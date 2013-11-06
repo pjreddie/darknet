@@ -3,6 +3,7 @@
 *.csv
 images/
 opencv/
+convnet/
 cnn
 
 # OS Generated #

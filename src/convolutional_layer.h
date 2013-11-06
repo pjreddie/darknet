@@ -14,8 +14,7 @@ typedef struct {
 
 convolutional_layer make_convolutional_layer(int w, int h, int c, int n, int size, int stride);
 void run_convolutional_layer(const image input, const convolutional_layer layer);
-void backpropagate_layer(image input, convolutional_layer layer);
-void backpropagate_layer_convolve(image input, convolutional_layer layer);
+void learn_convolutional_layer(image input, convolutional_layer layer);
 
 #endif
 

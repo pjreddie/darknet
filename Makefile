@@ -1,10 +1,10 @@
 CC=gcc
 CFLAGS=-Wall `pkg-config --cflags opencv` -O3 -flto -ffast-math
-#CFLAGS=-Wall `pkg-config --cflags opencv` -O0 -g
+CFLAGS=-Wall `pkg-config --cflags opencv` -O0 -g
 LDFLAGS=`pkg-config --libs opencv` -lm
 VPATH=./src/
 
-OBJ=network.o image.o tests.o convolutional_layer.o connected_layer.o maxpool_layer.o
+OBJ=network.o image.o tests.o convolutional_layer.o connected_layer.o maxpool_layer.o activations.o
 
 all: cnn
 

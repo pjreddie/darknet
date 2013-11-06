@@ -34,11 +34,11 @@ void test_color()
 void test_convolutional_layer()
 {
     srand(0);
-    image dog = load_image("test_dog.jpg");
+    image dog = load_image("dog.jpg");
     int i;
-    int n = 5;
+    int n = 3;
     int stride = 1;
-    int size = 8;
+    int size = 3;
     convolutional_layer layer = make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
     char buff[256];
     for(i = 0; i < n; ++i) {
@@ -47,7 +47,7 @@ void test_convolutional_layer()
     }
     run_convolutional_layer(dog, layer);
     
-    maxpool_layer mlayer = make_maxpool_layer(layer.output.h, layer.output.w, layer.output.c, 3);
+    maxpool_layer mlayer = make_maxpool_layer(layer.output.h, layer.output.w, layer.output.c, 2);
     run_maxpool_layer(layer.output,mlayer);
 
     show_image_layers(mlayer.output, "Test Maxpool Layer");
@@ -128,9 +128,9 @@ void test_network()
     n = 128;
     convolutional_layer cl5 = make_convolutional_layer(cl4.output.h, cl4.output.w, cl4.output.c, n, size, stride);
     maxpool_layer ml3 = make_maxpool_layer(cl5.output.h, cl5.output.w, cl5.output.c, 4);
-    connected_layer nl = make_connected_layer(ml3.output.h*ml3.output.w*ml3.output.c, 4096);
-    connected_layer nl2 = make_connected_layer(4096, 4096);
-    connected_layer nl3 = make_connected_layer(4096, 1000);
+    connected_layer nl = make_connected_layer(ml3.output.h*ml3.output.w*ml3.output.c, 4096, RELU);
+    connected_layer nl2 = make_connected_layer(4096, 4096, RELU);
+    connected_layer nl3 = make_connected_layer(4096, 1000, RELU);
 
     net.layers[0] = &cl;
     net.layers[1] = &ml;
@@ -155,6 +155,7 @@ void test_network()
 
     show_image_layers(get_network_image(net), "Test Network Layer");
 }
+
 void test_backpropagate()
 {
     int n = 3;
@@ -169,13 +170,13 @@ void test_backpropagate()
     int i;
     clock_t start = clock(), end;
     for(i = 0; i < 100; ++i){
-        backpropagate_layer(dog_copy, cl);
+        backpropagate_convolutional_layer(dog_copy, cl);
     }
     end = clock();
     printf("Backpropagate: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
     start = clock();
     for(i = 0; i < 100; ++i){
-        backpropagate_layer_convolve(dog, cl);
+        backpropagate_convolutional_layer_convolve(dog, cl);
     }
     end = clock();
     printf("Backpropagate Using Convolutions: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
@@ -185,14 +186,54 @@ void test_backpropagate()
     show_image(dog, "Test Backpropagate Difference");
 }
 
+void test_ann()
+{
+    network net;
+    net.n = 3;
+    net.layers = calloc(net.n, sizeof(void *));
+    net.types = calloc(net.n, sizeof(LAYER_TYPE));
+    net.types[0] = CONNECTED;
+    net.types[1] = CONNECTED;
+    net.types[2] = CONNECTED;
+
+    connected_layer nl = make_connected_layer(1, 20, RELU);
+    connected_layer nl2 = make_connected_layer(20, 20, RELU);
+    connected_layer nl3 = make_connected_layer(20, 1, RELU);
+
+    net.layers[0] = &nl;
+    net.layers[1] = &nl2;
+    net.layers[2] = &nl3;
+
+    image t = make_image(1,1,1);
+    int count = 0;
+        
+    double avgerr = 0;
+    while(1){
+        double v = ((double)rand()/RAND_MAX);
+        double truth = v*v;
+        set_pixel(t,0,0,0,v);
+        run_network(t, net);
+        double *out = get_network_output(net);
+        double err = pow((out[0]-truth),2.);
+        avgerr = .99 * avgerr + .01 * err;
+        //if(++count % 100000 == 0) printf("%f\n", avgerr);
+        if(++count % 100000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
+        out[0] = truth - out[0];
+        learn_network(t, net);
+        update_network(net, .001);
+    }
+
+}
+
 int main()
 {
     //test_backpropagate();
+    test_ann();
     //test_convolve();
     //test_upsample();
     //test_rotate();
     //test_load();
-    test_network();
+    //test_network();
     //test_convolutional_layer();
     //test_color();
     cvWaitKey(0);

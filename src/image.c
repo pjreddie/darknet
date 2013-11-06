@@ -132,7 +132,7 @@ image make_random_image(int h, int w, int c)
     image out = make_image(h,w,c);
     int i;
     for(i = 0; i < h*w*c; ++i){
-        out.data[i] = (double)rand()/RAND_MAX;
+        out.data[i] = .5-(double)rand()/RAND_MAX;
     }
     return out;
 }
