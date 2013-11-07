@@ -10,20 +10,20 @@ double convolution_gradient(double x)
     return (x>=0);
 }
 
-convolutional_layer make_convolutional_layer(int h, int w, int c, int n, int size, int stride)
+convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int size, int stride)
 {
     int i;
-    convolutional_layer layer;
-    layer.n = n;
-    layer.stride = stride;
-    layer.kernels = calloc(n, sizeof(image));
-    layer.kernel_updates = calloc(n, sizeof(image));
+    convolutional_layer *layer = calloc(1, sizeof(convolutional_layer));
+    layer->n = n;
+    layer->stride = stride;
+    layer->kernels = calloc(n, sizeof(image));
+    layer->kernel_updates = calloc(n, sizeof(image));
     for(i = 0; i < n; ++i){
-        layer.kernels[i] = make_random_kernel(size, c);
-        layer.kernel_updates[i] = make_random_kernel(size, c);
+        layer->kernels[i] = make_random_kernel(size, c);
+        layer->kernel_updates[i] = make_random_kernel(size, c);
     }
-    layer.output = make_image((h-1)/stride+1, (w-1)/stride+1, n);
-    layer.upsampled = make_image(h,w,n);
+    layer->output = make_image((h-1)/stride+1, (w-1)/stride+1, n);
+    layer->upsampled = make_image(h,w,n);
     return layer;
 }
 

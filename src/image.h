@@ -14,6 +14,7 @@ void normalize_image(image p);
 void threshold_image(image p, double t);
 void zero_image(image m);
 void rotate_image(image m);
+void subtract_image(image a, image b);
 
 void show_image(image p, char *name);
 void show_image_layers(image p, char *name);

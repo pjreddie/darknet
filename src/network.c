@@ -5,6 +5,15 @@
 #include "convolutional_layer.h"
 #include "maxpool_layer.h"
 
+network make_network(int n)
+{
+    network net;
+    net.n = n;
+    net.layers = calloc(net.n, sizeof(void *));
+    net.types = calloc(net.n, sizeof(LAYER_TYPE));
+    return net;
+}
+
 void run_network(image input, network net)
 {
     int i;
@@ -84,9 +93,9 @@ void learn_network(image input, network net)
     }
 }
 
-double *get_network_output(network net)
+
+double *get_network_output_layer(network net, int i)
 {
-    int i = net.n-1;
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
         return layer.output.data;
@@ -101,6 +110,43 @@ double *get_network_output(network net)
     }
     return 0;
 }
+
+int get_network_output_size_layer(network net, int i)
+{
+    if(net.types[i] == CONVOLUTIONAL){
+        convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.output.h*layer.output.w*layer.output.c;
+    }
+    else if(net.types[i] == MAXPOOL){
+        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.output.h*layer.output.w*layer.output.c;
+    }
+    else if(net.types[i] == CONNECTED){
+        connected_layer layer = *(connected_layer *)net.layers[i];
+        return layer.outputs;
+    }
+    return 0;
+}
+
+double *get_network_output(network net)
+{
+    int i = net.n-1;
+    return get_network_output_layer(net, i);
+}
+
+image get_network_image_layer(network net, int i)
+{
+    if(net.types[i] == CONVOLUTIONAL){
+        convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.output;
+    }
+    else if(net.types[i] == MAXPOOL){
+        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.output;
+    }
+    return make_image(0,0,0);
+}
+
 image get_network_image(network net)
 {
     int i;

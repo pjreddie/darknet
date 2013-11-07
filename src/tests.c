@@ -3,6 +3,7 @@
 #include "maxpool_layer.h"
 #include "network.h"
 #include "image.h"
+#include "parser.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -39,7 +40,7 @@ void test_convolutional_layer()
     int n = 3;
     int stride = 1;
     int size = 3;
-    convolutional_layer layer = make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
+    convolutional_layer layer = *make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
     char buff[256];
     for(i = 0; i < n; ++i) {
         sprintf(buff, "Kernel %d", i);
@@ -47,7 +48,7 @@ void test_convolutional_layer()
     }
     run_convolutional_layer(dog, layer);
     
-    maxpool_layer mlayer = make_maxpool_layer(layer.output.h, layer.output.w, layer.output.c, 2);
+    maxpool_layer mlayer = *make_maxpool_layer(layer.output.h, layer.output.w, layer.output.c, 2);
     run_maxpool_layer(layer.output,mlayer);
 
     show_image_layers(mlayer.output, "Test Maxpool Layer");
@@ -112,25 +113,25 @@ void test_network()
     int n = 48;
     int stride = 4;
     int size = 11;
-    convolutional_layer cl = make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
-    maxpool_layer ml = make_maxpool_layer(cl.output.h, cl.output.w, cl.output.c, 2);
+    convolutional_layer cl = *make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
+    maxpool_layer ml = *make_maxpool_layer(cl.output.h, cl.output.w, cl.output.c, 2);
 
     n = 128;
     size = 5;
     stride = 1;
-    convolutional_layer cl2 = make_convolutional_layer(ml.output.h, ml.output.w, ml.output.c, n, size, stride);
-    maxpool_layer ml2 = make_maxpool_layer(cl2.output.h, cl2.output.w, cl2.output.c, 2);
+    convolutional_layer cl2 = *make_convolutional_layer(ml.output.h, ml.output.w, ml.output.c, n, size, stride);
+    maxpool_layer ml2 = *make_maxpool_layer(cl2.output.h, cl2.output.w, cl2.output.c, 2);
 
     n = 192;
     size = 3;
-    convolutional_layer cl3 = make_convolutional_layer(ml2.output.h, ml2.output.w, ml2.output.c, n, size, stride);
-    convolutional_layer cl4 = make_convolutional_layer(cl3.output.h, cl3.output.w, cl3.output.c, n, size, stride);
+    convolutional_layer cl3 = *make_convolutional_layer(ml2.output.h, ml2.output.w, ml2.output.c, n, size, stride);
+    convolutional_layer cl4 = *make_convolutional_layer(cl3.output.h, cl3.output.w, cl3.output.c, n, size, stride);
     n = 128;
-    convolutional_layer cl5 = make_convolutional_layer(cl4.output.h, cl4.output.w, cl4.output.c, n, size, stride);
-    maxpool_layer ml3 = make_maxpool_layer(cl5.output.h, cl5.output.w, cl5.output.c, 4);
-    connected_layer nl = make_connected_layer(ml3.output.h*ml3.output.w*ml3.output.c, 4096, RELU);
-    connected_layer nl2 = make_connected_layer(4096, 4096, RELU);
-    connected_layer nl3 = make_connected_layer(4096, 1000, RELU);
+    convolutional_layer cl5 = *make_convolutional_layer(cl4.output.h, cl4.output.w, cl4.output.c, n, size, stride);
+    maxpool_layer ml3 = *make_maxpool_layer(cl5.output.h, cl5.output.w, cl5.output.c, 4);
+    connected_layer nl = *make_connected_layer(ml3.output.h*ml3.output.w*ml3.output.c, 4096, RELU);
+    connected_layer nl2 = *make_connected_layer(4096, 4096, RELU);
+    connected_layer nl3 = *make_connected_layer(4096, 1000, RELU);
 
     net.layers[0] = &cl;
     net.layers[1] = &ml;
@@ -164,7 +165,7 @@ void test_backpropagate()
     image dog = load_image("dog.jpg");
     show_image(dog, "Test Backpropagate Input");
     image dog_copy = copy_image(dog);
-    convolutional_layer cl = make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
+    convolutional_layer cl = *make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
     run_convolutional_layer(dog, cl);
     show_image(cl.output, "Test Backpropagate Output");
     int i;
@@ -196,9 +197,9 @@ void test_ann()
     net.types[1] = CONNECTED;
     net.types[2] = CONNECTED;
 
-    connected_layer nl = make_connected_layer(1, 20, RELU);
-    connected_layer nl2 = make_connected_layer(20, 20, RELU);
-    connected_layer nl3 = make_connected_layer(20, 1, RELU);
+    connected_layer nl = *make_connected_layer(1, 20, RELU);
+    connected_layer nl2 = *make_connected_layer(20, 20, RELU);
+    connected_layer nl3 = *make_connected_layer(20, 1, RELU);
 
     net.layers[0] = &nl;
     net.layers[1] = &nl2;
@@ -225,10 +226,34 @@ void test_ann()
 
 }
 
+void test_parser()
+{
+    network net = parse_network_cfg("test.cfg");
+    image t = make_image(1,1,1);
+    int count = 0;
+        
+    double avgerr = 0;
+    while(1){
+        double v = ((double)rand()/RAND_MAX);
+        double truth = v*v;
+        set_pixel(t,0,0,0,v);
+        run_network(t, net);
+        double *out = get_network_output(net);
+        double err = pow((out[0]-truth),2.);
+        avgerr = .99 * avgerr + .01 * err;
+        //if(++count % 100000 == 0) printf("%f\n", avgerr);
+        if(++count % 100000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
+        out[0] = truth - out[0];
+        learn_network(t, net);
+        update_network(net, .001);
+    }
+}
+
 int main()
 {
+    test_parser();
     //test_backpropagate();
-    test_ann();
+    //test_ann();
     //test_convolve();
     //test_upsample();
     //test_rotate();

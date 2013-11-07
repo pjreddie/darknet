@@ -16,7 +16,7 @@ typedef struct{
     double (* gradient)();
 } connected_layer;
 
-connected_layer make_connected_layer(int inputs, int outputs, ACTIVATOR_TYPE activator);
+connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activator);
 
 void run_connected_layer(double *input, connected_layer layer);
 void learn_connected_layer(double *input, connected_layer layer);

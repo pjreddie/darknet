@@ -8,7 +8,7 @@ typedef struct {
     image output;
 } maxpool_layer;
 
-maxpool_layer make_maxpool_layer(int h, int w, int c, int stride);
+maxpool_layer *make_maxpool_layer(int h, int w, int c, int stride);
 void run_maxpool_layer(const image input, const maxpool_layer layer);
 
 #endif

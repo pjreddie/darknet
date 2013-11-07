@@ -4,34 +4,34 @@
 #include <stdlib.h>
 #include <string.h>
 
-connected_layer make_connected_layer(int inputs, int outputs, ACTIVATOR_TYPE activator)
+connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activator)
 {
     int i;
-    connected_layer layer;
-    layer.inputs = inputs;
-    layer.outputs = outputs;
+    connected_layer *layer = calloc(1, sizeof(connected_layer));
+    layer->inputs = inputs;
+    layer->outputs = outputs;
 
-    layer.output = calloc(outputs, sizeof(double*));
+    layer->output = calloc(outputs, sizeof(double*));
 
-    layer.weight_updates = calloc(inputs*outputs, sizeof(double));
-    layer.weights = calloc(inputs*outputs, sizeof(double));
+    layer->weight_updates = calloc(inputs*outputs, sizeof(double));
+    layer->weights = calloc(inputs*outputs, sizeof(double));
     for(i = 0; i < inputs*outputs; ++i)
-        layer.weights[i] = .5 - (double)rand()/RAND_MAX;
+        layer->weights[i] = .5 - (double)rand()/RAND_MAX;
 
-    layer.bias_updates = calloc(outputs, sizeof(double));
-    layer.biases = calloc(outputs, sizeof(double));
+    layer->bias_updates = calloc(outputs, sizeof(double));
+    layer->biases = calloc(outputs, sizeof(double));
     for(i = 0; i < outputs; ++i)
-        layer.biases[i] = (double)rand()/RAND_MAX;
+        layer->biases[i] = (double)rand()/RAND_MAX;
 
     if(activator == SIGMOID){
-        layer.activation = sigmoid_activation;
-        layer.gradient = sigmoid_gradient;
+        layer->activation = sigmoid_activation;
+        layer->gradient = sigmoid_gradient;
     }else if(activator == RELU){
-        layer.activation = relu_activation;
-        layer.gradient = relu_gradient;
+        layer->activation = relu_activation;
+        layer->gradient = relu_gradient;
     }else if(activator == IDENTITY){
-        layer.activation = identity_activation;
-        layer.gradient = identity_gradient;
+        layer->activation = identity_activation;
+        layer->gradient = identity_gradient;
     }
 
     return layer;
