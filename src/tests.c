@@ -4,6 +4,8 @@
 #include "network.h"
 #include "image.h"
 #include "parser.h"
+#include "data.h"
+#include "matrix.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -40,18 +42,19 @@ void test_convolutional_layer()
     int n = 3;
     int stride = 1;
     int size = 3;
-    convolutional_layer layer = *make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
+    convolutional_layer layer = *make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride, RELU);
     char buff[256];
     for(i = 0; i < n; ++i) {
         sprintf(buff, "Kernel %d", i);
         show_image(layer.kernels[i], buff);
     }
-    run_convolutional_layer(dog, layer);
+    forward_convolutional_layer(layer, dog.data);
     
-    maxpool_layer mlayer = *make_maxpool_layer(layer.output.h, layer.output.w, layer.output.c, 2);
-    run_maxpool_layer(layer.output,mlayer);
+    image output = get_convolutional_image(layer);
+    maxpool_layer mlayer = *make_maxpool_layer(output.h, output.w, output.c, 2);
+    forward_maxpool_layer(mlayer, layer.output);
 
-    show_image_layers(mlayer.output, "Test Maxpool Layer");
+    show_image_layers(get_maxpool_image(mlayer), "Test Maxpool Layer");
 }
 
 void test_load()
@@ -90,168 +93,144 @@ void test_rotate()
     show_image(random, "Test Rotate Random");
 }
 
-void test_network()
-{
-    network net;
-    net.n = 11;
-    net.layers = calloc(net.n, sizeof(void *));
-    net.types = calloc(net.n, sizeof(LAYER_TYPE));
-    net.types[0] = CONVOLUTIONAL;
-    net.types[1] = MAXPOOL;
-    net.types[2] = CONVOLUTIONAL;
-    net.types[3] = MAXPOOL;
-    net.types[4] = CONVOLUTIONAL;
-    net.types[5] = CONVOLUTIONAL;
-    net.types[6] = CONVOLUTIONAL;
-    net.types[7] = MAXPOOL;
-    net.types[8] = CONNECTED;
-    net.types[9] = CONNECTED;
-    net.types[10] = CONNECTED;
-
-    image dog = load_image("test_hinton.jpg");
-
-    int n = 48;
-    int stride = 4;
-    int size = 11;
-    convolutional_layer cl = *make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
-    maxpool_layer ml = *make_maxpool_layer(cl.output.h, cl.output.w, cl.output.c, 2);
-
-    n = 128;
-    size = 5;
-    stride = 1;
-    convolutional_layer cl2 = *make_convolutional_layer(ml.output.h, ml.output.w, ml.output.c, n, size, stride);
-    maxpool_layer ml2 = *make_maxpool_layer(cl2.output.h, cl2.output.w, cl2.output.c, 2);
-
-    n = 192;
-    size = 3;
-    convolutional_layer cl3 = *make_convolutional_layer(ml2.output.h, ml2.output.w, ml2.output.c, n, size, stride);
-    convolutional_layer cl4 = *make_convolutional_layer(cl3.output.h, cl3.output.w, cl3.output.c, n, size, stride);
-    n = 128;
-    convolutional_layer cl5 = *make_convolutional_layer(cl4.output.h, cl4.output.w, cl4.output.c, n, size, stride);
-    maxpool_layer ml3 = *make_maxpool_layer(cl5.output.h, cl5.output.w, cl5.output.c, 4);
-    connected_layer nl = *make_connected_layer(ml3.output.h*ml3.output.w*ml3.output.c, 4096, RELU);
-    connected_layer nl2 = *make_connected_layer(4096, 4096, RELU);
-    connected_layer nl3 = *make_connected_layer(4096, 1000, RELU);
-
-    net.layers[0] = &cl;
-    net.layers[1] = &ml;
-    net.layers[2] = &cl2;
-    net.layers[3] = &ml2;
-    net.layers[4] = &cl3;
-    net.layers[5] = &cl4;
-    net.layers[6] = &cl5;
-    net.layers[7] = &ml3;
-    net.layers[8] = &nl;
-    net.layers[9] = &nl2;
-    net.layers[10] = &nl3;
-
-    int i;
-    clock_t start = clock(), end;
-    for(i = 0; i < 10; ++i){
-        run_network(dog, net);
-        rotate_image(dog);
-    }
-    end = clock();
-    printf("Ran %lf second per iteration\n", (double)(end-start)/CLOCKS_PER_SEC/10);
-
-    show_image_layers(get_network_image(net), "Test Network Layer");
-}
-
-void test_backpropagate()
-{
-    int n = 3;
-    int size = 4;
-    int stride = 10;
-    image dog = load_image("dog.jpg");
-    show_image(dog, "Test Backpropagate Input");
-    image dog_copy = copy_image(dog);
-    convolutional_layer cl = *make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride);
-    run_convolutional_layer(dog, cl);
-    show_image(cl.output, "Test Backpropagate Output");
-    int i;
-    clock_t start = clock(), end;
-    for(i = 0; i < 100; ++i){
-        backpropagate_convolutional_layer(dog_copy, cl);
-    }
-    end = clock();
-    printf("Backpropagate: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
-    start = clock();
-    for(i = 0; i < 100; ++i){
-        backpropagate_convolutional_layer_convolve(dog, cl);
-    }
-    end = clock();
-    printf("Backpropagate Using Convolutions: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
-    show_image(dog_copy, "Test Backpropagate 1");
-    show_image(dog, "Test Backpropagate 2");
-    subtract_image(dog, dog_copy);
-    show_image(dog, "Test Backpropagate Difference");
-}
-
-void test_ann()
-{
-    network net;
-    net.n = 3;
-    net.layers = calloc(net.n, sizeof(void *));
-    net.types = calloc(net.n, sizeof(LAYER_TYPE));
-    net.types[0] = CONNECTED;
-    net.types[1] = CONNECTED;
-    net.types[2] = CONNECTED;
-
-    connected_layer nl = *make_connected_layer(1, 20, RELU);
-    connected_layer nl2 = *make_connected_layer(20, 20, RELU);
-    connected_layer nl3 = *make_connected_layer(20, 1, RELU);
-
-    net.layers[0] = &nl;
-    net.layers[1] = &nl2;
-    net.layers[2] = &nl3;
-
-    image t = make_image(1,1,1);
-    int count = 0;
-        
-    double avgerr = 0;
-    while(1){
-        double v = ((double)rand()/RAND_MAX);
-        double truth = v*v;
-        set_pixel(t,0,0,0,v);
-        run_network(t, net);
-        double *out = get_network_output(net);
-        double err = pow((out[0]-truth),2.);
-        avgerr = .99 * avgerr + .01 * err;
-        //if(++count % 100000 == 0) printf("%f\n", avgerr);
-        if(++count % 100000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
-        out[0] = truth - out[0];
-        learn_network(t, net);
-        update_network(net, .001);
-    }
-
-}
-
 void test_parser()
 {
-    network net = parse_network_cfg("test.cfg");
-    image t = make_image(1,1,1);
+    network net = parse_network_cfg("test_parser.cfg");
+    double input[1];
     int count = 0;
         
     double avgerr = 0;
     while(1){
         double v = ((double)rand()/RAND_MAX);
         double truth = v*v;
-        set_pixel(t,0,0,0,v);
-        run_network(t, net);
+        input[0] = v;
+        forward_network(net, input);
         double *out = get_network_output(net);
+        double *delta = get_network_delta(net);
         double err = pow((out[0]-truth),2.);
         avgerr = .99 * avgerr + .01 * err;
         //if(++count % 100000 == 0) printf("%f\n", avgerr);
-        if(++count % 100000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
-        out[0] = truth - out[0];
-        learn_network(t, net);
+        if(++count % 1000000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
+        delta[0] = truth - out[0];
+        learn_network(net, input);
         update_network(net, .001);
+    }
+}
+
+void test_data()
+{
+    batch train = random_batch("train_paths.txt", 101);
+    show_image(train.images[0], "Test Data Loading");
+    show_image(train.images[100], "Test Data Loading");
+    show_image(train.images[10], "Test Data Loading");
+    free_batch(train);
+}
+
+void test_train()
+{
+    network net = parse_network_cfg("test.cfg");
+    srand(0);
+    //visualize_network(net);
+    int i = 1000;
+    //while(1){
+    while(i > 0){
+        batch train = random_batch("train_paths.txt", 100);
+        train_network_batch(net, train);
+        //show_image_layers(get_network_image(net), "hey");
+        //visualize_network(net);
+        //cvWaitKey(0);
+        free_batch(train);
+        --i;
+        }
+    //}
+}
+
+double error_network(network net, matrix m, double *truth)
+{
+    int i;
+    int correct = 0;
+    for(i = 0; i < m.rows; ++i){
+        forward_network(net, m.vals[i]);
+        double *out = get_network_output(net);
+        double err = truth[i] - out[0];
+        if(fabs(err) < .5) ++correct;
+    }
+    return (double)correct/m.rows;
+}
+
+void classify_random_filters()
+{
+    network net = parse_network_cfg("random_filter_finish.cfg");
+    matrix m = csv_to_matrix("train.csv");
+    matrix ho = hold_out_matrix(&m, 2500);
+    double *truth = pop_column(&m, 0);
+    double *ho_truth = pop_column(&ho, 0);
+    int i;
+    clock_t start = clock(), end;
+    int count = 0;
+    while(++count <= 300){
+        for(i = 0; i < m.rows; ++i){
+            int index = rand()%m.rows;
+            //image p = double_to_image(1690,1,1,m.vals[index]);
+            //normalize_image(p);
+            forward_network(net, m.vals[index]);
+            double *out = get_network_output(net);
+            double *delta = get_network_delta(net);
+            //printf("%f\n", out[0]);
+            delta[0] = truth[index] - out[0];
+           // printf("%f\n", delta[0]);
+            //printf("%f %f\n", truth[index], out[0]);
+            learn_network(net, m.vals[index]);
+            update_network(net, .000005);
+        }
+        double test_acc = error_network(net, m, truth);
+        double valid_acc = error_network(net, ho, ho_truth);
+        printf("%f, %f\n", test_acc, valid_acc);
+        fprintf(stderr, "%5d: %f Valid: %f\n",count, test_acc, valid_acc);
+        //if(valid_acc > .70) break;
+    }
+    end = clock();
+    FILE *fp = fopen("submission/out.txt", "w");
+    matrix test = csv_to_matrix("test.csv");
+    truth = pop_column(&test, 0);
+    for(i = 0; i < test.rows; ++i){
+        forward_network(net, test.vals[i]);
+        double *out = get_network_output(net);
+        if(fabs(out[0]) < .5) fprintf(fp, "0\n");
+        else fprintf(fp, "1\n");
+    }
+    fclose(fp);
+    printf("Neural Net Learning: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
+}
+
+void test_random_filters()
+{
+    FILE *file = fopen("test.csv", "w");
+    int i,j,k;
+    srand(0);
+    network net = parse_network_cfg("test_random_filter.cfg");
+    for(i = 0; i < 100; ++i){
+        printf("%d\n", i);
+        batch part = get_batch("test_paths.txt", i, 100);
+        for(j = 0; j < part.n; ++j){
+            forward_network(net, part.images[j].data);
+            double *out = get_network_output(net);
+            fprintf(file, "%f", part.truth[j][0]);
+            for(k = 0; k < get_network_output_size(net); ++k){
+                fprintf(file, ",%f", out[k]);
+            }
+            fprintf(file, "\n");
+        }
+        free_batch(part);
     }
 }
 
 int main()
 {
-    test_parser();
+    //classify_random_filters();
+    //test_random_filters();
+    test_train();
+    //test_parser();
     //test_backpropagate();
     //test_ann();
     //test_convolve();

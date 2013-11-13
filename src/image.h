@@ -15,13 +15,16 @@ void threshold_image(image p, double t);
 void zero_image(image m);
 void rotate_image(image m);
 void subtract_image(image a, image b);
+double avg_image_layer(image m, int l);
 
 void show_image(image p, char *name);
 void show_image_layers(image p, char *name);
 
 image make_image(int h, int w, int c);
+image make_empty_image(int h, int w, int c);
 image make_random_image(int h, int w, int c);
 image make_random_kernel(int size, int c);
+image double_to_image(int h, int w, int c, double *data);
 image copy_image(image p);
 image load_image(char *filename);
 

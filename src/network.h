@@ -3,6 +3,7 @@
 #define NETWORK_H
 
 #include "image.h"
+#include "data.h"
 
 typedef enum {
     CONVOLUTIONAL,
@@ -17,12 +18,16 @@ typedef struct {
 } network;
 
 network make_network(int n);
-void run_network(image input, network net);
-void learn_network(image input, network net);
+void forward_network(network net, double *input);
+void learn_network(network net, double *input);
 void update_network(network net, double step);
+void train_network_batch(network net, batch b);
 double *get_network_output(network net);
 double *get_network_output_layer(network net, int i);
+double *get_network_delta_layer(network net, int i);
+double *get_network_delta(network net);
 int get_network_output_size_layer(network net, int i);
+int get_network_output_size(network net);
 image get_network_image(network net);
 image get_network_image_layer(network net, int i);
 

@@ -34,6 +34,18 @@ void normalize_image(image p)
             p.data[i+j*p.h*p.w] = (p.data[i+j*p.h*p.w] - min[j])/(max[j]-min[j]);
         }
     }
+    free(min);
+    free(max);
+}
+
+double avg_image_layer(image m, int l)
+{
+    int i;
+    double sum = 0;
+    for(i = 0; i < m.h*m.w; ++i){
+        sum += m.data[l*m.h*m.w + i];
+    }
+    return sum/(m.h*m.w);
 }
 
 void threshold_image(image p, double t)
@@ -95,13 +107,26 @@ void show_image_layers(image p, char *name)
     }
 }
 
-image make_image(int h, int w, int c)
+image make_empty_image(int h, int w, int c)
 {
     image out;
     out.h = h;
     out.w = w;
     out.c = c;
+    return out;
+}
+
+image make_image(int h, int w, int c)
+{
+    image out = make_empty_image(h,w,c);
     out.data = calloc(h*w*c, sizeof(double));
+    return out;
+}
+
+image double_to_image(int h, int w, int c, double *data)
+{
+    image out = make_empty_image(h,w,c);
+    out.data = data;
     return out;
 }
 
@@ -132,7 +157,7 @@ image make_random_image(int h, int w, int c)
     image out = make_image(h,w,c);
     int i;
     for(i = 0; i < h*w*c; ++i){
-        out.data[i] = .5-(double)rand()/RAND_MAX;
+        out.data[i] = (.5-(double)rand()/RAND_MAX);
     }
     return out;
 }

@@ -8,9 +8,15 @@ typedef struct{
     int outputs;
     double *weights;
     double *biases;
+
     double *weight_updates;
     double *bias_updates;
+
+    double *weight_momentum;
+    double *bias_momentum;
+
     double *output;
+    double *delta;
 
     double (* activation)();
     double (* gradient)();
@@ -18,12 +24,11 @@ typedef struct{
 
 connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activator);
 
-void run_connected_layer(double *input, connected_layer layer);
-void learn_connected_layer(double *input, connected_layer layer);
-void update_connected_layer(connected_layer layer, double step);
+void forward_connected_layer(connected_layer layer, double *input);
+void backward_connected_layer(connected_layer layer, double *input, double *delta);
+void learn_connected_layer(connected_layer layer, double *input);
+void update_connected_layer(connected_layer layer, double step, double momentum, double decay);
 
-void backpropagate_connected_layer(double *input, connected_layer layer);
-void calculate_update_connected_layer(double *input, connected_layer layer);
 
 #endif
 
