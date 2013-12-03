@@ -18,11 +18,11 @@ typedef struct{
     double *output;
     double *delta;
 
-    double (* activation)();
-    double (* gradient)();
+    ACTIVATION activation;
+
 } connected_layer;
 
-connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activator);
+connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activation);
 
 void forward_connected_layer(connected_layer layer, double *input);
 void backward_connected_layer(connected_layer layer, double *input, double *delta);

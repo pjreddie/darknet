@@ -7,6 +7,7 @@
 #include "convolutional_layer.h"
 #include "connected_layer.h"
 #include "maxpool_layer.h"
+#include "softmax_layer.h"
 #include "list.h"
 #include "option_list.h"
 #include "utils.h"
@@ -19,6 +20,7 @@ typedef struct{
 int is_convolutional(section *s);
 int is_connected(section *s);
 int is_maxpool(section *s);
+int is_softmax(section *s);
 list *read_cfg(char *filename);
 
 
@@ -69,6 +71,17 @@ network parse_network_cfg(char *filename)
             net.types[count] = CONNECTED;
             net.layers[count] = layer;
             option_unused(options);
+        }else if(is_softmax(s)){
+            int input;
+            if(count == 0){
+                input = option_find_int(options, "input",1);
+            }else{
+                input =  get_network_output_size_layer(net, count-1);
+            }
+            softmax_layer *layer = make_softmax_layer(input);
+            net.types[count] = SOFTMAX;
+            net.layers[count] = layer;
+            option_unused(options);
         }else if(is_maxpool(s)){
             int h,w,c;
             int stride = option_find_int(options, "stride",1);
@@ -111,6 +124,12 @@ int is_maxpool(section *s)
 {
     return (strcmp(s->type, "[max]")==0
             || strcmp(s->type, "[maxpool]")==0);
+}
+
+int is_softmax(section *s)
+{
+    return (strcmp(s->type, "[soft]")==0
+            || strcmp(s->type, "[softmax]")==0);
 }
 
 int read_option(char *s, list *options)

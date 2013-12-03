@@ -2,10 +2,12 @@
 #include "network.h"
 #include "image.h"
 #include "data.h"
+#include "utils.h"
 
 #include "connected_layer.h"
 #include "convolutional_layer.h"
 #include "maxpool_layer.h"
+#include "softmax_layer.h"
 
 network make_network(int n)
 {
@@ -30,6 +32,11 @@ void forward_network(network net, double *input)
             forward_connected_layer(layer, input);
             input = layer.output;
         }
+        else if(net.types[i] == SOFTMAX){
+            softmax_layer layer = *(softmax_layer *)net.layers[i];
+            forward_softmax_layer(layer, input);
+            input = layer.output;
+        }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
             forward_maxpool_layer(layer, input);
@@ -44,14 +51,17 @@ void update_network(network net, double step)
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            update_convolutional_layer(layer, step);
+            update_convolutional_layer(layer, step, 0.9, .01);
         }
         else if(net.types[i] == MAXPOOL){
             //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
         }
+        else if(net.types[i] == SOFTMAX){
+            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            update_connected_layer(layer, step, .3, 0);
+            update_connected_layer(layer, step, .9, 0);
         }
     }
 }
@@ -63,6 +73,9 @@ double *get_network_output_layer(network net, int i)
         return layer.output;
     } else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.output;
+    } else if(net.types[i] == SOFTMAX){
+        softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.output;
     } else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
@@ -82,6 +95,9 @@ double *get_network_delta_layer(network net, int i)
         return layer.delta;
     } else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.delta;
+    } else if(net.types[i] == SOFTMAX){
+        softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.delta;
     } else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
@@ -114,7 +130,12 @@ void learn_network(network net, double *input)
             if(i != 0) backward_convolutional_layer(layer, prev_input, prev_delta);
         }
         else if(net.types[i] == MAXPOOL){
-            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+            maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+            if(i != 0) backward_maxpool_layer(layer, prev_input, prev_delta);
+        }
+        else if(net.types[i] == SOFTMAX){
+            softmax_layer layer = *(softmax_layer *)net.layers[i];
+            if(i != 0) backward_softmax_layer(layer, prev_input, prev_delta);
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
@@ -130,19 +151,33 @@ void train_network_batch(network net, batch b)
     int k = get_network_output_size(net);
     int correct = 0;
     for(i = 0; i < b.n; ++i){
+        show_image(b.images[i], "Input");
         forward_network(net, b.images[i].data);
         image o = get_network_image(net);
+        if(o.h) show_image_collapsed(o, "Output");
         double *output = get_network_output(net);
         double *delta = get_network_delta(net);
+        int max_k = 0;
+        double max = 0;
         for(j = 0; j < k; ++j){
-            //printf("%f %f\n", b.truth[i][j], output[j]);
             delta[j] = b.truth[i][j]-output[j];
-            if(fabs(delta[j]) < .5) ++correct;
-            //printf("%f\n",  output[j]);
+            if(output[j] > max) {
+                max = output[j];
+                max_k = j;
+            }
         }
+        if(b.truth[i][max_k]) ++correct;
+        printf("%f\n", (double)correct/(i+1));
         learn_network(net, b.images[i].data);
-        update_network(net, .00001);
+        update_network(net, .001);
+        if(i%100 == 0){
+            visualize_network(net);
+            cvWaitKey(100);
+        }
     }
+    visualize_network(net);
+    print_network(net);
+    cvWaitKey(100);
     printf("Accuracy: %f\n", (double)correct/b.n);
 }
 
@@ -161,6 +196,10 @@ int get_network_output_size_layer(network net, int i)
     else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
         return layer.outputs;
+    }
+    else if(net.types[i] == SOFTMAX){
+        softmax_layer layer = *(softmax_layer *)net.layers[i];
+        return layer.inputs;
     }
     return 0;
 }
@@ -181,7 +220,7 @@ image get_network_image_layer(network net, int i)
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
         return get_maxpool_image(layer);
     }
-    return make_image(0,0,0);
+    return make_empty_image(0,0,0);
 }
 
 image get_network_image(network net)
@@ -191,17 +230,56 @@ image get_network_image(network net)
         image m = get_network_image_layer(net, i);
         if(m.h != 0) return m;
     }
-    return make_image(1,1,1);
+    return make_empty_image(0,0,0);
 }
 
 void visualize_network(network net)
 {
     int i;
-    for(i = 0; i < 1; ++i){
+    char buff[256];
+    for(i = 0; i < net.n; ++i){
+        sprintf(buff, "Layer %d", i);
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            visualize_convolutional_layer(layer);
+            visualize_convolutional_filters(layer, buff);
         }
     } 
 }
 
+void print_network(network net)
+{
+    int i,j;
+    for(i = 0; i < net.n; ++i){
+        double *output;
+        int n = 0;
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+            output = layer.output;
+            image m = get_convolutional_image(layer);
+            n = m.h*m.w*m.c;
+        }
+        else if(net.types[i] == MAXPOOL){
+            maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+            output = layer.output;
+            image m = get_maxpool_image(layer);
+            n = m.h*m.w*m.c;
+        }
+        else if(net.types[i] == CONNECTED){
+            connected_layer layer = *(connected_layer *)net.layers[i];
+            output = layer.output;
+            n = layer.outputs;
+        }
+        else if(net.types[i] == SOFTMAX){
+            softmax_layer layer = *(softmax_layer *)net.layers[i];
+            output = layer.output;
+            n = layer.inputs;
+        }
+        double mean = mean_array(output, n);
+        double vari = variance_array(output, n);
+        printf("Layer %d - Mean: %f, Variance: %f\n",i,mean, vari);
+        if(n > 100) n = 100;
+        for(j = 0; j < n; ++j) printf("%f, ", output[j]);
+        if(n == 100)printf(".....\n");
+        printf("\n");
+    }
+}

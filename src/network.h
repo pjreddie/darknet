@@ -8,7 +8,8 @@
 typedef enum {
     CONVOLUTIONAL,
     CONNECTED,
-    MAXPOOL
+    MAXPOOL,
+    SOFTMAX
 } LAYER_TYPE;
 
 typedef struct {
@@ -30,6 +31,8 @@ int get_network_output_size_layer(network net, int i);
 int get_network_output_size(network net);
 image get_network_image(network net);
 image get_network_image_layer(network net, int i);
+void print_network(network net);
+void visualize_network(network net);
 
 #endif
 

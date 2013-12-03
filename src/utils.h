@@ -14,5 +14,10 @@ list *parse_csv_line(char *line);
 char *copy_string(char *s);
 int count_fields(char *line);
 double *parse_fields(char *line, int n);
+void normalize_array(double *a, int n);
+double constrain(double a, double max);
+double rand_normal();
+double mean_array(double *a, int n);
+double variance_array(double *a, int n);
 #endif
 

@@ -143,5 +143,47 @@ double *parse_fields(char *line, int n)
 	return field;
 }
 
+double mean_array(double *a, int n)
+{
+    int i;
+    double sum = 0;
+    for(i = 0; i < n; ++i) sum += a[i];
+    return sum/n;
+}
 
+double variance_array(double *a, int n)
+{
+    int i;
+    double sum = 0;
+    double mean = mean_array(a, n);
+    for(i = 0; i < n; ++i) sum += (a[i] - mean)*(a[i]-mean);
+    double variance = sum/n;
+    return variance;
+}
 
+double constrain(double a, double max)
+{
+    if(a > abs(max)) return abs(max);
+    if(a < -abs(max)) return -abs(max);
+    return a;
+}
+
+void normalize_array(double *a, int n)
+{
+    int i;
+    double mu = mean_array(a,n);
+    double sigma = sqrt(variance_array(a,n));
+    for(i = 0; i < n; ++i){
+        a[i] = (a[i] - mu)/sigma;
+    }
+    mu = mean_array(a,n);
+    sigma = sqrt(variance_array(a,n));
+}
+
+double rand_normal()
+{
+    int i;
+    double sum= 0;
+    for(i = 0; i < 12; ++i) sum += (double)rand()/RAND_MAX;
+    return sum-6.;
+}
