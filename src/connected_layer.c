@@ -8,7 +8,7 @@
 
 connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activation)
 {
-    printf("Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
+    fprintf(stderr, "Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
     int i;
     connected_layer *layer = calloc(1, sizeof(connected_layer));
     layer->inputs = inputs;
@@ -29,7 +29,7 @@ connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activa
     layer->biases = calloc(outputs, sizeof(double));
     for(i = 0; i < outputs; ++i)
         //layer->biases[i] = rand_normal()*scale + scale;
-        layer->biases[i] = 1;
+        layer->biases[i] = 0;
 
     layer->activation = activation;
     return layer;

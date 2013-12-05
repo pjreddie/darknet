@@ -15,7 +15,6 @@
 void test_convolve()
 {
     image dog = load_image("dog.jpg");
-    //show_image_layers(dog, "Dog");
     printf("dog channels %d\n", dog.c);
     image kernel = make_random_image(3,3,dog.c);
     image edge = make_image(dog.h, dog.w, 1);
@@ -88,7 +87,7 @@ void verify_convolutional_layer()
     image out_delta = get_convolutional_delta(layer);
     for(i = 0; i < out.h*out.w*out.c; ++i){
         out_delta.data[i] = 1;
-        backward_convolutional_layer2(layer, test.data, in_delta.data);
+        backward_convolutional_layer(layer, test.data, in_delta.data);
         image partial = copy_image(in_delta);
         jacobian2[i] = partial.data;
         out_delta.data[i] = 0;
@@ -156,7 +155,7 @@ void test_parser()
     int count = 0;
         
     double avgerr = 0;
-    while(1){
+    while(++count < 100000000){
         double v = ((double)rand()/RAND_MAX);
         double truth = v*v;
         input[0] = v;
@@ -165,8 +164,7 @@ void test_parser()
         double *delta = get_network_delta(net);
         double err = pow((out[0]-truth),2.);
         avgerr = .99 * avgerr + .01 * err;
-        //if(++count % 100000 == 0) printf("%f\n", avgerr);
-        if(++count % 1000000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
+        if(count % 1000000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
         delta[0] = truth - out[0];
         learn_network(net, input);
         update_network(net, .001);
@@ -197,15 +195,16 @@ void test_full()
     }
 }
 
-double error_network(network net, matrix m, double *truth)
+double error_network(network net, matrix m, double **truth)
 {
     int i;
     int correct = 0;
+    int k = get_network_output_size(net);
     for(i = 0; i < m.rows; ++i){
         forward_network(net, m.vals[i]);
         double *out = get_network_output(net);
-        double err = truth[i] - out[0];
-        if(fabs(err) < .5) ++correct;
+        int guess = max_index(out, k);
+        if(truth[i][guess]) ++correct;
     }
     return (double)correct/m.rows;
 }
@@ -224,24 +223,35 @@ double **one_hot(double *a, int n, int k)
 
 void test_nist()
 {
+    srand(999999);
     network net = parse_network_cfg("nist.cfg");
-    matrix m = csv_to_matrix("images/nist_train.csv");
-    matrix ho = hold_out_matrix(&m, 3000);
+    matrix m = csv_to_matrix("mnist/mnist_train.csv");
+    matrix test = csv_to_matrix("mnist/mnist_test.csv");
     double *truth_1d = pop_column(&m, 0);
     double **truth = one_hot(truth_1d, m.rows, 10);
-    double *ho_truth_1d = pop_column(&ho, 0);
-    double **ho_truth = one_hot(ho_truth_1d, ho.rows, 10);
+    double *test_truth_1d = pop_column(&test, 0);
+    double **test_truth = one_hot(test_truth_1d, test.rows, 10);
     int i,j;
     clock_t start = clock(), end;
+    for(i = 0; i < test.rows; ++i){
+        normalize_array(test.vals[i], 28*28);
+        //scale_array(m.vals[i], 28*28, 1./255.);
+        //translate_array(m.vals[i], 28*28, -.1);
+    }
+    for(i = 0; i < m.rows; ++i){
+        normalize_array(m.vals[i], 28*28);
+        //scale_array(m.vals[i], 28*28, 1./255.);
+        //translate_array(m.vals[i], 28*28, -.1);
+    }
     int count = 0;
-    double lr = .0001;
-    while(++count <= 3000000){
+    double lr = .0005;
+    while(++count <= 300){
         //lr *= .99;
         int index = 0;
         int correct = 0;
-        for(i = 0; i < 1000; ++i){
+        int number = 1000;
+        for(i = 0; i < number; ++i){
             index = rand()%m.rows;
-            normalize_array(m.vals[index], 28*28);
             forward_network(net, m.vals[index]);
             double *out = get_network_output(net);
             double *delta = get_network_delta(net);
@@ -260,19 +270,29 @@ void test_nist()
         }
         print_network(net);
         image input = double_to_image(28,28,1, m.vals[index]);
-        show_image(input, "Input");
+        //show_image(input, "Input");
         image o = get_network_image(net);
-        show_image_collapsed(o, "Output");
+        //show_image_collapsed(o, "Output");
         visualize_network(net);
-        cvWaitKey(100);
+        cvWaitKey(10);
         //double test_acc = error_network(net, m, truth);
-        //double valid_acc = error_network(net, ho, ho_truth);
-        //printf("%f, %f\n", test_acc, valid_acc);
-        fprintf(stderr, "%5d: %f %f\n",count, (double)correct/1000, lr);
-        //if(valid_acc > .70) break;
+        fprintf(stderr, "\n%5d: %f %f\n\n",count, (double)correct/number, lr);
+        if(count % 10 == 0 && 0){
+            double train_acc = error_network(net, m, truth);
+            fprintf(stderr, "\nTRAIN: %f\n", train_acc);
+            double test_acc = error_network(net, test, test_truth);
+            fprintf(stderr, "TEST: %f\n\n", test_acc);
+            printf("%d, %f, %f\n", count, train_acc, test_acc);
+        }
+        if(count % (m.rows/number) == 0) lr /= 2; 
     }
+            double train_acc = error_network(net, m, truth);
+            fprintf(stderr, "\nTRAIN: %f\n", train_acc);
+            double test_acc = error_network(net, test, test_truth);
+            fprintf(stderr, "TEST: %f\n\n", test_acc);
+            printf("%d, %f, %f\n", count, train_acc, test_acc);
     end = clock();
-    printf("Neural Net Learning: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
+    //printf("Neural Net Learning: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
 }
 
 void test_kernel_update()
@@ -281,14 +301,14 @@ void test_kernel_update()
     double delta[] = {.1};
     double input[] = {.3, .5, .3, .5, .5, .5, .5, .0, .5};
     double kernel[] = {1,2,3,4,5,6,7,8,9};
-    convolutional_layer layer = *make_convolutional_layer(3, 3, 1, 1, 3, 1, IDENTITY);
+    convolutional_layer layer = *make_convolutional_layer(3, 3, 1, 1, 3, 1, LINEAR);
     layer.kernels[0].data = kernel;
     layer.delta = delta;
     learn_convolutional_layer(layer, input);
     print_image(layer.kernels[0]);
     print_image(get_convolutional_delta(layer));
     print_image(layer.kernel_updates[0]);
-    
+
 }
 
 void test_random_classify()
@@ -311,15 +331,15 @@ void test_random_classify()
             double *delta = get_network_delta(net);
             //printf("%f\n", out[0]);
             delta[0] = truth[index] - out[0];
-           // printf("%f\n", delta[0]);
+            // printf("%f\n", delta[0]);
             //printf("%f %f\n", truth[index], out[0]);
             learn_network(net, m.vals[index]);
             update_network(net, .00001);
         }
-        double test_acc = error_network(net, m, truth);
-        double valid_acc = error_network(net, ho, ho_truth);
-        printf("%f, %f\n", test_acc, valid_acc);
-        fprintf(stderr, "%5d: %f Valid: %f\n",count, test_acc, valid_acc);
+        //double test_acc = error_network(net, m, truth);
+        //double valid_acc = error_network(net, ho, ho_truth);
+        //printf("%f, %f\n", test_acc, valid_acc);
+        //fprintf(stderr, "%5d: %f Valid: %f\n",count, test_acc, valid_acc);
         //if(valid_acc > .70) break;
     }
     end = clock();
@@ -362,8 +382,8 @@ void test_random_preprocess()
 int main()
 {
     //test_kernel_update();
-    //test_nist();
-    test_full();
+    test_nist();
+    //test_full();
     //test_random_preprocess();
     //test_random_classify();
     //test_parser();

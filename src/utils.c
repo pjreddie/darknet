@@ -180,6 +180,35 @@ void normalize_array(double *a, int n)
     sigma = sqrt(variance_array(a,n));
 }
 
+void translate_array(double *a, int n, double s)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        a[i] += s;
+    }
+}
+
+void scale_array(double *a, int n, double s)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        a[i] *= s;
+    }
+}
+int max_index(double *a, int n)
+{
+    if(n <= 0) return -1;
+    int i, max_i = 0;
+    double max = a[0];
+    for(i = 1; i < n; ++i){
+        if(a[i] > max){
+            max = a[i];
+            max_i = i;
+        }
+    }
+    return max_i;
+}
+
 double rand_normal()
 {
     int i;

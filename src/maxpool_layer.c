@@ -19,7 +19,7 @@ image get_maxpool_delta(maxpool_layer layer)
 
 maxpool_layer *make_maxpool_layer(int h, int w, int c, int stride)
 {
-    printf("Maxpool Layer: %d x %d x %d image, %d stride\n", h,w,c,stride);
+    fprintf(stderr, "Maxpool Layer: %d x %d x %d image, %d stride\n", h,w,c,stride);
     maxpool_layer *layer = calloc(1, sizeof(maxpool_layer));
     layer->h = h;
     layer->w = w;

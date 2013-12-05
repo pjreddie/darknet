@@ -39,7 +39,7 @@ convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int si
     layer->w = w;
     layer->c = c;
     layer->n = n;
-    layer->edge = 0;
+    layer->edge = 1;
     layer->stride = stride;
     layer->kernels = calloc(n, sizeof(image));
     layer->kernel_updates = calloc(n, sizeof(image));
@@ -47,10 +47,10 @@ convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int si
     layer->biases = calloc(n, sizeof(double));
     layer->bias_updates = calloc(n, sizeof(double));
     layer->bias_momentum = calloc(n, sizeof(double));
-    double scale = 20./(size*size*c);
+    double scale = 2./(size*size);
     for(i = 0; i < n; ++i){
         //layer->biases[i] = rand_normal()*scale + scale;
-        layer->biases[i] = 1;
+        layer->biases[i] = 0;
         layer->kernels[i] = make_random_kernel(size, c, scale);
         layer->kernel_updates[i] = make_random_kernel(size, c, 0);
         layer->kernel_momentum[i] = make_random_kernel(size, c, 0);
@@ -63,7 +63,7 @@ convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int si
         out_h = (layer->h - layer->size)/layer->stride+1;
         out_w = (layer->h - layer->size)/layer->stride+1;
     }
-    printf("Convolutional Layer: %d x %d x %d image, %d filters -> %d x %d x %d image\n", h,w,c,n, out_h, out_w, n);
+    fprintf(stderr, "Convolutional Layer: %d x %d x %d image, %d filters -> %d x %d x %d image\n", h,w,c,n, out_h, out_w, n);
     layer->output = calloc(out_h * out_w * n, sizeof(double));
     layer->delta  = calloc(out_h * out_w * n, sizeof(double));
     layer->upsampled = make_image(h,w,n);
@@ -124,15 +124,22 @@ void backward_convolutional_layer2(convolutional_layer layer, double *input, dou
     }
 }
 
-void learn_convolutional_layer(convolutional_layer layer, double *input)
+void gradient_delta_convolutional_layer(convolutional_layer layer)
 {
     int i;
-    image in_image = double_to_image(layer.h, layer.w, layer.c, input);
     image out_delta = get_convolutional_delta(layer);
     image out_image = get_convolutional_image(layer);
     for(i = 0; i < out_image.h*out_image.w*out_image.c; ++i){
         out_delta.data[i] *= gradient(out_image.data[i], layer.activation);
     }
+}
+
+void learn_convolutional_layer(convolutional_layer layer, double *input)
+{
+    int i;
+    image in_image = double_to_image(layer.h, layer.w, layer.c, input);
+    image out_delta = get_convolutional_delta(layer);
+    gradient_delta_convolutional_layer(layer);
     for(i = 0; i < layer.n; ++i){
         kernel_update(in_image, layer.kernel_updates[i], layer.stride, i, out_delta, layer.edge);
         layer.bias_updates[i] += avg_image_layer(out_delta, i);

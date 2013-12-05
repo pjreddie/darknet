@@ -2,7 +2,7 @@
 #define ACTIVATIONS_H
 
 typedef enum{
-    SIGMOID, RELU, IDENTITY, RAMP
+    SIGMOID, RELU, LINEAR, RAMP, TANH
 }ACTIVATION;
 
 ACTIVATION get_activation(char *s);

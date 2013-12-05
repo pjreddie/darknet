@@ -1,6 +1,8 @@
 *.o
 *.dSYM
 *.csv
+*.out
+mnist/
 images/
 opencv/
 convnet/
