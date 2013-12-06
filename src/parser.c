@@ -107,6 +107,8 @@ network parse_network_cfg(char *filename)
         ++count;
         n = n->next;
     }   
+    net.outputs = get_network_output_size(net);
+    net.output = get_network_output(net);
     return net;
 }
 

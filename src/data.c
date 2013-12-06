@@ -1,22 +1,11 @@
 #include "data.h"
 #include "list.h"
 #include "utils.h"
+#include "image.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-batch make_batch(int n, int k)
-{
-    batch b;
-    b.n = n;
-    if(k < 3) k = 1;
-    b.images = calloc(n, sizeof(image));
-    b.truth = calloc(n, sizeof(double *));
-    int i;
-    for(i =0 ; i < n; ++i) b.truth[i] = calloc(k, sizeof(double));
-    return b;
-}
 
 list *get_paths(char *filename)
 {
@@ -41,75 +30,145 @@ void fill_truth(char *path, char **labels, int k, double *truth)
     }
 }
 
-batch load_list(list *paths, char **labels, int k)
-{
-    char *path;
-    batch data = make_batch(paths->size, 2);
-    node *n = paths->front;
-    int i;
-    for(i = 0; i < data.n; ++i){
-        path = (char *)n->val;
-        data.images[i] = load_image(path);
-        fill_truth(path, labels, k, data.truth[i]);
-        n = n->next;
-    }
-    return data;
-}
-
-batch get_all_data(char *filename, char **labels, int k)
-{
-    list *paths = get_paths(filename);
-    batch b = load_list(paths, labels, k);
-    free_list_contents(paths);
-    free_list(paths);
-    return b;
-}
-
-void free_batch(batch b)
+data load_data_image_paths(char **paths, int n, char **labels, int k)
 {
     int i;
-    for(i = 0; i < b.n; ++i){
-        free_image(b.images[i]);
-        free(b.truth[i]);
+    data d;
+    d.shallow = 0;
+    d.X.rows = n;
+    d.X.vals = calloc(d.X.rows, sizeof(double*));
+    d.y = make_matrix(n, k);
+
+    for(i = 0; i < n; ++i){
+        image im = load_image(paths[i]);
+        d.X.vals[i] = im.data;
+        d.X.cols = im.h*im.w*im.c;
+        fill_truth(paths[i], labels, k, d.y.vals[i]);
     }
-    free(b.images);
-    free(b.truth);
+    return d;
 }
 
-batch get_batch(char *filename, int curr, int total, char **labels, int k)
+data load_data_image_pathfile(char *filename, char **labels, int k)
 {
     list *plist = get_paths(filename);
     char **paths = (char **)list_to_array(plist);
-    int i;
-    int start = curr*plist->size/total;
-    int end = (curr+1)*plist->size/total;
-    batch b = make_batch(end-start, 2);
-    for(i = start; i < end; ++i){
-        b.images[i-start] = load_image(paths[i]);
-        fill_truth(paths[i], labels, k, b.truth[i-start]);
-    }
+    data d = load_data_image_paths(paths, plist->size, labels, k);
     free_list_contents(plist);
     free_list(plist);
     free(paths);
-    return b;
+    return d;
 }
 
-batch random_batch(char *filename, int n, char **labels, int k)
+void free_data(data d)
+{
+    if(!d.shallow){
+        free_matrix(d.X);
+        free_matrix(d.y);
+    }else{
+        free(d.X.vals);
+        free(d.y.vals);
+    }
+}
+
+data load_data_image_pathfile_part(char *filename, int part, int total, char **labels, int k)
 {
     list *plist = get_paths(filename);
     char **paths = (char **)list_to_array(plist);
+    int start = part*plist->size/total;
+    int end = (part+1)*plist->size/total;
+    data d = load_data_image_paths(paths+start, end-start, labels, k);
+    free_list_contents(plist);
+    free_list(plist);
+    free(paths);
+    return d;
+}
+
+data load_data_image_pathfile_random(char *filename, int n, char **labels, int k)
+{
     int i;
-    batch b = make_batch(n, 2);
+    list *plist = get_paths(filename);
+    char **paths = (char **)list_to_array(plist);
+    char **random_paths = calloc(n, sizeof(char*));
     for(i = 0; i < n; ++i){
         int index = rand()%plist->size;
-        b.images[i] = load_image(paths[index]);
-        //scale_image(b.images[i], 1./255.);
-        z_normalize_image(b.images[i]);
-        fill_truth(paths[index], labels, k, b.truth[i]);
-        //print_image(b.images[i]);
+        random_paths[i] = paths[index];
     }
+    data d = load_data_image_paths(random_paths, n, labels, k);
     free_list_contents(plist);
     free_list(plist);
     free(paths);
-    return b;
+    free(random_paths);
+    return d;
 }
+
+data load_categorical_data_csv(char *filename, int target, int k)
+{
+    data d;
+    d.shallow = 0;
+    matrix X = csv_to_matrix(filename);
+    double *truth_1d = pop_column(&X, target);
+    double **truth = one_hot_encode(truth_1d, X.rows, k);
+    matrix y;
+    y.rows = X.rows;
+    y.cols = k;
+    y.vals = truth;
+    d.X = X;
+    d.y = y;
+    free(truth_1d);
+    return d;
+}
+
+void randomize_data(data d)
+{
+    int i;
+    for(i = d.X.rows-1; i > 0; --i){
+        int index = rand()%i;
+        double *swap = d.X.vals[index];
+        d.X.vals[index] = d.X.vals[i];
+        d.X.vals[i] = swap;
+
+        swap = d.y.vals[index];
+        d.y.vals[index] = d.y.vals[i];
+        d.y.vals[i] = swap;
+    }
+}
+
+void normalize_data_rows(data d)
+{
+    int i;
+    for(i = 0; i < d.X.rows; ++i){
+        normalize_array(d.X.vals[i], d.X.cols);
+    }
+}
+
+data *cv_split_data(data d, int part, int total)
+{
+    data *split = calloc(2, sizeof(data));
+    int i;
+    int start = part*d.X.rows/total;
+    int end = (part+1)*d.X.rows/total;
+    data train;
+    data test;
+    train.shallow = test.shallow = 1;
+
+    test.X.rows = test.y.rows = end-start;
+    train.X.rows = train.y.rows = d.X.rows - (end-start);
+    train.X.cols = test.X.cols = d.X.cols;
+    train.y.cols = test.y.cols = d.y.cols;
+    for(i = 0; i < start; ++i){
+        train.X.vals[i] = d.X.vals[i];
+        train.y.vals[i] = d.y.vals[i];
+    }
+    for(i = start; i < end; ++i){
+        test.X.vals[i-start] = d.X.vals[i];
+        test.y.vals[i-start] = d.y.vals[i];
+    }
+    for(i = end; i < d.X.rows; ++i){
+        train.X.vals[i-(start-end)] = d.X.vals[i];
+        train.y.vals[i-(start-end)] = d.y.vals[i];
+    }
+    split[0] = train;
+    split[1] = test;
+    return split;
+}
+

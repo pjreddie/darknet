@@ -69,7 +69,6 @@ void update_connected_layer(connected_layer layer, double step, double momentum,
             int index = i*layer.inputs+j;
             layer.weight_momentum[index] = step*(layer.weight_updates[index] - decay*layer.weights[index]) + momentum*layer.weight_momentum[index];
             layer.weights[index] += layer.weight_momentum[index];
-            //layer.weights[index] = constrain(layer.weights[index], 100.);
         }
     }
     memset(layer.bias_updates, 0, layer.outputs*sizeof(double));

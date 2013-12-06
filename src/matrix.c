@@ -13,6 +13,17 @@ void free_matrix(matrix m)
     free(m.vals);
 }
 
+void matrix_add_matrix(matrix from, matrix to)
+{
+    assert(from.rows == to.rows && from.cols == to.cols);
+    int i,j;
+    for(i = 0; i < from.rows; ++i){
+        for(j = 0; j < from.cols; ++j){
+            to.vals[i][j] += from.vals[i][j];
+        }
+    }
+}
+
 matrix make_matrix(int rows, int cols)
 {
     matrix m;

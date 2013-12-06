@@ -1,18 +1,24 @@
 #ifndef DATA_H
 #define DATA_H
 
-#include "image.h"
+#include "matrix.h"
 
 typedef struct{
-    int n;
-    image *images;
-    double **truth;
-} batch;
+    matrix X;
+    matrix y;
+    int shallow;
+} data;
 
-batch get_all_data(char *filename, char **labels, int k);
-batch random_batch(char *filename, int n, char **labels, int k);
-batch get_batch(char *filename, int curr, int total, char **labels, int k);
-void free_batch(batch b);
 
+data load_data_image_pathfile(char *filename, char **labels, int k);
+void free_data(data d);
+data load_data_image_pathfile(char *filename, char **labels, int k);
+data load_data_image_pathfile_part(char *filename, int part, int total, 
+                                                char **labels, int k);
+data load_data_image_pathfile_random(char *filename, int n, char **labels, int k);
+data load_categorical_data_csv(char *filename, int target, int k);
+void normalize_data_rows(data d);
+void randomize_data(data d);
+data *cv_split_data(data d, int part, int total);
 
 #endif

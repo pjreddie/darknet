@@ -143,26 +143,22 @@ void learn_convolutional_layer(convolutional_layer layer, double *input)
     for(i = 0; i < layer.n; ++i){
         kernel_update(in_image, layer.kernel_updates[i], layer.stride, i, out_delta, layer.edge);
         layer.bias_updates[i] += avg_image_layer(out_delta, i);
-        //printf("%30.20lf\n", layer.bias_updates[i]);
     }
 }
 
 void update_convolutional_layer(convolutional_layer layer, double step, double momentum, double decay)
 {
-    //step = .01;
     int i,j;
     for(i = 0; i < layer.n; ++i){
         layer.bias_momentum[i] = step*(layer.bias_updates[i]) 
                                 + momentum*layer.bias_momentum[i];
         layer.biases[i] += layer.bias_momentum[i];
-        //layer.biases[i] = constrain(layer.biases[i],1.);
         layer.bias_updates[i] = 0;
         int pixels = layer.kernels[i].h*layer.kernels[i].w*layer.kernels[i].c;
         for(j = 0; j < pixels; ++j){
             layer.kernel_momentum[i].data[j] = step*(layer.kernel_updates[i].data[j] - decay*layer.kernels[i].data[j]) 
                                                 + momentum*layer.kernel_momentum[i].data[j];
             layer.kernels[i].data[j] += layer.kernel_momentum[i].data[j];
-            //layer.kernels[i].data[j] = constrain(layer.kernels[i].data[j], 1.);
         }
         zero_image(layer.kernel_updates[i]);
     }
@@ -188,14 +184,6 @@ void visualize_convolutional_filters(convolutional_layer layer, char *window)
         int w_offset = i*(size+border);
         image k = layer.kernels[i];
         image copy = copy_image(k);
-        /*
-        printf("Kernel %d - Bias: %f, Channels:",i,layer.biases[i]);
-        for(j = 0; j < k.c; ++j){
-            double a = avg_image_layer(k, j);
-            printf("%f, ", a);
-        }
-        printf("\n");
-        */
         normalize_image(copy);
         for(j = 0; j < k.c; ++j){
             set_pixel(copy,0,0,j,layer.biases[i]);
@@ -227,7 +215,6 @@ void visualize_convolutional_layer(convolutional_layer layer)
 {
     int i;
     char buff[256];
-    //image vis = make_image(layer.n*layer.size, layer.size*layer.kernels[0].c, 3);
     for(i = 0; i < layer.n; ++i){
         image k = layer.kernels[i];
         sprintf(buff, "Kernel %d", i);

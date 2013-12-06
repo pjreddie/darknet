@@ -22,5 +22,6 @@ double constrain(double a, double max);
 double rand_normal();
 double mean_array(double *a, int n);
 double variance_array(double *a, int n);
+double **one_hot_encode(double *a, int n, int k);
 #endif
 

@@ -166,19 +166,16 @@ void test_parser()
         avgerr = .99 * avgerr + .01 * err;
         if(count % 1000000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
         delta[0] = truth - out[0];
-        learn_network(net, input);
-        update_network(net, .001);
+        backward_network(net, input, &truth);
+        update_network(net, .001,0,0);
     }
 }
 
 void test_data()
 {
     char *labels[] = {"cat","dog"};
-    batch train = random_batch("train_paths.txt", 101,labels, 2);
-    show_image(train.images[0], "Test Data Loading");
-    show_image(train.images[100], "Test Data Loading");
-    show_image(train.images[10], "Test Data Loading");
-    free_batch(train);
+    data train = load_data_image_pathfile_random("train_paths.txt", 101,labels, 2);
+    free_data(train);
 }
 
 void test_full()
@@ -188,110 +185,37 @@ void test_full()
     int i = 0;
     char *labels[] = {"cat","dog"};
     while(i++ < 1000 || 1){
-        batch train = random_batch("train_paths.txt", 1000, labels, 2);
-        train_network_batch(net, train);
-        free_batch(train);
+        data train = load_data_image_pathfile_random("train_paths.txt", 1000, labels, 2);
+        train_network(net, train, .0005, 0, 0);
+        free_data(train);
         printf("Round %d\n", i);
     }
 }
 
-double error_network(network net, matrix m, double **truth)
-{
-    int i;
-    int correct = 0;
-    int k = get_network_output_size(net);
-    for(i = 0; i < m.rows; ++i){
-        forward_network(net, m.vals[i]);
-        double *out = get_network_output(net);
-        int guess = max_index(out, k);
-        if(truth[i][guess]) ++correct;
-    }
-    return (double)correct/m.rows;
-}
-
-double **one_hot(double *a, int n, int k)
-{
-    int i;
-    double **t = calloc(n, sizeof(double*));
-    for(i = 0; i < n; ++i){
-        t[i] = calloc(k, sizeof(double));
-        int index = (int)a[i];
-        t[i][index] = 1;
-    }
-    return t;
-}
-
 void test_nist()
 {
-    srand(999999);
+    srand(444444);
     network net = parse_network_cfg("nist.cfg");
-    matrix m = csv_to_matrix("mnist/mnist_train.csv");
-    matrix test = csv_to_matrix("mnist/mnist_test.csv");
-    double *truth_1d = pop_column(&m, 0);
-    double **truth = one_hot(truth_1d, m.rows, 10);
-    double *test_truth_1d = pop_column(&test, 0);
-    double **test_truth = one_hot(test_truth_1d, test.rows, 10);
-    int i,j;
-    clock_t start = clock(), end;
-    for(i = 0; i < test.rows; ++i){
-        normalize_array(test.vals[i], 28*28);
-        //scale_array(m.vals[i], 28*28, 1./255.);
-        //translate_array(m.vals[i], 28*28, -.1);
-    }
-    for(i = 0; i < m.rows; ++i){
-        normalize_array(m.vals[i], 28*28);
-        //scale_array(m.vals[i], 28*28, 1./255.);
-        //translate_array(m.vals[i], 28*28, -.1);
-    }
+    data train = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
+    data test = load_categorical_data_csv("mnist/mnist_test.csv",0,10);
+    normalize_data_rows(train);
+    normalize_data_rows(test);
+    randomize_data(train);
     int count = 0;
     double lr = .0005;
-    while(++count <= 300){
-        //lr *= .99;
-        int index = 0;
-        int correct = 0;
-        int number = 1000;
-        for(i = 0; i < number; ++i){
-            index = rand()%m.rows;
-            forward_network(net, m.vals[index]);
-            double *out = get_network_output(net);
-            double *delta = get_network_delta(net);
-            int max_i = 0;
-            double max = out[0];
-            for(j = 0; j < 10; ++j){
-                delta[j] = truth[index][j]-out[j];
-                if(out[j] > max){
-                    max = out[j];
-                    max_i = j;
-                }
-            }
-            if(truth[index][max_i]) ++correct;
-            learn_network(net, m.vals[index]);
-            update_network(net, lr);
-        }
-        print_network(net);
-        image input = double_to_image(28,28,1, m.vals[index]);
-        //show_image(input, "Input");
-        image o = get_network_image(net);
-        //show_image_collapsed(o, "Output");
-        visualize_network(net);
-        cvWaitKey(10);
-        //double test_acc = error_network(net, m, truth);
-        fprintf(stderr, "\n%5d: %f %f\n\n",count, (double)correct/number, lr);
-        if(count % 10 == 0 && 0){
-            double train_acc = error_network(net, m, truth);
-            fprintf(stderr, "\nTRAIN: %f\n", train_acc);
-            double test_acc = error_network(net, test, test_truth);
-            fprintf(stderr, "TEST: %f\n\n", test_acc);
-            printf("%d, %f, %f\n", count, train_acc, test_acc);
-        }
-        if(count % (m.rows/number) == 0) lr /= 2; 
+    while(++count <= 1){
+        double acc = train_network_sgd(net, train, lr, .9, .001);
+        printf("Training Accuracy: %lf", acc);
+        lr /= 2; 
     }
-            double train_acc = error_network(net, m, truth);
-            fprintf(stderr, "\nTRAIN: %f\n", train_acc);
-            double test_acc = error_network(net, test, test_truth);
-            fprintf(stderr, "TEST: %f\n\n", test_acc);
-            printf("%d, %f, %f\n", count, train_acc, test_acc);
-    end = clock();
+    /*
+    double train_acc = network_accuracy(net, train);
+    fprintf(stderr, "\nTRAIN: %f\n", train_acc);
+    double test_acc = network_accuracy(net, test);
+    fprintf(stderr, "TEST: %f\n\n", test_acc);
+    printf("%d, %f, %f\n", count, train_acc, test_acc);
+    */
+    //end = clock();
     //printf("Neural Net Learning: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
 }
 
@@ -315,9 +239,9 @@ void test_random_classify()
 {
     network net = parse_network_cfg("connected.cfg");
     matrix m = csv_to_matrix("train.csv");
-    matrix ho = hold_out_matrix(&m, 2500);
+    //matrix ho = hold_out_matrix(&m, 2500);
     double *truth = pop_column(&m, 0);
-    double *ho_truth = pop_column(&ho, 0);
+    //double *ho_truth = pop_column(&ho, 0);
     int i;
     clock_t start = clock(), end;
     int count = 0;
@@ -333,8 +257,8 @@ void test_random_classify()
             delta[0] = truth[index] - out[0];
             // printf("%f\n", delta[0]);
             //printf("%f %f\n", truth[index], out[0]);
-            learn_network(net, m.vals[index]);
-            update_network(net, .00001);
+            //backward_network(net, m.vals[index], );
+            update_network(net, .00001, 0,0);
         }
         //double test_acc = error_network(net, m, truth);
         //double valid_acc = error_network(net, ho, ho_truth);
@@ -356,33 +280,19 @@ void test_random_classify()
     printf("Neural Net Learning: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
 }
 
-void test_random_preprocess()
+void test_split()
 {
-    FILE *file = fopen("train.csv", "w");
-    char *labels[] = {"cat","dog"};
-    int i,j,k;
-    srand(0);
-    network net = parse_network_cfg("convolutional.cfg");
-    for(i = 0; i < 100; ++i){
-        printf("%d\n", i);
-        batch part = get_batch("train_paths.txt", i, 100, labels, 2);
-        for(j = 0; j < part.n; ++j){
-            forward_network(net, part.images[j].data);
-            double *out = get_network_output(net);
-            fprintf(file, "%f", part.truth[j][0]);
-            for(k = 0; k < get_network_output_size(net); ++k){
-                fprintf(file, ",%f", out[k]);
-            }
-            fprintf(file, "\n");
-        }
-        free_batch(part);
-    }
+    data train = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
+    data *split = cv_split_data(train, 0, 13);
+    printf("%d, %d, %d\n", train.X.rows, split[0].X.rows, split[1].X.rows);
 }
+
 
 int main()
 {
     //test_kernel_update();
-    test_nist();
+    test_split();
+   // test_nist();
     //test_full();
     //test_random_preprocess();
     //test_random_classify();

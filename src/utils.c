@@ -216,3 +216,16 @@ double rand_normal()
     for(i = 0; i < 12; ++i) sum += (double)rand()/RAND_MAX;
     return sum-6.;
 }
+
+double **one_hot_encode(double *a, int n, int k)
+{
+    int i;
+    double **t = calloc(n, sizeof(double*));
+    for(i = 0; i < n; ++i){
+        t[i] = calloc(k, sizeof(double));
+        int index = (int)a[i];
+        t[i][index] = 1;
+    }
+    return t;
+}
+
