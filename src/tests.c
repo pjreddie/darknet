@@ -204,19 +204,55 @@ void test_nist()
     int count = 0;
     double lr = .0005;
     while(++count <= 1){
-        double acc = train_network_sgd(net, train, lr, .9, .001);
-        printf("Training Accuracy: %lf", acc);
+        double acc = train_network_sgd(net, train, 10000, lr, .9, .001);
+        printf("Training Accuracy: %lf\n", acc);
         lr /= 2; 
     }
-    /*
     double train_acc = network_accuracy(net, train);
     fprintf(stderr, "\nTRAIN: %f\n", train_acc);
     double test_acc = network_accuracy(net, test);
     fprintf(stderr, "TEST: %f\n\n", test_acc);
     printf("%d, %f, %f\n", count, train_acc, test_acc);
-    */
     //end = clock();
     //printf("Neural Net Learning: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
+}
+
+void test_ensemble()
+{
+    int i;
+    srand(888888);
+    data d = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
+    normalize_data_rows(d);
+    randomize_data(d);
+    data test = load_categorical_data_csv("mnist/mnist_test.csv", 0,10);
+    normalize_data_rows(test);
+    data train = d;
+    /*
+    data *split = split_data(d, 1, 10);
+    data train = split[0];
+    data test = split[1];
+    */
+    matrix prediction = make_matrix(test.y.rows, test.y.cols);
+    int n = 30;
+    for(i = 0; i < n; ++i){
+        int count = 0;
+        double lr = .0005;
+        network net = parse_network_cfg("nist.cfg");
+        while(++count <= 5){
+            double acc = train_network_sgd(net, train, train.X.rows, lr, .9, .001);
+            printf("Training Accuracy: %lf\n", acc);
+            lr /= 2; 
+        }
+        matrix partial = network_predict_data(net, test);
+        double acc = matrix_accuracy(test.y, partial);
+        printf("Model Accuracy: %lf\n", acc);
+        matrix_add_matrix(partial, prediction);
+        acc = matrix_accuracy(test.y, prediction);
+        printf("Current Ensemble Accuracy: %lf\n", acc);
+        free_matrix(partial);
+    }
+    double acc = matrix_accuracy(test.y, prediction);
+    printf("Full Ensemble Accuracy: %lf\n", acc);
 }
 
 void test_kernel_update()
@@ -283,7 +319,7 @@ void test_random_classify()
 void test_split()
 {
     data train = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
-    data *split = cv_split_data(train, 0, 13);
+    data *split = split_data(train, 0, 13);
     printf("%d, %d, %d\n", train.X.rows, split[0].X.rows, split[1].X.rows);
 }
 
@@ -291,8 +327,9 @@ void test_split()
 int main()
 {
     //test_kernel_update();
-    test_split();
-   // test_nist();
+    //test_split();
+    test_ensemble();
+    //test_nist();
     //test_full();
     //test_random_preprocess();
     //test_random_classify();
@@ -307,6 +344,6 @@ int main()
     //test_convolutional_layer();
     //verify_convolutional_layer();
     //test_color();
-    cvWaitKey(0);
+    //cvWaitKey(0);
     return 0;
 }

@@ -13,6 +13,18 @@ void free_matrix(matrix m)
     free(m.vals);
 }
 
+double matrix_accuracy(matrix truth, matrix guess)
+{
+    int k = truth.cols;
+    int i;
+    int count = 0;
+    for(i = 0; i < truth.rows; ++i){
+        int class = max_index(guess.vals[i], k);
+        if(truth.vals[i][class]) ++count;
+    }
+    return (double)count/truth.rows;
+}
+
 void matrix_add_matrix(matrix from, matrix to)
 {
     assert(from.rows == to.rows && from.cols == to.cols);
@@ -26,12 +38,14 @@ void matrix_add_matrix(matrix from, matrix to)
 
 matrix make_matrix(int rows, int cols)
 {
+    int i;
     matrix m;
     m.rows = rows;
     m.cols = cols;
     m.vals = calloc(m.rows, sizeof(double *));
-    int i;
-    for(i = 0; i < m.rows; ++i) m.vals[i] = calloc(m.cols, sizeof(double));
+    for(i = 0; i < m.rows; ++i){
+        m.vals[i] = calloc(m.cols, sizeof(double));
+    }
     return m;
 }
 

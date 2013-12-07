@@ -19,6 +19,6 @@ data load_data_image_pathfile_random(char *filename, int n, char **labels, int k
 data load_categorical_data_csv(char *filename, int target, int k);
 void normalize_data_rows(data d);
 void randomize_data(data d);
-data *cv_split_data(data d, int part, int total);
+data *split_data(data d, int part, int total);
 
 #endif

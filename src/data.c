@@ -141,7 +141,7 @@ void normalize_data_rows(data d)
     }
 }
 
-data *cv_split_data(data d, int part, int total)
+data *split_data(data d, int part, int total)
 {
     data *split = calloc(2, sizeof(data));
     int i;
@@ -155,6 +155,12 @@ data *cv_split_data(data d, int part, int total)
     train.X.rows = train.y.rows = d.X.rows - (end-start);
     train.X.cols = test.X.cols = d.X.cols;
     train.y.cols = test.y.cols = d.y.cols;
+
+    train.X.vals = calloc(train.X.rows, sizeof(double*));
+    test.X.vals = calloc(test.X.rows, sizeof(double*));
+    train.y.vals = calloc(train.y.rows, sizeof(double*));
+    test.y.vals = calloc(test.y.rows, sizeof(double*));
+
     for(i = 0; i < start; ++i){
         train.X.vals[i] = d.X.vals[i];
         train.y.vals[i] = d.y.vals[i];
@@ -164,8 +170,8 @@ data *cv_split_data(data d, int part, int total)
         test.y.vals[i-start] = d.y.vals[i];
     }
     for(i = end; i < d.X.rows; ++i){
-        train.X.vals[i-(start-end)] = d.X.vals[i];
-        train.y.vals[i-(start-end)] = d.y.vals[i];
+        train.X.vals[i-(end-start)] = d.X.vals[i];
+        train.y.vals[i-(end-start)] = d.y.vals[i];
     }
     split[0] = train;
     split[1] = test;
