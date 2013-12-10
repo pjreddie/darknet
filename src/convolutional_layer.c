@@ -39,7 +39,7 @@ convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int si
     layer->w = w;
     layer->c = c;
     layer->n = n;
-    layer->edge = 1;
+    layer->edge = 0;
     layer->stride = stride;
     layer->kernels = calloc(n, sizeof(image));
     layer->kernel_updates = calloc(n, sizeof(image));

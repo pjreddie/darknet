@@ -63,7 +63,7 @@ void update_network(network net, double step, double momentum, double decay)
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            update_connected_layer(layer, step, momentum, decay);
+            update_connected_layer(layer, step, momentum, 0);
         }
     }
 }
