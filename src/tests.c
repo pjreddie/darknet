@@ -184,9 +184,12 @@ void test_full()
     srand(0);
     int i = 0;
     char *labels[] = {"cat","dog"};
+    double lr = .00001;
+    double momentum = .9;
+    double decay = 0.01;
     while(i++ < 1000 || 1){
         data train = load_data_image_pathfile_random("train_paths.txt", 1000, labels, 2);
-        train_network(net, train, .0005, 0, 0);
+        train_network(net, train, lr, momentum, decay);
         free_data(train);
         printf("Round %d\n", i);
     }
@@ -206,9 +209,13 @@ void test_nist()
     double lr = .0005;
     double momentum = .9;
     double decay = 0.01;
+    clock_t start = clock(), end;
     while(++count <= 1000){
-        double acc = train_network_sgd(net, train, 1000, lr, momentum, decay);
-        printf("Training Accuracy: %lf, Params: %f %f %f\n", acc, lr, momentum, decay);
+        double acc = train_network_sgd(net, train, 6400, lr, momentum, decay);
+        printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*100, 1.-acc, lr, momentum, decay);
+        end = clock();
+        printf("Time: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
+        start=end;
         visualize_network(net);
         cvWaitKey(100);
         //lr /= 2; 
@@ -334,8 +341,8 @@ int main()
 {
     //test_kernel_update();
     //test_split();
-    test_ensemble();
-    //test_nist();
+    //test_ensemble();
+    test_nist();
     //test_full();
     //test_random_preprocess();
     //test_random_classify();
