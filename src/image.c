@@ -207,6 +207,7 @@ image make_random_image(int h, int w, int c)
     int i;
     for(i = 0; i < h*w*c; ++i){
         out.data[i] = rand_normal();
+        //out.data[i] = rand()%3;
     }
     return out;
 }

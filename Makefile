@@ -11,7 +11,7 @@ endif
 LDFLAGS=`pkg-config --libs opencv` -lm
 VPATH=./src/
 
-OBJ=network.o image.o tests.o convolutional_layer.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o
+OBJ=network.o image.o tests.o convolutional_layer.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o mini_blas.o
 
 all: cnn
 

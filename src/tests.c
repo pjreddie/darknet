@@ -7,6 +7,7 @@
 #include "data.h"
 #include "matrix.h"
 #include "utils.h"
+#include "mini_blas.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -26,6 +27,35 @@ void test_convolve()
     end = clock();
     printf("Convolutions: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
     show_image_layers(edge, "Test Convolve");
+}
+
+void test_convolve_matrix()
+{
+    image dog = load_image("dog.jpg");
+    printf("dog channels %d\n", dog.c);
+    
+    int size = 11;
+    int stride = 1;
+    int n = 40;
+    double *filters = make_random_image(size, size, dog.c*n).data;
+
+    int mw = ((dog.h-size)/stride+1)*((dog.w-size)/stride+1);
+    int mh = (size*size*dog.c);
+    double *matrix = calloc(mh*mw, sizeof(double));
+
+    image edge = make_image((dog.h-size)/stride+1, (dog.w-size)/stride+1, n);
+
+
+    int i;
+    clock_t start = clock(), end;
+    for(i = 0; i < 1000; ++i){
+        im2col_cpu(dog.data,  dog.c,  dog.h,  dog.w,  size,  stride, matrix);
+        gemm(0,0,n,mw,mh,1,filters,mh,matrix,mw,1,edge.data,mw);
+    }
+    end = clock();
+    printf("Convolutions: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
+    show_image_layers(edge, "Test Convolve");
+    cvWaitKey(0);
 }
 
 void test_color()
@@ -199,7 +229,7 @@ void test_nist()
 {
     srand(444444);
     srand(888888);
-    network net = parse_network_cfg("nist.cfg");
+    network net = parse_network_cfg("nist_basic.cfg");
     data train = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("mnist/mnist_test.csv",0,10);
     normalize_data_rows(train);
@@ -216,8 +246,8 @@ void test_nist()
         end = clock();
         printf("Time: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
         start=end;
-        visualize_network(net);
-        cvWaitKey(100);
+        //visualize_network(net);
+        //cvWaitKey(100);
         //lr /= 2; 
         if(count%5 == 0 && 0){
             double train_acc = network_accuracy(net, train);
@@ -336,13 +366,59 @@ void test_split()
     printf("%d, %d, %d\n", train.X.rows, split[0].X.rows, split[1].X.rows);
 }
 
+double *random_matrix(int rows, int cols)
+{
+    int i, j;
+    double *m = calloc(rows*cols, sizeof(double));
+    for(i = 0; i < rows; ++i){
+        for(j = 0; j < cols; ++j){
+            m[i*cols+j] = (double)rand()/RAND_MAX;
+        }
+    }
+    return m;
+}
+
+void test_blas()
+{
+    int m = 6025, n = 20, k = 11*11*3;
+    double *a = random_matrix(m,k);
+    double *b = random_matrix(k,n);
+    double *c = random_matrix(m,n);
+    int i;
+    for(i = 0; i<1000; ++i){
+        gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+    }
+}
+
+void test_im2row()
+{
+    int h = 20;
+    int w = 20;
+    int c = 3;
+    int stride = 1;
+    int size = 11;
+    image test = make_random_image(h,w,c);
+    int mc = 1;
+    int mw = ((h-size)/stride+1)*((w-size)/stride+1);
+    int mh = (size*size*c);
+    int msize = mc*mw*mh;
+    double *matrix = calloc(msize, sizeof(double));
+    int i;
+    for(i = 0; i < 1000; ++i){
+    im2col_cpu(test.data,  c,  h,  w,  size,  stride, matrix);
+    image render = double_to_image(mh, mw, mc, matrix);
+    }
+}
 
 int main()
 {
+    //test_blas();
+ test_convolve_matrix();
+//    test_im2row();
     //test_kernel_update();
     //test_split();
     //test_ensemble();
-    test_nist();
+    //test_nist();
     //test_full();
     //test_random_preprocess();
     //test_random_classify();
