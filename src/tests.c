@@ -413,12 +413,12 @@ void test_im2row()
 int main()
 {
     //test_blas();
- test_convolve_matrix();
+ //test_convolve_matrix();
 //    test_im2row();
     //test_kernel_update();
     //test_split();
     //test_ensemble();
-    //test_nist();
+    test_nist();
     //test_full();
     //test_random_preprocess();
     //test_random_classify();
