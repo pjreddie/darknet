@@ -1,3 +1,4 @@
+void pm(int M, int N, double *A);
 void gemm(int TA, int TB, int M, int N, int K, double ALPHA, 
                     double *A, int lda, 
                     double *B, int ldb,

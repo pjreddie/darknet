@@ -1,4 +1,5 @@
 #include "connected_layer.h"
+//#include "old_conv.h"
 #include "convolutional_layer.h"
 #include "maxpool_layer.h"
 #include "network.h"
@@ -35,7 +36,7 @@ void test_convolve_matrix()
     printf("dog channels %d\n", dog.c);
     
     int size = 11;
-    int stride = 1;
+    int stride = 4;
     int n = 40;
     double *filters = make_random_image(size, size, dog.c*n).data;
 
@@ -62,29 +63,6 @@ void test_color()
 {
     image dog = load_image("test_color.png");
     show_image_layers(dog, "Test Color");
-}
-
-void test_convolutional_layer()
-{
-    srand(0);
-    image dog = load_image("dog.jpg");
-    int i;
-    int n = 3;
-    int stride = 1;
-    int size = 3;
-    convolutional_layer layer = *make_convolutional_layer(dog.h, dog.w, dog.c, n, size, stride, RELU);
-    char buff[256];
-    for(i = 0; i < n; ++i) {
-        sprintf(buff, "Kernel %d", i);
-        show_image(layer.kernels[i], buff);
-    }
-    forward_convolutional_layer(layer, dog.data);
-    
-    image output = get_convolutional_image(layer);
-    maxpool_layer mlayer = *make_maxpool_layer(output.h, output.w, output.c, 2);
-    forward_maxpool_layer(mlayer, layer.output);
-
-    show_image_layers(get_maxpool_image(mlayer), "Test Maxpool Layer");
 }
 
 void verify_convolutional_layer()
@@ -117,7 +95,7 @@ void verify_convolutional_layer()
     image out_delta = get_convolutional_delta(layer);
     for(i = 0; i < out.h*out.w*out.c; ++i){
         out_delta.data[i] = 1;
-        backward_convolutional_layer(layer, test.data, in_delta.data);
+        //backward_convolutional_layer(layer, test.data, in_delta.data);
         image partial = copy_image(in_delta);
         jacobian2[i] = partial.data;
         out_delta.data[i] = 0;
@@ -240,16 +218,16 @@ void test_nist()
     double momentum = .9;
     double decay = 0.01;
     clock_t start = clock(), end;
-    while(++count <= 1000){
-        double acc = train_network_sgd(net, train, 6400, lr, momentum, decay);
-        printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*100, 1.-acc, lr, momentum, decay);
+    while(++count <= 100){
+        visualize_network(net);
+        double loss = train_network_sgd(net, train, 10000, lr, momentum, decay);
+        printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*100, loss, lr, momentum, decay);
         end = clock();
         printf("Time: %lf seconds\n", (double)(end-start)/CLOCKS_PER_SEC);
         start=end;
-        //visualize_network(net);
-        //cvWaitKey(100);
+        cvWaitKey(100);
         //lr /= 2; 
-        if(count%5 == 0 && 0){
+        if(count%5 == 0){
             double train_acc = network_accuracy(net, train);
             fprintf(stderr, "\nTRAIN: %f\n", train_acc);
             double test_acc = network_accuracy(net, test);
@@ -268,11 +246,9 @@ void test_ensemble()
     data test = load_categorical_data_csv("mnist/mnist_test.csv", 0,10);
     normalize_data_rows(test);
     data train = d;
-    /*
-       data *split = split_data(d, 1, 10);
-       data train = split[0];
-       data test = split[1];
-     */
+    //   data *split = split_data(d, 1, 10);
+    //   data train = split[0];
+    //   data test = split[1];
     matrix prediction = make_matrix(test.y.rows, test.y.cols);
     int n = 30;
     for(i = 0; i < n; ++i){
@@ -296,22 +272,6 @@ void test_ensemble()
     }
     double acc = matrix_accuracy(test.y, prediction);
     printf("Full Ensemble Accuracy: %lf\n", acc);
-}
-
-void test_kernel_update()
-{
-    srand(0);
-    double delta[] = {.1};
-    double input[] = {.3, .5, .3, .5, .5, .5, .5, .0, .5};
-    double kernel[] = {1,2,3,4,5,6,7,8,9};
-    convolutional_layer layer = *make_convolutional_layer(3, 3, 1, 1, 3, 1, LINEAR);
-    layer.kernels[0].data = kernel;
-    layer.delta = delta;
-    learn_convolutional_layer(layer, input);
-    print_image(layer.kernels[0]);
-    print_image(get_convolutional_delta(layer));
-    print_image(layer.kernel_updates[0]);
-
 }
 
 void test_random_classify()
@@ -380,7 +340,7 @@ double *random_matrix(int rows, int cols)
 
 void test_blas()
 {
-    int m = 6025, n = 20, k = 11*11*3;
+    int m = 1000, n = 1000, k = 1000;
     double *a = random_matrix(m,k);
     double *b = random_matrix(k,n);
     double *c = random_matrix(m,n);
@@ -405,17 +365,16 @@ void test_im2row()
     double *matrix = calloc(msize, sizeof(double));
     int i;
     for(i = 0; i < 1000; ++i){
-    im2col_cpu(test.data,  c,  h,  w,  size,  stride, matrix);
-    image render = double_to_image(mh, mw, mc, matrix);
+        im2col_cpu(test.data,  c,  h,  w,  size,  stride, matrix);
+        image render = double_to_image(mh, mw, mc, matrix);
     }
 }
 
 int main()
 {
     //test_blas();
- //test_convolve_matrix();
-//    test_im2row();
-    //test_kernel_update();
+    //test_convolve_matrix();
+    //    test_im2row();
     //test_split();
     //test_ensemble();
     test_nist();

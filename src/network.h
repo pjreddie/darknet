@@ -22,7 +22,7 @@ typedef struct {
 
 network make_network(int n);
 void forward_network(network net, double *input);
-void backward_network(network net, double *input, double *truth);
+double backward_network(network net, double *input, double *truth);
 void update_network(network net, double step, double momentum, double decay);
 double train_network_sgd(network net, data d, int n, double step, double momentum,double decay);
 double train_network_batch(network net, data d, int n, double step, double momentum,double decay);

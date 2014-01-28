@@ -6,6 +6,7 @@
 
 #include "connected_layer.h"
 #include "convolutional_layer.h"
+//#include "old_conv.h"
 #include "maxpool_layer.h"
 #include "softmax_layer.h"
 
@@ -113,14 +114,17 @@ double *get_network_delta(network net)
     return get_network_delta_layer(net, net.n-1);
 }
 
-void calculate_error_network(network net, double *truth)
+double calculate_error_network(network net, double *truth)
 {
+    double sum = 0;
     double *delta = get_network_delta(net);
     double *out = get_network_output(net);
     int i, k = get_network_output_size(net);
     for(i = 0; i < k; ++i){
         delta[i] = truth[i] - out[i];
+        sum += delta[i]*delta[i];
     }
+    return sum;
 }
 
 int get_predicted_class_network(network net)
@@ -130,9 +134,9 @@ int get_predicted_class_network(network net)
     return max_index(out, k);
 }
 
-void backward_network(network net, double *input, double *truth)
+double backward_network(network net, double *input, double *truth)
 {
-    calculate_error_network(net, truth);
+    double error = calculate_error_network(net, truth);
     int i;
     double *prev_input;
     double *prev_delta;
@@ -146,8 +150,9 @@ void backward_network(network net, double *input, double *truth)
         }
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            learn_convolutional_layer(layer, prev_input);
-            if(i != 0) backward_convolutional_layer(layer, prev_input, prev_delta);
+            learn_convolutional_layer(layer);
+            //learn_convolutional_layer(layer);
+            //if(i != 0) backward_convolutional_layer(layer, prev_input, prev_delta);
         }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
@@ -163,29 +168,31 @@ void backward_network(network net, double *input, double *truth)
             if(i != 0) backward_connected_layer(layer, prev_input, prev_delta);
         }
     }
+    return error;
 }
 
-int train_network_datum(network net, double *x, double *y, double step, double momentum, double decay)
+double train_network_datum(network net, double *x, double *y, double step, double momentum, double decay)
 {
         forward_network(net, x);
         int class = get_predicted_class_network(net);
-        backward_network(net, x, y);
+        double error = backward_network(net, x, y);
         update_network(net, step, momentum, decay);
-        return (y[class]?1:0);
+        //return (y[class]?1:0);
+        return error;
 }
 
 double train_network_sgd(network net, data d, int n, double step, double momentum,double decay)
 {
     int i;
-    int correct = 0;
+    double error = 0;
     for(i = 0; i < n; ++i){
         int index = rand()%d.X.rows;
-        correct += train_network_datum(net, d.X.vals[index], d.y.vals[index], step, momentum, decay);
+        error += train_network_datum(net, d.X.vals[index], d.y.vals[index], step, momentum, decay);
         //if((i+1)%10 == 0){
         //    printf("%d: %f\n", (i+1), (double)correct/(i+1));
         //}
     }
-    return (double)correct/n;
+    return error/n;
 }
 double train_network_batch(network net, data d, int n, double step, double momentum,double decay)
 {
@@ -282,7 +289,7 @@ void visualize_network(network net)
         sprintf(buff, "Layer %d", i);
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            visualize_convolutional_filters(layer, buff);
+            visualize_convolutional_layer(layer, buff);
         }
     } 
 }
