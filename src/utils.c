@@ -123,9 +123,9 @@ int count_fields(char *line)
 	return count;
 }
 
-double *parse_fields(char *line, int n)
+float *parse_fields(char *line, int n)
 {
-	double *field = calloc(n, sizeof(double));
+	float *field = calloc(n, sizeof(float));
 	char *c, *p, *end;
 	int count = 0;
 	int done = 0;
@@ -143,36 +143,36 @@ double *parse_fields(char *line, int n)
 	return field;
 }
 
-double mean_array(double *a, int n)
+float mean_array(float *a, int n)
 {
     int i;
-    double sum = 0;
+    float sum = 0;
     for(i = 0; i < n; ++i) sum += a[i];
     return sum/n;
 }
 
-double variance_array(double *a, int n)
+float variance_array(float *a, int n)
 {
     int i;
-    double sum = 0;
-    double mean = mean_array(a, n);
+    float sum = 0;
+    float mean = mean_array(a, n);
     for(i = 0; i < n; ++i) sum += (a[i] - mean)*(a[i]-mean);
-    double variance = sum/n;
+    float variance = sum/n;
     return variance;
 }
 
-double constrain(double a, double max)
+float constrain(float a, float max)
 {
     if(a > abs(max)) return abs(max);
     if(a < -abs(max)) return -abs(max);
     return a;
 }
 
-void normalize_array(double *a, int n)
+void normalize_array(float *a, int n)
 {
     int i;
-    double mu = mean_array(a,n);
-    double sigma = sqrt(variance_array(a,n));
+    float mu = mean_array(a,n);
+    float sigma = sqrt(variance_array(a,n));
     for(i = 0; i < n; ++i){
         a[i] = (a[i] - mu)/sigma;
     }
@@ -180,7 +180,7 @@ void normalize_array(double *a, int n)
     sigma = sqrt(variance_array(a,n));
 }
 
-void translate_array(double *a, int n, double s)
+void translate_array(float *a, int n, float s)
 {
     int i;
     for(i = 0; i < n; ++i){
@@ -188,18 +188,18 @@ void translate_array(double *a, int n, double s)
     }
 }
 
-void scale_array(double *a, int n, double s)
+void scale_array(float *a, int n, float s)
 {
     int i;
     for(i = 0; i < n; ++i){
         a[i] *= s;
     }
 }
-int max_index(double *a, int n)
+int max_index(float *a, int n)
 {
     if(n <= 0) return -1;
     int i, max_i = 0;
-    double max = a[0];
+    float max = a[0];
     for(i = 1; i < n; ++i){
         if(a[i] > max){
             max = a[i];
@@ -209,20 +209,20 @@ int max_index(double *a, int n)
     return max_i;
 }
 
-double rand_normal()
+float rand_normal()
 {
     int i;
-    double sum= 0;
-    for(i = 0; i < 12; ++i) sum += (double)rand()/RAND_MAX;
+    float sum= 0;
+    for(i = 0; i < 12; ++i) sum += (float)rand()/RAND_MAX;
     return sum-6.;
 }
 
-double **one_hot_encode(double *a, int n, int k)
+float **one_hot_encode(float *a, int n, int k)
 {
     int i;
-    double **t = calloc(n, sizeof(double*));
+    float **t = calloc(n, sizeof(float*));
     for(i = 0; i < n; ++i){
-        t[i] = calloc(k, sizeof(double));
+        t[i] = calloc(k, sizeof(float));
         int index = (int)a[i];
         t[i][index] = 1;
     }

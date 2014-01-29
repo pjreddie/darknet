@@ -19,10 +19,10 @@ list *get_paths(char *filename)
     return lines;
 }
 
-void fill_truth(char *path, char **labels, int k, double *truth)
+void fill_truth(char *path, char **labels, int k, float *truth)
 {
     int i;
-    memset(truth, 0, k*sizeof(double));
+    memset(truth, 0, k*sizeof(float));
     for(i = 0; i < k; ++i){
         if(strstr(path, labels[i])){
             truth[i] = 1;
@@ -36,7 +36,7 @@ data load_data_image_paths(char **paths, int n, char **labels, int k)
     data d;
     d.shallow = 0;
     d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(double*));
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.y = make_matrix(n, k);
 
     for(i = 0; i < n; ++i){
@@ -106,8 +106,8 @@ data load_categorical_data_csv(char *filename, int target, int k)
     data d;
     d.shallow = 0;
     matrix X = csv_to_matrix(filename);
-    double *truth_1d = pop_column(&X, target);
-    double **truth = one_hot_encode(truth_1d, X.rows, k);
+    float *truth_1d = pop_column(&X, target);
+    float **truth = one_hot_encode(truth_1d, X.rows, k);
     matrix y;
     y.rows = X.rows;
     y.cols = k;
@@ -123,7 +123,7 @@ void randomize_data(data d)
     int i;
     for(i = d.X.rows-1; i > 0; --i){
         int index = rand()%i;
-        double *swap = d.X.vals[index];
+        float *swap = d.X.vals[index];
         d.X.vals[index] = d.X.vals[i];
         d.X.vals[i] = swap;
 
@@ -156,10 +156,10 @@ data *split_data(data d, int part, int total)
     train.X.cols = test.X.cols = d.X.cols;
     train.y.cols = test.y.cols = d.y.cols;
 
-    train.X.vals = calloc(train.X.rows, sizeof(double*));
-    test.X.vals = calloc(test.X.rows, sizeof(double*));
-    train.y.vals = calloc(train.y.rows, sizeof(double*));
-    test.y.vals = calloc(test.y.rows, sizeof(double*));
+    train.X.vals = calloc(train.X.rows, sizeof(float*));
+    test.X.vals = calloc(test.X.rows, sizeof(float*));
+    train.y.vals = calloc(train.y.rows, sizeof(float*));
+    test.y.vals = calloc(test.y.rows, sizeof(float*));
 
     for(i = 0; i < start; ++i){
         train.X.vals[i] = d.X.vals[i];

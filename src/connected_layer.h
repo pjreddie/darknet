@@ -6,17 +6,17 @@
 typedef struct{
     int inputs;
     int outputs;
-    double *weights;
-    double *biases;
+    float *weights;
+    float *biases;
 
-    double *weight_updates;
-    double *bias_updates;
+    float *weight_updates;
+    float *bias_updates;
 
-    double *weight_momentum;
-    double *bias_momentum;
+    float *weight_momentum;
+    float *bias_momentum;
 
-    double *output;
-    double *delta;
+    float *output;
+    float *delta;
 
     ACTIVATION activation;
 
@@ -24,10 +24,10 @@ typedef struct{
 
 connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activation);
 
-void forward_connected_layer(connected_layer layer, double *input);
-void backward_connected_layer(connected_layer layer, double *input, double *delta);
-void learn_connected_layer(connected_layer layer, double *input);
-void update_connected_layer(connected_layer layer, double step, double momentum, double decay);
+void forward_connected_layer(connected_layer layer, float *input);
+void backward_connected_layer(connected_layer layer, float *input, float *delta);
+void learn_connected_layer(connected_layer layer, float *input);
+void update_connected_layer(connected_layer layer, float step, float momentum, float decay);
 
 
 #endif

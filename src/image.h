@@ -7,18 +7,18 @@ typedef struct {
     int h;
     int w;
     int c;
-    double *data;
+    float *data;
 } image;
 
-void scale_image(image m, double s);
-void add_scalar_image(image m, double s);
+void scale_image(image m, float s);
+void add_scalar_image(image m, float s);
 void normalize_image(image p);
 void z_normalize_image(image p);
-void threshold_image(image p, double t);
+void threshold_image(image p, float t);
 void zero_image(image m);
 void rotate_image(image m);
 void subtract_image(image a, image b);
-double avg_image_layer(image m, int l);
+float avg_image_layer(image m, int l);
 void embed_image(image source, image dest, int h, int w);
 image collapse_image_layers(image source, int border);
 
@@ -30,14 +30,14 @@ void print_image(image m);
 image make_image(int h, int w, int c);
 image make_empty_image(int h, int w, int c);
 image make_random_image(int h, int w, int c);
-image make_random_kernel(int size, int c, double scale);
-image double_to_image(int h, int w, int c, double *data);
+image make_random_kernel(int size, int c, float scale);
+image float_to_image(int h, int w, int c, float *data);
 image copy_image(image p);
 image load_image(char *filename);
 
-double get_pixel(image m, int x, int y, int c);
-double get_pixel_extend(image m, int x, int y, int c);
-void set_pixel(image m, int x, int y, int c, double val);
+float get_pixel(image m, int x, int y, int c);
+float get_pixel_extend(image m, int x, int y, int c);
+void set_pixel(image m, int x, int y, int c, float val);
 
 
 image get_image_layer(image m, int l);

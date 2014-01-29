@@ -21,7 +21,7 @@ network make_network(int n)
     return net;
 }
 
-void forward_network(network net, double *input)
+void forward_network(network net, float *input)
 {
     int i;
     for(i = 0; i < net.n; ++i){
@@ -48,7 +48,7 @@ void forward_network(network net, double *input)
     }
 }
 
-void update_network(network net, double step, double momentum, double decay)
+void update_network(network net, float step, float momentum, float decay)
 {
     int i;
     for(i = 0; i < net.n; ++i){
@@ -69,7 +69,7 @@ void update_network(network net, double step, double momentum, double decay)
     }
 }
 
-double *get_network_output_layer(network net, int i)
+float *get_network_output_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
@@ -86,12 +86,12 @@ double *get_network_output_layer(network net, int i)
     }
     return 0;
 }
-double *get_network_output(network net)
+float *get_network_output(network net)
 {
     return get_network_output_layer(net, net.n-1);
 }
 
-double *get_network_delta_layer(network net, int i)
+float *get_network_delta_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
@@ -109,16 +109,16 @@ double *get_network_delta_layer(network net, int i)
     return 0;
 }
 
-double *get_network_delta(network net)
+float *get_network_delta(network net)
 {
     return get_network_delta_layer(net, net.n-1);
 }
 
-double calculate_error_network(network net, double *truth)
+float calculate_error_network(network net, float *truth)
 {
-    double sum = 0;
-    double *delta = get_network_delta(net);
-    double *out = get_network_output(net);
+    float sum = 0;
+    float *delta = get_network_delta(net);
+    float *out = get_network_output(net);
     int i, k = get_network_output_size(net);
     for(i = 0; i < k; ++i){
         delta[i] = truth[i] - out[i];
@@ -129,17 +129,17 @@ double calculate_error_network(network net, double *truth)
 
 int get_predicted_class_network(network net)
 {
-    double *out = get_network_output(net);
+    float *out = get_network_output(net);
     int k = get_network_output_size(net);
     return max_index(out, k);
 }
 
-double backward_network(network net, double *input, double *truth)
+float backward_network(network net, float *input, float *truth)
 {
-    double error = calculate_error_network(net, truth);
+    float error = calculate_error_network(net, truth);
     int i;
-    double *prev_input;
-    double *prev_delta;
+    float *prev_input;
+    float *prev_delta;
     for(i = net.n-1; i >= 0; --i){
         if(i == 0){
             prev_input = input;
@@ -152,7 +152,7 @@ double backward_network(network net, double *input, double *truth)
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             learn_convolutional_layer(layer);
             //learn_convolutional_layer(layer);
-            //if(i != 0) backward_convolutional_layer(layer, prev_input, prev_delta);
+            if(i != 0) backward_convolutional_layer(layer, prev_delta);
         }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
@@ -171,49 +171,49 @@ double backward_network(network net, double *input, double *truth)
     return error;
 }
 
-double train_network_datum(network net, double *x, double *y, double step, double momentum, double decay)
+float train_network_datum(network net, float *x, float *y, float step, float momentum, float decay)
 {
         forward_network(net, x);
         int class = get_predicted_class_network(net);
-        double error = backward_network(net, x, y);
+        float error = backward_network(net, x, y);
         update_network(net, step, momentum, decay);
         //return (y[class]?1:0);
         return error;
 }
 
-double train_network_sgd(network net, data d, int n, double step, double momentum,double decay)
+float train_network_sgd(network net, data d, int n, float step, float momentum,float decay)
 {
     int i;
-    double error = 0;
+    float error = 0;
     for(i = 0; i < n; ++i){
         int index = rand()%d.X.rows;
         error += train_network_datum(net, d.X.vals[index], d.y.vals[index], step, momentum, decay);
         //if((i+1)%10 == 0){
-        //    printf("%d: %f\n", (i+1), (double)correct/(i+1));
+        //    printf("%d: %f\n", (i+1), (float)correct/(i+1));
         //}
     }
     return error/n;
 }
-double train_network_batch(network net, data d, int n, double step, double momentum,double decay)
+float train_network_batch(network net, data d, int n, float step, float momentum,float decay)
 {
     int i;
     int correct = 0;
     for(i = 0; i < n; ++i){
         int index = rand()%d.X.rows;
-        double *x = d.X.vals[index];
-        double *y = d.y.vals[index];
+        float *x = d.X.vals[index];
+        float *y = d.y.vals[index];
         forward_network(net, x);
         int class = get_predicted_class_network(net);
         backward_network(net, x, y);
         correct += (y[class]?1:0);
     }
     update_network(net, step, momentum, decay);
-    return (double)correct/n;
+    return (float)correct/n;
 
 }
 
 
-void train_network(network net, data d, double step, double momentum, double decay)
+void train_network(network net, data d, float step, float momentum, float decay)
 {
     int i;
     int correct = 0;
@@ -226,7 +226,7 @@ void train_network(network net, data d, double step, double momentum, double dec
     }
     visualize_network(net);
     cvWaitKey(100);
-    printf("Accuracy: %f\n", (double)correct/d.X.rows);
+    printf("Accuracy: %f\n", (float)correct/d.X.rows);
 }
 
 int get_network_output_size_layer(network net, int i)
@@ -294,10 +294,10 @@ void visualize_network(network net)
     } 
 }
 
-double *network_predict(network net, double *input)
+float *network_predict(network net, float *input)
 {
     forward_network(net, input);
-    double *out = get_network_output(net);
+    float *out = get_network_output(net);
     return out;
 }
 
@@ -307,7 +307,7 @@ matrix network_predict_data(network net, data test)
     int k = get_network_output_size(net);
     matrix pred = make_matrix(test.X.rows, k);
     for(i = 0; i < test.X.rows; ++i){
-        double *out = network_predict(net, test.X.vals[i]);
+        float *out = network_predict(net, test.X.vals[i]);
         for(j = 0; j < k; ++j){
             pred.vals[i][j] = out[j];
         }
@@ -319,7 +319,7 @@ void print_network(network net)
 {
     int i,j;
     for(i = 0; i < net.n; ++i){
-        double *output = 0;
+        float *output = 0;
         int n = 0;
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
@@ -343,8 +343,8 @@ void print_network(network net)
             output = layer.output;
             n = layer.inputs;
         }
-        double mean = mean_array(output, n);
-        double vari = variance_array(output, n);
+        float mean = mean_array(output, n);
+        float vari = variance_array(output, n);
         fprintf(stderr, "Layer %d - Mean: %f, Variance: %f\n",i,mean, vari);
         if(n > 100) n = 100;
         for(j = 0; j < n; ++j) fprintf(stderr, "%f, ", output[j]);
@@ -353,10 +353,10 @@ void print_network(network net)
     }
 }
 
-double network_accuracy(network net, data d)
+float network_accuracy(network net, data d)
 {
     matrix guess = network_predict_data(net, d);
-    double acc = matrix_accuracy(d.y, guess);
+    float acc = matrix_accuracy(d.y, guess);
     free_matrix(guess);
     return acc;
 }

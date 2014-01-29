@@ -59,7 +59,7 @@ int option_find_int(list *l, char *key, int def)
     return def;
 }
 
-double option_find_double(list *l, char *key, double def)
+float option_find_float(list *l, char *key, float def)
 {
     char *v = option_find(l, key);
     if(v) return atof(v);

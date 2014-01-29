@@ -15,19 +15,19 @@ connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activa
     layer->inputs = inputs;
     layer->outputs = outputs;
 
-    layer->output = calloc(outputs, sizeof(double*));
-    layer->delta = calloc(outputs, sizeof(double*));
+    layer->output = calloc(outputs, sizeof(float*));
+    layer->delta = calloc(outputs, sizeof(float*));
 
-    layer->weight_updates = calloc(inputs*outputs, sizeof(double));
-    layer->weight_momentum = calloc(inputs*outputs, sizeof(double));
-    layer->weights = calloc(inputs*outputs, sizeof(double));
-    double scale = 2./inputs;
+    layer->weight_updates = calloc(inputs*outputs, sizeof(float));
+    layer->weight_momentum = calloc(inputs*outputs, sizeof(float));
+    layer->weights = calloc(inputs*outputs, sizeof(float));
+    float scale = 2./inputs;
     for(i = 0; i < inputs*outputs; ++i)
         layer->weights[i] = rand_normal()*scale;
 
-    layer->bias_updates = calloc(outputs, sizeof(double));
-    layer->bias_momentum = calloc(outputs, sizeof(double));
-    layer->biases = calloc(outputs, sizeof(double));
+    layer->bias_updates = calloc(outputs, sizeof(float));
+    layer->bias_momentum = calloc(outputs, sizeof(float));
+    layer->biases = calloc(outputs, sizeof(float));
     for(i = 0; i < outputs; ++i)
         //layer->biases[i] = rand_normal()*scale + scale;
         layer->biases[i] = 0;
@@ -36,7 +36,7 @@ connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activa
     return layer;
 }
 
-void update_connected_layer(connected_layer layer, double step, double momentum, double decay)
+void update_connected_layer(connected_layer layer, float step, float momentum, float decay)
 {
     int i;
     for(i = 0; i < layer.outputs; ++i){
@@ -47,27 +47,27 @@ void update_connected_layer(connected_layer layer, double step, double momentum,
         layer.weight_momentum[i] = step*(layer.weight_updates[i] - decay*layer.weights[i]) + momentum*layer.weight_momentum[i];
         layer.weights[i] += layer.weight_momentum[i];
     }
-    memset(layer.bias_updates, 0, layer.outputs*sizeof(double));
-    memset(layer.weight_updates, 0, layer.outputs*layer.inputs*sizeof(double));
+    memset(layer.bias_updates, 0, layer.outputs*sizeof(float));
+    memset(layer.weight_updates, 0, layer.outputs*layer.inputs*sizeof(float));
 }
 
-void forward_connected_layer(connected_layer layer, double *input)
+void forward_connected_layer(connected_layer layer, float *input)
 {
     int i;
-    memcpy(layer.output, layer.biases, layer.outputs*sizeof(double));
+    memcpy(layer.output, layer.biases, layer.outputs*sizeof(float));
     int m = 1;
     int k = layer.inputs;
     int n = layer.outputs;
-    double *a = input;
-    double *b = layer.weights;
-    double *c = layer.output;
+    float *a = input;
+    float *b = layer.weights;
+    float *c = layer.output;
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
     for(i = 0; i < layer.outputs; ++i){
         layer.output[i] = activate(layer.output[i], layer.activation);
     }
 }
 
-void learn_connected_layer(connected_layer layer, double *input)
+void learn_connected_layer(connected_layer layer, float *input)
 {
     int i;
     for(i = 0; i < layer.outputs; ++i){
@@ -77,28 +77,28 @@ void learn_connected_layer(connected_layer layer, double *input)
     int m = layer.inputs;
     int k = 1;
     int n = layer.outputs;
-    double *a = input;
-    double *b = layer.delta;
-    double *c = layer.weight_updates;
+    float *a = input;
+    float *b = layer.delta;
+    float *c = layer.weight_updates;
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
 }
 
-void backward_connected_layer(connected_layer layer, double *input, double *delta)
+void backward_connected_layer(connected_layer layer, float *input, float *delta)
 {
-    memset(delta, 0, layer.inputs*sizeof(double));
+    memset(delta, 0, layer.inputs*sizeof(float));
 
     int m = layer.inputs;
     int k = layer.outputs;
     int n = 1;
 
-    double *a = layer.weights;
-    double *b = layer.delta;
-    double *c = delta;
+    float *a = layer.weights;
+    float *b = layer.delta;
+    float *c = delta;
 
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
 }
 /*
-   void forward_connected_layer(connected_layer layer, double *input)
+   void forward_connected_layer(connected_layer layer, float *input)
    {
    int i, j;
    for(i = 0; i < layer.outputs; ++i){
@@ -109,7 +109,7 @@ void backward_connected_layer(connected_layer layer, double *input, double *delt
    layer.output[i] = activate(layer.output[i], layer.activation);
    }
    }
-   void learn_connected_layer(connected_layer layer, double *input)
+   void learn_connected_layer(connected_layer layer, float *input)
    {
    int i, j;
    for(i = 0; i < layer.outputs; ++i){
@@ -120,7 +120,7 @@ void backward_connected_layer(connected_layer layer, double *input, double *delt
    }
    }
    }
-   void backward_connected_layer(connected_layer layer, double *input, double *delta)
+   void backward_connected_layer(connected_layer layer, float *input, float *delta)
    {
    int i, j;
 

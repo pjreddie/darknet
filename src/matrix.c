@@ -13,7 +13,7 @@ void free_matrix(matrix m)
     free(m.vals);
 }
 
-double matrix_accuracy(matrix truth, matrix guess)
+float matrix_accuracy(matrix truth, matrix guess)
 {
     int k = truth.cols;
     int i;
@@ -22,7 +22,7 @@ double matrix_accuracy(matrix truth, matrix guess)
         int class = max_index(guess.vals[i], k);
         if(truth.vals[i][class]) ++count;
     }
-    return (double)count/truth.rows;
+    return (float)count/truth.rows;
 }
 
 void matrix_add_matrix(matrix from, matrix to)
@@ -42,9 +42,9 @@ matrix make_matrix(int rows, int cols)
     matrix m;
     m.rows = rows;
     m.cols = cols;
-    m.vals = calloc(m.rows, sizeof(double *));
+    m.vals = calloc(m.rows, sizeof(float *));
     for(i = 0; i < m.rows; ++i){
-        m.vals[i] = calloc(m.cols, sizeof(double));
+        m.vals[i] = calloc(m.cols, sizeof(float));
     }
     return m;
 }
@@ -55,7 +55,7 @@ matrix hold_out_matrix(matrix *m, int n)
     matrix h;
     h.rows = n;
     h.cols = m->cols;
-    h.vals = calloc(h.rows, sizeof(double *));
+    h.vals = calloc(h.rows, sizeof(float *));
     for(i = 0; i < n; ++i){
         int index = rand()%m->rows;
         h.vals[i] = m->vals[index];
@@ -64,9 +64,9 @@ matrix hold_out_matrix(matrix *m, int n)
     return h;
 }
 
-double *pop_column(matrix *m, int c)
+float *pop_column(matrix *m, int c)
 {
-    double *col = calloc(m->rows, sizeof(double));
+    float *col = calloc(m->rows, sizeof(float));
     int i, j;
     for(i = 0; i < m->rows; ++i){
         col[i] = m->vals[i][c];
@@ -90,18 +90,18 @@ matrix csv_to_matrix(char *filename)
 
 	int n = 0;
 	int size = 1024;
-	m.vals = calloc(size, sizeof(double*));
+	m.vals = calloc(size, sizeof(float*));
 	while((line = fgetl(fp))){
         if(m.cols == -1) m.cols = count_fields(line);
 		if(n == size){
 			size *= 2;
-			m.vals = realloc(m.vals, size*sizeof(double*));
+			m.vals = realloc(m.vals, size*sizeof(float*));
 		}
 		m.vals[n] = parse_fields(line, m.cols);
 		free(line);
 		++n;
 	}
-	m.vals = realloc(m.vals, n*sizeof(double*));
+	m.vals = realloc(m.vals, n*sizeof(float*));
     m.rows = n;
 	return m;
 }

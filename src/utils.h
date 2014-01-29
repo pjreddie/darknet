@@ -13,15 +13,15 @@ char *fgetl(FILE *fp);
 list *parse_csv_line(char *line);
 char *copy_string(char *s);
 int count_fields(char *line);
-double *parse_fields(char *line, int n);
-void normalize_array(double *a, int n);
-void scale_array(double *a, int n, double s);
-void translate_array(double *a, int n, double s);
-int max_index(double *a, int n);
-double constrain(double a, double max);
-double rand_normal();
-double mean_array(double *a, int n);
-double variance_array(double *a, int n);
-double **one_hot_encode(double *a, int n, int k);
+float *parse_fields(char *line, int n);
+void normalize_array(float *a, int n);
+void scale_array(float *a, int n, float s);
+void translate_array(float *a, int n, float s);
+int max_index(float *a, int n);
+float constrain(float a, float max);
+float rand_normal();
+float mean_array(float *a, int n);
+float variance_array(float *a, int n);
+float **one_hot_encode(float *a, int n, int k);
 #endif
 

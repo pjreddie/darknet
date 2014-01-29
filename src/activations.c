@@ -15,7 +15,7 @@ ACTIVATION get_activation(char *s)
     return RELU;
 }
 
-double activate(double x, ACTIVATION a){
+float activate(float x, ACTIVATION a){
     switch(a){
         case LINEAR:
             return x;
@@ -30,7 +30,7 @@ double activate(double x, ACTIVATION a){
     }
     return 0;
 }
-double gradient(double x, ACTIVATION a){
+float gradient(float x, ACTIVATION a){
     switch(a){
         case LINEAR:
             return 1;

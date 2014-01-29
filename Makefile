@@ -1,6 +1,6 @@
 CC=gcc
 COMMON=-Wall `pkg-config --cflags opencv`
-CFLAGS= $(COMMON) -Ofast -ffast-math -flto
+CFLAGS= $(COMMON) -O3 -ffast-math -flto
 UNAME = $(shell uname)
 ifeq ($(UNAME), Darwin)
 COMMON += -isystem /usr/local/Cellar/opencv/2.4.6.1/include/opencv -isystem /usr/local/Cellar/opencv/2.4.6.1/include

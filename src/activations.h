@@ -7,8 +7,8 @@ typedef enum{
 
 ACTIVATION get_activation(char *s);
 
-double activate(double x, ACTIVATION a);
-double gradient(double x, ACTIVATION a);
+float activate(float x, ACTIVATION a);
+float gradient(float x, ACTIVATION a);
 
 #endif
 
