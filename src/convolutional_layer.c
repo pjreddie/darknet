@@ -41,8 +41,8 @@ convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int si
     layer->biases = calloc(n, sizeof(float));
     layer->bias_updates = calloc(n, sizeof(float));
     layer->bias_momentum = calloc(n, sizeof(float));
-    float scale = 2./(size*size);
-    for(i = 0; i < c*n*size*size; ++i) layer->filters[i] = rand_normal()*scale;
+    float scale = 1./(size*size*c);
+    for(i = 0; i < c*n*size*size; ++i) layer->filters[i] = scale*(rand_uniform());
     for(i = 0; i < n; ++i){
         //layer->biases[i] = rand_normal()*scale + scale;
         layer->biases[i] = 0;
@@ -65,6 +65,7 @@ convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int si
 
 void forward_convolutional_layer(const convolutional_layer layer, float *in)
 {
+    int i;
     int m = layer.n;
     int k = layer.size*layer.size*layer.c;
     int n = ((layer.h-layer.size)/layer.stride + 1)*
@@ -78,6 +79,11 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
 
     im2col_cpu(in,  layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, b);
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+
+    for(i = 0; i < m*n; ++i){
+        layer.output[i] = activate(layer.output[i], layer.activation);
+    }
+    //for(i = 0; i < m*n; ++i) if(i%(m*n/10+1)==0) printf("%f, ", layer.output[i]); printf("\n");
 
 }
 

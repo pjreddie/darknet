@@ -19,22 +19,45 @@ connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activa
     layer->delta = calloc(outputs, sizeof(float*));
 
     layer->weight_updates = calloc(inputs*outputs, sizeof(float));
+    layer->weight_adapt = calloc(inputs*outputs, sizeof(float));
     layer->weight_momentum = calloc(inputs*outputs, sizeof(float));
     layer->weights = calloc(inputs*outputs, sizeof(float));
-    float scale = 2./inputs;
+    float scale = 1./inputs;
     for(i = 0; i < inputs*outputs; ++i)
-        layer->weights[i] = rand_normal()*scale;
+        layer->weights[i] = scale*(rand_uniform());
 
     layer->bias_updates = calloc(outputs, sizeof(float));
+    layer->bias_adapt = calloc(outputs, sizeof(float));
     layer->bias_momentum = calloc(outputs, sizeof(float));
     layer->biases = calloc(outputs, sizeof(float));
     for(i = 0; i < outputs; ++i)
         //layer->biases[i] = rand_normal()*scale + scale;
-        layer->biases[i] = 0;
+        layer->biases[i] = 1;
 
     layer->activation = activation;
     return layer;
 }
+
+/*
+void update_connected_layer(connected_layer layer, float step, float momentum, float decay)
+{
+    int i;
+    for(i = 0; i < layer.outputs; ++i){
+        float delta = layer.bias_updates[i];
+        layer.bias_adapt[i] += delta*delta;
+        layer.bias_momentum[i] = step/sqrt(layer.bias_adapt[i])*(layer.bias_updates[i]) + momentum*layer.bias_momentum[i];
+        layer.biases[i] += layer.bias_momentum[i];
+    }
+    for(i = 0; i < layer.outputs*layer.inputs; ++i){
+        float delta = layer.weight_updates[i];
+        layer.weight_adapt[i] += delta*delta;
+        layer.weight_momentum[i] = step/sqrt(layer.weight_adapt[i])*(layer.weight_updates[i] - decay*layer.weights[i]) + momentum*layer.weight_momentum[i];
+        layer.weights[i] += layer.weight_momentum[i];
+    }
+    memset(layer.bias_updates, 0, layer.outputs*sizeof(float));
+    memset(layer.weight_updates, 0, layer.outputs*layer.inputs*sizeof(float));
+}
+*/
 
 void update_connected_layer(connected_layer layer, float step, float momentum, float decay)
 {
@@ -65,6 +88,7 @@ void forward_connected_layer(connected_layer layer, float *input)
     for(i = 0; i < layer.outputs; ++i){
         layer.output[i] = activate(layer.output[i], layer.activation);
     }
+    //for(i = 0; i < layer.outputs; ++i) if(i%(layer.outputs/10+1)==0) printf("%f, ", layer.output[i]); printf("\n");
 }
 
 void learn_connected_layer(connected_layer layer, float *input)

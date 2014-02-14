@@ -2,6 +2,13 @@
 #define OPTION_LIST_H
 #include "list.h"
 
+typedef struct{
+    char *key;
+    char *val;
+    int used;
+} kvp;
+
+
 void option_insert(list *l, char *key, char *val);
 char *option_find(list *l, char *key);
 char *option_find_str(list *l, char *key, char *def);

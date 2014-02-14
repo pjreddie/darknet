@@ -33,12 +33,11 @@ image make_random_image(int h, int w, int c);
 image make_random_kernel(int size, int c, float scale);
 image float_to_image(int h, int w, int c, float *data);
 image copy_image(image p);
-image load_image(char *filename);
+image load_image(char *filename, int h, int w);
 
 float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);
 void set_pixel(image m, int x, int y, int c, float val);
-
 
 image get_image_layer(image m, int l);
 

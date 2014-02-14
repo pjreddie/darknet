@@ -21,6 +21,77 @@ network make_network(int n)
     return net;
 }
 
+void print_convolutional_cfg(FILE *fp, convolutional_layer *l)
+{
+    int i;
+    fprintf(fp, "[convolutional]\n"
+                "height=%d\n"
+                "width=%d\n"
+                "channels=%d\n"
+                "filters=%d\n"
+                "size=%d\n"
+                "stride=%d\n"
+                "activation=%s\n",
+                l->h, l->w, l->c,
+                l->n, l->size, l->stride,
+                get_activation_string(l->activation));
+    fprintf(fp, "data=");
+    for(i = 0; i < l->n; ++i) fprintf(fp, "%g,", l->biases[i]);
+    for(i = 0; i < l->n*l->c*l->size*l->size; ++i) fprintf(fp, "%g,", l->filters[i]);
+    fprintf(fp, "\n\n");
+}
+void print_connected_cfg(FILE *fp, connected_layer *l)
+{
+    int i;
+    fprintf(fp, "[connected]\n"
+                "input=%d\n"
+                "output=%d\n"
+                "activation=%s\n",
+                l->inputs, l->outputs,
+                get_activation_string(l->activation));
+    fprintf(fp, "data=");
+    for(i = 0; i < l->outputs; ++i) fprintf(fp, "%g,", l->biases[i]);
+    for(i = 0; i < l->inputs*l->outputs; ++i) fprintf(fp, "%g,", l->weights[i]);
+    fprintf(fp, "\n\n");
+}
+
+void print_maxpool_cfg(FILE *fp, maxpool_layer *l)
+{
+    fprintf(fp, "[maxpool]\n"
+                "height=%d\n"
+                "width=%d\n"
+                "channels=%d\n"
+                "stride=%d\n\n",
+                l->h, l->w, l->c,
+                l->stride);
+}
+
+void print_softmax_cfg(FILE *fp, softmax_layer *l)
+{
+    fprintf(fp, "[softmax]\n"
+                "input=%d\n\n",
+                l->inputs);
+}
+
+void save_network(network net, char *filename)
+{
+    FILE *fp = fopen(filename, "w");
+    if(!fp) file_error(filename);
+    int i;
+    for(i = 0; i < net.n; ++i)
+    {
+        if(net.types[i] == CONVOLUTIONAL)
+            print_convolutional_cfg(fp, (convolutional_layer *)net.layers[i]);
+        else if(net.types[i] == CONNECTED)
+            print_connected_cfg(fp, (connected_layer *)net.layers[i]);
+        else if(net.types[i] == MAXPOOL)
+            print_maxpool_cfg(fp, (maxpool_layer *)net.layers[i]);
+        else if(net.types[i] == SOFTMAX)
+            print_softmax_cfg(fp, (softmax_layer *)net.layers[i]);
+    }
+    fclose(fp);
+}
+
 void forward_network(network net, float *input)
 {
     int i;
@@ -64,7 +135,7 @@ void update_network(network net, float step, float momentum, float decay)
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            update_connected_layer(layer, step, momentum, 0);
+            update_connected_layer(layer, step, momentum, decay);
         }
     }
 }
@@ -121,9 +192,11 @@ float calculate_error_network(network net, float *truth)
     float *out = get_network_output(net);
     int i, k = get_network_output_size(net);
     for(i = 0; i < k; ++i){
+        printf("%f, ", out[i]);
         delta[i] = truth[i] - out[i];
         sum += delta[i]*delta[i];
     }
+    printf("\n");
     return sum;
 }
 
@@ -173,25 +246,31 @@ float backward_network(network net, float *input, float *truth)
 
 float train_network_datum(network net, float *x, float *y, float step, float momentum, float decay)
 {
-        forward_network(net, x);
-        int class = get_predicted_class_network(net);
-        float error = backward_network(net, x, y);
-        update_network(net, step, momentum, decay);
-        //return (y[class]?1:0);
-        return error;
+    forward_network(net, x);
+    //int class = get_predicted_class_network(net);
+    float error = backward_network(net, x, y);
+    update_network(net, step, momentum, decay);
+    //return (y[class]?1:0);
+    return error;
 }
 
 float train_network_sgd(network net, data d, int n, float step, float momentum,float decay)
 {
     int i;
     float error = 0;
+    int correct = 0;
     for(i = 0; i < n; ++i){
         int index = rand()%d.X.rows;
         error += train_network_datum(net, d.X.vals[index], d.y.vals[index], step, momentum, decay);
+        float *y = d.y.vals[index];
+        int class = get_predicted_class_network(net);
+        correct += (y[class]?1:0);
+        //printf("%d %f %f\n", i,net.output[0], d.y.vals[index][0]);
         //if((i+1)%10 == 0){
         //    printf("%d: %f\n", (i+1), (float)correct/(i+1));
         //}
     }
+    printf("Accuracy: %f\n",(float) correct/n);
     return error/n;
 }
 float train_network_batch(network net, data d, int n, float step, float momentum,float decay)

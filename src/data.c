@@ -30,7 +30,7 @@ void fill_truth(char *path, char **labels, int k, float *truth)
     }
 }
 
-data load_data_image_paths(char **paths, int n, char **labels, int k)
+data load_data_image_paths(char **paths, int n, char **labels, int k, int h, int w)
 {
     int i;
     data d;
@@ -40,7 +40,7 @@ data load_data_image_paths(char **paths, int n, char **labels, int k)
     d.y = make_matrix(n, k);
 
     for(i = 0; i < n; ++i){
-        image im = load_image(paths[i]);
+        image im = load_image(paths[i], h, w);
         d.X.vals[i] = im.data;
         d.X.cols = im.h*im.w*im.c;
         fill_truth(paths[i], labels, k, d.y.vals[i]);
@@ -48,11 +48,11 @@ data load_data_image_paths(char **paths, int n, char **labels, int k)
     return d;
 }
 
-data load_data_image_pathfile(char *filename, char **labels, int k)
+data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w)
 {
     list *plist = get_paths(filename);
     char **paths = (char **)list_to_array(plist);
-    data d = load_data_image_paths(paths, plist->size, labels, k);
+    data d = load_data_image_paths(paths, plist->size, labels, k, h, w);
     free_list_contents(plist);
     free_list(plist);
     free(paths);
@@ -70,20 +70,20 @@ void free_data(data d)
     }
 }
 
-data load_data_image_pathfile_part(char *filename, int part, int total, char **labels, int k)
+data load_data_image_pathfile_part(char *filename, int part, int total, char **labels, int k, int h, int w)
 {
     list *plist = get_paths(filename);
     char **paths = (char **)list_to_array(plist);
     int start = part*plist->size/total;
     int end = (part+1)*plist->size/total;
-    data d = load_data_image_paths(paths+start, end-start, labels, k);
+    data d = load_data_image_paths(paths+start, end-start, labels, k, h, w);
     free_list_contents(plist);
     free_list(plist);
     free(paths);
     return d;
 }
 
-data load_data_image_pathfile_random(char *filename, int n, char **labels, int k)
+data load_data_image_pathfile_random(char *filename, int n, char **labels, int k, int h, int w)
 {
     int i;
     list *plist = get_paths(filename);
@@ -92,8 +92,9 @@ data load_data_image_pathfile_random(char *filename, int n, char **labels, int k
     for(i = 0; i < n; ++i){
         int index = rand()%plist->size;
         random_paths[i] = paths[index];
+        if(i == 0) printf("%s\n", paths[index]);
     }
-    data d = load_data_image_paths(random_paths, n, labels, k);
+    data d = load_data_image_paths(random_paths, n, labels, k, h, w);
     free_list_contents(plist);
     free_list(plist);
     free(paths);
@@ -130,6 +131,14 @@ void randomize_data(data d)
         swap = d.y.vals[index];
         d.y.vals[index] = d.y.vals[i];
         d.y.vals[i] = swap;
+    }
+}
+
+void scale_data_rows(data d, float s)
+{
+    int i;
+    for(i = 0; i < d.X.rows; ++i){
+        scale_array(d.X.vals[i], d.X.cols, s);
     }
 }
 

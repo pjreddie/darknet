@@ -159,7 +159,7 @@ void time_random_matrix(int TA, int TB, int m, int k, int n)
         gemm(TA,TB,m,n,k,1,a,k,b,n,1,c,n);
     }
     end = clock();
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (double)(end-start)/CLOCKS_PER_SEC);
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
 }
 
 void test_blas()

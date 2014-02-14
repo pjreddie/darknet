@@ -40,6 +40,7 @@ image get_network_image_layer(network net, int i);
 int get_predicted_class_network(network net);
 void print_network(network net);
 void visualize_network(network net);
+void save_network(network net, char *filename);
 
 #endif
 

@@ -12,6 +12,9 @@ typedef struct{
     float *weight_updates;
     float *bias_updates;
 
+    float *weight_adapt;
+    float *bias_adapt;
+
     float *weight_momentum;
     float *bias_momentum;
 

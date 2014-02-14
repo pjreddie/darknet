@@ -216,6 +216,10 @@ float rand_normal()
     for(i = 0; i < 12; ++i) sum += (float)rand()/RAND_MAX;
     return sum-6.;
 }
+float rand_uniform()
+{
+    return (float)rand()/RAND_MAX;
+}
 
 float **one_hot_encode(float *a, int n, int k)
 {

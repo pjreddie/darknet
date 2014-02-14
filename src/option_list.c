@@ -3,12 +3,6 @@
 #include <string.h>
 #include "option_list.h"
 
-typedef struct{
-    char *key;
-    char *val;
-    int used;
-} kvp;
-
 void option_insert(list *l, char *key, char *val)
 {
     kvp *p = malloc(sizeof(kvp));
@@ -47,7 +41,7 @@ char *option_find_str(list *l, char *key, char *def)
 {
     char *v = option_find(l, key);
     if(v) return v;
-    fprintf(stderr, "%s: Using default '%s'\n", key, def);
+    if(def) fprintf(stderr, "%s: Using default '%s'\n", key, def);
     return def;
 }
 

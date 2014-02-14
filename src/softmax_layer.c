@@ -36,8 +36,11 @@ void forward_softmax_layer(const softmax_layer layer, float *input)
     }
     for(i = 0; i < layer.inputs; ++i){
         sum += exp(input[i]-largest);
+        printf("%f, ", input[i]);
     }
-    sum = largest+log(sum);
+    printf("\n");
+    if(sum) sum = largest+log(sum);
+    else sum = largest-100;
     for(i = 0; i < layer.inputs; ++i){
         layer.output[i] = exp(input[i]-sum);
     }

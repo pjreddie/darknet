@@ -4,6 +4,25 @@
 #include <stdio.h>
 #include <string.h>
 
+char *get_activation_string(ACTIVATION a)
+{
+    switch(a){
+        case SIGMOID:
+            return "sigmoid";
+        case RELU:
+            return "relu";
+        case RAMP:
+            return "ramp";
+        case LINEAR:
+            return "linear";
+        case TANH:
+            return "tanh";
+        default:
+            break;
+    }
+    return "relu";
+}
+
 ACTIVATION get_activation(char *s)
 {
     if (strcmp(s, "sigmoid")==0) return SIGMOID;

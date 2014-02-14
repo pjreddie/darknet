@@ -19,7 +19,7 @@
 
 void test_convolve()
 {
-    image dog = load_image("dog.jpg");
+    image dog = load_image("dog.jpg",300,400);
     printf("dog channels %d\n", dog.c);
     image kernel = make_random_image(3,3,dog.c);
     image edge = make_image(dog.h, dog.w, 1);
@@ -35,7 +35,7 @@ void test_convolve()
 
 void test_convolve_matrix()
 {
-    image dog = load_image("dog.jpg");
+    image dog = load_image("dog.jpg",300,400);
     printf("dog channels %d\n", dog.c);
     
     int size = 11;
@@ -64,7 +64,7 @@ void test_convolve_matrix()
 
 void test_color()
 {
-    image dog = load_image("test_color.png");
+    image dog = load_image("test_color.png", 300, 400);
     show_image_layers(dog, "Test Color");
 }
 
@@ -124,13 +124,13 @@ void verify_convolutional_layer()
 
 void test_load()
 {
-    image dog = load_image("dog.jpg");
+    image dog = load_image("dog.jpg", 300, 400);
     show_image(dog, "Test Load");
     show_image_layers(dog, "Test Load");
 }
 void test_upsample()
 {
-    image dog = load_image("dog.jpg");
+    image dog = load_image("dog.jpg", 300, 400);
     int n = 3;
     image up = make_image(n*dog.h, n*dog.w, dog.c);
     upsample_image(dog, n, up);
@@ -141,7 +141,7 @@ void test_upsample()
 void test_rotate()
 {
     int i;
-    image dog = load_image("dog.jpg");
+    image dog = load_image("dog.jpg",300,400);
     clock_t start = clock(), end;
     for(i = 0; i < 1001; ++i){
         rotate_image(dog);
@@ -184,24 +184,39 @@ void test_parser()
 void test_data()
 {
     char *labels[] = {"cat","dog"};
-    data train = load_data_image_pathfile_random("train_paths.txt", 101,labels, 2);
+    data train = load_data_image_pathfile_random("train_paths.txt", 101,labels, 2, 300, 400);
     free_data(train);
 }
 
 void test_full()
 {
     network net = parse_network_cfg("full.cfg");
-    srand(0);
-    int i = 0;
+    srand(2222222);
+    int i = 800;
     char *labels[] = {"cat","dog"};
     float lr = .00001;
     float momentum = .9;
     float decay = 0.01;
     while(i++ < 1000 || 1){
-        data train = load_data_image_pathfile_random("train_paths.txt", 1000, labels, 2);
-        train_network(net, train, lr, momentum, decay);
+        visualize_network(net);
+        cvWaitKey(100);
+        data train = load_data_image_pathfile_random("train_paths.txt", 1000, labels, 2, 256, 256);
+        image im = float_to_image(256, 256, 3,train.X.vals[0]);
+        show_image(im, "input");
+        cvWaitKey(100);
+        //scale_data_rows(train, 1./255.);
+        normalize_data_rows(train);
+        clock_t start = clock(), end;
+        float loss = train_network_sgd(net, train, 100, lr, momentum, decay);
+        end = clock();
+        printf("%d: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", i, loss, (float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
         free_data(train);
-        printf("Round %d\n", i);
+        if(i%100==0){
+            char buff[256];
+            sprintf(buff, "backup_%d.cfg", i);
+            //save_network(net, buff);
+        }
+        //lr *= .99;
     }
 }
 
@@ -218,7 +233,7 @@ void test_nist()
     int count = 0;
     float lr = .0005;
     float momentum = .9;
-    float decay = 0.01;
+    float decay = 0.001;
     clock_t start = clock(), end;
     while(++count <= 100){
         //visualize_network(net);
@@ -227,7 +242,7 @@ void test_nist()
         end = clock();
         printf("Time: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
         start=end;
-        cvWaitKey(100);
+        //cvWaitKey(100);
         //lr /= 2; 
         if(count%5 == 0){
             float train_acc = network_accuracy(net, train);
@@ -235,7 +250,7 @@ void test_nist()
             float test_acc = network_accuracy(net, test);
             fprintf(stderr, "TEST: %f\n\n", test_acc);
             printf("%d, %f, %f\n", count, train_acc, test_acc);
-            lr *= .5;
+            //lr *= .5;
         }
     }
 }
@@ -345,7 +360,38 @@ void test_im2row()
     int i;
     for(i = 0; i < 1000; ++i){
         im2col_cpu(test.data,  c,  h,  w,  size,  stride, matrix);
-        image render = float_to_image(mh, mw, mc, matrix);
+        //image render = float_to_image(mh, mw, mc, matrix);
+    }
+}
+
+void train_VOC()
+{
+    network net = parse_network_cfg("cfg/voc_backup_ramp_80.cfg");
+    srand(2222222);
+    int i = 0;
+    char *labels[] = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"};
+    float lr = .00001;
+    float momentum = .9;
+    float decay = 0.01;
+    while(i++ < 1000 || 1){
+        visualize_network(net);
+        cvWaitKey(100);
+        data train = load_data_image_pathfile_random("images/VOC2012/train_paths.txt", 1000, labels, 20, 300, 400);
+        image im = float_to_image(300, 400, 3,train.X.vals[0]);
+        show_image(im, "input");
+        cvWaitKey(100);
+        normalize_data_rows(train);
+        clock_t start = clock(), end;
+        float loss = train_network_sgd(net, train, 1000, lr, momentum, decay);
+        end = clock();
+        printf("%d: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", i, loss, (float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
+        free_data(train);
+        if(i%10==0){
+            char buff[256];
+            sprintf(buff, "cfg/voc_backup_ramp_%d.cfg", i);
+            save_network(net, buff);
+        }
+        //lr *= .99;
     }
 }
 
@@ -358,8 +404,9 @@ int main()
     //    test_im2row();
     //test_split();
     //test_ensemble();
-    test_nist();
+    //test_nist();
     //test_full();
+    train_VOC();
     //test_random_preprocess();
     //test_random_classify();
     //test_parser();

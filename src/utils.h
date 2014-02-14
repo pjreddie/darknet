@@ -20,6 +20,7 @@ void translate_array(float *a, int n, float s);
 int max_index(float *a, int n);
 float constrain(float a, float max);
 float rand_normal();
+float rand_uniform();
 float mean_array(float *a, int n);
 float variance_array(float *a, int n);
 float **one_hot_encode(float *a, int n, int k);
