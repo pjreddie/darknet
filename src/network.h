@@ -41,6 +41,7 @@ int get_predicted_class_network(network net);
 void print_network(network net);
 void visualize_network(network net);
 void save_network(network net, char *filename);
+int reset_network_size(network net, int h, int w, int c);
 
 #endif
 

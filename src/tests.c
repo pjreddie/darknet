@@ -366,20 +366,21 @@ void test_im2row()
 
 void train_VOC()
 {
-    network net = parse_network_cfg("cfg/voc_backup_ramp_80.cfg");
+    network net = parse_network_cfg("cfg/voc_backup_sig_20.cfg");
     srand(2222222);
-    int i = 0;
+    int i = 20;
     char *labels[] = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"};
     float lr = .00001;
     float momentum = .9;
     float decay = 0.01;
     while(i++ < 1000 || 1){
-        visualize_network(net);
-        cvWaitKey(100);
         data train = load_data_image_pathfile_random("images/VOC2012/train_paths.txt", 1000, labels, 20, 300, 400);
+
         image im = float_to_image(300, 400, 3,train.X.vals[0]);
         show_image(im, "input");
+        visualize_network(net);
         cvWaitKey(100);
+
         normalize_data_rows(train);
         clock_t start = clock(), end;
         float loss = train_network_sgd(net, train, 1000, lr, momentum, decay);
@@ -388,10 +389,58 @@ void train_VOC()
         free_data(train);
         if(i%10==0){
             char buff[256];
-            sprintf(buff, "cfg/voc_backup_ramp_%d.cfg", i);
+            sprintf(buff, "cfg/voc_backup_sig_%d.cfg", i);
             save_network(net, buff);
         }
         //lr *= .99;
+    }
+}
+
+void features_VOC()
+{
+    int i,j;
+    network net = parse_network_cfg("cfg/voc_features.cfg");
+    char *path_file = "images/VOC2012/all_paths.txt";
+    char *out_dir = "voc_features/";
+    list *paths = get_paths(path_file);
+    node *n = paths->front;
+    while(n){
+        char *path = (char *)n->val;
+        char buff[1024];
+        sprintf(buff, "%s%s.txt",out_dir, path);
+        FILE *fp = fopen(buff, "w");
+        if(fp == 0) file_error(buff);
+
+        IplImage* src = 0;
+        if( (src = cvLoadImage(path,-1)) == 0 )
+        {
+            printf("Cannot load file image %s\n", path);
+            exit(0);
+        }
+
+        for(i = 0; i < 10; ++i){
+            int w = 1024 - 90*i; //PICKED WITH CAREFUL CROSS-VALIDATION!!!!
+            int h = (int)((double)w/src->width * src->height);
+            IplImage *sized = cvCreateImage(cvSize(w,h), src->depth, src->nChannels);
+            cvResize(src, sized, CV_INTER_LINEAR);
+            image im = ipl_to_image(sized);
+            reset_network_size(net, im.h, im.w, im.c);
+            forward_network(net, im.data);
+            free_image(im);
+            image out = get_network_image_layer(net, 5);
+            fprintf(fp, "%d, %d, %d\n",out.c, out.h, out.w);
+            for(j = 0; j < out.c*out.h*out.w; ++j){
+                if(j != 0)fprintf(fp, ",");
+                fprintf(fp, "%g", out.data[j]);
+            }
+            fprintf(fp, "\n");
+            out.c = 1;
+            show_image(out, "output");
+            cvWaitKey(10);
+            cvReleaseImage(&sized);
+        }
+        fclose(fp);
+        n = n->next;
     }
 }
 
@@ -406,7 +455,8 @@ int main()
     //test_ensemble();
     //test_nist();
     //test_full();
-    train_VOC();
+    //train_VOC();
+    features_VOC();
     //test_random_preprocess();
     //test_random_classify();
     //test_parser();

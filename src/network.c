@@ -331,6 +331,34 @@ int get_network_output_size_layer(network net, int i)
     return 0;
 }
 
+int reset_network_size(network net, int h, int w, int c)
+{
+    int i;
+    for (i = 0; i < net.n; ++i){
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer *layer = (convolutional_layer *)net.layers[i];
+            layer->h = h;
+            layer->w = w;
+            layer->c = c;
+            image output = get_convolutional_image(*layer);
+            h = output.h;
+            w = output.w;
+            c = output.c;
+        }
+        else if(net.types[i] == MAXPOOL){
+            maxpool_layer *layer = (maxpool_layer *)net.layers[i];
+            layer->h = h;
+            layer->w = w;
+            layer->c = c;
+            image output = get_maxpool_image(*layer);
+            h = output.h;
+            w = output.w;
+            c = output.c;
+        }
+    }
+    return 0;
+}
+
 int get_network_output_size(network net)
 {
     int i = net.n-1;

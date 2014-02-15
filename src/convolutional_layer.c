@@ -3,11 +3,21 @@
 #include "mini_blas.h"
 #include <stdio.h>
 
+int convolutional_out_height(convolutional_layer layer)
+{
+    return (layer.h-layer.size)/layer.stride + 1;
+}
+
+int convolutional_out_width(convolutional_layer layer)
+{
+    return (layer.w-layer.size)/layer.stride + 1;
+}
+
 image get_convolutional_image(convolutional_layer layer)
 {
     int h,w,c;
-    h = layer.out_h;
-    w = layer.out_w;
+    h = convolutional_out_height(layer);
+    w = convolutional_out_width(layer);
     c = layer.n;
     return float_to_image(h,w,c,layer.output);
 }
@@ -15,8 +25,8 @@ image get_convolutional_image(convolutional_layer layer)
 image get_convolutional_delta(convolutional_layer layer)
 {
     int h,w,c;
-    h = layer.out_h;
-    w = layer.out_w;
+    h = convolutional_out_height(layer);
+    w = convolutional_out_width(layer);
     c = layer.n;
     return float_to_image(h,w,c,layer.delta);
 }
@@ -24,7 +34,6 @@ image get_convolutional_delta(convolutional_layer layer)
 convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int size, int stride, ACTIVATION activation)
 {
     int i;
-    int out_h,out_w;
     size = 2*(size/2)+1; //HA! And you thought you'd use an even sized filter...
     convolutional_layer *layer = calloc(1, sizeof(convolutional_layer));
     layer->h = h;
@@ -47,15 +56,13 @@ convolutional_layer *make_convolutional_layer(int h, int w, int c, int n, int si
         //layer->biases[i] = rand_normal()*scale + scale;
         layer->biases[i] = 0;
     }
-    out_h = (h-size)/stride + 1;
-    out_w = (w-size)/stride + 1;
+    int out_h = (h-size)/stride + 1;
+    int out_w = (w-size)/stride + 1;
 
     layer->col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
     layer->output = calloc(out_h * out_w * n, sizeof(float));
     layer->delta  = calloc(out_h * out_w * n, sizeof(float));
     layer->activation = activation;
-    layer->out_h = out_h;
-    layer->out_w = out_w;
 
     fprintf(stderr, "Convolutional Layer: %d x %d x %d image, %d filters -> %d x %d x %d image\n", h,w,c,n, out_h, out_w, n);
     srand(0);
@@ -90,7 +97,10 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
 void gradient_delta_convolutional_layer(convolutional_layer layer)
 {
     int i;
-    for(i = 0; i < layer.out_h*layer.out_w*layer.n; ++i){
+    int size = convolutional_out_height(layer)
+                *convolutional_out_width(layer)
+                *layer.n;
+    for(i = 0; i < size; ++i){
         layer.delta[i] *= gradient(layer.output[i], layer.activation);
     }
 }
@@ -98,7 +108,8 @@ void gradient_delta_convolutional_layer(convolutional_layer layer)
 void learn_bias_convolutional_layer(convolutional_layer layer)
 {
     int i,j;
-    int size = layer.out_h*layer.out_w;
+    int size = convolutional_out_height(layer)
+                *convolutional_out_width(layer);
     for(i = 0; i < layer.n; ++i){
         float sum = 0;
         for(j = 0; j < size; ++j){

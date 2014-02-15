@@ -342,21 +342,11 @@ IplImage* resizeImage(const IplImage *origImg, int newHeight, int newWidth,
     return outImg;
 }
 
-image load_image(char *filename, int h, int w)
+image ipl_to_image(IplImage* src)
 {
-    IplImage* src = 0;
-    if( (src = cvLoadImage(filename,-1)) == 0 )
-    {
-        printf("Cannot load file image %s\n", filename);
-        exit(0);
-    }
-    cvShowImage("Orig", src);
-    IplImage *resized = resizeImage(src, h, w, 1);
-    cvShowImage("Sized", resized);
-    cvWaitKey(0);
-    cvReleaseImage(&src);
-    src = resized;
     unsigned char *data = (unsigned char *)src->imageData;
+    int h = src->height;
+    int w = src->width;
     int c = src->nChannels;
     int step = src->widthStep;
     image out = make_image(h,w,c);
@@ -369,6 +359,21 @@ image load_image(char *filename, int h, int w)
             }
         }
     }
+    return out;
+}
+
+image load_image(char *filename, int h, int w)
+{
+    IplImage* src = 0;
+    if( (src = cvLoadImage(filename,-1)) == 0 )
+    {
+        printf("Cannot load file image %s\n", filename);
+        exit(0);
+    }
+    IplImage *resized = resizeImage(src, h, w, 1);
+    cvReleaseImage(&src);
+    src = resized;
+    image out = ipl_to_image(src);
     cvReleaseImage(&src);
     return out;
 }
