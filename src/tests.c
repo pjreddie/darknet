@@ -366,7 +366,7 @@ void test_im2row()
 
 void train_VOC()
 {
-    network net = parse_network_cfg("cfg/voc_backup_sig_20.cfg");
+    network net = parse_network_cfg("cfg/voc_start.cfg");
     srand(2222222);
     int i = 20;
     char *labels[] = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"};
@@ -374,7 +374,7 @@ void train_VOC()
     float momentum = .9;
     float decay = 0.01;
     while(i++ < 1000 || 1){
-        data train = load_data_image_pathfile_random("images/VOC2012/train_paths.txt", 1000, labels, 20, 300, 400);
+        data train = load_data_image_pathfile_random("images/VOC2012/val_paths.txt", 1000, labels, 20, 300, 400);
 
         image im = float_to_image(300, 400, 3,train.X.vals[0]);
         show_image(im, "input");
@@ -389,25 +389,56 @@ void train_VOC()
         free_data(train);
         if(i%10==0){
             char buff[256];
-            sprintf(buff, "cfg/voc_backup_sig_%d.cfg", i);
+            sprintf(buff, "cfg/voc_clean_ramp_%d.cfg", i);
             save_network(net, buff);
         }
         //lr *= .99;
     }
 }
 
-void features_VOC()
+int voc_size(int x)
 {
-    int i,j;
+    x = x-1+3;
+    x = x-1+3;
+    x = (x-1)*2+1;
+    x = x-1+5;
+    x = (x-1)*2+1;
+    x = (x-1)*4+11;
+    return x;
+}
+
+image features_output_size(network net, IplImage *src, int outh, int outw)
+{
+    int h = voc_size(outh);
+    int w = voc_size(outw);
+
+    IplImage *sized = cvCreateImage(cvSize(w,h), src->depth, src->nChannels);
+    cvResize(src, sized, CV_INTER_LINEAR);
+    image im = ipl_to_image(sized);
+    reset_network_size(net, im.h, im.w, im.c);
+    forward_network(net, im.data);
+    image out = get_network_image_layer(net, 5);
+    //printf("%d %d\n%d %d\n", outh, out.h, outw, out.w);
+    free_image(im);
+    cvReleaseImage(&sized);
+    return copy_image(out);
+}
+
+void features_VOC(int part, int total)
+{
+    int i,j, count = 0;
     network net = parse_network_cfg("cfg/voc_features.cfg");
     char *path_file = "images/VOC2012/all_paths.txt";
     char *out_dir = "voc_features/";
     list *paths = get_paths(path_file);
     node *n = paths->front;
-    while(n){
+    int size = paths->size;
+    for(count = 0; count < part*size/total; ++count) n = n->next;
+    while(n && count++ < (part+1)*size/total){
         char *path = (char *)n->val;
         char buff[1024];
         sprintf(buff, "%s%s.txt",out_dir, path);
+        printf("%s\n", path);
         FILE *fp = fopen(buff, "w");
         if(fp == 0) file_error(buff);
 
@@ -417,35 +448,59 @@ void features_VOC()
             printf("Cannot load file image %s\n", path);
             exit(0);
         }
+        int w = src->width;
+        int h = src->height;
+        int sbin = 8;
+        int interval = 10;
+        double scale = pow(2., 1./interval);
+        int m = (w<h)?w:h;
+        int max_scale = 1+floor((double)log((double)m/(5.*sbin))/log(scale));
+        image *ims = calloc(max_scale+interval, sizeof(image));
 
-        for(i = 0; i < 10; ++i){
-            int w = 1024 - 90*i; //PICKED WITH CAREFUL CROSS-VALIDATION!!!!
-            int h = (int)((double)w/src->width * src->height);
-            IplImage *sized = cvCreateImage(cvSize(w,h), src->depth, src->nChannels);
-            cvResize(src, sized, CV_INTER_LINEAR);
-            image im = ipl_to_image(sized);
-            reset_network_size(net, im.h, im.w, im.c);
-            forward_network(net, im.data);
-            free_image(im);
-            image out = get_network_image_layer(net, 5);
+        for(i = 0; i < interval; ++i){
+            double factor = 1./pow(scale, i);
+            double ih =  round(h*factor);
+            double iw =  round(w*factor);
+            int ex_h = round(ih/4.) - 2;
+            int ex_w = round(iw/4.) - 2;
+            ims[i] = features_output_size(net, src, ex_h, ex_w);
+
+            ih =  round(h*factor);
+            iw =  round(w*factor);
+            ex_h = round(ih/8.) - 2;
+            ex_w = round(iw/8.) - 2;
+            ims[i+interval] = features_output_size(net, src, ex_h, ex_w);
+            for(j = i+interval; j < max_scale; j += interval){
+                factor /= 2.;
+                ih =  round(h*factor);
+                iw =  round(w*factor);
+                ex_h = round(ih/8.) - 2;
+                ex_w = round(iw/8.) - 2;
+                ims[j+interval] = features_output_size(net, src, ex_h, ex_w);
+            }
+        }
+        for(i = 0; i < max_scale+interval; ++i){
+            image out = ims[i];
+            //printf("%d, %d\n", out.h, out.w);
             fprintf(fp, "%d, %d, %d\n",out.c, out.h, out.w);
             for(j = 0; j < out.c*out.h*out.w; ++j){
                 if(j != 0)fprintf(fp, ",");
                 fprintf(fp, "%g", out.data[j]);
             }
             fprintf(fp, "\n");
-            out.c = 1;
-            show_image(out, "output");
-            cvWaitKey(10);
-            cvReleaseImage(&sized);
+            free_image(out);
         }
+        free(ims);
         fclose(fp);
+        cvReleaseImage(&src);
         n = n->next;
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    int part = atoi(argv[1]);
+    int total = atoi(argv[2]);
     //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
     //test_blas();
@@ -456,7 +511,7 @@ int main()
     //test_nist();
     //test_full();
     //train_VOC();
-    features_VOC();
+    features_VOC(part, total);
     //test_random_preprocess();
     //test_random_classify();
     //test_parser();
