@@ -497,10 +497,68 @@ void features_VOC(int part, int total)
     }
 }
 
+void features_VOC_image(char *image_file, char *image_dir, char *out_dir)
+{
+    int i,j;
+    network net = parse_network_cfg("cfg/voc_features.cfg");
+    char image_path[1024];
+    sprintf(image_path, "%s%s",image_dir, image_file);
+    char out_path[1024];
+    sprintf(out_path, "%s%s.txt",out_dir, image_file);
+    printf("%s\n", image_file);
+    FILE *fp = fopen(out_path, "w");
+    if(fp == 0) file_error(out_path);
+
+    IplImage* src = 0;
+    if( (src = cvLoadImage(image_path,-1)) == 0 ) file_error(image_path);
+    int w = src->width;
+    int h = src->height;
+    int sbin = 8;
+    int interval = 10;
+    double scale = pow(2., 1./interval);
+    int m = (w<h)?w:h;
+    int max_scale = 1+floor((double)log((double)m/(5.*sbin))/log(scale));
+    image *ims = calloc(max_scale+interval, sizeof(image));
+
+    for(i = 0; i < interval; ++i){
+        double factor = 1./pow(scale, i);
+        double ih =  round(h*factor);
+        double iw =  round(w*factor);
+        int ex_h = round(ih/4.) - 2;
+        int ex_w = round(iw/4.) - 2;
+        ims[i] = features_output_size(net, src, ex_h, ex_w);
+
+        ih =  round(h*factor);
+        iw =  round(w*factor);
+        ex_h = round(ih/8.) - 2;
+        ex_w = round(iw/8.) - 2;
+        ims[i+interval] = features_output_size(net, src, ex_h, ex_w);
+        for(j = i+interval; j < max_scale; j += interval){
+            factor /= 2.;
+            ih =  round(h*factor);
+            iw =  round(w*factor);
+            ex_h = round(ih/8.) - 2;
+            ex_w = round(iw/8.) - 2;
+            ims[j+interval] = features_output_size(net, src, ex_h, ex_w);
+        }
+    }
+    for(i = 0; i < max_scale+interval; ++i){
+        image out = ims[i];
+        fprintf(fp, "%d, %d, %d\n",out.c, out.h, out.w);
+        for(j = 0; j < out.c*out.h*out.w; ++j){
+            if(j != 0)fprintf(fp, ",");
+            fprintf(fp, "%g", out.data[j]);
+        }
+        fprintf(fp, "\n");
+        free_image(out);
+    }
+    free(ims);
+    fclose(fp);
+    cvReleaseImage(&src);
+}
+
 int main(int argc, char *argv[])
 {
-    int part = atoi(argv[1]);
-    int total = atoi(argv[2]);
     //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
     //test_blas();
@@ -511,7 +569,8 @@ int main(int argc, char *argv[])
     //test_nist();
     //test_full();
     //train_VOC();
-    features_VOC(part, total);
+    features_VOC_image(argv[1], argv[2], argv[3]);
+    printf("Success!\n");
     //test_random_preprocess();
     //test_random_classify();
     //test_parser();
