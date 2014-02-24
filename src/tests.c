@@ -456,7 +456,7 @@ image features_output_size(network net, IplImage *src, int outh, int outw)
 void features_VOC(int part, int total)
 {
     int i,j, count = 0;
-    network net = parse_network_cfg("cfg/voc_features.cfg");
+    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
     char *path_file = "images/VOC2012/all_paths.txt";
     char *out_dir = "voc_features/";
     list *paths = get_paths(path_file);
@@ -529,7 +529,7 @@ void features_VOC(int part, int total)
 void features_VOC_image(char *image_file, char *image_dir, char *out_dir)
 {
     int i,j;
-    network net = parse_network_cfg("cfg/imagenet.cfg");
+    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
     char image_path[1024];
     sprintf(image_path, "%s%s",image_dir, image_file);
     char out_path[1024];
