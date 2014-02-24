@@ -21,18 +21,18 @@ network make_network(int n)
     return net;
 }
 
-void print_convolutional_cfg(FILE *fp, convolutional_layer *l)
+void print_convolutional_cfg(FILE *fp, convolutional_layer *l, int first)
 {
     int i;
-    fprintf(fp, "[convolutional]\n"
-                "height=%d\n"
-                "width=%d\n"
-                "channels=%d\n"
-                "filters=%d\n"
+    fprintf(fp, "[convolutional]\n");
+    if(first) fprintf(fp,   "height=%d\n"
+                            "width=%d\n"
+                            "channels=%d\n",
+                            l->h, l->w, l->c);
+    fprintf(fp, "filters=%d\n"
                 "size=%d\n"
                 "stride=%d\n"
                 "activation=%s\n",
-                l->h, l->w, l->c,
                 l->n, l->size, l->stride,
                 get_activation_string(l->activation));
     fprintf(fp, "data=");
@@ -40,14 +40,14 @@ void print_convolutional_cfg(FILE *fp, convolutional_layer *l)
     for(i = 0; i < l->n*l->c*l->size*l->size; ++i) fprintf(fp, "%g,", l->filters[i]);
     fprintf(fp, "\n\n");
 }
-void print_connected_cfg(FILE *fp, connected_layer *l)
+void print_connected_cfg(FILE *fp, connected_layer *l, int first)
 {
     int i;
-    fprintf(fp, "[connected]\n"
-                "input=%d\n"
-                "output=%d\n"
+    fprintf(fp, "[connected]\n");
+    if(first) fprintf(fp, "input=%d\n", l->inputs);
+    fprintf(fp, "output=%d\n"
                 "activation=%s\n",
-                l->inputs, l->outputs,
+                l->outputs,
                 get_activation_string(l->activation));
     fprintf(fp, "data=");
     for(i = 0; i < l->outputs; ++i) fprintf(fp, "%g,", l->biases[i]);
@@ -55,22 +55,21 @@ void print_connected_cfg(FILE *fp, connected_layer *l)
     fprintf(fp, "\n\n");
 }
 
-void print_maxpool_cfg(FILE *fp, maxpool_layer *l)
+void print_maxpool_cfg(FILE *fp, maxpool_layer *l, int first)
 {
-    fprintf(fp, "[maxpool]\n"
-                "height=%d\n"
-                "width=%d\n"
-                "channels=%d\n"
-                "stride=%d\n\n",
-                l->h, l->w, l->c,
-                l->stride);
+    fprintf(fp, "[maxpool]\n");
+    if(first) fprintf(fp,   "height=%d\n"
+                            "width=%d\n"
+                            "channels=%d\n",
+                            l->h, l->w, l->c);
+    fprintf(fp, "stride=%d\n\n", l->stride);
 }
 
-void print_softmax_cfg(FILE *fp, softmax_layer *l)
+void print_softmax_cfg(FILE *fp, softmax_layer *l, int first)
 {
-    fprintf(fp, "[softmax]\n"
-                "input=%d\n\n",
-                l->inputs);
+    fprintf(fp, "[softmax]\n");
+    if(first) fprintf(fp, "input=%d\n", l->inputs);
+    fprintf(fp, "\n");
 }
 
 void save_network(network net, char *filename)
@@ -81,13 +80,13 @@ void save_network(network net, char *filename)
     for(i = 0; i < net.n; ++i)
     {
         if(net.types[i] == CONVOLUTIONAL)
-            print_convolutional_cfg(fp, (convolutional_layer *)net.layers[i]);
+            print_convolutional_cfg(fp, (convolutional_layer *)net.layers[i], i==0);
         else if(net.types[i] == CONNECTED)
-            print_connected_cfg(fp, (connected_layer *)net.layers[i]);
+            print_connected_cfg(fp, (connected_layer *)net.layers[i], i==0);
         else if(net.types[i] == MAXPOOL)
-            print_maxpool_cfg(fp, (maxpool_layer *)net.layers[i]);
+            print_maxpool_cfg(fp, (maxpool_layer *)net.layers[i], i==0);
         else if(net.types[i] == SOFTMAX)
-            print_softmax_cfg(fp, (softmax_layer *)net.layers[i]);
+            print_softmax_cfg(fp, (softmax_layer *)net.layers[i], i==0);
     }
     fclose(fp);
 }

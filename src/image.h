@@ -10,6 +10,7 @@ typedef struct {
     float *data;
 } image;
 
+image image_distance(image a, image b);
 void scale_image(image m, float s);
 void add_scalar_image(image m, float s);
 void normalize_image(image p);

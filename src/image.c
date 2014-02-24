@@ -4,6 +4,21 @@
 
 int windows = 0;
 
+image image_distance(image a, image b)
+{
+    int i,j;
+    image dist = make_image(a.h, a.w, 1);
+    for(i = 0; i < a.c; ++i){
+        for(j = 0; j < a.h*a.w; ++j){
+            dist.data[j] += pow(a.data[i*a.h*a.w+j]-b.data[i*a.h*a.w+j],2);
+        }
+    }
+    for(j = 0; j < a.h*a.w; ++j){
+        dist.data[j] = sqrt(dist.data[j]);
+    }
+    return dist;
+}
+
 void subtract_image(image a, image b)
 {
     int i;
@@ -370,9 +385,11 @@ image load_image(char *filename, int h, int w)
         printf("Cannot load file image %s\n", filename);
         exit(0);
     }
-    IplImage *resized = resizeImage(src, h, w, 1);
-    cvReleaseImage(&src);
-    src = resized;
+    if(h && w ){
+        IplImage *resized = resizeImage(src, h, w, 1);
+        cvReleaseImage(&src);
+        src = resized;
+    }
     image out = ipl_to_image(src);
     cvReleaseImage(&src);
     return out;
