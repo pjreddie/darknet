@@ -10,10 +10,11 @@
 #include "maxpool_layer.h"
 #include "softmax_layer.h"
 
-network make_network(int n)
+network make_network(int n, int batch)
 {
     network net;
     net.n = n;
+    net.batch = batch;
     net.layers = calloc(net.n, sizeof(void *));
     net.types = calloc(net.n, sizeof(LAYER_TYPE));
     net.outputs = 0;
@@ -25,10 +26,11 @@ void print_convolutional_cfg(FILE *fp, convolutional_layer *l, int first)
 {
     int i;
     fprintf(fp, "[convolutional]\n");
-    if(first) fprintf(fp,   "height=%d\n"
+    if(first) fprintf(fp,   "batch=%d\n"
+                            "height=%d\n"
                             "width=%d\n"
                             "channels=%d\n",
-                            l->h, l->w, l->c);
+                            l->batch,l->h, l->w, l->c);
     fprintf(fp, "filters=%d\n"
                 "size=%d\n"
                 "stride=%d\n"
@@ -44,7 +46,7 @@ void print_connected_cfg(FILE *fp, connected_layer *l, int first)
 {
     int i;
     fprintf(fp, "[connected]\n");
-    if(first) fprintf(fp, "input=%d\n", l->inputs);
+    if(first) fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
     fprintf(fp, "output=%d\n"
                 "activation=%s\n",
                 l->outputs,
@@ -58,17 +60,18 @@ void print_connected_cfg(FILE *fp, connected_layer *l, int first)
 void print_maxpool_cfg(FILE *fp, maxpool_layer *l, int first)
 {
     fprintf(fp, "[maxpool]\n");
-    if(first) fprintf(fp,   "height=%d\n"
+    if(first) fprintf(fp,   "batch=%d\n"
+                            "height=%d\n"
                             "width=%d\n"
                             "channels=%d\n",
-                            l->h, l->w, l->c);
+                            l->batch,l->h, l->w, l->c);
     fprintf(fp, "stride=%d\n\n", l->stride);
 }
 
 void print_softmax_cfg(FILE *fp, softmax_layer *l, int first)
 {
     fprintf(fp, "[softmax]\n");
-    if(first) fprintf(fp, "input=%d\n", l->inputs);
+    if(first) fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
     fprintf(fp, "\n");
 }
 
@@ -191,11 +194,11 @@ float calculate_error_network(network net, float *truth)
     float *out = get_network_output(net);
     int i, k = get_network_output_size(net);
     for(i = 0; i < k; ++i){
-        printf("%f, ", out[i]);
+        //printf("%f, ", out[i]);
         delta[i] = truth[i] - out[i];
         sum += delta[i]*delta[i];
     }
-    printf("\n");
+    //printf("\n");
     return sum;
 }
 
@@ -258,19 +261,26 @@ float train_network_sgd(network net, data d, int n, float step, float momentum,f
     int i;
     float error = 0;
     int correct = 0;
+    int pos = 0;
     for(i = 0; i < n; ++i){
         int index = rand()%d.X.rows;
-        error += train_network_datum(net, d.X.vals[index], d.y.vals[index], step, momentum, decay);
+        float err = train_network_datum(net, d.X.vals[index], d.y.vals[index], step, momentum, decay);
         float *y = d.y.vals[index];
         int class = get_predicted_class_network(net);
         correct += (y[class]?1:0);
+        if(y[1]){
+            error += err;
+            ++pos;
+        }
+        
+
         //printf("%d %f %f\n", i,net.output[0], d.y.vals[index][0]);
         //if((i+1)%10 == 0){
         //    printf("%d: %f\n", (i+1), (float)correct/(i+1));
         //}
     }
-    printf("Accuracy: %f\n",(float) correct/n);
-    return error/n;
+    //printf("Accuracy: %f\n",(float) correct/n);
+    return error/pos;
 }
 float train_network_batch(network net, data d, int n, float step, float momentum,float decay)
 {
@@ -304,7 +314,7 @@ void train_network(network net, data d, float step, float momentum, float decay)
     }
     visualize_network(net);
     cvWaitKey(100);
-    printf("Accuracy: %f\n", (float)correct/d.X.rows);
+    fprintf(stderr, "Accuracy: %f\n", (float)correct/d.X.rows);
 }
 
 int get_network_output_size_layer(network net, int i)
@@ -330,7 +340,8 @@ int get_network_output_size_layer(network net, int i)
     return 0;
 }
 
-int reset_network_size(network net, int h, int w, int c)
+/*
+int resize_network(network net, int h, int w, int c)
 {
     int i;
     for (i = 0; i < net.n; ++i){
@@ -353,6 +364,34 @@ int reset_network_size(network net, int h, int w, int c)
             h = output.h;
             w = output.w;
             c = output.c;
+        }
+    }
+    return 0;
+}
+*/
+
+int resize_network(network net, int h, int w, int c)
+{
+    int i;
+    for (i = 0; i < net.n; ++i){
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer *layer = (convolutional_layer *)net.layers[i];
+            resize_convolutional_layer(layer, h, w, c);
+            image output = get_convolutional_image(*layer);
+            h = output.h;
+            w = output.w;
+            c = output.c;
+        }
+        else if(net.types[i] == MAXPOOL){
+            maxpool_layer *layer = (maxpool_layer *)net.layers[i];
+            resize_maxpool_layer(layer, h, w, c);
+            image output = get_maxpool_image(*layer);
+            h = output.h;
+            w = output.w;
+            c = output.c;
+        }
+        else{
+            error("Cannot resize this type of layer");
         }
     }
     return 0;

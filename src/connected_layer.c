@@ -7,16 +7,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activation)
+connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation)
 {
     fprintf(stderr, "Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
     int i;
     connected_layer *layer = calloc(1, sizeof(connected_layer));
     layer->inputs = inputs;
     layer->outputs = outputs;
+    layer->batch=batch;
 
-    layer->output = calloc(outputs, sizeof(float*));
-    layer->delta = calloc(outputs, sizeof(float*));
+    layer->output = calloc(batch*outputs, sizeof(float*));
+    layer->delta = calloc(batch*outputs, sizeof(float*));
 
     layer->weight_updates = calloc(inputs*outputs, sizeof(float));
     layer->weight_adapt = calloc(inputs*outputs, sizeof(float));
@@ -78,14 +79,14 @@ void forward_connected_layer(connected_layer layer, float *input)
 {
     int i;
     memcpy(layer.output, layer.biases, layer.outputs*sizeof(float));
-    int m = 1;
+    int m = layer.batch;
     int k = layer.inputs;
     int n = layer.outputs;
     float *a = input;
     float *b = layer.weights;
     float *c = layer.output;
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
-    for(i = 0; i < layer.outputs; ++i){
+    for(i = 0; i < layer.outputs*layer.batch; ++i){
         layer.output[i] = activate(layer.output[i], layer.activation);
     }
     //for(i = 0; i < layer.outputs; ++i) if(i%(layer.outputs/10+1)==0) printf("%f, ", layer.output[i]); printf("\n");
@@ -94,12 +95,12 @@ void forward_connected_layer(connected_layer layer, float *input)
 void learn_connected_layer(connected_layer layer, float *input)
 {
     int i;
-    for(i = 0; i < layer.outputs; ++i){
+    for(i = 0; i < layer.outputs*layer.batch; ++i){
         layer.delta[i] *= gradient(layer.output[i], layer.activation);
-        layer.bias_updates[i] += layer.delta[i];
+        layer.bias_updates[i%layer.batch] += layer.delta[i]/layer.batch;
     }
     int m = layer.inputs;
-    int k = 1;
+    int k = layer.batch;
     int n = layer.outputs;
     float *a = input;
     float *b = layer.delta;
@@ -113,7 +114,7 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
 
     int m = layer.inputs;
     int k = layer.outputs;
-    int n = 1;
+    int n = layer.batch;
 
     float *a = layer.weights;
     float *b = layer.delta;

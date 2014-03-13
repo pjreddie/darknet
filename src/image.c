@@ -136,7 +136,7 @@ void show_image(image p, char *name)
         }
     }
     free_image(copy);
-    if(disp->height < 500 || disp->width < 500){
+    if(disp->height < 500 || disp->width < 500 || disp->height > 1000){
         int w = 1500;
         int h = w*p.h/p.w;
         if(h > 1000){

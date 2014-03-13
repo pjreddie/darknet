@@ -119,6 +119,30 @@ data load_categorical_data_csv(char *filename, int target, int k)
     return d;
 }
 
+data load_cifar10_data(char *filename)
+{
+    data d;
+    d.shallow = 0;
+    unsigned long i,j;
+    matrix X = make_matrix(10000, 3072);
+    matrix y = make_matrix(10000, 10);
+    d.X = X;
+    d.y = y;
+
+    FILE *fp = fopen(filename, "rb");
+    for(i = 0; i < 10000; ++i){
+        unsigned char bytes[3073];
+        fread(bytes, 1, 3073, fp);
+        int class = bytes[0];
+        y.vals[i][class] = 1;
+        for(j = 0; j < X.cols; ++j){
+            X.vals[i][j] = (double)bytes[j+1];
+        }
+    }
+    fclose(fp);
+    return d;
+}
+
 void randomize_data(data d)
 {
     int i;

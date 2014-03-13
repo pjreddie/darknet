@@ -14,13 +14,14 @@ typedef enum {
 
 typedef struct {
     int n;
+    int batch;
     void **layers;
     LAYER_TYPE *types;
     int outputs;
     float *output;
 } network;
 
-network make_network(int n);
+network make_network(int n, int batch);
 void forward_network(network net, float *input);
 float backward_network(network net, float *input, float *truth);
 void update_network(network net, float step, float momentum, float decay);
@@ -41,7 +42,7 @@ int get_predicted_class_network(network net);
 void print_network(network net);
 void visualize_network(network net);
 void save_network(network net, char *filename);
-int reset_network_size(network net, int h, int w, int c);
+int resize_network(network net, int h, int w, int c);
 
 #endif
 

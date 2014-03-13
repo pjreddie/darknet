@@ -4,9 +4,9 @@ UNAME = $(shell uname)
 ifeq ($(UNAME), Darwin)
 COMMON += -isystem /usr/local/Cellar/opencv/2.4.6.1/include/opencv -isystem /usr/local/Cellar/opencv/2.4.6.1/include
 else
-COMMON += -march=native
+COMMON += -march=native -flto
 endif
-CFLAGS= $(COMMON) -Ofast -flto
+CFLAGS= $(COMMON) -Ofast
 #CFLAGS= $(COMMON) -O0 -g 
 LDFLAGS=`pkg-config --libs opencv` -lm
 VPATH=./src/

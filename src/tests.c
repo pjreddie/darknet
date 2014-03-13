@@ -77,7 +77,7 @@ void verify_convolutional_layer()
     int size = 3;
     float eps = .00000001;
     image test = make_random_image(5,5, 1);
-    convolutional_layer layer = *make_convolutional_layer(test.h,test.w,test.c, n, size, stride, RELU);
+    convolutional_layer layer = *make_convolutional_layer(1,test.h,test.w,test.c, n, size, stride, RELU);
     image out = get_convolutional_image(layer);
     float **jacobian = calloc(test.h*test.w*test.c, sizeof(float));
     
@@ -200,7 +200,7 @@ void train_full()
     while(1){
         i += 1000;
         data train = load_data_image_pathfile_random("images/assira/train.list", 1000, labels, 2, 256, 256);
-        image im = float_to_image(256, 256, 3,train.X.vals[0]);
+        //image im = float_to_image(256, 256, 3,train.X.vals[0]);
         //visualize_network(net);
         //cvWaitKey(100);
         //show_image(im, "input");
@@ -247,30 +247,75 @@ void test_full()
     fclose(fp);
 }
 
+void test_cifar10()
+{
+    data test = load_cifar10_data("images/cifar10/test_batch.bin");
+    scale_data_rows(test, 1./255);
+    network net = parse_network_cfg("cfg/cifar10.cfg");
+    int count = 0;
+    float lr = .000005;
+    float momentum = .99;
+    float decay = 0.001;
+    decay = 0;
+    int batch = 10000;
+    while(++count <= 10000){
+        char buff[256];
+        sprintf(buff, "images/cifar10/data_batch_%d.bin", rand()%5+1);
+        data train = load_cifar10_data(buff);
+        scale_data_rows(train, 1./255);
+        train_network_sgd(net, train, batch, lr, momentum, decay);
+        //printf("%5f %5f\n",(double)count*batch/train.X.rows, loss);
+        
+        float test_acc = network_accuracy(net, test);
+        printf("%5f %5f\n",(double)count*batch/train.X.rows/5, 1-test_acc);
+        free_data(train);
+    }
+
+}
+
+void test_vince()
+{
+    network net = parse_network_cfg("cfg/vince.cfg");
+    data train = load_categorical_data_csv("images/vince.txt", 144, 2);
+    normalize_data_rows(train);
+
+    int count = 0;
+    float lr = .00005;
+    float momentum = .9;
+    float decay = 0.0001;
+    decay = 0;
+    int batch = 10000;
+    while(++count <= 10000){
+        float loss = train_network_sgd(net, train, batch, lr, momentum, decay);
+        printf("%5f %5f\n",(double)count*batch/train.X.rows, loss);
+    }
+}
+
 void test_nist()
 {
     srand(444444);
     srand(888888);
-    network net = parse_network_cfg("nist.cfg");
+    network net = parse_network_cfg("cfg/nist_basic.cfg");
     data train = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("mnist/mnist_test.csv",0,10);
     normalize_data_rows(train);
     normalize_data_rows(test);
     //randomize_data(train);
     int count = 0;
-    float lr = .0005;
+    float lr = .00005;
     float momentum = .9;
-    float decay = 0.001;
-    clock_t start = clock(), end;
-    while(++count <= 100){
-        //visualize_network(net);
-        float loss = train_network_sgd(net, train, 1000, lr, momentum, decay);
-        printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*100, loss, lr, momentum, decay);
-        end = clock();
-        printf("Time: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
-        start=end;
-        //cvWaitKey(100);
-        //lr /= 2; 
+    float decay = 0.0001;
+    decay = 0;
+    //clock_t start = clock(), end;
+    int batch = 10000;
+    while(++count <= 10000){
+        float loss = train_network_sgd(net, train, batch, lr, momentum, decay);
+        printf("%5f %5f\n",(double)count*batch/train.X.rows, loss);
+        //printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
+        //end = clock();
+        //printf("Time: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
+        //start=end;
+        /*
         if(count%5 == 0){
             float train_acc = network_accuracy(net, train);
             fprintf(stderr, "\nTRAIN: %f\n", train_acc);
@@ -279,6 +324,7 @@ void test_nist()
             printf("%d, %f, %f\n", count, train_acc, test_acc);
             //lr *= .5;
         }
+        */
     }
 }
 
@@ -439,91 +485,35 @@ image features_output_size(network net, IplImage *src, int outh, int outw)
 {
     int h = voc_size(outh);
     int w = voc_size(outw);
-    printf("%d %d\n", h, w);
+    fprintf(stderr, "%d %d\n", h, w);
 
     IplImage *sized = cvCreateImage(cvSize(w,h), src->depth, src->nChannels);
     cvResize(src, sized, CV_INTER_LINEAR);
     image im = ipl_to_image(sized);
-    reset_network_size(net, im.h, im.w, im.c);
+    resize_network(net, im.h, im.w, im.c);
     forward_network(net, im.data);
     image out = get_network_image_layer(net, 6);
-    //printf("%d %d\n%d %d\n", outh, out.h, outw, out.w);
     free_image(im);
     cvReleaseImage(&sized);
     return copy_image(out);
 }
 
-void features_VOC(int part, int total)
+void features_VOC_image_size(char *image_path, int h, int w)
 {
-    int i,j, count = 0;
+    int j;
     network net = parse_network_cfg("cfg/voc_imagenet.cfg");
-    char *path_file = "images/VOC2012/all_paths.txt";
-    char *out_dir = "voc_features/";
-    list *paths = get_paths(path_file);
-    node *n = paths->front;
-    int size = paths->size;
-    for(count = 0; count < part*size/total; ++count) n = n->next;
-    while(n && count++ < (part+1)*size/total){
-        char *path = (char *)n->val;
-        char buff[1024];
-        sprintf(buff, "%s%s.txt",out_dir, path);
-        printf("%s\n", path);
-        FILE *fp = fopen(buff, "w");
-        if(fp == 0) file_error(buff);
+    fprintf(stderr, "%s\n", image_path);
 
-        IplImage* src = 0;
-        if( (src = cvLoadImage(path,-1)) == 0 )
-        {
-            printf("Cannot load file image %s\n", path);
-            exit(0);
-        }
-        int w = src->width;
-        int h = src->height;
-        int sbin = 8;
-        int interval = 10;
-        double scale = pow(2., 1./interval);
-        int m = (w<h)?w:h;
-        int max_scale = 1+floor((double)log((double)m/(5.*sbin))/log(scale));
-        image *ims = calloc(max_scale+interval, sizeof(image));
-
-        for(i = 0; i < interval; ++i){
-            double factor = 1./pow(scale, i);
-            double ih =  round(h*factor);
-            double iw =  round(w*factor);
-            int ex_h = round(ih/4.) - 2;
-            int ex_w = round(iw/4.) - 2;
-            ims[i] = features_output_size(net, src, ex_h, ex_w);
-
-            ih =  round(h*factor);
-            iw =  round(w*factor);
-            ex_h = round(ih/8.) - 2;
-            ex_w = round(iw/8.) - 2;
-            ims[i+interval] = features_output_size(net, src, ex_h, ex_w);
-            for(j = i+interval; j < max_scale; j += interval){
-                factor /= 2.;
-                ih =  round(h*factor);
-                iw =  round(w*factor);
-                ex_h = round(ih/8.) - 2;
-                ex_w = round(iw/8.) - 2;
-                ims[j+interval] = features_output_size(net, src, ex_h, ex_w);
-            }
-        }
-        for(i = 0; i < max_scale+interval; ++i){
-            image out = ims[i];
-            //printf("%d, %d\n", out.h, out.w);
-            fprintf(fp, "%d, %d, %d\n",out.c, out.h, out.w);
-            for(j = 0; j < out.c*out.h*out.w; ++j){
-                if(j != 0)fprintf(fp, ",");
-                fprintf(fp, "%g", out.data[j]);
-            }
-            fprintf(fp, "\n");
-            free_image(out);
-        }
-        free(ims);
-        fclose(fp);
-        cvReleaseImage(&src);
-        n = n->next;
+    IplImage* src = 0;
+    if( (src = cvLoadImage(image_path,-1)) == 0 ) file_error(image_path);
+    image out = features_output_size(net, src, h, w);
+    for(j = 0; j < out.c*out.h*out.w; ++j){
+        if(j != 0) printf(",");
+        printf("%g", out.data[j]);
     }
+    printf("\n");
+    free_image(out);
+    cvReleaseImage(&src);
 }
 
 void features_VOC_image(char *image_file, char *image_dir, char *out_dir)
@@ -531,9 +521,9 @@ void features_VOC_image(char *image_file, char *image_dir, char *out_dir)
     int i,j;
     network net = parse_network_cfg("cfg/voc_imagenet.cfg");
     char image_path[1024];
-    sprintf(image_path, "%s%s",image_dir, image_file);
+    sprintf(image_path, "%s/%s",image_dir, image_file);
     char out_path[1024];
-    sprintf(out_path, "%s%s.txt",out_dir, image_file);
+    sprintf(out_path, "%s/%s.txt",out_dir, image_file);
     printf("%s\n", image_file);
     FILE *fp = fopen(out_path, "w");
     if(fp == 0) file_error(out_path);
@@ -543,10 +533,11 @@ void features_VOC_image(char *image_file, char *image_dir, char *out_dir)
     int w = src->width;
     int h = src->height;
     int sbin = 8;
-    int interval = 10;
+    int interval = 4;
     double scale = pow(2., 1./interval);
     int m = (w<h)?w:h;
     int max_scale = 1+floor((double)log((double)m/(5.*sbin))/log(scale));
+    if(max_scale < interval) error("max_scale must be >= interval");
     image *ims = calloc(max_scale+interval, sizeof(image));
 
     for(i = 0; i < interval; ++i){
@@ -642,10 +633,13 @@ int main(int argc, char *argv[])
     //test_split();
     //test_ensemble();
     //test_nist();
+    //test_cifar10();
+    //test_vince();
     //test_full();
     //train_VOC();
-    features_VOC_image(argv[1], argv[2], argv[3]);
-    printf("Success!\n");
+    //features_VOC_image(argv[1], argv[2], argv[3]);
+    features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
+    fprintf(stderr, "Success!\n");
     //test_random_preprocess();
     //test_random_classify();
     //test_parser();

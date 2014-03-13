@@ -52,6 +52,7 @@ convolutional_layer *parse_convolutional(list *options, network net, int count)
         h = option_find_int(options, "height",1);
         w = option_find_int(options, "width",1);
         c = option_find_int(options, "channels",1);
+        net.batch = option_find_int(options, "batch",1);
     }else{
         image m =  get_network_image_layer(net, count-1);
         h = m.h;
@@ -59,7 +60,7 @@ convolutional_layer *parse_convolutional(list *options, network net, int count)
         c = m.c;
         if(h == 0) error("Layer before convolutional layer must output image.");
     }
-    convolutional_layer *layer = make_convolutional_layer(h,w,c,n,size,stride, activation);
+    convolutional_layer *layer = make_convolutional_layer(net.batch,h,w,c,n,size,stride, activation);
     char *data = option_find_str(options, "data", 0);
     if(data){
         char *curr = data;
@@ -90,10 +91,11 @@ connected_layer *parse_connected(list *options, network net, int count)
     ACTIVATION activation = get_activation(activation_s);
     if(count == 0){
         input = option_find_int(options, "input",1);
+        net.batch = option_find_int(options, "batch",1);
     }else{
         input =  get_network_output_size_layer(net, count-1);
     }
-    connected_layer *layer = make_connected_layer(input, output, activation);
+    connected_layer *layer = make_connected_layer(net.batch, input, output, activation);
     char *data = option_find_str(options, "data", 0);
     if(data){
         char *curr = data;
@@ -120,10 +122,11 @@ softmax_layer *parse_softmax(list *options, network net, int count)
     int input;
     if(count == 0){
         input = option_find_int(options, "input",1);
+        net.batch = option_find_int(options, "batch",1);
     }else{
         input =  get_network_output_size_layer(net, count-1);
     }
-    softmax_layer *layer = make_softmax_layer(input);
+    softmax_layer *layer = make_softmax_layer(net.batch, input);
     option_unused(options);
     return layer;
 }
@@ -136,6 +139,7 @@ maxpool_layer *parse_maxpool(list *options, network net, int count)
         h = option_find_int(options, "height",1);
         w = option_find_int(options, "width",1);
         c = option_find_int(options, "channels",1);
+        net.batch = option_find_int(options, "batch",1);
     }else{
         image m =  get_network_image_layer(net, count-1);
         h = m.h;
@@ -143,7 +147,7 @@ maxpool_layer *parse_maxpool(list *options, network net, int count)
         c = m.c;
         if(h == 0) error("Layer before convolutional layer must output image.");
     }
-    maxpool_layer *layer = make_maxpool_layer(h,w,c,stride);
+    maxpool_layer *layer = make_maxpool_layer(net.batch,h,w,c,stride);
     option_unused(options);
     return layer;
 }
@@ -151,7 +155,7 @@ maxpool_layer *parse_maxpool(list *options, network net, int count)
 network parse_network_cfg(char *filename)
 {
     list *sections = read_cfg(filename);
-    network net = make_network(sections->size);
+    network net = make_network(sections->size, 0);
 
     node *n = sections->front;
     int count = 0;
@@ -162,18 +166,22 @@ network parse_network_cfg(char *filename)
             convolutional_layer *layer = parse_convolutional(options, net, count);
             net.types[count] = CONVOLUTIONAL;
             net.layers[count] = layer;
+            net.batch = layer->batch;
         }else if(is_connected(s)){
             connected_layer *layer = parse_connected(options, net, count);
             net.types[count] = CONNECTED;
             net.layers[count] = layer;
+            net.batch = layer->batch;
         }else if(is_softmax(s)){
             softmax_layer *layer = parse_softmax(options, net, count);
             net.types[count] = SOFTMAX;
             net.layers[count] = layer;
+            net.batch = layer->batch;
         }else if(is_maxpool(s)){
             maxpool_layer *layer = parse_maxpool(options, net, count);
             net.types[count] = MAXPOOL;
             net.layers[count] = layer;
+            net.batch = layer->batch;
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
