@@ -285,52 +285,47 @@ image get_convolutional_filter(convolutional_layer layer, int i)
     return float_to_image(h,w,c,layer.filters+i*h*w*c);
 }
 
-void visualize_convolutional_layer(convolutional_layer layer, char *window)
+image *weighted_sum_filters(convolutional_layer layer, image *prev_filters)
 {
-    int color = 1;
-    int border = 1;
-    int h,w,c;
-    int size = layer.size;
-    h = size;
-    w = (size + border) * layer.n - border;
-    c = layer.c;
-    if(c != 3 || !color){
-        h = (h+border)*c - border;
-        c = 1;
+    image *filters = calloc(layer.n, sizeof(image));
+    int i,j,k,c;
+    if(!prev_filters){
+        for(i = 0; i < layer.n; ++i){
+            filters[i] = copy_image(get_convolutional_filter(layer, i));
+        }
     }
-
-    image filters = make_image(h,w,c);
-    int i,j;
-    for(i = 0; i < layer.n; ++i){
-        int w_offset = i*(size+border);
-        image k = get_convolutional_filter(layer, i);
-        //printf("%f ** ", layer.biases[i]);
-        //print_image(k);
-        image copy = copy_image(k);
-        normalize_image(copy);
-        for(j = 0; j < k.c; ++j){
-            //set_pixel(copy,0,0,j,layer.biases[i]);
-        }
-        if(c == 3 && color){
-            embed_image(copy, filters, 0, w_offset);
-        }
-        else{
-            for(j = 0; j < k.c; ++j){
-                int h_offset = j*(size+border);
-                image layer = get_image_layer(k, j);
-                embed_image(layer, filters, h_offset, w_offset);
-                free_image(layer);
+    else{
+        image base = prev_filters[0];
+        for(i = 0; i < layer.n; ++i){
+            image filter = get_convolutional_filter(layer, i);
+            filters[i] = make_image(base.h, base.w, base.c);
+            for(j = 0; j < layer.size; ++j){
+                for(k = 0; k < layer.size; ++k){
+                    for(c = 0; c < layer.c; ++c){
+                        float weight = get_pixel(filter, j, k, c);
+                        image prev_filter = copy_image(prev_filters[c]);
+                        scale_image(prev_filter, weight);
+                        add_into_image(prev_filter, filters[i], 0,0);
+                        free_image(prev_filter);
+                    }
+                }
             }
         }
-        free_image(copy);
     }
+    return filters;
+}
+
+image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters)
+{
+    image *single_filters = weighted_sum_filters(layer, 0);
+    show_images(single_filters, layer.n, window);
+
     image delta = get_convolutional_delta(layer);
     image dc = collapse_image_layers(delta, 1);
     char buff[256];
     sprintf(buff, "%s: Delta", window);
-    show_image(dc, buff);
+    //show_image(dc, buff);
     free_image(dc);
-    show_image(filters, window);
-    free_image(filters);
+    return single_filters;
 }
 

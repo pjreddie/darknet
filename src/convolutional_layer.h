@@ -30,7 +30,7 @@ void resize_convolutional_layer(convolutional_layer *layer, int h, int w, int c)
 void forward_convolutional_layer(const convolutional_layer layer, float *in);
 void learn_convolutional_layer(convolutional_layer layer);
 void update_convolutional_layer(convolutional_layer layer, float step, float momentum, float decay);
-void visualize_convolutional_layer(convolutional_layer layer, char *window);
+image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters);
 
 void backward_convolutional_layer(convolutional_layer layer, float *delta);
 

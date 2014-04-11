@@ -428,13 +428,14 @@ image get_network_image(network net)
 
 void visualize_network(network net)
 {
+    image *prev = 0;
     int i;
     char buff[256];
     for(i = 0; i < net.n; ++i){
         sprintf(buff, "Layer %d", i);
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            visualize_convolutional_layer(layer, buff);
+            prev = visualize_convolutional_layer(layer, buff, prev);
         }
     } 
 }
@@ -505,4 +506,5 @@ float network_accuracy(network net, data d)
     free_matrix(guess);
     return acc;
 }
+
 

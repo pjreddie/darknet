@@ -21,9 +21,13 @@ void rotate_image(image m);
 void subtract_image(image a, image b);
 float avg_image_layer(image m, int l);
 void embed_image(image source, image dest, int h, int w);
+void add_into_image(image src, image dest, int h, int w);
 image collapse_image_layers(image source, int border);
+image get_sub_image(image m, int h, int w, int dh, int dw);
 
 void show_image(image p, char *name);
+void save_image(image p, char *name);
+void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);
 void show_image_collapsed(image p, char *name);
 void print_image(image m);
@@ -39,6 +43,7 @@ image ipl_to_image(IplImage* src);
 
 float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);
+void add_pixel(image m, int x, int y, int c, float val);
 void set_pixel(image m, int x, int y, int c, float val);
 
 image get_image_layer(image m, int l);

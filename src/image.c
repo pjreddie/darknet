@@ -113,6 +113,7 @@ image copy_image(image p)
     return copy;
 }
 
+
 void show_image(image p, char *name)
 {
     int i,j,k;
@@ -149,6 +150,30 @@ void show_image(image p, char *name)
         cvReleaseImage(&buffer);
     }
     cvShowImage(buff, disp);
+    cvReleaseImage(&disp);
+}
+
+void save_image(image p, char *name)
+{
+    int i,j,k;
+    image copy = copy_image(p);
+    normalize_image(copy);
+
+    char buff[256];
+    //sprintf(buff, "%s (%d)", name, windows);
+    sprintf(buff, "%s.png", name);
+
+    IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
+    int step = disp->widthStep;
+    for(i = 0; i < p.h; ++i){
+        for(j = 0; j < p.w; ++j){
+            for(k= 0; k < p.c; ++k){
+                disp->imageData[i*step + j*p.c + k] = (unsigned char)(get_pixel(copy,i,j,k)*255);
+            }
+        }
+    }
+    free_image(copy);
+    cvSaveImage(buff, disp,0);
     cvReleaseImage(&disp);
 }
 
@@ -225,6 +250,18 @@ image make_random_image(int h, int w, int c)
         //out.data[i] = rand()%3;
     }
     return out;
+}
+
+void add_into_image(image src, image dest, int h, int w)
+{
+    int i,j,k;
+    for(k = 0; k < src.c; ++k){
+        for(i = 0; i < src.h; ++i){
+            for(j = 0; j < src.w; ++j){
+                add_pixel(dest, h+i, w+j, k, get_pixel(src, i, j, k));
+            }
+        }
+    }
 }
 
 void add_scalar_image(image m, float s)
@@ -401,6 +438,20 @@ image get_image_layer(image m, int l)
     int i;
     for(i = 0; i < m.h*m.w; ++i){
         out.data[i] = m.data[i+l*m.h*m.w];
+    }
+    return out;
+}
+image get_sub_image(image m, int h, int w, int dh, int dw)
+{
+    image out = make_image(dh, dw, m.c);
+    int i,j,k;
+    for(k = 0; k < out.c; ++k){
+        for(i = 0; i < dh; ++i){
+            for(j = 0; j < dw; ++j){
+                float val = get_pixel(m, h+i, w+j, k);
+                set_pixel(out, i, j, k, val);
+            }
+        }
     }
     return out;
 }
@@ -593,6 +644,49 @@ void print_image(image m)
     int i;
     for(i =0 ; i < m.h*m.w*m.c; ++i) printf("%lf, ", m.data[i]);
     printf("\n");
+}
+
+image collapse_images(image *ims, int n)
+{
+    int color = 1;
+    int border = 1;
+    int h,w,c;
+    int size = ims[0].h;
+    h = size;
+    w = (size + border) * n - border;
+    c = ims[0].c;
+    if(c != 3 || !color){
+        h = (h+border)*c - border;
+        c = 1;
+    }
+
+    image filters = make_image(h,w,c);
+    int i,j;
+    for(i = 0; i < n; ++i){
+        int w_offset = i*(size+border);
+        image copy = copy_image(ims[i]);
+        normalize_image(copy);
+        if(c == 3 && color){
+            embed_image(copy, filters, 0, w_offset);
+        }
+        else{
+            for(j = 0; j < copy.c; ++j){
+                int h_offset = j*(size+border);
+                image layer = get_image_layer(copy, j);
+                embed_image(layer, filters, h_offset, w_offset);
+                free_image(layer);
+            }
+        }
+        free_image(copy);
+    }
+    return filters;
+} 
+
+void show_images(image *ims, int n, char *window)
+{
+    image m = collapse_images(ims, n);
+    show_image(m, window);
+    free_image(m);
 }
 
 void free_image(image m)

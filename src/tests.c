@@ -220,6 +220,14 @@ void train_full()
         //lr *= .99;
     }
 }
+
+void test_visualize()
+{
+    network net = parse_network_cfg("cfg/imagenet.cfg");
+    srand(2222222);
+    visualize_network(net);
+    cvWaitKey(0);
+}
 void test_full()
 {
     network net = parse_network_cfg("cfg/backup_1300.cfg");
@@ -265,7 +273,7 @@ void test_cifar10()
         scale_data_rows(train, 1./255);
         train_network_sgd(net, train, batch, lr, momentum, decay);
         //printf("%5f %5f\n",(double)count*batch/train.X.rows, loss);
-        
+
         float test_acc = network_accuracy(net, test);
         printf("%5f %5f\n",(double)count*batch/train.X.rows/5, 1-test_acc);
         free_data(train);
@@ -316,15 +324,15 @@ void test_nist()
         //printf("Time: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
         //start=end;
         /*
-        if(count%5 == 0){
-            float train_acc = network_accuracy(net, train);
-            fprintf(stderr, "\nTRAIN: %f\n", train_acc);
-            float test_acc = network_accuracy(net, test);
-            fprintf(stderr, "TEST: %f\n\n", test_acc);
-            printf("%d, %f, %f\n", count, train_acc, test_acc);
-            //lr *= .5;
+           if(count%5 == 0){
+           float train_acc = network_accuracy(net, train);
+           fprintf(stderr, "\nTRAIN: %f\n", train_acc);
+           float test_acc = network_accuracy(net, test);
+           fprintf(stderr, "TEST: %f\n\n", test_acc);
+           printf("%d, %f, %f\n", count, train_acc, test_acc);
+        //lr *= .5;
         }
-        */
+         */
     }
 }
 
@@ -516,6 +524,48 @@ void features_VOC_image_size(char *image_path, int h, int w)
     cvReleaseImage(&src);
 }
 
+void visualize_imagenet_features(char *filename)
+{
+    int i,j,k;
+    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+    list *plist = get_paths(filename);
+    node *n = plist->front;
+    int h = voc_size(1), w = voc_size(1);
+    int num = get_network_image(net).c;
+    image *vizs = calloc(num, sizeof(image));
+    for(i = 0; i < num; ++i) vizs[i] = make_image(h, w, 3);
+    while(n){
+        char *image_path = (char *)n->val;
+        image im = load_image(image_path, 0, 0);
+        printf("Processing %dx%d image\n", im.h, im.w);
+        resize_network(net, im.h, im.w, im.c);
+        forward_network(net, im.data);
+        image out = get_network_image(net);
+
+        int dh = (im.h - h)/h;
+        int dw = (im.w - w)/w;
+        for(i = 0; i < out.h; ++i){
+            for(j = 0; j < out.w; ++j){
+                image sub = get_sub_image(im, dh*i, dw*j, h, w);
+                for(k = 0; k < out.c; ++k){
+                    float val = get_pixel(out, i, j, k);
+                    //printf("%f, ", val);
+                    image sub_c = copy_image(sub);
+                    scale_image(sub_c, val);
+                    add_into_image(sub_c, vizs[k], 0, 0);
+                    free_image(sub_c);
+                }
+                free_image(sub);
+            }
+        }
+        //printf("\n");
+        show_images(vizs, 10, "IMAGENET Visualization");
+        cvWaitKey(1000);
+        n = n->next;
+    }
+    cvWaitKey(0);
+}
+
 void features_VOC_image(char *image_file, char *image_dir, char *out_dir)
 {
     int i,j;
@@ -628,6 +678,9 @@ int main(int argc, char *argv[])
     //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
     //test_blas();
+    //test_visualize();
+    //test_gpu_blas();
+    //test_blas();
     //test_convolve_matrix();
     //    test_im2row();
     //test_split();
@@ -638,7 +691,9 @@ int main(int argc, char *argv[])
     //test_full();
     //train_VOC();
     //features_VOC_image(argv[1], argv[2], argv[3]);
-    features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
+    //features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
+    //visualize_imagenet_features("data/assira/train.list");
+    visualize_imagenet_features("data/VOC2011.list");
     fprintf(stderr, "Success!\n");
     //test_random_preprocess();
     //test_random_classify();
