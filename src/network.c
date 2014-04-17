@@ -8,6 +8,7 @@
 #include "convolutional_layer.h"
 //#include "old_conv.h"
 #include "maxpool_layer.h"
+#include "normalization_layer.h"
 #include "softmax_layer.h"
 
 network make_network(int n, int batch)
@@ -40,6 +41,17 @@ void print_convolutional_cfg(FILE *fp, convolutional_layer *l, int first)
     fprintf(fp, "data=");
     for(i = 0; i < l->n; ++i) fprintf(fp, "%g,", l->biases[i]);
     for(i = 0; i < l->n*l->c*l->size*l->size; ++i) fprintf(fp, "%g,", l->filters[i]);
+    /*
+    int j,k;
+    for(i = 0; i < l->n; ++i) fprintf(fp, "%g,", l->biases[i]);
+    for(i = 0; i < l->n; ++i){
+        for(j = l->c-1; j >= 0; --j){
+            for(k = 0; k < l->size*l->size; ++k){
+                fprintf(fp, "%g,", l->filters[i*(l->c*l->size*l->size)+j*l->size*l->size+k]);
+            }
+        }
+    }
+    */
     fprintf(fp, "\n\n");
 }
 void print_connected_cfg(FILE *fp, connected_layer *l, int first)
@@ -48,9 +60,9 @@ void print_connected_cfg(FILE *fp, connected_layer *l, int first)
     fprintf(fp, "[connected]\n");
     if(first) fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
     fprintf(fp, "output=%d\n"
-                "activation=%s\n",
-                l->outputs,
-                get_activation_string(l->activation));
+            "activation=%s\n",
+            l->outputs,
+            get_activation_string(l->activation));
     fprintf(fp, "data=");
     for(i = 0; i < l->outputs; ++i) fprintf(fp, "%g,", l->biases[i]);
     for(i = 0; i < l->inputs*l->outputs; ++i) fprintf(fp, "%g,", l->weights[i]);
@@ -61,11 +73,25 @@ void print_maxpool_cfg(FILE *fp, maxpool_layer *l, int first)
 {
     fprintf(fp, "[maxpool]\n");
     if(first) fprintf(fp,   "batch=%d\n"
-                            "height=%d\n"
-                            "width=%d\n"
-                            "channels=%d\n",
-                            l->batch,l->h, l->w, l->c);
+            "height=%d\n"
+            "width=%d\n"
+            "channels=%d\n",
+            l->batch,l->h, l->w, l->c);
     fprintf(fp, "stride=%d\n\n", l->stride);
+}
+
+void print_normalization_cfg(FILE *fp, normalization_layer *l, int first)
+{
+    fprintf(fp, "[localresponsenormalization]\n");
+    if(first) fprintf(fp,   "batch=%d\n"
+            "height=%d\n"
+            "width=%d\n"
+            "channels=%d\n",
+            l->batch,l->h, l->w, l->c);
+    fprintf(fp, "size=%d\n"
+                "alpha=%g\n"
+                "beta=%g\n"
+                "kappa=%g\n\n", l->size, l->alpha, l->beta, l->kappa);
 }
 
 void print_softmax_cfg(FILE *fp, softmax_layer *l, int first)
@@ -88,6 +114,8 @@ void save_network(network net, char *filename)
             print_connected_cfg(fp, (connected_layer *)net.layers[i], i==0);
         else if(net.types[i] == MAXPOOL)
             print_maxpool_cfg(fp, (maxpool_layer *)net.layers[i], i==0);
+        else if(net.types[i] == NORMALIZATION)
+            print_normalization_cfg(fp, (normalization_layer *)net.layers[i], i==0);
         else if(net.types[i] == SOFTMAX)
             print_softmax_cfg(fp, (softmax_layer *)net.layers[i], i==0);
     }
@@ -118,6 +146,11 @@ void forward_network(network net, float *input)
             forward_maxpool_layer(layer, input);
             input = layer.output;
         }
+        else if(net.types[i] == NORMALIZATION){
+            normalization_layer layer = *(normalization_layer *)net.layers[i];
+            forward_normalization_layer(layer, input);
+            input = layer.output;
+        }
     }
 }
 
@@ -133,6 +166,9 @@ void update_network(network net, float step, float momentum, float decay)
             //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
         }
         else if(net.types[i] == SOFTMAX){
+            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        }
+        else if(net.types[i] == NORMALIZATION){
             //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
         }
         else if(net.types[i] == CONNECTED){
@@ -155,6 +191,9 @@ float *get_network_output_layer(network net, int i)
         return layer.output;
     } else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
+        return layer.output;
+    } else if(net.types[i] == NORMALIZATION){
+        normalization_layer layer = *(normalization_layer *)net.layers[i];
         return layer.output;
     }
     return 0;
@@ -233,6 +272,10 @@ float backward_network(network net, float *input, float *truth)
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
             if(i != 0) backward_maxpool_layer(layer, prev_input, prev_delta);
         }
+        else if(net.types[i] == NORMALIZATION){
+            normalization_layer layer = *(normalization_layer *)net.layers[i];
+            if(i != 0) backward_normalization_layer(layer, prev_input, prev_delta);
+        }
         else if(net.types[i] == SOFTMAX){
             softmax_layer layer = *(softmax_layer *)net.layers[i];
             if(i != 0) backward_softmax_layer(layer, prev_input, prev_delta);
@@ -272,7 +315,7 @@ float train_network_sgd(network net, data d, int n, float step, float momentum,f
             error += err;
             ++pos;
         }
-        
+
 
         //printf("%d %f %f\n", i,net.output[0], d.y.vals[index][0]);
         //if((i+1)%10 == 0){
@@ -341,34 +384,34 @@ int get_network_output_size_layer(network net, int i)
 }
 
 /*
-int resize_network(network net, int h, int w, int c)
-{
-    int i;
-    for (i = 0; i < net.n; ++i){
-        if(net.types[i] == CONVOLUTIONAL){
-            convolutional_layer *layer = (convolutional_layer *)net.layers[i];
-            layer->h = h;
-            layer->w = w;
-            layer->c = c;
-            image output = get_convolutional_image(*layer);
-            h = output.h;
-            w = output.w;
-            c = output.c;
-        }
-        else if(net.types[i] == MAXPOOL){
-            maxpool_layer *layer = (maxpool_layer *)net.layers[i];
-            layer->h = h;
-            layer->w = w;
-            layer->c = c;
-            image output = get_maxpool_image(*layer);
-            h = output.h;
-            w = output.w;
-            c = output.c;
-        }
-    }
-    return 0;
-}
-*/
+   int resize_network(network net, int h, int w, int c)
+   {
+   int i;
+   for (i = 0; i < net.n; ++i){
+   if(net.types[i] == CONVOLUTIONAL){
+   convolutional_layer *layer = (convolutional_layer *)net.layers[i];
+   layer->h = h;
+   layer->w = w;
+   layer->c = c;
+   image output = get_convolutional_image(*layer);
+   h = output.h;
+   w = output.w;
+   c = output.c;
+   }
+   else if(net.types[i] == MAXPOOL){
+   maxpool_layer *layer = (maxpool_layer *)net.layers[i];
+   layer->h = h;
+   layer->w = w;
+   layer->c = c;
+   image output = get_maxpool_image(*layer);
+   h = output.h;
+   w = output.w;
+   c = output.c;
+   }
+   }
+   return 0;
+   }
+ */
 
 int resize_network(network net, int h, int w, int c)
 {
@@ -381,16 +424,21 @@ int resize_network(network net, int h, int w, int c)
             h = output.h;
             w = output.w;
             c = output.c;
-        }
-        else if(net.types[i] == MAXPOOL){
+        }else if(net.types[i] == MAXPOOL){
             maxpool_layer *layer = (maxpool_layer *)net.layers[i];
             resize_maxpool_layer(layer, h, w, c);
             image output = get_maxpool_image(*layer);
             h = output.h;
             w = output.w;
             c = output.c;
-        }
-        else{
+        }else if(net.types[i] == NORMALIZATION){
+            normalization_layer *layer = (normalization_layer *)net.layers[i];
+            resize_normalization_layer(layer, h, w, c);
+            image output = get_normalization_image(*layer);
+            h = output.h;
+            w = output.w;
+            c = output.c;
+        }else{
             error("Cannot resize this type of layer");
         }
     }
@@ -412,6 +460,10 @@ image get_network_image_layer(network net, int i)
     else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
         return get_maxpool_image(layer);
+    }
+    else if(net.types[i] == NORMALIZATION){
+        normalization_layer layer = *(normalization_layer *)net.layers[i];
+        return get_normalization_image(layer);
     }
     return make_empty_image(0,0,0);
 }
@@ -436,6 +488,10 @@ void visualize_network(network net)
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             prev = visualize_convolutional_layer(layer, buff, prev);
+        }
+        if(net.types[i] == NORMALIZATION){
+            normalization_layer layer = *(normalization_layer *)net.layers[i];
+            visualize_normalization_layer(layer, buff);
         }
     } 
 }

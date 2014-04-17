@@ -7,6 +7,7 @@
 #include "convolutional_layer.h"
 #include "connected_layer.h"
 #include "maxpool_layer.h"
+#include "normalization_layer.h"
 #include "softmax_layer.h"
 #include "list.h"
 #include "option_list.h"
@@ -21,6 +22,7 @@ int is_convolutional(section *s);
 int is_connected(section *s);
 int is_maxpool(section *s);
 int is_softmax(section *s);
+int is_normalization(section *s);
 list *read_cfg(char *filename);
 
 void free_section(section *s)
@@ -152,6 +154,30 @@ maxpool_layer *parse_maxpool(list *options, network net, int count)
     return layer;
 }
 
+normalization_layer *parse_normalization(list *options, network net, int count)
+{
+    int h,w,c;
+    int size = option_find_int(options, "size",1);
+    float alpha = option_find_float(options, "alpha", 0.);
+    float beta = option_find_float(options, "beta", 1.);
+    float kappa = option_find_float(options, "kappa", 1.);
+    if(count == 0){
+        h = option_find_int(options, "height",1);
+        w = option_find_int(options, "width",1);
+        c = option_find_int(options, "channels",1);
+        net.batch = option_find_int(options, "batch",1);
+    }else{
+        image m =  get_network_image_layer(net, count-1);
+        h = m.h;
+        w = m.w;
+        c = m.c;
+        if(h == 0) error("Layer before convolutional layer must output image.");
+    }
+    normalization_layer *layer = make_normalization_layer(net.batch,h,w,c,size, alpha, beta, kappa);
+    option_unused(options);
+    return layer;
+}
+
 network parse_network_cfg(char *filename)
 {
     list *sections = read_cfg(filename);
@@ -180,6 +206,11 @@ network parse_network_cfg(char *filename)
         }else if(is_maxpool(s)){
             maxpool_layer *layer = parse_maxpool(options, net, count);
             net.types[count] = MAXPOOL;
+            net.layers[count] = layer;
+            net.batch = layer->batch;
+        }else if(is_normalization(s)){
+            normalization_layer *layer = parse_normalization(options, net, count);
+            net.types[count] = NORMALIZATION;
             net.layers[count] = layer;
             net.batch = layer->batch;
         }else{
@@ -215,6 +246,11 @@ int is_softmax(section *s)
 {
     return (strcmp(s->type, "[soft]")==0
             || strcmp(s->type, "[softmax]")==0);
+}
+int is_normalization(section *s)
+{
+    return (strcmp(s->type, "[lrnorm]")==0
+            || strcmp(s->type, "[localresponsenormalization]")==0);
 }
 
 int read_option(char *s, list *options)

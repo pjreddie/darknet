@@ -1,6 +1,7 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
 typedef struct {
@@ -12,7 +13,7 @@ typedef struct {
 
 image image_distance(image a, image b);
 void scale_image(image m, float s);
-void add_scalar_image(image m, float s);
+void translate_image(image m, float s);
 void normalize_image(image p);
 void z_normalize_image(image p);
 void threshold_image(image p, float t);
@@ -23,6 +24,8 @@ float avg_image_layer(image m, int l);
 void embed_image(image source, image dest, int h, int w);
 void add_into_image(image src, image dest, int h, int w);
 image collapse_image_layers(image source, int border);
+image collapse_images_horz(image *ims, int n);
+image collapse_images_vert(image *ims, int n);
 image get_sub_image(image m, int h, int w, int dh, int dw);
 
 void show_image(image p, char *name);
@@ -30,6 +33,9 @@ void save_image(image p, char *name);
 void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);
 void show_image_collapsed(image p, char *name);
+void show_images_grid(image **ims, int h, int w, char *window);
+void test_grid();
+image grid_images(image **ims, int h, int w);
 void print_image(image m);
 
 image make_image(int h, int w, int c);

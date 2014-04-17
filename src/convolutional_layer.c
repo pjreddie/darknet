@@ -320,11 +320,12 @@ image *visualize_convolutional_layer(convolutional_layer layer, char *window, im
     image *single_filters = weighted_sum_filters(layer, 0);
     show_images(single_filters, layer.n, window);
 
-    image delta = get_convolutional_delta(layer);
+    image delta = get_convolutional_image(layer);
     image dc = collapse_image_layers(delta, 1);
     char buff[256];
-    sprintf(buff, "%s: Delta", window);
-    //show_image(dc, buff);
+    sprintf(buff, "%s: Output", window);
+    show_image(dc, buff);
+    save_image(dc, buff);
     free_image(dc);
     return single_filters;
 }

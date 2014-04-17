@@ -9,7 +9,8 @@ typedef enum {
     CONVOLUTIONAL,
     CONNECTED,
     MAXPOOL,
-    SOFTMAX
+    SOFTMAX,
+    NORMALIZATION
 } LAYER_TYPE;
 
 typedef struct {

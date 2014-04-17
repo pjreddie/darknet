@@ -264,7 +264,7 @@ void add_into_image(image src, image dest, int h, int w)
     }
 }
 
-void add_scalar_image(image m, float s)
+void translate_image(image m, float s)
 {
     int i;
     for(i = 0; i < m.h*m.w*m.c; ++i) m.data[i] += s;
@@ -645,15 +645,49 @@ void print_image(image m)
     for(i =0 ; i < m.h*m.w*m.c; ++i) printf("%lf, ", m.data[i]);
     printf("\n");
 }
+image collapse_images_vert(image *ims, int n)
+{
+    int color = 1;
+    int border = 1;
+    int h,w,c;
+    w = ims[0].w;
+    h = (ims[0].h + border) * n - border;
+    c = ims[0].c;
+    if(c != 3 || !color){
+        w = (w+border)*c - border;
+        c = 1;
+    }
 
-image collapse_images(image *ims, int n)
+    image filters = make_image(h,w,c);
+    int i,j;
+    for(i = 0; i < n; ++i){
+        int h_offset = i*(ims[0].h+border);
+        image copy = copy_image(ims[i]);
+        //normalize_image(copy);
+        if(c == 3 && color){
+            embed_image(copy, filters, h_offset, 0);
+        }
+        else{
+            for(j = 0; j < copy.c; ++j){
+                int w_offset = j*(ims[0].w+border);
+                image layer = get_image_layer(copy, j);
+                embed_image(layer, filters, h_offset, w_offset);
+                free_image(layer);
+            }
+        }
+        free_image(copy);
+    }
+    return filters;
+} 
+
+image collapse_images_horz(image *ims, int n)
 {
     int color = 1;
     int border = 1;
     int h,w,c;
     int size = ims[0].h;
     h = size;
-    w = (size + border) * n - border;
+    w = (ims[0].w + border) * n - border;
     c = ims[0].c;
     if(c != 3 || !color){
         h = (h+border)*c - border;
@@ -665,7 +699,7 @@ image collapse_images(image *ims, int n)
     for(i = 0; i < n; ++i){
         int w_offset = i*(size+border);
         image copy = copy_image(ims[i]);
-        normalize_image(copy);
+        //normalize_image(copy);
         if(c == 3 && color){
             embed_image(copy, filters, 0, w_offset);
         }
@@ -684,9 +718,47 @@ image collapse_images(image *ims, int n)
 
 void show_images(image *ims, int n, char *window)
 {
-    image m = collapse_images(ims, n);
+    image m = collapse_images_vert(ims, n);
+    save_image(m, window);
     show_image(m, window);
     free_image(m);
+}
+
+image grid_images(image **ims, int h, int w)
+{
+    int i;
+    image *rows = calloc(h, sizeof(image));
+    for(i = 0; i < h; ++i){
+        rows[i] = collapse_images_horz(ims[i], w);
+    }
+    image out = collapse_images_vert(rows, h);
+    for(i = 0; i < h; ++i){
+        free_image(rows[i]);
+    }
+    free(rows);
+    return out;
+}
+
+void test_grid()
+{
+    int i,j;
+    int num = 3;
+    int topk = 3;
+    image **vizs = calloc(num, sizeof(image*));
+    for(i = 0; i < num; ++i){
+        vizs[i] = calloc(topk, sizeof(image));
+        for(j = 0; j < topk; ++j) vizs[i][j] = make_image(3,3,3);
+    }
+    image grid = grid_images(vizs, num, topk);
+    save_image(grid, "Test Grid");
+    free_image(grid);
+}
+
+void show_images_grid(image **ims, int h, int w, char *window)
+{
+    image out = grid_images(ims, h, w);
+    show_image(out, window);
+    free_image(out);
 }
 
 void free_image(image m)
