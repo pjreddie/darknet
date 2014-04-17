@@ -503,10 +503,11 @@ image features_output_size(network net, IplImage *src, int outh, int outw)
 	IplImage *sized = cvCreateImage(cvSize(w,h), src->depth, src->nChannels);
 	cvResize(src, sized, CV_INTER_LINEAR);
 	image im = ipl_to_image(sized);
-	normalize_array(im.data, im.h*im.w*im.c);
+	//normalize_array(im.data, im.h*im.w*im.c);
+	//translate_image(im, -144);
 	resize_network(net, im.h, im.w, im.c);
 	forward_network(net, im.data);
-	image out = get_network_image_layer(net, 6);
+	image out = get_network_image(net);
 	free_image(im);
 	cvReleaseImage(&sized);
 	return copy_image(out);
@@ -660,12 +661,11 @@ void visualize_cat()
 	cvWaitKey(0);
 }
 
-void features_VOC_image(char *image_file, char *image_dir, char *out_dir)
+void features_VOC_image(char *image_file, char *image_dir, char *out_dir, int flip)
 {
-	int flip = 1;
 	int interval = 4;
 	int i,j;
-	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+	network net = parse_network_cfg("cfg/voc_imagenet_nonorm.cfg");
 	char image_path[1024];
 	sprintf(image_path, "%s/%s",image_dir, image_file);
 	char out_path[1024];
@@ -714,7 +714,9 @@ void features_VOC_image(char *image_file, char *image_dir, char *out_dir)
 		fprintf(fp, "%d, %d, %d\n",out.c, out.h, out.w);
 		for(j = 0; j < out.c*out.h*out.w; ++j){
 			if(j != 0)fprintf(fp, ",");
-			fprintf(fp, "%g", out.data[j]);
+			float o = out.data[j];
+			//if(o < 0) o = 0;
+			fprintf(fp, "%g", o);
 		}
 		fprintf(fp, "\n");
 		free_image(out);
@@ -787,10 +789,11 @@ int main(int argc, char *argv[])
 	//test_vince();
 	//test_full();
 	//train_VOC();
-	//features_VOC_image(argv[1], argv[2], argv[3]);
+	features_VOC_image(argv[1], argv[2], argv[3], 0);
+	features_VOC_image(argv[1], argv[2], argv[3], 1);
 	//features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
 	//visualize_imagenet_features("data/assira/train.list");
-	visualize_imagenet_topk("data/VOC2012.list");
+	//visualize_imagenet_topk("data/VOC2012.list");
 	//visualize_cat();
 	//flip_network();
 	//test_visualize();

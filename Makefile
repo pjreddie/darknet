@@ -1,12 +1,12 @@
 CC=gcc
-COMMON=-Wall `pkg-config --cflags opencv`
+COMMON=-Wall `pkg-config --cflags opencv` -I/usr/local/cuda/include/
 UNAME = $(shell uname)
 OPTS=-O3
 ifeq ($(UNAME), Darwin)
 COMMON+= -isystem /usr/local/Cellar/opencv/2.4.6.1/include/opencv -isystem /usr/local/Cellar/opencv/2.4.6.1/include
 LDFLAGS= -framework OpenCL
 else
-OPTS+= -march=native -flto
+OPTS+= -march=native
 LDFLAGS= -lOpenCL
 endif
 CFLAGS= $(COMMON) $(OPTS)

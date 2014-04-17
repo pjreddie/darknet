@@ -16,11 +16,13 @@ cl_info cl_init()
 {
     cl_info info;
     info.initialized = 0;
-    cl_uint platforms, devices;
+    //cl_uint num_platforms, num_devices;
     // Fetch the Platform and Device IDs; we only want one.
-    info.error=clGetPlatformIDs(1, &info.platform, &platforms);
+    cl_device_id devices[2];
+    info.error=clGetPlatformIDs(1, &info.platform, 0);
     check_error(info);
-    info.error=clGetDeviceIDs(info.platform, CL_DEVICE_TYPE_ALL, 1, &info.device, &devices);
+    info.error=clGetDeviceIDs(info.platform, CL_DEVICE_TYPE_ALL, 2, devices, 0);
+    info.device = devices[rand()%2];
     check_error(info);
 
     cl_context_properties properties[]={
