@@ -7,6 +7,7 @@
 #include "convolutional_layer.h"
 #include "connected_layer.h"
 #include "maxpool_layer.h"
+#include "normalization_layer.h"
 #include "softmax_layer.h"
 #include "list.h"
 #include "option_list.h"
@@ -21,6 +22,7 @@ int is_convolutional(section *s);
 int is_connected(section *s);
 int is_maxpool(section *s);
 int is_softmax(section *s);
+int is_normalization(section *s);
 list *read_cfg(char *filename);
 
 void free_section(section *s)
@@ -52,6 +54,7 @@ convolutional_layer *parse_convolutional(list *options, network net, int count)
         h = option_find_int(options, "height",1);
         w = option_find_int(options, "width",1);
         c = option_find_int(options, "channels",1);
+        net.batch = option_find_int(options, "batch",1);
     }else{
         image m =  get_network_image_layer(net, count-1);
         h = m.h;
@@ -59,7 +62,7 @@ convolutional_layer *parse_convolutional(list *options, network net, int count)
         c = m.c;
         if(h == 0) error("Layer before convolutional layer must output image.");
     }
-    convolutional_layer *layer = make_convolutional_layer(h,w,c,n,size,stride, activation);
+    convolutional_layer *layer = make_convolutional_layer(net.batch,h,w,c,n,size,stride, activation);
     char *data = option_find_str(options, "data", 0);
     if(data){
         char *curr = data;
@@ -90,10 +93,11 @@ connected_layer *parse_connected(list *options, network net, int count)
     ACTIVATION activation = get_activation(activation_s);
     if(count == 0){
         input = option_find_int(options, "input",1);
+        net.batch = option_find_int(options, "batch",1);
     }else{
         input =  get_network_output_size_layer(net, count-1);
     }
-    connected_layer *layer = make_connected_layer(input, output, activation);
+    connected_layer *layer = make_connected_layer(net.batch, input, output, activation);
     char *data = option_find_str(options, "data", 0);
     if(data){
         char *curr = data;
@@ -120,10 +124,11 @@ softmax_layer *parse_softmax(list *options, network net, int count)
     int input;
     if(count == 0){
         input = option_find_int(options, "input",1);
+        net.batch = option_find_int(options, "batch",1);
     }else{
         input =  get_network_output_size_layer(net, count-1);
     }
-    softmax_layer *layer = make_softmax_layer(input);
+    softmax_layer *layer = make_softmax_layer(net.batch, input);
     option_unused(options);
     return layer;
 }
@@ -136,6 +141,7 @@ maxpool_layer *parse_maxpool(list *options, network net, int count)
         h = option_find_int(options, "height",1);
         w = option_find_int(options, "width",1);
         c = option_find_int(options, "channels",1);
+        net.batch = option_find_int(options, "batch",1);
     }else{
         image m =  get_network_image_layer(net, count-1);
         h = m.h;
@@ -143,7 +149,31 @@ maxpool_layer *parse_maxpool(list *options, network net, int count)
         c = m.c;
         if(h == 0) error("Layer before convolutional layer must output image.");
     }
-    maxpool_layer *layer = make_maxpool_layer(h,w,c,stride);
+    maxpool_layer *layer = make_maxpool_layer(net.batch,h,w,c,stride);
+    option_unused(options);
+    return layer;
+}
+
+normalization_layer *parse_normalization(list *options, network net, int count)
+{
+    int h,w,c;
+    int size = option_find_int(options, "size",1);
+    float alpha = option_find_float(options, "alpha", 0.);
+    float beta = option_find_float(options, "beta", 1.);
+    float kappa = option_find_float(options, "kappa", 1.);
+    if(count == 0){
+        h = option_find_int(options, "height",1);
+        w = option_find_int(options, "width",1);
+        c = option_find_int(options, "channels",1);
+        net.batch = option_find_int(options, "batch",1);
+    }else{
+        image m =  get_network_image_layer(net, count-1);
+        h = m.h;
+        w = m.w;
+        c = m.c;
+        if(h == 0) error("Layer before convolutional layer must output image.");
+    }
+    normalization_layer *layer = make_normalization_layer(net.batch,h,w,c,size, alpha, beta, kappa);
     option_unused(options);
     return layer;
 }
@@ -151,7 +181,7 @@ maxpool_layer *parse_maxpool(list *options, network net, int count)
 network parse_network_cfg(char *filename)
 {
     list *sections = read_cfg(filename);
-    network net = make_network(sections->size);
+    network net = make_network(sections->size, 0);
 
     node *n = sections->front;
     int count = 0;
@@ -162,18 +192,27 @@ network parse_network_cfg(char *filename)
             convolutional_layer *layer = parse_convolutional(options, net, count);
             net.types[count] = CONVOLUTIONAL;
             net.layers[count] = layer;
+            net.batch = layer->batch;
         }else if(is_connected(s)){
             connected_layer *layer = parse_connected(options, net, count);
             net.types[count] = CONNECTED;
             net.layers[count] = layer;
+            net.batch = layer->batch;
         }else if(is_softmax(s)){
             softmax_layer *layer = parse_softmax(options, net, count);
             net.types[count] = SOFTMAX;
             net.layers[count] = layer;
+            net.batch = layer->batch;
         }else if(is_maxpool(s)){
             maxpool_layer *layer = parse_maxpool(options, net, count);
             net.types[count] = MAXPOOL;
             net.layers[count] = layer;
+            net.batch = layer->batch;
+        }else if(is_normalization(s)){
+            normalization_layer *layer = parse_normalization(options, net, count);
+            net.types[count] = NORMALIZATION;
+            net.layers[count] = layer;
+            net.batch = layer->batch;
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
@@ -207,6 +246,11 @@ int is_softmax(section *s)
 {
     return (strcmp(s->type, "[soft]")==0
             || strcmp(s->type, "[softmax]")==0);
+}
+int is_normalization(section *s)
+{
+    return (strcmp(s->type, "[lrnorm]")==0
+            || strcmp(s->type, "[localresponsenormalization]")==0);
 }
 
 int read_option(char *s, list *options)

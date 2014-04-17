@@ -17,10 +17,12 @@ image get_maxpool_delta(maxpool_layer layer)
     return float_to_image(h,w,c,layer.delta);
 }
 
-maxpool_layer *make_maxpool_layer(int h, int w, int c, int stride)
+maxpool_layer *make_maxpool_layer(int batch, int h, int w, int c, int stride)
 {
+    c = c*batch;
     fprintf(stderr, "Maxpool Layer: %d x %d x %d image, %d stride\n", h,w,c,stride);
     maxpool_layer *layer = calloc(1, sizeof(maxpool_layer));
+    layer->batch = batch;
     layer->h = h;
     layer->w = w;
     layer->c = c;
@@ -28,6 +30,15 @@ maxpool_layer *make_maxpool_layer(int h, int w, int c, int stride)
     layer->output = calloc(((h-1)/stride+1) * ((w-1)/stride+1) * c, sizeof(float));
     layer->delta = calloc(((h-1)/stride+1) * ((w-1)/stride+1) * c, sizeof(float));
     return layer;
+}
+
+void resize_maxpool_layer(maxpool_layer *layer, int h, int w, int c)
+{
+    layer->h = h;
+    layer->w = w;
+    layer->c = c;
+    layer->output = realloc(layer->output, ((h-1)/layer->stride+1) * ((w-1)/layer->stride+1) * c * sizeof(float));
+    layer->delta = realloc(layer->delta, ((h-1)/layer->stride+1) * ((w-1)/layer->stride+1) * c * sizeof(float));
 }
 
 void forward_maxpool_layer(const maxpool_layer layer, float *in)

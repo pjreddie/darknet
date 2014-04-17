@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
+#include "mini_blas.h"
 
 void pm(int M, int N, float *A)
 {
@@ -17,42 +19,12 @@ void pm(int M, int N, float *A)
 }
 
 void gemm(int TA, int TB, int M, int N, int K, float ALPHA, 
-                    float *A, int lda, 
-                    float *B, int ldb,
-                    float BETA,
-                    float *C, int ldc)
+        float *A, int lda, 
+        float *B, int ldb,
+        float BETA,
+        float *C, int ldc)
 {
-    // Assume beta = 1 LULZ
-    int i,j,k;
-    if(TB && !TA){
-        for(i = 0; i < M; ++i){
-            for(j = 0; j < N; ++j){
-                register float sum = 0;
-                for(k = 0; k < K; ++k){
-                    sum += ALPHA*A[i*lda+k]*B[k+j*ldb];
-                }
-                C[i*ldc+j] += sum;
-            }
-        }
-    }else if(TA && !TB){
-        for(i = 0; i < M; ++i){
-            for(k = 0; k < K; ++k){
-                register float A_PART = ALPHA*A[k*lda+i];
-                for(j = 0; j < N; ++j){
-                    C[i*ldc+j] += A_PART*B[k*ldb+j];
-                }
-            }
-        }
-    }else{
-        for(i = 0; i < M; ++i){
-            for(k = 0; k < K; ++k){
-                register float A_PART = ALPHA*A[i*lda+k];
-                for(j = 0; j < N; ++j){
-                    C[i*ldc+j] += A_PART*B[k*ldb+j];
-                }
-            }
-        }
-    }
+    gpu_gemm( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
 }
 
 void im2row(float *image, int h, int w, int c, int size, int stride, float *matrix)
@@ -150,16 +122,26 @@ float *random_matrix(int rows, int cols)
 
 void time_random_matrix(int TA, int TB, int m, int k, int n)
 {
-    float *a = random_matrix(m,k);
-    float *b = random_matrix(k,n);
+    float *a;
+    if(!TA) a = random_matrix(m,k);
+    else a = random_matrix(k,m);
+    int lda = (!TA)?k:m;
+    float *b;
+    if(!TB) b = random_matrix(k,n);
+    else b = random_matrix(n,k);
+    int ldb = (!TB)?n:k;
+
     float *c = random_matrix(m,n);
     int i;
     clock_t start = clock(), end;
     for(i = 0; i<1000; ++i){
-        gemm(TA,TB,m,n,k,1,a,k,b,n,1,c,n);
+        cpu_gemm(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
     }
     end = clock();
     printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
+    free(a);
+    free(b);
+    free(c);
 }
 
 void test_blas()
@@ -167,9 +149,97 @@ void test_blas()
     time_random_matrix(0,0,100,100,100); 
     time_random_matrix(1,0,100,100,100); 
     time_random_matrix(0,1,100,100,100); 
+    time_random_matrix(1,1,100,100,100); 
 
-    time_random_matrix(0,1,1000,100,100); 
+    time_random_matrix(0,0,1000,100,100); 
     time_random_matrix(1,0,1000,100,100); 
+    time_random_matrix(0,1,1000,100,100); 
+    time_random_matrix(1,1,1000,100,100); 
+
 
 }
+
+void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
+{
+    float *a;
+    if(!TA) a = random_matrix(m,k);
+    else a = random_matrix(k,m);
+    int lda = (!TA)?k:m;
+    float *b;
+    if(!TB) b = random_matrix(k,n);
+    else b = random_matrix(n,k);
+    int ldb = (!TB)?n:k;
+
+    float *c = random_matrix(m,n);
+    int i;
+    clock_t start = clock(), end;
+    for(i = 0; i<1000; ++i){
+        gpu_gemm(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
+    }
+    end = clock();
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
+    free(a);
+    free(b);
+    free(c);
+}
+
+void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
+{
+    srand(0);
+    float *a;
+    if(!TA) a = random_matrix(m,k);
+    else a = random_matrix(k,m);
+    int lda = (!TA)?k:m;
+    float *b;
+    if(!TB) b = random_matrix(k,n);
+    else b = random_matrix(n,k);
+    int ldb = (!TB)?n:k;
+
+    float *c = random_matrix(m,n);
+    float *c_gpu = random_matrix(m,n);
+    memset(c, 0, m*n*sizeof(float));
+    memset(c_gpu, 0, m*n*sizeof(float));
+    int i;
+        //pm(m,k,b);
+        gpu_gemm(TA,TB,m,n,k,1,a,lda,b,ldb,1,c_gpu,n);
+        //pm(m, n, c_gpu);
+        cpu_gemm(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
+        //pm(m, n, c);
+    double sse = 0;
+    for(i = 0; i < m*n; ++i) {
+        //printf("%f %f\n", c[i], c_gpu[i]);
+        sse += pow(c[i]-c_gpu[i], 2);
+    }
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g MSE\n",m,k,k,n, TA, TB, sse/(m*n));
+    free(a);
+    free(b);
+    free(c);
+}
+
+void test_gpu_blas()
+{
+    test_gpu_accuracy(0,0,17,10,10); 
+    test_gpu_accuracy(1,0,17,10,10); 
+    test_gpu_accuracy(0,1,17,10,10); 
+    test_gpu_accuracy(1,1,17,10,10); 
+
+    test_gpu_accuracy(0,0,1000,10,100); 
+    test_gpu_accuracy(1,0,1000,10,100); 
+    test_gpu_accuracy(0,1,1000,10,100); 
+    test_gpu_accuracy(1,1,1000,10,100); 
+
+    time_gpu_random_matrix(0,0,1000,1000,100); 
+    time_random_matrix(0,0,1000,1000,100); 
+
+    time_gpu_random_matrix(0,1,1000,1000,100); 
+    time_random_matrix(0,1,1000,1000,100); 
+
+    time_gpu_random_matrix(1,0,1000,1000,100); 
+    time_random_matrix(1,0,1000,1000,100); 
+
+    time_gpu_random_matrix(1,1,1000,1000,100); 
+    time_random_matrix(1,1,1000,1000,100); 
+
+}
+
 

@@ -4,6 +4,7 @@
 #include "activations.h"
 
 typedef struct{
+    int batch;
     int inputs;
     int outputs;
     float *weights;
@@ -25,7 +26,7 @@ typedef struct{
 
 } connected_layer;
 
-connected_layer *make_connected_layer(int inputs, int outputs, ACTIVATION activation);
+connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation);
 
 void forward_connected_layer(connected_layer layer, float *input);
 void backward_connected_layer(connected_layer layer, float *input, float *delta);

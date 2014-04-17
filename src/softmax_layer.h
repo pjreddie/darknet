@@ -3,11 +3,12 @@
 
 typedef struct {
     int inputs;
+    int batch;
     float *delta;
     float *output;
 } softmax_layer;
 
-softmax_layer *make_softmax_layer(int inputs);
+softmax_layer *make_softmax_layer(int batch, int inputs);
 void forward_softmax_layer(const softmax_layer layer, float *input);
 void backward_softmax_layer(const softmax_layer layer, float *input, float *delta);
 
