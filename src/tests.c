@@ -504,7 +504,7 @@ image features_output_size(network net, IplImage *src, int outh, int outw)
 	cvResize(src, sized, CV_INTER_LINEAR);
 	image im = ipl_to_image(sized);
 	//normalize_array(im.data, im.h*im.w*im.c);
-	//translate_image(im, -144);
+	translate_image(im, -144);
 	resize_network(net, im.h, im.w, im.c);
 	forward_network(net, im.data);
 	image out = get_network_image(net);
@@ -665,7 +665,7 @@ void features_VOC_image(char *image_file, char *image_dir, char *out_dir, int fl
 {
 	int interval = 4;
 	int i,j;
-	network net = parse_network_cfg("cfg/voc_imagenet_nonorm.cfg");
+	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
 	char image_path[1024];
 	sprintf(image_path, "%s/%s",image_dir, image_file);
 	char out_path[1024];
@@ -715,7 +715,7 @@ void features_VOC_image(char *image_file, char *image_dir, char *out_dir, int fl
 		for(j = 0; j < out.c*out.h*out.w; ++j){
 			if(j != 0)fprintf(fp, ",");
 			float o = out.data[j];
-			//if(o < 0) o = 0;
+			if(o < 0) o = 0;
 			fprintf(fp, "%g", o);
 		}
 		fprintf(fp, "\n");
