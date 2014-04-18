@@ -672,8 +672,6 @@ void features_VOC_image(char *image_file, char *image_dir, char *out_dir, int fl
 	if (flip)sprintf(out_path, "%s%d/%s_r.txt",out_dir, interval, image_file);
 	else sprintf(out_path, "%s%d/%s.txt",out_dir, interval, image_file);
 	printf("%s\n", image_file);
-	FILE *fp = fopen(out_path, "w");
-	if(fp == 0) file_error(out_path);
 
 	IplImage* src = 0;
 	if( (src = cvLoadImage(image_path,-1)) == 0 ) file_error(image_path);
@@ -709,6 +707,8 @@ void features_VOC_image(char *image_file, char *image_dir, char *out_dir, int fl
 			ims[j+interval] = features_output_size(net, src, ex_h, ex_w);
 		}
 	}
+	FILE *fp = fopen(out_path, "w");
+	if(fp == 0) file_error(out_path);
 	for(i = 0; i < max_scale+interval; ++i){
 		image out = ims[i];
 		fprintf(fp, "%d, %d, %d\n",out.c, out.h, out.w);

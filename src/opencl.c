@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
+
 
 cl_info cl = {0};
 
@@ -12,22 +15,28 @@ void check_error(cl_info info)
     }
 }
 
+#define MAX_DEVICES 10
+
 cl_info cl_init()
 {
     cl_info info;
     info.initialized = 0;
-    //cl_uint num_platforms, num_devices;
+    cl_uint num_platforms, num_devices;
     // Fetch the Platform and Device IDs; we only want one.
-    cl_device_id devices[2];
-    info.error=clGetPlatformIDs(1, &info.platform, 0);
+    cl_device_id devices[MAX_DEVICES];
+    info.error=clGetPlatformIDs(1, &info.platform, &num_platforms);
     check_error(info);
-    info.error=clGetDeviceIDs(info.platform, CL_DEVICE_TYPE_ALL, 2, devices, 0);
-    info.device = devices[rand()%2];
+    info.error=clGetDeviceIDs(info.platform, CL_DEVICE_TYPE_ALL, MAX_DEVICES, devices, &num_devices);
+    if(num_devices > MAX_DEVICES) num_devices = MAX_DEVICES;
+    int index = getpid()%num_devices;
+    printf("%d rand, %d devices, %d index\n", getpid(), num_devices, index);
+    info.device = devices[index];
+    fprintf(stderr, "Found %d device(s)\n", num_devices);
     check_error(info);
 
     cl_context_properties properties[]={
-        CL_CONTEXT_PLATFORM, (cl_context_properties)info.platform,
-        0};
+	    CL_CONTEXT_PLATFORM, (cl_context_properties)info.platform,
+	    0};
     // Note that nVidia's OpenCL requires the platform property
     info.context=clCreateContext(properties, 1, &info.device, 0, 0, &info.error);
     check_error(info);
@@ -39,41 +48,41 @@ cl_info cl_init()
 
 cl_program cl_fprog(char *filename, char *options, cl_info info)
 {
-    size_t srcsize;
-    char src[8192];
-    memset(src, 0, 8192);
-    FILE *fil=fopen(filename,"r");
-    srcsize=fread(src, sizeof src, 1, fil);
-    fclose(fil);
-    const char *srcptr[]={src};
-    // Submit the source code of the example kernel to OpenCL
-    cl_program prog=clCreateProgramWithSource(info.context,1, srcptr, &srcsize, &info.error);
-    check_error(info);
-    char build_c[4096];
-    // and compile it (after this we could extract the compiled version)
-    info.error=clBuildProgram(prog, 0, 0, options, 0, 0);
-    if ( info.error != CL_SUCCESS ) {
-        fprintf(stderr, "Error Building Program: %d\n", info.error);
-        clGetProgramBuildInfo( prog, info.device, CL_PROGRAM_BUILD_LOG, 4096, build_c, 0);
-        fprintf(stderr, "Build Log for %s program:\n%s\n", filename, build_c);
-    }
-    return prog;
+	size_t srcsize;
+	char src[8192];
+	memset(src, 0, 8192);
+	FILE *fil=fopen(filename,"r");
+	srcsize=fread(src, sizeof src, 1, fil);
+	fclose(fil);
+	const char *srcptr[]={src};
+	// Submit the source code of the example kernel to OpenCL
+	cl_program prog=clCreateProgramWithSource(info.context,1, srcptr, &srcsize, &info.error);
+	check_error(info);
+	char build_c[4096];
+	// and compile it (after this we could extract the compiled version)
+	info.error=clBuildProgram(prog, 0, 0, options, 0, 0);
+	if ( info.error != CL_SUCCESS ) {
+		fprintf(stderr, "Error Building Program: %d\n", info.error);
+		clGetProgramBuildInfo( prog, info.device, CL_PROGRAM_BUILD_LOG, 4096, build_c, 0);
+		fprintf(stderr, "Build Log for %s program:\n%s\n", filename, build_c);
+	}
+	return prog;
 }
 
 void cl_setup()
 {
-    if(!cl.initialized){
-        cl = cl_init();
-    }
+	if(!cl.initialized){
+		cl = cl_init();
+	}
 }
 
 cl_kernel get_kernel(char *filename, char *kernelname, char *options)
 {
-    cl_setup();
-    cl_program prog = cl_fprog(filename, options, cl);
-    cl_kernel kernel=clCreateKernel(prog, kernelname, &cl.error);
-    check_error(cl);
-    return kernel;
+	cl_setup();
+	cl_program prog = cl_fprog(filename, options, cl);
+	cl_kernel kernel=clCreateKernel(prog, kernelname, &cl.error);
+	check_error(cl);
+	return kernel;
 }
 
 
