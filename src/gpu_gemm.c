@@ -83,6 +83,89 @@ void gpu_gemm(int TA, int TB, int M, int N, int K, float ALPHA,
 
 }
 
+void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
+{
+    float *a;
+    if(!TA) a = random_matrix(m,k);
+    else a = random_matrix(k,m);
+    int lda = (!TA)?k:m;
+    float *b;
+    if(!TB) b = random_matrix(k,n);
+    else b = random_matrix(n,k);
+    int ldb = (!TB)?n:k;
+
+    float *c = random_matrix(m,n);
+    int i;
+    clock_t start = clock(), end;
+    for(i = 0; i<1000; ++i){
+        gpu_gemm(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
+    }
+    end = clock();
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
+    free(a);
+    free(b);
+    free(c);
+}
+
+void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
+{
+    srand(0);
+    float *a;
+    if(!TA) a = random_matrix(m,k);
+    else a = random_matrix(k,m);
+    int lda = (!TA)?k:m;
+    float *b;
+    if(!TB) b = random_matrix(k,n);
+    else b = random_matrix(n,k);
+    int ldb = (!TB)?n:k;
+
+    float *c = random_matrix(m,n);
+    float *c_gpu = random_matrix(m,n);
+    memset(c, 0, m*n*sizeof(float));
+    memset(c_gpu, 0, m*n*sizeof(float));
+    int i;
+        //pm(m,k,b);
+        gpu_gemm(TA,TB,m,n,k,1,a,lda,b,ldb,1,c_gpu,n);
+        //pm(m, n, c_gpu);
+        cpu_gemm(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
+        //pm(m, n, c);
+    double sse = 0;
+    for(i = 0; i < m*n; ++i) {
+        //printf("%f %f\n", c[i], c_gpu[i]);
+        sse += pow(c[i]-c_gpu[i], 2);
+    }
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g MSE\n",m,k,k,n, TA, TB, sse/(m*n));
+    free(a);
+    free(b);
+    free(c);
+}
+
+void test_gpu_blas()
+{
+    test_gpu_accuracy(0,0,17,10,10); 
+    test_gpu_accuracy(1,0,17,10,10); 
+    test_gpu_accuracy(0,1,17,10,10); 
+    test_gpu_accuracy(1,1,17,10,10); 
+
+    test_gpu_accuracy(0,0,1000,10,100); 
+    test_gpu_accuracy(1,0,1000,10,100); 
+    test_gpu_accuracy(0,1,1000,10,100); 
+    test_gpu_accuracy(1,1,1000,10,100); 
+
+    time_gpu_random_matrix(0,0,1000,1000,100); 
+    time_random_matrix(0,0,1000,1000,100); 
+
+    time_gpu_random_matrix(0,1,1000,1000,100); 
+    time_random_matrix(0,1,1000,1000,100); 
+
+    time_gpu_random_matrix(1,0,1000,1000,100); 
+    time_random_matrix(1,0,1000,1000,100); 
+
+    time_gpu_random_matrix(1,1,1000,1000,100); 
+    time_random_matrix(1,1,1000,1000,100); 
+
+}
+
 /*
 cl_kernel get_gemm_kernel_slow()
 {

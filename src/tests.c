@@ -789,9 +789,9 @@ int main(int argc, char *argv[])
 	//test_vince();
 	//test_full();
 	//train_VOC();
-	features_VOC_image(argv[1], argv[2], argv[3], 0);
-	features_VOC_image(argv[1], argv[2], argv[3], 1);
-	//features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
+	//features_VOC_image(argv[1], argv[2], argv[3], 0);
+	//features_VOC_image(argv[1], argv[2], argv[3], 1);
+	features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
 	//visualize_imagenet_features("data/assira/train.list");
 	//visualize_imagenet_topk("data/VOC2012.list");
 	//visualize_cat();
