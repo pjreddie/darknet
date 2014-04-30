@@ -24,7 +24,7 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         float *C, int ldc)
 {
-    cpu_gemm( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
+    gpu_gemm( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
 }
 
 void im2row(float *image, int h, int w, int c, int size, int stride, float *matrix)

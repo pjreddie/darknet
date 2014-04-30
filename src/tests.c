@@ -302,9 +302,9 @@ void test_nist()
 {
 	srand(444444);
 	srand(888888);
-	network net = parse_network_cfg("cfg/nist_basic.cfg");
-	data train = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
-	data test = load_categorical_data_csv("mnist/mnist_test.csv",0,10);
+	network net = parse_network_cfg("cfg/nist.cfg");
+	data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
+	data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
 	normalize_data_rows(train);
 	normalize_data_rows(test);
 	//randomize_data(train);
@@ -655,9 +655,7 @@ void visualize_cat()
 	resize_network(net, im.h, im.w, im.c);
 	forward_network(net, im.data);
 
-	image out = get_network_image(net);
 	visualize_network(net);
-	cvWaitKey(1000);
 	cvWaitKey(0);
 }
 
@@ -784,14 +782,14 @@ int main(int argc, char *argv[])
 	//    test_im2row();
 	//test_split();
 	//test_ensemble();
-	//test_nist();
+	test_nist();
 	//test_cifar10();
 	//test_vince();
 	//test_full();
 	//train_VOC();
 	//features_VOC_image(argv[1], argv[2], argv[3], 0);
 	//features_VOC_image(argv[1], argv[2], argv[3], 1);
-	features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
+	//features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
 	//visualize_imagenet_features("data/assira/train.list");
 	//visualize_imagenet_topk("data/VOC2012.list");
 	//visualize_cat();

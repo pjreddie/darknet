@@ -5,6 +5,7 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
                     float BETA,
                     float *C, int ldc);
 float *random_matrix(int rows, int cols);
+void time_random_matrix(int TA, int TB, int m, int k, int n);
 void im2row(float *image, int h, int w, int c, int size, int stride, float *matrix);
 void im2col(float *image, int h, int w, int c, int size, int stride, float *matrix);
 void im2col_cpu(float* data_im, const int channels,

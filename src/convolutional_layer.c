@@ -96,33 +96,14 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
             convolutional_out_width(layer)*
             layer.batch;
 
-    memset(layer.output, 0, m*n*sizeof(float));
-
     float *a = layer.filters;
     float *b = layer.col_image;
     float *c = layer.output;
     for(i = 0; i < layer.batch; ++i){
         im2col_cpu(in+i*(n/layer.batch),  layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, b+i*(n/layer.batch));
     }
-    gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
-
-    for(i = 0; i < m*n; ++i){
-        layer.output[i] = activate(layer.output[i], layer.activation);
-    }
-    //for(i = 0; i < m*n; ++i) if(i%(m*n/10+1)==0) printf("%f, ", layer.output[i]); printf("\n");
-
-}
-
-void gradient_delta_convolutional_layer(convolutional_layer layer)
-{
-    int i;
-    int size = convolutional_out_height(layer)*
-                convolutional_out_width(layer)*
-                layer.n*
-                layer.batch;
-    for(i = 0; i < size; ++i){
-        layer.delta[i] *= gradient(layer.output[i], layer.activation);
-    }
+    gemm(0,0,m,n,k,1,a,k,b,n,0,c,n);
+    activate_array(layer.output, m*n, layer.activation);
 }
 
 void learn_bias_convolutional_layer(convolutional_layer layer)
@@ -143,13 +124,13 @@ void learn_bias_convolutional_layer(convolutional_layer layer)
 
 void learn_convolutional_layer(convolutional_layer layer)
 {
-    gradient_delta_convolutional_layer(layer);
-    learn_bias_convolutional_layer(layer);
     int m = layer.n;
     int n = layer.size*layer.size*layer.c;
     int k = convolutional_out_height(layer)*
             convolutional_out_width(layer)*
             layer.batch;
+    gradient_array(layer.output, m*k, layer.activation, layer.delta);
+    learn_bias_convolutional_layer(layer);
 
     float *a = layer.delta;
     float *b = layer.col_image;
@@ -171,9 +152,7 @@ void backward_convolutional_layer(convolutional_layer layer, float *delta)
     float *b = layer.delta;
     float *c = layer.col_image;
 
-
-    memset(c, 0, m*n*sizeof(float));
-    gemm(1,0,m,n,k,1,a,m,b,n,1,c,n);
+    gemm(1,0,m,n,k,1,a,m,b,n,0,c,n);
 
     memset(delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
     for(i = 0; i < layer.batch; ++i){
@@ -194,61 +173,6 @@ void update_convolutional_layer(convolutional_layer layer, float step, float mom
         layer.filter_updates[i] *= momentum;
     }
 }
-/*
-
-void backward_convolutional_layer2(convolutional_layer layer, float *input, float *delta)
-{
-    image in_delta = float_to_image(layer.h, layer.w, layer.c, delta);
-    image out_delta = get_convolutional_delta(layer);
-    int i,j;
-    for(i = 0; i < layer.n; ++i){
-        rotate_image(layer.kernels[i]);
-    }
-
-    zero_image(in_delta);
-    upsample_image(out_delta, layer.stride, layer.upsampled);
-    for(j = 0; j < in_delta.c; ++j){
-        for(i = 0; i < layer.n; ++i){
-            two_d_convolve(layer.upsampled, i, layer.kernels[i], j, 1, in_delta, j, layer.edge);
-        }
-    }
-
-    for(i = 0; i < layer.n; ++i){
-        rotate_image(layer.kernels[i]);
-    }
-}
-
-
-void learn_convolutional_layer(convolutional_layer layer, float *input)
-{
-    int i;
-    image in_image = float_to_image(layer.h, layer.w, layer.c, input);
-    image out_delta = get_convolutional_delta(layer);
-    gradient_delta_convolutional_layer(layer);
-    for(i = 0; i < layer.n; ++i){
-        kernel_update(in_image, layer.kernel_updates[i], layer.stride, i, out_delta, layer.edge);
-        layer.bias_updates[i] += avg_image_layer(out_delta, i);
-    }
-}
-
-void update_convolutional_layer(convolutional_layer layer, float step, float momentum, float decay)
-{
-    int i,j;
-    for(i = 0; i < layer.n; ++i){
-        layer.bias_momentum[i] = step*(layer.bias_updates[i]) 
-                                + momentum*layer.bias_momentum[i];
-        layer.biases[i] += layer.bias_momentum[i];
-        layer.bias_updates[i] = 0;
-        int pixels = layer.kernels[i].h*layer.kernels[i].w*layer.kernels[i].c;
-        for(j = 0; j < pixels; ++j){
-            layer.kernel_momentum[i].data[j] = step*(layer.kernel_updates[i].data[j] - decay*layer.kernels[i].data[j]) 
-                                                + momentum*layer.kernel_momentum[i].data[j];
-            layer.kernels[i].data[j] += layer.kernel_momentum[i].data[j];
-        }
-        zero_image(layer.kernel_updates[i]);
-    }
-}
-*/
 
 void test_convolutional_layer()
 {

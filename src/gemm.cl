@@ -1,5 +1,4 @@
 
-
 __kernel void gemm(int TA, int TB, int M, int N, int K, float ALPHA, 
                     __global float *A, int lda, 
                     __global float *B, int ldb,
@@ -40,33 +39,7 @@ __kernel void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
     }
 
     if(row < M && col < N){
-        C[row*ldc+col] = val;
+        C[row*ldc+col] = ALPHA*val + BETA*C[row*ldc+col];
     }
 }
 
-/*
-__kernel void gemm_slow(int TA, int TB, int M, int N, int K, float ALPHA, 
-                    __global float *A, int lda, 
-                    __global float *B, int ldb,
-                    float BETA,
-                    __global float *C, int ldc)
-{
-    float val = 0;
-    int row = get_global_id(0);
-    int col = get_global_id(1);
-    int i;
-    for(i = 0; i < K; ++i){
-        float Aval;
-        if(TA) Aval = A[i*lda+row]; 
-        else Aval = A[row*lda+i];
-
-        float Bval;
-        if(TB) Bval = B[col*ldb+i];
-        else Bval = B[col+i*ldb];
-
-        val += Aval*Bval;
-    }
-    C[row*ldc+col] = val;
-}
-
-*/

@@ -34,21 +34,37 @@ ACTIVATION get_activation(char *s)
     return RELU;
 }
 
+float linear_activate(float x){return x;}
+float sigmoid_activate(float x){return 1./(1. + exp(-x));}
+float relu_activate(float x){return x*(x>0);}
+float ramp_activate(float x){return x*(x>0)+.1*x;}
+float tanh_activate(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
+
 float activate(float x, ACTIVATION a){
     switch(a){
         case LINEAR:
-            return x;
+            return linear_activate(x);
         case SIGMOID:
-            return 1./(1.+exp(-x));
+            return sigmoid_activate(x);
         case RELU:
-            return x*(x>0);
+            return relu_activate(x);
         case RAMP:
-            return x*(x>0) + .1*x;
+            return ramp_activate(x);
         case TANH:
-            return (exp(2*x)-1)/(exp(2*x)+1);
+            return tanh_activate(x);
     }
     return 0;
 }
+
+void activate_array(float *x, const int n, const ACTIVATION a)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        x[i] = activate(x[i], a);
+    }
+}
+
+
 float gradient(float x, ACTIVATION a){
     switch(a){
         case LINEAR:
@@ -64,4 +80,12 @@ float gradient(float x, ACTIVATION a){
     }
     return 0;
 }
+
+void gradient_array(const float *x, const int n, const ACTIVATION a, float *delta)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        delta[i] *= gradient(x[i], a);
+    }
+} 
 

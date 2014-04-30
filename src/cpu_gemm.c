@@ -74,7 +74,12 @@ void cpu_gemm(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         float *C, int ldc)
 {
-    // Assume beta = 1 LULZ
+    int i, j;
+    for(i = 0; i < M; ++i){
+        for(j = 0; j < N; ++j){
+            C[i*ldc + j] *= BETA;
+        }
+    }
     if(!TA && !TB)
         cpu_gemm_nn( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
     else if(TA && !TB)

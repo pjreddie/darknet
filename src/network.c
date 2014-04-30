@@ -6,7 +6,6 @@
 
 #include "connected_layer.h"
 #include "convolutional_layer.h"
-//#include "old_conv.h"
 #include "maxpool_layer.h"
 #include "normalization_layer.h"
 #include "softmax_layer.h"

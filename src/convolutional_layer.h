@@ -34,10 +34,6 @@ image *visualize_convolutional_layer(convolutional_layer layer, char *window, im
 
 void backward_convolutional_layer(convolutional_layer layer, float *delta);
 
-//void backpropagate_convolutional_layer_convolve(image input, convolutional_layer layer);
-//void visualize_convolutional_filters(convolutional_layer layer, char *window);
-//void visualize_convolutional_layer(convolutional_layer layer);
-
 image get_convolutional_image(convolutional_layer layer);
 image get_convolutional_delta(convolutional_layer layer);
 image get_convolutional_filter(convolutional_layer layer, int i);

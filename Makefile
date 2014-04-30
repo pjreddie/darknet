@@ -1,5 +1,5 @@
 CC=gcc
-GPU=0
+GPU=1
 COMMON=-Wall `pkg-config --cflags opencv` -I/usr/local/cuda/include/
 UNAME = $(shell uname)
 OPTS=-O3
@@ -15,7 +15,7 @@ LDFLAGS= -lOpenCL
 endif
 endif
 CFLAGS= $(COMMON) $(OPTS)
-#CFLAGS= $(COMMON) -O0 -g 
+CFLAGS= $(COMMON) -O0 -g 
 LDFLAGS+=`pkg-config --libs opencv` -lm
 VPATH=./src/
 EXEC=cnn
