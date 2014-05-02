@@ -1,3 +1,4 @@
+#ifdef GPU
 #include "opencl.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +13,7 @@ void check_error(cl_info info)
 {
     if (info.error != CL_SUCCESS) {
         printf("\n Error number %d", info.error);
+        exit(1);
     }
 }
 
@@ -66,6 +68,7 @@ cl_program cl_fprog(char *filename, char *options, cl_info info)
 		clGetProgramBuildInfo( prog, info.device, CL_PROGRAM_BUILD_LOG, 4096, build_c, 0);
 		fprintf(stderr, "Build Log for %s program:\n%s\n", filename, build_c);
 	}
+	check_error(info);
 	return prog;
 }
 
@@ -85,4 +88,4 @@ cl_kernel get_kernel(char *filename, char *kernelname, char *options)
 	return kernel;
 }
 
-
+#endif

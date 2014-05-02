@@ -123,7 +123,7 @@ data load_cifar10_data(char *filename)
 {
     data d;
     d.shallow = 0;
-    unsigned long i,j;
+    long i,j;
     matrix X = make_matrix(10000, 3072);
     matrix y = make_matrix(10000, 10);
     d.X = X;

@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -18,77 +17,7 @@ void pm(int M, int N, float *A)
     printf("\n");
 }
 
-void gemm(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
-        float *B, int ldb,
-        float BETA,
-        float *C, int ldc)
-{
-    gpu_gemm( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
-}
-
-void im2row(float *image, int h, int w, int c, int size, int stride, float *matrix)
-{
-    int i;
-    int mc = c;
-    int mw = (size*size);
-    int mh = ((h-size)/stride+1)*((w-size)/stride+1);
-    int msize = mc*mw*mh;
-    for(i = 0; i < msize; ++i){
-        int channel = i/(mh*mw);
-        int block =   (i%(mh*mw))/mw;
-        int position = i%mw;
-        int block_h = block/((w-size)/stride+1);
-        int block_w = block%((w-size)/stride+1);
-        int ph, pw, pc;
-        ph = position/size+block_h;
-        pw = position%size+block_w;
-        pc = channel;
-        matrix[i] = image[pc*h*w+ph*w+pw];
-    }
-}
-void im2col(float *image, int h, int w, int c, int size, int stride, float *matrix)
-{
-    int b,p;
-    int blocks = ((h-size)/stride+1)*((w-size)/stride+1);
-    int pixels = (size*size*c);
-    for(b = 0; b < blocks; ++b){
-        int block_h = b/((w-size)/stride+1);
-        int block_w = b%((w-size)/stride+1);
-        for(p = 0; p < pixels; ++p){
-            int ph, pw, pc;
-            int position = p%(size*size);
-            pc = p/(size*size);
-            ph = position/size+block_h;
-            pw = position%size+block_w;
-            matrix[b+p*blocks] = image[pc*h*w+ph*w+pw];
-        }
-    }
-}
-
-//From Berkeley Vision's Caffe!
-void im2col_cpu(float* data_im, const int channels,
-        const int height, const int width, const int ksize, const int stride,
-        float* data_col) 
-{
-    int c,h,w;
-    int height_col = (height - ksize) / stride + 1;
-    int width_col = (width - ksize) / stride + 1;
-    int channels_col = channels * ksize * ksize;
-    for ( c = 0; c < channels_col; ++c) {
-        int w_offset = c % ksize;
-        int h_offset = (c / ksize) % ksize;
-        int c_im = c / ksize / ksize;
-        for ( h = 0; h < height_col; ++h) {
-            for ( w = 0; w < width_col; ++w) {
-                data_col[(c * height_col + h) * width_col + w] =
-                    data_im[(c_im * height + h * stride + h_offset) * width
-                    + w * stride + w_offset];
-            }
-        }
-    }
-}
-
+//This one might be too, can't remember.
 void col2im_cpu(float* data_col, const int channels,
         const int height, const int width, const int ksize, const int stride,
         float* data_im) 
@@ -135,7 +64,7 @@ void time_random_matrix(int TA, int TB, int m, int k, int n)
     int i;
     clock_t start = clock(), end;
     for(i = 0; i<1000; ++i){
-        cpu_gemm(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
+        gemm_cpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
     }
     end = clock();
     printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);

@@ -11,6 +11,7 @@ list *make_list()
 	return l;
 }
 
+/*
 void transfer_node(list *s, list *d, node *n)
 {
     node *prev, *next;
@@ -22,6 +23,7 @@ void transfer_node(list *s, list *d, node *n)
     if(s->front == n) s->front = next;
     if(s->back == n) s->back = prev;
 }
+*/
 
 void *list_pop(list *l){
     if(!l->back) return 0;

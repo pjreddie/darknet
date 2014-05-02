@@ -100,7 +100,7 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
     float *b = layer.col_image;
     float *c = layer.output;
     for(i = 0; i < layer.batch; ++i){
-        im2col_cpu(in+i*(n/layer.batch),  layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, b+i*(n/layer.batch));
+        im2col_gpu(in+i*(n/layer.batch),  layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, b+i*(n/layer.batch));
     }
     gemm(0,0,m,n,k,1,a,k,b,n,0,c,n);
     activate_array(layer.output, m*n, layer.activation);
@@ -162,16 +162,13 @@ void backward_convolutional_layer(convolutional_layer layer, float *delta)
 
 void update_convolutional_layer(convolutional_layer layer, float step, float momentum, float decay)
 {
-    int i;
     int size = layer.size*layer.size*layer.c*layer.n;
-    for(i = 0; i < layer.n; ++i){
-        layer.biases[i] += step*layer.bias_updates[i];
-        layer.bias_updates[i] *= momentum;
-    }
-    for(i = 0; i < size; ++i){
-        layer.filters[i] += step*(layer.filter_updates[i] - decay*layer.filters[i]);
-        layer.filter_updates[i] *= momentum;
-    }
+    axpy_cpu(layer.n, step, layer.bias_updates, 1, layer.biases, 1);
+    scal_cpu(layer.n, momentum, layer.bias_updates, 1);
+
+    scal_cpu(size, 1.-step*decay, layer.filters, 1);
+    axpy_cpu(size, step, layer.filter_updates, 1, layer.filters, 1);
+    scal_cpu(size, momentum, layer.filter_updates, 1);
 }
 
 void test_convolutional_layer()
