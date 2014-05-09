@@ -199,6 +199,7 @@ void show_image_collapsed(image p, char *name)
 image make_empty_image(int h, int w, int c)
 {
     image out;
+    out.data = 0;
     out.h = h;
     out.w = w;
     out.c = c;
