@@ -52,7 +52,7 @@ void test_convolve_matrix()
 	int i;
 	clock_t start = clock(), end;
 	for(i = 0; i < 1000; ++i){
-		im2col_cpu(dog.data,  dog.c,  dog.h,  dog.w,  size,  stride, matrix);
+		im2col_cpu(dog.data,  1, dog.c,  dog.h,  dog.w,  size,  stride, matrix);
 		gemm(0,0,n,mw,mh,1,filters,mh,matrix,mw,1,edge.data,mw);
 	}
 	end = clock();
@@ -168,7 +168,7 @@ void test_parser()
 		float v = ((float)rand()/RAND_MAX);
 		float truth = v*v;
 		input[0] = v;
-		forward_network(net, input);
+		forward_network(net, input, 1);
 		float *out = get_network_output(net);
 		float *delta = get_network_delta(net);
 		float err = pow((out[0]-truth),2.);
@@ -245,7 +245,7 @@ void test_full()
 		normalize_data_rows(test);
 		for(j = 0; j < test.X.rows; ++j){
 			float *x = test.X.vals[j];
-			forward_network(net, x);
+			forward_network(net, x, 0);
 			int class = get_predicted_class_network(net);
 			fprintf(fp, "%d\n", class);
 		}
@@ -317,21 +317,13 @@ void test_nist()
 	int batch = 10000;
 	while(++count <= 10000){
 		float loss = train_network_sgd(net, train, batch, lr, momentum, decay);
-		printf("%5f %5f\n",(double)count*batch/train.X.rows, loss);
+		float test_acc = network_accuracy(net, test);
+		printf("%3d %5f %5f\n",count, loss, test_acc);
 		//printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
 		//end = clock();
 		//printf("Time: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
 		//start=end;
-		/*
-		   if(count%5 == 0){
-		   float train_acc = network_accuracy(net, train);
-		   fprintf(stderr, "\nTRAIN: %f\n", train_acc);
-		   float test_acc = network_accuracy(net, test);
-		   fprintf(stderr, "TEST: %f\n\n", test_acc);
-		   printf("%d, %f, %f\n", count, train_acc, test_acc);
 		//lr *= .5;
-		}
-		*/
 	}
 }
 
@@ -387,7 +379,7 @@ void test_random_classify()
 			int index = rand()%m.rows;
 			//image p = float_to_image(1690,1,1,m.vals[index]);
 			//normalize_image(p);
-			forward_network(net, m.vals[index]);
+			forward_network(net, m.vals[index], 1);
 			float *out = get_network_output(net);
 			float *delta = get_network_delta(net);
 			//printf("%f\n", out[0]);
@@ -408,7 +400,7 @@ void test_random_classify()
 	matrix test = csv_to_matrix("test.csv");
 	truth = pop_column(&test, 0);
 	for(i = 0; i < test.rows; ++i){
-		forward_network(net, test.vals[i]);
+		forward_network(net, test.vals[i], 0);
 		float *out = get_network_output(net);
 		if(fabs(out[0]) < .5) fprintf(fp, "0\n");
 		else fprintf(fp, "1\n");
@@ -439,7 +431,7 @@ void test_im2row()
 	float *matrix = calloc(msize, sizeof(float));
 	int i;
 	for(i = 0; i < 1000; ++i){
-		im2col_cpu(test.data,  c,  h,  w,  size,  stride, matrix);
+		im2col_cpu(test.data, 1, c,  h,  w,  size,  stride, matrix);
 		//image render = float_to_image(mh, mw, mc, matrix);
 	}
 }
@@ -506,7 +498,7 @@ image features_output_size(network net, IplImage *src, int outh, int outw)
 	//normalize_array(im.data, im.h*im.w*im.c);
 	translate_image(im, -144);
 	resize_network(net, im.h, im.w, im.c);
-	forward_network(net, im.data);
+	forward_network(net, im.data, 0);
 	image out = get_network_image(net);
 	free_image(im);
 	cvReleaseImage(&sized);
@@ -558,7 +550,7 @@ void visualize_imagenet_topk(char *filename)
 		resize_network(net, im.h, im.w, im.c);
 		//scale_image(im, 1./255);
 		translate_image(im, -144);
-		forward_network(net, im.data);
+		forward_network(net, im.data, 0);
 		image out = get_network_image(net);
 
 		int dh = (im.h - h)/(out.h-1);
@@ -620,7 +612,7 @@ void visualize_imagenet_features(char *filename)
 		image im = load_image(image_path, 0, 0);
 		printf("Processing %dx%d image\n", im.h, im.w);
 		resize_network(net, im.h, im.w, im.c);
-		forward_network(net, im.data);
+		forward_network(net, im.data, 0);
 		image out = get_network_image(net);
 
 		int dh = (im.h - h)/h;
@@ -653,7 +645,7 @@ void visualize_cat()
 	image im = load_image("data/cat.png", 0, 0);
 	printf("Processing %dx%d image\n", im.h, im.w);
 	resize_network(net, im.h, im.w, im.c);
-	forward_network(net, im.data);
+	forward_network(net, im.data, 0);
 
 	visualize_network(net);
 	cvWaitKey(0);

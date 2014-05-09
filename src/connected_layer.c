@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation)
+connected_layer *make_connected_layer(int batch, int inputs, int outputs, float dropout, ACTIVATION activation)
 {
     fprintf(stderr, "Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
     int i;
@@ -15,6 +15,7 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     layer->inputs = inputs;
     layer->outputs = outputs;
     layer->batch=batch;
+    layer->dropout = dropout;
 
     layer->output = calloc(batch*outputs, sizeof(float*));
     layer->delta = calloc(batch*outputs, sizeof(float*));
@@ -54,9 +55,9 @@ void update_connected_layer(connected_layer layer, float step, float momentum, f
     memset(layer.weight_updates, 0, layer.outputs*layer.inputs*sizeof(float));
 }
 
-void forward_connected_layer(connected_layer layer, float *input)
+void forward_connected_layer(connected_layer layer, float *input, int train)
 {
-    int i;
+    if(!train) layer.dropout = 0;
     memcpy(layer.output, layer.biases, layer.outputs*sizeof(float));
     int m = layer.batch;
     int k = layer.inputs;
@@ -65,17 +66,15 @@ void forward_connected_layer(connected_layer layer, float *input)
     float *b = layer.weights;
     float *c = layer.output;
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
-    for(i = 0; i < layer.outputs*layer.batch; ++i){
-        layer.output[i] = activate(layer.output[i], layer.activation);
-    }
+    activate_array(layer.output, layer.outputs*layer.batch, layer.activation, layer.dropout);
 }
 
-void learn_connected_layer(connected_layer layer, float *input)
+void backward_connected_layer(connected_layer layer, float *input, float *delta)
 {
     int i;
     for(i = 0; i < layer.outputs*layer.batch; ++i){
         layer.delta[i] *= gradient(layer.output[i], layer.activation);
-        layer.bias_updates[i%layer.batch] += layer.delta[i]/layer.batch;
+        layer.bias_updates[i%layer.batch] += layer.delta[i];
     }
     int m = layer.inputs;
     int k = layer.batch;
@@ -84,18 +83,15 @@ void learn_connected_layer(connected_layer layer, float *input)
     float *b = layer.delta;
     float *c = layer.weight_updates;
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
-}
 
-void backward_connected_layer(connected_layer layer, float *input, float *delta)
-{
-    int m = layer.inputs;
-    int k = layer.outputs;
-    int n = layer.batch;
+    m = layer.inputs;
+    k = layer.outputs;
+    n = layer.batch;
 
-    float *a = layer.weights;
-    float *b = layer.delta;
-    float *c = delta;
+    a = layer.weights;
+    b = layer.delta;
+    c = delta;
 
-    gemm(0,0,m,n,k,1,a,k,b,n,0,c,n);
+    if(c) gemm(0,0,m,n,k,1,a,k,b,n,0,c,n);
 }
 

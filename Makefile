@@ -1,18 +1,19 @@
 CC=gcc
-GPU=1
+GPU=0
 COMMON=-Wall -Werror -Wfatal-errors `pkg-config --cflags opencv` -I/usr/local/cuda/include/
 ifeq ($(GPU), 1) 
 COMMON+=-DGPU
 else
 endif
 UNAME = $(shell uname)
-OPTS=-O3 -flto
+OPTS=-Ofast -flto
 ifeq ($(UNAME), Darwin)
 COMMON+= -isystem /usr/local/Cellar/opencv/2.4.6.1/include/opencv -isystem /usr/local/Cellar/opencv/2.4.6.1/include
 ifeq ($(GPU), 1)
 LDFLAGS= -framework OpenCL
 endif
 else
+OPTS+= -march=native
 ifeq ($(GPU), 1)
 LDFLAGS= -lOpenCL
 endif

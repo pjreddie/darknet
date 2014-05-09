@@ -88,4 +88,18 @@ cl_kernel get_kernel(char *filename, char *kernelname, char *options)
 	return kernel;
 }
 
+void cl_read_array(cl_mem mem, float *x, int n)
+{
+    cl_setup();
+    clEnqueueReadBuffer(cl.queue, mem, CL_TRUE, 0, sizeof(float)*n,x,0,0,0);
+    check_error(cl);
+}
+
+void cl_write_array(cl_mem mem, float *x, int n)
+{
+    cl_setup();
+    clEnqueueWriteBuffer(cl.queue, mem, CL_TRUE, 0,sizeof(float)*n,x,0,0,0);
+    check_error(cl);
+}
+
 #endif

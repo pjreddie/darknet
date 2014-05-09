@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 char *get_activation_string(ACTIVATION a)
@@ -40,27 +41,29 @@ float relu_activate(float x){return x*(x>0);}
 float ramp_activate(float x){return x*(x>0)+.1*x;}
 float tanh_activate(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
 
-float activate(float x, ACTIVATION a){
+float activate(float x, ACTIVATION a, float dropout)
+{
+    if((float)rand()/RAND_MAX < dropout) return 0;
     switch(a){
         case LINEAR:
-            return linear_activate(x);
+            return linear_activate(x)/(1-dropout);
         case SIGMOID:
-            return sigmoid_activate(x);
+            return sigmoid_activate(x)/(1-dropout);
         case RELU:
-            return relu_activate(x);
+            return relu_activate(x)/(1-dropout);
         case RAMP:
-            return ramp_activate(x);
+            return ramp_activate(x)/(1-dropout);
         case TANH:
-            return tanh_activate(x);
+            return tanh_activate(x)/(1-dropout);
     }
     return 0;
 }
 
-void activate_array(float *x, const int n, const ACTIVATION a)
+void activate_array(float *x, const int n, const ACTIVATION a, float dropout)
 {
     int i;
     for(i = 0; i < n; ++i){
-        x[i] = activate(x[i], a);
+        x[i] = activate(x[i], a, dropout);
     }
 }
 
@@ -89,3 +92,40 @@ void gradient_array(const float *x, const int n, const ACTIVATION a, float *delt
     }
 } 
 
+#ifdef GPU
+
+#include "opencl.h"
+#include <math.h>
+
+cl_kernel get_activation_kernel()
+{
+    static int init = 0;
+    static cl_kernel kernel;
+    if(!init){
+        kernel = get_kernel("src/activations.cl", "activate_array", 0);
+        init = 1;
+    }
+    return kernel;
+}
+
+
+void activate_array_ongpu(cl_mem x, int n, ACTIVATION a, float dropout) 
+{
+    cl_setup();
+    cl_kernel kernel = get_activation_kernel();
+    cl_command_queue queue = cl.queue;
+
+    cl_uint i = 0;
+    cl.error = clSetKernelArg(kernel, i++, sizeof(x), (void*) &x);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(n), (void*) &n);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(a), (void*) &a);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(dropout), 
+        (void*) &dropout);
+    check_error(cl);
+
+    size_t gsize = n;
+
+    clEnqueueNDRangeKernel(queue, kernel, 1, 0, &gsize, 0, 0, 0, 0);
+    check_error(cl);
+}
+#endif

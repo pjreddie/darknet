@@ -89,6 +89,7 @@ connected_layer *parse_connected(list *options, network net, int count)
     int i;
     int input;
     int output = option_find_int(options, "output",1);
+    float dropout = option_find_float(options, "dropout", 0.);
     char *activation_s = option_find_str(options, "activation", "sigmoid");
     ACTIVATION activation = get_activation(activation_s);
     if(count == 0){
@@ -97,7 +98,7 @@ connected_layer *parse_connected(list *options, network net, int count)
     }else{
         input =  get_network_output_size_layer(net, count-1);
     }
-    connected_layer *layer = make_connected_layer(net.batch, input, output, activation);
+    connected_layer *layer = make_connected_layer(net.batch, input, output, dropout, activation);
     char *data = option_find_str(options, "data", 0);
     if(data){
         char *curr = data;

@@ -19,6 +19,9 @@ network make_network(int n, int batch)
     net.types = calloc(net.n, sizeof(LAYER_TYPE));
     net.outputs = 0;
     net.output = 0;
+    #ifdef GPU
+    net.input_cl = 0;
+    #endif
     return net;
 }
 
@@ -40,17 +43,6 @@ void print_convolutional_cfg(FILE *fp, convolutional_layer *l, int first)
     fprintf(fp, "data=");
     for(i = 0; i < l->n; ++i) fprintf(fp, "%g,", l->biases[i]);
     for(i = 0; i < l->n*l->c*l->size*l->size; ++i) fprintf(fp, "%g,", l->filters[i]);
-    /*
-    int j,k;
-    for(i = 0; i < l->n; ++i) fprintf(fp, "%g,", l->biases[i]);
-    for(i = 0; i < l->n; ++i){
-        for(j = l->c-1; j >= 0; --j){
-            for(k = 0; k < l->size*l->size; ++k){
-                fprintf(fp, "%g,", l->filters[i*(l->c*l->size*l->size)+j*l->size*l->size+k]);
-            }
-        }
-    }
-    */
     fprintf(fp, "\n\n");
 }
 void print_connected_cfg(FILE *fp, connected_layer *l, int first)
@@ -121,18 +113,34 @@ void save_network(network net, char *filename)
     fclose(fp);
 }
 
-void forward_network(network net, float *input)
+void forward_network(network net, float *input, int train)
 {
     int i;
+    #ifdef GPU
+    cl_setup();
+    size_t size = get_network_input_size(net);
+    if(!net.input_cl){
+        net.input_cl = clCreateBuffer(cl.context,
+            CL_MEM_READ_WRITE, size*sizeof(float), 0, &cl.error);
+        check_error(cl);
+    }
+    cl_write_array(net.input_cl, input, size);
+    cl_mem input_cl = net.input_cl;
+    #endif
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+            #ifdef GPU
+            forward_convolutional_layer_gpu(layer, input_cl);
+            input_cl = layer.output_cl;
+            #else
             forward_convolutional_layer(layer, input);
+            #endif
             input = layer.output;
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            forward_connected_layer(layer, input);
+            forward_connected_layer(layer, input, train);
             input = layer.output;
         }
         else if(net.types[i] == SOFTMAX){
@@ -263,9 +271,7 @@ float backward_network(network net, float *input, float *truth)
         }
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            learn_convolutional_layer(layer);
-            //learn_convolutional_layer(layer);
-            if(i != 0) backward_convolutional_layer(layer, prev_delta);
+            backward_convolutional_layer(layer, prev_delta);
         }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
@@ -281,8 +287,7 @@ float backward_network(network net, float *input, float *truth)
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            learn_connected_layer(layer, prev_input);
-            if(i != 0) backward_connected_layer(layer, prev_input, prev_delta);
+            backward_connected_layer(layer, prev_input, prev_delta);
         }
     }
     return error;
@@ -290,7 +295,7 @@ float backward_network(network net, float *input, float *truth)
 
 float train_network_datum(network net, float *x, float *y, float step, float momentum, float decay)
 {
-    forward_network(net, x);
+    forward_network(net, x, 1);
     //int class = get_predicted_class_network(net);
     float error = backward_network(net, x, y);
     update_network(net, step, momentum, decay);
@@ -332,7 +337,7 @@ float train_network_batch(network net, data d, int n, float step, float momentum
         int index = rand()%d.X.rows;
         float *x = d.X.vals[index];
         float *y = d.y.vals[index];
-        forward_network(net, x);
+        forward_network(net, x, 1);
         int class = get_predicted_class_network(net);
         backward_network(net, x, y);
         correct += (y[class]?1:0);
@@ -359,6 +364,27 @@ void train_network(network net, data d, float step, float momentum, float decay)
     fprintf(stderr, "Accuracy: %f\n", (float)correct/d.X.rows);
 }
 
+int get_network_input_size_layer(network net, int i)
+{
+    if(net.types[i] == CONVOLUTIONAL){
+        convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.h*layer.w*layer.c;
+    }
+    else if(net.types[i] == MAXPOOL){
+        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.h*layer.w*layer.c;
+    }
+    else if(net.types[i] == CONNECTED){
+        connected_layer layer = *(connected_layer *)net.layers[i];
+        return layer.inputs;
+    }
+    else if(net.types[i] == SOFTMAX){
+        softmax_layer layer = *(softmax_layer *)net.layers[i];
+        return layer.inputs;
+    }
+    return 0;
+}
+
 int get_network_output_size_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
@@ -381,36 +407,6 @@ int get_network_output_size_layer(network net, int i)
     }
     return 0;
 }
-
-/*
-   int resize_network(network net, int h, int w, int c)
-   {
-   int i;
-   for (i = 0; i < net.n; ++i){
-   if(net.types[i] == CONVOLUTIONAL){
-   convolutional_layer *layer = (convolutional_layer *)net.layers[i];
-   layer->h = h;
-   layer->w = w;
-   layer->c = c;
-   image output = get_convolutional_image(*layer);
-   h = output.h;
-   w = output.w;
-   c = output.c;
-   }
-   else if(net.types[i] == MAXPOOL){
-   maxpool_layer *layer = (maxpool_layer *)net.layers[i];
-   layer->h = h;
-   layer->w = w;
-   layer->c = c;
-   image output = get_maxpool_image(*layer);
-   h = output.h;
-   w = output.w;
-   c = output.c;
-   }
-   }
-   return 0;
-   }
- */
 
 int resize_network(network net, int h, int w, int c)
 {
@@ -448,6 +444,11 @@ int get_network_output_size(network net)
 {
     int i = net.n-1;
     return get_network_output_size_layer(net, i);
+}
+
+int get_network_input_size(network net)
+{
+    return get_network_output_size_layer(net, 0);
 }
 
 image get_network_image_layer(network net, int i)
@@ -497,7 +498,7 @@ void visualize_network(network net)
 
 float *network_predict(network net, float *input)
 {
-    forward_network(net, input);
+    forward_network(net, input, 0);
     float *out = get_network_output(net);
     return out;
 }

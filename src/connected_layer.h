@@ -21,16 +21,17 @@ typedef struct{
 
     float *output;
     float *delta;
+    
+    float dropout;
 
     ACTIVATION activation;
 
 } connected_layer;
 
-connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation);
+connected_layer *make_connected_layer(int batch, int inputs, int outputs, float dropout, ACTIVATION activation);
 
-void forward_connected_layer(connected_layer layer, float *input);
+void forward_connected_layer(connected_layer layer, float *input, int train);
 void backward_connected_layer(connected_layer layer, float *input, float *delta);
-void learn_connected_layer(connected_layer layer, float *input);
 void update_connected_layer(connected_layer layer, float step, float momentum, float decay);
 
 

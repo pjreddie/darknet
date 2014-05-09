@@ -2,6 +2,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "opencl.h"
 #include "image.h"
 #include "data.h"
 
@@ -20,10 +21,15 @@ typedef struct {
     LAYER_TYPE *types;
     int outputs;
     float *output;
+
+    #ifdef GPU
+    cl_mem input_cl;
+    cl_mem output_cl;
+    #endif
 } network;
 
 network make_network(int n, int batch);
-void forward_network(network net, float *input);
+void forward_network(network net, float *input, int train);
 float backward_network(network net, float *input, float *truth);
 void update_network(network net, float step, float momentum, float decay);
 float train_network_sgd(network net, data d, int n, float step, float momentum,float decay);
@@ -44,6 +50,7 @@ void print_network(network net);
 void visualize_network(network net);
 void save_network(network net, char *filename);
 int resize_network(network net, int h, int w, int c);
+int get_network_input_size(network net);
 
 #endif
 
