@@ -48,6 +48,7 @@ convolutional_layer *parse_convolutional(list *options, network net, int count)
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
+    int pad = option_find_int(options, "pad",0);
     char *activation_s = option_find_str(options, "activation", "sigmoid");
     ACTIVATION activation = get_activation(activation_s);
     if(count == 0){
@@ -62,7 +63,7 @@ convolutional_layer *parse_convolutional(list *options, network net, int count)
         c = m.c;
         if(h == 0) error("Layer before convolutional layer must output image.");
     }
-    convolutional_layer *layer = make_convolutional_layer(net.batch,h,w,c,n,size,stride, activation);
+    convolutional_layer *layer = make_convolutional_layer(net.batch,h,w,c,n,size,stride,pad,activation);
     char *data = option_find_str(options, "data", 0);
     if(data){
         char *curr = data;

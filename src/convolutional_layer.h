@@ -14,6 +14,7 @@ typedef struct {
     int n;
     int size;
     int stride;
+    int pad;
     float *filters;
     float *filter_updates;
     float *filter_momentum;
@@ -47,7 +48,7 @@ typedef struct {
 void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in);
 #endif
 
-convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, ACTIVATION activation);
+convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation);
 void resize_convolutional_layer(convolutional_layer *layer, int h, int w, int c);
 void forward_convolutional_layer(const convolutional_layer layer, float *in);
 void update_convolutional_layer(convolutional_layer layer, float step, float momentum, float decay);

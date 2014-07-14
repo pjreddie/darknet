@@ -17,28 +17,6 @@ void pm(int M, int N, float *A)
     printf("\n");
 }
 
-//This one might be too, can't remember.
-void col2im_cpu(float* data_col, const int channels,
-        const int height, const int width, const int ksize, const int stride,
-        float* data_im) 
-{
-    int c,h,w;
-    int height_col = (height - ksize) / stride + 1;
-    int width_col = (width - ksize) / stride + 1;
-    int channels_col = channels * ksize * ksize;
-    for ( c = 0; c < channels_col; ++c) {
-        int w_offset = c % ksize;
-        int h_offset = (c / ksize) % ksize;
-        int c_im = c / ksize / ksize;
-        for ( h = 0; h < height_col; ++h) {
-            for ( w = 0; w < width_col; ++w) {
-                data_im[(c_im * height + h * stride + h_offset) * width
-                    + w * stride + w_offset]+= data_col[(c * height_col + h) * width_col + w];
-            }
-        }
-    }
-}
-
 float *random_matrix(int rows, int cols)
 {
     int i;

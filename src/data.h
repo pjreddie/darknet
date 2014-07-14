@@ -22,6 +22,7 @@ list *get_paths(char *filename);
 data load_categorical_data_csv(char *filename, int target, int k);
 void normalize_data_rows(data d);
 void scale_data_rows(data d, float s);
+void translate_data_rows(data d, float s);
 void randomize_data(data d);
 data *split_data(data d, int part, int total);
 

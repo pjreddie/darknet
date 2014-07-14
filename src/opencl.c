@@ -32,7 +32,8 @@ cl_info cl_init()
     if(num_devices > MAX_DEVICES) num_devices = MAX_DEVICES;
     int index = getpid()%num_devices;
     printf("%d rand, %d devices, %d index\n", getpid(), num_devices, index);
-    info.device = devices[index];
+    //info.device = devices[index];
+    info.device = devices[1];
     fprintf(stderr, "Found %d device(s)\n", num_devices);
     check_error(info);
 
@@ -100,6 +101,23 @@ void cl_write_array(cl_mem mem, float *x, int n)
     cl_setup();
     clEnqueueWriteBuffer(cl.queue, mem, CL_TRUE, 0,sizeof(float)*n,x,0,0,0);
     check_error(cl);
+}
+
+void cl_copy_array(cl_mem src, cl_mem dst, int n)
+{
+    cl_setup();
+    clEnqueueCopyBuffer(cl.queue, src, dst, 0, 0, sizeof(float)*n,0,0,0);
+    check_error(cl);
+}
+
+cl_mem cl_make_array(float *x, int n)
+{
+    cl_setup();
+    cl_mem mem = clCreateBuffer(cl.context,
+            CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
+            sizeof(float)*n, x, &cl.error);
+    check_error(cl);
+    return mem;
 }
 
 #endif

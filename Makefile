@@ -23,19 +23,21 @@ CFLAGS= $(COMMON) $(OPTS)
 LDFLAGS+=`pkg-config --libs opencv` -lm
 VPATH=./src/
 EXEC=cnn
+OBJDIR=./obj/
 
-OBJ=network.o image.o tests.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o mini_blas.o convolutional_layer.o gemm.o normalization_layer.o opencl.o im2col.o col2im.o axpy.o
+OBJ=network.o image.o cnn.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o mini_blas.o convolutional_layer.o gemm.o normalization_layer.o opencl.o im2col.o col2im.o axpy.o
+OBJS = $(addprefix $(OBJDIR), $(OBJ))
 
 all: $(EXEC)
 
-$(EXEC): $(OBJ)
+$(EXEC): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
-%.o: %.c 
+$(OBJDIR)%.o: %.c 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJ) $(EXEC)
+	rm -rf $(OBJS) $(EXEC)
 

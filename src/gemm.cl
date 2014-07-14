@@ -27,8 +27,8 @@ __kernel void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
         int brow = i + sub_row;
         int bcol = col_block*BLOCK + sub_col;
 
-        Asub[sub_row][sub_col] = TA ? A[arow + acol*lda] : A[arow*lda + acol];
-        Bsub[sub_row][sub_col] = TB ? B[brow + bcol*ldb] : B[brow*ldb + bcol];
+        if(arow < M && acol < K)Asub[sub_row][sub_col] = TA ? A[arow + acol*lda] : A[arow*lda + acol];
+        if(brow < K && bcol < N)Bsub[sub_row][sub_col] = TB ? B[brow + bcol*ldb] : B[brow*ldb + bcol];
 
         barrier(CLK_LOCAL_MEM_FENCE);
 

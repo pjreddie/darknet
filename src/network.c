@@ -113,10 +113,9 @@ void save_network(network net, char *filename)
     fclose(fp);
 }
 
+#ifdef GPU
 void forward_network(network net, float *input, int train)
 {
-    int i;
-    #ifdef GPU
     cl_setup();
     size_t size = get_network_input_size(net);
     if(!net.input_cl){
@@ -126,16 +125,12 @@ void forward_network(network net, float *input, int train)
     }
     cl_write_array(net.input_cl, input, size);
     cl_mem input_cl = net.input_cl;
-    #endif
+    int i;
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            #ifdef GPU
             forward_convolutional_layer_gpu(layer, input_cl);
             input_cl = layer.output_cl;
-            #else
-            forward_convolutional_layer(layer, input);
-            #endif
             input = layer.output;
         }
         else if(net.types[i] == CONNECTED){
@@ -160,6 +155,41 @@ void forward_network(network net, float *input, int train)
         }
     }
 }
+
+#else
+
+void forward_network(network net, float *input, int train)
+{
+    int i;
+    for(i = 0; i < net.n; ++i){
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+            forward_convolutional_layer(layer, input);
+            input = layer.output;
+        }
+        else if(net.types[i] == CONNECTED){
+            connected_layer layer = *(connected_layer *)net.layers[i];
+            forward_connected_layer(layer, input, train);
+            input = layer.output;
+        }
+        else if(net.types[i] == SOFTMAX){
+            softmax_layer layer = *(softmax_layer *)net.layers[i];
+            forward_softmax_layer(layer, input);
+            input = layer.output;
+        }
+        else if(net.types[i] == MAXPOOL){
+            maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+            forward_maxpool_layer(layer, input);
+            input = layer.output;
+        }
+        else if(net.types[i] == NORMALIZATION){
+            normalization_layer layer = *(normalization_layer *)net.layers[i];
+            forward_normalization_layer(layer, input);
+            input = layer.output;
+        }
+    }
+}
+#endif
 
 void update_network(network net, float step, float momentum, float decay)
 {
@@ -238,9 +268,10 @@ float calculate_error_network(network net, float *truth)
     float sum = 0;
     float *delta = get_network_delta(net);
     float *out = get_network_output(net);
-    int i, k = get_network_output_size(net);
-    for(i = 0; i < k; ++i){
-        //printf("%f, ", out[i]);
+    int i;
+    for(i = 0; i < get_network_output_size(net)*net.batch; ++i){
+        //if(i %get_network_output_size(net) == 0) printf("\n");
+        //printf("%5.2f %5.2f, ", out[i], truth[i]);
         delta[i] = truth[i] - out[i];
         sum += delta[i]*delta[i];
     }
@@ -305,20 +336,38 @@ float train_network_datum(network net, float *x, float *y, float step, float mom
 
 float train_network_sgd(network net, data d, int n, float step, float momentum,float decay)
 {
-    int i;
-    float error = 0;
-    int correct = 0;
-    int pos = 0;
+    int batch = net.batch;
+    float *X = calloc(batch*d.X.cols, sizeof(float));
+    float *y = calloc(batch*d.y.cols, sizeof(float));
+
+    int i,j;
+    float sum = 0;
     for(i = 0; i < n; ++i){
-        int index = rand()%d.X.rows;
-        float err = train_network_datum(net, d.X.vals[index], d.y.vals[index], step, momentum, decay);
+        for(j = 0; j < batch; ++j){
+            int index = rand()%d.X.rows;
+            memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
+            memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
+        }
+        float err = train_network_datum(net, X, y, step, momentum, decay);
+        sum += err;
+        //train_network_datum(net, X, y, step, momentum, decay);
+        /*
         float *y = d.y.vals[index];
         int class = get_predicted_class_network(net);
         correct += (y[class]?1:0);
-        if(y[1]){
-            error += err;
-            ++pos;
+        */
+
+/*
+        for(j = 0; j < d.y.cols*batch; ++j){
+            printf("%6.3f ", y[j]);
         }
+        printf("\n");
+        for(j = 0; j < d.y.cols*batch; ++j){
+            printf("%6.3f ", get_network_output(net)[j]);
+        }
+        printf("\n");
+        printf("\n");
+        */
 
 
         //printf("%d %f %f\n", i,net.output[0], d.y.vals[index][0]);
@@ -327,7 +376,9 @@ float train_network_sgd(network net, data d, int n, float step, float momentum,f
         //}
     }
     //printf("Accuracy: %f\n",(float) correct/n);
-    return error/pos;
+    free(X);
+    free(y);
+    return (float)sum/(n*batch);
 }
 float train_network_batch(network net, data d, int n, float step, float momentum,float decay)
 {
@@ -448,7 +499,7 @@ int get_network_output_size(network net)
 
 int get_network_input_size(network net)
 {
-    return get_network_output_size_layer(net, 0);
+    return get_network_input_size_layer(net, 0);
 }
 
 image get_network_image_layer(network net, int i)
@@ -505,15 +556,24 @@ float *network_predict(network net, float *input)
 
 matrix network_predict_data(network net, data test)
 {
-    int i,j;
+    int i,j,b;
     int k = get_network_output_size(net);
     matrix pred = make_matrix(test.X.rows, k);
-    for(i = 0; i < test.X.rows; ++i){
-        float *out = network_predict(net, test.X.vals[i]);
-        for(j = 0; j < k; ++j){
-            pred.vals[i][j] = out[j];
+    float *X = calloc(net.batch*test.X.rows, sizeof(float));
+    for(i = 0; i < test.X.rows; i += net.batch){
+        for(b = 0; b < net.batch; ++b){
+            if(i+b == test.X.rows) break;
+            memcpy(X+b*test.X.cols, test.X.vals[i+b], test.X.cols*sizeof(float));
+        }
+        float *out = network_predict(net, X);
+        for(b = 0; b < net.batch; ++b){
+            if(i+b == test.X.rows) break;
+            for(j = 0; j < k; ++j){
+                pred.vals[i+b][j] = out[j+b*k];
+            }
         }
     }
+    free(X);
     return pred;   
 }
 

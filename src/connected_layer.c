@@ -57,8 +57,11 @@ void update_connected_layer(connected_layer layer, float step, float momentum, f
 
 void forward_connected_layer(connected_layer layer, float *input, int train)
 {
+    int i;
     if(!train) layer.dropout = 0;
-    memcpy(layer.output, layer.biases, layer.outputs*sizeof(float));
+    for(i = 0; i < layer.batch; ++i){
+        memcpy(layer.output+i*layer.outputs, layer.biases, layer.outputs*sizeof(float));
+    }
     int m = layer.batch;
     int k = layer.inputs;
     int n = layer.outputs;
@@ -82,16 +85,16 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
     float *a = input;
     float *b = layer.delta;
     float *c = layer.weight_updates;
-    gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+    gemm(1,0,m,n,k,1,a,k,b,n,1,c,n);
 
-    m = layer.inputs;
+    m = layer.batch;
     k = layer.outputs;
-    n = layer.batch;
+    n = layer.inputs;
 
-    a = layer.weights;
-    b = layer.delta;
+    a = layer.delta;
+    b = layer.weights;
     c = delta;
 
-    if(c) gemm(0,0,m,n,k,1,a,k,b,n,0,c,n);
+    if(c) gemm(0,1,m,n,k,1,a,k,b,k,0,c,n);
 }
 

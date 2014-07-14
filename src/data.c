@@ -166,6 +166,14 @@ void scale_data_rows(data d, float s)
     }
 }
 
+void translate_data_rows(data d, float s)
+{
+    int i;
+    for(i = 0; i < d.X.rows; ++i){
+        translate_array(d.X.vals[i], d.X.cols, s);
+    }
+}
+
 void normalize_data_rows(data d)
 {
     int i;

@@ -5,12 +5,18 @@
 
 int convolutional_out_height(convolutional_layer layer)
 {
-    return (layer.h-layer.size)/layer.stride + 1;
+    int h = layer.h;
+    if (!layer.pad) h -= layer.size;
+    else h -= 1;
+    return h/layer.stride + 1;
 }
 
 int convolutional_out_width(convolutional_layer layer)
 {
-    return (layer.w-layer.size)/layer.stride + 1;
+    int w = layer.w;
+    if (!layer.pad) w -= layer.size;
+    else w -= 1;
+    return w/layer.stride + 1;
 }
 
 image get_convolutional_image(convolutional_layer layer)
@@ -31,7 +37,7 @@ image get_convolutional_delta(convolutional_layer layer)
     return float_to_image(h,w,c,layer.delta);
 }
 
-convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, ACTIVATION activation)
+convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation)
 {
     int i;
     size = 2*(size/2)+1; //HA! And you thought you'd use an even sized filter...
@@ -43,6 +49,7 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
     layer->batch = batch;
     layer->stride = stride;
     layer->size = size;
+    layer->pad = pad;
 
     layer->filters = calloc(c*n*size*size, sizeof(float));
     layer->filter_updates = calloc(c*n*size*size, sizeof(float));
@@ -64,6 +71,17 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
     layer->output = calloc(layer->batch*out_h * out_w * n, sizeof(float));
     layer->delta  = calloc(layer->batch*out_h * out_w * n, sizeof(float));
     #ifdef GPU
+    layer->filters_cl = cl_make_array(layer->filters, c*n*size*size);
+    layer->filter_updates_cl = cl_make_array(layer->filter_updates, c*n*size*size);
+    layer->filter_momentum_cl = cl_make_array(layer->filter_momentum, c*n*size*size);
+
+    layer->biases_cl = cl_make_array(layer->biases, n);
+    layer->bias_updates_cl = cl_make_array(layer->bias_updates, n);
+    layer->bias_momentum_cl = cl_make_array(layer->bias_momentum, n);
+
+    layer->col_image_cl = cl_make_array(layer->col_image, layer->batch*out_h*out_w*size*size*c);
+    layer->delta_cl = cl_make_array(layer->delta, layer->batch*out_h*out_w*n);
+    layer->output_cl = cl_make_array(layer->output, layer->batch*out_h*out_w*n);
     #endif
     layer->activation = activation;
 
@@ -91,12 +109,14 @@ void resize_convolutional_layer(convolutional_layer *layer, int h, int w, int c)
 
 void bias_output(const convolutional_layer layer)
 {
-    int i,j;
+    int i,j,b;
     int out_h = convolutional_out_height(layer);
     int out_w = convolutional_out_width(layer);
-    for(i = 0; i < layer.n; ++i){
-        for(j = 0; j < out_h*out_w; ++j){
-            layer.output[i*out_h*out_w + j] = layer.biases[i];
+    for(b = 0; b < layer.batch; ++b){
+        for(i = 0; i < layer.n; ++i){
+            for(j = 0; j < out_h*out_w; ++j){
+                layer.output[(b*layer.n + i)*out_h*out_w + j] = layer.biases[i];
+            }
         }
     }
 }
@@ -114,7 +134,7 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
     float *b = layer.col_image;
     float *c = layer.output;
     im2col_cpu(in,layer.batch, layer.c, layer.h, layer.w, 
-        layer.size, layer.stride, b);
+        layer.size, layer.stride, layer.pad, b);
     bias_output(layer);
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
     activate_array(layer.output, m*n, layer.activation, 0.);
@@ -169,7 +189,6 @@ void backward_convolutional_layer(convolutional_layer layer, float *delta)
     gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
 
     if(delta){
-        int i;
         m = layer.size*layer.size*layer.c;
         k = layer.n;
         n = convolutional_out_height(layer)*
@@ -183,9 +202,7 @@ void backward_convolutional_layer(convolutional_layer layer, float *delta)
         gemm(1,0,m,n,k,1,a,m,b,n,0,c,n);
 
         memset(delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
-        for(i = 0; i < layer.batch; ++i){
-            col2im_cpu(c+i*n/layer.batch,  layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, delta+i*n/layer.batch);
-        }
+        col2im_cpu(c, layer.batch,  layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta);
     }
 }
 
