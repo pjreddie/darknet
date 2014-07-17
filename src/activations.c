@@ -43,7 +43,7 @@ float tanh_activate(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
 
 float activate(float x, ACTIVATION a, float dropout)
 {
-    if((float)rand()/RAND_MAX < dropout) return 0;
+    if(dropout && (float)rand()/RAND_MAX < dropout) return 0;
     switch(a){
         case LINEAR:
             return linear_activate(x)/(1-dropout);

@@ -86,7 +86,6 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
     layer->activation = activation;
 
     fprintf(stderr, "Convolutional Layer: %d x %d x %d image, %d filters -> %d x %d x %d image\n", h,w,c,n, out_h, out_w, n);
-    srand(0);
 
     return layer;
 }
@@ -133,10 +132,15 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
     float *a = layer.filters;
     float *b = layer.col_image;
     float *c = layer.output;
-    im2col_cpu(in,layer.batch, layer.c, layer.h, layer.w, 
+    im2col_cpu(in, layer.batch, layer.c, layer.h, layer.w, 
         layer.size, layer.stride, layer.pad, b);
     bias_output(layer);
     gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+    /*
+    int i;
+    for(i = 0; i < m*n; ++i) printf("%f, ", layer.output[i]);
+    printf("\n");
+    */
     activate_array(layer.output, m*n, layer.activation, 0.);
 }
 

@@ -1,4 +1,5 @@
 #include "mini_blas.h"
+#include <stdio.h>
 
 inline float im2col_get_pixel(float *im, int height, int width, int channels,
                         int row, int col, int channel, int pad)
@@ -27,7 +28,7 @@ void im2col_cpu(float* data_im,
     }
     int channels_col = channels * ksize * ksize;
     int im_size = height*width*channels;
-    int col_size = height_col*width_col*channels_col;
+    //int col_size = height_col*width_col*channels_col;
     for (b = 0; b < batch; ++b) {
         for (c = 0; c < channels_col; ++c) {
             int w_offset = c % ksize;
@@ -37,14 +38,14 @@ void im2col_cpu(float* data_im,
                 for (w = 0; w < width_col; ++w) {
                     int im_row = h_offset + h * stride;
                     int im_col = w_offset + w * stride;
-                    data_col[(c * height_col + h) * width_col + w] =
-                        im2col_get_pixel(data_im, height, width, channels,
+                    int col_index = (c * height_col + h) * width_col + w + (batch-1) * c * height_col*width_col;
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels,
                                         im_row, im_col, c_im, pad);
                 }
             }
         }
         data_im += im_size;
-        data_col+= col_size;
+        data_col+= channels_col;
     }
 }
 

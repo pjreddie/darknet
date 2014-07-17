@@ -300,7 +300,6 @@ void test_vince()
 
 void test_nist()
 {
-	srand(444444);
 	srand(222222);
 	network net = parse_network_cfg("cfg/nist.cfg");
 	data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
@@ -309,18 +308,18 @@ void test_nist()
 	normalize_data_rows(test);
 	//randomize_data(train);
 	int count = 0;
-	float lr = .000075;
+	float lr = .0001;
 	float momentum = .9;
 	float decay = 0.0001;
-	decay = 0;
 	//clock_t start = clock(), end;
-	int iters = 100;
+	int iters = 1000;
 	while(++count <= 10){
 		clock_t start = clock(), end;
 		float loss = train_network_sgd(net, train, iters, lr, momentum, decay);
 		end = clock();
-		float test_acc = network_accuracy(net, test);
-		printf("%d: %f %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
+		//float test_acc = network_accuracy(net, test);
+        float test_acc = 0;
+		printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
 
 		//printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
 		//end = clock();

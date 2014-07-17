@@ -77,7 +77,7 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
     int i;
     for(i = 0; i < layer.outputs*layer.batch; ++i){
         layer.delta[i] *= gradient(layer.output[i], layer.activation);
-        layer.bias_updates[i%layer.batch] += layer.delta[i];
+        layer.bias_updates[i%layer.outputs] += layer.delta[i];
     }
     int m = layer.inputs;
     int k = layer.batch;
@@ -85,7 +85,7 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
     float *a = input;
     float *b = layer.delta;
     float *c = layer.weight_updates;
-    gemm(1,0,m,n,k,1,a,k,b,n,1,c,n);
+    gemm(1,0,m,n,k,1,a,m,b,n,1,c,n);
 
     m = layer.batch;
     k = layer.outputs;
