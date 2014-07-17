@@ -26,11 +26,11 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
 #endif
 
 void im2col_cpu(float* data_im,
-    const int batch, const int channels, const int height, const int width,
+    const int channels, const int height, const int width,
     const int ksize, const int stride, int pad, float* data_col);
 
 void col2im_cpu(float* data_col,
-        const int batch, const int channels, const int height, const int width,
+        const int channels, const int height, const int width,
         const int ksize, const int stride, int pad, float* data_im);
 void test_blas();
 

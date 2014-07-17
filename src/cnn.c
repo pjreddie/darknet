@@ -48,11 +48,10 @@ void test_convolve_matrix()
 
 	image edge = make_image((dog.h-size)/stride+1, (dog.w-size)/stride+1, n);
 
-
 	int i;
 	clock_t start = clock(), end;
 	for(i = 0; i < 1000; ++i){
-		im2col_cpu(dog.data,  1, dog.c,  dog.h,  dog.w,  size,  stride, 0, matrix);
+		im2col_cpu(dog.data, dog.c,  dog.h,  dog.w,  size,  stride, 0, matrix);
 		gemm(0,0,n,mw,mh,1,filters,mh,matrix,mw,1,edge.data,mw);
 	}
 	end = clock();
@@ -317,8 +316,8 @@ void test_nist()
 		clock_t start = clock(), end;
 		float loss = train_network_sgd(net, train, iters, lr, momentum, decay);
 		end = clock();
-		//float test_acc = network_accuracy(net, test);
-        float test_acc = 0;
+		float test_acc = network_accuracy(net, test);
+        //float test_acc = 0;
 		printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
 
 		//printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
@@ -434,7 +433,7 @@ void test_im2row()
 	float *matrix = calloc(msize, sizeof(float));
 	int i;
 	for(i = 0; i < 1000; ++i){
-		im2col_cpu(test.data, 1, c,  h,  w,  size,  stride, 0, matrix);
+		im2col_cpu(test.data,  c,  h,  w,  size,  stride, 0, matrix);
 		//image render = float_to_image(mh, mw, mc, matrix);
 	}
 }

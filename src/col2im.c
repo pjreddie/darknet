@@ -10,10 +10,10 @@ inline void col2im_set_pixel(float *im, int height, int width, int channels,
 }
 //This one might be too, can't remember.
 void col2im_cpu(float* data_col,
-        const int batch, const int channels, const int height, const int width,
+        const int channels, const int height, const int width,
         const int ksize, const int stride, int pad, float* data_im) 
 {
-    int c,h,w,b;
+    int c,h,w;
     int height_col = (height - ksize) / stride + 1;
     int width_col = (width - ksize) / stride + 1;
     if (pad){
@@ -22,25 +22,19 @@ void col2im_cpu(float* data_col,
         pad = ksize/2;
     }
     int channels_col = channels * ksize * ksize;
-    int im_size = height*width*channels;
-    int col_size = height_col*width_col*channels_col;
-    for (b = 0; b < batch; ++b) {
-        for (c = 0; c < channels_col; ++c) {
-            int w_offset = c % ksize;
-            int h_offset = (c / ksize) % ksize;
-            int c_im = c / ksize / ksize;
-            for (h = 0; h < height_col; ++h) {
-                for (w = 0; w < width_col; ++w) {
-                    int im_row = h_offset + h * stride;
-                    int im_col = w_offset + w * stride;
-                    double val = data_col[(c * height_col + h) * width_col + w];
-                    col2im_set_pixel(data_im, height, width, channels,
-                                    im_row, im_col, c_im, pad, val);
-                }
+    for (c = 0; c < channels_col; ++c) {
+        int w_offset = c % ksize;
+        int h_offset = (c / ksize) % ksize;
+        int c_im = c / ksize / ksize;
+        for (h = 0; h < height_col; ++h) {
+            for (w = 0; w < width_col; ++w) {
+                int im_row = h_offset + h * stride;
+                int im_col = w_offset + w * stride;
+                double val = data_col[(c * height_col + h) * width_col + w];
+                col2im_set_pixel(data_im, height, width, channels,
+                        im_row, im_col, c_im, pad, val);
             }
         }
-        data_im += im_size;
-        data_col+= col_size;
     }
 }
 

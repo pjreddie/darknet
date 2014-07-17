@@ -79,7 +79,7 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
     layer->bias_updates_cl = cl_make_array(layer->bias_updates, n);
     layer->bias_momentum_cl = cl_make_array(layer->bias_momentum, n);
 
-    layer->col_image_cl = cl_make_array(layer->col_image, layer->batch*out_h*out_w*size*size*c);
+    layer->col_image_cl = cl_make_array(layer->col_image, layer.batch*out_h*out_w*size*size*c);
     layer->delta_cl = cl_make_array(layer->delta, layer->batch*out_h*out_w*n);
     layer->output_cl = cl_make_array(layer->output, layer->batch*out_h*out_w*n);
     #endif
@@ -124,24 +124,32 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
 {
     int out_h = convolutional_out_height(layer);
     int out_w = convolutional_out_width(layer);
+    int i;
+
+    bias_output(layer);
 
     int m = layer.n;
     int k = layer.size*layer.size*layer.c;
-    int n = out_h*out_w*layer.batch;
+    int n = out_h*out_w;
 
     float *a = layer.filters;
     float *b = layer.col_image;
     float *c = layer.output;
-    im2col_cpu(in, layer.batch, layer.c, layer.h, layer.w, 
-        layer.size, layer.stride, layer.pad, b);
-    bias_output(layer);
-    gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+
+    for(i = 0; i < layer.batch; ++i){
+        im2col_cpu(in, layer.c, layer.h, layer.w, 
+            layer.size, layer.stride, layer.pad, b);
+        gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+        c += n*m;
+        in += layer.h*layer.w*layer.c;
+        b += k*n;
+    }
     /*
     int i;
     for(i = 0; i < m*n; ++i) printf("%f, ", layer.output[i]);
     printf("\n");
     */
-    activate_array(layer.output, m*n, layer.activation, 0.);
+    activate_array(layer.output, m*n*layer.batch, layer.activation, 0.);
 }
 
 #ifdef GPU
@@ -178,35 +186,42 @@ void learn_bias_convolutional_layer(convolutional_layer layer)
 
 void backward_convolutional_layer(convolutional_layer layer, float *delta)
 {
+    int i;
     int m = layer.n;
     int n = layer.size*layer.size*layer.c;
     int k = convolutional_out_height(layer)*
-        convolutional_out_width(layer)*
-        layer.batch;
-    gradient_array(layer.output, m*k, layer.activation, layer.delta);
+        convolutional_out_width(layer);
+    gradient_array(layer.output, m*k*layer.batch, layer.activation, layer.delta);
     learn_bias_convolutional_layer(layer);
 
     float *a = layer.delta;
     float *b = layer.col_image;
     float *c = layer.filter_updates;
 
-    gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
+    for(i = 0; i < layer.batch; ++i){
+        gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
+        a += m*k;
+        b += k*n;
+    }
 
     if(delta){
         m = layer.size*layer.size*layer.c;
         k = layer.n;
         n = convolutional_out_height(layer)*
-            convolutional_out_width(layer)*
-            layer.batch;
+            convolutional_out_width(layer);
 
         a = layer.filters;
         b = layer.delta;
         c = layer.col_image;
 
-        gemm(1,0,m,n,k,1,a,m,b,n,0,c,n);
-
         memset(delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
-        col2im_cpu(c, layer.batch,  layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta);
+
+        for(i = 0; i < layer.batch; ++i){
+            gemm(1,0,m,n,k,1,a,m,b,n,0,c,n);
+            col2im_cpu(c, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta);
+            c += k*n;
+            delta += layer.h*layer.w*layer.c;
+        }
     }
 }
 
