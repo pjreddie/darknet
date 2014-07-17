@@ -37,6 +37,7 @@ data load_data_image_paths(char **paths, int n, char **labels, int k, int h, int
     d.shallow = 0;
     d.X.rows = n;
     d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.cols = 0;
     d.y = make_matrix(n, k);
 
     for(i = 0; i < n; ++i){

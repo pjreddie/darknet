@@ -655,9 +655,8 @@ void visualize_cat()
 	cvWaitKey(0);
 }
 
-void features_VOC_image(char *image_file, char *image_dir, char *out_dir, int flip)
+void features_VOC_image(char *image_file, char *image_dir, char *out_dir, int flip, int interval)
 {
-	int interval = 4;
 	int i,j;
 	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
 	char image_path[1024];
@@ -785,6 +784,9 @@ int main(int argc, char *argv[])
 	//tune_VOC();
 	//features_VOC_image(argv[1], argv[2], argv[3], 0);
 	//features_VOC_image(argv[1], argv[2], argv[3], 1);
+	//train_VOC();
+	//features_VOC_image(argv[1], argv[2], argv[3], 0, 4);
+	//features_VOC_image(argv[1], argv[2], argv[3], 1, 4);
 	//features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
 	//visualize_imagenet_features("data/assira/train.list");
 	//visualize_imagenet_topk("data/VOC2012.list");
