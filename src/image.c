@@ -138,7 +138,7 @@ void show_image(image p, char *name)
     }
     free_image(copy);
     if(disp->height < 500 || disp->width < 500 || disp->height > 1000){
-        int w = 1500;
+        int w = 500;
         int h = w*p.h/p.w;
         if(h > 1000){
             h = 1000;
@@ -720,7 +720,7 @@ image collapse_images_horz(image *ims, int n)
 void show_images(image *ims, int n, char *window)
 {
     image m = collapse_images_vert(ims, n);
-    save_image(m, window);
+    //save_image(m, window);
     show_image(m, window);
     free_image(m);
 }

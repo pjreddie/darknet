@@ -25,5 +25,6 @@ void cl_read_array(cl_mem mem, float *x, int n);
 void cl_write_array(cl_mem mem, float *x, int n);
 cl_mem cl_make_array(float *x, int n);
 void cl_copy_array(cl_mem src, cl_mem dst, int n);
+cl_mem cl_sub_array(cl_mem src, int offset, int size);
 #endif
 #endif

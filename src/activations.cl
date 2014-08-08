@@ -8,27 +8,26 @@ float relu_activate(float x){return x*(x>0);}
 float ramp_activate(float x){return x*(x>0)+.1*x;}
 float tanh_activate(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
 
-float activate(float x, ACTIVATION a, float dropout)
+float activate(float x, ACTIVATION a)
 {
-    //if((float)rand()/RAND_MAX < dropout) return 0;
     switch(a){
         case LINEAR:
-            return linear_activate(x)/(1-dropout);
+            return linear_activate(x);
         case SIGMOID:
-            return sigmoid_activate(x)/(1-dropout);
+            return sigmoid_activate(x);
         case RELU:
-            return relu_activate(x)/(1-dropout);
+            return relu_activate(x);
         case RAMP:
-            return ramp_activate(x)/(1-dropout);
+            return ramp_activate(x);
         case TANH:
-            return tanh_activate(x)/(1-dropout);
+            return tanh_activate(x);
     }
     return 0;
 }
 
 __kernel void activate_array(__global float *x,
-    const int n, const ACTIVATION a, const float dropout)
+    const int n, const ACTIVATION a)
 {
     int i = get_global_id(0);
-    x[i] = activate(x[i], a, dropout);
+    x[i] = activate(x[i], a);
 }

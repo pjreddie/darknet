@@ -9,6 +9,10 @@
 #include "activations.h"
 
 typedef struct {
+    float learning_rate;
+    float momentum;
+    float decay;
+
     int batch;
     int h,w,c;
     int n;
@@ -48,10 +52,10 @@ typedef struct {
 void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in);
 #endif
 
-convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation);
+convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, float learning_rate, float momentum, float decay);
 void resize_convolutional_layer(convolutional_layer *layer, int h, int w, int c);
 void forward_convolutional_layer(const convolutional_layer layer, float *in);
-void update_convolutional_layer(convolutional_layer layer, float step, float momentum, float decay);
+void update_convolutional_layer(convolutional_layer layer);
 image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters);
 
 void backward_convolutional_layer(convolutional_layer layer, float *delta);

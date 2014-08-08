@@ -1,4 +1,6 @@
-inline void col2im_set_pixel(float *im, int height, int width, int channels,
+#include <stdio.h>
+#include <math.h>
+inline void col2im_add_pixel(float *im, int height, int width, int channels,
                         int row, int col, int channel, int pad, float val)
 {
     row -= pad;
@@ -6,7 +8,7 @@ inline void col2im_set_pixel(float *im, int height, int width, int channels,
 
     if (row < 0 || col < 0 ||
         row >= height || col >= width) return;
-    im[col + width*(row + channel*height)] = val;
+    im[col + width*(row + channel*height)] += val;
 }
 //This one might be too, can't remember.
 void col2im_cpu(float* data_col,
@@ -31,7 +33,7 @@ void col2im_cpu(float* data_col,
                 int im_row = h_offset + h * stride;
                 int im_col = w_offset + w * stride;
                 double val = data_col[(c * height_col + h) * width_col + w];
-                col2im_set_pixel(data_im, height, width, channels,
+                col2im_add_pixel(data_im, height, width, channels,
                         im_row, im_col, c_im, pad, val);
             }
         }

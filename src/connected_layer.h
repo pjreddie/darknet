@@ -4,6 +4,10 @@
 #include "activations.h"
 
 typedef struct{
+    float learning_rate;
+    float momentum;
+    float decay;
+
     int batch;
     int inputs;
     int outputs;
@@ -22,17 +26,15 @@ typedef struct{
     float *output;
     float *delta;
     
-    float dropout;
-
     ACTIVATION activation;
 
 } connected_layer;
 
-connected_layer *make_connected_layer(int batch, int inputs, int outputs, float dropout, ACTIVATION activation);
+connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, float learning_rate, float momentum, float decay);
 
-void forward_connected_layer(connected_layer layer, float *input, int train);
+void forward_connected_layer(connected_layer layer, float *input);
 void backward_connected_layer(connected_layer layer, float *input, float *delta);
-void update_connected_layer(connected_layer layer, float step, float momentum, float decay);
+void update_connected_layer(connected_layer layer);
 
 
 #endif

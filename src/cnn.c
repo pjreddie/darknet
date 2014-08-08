@@ -51,7 +51,7 @@ void test_convolve_matrix()
 	int i;
 	clock_t start = clock(), end;
 	for(i = 0; i < 1000; ++i){
-		im2col_cpu(dog.data, dog.c,  dog.h,  dog.w,  size,  stride, 0, matrix);
+		im2col_cpu(dog.data,1, dog.c,  dog.h,  dog.w,  size,  stride, 0, matrix);
 		gemm(0,0,n,mw,mh,1,filters,mh,matrix,mw,1,edge.data,mw);
 	}
 	end = clock();
@@ -75,7 +75,7 @@ void verify_convolutional_layer()
 	int size = 3;
 	float eps = .00000001;
 	image test = make_random_image(5,5, 1);
-	convolutional_layer layer = *make_convolutional_layer(1,test.h,test.w,test.c, n, size, stride, 0, RELU);
+	convolutional_layer layer = *make_convolutional_layer(1,test.h,test.w,test.c, n, size, stride, 0, RELU,0,0,0);
 	image out = get_convolutional_image(layer);
 	float **jacobian = calloc(test.h*test.w*test.c, sizeof(float));
 
@@ -158,25 +158,10 @@ void test_rotate()
 
 void test_parser()
 {
-	network net = parse_network_cfg("test_parser.cfg");
-	float input[1];
-	int count = 0;
-
-	float avgerr = 0;
-	while(++count < 100000000){
-		float v = ((float)rand()/RAND_MAX);
-		float truth = v*v;
-		input[0] = v;
-		forward_network(net, input, 1);
-		float *out = get_network_output(net);
-		float *delta = get_network_delta(net);
-		float err = pow((out[0]-truth),2.);
-		avgerr = .99 * avgerr + .01 * err;
-		if(count % 1000000 == 0) printf("%f %f :%f AVG %f \n", truth, out[0], err, avgerr);
-		delta[0] = truth - out[0];
-		backward_network(net, input, &truth);
-		update_network(net, .001,0,0);
-	}
+	network net = parse_network_cfg("cfg/test_parser.cfg");
+    save_network(net, "cfg/test_parser_1.cfg");
+	network net2 = parse_network_cfg("cfg/test_parser_1.cfg");
+    save_network(net2, "cfg/test_parser_2.cfg");
 }
 
 void test_data()
@@ -206,7 +191,7 @@ void train_full()
 		//scale_data_rows(train, 1./255.);
 		normalize_data_rows(train);
 		clock_t start = clock(), end;
-		float loss = train_network_sgd(net, train, 1000, lr, momentum, decay);
+		float loss = train_network_sgd(net, train, 1000);
 		end = clock();
 		printf("%d: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", i, loss, (float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
 		free_data(train);
@@ -255,558 +240,567 @@ void test_full()
 
 void test_cifar10()
 {
-	data test = load_cifar10_data("images/cifar10/test_batch.bin");
-	scale_data_rows(test, 1./255);
-	network net = parse_network_cfg("cfg/cifar10.cfg");
-	int count = 0;
-	float lr = .000005;
-	float momentum = .99;
-	float decay = 0.001;
-	decay = 0;
-	int batch = 10000;
-	while(++count <= 10000){
-		char buff[256];
-		sprintf(buff, "images/cifar10/data_batch_%d.bin", rand()%5+1);
-		data train = load_cifar10_data(buff);
-		scale_data_rows(train, 1./255);
-		train_network_sgd(net, train, batch, lr, momentum, decay);
-		//printf("%5f %5f\n",(double)count*batch/train.X.rows, loss);
+	srand(222222);
+    network net = parse_network_cfg("cfg/cifar10.cfg");
+    //data test = load_cifar10_data("data/cifar10/test_batch.bin");
+    int count = 0;
+    int iters = 10000/net.batch;
+    data train = load_all_cifar10();
+    while(++count <= 10000){
+        clock_t start = clock(), end;
+        float loss = train_network_sgd(net, train, iters);
+        end = clock();
+        //visualize_network(net);
+        //cvWaitKey(1000);
 
-		float test_acc = network_accuracy(net, test);
-		printf("%5f %5f\n",(double)count*batch/train.X.rows/5, 1-test_acc);
-		free_data(train);
-	}
-
+        //float test_acc = network_accuracy(net, test);
+        //printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+        printf("%d: Loss: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, (float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+    }
+    free_data(train);
 }
 
 void test_vince()
 {
-	network net = parse_network_cfg("cfg/vince.cfg");
-	data train = load_categorical_data_csv("images/vince.txt", 144, 2);
-	normalize_data_rows(train);
+    network net = parse_network_cfg("cfg/vince.cfg");
+    data train = load_categorical_data_csv("images/vince.txt", 144, 2);
+    normalize_data_rows(train);
 
-	int count = 0;
-	float lr = .00005;
-	float momentum = .9;
-	float decay = 0.0001;
-	decay = 0;
-	int batch = 10000;
-	while(++count <= 10000){
-		float loss = train_network_sgd(net, train, batch, lr, momentum, decay);
-		printf("%5f %5f\n",(double)count*batch/train.X.rows, loss);
-	}
+    int count = 0;
+    //float lr = .00005;
+    //float momentum = .9;
+    //float decay = 0.0001;
+    //decay = 0;
+    int batch = 10000;
+    while(++count <= 10000){
+        float loss = train_network_sgd(net, train, batch);
+        printf("%5f %5f\n",(double)count*batch/train.X.rows, loss);
+    }
+}
+
+void test_nist_single()
+{
+    srand(222222);
+    network net = parse_network_cfg("cfg/nist.cfg");
+    data train = load_categorical_data_csv("data/mnist/mnist_tiny.csv", 0, 10);
+    normalize_data_rows(train);
+    float loss = train_network_sgd(net, train, 5);
+    printf("Loss: %f, LR: %f, Momentum: %f, Decay: %f\n", loss, net.learning_rate, net.momentum, net.decay);
+
 }
 
 void test_nist()
 {
-	srand(222222);
-	network net = parse_network_cfg("cfg/nist.cfg");
-	data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
-	data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
-	normalize_data_rows(train);
-	normalize_data_rows(test);
-	//randomize_data(train);
-	int count = 0;
-	float lr = .0001;
-	float momentum = .9;
-	float decay = 0.0001;
-	//clock_t start = clock(), end;
-	int iters = 1000;
-	while(++count <= 10){
-		clock_t start = clock(), end;
-		float loss = train_network_sgd(net, train, iters, lr, momentum, decay);
-		end = clock();
-		float test_acc = network_accuracy(net, test);
+    srand(222222);
+    network net = parse_network_cfg("cfg/nist.cfg");
+    data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
+    data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
+	translate_data_rows(train, -144);
+	scale_data_rows(train, 1./128);
+	translate_data_rows(test, -144);
+	scale_data_rows(test, 1./128);
+    //randomize_data(train);
+    int count = 0;
+    //clock_t start = clock(), end;
+    int iters = 10000/net.batch;
+    while(++count <= 100){
+        clock_t start = clock(), end;
+        float loss = train_network_sgd(net, train, iters);
+        end = clock();
+        float test_acc = network_accuracy(net, test);
         //float test_acc = 0;
-		printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
+        printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+        //save_network(net, "cfg/nist_basic_trained.cfg");
 
-		//printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
-		//end = clock();
-		//printf("Time: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
-		//start=end;
-		//lr *= .5;
-	}
-	//save_network(net, "cfg/nist_basic_trained.cfg");
+        //printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
+        //end = clock();
+        //printf("Time: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
+        //start=end;
+        //lr *= .5;
+    }
+    //save_network(net, "cfg/nist_basic_trained.cfg");
 }
 
 void test_ensemble()
 {
-	int i;
-	srand(888888);
-	data d = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
-	normalize_data_rows(d);
-	data test = load_categorical_data_csv("mnist/mnist_test.csv", 0,10);
-	normalize_data_rows(test);
-	data train = d;
-	//   data *split = split_data(d, 1, 10);
-	//   data train = split[0];
-	//   data test = split[1];
-	matrix prediction = make_matrix(test.y.rows, test.y.cols);
-	int n = 30;
-	for(i = 0; i < n; ++i){
-		int count = 0;
-		float lr = .0005;
-		float momentum = .9;
-		float decay = .01;
-		network net = parse_network_cfg("nist.cfg");
-		while(++count <= 15){
-			float acc = train_network_sgd(net, train, train.X.rows, lr, momentum, decay);
-			printf("Training Accuracy: %lf Learning Rate: %f Momentum: %f Decay: %f\n", acc, lr, momentum, decay );
-			lr /= 2; 
-		}
-		matrix partial = network_predict_data(net, test);
-		float acc = matrix_accuracy(test.y, partial);
-		printf("Model Accuracy: %lf\n", acc);
-		matrix_add_matrix(partial, prediction);
-		acc = matrix_accuracy(test.y, prediction);
-		printf("Current Ensemble Accuracy: %lf\n", acc);
-		free_matrix(partial);
-	}
-	float acc = matrix_accuracy(test.y, prediction);
-	printf("Full Ensemble Accuracy: %lf\n", acc);
+    int i;
+    srand(888888);
+    data d = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
+    normalize_data_rows(d);
+    data test = load_categorical_data_csv("mnist/mnist_test.csv", 0,10);
+    normalize_data_rows(test);
+    data train = d;
+    //   data *split = split_data(d, 1, 10);
+    //   data train = split[0];
+    //   data test = split[1];
+    matrix prediction = make_matrix(test.y.rows, test.y.cols);
+    int n = 30;
+    for(i = 0; i < n; ++i){
+        int count = 0;
+        float lr = .0005;
+        float momentum = .9;
+        float decay = .01;
+        network net = parse_network_cfg("nist.cfg");
+        while(++count <= 15){
+            float acc = train_network_sgd(net, train, train.X.rows);
+            printf("Training Accuracy: %lf Learning Rate: %f Momentum: %f Decay: %f\n", acc, lr, momentum, decay );
+            lr /= 2; 
+        }
+        matrix partial = network_predict_data(net, test);
+        float acc = matrix_accuracy(test.y, partial);
+        printf("Model Accuracy: %lf\n", acc);
+        matrix_add_matrix(partial, prediction);
+        acc = matrix_accuracy(test.y, prediction);
+        printf("Current Ensemble Accuracy: %lf\n", acc);
+        free_matrix(partial);
+    }
+    float acc = matrix_accuracy(test.y, prediction);
+    printf("Full Ensemble Accuracy: %lf\n", acc);
 }
 
 void test_random_classify()
 {
-	network net = parse_network_cfg("connected.cfg");
-	matrix m = csv_to_matrix("train.csv");
-	//matrix ho = hold_out_matrix(&m, 2500);
-	float *truth = pop_column(&m, 0);
-	//float *ho_truth = pop_column(&ho, 0);
-	int i;
-	clock_t start = clock(), end;
-	int count = 0;
-	while(++count <= 300){
-		for(i = 0; i < m.rows; ++i){
-			int index = rand()%m.rows;
-			//image p = float_to_image(1690,1,1,m.vals[index]);
-			//normalize_image(p);
-			forward_network(net, m.vals[index], 1);
-			float *out = get_network_output(net);
-			float *delta = get_network_delta(net);
-			//printf("%f\n", out[0]);
-			delta[0] = truth[index] - out[0];
-			// printf("%f\n", delta[0]);
-			//printf("%f %f\n", truth[index], out[0]);
-			//backward_network(net, m.vals[index], );
-			update_network(net, .00001, 0,0);
-		}
-		//float test_acc = error_network(net, m, truth);
-		//float valid_acc = error_network(net, ho, ho_truth);
-		//printf("%f, %f\n", test_acc, valid_acc);
-		//fprintf(stderr, "%5d: %f Valid: %f\n",count, test_acc, valid_acc);
-		//if(valid_acc > .70) break;
-	}
-	end = clock();
-	FILE *fp = fopen("submission/out.txt", "w");
-	matrix test = csv_to_matrix("test.csv");
-	truth = pop_column(&test, 0);
-	for(i = 0; i < test.rows; ++i){
-		forward_network(net, test.vals[i], 0);
-		float *out = get_network_output(net);
-		if(fabs(out[0]) < .5) fprintf(fp, "0\n");
-		else fprintf(fp, "1\n");
-	}
-	fclose(fp);
-	printf("Neural Net Learning: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
+    network net = parse_network_cfg("connected.cfg");
+    matrix m = csv_to_matrix("train.csv");
+    //matrix ho = hold_out_matrix(&m, 2500);
+    float *truth = pop_column(&m, 0);
+    //float *ho_truth = pop_column(&ho, 0);
+    int i;
+    clock_t start = clock(), end;
+    int count = 0;
+    while(++count <= 300){
+        for(i = 0; i < m.rows; ++i){
+            int index = rand()%m.rows;
+            //image p = float_to_image(1690,1,1,m.vals[index]);
+            //normalize_image(p);
+            forward_network(net, m.vals[index], 1);
+            float *out = get_network_output(net);
+            float *delta = get_network_delta(net);
+            //printf("%f\n", out[0]);
+            delta[0] = truth[index] - out[0];
+            // printf("%f\n", delta[0]);
+            //printf("%f %f\n", truth[index], out[0]);
+            //backward_network(net, m.vals[index], );
+            update_network(net);
+        }
+        //float test_acc = error_network(net, m, truth);
+        //float valid_acc = error_network(net, ho, ho_truth);
+        //printf("%f, %f\n", test_acc, valid_acc);
+        //fprintf(stderr, "%5d: %f Valid: %f\n",count, test_acc, valid_acc);
+        //if(valid_acc > .70) break;
+    }
+    end = clock();
+    FILE *fp = fopen("submission/out.txt", "w");
+    matrix test = csv_to_matrix("test.csv");
+    truth = pop_column(&test, 0);
+    for(i = 0; i < test.rows; ++i){
+        forward_network(net, test.vals[i], 0);
+        float *out = get_network_output(net);
+        if(fabs(out[0]) < .5) fprintf(fp, "0\n");
+        else fprintf(fp, "1\n");
+    }
+    fclose(fp);
+    printf("Neural Net Learning: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
 }
 
 void test_split()
 {
-	data train = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
-	data *split = split_data(train, 0, 13);
-	printf("%d, %d, %d\n", train.X.rows, split[0].X.rows, split[1].X.rows);
+    data train = load_categorical_data_csv("mnist/mnist_train.csv", 0, 10);
+    data *split = split_data(train, 0, 13);
+    printf("%d, %d, %d\n", train.X.rows, split[0].X.rows, split[1].X.rows);
 }
 
 void test_im2row()
 {
-	int h = 20;
-	int w = 20;
-	int c = 3;
-	int stride = 1;
-	int size = 11;
-	image test = make_random_image(h,w,c);
-	int mc = 1;
-	int mw = ((h-size)/stride+1)*((w-size)/stride+1);
-	int mh = (size*size*c);
-	int msize = mc*mw*mh;
-	float *matrix = calloc(msize, sizeof(float));
-	int i;
-	for(i = 0; i < 1000; ++i){
-		im2col_cpu(test.data,  c,  h,  w,  size,  stride, 0, matrix);
-		//image render = float_to_image(mh, mw, mc, matrix);
-	}
+    int h = 20;
+    int w = 20;
+    int c = 3;
+    int stride = 1;
+    int size = 11;
+    image test = make_random_image(h,w,c);
+    int mc = 1;
+    int mw = ((h-size)/stride+1)*((w-size)/stride+1);
+    int mh = (size*size*c);
+    int msize = mc*mw*mh;
+    float *matrix = calloc(msize, sizeof(float));
+    int i;
+    for(i = 0; i < 1000; ++i){
+        im2col_cpu(test.data,1,  c,  h,  w,  size,  stride, 0, matrix);
+        //image render = float_to_image(mh, mw, mc, matrix);
+    }
 }
 
 void flip_network()
 {
-	network net = parse_network_cfg("cfg/voc_imagenet_orig.cfg");
-	save_network(net, "cfg/voc_imagenet_rev.cfg");
+    network net = parse_network_cfg("cfg/voc_imagenet_orig.cfg");
+    save_network(net, "cfg/voc_imagenet_rev.cfg");
 }
 
 void tune_VOC()
 {
-	network net = parse_network_cfg("cfg/voc_start.cfg");
-	srand(2222222);
-	int i = 20;
-	char *labels[] = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"};
-	float lr = .000005;
-	float momentum = .9;
-	float decay = 0.0001;
-	while(i++ < 1000 || 1){
-		data train = load_data_image_pathfile_random("/home/pjreddie/VOC2012/trainval_paths.txt", 10, labels, 20, 256, 256);
+    network net = parse_network_cfg("cfg/voc_start.cfg");
+    srand(2222222);
+    int i = 20;
+    char *labels[] = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"};
+    float lr = .000005;
+    float momentum = .9;
+    float decay = 0.0001;
+    while(i++ < 1000 || 1){
+        data train = load_data_image_pathfile_random("/home/pjreddie/VOC2012/trainval_paths.txt", 10, labels, 20, 256, 256);
 
-		image im = float_to_image(256, 256, 3,train.X.vals[0]);
-		show_image(im, "input");
-		visualize_network(net);
-		cvWaitKey(100);
+        image im = float_to_image(256, 256, 3,train.X.vals[0]);
+        show_image(im, "input");
+        visualize_network(net);
+        cvWaitKey(100);
 
-		translate_data_rows(train, -144);
-		clock_t start = clock(), end;
-		float loss = train_network_sgd(net, train, 10, lr, momentum, decay);
-		end = clock();
-		printf("%d: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", i, loss, (float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
-		free_data(train);
+        translate_data_rows(train, -144);
+        clock_t start = clock(), end;
+        float loss = train_network_sgd(net, train, 10);
+        end = clock();
+        printf("%d: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", i, loss, (float)(end-start)/CLOCKS_PER_SEC, lr, momentum, decay);
+        free_data(train);
         /*
-		if(i%10==0){
-			char buff[256];
-			sprintf(buff, "/home/pjreddie/voc_cfg/voc_ramp_%d.cfg", i);
-			save_network(net, buff);
-		}
-        */
-		//lr *= .99;
-	}
+           if(i%10==0){
+           char buff[256];
+           sprintf(buff, "/home/pjreddie/voc_cfg/voc_ramp_%d.cfg", i);
+           save_network(net, buff);
+           }
+         */
+        //lr *= .99;
+    }
 }
 
 int voc_size(int x)
 {
-	x = x-1+3;
-	x = x-1+3;
-	x = x-1+3;
-	x = (x-1)*2+1;
-	x = x-1+5;
-	x = (x-1)*2+1;
-	x = (x-1)*4+11;
-	return x;
+    x = x-1+3;
+    x = x-1+3;
+    x = x-1+3;
+    x = (x-1)*2+1;
+    x = x-1+5;
+    x = (x-1)*2+1;
+    x = (x-1)*4+11;
+    return x;
 }
 
 image features_output_size(network net, IplImage *src, int outh, int outw)
 {
-	int h = voc_size(outh);
-	int w = voc_size(outw);
-	fprintf(stderr, "%d %d\n", h, w);
+    int h = voc_size(outh);
+    int w = voc_size(outw);
+    fprintf(stderr, "%d %d\n", h, w);
 
-	IplImage *sized = cvCreateImage(cvSize(w,h), src->depth, src->nChannels);
-	cvResize(src, sized, CV_INTER_LINEAR);
-	image im = ipl_to_image(sized);
-	//normalize_array(im.data, im.h*im.w*im.c);
-	translate_image(im, -144);
-	resize_network(net, im.h, im.w, im.c);
-	forward_network(net, im.data, 0);
-	image out = get_network_image(net);
-	free_image(im);
-	cvReleaseImage(&sized);
-	return copy_image(out);
+    IplImage *sized = cvCreateImage(cvSize(w,h), src->depth, src->nChannels);
+    cvResize(src, sized, CV_INTER_LINEAR);
+    image im = ipl_to_image(sized);
+    //normalize_array(im.data, im.h*im.w*im.c);
+    translate_image(im, -144);
+    resize_network(net, im.h, im.w, im.c);
+    forward_network(net, im.data, 0);
+    image out = get_network_image(net);
+    free_image(im);
+    cvReleaseImage(&sized);
+    return copy_image(out);
 }
 
 void features_VOC_image_size(char *image_path, int h, int w)
 {
-	int j;
-	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
-	fprintf(stderr, "%s\n", image_path);
+    int j;
+    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+    fprintf(stderr, "%s\n", image_path);
 
-	IplImage* src = 0;
-	if( (src = cvLoadImage(image_path,-1)) == 0 ) file_error(image_path);
-	image out = features_output_size(net, src, h, w);
-	for(j = 0; j < out.c*out.h*out.w; ++j){
-		if(j != 0) printf(",");
-		printf("%g", out.data[j]);
-	}
-	printf("\n");
-	free_image(out);
-	cvReleaseImage(&src);
+    IplImage* src = 0;
+    if( (src = cvLoadImage(image_path,-1)) == 0 ) file_error(image_path);
+    image out = features_output_size(net, src, h, w);
+    for(j = 0; j < out.c*out.h*out.w; ++j){
+        if(j != 0) printf(",");
+        printf("%g", out.data[j]);
+    }
+    printf("\n");
+    free_image(out);
+    cvReleaseImage(&src);
 }
 void visualize_imagenet_topk(char *filename)
 {
-	int i,j,k,l;
-	int topk = 10;
-	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
-	list *plist = get_paths(filename);
-	node *n = plist->front;
-	int h = voc_size(1), w = voc_size(1);
-	int num = get_network_image(net).c;
-	image **vizs = calloc(num, sizeof(image*));
-	float **score = calloc(num, sizeof(float *));
-	for(i = 0; i < num; ++i){
-		vizs[i] = calloc(topk, sizeof(image));
-		for(j = 0; j < topk; ++j) vizs[i][j] = make_image(h,w,3);
-		score[i] = calloc(topk, sizeof(float));
-	}
+    int i,j,k,l;
+    int topk = 10;
+    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+    list *plist = get_paths(filename);
+    node *n = plist->front;
+    int h = voc_size(1), w = voc_size(1);
+    int num = get_network_image(net).c;
+    image **vizs = calloc(num, sizeof(image*));
+    float **score = calloc(num, sizeof(float *));
+    for(i = 0; i < num; ++i){
+        vizs[i] = calloc(topk, sizeof(image));
+        for(j = 0; j < topk; ++j) vizs[i][j] = make_image(h,w,3);
+        score[i] = calloc(topk, sizeof(float));
+    }
 
-	int count = 0;
-	while(n){
-		++count;
-		char *image_path = (char *)n->val;
-		image im = load_image(image_path, 0, 0);
-		n = n->next;
-		if(im.h < 200 || im.w < 200) continue;
-		printf("Processing %dx%d image\n", im.h, im.w);
-		resize_network(net, im.h, im.w, im.c);
-		//scale_image(im, 1./255);
-		translate_image(im, -144);
-		forward_network(net, im.data, 0);
-		image out = get_network_image(net);
+    int count = 0;
+    while(n){
+        ++count;
+        char *image_path = (char *)n->val;
+        image im = load_image(image_path, 0, 0);
+        n = n->next;
+        if(im.h < 200 || im.w < 200) continue;
+        printf("Processing %dx%d image\n", im.h, im.w);
+        resize_network(net, im.h, im.w, im.c);
+        //scale_image(im, 1./255);
+        translate_image(im, -144);
+        forward_network(net, im.data, 0);
+        image out = get_network_image(net);
 
-		int dh = (im.h - h)/(out.h-1);
-		int dw = (im.w - w)/(out.w-1);
-		//printf("%d %d\n", dh, dw);
-		for(k = 0; k < out.c; ++k){
-			float topv = 0;
-			int topi = -1;
-			int topj = -1;
-			for(i = 0; i < out.h; ++i){
-				for(j = 0; j < out.w; ++j){
-					float val = get_pixel(out, i, j, k);
-					if(val > topv){
-						topv = val;
-						topi = i;
-						topj = j;
-					}
-				}
-			}
-			if(topv){
-				image sub = get_sub_image(im, dh*topi, dw*topj, h, w);
-				for(l = 0; l < topk; ++l){
-					if(topv > score[k][l]){
-						float swap = score[k][l];
-						score[k][l] = topv;
-						topv = swap;
+        int dh = (im.h - h)/(out.h-1);
+        int dw = (im.w - w)/(out.w-1);
+        //printf("%d %d\n", dh, dw);
+        for(k = 0; k < out.c; ++k){
+            float topv = 0;
+            int topi = -1;
+            int topj = -1;
+            for(i = 0; i < out.h; ++i){
+                for(j = 0; j < out.w; ++j){
+                    float val = get_pixel(out, i, j, k);
+                    if(val > topv){
+                        topv = val;
+                        topi = i;
+                        topj = j;
+                    }
+                }
+            }
+            if(topv){
+                image sub = get_sub_image(im, dh*topi, dw*topj, h, w);
+                for(l = 0; l < topk; ++l){
+                    if(topv > score[k][l]){
+                        float swap = score[k][l];
+                        score[k][l] = topv;
+                        topv = swap;
 
-						image swapi = vizs[k][l];
-						vizs[k][l] = sub;
-						sub = swapi;
-					}
-				}
-				free_image(sub);
-			}
-		}
-		free_image(im);
-		if(count%50 == 0){
-			image grid = grid_images(vizs, num, topk);
-			//show_image(grid, "IMAGENET Visualization");
-			save_image(grid, "IMAGENET Grid Single Nonorm");
-			free_image(grid);
-		}
-	}
-	//cvWaitKey(0);
+                        image swapi = vizs[k][l];
+                        vizs[k][l] = sub;
+                        sub = swapi;
+                    }
+                }
+                free_image(sub);
+            }
+        }
+        free_image(im);
+        if(count%50 == 0){
+            image grid = grid_images(vizs, num, topk);
+            //show_image(grid, "IMAGENET Visualization");
+            save_image(grid, "IMAGENET Grid Single Nonorm");
+            free_image(grid);
+        }
+    }
+    //cvWaitKey(0);
 }
 
 void visualize_imagenet_features(char *filename)
 {
-	int i,j,k;
-	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
-	list *plist = get_paths(filename);
-	node *n = plist->front;
-	int h = voc_size(1), w = voc_size(1);
-	int num = get_network_image(net).c;
-	image *vizs = calloc(num, sizeof(image));
-	for(i = 0; i < num; ++i) vizs[i] = make_image(h, w, 3);
-	while(n){
-		char *image_path = (char *)n->val;
-		image im = load_image(image_path, 0, 0);
-		printf("Processing %dx%d image\n", im.h, im.w);
-		resize_network(net, im.h, im.w, im.c);
-		forward_network(net, im.data, 0);
-		image out = get_network_image(net);
+    int i,j,k;
+    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+    list *plist = get_paths(filename);
+    node *n = plist->front;
+    int h = voc_size(1), w = voc_size(1);
+    int num = get_network_image(net).c;
+    image *vizs = calloc(num, sizeof(image));
+    for(i = 0; i < num; ++i) vizs[i] = make_image(h, w, 3);
+    while(n){
+        char *image_path = (char *)n->val;
+        image im = load_image(image_path, 0, 0);
+        printf("Processing %dx%d image\n", im.h, im.w);
+        resize_network(net, im.h, im.w, im.c);
+        forward_network(net, im.data, 0);
+        image out = get_network_image(net);
 
-		int dh = (im.h - h)/h;
-		int dw = (im.w - w)/w;
-		for(i = 0; i < out.h; ++i){
-			for(j = 0; j < out.w; ++j){
-				image sub = get_sub_image(im, dh*i, dw*j, h, w);
-				for(k = 0; k < out.c; ++k){
-					float val = get_pixel(out, i, j, k);
-					//printf("%f, ", val);
-					image sub_c = copy_image(sub);
-					scale_image(sub_c, val);
-					add_into_image(sub_c, vizs[k], 0, 0);
-					free_image(sub_c);
-				}
-				free_image(sub);
-			}
-		}
-		//printf("\n");
-		show_images(vizs, 10, "IMAGENET Visualization");
-		cvWaitKey(1000);
-		n = n->next;
-	}
-	cvWaitKey(0);
+        int dh = (im.h - h)/h;
+        int dw = (im.w - w)/w;
+        for(i = 0; i < out.h; ++i){
+            for(j = 0; j < out.w; ++j){
+                image sub = get_sub_image(im, dh*i, dw*j, h, w);
+                for(k = 0; k < out.c; ++k){
+                    float val = get_pixel(out, i, j, k);
+                    //printf("%f, ", val);
+                    image sub_c = copy_image(sub);
+                    scale_image(sub_c, val);
+                    add_into_image(sub_c, vizs[k], 0, 0);
+                    free_image(sub_c);
+                }
+                free_image(sub);
+            }
+        }
+        //printf("\n");
+        show_images(vizs, 10, "IMAGENET Visualization");
+        cvWaitKey(1000);
+        n = n->next;
+    }
+    cvWaitKey(0);
 }
 
 void visualize_cat()
 {
-	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
-	image im = load_image("data/cat.png", 0, 0);
-	printf("Processing %dx%d image\n", im.h, im.w);
-	resize_network(net, im.h, im.w, im.c);
-	forward_network(net, im.data, 0);
+    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+    image im = load_image("data/cat.png", 0, 0);
+    printf("Processing %dx%d image\n", im.h, im.w);
+    resize_network(net, im.h, im.w, im.c);
+    forward_network(net, im.data, 0);
 
-	visualize_network(net);
-	cvWaitKey(0);
+    visualize_network(net);
+    cvWaitKey(0);
 }
 
 void features_VOC_image(char *image_file, char *image_dir, char *out_dir, int flip, int interval)
 {
-	int i,j;
-	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
-	char image_path[1024];
-	sprintf(image_path, "%s/%s",image_dir, image_file);
-	char out_path[1024];
-	if (flip)sprintf(out_path, "%s%d/%s_r.txt",out_dir, interval, image_file);
-	else sprintf(out_path, "%s%d/%s.txt",out_dir, interval, image_file);
-	printf("%s\n", image_file);
+    int i,j;
+    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+    char image_path[1024];
+    sprintf(image_path, "%s/%s",image_dir, image_file);
+    char out_path[1024];
+    if (flip)sprintf(out_path, "%s%d/%s_r.txt",out_dir, interval, image_file);
+    else sprintf(out_path, "%s%d/%s.txt",out_dir, interval, image_file);
+    printf("%s\n", image_file);
 
-	IplImage* src = 0;
-	if( (src = cvLoadImage(image_path,-1)) == 0 ) file_error(image_path);
-	if(flip)cvFlip(src, 0, 1);
-	int w = src->width;
-	int h = src->height;
-	int sbin = 8;
-	double scale = pow(2., 1./interval);
-	int m = (w<h)?w:h;
-	int max_scale = 1+floor((double)log((double)m/(5.*sbin))/log(scale));
-	if(max_scale < interval) error("max_scale must be >= interval");
-	image *ims = calloc(max_scale+interval, sizeof(image));
+    IplImage* src = 0;
+    if( (src = cvLoadImage(image_path,-1)) == 0 ) file_error(image_path);
+    if(flip)cvFlip(src, 0, 1);
+    int w = src->width;
+    int h = src->height;
+    int sbin = 8;
+    double scale = pow(2., 1./interval);
+    int m = (w<h)?w:h;
+    int max_scale = 1+floor((double)log((double)m/(5.*sbin))/log(scale));
+    if(max_scale < interval) error("max_scale must be >= interval");
+    image *ims = calloc(max_scale+interval, sizeof(image));
 
-	for(i = 0; i < interval; ++i){
-		double factor = 1./pow(scale, i);
-		double ih =  round(h*factor);
-		double iw =  round(w*factor);
-		int ex_h = round(ih/4.) - 2;
-		int ex_w = round(iw/4.) - 2;
-		ims[i] = features_output_size(net, src, ex_h, ex_w);
+    for(i = 0; i < interval; ++i){
+        double factor = 1./pow(scale, i);
+        double ih =  round(h*factor);
+        double iw =  round(w*factor);
+        int ex_h = round(ih/4.) - 2;
+        int ex_w = round(iw/4.) - 2;
+        ims[i] = features_output_size(net, src, ex_h, ex_w);
 
-		ih =  round(h*factor);
-		iw =  round(w*factor);
-		ex_h = round(ih/8.) - 2;
-		ex_w = round(iw/8.) - 2;
-		ims[i+interval] = features_output_size(net, src, ex_h, ex_w);
-		for(j = i+interval; j < max_scale; j += interval){
-			factor /= 2.;
-			ih =  round(h*factor);
-			iw =  round(w*factor);
-			ex_h = round(ih/8.) - 2;
-			ex_w = round(iw/8.) - 2;
-			ims[j+interval] = features_output_size(net, src, ex_h, ex_w);
-		}
-	}
-	FILE *fp = fopen(out_path, "w");
-	if(fp == 0) file_error(out_path);
-	for(i = 0; i < max_scale+interval; ++i){
-		image out = ims[i];
-		fprintf(fp, "%d, %d, %d\n",out.c, out.h, out.w);
-		for(j = 0; j < out.c*out.h*out.w; ++j){
-			if(j != 0)fprintf(fp, ",");
-			float o = out.data[j];
-			if(o < 0) o = 0;
-			fprintf(fp, "%g", o);
-		}
-		fprintf(fp, "\n");
-		free_image(out);
-	}
-	free(ims);
-	fclose(fp);
-	cvReleaseImage(&src);
+        ih =  round(h*factor);
+        iw =  round(w*factor);
+        ex_h = round(ih/8.) - 2;
+        ex_w = round(iw/8.) - 2;
+        ims[i+interval] = features_output_size(net, src, ex_h, ex_w);
+        for(j = i+interval; j < max_scale; j += interval){
+            factor /= 2.;
+            ih =  round(h*factor);
+            iw =  round(w*factor);
+            ex_h = round(ih/8.) - 2;
+            ex_w = round(iw/8.) - 2;
+            ims[j+interval] = features_output_size(net, src, ex_h, ex_w);
+        }
+    }
+    FILE *fp = fopen(out_path, "w");
+    if(fp == 0) file_error(out_path);
+    for(i = 0; i < max_scale+interval; ++i){
+        image out = ims[i];
+        fprintf(fp, "%d, %d, %d\n",out.c, out.h, out.w);
+        for(j = 0; j < out.c*out.h*out.w; ++j){
+            if(j != 0)fprintf(fp, ",");
+            float o = out.data[j];
+            if(o < 0) o = 0;
+            fprintf(fp, "%g", o);
+        }
+        fprintf(fp, "\n");
+        free_image(out);
+    }
+    free(ims);
+    fclose(fp);
+    cvReleaseImage(&src);
 }
 
 void test_distribution()
 {
-	IplImage* img = 0;
-	if( (img = cvLoadImage("im_small.jpg",-1)) == 0 ) file_error("im_small.jpg");
-	network net = parse_network_cfg("cfg/voc_features.cfg");
-	int h = img->height/8-2;
-	int w = img->width/8-2;
-	image out = features_output_size(net, img, h, w);
-	int c = out.c;
-	out.c = 1;
-	show_image(out, "output");
-	out.c = c;
-	image input = ipl_to_image(img);
-	show_image(input, "input");
-	CvScalar s;
-	int i,j;
-	image affects = make_image(input.h, input.w, 1);
-	int count = 0;
-	for(i = 0; i<img->height; i += 1){
-		for(j = 0; j < img->width; j += 1){
-			IplImage *copy = cvCloneImage(img);
-			s=cvGet2D(copy,i,j); // get the (i,j) pixel value
-			printf("%d/%d\n", count++, img->height*img->width);
-			s.val[0]=0;
-			s.val[1]=0;
-			s.val[2]=0;
-			cvSet2D(copy,i,j,s); // set the (i,j) pixel value
-			image mod = features_output_size(net, copy, h, w);
-			image dist = image_distance(out, mod);
-			show_image(affects, "affects");
-			cvWaitKey(1);
-			cvReleaseImage(&copy);
-			//affects.data[i*affects.w + j] += dist.data[3*dist.w+5];
-			affects.data[i*affects.w + j] += dist.data[1*dist.w+1];
-			free_image(mod);
-			free_image(dist);
-		}
-	}
-	show_image(affects, "Origins");
-	cvWaitKey(0);
-	cvWaitKey(0);
+    IplImage* img = 0;
+    if( (img = cvLoadImage("im_small.jpg",-1)) == 0 ) file_error("im_small.jpg");
+    network net = parse_network_cfg("cfg/voc_features.cfg");
+    int h = img->height/8-2;
+    int w = img->width/8-2;
+    image out = features_output_size(net, img, h, w);
+    int c = out.c;
+    out.c = 1;
+    show_image(out, "output");
+    out.c = c;
+    image input = ipl_to_image(img);
+    show_image(input, "input");
+    CvScalar s;
+    int i,j;
+    image affects = make_image(input.h, input.w, 1);
+    int count = 0;
+    for(i = 0; i<img->height; i += 1){
+        for(j = 0; j < img->width; j += 1){
+            IplImage *copy = cvCloneImage(img);
+            s=cvGet2D(copy,i,j); // get the (i,j) pixel value
+            printf("%d/%d\n", count++, img->height*img->width);
+            s.val[0]=0;
+            s.val[1]=0;
+            s.val[2]=0;
+            cvSet2D(copy,i,j,s); // set the (i,j) pixel value
+            image mod = features_output_size(net, copy, h, w);
+            image dist = image_distance(out, mod);
+            show_image(affects, "affects");
+            cvWaitKey(1);
+            cvReleaseImage(&copy);
+            //affects.data[i*affects.w + j] += dist.data[3*dist.w+5];
+            affects.data[i*affects.w + j] += dist.data[1*dist.w+1];
+            free_image(mod);
+            free_image(dist);
+        }
+    }
+    show_image(affects, "Origins");
+    cvWaitKey(0);
+    cvWaitKey(0);
 }
 
 
 int main(int argc, char *argv[])
 {
-	//train_full();
-	//test_distribution();
-	//feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+    //train_full();
+    //test_distribution();
+    //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
-	//test_blas();
-	//test_visualize();
-	//test_gpu_blas();
-	//test_blas();
-	//test_convolve_matrix();
-	//    test_im2row();
-	//test_split();
-	//test_ensemble();
-	test_nist();
-	//test_cifar10();
-	//test_vince();
-	//test_full();
-	//tune_VOC();
-	//features_VOC_image(argv[1], argv[2], argv[3], 0);
-	//features_VOC_image(argv[1], argv[2], argv[3], 1);
-	//train_VOC();
-	//features_VOC_image(argv[1], argv[2], argv[3], 0, 4);
-	//features_VOC_image(argv[1], argv[2], argv[3], 1, 4);
-	//features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
-	//visualize_imagenet_features("data/assira/train.list");
-	//visualize_imagenet_topk("data/VOC2012.list");
-	//visualize_cat();
-	//flip_network();
-	//test_visualize();
-	fprintf(stderr, "Success!\n");
-	//test_random_preprocess();
-	//test_random_classify();
-	//test_parser();
-	//test_backpropagate();
-	//test_ann();
-	//test_convolve();
-	//test_upsample();
-	//test_rotate();
-	//test_load();
-	//test_network();
-	//test_convolutional_layer();
-	//verify_convolutional_layer();
-	//test_color();
-	//cvWaitKey(0);
-	return 0;
+    //test_blas();
+    //test_visualize();
+    //test_gpu_blas();
+    //test_blas();
+    //test_convolve_matrix();
+    //    test_im2row();
+    //test_split();
+    //test_ensemble();
+    //test_nist_single();
+    test_nist();
+    //test_cifar10();
+    //test_vince();
+    //test_full();
+    //tune_VOC();
+    //features_VOC_image(argv[1], argv[2], argv[3], 0);
+    //features_VOC_image(argv[1], argv[2], argv[3], 1);
+    //train_VOC();
+    //features_VOC_image(argv[1], argv[2], argv[3], 0, 4);
+    //features_VOC_image(argv[1], argv[2], argv[3], 1, 4);
+    //features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
+    //visualize_imagenet_features("data/assira/train.list");
+    //visualize_imagenet_topk("data/VOC2012.list");
+    //visualize_cat();
+    //flip_network();
+    //test_visualize();
+    //test_parser();
+    fprintf(stderr, "Success!\n");
+    //test_random_preprocess();
+    //test_random_classify();
+    //test_parser();
+    //test_backpropagate();
+    //test_ann();
+    //test_convolve();
+    //test_upsample();
+    //test_rotate();
+    //test_load();
+    //test_network();
+    //test_convolutional_layer();
+    //verify_convolutional_layer();
+    //test_color();
+    //cvWaitKey(0);
+    return 0;
 }

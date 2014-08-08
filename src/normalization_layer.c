@@ -72,7 +72,7 @@ void forward_normalization_layer(const normalization_layer layer, float *in)
         int next = k+layer.size/2;
         int prev = k-layer.size/2-1;
         if(next < layer.c) add_square_array(in+next*imsize, layer.sums, imsize);
-        if(prev > 0)        sub_square_array(in+prev*imsize, layer.sums, imsize);
+        if(prev > 0)       sub_square_array(in+prev*imsize, layer.sums, imsize);
         for(i = 0; i < imsize; ++i){
             layer.output[k*imsize + i] = in[k*imsize+i] / pow(layer.kappa + layer.alpha * layer.sums[i], layer.beta);
         }

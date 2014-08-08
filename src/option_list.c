@@ -53,6 +53,13 @@ int option_find_int(list *l, char *key, int def)
     return def;
 }
 
+float option_find_float_quiet(list *l, char *key, float def)
+{
+    char *v = option_find(l, key);
+    if(v) return atof(v);
+    return def;
+}
+
 float option_find_float(list *l, char *key, float def)
 {
     char *v = option_find(l, key);

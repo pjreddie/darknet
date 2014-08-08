@@ -6,6 +6,7 @@ typedef struct {
     int batch;
     float *delta;
     float *output;
+    float *jacobian;
 } softmax_layer;
 
 softmax_layer *make_softmax_layer(int batch, int inputs);

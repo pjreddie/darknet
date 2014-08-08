@@ -131,6 +131,7 @@ data load_cifar10_data(char *filename)
     d.y = y;
 
     FILE *fp = fopen(filename, "rb");
+    if(!fp) file_error(filename);
     for(i = 0; i < 10000; ++i){
         unsigned char bytes[3073];
         fread(bytes, 1, 3073, fp);
@@ -140,7 +141,43 @@ data load_cifar10_data(char *filename)
             X.vals[i][j] = (double)bytes[j+1];
         }
     }
+	translate_data_rows(d, -144);
+	scale_data_rows(d, 1./128);
+	//normalize_data_rows(d);
     fclose(fp);
+    return d;
+}
+
+data load_all_cifar10()
+{
+    data d;
+    d.shallow = 0;
+    int i,j,b;
+    matrix X = make_matrix(50000, 3072);
+    matrix y = make_matrix(50000, 10);
+    d.X = X;
+    d.y = y;
+
+    
+    for(b = 0; b < 5; ++b){
+        char buff[256];
+        sprintf(buff, "data/cifar10/data_batch_%d.bin", b+1);
+        FILE *fp = fopen(buff, "rb");
+        if(!fp) file_error(buff);
+        for(i = 0; i < 10000; ++i){
+            unsigned char bytes[3073];
+            fread(bytes, 1, 3073, fp);
+            int class = bytes[0];
+            y.vals[i+b*10000][class] = 1;
+            for(j = 0; j < X.cols; ++j){
+                X.vals[i+b*10000][j] = (double)bytes[j+1];
+            }
+        }
+        fclose(fp);
+    }
+    //normalize_data_rows(d);
+	translate_data_rows(d, -144);
+	scale_data_rows(d, 1./128);
     return d;
 }
 

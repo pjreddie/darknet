@@ -110,6 +110,15 @@ void cl_copy_array(cl_mem src, cl_mem dst, int n)
     check_error(cl);
 }
 
+cl_mem cl_sub_array(cl_mem src, int offset, int size)
+{
+    cl_buffer_region r;
+    r.origin = offset*sizeof(float);
+    r.size = size*sizeof(float);
+    cl_mem sub = clCreateSubBuffer(src, CL_MEM_USE_HOST_PTR, CL_BUFFER_CREATE_TYPE_REGION, &r, 0);
+    return sub;
+}
+
 cl_mem cl_make_array(float *x, int n)
 {
     cl_setup();

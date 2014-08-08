@@ -1,6 +1,6 @@
 CC=gcc
 GPU=0
-COMMON=-Wall -Werror -Wfatal-errors `pkg-config --cflags opencv` -I/usr/local/cuda/include/
+COMMON=-Wall -Wfatal-errors `pkg-config --cflags opencv` -I/usr/local/cuda/include/
 ifeq ($(GPU), 1) 
 COMMON+=-DGPU
 else
@@ -19,13 +19,13 @@ LDFLAGS= -lOpenCL
 endif
 endif
 CFLAGS= $(COMMON) $(OPTS)
-#CFLAGS= $(COMMON) -O0 -g 
+#CFLAGS= $(COMMON) -O0 -g
 LDFLAGS+=`pkg-config --libs opencv` -lm
 VPATH=./src/
 EXEC=cnn
 OBJDIR=./obj/
 
-OBJ=network.o image.o cnn.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o mini_blas.o convolutional_layer.o gemm.o normalization_layer.o opencl.o im2col.o col2im.o axpy.o
+OBJ=network.o image.o cnn.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o mini_blas.o convolutional_layer.o gemm.o normalization_layer.o opencl.o im2col.o col2im.o axpy.o dropout_layer.o
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 
 all: $(EXEC)

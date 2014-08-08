@@ -1,7 +1,7 @@
 
-__kernel void im2col(__global float *data_im,
-    const int batch, const int channels, const int height, const int width,
-    const int ksize, const int stride, __global float *data_col) 
+__kernel void im2col(__global float *data_im, const int im_offset,
+    const int channels, const int height, const int width,
+    const int ksize, const int stride, __global float *data_col, const int col_offset) 
 {
     int b = get_global_id(0);
     int c = get_global_id(1);

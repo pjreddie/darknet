@@ -11,12 +11,16 @@ typedef enum {
     CONNECTED,
     MAXPOOL,
     SOFTMAX,
-    NORMALIZATION
+    NORMALIZATION,
+    DROPOUT
 } LAYER_TYPE;
 
 typedef struct {
     int n;
     int batch;
+    float learning_rate;
+    float momentum;
+    float decay;
     void **layers;
     LAYER_TYPE *types;
     int outputs;
@@ -31,10 +35,10 @@ typedef struct {
 network make_network(int n, int batch);
 void forward_network(network net, float *input, int train);
 float backward_network(network net, float *input, float *truth);
-void update_network(network net, float step, float momentum, float decay);
-float train_network_sgd(network net, data d, int n, float step, float momentum,float decay);
-float train_network_batch(network net, data d, int n, float step, float momentum,float decay);
-void train_network(network net, data d, float step, float momentum, float decay);
+void update_network(network net);
+float train_network_sgd(network net, data d, int n);
+float train_network_batch(network net, data d, int n);
+void train_network(network net, data d);
 matrix network_predict_data(network net, data test);
 float network_accuracy(network net, data d);
 float *get_network_output(network net);
@@ -48,7 +52,6 @@ image get_network_image_layer(network net, int i);
 int get_predicted_class_network(network net);
 void print_network(network net);
 void visualize_network(network net);
-void save_network(network net, char *filename);
 int resize_network(network net, int h, int w, int c);
 int get_network_input_size(network net);
 

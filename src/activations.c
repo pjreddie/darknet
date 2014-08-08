@@ -41,29 +41,28 @@ float relu_activate(float x){return x*(x>0);}
 float ramp_activate(float x){return x*(x>0)+.1*x;}
 float tanh_activate(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
 
-float activate(float x, ACTIVATION a, float dropout)
+float activate(float x, ACTIVATION a)
 {
-    if(dropout && (float)rand()/RAND_MAX < dropout) return 0;
     switch(a){
         case LINEAR:
-            return linear_activate(x)/(1-dropout);
+            return linear_activate(x);
         case SIGMOID:
-            return sigmoid_activate(x)/(1-dropout);
+            return sigmoid_activate(x);
         case RELU:
-            return relu_activate(x)/(1-dropout);
+            return relu_activate(x);
         case RAMP:
-            return ramp_activate(x)/(1-dropout);
+            return ramp_activate(x);
         case TANH:
-            return tanh_activate(x)/(1-dropout);
+            return tanh_activate(x);
     }
     return 0;
 }
 
-void activate_array(float *x, const int n, const ACTIVATION a, float dropout)
+void activate_array(float *x, const int n, const ACTIVATION a)
 {
     int i;
     for(i = 0; i < n; ++i){
-        x[i] = activate(x[i], a, dropout);
+        x[i] = activate(x[i], a);
     }
 }
 
@@ -109,7 +108,7 @@ cl_kernel get_activation_kernel()
 }
 
 
-void activate_array_ongpu(cl_mem x, int n, ACTIVATION a, float dropout) 
+void activate_array_ongpu(cl_mem x, int n, ACTIVATION a) 
 {
     cl_setup();
     cl_kernel kernel = get_activation_kernel();
@@ -119,8 +118,6 @@ void activate_array_ongpu(cl_mem x, int n, ACTIVATION a, float dropout)
     cl.error = clSetKernelArg(kernel, i++, sizeof(x), (void*) &x);
     cl.error = clSetKernelArg(kernel, i++, sizeof(n), (void*) &n);
     cl.error = clSetKernelArg(kernel, i++, sizeof(a), (void*) &a);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(dropout), 
-        (void*) &dropout);
     check_error(cl);
 
     size_t gsize = n;
