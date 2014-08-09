@@ -281,10 +281,10 @@ void test_vince()
 void test_nist_single()
 {
     srand(222222);
-    network net = parse_network_cfg("cfg/nist.cfg");
+    network net = parse_network_cfg("cfg/nist_single.cfg");
     data train = load_categorical_data_csv("data/mnist/mnist_tiny.csv", 0, 10);
     normalize_data_rows(train);
-    float loss = train_network_sgd(net, train, 5);
+    float loss = train_network_sgd(net, train, 1);
     printf("Loss: %f, LR: %f, Momentum: %f, Decay: %f\n", loss, net.learning_rate, net.momentum, net.decay);
 
 }
@@ -296,20 +296,26 @@ void test_nist()
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
 	translate_data_rows(train, -144);
-	scale_data_rows(train, 1./128);
+	//scale_data_rows(train, 1./128);
 	translate_data_rows(test, -144);
-	scale_data_rows(test, 1./128);
+	//scale_data_rows(test, 1./128);
     //randomize_data(train);
     int count = 0;
     //clock_t start = clock(), end;
     int iters = 10000/net.batch;
-    while(++count <= 100){
+    while(++count <= 2000){
         clock_t start = clock(), end;
         float loss = train_network_sgd(net, train, iters);
         end = clock();
         float test_acc = network_accuracy(net, test);
         //float test_acc = 0;
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+        /*printf("%f %f %f %f %f\n", mean_array(get_network_output_layer(net,0), 100),
+        mean_array(get_network_output_layer(net,1), 100),
+        mean_array(get_network_output_layer(net,2), 100),
+        mean_array(get_network_output_layer(net,3), 100),
+        mean_array(get_network_output_layer(net,4), 100));
+        */
         //save_network(net, "cfg/nist_basic_trained.cfg");
 
         //printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
@@ -759,7 +765,7 @@ int main(int argc, char *argv[])
 {
     //train_full();
     //test_distribution();
-    //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
     //test_blas();
     //test_visualize();

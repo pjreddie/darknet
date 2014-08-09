@@ -29,9 +29,9 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     layer->weight_momentum = calloc(inputs*outputs, sizeof(float));
     layer->weights = calloc(inputs*outputs, sizeof(float));
     float scale = 1./inputs;
-    //scale = .01;
+    scale = .05;
     for(i = 0; i < inputs*outputs; ++i)
-        layer->weights[i] = scale*(rand_uniform()-.5);
+        layer->weights[i] = scale*2*(rand_uniform()-.5);
 
     layer->bias_updates = calloc(outputs, sizeof(float));
     layer->bias_adapt = calloc(outputs, sizeof(float));
