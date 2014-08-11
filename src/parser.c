@@ -4,6 +4,7 @@
 
 #include "parser.h"
 #include "activations.h"
+#include "crop_layer.h"
 #include "convolutional_layer.h"
 #include "connected_layer.h"
 #include "maxpool_layer.h"
@@ -24,6 +25,7 @@ int is_connected(section *s);
 int is_maxpool(section *s);
 int is_dropout(section *s);
 int is_softmax(section *s);
+int is_crop(section *s);
 int is_normalization(section *s);
 list *read_cfg(char *filename);
 
@@ -41,6 +43,22 @@ void free_section(section *s)
     }
     free(s->options);
     free(s);
+}
+
+void parse_data(char *data, float *a, int n)
+{
+    int i;
+    if(!data) return;
+    char *curr = data;
+    char *next = data;
+    int done = 0;
+    for(i = 0; i < n && !done; ++i){
+        while(*++next !='\0' && *next != ',');
+        if(*next == '\0') done = 1;
+        *next = '\0';
+        sscanf(curr, "%g", &a[i]);
+        curr = next+1;
+    }
 }
 
 convolutional_layer *parse_convolutional(list *options, network *net, int count)
@@ -95,30 +113,8 @@ convolutional_layer *parse_convolutional(list *options, network *net, int count)
     }
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
-    if(biases){
-        char *curr = biases;
-        char *next = biases;
-        int done = 0;
-        for(i = 0; i < n && !done; ++i){
-            while(*++next !='\0' && *next != ',');
-            if(*next == '\0') done = 1;
-            *next = '\0';
-            sscanf(curr, "%g", &layer->biases[i]);
-            curr = next+1;
-        }
-    }
-    if(weights){
-        char *curr = weights;
-        char *next = weights;
-        int done = 0;
-        for(i = 0; i < c*n*size*size && !done; ++i){
-            while(*++next !='\0' && *next != ',');
-            if(*next == '\0') done = 1;
-            *next = '\0';
-            sscanf(curr, "%g", &layer->filters[i]);
-            curr = next+1;
-        }
-    }
+    parse_data(biases, layer->biases, n);
+    parse_data(weights, layer->filters, c*n*size*size);
     option_unused(options);
     return layer;
 }
@@ -164,6 +160,10 @@ connected_layer *parse_connected(list *options, network *net, int count)
             curr = next+1;
         }
     }
+    char *weights = option_find_str(options, "weights", 0);
+    char *biases = option_find_str(options, "biases", 0);
+    parse_data(biases, layer->biases, output);
+    parse_data(weights, layer->weights, input*output);
     option_unused(options);
     return layer;
 }
@@ -178,6 +178,36 @@ softmax_layer *parse_softmax(list *options, network *net, int count)
         input =  get_network_output_size_layer(*net, count-1);
     }
     softmax_layer *layer = make_softmax_layer(net->batch, input);
+    option_unused(options);
+    return layer;
+}
+
+crop_layer *parse_crop(list *options, network *net, int count)
+{
+    float learning_rate, momentum, decay;
+    int h,w,c;
+    int crop_height = option_find_int(options, "crop_height",1);
+    int crop_width = option_find_int(options, "crop_width",1);
+    int flip = option_find_int(options, "flip",0);
+    if(count == 0){
+        h = option_find_int(options, "height",1);
+        w = option_find_int(options, "width",1);
+        c = option_find_int(options, "channels",1);
+        net->batch = option_find_int(options, "batch",1);
+        learning_rate = option_find_float(options, "learning_rate", .001);
+        momentum = option_find_float(options, "momentum", .9);
+        decay = option_find_float(options, "decay", .0001);
+        net->learning_rate = learning_rate;
+        net->momentum = momentum;
+        net->decay = decay;
+    }else{
+        image m =  get_network_image_layer(*net, count-1);
+        h = m.h;
+        w = m.w;
+        c = m.c;
+        if(h == 0) error("Layer before crop layer must output image.");
+    }
+    crop_layer *layer = make_crop_layer(net->batch,h,w,c,crop_height,crop_width,flip);
     option_unused(options);
     return layer;
 }
@@ -261,6 +291,10 @@ network parse_network_cfg(char *filename)
             connected_layer *layer = parse_connected(options, &net, count);
             net.types[count] = CONNECTED;
             net.layers[count] = layer;
+        }else if(is_crop(s)){
+            crop_layer *layer = parse_crop(options, &net, count);
+            net.types[count] = CROP;
+            net.layers[count] = layer;
         }else if(is_softmax(s)){
             softmax_layer *layer = parse_softmax(options, &net, count);
             net.types[count] = SOFTMAX;
@@ -290,6 +324,10 @@ network parse_network_cfg(char *filename)
     return net;
 }
 
+int is_crop(section *s)
+{
+    return (strcmp(s->type, "[crop]")==0);
+}
 int is_convolutional(section *s)
 {
     return (strcmp(s->type, "[conv]")==0
@@ -389,11 +427,11 @@ void print_convolutional_cfg(FILE *fp, convolutional_layer *l, network net, int 
                 l->batch,l->h, l->w, l->c, l->learning_rate, l->momentum, l->decay);
     } else {
         if(l->learning_rate != net.learning_rate)
-                fprintf(fp, "learning_rate=%g\n", l->learning_rate);
+            fprintf(fp, "learning_rate=%g\n", l->learning_rate);
         if(l->momentum != net.momentum)
-                fprintf(fp, "momentum=%g\n", l->momentum);
+            fprintf(fp, "momentum=%g\n", l->momentum);
         if(l->decay != net.decay)
-                fprintf(fp, "decay=%g\n", l->decay);
+            fprintf(fp, "decay=%g\n", l->decay);
     }
     fprintf(fp, "filters=%d\n"
             "size=%d\n"
@@ -432,10 +470,28 @@ void print_connected_cfg(FILE *fp, connected_layer *l, network net, int count)
             "activation=%s\n",
             l->outputs,
             get_activation_string(l->activation));
-    fprintf(fp, "data=");
+    fprintf(fp, "biases=");
     for(i = 0; i < l->outputs; ++i) fprintf(fp, "%g,", l->biases[i]);
-    for(i = 0; i < l->inputs*l->outputs; ++i) fprintf(fp, "%g,", l->weights[i]);
+    fprintf(fp, "\n");
+    fprintf(fp, "weights=");
+    for(i = 0; i < l->outputs*l->inputs; ++i) fprintf(fp, "%g,", l->weights[i]);
     fprintf(fp, "\n\n");
+}
+
+void print_crop_cfg(FILE *fp, crop_layer *l, network net, int count)
+{
+    fprintf(fp, "[crop]\n");
+    if(count == 0) {
+        fprintf(fp,   "batch=%d\n"
+                "height=%d\n"
+                "width=%d\n"
+                "channels=%d\n"
+                "learning_rate=%g\n"
+                "momentum=%g\n"
+                "decay=%g\n",
+                l->batch,l->h, l->w, l->c, net.learning_rate, net.momentum, net.decay);
+    }
+    fprintf(fp, "crop_height=%d\ncrop_width=%d\nflip=%d\n\n", l->crop_height, l->crop_width, l->flip);
 }
 
 void print_maxpool_cfg(FILE *fp, maxpool_layer *l, network net, int count)
@@ -481,6 +537,8 @@ void save_network(network net, char *filename)
             print_convolutional_cfg(fp, (convolutional_layer *)net.layers[i], net, i);
         else if(net.types[i] == CONNECTED)
             print_connected_cfg(fp, (connected_layer *)net.layers[i], net, i);
+        else if(net.types[i] == CROP)
+            print_crop_cfg(fp, (crop_layer *)net.layers[i], net, i);
         else if(net.types[i] == MAXPOOL)
             print_maxpool_cfg(fp, (maxpool_layer *)net.layers[i], net, i);
         else if(net.types[i] == NORMALIZATION)

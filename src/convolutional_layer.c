@@ -166,7 +166,7 @@ void learn_bias_convolutional_layer(convolutional_layer layer)
         *convolutional_out_width(layer);
     for(b = 0; b < layer.batch; ++b){
         for(i = 0; i < layer.n; ++i){
-            layer.bias_updates[i] += mean_array(layer.delta+size*(i+b*layer.n), size);
+            layer.bias_updates[i] += sum_array(layer.delta+size*(i+b*layer.n), size);
         }
     }
 }

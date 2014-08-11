@@ -240,9 +240,22 @@ void test_full()
 
 void test_cifar10()
 {
-	srand(222222);
+
+    network net = parse_network_cfg("cfg/cifar10_part5.cfg");
+    data test = load_cifar10_data("data/cifar10/test_batch.bin");
+        clock_t start = clock(), end;
+    float test_acc = network_accuracy(net, test);
+        end = clock();
+    printf("%f in %f Sec\n", test_acc, (float)(end-start)/CLOCKS_PER_SEC);
+    visualize_network(net);
+    cvWaitKey(0);
+}
+
+void train_cifar10()
+{
+    srand(555555);
     network net = parse_network_cfg("cfg/cifar10.cfg");
-    //data test = load_cifar10_data("data/cifar10/test_batch.bin");
+    data test = load_cifar10_data("data/cifar10/test_batch.bin");
     int count = 0;
     int iters = 10000/net.batch;
     data train = load_all_cifar10();
@@ -250,12 +263,20 @@ void test_cifar10()
         clock_t start = clock(), end;
         float loss = train_network_sgd(net, train, iters);
         end = clock();
-        //visualize_network(net);
-        //cvWaitKey(1000);
+        visualize_network(net);
+        cvWaitKey(5000);
 
         //float test_acc = network_accuracy(net, test);
         //printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
-        printf("%d: Loss: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, (float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+        if(count%10 == 0){
+            float test_acc = network_accuracy(net, test);
+            printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+            char buff[256];
+            sprintf(buff, "/home/pjreddie/cifar/cifar2_%d.cfg", count);
+            save_network(net, buff);
+        }else{
+            printf("%d: Loss: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, (float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+        }
     }
     free_data(train);
 }
@@ -292,13 +313,25 @@ void test_nist_single()
 void test_nist()
 {
     srand(222222);
-    network net = parse_network_cfg("cfg/nist.cfg");
+    network net = parse_network_cfg("cfg/nist_final.cfg");
+    data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
+    translate_data_rows(test, -144);
+    clock_t start = clock(), end;
+    float test_acc = network_accuracy_multi(net, test,16);
+    end = clock();
+    printf("Accuracy: %f, Time: %lf seconds\n", test_acc,(float)(end-start)/CLOCKS_PER_SEC);
+}
+
+void train_nist()
+{
+    srand(222222);
+    network net = parse_network_cfg("cfg/nist_final.cfg");
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
-	translate_data_rows(train, -144);
-	//scale_data_rows(train, 1./128);
-	translate_data_rows(test, -144);
-	//scale_data_rows(test, 1./128);
+    translate_data_rows(train, -144);
+    //scale_data_rows(train, 1./128);
+    translate_data_rows(test, -144);
+    //scale_data_rows(test, 1./128);
     //randomize_data(train);
     int count = 0;
     //clock_t start = clock(), end;
@@ -311,12 +344,12 @@ void test_nist()
         //float test_acc = 0;
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
         /*printf("%f %f %f %f %f\n", mean_array(get_network_output_layer(net,0), 100),
-        mean_array(get_network_output_layer(net,1), 100),
-        mean_array(get_network_output_layer(net,2), 100),
-        mean_array(get_network_output_layer(net,3), 100),
-        mean_array(get_network_output_layer(net,4), 100));
-        */
-        //save_network(net, "cfg/nist_basic_trained.cfg");
+          mean_array(get_network_output_layer(net,1), 100),
+          mean_array(get_network_output_layer(net,2), 100),
+          mean_array(get_network_output_layer(net,3), 100),
+          mean_array(get_network_output_layer(net,4), 100));
+         */
+        save_network(net, "cfg/nist_final2.cfg");
 
         //printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
         //end = clock();
@@ -778,6 +811,7 @@ int main(int argc, char *argv[])
     //test_nist_single();
     test_nist();
     //test_cifar10();
+    //train_cifar10();
     //test_vince();
     //test_full();
     //tune_VOC();

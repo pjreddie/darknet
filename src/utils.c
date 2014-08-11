@@ -143,12 +143,17 @@ float *parse_fields(char *line, int n)
 	return field;
 }
 
-float mean_array(float *a, int n)
+float sum_array(float *a, int n)
 {
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i) sum += a[i];
-    return sum/n;
+    return sum;
+}
+
+float mean_array(float *a, int n)
+{
+    return sum_array(a,n)/n;
 }
 
 float variance_array(float *a, int n)

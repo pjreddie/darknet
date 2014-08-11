@@ -12,7 +12,8 @@ typedef enum {
     MAXPOOL,
     SOFTMAX,
     NORMALIZATION,
-    DROPOUT
+    DROPOUT,
+    CROP
 } LAYER_TYPE;
 
 typedef struct {
@@ -41,6 +42,7 @@ float train_network_batch(network net, data d, int n);
 void train_network(network net, data d);
 matrix network_predict_data(network net, data test);
 float network_accuracy(network net, data d);
+float network_accuracy_multi(network net, data d, int n);
 float *get_network_output(network net);
 float *get_network_output_layer(network net, int i);
 float *get_network_delta_layer(network net, int i);

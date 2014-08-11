@@ -4,6 +4,7 @@
 #include "data.h"
 #include "utils.h"
 
+#include "crop_layer.h"
 #include "connected_layer.h"
 #include "convolutional_layer.h"
 #include "maxpool_layer.h"
@@ -56,6 +57,11 @@ void forward_network(network net, float *input, int train)
             forward_softmax_layer(layer, input);
             input = layer.output;
         }
+        else if(net.types[i] == CROP){
+            crop_layer layer = *(crop_layer *)net.layers[i];
+            forward_crop_layer(layer, input);
+            input = layer.output;
+        }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
             forward_maxpool_layer(layer, input);
@@ -83,6 +89,11 @@ void forward_network(network net, float *input, int train)
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
             forward_connected_layer(layer, input);
+            input = layer.output;
+        }
+        else if(net.types[i] == CROP){
+            crop_layer layer = *(crop_layer *)net.layers[i];
+            forward_crop_layer(layer, input);
             input = layer.output;
         }
         else if(net.types[i] == SOFTMAX){
@@ -266,12 +277,14 @@ float train_network_sgd(network net, data d, int n)
 
     int i,j;
     float sum = 0;
+    int index = 0;
     for(i = 0; i < n; ++i){
         for(j = 0; j < batch; ++j){
-            int index = rand()%d.X.rows;
+            index = rand()%d.X.rows;
             memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
             memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
         }
+
         float err = train_network_datum(net, X, y);
         sum += err;
         //train_network_datum(net, X, y);
@@ -300,6 +313,7 @@ float train_network_sgd(network net, data d, int n)
         //}
     }
     //printf("Accuracy: %f\n",(float) correct/n);
+    //show_image(float_to_image(32,32,3,X), "Orig");
     free(X);
     free(y);
     return (float)sum/(n*batch);
@@ -446,6 +460,10 @@ image get_network_image_layer(network net, int i)
         normalization_layer layer = *(normalization_layer *)net.layers[i];
         return get_normalization_image(layer);
     }
+    else if(net.types[i] == CROP){
+        crop_layer layer = *(crop_layer *)net.layers[i];
+        return get_crop_image(layer);
+    }
     return make_empty_image(0,0,0);
 }
 
@@ -464,6 +482,7 @@ void visualize_network(network net)
     image *prev = 0;
     int i;
     char buff[256];
+    show_image(get_network_image_layer(net, 0), "Crop");
     for(i = 0; i < net.n; ++i){
         sprintf(buff, "Layer %d", i);
         if(net.types[i] == CONVOLUTIONAL){
@@ -482,6 +501,31 @@ float *network_predict(network net, float *input)
     forward_network(net, input, 0);
     float *out = get_network_output(net);
     return out;
+}
+
+matrix network_predict_data_multi(network net, data test, int n)
+{
+    int i,j,b,m;
+    int k = get_network_output_size(net);
+    matrix pred = make_matrix(test.X.rows, k);
+    float *X = calloc(net.batch*test.X.rows, sizeof(float));
+    for(i = 0; i < test.X.rows; i += net.batch){
+        for(b = 0; b < net.batch; ++b){
+            if(i+b == test.X.rows) break;
+            memcpy(X+b*test.X.cols, test.X.vals[i+b], test.X.cols*sizeof(float));
+        }
+        for(m = 0; m < n; ++m){
+            float *out = network_predict(net, X);
+            for(b = 0; b < net.batch; ++b){
+                if(i+b == test.X.rows) break;
+                for(j = 0; j < k; ++j){
+                    pred.vals[i+b][j] += out[j+b*k]/n;
+                }
+            }
+        }
+    }
+    free(X);
+    return pred;   
 }
 
 matrix network_predict_data(network net, data test)
@@ -525,6 +569,12 @@ void print_network(network net)
             image m = get_maxpool_image(layer);
             n = m.h*m.w*m.c;
         }
+        else if(net.types[i] == CROP){
+            crop_layer layer = *(crop_layer *)net.layers[i];
+            output = layer.output;
+            image m = get_crop_image(layer);
+            n = m.h*m.w*m.c;
+        }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
             output = layer.output;
@@ -548,6 +598,14 @@ void print_network(network net)
 float network_accuracy(network net, data d)
 {
     matrix guess = network_predict_data(net, d);
+    float acc = matrix_accuracy(d.y, guess);
+    free_matrix(guess);
+    return acc;
+}
+
+float network_accuracy_multi(network net, data d, int n)
+{
+    matrix guess = network_predict_data_multi(net, d, n);
     float acc = matrix_accuracy(d.y, guess);
     free_matrix(guess);
     return acc;
