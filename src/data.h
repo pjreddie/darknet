@@ -20,6 +20,7 @@ data load_data_image_pathfile_random(char *filename, int n, char **labels,
 data load_cifar10_data(char *filename);
 data load_all_cifar10();
 list *get_paths(char *filename);
+void get_batch(data d, int n, float *X, float *y);
 data load_categorical_data_csv(char *filename, int target, int k);
 void normalize_data_rows(data d);
 void scale_data_rows(data d, float s);

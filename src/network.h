@@ -33,6 +33,10 @@ typedef struct {
     #endif
 } network;
 
+#ifdef GPU
+void forward_network_gpu(network net, cl_mem input, int train);
+#endif
+
 network make_network(int n, int batch);
 void forward_network(network net, float *input, int train);
 float backward_network(network net, float *input, float *truth);

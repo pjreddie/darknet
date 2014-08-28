@@ -41,6 +41,12 @@ float relu_activate(float x){return x*(x>0);}
 float ramp_activate(float x){return x*(x>0)+.1*x;}
 float tanh_activate(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
 
+float linear_gradient(float x){return 1;}
+float sigmoid_gradient(float x){return (1-x)*x;}
+float relu_gradient(float x){return (x>0);}
+float ramp_gradient(float x){return (x>0)+.1;}
+float tanh_gradient(float x){return 1-x*x;}
+
 float activate(float x, ACTIVATION a)
 {
     switch(a){
@@ -66,19 +72,19 @@ void activate_array(float *x, const int n, const ACTIVATION a)
     }
 }
 
-
-float gradient(float x, ACTIVATION a){
+float gradient(float x, ACTIVATION a)
+{
     switch(a){
         case LINEAR:
-            return 1;
+            return linear_gradient(x);
         case SIGMOID:
-            return (1.-x)*x;
+            return sigmoid_gradient(x);
         case RELU:
-            return (x>0);
+            return relu_gradient(x);
         case RAMP:
-            return (x>0) + .1;
+            return ramp_gradient(x);
         case TANH:
-            return 1-x*x;
+            return tanh_gradient(x);
     }
     return 0;
 }
@@ -107,7 +113,6 @@ cl_kernel get_activation_kernel()
     return kernel;
 }
 
-
 void activate_array_ongpu(cl_mem x, int n, ACTIVATION a) 
 {
     cl_setup();
@@ -118,6 +123,36 @@ void activate_array_ongpu(cl_mem x, int n, ACTIVATION a)
     cl.error = clSetKernelArg(kernel, i++, sizeof(x), (void*) &x);
     cl.error = clSetKernelArg(kernel, i++, sizeof(n), (void*) &n);
     cl.error = clSetKernelArg(kernel, i++, sizeof(a), (void*) &a);
+    check_error(cl);
+
+    size_t gsize = n;
+
+    clEnqueueNDRangeKernel(queue, kernel, 1, 0, &gsize, 0, 0, 0, 0);
+    check_error(cl);
+}
+
+cl_kernel get_gradient_kernel()
+{
+    static int init = 0;
+    static cl_kernel kernel;
+    if(!init){
+        kernel = get_kernel("src/activations.cl", "gradient_array", 0);
+        init = 1;
+    }
+    return kernel;
+}
+
+void gradient_array_ongpu(cl_mem x, int n, ACTIVATION a, cl_mem delta) 
+{
+    cl_setup();
+    cl_kernel kernel = get_gradient_kernel();
+    cl_command_queue queue = cl.queue;
+
+    cl_uint i = 0;
+    cl.error = clSetKernelArg(kernel, i++, sizeof(x), (void*) &x);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(n), (void*) &n);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(a), (void*) &a);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(delta), (void*) &delta);
     check_error(cl);
 
     size_t gsize = n;

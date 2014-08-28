@@ -28,25 +28,16 @@ network make_network(int n, int batch)
 }
 
 #ifdef GPU
-void forward_network(network net, float *input, int train)
+void forward_network_gpu(network net, cl_mem input_cl, int train)
 {
-    cl_setup();
-    size_t size = get_network_input_size(net);
-    if(!net.input_cl){
-        net.input_cl = clCreateBuffer(cl.context,
-            CL_MEM_READ_WRITE, size*sizeof(float), 0, &cl.error);
-        check_error(cl);
-    }
-    cl_write_array(net.input_cl, input, size);
-    cl_mem input_cl = net.input_cl;
     int i;
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             forward_convolutional_layer_gpu(layer, input_cl);
             input_cl = layer.output_cl;
-            input = layer.output;
         }
+        /*
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
             forward_connected_layer(layer, input, train);
@@ -72,10 +63,11 @@ void forward_network(network net, float *input, int train)
             forward_normalization_layer(layer, input);
             input = layer.output;
         }
+        */
     }
 }
 
-#else
+#endif
 
 void forward_network(network net, float *input, int train)
 {
@@ -118,7 +110,6 @@ void forward_network(network net, float *input, int train)
         }
     }
 }
-#endif
 
 void update_network(network net)
 {
@@ -275,45 +266,13 @@ float train_network_sgd(network net, data d, int n)
     float *X = calloc(batch*d.X.cols, sizeof(float));
     float *y = calloc(batch*d.y.cols, sizeof(float));
 
-    int i,j;
+    int i;
     float sum = 0;
-    int index = 0;
     for(i = 0; i < n; ++i){
-        for(j = 0; j < batch; ++j){
-            index = rand()%d.X.rows;
-            memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
-            memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
-        }
-
+        get_batch(d, batch, X, y);
         float err = train_network_datum(net, X, y);
         sum += err;
-        //train_network_datum(net, X, y);
-        /*
-        float *y = d.y.vals[index];
-        int class = get_predicted_class_network(net);
-        correct += (y[class]?1:0);
-        */
-
-/*
-        for(j = 0; j < d.y.cols*batch; ++j){
-            printf("%6.3f ", y[j]);
-        }
-        printf("\n");
-        for(j = 0; j < d.y.cols*batch; ++j){
-            printf("%6.3f ", get_network_output(net)[j]);
-        }
-        printf("\n");
-        printf("\n");
-        */
-
-
-        //printf("%d %f %f\n", i,net.output[0], d.y.vals[index][0]);
-        //if((i+1)%10 == 0){
-        //    printf("%d: %f\n", (i+1), (float)correct/(i+1));
-        //}
     }
-    //printf("Accuracy: %f\n",(float) correct/n);
-    //show_image(float_to_image(32,32,3,X), "Orig");
     free(X);
     free(y);
     return (float)sum/(n*batch);

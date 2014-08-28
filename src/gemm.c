@@ -6,11 +6,7 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         float *C, int ldc)
 {
-#ifdef GPU
-    gemm_gpu( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
-#else
     gemm_cpu( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
-#endif
 }
 
 void gemm_nn(int M, int N, int K, float ALPHA, 
@@ -83,6 +79,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         float *C, int ldc)
 {
+    //printf("cpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
     int i, j;
     for(i = 0; i < M; ++i){
         for(j = 0; j < N; ++j){
@@ -107,7 +104,11 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
+#ifdef __APPLE__
+#define BLOCK 1
+#else
 #define BLOCK 8
+#endif
 
 cl_kernel get_gemm_kernel()
 {
@@ -126,6 +127,7 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         cl_mem C_gpu, int ldc)
 {
+    //printf("gpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
     cl_setup();
     cl_kernel gemm_kernel = get_gemm_kernel();
     cl_command_queue queue = cl.queue;
@@ -256,6 +258,8 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
 
 void test_gpu_blas()
 {
+    test_gpu_accuracy(0,0,10,576,75); 
+
     test_gpu_accuracy(0,0,17,10,10); 
     test_gpu_accuracy(1,0,17,10,10); 
     test_gpu_accuracy(0,1,17,10,10); 
@@ -266,6 +270,7 @@ void test_gpu_blas()
     test_gpu_accuracy(0,1,1000,10,100); 
     test_gpu_accuracy(1,1,1000,10,100); 
 
+/*
     time_gpu_random_matrix(0,0,1000,1000,100); 
     time_random_matrix(0,0,1000,1000,100); 
 
@@ -277,6 +282,7 @@ void test_gpu_blas()
 
     time_gpu_random_matrix(1,1,1000,1000,100); 
     time_random_matrix(1,1,1000,1000,100); 
+    */
 
 }
 #endif

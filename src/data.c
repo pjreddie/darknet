@@ -148,6 +148,16 @@ data load_cifar10_data(char *filename)
     return d;
 }
 
+void get_batch(data d, int n, float *X, float *y)
+{
+    int j;
+    for(j = 0; j < n; ++j){
+        int index = rand()%d.X.rows;
+        memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
+        memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
+    }
+}
+
 data load_all_cifar10()
 {
     data d;
@@ -158,7 +168,7 @@ data load_all_cifar10()
     d.X = X;
     d.y = y;
 
-    
+
     for(b = 0; b < 5; ++b){
         char buff[256];
         sprintf(buff, "data/cifar10/data_batch_%d.bin", b+1);
@@ -176,8 +186,8 @@ data load_all_cifar10()
         fclose(fp);
     }
     //normalize_data_rows(d);
-	translate_data_rows(d, -144);
-	scale_data_rows(d, 1./128);
+    translate_data_rows(d, -144);
+    scale_data_rows(d, 1./128);
     return d;
 }
 

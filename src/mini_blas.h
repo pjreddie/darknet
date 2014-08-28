@@ -10,13 +10,17 @@ float *random_matrix(int rows, int cols);
 void time_random_matrix(int TA, int TB, int m, int k, int n);
 
 #ifdef GPU
-void im2col_ongpu(cl_mem data_im, const int batch,
-        const int channels, const int height, const int width,
-        const int ksize, const int stride, cl_mem data_col);
+void im2col_ongpu(cl_mem data_im, int batch,
+         int channels, int height, int width,
+         int ksize, int stride, int pad, cl_mem data_col);
 
-void im2col_gpu(float *data_im,
-    const int batch, const int channels, const int height, const int width,
-    const int ksize, const int stride, float *data_col);
+void col2im_ongpu(cl_mem data_col, int batch,
+        int channels, int height, int width,
+        int ksize, int stride, int pad, cl_mem data_im);
+
+void im2col_gpu(float *data_im, int batch,
+         int channels, int height, int width,
+         int ksize, int stride, int pad, float *data_col);
 
 void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         cl_mem A_gpu, int lda, 
@@ -25,13 +29,14 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         cl_mem C_gpu, int ldc);
 #endif
 
-void im2col_cpu(float* data_im, const int batch,
-    const int channels, const int height, const int width,
-    const int ksize, const int stride, int pad, float* data_col);
+void im2col_cpu(float* data_im, int batch,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float* data_col);
 
-void col2im_cpu(float* data_col,
-        const int channels, const int height, const int width,
-        const int ksize, const int stride, int pad, float* data_im);
+void col2im_cpu(float* data_col, int batch,
+        int channels, int height, int width,
+        int ksize, int stride, int pad, float* data_im);
+
 void test_blas();
 
 void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA, 

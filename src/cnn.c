@@ -32,6 +32,51 @@ void test_convolve()
 	show_image_layers(edge, "Test Convolve");
 }
 
+#ifdef GPU
+
+void test_convolutional_layer()
+{
+    int i;
+	image dog = load_image("data/dog.jpg",256,256);
+	network net = parse_network_cfg("cfg/convolutional.cfg");
+//    data test = load_cifar10_data("data/cifar10/test_batch.bin");
+//    float *X = calloc(net.batch*test.X.cols, sizeof(float));
+//    float *y = calloc(net.batch*test.y.cols, sizeof(float));
+    int in_size = get_network_input_size(net)*net.batch;
+    int size = get_network_output_size(net)*net.batch;
+float *X = calloc(in_size, sizeof(float));
+    for(i = 0; i < in_size; ++i){
+        X[i] = dog.data[i%get_network_input_size(net)];
+    }
+//    get_batch(test, net.batch, X, y);
+    clock_t start, end;
+    cl_mem input_cl = cl_make_array(X, in_size);
+
+    forward_network_gpu(net, input_cl, 1);
+    start = clock();
+    forward_network_gpu(net, input_cl, 1);
+    end = clock();
+    float gpu_sec = (float)(end-start)/CLOCKS_PER_SEC;
+    float *gpu_out = calloc(size, sizeof(float));
+    memcpy(gpu_out, get_network_output(net), size*sizeof(float));
+
+    start = clock();
+    forward_network(net, X, 1);
+    end = clock();
+    float cpu_sec = (float)(end-start)/CLOCKS_PER_SEC;
+    float *cpu_out = calloc(size, sizeof(float));
+    memcpy(cpu_out, get_network_output(net), size*sizeof(float));
+
+    float sum = 0;
+    for(i = 0; i < size; ++i) {
+        //printf("%f, %f\n", gpu_out[i], cpu_out[i]);
+        sum += pow(gpu_out[i] - cpu_out[i], 2);
+    }
+    printf("gpu: %f sec, cpu: %f sec, diff: %f, size: %d\n", gpu_sec, cpu_sec, sum, size);
+}
+
+#endif
+
 void test_convolve_matrix()
 {
 	image dog = load_image("dog.jpg",300,400);
@@ -325,7 +370,7 @@ void test_nist()
 void train_nist()
 {
     srand(222222);
-    network net = parse_network_cfg("cfg/nist_final.cfg");
+    network net = parse_network_cfg("cfg/nist.cfg");
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
     translate_data_rows(train, -144);
@@ -349,7 +394,7 @@ void train_nist()
           mean_array(get_network_output_layer(net,3), 100),
           mean_array(get_network_output_layer(net,4), 100));
          */
-        save_network(net, "cfg/nist_final2.cfg");
+        //save_network(net, "cfg/nist_final2.cfg");
 
         //printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
         //end = clock();
@@ -798,7 +843,7 @@ int main(int argc, char *argv[])
 {
     //train_full();
     //test_distribution();
-    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+    //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
     //test_blas();
     //test_visualize();
@@ -809,7 +854,9 @@ int main(int argc, char *argv[])
     //test_split();
     //test_ensemble();
     //test_nist_single();
-    test_nist();
+    //test_nist();
+    train_nist();
+    //test_convolutional_layer();
     //test_cifar10();
     //train_cifar10();
     //test_vince();

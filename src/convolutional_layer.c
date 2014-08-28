@@ -147,15 +147,9 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
 
     for(i = 0; i < layer.batch; ++i){
         gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
-        c += n*m;
-        in += layer.h*layer.w*layer.c;
         b += k*n;
+        c += n*m;
     }
-    /*
-    int i;
-    for(i = 0; i < m*n; ++i) printf("%f, ", layer.output[i]);
-    printf("\n");
-    */
     activate_array(layer.output, m*n*layer.batch, layer.activation);
 }
 
@@ -205,10 +199,10 @@ void backward_convolutional_layer(convolutional_layer layer, float *delta)
 
         for(i = 0; i < layer.batch; ++i){
             gemm(1,0,m,n,k,1,a,m,b,n,0,c,n);
-            col2im_cpu(c, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta);
-            c += k*n;
-            delta += layer.h*layer.w*layer.c;
+            b += k*n;
+            c += m*n;
         }
+        col2im_cpu(layer.col_image, layer.batch, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta);
     }
 }
 
@@ -278,22 +272,140 @@ image *visualize_convolutional_layer(convolutional_layer layer, char *window, im
 }
 
 #ifdef GPU
+
+cl_kernel get_convolutional_learn_bias_kernel()
+{
+    static int init = 0;
+    static cl_kernel kernel;
+    if(!init){
+        kernel = get_kernel("src/convolutional_layer.cl", "learn_bias", 0);
+        init = 1;
+    }
+    return kernel;
+}
+
+void learn_bias_convolutional_layer_ongpu(convolutional_layer layer)
+{
+    int size = convolutional_out_height(layer) * convolutional_out_width(layer);
+
+    cl_setup();
+    cl_kernel kernel = get_convolutional_learn_bias_kernel();
+    cl_command_queue queue = cl.queue;
+
+    cl_uint i = 0;
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.batch), (void*) &layer.batch);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.n), (void*) &layer.n);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(size), (void*) &size);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.delta_cl), (void*) &layer.delta_cl);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.bias_updates_cl), (void*) &layer.bias_updates_cl);
+    check_error(cl);
+
+    const size_t global_size[] = {layer.n};
+
+    clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    check_error(cl);
+}
+
+cl_kernel get_convolutional_bias_kernel()
+{
+    static int init = 0;
+    static cl_kernel kernel;
+    if(!init){
+        kernel = get_kernel("src/convolutional_layer.cl", "bias", 0);
+        init = 1;
+    }
+    return kernel;
+}
+
+void bias_output_gpu(const convolutional_layer layer)
+{
+    int out_h = convolutional_out_height(layer);
+    int out_w = convolutional_out_width(layer);
+    int size = out_h*out_w;
+
+    cl_setup();
+    cl_kernel kernel = get_convolutional_bias_kernel();
+    cl_command_queue queue = cl.queue;
+
+    cl_uint i = 0;
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.n), (void*) &layer.n);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(size), (void*) &size);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.biases_cl), (void*) &layer.biases_cl);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.output_cl), (void*) &layer.output_cl);
+    check_error(cl);
+
+    const size_t global_size[] = {layer.batch, layer.n*size};
+
+    clEnqueueNDRangeKernel(queue, kernel, 2, 0, global_size, 0, 0, 0, 0);
+    check_error(cl);
+}
+
 void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in)
 {
+    int i;
     int m = layer.n;
     int k = layer.size*layer.size*layer.c;
     int n = convolutional_out_height(layer)*
-        convolutional_out_width(layer)*
-        layer.batch;
+        convolutional_out_width(layer);
 
-    cl_write_array(layer.filters_cl, layer.filters, m*k);
-    cl_mem a = layer.filters_cl;
-    cl_mem b = layer.col_image_cl;
-    cl_mem c = layer.output_cl;
-    im2col_ongpu(in, layer.batch, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, b);
-    gemm_ongpu(0,0,m,n,k,1,a,k,b,n,0,c,n);
-    activate_array_ongpu(layer.output_cl, m*n, layer.activation);
-    cl_read_array(layer.output_cl, layer.output, m*n);
+    //cl_write_array(layer.filters_cl, layer.filters, m*k);
+    //cl_write_array(layer.biases_cl, layer.biases, m);
+    bias_output_gpu(layer);
+    im2col_ongpu(in, layer.batch, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_cl);
+    for(i = 0; i < layer.batch; ++i){
+        cl_mem a = layer.filters_cl;
+        cl_mem b = cl_sub_array(layer.col_image_cl, i*k*n, k*n);
+        cl_mem c = cl_sub_array(layer.output_cl, i*m*n, m*n);
+        gemm_ongpu(0,0,m,n,k,1.,a,k,b,n,1.,c,n);
+        clReleaseMemObject(b);
+        clReleaseMemObject(c);
+    }
+    activate_array_ongpu(layer.output_cl, m*n*layer.batch, layer.activation);
+    cl_read_array(layer.output_cl, layer.output, m*n*layer.batch);
 }
+
+void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl)
+{
+    int i;
+    int m = layer.n;
+    int n = layer.size*layer.size*layer.c;
+    int k = convolutional_out_height(layer)*
+        convolutional_out_width(layer);
+    gradient_array_ongpu(layer.output_cl, m*k*layer.batch, layer.activation, layer.delta_cl);
+    learn_bias_convolutional_layer_ongpu(layer);
+
+    for(i = 0; i < layer.batch; ++i){
+        cl_mem a = cl_sub_array(layer.delta_cl,i*m*k, m*k);
+        cl_mem b = cl_sub_array(layer.col_image_cl,i*k*n, k*n);
+        cl_mem c = layer.filter_updates_cl;
+
+        gemm_ongpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
+
+        clReleaseMemObject(a);
+        clReleaseMemObject(b);
+    }
+    cl_read_array(layer.filter_updates_cl, layer.filter_updates, m*n);
+    cl_read_array(layer.bias_updates_cl, layer.bias_updates, m);
+    
+
+    if(delta_cl){
+        m = layer.size*layer.size*layer.c;
+        k = layer.n;
+        n = convolutional_out_height(layer)*
+            convolutional_out_width(layer);
+
+        for(i = 0; i < layer.batch; ++i){
+            a = layer.filters_cl;
+            b = cl_sub_array(layer.delta_cl, i*k*n, k*n);
+            c = cl_sub_array(layer.col_image_cl, i*m*n, m*n);
+
+            gemm_ongpu(1,0,m,n,k,1,a,m,b,n,0,c,n);
+            clReleaseMemObject(b);
+            clReleaseMemObject(c);
+        }
+        col2im_gpu(layer.col_image_cl, layer.batch, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta_cl);
+    }
+}
+
 #endif
 
