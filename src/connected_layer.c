@@ -25,7 +25,7 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     layer->delta = calloc(batch*outputs, sizeof(float*));
 
     layer->weight_updates = calloc(inputs*outputs, sizeof(float));
-    layer->weight_adapt = calloc(inputs*outputs, sizeof(float));
+    //layer->weight_adapt = calloc(inputs*outputs, sizeof(float));
     layer->weight_momentum = calloc(inputs*outputs, sizeof(float));
     layer->weights = calloc(inputs*outputs, sizeof(float));
     float scale = 1./inputs;
@@ -34,13 +34,16 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
         layer->weights[i] = scale*2*(rand_uniform()-.5);
 
     layer->bias_updates = calloc(outputs, sizeof(float));
-    layer->bias_adapt = calloc(outputs, sizeof(float));
+    //layer->bias_adapt = calloc(outputs, sizeof(float));
     layer->bias_momentum = calloc(outputs, sizeof(float));
     layer->biases = calloc(outputs, sizeof(float));
-    for(i = 0; i < outputs; ++i)
+    for(i = 0; i < outputs; ++i){
         //layer->biases[i] = rand_normal()*scale + scale;
         layer->biases[i] = 1;
+        }
 
+    #ifdef GPU
+    #endif
     layer->activation = activation;
     return layer;
 }

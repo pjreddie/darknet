@@ -80,11 +80,32 @@ void col2im_ongpu(cl_mem data_col,  int batch,
     cl.error = clSetKernelArg(kernel, i++, sizeof(data_im), (void*) &data_im);
     check_error(cl);
 
-    size_t global_size = {channels*height*width*batch};
+    size_t global_size = channels*height*width*batch;
 
-    clEnqueueNDRangeKernel(queue, kernel, 3, 0,
-            global_size, 0, 0, 0, 0);
+    clEnqueueNDRangeKernel(queue, kernel, 1, 0,
+            &global_size, 0, 0, 0, 0);
     check_error(cl);
+}
+
+void col2im_gpu(float *data_col,  int batch,
+         int channels,  int height,  int width,
+         int ksize,  int stride,  int pad, float *data_im) 
+{
+    int height_col = (height - ksize) / stride + 1;
+    int width_col = (width - ksize) / stride + 1;
+    int channels_col = channels * ksize * ksize;
+
+    size_t size = height_col*width_col*channels_col*batch;
+    cl_mem col_gpu = cl_make_array(data_col, size);
+    size = channels*height*width*batch;
+    cl_mem im_gpu = cl_make_array(data_im, size);
+
+    col2im_ongpu(col_gpu, batch, channels, height, width,
+            ksize, stride, pad, im_gpu);
+
+    cl_read_array(im_gpu, data_im, size);
+    clReleaseMemObject(col_gpu);
+    clReleaseMemObject(im_gpu);
 }
 
 #endif

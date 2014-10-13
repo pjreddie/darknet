@@ -2,6 +2,7 @@
 #define CONNECTED_LAYER_H
 
 #include "activations.h"
+#include "opencl.h"
 
 typedef struct{
     float learning_rate;
@@ -26,6 +27,19 @@ typedef struct{
     float *output;
     float *delta;
     
+    #ifdef GPU
+    cl_mem weights_cl;
+    cl_mem biases_cl;
+
+    cl_mem weight_updates_cl;
+    cl_mem bias_updates_cl;
+
+    cl_mem weight_momentum_cl;
+    cl_mem bias_momentum_cl;
+
+    cl_mem output_cl;
+    cl_mem delta_cl;
+    #endif
     ACTIVATION activation;
 
 } connected_layer;

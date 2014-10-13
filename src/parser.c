@@ -5,12 +5,14 @@
 #include "parser.h"
 #include "activations.h"
 #include "crop_layer.h"
+#include "cost_layer.h"
 #include "convolutional_layer.h"
 #include "connected_layer.h"
 #include "maxpool_layer.h"
 #include "normalization_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
+#include "freeweight_layer.h"
 #include "list.h"
 #include "option_list.h"
 #include "utils.h"
@@ -24,8 +26,10 @@ int is_convolutional(section *s);
 int is_connected(section *s);
 int is_maxpool(section *s);
 int is_dropout(section *s);
+int is_freeweight(section *s);
 int is_softmax(section *s);
 int is_crop(section *s);
+int is_cost(section *s);
 int is_normalization(section *s);
 list *read_cfg(char *filename);
 
@@ -182,6 +186,20 @@ softmax_layer *parse_softmax(list *options, network *net, int count)
     return layer;
 }
 
+cost_layer *parse_cost(list *options, network *net, int count)
+{
+    int input;
+    if(count == 0){
+        input = option_find_int(options, "input",1);
+        net->batch = option_find_int(options, "batch",1);
+    }else{
+        input =  get_network_output_size_layer(*net, count-1);
+    }
+    cost_layer *layer = make_cost_layer(net->batch, input);
+    option_unused(options);
+    return layer;
+}
+
 crop_layer *parse_crop(list *options, network *net, int count)
 {
     float learning_rate, momentum, decay;
@@ -230,6 +248,20 @@ maxpool_layer *parse_maxpool(list *options, network *net, int count)
         if(h == 0) error("Layer before convolutional layer must output image.");
     }
     maxpool_layer *layer = make_maxpool_layer(net->batch,h,w,c,size,stride);
+    option_unused(options);
+    return layer;
+}
+
+freeweight_layer *parse_freeweight(list *options, network *net, int count)
+{
+    int input;
+    if(count == 0){
+        net->batch = option_find_int(options, "batch",1);
+        input = option_find_int(options, "input",1);
+    }else{
+        input =  get_network_output_size_layer(*net, count-1);
+    }
+    freeweight_layer *layer = make_freeweight_layer(net->batch,input);
     option_unused(options);
     return layer;
 }
@@ -295,6 +327,10 @@ network parse_network_cfg(char *filename)
             crop_layer *layer = parse_crop(options, &net, count);
             net.types[count] = CROP;
             net.layers[count] = layer;
+        }else if(is_cost(s)){
+            cost_layer *layer = parse_cost(options, &net, count);
+            net.types[count] = COST;
+            net.layers[count] = layer;
         }else if(is_softmax(s)){
             softmax_layer *layer = parse_softmax(options, &net, count);
             net.types[count] = SOFTMAX;
@@ -310,6 +346,10 @@ network parse_network_cfg(char *filename)
         }else if(is_dropout(s)){
             dropout_layer *layer = parse_dropout(options, &net, count);
             net.types[count] = DROPOUT;
+            net.layers[count] = layer;
+        }else if(is_freeweight(s)){
+            freeweight_layer *layer = parse_freeweight(options, &net, count);
+            net.types[count] = FREEWEIGHT;
             net.layers[count] = layer;
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
@@ -327,6 +367,10 @@ network parse_network_cfg(char *filename)
 int is_crop(section *s)
 {
     return (strcmp(s->type, "[crop]")==0);
+}
+int is_cost(section *s)
+{
+    return (strcmp(s->type, "[cost]")==0);
 }
 int is_convolutional(section *s)
 {
@@ -346,6 +390,10 @@ int is_maxpool(section *s)
 int is_dropout(section *s)
 {
     return (strcmp(s->type, "[dropout]")==0);
+}
+int is_freeweight(section *s)
+{
+    return (strcmp(s->type, "[freeweight]")==0);
 }
 
 int is_softmax(section *s)
@@ -447,6 +495,25 @@ void print_convolutional_cfg(FILE *fp, convolutional_layer *l, network net, int 
     for(i = 0; i < l->n*l->c*l->size*l->size; ++i) fprintf(fp, "%g,", l->filters[i]);
     fprintf(fp, "\n\n");
 }
+
+void print_freeweight_cfg(FILE *fp, freeweight_layer *l, network net, int count)
+{
+    fprintf(fp, "[freeweight]\n");
+    if(count == 0){
+        fprintf(fp, "batch=%d\ninput=%d\n",l->batch, l->inputs);
+    }
+    fprintf(fp, "\n");
+}
+
+void print_dropout_cfg(FILE *fp, dropout_layer *l, network net, int count)
+{
+    fprintf(fp, "[dropout]\n");
+    if(count == 0){
+        fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
+    }
+    fprintf(fp, "probability=%g\n\n", l->probability);
+}
+
 void print_connected_cfg(FILE *fp, connected_layer *l, network net, int count)
 {
     int i;
@@ -526,6 +593,14 @@ void print_softmax_cfg(FILE *fp, softmax_layer *l, network net, int count)
     fprintf(fp, "\n");
 }
 
+void print_cost_cfg(FILE *fp, cost_layer *l, network net, int count)
+{
+    fprintf(fp, "[cost]\n");
+    if(count == 0) fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
+    fprintf(fp, "\n");
+}
+
+
 void save_network(network net, char *filename)
 {
     FILE *fp = fopen(filename, "w");
@@ -541,10 +616,16 @@ void save_network(network net, char *filename)
             print_crop_cfg(fp, (crop_layer *)net.layers[i], net, i);
         else if(net.types[i] == MAXPOOL)
             print_maxpool_cfg(fp, (maxpool_layer *)net.layers[i], net, i);
+        else if(net.types[i] == FREEWEIGHT)
+            print_freeweight_cfg(fp, (freeweight_layer *)net.layers[i], net, i);
+        else if(net.types[i] == DROPOUT)
+            print_dropout_cfg(fp, (dropout_layer *)net.layers[i], net, i);
         else if(net.types[i] == NORMALIZATION)
             print_normalization_cfg(fp, (normalization_layer *)net.layers[i], net, i);
         else if(net.types[i] == SOFTMAX)
             print_softmax_cfg(fp, (softmax_layer *)net.layers[i], net, i);
+        else if(net.types[i] == COST)
+            print_cost_cfg(fp, (cost_layer *)net.layers[i], net, i);
     }
     fclose(fp);
 }

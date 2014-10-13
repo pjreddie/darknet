@@ -10,10 +10,16 @@ float *random_matrix(int rows, int cols);
 void time_random_matrix(int TA, int TB, int m, int k, int n);
 
 #ifdef GPU
+void axpy_ongpu(int N, float ALPHA, cl_mem X, int INCX, cl_mem Y, int INCY);
+void copy_ongpu(int N, cl_mem X, int INCX, cl_mem Y, int INCY);
+void scal_ongpu(int N, float ALPHA, cl_mem X, int INCX);
 void im2col_ongpu(cl_mem data_im, int batch,
          int channels, int height, int width,
          int ksize, int stride, int pad, cl_mem data_col);
 
+void col2im_gpu(float *data_col,  int batch,
+         int channels,  int height,  int width,
+         int ksize,  int stride,  int pad, float *data_im);
 void col2im_ongpu(cl_mem data_col, int batch,
         int channels, int height, int width,
         int ksize, int stride, int pad, cl_mem data_im);
@@ -49,6 +55,8 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
                     float *B, int ldb,
                     float BETA,
                     float *C, int ldc);
-void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
-void scal_cpu(int N, float ALPHA, float *X, int INCX);
+inline void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
+inline void copy_cpu(int N, float *X, int INCX, float *Y, int INCY);
+inline void scal_cpu(int N, float ALPHA, float *X, int INCX);
+inline float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void test_gpu_blas();

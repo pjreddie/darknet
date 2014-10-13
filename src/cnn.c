@@ -37,42 +37,104 @@ void test_convolve()
 void test_convolutional_layer()
 {
     int i;
-	image dog = load_image("data/dog.jpg",256,256);
+	image dog = load_image("data/dog.jpg",224,224);
 	network net = parse_network_cfg("cfg/convolutional.cfg");
 //    data test = load_cifar10_data("data/cifar10/test_batch.bin");
 //    float *X = calloc(net.batch*test.X.cols, sizeof(float));
 //    float *y = calloc(net.batch*test.y.cols, sizeof(float));
     int in_size = get_network_input_size(net)*net.batch;
+    int del_size = get_network_output_size_layer(net, 0)*net.batch;
     int size = get_network_output_size(net)*net.batch;
-float *X = calloc(in_size, sizeof(float));
+    float *X = calloc(in_size, sizeof(float));
+    float *y = calloc(size, sizeof(float));
     for(i = 0; i < in_size; ++i){
         X[i] = dog.data[i%get_network_input_size(net)];
     }
 //    get_batch(test, net.batch, X, y);
     clock_t start, end;
     cl_mem input_cl = cl_make_array(X, in_size);
+    cl_mem truth_cl = cl_make_array(y, size);
 
-    forward_network_gpu(net, input_cl, 1);
+    forward_network_gpu(net, input_cl, truth_cl, 1);
     start = clock();
-    forward_network_gpu(net, input_cl, 1);
+    forward_network_gpu(net, input_cl, truth_cl, 1);
     end = clock();
     float gpu_sec = (float)(end-start)/CLOCKS_PER_SEC;
+    printf("forward gpu: %f sec\n", gpu_sec);
+    start = clock();
+    backward_network_gpu(net, input_cl);
+    end = clock();
+    gpu_sec = (float)(end-start)/CLOCKS_PER_SEC;
+    printf("backward gpu: %f sec\n", gpu_sec);
+    //float gpu_cost = get_network_cost(net);
     float *gpu_out = calloc(size, sizeof(float));
     memcpy(gpu_out, get_network_output(net), size*sizeof(float));
 
+    float *gpu_del = calloc(del_size, sizeof(float));
+    memcpy(gpu_del, get_network_delta_layer(net, 0), del_size*sizeof(float));
+
+/*
     start = clock();
-    forward_network(net, X, 1);
+    forward_network(net, X, y, 1);
+    backward_network(net, X);
+    float cpu_cost = get_network_cost(net);
     end = clock();
     float cpu_sec = (float)(end-start)/CLOCKS_PER_SEC;
     float *cpu_out = calloc(size, sizeof(float));
     memcpy(cpu_out, get_network_output(net), size*sizeof(float));
+    float *cpu_del = calloc(del_size, sizeof(float));
+    memcpy(cpu_del, get_network_delta_layer(net, 0), del_size*sizeof(float));
 
     float sum = 0;
-    for(i = 0; i < size; ++i) {
-        //printf("%f, %f\n", gpu_out[i], cpu_out[i]);
-        sum += pow(gpu_out[i] - cpu_out[i], 2);
+    float del_sum = 0;
+    for(i = 0; i < size; ++i) sum += pow(gpu_out[i] - cpu_out[i], 2);
+    for(i = 0; i < del_size; ++i) {
+        //printf("%f %f\n", cpu_del[i], gpu_del[i]);
+        del_sum += pow(cpu_del[i] - gpu_del[i], 2);
     }
-    printf("gpu: %f sec, cpu: %f sec, diff: %f, size: %d\n", gpu_sec, cpu_sec, sum, size);
+    printf("GPU cost: %f, CPU cost: %f\n", gpu_cost, cpu_cost);
+    printf("gpu: %f sec, cpu: %f sec, diff: %f, delta diff: %f, size: %d\n", gpu_sec, cpu_sec, sum, del_sum, size);
+    */
+}
+
+void test_col2im()
+{
+    float col[] =  {1,2,1,2,
+                    1,2,1,2,
+                    1,2,1,2,
+                    1,2,1,2,
+                    1,2,1,2,
+                    1,2,1,2,
+                    1,2,1,2,
+                    1,2,1,2,
+                    1,2,1,2};
+    float im[16] = {0};
+    int batch = 1;
+    int channels = 1;
+    int height=4;
+    int width=4;
+    int ksize = 3;
+    int stride = 1;
+    int pad = 0;
+    col2im_gpu(col, batch,
+         channels,  height,  width,
+         ksize,  stride, pad, im);
+    int i;
+    for(i = 0; i < 16; ++i)printf("%f,", im[i]);
+    printf("\n");
+    /*
+    float data_im[] = {
+            1,2,3,4,
+            5,6,7,8,
+            9,10,11,12
+    };
+    float data_col[18] = {0};
+    im2col_cpu(data_im,  batch,
+      channels,   height,  width,
+      ksize,   stride,  pad, data_col) ;
+    for(i = 0; i < 18; ++i)printf("%f,", data_col[i]);
+    printf("\n");
+    */
 }
 
 #endif
@@ -274,7 +336,7 @@ void test_full()
 		normalize_data_rows(test);
 		for(j = 0; j < test.X.rows; ++j){
 			float *x = test.X.vals[j];
-			forward_network(net, x, 0);
+			forward_network(net, x, 0, 0);
 			int class = get_predicted_class_network(net);
 			fprintf(fp, "%d\n", class);
 		}
@@ -285,7 +347,6 @@ void test_full()
 
 void test_cifar10()
 {
-
     network net = parse_network_cfg("cfg/cifar10_part5.cfg");
     data test = load_cifar10_data("data/cifar10/test_batch.bin");
         clock_t start = clock(), end;
@@ -457,7 +518,7 @@ void test_random_classify()
             int index = rand()%m.rows;
             //image p = float_to_image(1690,1,1,m.vals[index]);
             //normalize_image(p);
-            forward_network(net, m.vals[index], 1);
+            forward_network(net, m.vals[index], 0, 1);
             float *out = get_network_output(net);
             float *delta = get_network_delta(net);
             //printf("%f\n", out[0]);
@@ -478,7 +539,7 @@ void test_random_classify()
     matrix test = csv_to_matrix("test.csv");
     truth = pop_column(&test, 0);
     for(i = 0; i < test.rows; ++i){
-        forward_network(net, test.vals[i], 0);
+        forward_network(net, test.vals[i],0, 0);
         float *out = get_network_output(net);
         if(fabs(out[0]) < .5) fprintf(fp, "0\n");
         else fprintf(fp, "1\n");
@@ -578,7 +639,7 @@ image features_output_size(network net, IplImage *src, int outh, int outw)
     //normalize_array(im.data, im.h*im.w*im.c);
     translate_image(im, -144);
     resize_network(net, im.h, im.w, im.c);
-    forward_network(net, im.data, 0);
+    forward_network(net, im.data, 0, 0);
     image out = get_network_image(net);
     free_image(im);
     cvReleaseImage(&sized);
@@ -630,7 +691,7 @@ void visualize_imagenet_topk(char *filename)
         resize_network(net, im.h, im.w, im.c);
         //scale_image(im, 1./255);
         translate_image(im, -144);
-        forward_network(net, im.data, 0);
+        forward_network(net, im.data, 0, 0);
         image out = get_network_image(net);
 
         int dh = (im.h - h)/(out.h-1);
@@ -692,7 +753,7 @@ void visualize_imagenet_features(char *filename)
         image im = load_image(image_path, 0, 0);
         printf("Processing %dx%d image\n", im.h, im.w);
         resize_network(net, im.h, im.w, im.c);
-        forward_network(net, im.data, 0);
+        forward_network(net, im.data, 0, 0);
         image out = get_network_image(net);
 
         int dh = (im.h - h)/h;
@@ -725,7 +786,7 @@ void visualize_cat()
     image im = load_image("data/cat.png", 0, 0);
     printf("Processing %dx%d image\n", im.h, im.w);
     resize_network(net, im.h, im.w, im.c);
-    forward_network(net, im.data, 0);
+    forward_network(net, im.data, 0, 0);
 
     visualize_network(net);
     cvWaitKey(0);
@@ -855,8 +916,9 @@ int main(int argc, char *argv[])
     //test_ensemble();
     //test_nist_single();
     //test_nist();
-    train_nist();
-    //test_convolutional_layer();
+    //train_nist();
+    test_convolutional_layer();
+    //test_col2im();
     //test_cifar10();
     //train_cifar10();
     //test_vince();

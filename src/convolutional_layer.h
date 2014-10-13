@@ -1,10 +1,7 @@
 #ifndef CONVOLUTIONAL_LAYER_H
 #define CONVOLUTIONAL_LAYER_H
 
-#ifdef GPU
 #include "opencl.h"
-#endif
-
 #include "image.h"
 #include "activations.h"
 
@@ -51,6 +48,7 @@ typedef struct {
 #ifdef GPU
 void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in);
 void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl);
+void update_convolutional_layer_gpu(convolutional_layer layer);
 #endif
 
 convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, float learning_rate, float momentum, float decay);

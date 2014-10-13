@@ -195,13 +195,14 @@ void backward_convolutional_layer(convolutional_layer layer, float *delta)
         b = layer.delta;
         c = layer.col_image;
 
-        memset(delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
-
         for(i = 0; i < layer.batch; ++i){
             gemm(1,0,m,n,k,1,a,m,b,n,0,c,n);
             b += k*n;
             c += m*n;
         }
+
+        memset(delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
+
         col2im_cpu(layer.col_image, layer.batch, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta);
     }
 }
@@ -361,7 +362,7 @@ void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in)
         clReleaseMemObject(c);
     }
     activate_array_ongpu(layer.output_cl, m*n*layer.batch, layer.activation);
-    cl_read_array(layer.output_cl, layer.output, m*n*layer.batch);
+    //cl_read_array(layer.output_cl, layer.output, m*n*layer.batch);
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl)
@@ -384,9 +385,7 @@ void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl
         clReleaseMemObject(a);
         clReleaseMemObject(b);
     }
-    cl_read_array(layer.filter_updates_cl, layer.filter_updates, m*n);
-    cl_read_array(layer.bias_updates_cl, layer.bias_updates, m);
-    
+    //cl_read_array(layer.delta_cl, layer.delta, m*k*layer.batch);
 
     if(delta_cl){
         m = layer.size*layer.size*layer.c;
@@ -395,17 +394,31 @@ void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl
             convolutional_out_width(layer);
 
         for(i = 0; i < layer.batch; ++i){
-            a = layer.filters_cl;
-            b = cl_sub_array(layer.delta_cl, i*k*n, k*n);
-            c = cl_sub_array(layer.col_image_cl, i*m*n, m*n);
+            cl_mem a = layer.filters_cl;
+            cl_mem b = cl_sub_array(layer.delta_cl, i*k*n, k*n);
+            cl_mem c = cl_sub_array(layer.col_image_cl, i*m*n, m*n);
 
             gemm_ongpu(1,0,m,n,k,1,a,m,b,n,0,c,n);
             clReleaseMemObject(b);
             clReleaseMemObject(c);
         }
-        col2im_gpu(layer.col_image_cl, layer.batch, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta_cl);
+
+        scal_ongpu(layer.batch*layer.h*layer.w*layer.c,0,delta_cl, 1);
+        col2im_ongpu(layer.col_image_cl, layer.batch, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta_cl);
     }
 }
+
+void update_convolutional_layer_gpu(convolutional_layer layer)
+{
+    int size = layer.size*layer.size*layer.c*layer.n;
+    axpy_ongpu(layer.n, layer.learning_rate, layer.bias_updates_cl, 1, layer.biases_cl, 1);
+    scal_ongpu(layer.n,layer.momentum, layer.bias_updates_cl, 1);
+
+    scal_ongpu(size, 1.-layer.learning_rate*layer.decay, layer.filters_cl, 1);
+    axpy_ongpu(size, layer.learning_rate, layer.filter_updates_cl, 1, layer.filters_cl, 1);
+    scal_ongpu(size, layer.momentum, layer.filter_updates_cl, 1);
+}
+
 
 #endif
 

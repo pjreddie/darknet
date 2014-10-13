@@ -40,6 +40,7 @@ float sigmoid_activate(float x){return 1./(1. + exp(-x));}
 float relu_activate(float x){return x*(x>0);}
 float ramp_activate(float x){return x*(x>0)+.1*x;}
 float tanh_activate(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
+//float tanh_activate(float x){return x - (x*x*x)/3;}
 
 float linear_gradient(float x){return 1;}
 float sigmoid_gradient(float x){return (1-x)*x;}

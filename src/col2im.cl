@@ -1,41 +1,46 @@
-int index(int row, int col)
+__kernel void col2im(__global float *data_col, int batch,
+        int channels, int height, int width,
+        int ksize, int stride, int pad, __global float *data_im)
 {
-    
-}
-
-__kernel void col2im(__global float *data_col,  int batch,
-     int channels,  int height,  int width,
-     int ksize,  int stride,  int pad, __global float *data_im)
-{
-    int id = get_global_id(0);
-    int index = id;
-    int w = id%width;
-    id /= width;
-    int h = id%height;
-    id /= height;
-    int c = id%channels;
-    id /= channels;
-    int b = id%batch;
 
     int height_col = (height - ksize) / stride + 1;
     int width_col = (width - ksize) / stride + 1;
-    int rows = channels * ksize * ksize;
     if (pad){
         height_col = 1 + (height-1) / stride;
         width_col = 1 + (width-1) / stride;
         pad = ksize/2;
     }
+
+    int id = get_global_id(0);
+    int index = id;
+    int w = id%width + pad;
+    id /= width;
+    int h = id%height + pad;
+    id /= height;
+    int c = id%channels;
+    id /= channels;
+    int b = id%batch;
+
+    int w_start = (w<ksize)?0:(w-ksize)/stride + 1;
+    int w_end = w/stride + 1;
+    if(width_col < w_end) w_end = width_col;
+
+    int h_start = (h<ksize)?0:(h-ksize)/stride+1;
+    int h_end = h/stride + 1;
+    if(height_col < h_end) h_end = height_col;
+
+    int rows = channels * ksize * ksize;
     int cols = height_col*width_col;
-    int batch_offset = b*cols*rows;
-    int channel_offset = c*cols*ksize*ksize;
-    data_col[index] = 0;
-    int i,j;
-    for(i = 0; i < ksize; ++i){
-        row_offset = i*height_col*width_col;
-        for(j = 0; j < ksize; ++j){
-            col_offset = 
+    int offset = (c*ksize*ksize + h * ksize + w)*height_col*width_col;
+    offset += b*cols*rows;
+    int h_coeff = (1-stride*ksize*height_col)*width_col;
+    int w_coeff = 1-stride*height_col*width_col;
+    float val = 0;
+    int h_col, w_col;
+    for(h_col = h_start; h_col < h_end; ++h_col){
+        for(w_col = w_start; w_col < w_end; ++w_col){
+            val += data_col[offset +h_col*h_coeff + w_col*w_coeff];
         }
     }
-
-    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, b, im_row, im_col, c_im, pad);
+    data_im[index] = val;
 }

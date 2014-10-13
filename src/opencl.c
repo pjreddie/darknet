@@ -1,11 +1,12 @@
 #ifdef GPU
-#include "opencl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 
+#include "opencl.h"
+#include "utils.h"
 
 cl_info cl = {0};
 
@@ -103,6 +104,7 @@ cl_program cl_fprog(char *filename, char *options, cl_info info)
 	char src[64*1024];
 	memset(src, 0, 64*1024);
 	FILE *fil=fopen(filename,"r");
+    if(fil == 0) file_error(filename);
 	srcsize=fread(src, sizeof src, 1, fil);
 	fclose(fil);
 	const char *srcptr[]={src};

@@ -13,7 +13,9 @@ typedef enum {
     SOFTMAX,
     NORMALIZATION,
     DROPOUT,
-    CROP
+    FREEWEIGHT,
+    CROP,
+    COST
 } LAYER_TYPE;
 
 typedef struct {
@@ -34,12 +36,16 @@ typedef struct {
 } network;
 
 #ifdef GPU
-void forward_network_gpu(network net, cl_mem input, int train);
+void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train);
+void backward_network_gpu(network net, cl_mem input);
+void update_network_gpu(network net);
+cl_mem get_network_output_cl_layer(network net, int i);
+cl_mem get_network_delta_cl_layer(network net, int i);
 #endif
 
 network make_network(int n, int batch);
-void forward_network(network net, float *input, int train);
-float backward_network(network net, float *input, float *truth);
+void forward_network(network net, float *input, float *truth, int train);
+void backward_network(network net, float *input);
 void update_network(network net);
 float train_network_sgd(network net, data d, int n);
 float train_network_batch(network net, data d, int n);
@@ -60,6 +66,7 @@ void print_network(network net);
 void visualize_network(network net);
 int resize_network(network net, int h, int w, int c);
 int get_network_input_size(network net);
+float get_network_cost(network net);
 
 #endif
 

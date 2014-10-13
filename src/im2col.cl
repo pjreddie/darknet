@@ -1,4 +1,3 @@
-
 float im2col_get_pixel(__global float *im, int height, int width, int channels,
                        int batch, int row, int col, int channel, int pad)
 {
