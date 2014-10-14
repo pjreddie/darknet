@@ -26,7 +26,6 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
 
     layer->weight_updates = calloc(inputs*outputs, sizeof(float));
     //layer->weight_adapt = calloc(inputs*outputs, sizeof(float));
-    layer->weight_momentum = calloc(inputs*outputs, sizeof(float));
     layer->weights = calloc(inputs*outputs, sizeof(float));
     float scale = 1./inputs;
     scale = .05;
@@ -35,7 +34,6 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
 
     layer->bias_updates = calloc(outputs, sizeof(float));
     //layer->bias_adapt = calloc(outputs, sizeof(float));
-    layer->bias_momentum = calloc(outputs, sizeof(float));
     layer->biases = calloc(outputs, sizeof(float));
     for(i = 0; i < outputs; ++i){
         //layer->biases[i] = rand_normal()*scale + scale;
@@ -50,24 +48,19 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
 
 void update_connected_layer(connected_layer layer)
 {
-    int i;
-    for(i = 0; i < layer.outputs; ++i){
-        layer.bias_momentum[i] = layer.learning_rate*(layer.bias_updates[i]) + layer.momentum*layer.bias_momentum[i];
-        layer.biases[i] += layer.bias_momentum[i];
-    }
-    for(i = 0; i < layer.outputs*layer.inputs; ++i){
-        layer.weight_momentum[i] = layer.learning_rate*(layer.weight_updates[i] - layer.decay*layer.weights[i]) + layer.momentum*layer.weight_momentum[i];
-        layer.weights[i] += layer.weight_momentum[i];
-    }
-    memset(layer.bias_updates, 0, layer.outputs*sizeof(float));
-    memset(layer.weight_updates, 0, layer.outputs*layer.inputs*sizeof(float));
+    axpy_cpu(layer.outputs, layer.learning_rate, layer.bias_updates, 1, layer.biases, 1);
+    scal_cpu(layer.outputs, layer.momentum, layer.bias_updates, 1);
+
+    scal_cpu(layer.inputs*layer.outputs, 1.-layer.learning_rate*layer.decay, layer.weights, 1);
+    axpy_cpu(layer.inputs*layer.outputs, layer.learning_rate, layer.weight_updates, 1, layer.weights, 1);
+    scal_cpu(layer.inputs*layer.outputs, layer.momentum, layer.weight_updates, 1);
 }
 
 void forward_connected_layer(connected_layer layer, float *input)
 {
     int i;
     for(i = 0; i < layer.batch; ++i){
-        memcpy(layer.output+i*layer.outputs, layer.biases, layer.outputs*sizeof(float));
+        copy_cpu(layer.outputs, layer.biases, 1, layer.output + i*layer.outputs, 1);
     }
     int m = layer.batch;
     int k = layer.inputs;
@@ -82,8 +75,8 @@ void forward_connected_layer(connected_layer layer, float *input)
 void backward_connected_layer(connected_layer layer, float *input, float *delta)
 {
     int i;
+    gradient_array(layer.output, layer.outputs*layer.batch, layer.activation, layer.delta);
     for(i = 0; i < layer.outputs*layer.batch; ++i){
-        layer.delta[i] *= gradient(layer.output[i], layer.activation);
         layer.bias_updates[i%layer.outputs] += layer.delta[i];
     }
     int m = layer.inputs;

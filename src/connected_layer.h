@@ -21,9 +21,6 @@ typedef struct{
     float *weight_adapt;
     float *bias_adapt;
 
-    float *weight_momentum;
-    float *bias_momentum;
-
     float *output;
     float *delta;
     

@@ -916,8 +916,8 @@ int main(int argc, char *argv[])
     //test_ensemble();
     //test_nist_single();
     //test_nist();
-    //train_nist();
-    test_convolutional_layer();
+    train_nist();
+    //test_convolutional_layer();
     //test_col2im();
     //test_cifar10();
     //train_cifar10();
