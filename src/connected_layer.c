@@ -38,9 +38,17 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     for(i = 0; i < outputs; ++i){
         //layer->biases[i] = rand_normal()*scale + scale;
         layer->biases[i] = 1;
-        }
+    }
 
     #ifdef GPU
+    layer->weights_cl = cl_make_array(layer->weights, inputs*outputs);
+    layer->biases_cl = cl_make_array(layer->biases, outputs);
+
+    layer->weight_updates_cl = cl_make_array(layer->weight_updates, inputs*outputs);
+    layer->bias_updates_cl = cl_make_array(layer->bias_updates, outputs);
+
+    layer->output_cl = cl_make_array(layer->output, outputs*batch);
+    layer->delta_cl = cl_make_array(layer->delta, outputs*batch);
     #endif
     layer->activation = activation;
     return layer;
@@ -76,8 +84,8 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
 {
     int i;
     gradient_array(layer.output, layer.outputs*layer.batch, layer.activation, layer.delta);
-    for(i = 0; i < layer.outputs*layer.batch; ++i){
-        layer.bias_updates[i%layer.outputs] += layer.delta[i];
+    for(i = 0; i < layer.batch; ++i){
+        axpy_cpu(layer.outputs, 1, layer.delta + i*layer.outputs, 1, layer.bias_updates, 1);
     }
     int m = layer.inputs;
     int k = layer.batch;
@@ -98,3 +106,61 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
     if(c) gemm(0,1,m,n,k,1,a,k,b,k,0,c,n);
 }
 
+#ifdef GPU
+
+void update_connected_layer_gpu(connected_layer layer)
+{
+    axpy_ongpu(layer.outputs, layer.learning_rate, layer.bias_updates_cl, 1, layer.biases_cl, 1);
+    scal_ongpu(layer.outputs, layer.momentum, layer.bias_updates_cl, 1);
+
+    scal_ongpu(layer.inputs*layer.outputs, 1.-layer.learning_rate*layer.decay, layer.weights_cl, 1);
+    axpy_ongpu(layer.inputs*layer.outputs, layer.learning_rate, layer.weight_updates_cl, 1, layer.weights_cl, 1);
+    scal_ongpu(layer.inputs*layer.outputs, layer.momentum, layer.weight_updates_cl, 1);
+}
+
+void forward_connected_layer_gpu(connected_layer layer, cl_mem input)
+{
+    int i;
+    for(i = 0; i < layer.batch; ++i){
+        cl_mem sub = cl_sub_array(layer.output_cl, i*layer.outputs, layer.outputs);
+        copy_ongpu(layer.outputs, layer.biases_cl, 1, sub, 1);
+        clReleaseMemObject(sub);
+    }
+    int m = layer.batch;
+    int k = layer.inputs;
+    int n = layer.outputs;
+    cl_mem a = input;
+    cl_mem b = layer.weights_cl;
+    cl_mem c = layer.output_cl;
+    gemm_ongpu(0,0,m,n,k,1,a,k,b,n,1,c,n);
+    activate_array_ongpu(layer.output_cl, layer.outputs*layer.batch, layer.activation);
+}
+
+void backward_connected_layer_gpu(connected_layer layer, cl_mem input, cl_mem delta)
+{
+    int i;
+    gradient_array_ongpu(layer.output_cl, layer.outputs*layer.batch, layer.activation, layer.delta_cl);
+    for(i = 0; i < layer.batch; ++i){
+        cl_mem sub = cl_sub_array(layer.delta_cl, i*layer.outputs, layer.outputs);
+        axpy_ongpu(layer.outputs, 1, sub, 1, layer.bias_updates_cl, 1);
+        clReleaseMemObject(sub);
+    }
+    int m = layer.inputs;
+    int k = layer.batch;
+    int n = layer.outputs;
+    cl_mem a = input;
+    cl_mem b = layer.delta_cl;
+    cl_mem c = layer.weight_updates_cl;
+    gemm_ongpu(1,0,m,n,k,1,a,m,b,n,1,c,n);
+
+    m = layer.batch;
+    k = layer.outputs;
+    n = layer.inputs;
+
+    a = layer.delta_cl;
+    b = layer.weights_cl;
+    c = delta;
+
+    if(c) gemm_ongpu(0,1,m,n,k,1,a,k,b,k,0,c,n);
+}
+    #endif

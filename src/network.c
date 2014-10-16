@@ -24,7 +24,8 @@ network make_network(int n, int batch)
     net.outputs = 0;
     net.output = 0;
     #ifdef GPU
-    net.input_cl = 0;
+    net.input_cl = calloc(1, sizeof(cl_mem));
+    net.truth_cl = calloc(1, sizeof(cl_mem));
     #endif
     return net;
 }
@@ -43,12 +44,12 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
             cost_layer layer = *(cost_layer *)net.layers[i];
             forward_cost_layer_gpu(layer, input, truth);
         }
-        /*
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            forward_connected_layer(layer, input, train);
-            input = layer.output;
+            forward_connected_layer_gpu(layer, input);
+            input = layer.output_cl;
         }
+        /*
         else if(net.types[i] == SOFTMAX){
             softmax_layer layer = *(softmax_layer *)net.layers[i];
             forward_softmax_layer(layer, input);
@@ -94,6 +95,10 @@ void backward_network_gpu(network net, cl_mem input)
             cost_layer layer = *(cost_layer *)net.layers[i];
             backward_cost_layer_gpu(layer, prev_input, prev_delta);
         }
+        else if(net.types[i] == CONNECTED){
+            connected_layer layer = *(connected_layer *)net.layers[i];
+            backward_connected_layer_gpu(layer, prev_input, prev_delta);
+        }
     }
 }
 
@@ -105,18 +110,9 @@ void update_network_gpu(network net)
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             update_convolutional_layer_gpu(layer);
         }
-        else if(net.types[i] == MAXPOOL){
-            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        }
-        else if(net.types[i] == SOFTMAX){
-            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        }
-        else if(net.types[i] == NORMALIZATION){
-            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            update_connected_layer(layer);
+            update_connected_layer_gpu(layer);
         }
     }
 }
@@ -127,6 +123,10 @@ cl_mem get_network_output_cl_layer(network net, int i)
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
         return layer.output_cl;
     }
+    else if(net.types[i] == CONNECTED){
+        connected_layer layer = *(connected_layer *)net.layers[i];
+        return layer.output_cl;
+    }
     return 0;
 }
 
@@ -134,6 +134,10 @@ cl_mem get_network_delta_cl_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.delta_cl;
+    }
+    else if(net.types[i] == CONNECTED){
+        connected_layer layer = *(connected_layer *)net.layers[i];
         return layer.delta_cl;
     }
     return 0;
@@ -346,6 +350,46 @@ void backward_network(network net, float *input)
         }
     }
 }
+
+#ifdef GPU
+float train_network_datum_gpu(network net, float *x, float *y)
+{
+    int x_size = get_network_input_size(net)*net.batch;
+    int y_size = get_network_output_size(net)*net.batch;
+    if(!*net.input_cl){
+        *net.input_cl = cl_make_array(x, x_size);
+        *net.truth_cl = cl_make_array(y, y_size);
+    }else{
+        cl_write_array(*net.input_cl, x, x_size);
+        cl_write_array(*net.truth_cl, y, y_size);
+    }
+    forward_network_gpu(net, *net.input_cl, *net.truth_cl, 1);
+    //int class = get_predicted_class_network(net);
+    backward_network_gpu(net, *net.input_cl);
+    float error = get_network_cost(net);
+    update_network_gpu(net);
+    //return (y[class]?1:0);
+    return error;
+}
+float train_network_sgd_gpu(network net, data d, int n)
+{
+    int batch = net.batch;
+    float *X = calloc(batch*d.X.cols, sizeof(float));
+    float *y = calloc(batch*d.y.cols, sizeof(float));
+
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; ++i){
+        get_batch(d, batch, X, y);
+        float err = train_network_datum_gpu(net, X, y);
+        sum += err;
+    }
+    free(X);
+    free(y);
+    return (float)sum/(n*batch);
+}
+#endif
+
 
 float train_network_datum(network net, float *x, float *y)
 {

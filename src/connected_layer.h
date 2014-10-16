@@ -31,9 +31,6 @@ typedef struct{
     cl_mem weight_updates_cl;
     cl_mem bias_updates_cl;
 
-    cl_mem weight_momentum_cl;
-    cl_mem bias_momentum_cl;
-
     cl_mem output_cl;
     cl_mem delta_cl;
     #endif
@@ -47,6 +44,11 @@ void forward_connected_layer(connected_layer layer, float *input);
 void backward_connected_layer(connected_layer layer, float *input, float *delta);
 void update_connected_layer(connected_layer layer);
 
+#ifdef GPU
+void forward_connected_layer_gpu(connected_layer layer, cl_mem input);
+void backward_connected_layer_gpu(connected_layer layer, cl_mem input, cl_mem delta);
+void update_connected_layer_gpu(connected_layer layer);
+#endif
 
 #endif
 

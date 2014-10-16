@@ -8,7 +8,7 @@ typedef struct {
     int h,w,c;
     int stride;
     int size;
-    int *max_indexes;
+    int *indexes;
     float *delta;
     float *output;
 } maxpool_layer;

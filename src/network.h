@@ -30,8 +30,8 @@ typedef struct {
     float *output;
 
     #ifdef GPU
-    cl_mem input_cl;
-    cl_mem output_cl;
+    cl_mem *input_cl;
+    cl_mem *truth_cl;
     #endif
 } network;
 
@@ -41,6 +41,7 @@ void backward_network_gpu(network net, cl_mem input);
 void update_network_gpu(network net);
 cl_mem get_network_output_cl_layer(network net, int i);
 cl_mem get_network_delta_cl_layer(network net, int i);
+float train_network_sgd_gpu(network net, data d, int n);
 #endif
 
 network make_network(int n, int batch);
