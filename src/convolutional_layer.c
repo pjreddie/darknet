@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "mini_blas.h"
 #include <stdio.h>
+#include <time.h>
 
 int convolutional_out_height(convolutional_layer layer)
 {
@@ -341,6 +342,8 @@ void bias_output_gpu(const convolutional_layer layer)
     check_error(cl);
 }
 
+//#define TIMEIT
+
 void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in)
 {
     int i;
@@ -349,10 +352,21 @@ void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in)
     int n = convolutional_out_height(layer)*
         convolutional_out_width(layer);
 
-    //cl_write_array(layer.filters_cl, layer.filters, m*k);
-    //cl_write_array(layer.biases_cl, layer.biases, m);
     bias_output_gpu(layer);
+
+    #ifdef TIMEIT
+    clock_t time = clock();
+    printf("Forward\n");
+    #endif
+
     im2col_ongpu(in, layer.batch, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_cl);
+
+    #ifdef TIMEIT
+    clFinish(cl.queue);
+    printf("Im2col %f\n", sec(clock()-time));
+    time = clock();
+    #endif
+
     for(i = 0; i < layer.batch; ++i){
         cl_mem a = layer.filters_cl;
         cl_mem b = cl_sub_array(layer.col_image_cl, i*k*n, k*n);
@@ -361,8 +375,14 @@ void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in)
         clReleaseMemObject(b);
         clReleaseMemObject(c);
     }
+    #ifdef TIMEIT
+    clFinish(cl.queue);
+    printf("Gemm %f\n", sec(clock()-time));
+    #endif
     activate_array_ongpu(layer.output_cl, m*n*layer.batch, layer.activation);
-    //cl_read_array(layer.output_cl, layer.output, m*n*layer.batch);
+    #ifdef TIMEIT
+    cl_read_array(layer.output_cl, layer.output, m*n*layer.batch);
+    #endif
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl)
@@ -408,6 +428,12 @@ void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl
     }
 }
 
+void pull_convolutional_layer(convolutional_layer layer)
+{
+    cl_read_array(layer.filters_cl, layer.filters, layer.c*layer.n*layer.size*layer.size);
+    cl_read_array(layer.biases_cl, layer.biases, layer.n);
+}
+
 void update_convolutional_layer_gpu(convolutional_layer layer)
 {
     int size = layer.size*layer.size*layer.c*layer.n;
@@ -417,6 +443,7 @@ void update_convolutional_layer_gpu(convolutional_layer layer)
     scal_ongpu(size, 1.-layer.learning_rate*layer.decay, layer.filters_cl, 1);
     axpy_ongpu(size, layer.learning_rate, layer.filter_updates_cl, 1, layer.filters_cl, 1);
     scal_ongpu(size, layer.momentum, layer.filter_updates_cl, 1);
+    pull_convolutional_layer(layer);
 }
 
 

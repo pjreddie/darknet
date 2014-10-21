@@ -1,4 +1,5 @@
 #include "mini_blas.h"
+#include <clBLAS.h>
 
 void gemm(int TA, int TB, int M, int N, int K, float ALPHA, 
         float *A, int lda, 
@@ -35,7 +36,7 @@ void gemm_nt(int M, int N, int K, float ALPHA,
         for(j = 0; j < N; ++j){
             register float sum = 0;
             for(k = 0; k < K; ++k){
-                sum += ALPHA*A[i*lda+k]*B[k+j*ldb];
+                sum += ALPHA*A[i*lda+k]*B[j*ldb + k];
             }
             C[i*ldc+j] += sum;
         }
@@ -57,6 +58,7 @@ void gemm_tn(int M, int N, int K, float ALPHA,
         }
     }
 }
+
 void gemm_tt(int M, int N, int K, float ALPHA, 
         float *A, int lda, 
         float *B, int ldb,
@@ -65,9 +67,11 @@ void gemm_tt(int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(j = 0; j < N; ++j){
+            register float sum = 0;
             for(k = 0; k < K; ++k){
-                C[i*ldc+j] += ALPHA*A[i+k*lda]*B[k+j*ldb];
+                sum += ALPHA*A[i+k*lda]*B[k+j*ldb];
             }
+            C[i*ldc+j] += sum;
         }
     }
 }
@@ -121,13 +125,31 @@ cl_kernel get_gemm_kernel()
     return gemm_kernel;
 }
 
+void gemm_ongpu_old(int TA, int TB, int M, int N, int K, float ALPHA, 
+        cl_mem A_gpu, int lda, 
+        cl_mem B_gpu, int ldb,
+        float BETA,
+        cl_mem C_gpu, int ldc);
+
 void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         cl_mem A_gpu, int lda, 
         cl_mem B_gpu, int ldb,
         float BETA,
         cl_mem C_gpu, int ldc)
 {
-    //printf("gpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
+    cl_setup();
+    //cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, 0, lda,B_gpu, 0, ldb,BETA, C_gpu, 0, ldc,1, &queue, 0, NULL, &event);
+    //check_error(cl);
+    gemm_ongpu_old(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
+}
+
+void gemm_ongpu_old(int TA, int TB, int M, int N, int K, float ALPHA, 
+        cl_mem A_gpu, int lda, 
+        cl_mem B_gpu, int ldb,
+        float BETA,
+        cl_mem C_gpu, int ldc)
+{
+    //printf("gpu: %d %d %d %d %d\n",TA, TB, M, N, K);
     cl_setup();
     cl_kernel gemm_kernel = get_gemm_kernel();
     cl_command_queue queue = cl.queue;
@@ -213,11 +235,11 @@ void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
     float *c = random_matrix(m,n);
     int i;
     clock_t start = clock(), end;
-    for(i = 0; i<1000; ++i){
+    for(i = 0; i<10; ++i){
         gemm_gpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
     }
     end = clock();
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
     free(a);
     free(b);
     free(c);
@@ -270,19 +292,19 @@ void test_gpu_blas()
     test_gpu_accuracy(0,1,1000,10,100); 
     test_gpu_accuracy(1,1,1000,10,100); 
 
-/*
-    time_gpu_random_matrix(0,0,1000,1000,100); 
-    time_random_matrix(0,0,1000,1000,100); 
+    /*
+       time_gpu_random_matrix(0,0,1000,1000,100); 
+       time_random_matrix(0,0,1000,1000,100); 
 
-    time_gpu_random_matrix(0,1,1000,1000,100); 
-    time_random_matrix(0,1,1000,1000,100); 
+       time_gpu_random_matrix(0,1,1000,1000,100); 
+       time_random_matrix(0,1,1000,1000,100); 
 
-    time_gpu_random_matrix(1,0,1000,1000,100); 
-    time_random_matrix(1,0,1000,1000,100); 
+       time_gpu_random_matrix(1,0,1000,1000,100); 
+       time_random_matrix(1,0,1000,1000,100); 
 
-    time_gpu_random_matrix(1,1,1000,1000,100); 
-    time_random_matrix(1,1,1000,1000,100); 
-    */
+       time_gpu_random_matrix(1,1,1000,1000,100); 
+       time_random_matrix(1,1,1000,1000,100); 
+     */
 
 }
 #endif

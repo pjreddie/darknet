@@ -1,5 +1,5 @@
 CC=gcc
-GPU=0
+GPU=1
 COMMON=-Wall -Wfatal-errors `pkg-config --cflags opencv` -I/usr/local/cuda/include/
 ifeq ($(GPU), 1) 
 COMMON+=-DGPU

@@ -41,7 +41,7 @@ void time_random_matrix(int TA, int TB, int m, int k, int n)
     float *c = random_matrix(m,n);
     int i;
     clock_t start = clock(), end;
-    for(i = 0; i<1000; ++i){
+    for(i = 0; i<10; ++i){
         gemm_cpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
     }
     end = clock();

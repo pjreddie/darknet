@@ -4,6 +4,11 @@
 #include <string.h>
 #include <math.h>
 
+float sec(clock_t clocks)
+{
+    return (float)clocks/CLOCKS_PER_SEC;
+}
+
 void error(char *s)
 {
     fprintf(stderr, "Error: %s\n", s);

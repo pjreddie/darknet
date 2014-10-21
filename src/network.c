@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 #include "network.h"
 #include "image.h"
 #include "data.h"
@@ -31,8 +32,10 @@ network make_network(int n, int batch)
 }
 
 #ifdef GPU
+
 void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
 {
+    //printf("start\n");
     int i;
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
@@ -49,28 +52,28 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
             forward_connected_layer_gpu(layer, input);
             input = layer.output_cl;
         }
-        /*
-        else if(net.types[i] == SOFTMAX){
-            softmax_layer layer = *(softmax_layer *)net.layers[i];
-            forward_softmax_layer(layer, input);
-            input = layer.output;
-        }
-        else if(net.types[i] == CROP){
-            crop_layer layer = *(crop_layer *)net.layers[i];
-            forward_crop_layer(layer, input);
-            input = layer.output;
-        }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-            forward_maxpool_layer(layer, input);
-            input = layer.output;
+            forward_maxpool_layer_gpu(layer, input);
+            input = layer.output_cl;
         }
-        else if(net.types[i] == NORMALIZATION){
-            normalization_layer layer = *(normalization_layer *)net.layers[i];
-            forward_normalization_layer(layer, input);
-            input = layer.output;
+        else if(net.types[i] == SOFTMAX){
+            softmax_layer layer = *(softmax_layer *)net.layers[i];
+            forward_softmax_layer_gpu(layer, input);
+            input = layer.output_cl;
         }
-        */
+        /*
+           else if(net.types[i] == CROP){
+           crop_layer layer = *(crop_layer *)net.layers[i];
+           forward_crop_layer(layer, input);
+           input = layer.output;
+           }
+           else if(net.types[i] == NORMALIZATION){
+           normalization_layer layer = *(normalization_layer *)net.layers[i];
+           forward_normalization_layer(layer, input);
+           input = layer.output;
+           }
+         */
     }
 }
 
@@ -98,6 +101,14 @@ void backward_network_gpu(network net, cl_mem input)
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
             backward_connected_layer_gpu(layer, prev_input, prev_delta);
+        }
+        else if(net.types[i] == MAXPOOL){
+            maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+            backward_maxpool_layer_gpu(layer, prev_delta);
+        }
+        else if(net.types[i] == SOFTMAX){
+            softmax_layer layer = *(softmax_layer *)net.layers[i];
+            backward_softmax_layer_gpu(layer, prev_delta);
         }
     }
 }
@@ -127,6 +138,14 @@ cl_mem get_network_output_cl_layer(network net, int i)
         connected_layer layer = *(connected_layer *)net.layers[i];
         return layer.output_cl;
     }
+    else if(net.types[i] == MAXPOOL){
+        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.output_cl;
+    }
+    else if(net.types[i] == SOFTMAX){
+        softmax_layer layer = *(softmax_layer *)net.layers[i];
+        return layer.output_cl;
+    }
     return 0;
 }
 
@@ -138,6 +157,14 @@ cl_mem get_network_delta_cl_layer(network net, int i)
     }
     else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
+        return layer.delta_cl;
+    }
+    else if(net.types[i] == MAXPOOL){
+        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.delta_cl;
+    }
+    else if(net.types[i] == SOFTMAX){
+        softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.delta_cl;
     }
     return 0;
@@ -330,7 +357,7 @@ void backward_network(network net, float *input)
         }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-            if(i != 0) backward_maxpool_layer(layer, prev_input, prev_delta);
+            if(i != 0) backward_maxpool_layer(layer, prev_delta);
         }
         else if(net.types[i] == NORMALIZATION){
             normalization_layer layer = *(normalization_layer *)net.layers[i];
@@ -338,7 +365,7 @@ void backward_network(network net, float *input)
         }
         else if(net.types[i] == SOFTMAX){
             softmax_layer layer = *(softmax_layer *)net.layers[i];
-            if(i != 0) backward_softmax_layer(layer, prev_input, prev_delta);
+            if(i != 0) backward_softmax_layer(layer, prev_delta);
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
@@ -350,6 +377,7 @@ void backward_network(network net, float *input)
         }
     }
 }
+
 
 #ifdef GPU
 float train_network_datum_gpu(network net, float *x, float *y)
@@ -364,13 +392,12 @@ float train_network_datum_gpu(network net, float *x, float *y)
         cl_write_array(*net.truth_cl, y, y_size);
     }
     forward_network_gpu(net, *net.input_cl, *net.truth_cl, 1);
-    //int class = get_predicted_class_network(net);
     backward_network_gpu(net, *net.input_cl);
     float error = get_network_cost(net);
     update_network_gpu(net);
-    //return (y[class]?1:0);
     return error;
 }
+
 float train_network_sgd_gpu(network net, data d, int n)
 {
     int batch = net.batch;

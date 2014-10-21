@@ -108,6 +108,12 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
 
 #ifdef GPU
 
+void pull_connected_layer(connected_layer layer)
+{
+    cl_read_array(layer.weights_cl, layer.weights, layer.inputs*layer.outputs);
+    cl_read_array(layer.biases_cl, layer.biases, layer.outputs);
+}
+
 void update_connected_layer_gpu(connected_layer layer)
 {
     axpy_ongpu(layer.outputs, layer.learning_rate, layer.bias_updates_cl, 1, layer.biases_cl, 1);
@@ -116,6 +122,7 @@ void update_connected_layer_gpu(connected_layer layer)
     scal_ongpu(layer.inputs*layer.outputs, 1.-layer.learning_rate*layer.decay, layer.weights_cl, 1);
     axpy_ongpu(layer.inputs*layer.outputs, layer.learning_rate, layer.weight_updates_cl, 1, layer.weights_cl, 1);
     scal_ongpu(layer.inputs*layer.outputs, layer.momentum, layer.weight_updates_cl, 1);
+    pull_connected_layer(layer);
 }
 
 void forward_connected_layer_gpu(connected_layer layer, cl_mem input)

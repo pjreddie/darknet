@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <stdio.h>
+#include <time.h>
 #include "list.h"
 
 void error(char *s);
@@ -25,5 +26,6 @@ float sum_array(float *a, int n);
 float mean_array(float *a, int n);
 float variance_array(float *a, int n);
 float **one_hot_encode(float *a, int n, int k);
+float sec(clock_t clocks);
 #endif
 

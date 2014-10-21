@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+//#include <clBLAS.h>
 
 #include "opencl.h"
 #include "utils.h"
@@ -80,9 +81,9 @@ cl_info cl_init()
 
     }
     int index = getpid()%num_devices;
+    index = 0;
     printf("%d rand, %d devices, %d index\n", getpid(), num_devices, index);
-    //info.device = devices[index];
-    info.device = devices[0];
+    info.device = devices[index];
     fprintf(stderr, "Found %d device(s)\n", num_devices);
     check_error(info);
 
@@ -94,8 +95,22 @@ cl_info cl_init()
     check_error(info);
     info.queue = clCreateCommandQueue(info.context, info.device, 0, &info.error);
     check_error(info);
+    for(i = 0; i < NUM_QUEUES; ++i){
+        info.queues[i] = clCreateCommandQueue(info.context, info.device, 0, &info.error);
+        check_error(info);
+    }
+    //info.error = clblasSetup();
+    check_error(info);
     info.initialized = 1;
     return info;
+}
+
+void wait_for_queues()
+{
+    int i;
+    for(i = 0; i < NUM_QUEUES; ++i){
+        clFinish(cl.queues[i]);
+    }
 }
 
 cl_program cl_fprog(char *filename, char *options, cl_info info)
@@ -176,6 +191,16 @@ cl_mem cl_make_array(float *x, int n)
     cl_mem mem = clCreateBuffer(cl.context,
             CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
             sizeof(float)*n, x, &cl.error);
+    check_error(cl);
+    return mem;
+}
+
+cl_mem cl_make_int_array(int *x, int n)
+{
+    cl_setup();
+    cl_mem mem = clCreateBuffer(cl.context,
+            CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
+            sizeof(int)*n, x, &cl.error);
     check_error(cl);
     return mem;
 }
