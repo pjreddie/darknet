@@ -41,9 +41,11 @@ data load_data_image_paths(char **paths, int n, char **labels, int k, int h, int
     d.y = make_matrix(n, k);
 
     for(i = 0; i < n; ++i){
-        image im = load_image(paths[i], h, w);
+        image im = load_image_color(paths[i], h, w);
         d.X.vals[i] = im.data;
         d.X.cols = im.h*im.w*im.c;
+    }
+    for(i = 0; i < n; ++i){
         fill_truth(paths[i], labels, k, d.y.vals[i]);
     }
     return d;
@@ -58,6 +60,14 @@ data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w
     free_list(plist);
     free(paths);
     return d;
+}
+
+char **get_labels(char *filename)
+{
+    list *plist = get_paths(filename);
+    char **labels = (char **)list_to_array(plist);
+    free_list(plist);
+    return labels;
 }
 
 void free_data(data d)
@@ -81,6 +91,20 @@ data load_data_image_pathfile_part(char *filename, int part, int total, char **l
     free_list_contents(plist);
     free_list(plist);
     free(paths);
+    return d;
+}
+
+data load_data_random(int n, char **paths, int m, char **labels, int k, int h, int w)
+{
+    char **random_paths = calloc(n, sizeof(char*));
+    int i;
+    for(i = 0; i < n; ++i){
+        int index = rand()%m;
+        random_paths[i] = paths[index];
+        if(i == 0) printf("%s\n", paths[index]);
+    }
+    data d = load_data_image_paths(random_paths, n, labels, k, h, w);
+    free(random_paths);
     return d;
 }
 

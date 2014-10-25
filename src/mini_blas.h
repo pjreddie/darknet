@@ -55,8 +55,8 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
                     float *B, int ldb,
                     float BETA,
                     float *C, int ldc);
-inline void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
-inline void copy_cpu(int N, float *X, int INCX, float *Y, int INCY);
-inline void scal_cpu(int N, float ALPHA, float *X, int INCX);
-inline float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
+void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
+void copy_cpu(int N, float *X, int INCX, float *Y, int INCY);
+void scal_cpu(int N, float ALPHA, float *X, int INCX);
+float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void test_gpu_blas();

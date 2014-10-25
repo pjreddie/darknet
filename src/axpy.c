@@ -1,24 +1,24 @@
 #include "mini_blas.h"
 
-inline void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY)
+void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY)
 {
     int i;
     for(i = 0; i < N; ++i) Y[i*INCY] += ALPHA*X[i*INCX];
 }
 
-inline void scal_cpu(int N, float ALPHA, float *X, int INCX)
+void scal_cpu(int N, float ALPHA, float *X, int INCX)
 {
     int i;
     for(i = 0; i < N; ++i) X[i*INCX] *= ALPHA;
 }
 
-inline void copy_cpu(int N, float *X, int INCX, float *Y, int INCY)
+void copy_cpu(int N, float *X, int INCX, float *Y, int INCY)
 {
     int i;
     for(i = 0; i < N; ++i) Y[i*INCY] = X[i*INCX];
 }
 
-inline float dot_cpu(int N, float *X, int INCX, float *Y, int INCY)
+float dot_cpu(int N, float *X, int INCX, float *Y, int INCY)
 {
     int i;
     float dot = 0;

@@ -67,7 +67,6 @@ void parse_data(char *data, float *a, int n)
 
 convolutional_layer *parse_convolutional(list *options, network *net, int count)
 {
-    int i;
     int h,w,c;
     float learning_rate, momentum, decay;
     int n = option_find_int(options, "filters",1);
@@ -98,34 +97,19 @@ convolutional_layer *parse_convolutional(list *options, network *net, int count)
         if(h == 0) error("Layer before convolutional layer must output image.");
     }
     convolutional_layer *layer = make_convolutional_layer(net->batch,h,w,c,n,size,stride,pad,activation,learning_rate,momentum,decay);
-    char *data = option_find_str(options, "data", 0);
-    if(data){
-        char *curr = data;
-        char *next = data;
-        for(i = 0; i < n; ++i){
-            while(*++next !='\0' && *next != ',');
-            *next = '\0';
-            sscanf(curr, "%g", &layer->biases[i]);
-            curr = next+1;
-        }
-        for(i = 0; i < c*n*size*size; ++i){
-            while(*++next !='\0' && *next != ',');
-            *next = '\0';
-            sscanf(curr, "%g", &layer->filters[i]);
-            curr = next+1;
-        }
-    }
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
-    parse_data(biases, layer->biases, n);
     parse_data(weights, layer->filters, c*n*size*size);
+    parse_data(biases, layer->biases, n);
+    #ifdef GPU
+    push_convolutional_layer(*layer);
+    #endif
     option_unused(options);
     return layer;
 }
 
 connected_layer *parse_connected(list *options, network *net, int count)
 {
-    int i;
     int input;
     float learning_rate, momentum, decay;
     int output = option_find_int(options, "output",1);
@@ -147,27 +131,13 @@ connected_layer *parse_connected(list *options, network *net, int count)
         input =  get_network_output_size_layer(*net, count-1);
     }
     connected_layer *layer = make_connected_layer(net->batch, input, output, activation,learning_rate,momentum,decay);
-    char *data = option_find_str(options, "data", 0);
-    if(data){
-        char *curr = data;
-        char *next = data;
-        for(i = 0; i < output; ++i){
-            while(*++next !='\0' && *next != ',');
-            *next = '\0';
-            sscanf(curr, "%g", &layer->biases[i]);
-            curr = next+1;
-        }
-        for(i = 0; i < input*output; ++i){
-            while(*++next !='\0' && *next != ',');
-            *next = '\0';
-            sscanf(curr, "%g", &layer->weights[i]);
-            curr = next+1;
-        }
-    }
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
     parse_data(biases, layer->biases, output);
     parse_data(weights, layer->weights, input*output);
+    #ifdef GPU
+    push_connected_layer(*layer);
+    #endif
     option_unused(options);
     return layer;
 }

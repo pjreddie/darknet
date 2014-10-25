@@ -10,11 +10,11 @@ __kernel void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
 
     float val = 0;
     
-    int row_block = get_group_id(0);
-    int col_block = get_group_id(1);
+    int row_block = get_group_id(1);
+    int col_block = get_group_id(0);
 
-    int sub_row = get_local_id(0);
-    int sub_col = get_local_id(1);
+    int sub_row = get_local_id(1);
+    int sub_col = get_local_id(0);
 
     int row = row_block*BLOCK + sub_row;
     int col = col_block*BLOCK + sub_col;

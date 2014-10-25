@@ -369,7 +369,6 @@ IplImage* resizeImage(const IplImage *origImg, int newHeight, int newWidth,
         // Will do a scaled image resize with the correct aspect ratio.
         outImg = resizeImage(croppedImg, newHeight, newWidth, 0);
         cvReleaseImage( &croppedImg );
-
     }
     else {
 
@@ -412,6 +411,25 @@ image ipl_to_image(IplImage* src)
             }
         }
     }
+    return out;
+}
+
+image load_image_color(char *filename, int h, int w)
+{
+    IplImage* src = 0;
+    if( (src = cvLoadImage(filename, 1)) == 0 )
+    {
+        printf("Cannot load file image %s\n", filename);
+        exit(0);
+    }
+    if(h && w && (src->height != h || src->width != w)){
+        printf("Resized!\n");
+        IplImage *resized = resizeImage(src, h, w, 1);
+        cvReleaseImage(&src);
+        src = resized;
+    }
+    image out = ipl_to_image(src);
+    cvReleaseImage(&src);
     return out;
 }
 

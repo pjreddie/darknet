@@ -621,7 +621,7 @@ void visualize_network(network net)
     image *prev = 0;
     int i;
     char buff[256];
-    show_image(get_network_image_layer(net, 0), "Crop");
+    //show_image(get_network_image_layer(net, 0), "Crop");
     for(i = 0; i < net.n; ++i){
         sprintf(buff, "Layer %d", i);
         if(net.types[i] == CONVOLUTIONAL){
@@ -633,6 +633,27 @@ void visualize_network(network net)
             visualize_normalization_layer(layer, buff);
         }
     } 
+}
+
+void top_predictions(network net, int n, int *index)
+{
+    int i,j;
+    int k = get_network_output_size(net);
+    float *out = get_network_output(net);
+    float thresh = FLT_MAX;
+    for(i = 0; i < n; ++i){
+        float max = -FLT_MAX;
+        int max_i = -1;
+        for(j = 0; j < k; ++j){
+            float val = out[j];
+            if(val > max &&  val < thresh){
+                max = val;
+                max_i = j;
+            }
+        }
+        index[i] = max_i;
+        thresh = max;
+    }
 }
 
 float *network_predict(network net, float *input)

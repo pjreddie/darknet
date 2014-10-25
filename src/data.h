@@ -12,6 +12,7 @@ typedef struct{
 
 
 void free_data(data d);
+data load_data_random(int n, char **paths, int m, char **labels, int k, int h, int w);
 data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w);
 data load_data_image_pathfile_part(char *filename, int part, int total, 
                                     char **labels, int k, int h, int w);
@@ -20,6 +21,7 @@ data load_data_image_pathfile_random(char *filename, int n, char **labels,
 data load_cifar10_data(char *filename);
 data load_all_cifar10();
 list *get_paths(char *filename);
+char **get_labels(char *filename);
 void get_batch(data d, int n, float *X, float *y);
 data load_categorical_data_csv(char *filename, int target, int k);
 void normalize_data_rows(data d);

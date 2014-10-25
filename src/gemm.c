@@ -1,5 +1,5 @@
 #include "mini_blas.h"
-#include <clBLAS.h>
+#include "utils.h"
 
 void gemm(int TA, int TB, int M, int N, int K, float ALPHA, 
         float *A, int lda, 
@@ -104,6 +104,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 
 #include "opencl.h"
 #include <math.h>
+#include <clBLAS.h>
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
@@ -111,7 +112,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 #ifdef __APPLE__
 #define BLOCK 1
 #else
-#define BLOCK 8
+#define BLOCK 16
 #endif
 
 cl_kernel get_gemm_kernel()
@@ -125,6 +126,44 @@ cl_kernel get_gemm_kernel()
     return gemm_kernel;
 }
 
+cl_kernel get_gemm_nt_kernel()
+{
+    static int init = 0;
+    static cl_kernel gemm_kernel;
+    if(!init){
+        gemm_kernel = get_kernel("src/gemm_new.cl", "gemm_nt", "-D BLOCK=" STR(BLOCK) );
+        init = 1;
+    }
+    return gemm_kernel;
+}
+
+cl_kernel get_gemm_tn_kernel()
+{
+    static int init = 0;
+    static cl_kernel gemm_kernel;
+    if(!init){
+        gemm_kernel = get_kernel("src/gemm_new.cl", "gemm_tn", "-D BLOCK=" STR(BLOCK) );
+        init = 1;
+    }
+    return gemm_kernel;
+}
+
+cl_kernel get_gemm_nn_kernel()
+{
+    static int init = 0;
+    static cl_kernel gemm_kernel;
+    if(!init){
+        gemm_kernel = get_kernel("src/gemm_new.cl", "gemm_nn", "-D BLOCK=" STR(BLOCK) );
+        init = 1;
+    }
+    return gemm_kernel;
+}
+
+void gemm_ongpu_new(int TA, int TB, int M, int N, int K, float ALPHA, 
+        cl_mem A_gpu, int lda, 
+        cl_mem B_gpu, int ldb,
+        float BETA,
+        cl_mem C_gpu, int ldc);
 void gemm_ongpu_old(int TA, int TB, int M, int N, int K, float ALPHA, 
         cl_mem A_gpu, int lda, 
         cl_mem B_gpu, int ldb,
@@ -137,10 +176,51 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         cl_mem C_gpu, int ldc)
 {
+    /*
     cl_setup();
-    //cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, 0, lda,B_gpu, 0, ldb,BETA, C_gpu, 0, ldc,1, &queue, 0, NULL, &event);
-    //check_error(cl);
-    gemm_ongpu_old(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
+    cl_command_queue queue = cl.queue;
+    cl_event event;
+    cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, 0, lda,B_gpu, 0, ldb,BETA, C_gpu, 0, ldc,1, &queue, 0, NULL, &event);
+    */
+
+    gemm_ongpu_new(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
+}
+
+void gemm_ongpu_new(int TA, int TB, int M, int N, int K, float ALPHA, 
+        cl_mem A_gpu, int lda, 
+        cl_mem B_gpu, int ldb,
+        float BETA,
+        cl_mem C_gpu, int ldc)
+{
+    //printf("gpu: %d %d %d %d %d\n",TA, TB, M, N, K);
+    cl_setup();
+    cl_kernel      gemm_kernel = get_gemm_kernel();
+    if(!TA && !TB) gemm_kernel = get_gemm_nn_kernel();
+    if(!TA && TB)  gemm_kernel = get_gemm_nt_kernel();
+    if(TA && !TB)  gemm_kernel = get_gemm_tn_kernel();
+    cl_command_queue queue = cl.queue;
+
+    cl_uint i = 0;
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(TA), (void*) &TA);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(TB), (void*) &TB);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(M), (void*) &M);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(N), (void*) &N);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(K), (void*) &K);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ALPHA), (void*) &ALPHA);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(A_gpu), (void*) &A_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(lda), (void*) &lda);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(B_gpu), (void*) &B_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldb), (void*) &ldb);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(BETA), (void*) &BETA);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(C_gpu), (void*) &C_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldc), (void*) &ldc);
+    check_error(cl);
+
+    const size_t global_size[] = {ceil((float)N/BLOCK)*BLOCK, ceil((float)M/BLOCK)*BLOCK};
+    const size_t local_size[] = {BLOCK, BLOCK};
+
+    clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
+    check_error(cl);
 }
 
 void gemm_ongpu_old(int TA, int TB, int M, int N, int K, float ALPHA, 
@@ -170,7 +250,7 @@ void gemm_ongpu_old(int TA, int TB, int M, int N, int K, float ALPHA,
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldc), (void*) &ldc);
     check_error(cl);
 
-    const size_t global_size[] = {ceil((float)M/BLOCK)*BLOCK, ceil((float)N/BLOCK)*BLOCK};
+    const size_t global_size[] = {ceil((float)N/BLOCK)*BLOCK, ceil((float)M/BLOCK)*BLOCK};
     const size_t local_size[] = {BLOCK, BLOCK};
 
     clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
@@ -235,11 +315,44 @@ void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
     float *c = random_matrix(m,n);
     int i;
     clock_t start = clock(), end;
-    for(i = 0; i<10; ++i){
+    for(i = 0; i<32; ++i){
         gemm_gpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
     }
     end = clock();
     printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
+    free(a);
+    free(b);
+    free(c);
+}
+
+void time_ongpu(int TA, int TB, int m, int k, int n)
+{
+    int iter = 100;
+    float *a = random_matrix(m,k);
+    float *b = random_matrix(k,n);
+
+    int lda = (!TA)?k:m;
+    int ldb = (!TB)?n:k;
+
+    float *c = random_matrix(m,n);
+
+    cl_mem a_cl = cl_make_array(a, m*k);
+    cl_mem b_cl = cl_make_array(b, k*n);
+    cl_mem c_cl = cl_make_array(c, m*n);
+
+    int i;
+    clock_t start = clock(), end;
+    for(i = 0; i<iter; ++i){
+        gemm_ongpu(TA,TB,m,n,k,1,a_cl,lda,b_cl,ldb,1,c_cl,n);
+    }
+    int flop = m*n*(2*k+3)*iter;
+    float gflop = flop/pow(10., 9);
+    end = clock();
+    float seconds = sec(end-start);
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s, %lf GFLOPS\n",m,k,k,n, TA, TB, seconds, gflop/seconds);
+    clReleaseMemObject(a_cl);
+    clReleaseMemObject(b_cl);
+    clReleaseMemObject(c_cl);
     free(a);
     free(b);
     free(c);
@@ -272,14 +385,16 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
         //printf("%f %f\n", c[i], c_gpu[i]);
         sse += pow(c[i]-c_gpu[i], 2);
     }
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g MSE\n",m,k,k,n, TA, TB, sse/(m*n));
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g SSE\n",m,k,k,n, TA, TB, sse/(m*n));
     free(a);
     free(b);
     free(c);
+    free(c_gpu);
 }
 
 void test_gpu_blas()
 {
+    /*
     test_gpu_accuracy(0,0,10,576,75); 
 
     test_gpu_accuracy(0,0,17,10,10); 
@@ -291,6 +406,21 @@ void test_gpu_blas()
     test_gpu_accuracy(1,0,1000,10,100); 
     test_gpu_accuracy(0,1,1000,10,100); 
     test_gpu_accuracy(1,1,1000,10,100); 
+    */
+    test_gpu_accuracy(0,0,131,4093,1199); 
+    test_gpu_accuracy(0,1,131,4093,1199); 
+    test_gpu_accuracy(1,0,131,4093,1199); 
+    test_gpu_accuracy(1,1,131,4093,1199); 
+
+    time_ongpu(0,0,1024,1024,1024); 
+    time_ongpu(0,1,1024,1024,1024); 
+    time_ongpu(1,0,1024,1024,1024); 
+    time_ongpu(1,1,1024,1024,1024); 
+
+    time_ongpu(0,0,128,4096,1200); 
+    time_ongpu(0,1,128,4096,1200); 
+    time_ongpu(1,0,128,4096,1200); 
+    time_ongpu(1,1,128,4096,1200); 
 
     /*
        time_gpu_random_matrix(0,0,1000,1000,100); 

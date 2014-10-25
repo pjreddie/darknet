@@ -286,14 +286,16 @@ void train_assira()
 	srand(2222222);
 	int i = 0;
 	char *labels[] = {"cat","dog"};
+    clock_t time;
 	while(1){
 		i += 1000;
+        time=clock();
 		data train = load_data_image_pathfile_random("data/assira/train.list", imgs*net.batch, labels, 2, 256, 256);
 		normalize_data_rows(train);
-		clock_t start = clock(), end;
-		float loss = train_network_sgd_gpu(net, train, imgs);
-		end = clock();
-		printf("%d: %f, Time: %lf seconds\n", i, loss, (float)(end-start)/CLOCKS_PER_SEC );
+        printf("Loaded: %lf seconds\n", sec(clock()-time));
+        time=clock();
+		float loss = train_network_sgd(net, train, imgs);
+		printf("%d: %f, Time: %lf seconds\n", i, loss, sec(clock()-time));
 		free_data(train);
 		if(i%10000==0){
 			char buff[256];
@@ -304,9 +306,69 @@ void train_assira()
 	}
 }
 
+void train_imagenet()
+{
+	network net = parse_network_cfg("cfg/imagenet_backup_710.cfg");
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    int imgs = 1000/net.batch+1;
+    //imgs=1;
+	srand(888888);
+	int i = 0;
+    char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
+    list *plist = get_paths("/home/pjreddie/data/imagenet/cls.cropped.list");
+    char **paths = (char **)list_to_array(plist);
+    clock_t time;
+	while(1){
+		i += 1;
+        time=clock();
+		data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
+		normalize_data_rows(train);
+        printf("Loaded: %lf seconds\n", sec(clock()-time));
+        time=clock();
+        #ifdef GPU
+		float loss = train_network_sgd_gpu(net, train, imgs);
+		printf("%d: %f, %lf seconds, %d images\n", i, loss, sec(clock()-time), i*imgs*net.batch);
+        #endif
+		free_data(train);
+		if(i%10==0){
+			char buff[256];
+			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_backup_%d.cfg", i);
+			save_network(net, buff);
+		}
+	}
+}
+
+void test_imagenet()
+{
+	network net = parse_network_cfg("cfg/imagenet_test.cfg");
+    //imgs=1;
+	srand(2222222);
+	int i = 0;
+    char **names = get_labels("cfg/shortnames.txt");
+    clock_t time;
+    char filename[256];
+    int indexes[10];
+	while(1){
+        gets(filename);
+        image im = load_image_color(filename, 256, 256);
+        normalize_image(im);
+        printf("%d %d %d\n", im.h, im.w, im.c);
+        float *X = im.data;
+        time=clock();
+        float *predictions = network_predict(net, X);
+        top_predictions(net, 10, indexes);
+		printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
+        for(i = 0; i < 10; ++i){
+            int index = indexes[i];
+            printf("%s: %f\n", names[index], predictions[index]);
+        }
+		free_image(im);
+	}
+}
+
 void test_visualize()
 {
-	network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+	network net = parse_network_cfg("cfg/assira_backup_740000.cfg");
 	srand(2222222);
 	visualize_network(net);
 	cvWaitKey(0);
@@ -322,7 +384,7 @@ void test_full()
 	for(i = 0; i < total; ++i){
 		visualize_network(net);
 		cvWaitKey(100);
-		data test = load_data_image_pathfile_part("images/assira/test.list", i, total, labels, 2, 256, 256);
+		data test = load_data_image_pathfile_part("data/assira/test.list", i, total, labels, 2, 256, 256);
 		image im = float_to_image(256, 256, 3,test.X.vals[0]);
 		show_image(im, "input");
 		cvWaitKey(100);
@@ -437,7 +499,7 @@ void train_nist()
     int iters = 10000/net.batch;
     while(++count <= 2000){
         clock_t start = clock(), end;
-        float loss = train_network_sgd_gpu(net, train, iters);
+        float loss = train_network_sgd(net, train, iters);
         end = clock();
         float test_acc = network_accuracy(net, test);
         //float test_acc = 0;
@@ -895,10 +957,14 @@ void test_distribution()
 
 int main(int argc, char *argv[])
 {
+    test_gpu_blas();
     //test_blas();
-    train_assira();
+    //train_assira();
+	//test_visualize();
     //test_distribution();
     //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+    //train_imagenet();
+    //test_imagenet();
 
     //test_blas();
     //test_visualize();

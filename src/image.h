@@ -45,6 +45,7 @@ image make_random_kernel(int size, int c, float scale);
 image float_to_image(int h, int w, int c, float *data);
 image copy_image(image p);
 image load_image(char *filename, int h, int w);
+image load_image_color(char *filename, int h, int w);
 image ipl_to_image(IplImage* src);
 
 float get_pixel(image m, int x, int y, int c);

@@ -48,6 +48,7 @@ void update_connected_layer(connected_layer layer);
 void forward_connected_layer_gpu(connected_layer layer, cl_mem input);
 void backward_connected_layer_gpu(connected_layer layer, cl_mem input, cl_mem delta);
 void update_connected_layer_gpu(connected_layer layer);
+void push_connected_layer(connected_layer layer);
 #endif
 
 #endif

@@ -114,6 +114,12 @@ void pull_connected_layer(connected_layer layer)
     cl_read_array(layer.biases_cl, layer.biases, layer.outputs);
 }
 
+void push_connected_layer(connected_layer layer)
+{
+    cl_write_array(layer.weights_cl, layer.weights, layer.inputs*layer.outputs);
+    cl_write_array(layer.biases_cl, layer.biases, layer.outputs);
+}
+
 void update_connected_layer_gpu(connected_layer layer)
 {
     axpy_ongpu(layer.outputs, layer.learning_rate, layer.bias_updates_cl, 1, layer.biases_cl, 1);

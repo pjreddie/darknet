@@ -212,7 +212,7 @@ void update_convolutional_layer(convolutional_layer layer)
 {
     int size = layer.size*layer.size*layer.c*layer.n;
     axpy_cpu(layer.n, layer.learning_rate, layer.bias_updates, 1, layer.biases, 1);
-    scal_cpu(layer.n,layer.momentum, layer.bias_updates, 1);
+    scal_cpu(layer.n, layer.momentum, layer.bias_updates, 1);
 
     scal_cpu(size, 1.-layer.learning_rate*layer.decay, layer.filters, 1);
     axpy_cpu(size, layer.learning_rate, layer.filter_updates, 1, layer.filters, 1);
@@ -432,6 +432,12 @@ void pull_convolutional_layer(convolutional_layer layer)
 {
     cl_read_array(layer.filters_cl, layer.filters, layer.c*layer.n*layer.size*layer.size);
     cl_read_array(layer.biases_cl, layer.biases, layer.n);
+}
+
+void push_convolutional_layer(convolutional_layer layer)
+{
+    cl_write_array(layer.filters_cl, layer.filters, layer.c*layer.n*layer.size*layer.size);
+    cl_write_array(layer.biases_cl, layer.biases, layer.n);
 }
 
 void update_convolutional_layer_gpu(convolutional_layer layer)
