@@ -176,14 +176,12 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         cl_mem C_gpu, int ldc)
 {
-    /*
     cl_setup();
     cl_command_queue queue = cl.queue;
     cl_event event;
     cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, 0, lda,B_gpu, 0, ldb,BETA, C_gpu, 0, ldc,1, &queue, 0, NULL, &event);
-    */
 
-    gemm_ongpu_new(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
+    //gemm_ongpu_new(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
 }
 
 void gemm_ongpu_new(int TA, int TB, int M, int N, int K, float ALPHA, 
@@ -327,7 +325,7 @@ void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
 
 void time_ongpu(int TA, int TB, int m, int k, int n)
 {
-    int iter = 100;
+    int iter = 128;
     float *a = random_matrix(m,k);
     float *b = random_matrix(k,n);
 
@@ -345,10 +343,10 @@ void time_ongpu(int TA, int TB, int m, int k, int n)
     for(i = 0; i<iter; ++i){
         gemm_ongpu(TA,TB,m,n,k,1,a_cl,lda,b_cl,ldb,1,c_cl,n);
     }
-    int flop = m*n*(2*k+3)*iter;
-    float gflop = flop/pow(10., 9);
+    double flop = m*n*(2.*k+3.)*iter;
+    double gflop = flop/pow(10., 9);
     end = clock();
-    float seconds = sec(end-start);
+    double seconds = sec(end-start);
     printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s, %lf GFLOPS\n",m,k,k,n, TA, TB, seconds, gflop/seconds);
     clReleaseMemObject(a_cl);
     clReleaseMemObject(b_cl);

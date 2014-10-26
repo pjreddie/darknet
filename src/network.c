@@ -38,6 +38,7 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
     //printf("start\n");
     int i;
     for(i = 0; i < net.n; ++i){
+        clock_t time = clock();
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             forward_convolutional_layer_gpu(layer, input);
@@ -62,6 +63,7 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
             forward_softmax_layer_gpu(layer, input);
             input = layer.output_cl;
         }
+        printf("%d %f\n", i, sec(clock()-time));
         /*
            else if(net.types[i] == CROP){
            crop_layer layer = *(crop_layer *)net.layers[i];

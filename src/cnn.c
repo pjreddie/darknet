@@ -957,59 +957,8 @@ void test_distribution()
 
 int main(int argc, char *argv[])
 {
-    test_gpu_blas();
-    //test_blas();
-    //train_assira();
-	//test_visualize();
-    //test_distribution();
-    //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
-    //train_imagenet();
-    //test_imagenet();
-
-    //test_blas();
-    //test_visualize();
     //test_gpu_blas();
-    //test_blas();
-    //test_convolve_matrix();
-    //    test_im2row();
-    //test_split();
-    //test_ensemble();
-    //test_nist_single();
-    //test_nist();
-    //train_nist();
-    //test_convolutional_layer();
-    //test_col2im();
-    //test_cifar10();
-    //train_cifar10();
-    //test_vince();
-    //test_full();
-    //tune_VOC();
-    //features_VOC_image(argv[1], argv[2], argv[3], 0);
-    //features_VOC_image(argv[1], argv[2], argv[3], 1);
-    //train_VOC();
-    //features_VOC_image(argv[1], argv[2], argv[3], 0, 4);
-    //features_VOC_image(argv[1], argv[2], argv[3], 1, 4);
-    //features_VOC_image_size(argv[1], atoi(argv[2]), atoi(argv[3]));
-    //visualize_imagenet_features("data/assira/train.list");
-    //visualize_imagenet_topk("data/VOC2012.list");
-    //visualize_cat();
-    //flip_network();
-    //test_visualize();
-    //test_parser();
+    train_imagenet();
     fprintf(stderr, "Success!\n");
-    //test_random_preprocess();
-    //test_random_classify();
-    //test_parser();
-    //test_backpropagate();
-    //test_ann();
-    //test_convolve();
-    //test_upsample();
-    //test_rotate();
-    //test_load();
-    //test_network();
-    //test_convolutional_layer();
-    //verify_convolutional_layer();
-    //test_color();
-    //cvWaitKey(0);
     return 0;
 }
