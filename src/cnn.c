@@ -499,7 +499,7 @@ void train_nist()
     int iters = 10000/net.batch;
     while(++count <= 2000){
         clock_t start = clock(), end;
-        float loss = train_network_sgd(net, train, iters);
+        float loss = train_network_sgd_gpu(net, train, iters);
         end = clock();
         float test_acc = network_accuracy(net, test);
         //float test_acc = 0;
@@ -957,8 +957,9 @@ void test_distribution()
 
 int main(int argc, char *argv[])
 {
-    //test_gpu_blas();
-    train_imagenet();
+    test_gpu_blas();
+    //train_imagenet();
+    //train_nist();
     fprintf(stderr, "Success!\n");
     return 0;
 }

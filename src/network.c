@@ -38,7 +38,7 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
     //printf("start\n");
     int i;
     for(i = 0; i < net.n; ++i){
-        clock_t time = clock();
+        //clock_t time = clock();
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             forward_convolutional_layer_gpu(layer, input);
@@ -63,7 +63,7 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
             forward_softmax_layer_gpu(layer, input);
             input = layer.output_cl;
         }
-        printf("%d %f\n", i, sec(clock()-time));
+        //printf("%d %f\n", i, sec(clock()-time));
         /*
            else if(net.types[i] == CROP){
            crop_layer layer = *(crop_layer *)net.layers[i];
@@ -386,6 +386,7 @@ float train_network_datum_gpu(network net, float *x, float *y)
 {
     int x_size = get_network_input_size(net)*net.batch;
     int y_size = get_network_output_size(net)*net.batch;
+    clock_t time = clock();
     if(!*net.input_cl){
         *net.input_cl = cl_make_array(x, x_size);
         *net.truth_cl = cl_make_array(y, y_size);
@@ -393,10 +394,18 @@ float train_network_datum_gpu(network net, float *x, float *y)
         cl_write_array(*net.input_cl, x, x_size);
         cl_write_array(*net.truth_cl, y, y_size);
     }
+    //printf("trans %f\n", sec(clock()-time));
+    time = clock();
     forward_network_gpu(net, *net.input_cl, *net.truth_cl, 1);
+    //printf("forw %f\n", sec(clock()-time));
+    time = clock();
     backward_network_gpu(net, *net.input_cl);
+    //printf("back %f\n", sec(clock()-time));
+    time = clock();
     float error = get_network_cost(net);
     update_network_gpu(net);
+    //printf("updt %f\n", sec(clock()-time));
+    time = clock();
     return error;
 }
 

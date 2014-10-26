@@ -23,11 +23,11 @@ __kernel void col2im(__global float *data_col, int batch,
 
     int w_start = (w<ksize)?0:(w-ksize)/stride + 1;
     int w_end = w/stride + 1;
-    if(width_col < w_end) w_end = width_col;
+    w_end = (width_col < w_end) ? width_col : w_end;
 
     int h_start = (h<ksize)?0:(h-ksize)/stride+1;
     int h_end = h/stride + 1;
-    if(height_col < h_end) h_end = height_col;
+    h_end = (height_col < h_end) ? height_col : h_end;
 
     int rows = channels * ksize * ksize;
     int cols = height_col*width_col;

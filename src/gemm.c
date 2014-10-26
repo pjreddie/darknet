@@ -176,12 +176,14 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         cl_mem C_gpu, int ldc)
 {
+/*
     cl_setup();
     cl_command_queue queue = cl.queue;
     cl_event event;
     cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, 0, lda,B_gpu, 0, ldb,BETA, C_gpu, 0, ldc,1, &queue, 0, NULL, &event);
 
-    //gemm_ongpu_new(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
+*/
+    gemm_ongpu_new(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
 }
 
 void gemm_ongpu_new(int TA, int TB, int M, int N, int K, float ALPHA, 

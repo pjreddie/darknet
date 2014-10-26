@@ -16,21 +16,22 @@ __kernel void im2col(__global float *data_im,  int batch,
     int c,h,w,b;
     int height_col = (height - ksize) / stride + 1;
     int width_col = (width - ksize) / stride + 1;
+    int channels_col = channels * ksize * ksize;
     if (pad){
         height_col = 1 + (height-1) / stride;
         width_col = 1 + (width-1) / stride;
         pad = ksize/2;
     }
-    int gid1 = get_global_id(0);
-    b = gid1%batch;
-    c = gid1/batch;
+    int id = get_global_id(0);
+    w = id % width_col;
+    id /= width_col;
+    h = id % height_col;
+    id /= height_col;
+    c = id % channels_col;
+    id /= channels_col;
+    b = id % batch;
+    id /= batch;
 
-    int gid2 = get_global_id(1);
-    h = gid2%height_col;
-    w = gid2/height_col;
-
-
-    int channels_col = channels * ksize * ksize;
     int col_size = height_col*width_col*channels_col;
     int w_offset = c % ksize;
     int h_offset = (c / ksize) % ksize;

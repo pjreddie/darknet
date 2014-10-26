@@ -91,12 +91,10 @@ void im2col_ongpu(cl_mem data_im,  int batch,
         width_col = 1 + (width-1) / stride;
     }
 
-    size_t global_size[2];
-    global_size[0] = batch*channels_col;
-    global_size[1] = height_col*width_col;
+    size_t global_size = batch*channels_col*height_col*width_col;
 
-    clEnqueueNDRangeKernel(queue, im2col_kernel, 2, 0,
-            global_size, 0, 0, 0, 0);
+    clEnqueueNDRangeKernel(queue, im2col_kernel, 1, 0,
+            &global_size, 0, 0, 0, 0);
     check_error(cl);
 }
 

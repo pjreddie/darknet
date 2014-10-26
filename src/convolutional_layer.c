@@ -342,7 +342,7 @@ void bias_output_gpu(const convolutional_layer layer)
     check_error(cl);
 }
 
-#define TIMEIT
+//#define TIMEIT
 
 void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in)
 {
