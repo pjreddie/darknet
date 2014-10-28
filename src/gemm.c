@@ -104,7 +104,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 
 #include "opencl.h"
 #include <math.h>
-#include <clBLAS.h>
+//#include <clBLAS.h>
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
@@ -131,7 +131,7 @@ cl_kernel get_gemm_nt_kernel()
     static int init = 0;
     static cl_kernel gemm_kernel;
     if(!init){
-        gemm_kernel = get_kernel("src/gemm_new.cl", "gemm_nt", "-D BLOCK=" STR(BLOCK) );
+        gemm_kernel = get_kernel("src/gemm.cl", "gemm_nt", "-D BLOCK=" STR(BLOCK) );
         init = 1;
     }
     return gemm_kernel;
@@ -142,7 +142,7 @@ cl_kernel get_gemm_tn_kernel()
     static int init = 0;
     static cl_kernel gemm_kernel;
     if(!init){
-        gemm_kernel = get_kernel("src/gemm_new.cl", "gemm_tn", "-D BLOCK=" STR(BLOCK) );
+        gemm_kernel = get_kernel("src/gemm.cl", "gemm_tn", "-D BLOCK=" STR(BLOCK) );
         init = 1;
     }
     return gemm_kernel;
@@ -153,22 +153,11 @@ cl_kernel get_gemm_nn_kernel()
     static int init = 0;
     static cl_kernel gemm_kernel;
     if(!init){
-        gemm_kernel = get_kernel("src/gemm_new.cl", "gemm_nn", "-D BLOCK=" STR(BLOCK) );
+        gemm_kernel = get_kernel("src/gemm.cl", "gemm_nn", "-D BLOCK=" STR(BLOCK) );
         init = 1;
     }
     return gemm_kernel;
 }
-
-void gemm_ongpu_new(int TA, int TB, int M, int N, int K, float ALPHA, 
-        cl_mem A_gpu, int lda, 
-        cl_mem B_gpu, int ldb,
-        float BETA,
-        cl_mem C_gpu, int ldc);
-void gemm_ongpu_old(int TA, int TB, int M, int N, int K, float ALPHA, 
-        cl_mem A_gpu, int lda, 
-        cl_mem B_gpu, int ldb,
-        float BETA,
-        cl_mem C_gpu, int ldc);
 
 void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         cl_mem A_gpu, int lda, 
@@ -181,16 +170,16 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
     cl_command_queue queue = cl.queue;
     cl_event event;
     cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, 0, lda,B_gpu, 0, ldb,BETA, C_gpu, 0, ldc,1, &queue, 0, NULL, &event);
+    */
 
-*/
-    gemm_ongpu_new(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
+    gemm_ongpu_offset(TA, TB, M, N, K, ALPHA, A_gpu, 0, lda, B_gpu, 0, ldb, BETA, C_gpu, 0, ldc);
 }
 
-void gemm_ongpu_new(int TA, int TB, int M, int N, int K, float ALPHA, 
-        cl_mem A_gpu, int lda, 
-        cl_mem B_gpu, int ldb,
+void gemm_ongpu_offset(int TA, int TB, int M, int N, int K, float ALPHA, 
+        cl_mem A_gpu, int a_off, int lda, 
+        cl_mem B_gpu, int b_off, int ldb,
         float BETA,
-        cl_mem C_gpu, int ldc)
+        cl_mem C_gpu, int c_off, int ldc)
 {
     //printf("gpu: %d %d %d %d %d\n",TA, TB, M, N, K);
     cl_setup();
@@ -208,11 +197,14 @@ void gemm_ongpu_new(int TA, int TB, int M, int N, int K, float ALPHA,
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(K), (void*) &K);
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ALPHA), (void*) &ALPHA);
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(A_gpu), (void*) &A_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(a_off), (void*) &a_off);
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(lda), (void*) &lda);
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(B_gpu), (void*) &B_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(b_off), (void*) &b_off);
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldb), (void*) &ldb);
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(BETA), (void*) &BETA);
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(C_gpu), (void*) &C_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(c_off), (void*) &c_off);
     cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldc), (void*) &ldc);
     check_error(cl);
 
@@ -222,41 +214,6 @@ void gemm_ongpu_new(int TA, int TB, int M, int N, int K, float ALPHA,
     clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
     check_error(cl);
 }
-
-void gemm_ongpu_old(int TA, int TB, int M, int N, int K, float ALPHA, 
-        cl_mem A_gpu, int lda, 
-        cl_mem B_gpu, int ldb,
-        float BETA,
-        cl_mem C_gpu, int ldc)
-{
-    //printf("gpu: %d %d %d %d %d\n",TA, TB, M, N, K);
-    cl_setup();
-    cl_kernel gemm_kernel = get_gemm_kernel();
-    cl_command_queue queue = cl.queue;
-
-    cl_uint i = 0;
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(TA), (void*) &TA);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(TB), (void*) &TB);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(M), (void*) &M);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(N), (void*) &N);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(K), (void*) &K);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ALPHA), (void*) &ALPHA);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(A_gpu), (void*) &A_gpu);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(lda), (void*) &lda);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(B_gpu), (void*) &B_gpu);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldb), (void*) &ldb);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(BETA), (void*) &BETA);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(C_gpu), (void*) &C_gpu);
-    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldc), (void*) &ldc);
-    check_error(cl);
-
-    const size_t global_size[] = {ceil((float)N/BLOCK)*BLOCK, ceil((float)M/BLOCK)*BLOCK};
-    const size_t local_size[] = {BLOCK, BLOCK};
-
-    clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
-    check_error(cl);
-}
-
 
 void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         float *A, int lda, 

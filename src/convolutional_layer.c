@@ -369,11 +369,9 @@ void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in)
 
     for(i = 0; i < layer.batch; ++i){
         cl_mem a = layer.filters_cl;
-        cl_mem b = cl_sub_array(layer.col_image_cl, i*k*n, k*n);
-        cl_mem c = cl_sub_array(layer.output_cl, i*m*n, m*n);
-        gemm_ongpu(0,0,m,n,k,1.,a,k,b,n,1.,c,n);
-        clReleaseMemObject(b);
-        clReleaseMemObject(c);
+        cl_mem b = layer.col_image_cl;
+        cl_mem c = layer.output_cl;
+        gemm_ongpu_offset(0,0,m,n,k,1.,a,0,k,b,i*k*n,n,1.,c,i*m*n,n);
     }
     #ifdef TIMEIT
     clFinish(cl.queue);
@@ -396,14 +394,11 @@ void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl
     learn_bias_convolutional_layer_ongpu(layer);
 
     for(i = 0; i < layer.batch; ++i){
-        cl_mem a = cl_sub_array(layer.delta_cl,i*m*k, m*k);
-        cl_mem b = cl_sub_array(layer.col_image_cl,i*k*n, k*n);
+        cl_mem a = layer.delta_cl;
+        cl_mem b = layer.col_image_cl;
         cl_mem c = layer.filter_updates_cl;
 
-        gemm_ongpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
-
-        clReleaseMemObject(a);
-        clReleaseMemObject(b);
+        gemm_ongpu_offset(0,1,m,n,k,1,a,i*m*k,k,b,i*k*n,k,1,c,0,n);
     }
     //cl_read_array(layer.delta_cl, layer.delta, m*k*layer.batch);
 
@@ -415,12 +410,10 @@ void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl
 
         for(i = 0; i < layer.batch; ++i){
             cl_mem a = layer.filters_cl;
-            cl_mem b = cl_sub_array(layer.delta_cl, i*k*n, k*n);
-            cl_mem c = cl_sub_array(layer.col_image_cl, i*m*n, m*n);
+            cl_mem b = layer.delta_cl;
+            cl_mem c = layer.col_image_cl;
 
-            gemm_ongpu(1,0,m,n,k,1,a,m,b,n,0,c,n);
-            clReleaseMemObject(b);
-            clReleaseMemObject(c);
+            gemm_ongpu_offset(1,0,m,n,k,1,a,0,m,b,i*k*n,n,0,c,i*m*n,n);
         }
 
         scal_ongpu(layer.batch*layer.h*layer.w*layer.c,0,delta_cl, 1);

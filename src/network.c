@@ -418,7 +418,25 @@ float train_network_sgd_gpu(network net, data d, int n)
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i){
-        get_batch(d, batch, X, y);
+        get_random_batch(d, batch, X, y);
+        float err = train_network_datum_gpu(net, X, y);
+        sum += err;
+    }
+    free(X);
+    free(y);
+    return (float)sum/(n*batch);
+}
+
+float train_network_data_gpu(network net, data d, int n)
+{
+    int batch = net.batch;
+    float *X = calloc(batch*d.X.cols, sizeof(float));
+    float *y = calloc(batch*d.y.cols, sizeof(float));
+
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; ++i){
+        get_next_batch(d, batch, i*batch, X, y);
         float err = train_network_datum_gpu(net, X, y);
         sum += err;
     }
@@ -449,7 +467,7 @@ float train_network_sgd(network net, data d, int n)
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i){
-        get_batch(d, batch, X, y);
+        get_random_batch(d, batch, X, y);
         float err = train_network_datum(net, X, y);
         sum += err;
     }

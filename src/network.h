@@ -42,6 +42,7 @@ void update_network_gpu(network net);
 cl_mem get_network_output_cl_layer(network net, int i);
 cl_mem get_network_delta_cl_layer(network net, int i);
 float train_network_sgd_gpu(network net, data d, int n);
+float train_network_data_gpu(network net, data d, int n);
 #endif
 
 network make_network(int n, int batch);

@@ -308,15 +308,15 @@ void train_assira()
 
 void train_imagenet()
 {
-	network net = parse_network_cfg("cfg/imagenet_backup_710.cfg");
+	network net = parse_network_cfg("/home/pjreddie/imagenet_backup/imagenet_backup_slower_larger_870.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
-    //imgs=1;
-	srand(888888);
+	srand(986987);
 	int i = 0;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
-    list *plist = get_paths("/home/pjreddie/data/imagenet/cls.cropped.list");
+    list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
+    printf("%d\n", plist->size);
     clock_t time;
 	while(1){
 		i += 1;
@@ -326,29 +326,58 @@ void train_imagenet()
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         #ifdef GPU
-		float loss = train_network_sgd_gpu(net, train, imgs);
+		float loss = train_network_data_gpu(net, train, imgs);
 		printf("%d: %f, %lf seconds, %d images\n", i, loss, sec(clock()-time), i*imgs*net.batch);
         #endif
 		free_data(train);
 		if(i%10==0){
 			char buff[256];
-			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_backup_%d.cfg", i);
+			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_backup_larger_%d.cfg", i);
 			save_network(net, buff);
 		}
 	}
 }
 
+void train_imagenet_small()
+{
+	network net = parse_network_cfg("cfg/imagenet_small.cfg");
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    int imgs=1;
+    srand(111222);
+    int i = 0;
+    char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
+    list *plist = get_paths("/data/imagenet/cls.train.list");
+    char **paths = (char **)list_to_array(plist);
+    printf("%d\n", plist->size);
+    clock_t time;
+
+    i += 1;
+    time=clock();
+    data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
+    normalize_data_rows(train);
+    printf("Loaded: %lf seconds\n", sec(clock()-time));
+    time=clock();
+#ifdef GPU
+    float loss = train_network_data_gpu(net, train, imgs);
+    printf("%d: %f, %lf seconds, %d images\n", i, loss, sec(clock()-time), i*imgs*net.batch);
+#endif
+    free_data(train);
+    char buff[256];
+    sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_backup_slower_larger_%d.cfg", i);
+    save_network(net, buff);
+}
+
 void test_imagenet()
 {
-	network net = parse_network_cfg("cfg/imagenet_test.cfg");
+    network net = parse_network_cfg("cfg/imagenet_test.cfg");
     //imgs=1;
-	srand(2222222);
-	int i = 0;
+    srand(2222222);
+    int i = 0;
     char **names = get_labels("cfg/shortnames.txt");
     clock_t time;
     char filename[256];
     int indexes[10];
-	while(1){
+    while(1){
         gets(filename);
         image im = load_image_color(filename, 256, 256);
         normalize_image(im);
@@ -357,56 +386,55 @@ void test_imagenet()
         time=clock();
         float *predictions = network_predict(net, X);
         top_predictions(net, 10, indexes);
-		printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
+        printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
         for(i = 0; i < 10; ++i){
             int index = indexes[i];
             printf("%s: %f\n", names[index], predictions[index]);
         }
-		free_image(im);
-	}
+        free_image(im);
+    }
 }
 
 void test_visualize()
 {
-	network net = parse_network_cfg("cfg/assira_backup_740000.cfg");
-	srand(2222222);
-	visualize_network(net);
-	cvWaitKey(0);
+    network net = parse_network_cfg("cfg/imagenet_test.cfg");
+    visualize_network(net);
+    cvWaitKey(0);
 }
 void test_full()
 {
-	network net = parse_network_cfg("cfg/backup_1300.cfg");
-	srand(2222222);
-	int i,j;
-	int total = 100;
-	char *labels[] = {"cat","dog"};
-	FILE *fp = fopen("preds.txt","w");
-	for(i = 0; i < total; ++i){
-		visualize_network(net);
-		cvWaitKey(100);
-		data test = load_data_image_pathfile_part("data/assira/test.list", i, total, labels, 2, 256, 256);
-		image im = float_to_image(256, 256, 3,test.X.vals[0]);
-		show_image(im, "input");
-		cvWaitKey(100);
-		normalize_data_rows(test);
-		for(j = 0; j < test.X.rows; ++j){
-			float *x = test.X.vals[j];
-			forward_network(net, x, 0, 0);
-			int class = get_predicted_class_network(net);
-			fprintf(fp, "%d\n", class);
-		}
-		free_data(test);
-	}
-	fclose(fp);
+    network net = parse_network_cfg("cfg/backup_1300.cfg");
+    srand(2222222);
+    int i,j;
+    int total = 100;
+    char *labels[] = {"cat","dog"};
+    FILE *fp = fopen("preds.txt","w");
+    for(i = 0; i < total; ++i){
+        visualize_network(net);
+        cvWaitKey(100);
+        data test = load_data_image_pathfile_part("data/assira/test.list", i, total, labels, 2, 256, 256);
+        image im = float_to_image(256, 256, 3,test.X.vals[0]);
+        show_image(im, "input");
+        cvWaitKey(100);
+        normalize_data_rows(test);
+        for(j = 0; j < test.X.rows; ++j){
+            float *x = test.X.vals[j];
+            forward_network(net, x, 0, 0);
+            int class = get_predicted_class_network(net);
+            fprintf(fp, "%d\n", class);
+        }
+        free_data(test);
+    }
+    fclose(fp);
 }
 
 void test_cifar10()
 {
     network net = parse_network_cfg("cfg/cifar10_part5.cfg");
     data test = load_cifar10_data("data/cifar10/test_batch.bin");
-        clock_t start = clock(), end;
+    clock_t start = clock(), end;
     float test_acc = network_accuracy(net, test);
-        end = clock();
+    end = clock();
     printf("%f in %f Sec\n", test_acc, (float)(end-start)/CLOCKS_PER_SEC);
     visualize_network(net);
     cvWaitKey(0);
@@ -499,7 +527,7 @@ void train_nist()
     int iters = 10000/net.batch;
     while(++count <= 2000){
         clock_t start = clock(), end;
-        float loss = train_network_sgd_gpu(net, train, iters);
+        float loss = train_network_sgd(net, train, iters);
         end = clock();
         float test_acc = network_accuracy(net, test);
         //float test_acc = 0;
@@ -954,12 +982,51 @@ void test_distribution()
     cvWaitKey(0);
 }
 
+void test_gpu_net()
+{
+    srand(222222);
+    network net = parse_network_cfg("cfg/nist.cfg");
+    data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
+    data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
+    translate_data_rows(train, -144);
+    translate_data_rows(test, -144);
+    int count = 0;
+    int iters = 10000/net.batch;
+    while(++count <= 5){
+        clock_t start = clock(), end;
+        float loss = train_network_sgd(net, train, iters);
+        end = clock();
+        float test_acc = network_accuracy(net, test);
+        printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+    }
+    count = 0;
+    srand(222222);
+    net = parse_network_cfg("cfg/nist.cfg");
+    while(++count <= 5){
+        clock_t start = clock(), end;
+        float loss = train_network_sgd_gpu(net, train, iters);
+        end = clock();
+        float test_acc = network_accuracy(net, test);
+        printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
+    }
+}
+
 
 int main(int argc, char *argv[])
 {
-    test_gpu_blas();
-    //train_imagenet();
+    if(argc != 2){
+        fprintf(stderr, "usage: %s <function>\n", argv[0]);
+        return 0;
+    }
+    if(0==strcmp(argv[1], "train")) train_imagenet();
+    else if(0==strcmp(argv[1], "train_small")) train_imagenet_small();
+    else if(0==strcmp(argv[1], "test_gpu")) test_gpu_blas();
+    else if(0==strcmp(argv[1], "test")) test_gpu_net();
+    //test_gpu_blas();
+    //train_imagenet_small();
+    //test_imagenet();
     //train_nist();
+    //test_visualize();
     fprintf(stderr, "Success!\n");
     return 0;
 }

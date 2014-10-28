@@ -172,7 +172,7 @@ data load_cifar10_data(char *filename)
     return d;
 }
 
-void get_batch(data d, int n, float *X, float *y)
+void get_random_batch(data d, int n, float *X, float *y)
 {
     int j;
     for(j = 0; j < n; ++j){
@@ -181,6 +181,17 @@ void get_batch(data d, int n, float *X, float *y)
         memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
     }
 }
+
+void get_next_batch(data d, int n, int offset, float *X, float *y)
+{
+    int j;
+    for(j = 0; j < n; ++j){
+        int index = offset + j;
+        memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
+        memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
+    }
+}
+
 
 data load_all_cifar10()
 {

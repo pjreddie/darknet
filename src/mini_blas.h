@@ -28,6 +28,12 @@ void im2col_gpu(float *data_im, int batch,
          int channels, int height, int width,
          int ksize, int stride, int pad, float *data_col);
 
+void gemm_ongpu_offset(int TA, int TB, int M, int N, int K, float ALPHA, 
+        cl_mem A_gpu, int a_off, int lda, 
+        cl_mem B_gpu, int b_off, int ldb,
+        float BETA,
+        cl_mem C_gpu, int c_off, int ldc);
+
 void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         cl_mem A_gpu, int lda, 
         cl_mem B_gpu, int ldb,

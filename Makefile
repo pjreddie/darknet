@@ -1,6 +1,6 @@
 CC=gcc
 GPU=1
-COMMON=-Wall -Wfatal-errors `pkg-config --cflags opencv` -I/usr/local/cuda/include/ -I/usr/local/clblas/include/
+COMMON=-Wall -Wfatal-errors `pkg-config --cflags opencv` -I/usr/local/cuda/include/
 ifeq ($(GPU), 1) 
 COMMON+=-DGPU
 else
@@ -15,7 +15,7 @@ endif
 else
 OPTS+= -march=native
 ifeq ($(GPU), 1)
-LDFLAGS= -lOpenCL -lclBLAS
+LDFLAGS= -lOpenCL
 endif
 endif
 CFLAGS= $(COMMON) $(OPTS)

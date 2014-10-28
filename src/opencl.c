@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <clBLAS.h>
+//#include <clBLAS.h>
 
 #include "opencl.h"
 #include "utils.h"
@@ -99,7 +99,7 @@ cl_info cl_init()
         info.queues[i] = clCreateCommandQueue(info.context, info.device, 0, &info.error);
         check_error(info);
     }
-    info.error = clblasSetup();
+    //info.error = clblasSetup();
     check_error(info);
     info.initialized = 1;
     return info;
@@ -141,6 +141,7 @@ cl_program cl_fprog(char *filename, char *options, cl_info info)
 void cl_setup()
 {
 	if(!cl.initialized){
+        printf("initializing\n");
 		cl = cl_init();
 	}
 }

@@ -71,7 +71,7 @@ void strip_char(char *s, char bad)
 char *fgetl(FILE *fp)
 {
     if(feof(fp)) return 0;
-    int size = 512;
+    unsigned long size = 512;
     char *line = malloc(size*sizeof(char));
     if(!fgets(line, size, fp)){
         free(line);
@@ -83,7 +83,10 @@ char *fgetl(FILE *fp)
     while(line[curr-1]!='\n'){
         size *= 2;
         line = realloc(line, size*sizeof(char));
-        if(!line) malloc_error();
+        if(!line) {
+            printf("%ld\n", size);
+            malloc_error();
+        }
         fgets(&line[curr], size-curr, fp);
         curr = strlen(line);
     }
