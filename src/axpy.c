@@ -65,6 +65,11 @@ cl_kernel get_scal_kernel()
 
 void axpy_ongpu(int N, float ALPHA, cl_mem X, int INCX, cl_mem Y, int INCY)
 {
+    axpy_ongpu_offset(N,ALPHA,X,0,INCX,Y,0,INCY);
+}
+
+void axpy_ongpu_offset(int N, float ALPHA, cl_mem X, int OFFX, int INCX, cl_mem Y, int OFFY, int INCY)
+{
     cl_setup();
     cl_kernel kernel = get_axpy_kernel();
     cl_command_queue queue = cl.queue;
@@ -73,8 +78,10 @@ void axpy_ongpu(int N, float ALPHA, cl_mem X, int INCX, cl_mem Y, int INCY)
     cl.error = clSetKernelArg(kernel, i++, sizeof(N), (void*) &N);
     cl.error = clSetKernelArg(kernel, i++, sizeof(ALPHA), (void*) &ALPHA);
     cl.error = clSetKernelArg(kernel, i++, sizeof(X), (void*) &X);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(OFFX), (void*) &OFFX);
     cl.error = clSetKernelArg(kernel, i++, sizeof(INCX), (void*) &INCX);
     cl.error = clSetKernelArg(kernel, i++, sizeof(Y), (void*) &Y);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(OFFY), (void*) &OFFY);
     cl.error = clSetKernelArg(kernel, i++, sizeof(INCY), (void*) &INCY);
     check_error(cl);
 
@@ -86,6 +93,10 @@ void axpy_ongpu(int N, float ALPHA, cl_mem X, int INCX, cl_mem Y, int INCY)
 }
 void copy_ongpu(int N, cl_mem X, int INCX, cl_mem Y, int INCY)
 {
+    copy_ongpu_offset(N,X,0,INCX,Y,0,INCY);
+}
+void copy_ongpu_offset(int N, cl_mem X, int OFFX, int INCX, cl_mem Y, int OFFY, int INCY)
+{
     cl_setup();
     cl_kernel kernel = get_copy_kernel();
     cl_command_queue queue = cl.queue;
@@ -93,8 +104,10 @@ void copy_ongpu(int N, cl_mem X, int INCX, cl_mem Y, int INCY)
     cl_uint i = 0;
     cl.error = clSetKernelArg(kernel, i++, sizeof(N), (void*) &N);
     cl.error = clSetKernelArg(kernel, i++, sizeof(X), (void*) &X);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(OFFX), (void*) &OFFX);
     cl.error = clSetKernelArg(kernel, i++, sizeof(INCX), (void*) &INCX);
     cl.error = clSetKernelArg(kernel, i++, sizeof(Y), (void*) &Y);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(OFFY), (void*) &OFFY);
     cl.error = clSetKernelArg(kernel, i++, sizeof(INCY), (void*) &INCY);
     check_error(cl);
 

@@ -1,7 +1,7 @@
-__kernel void axpy(int N, float ALPHA, __global float *X, int INCX, __global float *Y, int INCY)
+__kernel void axpy(int N, float ALPHA, __global float *X, int OFFX, int INCX, __global float *Y, int OFFY, int INCY)
 {
     int i = get_global_id(0);
-    Y[i*INCY] += ALPHA*X[i*INCX];
+    Y[OFFY+i*INCY] += ALPHA*X[OFFX+i*INCX];
 }
 
 __kernel void scal(int N, float ALPHA, __global float *X, int INCX)
@@ -10,9 +10,9 @@ __kernel void scal(int N, float ALPHA, __global float *X, int INCX)
     X[i*INCX] *= ALPHA;
 }
 
-__kernel void copy(int N, __global float *X, int INCX, __global float *Y, int INCY)
+__kernel void copy(int N, __global float *X, int OFFX, int INCX, __global float *Y, int OFFY, int INCY)
 {
     int i = get_global_id(0);
-    Y[i*INCY] = X[i*INCX];
+    Y[i*INCY + OFFY] = X[i*INCX + OFFX];
 }
 

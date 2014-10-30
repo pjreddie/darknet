@@ -308,10 +308,10 @@ void train_assira()
 
 void train_imagenet()
 {
-	network net = parse_network_cfg("/home/pjreddie/imagenet_backup/imagenet_backup_slower_larger_870.cfg");
+	network net = parse_network_cfg("cfg/imagenet_backup_slowest_2340.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
-	srand(986987);
+	srand(6472345);
 	int i = 0;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
@@ -332,7 +332,7 @@ void train_imagenet()
 		free_data(train);
 		if(i%10==0){
 			char buff[256];
-			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_backup_larger_%d.cfg", i);
+			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_small_%d.cfg", i);
 			save_network(net, buff);
 		}
 	}
@@ -397,7 +397,7 @@ void test_imagenet()
 
 void test_visualize()
 {
-    network net = parse_network_cfg("cfg/imagenet_test.cfg");
+    network net = parse_network_cfg("cfg/imagenet.cfg");
     visualize_network(net);
     cvWaitKey(0);
 }
@@ -991,7 +991,7 @@ void test_gpu_net()
     translate_data_rows(train, -144);
     translate_data_rows(test, -144);
     int count = 0;
-    int iters = 10000/net.batch;
+    int iters = 1000/net.batch;
     while(++count <= 5){
         clock_t start = clock(), end;
         float loss = train_network_sgd(net, train, iters);
@@ -999,6 +999,7 @@ void test_gpu_net()
         float test_acc = network_accuracy(net, test);
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
     }
+    #ifdef GPU
     count = 0;
     srand(222222);
     net = parse_network_cfg("cfg/nist.cfg");
@@ -1009,6 +1010,7 @@ void test_gpu_net()
         float test_acc = network_accuracy(net, test);
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
     }
+    #endif
 }
 
 
@@ -1020,13 +1022,12 @@ int main(int argc, char *argv[])
     }
     if(0==strcmp(argv[1], "train")) train_imagenet();
     else if(0==strcmp(argv[1], "train_small")) train_imagenet_small();
+    else if(0==strcmp(argv[1], "test_correct")) test_gpu_net();
+    else if(0==strcmp(argv[1], "test")) test_imagenet();
+    else if(0==strcmp(argv[1], "visualize")) test_visualize();
+    #ifdef GPU
     else if(0==strcmp(argv[1], "test_gpu")) test_gpu_blas();
-    else if(0==strcmp(argv[1], "test")) test_gpu_net();
-    //test_gpu_blas();
-    //train_imagenet_small();
-    //test_imagenet();
-    //train_nist();
-    //test_visualize();
+    #endif
     fprintf(stderr, "Success!\n");
     return 0;
 }

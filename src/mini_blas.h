@@ -11,7 +11,9 @@ void time_random_matrix(int TA, int TB, int m, int k, int n);
 
 #ifdef GPU
 void axpy_ongpu(int N, float ALPHA, cl_mem X, int INCX, cl_mem Y, int INCY);
+void axpy_ongpu_offset(int N, float ALPHA, cl_mem X, int OFFX, int INCX, cl_mem Y, int OFFY, int INCY);
 void copy_ongpu(int N, cl_mem X, int INCX, cl_mem Y, int INCY);
+void copy_ongpu_offset(int N, cl_mem X, int OFFX, int INCX, cl_mem Y, int OFFY, int INCY);
 void scal_ongpu(int N, float ALPHA, cl_mem X, int INCX);
 void im2col_ongpu(cl_mem data_im, int batch,
          int channels, int height, int width,

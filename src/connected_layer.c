@@ -135,9 +135,7 @@ void forward_connected_layer_gpu(connected_layer layer, cl_mem input)
 {
     int i;
     for(i = 0; i < layer.batch; ++i){
-        cl_mem sub = cl_sub_array(layer.output_cl, i*layer.outputs, layer.outputs);
-        copy_ongpu(layer.outputs, layer.biases_cl, 1, sub, 1);
-        clReleaseMemObject(sub);
+        copy_ongpu_offset(layer.outputs, layer.biases_cl, 0, 1, layer.output_cl, i*layer.outputs, 1);
     }
     int m = layer.batch;
     int k = layer.inputs;
@@ -154,9 +152,7 @@ void backward_connected_layer_gpu(connected_layer layer, cl_mem input, cl_mem de
     int i;
     gradient_array_ongpu(layer.output_cl, layer.outputs*layer.batch, layer.activation, layer.delta_cl);
     for(i = 0; i < layer.batch; ++i){
-        cl_mem sub = cl_sub_array(layer.delta_cl, i*layer.outputs, layer.outputs);
-        axpy_ongpu(layer.outputs, 1, sub, 1, layer.bias_updates_cl, 1);
-        clReleaseMemObject(sub);
+        axpy_ongpu_offset(layer.outputs, 1, layer.delta_cl, i*layer.outputs, 1, layer.bias_updates_cl, 0, 1);
     }
     int m = layer.inputs;
     int k = layer.batch;

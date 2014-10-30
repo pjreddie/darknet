@@ -738,7 +738,7 @@ image collapse_images_horz(image *ims, int n)
 void show_images(image *ims, int n, char *window)
 {
     image m = collapse_images_vert(ims, n);
-    //save_image(m, window);
+    save_image(m, window);
     show_image(m, window);
     free_image(m);
 }
