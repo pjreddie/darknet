@@ -28,7 +28,7 @@ __kernel void im2col_pad(__global float *im,  int batch,
     int im_row = h_offset + h * stride - pad;
     int im_col = w_offset + w * stride - pad;
 
-    int im_index = im_col + width*(im_row + height*(im_channel+batch*channels));
+    int im_index = im_col + width*(im_row + height*(im_channel+b*channels));
     float val = (im_row < 0 || im_col < 0 || im_row >= height || im_col >= width) ? 0 : im[im_index];
 
     data_col[col_index] = val;
@@ -61,7 +61,7 @@ __kernel void im2col_nopad(__global float *im,  int batch,
     int im_row = h_offset + h * stride;
     int im_col = w_offset + w * stride;
 
-    int im_index = im_col + width*(im_row + height*(im_channel+batch*channels));
+    int im_index = im_col + width*(im_row + height*(im_channel+b*channels));
     float val = (im_row < 0 || im_col < 0 || im_row >= height || im_col >= width) ? 0 : im[im_index];
 
     data_col[col_index] = val;
