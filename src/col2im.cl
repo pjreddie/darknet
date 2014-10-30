@@ -21,13 +21,15 @@ __kernel void col2im(__global float *data_col, int batch,
     id /= channels;
     int b = id%batch;
 
-    int w_start = (w<ksize)?0:(w-ksize)/stride + 1;
+    //int w_start = (w<ksize)?0:(w-ksize)/stride + 1;
+    int w_start = (w-ksize+stride)/stride;
     int w_end = w/stride + 1;
-    w_end = (width_col < w_end) ? width_col : w_end;
+    //w_end = (width_col < w_end) ? width_col : w_end;
 
-    int h_start = (h<ksize)?0:(h-ksize)/stride+1;
+    int h_start = (h-ksize+stride)/stride;
+    //int h_start = (h-ksize)/stride+1;
     int h_end = h/stride + 1;
-    h_end = (height_col < h_end) ? height_col : h_end;
+    //h_end = (height_col < h_end) ? height_col : h_end;
 
     int rows = channels * ksize * ksize;
     int cols = height_col*width_col;
@@ -39,7 +41,9 @@ __kernel void col2im(__global float *data_col, int batch,
     int h_col, w_col;
     for(h_col = h_start; h_col < h_end; ++h_col){
         for(w_col = w_start; w_col < w_end; ++w_col){
-            val += data_col[offset +h_col*h_coeff + w_col*w_coeff];
+            int col_index = offset +h_col*h_coeff + w_col*w_coeff;
+            float part = (w_col < 0 || h_col < 0 || h_col >= height_col || w_col >= width_col) ? 0 : data_col[col_index];
+            val += part;
         }
     }
     data_im[index] = val;

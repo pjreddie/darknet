@@ -308,7 +308,7 @@ void train_assira()
 
 void train_imagenet()
 {
-	network net = parse_network_cfg("cfg/imagenet_backup_slowest_2340.cfg");
+	network net = parse_network_cfg("cfg/imagenet_small_830.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
 	srand(6472345);
@@ -1016,6 +1016,17 @@ void test_gpu_net()
 
 int main(int argc, char *argv[])
 {
+    int i;
+    int ksize = 3;
+    int stride = 4;
+    int width_col = 20;
+    for(i = 0; i < 10; ++i){
+        int start = (i<ksize)?0:(i-ksize)/stride + 1;
+        int start2 = (i-ksize+stride)/stride;
+        int end = i/stride + 1;
+        end = (width_col < end) ? width_col : end;
+        printf("%d: %d vs %d, %d\n", i, start,start2, end);
+    }
     if(argc != 2){
         fprintf(stderr, "usage: %s <function>\n", argv[0]);
         return 0;

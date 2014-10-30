@@ -1,10 +1,10 @@
 
 __kernel void bias(int n, int size, __global float *biases, __global float *output)
 {
-    int batch = get_global_id(0);
-    int id = get_global_id(1);
+    int id = get_global_id(0);
+    int batch = get_global_id(1);
     int filter = id/size;
-    int position = id%size;
+    //int position = id%size;
 
     output[batch*n*size + id] = biases[filter];
 }

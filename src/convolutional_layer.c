@@ -336,7 +336,7 @@ void bias_output_gpu(const convolutional_layer layer)
     cl.error = clSetKernelArg(kernel, i++, sizeof(layer.output_cl), (void*) &layer.output_cl);
     check_error(cl);
 
-    const size_t global_size[] = {layer.batch, layer.n*size};
+    const size_t global_size[] = {layer.n*size, layer.batch};
 
     clEnqueueNDRangeKernel(queue, kernel, 2, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
