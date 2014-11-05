@@ -20,6 +20,7 @@ void forward_softmax_layer(const softmax_layer layer, float *input);
 void backward_softmax_layer(const softmax_layer layer, float *delta);
 
 #ifdef GPU
+void pull_softmax_layer_output(const softmax_layer layer);
 void forward_softmax_layer_gpu(const softmax_layer layer, cl_mem input);
 void backward_softmax_layer_gpu(const softmax_layer layer, cl_mem delta);
 #endif

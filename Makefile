@@ -1,10 +1,17 @@
-CC=gcc
 GPU=1
+CLBLAS=0
+
+CC=gcc
 COMMON=-Wall -Wfatal-errors `pkg-config --cflags opencv` -I/usr/local/cuda/include/
 ifeq ($(GPU), 1) 
 COMMON+=-DGPU
-else
 endif
+
+ifeq ($(CLBLAS), 1) 
+COMMON+=-DCLBLAS
+LDFLAGS=-lclBLAS
+endif
+
 UNAME = $(shell uname)
 OPTS=-Ofast -flto
 ifeq ($(UNAME), Darwin)
@@ -15,7 +22,7 @@ endif
 else
 OPTS+= -march=native
 ifeq ($(GPU), 1)
-LDFLAGS= -lOpenCL
+LDFLAGS+= -lOpenCL
 endif
 endif
 CFLAGS= $(COMMON) $(OPTS)
@@ -25,7 +32,7 @@ VPATH=./src/
 EXEC=cnn
 OBJDIR=./obj/
 
-OBJ=network.o image.o cnn.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o mini_blas.o convolutional_layer.o gemm.o normalization_layer.o opencl.o im2col.o col2im.o axpy.o dropout_layer.o crop_layer.o freeweight_layer.o cost_layer.o
+OBJ=network.o network_gpu.o image.o cnn.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o mini_blas.o convolutional_layer.o gemm.o normalization_layer.o opencl.o im2col.o col2im.o axpy.o dropout_layer.o crop_layer.o freeweight_layer.o cost_layer.o
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 
 all: $(EXEC)

@@ -28,7 +28,7 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     //layer->weight_adapt = calloc(inputs*outputs, sizeof(float));
     layer->weights = calloc(inputs*outputs, sizeof(float));
     float scale = 1./inputs;
-    scale = .05;
+    scale = .01;
     for(i = 0; i < inputs*outputs; ++i)
         layer->weights[i] = scale*2*(rand_uniform()-.5);
 

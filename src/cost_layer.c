@@ -35,6 +35,8 @@ void backward_cost_layer(const cost_layer layer, float *input, float *delta)
 void forward_cost_layer_gpu(cost_layer layer, cl_mem input, cl_mem truth)
 {
     if (!truth) return;
+
+
     copy_ongpu(layer.batch*layer.inputs, truth, 1, layer.delta_cl, 1);
     axpy_ongpu(layer.batch*layer.inputs, -1, input, 1, layer.delta_cl, 1);
     cl_read_array(layer.delta_cl, layer.delta, layer.batch*layer.inputs);

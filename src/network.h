@@ -43,6 +43,8 @@ cl_mem get_network_output_cl_layer(network net, int i);
 cl_mem get_network_delta_cl_layer(network net, int i);
 float train_network_sgd_gpu(network net, data d, int n);
 float train_network_data_gpu(network net, data d, int n);
+float *network_predict_gpu(network net, float *input);
+float network_accuracy_gpu(network net, data d);
 #endif
 
 network make_network(int n, int batch);
@@ -51,6 +53,7 @@ void backward_network(network net, float *input);
 void update_network(network net);
 float train_network_sgd(network net, data d, int n);
 float train_network_batch(network net, data d, int n);
+float train_network_data_cpu(network net, data d, int n);
 void train_network(network net, data d);
 matrix network_predict_data(network net, data test);
 float *network_predict(network net, float *input);

@@ -4,7 +4,10 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-//#include <clBLAS.h>
+
+#ifdef CLBLAS
+#include <clBLAS.h>
+#endif
 
 #include "opencl.h"
 #include "utils.h"
@@ -81,7 +84,7 @@ cl_info cl_init()
 
     }
     int index = getpid()%num_devices;
-    index = 1;
+    index = 0;
     printf("%d rand, %d devices, %d index\n", getpid(), num_devices, index);
     info.device = devices[index];
     fprintf(stderr, "Found %d device(s)\n", num_devices);
@@ -95,22 +98,12 @@ cl_info cl_init()
     check_error(info);
     info.queue = clCreateCommandQueue(info.context, info.device, 0, &info.error);
     check_error(info);
-    for(i = 0; i < NUM_QUEUES; ++i){
-        info.queues[i] = clCreateCommandQueue(info.context, info.device, 0, &info.error);
-        check_error(info);
-    }
-    //info.error = clblasSetup();
+    #ifdef CLBLAS
+    info.error = clblasSetup();
+    #endif
     check_error(info);
     info.initialized = 1;
     return info;
-}
-
-void wait_for_queues()
-{
-    int i;
-    for(i = 0; i < NUM_QUEUES; ++i){
-        clFinish(cl.queues[i]);
-    }
 }
 
 cl_program cl_fprog(char *filename, char *options, cl_info info)

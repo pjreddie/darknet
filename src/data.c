@@ -83,6 +83,7 @@ void free_data(data d)
 
 data load_data_image_pathfile_part(char *filename, int part, int total, char **labels, int k, int h, int w)
 {
+    clock_t time = clock();
     list *plist = get_paths(filename);
     char **paths = (char **)list_to_array(plist);
     int start = part*plist->size/total;

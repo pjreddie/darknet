@@ -50,6 +50,12 @@ void backward_softmax_layer(const softmax_layer layer, float *delta)
 }
 
 #ifdef GPU
+
+void pull_softmax_layer_output(const softmax_layer layer)
+{
+    cl_read_array(layer.output_cl, layer.output, layer.inputs*layer.batch);
+}
+
 cl_kernel get_softmax_forward_kernel()
 {
     static int init = 0;
@@ -77,6 +83,12 @@ void forward_softmax_layer_gpu(const softmax_layer layer, cl_mem input)
 
     clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
+
+/*
+    cl_read_array(layer.output_cl, layer.output, layer.inputs*layer.batch);
+    int z;
+    for(z = 0; z < layer.inputs*layer.batch; ++z) printf("%f,",layer.output[z]);
+    */
 }
 
 void backward_softmax_layer_gpu(const softmax_layer layer, cl_mem delta)

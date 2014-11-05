@@ -104,7 +104,10 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 
 #include "opencl.h"
 #include <math.h>
-//#include <clBLAS.h>
+
+#ifdef CLBLAS
+#include <clBLAS.h>
+#endif
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
@@ -165,13 +168,6 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         cl_mem C_gpu, int ldc)
 {
-/*
-    cl_setup();
-    cl_command_queue queue = cl.queue;
-    cl_event event;
-    cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, 0, lda,B_gpu, 0, ldb,BETA, C_gpu, 0, ldc,1, &queue, 0, NULL, &event);
-    */
-
     gemm_ongpu_offset(TA, TB, M, N, K, ALPHA, A_gpu, 0, lda, B_gpu, 0, ldb, BETA, C_gpu, 0, ldc);
 }
 
@@ -181,6 +177,13 @@ void gemm_ongpu_offset(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         cl_mem C_gpu, int c_off, int ldc)
 {
+#ifdef CLBLAS
+    cl_setup();
+    cl_command_queue queue = cl.queue;
+    cl_event event;
+    cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, a_off, lda,B_gpu, b_off, ldb,BETA, C_gpu, c_off, ldc,1, &queue, 0, NULL, &event);
+    check_error(cl);
+#else
     //printf("gpu: %d %d %d %d %d\n",TA, TB, M, N, K);
     cl_setup();
     cl_kernel      gemm_kernel = get_gemm_kernel();
@@ -213,6 +216,7 @@ void gemm_ongpu_offset(int TA, int TB, int M, int N, int K, float ALPHA,
 
     clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
     check_error(cl);
+    #endif
 }
 
 void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA, 
@@ -284,7 +288,7 @@ void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
 
 void time_ongpu(int TA, int TB, int m, int k, int n)
 {
-    int iter = 128;
+    int iter = 10;
     float *a = random_matrix(m,k);
     float *b = random_matrix(k,n);
 
@@ -302,7 +306,7 @@ void time_ongpu(int TA, int TB, int m, int k, int n)
     for(i = 0; i<iter; ++i){
         gemm_ongpu(TA,TB,m,n,k,1,a_cl,lda,b_cl,ldb,1,c_cl,n);
     }
-    double flop = m*n*(2.*k+3.)*iter;
+    double flop = m*n*k*iter;
     double gflop = flop/pow(10., 9);
     end = clock();
     double seconds = sec(end-start);
@@ -352,32 +356,43 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
 void test_gpu_blas()
 {
     /*
-    test_gpu_accuracy(0,0,10,576,75); 
+       test_gpu_accuracy(0,0,10,576,75); 
 
-    test_gpu_accuracy(0,0,17,10,10); 
-    test_gpu_accuracy(1,0,17,10,10); 
-    test_gpu_accuracy(0,1,17,10,10); 
-    test_gpu_accuracy(1,1,17,10,10); 
+       test_gpu_accuracy(0,0,17,10,10); 
+       test_gpu_accuracy(1,0,17,10,10); 
+       test_gpu_accuracy(0,1,17,10,10); 
+       test_gpu_accuracy(1,1,17,10,10); 
 
-    test_gpu_accuracy(0,0,1000,10,100); 
-    test_gpu_accuracy(1,0,1000,10,100); 
-    test_gpu_accuracy(0,1,1000,10,100); 
-    test_gpu_accuracy(1,1,1000,10,100); 
-    */
+       test_gpu_accuracy(0,0,1000,10,100); 
+       test_gpu_accuracy(1,0,1000,10,100); 
+       test_gpu_accuracy(0,1,1000,10,100); 
+       test_gpu_accuracy(1,1,1000,10,100); 
+     */
+    time_ongpu(0,0,128,1200,4096); 
+    time_ongpu(0,0,128,1200,4096); 
+    time_ongpu(0,0,128,1200,4096); 
+
+    time_ongpu(0,1,128,1200,4096); 
+    time_ongpu(1,0,1200,4096,128); 
+    time_ongpu(1,0,4096,1200,128); 
+    time_ongpu(1,0,1200,128,4096); 
+
     test_gpu_accuracy(0,0,131,4093,1199); 
     test_gpu_accuracy(0,1,131,4093,1199); 
     test_gpu_accuracy(1,0,131,4093,1199); 
     test_gpu_accuracy(1,1,131,4093,1199); 
+    /*
 
-    time_ongpu(0,0,1024,1024,1024); 
-    time_ongpu(0,1,1024,1024,1024); 
-    time_ongpu(1,0,1024,1024,1024); 
-    time_ongpu(1,1,1024,1024,1024); 
+       time_ongpu(0,0,1024,1024,1024); 
+       time_ongpu(0,1,1024,1024,1024); 
+       time_ongpu(1,0,1024,1024,1024); 
+       time_ongpu(1,1,1024,1024,1024); 
 
-    time_ongpu(0,0,128,4096,1200); 
-    time_ongpu(0,1,128,4096,1200); 
-    time_ongpu(1,0,128,4096,1200); 
-    time_ongpu(1,1,128,4096,1200); 
+       time_ongpu(0,0,128,4096,1200); 
+       time_ongpu(0,1,128,4096,1200); 
+       time_ongpu(1,0,128,4096,1200); 
+       time_ongpu(1,1,128,4096,1200); 
+     */
 
     /*
        time_gpu_random_matrix(0,0,1000,1000,100); 

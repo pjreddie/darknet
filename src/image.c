@@ -423,7 +423,7 @@ image load_image_color(char *filename, int h, int w)
         exit(0);
     }
     if(h && w && (src->height != h || src->width != w)){
-        printf("Resized!\n");
+        //printf("Resized!\n");
         IplImage *resized = resizeImage(src, h, w, 1);
         cvReleaseImage(&src);
         src = resized;

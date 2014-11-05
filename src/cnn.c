@@ -278,9 +278,9 @@ void test_data()
 	free_data(train);
 }
 
-void train_assira()
+void train_asirra()
 {
-	network net = parse_network_cfg("cfg/assira.cfg");
+	network net = parse_network_cfg("cfg/imagenet.cfg");
     int imgs = 1000/net.batch+1;
     //imgs = 1;
 	srand(2222222);
@@ -288,18 +288,18 @@ void train_assira()
 	char *labels[] = {"cat","dog"};
     clock_t time;
 	while(1){
-		i += 1000;
+		i += 1;
         time=clock();
 		data train = load_data_image_pathfile_random("data/assira/train.list", imgs*net.batch, labels, 2, 256, 256);
 		normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
-		float loss = train_network_sgd(net, train, imgs);
-		printf("%d: %f, Time: %lf seconds\n", i, loss, sec(clock()-time));
+		float loss = train_network_data_gpu(net, train, imgs);
+		printf("%d: %f, Time: %lf seconds\n", i*net.batch*imgs, loss, sec(clock()-time));
 		free_data(train);
-		if(i%10000==0){
+		if(i%10==0){
 			char buff[256];
-			sprintf(buff, "cfg/assira_backup_%d.cfg", i);
+			sprintf(buff, "cfg/asirra_backup_%d.cfg", i);
 			save_network(net, buff);
 		}
 		//lr *= .99;
@@ -308,10 +308,11 @@ void train_assira()
 
 void train_imagenet()
 {
-	network net = parse_network_cfg("cfg/imagenet_small_830.cfg");
+    float avg_loss = 1;
+	network net = parse_network_cfg("/home/pjreddie/imagenet_backup/imagenet_nin_2680.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
-	srand(6472345);
+	srand(time(0));
 	int i = 0;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
@@ -322,19 +323,48 @@ void train_imagenet()
 		i += 1;
         time=clock();
 		data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
-		normalize_data_rows(train);
+        //translate_data_rows(train, -144);
+        normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         #ifdef GPU
 		float loss = train_network_data_gpu(net, train, imgs);
-		printf("%d: %f, %lf seconds, %d images\n", i, loss, sec(clock()-time), i*imgs*net.batch);
+        avg_loss = avg_loss*.9 + loss*.1;
+		printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs*net.batch);
         #endif
 		free_data(train);
 		if(i%10==0){
 			char buff[256];
-			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_small_%d.cfg", i);
+			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_nin_%d.cfg", i);
 			save_network(net, buff);
 		}
+	}
+}
+
+void validate_imagenet(char *filename)
+{
+    int i;
+	network net = parse_network_cfg(filename);
+	srand(time(0));
+
+    char **labels = get_labels("/home/pjreddie/data/imagenet/cls.val.labels.list");
+    char *path = "/home/pjreddie/data/imagenet/cls.val.list";
+
+    clock_t time;
+    float avg_acc = 0;
+    int splits = 50;
+    for(i = 0; i < splits; ++i){
+        time=clock();
+        data val = load_data_image_pathfile_part(path, i, splits, labels, 1000, 256, 256);
+        normalize_data_rows(val);
+        printf("Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
+        time=clock();
+        #ifdef GPU
+		float acc = network_accuracy_gpu(net, val);
+        avg_acc += acc;
+		printf("%d: %f, %f avg, %lf seconds, %d images\n", i, acc, avg_acc/(i+1), sec(clock()-time), val.X.rows);
+        #endif
+		free_data(val);
 	}
 }
 
@@ -369,7 +399,7 @@ void train_imagenet_small()
 
 void test_imagenet()
 {
-    network net = parse_network_cfg("cfg/imagenet_test.cfg");
+	network net = parse_network_cfg("cfg/imagenet_test.cfg");
     //imgs=1;
     srand(2222222);
     int i = 0;
@@ -380,7 +410,7 @@ void test_imagenet()
     while(1){
         gets(filename);
         image im = load_image_color(filename, 256, 256);
-        normalize_image(im);
+        z_normalize_image(im);
         printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();
@@ -395,9 +425,9 @@ void test_imagenet()
     }
 }
 
-void test_visualize()
+void test_visualize(char *filename)
 {
-    network net = parse_network_cfg("cfg/imagenet.cfg");
+    network net = parse_network_cfg(filename);
     visualize_network(net);
     cvWaitKey(0);
 }
@@ -1016,26 +1046,17 @@ void test_gpu_net()
 
 int main(int argc, char *argv[])
 {
-    int i;
-    int ksize = 3;
-    int stride = 4;
-    int width_col = 20;
-    for(i = 0; i < 10; ++i){
-        int start = (i<ksize)?0:(i-ksize)/stride + 1;
-        int start2 = (i-ksize+stride)/stride;
-        int end = i/stride + 1;
-        end = (width_col < end) ? width_col : end;
-        printf("%d: %d vs %d, %d\n", i, start,start2, end);
-    }
-    if(argc != 2){
+    if(argc < 2){
         fprintf(stderr, "usage: %s <function>\n", argv[0]);
         return 0;
     }
     if(0==strcmp(argv[1], "train")) train_imagenet();
+    else if(0==strcmp(argv[1], "asirra")) train_asirra();
     else if(0==strcmp(argv[1], "train_small")) train_imagenet_small();
     else if(0==strcmp(argv[1], "test_correct")) test_gpu_net();
     else if(0==strcmp(argv[1], "test")) test_imagenet();
-    else if(0==strcmp(argv[1], "visualize")) test_visualize();
+    else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
+    else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2]);
     #ifdef GPU
     else if(0==strcmp(argv[1], "test_gpu")) test_gpu_blas();
     #endif
