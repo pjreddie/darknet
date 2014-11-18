@@ -265,10 +265,8 @@ void test_rotate()
 
 void test_parser()
 {
-	network net = parse_network_cfg("cfg/test_parser.cfg");
-    save_network(net, "cfg/test_parser_1.cfg");
-	network net2 = parse_network_cfg("cfg/test_parser_1.cfg");
-    save_network(net2, "cfg/test_parser_2.cfg");
+	network net = parse_network_cfg("cfg/trained_imagenet.cfg");
+    save_network(net, "cfg/trained_imagenet_smaller.cfg");
 }
 
 void test_data()
@@ -294,7 +292,8 @@ void train_asirra()
 		normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
-		float loss = train_network_data_gpu(net, train, imgs);
+		//float loss = train_network_data(net, train, imgs);
+        float loss = 0;
 		printf("%d: %f, Time: %lf seconds\n", i*net.batch*imgs, loss, sec(clock()-time));
 		free_data(train);
 		if(i%10==0){
@@ -309,7 +308,8 @@ void train_asirra()
 void train_imagenet()
 {
     float avg_loss = 1;
-	network net = parse_network_cfg("/home/pjreddie/imagenet_backup/imagenet_nin_2680.cfg");
+	network net = parse_network_cfg("/home/pjreddie/imagenet_backup/imagenet_2280.cfg");
+	//network net = parse_network_cfg("cfg/imagenet2.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
 	srand(time(0));
@@ -335,7 +335,7 @@ void train_imagenet()
 		free_data(train);
 		if(i%10==0){
 			char buff[256];
-			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_nin_%d.cfg", i);
+			sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_%d.cfg", i);
 			save_network(net, buff);
 		}
 	}
@@ -408,7 +408,7 @@ void test_imagenet()
     char filename[256];
     int indexes[10];
     while(1){
-        gets(filename);
+        fgets(filename, 256, stdin);
         image im = load_image_color(filename, 256, 256);
         z_normalize_image(im);
         printf("%d %d %d\n", im.h, im.w, im.c);
@@ -548,35 +548,16 @@ void train_nist()
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
     translate_data_rows(train, -144);
-    //scale_data_rows(train, 1./128);
     translate_data_rows(test, -144);
-    //scale_data_rows(test, 1./128);
-    //randomize_data(train);
     int count = 0;
-    //clock_t start = clock(), end;
-    int iters = 10000/net.batch;
+    int iters = 50000/net.batch;
     while(++count <= 2000){
         clock_t start = clock(), end;
         float loss = train_network_sgd(net, train, iters);
         end = clock();
         float test_acc = network_accuracy(net, test);
-        //float test_acc = 0;
-        printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
-        /*printf("%f %f %f %f %f\n", mean_array(get_network_output_layer(net,0), 100),
-          mean_array(get_network_output_layer(net,1), 100),
-          mean_array(get_network_output_layer(net,2), 100),
-          mean_array(get_network_output_layer(net,3), 100),
-          mean_array(get_network_output_layer(net,4), 100));
-         */
-        //save_network(net, "cfg/nist_final2.cfg");
-
-        //printf("%5d Training Loss: %lf, Params: %f %f %f, ",count*1000, loss, lr, momentum, decay);
-        //end = clock();
-        //printf("Time: %lf seconds\n", (float)(end-start)/CLOCKS_PER_SEC);
-        //start=end;
-        //lr *= .5;
+        printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC);
     }
-    //save_network(net, "cfg/nist_basic_trained.cfg");
 }
 
 void test_ensemble()
@@ -1052,6 +1033,7 @@ int main(int argc, char *argv[])
     }
     if(0==strcmp(argv[1], "train")) train_imagenet();
     else if(0==strcmp(argv[1], "asirra")) train_asirra();
+    else if(0==strcmp(argv[1], "nist")) train_nist();
     else if(0==strcmp(argv[1], "train_small")) train_imagenet_small();
     else if(0==strcmp(argv[1], "test_correct")) test_gpu_net();
     else if(0==strcmp(argv[1], "test")) test_imagenet();

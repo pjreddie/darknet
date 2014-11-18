@@ -214,7 +214,7 @@ void gemm_ongpu_offset(int TA, int TB, int M, int N, int K, float ALPHA,
     const size_t global_size[] = {ceil((float)N/BLOCK)*BLOCK, ceil((float)M/BLOCK)*BLOCK};
     const size_t local_size[] = {BLOCK, BLOCK};
 
-    clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
     check_error(cl);
     #endif
 }
@@ -368,6 +368,7 @@ void test_gpu_blas()
        test_gpu_accuracy(0,1,1000,10,100); 
        test_gpu_accuracy(1,1,1000,10,100); 
      */
+    time_ongpu(0,0,512,256,1152); 
     time_ongpu(0,0,128,1200,4096); 
     time_ongpu(0,0,128,1200,4096); 
     time_ongpu(0,0,128,1200,4096); 
@@ -377,6 +378,7 @@ void test_gpu_blas()
     time_ongpu(1,0,4096,1200,128); 
     time_ongpu(1,0,1200,128,4096); 
 
+    test_gpu_accuracy(0,0,512,256,1152); 
     test_gpu_accuracy(0,0,131,4093,1199); 
     test_gpu_accuracy(0,1,131,4093,1199); 
     test_gpu_accuracy(1,0,131,4093,1199); 

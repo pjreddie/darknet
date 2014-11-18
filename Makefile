@@ -14,6 +14,7 @@ endif
 
 UNAME = $(shell uname)
 OPTS=-Ofast -flto
+#OPTS=-O3
 ifeq ($(UNAME), Darwin)
 COMMON+= -isystem /usr/local/Cellar/opencv/2.4.6.1/include/opencv -isystem /usr/local/Cellar/opencv/2.4.6.1/include
 ifeq ($(GPU), 1)

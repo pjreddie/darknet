@@ -22,7 +22,9 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
 {
     //printf("start\n");
     int i;
+   // printf("Truth: %f\n", cl_checksum(truth, 1000*net.batch));
     for(i = 0; i < net.n; ++i){
+        //printf("Truth %i: %f\n", i, cl_checksum(truth, 1000*net.batch));
         //clock_t time = clock();
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
@@ -47,6 +49,11 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
             softmax_layer layer = *(softmax_layer *)net.layers[i];
             forward_softmax_layer_gpu(layer, input);
             input = layer.output_cl;
+        }
+        else if(net.types[i] == DROPOUT){
+            if(!train) continue;
+            dropout_layer layer = *(dropout_layer *)net.layers[i];
+            forward_dropout_layer_gpu(layer, input);
         }
         //printf("%d %f\n", i, sec(clock()-time));
         /*
@@ -134,6 +141,8 @@ cl_mem get_network_output_cl_layer(network net, int i)
     else if(net.types[i] == SOFTMAX){
         softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.output_cl;
+    } else if(net.types[i] == DROPOUT){
+        return get_network_output_cl_layer(net, i-1);
     }
     return 0;
 }
@@ -155,6 +164,8 @@ cl_mem get_network_delta_cl_layer(network net, int i)
     else if(net.types[i] == SOFTMAX){
         softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.delta_cl;
+    } else if(net.types[i] == DROPOUT){
+        return get_network_delta_cl_layer(net, i-1);
     }
     return 0;
 }
@@ -173,14 +184,18 @@ float train_network_datum_gpu(network net, float *x, float *y)
     }
     //printf("trans %f\n", sec(clock()-time));
     //time = clock();
+
     forward_network_gpu(net, *net.input_cl, *net.truth_cl, 1);
+
     //printf("forw %f\n", sec(clock()-time));
     //time = clock();
     backward_network_gpu(net, *net.input_cl);
     //printf("back %f\n", sec(clock()-time));
     //time = clock();
+
     update_network_gpu(net);
     float error = get_network_cost(net);
+
     //printf("updt %f\n", sec(clock()-time));
     //time = clock();
     return error;

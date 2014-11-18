@@ -18,6 +18,7 @@ void forward_freeweight_layer(freeweight_layer layer, float *input)
         input[i] *= 2.*((float)rand()/RAND_MAX);
     }
 }
+
 void backward_freeweight_layer(freeweight_layer layer, float *input, float *delta)
 {
     // Don't do shit LULZ

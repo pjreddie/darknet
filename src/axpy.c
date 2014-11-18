@@ -87,7 +87,7 @@ void axpy_ongpu_offset(int N, float ALPHA, cl_mem X, int OFFX, int INCX, cl_mem 
 
     const size_t global_size[] = {N};
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
 
 }
@@ -113,7 +113,7 @@ void copy_ongpu_offset(int N, cl_mem X, int OFFX, int INCX, cl_mem Y, int OFFY, 
 
     const size_t global_size[] = {N};
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
 }
 void scal_ongpu(int N, float ALPHA, cl_mem X, int INCX)
@@ -131,7 +131,7 @@ void scal_ongpu(int N, float ALPHA, cl_mem X, int INCX)
 
     const size_t global_size[] = {N};
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
 }
 #endif

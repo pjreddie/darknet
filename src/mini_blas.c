@@ -53,6 +53,7 @@ void time_random_matrix(int TA, int TB, int m, int k, int n)
 
 void test_blas()
 {
+
     time_random_matrix(0,0,100,100,100); 
     time_random_matrix(1,0,100,100,100); 
     time_random_matrix(0,1,100,100,100); 

@@ -81,10 +81,10 @@ void forward_softmax_layer_gpu(const softmax_layer layer, cl_mem input)
 
     const size_t global_size[] = {layer.batch};
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
 
-/*
+    /*
     cl_read_array(layer.output_cl, layer.output, layer.inputs*layer.batch);
     int z;
     for(z = 0; z < layer.inputs*layer.batch; ++z) printf("%f,",layer.output[z]);

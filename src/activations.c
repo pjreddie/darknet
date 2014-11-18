@@ -128,7 +128,7 @@ void activate_array_ongpu(cl_mem x, int n, ACTIVATION a)
 
     size_t gsize = n;
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, &gsize, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, &gsize, 0, 0, 0, 0);
     check_error(cl);
 }
 
@@ -158,7 +158,7 @@ void gradient_array_ongpu(cl_mem x, int n, ACTIVATION a, cl_mem delta)
 
     size_t gsize = n;
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, &gsize, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, &gsize, 0, 0, 0, 0);
     check_error(cl);
 }
 #endif

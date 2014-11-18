@@ -11,14 +11,16 @@
 
 #include "opencl.h"
 #include "utils.h"
+#include "activations.h"
 
 cl_info cl = {0};
 
 void check_error(cl_info info)
 {
-    clFinish(cl.queue);
+   // clFinish(cl.queue);
     if (info.error != CL_SUCCESS) {
         printf("\n Error number %d", info.error);
+        abort();
         exit(1);
     }
 }
@@ -72,6 +74,8 @@ cl_info cl_init()
         printf("  DEVICE_MAX_CLOCK_FREQUENCY = %u\n", (unsigned int)buf_uint);
         clGetDeviceInfo(devices[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(buf_ulong), &buf_ulong, NULL);
         printf("  DEVICE_GLOBAL_MEM_SIZE = %llu\n", (unsigned long long)buf_ulong);
+        clGetDeviceInfo(devices[i], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(buf_ulong), &buf_ulong, NULL);
+        printf("  DEVICE_MAX_MEM_ALLOC_SIZE = %llu\n", (unsigned long long)buf_ulong);
         clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(buf_ulong), &buf_ulong, NULL);
         printf("  DEVICE_MAX_WORK_GROUP_SIZE = %llu\n", (unsigned long long)buf_ulong);
         cl_uint items;
@@ -151,21 +155,31 @@ cl_kernel get_kernel(char *filename, char *kernelname, char *options)
 void cl_read_array(cl_mem mem, float *x, int n)
 {
     cl_setup();
-    clEnqueueReadBuffer(cl.queue, mem, CL_TRUE, 0, sizeof(float)*n,x,0,0,0);
+    cl.error = clEnqueueReadBuffer(cl.queue, mem, CL_TRUE, 0, sizeof(float)*n,x,0,0,0);
     check_error(cl);
+}
+
+float cl_checksum(cl_mem mem, int n)
+{
+    
+    float *x = calloc(n, sizeof(float));
+    cl_read_array(mem, x, n);
+    float sum = sum_array(x, n);
+    free(x);
+    return sum;
 }
 
 void cl_write_array(cl_mem mem, float *x, int n)
 {
     cl_setup();
-    clEnqueueWriteBuffer(cl.queue, mem, CL_TRUE, 0,sizeof(float)*n,x,0,0,0);
+    cl.error = clEnqueueWriteBuffer(cl.queue, mem, CL_TRUE, 0,sizeof(float)*n,x,0,0,0);
     check_error(cl);
 }
 
 void cl_copy_array(cl_mem src, cl_mem dst, int n)
 {
     cl_setup();
-    clEnqueueCopyBuffer(cl.queue, src, dst, 0, 0, sizeof(float)*n,0,0,0);
+    cl.error = clEnqueueCopyBuffer(cl.queue, src, dst, 0, 0, sizeof(float)*n,0,0,0);
     check_error(cl);
 }
 
@@ -179,6 +193,7 @@ cl_mem cl_sub_array(cl_mem src, int offset, int size)
     return sub;
 }
 
+
 cl_mem cl_make_array(float *x, int n)
 {
     cl_setup();
@@ -186,6 +201,7 @@ cl_mem cl_make_array(float *x, int n)
             CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
             sizeof(float)*n, x, &cl.error);
     check_error(cl);
+    activate_array_ongpu(mem, n, LINEAR);
     return mem;
 }
 

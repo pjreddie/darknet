@@ -304,7 +304,7 @@ void learn_bias_convolutional_layer_ongpu(convolutional_layer layer)
 
     const size_t global_size[] = {layer.n};
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
 }
 
@@ -338,7 +338,7 @@ void bias_output_gpu(const convolutional_layer layer)
 
     const size_t global_size[] = {layer.n*size, layer.batch};
 
-    clEnqueueNDRangeKernel(queue, kernel, 2, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 2, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
 }
 
@@ -400,7 +400,6 @@ void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl
 
         gemm_ongpu_offset(0,1,m,n,k,1,a,i*m*k,k,b,i*k*n,k,1,c,0,n);
     }
-    //cl_read_array(layer.delta_cl, layer.delta, m*k*layer.batch);
 
     if(delta_cl){
         m = layer.size*layer.size*layer.c;

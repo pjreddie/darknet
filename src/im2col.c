@@ -106,7 +106,7 @@ void im2col_ongpu(cl_mem data_im,  int batch,
 
     size_t global_size = batch*channels_col*height_col*width_col;
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0,
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0,
             &global_size, 0, 0, 0, 0);
     check_error(cl);
 }

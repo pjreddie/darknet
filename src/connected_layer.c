@@ -9,7 +9,6 @@
 
 connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, float learning_rate, float momentum, float decay)
 {
-    fprintf(stderr, "Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
     int i;
     connected_layer *layer = calloc(1, sizeof(connected_layer));
 
@@ -51,6 +50,7 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     layer->delta_cl = cl_make_array(layer->delta, outputs*batch);
     #endif
     layer->activation = activation;
+    fprintf(stderr, "Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
     return layer;
 }
 

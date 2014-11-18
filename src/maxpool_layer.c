@@ -132,7 +132,7 @@ void forward_maxpool_layer_gpu(maxpool_layer layer, cl_mem input)
 
     const size_t global_size[] = {h*w*c*layer.batch};
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
 }
 
@@ -166,7 +166,7 @@ void backward_maxpool_layer_gpu(maxpool_layer layer, cl_mem delta)
 
     const size_t global_size[] = {layer.h*layer.w*layer.c*layer.batch};
 
-    clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
     check_error(cl);
 }
 

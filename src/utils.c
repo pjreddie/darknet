@@ -1,12 +1,49 @@
-#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
+
+#include "utils.h"
+
+char *find_replace(char *str, char *orig, char *rep)
+{
+    static char buffer[4096];
+    char *p;
+
+    if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
+        return str;
+
+    strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
+    buffer[p-str] = '\0';
+
+    sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+
+    return buffer;
+}
 
 float sec(clock_t clocks)
 {
     return (float)clocks/CLOCKS_PER_SEC;
+}
+
+void top_k(float *a, int n, int k, int *index)
+{
+    int i,j;
+    float thresh = FLT_MAX;
+    for(i = 0; i < k; ++i){
+        float max = -FLT_MAX;
+        int max_i = -1;
+        for(j = 0; j < n; ++j){
+            float val = a[j];
+            if(val > max &&  val < thresh){
+                max = val;
+                max_i = j;
+            }
+        }
+        index[i] = max_i;
+        thresh = max;
+    }
 }
 
 void error(char *s)
@@ -79,7 +116,7 @@ char *fgetl(FILE *fp)
     }
 
     int curr = strlen(line);
-    
+
     while(line[curr-1]!='\n'){
         size *= 2;
         line = realloc(line, size*sizeof(char));
@@ -121,34 +158,34 @@ list *parse_csv_line(char *line)
 
 int count_fields(char *line)
 {
-	int count = 0;
-	int done = 0;
+    int count = 0;
+    int done = 0;
     char *c;
-	for(c = line; !done; ++c){
-		done = (*c == '\0');
-		if(*c == ',' || done) ++count;
-	}
-	return count;
+    for(c = line; !done; ++c){
+        done = (*c == '\0');
+        if(*c == ',' || done) ++count;
+    }
+    return count;
 }
 
 float *parse_fields(char *line, int n)
 {
-	float *field = calloc(n, sizeof(float));
-	char *c, *p, *end;
-	int count = 0;
-	int done = 0;
-	for(c = line, p = line; !done; ++c){
-		done = (*c == '\0');
-		if(*c == ',' || done){
-			*c = '\0';
-			field[count] = strtod(p, &end);
-			if(p == c) field[count] = nan("");
-			if(end != c && (end != c-1 || *end != '\r')) field[count] = nan(""); //DOS file formats!
-			p = c+1;
-			++count;
-		}
-	}
-	return field;
+    float *field = calloc(n, sizeof(float));
+    char *c, *p, *end;
+    int count = 0;
+    int done = 0;
+    for(c = line, p = line; !done; ++c){
+        done = (*c == '\0');
+        if(*c == ',' || done){
+            *c = '\0';
+            field[count] = strtod(p, &end);
+            if(p == c) field[count] = nan("");
+            if(end != c && (end != c-1 || *end != '\r')) field[count] = nan(""); //DOS file formats!
+            p = c+1;
+            ++count;
+        }
+    }
+    return field;
 }
 
 float sum_array(float *a, int n)

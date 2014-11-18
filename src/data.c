@@ -19,6 +19,12 @@ list *get_paths(char *filename)
     return lines;
 }
 
+void fill_truth_det(char *path, float *truth)
+{
+    find_replace(path, "imgs", "det");
+    find_replace(path, ".JPEG", ".txt");
+}
+
 void fill_truth(char *path, char **labels, int k, float *truth)
 {
     int i;
@@ -83,7 +89,6 @@ void free_data(data d)
 
 data load_data_image_pathfile_part(char *filename, int part, int total, char **labels, int k, int h, int w)
 {
-    clock_t time = clock();
     list *plist = get_paths(filename);
     char **paths = (char **)list_to_array(plist);
     int start = part*plist->size/total;

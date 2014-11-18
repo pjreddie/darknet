@@ -28,5 +28,6 @@ cl_mem cl_make_array(float *x, int n);
 cl_mem cl_make_int_array(int *x, int n);
 void cl_copy_array(cl_mem src, cl_mem dst, int n);
 cl_mem cl_sub_array(cl_mem src, int offset, int size);
+float cl_checksum(cl_mem mem, int n);
 #endif
 #endif
