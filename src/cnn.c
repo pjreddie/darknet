@@ -308,8 +308,8 @@ void train_asirra()
 void train_imagenet()
 {
     float avg_loss = 1;
-	network net = parse_network_cfg("/home/pjreddie/imagenet_backup/imagenet_2280.cfg");
-	//network net = parse_network_cfg("cfg/imagenet2.cfg");
+	//network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
+	network net = parse_network_cfg("cfg/imagenet.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
 	srand(time(0));
@@ -1042,6 +1042,7 @@ int main(int argc, char *argv[])
     #ifdef GPU
     else if(0==strcmp(argv[1], "test_gpu")) test_gpu_blas();
     #endif
+    test_parser();
     fprintf(stderr, "Success!\n");
     return 0;
 }
