@@ -19,10 +19,28 @@ list *get_paths(char *filename)
     return lines;
 }
 
-void fill_truth_det(char *path, float *truth)
+void fill_truth_detection(char *path, float *truth, int height, int width, int num_height, int num_width, float scale)
 {
-    find_replace(path, "imgs", "det");
-    find_replace(path, ".JPEG", ".txt");
+    int box_height = height/num_height;
+    int box_width = width/num_width;
+    char *labelpath = find_replace(path, "imgs", "det");
+    labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    FILE *file = fopen(labelpath, "r");
+    int x, y, h, w;
+    while(fscanf(file, "%d %d %d %d", &x, &y, &w, &h) == 4){
+        int i = x/box_width;
+        int j = y/box_height;
+        float dh = (float)(x%box_width)/box_height;
+        float dw = (float)(y%box_width)/box_width;
+        float sh = h/scale;
+        float sw = w/scale;
+        int index = (i+j*num_width)*5;
+        truth[index++] = 1;
+        truth[index++] = dh;
+        truth[index++] = dw;
+        truth[index++] = sh;
+        truth[index++] = sw;
+    }
 }
 
 void fill_truth(char *path, char **labels, int k, float *truth)
@@ -36,32 +54,52 @@ void fill_truth(char *path, char **labels, int k, float *truth)
     }
 }
 
-data load_data_image_paths(char **paths, int n, char **labels, int k, int h, int w)
+matrix load_image_paths(char **paths, int n, int h, int w)
 {
     int i;
-    data d;
-    d.shallow = 0;
-    d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
-    d.X.cols = 0;
-    d.y = make_matrix(n, k);
+    matrix X;
+    X.rows = n;
+    X.vals = calloc(X.rows, sizeof(float*));
+    X.cols = 0;
 
     for(i = 0; i < n; ++i){
         image im = load_image_color(paths[i], h, w);
-        d.X.vals[i] = im.data;
-        d.X.cols = im.h*im.w*im.c;
+        X.vals[i] = im.data;
+        X.cols = im.h*im.w*im.c;
     }
+    return X;
+}
+
+matrix load_labels_paths(char **paths, int n, char **labels, int k)
+{
+    matrix y = make_matrix(n, k);
+    int i;
     for(i = 0; i < n; ++i){
-        fill_truth(paths[i], labels, k, d.y.vals[i]);
+        fill_truth(paths[i], labels, k, y.vals[i]);
     }
-    return d;
+    return y;
+}
+
+matrix load_labels_detection(char **paths, int n, int height, int width, int num_height, int num_width, float scale)
+{
+    int k = num_height*num_width*5;
+    matrix y = make_matrix(n, k);
+    int i;
+    for(i = 0; i < n; ++i){
+        fill_truth_detection(paths[i], y.vals[i], height, width, num_height, num_width, scale);
+    }
+    return y;
 }
 
 data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w)
 {
     list *plist = get_paths(filename);
     char **paths = (char **)list_to_array(plist);
-    data d = load_data_image_paths(paths, plist->size, labels, k, h, w);
+    int n = plist->size;
+    data d;
+    d.shallow = 0;
+    d.X = load_image_paths(paths, n, h, w);
+    d.y = load_labels_paths(paths, n, labels, k);
     free_list_contents(plist);
     free_list(plist);
     free(paths);
@@ -87,16 +125,29 @@ void free_data(data d)
     }
 }
 
-data load_data_image_pathfile_part(char *filename, int part, int total, char **labels, int k, int h, int w)
+data load_data_detection_random(int n, char **paths, int m, char **labels, int h, int w, int nh, int nw, float scale)
 {
-    list *plist = get_paths(filename);
-    char **paths = (char **)list_to_array(plist);
-    int start = part*plist->size/total;
-    int end = (part+1)*plist->size/total;
-    data d = load_data_image_paths(paths+start, end-start, labels, k, h, w);
-    free_list_contents(plist);
-    free_list(plist);
-    free(paths);
+    char **random_paths = calloc(n, sizeof(char*));
+    int i;
+    for(i = 0; i < n; ++i){
+        int index = rand()%m;
+        random_paths[i] = paths[index];
+        if(i == 0) printf("%s\n", paths[index]);
+    }
+    data d;
+    d.shallow = 0;
+    d.X = load_image_paths(random_paths, n, h, w);
+    d.y = load_labels_detection(random_paths, n, h, w, nh, nw, scale);
+    free(random_paths);
+    return d;
+}
+
+data load_data(char **paths, int n, char **labels, int k, int h, int w)
+{
+    data d;
+    d.shallow = 0;
+    d.X = load_image_paths(paths, n, h, w);
+    d.y = load_labels_paths(paths, n, labels, k);
     return d;
 }
 
@@ -109,26 +160,7 @@ data load_data_random(int n, char **paths, int m, char **labels, int k, int h, i
         random_paths[i] = paths[index];
         if(i == 0) printf("%s\n", paths[index]);
     }
-    data d = load_data_image_paths(random_paths, n, labels, k, h, w);
-    free(random_paths);
-    return d;
-}
-
-data load_data_image_pathfile_random(char *filename, int n, char **labels, int k, int h, int w)
-{
-    int i;
-    list *plist = get_paths(filename);
-    char **paths = (char **)list_to_array(plist);
-    char **random_paths = calloc(n, sizeof(char*));
-    for(i = 0; i < n; ++i){
-        int index = rand()%plist->size;
-        random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
-    }
-    data d = load_data_image_paths(random_paths, n, labels, k, h, w);
-    free_list_contents(plist);
-    free_list(plist);
-    free(paths);
+    data d = load_data(random_paths, n, labels, k, h, w);
     free(random_paths);
     return d;
 }
