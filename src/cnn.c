@@ -314,15 +314,14 @@ void train_detection_net()
     int imgs = 1000/net.batch+1;
     srand(time(0));
     int i = 0;
-    char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
-    list *plist = get_paths("/data/imagenet/cls.train.list");
+    list *plist = get_paths("/home/pjreddie/data/imagenet/horse.txt");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     clock_t time;
     while(1){
         i += 1;
         time=clock();
-        data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
+        data train = load_data_detection_random(imgs*net.batch, paths, plist->size, 256, 256, 8, 8, 256);
         //translate_data_rows(train, -144);
         normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
@@ -346,7 +345,7 @@ void train_imagenet()
 {
     float avg_loss = 1;
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
-    network net = parse_network_cfg("cfg/alexnet.cfg");
+    network net = parse_network_cfg("cfg/trained_alexnet.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
     srand(time(0));
@@ -409,6 +408,29 @@ void validate_imagenet(char *filename)
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, acc, avg_acc/(i+1), sec(clock()-time), val.X.rows);
 #endif
         free_data(val);
+    }
+}
+
+void test_detection()
+{
+    network net = parse_network_cfg("cfg/detnet_test.cfg");
+    //imgs=1;
+    srand(2222222);
+    int i = 0;
+    clock_t time;
+    char filename[256];
+    int indexes[10];
+    while(1){
+        fgets(filename, 256, stdin);
+        image im = load_image_color(filename, 256, 256);
+        z_normalize_image(im);
+        printf("%d %d %d\n", im.h, im.w, im.c);
+        float *X = im.data;
+        time=clock();
+        float *predictions = network_predict(net, X);
+        top_predictions(net, 10, indexes);
+        printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
+        free_image(im);
     }
 }
 
@@ -717,6 +739,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     if(0==strcmp(argv[1], "train")) train_imagenet();
+    else if(0==strcmp(argv[1], "detection")) train_detection_net();
     else if(0==strcmp(argv[1], "asirra")) train_asirra();
     else if(0==strcmp(argv[1], "nist")) train_nist();
     else if(0==strcmp(argv[1], "test_correct")) test_gpu_net();
@@ -726,7 +749,6 @@ int main(int argc, char *argv[])
 #ifdef GPU
     else if(0==strcmp(argv[1], "test_gpu")) test_gpu_blas();
 #endif
-    test_parser();
     fprintf(stderr, "Success!\n");
     return 0;
 }

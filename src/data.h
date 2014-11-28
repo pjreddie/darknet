@@ -14,7 +14,7 @@ typedef struct{
 void free_data(data d);
 data load_data(char **paths, int n, char **labels, int k, int h, int w);
 data load_data_random(int n, char **paths, int m, char **labels, int k, int h, int w);
-data load_data_detection_random(int n, char **paths, int m, char **labels, int h, int w, int nh, int nw, float scale);
+data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale);
 data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w);
 data load_cifar10_data(char *filename);
 data load_all_cifar10();

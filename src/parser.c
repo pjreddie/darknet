@@ -165,7 +165,9 @@ cost_layer *parse_cost(list *options, network *net, int count)
     }else{
         input =  get_network_output_size_layer(*net, count-1);
     }
-    cost_layer *layer = make_cost_layer(net->batch, input);
+    char *type_s = option_find_str(options, "type", "sse");
+    COST_TYPE type = get_cost_type(type_s);
+    cost_layer *layer = make_cost_layer(net->batch, input, type);
     option_unused(options);
     return layer;
 }
@@ -565,7 +567,7 @@ void print_softmax_cfg(FILE *fp, softmax_layer *l, network net, int count)
 
 void print_cost_cfg(FILE *fp, cost_layer *l, network net, int count)
 {
-    fprintf(fp, "[cost]\n");
+    fprintf(fp, "[cost]\ntype=%s\n", get_cost_string(l->type));
     if(count == 0) fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
     fprintf(fp, "\n");
 }

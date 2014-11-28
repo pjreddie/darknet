@@ -26,6 +26,7 @@ void fill_truth_detection(char *path, float *truth, int height, int width, int n
     char *labelpath = find_replace(path, "imgs", "det");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
     FILE *file = fopen(labelpath, "r");
+    if(!file) file_error(labelpath);
     int x, y, h, w;
     while(fscanf(file, "%d %d %d %d", &x, &y, &w, &h) == 4){
         int i = x/box_width;
@@ -34,6 +35,7 @@ void fill_truth_detection(char *path, float *truth, int height, int width, int n
         float dw = (float)(y%box_width)/box_width;
         float sh = h/scale;
         float sw = w/scale;
+        //printf("%d %d %f %f\n", i, j, dh, dw);
         int index = (i+j*num_width)*5;
         truth[index++] = 1;
         truth[index++] = dh;
@@ -41,6 +43,7 @@ void fill_truth_detection(char *path, float *truth, int height, int width, int n
         truth[index++] = sh;
         truth[index++] = sw;
     }
+    fclose(file);
 }
 
 void fill_truth(char *path, char **labels, int k, float *truth)
@@ -125,7 +128,7 @@ void free_data(data d)
     }
 }
 
-data load_data_detection_random(int n, char **paths, int m, char **labels, int h, int w, int nh, int nw, float scale)
+data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale)
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
