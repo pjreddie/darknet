@@ -31,8 +31,8 @@ void fill_truth_detection(char *path, float *truth, int height, int width, int n
     while(fscanf(file, "%d %d %d %d", &x, &y, &w, &h) == 4){
         int i = x/box_width;
         int j = y/box_height;
-        float dh = (float)(x%box_width)/box_height;
-        float dw = (float)(y%box_width)/box_width;
+        float dw = (float)(x%box_width)/box_height;
+        float dh = (float)(y%box_width)/box_width;
         float sh = h/scale;
         float sw = w/scale;
         //printf("%d %d %f %f\n", i, j, dh, dw);

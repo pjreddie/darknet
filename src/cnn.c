@@ -312,7 +312,8 @@ void train_detection_net()
     network net = parse_network_cfg("cfg/detnet.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
-    srand(time(0));
+    //srand(time(0));
+    srand(23410);
     int i = 0;
     list *plist = get_paths("/home/pjreddie/data/imagenet/horse.txt");
     char **paths = (char **)list_to_array(plist);
@@ -323,6 +324,31 @@ void train_detection_net()
         time=clock();
         data train = load_data_detection_random(imgs*net.batch, paths, plist->size, 256, 256, 8, 8, 256);
         //translate_data_rows(train, -144);
+        /*
+        image im = float_to_image(256, 256, 3, train.X.vals[0]);
+        float *truth = train.y.vals[0];
+        int j;
+        int r, c;
+        for(r = 0; r < 8; ++r){
+            for(c = 0; c < 8; ++c){
+                j = (r*8 + c) * 5;
+                if(truth[j]){
+                    int d = 256/8;
+                    int y = r*d+truth[j+1]*d;
+                    int x = c*d+truth[j+2]*d;
+                    int h = truth[j+3]*256;
+                    int w = truth[j+4]*256;
+                    printf("%f %f %f %f\n", truth[j+1], truth[j+2], truth[j+3], truth[j+4]);
+                    printf("%d %d %d %d\n", x, y, w, h);
+                    printf("%d %d %d %d\n", x-w/2, y-h/2, x+w/2, y+h/2);
+                    draw_box(im, x-w/2, y-h/2, x+w/2, y+h/2);
+                }
+            }
+        }
+        show_image(im, "box");
+        cvWaitKey(0);
+        */
+
         normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -334,7 +360,7 @@ void train_detection_net()
         free_data(train);
         if(i%10==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_%d.cfg", i);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/detnet_%d.cfg", i);
             save_network(net, buff);
         }
     }
@@ -345,7 +371,7 @@ void train_imagenet()
 {
     float avg_loss = 1;
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
-    network net = parse_network_cfg("cfg/trained_alexnet.cfg");
+    network net = parse_network_cfg("cfg/alexnet.part");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
     srand(time(0));
@@ -371,7 +397,7 @@ void train_imagenet()
         free_data(train);
         if(i%10==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/imagenet_%d.cfg", i);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/alexnet_%d.cfg", i);
             save_network(net, buff);
         }
     }
@@ -399,6 +425,7 @@ void validate_imagenet(char *filename)
         char **part = paths+(i*m/splits);
         int num = (i+1)*m/splits - i*m/splits;
         data val = load_data(part, num, labels, 1000, 256, 256);
+
         normalize_data_rows(val);
         printf("Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
         time=clock();
@@ -411,25 +438,48 @@ void validate_imagenet(char *filename)
     }
 }
 
+void draw_detection(image im, float *box)
+{
+    int j;
+    int r, c;
+    for(r = 0; r < 8; ++r){
+        for(c = 0; c < 8; ++c){
+            j = (r*8 + c) * 5;
+            printf("Prob: %f\n", box[j]);
+            if(box[j] > .999){
+                int d = 256/8;
+                int y = r*d+box[j+1]*d;
+                int x = c*d+box[j+2]*d;
+                int h = box[j+3]*256;
+                int w = box[j+4]*256;
+                printf("%f %f %f %f\n", box[j+1], box[j+2], box[j+3], box[j+4]);
+                printf("%d %d %d %d\n", x, y, w, h);
+                printf("%d %d %d %d\n", x-w/2, y-h/2, x+w/2, y+h/2);
+                draw_box(im, x-w/2, y-h/2, x+w/2, y+h/2);
+            }
+        }
+    }
+    show_image(im, "box");
+    cvWaitKey(0);
+}
+
 void test_detection()
 {
     network net = parse_network_cfg("cfg/detnet_test.cfg");
-    //imgs=1;
     srand(2222222);
-    int i = 0;
     clock_t time;
     char filename[256];
-    int indexes[10];
     while(1){
         fgets(filename, 256, stdin);
+        strtok(filename, "\n");
         image im = load_image_color(filename, 256, 256);
         z_normalize_image(im);
         printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();
         float *predictions = network_predict(net, X);
-        top_predictions(net, 10, indexes);
         printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
+        draw_detection(im, predictions);
         free_image(im);
     }
 }
@@ -446,6 +496,7 @@ void test_imagenet()
     int indexes[10];
     while(1){
         fgets(filename, 256, stdin);
+        strtok(filename, "\n");
         image im = load_image_color(filename, 256, 256);
         z_normalize_image(im);
         printf("%d %d %d\n", im.h, im.w, im.c);
@@ -731,6 +782,14 @@ void test_gpu_net()
 #endif
 }
 
+void test_server()
+{
+    server_update();
+}
+void test_client()
+{
+    client_update();
+}
 
 int main(int argc, char *argv[])
 {
@@ -744,6 +803,9 @@ int main(int argc, char *argv[])
     else if(0==strcmp(argv[1], "nist")) train_nist();
     else if(0==strcmp(argv[1], "test_correct")) test_gpu_net();
     else if(0==strcmp(argv[1], "test")) test_imagenet();
+    else if(0==strcmp(argv[1], "server")) test_server();
+    else if(0==strcmp(argv[1], "client")) test_client();
+    else if(0==strcmp(argv[1], "detect")) test_detection();
     else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
     else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2]);
 #ifdef GPU
@@ -754,79 +816,79 @@ int main(int argc, char *argv[])
 }
 
 /*
-void visualize_imagenet_topk(char *filename)
-{
-    int i,j,k,l;
-    int topk = 10;
-    network net = parse_network_cfg("cfg/voc_imagenet.cfg");
-    list *plist = get_paths(filename);
-    node *n = plist->front;
-    int h = voc_size(1), w = voc_size(1);
-    int num = get_network_image(net).c;
-    image **vizs = calloc(num, sizeof(image*));
-    float **score = calloc(num, sizeof(float *));
-    for(i = 0; i < num; ++i){
-        vizs[i] = calloc(topk, sizeof(image));
-        for(j = 0; j < topk; ++j) vizs[i][j] = make_image(h,w,3);
-        score[i] = calloc(topk, sizeof(float));
-    }
+   void visualize_imagenet_topk(char *filename)
+   {
+   int i,j,k,l;
+   int topk = 10;
+   network net = parse_network_cfg("cfg/voc_imagenet.cfg");
+   list *plist = get_paths(filename);
+   node *n = plist->front;
+   int h = voc_size(1), w = voc_size(1);
+   int num = get_network_image(net).c;
+   image **vizs = calloc(num, sizeof(image*));
+   float **score = calloc(num, sizeof(float *));
+   for(i = 0; i < num; ++i){
+   vizs[i] = calloc(topk, sizeof(image));
+   for(j = 0; j < topk; ++j) vizs[i][j] = make_image(h,w,3);
+   score[i] = calloc(topk, sizeof(float));
+   }
 
-    int count = 0;
-    while(n){
-        ++count;
-        char *image_path = (char *)n->val;
-        image im = load_image(image_path, 0, 0);
-        n = n->next;
-        if(im.h < 200 || im.w < 200) continue;
-        printf("Processing %dx%d image\n", im.h, im.w);
-        resize_network(net, im.h, im.w, im.c);
-        //scale_image(im, 1./255);
-        translate_image(im, -144);
-        forward_network(net, im.data, 0, 0);
-        image out = get_network_image(net);
+   int count = 0;
+   while(n){
+   ++count;
+   char *image_path = (char *)n->val;
+   image im = load_image(image_path, 0, 0);
+   n = n->next;
+   if(im.h < 200 || im.w < 200) continue;
+   printf("Processing %dx%d image\n", im.h, im.w);
+   resize_network(net, im.h, im.w, im.c);
+//scale_image(im, 1./255);
+translate_image(im, -144);
+forward_network(net, im.data, 0, 0);
+image out = get_network_image(net);
 
-        int dh = (im.h - h)/(out.h-1);
-        int dw = (im.w - w)/(out.w-1);
-        //printf("%d %d\n", dh, dw);
-        for(k = 0; k < out.c; ++k){
-            float topv = 0;
-            int topi = -1;
-            int topj = -1;
-            for(i = 0; i < out.h; ++i){
-                for(j = 0; j < out.w; ++j){
-                    float val = get_pixel(out, i, j, k);
-                    if(val > topv){
-                        topv = val;
-                        topi = i;
-                        topj = j;
-                    }
-                }
-            }
-            if(topv){
-                image sub = get_sub_image(im, dh*topi, dw*topj, h, w);
-                for(l = 0; l < topk; ++l){
-                    if(topv > score[k][l]){
-                        float swap = score[k][l];
-                        score[k][l] = topv;
-                        topv = swap;
+int dh = (im.h - h)/(out.h-1);
+int dw = (im.w - w)/(out.w-1);
+//printf("%d %d\n", dh, dw);
+for(k = 0; k < out.c; ++k){
+float topv = 0;
+int topi = -1;
+int topj = -1;
+for(i = 0; i < out.h; ++i){
+for(j = 0; j < out.w; ++j){
+float val = get_pixel(out, i, j, k);
+if(val > topv){
+topv = val;
+topi = i;
+topj = j;
+}
+}
+}
+if(topv){
+image sub = get_sub_image(im, dh*topi, dw*topj, h, w);
+for(l = 0; l < topk; ++l){
+if(topv > score[k][l]){
+float swap = score[k][l];
+score[k][l] = topv;
+topv = swap;
 
-                        image swapi = vizs[k][l];
-                        vizs[k][l] = sub;
-                        sub = swapi;
-                    }
-                }
-                free_image(sub);
-            }
-        }
-        free_image(im);
-        if(count%50 == 0){
-            image grid = grid_images(vizs, num, topk);
-            //show_image(grid, "IMAGENET Visualization");
-            save_image(grid, "IMAGENET Grid Single Nonorm");
-            free_image(grid);
-        }
-    }
-    //cvWaitKey(0);
+image swapi = vizs[k][l];
+vizs[k][l] = sub;
+sub = swapi;
+}
+}
+free_image(sub);
+}
+}
+free_image(im);
+if(count%50 == 0){
+image grid = grid_images(vizs, num, topk);
+//show_image(grid, "IMAGENET Visualization");
+save_image(grid, "IMAGENET Grid Single Nonorm");
+free_image(grid);
+}
+}
+//cvWaitKey(0);
 }
 
 void visualize_imagenet_features(char *filename)

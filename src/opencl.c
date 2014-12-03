@@ -88,7 +88,7 @@ cl_info cl_init()
 
     }
     int index = getpid()%num_devices;
-    index = 0;
+    index = 1;
     printf("%d rand, %d devices, %d index\n", getpid(), num_devices, index);
     info.device = devices[index];
     fprintf(stderr, "Found %d device(s)\n", num_devices);

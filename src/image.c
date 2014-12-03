@@ -4,6 +4,23 @@
 
 int windows = 0;
 
+void draw_box(image a, int x1, int y1, int x2, int y2)
+{
+    int i, c;
+    for(c = 0; c < a.c; ++c){
+        for(i = x1; i < x2; ++i){
+            a.data[i + y1*a.w + c*a.w*a.h] = 0;
+            a.data[i + y2*a.w + c*a.w*a.h] = 0;
+        }
+    }
+    for(c = 0; c < a.c; ++c){
+        for(i = y1; i < y2; ++i){
+            a.data[x1 + i*a.w + c*a.w*a.h] = 0;
+            a.data[x2 + i*a.w + c*a.w*a.h] = 0;
+        }
+    }
+}
+
 image image_distance(image a, image b)
 {
     int i,j;
@@ -424,7 +441,7 @@ image load_image_color(char *filename, int h, int w)
     }
     if(h && w && (src->height != h || src->width != w)){
         //printf("Resized!\n");
-        IplImage *resized = resizeImage(src, h, w, 1);
+        IplImage *resized = resizeImage(src, h, w, 0);
         cvReleaseImage(&src);
         src = resized;
     }

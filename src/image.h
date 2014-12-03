@@ -11,6 +11,7 @@ typedef struct {
     float *data;
 } image;
 
+void draw_box(image a, int x1, int y1, int x2, int y2);
 image image_distance(image a, image b);
 void scale_image(image m, float s);
 void translate_image(image m, float s);
