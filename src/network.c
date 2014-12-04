@@ -213,7 +213,7 @@ void backward_network(network net, float *input)
         }
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            backward_convolutional_layer(layer, prev_delta);
+            backward_convolutional_layer(layer, prev_input, prev_delta);
         }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];

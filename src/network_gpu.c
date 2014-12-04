@@ -87,7 +87,7 @@ void backward_network_gpu(network net, cl_mem input)
         }
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            backward_convolutional_layer_gpu(layer, prev_delta);
+            backward_convolutional_layer_gpu(layer, prev_input, prev_delta);
         }
         else if(net.types[i] == COST){
             cost_layer layer = *(cost_layer *)net.layers[i];

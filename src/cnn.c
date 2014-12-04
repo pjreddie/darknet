@@ -36,6 +36,7 @@ void test_convolve()
 
 void test_convolutional_layer()
 {
+/*
     int i;
     image dog = load_image("data/dog.jpg",224,224);
     network net = parse_network_cfg("cfg/convolutional.cfg");
@@ -72,6 +73,7 @@ void test_convolutional_layer()
 
     float *gpu_del = calloc(del_size, sizeof(float));
     memcpy(gpu_del, get_network_delta_layer(net, 0), del_size*sizeof(float));
+    */
 
     /*
        start = clock();
@@ -97,6 +99,7 @@ void test_convolutional_layer()
      */
 }
 
+/*
 void test_col2im()
 {
     float col[] =  {1,2,1,2,
@@ -116,13 +119,12 @@ void test_col2im()
     int ksize = 3;
     int stride = 1;
     int pad = 0;
-    col2im_gpu(col, batch,
-            channels,  height,  width,
-            ksize,  stride, pad, im);
+    //col2im_gpu(col, batch,
+    //        channels,  height,  width,
+    //        ksize,  stride, pad, im);
     int i;
     for(i = 0; i < 16; ++i)printf("%f,", im[i]);
     printf("\n");
-    /*
        float data_im[] = {
        1,2,3,4,
        5,6,7,8,
@@ -134,8 +136,8 @@ void test_col2im()
        ksize,   stride,  pad, data_col) ;
        for(i = 0; i < 18; ++i)printf("%f,", data_col[i]);
        printf("\n");
-     */
 }
+*/
 
 #endif
 
@@ -158,7 +160,7 @@ void test_convolve_matrix()
     int i;
     clock_t start = clock(), end;
     for(i = 0; i < 1000; ++i){
-        im2col_cpu(dog.data,1, dog.c,  dog.h,  dog.w,  size,  stride, 0, matrix);
+        //im2col_cpu(dog.data,1, dog.c,  dog.h,  dog.w,  size,  stride, 0, matrix);
         gemm(0,0,n,mw,mh,1,filters,mh,matrix,mw,1,edge.data,mw);
     }
     end = clock();
@@ -175,6 +177,7 @@ void test_color()
 
 void verify_convolutional_layer()
 {
+/*
     srand(0);
     int i;
     int n = 1;
@@ -225,6 +228,7 @@ void verify_convolutional_layer()
     printf("%f %f\n", avg_image_layer(mj1,0), avg_image_layer(mj2,0));
     show_image(mj1, "forward jacobian");
     show_image(mj2, "backward jacobian");
+    */
 }
 
 void test_load()
@@ -446,7 +450,7 @@ void draw_detection(image im, float *box)
         for(c = 0; c < 8; ++c){
             j = (r*8 + c) * 5;
             printf("Prob: %f\n", box[j]);
-            if(box[j] > .999){
+            if(box[j] > .05){
                 int d = 256/8;
                 int y = r*d+box[j+1]*d;
                 int x = c*d+box[j+2]*d;
@@ -465,7 +469,7 @@ void draw_detection(image im, float *box)
 
 void test_detection()
 {
-    network net = parse_network_cfg("cfg/detnet_test.cfg");
+    network net = parse_network_cfg("cfg/detnet.test");
     srand(2222222);
     clock_t time;
     char filename[256];
@@ -726,7 +730,7 @@ void test_im2row()
     float *matrix = calloc(msize, sizeof(float));
     int i;
     for(i = 0; i < 1000; ++i){
-        im2col_cpu(test.data,1,  c,  h,  w,  size,  stride, 0, matrix);
+        //im2col_cpu(test.data,1,  c,  h,  w,  size,  stride, 0, matrix);
         //image render = float_to_image(mh, mw, mc, matrix);
     }
 }
@@ -782,13 +786,59 @@ void test_gpu_net()
 #endif
 }
 
+void test_correct_alexnet()
+{
+    char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
+    list *plist = get_paths("/data/imagenet/cls.train.list");
+    char **paths = (char **)list_to_array(plist);
+    printf("%d\n", plist->size);
+    clock_t time;
+    int count = 0;
+
+    srand(222222);
+    network net = parse_network_cfg("cfg/alexnet.test");
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    int imgs = 1000/net.batch+1;
+    imgs = 1;
+
+    while(++count <= 5){
+        time=clock();
+        data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
+        //translate_data_rows(train, -144);
+        normalize_data_rows(train);
+        printf("Loaded: %lf seconds\n", sec(clock()-time));
+        time=clock();
+        float loss = train_network_data_cpu(net, train, imgs);
+        printf("%d: %f, %lf seconds, %d images\n", count, loss, sec(clock()-time), imgs*net.batch);
+        free_data(train);
+    }
+#ifdef GPU
+    count = 0;
+    srand(222222);
+    net = parse_network_cfg("cfg/alexnet.test");
+    while(++count <= 5){
+        time=clock();
+        data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
+        //translate_data_rows(train, -144);
+        normalize_data_rows(train);
+        printf("Loaded: %lf seconds\n", sec(clock()-time));
+        time=clock();
+        float loss = train_network_data_gpu(net, train, imgs);
+        printf("%d: %f, %lf seconds, %d images\n", count, loss, sec(clock()-time), imgs*net.batch);
+        free_data(train);
+    }
+#endif
+}
+
 void test_server()
 {
-    server_update();
+    network net = parse_network_cfg("cfg/alexnet.test");
+    server_update(net);
 }
 void test_client()
 {
-    client_update();
+    network net = parse_network_cfg("cfg/alexnet.test");
+    client_update(net);
 }
 
 int main(int argc, char *argv[])
@@ -801,7 +851,7 @@ int main(int argc, char *argv[])
     else if(0==strcmp(argv[1], "detection")) train_detection_net();
     else if(0==strcmp(argv[1], "asirra")) train_asirra();
     else if(0==strcmp(argv[1], "nist")) train_nist();
-    else if(0==strcmp(argv[1], "test_correct")) test_gpu_net();
+    else if(0==strcmp(argv[1], "test_correct")) test_correct_alexnet();
     else if(0==strcmp(argv[1], "test")) test_imagenet();
     else if(0==strcmp(argv[1], "server")) test_server();
     else if(0==strcmp(argv[1], "client")) test_client();

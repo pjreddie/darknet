@@ -52,6 +52,7 @@ void forward_cost_layer(cost_layer layer, float *input, float *truth)
         }
     }
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
+    //printf("cost: %f\n", *layer.output);
 }
 
 void backward_cost_layer(const cost_layer layer, float *input, float *delta)
@@ -105,7 +106,7 @@ void forward_cost_layer_gpu(cost_layer layer, cl_mem input, cl_mem truth)
 
     cl_read_array(layer.delta_cl, layer.delta, layer.batch*layer.inputs);
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
-    //printf("%f\n", *layer.output);
+    //printf("cost: %f\n", *layer.output);
 }
 
 void backward_cost_layer_gpu(const cost_layer layer, cl_mem input, cl_mem delta)

@@ -47,7 +47,7 @@ typedef struct {
 
 #ifdef GPU
 void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in);
-void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem delta_cl);
+void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in, cl_mem delta_cl);
 void update_convolutional_layer_gpu(convolutional_layer layer);
 void push_convolutional_layer(convolutional_layer layer);
 #endif
@@ -58,7 +58,7 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in);
 void update_convolutional_layer(convolutional_layer layer);
 image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters);
 
-void backward_convolutional_layer(convolutional_layer layer, float *delta);
+void backward_convolutional_layer(convolutional_layer layer, float *in, float *delta);
 
 image get_convolutional_image(convolutional_layer layer);
 image get_convolutional_delta(convolutional_layer layer);

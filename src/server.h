@@ -1,3 +1,4 @@
+#include "network.h"
 
-void server_update();
-void client_update();
+void server_update(network net);
+void client_update(network net);
