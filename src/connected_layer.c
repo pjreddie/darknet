@@ -112,12 +112,16 @@ void pull_connected_layer(connected_layer layer)
 {
     cl_read_array(layer.weights_cl, layer.weights, layer.inputs*layer.outputs);
     cl_read_array(layer.biases_cl, layer.biases, layer.outputs);
+    cl_read_array(layer.weight_updates_cl, layer.weight_updates, layer.inputs*layer.outputs);
+    cl_read_array(layer.bias_updates_cl, layer.bias_updates, layer.outputs);
 }
 
 void push_connected_layer(connected_layer layer)
 {
     cl_write_array(layer.weights_cl, layer.weights, layer.inputs*layer.outputs);
     cl_write_array(layer.biases_cl, layer.biases, layer.outputs);
+    cl_write_array(layer.weight_updates_cl, layer.weight_updates, layer.inputs*layer.outputs);
+    cl_write_array(layer.bias_updates_cl, layer.bias_updates, layer.outputs);
 }
 
 void update_connected_layer_gpu(connected_layer layer)

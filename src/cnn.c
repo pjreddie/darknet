@@ -8,6 +8,7 @@
 #include "matrix.h"
 #include "utils.h"
 #include "mini_blas.h"
+#include "server.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -370,15 +371,52 @@ void train_detection_net()
     }
 }
 
+void train_imagenet_distributed(char *address)
+{
+    float avg_loss = 1;
+    srand(0);
+    network net = parse_network_cfg("cfg/alexnet.client");
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    int imgs = 1000/net.batch+1;
+    imgs = 1;
+    int i = 0;
+    char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
+    list *plist = get_paths("/data/imagenet/cls.train.list");
+    char **paths = (char **)list_to_array(plist);
+    printf("%d\n", plist->size);
+    clock_t time;
+    while(1){
+        i += 1;
+        time=clock();
+        data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
+        //translate_data_rows(train, -144);
+        normalize_data_rows(train);
+        printf("Loaded: %lf seconds\n", sec(clock()-time));
+        time=clock();
+#ifdef GPU
+        float loss = train_network_data_gpu(net, train, imgs);
+        client_update(net, address);
+        avg_loss = avg_loss*.9 + loss*.1;
+        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs*net.batch);
+#endif
+        free_data(train);
+        if(i%10==0){
+            char buff[256];
+            sprintf(buff, "/home/pjreddie/imagenet_backup/alexnet_%d.cfg", i);
+            save_network(net, buff);
+        }
+    }
+}
 
 void train_imagenet()
 {
     float avg_loss = 1;
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
-    network net = parse_network_cfg("cfg/alexnet.part");
+    srand(0);
+    network net = parse_network_cfg("cfg/alexnet.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
-    srand(time(0));
+    imgs=1;
     int i = 0;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
@@ -450,7 +488,7 @@ void draw_detection(image im, float *box)
         for(c = 0; c < 8; ++c){
             j = (r*8 + c) * 5;
             printf("Prob: %f\n", box[j]);
-            if(box[j] > .05){
+            if(box[j] > .01){
                 int d = 256/8;
                 int y = r*d+box[j+1]*d;
                 int x = c*d+box[j+2]*d;
@@ -715,6 +753,7 @@ void test_split()
     printf("%d, %d, %d\n", train.X.rows, split[0].X.rows, split[1].X.rows);
 }
 
+/*
 void test_im2row()
 {
     int h = 20;
@@ -734,6 +773,7 @@ void test_im2row()
         //image render = float_to_image(mh, mw, mc, matrix);
     }
 }
+*/
 
 void flip_network()
 {
@@ -830,15 +870,23 @@ void test_correct_alexnet()
 #endif
 }
 
-void test_server()
+void run_server()
 {
-    network net = parse_network_cfg("cfg/alexnet.test");
+    srand(0);
+    network net = parse_network_cfg("cfg/alexnet.server");
     server_update(net);
 }
 void test_client()
 {
-    network net = parse_network_cfg("cfg/alexnet.test");
-    client_update(net);
+    network net = parse_network_cfg("cfg/alexnet.client");
+    clock_t time=clock();
+    client_update(net, "localhost");
+    printf("1\n");
+    client_update(net, "localhost");
+    printf("2\n");
+    client_update(net, "localhost");
+    printf("3\n");
+    printf("Transfered: %lf seconds\n", sec(clock()-time));
 }
 
 int main(int argc, char *argv[])
@@ -853,8 +901,8 @@ int main(int argc, char *argv[])
     else if(0==strcmp(argv[1], "nist")) train_nist();
     else if(0==strcmp(argv[1], "test_correct")) test_correct_alexnet();
     else if(0==strcmp(argv[1], "test")) test_imagenet();
-    else if(0==strcmp(argv[1], "server")) test_server();
-    else if(0==strcmp(argv[1], "client")) test_client();
+    else if(0==strcmp(argv[1], "server")) run_server();
+    else if(0==strcmp(argv[1], "client")) train_imagenet_distributed(argv[2]);
     else if(0==strcmp(argv[1], "detect")) test_detection();
     else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
     else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2]);

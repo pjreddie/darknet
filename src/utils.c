@@ -48,7 +48,8 @@ void top_k(float *a, int n, int k, int *index)
 
 void error(char *s)
 {
-    fprintf(stderr, "Error: %s\n", s);
+    perror(s);
+    //fprintf(stderr, "Error: %s\n", s);
     exit(0);
 }
 

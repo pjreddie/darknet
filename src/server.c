@@ -1,136 +1,205 @@
+#include <stdio.h> /* needed for sockaddr_in */
+#include <string.h> /* needed for sockaddr_in */
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h> /* needed for sockaddr_in */
-#include <stdio.h> /* needed for sockaddr_in */
-#include <string.h> /* needed for sockaddr_in */
 #include <netdb.h>
+#include <pthread.h>
 
+#include "mini_blas.h"
+#include "utils.h"
 #include "server.h"
 #include "connected_layer.h"
+#include "convolutional_layer.h"
 
-#define MESSAGESIZE 50012
-#define NUMFLOATS ((MESSAGESIZE-12)/4)
 #define SERVER_PORT 9876
-#define CLIENT_PORT 9879
 #define STR(x) #x
-#define PARAMETER_SERVER localhost
 
-typedef struct{
-    int layer;
-    int wob;
-    int offset;
-    float data[NUMFLOATS];
-} message;
-
-int socket_setup(int port)
+int socket_setup(int server)
 {
-    static int fd = 0;                         /* our socket */
-    if(fd) return fd;
-    struct sockaddr_in myaddr;      /* our address */
+    int fd = 0;                         /* our socket */
+    struct sockaddr_in me;      /* our address */
 
     /* create a UDP socket */
 
-    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("cannot create socket\n");
-        fd=0;
-        return 0;
+    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        error("cannot create socket");
     }
 
     /* bind the socket to any valid IP address and a specific port */
+    if (server == 1){
+        bzero((char *) &me, sizeof(me));
+        me.sin_family = AF_INET;
+        me.sin_addr.s_addr = htonl(INADDR_ANY);
+        me.sin_port = htons(SERVER_PORT);
 
-    memset((char *)&myaddr, 0, sizeof(myaddr));
-    myaddr.sin_family = AF_INET;
-    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    myaddr.sin_port = htons(port);
-
-    if (bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0) {
-        perror("bind failed");
-        fd=0;
-        return 0;
+        if (bind(fd, (struct sockaddr *)&me, sizeof(me)) < 0) {
+            error("bind failed");
+        }
     }
+
     return fd;
+}
+
+typedef struct{
+    int fd;
+    int *counter;
+    network net;
+} connection_info;
+
+void read_all(int fd, char *buffer, size_t bytes)
+{
+    size_t n = 0;
+    while(n < bytes){
+        int next = read(fd, buffer + n, bytes-n);
+        if(next < 0) error("read failed");
+        n += next;
+    }
+}
+
+void write_all(int fd, char *buffer, size_t bytes)
+{
+    size_t n = 0;
+    while(n < bytes){
+        int next = write(fd, buffer + n, bytes-n);
+        if(next < 0) error("write failed");
+        n += next;
+    }
+}
+
+void read_and_add_into(int fd, float *a, int n)
+{
+    float *buff = calloc(n, sizeof(float));
+    read_all(fd, (char*) buff, n*sizeof(float));
+    axpy_cpu(n, 1, buff, 1, a, 1);
+    free(buff);
+}
+
+void handle_connection(void *pointer)
+{
+    printf("New Connection\n");
+    connection_info info = *(connection_info *) pointer;
+    int fd = info.fd;
+    network net = info.net;
+    ++*(info.counter);
+    int i;
+    for(i = 0; i < net.n; ++i){
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer layer = *(convolutional_layer *) net.layers[i];
+
+            read_and_add_into(fd, layer.bias_updates, layer.n);
+            int num = layer.n*layer.c*layer.size*layer.size;
+            read_and_add_into(fd, layer.filter_updates, num);
+        }
+        if(net.types[i] == CONNECTED){
+            connected_layer layer = *(connected_layer *) net.layers[i];
+
+            read_and_add_into(fd, layer.bias_updates, layer.outputs);
+            read_and_add_into(fd, layer.weight_updates, layer.inputs*layer.outputs);
+        }
+    }
+    for(i = 0; i < net.n; ++i){
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer layer = *(convolutional_layer *) net.layers[i];
+            update_convolutional_layer(layer);
+
+            write_all(fd, (char*) layer.biases, layer.n*sizeof(float));
+            int num = layer.n*layer.c*layer.size*layer.size;
+            write_all(fd, (char*) layer.filters, num*sizeof(float));
+        }
+        if(net.types[i] == CONNECTED){
+            connected_layer layer = *(connected_layer *) net.layers[i];
+            update_connected_layer(layer);
+            write_all(fd, (char *)layer.biases, layer.outputs*sizeof(float));
+            write_all(fd, (char *)layer.weights, layer.outputs*layer.inputs*sizeof(float));
+        }
+    }
+    printf("Received updates\n");
+    close(fd);
 }
 
 void server_update(network net)
 {
-    int fd = socket_setup(SERVER_PORT);
-    struct sockaddr_in remaddr;     /* remote address */
-    socklen_t addrlen = sizeof(remaddr);            /* length of addresses */
-    int recvlen;                    /* # bytes received */
-    unsigned char buf[MESSAGESIZE];     /* receive buffer */
-    message m;
-
-    int count = 0;
+    int fd = socket_setup(1);
+    int counter = 0;
+    listen(fd, 10);
+    struct sockaddr_in client;     /* remote address */
+    socklen_t client_size = sizeof(client);   /* length of addresses */
+    connection_info info;
+    info.net = net;
+    info.counter = &counter;
     while(1){
-        recvlen = recvfrom(fd, buf, MESSAGESIZE, 0, (struct sockaddr *)&remaddr, &addrlen);
-        memcpy(&m, buf, recvlen);
-        //printf("received %d bytes\n", recvlen);
-        //printf("layer %d wob %d offset %d\n", m.layer, m.wob, m.offset);
-        ++count;
-        if(count % 100 == 0) printf("%d\n", count);
+        pthread_t worker;
+        int connection = accept(fd, (struct sockaddr *) &client, &client_size);
+        info.fd = connection;
+        pthread_create(&worker, NULL, (void *) &handle_connection, &info);
     }
-    //printf("%s\n", buf);
 }
 
-void client_update(network net)
+void client_update(network net, char *address)
 {
-    int fd = socket_setup(CLIENT_PORT);
-    struct hostent *hp;     /* host information */
-    struct sockaddr_in servaddr;    /* server address */
-    printf("%ld %ld\n", sizeof(message), MESSAGESIZE);
-    char *my_message = "this is a test message";
+    int fd = socket_setup(0);
 
-    unsigned char buf[MESSAGESIZE];
-    message m;
+    struct hostent *hp;     /* host information */
+    struct sockaddr_in server;    /* server address */
 
     /* fill in the server's address and data */
-    memset((char*)&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(SERVER_PORT);
+    bzero((char*)&server, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(SERVER_PORT);
 
     /* look up the address of the server given its name */
-    hp = gethostbyname("localhost");
+    hp = gethostbyname(address);
     if (!hp) {
+        perror("no such host");
         fprintf(stderr, "could not obtain address of %s\n", "localhost");
     }
 
     /* put the host's address into the server address structure */
-    memcpy((void *)&servaddr.sin_addr, hp->h_addr_list[0], hp->h_length);
+    memcpy((void *)&server.sin_addr, hp->h_addr_list[0], hp->h_length);
+    if (connect(fd, (struct sockaddr *) &server, sizeof(server)) < 0) {
+        error("error connecting");
+    }
 
     /* send a message to the server */
-    int i, j, k;
+    int i;
     for(i = 0; i < net.n; ++i){
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer layer = *(convolutional_layer *) net.layers[i];
+            write_all(fd, (char*) layer.bias_updates, layer.n*sizeof(float));
+            int num = layer.n*layer.c*layer.size*layer.size;
+            write_all(fd, (char*) layer.filter_updates, num*sizeof(float));
+            memset(layer.bias_updates, 0, layer.n*sizeof(float));
+            memset(layer.filter_updates, 0, num*sizeof(float));
+        }
         if(net.types[i] == CONNECTED){
-            connected_layer *layer = (connected_layer *) net.layers[i];
-            m.layer = i;
-            m.wob = 0;
-            for(j = 0; j < layer->outputs; j += NUMFLOATS){
-                m.offset = j;
-
-                int num = layer->outputs - j;
-                if(NUMFLOATS < num) num = NUMFLOATS;
-
-                memcpy(m.data, &layer->bias_updates[j], num*sizeof(float));
-                memcpy(buf, &m, MESSAGESIZE);
-
-                if (sendto(fd, buf, MESSAGESIZE, 0, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-                    perror("sendto failed");
-                }
-            }
-            m.wob = 1;
-            for(j = 0; j < layer->outputs*layer->inputs; j += NUMFLOATS){
-                m.offset = j;
-
-                int num = layer->outputs*layer->inputs - j;
-                if(NUMFLOATS < num) num = NUMFLOATS;
-
-                memcpy(m.data, &layer->weight_updates[j], num*sizeof(float));
-                memcpy(buf, &m, MESSAGESIZE);
-
-                if (sendto(fd, buf, MESSAGESIZE, 0, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-                    perror("sendto failed");
-                }
-            }
+            connected_layer layer = *(connected_layer *) net.layers[i];
+            write_all(fd, (char *)layer.bias_updates, layer.outputs*sizeof(float));
+            write_all(fd, (char *)layer.weight_updates, layer.outputs*layer.inputs*sizeof(float));
+            memset(layer.bias_updates, 0, layer.outputs*sizeof(float));
+            memset(layer.weight_updates, 0, layer.inputs*layer.outputs*sizeof(float));
         }
     }
+
+    for(i = 0; i < net.n; ++i){
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer layer = *(convolutional_layer *) net.layers[i];
+
+            read_all(fd, (char*) layer.biases, layer.n*sizeof(float));
+            int num = layer.n*layer.c*layer.size*layer.size;
+            read_all(fd, (char*) layer.filters, num*sizeof(float));
+
+            push_convolutional_layer(layer);
+        }
+        if(net.types[i] == CONNECTED){
+            connected_layer layer = *(connected_layer *) net.layers[i];
+
+            read_all(fd, (char *)layer.biases, layer.outputs*sizeof(float));
+            read_all(fd, (char *)layer.weights, layer.outputs*layer.inputs*sizeof(float));
+
+            push_connected_layer(layer);
+        }
+    }
+    close(fd);
 }

@@ -59,11 +59,9 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
 
     layer->filters = calloc(c*n*size*size, sizeof(float));
     layer->filter_updates = calloc(c*n*size*size, sizeof(float));
-    layer->filter_momentum = calloc(c*n*size*size, sizeof(float));
 
     layer->biases = calloc(n, sizeof(float));
     layer->bias_updates = calloc(n, sizeof(float));
-    layer->bias_momentum = calloc(n, sizeof(float));
     float scale = 1./(size*size*c);
     scale = .01;
     for(i = 0; i < c*n*size*size; ++i) layer->filters[i] = scale*2*(rand_uniform()-.5);
@@ -77,14 +75,13 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
     layer->col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
     layer->output = calloc(layer->batch*out_h * out_w * n, sizeof(float));
     layer->delta  = calloc(layer->batch*out_h * out_w * n, sizeof(float));
+
     #ifdef GPU
     layer->filters_cl = cl_make_array(layer->filters, c*n*size*size);
     layer->filter_updates_cl = cl_make_array(layer->filter_updates, c*n*size*size);
-    layer->filter_momentum_cl = cl_make_array(layer->filter_momentum, c*n*size*size);
 
     layer->biases_cl = cl_make_array(layer->biases, n);
     layer->bias_updates_cl = cl_make_array(layer->bias_updates, n);
-    layer->bias_momentum_cl = cl_make_array(layer->bias_momentum, n);
 
     layer->col_image_cl = cl_make_array(layer->col_image, out_h*out_w*size*size*c);
     layer->delta_cl = cl_make_array(layer->delta, layer->batch*out_h*out_w*n);
@@ -394,12 +391,16 @@ void pull_convolutional_layer(convolutional_layer layer)
 {
     cl_read_array(layer.filters_cl, layer.filters, layer.c*layer.n*layer.size*layer.size);
     cl_read_array(layer.biases_cl, layer.biases, layer.n);
+    cl_read_array(layer.filter_updates_cl, layer.filter_updates, layer.c*layer.n*layer.size*layer.size);
+    cl_read_array(layer.bias_updates_cl, layer.bias_updates, layer.n);
 }
 
 void push_convolutional_layer(convolutional_layer layer)
 {
     cl_write_array(layer.filters_cl, layer.filters, layer.c*layer.n*layer.size*layer.size);
     cl_write_array(layer.biases_cl, layer.biases, layer.n);
+    cl_write_array(layer.filter_updates_cl, layer.filter_updates, layer.c*layer.n*layer.size*layer.size);
+    cl_write_array(layer.bias_updates_cl, layer.bias_updates, layer.n);
 }
 
 void update_convolutional_layer_gpu(convolutional_layer layer)
