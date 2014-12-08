@@ -6,6 +6,7 @@
 #include <netinet/in.h> /* needed for sockaddr_in */
 #include <netdb.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "mini_blas.h"
 #include "utils.h"
@@ -83,7 +84,7 @@ void handle_connection(void *pointer)
 {
     connection_info info = *(connection_info *) pointer;
     free(pointer);
-    printf("New Connection\n");
+    //printf("New Connection\n");
     int fd = info.fd;
     network net = info.net;
     int i;
@@ -118,7 +119,7 @@ void handle_connection(void *pointer)
             write_all(fd, (char *)layer.weights, layer.outputs*layer.inputs*sizeof(float));
         }
     }
-    printf("Received updates\n");
+    //printf("Received updates\n");
     close(fd);
 }
 
@@ -129,17 +130,23 @@ void server_update(network net)
     listen(fd, 10);
     struct sockaddr_in client;     /* remote address */
     socklen_t client_size = sizeof(client);   /* length of addresses */
+    time_t t=0;
     while(1){
         connection_info *info = calloc(1, sizeof(connection_info));
         info->net = net;
         info->counter = &counter;
         pthread_t worker;
         int connection = accept(fd, (struct sockaddr *) &client, &client_size);
+        if(!t) t=time(0);
         info->fd = connection;
         pthread_create(&worker, NULL, (void *) &handle_connection, info);
         ++counter;
+        printf("%d\n", counter);
+        if(counter == 1024) break;
         if(counter%1000==0) save_network(net, "cfg/nist.part");
     }
+    printf("1024 epochs: %d seconds\n", time(0)-t);
+    close(fd);
 }
 
 void client_update(network net, char *address)
