@@ -19,7 +19,7 @@ typedef struct {
 
 extern cl_info cl;
 
-void cl_setup();
+void cl_setup(int index);
 void check_error(cl_info info);
 cl_kernel get_kernel(char *filename, char *kernelname, char *options);
 void cl_read_array(cl_mem mem, float *x, int n);

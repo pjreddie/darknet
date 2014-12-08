@@ -61,7 +61,6 @@ void col2im_ongpu(cl_mem data_col,  int offset,
         int channels,  int height,  int width,
         int ksize,  int stride,  int pad, cl_mem data_im)
 {
-    cl_setup();
     cl_kernel kernel = get_col2im_kernel();
     cl_command_queue queue = cl.queue;
 

@@ -115,7 +115,6 @@ void forward_maxpool_layer_gpu(maxpool_layer layer, cl_mem input)
     int h = (layer.h-1)/layer.stride + 1;
     int w = (layer.w-1)/layer.stride + 1;
     int c = layer.c;
-    cl_setup();
     cl_kernel kernel = get_forward_kernel();
     cl_command_queue queue = cl.queue;
 
@@ -149,7 +148,6 @@ cl_kernel get_backward_kernel()
 
 void backward_maxpool_layer_gpu(maxpool_layer layer, cl_mem delta)
 {
-    cl_setup();
     cl_kernel kernel = get_backward_kernel();
     cl_command_queue queue = cl.queue;
 

@@ -75,7 +75,6 @@ void im2col_ongpu(cl_mem data_im, int offset,
         int channels,  int height,  int width,
         int ksize,  int stride,  int pad, cl_mem data_col)
 {
-    cl_setup();
 
     int height_col = (height - ksize) / stride + 1;
     int width_col = (width - ksize) / stride + 1;
@@ -113,7 +112,6 @@ void im2col_ongpu(cl_mem data_im, int offset,
    int channels,  int height,  int width,
    int ksize,  int stride,  int pad, float *data_col) 
    {
-   cl_setup();
    cl_context context = cl.context;
    cl_command_queue queue = cl.queue;
 

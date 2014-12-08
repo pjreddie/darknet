@@ -666,6 +666,28 @@ void train_nist()
     }
 }
 
+void train_nist_distributed(char *address)
+{
+    srand(time(0));
+    network net = parse_network_cfg("cfg/nist.client");
+    data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
+    //data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
+    normalize_data_rows(train);
+    //normalize_data_rows(test);
+    int count = 0;
+    int iters = 50000/net.batch;
+    iters = 1000/net.batch + 1;
+    while(++count <= 2000){
+        clock_t start = clock(), end;
+        float loss = train_network_sgd_gpu(net, train, iters);
+        client_update(net, address);
+        end = clock();
+        //float test_acc = network_accuracy_gpu(net, test);
+        //float test_acc = 0;
+        printf("%d: Loss: %f, Time: %lf seconds\n", count, loss, (float)(end-start)/CLOCKS_PER_SEC);
+    }
+}
+
 void test_ensemble()
 {
     int i;
@@ -875,7 +897,7 @@ void test_correct_alexnet()
 void run_server()
 {
     srand(time(0));
-    network net = parse_network_cfg("cfg/alexnet.server");
+    network net = parse_network_cfg("cfg/nist.server");
     server_update(net);
 }
 void test_client()
@@ -891,12 +913,23 @@ void test_client()
     printf("Transfered: %lf seconds\n", sec(clock()-time));
 }
 
+int find_int_arg(int argc, char* argv[], char *arg)
+{
+    int i;
+    for(i = 0; i < argc-1; ++i) if(0==strcmp(argv[i], arg)) return atoi(argv[i+1]);
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     if(argc < 2){
         fprintf(stderr, "usage: %s <function>\n", argv[0]);
         return 0;
     }
+    int index = find_int_arg(argc, argv, "-i");
+    #ifdef GPU
+    cl_setup(index);
+    #endif
     if(0==strcmp(argv[1], "train")) train_imagenet();
     else if(0==strcmp(argv[1], "detection")) train_detection_net();
     else if(0==strcmp(argv[1], "asirra")) train_asirra();
@@ -912,7 +945,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "usage: %s <function>\n", argv[0]);
         return 0;
     }
-    else if(0==strcmp(argv[1], "client")) train_imagenet_distributed(argv[2]);
+    else if(0==strcmp(argv[1], "client")) train_nist_distributed(argv[2]);
     else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
     else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2]);
     fprintf(stderr, "Success!\n");

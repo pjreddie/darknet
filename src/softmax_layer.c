@@ -69,7 +69,6 @@ cl_kernel get_softmax_forward_kernel()
 
 void forward_softmax_layer_gpu(const softmax_layer layer, cl_mem input)
 {
-    cl_setup();
     cl_kernel kernel = get_softmax_forward_kernel();
     cl_command_queue queue = cl.queue;
 

@@ -280,7 +280,6 @@ void learn_bias_convolutional_layer_ongpu(convolutional_layer layer)
 {
     int size = convolutional_out_height(layer) * convolutional_out_width(layer);
 
-    cl_setup();
     cl_kernel kernel = get_convolutional_learn_bias_kernel();
     cl_command_queue queue = cl.queue;
 
@@ -315,7 +314,6 @@ void bias_output_gpu(const convolutional_layer layer)
     int out_w = convolutional_out_width(layer);
     int size = out_h*out_w;
 
-    cl_setup();
     cl_kernel kernel = get_convolutional_bias_kernel();
     cl_command_queue queue = cl.queue;
 

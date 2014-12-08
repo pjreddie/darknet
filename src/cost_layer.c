@@ -75,7 +75,6 @@ cl_kernel get_mask_kernel()
 
 void mask_ongpu(int n, cl_mem x, cl_mem mask, int mod)
 {
-    cl_setup();
     cl_kernel kernel = get_mask_kernel();
     cl_command_queue queue = cl.queue;
 

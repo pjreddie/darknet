@@ -70,7 +70,6 @@ void axpy_ongpu(int N, float ALPHA, cl_mem X, int INCX, cl_mem Y, int INCY)
 
 void axpy_ongpu_offset(int N, float ALPHA, cl_mem X, int OFFX, int INCX, cl_mem Y, int OFFY, int INCY)
 {
-    cl_setup();
     cl_kernel kernel = get_axpy_kernel();
     cl_command_queue queue = cl.queue;
 
@@ -97,7 +96,6 @@ void copy_ongpu(int N, cl_mem X, int INCX, cl_mem Y, int INCY)
 }
 void copy_ongpu_offset(int N, cl_mem X, int OFFX, int INCX, cl_mem Y, int OFFY, int INCY)
 {
-    cl_setup();
     cl_kernel kernel = get_copy_kernel();
     cl_command_queue queue = cl.queue;
 
@@ -118,7 +116,6 @@ void copy_ongpu_offset(int N, cl_mem X, int OFFX, int INCX, cl_mem Y, int OFFY, 
 }
 void scal_ongpu(int N, float ALPHA, cl_mem X, int INCX)
 {
-    cl_setup();
     cl_kernel kernel = get_scal_kernel();
     cl_command_queue queue = cl.queue;
 

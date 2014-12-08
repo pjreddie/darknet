@@ -178,14 +178,12 @@ void gemm_ongpu_offset(int TA, int TB, int M, int N, int K, float ALPHA,
         cl_mem C_gpu, int c_off, int ldc)
 {
 #ifdef CLBLAS
-    cl_setup();
     cl_command_queue queue = cl.queue;
     cl_event event;
     cl.error = clblasSgemm(clblasRowMajor, TA?clblasTrans:clblasNoTrans, TB?clblasTrans:clblasNoTrans,M, N, K,ALPHA, A_gpu, a_off, lda,B_gpu, b_off, ldb,BETA, C_gpu, c_off, ldc,1, &queue, 0, NULL, &event);
     check_error(cl);
 #else
     //printf("gpu: %d %d %d %d %d\n",TA, TB, M, N, K);
-    cl_setup();
     cl_kernel      gemm_kernel = get_gemm_kernel();
     if(!TA && !TB) gemm_kernel = get_gemm_nn_kernel();
     if(!TA && TB)  gemm_kernel = get_gemm_nt_kernel();
@@ -225,7 +223,6 @@ void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         float *C, int ldc)
 {
-    cl_setup();
     cl_context context = cl.context;
     cl_command_queue queue = cl.queue;
 

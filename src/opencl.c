@@ -27,7 +27,7 @@ void check_error(cl_info info)
 
 #define MAX_DEVICES 10
 
-cl_info cl_init()
+cl_info cl_init(int index)
 {
     cl_info info;
     info.initialized = 0;
@@ -87,8 +87,7 @@ cl_info cl_init()
         printf("  DEVICE_MAX_WORK_ITEM_SIZES = %u / %u / %u \n", (unsigned int)workitem_size[0], (unsigned int)workitem_size[1], (unsigned int)workitem_size[2]);
 
     }
-    int index = getpid()%num_devices;
-    index = 1;
+    index = index%num_devices;
     printf("%d rand, %d devices, %d index\n", getpid(), num_devices, index);
     info.device = devices[index];
     fprintf(stderr, "Found %d device(s)\n", num_devices);
@@ -135,17 +134,16 @@ cl_program cl_fprog(char *filename, char *options, cl_info info)
 	return prog;
 }
 
-void cl_setup()
+void cl_setup(int index)
 {
 	if(!cl.initialized){
         printf("initializing\n");
-		cl = cl_init();
+		cl = cl_init(index);
 	}
 }
 
 cl_kernel get_kernel(char *filename, char *kernelname, char *options)
 {
-	cl_setup();
 	cl_program prog = cl_fprog(filename, options, cl);
 	cl_kernel kernel=clCreateKernel(prog, kernelname, &cl.error);
 	check_error(cl);
@@ -154,7 +152,6 @@ cl_kernel get_kernel(char *filename, char *kernelname, char *options)
 
 void cl_read_array(cl_mem mem, float *x, int n)
 {
-    cl_setup();
     cl.error = clEnqueueReadBuffer(cl.queue, mem, CL_TRUE, 0, sizeof(float)*n,x,0,0,0);
     check_error(cl);
 }
@@ -171,14 +168,12 @@ float cl_checksum(cl_mem mem, int n)
 
 void cl_write_array(cl_mem mem, float *x, int n)
 {
-    cl_setup();
     cl.error = clEnqueueWriteBuffer(cl.queue, mem, CL_TRUE, 0,sizeof(float)*n,x,0,0,0);
     check_error(cl);
 }
 
 void cl_copy_array(cl_mem src, cl_mem dst, int n)
 {
-    cl_setup();
     cl.error = clEnqueueCopyBuffer(cl.queue, src, dst, 0, 0, sizeof(float)*n,0,0,0);
     check_error(cl);
 }
@@ -196,7 +191,6 @@ cl_mem cl_sub_array(cl_mem src, int offset, int size)
 
 cl_mem cl_make_array(float *x, int n)
 {
-    cl_setup();
     cl_mem mem = clCreateBuffer(cl.context,
             CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
             sizeof(float)*n, x, &cl.error);
@@ -207,7 +201,6 @@ cl_mem cl_make_array(float *x, int n)
 
 cl_mem cl_make_int_array(int *x, int n)
 {
-    cl_setup();
     cl_mem mem = clCreateBuffer(cl.context,
             CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
             sizeof(int)*n, x, &cl.error);

@@ -116,7 +116,6 @@ cl_kernel get_activation_kernel()
 
 void activate_array_ongpu(cl_mem x, int n, ACTIVATION a) 
 {
-    cl_setup();
     cl_kernel kernel = get_activation_kernel();
     cl_command_queue queue = cl.queue;
 
@@ -145,7 +144,6 @@ cl_kernel get_gradient_kernel()
 
 void gradient_array_ongpu(cl_mem x, int n, ACTIVATION a, cl_mem delta) 
 {
-    cl_setup();
     cl_kernel kernel = get_gradient_kernel();
     cl_command_queue queue = cl.queue;
 

@@ -51,20 +51,22 @@ typedef struct{
 
 void read_all(int fd, char *buffer, size_t bytes)
 {
+    //printf("Want %d\n", bytes);
     size_t n = 0;
     while(n < bytes){
         int next = read(fd, buffer + n, bytes-n);
-        if(next < 0) error("read failed");
+        if(next <= 0) error("read failed");
         n += next;
     }
 }
 
 void write_all(int fd, char *buffer, size_t bytes)
 {
+    //printf("Writ %d\n", bytes);
     size_t n = 0;
     while(n < bytes){
         int next = write(fd, buffer + n, bytes-n);
-        if(next < 0) error("write failed");
+        if(next <= 0) error("write failed");
         n += next;
     }
 }
@@ -79,8 +81,9 @@ void read_and_add_into(int fd, float *a, int n)
 
 void handle_connection(void *pointer)
 {
-    printf("New Connection\n");
     connection_info info = *(connection_info *) pointer;
+    free(pointer);
+    printf("New Connection\n");
     int fd = info.fd;
     network net = info.net;
     int i;
@@ -117,8 +120,6 @@ void handle_connection(void *pointer)
     }
     printf("Received updates\n");
     close(fd);
-    ++*(info.counter);
-    if(*(info.counter)%10==0) save_network(net, "/home/pjreddie/imagenet_backup/alexnet.part");
 }
 
 void server_update(network net)
@@ -128,14 +129,16 @@ void server_update(network net)
     listen(fd, 10);
     struct sockaddr_in client;     /* remote address */
     socklen_t client_size = sizeof(client);   /* length of addresses */
-    connection_info info;
-    info.net = net;
-    info.counter = &counter;
     while(1){
+        connection_info *info = calloc(1, sizeof(connection_info));
+        info->net = net;
+        info->counter = &counter;
         pthread_t worker;
         int connection = accept(fd, (struct sockaddr *) &client, &client_size);
-        info.fd = connection;
-        pthread_create(&worker, NULL, (void *) &handle_connection, &info);
+        info->fd = connection;
+        pthread_create(&worker, NULL, (void *) &handle_connection, info);
+        ++counter;
+        if(counter%1000==0) save_network(net, "cfg/nist.part");
     }
 }
 
@@ -166,6 +169,7 @@ void client_update(network net, char *address)
 
     /* send a message to the server */
     int i;
+    //printf("Sending\n");
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *) net.layers[i];
@@ -183,6 +187,7 @@ void client_update(network net, char *address)
             memset(layer.weight_updates, 0, layer.inputs*layer.outputs*sizeof(float));
         }
     }
+    //printf("Sent\n");
 
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
@@ -203,5 +208,6 @@ void client_update(network net, char *address)
             push_connected_layer(layer);
         }
     }
+    //printf("Updated\n");
     close(fd);
 }
