@@ -651,15 +651,17 @@ void train_nist()
     network net = parse_network_cfg("cfg/nist.cfg");
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
-    translate_data_rows(train, -144);
-    translate_data_rows(test, -144);
+    normalize_data_rows(train);
+    normalize_data_rows(test);
     int count = 0;
     int iters = 50000/net.batch;
+    iters = 1000/net.batch + 1;
     while(++count <= 2000){
         clock_t start = clock(), end;
-        float loss = train_network_sgd(net, train, iters);
+        float loss = train_network_sgd_gpu(net, train, iters);
         end = clock();
-        float test_acc = network_accuracy(net, test);
+        float test_acc = network_accuracy_gpu(net, test);
+        //float test_acc = 0;
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC);
     }
 }
@@ -902,13 +904,17 @@ int main(int argc, char *argv[])
     else if(0==strcmp(argv[1], "test_correct")) test_correct_alexnet();
     else if(0==strcmp(argv[1], "test")) test_imagenet();
     else if(0==strcmp(argv[1], "server")) run_server();
-    else if(0==strcmp(argv[1], "client")) train_imagenet_distributed(argv[2]);
     else if(0==strcmp(argv[1], "detect")) test_detection();
-    else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
-    else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2]);
 #ifdef GPU
     else if(0==strcmp(argv[1], "test_gpu")) test_gpu_blas();
 #endif
+    else if(argc < 3){
+        fprintf(stderr, "usage: %s <function>\n", argv[0]);
+        return 0;
+    }
+    else if(0==strcmp(argv[1], "client")) train_imagenet_distributed(argv[2]);
+    else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
+    else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2]);
     fprintf(stderr, "Success!\n");
     return 0;
 }
