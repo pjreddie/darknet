@@ -9,6 +9,7 @@
 
 #include "mini_blas.h"
 #include "utils.h"
+#include "parser.h"
 #include "server.h"
 #include "connected_layer.h"
 #include "convolutional_layer.h"
@@ -82,7 +83,6 @@ void handle_connection(void *pointer)
     connection_info info = *(connection_info *) pointer;
     int fd = info.fd;
     network net = info.net;
-    ++*(info.counter);
     int i;
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
@@ -117,6 +117,8 @@ void handle_connection(void *pointer)
     }
     printf("Received updates\n");
     close(fd);
+    ++*(info.counter);
+    if(*(info.counter)%10==0) save_network(net, "/home/pjreddie/imagenet_backup/alexnet.part");
 }
 
 void server_update(network net)

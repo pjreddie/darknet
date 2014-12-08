@@ -374,7 +374,7 @@ void train_detection_net()
 void train_imagenet_distributed(char *address)
 {
     float avg_loss = 1;
-    srand(0);
+    srand(time(0));
     network net = parse_network_cfg("cfg/alexnet.client");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
@@ -412,11 +412,11 @@ void train_imagenet()
 {
     float avg_loss = 1;
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
-    srand(0);
+    srand(time(0));
     network net = parse_network_cfg("cfg/alexnet.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
-    imgs=1;
+    //imgs=1;
     int i = 0;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
@@ -872,7 +872,7 @@ void test_correct_alexnet()
 
 void run_server()
 {
-    srand(0);
+    srand(time(0));
     network net = parse_network_cfg("cfg/alexnet.server");
     server_update(net);
 }

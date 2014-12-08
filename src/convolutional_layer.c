@@ -64,10 +64,10 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
     layer->bias_updates = calloc(n, sizeof(float));
     float scale = 1./(size*size*c);
     scale = .01;
-    for(i = 0; i < c*n*size*size; ++i) layer->filters[i] = scale*2*(rand_uniform()-.5);
+    for(i = 0; i < c*n*size*size; ++i) layer->filters[i] = scale*rand_normal();
     for(i = 0; i < n; ++i){
         //layer->biases[i] = rand_normal()*scale + scale;
-        layer->biases[i] = .5;
+        layer->biases[i] = .01;
     }
     int out_h = convolutional_out_height(*layer);
     int out_w = convolutional_out_width(*layer);
@@ -204,7 +204,7 @@ void update_convolutional_layer(convolutional_layer layer)
     axpy_cpu(layer.n, layer.learning_rate, layer.bias_updates, 1, layer.biases, 1);
     scal_cpu(layer.n, layer.momentum, layer.bias_updates, 1);
 
-    scal_cpu(size, 1.-layer.learning_rate*layer.decay, layer.filters, 1);
+    axpy_cpu(size, -layer.decay, layer.filters, 1, layer.filter_updates, 1);
     axpy_cpu(size, layer.learning_rate, layer.filter_updates, 1, layer.filters, 1);
     scal_cpu(size, layer.momentum, layer.filter_updates, 1);
 }
@@ -409,7 +409,7 @@ void update_convolutional_layer_gpu(convolutional_layer layer)
     axpy_ongpu(layer.n, layer.learning_rate, layer.bias_updates_cl, 1, layer.biases_cl, 1);
     scal_ongpu(layer.n,layer.momentum, layer.bias_updates_cl, 1);
 
-    scal_ongpu(size, 1.-layer.learning_rate*layer.decay, layer.filters_cl, 1);
+    axpy_ongpu(size, -layer.decay, layer.filters_cl, 1, layer.filter_updates_cl, 1);
     axpy_ongpu(size, layer.learning_rate, layer.filter_updates_cl, 1, layer.filters_cl, 1);
     scal_ongpu(size, layer.momentum, layer.filter_updates_cl, 1);
     pull_convolutional_layer(layer);

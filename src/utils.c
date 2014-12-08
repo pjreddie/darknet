@@ -262,10 +262,11 @@ int max_index(float *a, int n)
 
 float rand_normal()
 {
+    int n = 12;
     int i;
     float sum= 0;
-    for(i = 0; i < 12; ++i) sum += (float)rand()/RAND_MAX;
-    return sum-6.;
+    for(i = 0; i < n; ++i) sum += (float)rand()/RAND_MAX;
+    return sum-n/2.;
 }
 float rand_uniform()
 {
