@@ -323,6 +323,65 @@ void train_network(network net, data d)
     fprintf(stderr, "Accuracy: %f\n", (float)correct/d.X.rows);
 }
 
+void set_learning_network(network *net, float rate, float momentum, float decay)
+{
+    int i;
+    net->learning_rate=rate;
+    net->momentum = momentum;
+    net->decay = decay;
+    for(i = 0; i < net->n; ++i){
+        if(net->types[i] == CONVOLUTIONAL){
+            convolutional_layer *layer = (convolutional_layer *)net->layers[i];
+            layer->learning_rate=rate;
+            layer->momentum = momentum;
+            layer->decay = decay;
+        }
+        else if(net->types[i] == CONNECTED){
+            connected_layer *layer = (connected_layer *)net->layers[i];
+            layer->learning_rate=rate;
+            layer->momentum = momentum;
+            layer->decay = decay;
+        }
+    }
+}
+
+
+void set_batch_network(network *net, int b)
+{
+    net->batch = b;
+    int i;
+    for(i = 0; i < net->n; ++i){
+        if(net->types[i] == CONVOLUTIONAL){
+            convolutional_layer *layer = (convolutional_layer *)net->layers[i];
+            layer->batch = b;
+        }
+        else if(net->types[i] == MAXPOOL){
+            maxpool_layer *layer = (maxpool_layer *)net->layers[i];
+            layer->batch = b;
+        }
+        else if(net->types[i] == CONNECTED){
+            connected_layer *layer = (connected_layer *)net->layers[i];
+            layer->batch = b;
+        } else if(net->types[i] == DROPOUT){
+            dropout_layer *layer = (dropout_layer *) net->layers[i];
+            layer->batch = b;
+        }
+        else if(net->types[i] == FREEWEIGHT){
+            freeweight_layer *layer = (freeweight_layer *) net->layers[i];
+            layer->batch = b;
+        }
+        else if(net->types[i] == SOFTMAX){
+            softmax_layer *layer = (softmax_layer *)net->layers[i];
+            layer->batch = b;
+        }
+        else if(net->types[i] == COST){
+            cost_layer *layer = (cost_layer *)net->layers[i];
+            layer->batch = b;
+        }
+    }
+}
+
+
 int get_network_input_size_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
@@ -586,15 +645,26 @@ void print_network(network net)
 float network_accuracy(network net, data d)
 {
     matrix guess = network_predict_data(net, d);
-    float acc = matrix_accuracy(d.y, guess);
+    float acc = matrix_topk_accuracy(d.y, guess,1);
     free_matrix(guess);
     return acc;
 }
 
+float *network_accuracies(network net, data d)
+{
+    static float acc[2];
+    matrix guess = network_predict_data(net, d);
+    acc[0] = matrix_topk_accuracy(d.y, guess,1);
+    acc[1] = matrix_topk_accuracy(d.y, guess,5);
+    free_matrix(guess);
+    return acc;
+}
+
+
 float network_accuracy_multi(network net, data d, int n)
 {
     matrix guess = network_predict_data_multi(net, d, n);
-    float acc = matrix_accuracy(d.y, guess);
+    float acc = matrix_topk_accuracy(d.y, guess,1);
     free_matrix(guess);
     return acc;
 }

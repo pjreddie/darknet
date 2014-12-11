@@ -19,7 +19,7 @@ list *get_paths(char *filename)
     return lines;
 }
 
-void fill_truth_detection(char *path, float *truth, int height, int width, int num_height, int num_width, float scale)
+void fill_truth_detection(char *path, float *truth, int height, int width, int num_height, int num_width, float scale, int dx, int dy)
 {
     int box_height = height/num_height;
     int box_width = width/num_width;
@@ -29,8 +29,16 @@ void fill_truth_detection(char *path, float *truth, int height, int width, int n
     if(!file) file_error(labelpath);
     int x, y, h, w;
     while(fscanf(file, "%d %d %d %d", &x, &y, &w, &h) == 4){
+        x -= dx;
+        y -= dy;
         int i = x/box_width;
         int j = y/box_height;
+
+        if(i < 0) i = 0;
+        if(i >= num_width) i = num_width-1;
+        if(j < 0) j = 0;
+        if(j >= num_height) j = num_height-1;
+        
         float dw = (float)(x%box_width)/box_height;
         float dh = (float)(y%box_width)/box_width;
         float sh = h/scale;
@@ -89,7 +97,7 @@ matrix load_labels_detection(char **paths, int n, int height, int width, int num
     matrix y = make_matrix(n, k);
     int i;
     for(i = 0; i < n; ++i){
-        fill_truth_detection(paths[i], y.vals[i], height, width, num_height, num_width, scale);
+        fill_truth_detection(paths[i], y.vals[i], height, width, num_height, num_width, scale,0,0);
     }
     return y;
 }
@@ -127,6 +135,33 @@ void free_data(data d)
         free(d.y.vals);
     }
 }
+
+data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale)
+{
+    char **random_paths = calloc(n, sizeof(char*));
+    int i;
+    for(i = 0; i < n; ++i){
+        int index = rand()%m;
+        random_paths[i] = paths[index];
+        if(i == 0) printf("%s\n", paths[index]);
+    }
+    data d;
+    d.shallow = 0;
+    d.X = load_image_paths(random_paths, n, h, w);
+    int k = nh*nw*5;
+    d.y = make_matrix(n, k);
+    for(i = 0; i < n; ++i){
+        int dx = rand()%32;
+        int dy = rand()%32;
+        fill_truth_detection(random_paths[i], d.y.vals[i], 224, 224, nh, nw, scale, dx, dy);
+
+        image a = float_to_image(h, w, 3, d.X.vals[i]);
+        jitter_image(a,224,224,dy,dx);
+    }
+    free(random_paths);
+    return d;
+}
+
 
 data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale)
 {
@@ -166,6 +201,42 @@ data load_data_random(int n, char **paths, int m, char **labels, int k, int h, i
     data d = load_data(random_paths, n, labels, k, h, w);
     free(random_paths);
     return d;
+}
+
+struct load_args{
+    int n;
+    char **paths;
+    int m;
+    char **labels;
+    int k;
+    int h;
+    int w;
+    data *d;
+};
+
+void *load_in_thread(void *ptr)
+{
+    struct load_args a = *(struct load_args*)ptr;
+    *a.d = load_data_random(a.n, a.paths, a.m, a.labels, a.k, a.h, a.w);
+    return 0;
+}
+
+pthread_t load_data_random_thread(int n, char **paths, int m, char **labels, int k, int h, int w, data *d)
+{
+    pthread_t thread;
+    struct load_args *args = calloc(1, sizeof(struct load_args));
+    args->n = n;
+    args->paths = paths;
+    args->m = m;
+    args->labels = labels;
+    args->k = k;
+    args->h = h;
+    args->w = w;
+    args->d = d;
+    if(pthread_create(&thread, 0, load_in_thread, args)) {
+        error("Thread creation failed");
+    }
+    return thread;
 }
 
 data load_categorical_data_csv(char *filename, int target, int k)

@@ -15,7 +15,7 @@
 #include "connected_layer.h"
 #include "convolutional_layer.h"
 
-#define SERVER_PORT 9876
+#define SERVER_PORT 9423
 #define STR(x) #x
 
 int socket_setup(int server)
@@ -46,7 +46,7 @@ int socket_setup(int server)
 
 typedef struct{
     int fd;
-    int *counter;
+    int counter;
     network net;
 } connection_info;
 
@@ -85,6 +85,11 @@ void handle_connection(void *pointer)
     connection_info info = *(connection_info *) pointer;
     free(pointer);
     //printf("New Connection\n");
+    if(info.counter%100==0){
+        char buff[256];
+        sprintf(buff, "/home/pjreddie/net_%d.part", info.counter);
+        save_network(info.net, buff);
+    }
     int fd = info.fd;
     network net = info.net;
     int i;
@@ -134,7 +139,7 @@ void server_update(network net)
     while(1){
         connection_info *info = calloc(1, sizeof(connection_info));
         info->net = net;
-        info->counter = &counter;
+        info->counter = counter;
         pthread_t worker;
         int connection = accept(fd, (struct sockaddr *) &client, &client_size);
         if(!t) t=time(0);
@@ -142,10 +147,8 @@ void server_update(network net)
         pthread_create(&worker, NULL, (void *) &handle_connection, info);
         ++counter;
         printf("%d\n", counter);
-        if(counter == 1024) break;
-        if(counter%1000==0) save_network(net, "cfg/nist.part");
+        //if(counter == 1024) break;
     }
-    printf("1024 epochs: %d seconds\n", time(0)-t);
     close(fd);
 }
 
@@ -204,7 +207,9 @@ void client_update(network net, char *address)
             int num = layer.n*layer.c*layer.size*layer.size;
             read_all(fd, (char*) layer.filters, num*sizeof(float));
 
+#ifdef GPU
             push_convolutional_layer(layer);
+            #endif
         }
         if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *) net.layers[i];
@@ -212,7 +217,9 @@ void client_update(network net, char *address)
             read_all(fd, (char *)layer.biases, layer.outputs*sizeof(float));
             read_all(fd, (char *)layer.weights, layer.outputs*layer.inputs*sizeof(float));
 
+#ifdef GPU
             push_connected_layer(layer);
+            #endif
         }
     }
     //printf("Updated\n");

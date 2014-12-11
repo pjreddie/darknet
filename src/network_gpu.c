@@ -182,22 +182,10 @@ float train_network_datum_gpu(network net, float *x, float *y)
         cl_write_array(*net.input_cl, x, x_size);
         cl_write_array(*net.truth_cl, y, y_size);
     }
-    //printf("trans %f\n", sec(clock()-time));
-    //time = clock();
-
     forward_network_gpu(net, *net.input_cl, *net.truth_cl, 1);
-
-    //printf("forw %f\n", sec(clock()-time));
-    //time = clock();
     backward_network_gpu(net, *net.input_cl);
-    //printf("back %f\n", sec(clock()-time));
-    //time = clock();
-
     update_network_gpu(net);
     float error = get_network_cost(net);
-
-    //printf("updt %f\n", sec(clock()-time));
-    //time = clock();
     return error;
 }
 
@@ -302,11 +290,29 @@ matrix network_predict_data_gpu(network net, data test)
 float network_accuracy_gpu(network net, data d)
 {
     matrix guess = network_predict_data_gpu(net, d);
-    float acc = matrix_accuracy(d.y, guess);
+    float acc = matrix_topk_accuracy(d.y, guess,1);
+    free_matrix(guess);
+    return acc;
+}
+
+float *network_accuracies_gpu(network net, data d)
+{
+    static float acc[2];
+    matrix guess = network_predict_data_gpu(net, d);
+    acc[0] = matrix_topk_accuracy(d.y, guess,1);
+    acc[1] = matrix_topk_accuracy(d.y, guess,5);
     free_matrix(guess);
     return acc;
 }
 
 
+#else
+void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train){}
+void backward_network_gpu(network net, cl_mem input){}
+void update_network_gpu(network net){}
+float train_network_sgd_gpu(network net, data d, int n){return 0;}
+float train_network_data_gpu(network net, data d, int n){return 0;}
+float *network_predict_gpu(network net, float *input){return 0;}
+float network_accuracy_gpu(network net, data d){return 0;}
 
 #endif

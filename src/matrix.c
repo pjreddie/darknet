@@ -13,16 +13,24 @@ void free_matrix(matrix m)
     free(m.vals);
 }
 
-float matrix_accuracy(matrix truth, matrix guess)
+float matrix_topk_accuracy(matrix truth, matrix guess, int k)
 {
-    int k = truth.cols;
-    int i;
-    int count = 0;
+    int *indexes = calloc(k, sizeof(int));
+    int n = truth.cols;
+    int i,j;
+    int correct = 0;
     for(i = 0; i < truth.rows; ++i){
-        int class = max_index(guess.vals[i], k);
-        if(truth.vals[i][class]) ++count;
+        top_k(guess.vals[i], n, k, indexes);
+        for(j = 0; j < k; ++j){
+            int class = indexes[j];
+            if(truth.vals[i][class]){
+                ++correct;
+                break;
+            }
+        }
     }
-    return (float)count/truth.rows;
+    free(indexes);
+    return (float)correct/truth.rows;
 }
 
 void matrix_add_matrix(matrix from, matrix to)
@@ -80,30 +88,30 @@ float *pop_column(matrix *m, int c)
 
 matrix csv_to_matrix(char *filename)
 {
-	FILE *fp = fopen(filename, "r");
-	if(!fp) file_error(filename);
+    FILE *fp = fopen(filename, "r");
+    if(!fp) file_error(filename);
 
     matrix m;
     m.cols = -1;
 
-	char *line;
+    char *line;
 
-	int n = 0;
-	int size = 1024;
-	m.vals = calloc(size, sizeof(float*));
-	while((line = fgetl(fp))){
+    int n = 0;
+    int size = 1024;
+    m.vals = calloc(size, sizeof(float*));
+    while((line = fgetl(fp))){
         if(m.cols == -1) m.cols = count_fields(line);
-		if(n == size){
-			size *= 2;
-			m.vals = realloc(m.vals, size*sizeof(float*));
-		}
-		m.vals[n] = parse_fields(line, m.cols);
-		free(line);
-		++n;
-	}
-	m.vals = realloc(m.vals, n*sizeof(float*));
+        if(n == size){
+            size *= 2;
+            m.vals = realloc(m.vals, size*sizeof(float*));
+        }
+        m.vals[n] = parse_fields(line, m.cols);
+        free(line);
+        ++n;
+    }
+    m.vals = realloc(m.vals, n*sizeof(float*));
     m.rows = n;
-	return m;
+    return m;
 }
 
 void print_matrix(matrix m)

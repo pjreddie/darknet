@@ -30,19 +30,16 @@ float sec(clock_t clocks)
 void top_k(float *a, int n, int k, int *index)
 {
     int i,j;
-    float thresh = FLT_MAX;
-    for(i = 0; i < k; ++i){
-        float max = -FLT_MAX;
-        int max_i = -1;
-        for(j = 0; j < n; ++j){
-            float val = a[j];
-            if(val > max &&  val < thresh){
-                max = val;
-                max_i = j;
+    for(j = 0; j < k; ++j) index[j] = 0;
+    for(i = 0; i < n; ++i){
+        int curr = i;
+        for(j = 0; j < k; ++j){
+            if(a[curr] > a[index[j]]){
+                int swap = curr;
+                curr = index[j];
+                index[j] = swap;
             }
         }
-        index[i] = max_i;
-        thresh = max;
     }
 }
 
@@ -260,14 +257,40 @@ int max_index(float *a, int n)
     return max_i;
 }
 
+// From http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+#define TWO_PI 6.2831853071795864769252866
 float rand_normal()
 {
-    int n = 12;
-    int i;
-    float sum= 0;
-    for(i = 0; i < n; ++i) sum += (float)rand()/RAND_MAX;
-    return sum-n/2.;
+    static int haveSpare = 0;
+    static double rand1, rand2;
+
+    if(haveSpare)
+    {
+        haveSpare = 0;
+        return sqrt(rand1) * sin(rand2);
+    }
+
+    haveSpare = 1;
+
+    rand1 = rand() / ((double) RAND_MAX);
+    if(rand1 < 1e-100) rand1 = 1e-100;
+    rand1 = -2 * log(rand1);
+    rand2 = (rand() / ((double) RAND_MAX)) * TWO_PI;
+
+    return sqrt(rand1) * cos(rand2);
 }
+
+/*
+   float rand_normal()
+   {
+   int n = 12;
+   int i;
+   float sum= 0;
+   for(i = 0; i < n; ++i) sum += (float)rand()/RAND_MAX;
+   return sum-n/2.;
+   }
+ */
+
 float rand_uniform()
 {
     return (float)rand()/RAND_MAX;

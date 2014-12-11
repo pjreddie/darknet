@@ -35,17 +35,22 @@ typedef struct {
     #endif
 } network;
 
-#ifdef GPU
+#ifndef GPU
+typedef int cl_mem;
+#endif
+
+cl_mem get_network_output_cl_layer(network net, int i);
+cl_mem get_network_delta_cl_layer(network net, int i);
 void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train);
 void backward_network_gpu(network net, cl_mem input);
 void update_network_gpu(network net);
-cl_mem get_network_output_cl_layer(network net, int i);
-cl_mem get_network_delta_cl_layer(network net, int i);
 float train_network_sgd_gpu(network net, data d, int n);
 float train_network_data_gpu(network net, data d, int n);
 float *network_predict_gpu(network net, float *input);
 float network_accuracy_gpu(network net, data d);
-#endif
+float *network_accuracies_gpu(network net, data d);
+
+float *network_accuracies(network net, data d);
 
 network make_network(int n, int batch);
 void forward_network(network net, float *input, float *truth, int train);
@@ -72,6 +77,8 @@ int get_predicted_class_network(network net);
 void print_network(network net);
 void visualize_network(network net);
 int resize_network(network net, int h, int w, int c);
+void set_batch_network(network *net, int b);
+void set_learning_network(network *net, float rate, float momentum, float decay);
 int get_network_input_size(network net);
 float get_network_cost(network net);
 
