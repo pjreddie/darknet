@@ -294,7 +294,7 @@ void train_asirra()
     while(1){
         i += 1;
         time=clock();
-        data train = load_data_random(imgs*net.batch, paths, m, labels, 2, 256, 256);
+        data train = load_data(paths, imgs*net.batch, m, labels, 2, 256, 256);
         normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -404,7 +404,7 @@ void train_imagenet_distributed(char *address)
     printf("%d\n", plist->size);
     clock_t time;
     data train, buffer;
-    pthread_t load_thread = load_data_random_thread(imgs*net.batch, paths, plist->size, labels, 1000, 224, 224, &buffer);
+    pthread_t load_thread = load_data_thread(paths, imgs*net.batch, plist->size, labels, 1000, 224, 224, &buffer);
     while(1){
         i += 1;
 
@@ -416,7 +416,7 @@ void train_imagenet_distributed(char *address)
         pthread_join(load_thread, 0);
         train = buffer;
         normalize_data_rows(train);
-        load_thread = load_data_random_thread(imgs*net.batch, paths, plist->size, labels, 1000, 224, 224, &buffer);
+        load_thread = load_data_thread(paths, imgs*net.batch, plist->size, labels, 1000, 224, 224, &buffer);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
 
@@ -434,11 +434,10 @@ void train_imagenet()
     float avg_loss = 1;
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     srand(time(0));
-    network net = parse_network_cfg("cfg/net.cfg");
+    network net = parse_network_cfg("cfg/net.part");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
-    //imgs=1;
-    int i = 0;
+    int i = 9540;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
@@ -447,14 +446,14 @@ void train_imagenet()
     pthread_t load_thread;
     data train;
     data buffer;
-    load_thread = load_data_random_thread(imgs*net.batch, paths, plist->size, labels, 1000, 224, 224, &buffer);
+    load_thread = load_data_thread(paths, imgs*net.batch, plist->size, labels, 1000, 224, 224, &buffer);
     while(1){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
         normalize_data_rows(train);
-        load_thread = load_data_random_thread(imgs*net.batch, paths, plist->size, labels, 1000, 224, 224, &buffer);
+        load_thread = load_data_thread(paths, imgs*net.batch, plist->size, labels, 1000, 224, 224, &buffer);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
 #ifdef GPU
@@ -465,7 +464,7 @@ void train_imagenet()
         free_data(train);
         if(i%10==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/alexnet_%d.cfg", i);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/net_%d.cfg", i);
             save_network(net, buff);
         }
     }
@@ -473,7 +472,7 @@ void train_imagenet()
 
 void validate_imagenet(char *filename)
 {
-    int i;
+    int i = 0;
     network net = parse_network_cfg(filename);
     srand(time(0));
 
@@ -488,21 +487,28 @@ void validate_imagenet(char *filename)
     float avg_acc = 0;
     float avg_top5 = 0;
     int splits = 50;
+    int num = (i+1)*m/splits - i*m/splits;
 
-    for(i = 0; i < splits; ++i){
+    data val, buffer;
+    pthread_t load_thread = load_data_thread(paths, num, 0, labels, 1000, 224, 224, &buffer);
+    for(i = 1; i <= splits; ++i){
         time=clock();
-        char **part = paths+(i*m/splits);
-        int num = (i+1)*m/splits - i*m/splits;
-        data val = load_data(part, num, labels, 1000, 224, 224);
 
+        pthread_join(load_thread, 0);
+        val = buffer;
         normalize_data_rows(val);
+
+        num = (i+1)*m/splits - i*m/splits;
+        char **part = paths+(i*m/splits);
+        if(i != splits) load_thread = load_data_thread(part, num, 0, labels, 1000, 224, 224, &buffer);
         printf("Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
+
         time=clock();
 #ifdef GPU
         float *acc = network_accuracies_gpu(net, val);
         avg_acc += acc[0];
         avg_top5 += acc[1];
-        printf("%d: top1: %f, top5: %f, %lf seconds, %d images\n", i, avg_acc/(i+1), avg_top5/(i+1), sec(clock()-time), val.X.rows);
+        printf("%d: top1: %f, top5: %f, %lf seconds, %d images\n", i, avg_acc/i, avg_top5/i, sec(clock()-time), val.X.rows);
 #endif
         free_data(val);
     }
@@ -895,14 +901,14 @@ void test_correct_alexnet()
     int count = 0;
 
     srand(222222);
-    network net = parse_network_cfg("cfg/alexnet.test");
+    network net = parse_network_cfg("cfg/net.cfg");
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
     imgs = 1;
 
     while(++count <= 5){
         time=clock();
-        data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
+        data train = load_data(paths, imgs*net.batch, plist->size, labels, 1000, 224,224);
         //translate_data_rows(train, -144);
         normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
@@ -914,10 +920,10 @@ void test_correct_alexnet()
 #ifdef GPU
     count = 0;
     srand(222222);
-    net = parse_network_cfg("cfg/alexnet.test");
+    net = parse_network_cfg("cfg/net.cfg");
     while(++count <= 5){
         time=clock();
-        data train = load_data_random(imgs*net.batch, paths, plist->size, labels, 1000, 256, 256);
+        data train = load_data(paths, imgs*net.batch, plist->size, labels, 1000, 224, 224);
         //translate_data_rows(train, -144);
         normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));

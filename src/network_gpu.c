@@ -101,6 +101,10 @@ void backward_network_gpu(network net, cl_mem input)
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
             backward_maxpool_layer_gpu(layer, prev_delta);
         }
+        else if(net.types[i] == DROPOUT){
+            dropout_layer layer = *(dropout_layer *)net.layers[i];
+            backward_dropout_layer_gpu(layer, prev_delta);
+        }
         else if(net.types[i] == SOFTMAX){
             softmax_layer layer = *(softmax_layer *)net.layers[i];
             backward_softmax_layer_gpu(layer, prev_delta);

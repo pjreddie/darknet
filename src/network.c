@@ -219,6 +219,10 @@ void backward_network(network net, float *input)
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
             if(i != 0) backward_maxpool_layer(layer, prev_delta);
         }
+        else if(net.types[i] == DROPOUT){
+            dropout_layer layer = *(dropout_layer *)net.layers[i];
+            backward_dropout_layer(layer, prev_delta);
+        }
         else if(net.types[i] == NORMALIZATION){
             normalization_layer layer = *(normalization_layer *)net.layers[i];
             if(i != 0) backward_normalization_layer(layer, prev_input, prev_delta);

@@ -1,5 +1,5 @@
-__kernel void forward(__global float *input, __global float *rand, float prob)
+__kernel void yoloswag420blazeit360noscope(__global float *input, __global float *rand, float prob, float scale)
 {
     int id = get_global_id(0);
-    input[id] = (rand[id] < prob) ? 0 : input[id]/(1.-prob);
+    input[id] = (rand[id] < prob) ? 0 : input[id]*scale;
 }

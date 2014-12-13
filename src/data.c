@@ -180,16 +180,7 @@ data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh
     return d;
 }
 
-data load_data(char **paths, int n, char **labels, int k, int h, int w)
-{
-    data d;
-    d.shallow = 0;
-    d.X = load_image_paths(paths, n, h, w);
-    d.y = load_labels_paths(paths, n, labels, k);
-    return d;
-}
-
-data load_data_random(int n, char **paths, int m, char **labels, int k, int h, int w)
+char **get_random_paths(char **paths, int n, int m)
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
@@ -198,14 +189,23 @@ data load_data_random(int n, char **paths, int m, char **labels, int k, int h, i
         random_paths[i] = paths[index];
         if(i == 0) printf("%s\n", paths[index]);
     }
-    data d = load_data(random_paths, n, labels, k, h, w);
-    free(random_paths);
+    return random_paths;
+}
+
+data load_data(char **paths, int n, int m, char **labels, int k, int h, int w)
+{
+    if(m) paths = get_random_paths(paths, n, m);
+    data d;
+    d.shallow = 0;
+    d.X = load_image_paths(paths, n, h, w);
+    d.y = load_labels_paths(paths, n, labels, k);
+    if(m) free(paths);
     return d;
 }
 
 struct load_args{
-    int n;
     char **paths;
+    int n;
     int m;
     char **labels;
     int k;
@@ -217,11 +217,11 @@ struct load_args{
 void *load_in_thread(void *ptr)
 {
     struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data_random(a.n, a.paths, a.m, a.labels, a.k, a.h, a.w);
+    *a.d = load_data(a.paths, a.n, a.m, a.labels, a.k, a.h, a.w);
     return 0;
 }
 
-pthread_t load_data_random_thread(int n, char **paths, int m, char **labels, int k, int h, int w, data *d)
+pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int h, int w, data *d)
 {
     pthread_t thread;
     struct load_args *args = calloc(1, sizeof(struct load_args));
