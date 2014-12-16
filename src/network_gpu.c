@@ -55,6 +55,11 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
             dropout_layer layer = *(dropout_layer *)net.layers[i];
             forward_dropout_layer_gpu(layer, input);
         }
+        else if(net.types[i] == CROP){
+            crop_layer layer = *(crop_layer *)net.layers[i];
+            forward_crop_layer_gpu(layer, input);
+            input = layer.output_cl;
+        }
         //printf("%d %f\n", i, sec(clock()-time));
         /*
            else if(net.types[i] == CROP){
@@ -140,6 +145,10 @@ cl_mem get_network_output_cl_layer(network net, int i)
     }
     else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.output_cl;
+    }
+    else if(net.types[i] == CROP){
+        crop_layer layer = *(crop_layer *)net.layers[i];
         return layer.output_cl;
     }
     else if(net.types[i] == SOFTMAX){
@@ -260,7 +269,7 @@ float *get_network_output_gpu(network net)
 
 float *network_predict_gpu(network net, float *input)
 {
-    
+
     int size = get_network_input_size(net) * net.batch;
     cl_mem input_cl = cl_make_array(input, size);
     forward_network_gpu(net, input_cl, 0, 0);

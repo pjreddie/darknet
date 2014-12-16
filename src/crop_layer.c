@@ -21,37 +21,77 @@ crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int
     layer->crop_width = crop_width;
     layer->crop_height = crop_height;
     layer->output = calloc(crop_width*crop_height * c*batch, sizeof(float));
-    layer->delta = calloc(crop_width*crop_height * c*batch, sizeof(float));
+    #ifdef GPU
+    layer->output_cl = cl_make_array(layer->output, crop_width*crop_height*c*batch);
+    #endif
     return layer;
 }
+
 void forward_crop_layer(const crop_layer layer, float *input)
 {
-    int i,j,c,b;
+    int i,j,c,b,row,col;
+    int index;
+    int count = 0;
+    int flip = (layer.flip && rand()%2);
     int dh = rand()%(layer.h - layer.crop_height);
     int dw = rand()%(layer.w - layer.crop_width);
-    int count = 0;
-    if(layer.flip && rand()%2){
-        for(b = 0; b < layer.batch; ++b){
-            for(c = 0; c < layer.c; ++c){
-                for(i = dh; i < dh+layer.crop_height; ++i){
-                    for(j = dw+layer.crop_width-1; j >= dw; --j){
-                        int index = j+layer.w*(i+layer.h*(c + layer.c*b));
-                        layer.output[count++] = input[index];
+    for(b = 0; b < layer.batch; ++b){
+        for(c = 0; c < layer.c; ++c){
+            for(i = 0; i < layer.crop_height; ++i){
+                for(j = 0; j < layer.crop_width; ++j){
+                    if(flip){
+                        col = layer.w - dw - j - 1;    
+                    }else{
+                        col = j + dw;
                     }
-                }
-            }
-        }
-    }else{
-        for(b = 0; b < layer.batch; ++b){
-            for(c = 0; c < layer.c; ++c){
-                for(i = dh; i < dh+layer.crop_height; ++i){
-                    for(j = dw; j < dw+layer.crop_width; ++j){
-                        int index = j+layer.w*(i+layer.h*(c + layer.c*b));
-                        layer.output[count++] = input[index];
-                    }
+                    row = i + dh;
+                    index = col+layer.w*(row+layer.h*(c + layer.c*b)); 
+                    layer.output[count++] = input[index];
                 }
             }
         }
     }
 }
 
+#ifdef GPU
+cl_kernel get_crop_kernel()
+{
+    static int init = 0;
+    static cl_kernel kernel;
+    if(!init){
+        kernel = get_kernel("src/crop_layer.cl", "forward", 0);
+        init = 1;
+    }
+    return kernel;
+}
+
+void forward_crop_layer_gpu(crop_layer layer, cl_mem input)
+{
+    int flip = (layer.flip && rand()%2);
+    int dh = rand()%(layer.h - layer.crop_height);
+    int dw = rand()%(layer.w - layer.crop_width);
+    int size = layer.batch*layer.c*layer.crop_width*layer.crop_height;
+
+    cl_kernel kernel = get_crop_kernel();
+    cl_command_queue queue = cl.queue;
+
+    cl_uint i = 0;
+    cl.error = clSetKernelArg(kernel, i++, sizeof(input), (void*) &input);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.c), (void*) &layer.c);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.h), (void*) &layer.h);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.w), (void*) &layer.w);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.crop_height), (void*) &layer.crop_height);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.crop_width), (void*) &layer.crop_width);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(dh), (void*) &dh);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(dw), (void*) &dw);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(flip), (void*) &flip);
+    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.output_cl), (void*) &layer.output_cl);
+    check_error(cl);
+
+    const size_t global_size[] = {size};
+
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    check_error(cl);
+}
+
+#endif

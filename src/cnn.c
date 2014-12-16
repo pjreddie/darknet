@@ -429,15 +429,16 @@ void train_imagenet_distributed(char *address)
     }
 }
 
-void train_imagenet()
+void train_imagenet(char *cfgfile)
 {
     float avg_loss = 1;
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     srand(time(0));
-    network net = parse_network_cfg("cfg/net.part");
+    network net = parse_network_cfg(cfgfile);
+    set_learning_network(&net, .000001, .9, .0005);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1000/net.batch+1;
-    int i = 9540;
+    int i = 20590;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
@@ -446,14 +447,14 @@ void train_imagenet()
     pthread_t load_thread;
     data train;
     data buffer;
-    load_thread = load_data_thread(paths, imgs*net.batch, plist->size, labels, 1000, 224, 224, &buffer);
+    load_thread = load_data_thread(paths, imgs*net.batch, plist->size, labels, 1000, 256, 256, &buffer);
     while(1){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
         normalize_data_rows(train);
-        load_thread = load_data_thread(paths, imgs*net.batch, plist->size, labels, 1000, 224, 224, &buffer);
+        load_thread = load_data_thread(paths, imgs*net.batch, plist->size, labels, 1000, 256, 256, &buffer);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
 #ifdef GPU
@@ -490,7 +491,7 @@ void validate_imagenet(char *filename)
     int num = (i+1)*m/splits - i*m/splits;
 
     data val, buffer;
-    pthread_t load_thread = load_data_thread(paths, num, 0, labels, 1000, 224, 224, &buffer);
+    pthread_t load_thread = load_data_thread(paths, num, 0, labels, 1000, 256, 256, &buffer);
     for(i = 1; i <= splits; ++i){
         time=clock();
 
@@ -500,7 +501,7 @@ void validate_imagenet(char *filename)
 
         num = (i+1)*m/splits - i*m/splits;
         char **part = paths+(i*m/splits);
-        if(i != splits) load_thread = load_data_thread(part, num, 0, labels, 1000, 224, 224, &buffer);
+        if(i != splits) load_thread = load_data_thread(part, num, 0, labels, 1000, 256, 256, &buffer);
         printf("Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
 
         time=clock();
@@ -514,9 +515,10 @@ void validate_imagenet(char *filename)
     }
 }
 
-void test_detection()
+void test_detection(char *cfgfile)
 {
-    network net = parse_network_cfg("cfg/detnet.test");
+    network net = parse_network_cfg(cfgfile);
+    set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
     char filename[256];
@@ -618,14 +620,14 @@ void test_cifar10()
 void train_cifar10()
 {
     srand(555555);
-    network net = parse_network_cfg("cfg/cifar10.cfg");
+    network net = parse_network_cfg("cfg/cifar_ramp.part");
     data test = load_cifar10_data("data/cifar10/test_batch.bin");
     int count = 0;
     int iters = 10000/net.batch;
     data train = load_all_cifar10();
     while(++count <= 10000){
         clock_t start = clock(), end;
-        float loss = train_network_sgd(net, train, iters);
+        float loss = train_network_sgd_gpu(net, train, iters);
         end = clock();
         //visualize_network(net);
         //cvWaitKey(5000);
@@ -633,10 +635,10 @@ void train_cifar10()
         //float test_acc = network_accuracy(net, test);
         //printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
         if(count%10 == 0){
-            float test_acc = network_accuracy(net, test);
+            float test_acc = network_accuracy_gpu(net, test);
             printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
             char buff[256];
-            sprintf(buff, "/home/pjreddie/cifar/cifar10_2_%d.cfg", count);
+            sprintf(buff, "/home/pjreddie/cifar/cifar10_%d.cfg", count);
             save_network(net, buff);
         }else{
             printf("%d: Loss: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, (float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
@@ -899,31 +901,16 @@ void test_correct_alexnet()
     printf("%d\n", plist->size);
     clock_t time;
     int count = 0;
-
-    srand(222222);
-    network net = parse_network_cfg("cfg/net.cfg");
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network net;
     int imgs = 1000/net.batch+1;
     imgs = 1;
-
-    while(++count <= 5){
-        time=clock();
-        data train = load_data(paths, imgs*net.batch, plist->size, labels, 1000, 224,224);
-        //translate_data_rows(train, -144);
-        normalize_data_rows(train);
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
-        time=clock();
-        float loss = train_network_data_cpu(net, train, imgs);
-        printf("%d: %f, %lf seconds, %d images\n", count, loss, sec(clock()-time), imgs*net.batch);
-        free_data(train);
-    }
 #ifdef GPU
     count = 0;
     srand(222222);
     net = parse_network_cfg("cfg/net.cfg");
     while(++count <= 5){
         time=clock();
-        data train = load_data(paths, imgs*net.batch, plist->size, labels, 1000, 224, 224);
+        data train = load_data(paths, imgs*net.batch, plist->size, labels, 1000, 256, 256);
         //translate_data_rows(train, -144);
         normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
@@ -933,6 +920,21 @@ void test_correct_alexnet()
         free_data(train);
     }
 #endif
+    count = 0;
+    srand(222222);
+    net = parse_network_cfg("cfg/net.cfg");
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    while(++count <= 5){
+        time=clock();
+        data train = load_data(paths, imgs*net.batch, plist->size, labels, 1000, 256,256);
+        //translate_data_rows(train, -144);
+        normalize_data_rows(train);
+        printf("Loaded: %lf seconds\n", sec(clock()-time));
+        time=clock();
+        float loss = train_network_data_cpu(net, train, imgs);
+        printf("%d: %f, %lf seconds, %d images\n", count, loss, sec(clock()-time), imgs*net.batch);
+        free_data(train);
+    }
 }
 
 void run_server()
@@ -972,22 +974,23 @@ int main(int argc, char *argv[])
 #ifdef GPU
     cl_setup(index);
 #endif
-    if(0==strcmp(argv[1], "train")) train_imagenet();
-    else if(0==strcmp(argv[1], "detection")) train_detection_net();
+    if(0==strcmp(argv[1], "detection")) train_detection_net();
     else if(0==strcmp(argv[1], "asirra")) train_asirra();
     else if(0==strcmp(argv[1], "nist")) train_nist();
+    else if(0==strcmp(argv[1], "cifar")) train_cifar10();
     else if(0==strcmp(argv[1], "test_correct")) test_correct_alexnet();
     else if(0==strcmp(argv[1], "test")) test_imagenet();
     else if(0==strcmp(argv[1], "server")) run_server();
-    else if(0==strcmp(argv[1], "detect")) test_detection();
 #ifdef GPU
     else if(0==strcmp(argv[1], "test_gpu")) test_gpu_blas();
 #endif
     else if(argc < 3){
-        fprintf(stderr, "usage: %s <function>\n", argv[0]);
+        fprintf(stderr, "usage: %s <function> <filename>\n", argv[0]);
         return 0;
     }
+    else if(0==strcmp(argv[1], "train")) train_imagenet(argv[2]);
     else if(0==strcmp(argv[1], "client")) train_imagenet_distributed(argv[2]);
+    else if(0==strcmp(argv[1], "detect")) test_detection(argv[2]);
     else if(0==strcmp(argv[1], "init")) test_init(argv[2]);
     else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
     else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2]);

@@ -125,6 +125,9 @@ float *get_network_output_layer(network net, int i)
     } else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
         return layer.output;
+    } else if(net.types[i] == CROP){
+        crop_layer layer = *(crop_layer *)net.layers[i];
+        return layer.output;
     } else if(net.types[i] == NORMALIZATION){
         normalization_layer layer = *(normalization_layer *)net.layers[i];
         return layer.output;
@@ -402,6 +405,9 @@ int get_network_input_size_layer(network net, int i)
     } else if(net.types[i] == DROPOUT){
         dropout_layer layer = *(dropout_layer *) net.layers[i];
         return layer.inputs;
+    } else if(net.types[i] == CROP){
+        crop_layer layer = *(crop_layer *) net.layers[i];
+        return layer.c*layer.h*layer.w;
     }
     else if(net.types[i] == FREEWEIGHT){
         freeweight_layer layer = *(freeweight_layer *) net.layers[i];
@@ -411,6 +417,7 @@ int get_network_input_size_layer(network net, int i)
         softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.inputs;
     }
+    printf("Can't find input size\n");
     return 0;
 }
 
@@ -425,6 +432,10 @@ int get_network_output_size_layer(network net, int i)
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
         image output = get_maxpool_image(layer);
         return output.h*output.w*output.c;
+    }
+     else if(net.types[i] == CROP){
+        crop_layer layer = *(crop_layer *) net.layers[i];
+        return layer.c*layer.crop_height*layer.crop_width;
     }
     else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
@@ -442,6 +453,7 @@ int get_network_output_size_layer(network net, int i)
         softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.inputs;
     }
+    printf("Can't find output size\n");
     return 0;
 }
 
