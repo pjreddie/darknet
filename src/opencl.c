@@ -159,6 +159,7 @@ cl_kernel get_kernel(char *filename, char *kernelname, char *options)
 
 void cl_read_array(cl_mem mem, float *x, int n)
 {
+    if(gpu_index < 0) return;
     cl.error = clEnqueueReadBuffer(cl.queue, mem, CL_TRUE, 0, sizeof(float)*n,x,0,0,0);
     check_error(cl);
 }
@@ -175,6 +176,7 @@ float cl_checksum(cl_mem mem, int n)
 
 void cl_write_array(cl_mem mem, float *x, int n)
 {
+    if(gpu_index < 0) return;
     cl.error = clEnqueueWriteBuffer(cl.queue, mem, CL_TRUE, 0,sizeof(float)*n,x,0,0,0);
     check_error(cl);
 }
@@ -209,6 +211,7 @@ cl_mem cl_make_array(float *x, int n)
 
 cl_mem cl_make_int_array(int *x, int n)
 {
+    if(gpu_index < 0) return 0;
     cl_mem mem = clCreateBuffer(cl.context,
             CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
             sizeof(int)*n, x, &cl.error);

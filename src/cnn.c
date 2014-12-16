@@ -562,7 +562,7 @@ void del_arg(int argc, char **argv, int index)
 int find_arg(int argc, char* argv[], char *arg)
 {
     int i;
-    for(i = 0; i < argc-1; ++i) if(0==strcmp(argv[i], arg)) {
+    for(i = 0; i < argc; ++i) if(0==strcmp(argv[i], arg)) {
         del_arg(argc, argv, i);
         return 1;
     }
