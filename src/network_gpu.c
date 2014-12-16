@@ -17,15 +17,13 @@
 #include "dropout_layer.h"
 
 #ifdef GPU
+cl_mem get_network_output_cl_layer(network net, int i);
+cl_mem get_network_delta_cl_layer(network net, int i);
 
 void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
 {
-    //printf("start\n");
     int i;
-   // printf("Truth: %f\n", cl_checksum(truth, 1000*net.batch));
     for(i = 0; i < net.n; ++i){
-        //printf("Truth %i: %f\n", i, cl_checksum(truth, 1000*net.batch));
-        //clock_t time = clock();
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             forward_convolutional_layer_gpu(layer, input);
@@ -60,19 +58,6 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
             forward_crop_layer_gpu(layer, input);
             input = layer.output_cl;
         }
-        //printf("%d %f\n", i, sec(clock()-time));
-        /*
-           else if(net.types[i] == CROP){
-           crop_layer layer = *(crop_layer *)net.layers[i];
-           forward_crop_layer(layer, input);
-           input = layer.output;
-           }
-           else if(net.types[i] == NORMALIZATION){
-           normalization_layer layer = *(normalization_layer *)net.layers[i];
-           forward_normalization_layer(layer, input);
-           input = layer.output;
-           }
-         */
     }
 }
 
@@ -82,7 +67,6 @@ void backward_network_gpu(network net, cl_mem input)
     cl_mem prev_input;
     cl_mem prev_delta;
     for(i = net.n-1; i >= 0; --i){
-        //clock_t time = clock();
         if(i == 0){
             prev_input = input;
             prev_delta = 0;
@@ -114,7 +98,6 @@ void backward_network_gpu(network net, cl_mem input)
             softmax_layer layer = *(softmax_layer *)net.layers[i];
             backward_softmax_layer_gpu(layer, prev_delta);
         }
-        //printf("back: %d %f\n", i, sec(clock()-time));
     }
 }
 
@@ -187,7 +170,6 @@ float train_network_datum_gpu(network net, float *x, float *y)
 {
     int x_size = get_network_input_size(net)*net.batch;
     int y_size = get_network_output_size(net)*net.batch;
-    //clock_t time = clock();
     if(!*net.input_cl){
         *net.input_cl = cl_make_array(x, x_size);
         *net.truth_cl = cl_make_array(y, y_size);
@@ -200,42 +182,6 @@ float train_network_datum_gpu(network net, float *x, float *y)
     update_network_gpu(net);
     float error = get_network_cost(net);
     return error;
-}
-
-float train_network_sgd_gpu(network net, data d, int n)
-{
-    int batch = net.batch;
-    float *X = calloc(batch*d.X.cols, sizeof(float));
-    float *y = calloc(batch*d.y.cols, sizeof(float));
-
-    int i;
-    float sum = 0;
-    for(i = 0; i < n; ++i){
-        get_random_batch(d, batch, X, y);
-        float err = train_network_datum_gpu(net, X, y);
-        sum += err;
-    }
-    free(X);
-    free(y);
-    return (float)sum/(n*batch);
-}
-
-float train_network_data_gpu(network net, data d, int n)
-{
-    int batch = net.batch;
-    float *X = calloc(batch*d.X.cols, sizeof(float));
-    float *y = calloc(batch*d.y.cols, sizeof(float));
-
-    int i;
-    float sum = 0;
-    for(i = 0; i < n; ++i){
-        get_next_batch(d, batch, i*batch, X, y);
-        float err = train_network_datum_gpu(net, X, y);
-        sum += err;
-    }
-    free(X);
-    free(y);
-    return (float)sum/(n*batch);
 }
 
 float *get_network_output_layer_gpu(network net, int i)
@@ -277,55 +223,5 @@ float *network_predict_gpu(network net, float *input)
     clReleaseMemObject(input_cl);
     return out;
 }
-
-matrix network_predict_data_gpu(network net, data test)
-{
-    int i,j,b;
-    int k = get_network_output_size(net);
-    matrix pred = make_matrix(test.X.rows, k);
-    float *X = calloc(net.batch*test.X.cols, sizeof(float));
-    for(i = 0; i < test.X.rows; i += net.batch){
-        for(b = 0; b < net.batch; ++b){
-            if(i+b == test.X.rows) break;
-            memcpy(X+b*test.X.cols, test.X.vals[i+b], test.X.cols*sizeof(float));
-        }
-        float *out = network_predict_gpu(net, X);
-        for(b = 0; b < net.batch; ++b){
-            if(i+b == test.X.rows) break;
-            for(j = 0; j < k; ++j){
-                pred.vals[i+b][j] = out[j+b*k];
-            }
-        }
-    }
-    free(X);
-    return pred;   
-}
-float network_accuracy_gpu(network net, data d)
-{
-    matrix guess = network_predict_data_gpu(net, d);
-    float acc = matrix_topk_accuracy(d.y, guess,1);
-    free_matrix(guess);
-    return acc;
-}
-
-float *network_accuracies_gpu(network net, data d)
-{
-    static float acc[2];
-    matrix guess = network_predict_data_gpu(net, d);
-    acc[0] = matrix_topk_accuracy(d.y, guess,1);
-    acc[1] = matrix_topk_accuracy(d.y, guess,5);
-    free_matrix(guess);
-    return acc;
-}
-
-
-#else
-void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train){}
-void backward_network_gpu(network net, cl_mem input){}
-void update_network_gpu(network net){}
-float train_network_sgd_gpu(network net, data d, int n){return 0;}
-float train_network_data_gpu(network net, data d, int n){return 0;}
-float *network_predict_gpu(network net, float *input){return 0;}
-float network_accuracy_gpu(network net, data d){return 0;}
 
 #endif

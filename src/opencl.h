@@ -1,6 +1,7 @@
-#ifdef GPU
 #ifndef OPENCL_H
 #define OPENCL_H
+extern int gpu_index;
+#ifdef GPU
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
 #else
@@ -19,7 +20,7 @@ typedef struct {
 
 extern cl_info cl;
 
-void cl_setup(int index);
+void cl_setup();
 void check_error(cl_info info);
 cl_kernel get_kernel(char *filename, char *kernelname, char *options);
 void cl_read_array(cl_mem mem, float *x, int n);

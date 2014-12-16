@@ -245,17 +245,15 @@ void backward_network(network net, float *input)
     }
 }
 
-
-
-
 float train_network_datum(network net, float *x, float *y)
 {
+    #ifdef GPU
+    if(gpu_index >= 0) return train_network_datum_gpu(net, x, y);
+    #endif
     forward_network(net, x, y, 1);
-    //int class = get_predicted_class_network(net);
     backward_network(net, x);
     float error = get_network_cost(net);
     update_network(net);
-    //return (y[class]?1:0);
     return error;
 }
 
@@ -269,6 +267,25 @@ float train_network_sgd(network net, data d, int n)
     float sum = 0;
     for(i = 0; i < n; ++i){
         get_random_batch(d, batch, X, y);
+        float err = train_network_datum(net, X, y);
+        sum += err;
+    }
+    free(X);
+    free(y);
+    return (float)sum/(n*batch);
+}
+
+float train_network(network net, data d)
+{
+    int batch = net.batch;
+    int n = d.X.rows / batch;
+    float *X = calloc(batch*d.X.cols, sizeof(float));
+    float *y = calloc(batch*d.y.cols, sizeof(float));
+
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; ++i){
+        get_next_batch(d, batch, i*batch, X, y);
         float err = train_network_datum(net, X, y);
         sum += err;
     }
@@ -294,40 +311,6 @@ float train_network_batch(network net, data d, int n)
         update_network(net);
     }
     return (float)sum/(n*batch);
-}
-
-float train_network_data_cpu(network net, data d, int n)
-{
-    int batch = net.batch;
-    float *X = calloc(batch*d.X.cols, sizeof(float));
-    float *y = calloc(batch*d.y.cols, sizeof(float));
-
-    int i;
-    float sum = 0;
-    for(i = 0; i < n; ++i){
-        get_next_batch(d, batch, i*batch, X, y);
-        float err = train_network_datum(net, X, y);
-        sum += err;
-    }
-    free(X);
-    free(y);
-    return (float)sum/(n*batch);
-}
-
-void train_network(network net, data d)
-{
-    int i;
-    int correct = 0;
-    for(i = 0; i < d.X.rows; ++i){
-        correct += train_network_datum(net, d.X.vals[i], d.y.vals[i]);
-        if(i%100 == 0){
-            visualize_network(net);
-            cvWaitKey(10);
-        }
-    }
-    visualize_network(net);
-    cvWaitKey(100);
-    fprintf(stderr, "Accuracy: %f\n", (float)correct/d.X.rows);
 }
 
 void set_learning_network(network *net, float rate, float momentum, float decay)
@@ -561,6 +544,10 @@ void top_predictions(network net, int k, int *index)
 
 float *network_predict(network net, float *input)
 {
+    #ifdef GPU
+        if(gpu_index >= 0) return network_predict_gpu(net, input);
+    #endif
+
     forward_network(net, input, 0, 0);
     float *out = get_network_output(net);
     return out;

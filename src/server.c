@@ -87,7 +87,7 @@ void handle_connection(void *pointer)
     //printf("New Connection\n");
     if(info.counter%100==0){
         char buff[256];
-        sprintf(buff, "/home/pjreddie/net_%d.part", info.counter);
+        sprintf(buff, "unikitty/net_%d.part", info.counter);
         save_network(info.net, buff);
     }
     int fd = info.fd;
@@ -131,8 +131,8 @@ void handle_connection(void *pointer)
 void server_update(network net)
 {
     int fd = socket_setup(1);
-    int counter = 0;
-    listen(fd, 10);
+    int counter = 18000;
+    listen(fd, 64);
     struct sockaddr_in client;     /* remote address */
     socklen_t client_size = sizeof(client);   /* length of addresses */
     time_t t=0;
