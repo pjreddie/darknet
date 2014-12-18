@@ -367,10 +367,10 @@ void test_nist(char *path)
     printf("Accuracy: %f, Time: %lf seconds\n", test_acc,(float)(end-start)/CLOCKS_PER_SEC);
 }
 
-void train_nist()
+void train_nist(char *cfgfile)
 {
     srand(222222);
-    network net = parse_network_cfg("cfg/nist.cfg.old");
+    network net = parse_network_cfg(cfgfile);
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
     normalize_data_rows(train);
@@ -382,10 +382,12 @@ void train_nist()
         float loss = train_network_sgd(net, train, iters);
         end = clock();
         float test_acc = 0;
-        if(count%1 == 0) test_acc = network_accuracy(net, test);
+        //if(count%1 == 0) test_acc = network_accuracy(net, test);
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC);
     }
-    save_network(net, "~/nist_conv.cfg");
+    char buff[256];
+    sprintf(buff, "%s.trained", cfgfile);
+    save_network(net, buff);
 }
 
 void train_nist_distributed(char *address)
@@ -602,7 +604,6 @@ int main(int argc, char **argv)
 #endif
 
     if(0==strcmp(argv[1], "detection")) train_detection_net();
-    else if(0==strcmp(argv[1], "nist")) train_nist();
     else if(0==strcmp(argv[1], "cifar")) train_cifar10();
     else if(0==strcmp(argv[1], "test_correct")) test_correct_alexnet();
     else if(0==strcmp(argv[1], "test")) test_imagenet();
@@ -616,6 +617,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "usage: %s <function> <filename>\n", argv[0]);
         return 0;
     }
+    else if(0==strcmp(argv[1], "nist")) train_nist(argv[2]);
     else if(0==strcmp(argv[1], "train")) train_imagenet(argv[2]);
     else if(0==strcmp(argv[1], "client")) train_imagenet_distributed(argv[2]);
     else if(0==strcmp(argv[1], "detect")) test_detection(argv[2]);
