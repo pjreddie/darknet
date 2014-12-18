@@ -665,6 +665,9 @@ void compare_networks(network n1, network n2, data test)
         }
     }
     printf("%5d %5d\n%5d %5d\n", a, b, c, d);
+    float num = pow((abs(b - c) - 1.), 2.);
+    float den = b + c;
+    printf("%f\n", num/den); 
 }
 
 float network_accuracy(network net, data d)

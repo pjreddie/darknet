@@ -380,6 +380,7 @@ void test_nist(char *path)
 void train_nist(char *cfgfile)
 {
     srand(222222);
+    srand(time(0));
     network net = parse_network_cfg(cfgfile);
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
