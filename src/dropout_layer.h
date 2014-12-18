@@ -8,8 +8,10 @@ typedef struct{
     float probability;
     float scale;
     float *rand;
+    float *output;
     #ifdef GPU
     cl_mem rand_cl;
+    cl_mem output_cl;
     #endif
 } dropout_layer;
 

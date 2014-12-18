@@ -52,6 +52,7 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
             if(!train) continue;
             dropout_layer layer = *(dropout_layer *)net.layers[i];
             forward_dropout_layer_gpu(layer, input);
+            input = layer.output_cl;
         }
         else if(net.types[i] == CROP){
             crop_layer layer = *(crop_layer *)net.layers[i];
@@ -138,7 +139,8 @@ cl_mem get_network_output_cl_layer(network net, int i)
         softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.output_cl;
     } else if(net.types[i] == DROPOUT){
-        return get_network_output_cl_layer(net, i-1);
+        dropout_layer layer = *(dropout_layer *)net.layers[i];
+        return layer.output_cl;
     }
     return 0;
 }
@@ -161,6 +163,7 @@ cl_mem get_network_delta_cl_layer(network net, int i)
         softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.delta_cl;
     } else if(net.types[i] == DROPOUT){
+        if(i == 0) return 0;
         return get_network_delta_cl_layer(net, i-1);
     }
     return 0;

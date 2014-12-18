@@ -74,6 +74,7 @@ void forward_network(network net, float *input, float *truth, int train)
             if(!train) continue;
             dropout_layer layer = *(dropout_layer *)net.layers[i];
             forward_dropout_layer(layer, input);
+            input = layer.output;
         }
         else if(net.types[i] == FREEWEIGHT){
             if(!train) continue;
@@ -119,7 +120,8 @@ float *get_network_output_layer(network net, int i)
         softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.output;
     } else if(net.types[i] == DROPOUT){
-        return get_network_output_layer(net, i-1);
+        dropout_layer layer = *(dropout_layer *)net.layers[i];
+        return layer.output;
     } else if(net.types[i] == FREEWEIGHT){
         return get_network_output_layer(net, i-1);
     } else if(net.types[i] == CONNECTED){
@@ -153,6 +155,7 @@ float *get_network_delta_layer(network net, int i)
         softmax_layer layer = *(softmax_layer *)net.layers[i];
         return layer.delta;
     } else if(net.types[i] == DROPOUT){
+        if(i == 0) return 0;
         return get_network_delta_layer(net, i-1);
     } else if(net.types[i] == FREEWEIGHT){
         return get_network_delta_layer(net, i-1);

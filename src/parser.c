@@ -245,6 +245,12 @@ dropout_layer *parse_dropout(list *options, network *net, int count)
     if(count == 0){
         net->batch = option_find_int(options, "batch",1);
         input = option_find_int(options, "input",1);
+        float learning_rate = option_find_float(options, "learning_rate", .001);
+        float momentum = option_find_float(options, "momentum", .9);
+        float decay = option_find_float(options, "decay", .0001);
+        net->learning_rate = learning_rate;
+        net->momentum = momentum;
+        net->decay = decay;
     }else{
         input =  get_network_output_size_layer(*net, count-1);
     }

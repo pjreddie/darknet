@@ -27,7 +27,7 @@ LDFLAGS+= -lOpenCL
 endif
 endif
 CFLAGS= $(COMMON) $(OPTS)
-#CFLAGS= $(COMMON) -O0 -g
+CFLAGS= $(COMMON) -O0 -g
 LDFLAGS+=`pkg-config --libs opencv` -lm -pthread
 VPATH=./src/
 EXEC=cnn
