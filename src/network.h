@@ -40,6 +40,8 @@ float train_network_datum_gpu(network net, float *x, float *y);
 float *network_predict_gpu(network net, float *input);
 #endif
 
+void compare_networks(network n1, network n2, data d);
+
 network make_network(int n, int batch);
 void forward_network(network net, float *input, float *truth, int train);
 void backward_network(network net, float *input);

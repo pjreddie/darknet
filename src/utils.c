@@ -243,6 +243,7 @@ void scale_array(float *a, int n, float s)
         a[i] *= s;
     }
 }
+
 int max_index(float *a, int n)
 {
     if(n <= 0) return -1;
