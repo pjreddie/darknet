@@ -151,10 +151,10 @@ void train_imagenet(char *cfgfile)
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     srand(time(0));
     network net = parse_network_cfg(cfgfile);
-    set_learning_network(&net, .000001, .9, .0005);
+    set_learning_network(&net, net.learning_rate, .5, .0005);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
-    int i = 20590;
+    int i = 23030;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
@@ -177,7 +177,7 @@ void train_imagenet(char *cfgfile)
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
         free_data(train);
-        if(i%10==0){
+        if(i%100==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/net_%d.cfg", i);
             save_network(net, buff);
@@ -370,14 +370,14 @@ void test_nist(char *path)
 void train_nist()
 {
     srand(222222);
-    network net = parse_network_cfg("cfg/nist.cfg");
+    network net = parse_network_cfg("cfg/nist.cfg.old");
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
     normalize_data_rows(train);
     normalize_data_rows(test);
     int count = 0;
     int iters = 60000/net.batch + 1;
-    while(++count <= 2000){
+    while(++count <= 200){
         clock_t start = clock(), end;
         float loss = train_network_sgd(net, train, iters);
         end = clock();
@@ -385,6 +385,7 @@ void train_nist()
         if(count%1 == 0) test_acc = network_accuracy(net, test);
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC);
     }
+    save_network(net, "~/nist_conv.cfg");
 }
 
 void train_nist_distributed(char *address)
