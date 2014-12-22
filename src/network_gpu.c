@@ -195,6 +195,7 @@ float *get_network_output_layer_gpu(network net, int i)
     }
     else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
+        cl_read_array(layer.output_cl, layer.output, layer.outputs*layer.batch);
         return layer.output;
     }
     else if(net.types[i] == MAXPOOL){

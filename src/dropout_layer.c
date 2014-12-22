@@ -80,6 +80,7 @@ void forward_dropout_layer_gpu(dropout_layer layer, cl_mem input)
 
 void backward_dropout_layer_gpu(dropout_layer layer, cl_mem delta)
 {
+    if(!delta) return;
     int size = layer.inputs*layer.batch;
 
     cl_kernel kernel = get_dropout_kernel();

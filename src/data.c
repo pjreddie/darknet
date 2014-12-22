@@ -81,6 +81,18 @@ matrix load_image_paths(char **paths, int n, int h, int w)
     return X;
 }
 
+char **get_random_paths(char **paths, int n, int m)
+{
+    char **random_paths = calloc(n, sizeof(char*));
+    int i;
+    for(i = 0; i < n; ++i){
+        int index = rand()%m;
+        random_paths[i] = paths[index];
+        if(i == 0) printf("%s\n", paths[index]);
+    }
+    return random_paths;
+}
+
 matrix load_labels_paths(char **paths, int n, char **labels, int k)
 {
     matrix y = make_matrix(n, k);
@@ -138,13 +150,8 @@ void free_data(data d)
 
 data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale)
 {
-    char **random_paths = calloc(n, sizeof(char*));
+    char **random_paths = get_random_paths(paths, n, m);
     int i;
-    for(i = 0; i < n; ++i){
-        int index = rand()%m;
-        random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
-    }
     data d;
     d.shallow = 0;
     d.X = load_image_paths(random_paths, n, h, w);
@@ -154,10 +161,11 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w,
         int dx = rand()%32;
         int dy = rand()%32;
         fill_truth_detection(random_paths[i], d.y.vals[i], 224, 224, nh, nw, scale, dx, dy);
-
         image a = float_to_image(h, w, 3, d.X.vals[i]);
         jitter_image(a,224,224,dy,dx);
     }
+    d.X.cols = 224*224*3;
+   // print_matrix(d.y);
     free(random_paths);
     return d;
 }
@@ -165,31 +173,13 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w,
 
 data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale)
 {
-    char **random_paths = calloc(n, sizeof(char*));
-    int i;
-    for(i = 0; i < n; ++i){
-        int index = rand()%m;
-        random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
-    }
+    char **random_paths = get_random_paths(paths, n, m);
     data d;
     d.shallow = 0;
     d.X = load_image_paths(random_paths, n, h, w);
     d.y = load_labels_detection(random_paths, n, h, w, nh, nw, scale);
     free(random_paths);
     return d;
-}
-
-char **get_random_paths(char **paths, int n, int m)
-{
-    char **random_paths = calloc(n, sizeof(char*));
-    int i;
-    for(i = 0; i < n; ++i){
-        int index = rand()%m;
-        random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
-    }
-    return random_paths;
 }
 
 data load_data(char **paths, int n, int m, char **labels, int k, int h, int w)

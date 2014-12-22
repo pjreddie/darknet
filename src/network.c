@@ -103,7 +103,8 @@ void update_network(network net)
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            update_connected_layer(layer);
+            secret_update_connected_layer((connected_layer *)net.layers[i]);
+            //update_connected_layer(layer);
         }
     }
 }

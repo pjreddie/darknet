@@ -24,15 +24,21 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     layer->delta = calloc(batch*outputs, sizeof(float*));
 
     layer->weight_updates = calloc(inputs*outputs, sizeof(float));
+    layer->bias_updates = calloc(outputs, sizeof(float));
+
+    layer->weight_prev = calloc(inputs*outputs, sizeof(float));
+    layer->bias_prev = calloc(outputs, sizeof(float));
+
     layer->weights = calloc(inputs*outputs, sizeof(float));
+    layer->biases = calloc(outputs, sizeof(float));
+
+
     float scale = 1./sqrt(inputs);
     //scale = .01;
     for(i = 0; i < inputs*outputs; ++i){
         layer->weights[i] = scale*rand_normal();
     }
 
-    layer->bias_updates = calloc(outputs, sizeof(float));
-    layer->biases = calloc(outputs, sizeof(float));
     for(i = 0; i < outputs; ++i){
         layer->biases[i] = scale;
     }
@@ -50,6 +56,32 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     layer->activation = activation;
     fprintf(stderr, "Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
     return layer;
+}
+
+void secret_update_connected_layer(connected_layer *layer)
+{
+    int n = layer->outputs*layer->inputs;
+    float dot = dot_cpu(n, layer->weight_updates, 1, layer->weight_prev, 1);
+    float mag = sqrt(dot_cpu(n, layer->weight_updates, 1, layer->weight_updates, 1))
+                * sqrt(dot_cpu(n, layer->weight_prev, 1, layer->weight_prev, 1));
+    float cos = dot/mag;
+    if(cos > .3) layer->learning_rate *= 1.1;
+    else if (cos < -.3) layer-> learning_rate /= 1.1;
+
+    scal_cpu(n, layer->momentum, layer->weight_prev, 1);
+    axpy_cpu(n, 1, layer->weight_updates, 1, layer->weight_prev, 1);
+    scal_cpu(n, 0, layer->weight_updates, 1);
+
+    scal_cpu(layer->outputs, layer->momentum, layer->bias_prev, 1);
+    axpy_cpu(layer->outputs, 1, layer->bias_updates, 1, layer->bias_prev, 1);
+    scal_cpu(layer->outputs, 0, layer->bias_updates, 1);
+
+    //printf("rate:   %f\n", layer->learning_rate);
+
+    axpy_cpu(layer->outputs, layer->learning_rate, layer->bias_prev, 1, layer->biases, 1);
+
+    axpy_cpu(layer->inputs*layer->outputs, -layer->decay, layer->weights, 1, layer->weight_prev, 1);
+    axpy_cpu(layer->inputs*layer->outputs, layer->learning_rate, layer->weight_prev, 1, layer->weights, 1);
 }
 
 void update_connected_layer(connected_layer layer)

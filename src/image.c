@@ -39,6 +39,7 @@ void jitter_image(image a, int h, int w, int dh, int dw)
             for(j = 0; j < w; ++j){
                 int src = j + dw + (i+dh)*a.w + k*a.w*a.h;
                 int dst = j + i*w + k*w*h;
+                //printf("%d %d\n", src, dst);
                 a.data[dst] = a.data[src];
             }
         }

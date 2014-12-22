@@ -18,8 +18,8 @@ typedef struct{
     float *weight_updates;
     float *bias_updates;
 
-    float *weight_adapt;
-    float *bias_adapt;
+    float *weight_prev;
+    float *bias_prev;
 
     float *output;
     float *delta;
@@ -38,6 +38,7 @@ typedef struct{
 
 } connected_layer;
 
+void secret_update_connected_layer(connected_layer *layer);
 connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, float learning_rate, float momentum, float decay);
 
 void forward_connected_layer(connected_layer layer, float *input);

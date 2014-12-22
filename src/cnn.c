@@ -31,21 +31,23 @@ void test_parser()
     save_network(net, "cfg/trained_imagenet_smaller.cfg");
 }
 
+#define AMNT 3
 void draw_detection(image im, float *box, int side)
 {
     int j;
     int r, c;
-    float amount[5] = {0,0,0,0,0};
+    float amount[AMNT] = {0};
     for(r = 0; r < side*side; ++r){
-        for(j = 0; j < 5; ++j){
-            if(box[r*5] > amount[j]) {
-                amount[j] = box[r*5];
-                break;
+        float val = box[r*5];
+        for(j = 0; j < AMNT; ++j){
+            if(val > amount[j]) {
+                float swap = val;
+                val = amount[j];
+                amount[j] = swap;
             }
         }
     }
-    float smallest = amount[0];
-    for(j = 1; j < 5; ++j) if(amount[j] < smallest) smallest = amount[j];
+    float smallest = amount[AMNT-1];
 
     for(r = 0; r < side; ++r){
         for(c = 0; c < side; ++c){
@@ -57,9 +59,9 @@ void draw_detection(image im, float *box, int side)
                 int x = c*d+box[j+2]*d;
                 int h = box[j+3]*256;
                 int w = box[j+4]*256;
-                printf("%f %f %f %f\n", box[j+1], box[j+2], box[j+3], box[j+4]);
-                printf("%d %d %d %d\n", x, y, w, h);
-                printf("%d %d %d %d\n", x-w/2, y-h/2, x+w/2, y+h/2);
+                //printf("%f %f %f %f\n", box[j+1], box[j+2], box[j+3], box[j+4]);
+                //printf("%d %d %d %d\n", x, y, w, h);
+                //printf("%d %d %d %d\n", x-w/2, y-h/2, x+w/2, y+h/2);
                 draw_box(im, x-w/2, y-h/2, x+w/2, y+h/2);
             }
         }
@@ -87,9 +89,11 @@ void train_detection_net()
         i += 1;
         time=clock();
         data train = load_data_detection_jitter_random(imgs, paths, plist->size, 256, 256, 7, 7, 256);
-        /*
-        image im = float_to_image(224, 224, 3, train.X.vals[0]);
-        draw_detection(im, train.y.vals[0], 7);
+        //data train = load_data_detection_random(imgs, paths, plist->size, 224, 224, 7, 7, 256);
+
+/*
+        image im = float_to_image(224, 224, 3, train.X.vals[923]);
+        draw_detection(im, train.y.vals[923], 7);
         */
 
         normalize_data_rows(train);
@@ -151,10 +155,10 @@ void train_imagenet(char *cfgfile)
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     srand(time(0));
     network net = parse_network_cfg(cfgfile);
-    set_learning_network(&net, net.learning_rate, .5, .0005);
+    set_learning_network(&net, net.learning_rate/10., .5, .0005);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
-    int i = 23030;
+    int i = 44700;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
@@ -385,8 +389,8 @@ void train_nist(char *cfgfile)
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
     network net = parse_network_cfg(cfgfile);
     int count = 0;
-    int iters = 60000/net.batch + 1;
-    while(++count <= 10){
+    int iters = 6000/net.batch + 1;
+    while(++count <= 100){
         clock_t start = clock(), end;
         normalize_data_rows(train);
         normalize_data_rows(test);
