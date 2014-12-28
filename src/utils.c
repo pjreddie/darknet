@@ -106,16 +106,17 @@ void strip_char(char *s, char bad)
 char *fgetl(FILE *fp)
 {
     if(feof(fp)) return 0;
-    unsigned long size = 512;
+    size_t size = 512;
     char *line = malloc(size*sizeof(char));
     if(!fgets(line, size, fp)){
         free(line);
         return 0;
     }
 
-    int curr = strlen(line);
+    size_t curr = strlen(line);
 
-    while(line[curr-1]!='\n'){
+    while((line[curr-1] != '\n') && !feof(fp)){
+        printf("%ld %ld\n", curr, size);
         size *= 2;
         line = realloc(line, size*sizeof(char));
         if(!line) {
@@ -125,7 +126,7 @@ char *fgetl(FILE *fp)
         fgets(&line[curr], size-curr, fp);
         curr = strlen(line);
     }
-    line[curr-1] = '\0';
+    if(line[curr-1] == '\n') line[curr-1] = '\0';
 
     return line;
 }

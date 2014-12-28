@@ -6,6 +6,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct load_args{
+    char **paths;
+    int n;
+    int m;
+    char **labels;
+    int k;
+    int h;
+    int w;
+    int nh;
+    int nw;
+    float scale;
+    data *d;
+};
+
 list *get_paths(char *filename)
 {
     char *path;
@@ -165,11 +179,36 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w,
         jitter_image(a,224,224,dy,dx);
     }
     d.X.cols = 224*224*3;
-   // print_matrix(d.y);
     free(random_paths);
     return d;
 }
 
+void *load_detection_thread(void *ptr)
+{
+    struct load_args a = *(struct load_args*)ptr;
+    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.h, a.w, a.nh, a.nw, a.scale);
+    free(ptr);
+    return 0;
+}
+
+pthread_t load_data_detection_thread(int n, char **paths, int m, int h, int w, int nh, int nw, float scale, data *d)
+{
+    pthread_t thread;
+    struct load_args *args = calloc(1, sizeof(struct load_args));
+    args->n = n;
+    args->paths = paths;
+    args->m = m;
+    args->h = h;
+    args->w = w;
+    args->nh = nh;
+    args->nw = nw;
+    args->scale = scale;
+    args->d = d;
+    if(pthread_create(&thread, 0, load_detection_thread, args)) {
+        error("Thread creation failed");
+    }
+    return thread;
+}
 
 data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale)
 {
@@ -193,21 +232,11 @@ data load_data(char **paths, int n, int m, char **labels, int k, int h, int w)
     return d;
 }
 
-struct load_args{
-    char **paths;
-    int n;
-    int m;
-    char **labels;
-    int k;
-    int h;
-    int w;
-    data *d;
-};
-
 void *load_in_thread(void *ptr)
 {
     struct load_args a = *(struct load_args*)ptr;
     *a.d = load_data(a.paths, a.n, a.m, a.labels, a.k, a.h, a.w);
+    free(ptr);
     return 0;
 }
 

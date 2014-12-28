@@ -84,11 +84,15 @@ void train_detection_net()
     list *plist = get_paths("/home/pjreddie/data/imagenet/horse.txt");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
+    data train, buffer;
+    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, 256, 256, 7, 7, 256, &buffer);
     clock_t time;
     while(1){
         i += 1;
         time=clock();
-        data train = load_data_detection_jitter_random(imgs, paths, plist->size, 256, 256, 7, 7, 256);
+        pthread_join(load_thread, 0);
+        train = buffer;
+        load_thread = load_data_detection_thread(imgs, paths, plist->size, 256, 256, 7, 7, 256, &buffer);
         //data train = load_data_detection_random(imgs, paths, plist->size, 224, 224, 7, 7, 256);
 
 /*
@@ -102,7 +106,7 @@ void train_detection_net()
         float loss = train_network(net, train);
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs*net.batch);
-        if(i%10==0){
+        if(i%100==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/detnet_%d.cfg", i);
             save_network(net, buff);
@@ -155,10 +159,10 @@ void train_imagenet(char *cfgfile)
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     srand(time(0));
     network net = parse_network_cfg(cfgfile);
-    set_learning_network(&net, net.learning_rate/10., .5, .0005);
+    //set_learning_network(&net, net.learning_rate, 0, .0005);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
-    int i = 44700;
+    int i = 47900;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
