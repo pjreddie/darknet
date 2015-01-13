@@ -16,6 +16,7 @@
 #include "list.h"
 #include "option_list.h"
 #include "utils.h"
+#include "opencl.h"
 
 typedef struct{
     char *type;
@@ -387,8 +388,8 @@ int is_normalization(section *s)
 
 int read_option(char *s, list *options)
 {
-    int i;
-    int len = strlen(s);
+    size_t i;
+    size_t len = strlen(s);
     char *val = 0;
     for(i = 0; i < len; ++i){
         if(s[i] == '='){
@@ -416,7 +417,6 @@ list *read_cfg(char *filename)
         strip(line);
         switch(line[0]){
             case '[':
-                printf("%s\n", line);
                 current = malloc(sizeof(section));
                 list_insert(sections, current);
                 current->options = make_list();
@@ -441,6 +441,9 @@ list *read_cfg(char *filename)
 
 void print_convolutional_cfg(FILE *fp, convolutional_layer *l, network net, int count)
 {
+    #ifdef GPU
+    if(gpu_index >= 0) pull_convolutional_layer(*l);
+    #endif
     int i;
     fprintf(fp, "[convolutional]\n");
     if(count == 0) {
@@ -495,6 +498,9 @@ void print_dropout_cfg(FILE *fp, dropout_layer *l, network net, int count)
 
 void print_connected_cfg(FILE *fp, connected_layer *l, network net, int count)
 {
+    #ifdef GPU
+    if(gpu_index >= 0) pull_connected_layer(*l);
+    #endif
     int i;
     fprintf(fp, "[connected]\n");
     if(count == 0){

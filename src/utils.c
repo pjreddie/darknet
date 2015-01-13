@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+#include <limits.h>
 
 #include "utils.h"
 
@@ -64,8 +65,8 @@ void file_error(char *s)
 
 list *split_str(char *s, char delim)
 {
-    int i;
-    int len = strlen(s);
+    size_t i;
+    size_t len = strlen(s);
     list *l = make_list();
     list_insert(l, s);
     for(i = 0; i < len; ++i){
@@ -79,9 +80,9 @@ list *split_str(char *s, char delim)
 
 void strip(char *s)
 {
-    int i;
-    int len = strlen(s);
-    int offset = 0;
+    size_t i;
+    size_t len = strlen(s);
+    size_t offset = 0;
     for(i = 0; i < len; ++i){
         char c = s[i];
         if(c==' '||c=='\t'||c=='\n') ++offset;
@@ -92,9 +93,9 @@ void strip(char *s)
 
 void strip_char(char *s, char bad)
 {
-    int i;
-    int len = strlen(s);
-    int offset = 0;
+    size_t i;
+    size_t len = strlen(s);
+    size_t offset = 0;
     for(i = 0; i < len; ++i){
         char c = s[i];
         if(c==bad) ++offset;
@@ -116,14 +117,17 @@ char *fgetl(FILE *fp)
     size_t curr = strlen(line);
 
     while((line[curr-1] != '\n') && !feof(fp)){
-        printf("%ld %ld\n", curr, size);
-        size *= 2;
-        line = realloc(line, size*sizeof(char));
-        if(!line) {
-            printf("%ld\n", size);
-            malloc_error();
+        if(curr == size-1){
+            size *= 2;
+            line = realloc(line, size*sizeof(char));
+            if(!line) {
+                printf("%ld\n", size);
+                malloc_error();
+            }
         }
-        fgets(&line[curr], size-curr, fp);
+        size_t readsize = size-curr;
+        if(readsize > INT_MAX) readsize = INT_MAX-1;
+        fgets(&line[curr], readsize, fp);
         curr = strlen(line);
     }
     if(line[curr-1] == '\n') line[curr-1] = '\0';

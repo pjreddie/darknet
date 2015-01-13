@@ -372,6 +372,10 @@ void set_batch_network(network *net, int b)
             cost_layer *layer = (cost_layer *)net->layers[i];
             layer->batch = b;
         }
+        else if(net->types[i] == CROP){
+            crop_layer *layer = (crop_layer *)net->layers[i];
+            layer->batch = b;
+        }
     }
 }
 

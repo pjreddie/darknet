@@ -13,8 +13,8 @@ LDFLAGS=-lclBLAS
 endif
 
 UNAME = $(shell uname)
-OPTS=-Ofast -flto
-#OPTS=-O3
+#OPTS=-Ofast -flto
+OPTS=-O3 -flto
 ifeq ($(UNAME), Darwin)
 COMMON+= -isystem /usr/local/Cellar/opencv/2.4.6.1/include/opencv -isystem /usr/local/Cellar/opencv/2.4.6.1/include
 ifeq ($(GPU), 1)

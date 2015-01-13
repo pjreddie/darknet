@@ -162,7 +162,7 @@ void update_connected_layer_gpu(connected_layer layer)
     axpy_ongpu(layer.inputs*layer.outputs, -layer.decay, layer.weights_cl, 1, layer.weight_updates_cl, 1);
     axpy_ongpu(layer.inputs*layer.outputs, layer.learning_rate, layer.weight_updates_cl, 1, layer.weights_cl, 1);
     scal_ongpu(layer.inputs*layer.outputs, layer.momentum, layer.weight_updates_cl, 1);
-    pull_connected_layer(layer);
+    //pull_connected_layer(layer);
 }
 
 void forward_connected_layer_gpu(connected_layer layer, cl_mem input)

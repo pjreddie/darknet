@@ -18,7 +18,7 @@ cl_info cl = {0};
 
 void check_error(cl_info info)
 {
-   // clFinish(cl.queue);
+    clFinish(cl.queue);
     if (info.error != CL_SUCCESS) {
         printf("\n Error number %d", info.error);
         abort();
@@ -144,7 +144,7 @@ cl_program cl_fprog(char *filename, char *options, cl_info info)
 void cl_setup()
 {
     if(!cl.initialized){
-        printf("initializing\n");
+        fprintf(stderr, "Initializing OpenCL\n");
         cl = cl_init(gpu_index);
     }
 }

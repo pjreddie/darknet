@@ -72,11 +72,14 @@ void fill_truth(char *path, char **labels, int k, float *truth)
 {
     int i;
     memset(truth, 0, k*sizeof(float));
+    int count = 0;
     for(i = 0; i < k; ++i){
         if(strstr(path, labels[i])){
             truth[i] = 1;
+            ++count;
         }
     }
+    if(count != 1) printf("%d, %s\n", count, path);
 }
 
 matrix load_image_paths(char **paths, int n, int h, int w)
@@ -111,7 +114,7 @@ matrix load_labels_paths(char **paths, int n, char **labels, int k)
 {
     matrix y = make_matrix(n, k);
     int i;
-    for(i = 0; i < n; ++i){
+    for(i = 0; i < n && labels; ++i){
         fill_truth(paths[i], labels, k, y.vals[i]);
     }
     return y;

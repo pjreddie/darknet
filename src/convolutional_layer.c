@@ -170,7 +170,9 @@ void backward_convolutional_layer(convolutional_layer layer, float *in, float *d
     int n = layer.size*layer.size*layer.c;
     int k = convolutional_out_height(layer)*
         convolutional_out_width(layer);
+
     gradient_array(layer.output, m*k*layer.batch, layer.activation, layer.delta);
+
     learn_bias_convolutional_layer(layer);
 
     if(delta) memset(delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
@@ -264,13 +266,18 @@ image *visualize_convolutional_layer(convolutional_layer layer, char *window, im
 }
 
 #ifdef GPU
+#define BLOCK 32
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
 
 cl_kernel get_convolutional_learn_bias_kernel()
 {
     static int init = 0;
     static cl_kernel kernel;
     if(!init){
-        kernel = get_kernel("src/convolutional_layer.cl", "learn_bias", 0);
+        kernel = get_kernel("src/convolutional_layer.cl", "learn_bias", "-D BLOCK=" STR(BLOCK));
         init = 1;
     }
     return kernel;
@@ -291,9 +298,10 @@ void learn_bias_convolutional_layer_ongpu(convolutional_layer layer)
     cl.error = clSetKernelArg(kernel, i++, sizeof(layer.bias_updates_cl), (void*) &layer.bias_updates_cl);
     check_error(cl);
 
-    const size_t global_size[] = {layer.n};
+    const size_t global_size[] = {layer.n*BLOCK};
+    const size_t local_size[] = {BLOCK};
 
-    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
+    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, local_size, 0, 0, 0);
     check_error(cl);
 }
 
@@ -302,7 +310,7 @@ cl_kernel get_convolutional_bias_kernel()
     static int init = 0;
     static cl_kernel kernel;
     if(!init){
-        kernel = get_kernel("src/convolutional_layer.cl", "bias", 0);
+        kernel = get_kernel("src/convolutional_layer.cl", "bias", "-D BLOCK=" STR(BLOCK));
         init = 1;
     }
     return kernel;
@@ -410,7 +418,7 @@ void update_convolutional_layer_gpu(convolutional_layer layer)
     axpy_ongpu(size, -layer.decay, layer.filters_cl, 1, layer.filter_updates_cl, 1);
     axpy_ongpu(size, layer.learning_rate, layer.filter_updates_cl, 1, layer.filters_cl, 1);
     scal_ongpu(size, layer.momentum, layer.filter_updates_cl, 1);
-    pull_convolutional_layer(layer);
+    //pull_convolutional_layer(layer);
 }
 
 
