@@ -105,7 +105,7 @@ void train_detection_net(char *cfgfile)
         time=clock();
         float loss = train_network(net, train);
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs*net.batch);
+        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
         if(i%100==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/detnet_%d.cfg", i);
@@ -213,7 +213,7 @@ void train_imagenet(char *cfgfile)
     set_learning_network(&net, net.learning_rate, 0, net.decay);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
-    int i = 77700;
+    int i = 0;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
@@ -240,7 +240,7 @@ void train_imagenet(char *cfgfile)
         free_data(train);
         if(i%100==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/net_%d.cfg", i);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/alexnet_%d.cfg", i);
             save_network(net, buff);
         }
     }

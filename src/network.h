@@ -41,6 +41,7 @@ float *network_predict_gpu(network net, float *input);
 #endif
 
 void compare_networks(network n1, network n2, data d);
+char *get_layer_string(LAYER_TYPE a);
 
 network make_network(int n, int batch);
 void forward_network(network net, float *input, float *truth, int train);

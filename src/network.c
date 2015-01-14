@@ -15,6 +15,35 @@
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 
+char *get_layer_string(LAYER_TYPE a)
+{
+    switch(a){
+        case CONVOLUTIONAL:
+            return "convolutional";
+        case CONNECTED:
+            return "connected";
+        case MAXPOOL:
+            return "maxpool";
+        case SOFTMAX:
+            return "softmax";
+        case NORMALIZATION:
+            return "normalization";
+        case DROPOUT:
+            return "dropout";
+        case FREEWEIGHT:
+            return "freeweight";
+        case CROP:
+            return "crop";
+        case COST:
+            return "cost";
+        default:
+            break;
+    }
+    return "none";
+}
+
+
+
 network make_network(int n, int batch)
 {
     network net;
