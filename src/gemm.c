@@ -164,8 +164,7 @@ cl_kernel get_gemm_nn_kernel()
 
 #define TILE 64
 #define TILE_K 16
-#define WPT 8
-#define THREADS (TILE*TILE)/(WPT*WPT)
+#define THREADS 64
 
 cl_kernel get_gemm_nn_fast_kernel()
 {
@@ -175,7 +174,6 @@ cl_kernel get_gemm_nn_fast_kernel()
         gemm_kernel = get_kernel("src/gemm_fast.cl", "gemm_nn_fast", "-D TILE=" STR(TILE)
                                                                     " -cl-nv-verbose "
                                                                     " -D TILE_K=" STR(TILE_K)
-                                                                    " -D WPT=" STR(WPT)
                                                                     " -D THREADS=" STR(THREADS));
         init = 1;
     }
@@ -464,7 +462,6 @@ void test_gpu_blas()
 
     test_gpu_accuracy(0,0,128,128,128); 
 
-/*
     time_ongpu(0,0,64,2916,363); 
     time_ongpu_fast(0,0,64,2916,363); 
     time_ongpu(0,0,64,2916,363); 
@@ -483,7 +480,6 @@ void test_gpu_blas()
     time_ongpu_fast(0,0,128,4096,12544); 
     time_ongpu(0,0,128,4096,4096); 
     time_ongpu_fast(0,0,128,4096,4096); 
-    */
 //    time_ongpu(1,0,2304,196,256); 
 //    time_ongpu_fast(1,0,2304,196,256); 
 //    time_ongpu(0,1,256,2304,196); 

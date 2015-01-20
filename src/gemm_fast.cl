@@ -16,16 +16,15 @@ __kernel void gemm_nn_fast(int TA, int TB, int M, int N, int K, float ALPHA,
     int ctile = get_group_id(0);
     int rtile = get_group_id(1);
 
-    float Breg;
-    float Areg[WPT];
-    float acc[WPT][WPT];
+    float Areg[TILE];
+    float acc[TILE][TILE/THREADS];
 
     A += rtile*TILE*lda;
     B += ctile*TILE;
     C += rtile*TILE*ldc + ctile*TILE;
 
-    for(i = 0; i < WPT; ++i){
-        for(j = 0; j < WPT; ++j){
+    for(i = 0; i < TILE; ++i){
+        for(j = 0; j < TILE/THREADS; ++j){
             acc[i][j] = 0;
         }
     }
@@ -51,28 +50,26 @@ __kernel void gemm_nn_fast(int TA, int TB, int M, int N, int K, float ALPHA,
         barrier(CLK_LOCAL_MEM_FENCE);
 
         for(k = 0; k < TILE_K; ++k){
-            for(y = 0; y < WPT; ++y){
-                int row = (offset + (y*WPT)*THREADS)/TILE;
-                //Areg[y] = Asub[y*WPT][k];
+            #pragma unroll
+            for(y = 0; y < TILE; ++y){
+                Areg[y] = Asub[y][k];
             }
-            for(y = 0; y < WPT; ++y){
-                for(x = 0; x < WPT; ++x){
-                    int index = offset + (y*WPT + x)*THREADS;
-                    int row = index / TILE;
-                    int col = index % TILE;
-                    acc[y][x] += Asub[row][k]*Bsub[k][col];
+            for(x = 0; x < TILE; x += THREADS){
+                float Breg = Bsub[k][x+offset];
+                #pragma unroll
+                for(y = 0; y < TILE; ++y){
+                    acc[y][x/THREADS] += Breg * Areg[y];
                 }
             }
         }
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    for(y = 0; y < WPT; ++y){
-        for(x = 0; x < WPT; ++x){
-            int index = offset + (y*WPT + x)*THREADS;
-            int row = index / TILE;
-            int col = index % TILE;
-            C[row*ldc+col] = ALPHA*acc[y][x] + BETA*C[row*ldc+col];
+    for(i = 0; i < TILE; ++i){
+        for(j = 0; j < TILE/THREADS; ++j){
+            int col = j*THREADS + offset;
+            int row = i;
+            C[row*ldc+col] = ALPHA*acc[i][j] + BETA*C[row*ldc+col];
         }
     }
 }

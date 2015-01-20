@@ -210,7 +210,7 @@ void train_imagenet(char *cfgfile)
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     srand(time(0));
     network net = parse_network_cfg(cfgfile);
-    set_learning_network(&net, net.learning_rate*10., net.momentum, net.decay);
+    set_learning_network(&net, net.learning_rate*100., net.momentum, net.decay);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
     int i = 6600;
