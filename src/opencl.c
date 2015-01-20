@@ -132,11 +132,11 @@ cl_program cl_fprog(char *filename, char *options, cl_info info)
     char build_c[1024*64];
     // and compile it (after this we could extract the compiled version)
     info.error=clBuildProgram(prog, 0, 0, options, 0, 0);
-    if ( info.error != CL_SUCCESS ) {
+    //if ( info.error != CL_SUCCESS ) {
         fprintf(stderr, "Error Building Program: %d\n", info.error);
         clGetProgramBuildInfo( prog, info.device, CL_PROGRAM_BUILD_LOG, 1024*64, build_c, 0);
         fprintf(stderr, "Build Log for %s program:\n%s\n", filename, build_c);
-    }
+    //}
     check_error(info);
     return prog;
 }
@@ -205,7 +205,7 @@ cl_mem cl_make_array(float *x, int n)
             CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
             sizeof(float)*n, x, &cl.error);
     check_error(cl);
-    activate_array_ongpu(mem, n, LINEAR);
+    //activate_array_ongpu(mem, n, LINEAR);
     return mem;
 }
 

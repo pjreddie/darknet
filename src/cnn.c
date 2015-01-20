@@ -210,10 +210,10 @@ void train_imagenet(char *cfgfile)
     //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     srand(time(0));
     network net = parse_network_cfg(cfgfile);
-    set_learning_network(&net, net.learning_rate, 0, net.decay);
+    set_learning_network(&net, net.learning_rate*10., net.momentum, net.decay);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
-    int i = 0;
+    int i = 6600;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
@@ -228,9 +228,9 @@ void train_imagenet(char *cfgfile)
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        //normalize_data_rows(train);
-        translate_data_rows(train, -128);
-        scale_data_rows(train, 1./128);
+        normalize_data_rows(train);
+        //translate_data_rows(train, -128);
+        //scale_data_rows(train, 1./128);
         load_thread = load_data_thread(paths, imgs, plist->size, labels, 1000, 256, 256, &buffer);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -539,12 +539,14 @@ void visualize_cat()
 
 void test_correct_nist()
 {
+    network net = parse_network_cfg("cfg/nist_conv.cfg");
+    test_learn_bias(*(convolutional_layer *)net.layers[0]);
     srand(222222);
-    network net = parse_network_cfg("cfg/nist.cfg");
+    net = parse_network_cfg("cfg/nist_conv.cfg");
     data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
     data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
-    translate_data_rows(train, -144);
-    translate_data_rows(test, -144);
+    normalize_data_rows(train);
+    normalize_data_rows(test);
     int count = 0;
     int iters = 1000/net.batch;
 
@@ -555,11 +557,12 @@ void test_correct_nist()
         float test_acc = network_accuracy(net, test);
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
     }
+    save_network(net, "cfg/nist_gpu.cfg");
 
     gpu_index = -1;
     count = 0;
     srand(222222);
-    net = parse_network_cfg("cfg/nist.cfg");
+     net = parse_network_cfg("cfg/nist_conv.cfg");
     while(++count <= 5){
         clock_t start = clock(), end;
         float loss = train_network_sgd(net, train, iters);
@@ -567,6 +570,7 @@ void test_correct_nist()
         float test_acc = network_accuracy(net, test);
         printf("%d: Loss: %f, Test Acc: %f, Time: %lf seconds, LR: %f, Momentum: %f, Decay: %f\n", count, loss, test_acc,(float)(end-start)/CLOCKS_PER_SEC, net.learning_rate, net.momentum, net.decay);
     }
+    save_network(net, "cfg/nist_cpu.cfg");
 }
 
 void test_correct_alexnet()

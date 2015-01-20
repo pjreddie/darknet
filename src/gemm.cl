@@ -215,4 +215,3 @@ __kernel void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
         C[row*ldc+col] = ALPHA*val + BETA*C[row*ldc+col];
     }
 }
-

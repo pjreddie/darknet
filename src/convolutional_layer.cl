@@ -19,7 +19,7 @@ __kernel void learn_bias(int batch, int n, int size, __global float *delta, __gl
     for(b = 0; b < batch; ++b){
         for(i = 0; i < size; i += BLOCK){
             int index = p + i + size*(filter + n*b);
-            sum += (index < size) ? delta[index] : 0;
+            sum += (p+i < size) ? delta[index] : 0;
         }
     }
     part[p] = sum;

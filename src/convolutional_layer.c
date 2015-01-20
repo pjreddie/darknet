@@ -305,6 +305,27 @@ void learn_bias_convolutional_layer_ongpu(convolutional_layer layer)
     check_error(cl);
 }
 
+void test_learn_bias(convolutional_layer l)
+{
+    int i;
+    int size = convolutional_out_height(l) * convolutional_out_width(l);
+    for(i = 0; i < size*l.batch*l.n; ++i){
+        l.delta[i] = rand_uniform();
+    }
+    for(i = 0; i < l.n; ++i){
+        l.bias_updates[i] = rand_uniform();
+    }
+    cl_write_array(l.delta_cl, l.delta, size*l.batch*l.n);
+    cl_write_array(l.bias_updates_cl, l.bias_updates, l.n);
+    float *gpu = calloc(l.n, sizeof(float));
+    cl_read_array(l.bias_updates_cl, gpu, l.n);
+    for(i = 0; i < l.n; ++i) printf("%.9g %.9g\n", l.bias_updates[i], gpu[i]);
+    learn_bias_convolutional_layer_ongpu(l);
+    learn_bias_convolutional_layer(l);
+    cl_read_array(l.bias_updates_cl, gpu, l.n);
+    for(i = 0; i < l.n; ++i) printf("%.9g %.9g\n", l.bias_updates[i], gpu[i]);
+}
+
 cl_kernel get_convolutional_bias_kernel()
 {
     static int init = 0;

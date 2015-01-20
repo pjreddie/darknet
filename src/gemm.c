@@ -162,6 +162,26 @@ cl_kernel get_gemm_nn_kernel()
     return gemm_kernel;
 }
 
+#define TILE 64
+#define TILE_K 16
+#define WPT 8
+#define THREADS (TILE*TILE)/(WPT*WPT)
+
+cl_kernel get_gemm_nn_fast_kernel()
+{
+    static int init = 0;
+    static cl_kernel gemm_kernel;
+    if(!init){
+        gemm_kernel = get_kernel("src/gemm_fast.cl", "gemm_nn_fast", "-D TILE=" STR(TILE)
+                                                                    " -cl-nv-verbose "
+                                                                    " -D TILE_K=" STR(TILE_K)
+                                                                    " -D WPT=" STR(WPT)
+                                                                    " -D THREADS=" STR(THREADS));
+        init = 1;
+    }
+    return gemm_kernel;
+}
+
 void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         cl_mem A_gpu, int lda, 
         cl_mem B_gpu, int ldb,
@@ -169,6 +189,45 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         cl_mem C_gpu, int ldc)
 {
     gemm_ongpu_offset(TA, TB, M, N, K, ALPHA, A_gpu, 0, lda, B_gpu, 0, ldb, BETA, C_gpu, 0, ldc);
+}
+
+void gemm_ongpu_fast(int TA, int TB, int M, int N, int K, float ALPHA, 
+        cl_mem A_gpu, int lda, 
+        cl_mem B_gpu, int ldb,
+        float BETA,
+        cl_mem C_gpu, int ldc)
+{
+    int a_off = 0;
+    int b_off = 0;
+    int c_off = 0;
+    //printf("gpu: %d %d %d %d %d\n",TA, TB, M, N, K);
+    cl_kernel      gemm_kernel = get_gemm_nn_fast_kernel();
+    cl_command_queue queue = cl.queue;
+
+    cl_uint i = 0;
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(TA), (void*) &TA);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(TB), (void*) &TB);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(M), (void*) &M);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(N), (void*) &N);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(K), (void*) &K);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ALPHA), (void*) &ALPHA);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(A_gpu), (void*) &A_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(a_off), (void*) &a_off);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(lda), (void*) &lda);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(B_gpu), (void*) &B_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(b_off), (void*) &b_off);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldb), (void*) &ldb);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(BETA), (void*) &BETA);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(C_gpu), (void*) &C_gpu);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(c_off), (void*) &c_off);
+    cl.error = clSetKernelArg(gemm_kernel, i++, sizeof(ldc), (void*) &ldc);
+    check_error(cl);
+
+    const size_t global_size[] = {THREADS*((N-1)/TILE + 1), (M-1)/TILE + 1};
+    const size_t local_size[] = {THREADS, 1};
+
+    cl.error = clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
+    check_error(cl);
 }
 
 void gemm_ongpu_offset(int TA, int TB, int M, int N, int K, float ALPHA, 
@@ -214,7 +273,7 @@ void gemm_ongpu_offset(int TA, int TB, int M, int N, int K, float ALPHA,
 
     cl.error = clEnqueueNDRangeKernel(queue, gemm_kernel, 2, 0, global_size, local_size, 0, 0, 0);
     check_error(cl);
-    #endif
+#endif
 }
 
 void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA, 
@@ -244,7 +303,9 @@ void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
             size, C, &cl.error);
     check_error(cl);
 
-    gemm_ongpu(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
+    // TODO
+    //gemm_ongpu(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
+    gemm_ongpu_fast(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
 
     clEnqueueReadBuffer(queue, C_gpu, CL_TRUE, 0, size, C, 0, 0, 0);
     check_error(cl);
@@ -303,11 +364,44 @@ void time_ongpu(int TA, int TB, int m, int k, int n)
     for(i = 0; i<iter; ++i){
         gemm_ongpu(TA,TB,m,n,k,1,a_cl,lda,b_cl,ldb,1,c_cl,n);
     }
-    double flop = m*n*k*iter;
+    double flop = ((double)m)*n*(2.*k + 2.)*iter;
     double gflop = flop/pow(10., 9);
     end = clock();
     double seconds = sec(end-start);
     printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s, %lf GFLOPS\n",m,k,k,n, TA, TB, seconds, gflop/seconds);
+    clReleaseMemObject(a_cl);
+    clReleaseMemObject(b_cl);
+    clReleaseMemObject(c_cl);
+    free(a);
+    free(b);
+    free(c);
+}
+
+void time_ongpu_fast(int TA, int TB, int m, int k, int n)
+{
+    int iter = 10;
+    float *a = random_matrix(m,k);
+    float *b = random_matrix(k,n);
+
+    int lda = (!TA)?k:m;
+    int ldb = (!TB)?n:k;
+
+    float *c = random_matrix(m,n);
+
+    cl_mem a_cl = cl_make_array(a, m*k);
+    cl_mem b_cl = cl_make_array(b, k*n);
+    cl_mem c_cl = cl_make_array(c, m*n);
+
+    int i;
+    clock_t start = clock(), end;
+    for(i = 0; i<iter; ++i){
+        gemm_ongpu_fast(TA,TB,m,n,k,1,a_cl,lda,b_cl,ldb,1,c_cl,n);
+    }
+    double flop = ((double)m)*n*(2.*k + 2.)*iter;
+    double gflop = flop/pow(10., 9);
+    end = clock();
+    double seconds = sec(end-start);
+    printf("Fast   Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s, %lf GFLOPS\n",m,k,k,n, TA, TB, seconds, gflop/seconds);
     clReleaseMemObject(a_cl);
     clReleaseMemObject(b_cl);
     clReleaseMemObject(c_cl);
@@ -335,8 +429,10 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
     int i;
     //pm(m,k,b);
     gemm_gpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c_gpu,n);
+    //printf("GPU\n");
     //pm(m, n, c_gpu);
     gemm_cpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
+    //printf("\n\nCPU\n");
     //pm(m, n, c);
     double sse = 0;
     for(i = 0; i < m*n; ++i) {
@@ -365,21 +461,47 @@ void test_gpu_blas()
        test_gpu_accuracy(0,1,1000,10,100); 
        test_gpu_accuracy(1,1,1000,10,100); 
      */
-    time_ongpu(0,0,512,256,1152); 
-    time_ongpu(0,0,128,1200,4096); 
-    time_ongpu(0,0,128,1200,4096); 
-    time_ongpu(0,0,128,1200,4096); 
 
-    time_ongpu(0,1,128,1200,4096); 
-    time_ongpu(1,0,1200,4096,128); 
-    time_ongpu(1,0,4096,1200,128); 
-    time_ongpu(1,0,1200,128,4096); 
+    test_gpu_accuracy(0,0,128,128,128); 
 
-    test_gpu_accuracy(0,0,512,256,1152); 
-    test_gpu_accuracy(0,0,131,4093,1199); 
-    test_gpu_accuracy(0,1,131,4093,1199); 
-    test_gpu_accuracy(1,0,131,4093,1199); 
-    test_gpu_accuracy(1,1,131,4093,1199); 
+/*
+    time_ongpu(0,0,64,2916,363); 
+    time_ongpu_fast(0,0,64,2916,363); 
+    time_ongpu(0,0,64,2916,363); 
+    time_ongpu_fast(0,0,64,2916,363); 
+    time_ongpu(0,0,64,2916,363); 
+    time_ongpu_fast(0,0,64,2916,363); 
+    time_ongpu(0,0,192,729,1600); 
+    time_ongpu_fast(0,0,192,729,1600); 
+    time_ongpu(0,0,384,196,1728); 
+    time_ongpu_fast(0,0,384,196,1728); 
+    time_ongpu(0,0,256,196,3456); 
+    time_ongpu_fast(0,0,256,196,3456); 
+    time_ongpu(0,0,256,196,2304); 
+    time_ongpu_fast(0,0,256,196,2304); 
+    time_ongpu(0,0,128,4096,12544); 
+    time_ongpu_fast(0,0,128,4096,12544); 
+    time_ongpu(0,0,128,4096,4096); 
+    time_ongpu_fast(0,0,128,4096,4096); 
+    */
+//    time_ongpu(1,0,2304,196,256); 
+//    time_ongpu_fast(1,0,2304,196,256); 
+//    time_ongpu(0,1,256,2304,196); 
+//    time_ongpu_fast(0,1,256,2304,196); 
+
+    time_ongpu(0,0,2048,2048,2048); 
+    time_ongpu_fast(0,0,2048,2048,2048); 
+    time_ongpu(0,0,2048,2048,2048); 
+    time_ongpu_fast(0,0,2048,2048,2048); 
+    time_ongpu(0,0,2048,2048,2048); 
+    time_ongpu_fast(0,0,2048,2048,2048); 
+
+    /*
+       test_gpu_accuracy(0,0,131,4093,1199); 
+       test_gpu_accuracy(0,1,131,4093,1199); 
+       test_gpu_accuracy(1,0,131,4093,1199); 
+       test_gpu_accuracy(1,1,131,4093,1199); 
+     */
     /*
 
        time_ongpu(0,0,1024,1024,1024); 
