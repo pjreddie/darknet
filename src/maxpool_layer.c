@@ -1,4 +1,5 @@
 #include "maxpool_layer.h"
+#include "cuda.h"
 #include <stdio.h>
 
 image get_maxpool_image(maxpool_layer layer)
@@ -32,9 +33,9 @@ maxpool_layer *make_maxpool_layer(int batch, int h, int w, int c, int size, int 
     layer->output =  calloc(output_size, sizeof(float));
     layer->delta =   calloc(output_size, sizeof(float));
     #ifdef GPU
-    layer->indexes_cl = cl_make_int_array(layer->indexes, output_size);
-    layer->output_cl  = cl_make_array(layer->output, output_size);
-    layer->delta_cl   = cl_make_array(layer->delta, output_size);
+    layer->indexes_gpu = cuda_make_int_array(output_size);
+    layer->output_gpu  = cuda_make_array(layer->output, output_size);
+    layer->delta_gpu   = cuda_make_array(layer->delta, output_size);
     #endif
     return layer;
 }
@@ -98,74 +99,3 @@ void backward_maxpool_layer(const maxpool_layer layer, float *delta)
     }
 }
 
-#ifdef GPU
-cl_kernel get_forward_kernel()
-{
-    static int init = 0;
-    static cl_kernel kernel;
-    if(!init){
-        kernel = get_kernel("src/maxpool_layer.cl", "forward", 0);
-        init = 1;
-    }
-    return kernel;
-}
-
-void forward_maxpool_layer_gpu(maxpool_layer layer, cl_mem input)
-{
-    int h = (layer.h-1)/layer.stride + 1;
-    int w = (layer.w-1)/layer.stride + 1;
-    int c = layer.c;
-    cl_kernel kernel = get_forward_kernel();
-    cl_command_queue queue = cl.queue;
-
-    cl_uint i = 0;
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.h), (void*) &layer.h);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.w), (void*) &layer.w);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.c), (void*) &layer.c);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.stride), (void*) &layer.stride);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.size), (void*) &layer.size);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(input), (void*) &input);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.output_cl), (void*) &layer.output_cl);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.indexes_cl), (void*) &layer.indexes_cl);
-    check_error(cl);
-
-    const size_t global_size[] = {h*w*c*layer.batch};
-
-    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
-    check_error(cl);
-}
-
-cl_kernel get_backward_kernel()
-{
-    static int init = 0;
-    static cl_kernel kernel;
-    if(!init){
-        kernel = get_kernel("src/maxpool_layer.cl", "backward", 0);
-        init = 1;
-    }
-    return kernel;
-}
-
-void backward_maxpool_layer_gpu(maxpool_layer layer, cl_mem delta)
-{
-    cl_kernel kernel = get_backward_kernel();
-    cl_command_queue queue = cl.queue;
-
-    cl_uint i = 0;
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.h), (void*) &layer.h);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.w), (void*) &layer.w);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.c), (void*) &layer.c);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.stride), (void*) &layer.stride);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.size), (void*) &layer.size);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.delta_cl), (void*) &layer.delta_cl);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(delta), (void*) &delta);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.indexes_cl), (void*) &layer.indexes_cl);
-    check_error(cl);
-
-    const size_t global_size[] = {layer.h*layer.w*layer.c*layer.batch};
-
-    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
-    check_error(cl);
-}
-
-#endif

@@ -5,7 +5,7 @@
 #include "list.h"
 
 char *find_replace(char *str, char *orig, char *rep);
-void error(char *s);
+void error(const char *s);
 void malloc_error();
 void file_error(char *s);
 void strip(char *s);

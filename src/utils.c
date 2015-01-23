@@ -7,6 +7,19 @@
 
 #include "utils.h"
 
+void pm(int M, int N, float *A)
+{
+    int i,j;
+    for(i =0 ; i < M; ++i){
+        for(j = 0; j < N; ++j){
+            printf("%10.6f, ", A[i*N+j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+
 char *find_replace(char *str, char *orig, char *rep)
 {
     static char buffer[4096];
@@ -44,10 +57,9 @@ void top_k(float *a, int n, int k, int *index)
     }
 }
 
-void error(char *s)
+void error(const char *s)
 {
     perror(s);
-    //fprintf(stderr, "Error: %s\n", s);
     exit(0);
 }
 

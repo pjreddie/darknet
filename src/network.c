@@ -53,9 +53,10 @@ network make_network(int n, int batch)
     net.types = calloc(net.n, sizeof(LAYER_TYPE));
     net.outputs = 0;
     net.output = 0;
+    net.seen = 0;
     #ifdef GPU
-    net.input_cl = calloc(1, sizeof(cl_mem));
-    net.truth_cl = calloc(1, sizeof(cl_mem));
+    net.input_gpu = calloc(1, sizeof(float *));
+    net.truth_gpu = calloc(1, sizeof(float *));
     #endif
     return net;
 }
@@ -107,9 +108,12 @@ void forward_network(network net, float *input, float *truth, int train)
         }
         else if(net.types[i] == FREEWEIGHT){
             if(!train) continue;
-            freeweight_layer layer = *(freeweight_layer *)net.layers[i];
-            forward_freeweight_layer(layer, input);
+            //freeweight_layer layer = *(freeweight_layer *)net.layers[i];
+            //forward_freeweight_layer(layer, input);
         }
+        //char buff[256];
+        //sprintf(buff, "layer %d", i);
+        //cuda_compare(get_network_output_gpu_layer(net, i), input, get_network_output_size_layer(net, i)*net.batch, buff);
     }
 }
 
@@ -582,7 +586,7 @@ void top_predictions(network net, int k, int *index)
 float *network_predict(network net, float *input)
 {
     #ifdef GPU
-        if(gpu_index >= 0) return network_predict_gpu(net, input);
+    if(gpu_index >= 0)  return network_predict_gpu(net, input);
     #endif
 
     forward_network(net, input, 0, 0);

@@ -1,6 +1,5 @@
 #ifndef COST_LAYER_H
 #define COST_LAYER_H
-#include "opencl.h"
 
 typedef enum{
     SSE, DETECTION
@@ -13,7 +12,7 @@ typedef struct {
     float *output;
     COST_TYPE type;
     #ifdef GPU
-    cl_mem delta_cl;
+    float * delta_gpu;
     #endif
 } cost_layer;
 
@@ -24,8 +23,8 @@ void forward_cost_layer(const cost_layer layer, float *input, float *truth);
 void backward_cost_layer(const cost_layer layer, float *input, float *delta);
 
 #ifdef GPU
-void forward_cost_layer_gpu(cost_layer layer, cl_mem input, cl_mem truth);
-void backward_cost_layer_gpu(const cost_layer layer, cl_mem input, cl_mem delta);
+void forward_cost_layer_gpu(cost_layer layer, float * input, float * truth);
+void backward_cost_layer_gpu(const cost_layer layer, float * input, float * delta);
 #endif
 
 #endif

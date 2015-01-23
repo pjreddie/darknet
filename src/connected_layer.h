@@ -2,7 +2,6 @@
 #define CONNECTED_LAYER_H
 
 #include "activations.h"
-#include "opencl.h"
 
 typedef struct{
     float learning_rate;
@@ -25,14 +24,14 @@ typedef struct{
     float *delta;
     
     #ifdef GPU
-    cl_mem weights_cl;
-    cl_mem biases_cl;
+    float * weights_gpu;
+    float * biases_gpu;
 
-    cl_mem weight_updates_cl;
-    cl_mem bias_updates_cl;
+    float * weight_updates_gpu;
+    float * bias_updates_gpu;
 
-    cl_mem output_cl;
-    cl_mem delta_cl;
+    float * output_gpu;
+    float * delta_gpu;
     #endif
     ACTIVATION activation;
 
@@ -46,8 +45,8 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
 void update_connected_layer(connected_layer layer);
 
 #ifdef GPU
-void forward_connected_layer_gpu(connected_layer layer, cl_mem input);
-void backward_connected_layer_gpu(connected_layer layer, cl_mem input, cl_mem delta);
+void forward_connected_layer_gpu(connected_layer layer, float * input);
+void backward_connected_layer_gpu(connected_layer layer, float * input, float * delta);
 void update_connected_layer_gpu(connected_layer layer);
 void push_connected_layer(connected_layer layer);
 void pull_connected_layer(connected_layer layer);

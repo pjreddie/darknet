@@ -1,6 +1,5 @@
 #ifndef DROPOUT_LAYER_H
 #define DROPOUT_LAYER_H
-#include "opencl.h"
 
 typedef struct{
     int batch;
@@ -10,8 +9,8 @@ typedef struct{
     float *rand;
     float *output;
     #ifdef GPU
-    cl_mem rand_cl;
-    cl_mem output_cl;
+    float * rand_gpu;
+    float * output_gpu;
     #endif
 } dropout_layer;
 
@@ -21,8 +20,8 @@ void forward_dropout_layer(dropout_layer layer, float *input);
 void backward_dropout_layer(dropout_layer layer, float *delta);
 
 #ifdef GPU
-void forward_dropout_layer_gpu(dropout_layer layer, cl_mem input);
-void backward_dropout_layer_gpu(dropout_layer layer, cl_mem delta);
+void forward_dropout_layer_gpu(dropout_layer layer, float * input);
+void backward_dropout_layer_gpu(dropout_layer layer, float * delta);
 
 #endif
 #endif

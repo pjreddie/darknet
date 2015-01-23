@@ -1,11 +1,17 @@
+extern "C" {
+#include "maxpool_layer.h"
+#include "cuda.h"
+}
 
-__kernel void forward(int in_h, int in_w, int in_c, int stride, int size, __global float *input, __global float *output, __global int *indexes)
+__global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, float *input, float *output, int *indexes)
 {
     int h = (in_h-1)/stride + 1;
     int w = (in_w-1)/stride + 1;
     int c = in_c;
 
-    int id = get_global_id(0);
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(id >= n) return;
+
     int j = id % w;
     id /= w;
     int i = id % h;
@@ -37,14 +43,16 @@ __kernel void forward(int in_h, int in_w, int in_c, int stride, int size, __glob
     indexes[out_index] = max_i;
 }
 
-__kernel void backward(int in_h, int in_w, int in_c, int stride, int size, __global float *delta, __global float *prev_delta, __global int *indexes)
+__global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, float *delta, float *prev_delta, int *indexes)
 {
     int h = (in_h-1)/stride + 1;
     int w = (in_w-1)/stride + 1;
     int c = in_c;
     int area = (size-1)/stride;
 
-    int id = get_global_id(0);
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(id >= n) return;
+
     int index = id;
     int j = id % in_w;
     id /= in_w;
@@ -71,3 +79,24 @@ __kernel void backward(int in_h, int in_w, int in_c, int stride, int size, __glo
     }
     prev_delta[index] = d;
 }
+
+extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, float *input)
+{
+    int h = (layer.h-1)/layer.stride + 1;
+    int w = (layer.w-1)/layer.stride + 1;
+    int c = layer.c;
+
+    size_t n = h*w*c*layer.batch;
+
+    forward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, input, layer.output_gpu, layer.indexes_gpu);
+    check_error(cudaPeekAtLastError());
+}
+
+extern "C" void backward_maxpool_layer_gpu(maxpool_layer layer, float * delta)
+{
+    size_t n = layer.h*layer.w*layer.c*layer.batch;
+
+    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.delta_gpu, delta, layer.indexes_gpu);
+    check_error(cudaPeekAtLastError());
+}
+

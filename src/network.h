@@ -2,7 +2,6 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include "opencl.h"
 #include "image.h"
 #include "data.h"
 
@@ -21,6 +20,7 @@ typedef enum {
 typedef struct {
     int n;
     int batch;
+    int seen;
     float learning_rate;
     float momentum;
     float decay;
@@ -30,14 +30,16 @@ typedef struct {
     float *output;
 
     #ifdef GPU
-    cl_mem *input_cl;
-    cl_mem *truth_cl;
+    float **input_gpu;
+    float **truth_gpu;
     #endif
 } network;
 
 #ifdef GPU
 float train_network_datum_gpu(network net, float *x, float *y);
 float *network_predict_gpu(network net, float *input);
+float * get_network_output_gpu_layer(network net, int i);
+float * get_network_delta_gpu_layer(network net, int i);
 #endif
 
 void compare_networks(network n1, network n2, data d);

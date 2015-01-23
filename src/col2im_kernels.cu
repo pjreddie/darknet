@@ -1,6 +1,11 @@
-__kernel void col2im(__global float *data_col, int offset,
+extern "C" {
+#include "col2im.h"
+#include "cuda.h"
+}
+
+__global__ void col2im_kernel(float *data_col, int offset,
         int channels, int height, int width,
-        int ksize, int stride, int pad, __global float *data_im)
+        int ksize, int stride, int pad, float *data_im)
 {
 
     int height_col = (height - ksize) / stride + 1;
@@ -11,7 +16,9 @@ __kernel void col2im(__global float *data_col, int offset,
         pad = ksize/2;
     }
 
-    int id = get_global_id(0);
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(id >= channels*height*width) return;
+
     int index = id;
     int w = id%width + pad;
     id /= width;
@@ -25,8 +32,8 @@ __kernel void col2im(__global float *data_col, int offset,
     int h_start = (h-ksize+stride)/stride;
     int h_end = h/stride + 1;
 
-    int rows = channels * ksize * ksize;
-    int cols = height_col*width_col;
+    // int rows = channels * ksize * ksize;
+    // int cols = height_col*width_col;
     int col_offset = (c*ksize*ksize + h * ksize + w)*height_col*width_col;
     int h_coeff = (1-stride*ksize*height_col)*width_col;
     int w_coeff = 1-stride*height_col*width_col;
@@ -40,4 +47,16 @@ __kernel void col2im(__global float *data_col, int offset,
         }
     }
     data_im[index+offset] = val;
+}
+
+
+extern "C" void col2im_ongpu(float *data_col, int offset,
+        int channels,  int height,  int width,
+        int ksize,  int stride,  int pad, float *data_im)
+{
+
+    size_t n = channels*height*width;
+
+    col2im_kernel<<<cuda_gridsize(n), BLOCK>>>(data_col, offset, channels, height, width, ksize, stride, pad, data_im);
+    check_error(cudaPeekAtLastError());
 }

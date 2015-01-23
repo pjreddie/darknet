@@ -1,48 +1,49 @@
 GPU=1
-CLBLAS=0
+DEBUG=0
 
-CC=gcc
-COMMON=-Wall -Wfatal-errors `pkg-config --cflags opencv` -I/usr/local/cuda/include/
-ifeq ($(GPU), 1) 
-COMMON+=-DGPU
-endif
-
-ifeq ($(CLBLAS), 1) 
-COMMON+=-DCLBLAS
-LDFLAGS=-lclBLAS
-endif
-
-UNAME = $(shell uname)
-#OPTS=-Ofast -flto
-OPTS=-O3 -flto
-ifeq ($(UNAME), Darwin)
-COMMON+= -isystem /usr/local/Cellar/opencv/2.4.6.1/include/opencv -isystem /usr/local/Cellar/opencv/2.4.6.1/include
-ifeq ($(GPU), 1)
-LDFLAGS= -framework OpenCL
-endif
-else
-OPTS+= -march=native
-ifeq ($(GPU), 1)
-LDFLAGS+= -lOpenCL
-endif
-endif
-CFLAGS= $(COMMON) $(OPTS)
-#CFLAGS= $(COMMON) -O0 -g
-LDFLAGS+=`pkg-config --libs opencv` -lm -pthread
 VPATH=./src/
 EXEC=cnn
 OBJDIR=./obj/
 
-OBJ=network.o network_gpu.o image.o cnn.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o mini_blas.o convolutional_layer.o gemm.o normalization_layer.o opencl.o im2col.o col2im.o axpy.o dropout_layer.o crop_layer.o freeweight_layer.o cost_layer.o server.o
+CC=gcc
+NVCC=nvcc
+OPTS=-O3
+LINKER=$(CC)
+LDFLAGS=`pkg-config --libs opencv` -lm -pthread
+COMMON=`pkg-config --cflags opencv` -I/usr/local/cuda/include/
+CFLAGS=-Wall -Wfatal-errors
+CFLAGS+=$(OPTS)
+
+ifeq ($(DEBUG), 1) 
+COMMON+=-O0 -g
+CFLAGS+=-O0 -g
+endif
+
+ifeq ($(GPU), 1) 
+LINKER=$(NVCC)
+COMMON+=-DGPU
+CFLAGS+=-DGPU
+LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas
+endif
+
+#OBJ=network.o network_gpu.o image.o cnn.o connected_layer.o maxpool_layer.o activations.o list.o option_list.o parser.o utils.o data.o matrix.o softmax_layer.o convolutional_layer.o gemm.o normalization_layer.o opencl.o im2col.o col2im.o axpy.o dropout_layer.o crop_layer.o freeweight_layer.o cost_layer.o server.o
+OBJ=gemm.o utils.o cuda.o convolutional_layer.o list.o image.o activations.o im2col.o col2im.o blas.o crop_layer.o dropout_layer.o maxpool_layer.o softmax_layer.o data.o matrix.o network.o connected_layer.o cost_layer.o normalization_layer.o parser.o option_list.o cnn.o
+ifeq ($(GPU), 1) 
+OBJ+=convolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_kernels.o blas_kernels.o crop_layer_kernels.o dropout_layer_kernels.o maxpool_layer_kernels.o softmax_layer_kernels.o network_kernels.o
+endif
+
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(COMMON) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 $(OBJDIR)%.o: %.c 
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)%.o: %.cu 
+	$(NVCC) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
 .PHONY: clean
 

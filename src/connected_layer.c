@@ -1,6 +1,8 @@
 #include "connected_layer.h"
 #include "utils.h"
-#include "mini_blas.h"
+#include "cuda.h"
+#include "blas.h"
+#include "gemm.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -44,14 +46,14 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     }
 
 #ifdef GPU
-    layer->weights_cl = cl_make_array(layer->weights, inputs*outputs);
-    layer->biases_cl = cl_make_array(layer->biases, outputs);
+    layer->weights_gpu = cuda_make_array(layer->weights, inputs*outputs);
+    layer->biases_gpu = cuda_make_array(layer->biases, outputs);
 
-    layer->weight_updates_cl = cl_make_array(layer->weight_updates, inputs*outputs);
-    layer->bias_updates_cl = cl_make_array(layer->bias_updates, outputs);
+    layer->weight_updates_gpu = cuda_make_array(layer->weight_updates, inputs*outputs);
+    layer->bias_updates_gpu = cuda_make_array(layer->bias_updates, outputs);
 
-    layer->output_cl = cl_make_array(layer->output, outputs*batch);
-    layer->delta_cl = cl_make_array(layer->delta, outputs*batch);
+    layer->output_gpu = cuda_make_array(layer->output, outputs*batch);
+    layer->delta_gpu = cuda_make_array(layer->delta, outputs*batch);
 #endif
     layer->activation = activation;
     fprintf(stderr, "Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
@@ -140,68 +142,68 @@ void backward_connected_layer(connected_layer layer, float *input, float *delta)
 
 void pull_connected_layer(connected_layer layer)
 {
-    cl_read_array(layer.weights_cl, layer.weights, layer.inputs*layer.outputs);
-    cl_read_array(layer.biases_cl, layer.biases, layer.outputs);
-    cl_read_array(layer.weight_updates_cl, layer.weight_updates, layer.inputs*layer.outputs);
-    cl_read_array(layer.bias_updates_cl, layer.bias_updates, layer.outputs);
+    cuda_pull_array(layer.weights_gpu, layer.weights, layer.inputs*layer.outputs);
+    cuda_pull_array(layer.biases_gpu, layer.biases, layer.outputs);
+    cuda_pull_array(layer.weight_updates_gpu, layer.weight_updates, layer.inputs*layer.outputs);
+    cuda_pull_array(layer.bias_updates_gpu, layer.bias_updates, layer.outputs);
 }
 
 void push_connected_layer(connected_layer layer)
 {
-    cl_write_array(layer.weights_cl, layer.weights, layer.inputs*layer.outputs);
-    cl_write_array(layer.biases_cl, layer.biases, layer.outputs);
-    cl_write_array(layer.weight_updates_cl, layer.weight_updates, layer.inputs*layer.outputs);
-    cl_write_array(layer.bias_updates_cl, layer.bias_updates, layer.outputs);
+    cuda_push_array(layer.weights_gpu, layer.weights, layer.inputs*layer.outputs);
+    cuda_push_array(layer.biases_gpu, layer.biases, layer.outputs);
+    cuda_push_array(layer.weight_updates_gpu, layer.weight_updates, layer.inputs*layer.outputs);
+    cuda_push_array(layer.bias_updates_gpu, layer.bias_updates, layer.outputs);
 }
 
 void update_connected_layer_gpu(connected_layer layer)
 {
-    axpy_ongpu(layer.outputs, layer.learning_rate, layer.bias_updates_cl, 1, layer.biases_cl, 1);
-    scal_ongpu(layer.outputs, layer.momentum, layer.bias_updates_cl, 1);
+    axpy_ongpu(layer.outputs, layer.learning_rate, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);
+    scal_ongpu(layer.outputs, layer.momentum, layer.bias_updates_gpu, 1);
 
-    axpy_ongpu(layer.inputs*layer.outputs, -layer.decay, layer.weights_cl, 1, layer.weight_updates_cl, 1);
-    axpy_ongpu(layer.inputs*layer.outputs, layer.learning_rate, layer.weight_updates_cl, 1, layer.weights_cl, 1);
-    scal_ongpu(layer.inputs*layer.outputs, layer.momentum, layer.weight_updates_cl, 1);
+    axpy_ongpu(layer.inputs*layer.outputs, -layer.decay, layer.weights_gpu, 1, layer.weight_updates_gpu, 1);
+    axpy_ongpu(layer.inputs*layer.outputs, layer.learning_rate, layer.weight_updates_gpu, 1, layer.weights_gpu, 1);
+    scal_ongpu(layer.inputs*layer.outputs, layer.momentum, layer.weight_updates_gpu, 1);
     //pull_connected_layer(layer);
 }
 
-void forward_connected_layer_gpu(connected_layer layer, cl_mem input)
+void forward_connected_layer_gpu(connected_layer layer, float * input)
 {
     int i;
     for(i = 0; i < layer.batch; ++i){
-        copy_ongpu_offset(layer.outputs, layer.biases_cl, 0, 1, layer.output_cl, i*layer.outputs, 1);
+        copy_ongpu_offset(layer.outputs, layer.biases_gpu, 0, 1, layer.output_gpu, i*layer.outputs, 1);
     }
     int m = layer.batch;
     int k = layer.inputs;
     int n = layer.outputs;
-    cl_mem a = input;
-    cl_mem b = layer.weights_cl;
-    cl_mem c = layer.output_cl;
+    float * a = input;
+    float * b = layer.weights_gpu;
+    float * c = layer.output_gpu;
     gemm_ongpu(0,0,m,n,k,1,a,k,b,n,1,c,n);
-    activate_array_ongpu(layer.output_cl, layer.outputs*layer.batch, layer.activation);
+    activate_array_ongpu(layer.output_gpu, layer.outputs*layer.batch, layer.activation);
 }
 
-void backward_connected_layer_gpu(connected_layer layer, cl_mem input, cl_mem delta)
+void backward_connected_layer_gpu(connected_layer layer, float * input, float * delta)
 {
     int i;
-    gradient_array_ongpu(layer.output_cl, layer.outputs*layer.batch, layer.activation, layer.delta_cl);
+    gradient_array_ongpu(layer.output_gpu, layer.outputs*layer.batch, layer.activation, layer.delta_gpu);
     for(i = 0; i < layer.batch; ++i){
-        axpy_ongpu_offset(layer.outputs, 1, layer.delta_cl, i*layer.outputs, 1, layer.bias_updates_cl, 0, 1);
+        axpy_ongpu_offset(layer.outputs, 1, layer.delta_gpu, i*layer.outputs, 1, layer.bias_updates_gpu, 0, 1);
     }
     int m = layer.inputs;
     int k = layer.batch;
     int n = layer.outputs;
-    cl_mem a = input;
-    cl_mem b = layer.delta_cl;
-    cl_mem c = layer.weight_updates_cl;
+    float * a = input;
+    float * b = layer.delta_gpu;
+    float * c = layer.weight_updates_gpu;
     gemm_ongpu(1,0,m,n,k,1,a,m,b,n,1,c,n);
 
     m = layer.batch;
     k = layer.outputs;
     n = layer.inputs;
 
-    a = layer.delta_cl;
-    b = layer.weights_cl;
+    a = layer.delta_gpu;
+    b = layer.weights_gpu;
     c = delta;
 
     if(c) gemm_ongpu(0,1,m,n,k,1,a,k,b,k,0,c,n);

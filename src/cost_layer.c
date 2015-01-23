@@ -1,6 +1,7 @@
 #include "cost_layer.h"
 #include "utils.h"
-#include "mini_blas.h"
+#include "cuda.h"
+#include "blas.h"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
@@ -35,7 +36,7 @@ cost_layer *make_cost_layer(int batch, int inputs, COST_TYPE type)
     layer->delta = calloc(inputs*batch, sizeof(float));
     layer->output = calloc(1, sizeof(float));
     #ifdef GPU
-    layer->delta_cl = cl_make_array(layer->delta, inputs*batch);
+    layer->delta_gpu = cuda_make_array(layer->delta, inputs*batch);
     #endif
     return layer;
 }
@@ -62,55 +63,25 @@ void backward_cost_layer(const cost_layer layer, float *input, float *delta)
 
 #ifdef GPU
 
-cl_kernel get_mask_kernel()
-{
-    static int init = 0;
-    static cl_kernel kernel;
-    if(!init){
-        kernel = get_kernel("src/axpy.cl", "mask", 0);
-        init = 1;
-    }
-    return kernel;
-}
-
-void mask_ongpu(int n, cl_mem x, cl_mem mask, int mod)
-{
-    cl_kernel kernel = get_mask_kernel();
-    cl_command_queue queue = cl.queue;
-
-    cl_uint i = 0;
-    cl.error = clSetKernelArg(kernel, i++, sizeof(n), (void*) &n);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(x), (void*) &x);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(mask), (void*) &mask);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(mod), (void*) &mod);
-    check_error(cl);
-
-    const size_t global_size[] = {n};
-
-    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
-    check_error(cl);
-
-}
-
-void forward_cost_layer_gpu(cost_layer layer, cl_mem input, cl_mem truth)
+void forward_cost_layer_gpu(cost_layer layer, float * input, float * truth)
 {
     if (!truth) return;
 
-    copy_ongpu(layer.batch*layer.inputs, truth, 1, layer.delta_cl, 1);
-    axpy_ongpu(layer.batch*layer.inputs, -1, input, 1, layer.delta_cl, 1);
+    copy_ongpu(layer.batch*layer.inputs, truth, 1, layer.delta_gpu, 1);
+    axpy_ongpu(layer.batch*layer.inputs, -1, input, 1, layer.delta_gpu, 1);
 
     if(layer.type==DETECTION){
-        mask_ongpu(layer.inputs*layer.batch, layer.delta_cl, truth, 5);
+        mask_ongpu(layer.inputs*layer.batch, layer.delta_gpu, truth, 5);
     }
 
-    cl_read_array(layer.delta_cl, layer.delta, layer.batch*layer.inputs);
+    cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
     //printf("cost: %f\n", *layer.output);
 }
 
-void backward_cost_layer_gpu(const cost_layer layer, cl_mem input, cl_mem delta)
+void backward_cost_layer_gpu(const cost_layer layer, float * input, float * delta)
 {
-    copy_ongpu(layer.batch*layer.inputs, layer.delta_cl, 1, delta, 1);
+    copy_ongpu(layer.batch*layer.inputs, layer.delta_gpu, 1, delta, 1);
 }
 #endif
 

@@ -1,4 +1,5 @@
 #include "crop_layer.h"
+#include "cuda.h"
 #include <stdio.h>
 
 image get_crop_image(crop_layer layer)
@@ -22,7 +23,7 @@ crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int
     layer->crop_height = crop_height;
     layer->output = calloc(crop_width*crop_height * c*batch, sizeof(float));
     #ifdef GPU
-    layer->output_cl = cl_make_array(layer->output, crop_width*crop_height*c*batch);
+    layer->output_gpu = cuda_make_array(layer->output, crop_width*crop_height*c*batch);
     #endif
     return layer;
 }
@@ -53,45 +54,3 @@ void forward_crop_layer(const crop_layer layer, float *input)
     }
 }
 
-#ifdef GPU
-cl_kernel get_crop_kernel()
-{
-    static int init = 0;
-    static cl_kernel kernel;
-    if(!init){
-        kernel = get_kernel("src/crop_layer.cl", "forward", 0);
-        init = 1;
-    }
-    return kernel;
-}
-
-void forward_crop_layer_gpu(crop_layer layer, cl_mem input)
-{
-    int flip = (layer.flip && rand()%2);
-    int dh = rand()%(layer.h - layer.crop_height);
-    int dw = rand()%(layer.w - layer.crop_width);
-    int size = layer.batch*layer.c*layer.crop_width*layer.crop_height;
-
-    cl_kernel kernel = get_crop_kernel();
-    cl_command_queue queue = cl.queue;
-
-    cl_uint i = 0;
-    cl.error = clSetKernelArg(kernel, i++, sizeof(input), (void*) &input);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.c), (void*) &layer.c);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.h), (void*) &layer.h);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.w), (void*) &layer.w);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.crop_height), (void*) &layer.crop_height);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.crop_width), (void*) &layer.crop_width);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(dh), (void*) &dh);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(dw), (void*) &dw);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(flip), (void*) &flip);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.output_cl), (void*) &layer.output_cl);
-    check_error(cl);
-
-    const size_t global_size[] = {size};
-
-    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
-    check_error(cl);
-}
-
-#endif

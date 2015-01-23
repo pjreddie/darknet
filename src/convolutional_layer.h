@@ -1,7 +1,7 @@
 #ifndef CONVOLUTIONAL_LAYER_H
 #define CONVOLUTIONAL_LAYER_H
 
-#include "opencl.h"
+#include "cuda.h"
 #include "image.h"
 #include "activations.h"
 
@@ -27,26 +27,28 @@ typedef struct {
     float *output;
 
     #ifdef GPU
-    cl_mem filters_cl;
-    cl_mem filter_updates_cl;
+    float * filters_gpu;
+    float * filter_updates_gpu;
 
-    cl_mem biases_cl;
-    cl_mem bias_updates_cl;
+    float * biases_gpu;
+    float * bias_updates_gpu;
 
-    cl_mem col_image_cl;
-    cl_mem delta_cl;
-    cl_mem output_cl;
+    float * col_image_gpu;
+    float * delta_gpu;
+    float * output_gpu;
     #endif
 
     ACTIVATION activation;
 } convolutional_layer;
 
 #ifdef GPU
-void forward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in);
-void backward_convolutional_layer_gpu(convolutional_layer layer, cl_mem in, cl_mem delta_cl);
+void forward_convolutional_layer_gpu(convolutional_layer layer, float * in);
+void backward_convolutional_layer_gpu(convolutional_layer layer, float * in, float * delta_gpu);
 void update_convolutional_layer_gpu(convolutional_layer layer);
 void push_convolutional_layer(convolutional_layer layer);
 void pull_convolutional_layer(convolutional_layer layer);
+void learn_bias_convolutional_layer_ongpu(convolutional_layer layer);
+void bias_output_gpu(const convolutional_layer layer);
 #endif
 
 convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, float learning_rate, float momentum, float decay);
@@ -57,9 +59,14 @@ image *visualize_convolutional_layer(convolutional_layer layer, char *window, im
 
 void backward_convolutional_layer(convolutional_layer layer, float *in, float *delta);
 
+void bias_output(const convolutional_layer layer);
 image get_convolutional_image(convolutional_layer layer);
 image get_convolutional_delta(convolutional_layer layer);
 image get_convolutional_filter(convolutional_layer layer, int i);
+
+int convolutional_out_height(convolutional_layer layer);
+int convolutional_out_width(convolutional_layer layer);
+void learn_bias_convolutional_layer(convolutional_layer layer);
 
 #endif
 

@@ -1,7 +1,6 @@
 #ifndef CROP_LAYER_H
 #define CROP_LAYER_H
 
-#include "opencl.h"
 #include "image.h"
 
 typedef struct {
@@ -12,7 +11,7 @@ typedef struct {
     int flip;
     float *output;
 #ifdef GPU
-    cl_mem output_cl;
+    float *output_gpu;
 #endif
 } crop_layer;
 
@@ -21,7 +20,7 @@ crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int
 void forward_crop_layer(const crop_layer layer, float *input);
 
 #ifdef GPU
-void forward_crop_layer_gpu(crop_layer layer, cl_mem input);
+void forward_crop_layer_gpu(crop_layer layer, float *input);
 #endif
 
 #endif

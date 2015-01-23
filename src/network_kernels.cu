@@ -1,3 +1,4 @@
+extern "C" {
 #include <stdio.h>
 #include <time.h>
 
@@ -15,12 +16,12 @@
 #include "freeweight_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
+}
 
-#ifdef GPU
-cl_mem get_network_output_cl_layer(network net, int i);
-cl_mem get_network_delta_cl_layer(network net, int i);
+extern "C" float * get_network_output_gpu_layer(network net, int i);
+extern "C" float * get_network_delta_gpu_layer(network net, int i);
 
-void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
+void forward_network_gpu(network net, float * input, float * truth, int train)
 {
     int i;
     for(i = 0; i < net.n; ++i){
@@ -28,7 +29,7 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             forward_convolutional_layer_gpu(layer, input);
-            input = layer.output_cl;
+            input = layer.output_gpu;
         }
         else if(net.types[i] == COST){
             cost_layer layer = *(cost_layer *)net.layers[i];
@@ -37,47 +38,46 @@ void forward_network_gpu(network net, cl_mem input, cl_mem truth, int train)
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
             forward_connected_layer_gpu(layer, input);
-            input = layer.output_cl;
+            input = layer.output_gpu;
         }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
             forward_maxpool_layer_gpu(layer, input);
-            input = layer.output_cl;
+            input = layer.output_gpu;
         }
         else if(net.types[i] == SOFTMAX){
             softmax_layer layer = *(softmax_layer *)net.layers[i];
             forward_softmax_layer_gpu(layer, input);
-            input = layer.output_cl;
+            input = layer.output_gpu;
         }
         else if(net.types[i] == DROPOUT){
             if(!train) continue;
             dropout_layer layer = *(dropout_layer *)net.layers[i];
             forward_dropout_layer_gpu(layer, input);
-            input = layer.output_cl;
+            input = layer.output_gpu;
         }
         else if(net.types[i] == CROP){
             crop_layer layer = *(crop_layer *)net.layers[i];
             forward_crop_layer_gpu(layer, input);
-            input = layer.output_cl;
+            input = layer.output_gpu;
         }
-        check_error(cl);
         //printf("Forward %d %s %f\n", i, get_layer_string(net.types[i]), sec(clock() - time));
     }
 }
 
-void backward_network_gpu(network net, cl_mem input)
+void backward_network_gpu(network net, float * input)
 {
     int i;
-    cl_mem prev_input;
-    cl_mem prev_delta;
+    float * prev_input;
+    float * prev_delta;
     for(i = net.n-1; i >= 0; --i){
         //clock_t time = clock();
         if(i == 0){
             prev_input = input;
             prev_delta = 0;
         }else{
-            prev_input = get_network_output_cl_layer(net, i-1);
-            prev_delta = get_network_delta_cl_layer(net, i-1);
+            prev_input = get_network_output_gpu_layer(net, i-1);
+            prev_delta = get_network_delta_gpu_layer(net, i-1);
         }
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
@@ -103,7 +103,6 @@ void backward_network_gpu(network net, cl_mem input)
             softmax_layer layer = *(softmax_layer *)net.layers[i];
             backward_softmax_layer_gpu(layer, prev_delta);
         }
-        check_error(cl);
         //printf("Backward %d %s %f\n", i, get_layer_string(net.types[i]), sec(clock() - time));
     }
 }
@@ -123,54 +122,54 @@ void update_network_gpu(network net)
     }
 }
 
-cl_mem get_network_output_cl_layer(network net, int i)
+float * get_network_output_gpu_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-        return layer.output_cl;
+        return layer.output_gpu;
     }
     else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
-        return layer.output_cl;
+        return layer.output_gpu;
     }
     else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        return layer.output_cl;
+        return layer.output_gpu;
     }
     else if(net.types[i] == CROP){
         crop_layer layer = *(crop_layer *)net.layers[i];
-        return layer.output_cl;
+        return layer.output_gpu;
     }
     else if(net.types[i] == SOFTMAX){
         softmax_layer layer = *(softmax_layer *)net.layers[i];
-        return layer.output_cl;
+        return layer.output_gpu;
     } else if(net.types[i] == DROPOUT){
         dropout_layer layer = *(dropout_layer *)net.layers[i];
-        return layer.output_cl;
+        return layer.output_gpu;
     }
     return 0;
 }
 
-cl_mem get_network_delta_cl_layer(network net, int i)
+float * get_network_delta_gpu_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-        return layer.delta_cl;
+        return layer.delta_gpu;
     }
     else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
-        return layer.delta_cl;
+        return layer.delta_gpu;
     }
     else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        return layer.delta_cl;
+        return layer.delta_gpu;
     }
     else if(net.types[i] == SOFTMAX){
         softmax_layer layer = *(softmax_layer *)net.layers[i];
-        return layer.delta_cl;
+        return layer.delta_gpu;
     } else if(net.types[i] == DROPOUT){
         if(i == 0) return 0;
-        return get_network_delta_cl_layer(net, i-1);
+        return get_network_delta_gpu_layer(net, i-1);
     }
     return 0;
 }
@@ -179,15 +178,15 @@ float train_network_datum_gpu(network net, float *x, float *y)
 {
     int x_size = get_network_input_size(net)*net.batch;
     int y_size = get_network_output_size(net)*net.batch;
-    if(!*net.input_cl){
-        *net.input_cl = cl_make_array(x, x_size);
-        *net.truth_cl = cl_make_array(y, y_size);
+    if(!*net.input_gpu){
+        *net.input_gpu = cuda_make_array(x, x_size);
+        *net.truth_gpu = cuda_make_array(y, y_size);
     }else{
-        cl_write_array(*net.input_cl, x, x_size);
-        cl_write_array(*net.truth_cl, y, y_size);
+        cuda_push_array(*net.input_gpu, x, x_size);
+        cuda_push_array(*net.truth_gpu, y, y_size);
     }
-    forward_network_gpu(net, *net.input_cl, *net.truth_cl, 1);
-    backward_network_gpu(net, *net.input_cl);
+    forward_network_gpu(net, *net.input_gpu, *net.truth_gpu, 1);
+    backward_network_gpu(net, *net.input_gpu);
     update_network_gpu(net);
     float error = get_network_cost(net);
     return error;
@@ -201,7 +200,7 @@ float *get_network_output_layer_gpu(network net, int i)
     }
     else if(net.types[i] == CONNECTED){
         connected_layer layer = *(connected_layer *)net.layers[i];
-        cl_read_array(layer.output_cl, layer.output, layer.outputs*layer.batch);
+        cuda_pull_array(layer.output_gpu, layer.output, layer.outputs*layer.batch);
         return layer.output;
     }
     else if(net.types[i] == MAXPOOL){
@@ -227,11 +226,10 @@ float *network_predict_gpu(network net, float *input)
 {
 
     int size = get_network_input_size(net) * net.batch;
-    cl_mem input_cl = cl_make_array(input, size);
-    forward_network_gpu(net, input_cl, 0, 0);
+    float * input_gpu = cuda_make_array(input, size);
+    forward_network_gpu(net, input_gpu, 0, 0);
     float *out = get_network_output_gpu(net);
-    clReleaseMemObject(input_cl);
+    cuda_free(input_gpu);
     return out;
 }
 
-#endif

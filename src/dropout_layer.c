@@ -1,5 +1,6 @@
 #include "dropout_layer.h"
 #include "utils.h"
+#include "cuda.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -14,8 +15,8 @@ dropout_layer *make_dropout_layer(int batch, int inputs, float probability)
     layer->rand = calloc(inputs*batch, sizeof(float));
     layer->scale = 1./(1.-probability);
     #ifdef GPU
-    layer->output_cl = cl_make_array(layer->output, inputs*batch);
-    layer->rand_cl = cl_make_array(layer->rand, inputs*batch);
+    layer->output_gpu = cuda_make_array(layer->output, inputs*batch);
+    layer->rand_gpu = cuda_make_array(layer->rand, inputs*batch);
     #endif
     return layer;
 } 
@@ -42,61 +43,3 @@ void backward_dropout_layer(dropout_layer layer, float *delta)
     }
 }
 
-#ifdef GPU
-cl_kernel get_dropout_kernel()
-{
-    static int init = 0;
-    static cl_kernel kernel;
-    if(!init){
-        kernel = get_kernel("src/dropout_layer.cl", "yoloswag420blazeit360noscope", 0);
-        init = 1;
-    }
-    return kernel;
-}
-
-void forward_dropout_layer_gpu(dropout_layer layer, cl_mem input)
-{
-    int j;
-    int size = layer.inputs*layer.batch;
-    for(j = 0; j < size; ++j) layer.rand[j] = rand_uniform();
-    cl_write_array(layer.rand_cl, layer.rand, layer.inputs*layer.batch);
-
-    cl_kernel kernel = get_dropout_kernel();
-    cl_command_queue queue = cl.queue;
-
-    cl_uint i = 0;
-    cl.error = clSetKernelArg(kernel, i++, sizeof(input), (void*) &input);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.rand_cl), (void*) &layer.rand_cl);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.probability), (void*) &layer.probability);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.scale), (void*) &layer.scale);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.output_cl), (void*) &layer.output_cl);
-    check_error(cl);
-
-    const size_t global_size[] = {size};
-
-    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
-    check_error(cl);
-}
-
-void backward_dropout_layer_gpu(dropout_layer layer, cl_mem delta)
-{
-    if(!delta) return;
-    int size = layer.inputs*layer.batch;
-
-    cl_kernel kernel = get_dropout_kernel();
-    cl_command_queue queue = cl.queue;
-
-    cl_uint i = 0;
-    cl.error = clSetKernelArg(kernel, i++, sizeof(delta), (void*) &delta);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.rand_cl), (void*) &layer.rand_cl);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.probability), (void*) &layer.probability);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(layer.scale), (void*) &layer.scale);
-    cl.error = clSetKernelArg(kernel, i++, sizeof(delta), (void*) &delta);
-    check_error(cl);
-
-    const size_t global_size[] = {size};
-
-    cl.error = clEnqueueNDRangeKernel(queue, kernel, 1, 0, global_size, 0, 0, 0, 0);
-    check_error(cl);
-}
-#endif

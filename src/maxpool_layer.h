@@ -2,7 +2,7 @@
 #define MAXPOOL_LAYER_H
 
 #include "image.h"
-#include "opencl.h"
+#include "cuda.h"
 
 typedef struct {
     int batch;
@@ -13,9 +13,9 @@ typedef struct {
     float *delta;
     float *output;
     #ifdef GPU
-    cl_mem indexes_cl;
-    cl_mem output_cl;
-    cl_mem delta_cl;
+    int *indexes_gpu;
+    float *output_gpu;
+    float *delta_gpu;
     #endif
 } maxpool_layer;
 
@@ -26,8 +26,8 @@ void forward_maxpool_layer(const maxpool_layer layer, float *input);
 void backward_maxpool_layer(const maxpool_layer layer, float *delta);
 
 #ifdef GPU
-void forward_maxpool_layer_gpu(maxpool_layer layer, cl_mem input);
-void backward_maxpool_layer_gpu(maxpool_layer layer, cl_mem delta);
+void forward_maxpool_layer_gpu(maxpool_layer layer, float * input);
+void backward_maxpool_layer_gpu(maxpool_layer layer, float * delta);
 #endif
 
 #endif
