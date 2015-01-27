@@ -8,7 +8,7 @@ opencv/
 convnet/
 decaf/
 submission/
-cnn
+darknet
 
 # OS Generated #
 .DS_Store*
