@@ -1,5 +1,6 @@
 GPU=1
 DEBUG=0
+ARCH= -arch=sm_35
 
 VPATH=./src/
 EXEC=cnn
@@ -8,7 +9,6 @@ OBJDIR=./obj/
 CC=gcc
 NVCC=nvcc
 OPTS=-O3
-LINKER=$(CC)
 LDFLAGS=`pkg-config --libs opencv` -lm -pthread
 COMMON=`pkg-config --cflags opencv` -I/usr/local/cuda/include/
 CFLAGS=-Wall -Wfatal-errors
@@ -20,7 +20,6 @@ CFLAGS+=-O0 -g
 endif
 
 ifeq ($(GPU), 1) 
-LINKER=$(NVCC)
 COMMON+=-DGPU
 CFLAGS+=-DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas
@@ -43,7 +42,7 @@ $(OBJDIR)%.o: %.c
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)%.o: %.cu 
-	$(NVCC) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
 .PHONY: clean
 

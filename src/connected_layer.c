@@ -78,8 +78,6 @@ void secret_update_connected_layer(connected_layer *layer)
     axpy_cpu(layer->outputs, 1, layer->bias_updates, 1, layer->bias_prev, 1);
     scal_cpu(layer->outputs, 0, layer->bias_updates, 1);
 
-    //printf("rate:   %f\n", layer->learning_rate);
-
     axpy_cpu(layer->outputs, layer->learning_rate, layer->bias_prev, 1, layer->biases, 1);
 
     axpy_cpu(layer->inputs*layer->outputs, -layer->decay, layer->weights, 1, layer->weight_prev, 1);

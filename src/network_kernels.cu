@@ -176,6 +176,7 @@ float * get_network_delta_gpu_layer(network net, int i)
 
 float train_network_datum_gpu(network net, float *x, float *y)
 {
+  //clock_t time = clock();
     int x_size = get_network_input_size(net)*net.batch;
     int y_size = get_network_output_size(net)*net.batch;
     if(!*net.input_gpu){
@@ -185,10 +186,18 @@ float train_network_datum_gpu(network net, float *x, float *y)
         cuda_push_array(*net.input_gpu, x, x_size);
         cuda_push_array(*net.truth_gpu, y, y_size);
     }
+  //printf("trans %f\n", sec(clock() - time));
+  //time = clock();
     forward_network_gpu(net, *net.input_gpu, *net.truth_gpu, 1);
+  //printf("forw %f\n", sec(clock() - time));
+  //time = clock();
     backward_network_gpu(net, *net.input_gpu);
+  //printf("back %f\n", sec(clock() - time));
+  //time = clock();
     update_network_gpu(net);
     float error = get_network_cost(net);
+  //printf("updt %f\n", sec(clock() - time));
+  //time = clock();
     return error;
 }
 

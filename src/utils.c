@@ -233,6 +233,14 @@ float constrain(float a, float max)
     return a;
 }
 
+float mse_array(float *a, int n)
+{
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; ++i) sum += a[i]*a[i];
+    return sqrt(sum/n);
+}
+
 void normalize_array(float *a, int n)
 {
     int i;

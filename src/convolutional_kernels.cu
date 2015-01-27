@@ -32,7 +32,7 @@ __global__ void learn_bias(int batch, int n, int size, float *delta, float *bias
 {
     __shared__ float part[BLOCK];
     int i,b;
-    int filter = (blockIdx.x + blockIdx.y*gridDim.x);
+    int filter = blockIdx.x;
     int p = threadIdx.x;
     float sum = 0;
     for(b = 0; b < batch; ++b){
@@ -52,8 +52,7 @@ extern "C" void learn_bias_convolutional_layer_ongpu(convolutional_layer layer)
 {
     int size = convolutional_out_height(layer)*convolutional_out_width(layer);
 
-
-    learn_bias<<<cuda_gridsize(layer.n), BLOCK>>>(layer.batch, layer.n, size, layer.delta_gpu, layer.bias_updates_gpu);
+    learn_bias<<<layer.n, BLOCK>>>(layer.batch, layer.n, size, layer.delta_gpu, layer.bias_updates_gpu);
     check_error(cudaPeekAtLastError());
 }
 
@@ -96,9 +95,6 @@ extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, float
         gemm_ongpu(0,0,m,n,k,1.,a,k,b,n,1.,c+i*m*n,n);
     }
     activate_array_ongpu(layer.output_gpu, m*n*layer.batch, layer.activation);
-    cuda_pull_array(layer.output_gpu, layer.output, m*n*layer.batch);
-    //for(i = 0; i < m*n*layer.batch; ++i) printf("%f, ", layer.output[i]);
-    //printf("\n");
 }
 
 extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, float *in, float *delta_gpu)
@@ -153,6 +149,16 @@ extern "C" void push_convolutional_layer(convolutional_layer layer)
 extern "C" void update_convolutional_layer_gpu(convolutional_layer layer)
 {
     int size = layer.size*layer.size*layer.c*layer.n;
+
+/*
+    cuda_pull_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
+    cuda_pull_array(layer.biases_gpu, layer.biases, layer.n);
+    cuda_pull_array(layer.filter_updates_gpu, layer.filter_updates, size);
+    cuda_pull_array(layer.filters_gpu, layer.filters, size);
+    printf("Bias: %f updates: %f\n", mse_array(layer.biases, layer.n), mse_array(layer.bias_updates, layer.n));
+    printf("Filter: %f updates: %f\n", mse_array(layer.filters, layer.n), mse_array(layer.filter_updates, layer.n));
+    */
+
     axpy_ongpu(layer.n, layer.learning_rate, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);
     scal_ongpu(layer.n,layer.momentum, layer.bias_updates_gpu, 1);
 

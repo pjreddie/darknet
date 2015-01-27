@@ -42,8 +42,6 @@ char *get_layer_string(LAYER_TYPE a)
     return "none";
 }
 
-
-
 network make_network(int n, int batch)
 {
     network net;
@@ -60,7 +58,6 @@ network make_network(int n, int batch)
     #endif
     return net;
 }
-
 
 void forward_network(network net, float *input, float *truth, int train)
 {
