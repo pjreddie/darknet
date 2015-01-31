@@ -11,6 +11,7 @@ void pm(int M, int N, float *A)
 {
     int i,j;
     for(i =0 ; i < M; ++i){
+        printf("%d ", i+1);
         for(j = 0; j < N; ++j){
             printf("%10.6f, ", A[i*N+j]);
         }

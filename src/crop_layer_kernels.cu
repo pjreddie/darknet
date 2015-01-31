@@ -24,11 +24,16 @@ __global__ void forward_crop_layer_kernel(float *input, int size, int c, int h, 
     output[count] = input[index];
 }
 
-extern "C" void forward_crop_layer_gpu(crop_layer layer, float *input)
+extern "C" void forward_crop_layer_gpu(crop_layer layer, int train, float *input)
 {
     int flip = (layer.flip && rand()%2);
-    int dh = rand()%(layer.h - layer.crop_height);
-    int dw = rand()%(layer.w - layer.crop_width);
+    int dh = rand()%(layer.h - layer.crop_height + 1);
+    int dw = rand()%(layer.w - layer.crop_width + 1);
+    if(!train){
+        flip = 0;
+        dh = (layer.h - layer.crop_height)/2;
+        dw = (layer.w - layer.crop_width)/2;
+    }
     int size = layer.batch*layer.c*layer.crop_width*layer.crop_height;
 
     dim3 dimBlock(BLOCK, 1, 1);

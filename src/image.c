@@ -484,7 +484,7 @@ image load_image(char *filename, int h, int w)
         exit(0);
     }
     if(h && w ){
-        IplImage *resized = resizeImage(src, h, w, 1);
+        IplImage *resized = resizeImage(src, h, w, 0);
         cvReleaseImage(&src);
         src = resized;
     }
@@ -702,10 +702,21 @@ void back_convolve(image m, image kernel, int stride, int channel, image out, in
 
 void print_image(image m)
 {
-    int i;
-    for(i =0 ; i < m.h*m.w*m.c; ++i) printf("%lf, ", m.data[i]);
+    int i, j, k;
+    for(i =0 ; i < m.c; ++i){
+        for(j =0 ; j < m.h; ++j){
+            for(k = 0; k < m.w; ++k){
+                printf("%.2lf, ", m.data[i*m.h*m.w + j*m.w + k]);
+                if(k > 30) break;
+            }
+            printf("\n");
+            if(j > 30) break;
+        }
+        printf("\n");
+    }
     printf("\n");
 }
+
 image collapse_images_vert(image *ims, int n)
 {
     int color = 1;

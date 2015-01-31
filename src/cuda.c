@@ -1,9 +1,12 @@
+int gpu_index = 0;
+
+#ifdef GPU
+
 #include "cuda.h"
 #include "utils.h"
 #include "blas.h"
 #include <stdlib.h>
 
-int gpu_index = 0;
 
 void check_error(cudaError_t status)
 {
@@ -96,4 +99,4 @@ void cuda_pull_array(float *x_gpu, float *x, int n)
     check_error(status);
 }
 
-
+#endif

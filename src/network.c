@@ -75,7 +75,7 @@ void forward_network(network net, float *input, float *truth, int train)
         }
         else if(net.types[i] == CROP){
             crop_layer layer = *(crop_layer *)net.layers[i];
-            forward_crop_layer(layer, input);
+            forward_crop_layer(layer, train, input);
             input = layer.output;
         }
         else if(net.types[i] == COST){
@@ -535,6 +535,9 @@ image get_network_image_layer(network net, int i)
     else if(net.types[i] == NORMALIZATION){
         normalization_layer layer = *(normalization_layer *)net.layers[i];
         return get_normalization_image(layer);
+    }
+    else if(net.types[i] == DROPOUT){
+        return get_network_image_layer(net, i-1);
     }
     else if(net.types[i] == CROP){
         crop_layer layer = *(crop_layer *)net.layers[i];

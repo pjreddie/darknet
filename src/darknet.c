@@ -209,13 +209,12 @@ void train_imagenet_distributed(char *address)
 void train_imagenet(char *cfgfile)
 {
     float avg_loss = 1;
-    //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     srand(time(0));
     network net = parse_network_cfg(cfgfile);
     //test_learn_bias(*(convolutional_layer *)net.layers[1]);
     //set_learning_network(&net, net.learning_rate, 0, net.decay);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = 3072;
+    int imgs = 1024;
     int i = net.seen/imgs;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
@@ -231,9 +230,6 @@ void train_imagenet(char *cfgfile)
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        //normalize_data_rows(train);
-        //translate_data_rows(train, -128);
-        //scale_data_rows(train, 1./128);
         load_thread = load_data_thread(paths, imgs, plist->size, labels, 1000, 256, 256, &buffer);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -244,7 +240,7 @@ void train_imagenet(char *cfgfile)
         free_data(train);
         if(i%100==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/alexnet_%d.cfg", i);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/vgg_%d.cfg", i);
             save_network(net, buff);
         }
     }
@@ -347,10 +343,28 @@ void test_init(char *cfgfile)
     }
     free_image(im);
 }
-
-void test_imagenet()
+void test_dog(char *cfgfile)
 {
-    network net = parse_network_cfg("cfg/imagenet_test.cfg");
+    image im = load_image_color("data/dog.jpg", 224, 224);
+    translate_image(im, -128);
+    print_image(im);
+    float *X = im.data;
+    network net = parse_network_cfg(cfgfile);
+    set_batch_network(&net, 1);
+    float *predictions = network_predict(net, X);
+    image crop = get_network_image_layer(net, 0);
+    //show_image(crop, "cropped");
+   // print_image(crop);
+    //show_image(im, "orig");
+    float * inter = get_network_output(net);
+    pm(1000, 1, inter);
+    //cvWaitKey(0);
+}
+
+void test_imagenet(char *cfgfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    set_batch_network(&net, 1);
     //imgs=1;
     srand(2222222);
     int i = 0;
@@ -362,7 +376,8 @@ void test_imagenet()
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
         image im = load_image_color(filename, 256, 256);
-        z_normalize_image(im);
+        translate_image(im, -128);
+        //scale_image(im, 1/128.);
         printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();
@@ -472,28 +487,28 @@ void train_nist(char *cfgfile)
 }
 
 /*
-void train_nist_distributed(char *address)
-{
-    srand(time(0));
-    network net = parse_network_cfg("cfg/nist.client");
-    data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
-    //data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
-    normalize_data_rows(train);
-    //normalize_data_rows(test);
-    int count = 0;
-    int iters = 50000/net.batch;
-    iters = 1000/net.batch + 1;
-    while(++count <= 2000){
-        clock_t start = clock(), end;
-        float loss = train_network_sgd(net, train, iters);
-        client_update(net, address);
-        end = clock();
-        //float test_acc = network_accuracy_gpu(net, test);
-        //float test_acc = 0;
-        printf("%d: Loss: %f, Time: %lf seconds\n", count, loss, (float)(end-start)/CLOCKS_PER_SEC);
-    }
+   void train_nist_distributed(char *address)
+   {
+   srand(time(0));
+   network net = parse_network_cfg("cfg/nist.client");
+   data train = load_categorical_data_csv("data/mnist/mnist_train.csv", 0, 10);
+//data test = load_categorical_data_csv("data/mnist/mnist_test.csv",0,10);
+normalize_data_rows(train);
+//normalize_data_rows(test);
+int count = 0;
+int iters = 50000/net.batch;
+iters = 1000/net.batch + 1;
+while(++count <= 2000){
+clock_t start = clock(), end;
+float loss = train_network_sgd(net, train, iters);
+client_update(net, address);
+end = clock();
+//float test_acc = network_accuracy_gpu(net, test);
+//float test_acc = 0;
+printf("%d: Loss: %f, Time: %lf seconds\n", count, loss, (float)(end-start)/CLOCKS_PER_SEC);
 }
-*/
+}
+ */
 
 void test_ensemble()
 {
@@ -535,7 +550,7 @@ void test_ensemble()
 void visualize_cat()
 {
     network net = parse_network_cfg("cfg/voc_imagenet.cfg");
-    image im = load_image("data/cat.png", 0, 0);
+    image im = load_image_color("data/cat.png", 0, 0);
     printf("Processing %dx%d image\n", im.h, im.w);
     resize_network(net, im.h, im.w, im.c);
     forward_network(net, im.data, 0, 0);
@@ -544,6 +559,7 @@ void visualize_cat()
     cvWaitKey(0);
 }
 
+#ifdef GPU
 void test_convolutional_layer()
 {
     network net = parse_network_cfg("cfg/nist_conv.cfg");
@@ -561,6 +577,7 @@ void test_convolutional_layer()
     bias_output_gpu(layer);
     cuda_compare(layer.output_gpu, layer.output, out_size, "biased output");
 }
+#endif
 
 void test_correct_nist()
 {
@@ -586,7 +603,7 @@ void test_correct_nist()
     gpu_index = -1;
     count = 0;
     srand(222222);
-     net = parse_network_cfg("cfg/nist_conv.cfg");
+    net = parse_network_cfg("cfg/nist_conv.cfg");
     while(++count <= 5){
         clock_t start = clock(), end;
         float loss = train_network_sgd(net, train, iters);
@@ -641,27 +658,27 @@ void test_correct_alexnet()
 }
 
 /*
-void run_server()
-{
-    srand(time(0));
-    network net = parse_network_cfg("cfg/net.cfg");
-    set_batch_network(&net, 1);
-    server_update(net);
-}
+   void run_server()
+   {
+   srand(time(0));
+   network net = parse_network_cfg("cfg/net.cfg");
+   set_batch_network(&net, 1);
+   server_update(net);
+   }
 
-void test_client()
-{
-    network net = parse_network_cfg("cfg/alexnet.client");
-    clock_t time=clock();
-    client_update(net, "localhost");
-    printf("1\n");
-    client_update(net, "localhost");
-    printf("2\n");
-    client_update(net, "localhost");
-    printf("3\n");
-    printf("Transfered: %lf seconds\n", sec(clock()-time));
-}
-*/
+   void test_client()
+   {
+   network net = parse_network_cfg("cfg/alexnet.client");
+   clock_t time=clock();
+   client_update(net, "localhost");
+   printf("1\n");
+   client_update(net, "localhost");
+   printf("2\n");
+   client_update(net, "localhost");
+   printf("3\n");
+   printf("Transfered: %lf seconds\n", sec(clock()-time));
+   }
+ */
 
 void del_arg(int argc, char **argv, int index)
 {
@@ -713,7 +730,6 @@ int main(int argc, char **argv)
 
     if(0==strcmp(argv[1], "test_correct")) test_correct_alexnet();
     else if(0==strcmp(argv[1], "test_correct_nist")) test_correct_nist();
-    else if(0==strcmp(argv[1], "test")) test_imagenet();
     //else if(0==strcmp(argv[1], "server")) run_server();
 
 #ifdef GPU
@@ -725,6 +741,8 @@ int main(int argc, char **argv)
         return 0;
     }
     else if(0==strcmp(argv[1], "detection")) train_detection_net(argv[2]);
+    else if(0==strcmp(argv[1], "test")) test_imagenet(argv[2]);
+    else if(0==strcmp(argv[1], "dog")) test_dog(argv[2]);
     else if(0==strcmp(argv[1], "ctrain")) train_cifar10(argv[2]);
     else if(0==strcmp(argv[1], "nist")) train_nist(argv[2]);
     else if(0==strcmp(argv[1], "ctest")) test_cifar10(argv[2]);

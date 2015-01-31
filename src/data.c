@@ -239,7 +239,7 @@ void *load_in_thread(void *ptr)
 {
     struct load_args a = *(struct load_args*)ptr;
     *a.d = load_data(a.paths, a.n, a.m, a.labels, a.k, a.h, a.w);
-	translate_data_rows(*a.d, -144);
+	translate_data_rows(*a.d, -128);
 	scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;

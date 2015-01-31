@@ -1,12 +1,14 @@
 #ifndef CUDA_H
 #define CUDA_H
 
+extern int gpu_index;
+
+#ifdef GPU
+
 #define BLOCK 256
 
 #include "cuda_runtime.h"
 #include "cublas_v2.h"
-
-extern int gpu_index;
 
 void check_error(cudaError_t status);
 cublasHandle_t blas_handle();
@@ -18,4 +20,5 @@ void cuda_free(float *x_gpu);
 float cuda_compare(float *x_gpu, float *x, int n, char *s);
 dim3 cuda_gridsize(size_t n);
 
+#endif
 #endif
