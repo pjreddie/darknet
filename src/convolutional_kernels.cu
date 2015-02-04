@@ -28,7 +28,7 @@ extern "C" void bias_output_gpu(const convolutional_layer layer)
     check_error(cudaPeekAtLastError());
 }
 
-__global__ void learn_bias(int batch, int n, int size, float *delta, float *bias_updates)
+__global__ void learn_bias(int batch, int n, int size, float *delta, float *bias_updates, float scale)
 {
     __shared__ float part[BLOCK];
     int i,b;
@@ -44,15 +44,16 @@ __global__ void learn_bias(int batch, int n, int size, float *delta, float *bias
     part[p] = sum;
     __syncthreads();
     if(p == 0){
-        for(i = 0; i < BLOCK; ++i) bias_updates[filter] += part[i];
+        for(i = 0; i < BLOCK; ++i) bias_updates[filter] += scale * part[i];
     }
 }
 
 extern "C" void learn_bias_convolutional_layer_ongpu(convolutional_layer layer)
 {
     int size = convolutional_out_height(layer)*convolutional_out_width(layer);
+    float alpha = 1./layer.batch;
 
-    learn_bias<<<layer.n, BLOCK>>>(layer.batch, layer.n, size, layer.delta_gpu, layer.bias_updates_gpu);
+    learn_bias<<<layer.n, BLOCK>>>(layer.batch, layer.n, size, layer.delta_gpu, layer.bias_updates_gpu, alpha);
     check_error(cudaPeekAtLastError());
 }
 
@@ -99,6 +100,7 @@ extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, float
 
 extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, float *in, float *delta_gpu)
 {
+    float alpha = 1./layer.batch;
     int i;
     int m = layer.n;
     int n = layer.size*layer.size*layer.c;
@@ -115,7 +117,7 @@ extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, floa
         float * c = layer.filter_updates_gpu;
 
         im2col_ongpu(in, i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
-        gemm_ongpu(0,1,m,n,k,1,a + i*m*k,k,b,k,1,c,n);
+        gemm_ongpu(0,1,m,n,k,alpha,a + i*m*k,k,b,k,1,c,n);
 
         if(delta_gpu){
 
@@ -151,12 +153,9 @@ extern "C" void update_convolutional_layer_gpu(convolutional_layer layer)
     int size = layer.size*layer.size*layer.c*layer.n;
 
 /*
-    cuda_pull_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
-    cuda_pull_array(layer.biases_gpu, layer.biases, layer.n);
     cuda_pull_array(layer.filter_updates_gpu, layer.filter_updates, size);
     cuda_pull_array(layer.filters_gpu, layer.filters, size);
-    printf("Bias: %f updates: %f\n", mse_array(layer.biases, layer.n), mse_array(layer.bias_updates, layer.n));
-    printf("Filter: %f updates: %f\n", mse_array(layer.filters, layer.n), mse_array(layer.filter_updates, layer.n));
+    printf("Filter: %f updates: %f\n", mag_array(layer.filters, size), layer.learning_rate*mag_array(layer.filter_updates, size));
     */
 
     axpy_ongpu(layer.n, layer.learning_rate, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);

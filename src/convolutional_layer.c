@@ -66,11 +66,12 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
     layer->biases = calloc(n, sizeof(float));
     layer->bias_updates = calloc(n, sizeof(float));
     float scale = 1./sqrt(size*size*c);
-    //scale = .05;
+    //scale = .01;
     for(i = 0; i < c*n*size*size; ++i) layer->filters[i] = scale*rand_normal();
     for(i = 0; i < n; ++i){
         //layer->biases[i] = rand_normal()*scale + scale;
         layer->biases[i] = scale;
+        //layer->biases[i] = 1;
     }
     int out_h = convolutional_out_height(*layer);
     int out_w = convolutional_out_width(*layer);
@@ -155,18 +156,20 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
 
 void learn_bias_convolutional_layer(convolutional_layer layer)
 {
+    float alpha = 1./layer.batch;
     int i,b;
     int size = convolutional_out_height(layer)
         *convolutional_out_width(layer);
     for(b = 0; b < layer.batch; ++b){
         for(i = 0; i < layer.n; ++i){
-            layer.bias_updates[i] += sum_array(layer.delta+size*(i+b*layer.n), size);
+            layer.bias_updates[i] += alpha * sum_array(layer.delta+size*(i+b*layer.n), size);
         }
     }
 }
 
 void backward_convolutional_layer(convolutional_layer layer, float *in, float *delta)
 {
+    float alpha = 1./layer.batch;
     int i;
     int m = layer.n;
     int n = layer.size*layer.size*layer.c;
@@ -188,7 +191,7 @@ void backward_convolutional_layer(convolutional_layer layer, float *in, float *d
 
         im2col_cpu(im, layer.c, layer.h, layer.w, 
                 layer.size, layer.stride, layer.pad, b);
-        gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
+        gemm(0,1,m,n,k,alpha,a,k,b,k,1,c,n);
 
         if(delta){
             a = layer.filters;

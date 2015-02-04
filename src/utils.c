@@ -262,6 +262,16 @@ void translate_array(float *a, int n, float s)
     }
 }
 
+float mag_array(float *a, int n)
+{
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; ++i){
+        sum += a[i]*a[i];   
+    }
+    return sqrt(sum);
+}
+
 void scale_array(float *a, int n, float s)
 {
     int i;

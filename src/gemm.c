@@ -276,6 +276,7 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
 
 int test_gpu_blas()
 {
+/*
        test_gpu_accuracy(0,0,10,576,75); 
 
        test_gpu_accuracy(0,0,17,10,10); 
@@ -299,6 +300,15 @@ int test_gpu_blas()
     time_ongpu(0,0,256,196,2304); 
     time_ongpu(0,0,128,4096,12544); 
     time_ongpu(0,0,128,4096,4096); 
+    */
+    time_ongpu(0,0,64,75,12544); 
+    time_ongpu(0,0,64,75,12544); 
+    time_ongpu(0,0,64,75,12544); 
+    time_ongpu(0,0,64,576,12544); 
+    time_ongpu(0,0,256,2304,784); 
+    time_ongpu(1,1,2304,256,784); 
+    time_ongpu(0,0,512,4608,196); 
+    time_ongpu(1,1,4608,512,196); 
 
 return 0;
 }

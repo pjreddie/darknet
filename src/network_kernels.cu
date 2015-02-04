@@ -61,6 +61,7 @@ void forward_network_gpu(network net, float * input, float * truth, int train)
             forward_crop_layer_gpu(layer, train, input);
             input = layer.output_gpu;
         }
+        //cudaDeviceSynchronize();
         //printf("Forward %d %s %f\n", i, get_layer_string(net.types[i]), sec(clock() - time));
     }
 }

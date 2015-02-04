@@ -206,10 +206,28 @@ void train_imagenet_distributed(char *address)
 }
 */
 
+char *basename(char *cfgfile)
+{
+    char *c = cfgfile;
+    char *next;
+    while((next = strchr(c, '/')))
+    {
+        c = next+1;
+    }
+    c = copy_string(c);
+    next = strchr(c, '_');
+    if (next) *next = 0;
+    next = strchr(c, '.');
+    if (next) *next = 0;
+    return c;
+}
+
 void train_imagenet(char *cfgfile)
 {
-    float avg_loss = 1;
+    float avg_loss = -1;
     srand(time(0));
+    char *base = basename(cfgfile);
+    printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
     //test_learn_bias(*(convolutional_layer *)net.layers[1]);
     //set_learning_network(&net, net.learning_rate, 0, net.decay);
@@ -235,12 +253,13 @@ void train_imagenet(char *cfgfile)
         time=clock();
         float loss = train_network(net, train);
         net.seen += imgs;
+        if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
         free_data(train);
         if(i%100==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/vgg_%d.cfg", i);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.cfg",base, i);
             save_network(net, buff);
         }
     }
@@ -272,7 +291,6 @@ void validate_imagenet(char *filename)
 
         pthread_join(load_thread, 0);
         val = buffer;
-        //normalize_data_rows(val);
 
         num = (i+1)*m/splits - i*m/splits;
         char **part = paths+(i*m/splits);
@@ -312,6 +330,7 @@ void test_detection(char *cfgfile)
 
 void test_init(char *cfgfile)
 {
+    gpu_index = -1;
     network net = parse_network_cfg(cfgfile);
     set_batch_network(&net, 1);
     srand(2222222);
@@ -345,7 +364,7 @@ void test_init(char *cfgfile)
 }
 void test_dog(char *cfgfile)
 {
-    image im = load_image_color("data/dog.jpg", 224, 224);
+    image im = load_image_color("data/dog.jpg", 256, 256);
     translate_image(im, -128);
     print_image(im);
     float *X = im.data;
@@ -377,7 +396,7 @@ void test_imagenet(char *cfgfile)
         strtok(filename, "\n");
         image im = load_image_color(filename, 256, 256);
         translate_image(im, -128);
-        //scale_image(im, 1/128.);
+        scale_image(im, 1/128.);
         printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();
