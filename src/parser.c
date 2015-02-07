@@ -103,7 +103,7 @@ convolutional_layer *parse_convolutional(list *options, network *net, int count)
     parse_data(weights, layer->filters, c*n*size*size);
     parse_data(biases, layer->biases, n);
     #ifdef GPU
-    push_convolutional_layer(*layer);
+    if(weights || biases) push_convolutional_layer(*layer);
     #endif
     option_unused(options);
     return layer;
@@ -137,7 +137,7 @@ connected_layer *parse_connected(list *options, network *net, int count)
     parse_data(biases, layer->biases, output);
     parse_data(weights, layer->weights, input*output);
     #ifdef GPU
-    push_connected_layer(*layer);
+    if(weights || biases) push_connected_layer(*layer);
     #endif
     option_unused(options);
     return layer;
@@ -597,6 +597,82 @@ void print_cost_cfg(FILE *fp, cost_layer *l, network net, int count)
     fprintf(fp, "\n");
 }
 
+void save_weights(network net, char *filename)
+{
+    printf("Saving weights to %s\n", filename);
+    FILE *fp = fopen(filename, "w");
+    if(!fp) file_error(filename);
+
+    fwrite(&net.learning_rate, sizeof(float), 1, fp);
+    fwrite(&net.momentum, sizeof(float), 1, fp);
+    fwrite(&net.decay, sizeof(float), 1, fp);
+    fwrite(&net.seen, sizeof(int), 1, fp);
+
+    int i;
+    for(i = 0; i < net.n; ++i){
+        if(net.types[i] == CONVOLUTIONAL){
+            convolutional_layer layer = *(convolutional_layer *) net.layers[i];
+            #ifdef GPU
+            if(gpu_index >= 0){
+                pull_convolutional_layer(layer);
+            }
+            #endif
+            int num = layer.n*layer.c*layer.size*layer.size;
+            fwrite(layer.biases, sizeof(float), layer.n, fp);
+            fwrite(layer.filters, sizeof(float), num, fp);
+        }
+        if(net.types[i] == CONNECTED){
+            connected_layer layer = *(connected_layer *) net.layers[i];
+            #ifdef GPU
+            if(gpu_index >= 0){
+                pull_connected_layer(layer);
+            }
+            #endif
+            fwrite(layer.biases, sizeof(float), layer.outputs, fp);
+            fwrite(layer.weights, sizeof(float), layer.outputs*layer.inputs, fp);
+        }
+    }
+    fclose(fp);
+}
+
+void load_weights(network *net, char *filename)
+{
+    printf("Loading weights from %s\n", filename);
+    FILE *fp = fopen(filename, "r");
+    if(!fp) file_error(filename);
+
+    fread(&net->learning_rate, sizeof(float), 1, fp);
+    fread(&net->momentum, sizeof(float), 1, fp);
+    fread(&net->decay, sizeof(float), 1, fp);
+    fread(&net->seen, sizeof(int), 1, fp);
+    set_learning_network(net, net->learning_rate, net->momentum, net->decay);
+    
+    int i;
+    for(i = 0; i < net->n; ++i){
+        if(net->types[i] == CONVOLUTIONAL){
+            convolutional_layer layer = *(convolutional_layer *) net->layers[i];
+            int num = layer.n*layer.c*layer.size*layer.size;
+            fread(layer.biases, sizeof(float), layer.n, fp);
+            fread(layer.filters, sizeof(float), num, fp);
+            #ifdef GPU
+            if(gpu_index >= 0){
+                push_convolutional_layer(layer);
+            }
+            #endif
+        }
+        if(net->types[i] == CONNECTED){
+            connected_layer layer = *(connected_layer *) net->layers[i];
+            fread(layer.biases, sizeof(float), layer.outputs, fp);
+            fread(layer.weights, sizeof(float), layer.outputs*layer.inputs, fp);
+            #ifdef GPU
+            if(gpu_index >= 0){
+                push_connected_layer(layer);
+            }
+            #endif
+        }
+    }
+    fclose(fp);
+}
 
 void save_network(network net, char *filename)
 {

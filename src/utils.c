@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 #include <float.h>
 #include <limits.h>
 
@@ -147,6 +148,27 @@ char *fgetl(FILE *fp)
 
     return line;
 }
+
+void read_all(int fd, char *buffer, size_t bytes)
+{
+    size_t n = 0;
+    while(n < bytes){
+        int next = read(fd, buffer + n, bytes-n);
+        if(next <= 0) error("read failed");
+        n += next;
+    }
+}
+
+void write_all(int fd, char *buffer, size_t bytes)
+{
+    size_t n = 0;
+    while(n < bytes){
+        size_t next = write(fd, buffer + n, bytes-n);
+        if(next <= 0) error("write failed");
+        n += next;
+    }
+}
+
 
 char *copy_string(char *s)
 {

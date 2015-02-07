@@ -36,14 +36,12 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
 
 
     float scale = 1./sqrt(inputs);
-    //scale = .01;
     for(i = 0; i < inputs*outputs; ++i){
         layer->weights[i] = scale*rand_normal();
     }
 
     for(i = 0; i < outputs; ++i){
         layer->biases[i] = scale;
-       // layer->biases[i] = 1;
     }
 
 #ifdef GPU

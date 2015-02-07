@@ -4,6 +4,8 @@
 #include <time.h>
 #include "list.h"
 
+void read_all(int fd, char *buffer, size_t bytes);
+void write_all(int fd, char *buffer, size_t bytes);
 char *find_replace(char *str, char *orig, char *rep);
 void error(const char *s);
 void malloc_error();

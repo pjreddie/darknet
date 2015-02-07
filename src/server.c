@@ -50,28 +50,6 @@ typedef struct{
     network net;
 } connection_info;
 
-void read_all(int fd, char *buffer, size_t bytes)
-{
-    //printf("Want %d\n", bytes);
-    size_t n = 0;
-    while(n < bytes){
-        int next = read(fd, buffer + n, bytes-n);
-        if(next <= 0) error("read failed");
-        n += next;
-    }
-}
-
-void write_all(int fd, char *buffer, size_t bytes)
-{
-    //printf("Writ %d\n", bytes);
-    size_t n = 0;
-    while(n < bytes){
-        int next = write(fd, buffer + n, bytes-n);
-        if(next <= 0) error("write failed");
-        n += next;
-    }
-}
-
 void read_and_add_into(int fd, float *a, int n)
 {
     float *buff = calloc(n, sizeof(float));

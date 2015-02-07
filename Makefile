@@ -12,12 +12,12 @@ OPTS=-O3
 LDFLAGS=`pkg-config --libs opencv` -lm -pthread
 COMMON=`pkg-config --cflags opencv` -I/usr/local/cuda/include/
 CFLAGS=-Wall -Wfatal-errors
-CFLAGS+=$(OPTS)
 
 ifeq ($(DEBUG), 1) 
-COMMON+=-O0 -g
-CFLAGS+=-O0 -g
+OPTS=-O0 -g
 endif
+
+CFLAGS+=$(OPTS)
 
 ifeq ($(GPU), 1) 
 COMMON+=-DGPU

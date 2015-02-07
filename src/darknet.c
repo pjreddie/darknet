@@ -222,13 +222,16 @@ char *basename(char *cfgfile)
     return c;
 }
 
-void train_imagenet(char *cfgfile)
+void train_imagenet(char *cfgfile, char *weightfile)
 {
     float avg_loss = -1;
     srand(time(0));
     char *base = basename(cfgfile);
     printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
     //test_learn_bias(*(convolutional_layer *)net.layers[1]);
     //set_learning_network(&net, net.learning_rate, 0, net.decay);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
@@ -259,16 +262,19 @@ void train_imagenet(char *cfgfile)
         free_data(train);
         if(i%100==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.cfg",base, i);
-            save_network(net, buff);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
+            save_weights(net, buff);
         }
     }
 }
 
-void validate_imagenet(char *filename)
+void validate_imagenet(char *filename, char *weightfile)
 {
     int i = 0;
     network net = parse_network_cfg(filename);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
     srand(time(0));
 
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.val.labels.list");
@@ -370,14 +376,14 @@ void test_dog(char *cfgfile)
     float *X = im.data;
     network net = parse_network_cfg(cfgfile);
     set_batch_network(&net, 1);
-    float *predictions = network_predict(net, X);
+    network_predict(net, X);
     image crop = get_network_image_layer(net, 0);
-    //show_image(crop, "cropped");
-   // print_image(crop);
-    //show_image(im, "orig");
+    show_image(crop, "cropped");
+    print_image(crop);
+    show_image(im, "orig");
     float * inter = get_network_output(net);
     pm(1000, 1, inter);
-    //cvWaitKey(0);
+    cvWaitKey(0);
 }
 
 void test_imagenet(char *cfgfile)
@@ -586,7 +592,6 @@ void test_convolutional_layer()
     float *in = calloc(size, sizeof(float));
     int i;
     for(i = 0; i < size; ++i) in[i] = rand_normal();
-    float *in_gpu = cuda_make_array(in, size);
     convolutional_layer layer = *(convolutional_layer *)net.layers[0];
     int out_size = convolutional_out_height(layer)*convolutional_out_width(layer)*layer.batch;
     cuda_compare(layer.output_gpu, layer.output, out_size, "nothing");
@@ -703,14 +708,18 @@ void del_arg(int argc, char **argv, int index)
 {
     int i;
     for(i = index; i < argc-1; ++i) argv[i] = argv[i+1];
+    argv[i] = 0;
 }
 
 int find_arg(int argc, char* argv[], char *arg)
 {
     int i;
-    for(i = 0; i < argc; ++i) if(0==strcmp(argv[i], arg)) {
-        del_arg(argc, argv, i);
-        return 1;
+    for(i = 0; i < argc; ++i) {
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)) {
+            del_arg(argc, argv, i);
+            return 1;
+        }
     }
     return 0;
 }
@@ -719,6 +728,7 @@ int find_int_arg(int argc, char **argv, char *arg, int def)
 {
     int i;
     for(i = 0; i < argc-1; ++i){
+        if(!argv[i]) continue;
         if(0==strcmp(argv[i], arg)){
             def = atoi(argv[i+1]);
             del_arg(argc, argv, i);
@@ -727,6 +737,20 @@ int find_int_arg(int argc, char **argv, char *arg, int def)
         }
     }
     return def;
+}
+
+void scale_rate(char *filename, float scale)
+{
+    // Ready for some weird shit??
+    FILE *fp = fopen(filename, "r+b");
+    if(!fp) file_error(filename);
+    float rate = 0;
+    fread(&rate, sizeof(float), 1, fp);
+    printf("Scaling learning rate from %f to %f\n", rate, rate*scale);
+    rate = rate*scale;
+    fseek(fp, 0, SEEK_SET);
+    fwrite(&rate, sizeof(float), 1, fp);
+    fclose(fp);
 }
 
 int main(int argc, char **argv)
@@ -765,12 +789,12 @@ int main(int argc, char **argv)
     else if(0==strcmp(argv[1], "ctrain")) train_cifar10(argv[2]);
     else if(0==strcmp(argv[1], "nist")) train_nist(argv[2]);
     else if(0==strcmp(argv[1], "ctest")) test_cifar10(argv[2]);
-    else if(0==strcmp(argv[1], "train")) train_imagenet(argv[2]);
+    else if(0==strcmp(argv[1], "train")) train_imagenet(argv[2], (argc > 3)? argv[3] : 0);
     //else if(0==strcmp(argv[1], "client")) train_imagenet_distributed(argv[2]);
     else if(0==strcmp(argv[1], "detect")) test_detection(argv[2]);
     else if(0==strcmp(argv[1], "init")) test_init(argv[2]);
     else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
-    else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2]);
+    else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2], (argc > 3)? argv[3] : 0);
     else if(0==strcmp(argv[1], "testnist")) test_nist(argv[2]);
     else if(0==strcmp(argv[1], "validetect")) validate_detection_net(argv[2]);
     else if(argc < 4){
@@ -778,6 +802,7 @@ int main(int argc, char **argv)
         return 0;
     }
     else if(0==strcmp(argv[1], "compare")) compare_nist(argv[2], argv[3]);
+    else if(0==strcmp(argv[1], "scale")) scale_rate(argv[2], atof(argv[3]));
     fprintf(stderr, "Success!\n");
     return 0;
 }
