@@ -225,8 +225,7 @@ char *basename(char *cfgfile)
 void train_imagenet(char *cfgfile, char *weightfile)
 {
     float avg_loss = -1;
-    // TODO
-    srand(0);
+    srand(time(0));
     char *base = basename(cfgfile);
     printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
@@ -584,25 +583,6 @@ void visualize_cat()
     visualize_network(net);
     cvWaitKey(0);
 }
-
-#ifdef GPU
-void test_convolutional_layer()
-{
-    network net = parse_network_cfg("cfg/nist_conv.cfg");
-    int size = get_network_input_size(net);
-    float *in = calloc(size, sizeof(float));
-    int i;
-    for(i = 0; i < size; ++i) in[i] = rand_normal();
-    convolutional_layer layer = *(convolutional_layer *)net.layers[0];
-    int out_size = convolutional_out_height(layer)*convolutional_out_width(layer)*layer.batch;
-    cuda_compare(layer.output_gpu, layer.output, out_size, "nothing");
-    cuda_compare(layer.biases_gpu, layer.biases, layer.n, "biases");
-    cuda_compare(layer.filters_gpu, layer.filters, layer.n*layer.size*layer.size*layer.c, "filters");
-    bias_output(layer);
-    bias_output_gpu(layer);
-    cuda_compare(layer.output_gpu, layer.output, out_size, "biased output");
-}
-#endif
 
 void test_correct_nist()
 {

@@ -8,7 +8,7 @@ extern "C" {
 #include "cuda.h"
 }
 
-__global__ void bias(int n, int size, float *biases, float *output)
+__global__ void bias_output_kernel(float *output, float *biases, int n, int size)
 {
     int offset = blockIdx.x * blockDim.x + threadIdx.x;
     int filter = blockIdx.y;
@@ -17,18 +17,16 @@ __global__ void bias(int n, int size, float *biases, float *output)
     if(offset < size) output[(batch*n+filter)*size + offset] = biases[filter];
 }
 
-extern "C" void bias_output_gpu(const convolutional_layer layer)
+extern "C" void bias_output_gpu(float *output, float *biases, int batch, int n, int size)
 {
-    int size = convolutional_out_height(layer)*convolutional_out_width(layer);
-
     dim3 dimBlock(BLOCK, 1, 1);
-    dim3 dimGrid((size-1)/BLOCK + 1, layer.n, layer.batch);
+    dim3 dimGrid((size-1)/BLOCK + 1, n, batch);
 
-    bias<<<dimGrid, dimBlock>>>(layer.n, size, layer.biases_gpu, layer.output_gpu);
+    bias_output_kernel<<<dimGrid, dimBlock>>>(output, biases, n, size);
     check_error(cudaPeekAtLastError());
 }
 
-__global__ void learn_bias(int batch, int n, int size, float *delta, float *bias_updates, float scale)
+__global__ void backward_bias_kernel(float *bias_updates, float *delta, int batch, int n, int size, float scale)
 {
     __shared__ float part[BLOCK];
     int i,b;
@@ -48,34 +46,12 @@ __global__ void learn_bias(int batch, int n, int size, float *delta, float *bias
     }
 }
 
-extern "C" void learn_bias_convolutional_layer_ongpu(convolutional_layer layer)
+extern "C" void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
 {
-    int size = convolutional_out_height(layer)*convolutional_out_width(layer);
-    float alpha = 1./layer.batch;
+    float alpha = 1./batch;
 
-    learn_bias<<<layer.n, BLOCK>>>(layer.batch, layer.n, size, layer.delta_gpu, layer.bias_updates_gpu, alpha);
+    backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size, alpha);
     check_error(cudaPeekAtLastError());
-}
-
-extern "C" void test_learn_bias(convolutional_layer l)
-{
-    int i;
-    int size = convolutional_out_height(l) * convolutional_out_width(l);
-    for(i = 0; i < size*l.batch*l.n; ++i){
-        l.delta[i] = rand_uniform();
-    }
-    for(i = 0; i < l.n; ++i){
-        l.bias_updates[i] = rand_uniform();
-    }
-    cuda_push_array(l.delta_gpu, l.delta, size*l.batch*l.n);
-    cuda_push_array(l.bias_updates_gpu, l.bias_updates, l.n);
-    float *gpu = (float *) calloc(l.n, sizeof(float));
-    cuda_pull_array(l.bias_updates_gpu, gpu, l.n);
-    for(i = 0; i < l.n; ++i) printf("%.9g %.9g\n", l.bias_updates[i], gpu[i]);
-    learn_bias_convolutional_layer_ongpu(l);
-    learn_bias_convolutional_layer(l);
-    cuda_pull_array(l.bias_updates_gpu, gpu, l.n);
-    for(i = 0; i < l.n; ++i) printf("%.9g %.9g\n", l.bias_updates[i], gpu[i]);
 }
 
 extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, float *in)
@@ -86,7 +62,7 @@ extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, float
     int n = convolutional_out_height(layer)*
         convolutional_out_width(layer);
 
-    bias_output_gpu(layer);
+    bias_output_gpu(layer.output_gpu, layer.biases_gpu, layer.batch, layer.n, n);
 
     for(i = 0; i < layer.batch; ++i){
         im2col_ongpu(in, i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
@@ -106,8 +82,9 @@ extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, floa
     int n = layer.size*layer.size*layer.c;
     int k = convolutional_out_height(layer)*
         convolutional_out_width(layer);
+
     gradient_array_ongpu(layer.output_gpu, m*k*layer.batch, layer.activation, layer.delta_gpu);
-    learn_bias_convolutional_layer_ongpu(layer);
+    backward_bias_gpu(layer.bias_updates_gpu, layer.delta_gpu, layer.batch, layer.n, k);
 
     if(delta_gpu) scal_ongpu(layer.batch*layer.h*layer.w*layer.c, 0, delta_gpu, 1);
 

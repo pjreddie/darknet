@@ -111,19 +111,29 @@ void resize_convolutional_layer(convolutional_layer *layer, int h, int w, int c)
                                 layer->batch*out_h * out_w * layer->n*sizeof(float));
 }
 
-void bias_output(const convolutional_layer layer)
+void bias_output(float *output, float *biases, int batch, int n, int size)
 {
     int i,j,b;
-    int out_h = convolutional_out_height(layer);
-    int out_w = convolutional_out_width(layer);
-    for(b = 0; b < layer.batch; ++b){
-        for(i = 0; i < layer.n; ++i){
-            for(j = 0; j < out_h*out_w; ++j){
-                layer.output[(b*layer.n + i)*out_h*out_w + j] = layer.biases[i];
+    for(b = 0; b < batch; ++b){
+        for(i = 0; i < n; ++i){
+            for(j = 0; j < size; ++j){
+                output[(b*n + i)*size + j] = biases[i];
             }
         }
     }
 }
+
+void backward_bias(float *bias_updates, float *delta, int batch, int n, int size)
+{
+    float alpha = 1./batch;
+    int i,b;
+    for(b = 0; b < batch; ++b){
+        for(i = 0; i < n; ++i){
+            bias_updates[i] += alpha * sum_array(delta+size*(i+b*n), size);
+        }
+    }
+}
+
 
 void forward_convolutional_layer(const convolutional_layer layer, float *in)
 {
@@ -131,7 +141,7 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
     int out_w = convolutional_out_width(layer);
     int i;
 
-    bias_output(layer);
+    bias_output(layer.output, layer.biases, layer.batch, layer.n, out_h*out_w);
 
     int m = layer.n;
     int k = layer.size*layer.size*layer.c;
@@ -151,19 +161,6 @@ void forward_convolutional_layer(const convolutional_layer layer, float *in)
     activate_array(layer.output, m*n*layer.batch, layer.activation);
 }
 
-void learn_bias_convolutional_layer(convolutional_layer layer)
-{
-    float alpha = 1./layer.batch;
-    int i,b;
-    int size = convolutional_out_height(layer)
-        *convolutional_out_width(layer);
-    for(b = 0; b < layer.batch; ++b){
-        for(i = 0; i < layer.n; ++i){
-            layer.bias_updates[i] += alpha * sum_array(layer.delta+size*(i+b*layer.n), size);
-        }
-    }
-}
-
 void backward_convolutional_layer(convolutional_layer layer, float *in, float *delta)
 {
     float alpha = 1./layer.batch;
@@ -174,8 +171,7 @@ void backward_convolutional_layer(convolutional_layer layer, float *in, float *d
         convolutional_out_width(layer);
 
     gradient_array(layer.output, m*k*layer.batch, layer.activation, layer.delta);
-
-    learn_bias_convolutional_layer(layer);
+    backward_bias(layer.bias_updates, layer.delta, layer.batch, layer.n, k);
 
     if(delta) memset(delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
 
