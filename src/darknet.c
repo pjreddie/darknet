@@ -225,7 +225,8 @@ char *basename(char *cfgfile)
 void train_imagenet(char *cfgfile, char *weightfile)
 {
     float avg_loss = -1;
-    srand(time(0));
+    // TODO
+    srand(0);
     char *base = basename(cfgfile);
     printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
