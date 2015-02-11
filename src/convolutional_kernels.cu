@@ -65,7 +65,7 @@ extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, float
     bias_output_gpu(layer.output_gpu, layer.biases_gpu, layer.batch, layer.n, n);
 
     for(i = 0; i < layer.batch; ++i){
-        im2col_ongpu(in, i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
+        im2col_ongpu(in + i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
         float * a = layer.filters_gpu;
         float * b = layer.col_image_gpu;
         float * c = layer.output_gpu;
@@ -93,7 +93,7 @@ extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, floa
         float * b = layer.col_image_gpu;
         float * c = layer.filter_updates_gpu;
 
-        im2col_ongpu(in, i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
+        im2col_ongpu(in + i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
         gemm_ongpu(0,1,m,n,k,alpha,a + i*m*k,k,b,k,1,c,n);
 
         if(delta_gpu){
@@ -104,7 +104,7 @@ extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, floa
 
             gemm_ongpu(1,0,n,k,m,1,a,n,b + i*k*m,k,0,c,k);
 
-            col2im_ongpu(layer.col_image_gpu, i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta_gpu);
+            col2im_ongpu(layer.col_image_gpu, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta_gpu + i*layer.c*layer.h*layer.w);
         }
     }
 }

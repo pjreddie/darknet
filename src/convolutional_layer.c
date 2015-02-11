@@ -44,7 +44,6 @@ image get_convolutional_delta(convolutional_layer layer)
 convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, float learning_rate, float momentum, float decay)
 {
     int i;
-    size = 2*(size/2)+1; //HA! And you thought you'd use an even sized filter...
     convolutional_layer *layer = calloc(1, sizeof(convolutional_layer));
 
     layer->learning_rate = learning_rate;
@@ -95,11 +94,10 @@ convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, in
     return layer;
 }
 
-void resize_convolutional_layer(convolutional_layer *layer, int h, int w, int c)
+void resize_convolutional_layer(convolutional_layer *layer, int h, int w)
 {
     layer->h = h;
     layer->w = w;
-    layer->c = c;
     int out_h = convolutional_out_height(*layer);
     int out_w = convolutional_out_width(*layer);
 
@@ -109,6 +107,16 @@ void resize_convolutional_layer(convolutional_layer *layer, int h, int w, int c)
                                 layer->batch*out_h * out_w * layer->n*sizeof(float));
     layer->delta  = realloc(layer->delta,
                                 layer->batch*out_h * out_w * layer->n*sizeof(float));
+
+    #ifdef GPU
+    cuda_free(layer->col_image_gpu);
+    cuda_free(layer->delta_gpu);
+    cuda_free(layer->output_gpu);
+
+    layer->col_image_gpu = cuda_make_array(layer->col_image, out_h*out_w*layer->size*layer->size*layer->c);
+    layer->delta_gpu = cuda_make_array(layer->delta, layer->batch*out_h*out_w*layer->n);
+    layer->output_gpu = cuda_make_array(layer->output, layer->batch*out_h*out_w*layer->n);
+    #endif
 }
 
 void bias_output(float *output, float *biases, int batch, int n, int size)

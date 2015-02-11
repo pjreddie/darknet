@@ -8,6 +8,7 @@
 #include "crop_layer.h"
 #include "connected_layer.h"
 #include "convolutional_layer.h"
+#include "deconvolutional_layer.h"
 #include "maxpool_layer.h"
 #include "cost_layer.h"
 #include "normalization_layer.h"
@@ -20,6 +21,8 @@ char *get_layer_string(LAYER_TYPE a)
     switch(a){
         case CONVOLUTIONAL:
             return "convolutional";
+        case DECONVOLUTIONAL:
+            return "deconvolutional";
         case CONNECTED:
             return "connected";
         case MAXPOOL:
@@ -66,6 +69,11 @@ void forward_network(network net, float *input, float *truth, int train)
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             forward_convolutional_layer(layer, input);
+            input = layer.output;
+        }
+        else if(net.types[i] == DECONVOLUTIONAL){
+            deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+            forward_deconvolutional_layer(layer, input);
             input = layer.output;
         }
         else if(net.types[i] == CONNECTED){
@@ -122,14 +130,9 @@ void update_network(network net)
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             update_convolutional_layer(layer);
         }
-        else if(net.types[i] == MAXPOOL){
-            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        }
-        else if(net.types[i] == SOFTMAX){
-            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        }
-        else if(net.types[i] == NORMALIZATION){
-            //maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        else if(net.types[i] == DECONVOLUTIONAL){
+            deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+            update_deconvolutional_layer(layer);
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
@@ -142,6 +145,9 @@ float *get_network_output_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.output;
+    } else if(net.types[i] == DECONVOLUTIONAL){
+        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
         return layer.output;
     } else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
@@ -177,6 +183,9 @@ float *get_network_delta_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.delta;
+    } else if(net.types[i] == DECONVOLUTIONAL){
+        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
         return layer.delta;
     } else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
@@ -247,9 +256,13 @@ void backward_network(network net, float *input)
             prev_input = get_network_output_layer(net, i-1);
             prev_delta = get_network_delta_layer(net, i-1);
         }
+
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             backward_convolutional_layer(layer, prev_input, prev_delta);
+        } else if(net.types[i] == DECONVOLUTIONAL){
+            deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+            backward_deconvolutional_layer(layer, prev_input, prev_delta);
         }
         else if(net.types[i] == MAXPOOL){
             maxpool_layer layer = *(maxpool_layer *)net.layers[i];
@@ -377,6 +390,9 @@ void set_batch_network(network *net, int b)
         if(net->types[i] == CONVOLUTIONAL){
             convolutional_layer *layer = (convolutional_layer *)net->layers[i];
             layer->batch = b;
+        }else if(net->types[i] == DECONVOLUTIONAL){
+            deconvolutional_layer *layer = (deconvolutional_layer *)net->layers[i];
+            layer->batch = b;
         }
         else if(net->types[i] == MAXPOOL){
             maxpool_layer *layer = (maxpool_layer *)net->layers[i];
@@ -415,6 +431,10 @@ int get_network_input_size_layer(network net, int i)
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
         return layer.h*layer.w*layer.c;
     }
+    if(net.types[i] == DECONVOLUTIONAL){
+        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+        return layer.h*layer.w*layer.c;
+    }
     else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
         return layer.h*layer.w*layer.c;
@@ -446,6 +466,11 @@ int get_network_output_size_layer(network net, int i)
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
         image output = get_convolutional_image(layer);
+        return output.h*output.w*output.c;
+    }
+    else if(net.types[i] == DECONVOLUTIONAL){
+        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+        image output = get_deconvolutional_image(layer);
         return output.h*output.w*output.c;
     }
     else if(net.types[i] == MAXPOOL){
@@ -483,21 +508,31 @@ int resize_network(network net, int h, int w, int c)
     for (i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer *layer = (convolutional_layer *)net.layers[i];
-            resize_convolutional_layer(layer, h, w, c);
+            resize_convolutional_layer(layer, h, w);
             image output = get_convolutional_image(*layer);
+            h = output.h;
+            w = output.w;
+            c = output.c;
+        } else if(net.types[i] == DECONVOLUTIONAL){
+            deconvolutional_layer *layer = (deconvolutional_layer *)net.layers[i];
+            resize_deconvolutional_layer(layer, h, w);
+            image output = get_deconvolutional_image(*layer);
             h = output.h;
             w = output.w;
             c = output.c;
         }else if(net.types[i] == MAXPOOL){
             maxpool_layer *layer = (maxpool_layer *)net.layers[i];
-            resize_maxpool_layer(layer, h, w, c);
+            resize_maxpool_layer(layer, h, w);
             image output = get_maxpool_image(*layer);
             h = output.h;
             w = output.w;
             c = output.c;
+        }else if(net.types[i] == DROPOUT){
+            dropout_layer *layer = (dropout_layer *)net.layers[i];
+            resize_dropout_layer(layer, h*w*c);
         }else if(net.types[i] == NORMALIZATION){
             normalization_layer *layer = (normalization_layer *)net.layers[i];
-            resize_normalization_layer(layer, h, w, c);
+            resize_normalization_layer(layer, h, w);
             image output = get_normalization_image(*layer);
             h = output.h;
             w = output.w;
@@ -526,6 +561,10 @@ image get_network_image_layer(network net, int i)
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
         return get_convolutional_image(layer);
+    }
+    else if(net.types[i] == DECONVOLUTIONAL){
+        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+        return get_deconvolutional_image(layer);
     }
     else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];

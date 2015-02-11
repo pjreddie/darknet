@@ -35,13 +35,12 @@ normalization_layer *make_normalization_layer(int batch, int h, int w, int c, in
     return layer;
 }
 
-void resize_normalization_layer(normalization_layer *layer, int h, int w, int c)
+void resize_normalization_layer(normalization_layer *layer, int h, int w)
 {
     layer->h = h;
     layer->w = w;
-    layer->c = c;
-    layer->output = realloc(layer->output, h * w * c * layer->batch * sizeof(float));
-    layer->delta = realloc(layer->delta, h * w * c * layer->batch * sizeof(float));
+    layer->output = realloc(layer->output, h * w * layer->c * layer->batch * sizeof(float));
+    layer->delta = realloc(layer->delta, h * w * layer->c * layer->batch * sizeof(float));
     layer->sums = realloc(layer->sums, h*w * sizeof(float));
 }
 

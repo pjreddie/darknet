@@ -18,6 +18,7 @@ dropout_layer *make_dropout_layer(int batch, int inputs, float probability);
 
 void forward_dropout_layer(dropout_layer layer, float *input);
 void backward_dropout_layer(dropout_layer layer, float *delta);
+void resize_dropout_layer(dropout_layer *layer, int inputs);
 
 #ifdef GPU
 void forward_dropout_layer_gpu(dropout_layer layer, float * input);

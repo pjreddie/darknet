@@ -16,7 +16,7 @@ struct load_args{
     int w;
     int nh;
     int nw;
-    float scale;
+    int jitter;
     data *d;
 };
 
@@ -33,16 +33,18 @@ list *get_paths(char *filename)
     return lines;
 }
 
-void fill_truth_detection(char *path, float *truth, int height, int width, int num_height, int num_width, float scale, int dx, int dy)
+void fill_truth_detection(char *path, float *truth, int height, int width, int num_height, int num_width, int dy, int dx, int jitter)
 {
     int box_height = height/num_height;
     int box_width = width/num_width;
-    char *labelpath = find_replace(path, "imgs", "det");
+    char *labelpath = find_replace(path, "imgs", "det/train");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
     FILE *file = fopen(labelpath, "r");
     if(!file) file_error(labelpath);
-    int x, y, h, w;
-    while(fscanf(file, "%d %d %d %d", &x, &y, &w, &h) == 4){
+    float x, y, h, w;
+    while(fscanf(file, "%f %f %f %f", &x, &y, &w, &h) == 4){
+        x *= width + jitter;
+        y *= height + jitter;
         x -= dx;
         y -= dy;
         int i = x/box_width;
@@ -53,17 +55,15 @@ void fill_truth_detection(char *path, float *truth, int height, int width, int n
         if(j < 0) j = 0;
         if(j >= num_height) j = num_height-1;
         
-        float dw = (float)(x%box_width)/box_height;
-        float dh = (float)(y%box_width)/box_width;
-        float sh = h/scale;
-        float sw = w/scale;
+        float dw = (x - i*box_width)/box_width;
+        float dh = (y - j*box_height)/box_height;
         //printf("%d %d %f %f\n", i, j, dh, dw);
         int index = (i+j*num_width)*5;
         truth[index++] = 1;
         truth[index++] = dh;
         truth[index++] = dw;
-        truth[index++] = sh;
-        truth[index++] = sw;
+        truth[index++] = h*(height+jitter)/height;
+        truth[index++] = w*(width+jitter)/width;
     }
     fclose(file);
 }
@@ -120,13 +120,13 @@ matrix load_labels_paths(char **paths, int n, char **labels, int k)
     return y;
 }
 
-matrix load_labels_detection(char **paths, int n, int height, int width, int num_height, int num_width, float scale)
+matrix load_labels_detection(char **paths, int n, int height, int width, int num_height, int num_width)
 {
     int k = num_height*num_width*5;
     matrix y = make_matrix(n, k);
     int i;
     for(i = 0; i < n; ++i){
-        fill_truth_detection(paths[i], y.vals[i], height, width, num_height, num_width, scale,0,0);
+        fill_truth_detection(paths[i], y.vals[i], height, width, num_height, num_width, 0, 0, 0);
     }
     return y;
 }
@@ -165,7 +165,7 @@ void free_data(data d)
     }
 }
 
-data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale)
+data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w, int nh, int nw, int jitter)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -175,13 +175,13 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w,
     int k = nh*nw*5;
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
-        int dx = rand()%32;
-        int dy = rand()%32;
-        fill_truth_detection(random_paths[i], d.y.vals[i], 224, 224, nh, nw, scale, dx, dy);
+        int dx = rand()%jitter;
+        int dy = rand()%jitter;
+        fill_truth_detection(random_paths[i], d.y.vals[i], h-jitter, w-jitter, nh, nw, dy, dx, jitter);
         image a = float_to_image(h, w, 3, d.X.vals[i]);
-        jitter_image(a,224,224,dy,dx);
+        jitter_image(a,h-jitter,w-jitter,dy,dx);
     }
-    d.X.cols = 224*224*3;
+    d.X.cols = (h-jitter)*(w-jitter)*3;
     free(random_paths);
     return d;
 }
@@ -189,12 +189,14 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w,
 void *load_detection_thread(void *ptr)
 {
     struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.h, a.w, a.nh, a.nw, a.scale);
+    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.h, a.w, a.nh, a.nw, a.jitter);
+    translate_data_rows(*a.d, -128);
+    scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;
 }
 
-pthread_t load_data_detection_thread(int n, char **paths, int m, int h, int w, int nh, int nw, float scale, data *d)
+pthread_t load_data_detection_thread(int n, char **paths, int m, int h, int w, int nh, int nw, int jitter, data *d)
 {
     pthread_t thread;
     struct load_args *args = calloc(1, sizeof(struct load_args));
@@ -205,7 +207,7 @@ pthread_t load_data_detection_thread(int n, char **paths, int m, int h, int w, i
     args->w = w;
     args->nh = nh;
     args->nw = nw;
-    args->scale = scale;
+    args->jitter = jitter;
     args->d = d;
     if(pthread_create(&thread, 0, load_detection_thread, args)) {
         error("Thread creation failed");
@@ -213,13 +215,13 @@ pthread_t load_data_detection_thread(int n, char **paths, int m, int h, int w, i
     return thread;
 }
 
-data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw, float scale)
+data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw)
 {
     char **random_paths = get_random_paths(paths, n, m);
     data d;
     d.shallow = 0;
     d.X = load_image_paths(random_paths, n, h, w);
-    d.y = load_labels_detection(random_paths, n, h, w, nh, nw, scale);
+    d.y = load_labels_detection(random_paths, n, h, w, nh, nw);
     free(random_paths);
     return d;
 }
@@ -239,8 +241,8 @@ void *load_in_thread(void *ptr)
 {
     struct load_args a = *(struct load_args*)ptr;
     *a.d = load_data(a.paths, a.n, a.m, a.labels, a.k, a.h, a.w);
-	translate_data_rows(*a.d, -128);
-	scale_data_rows(*a.d, 1./128);
+    translate_data_rows(*a.d, -128);
+    scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;
 }
@@ -301,9 +303,9 @@ data load_cifar10_data(char *filename)
             X.vals[i][j] = (double)bytes[j+1];
         }
     }
-	translate_data_rows(d, -144);
-	scale_data_rows(d, 1./128);
-	//normalize_data_rows(d);
+    translate_data_rows(d, -144);
+    scale_data_rows(d, 1./128);
+    //normalize_data_rows(d);
     fclose(fp);
     return d;
 }

@@ -3,7 +3,7 @@ extern "C" {
 #include "cuda.h"
 }
 
-__global__ void im2col_pad_kernel(float *im,  int offset,
+__global__ void im2col_pad_kernel(float *im,
      int channels,  int height,  int width,
      int ksize,  int stride, float *data_col)
 {
@@ -32,13 +32,13 @@ __global__ void im2col_pad_kernel(float *im,  int offset,
     int im_row = h_offset + h * stride - pad;
     int im_col = w_offset + w * stride - pad;
 
-    int im_index = offset + im_col + width*(im_row + height*im_channel);
+    int im_index = im_col + width*(im_row + height*im_channel);
     float val = (im_row < 0 || im_col < 0 || im_row >= height || im_col >= width) ? 0 : im[im_index];
 
     data_col[col_index] = val;
 }
 
-__global__ void im2col_nopad_kernel(float *im,  int offset,
+__global__ void im2col_nopad_kernel(float *im,
         int channels,  int height,  int width,
         int ksize,  int stride, float *data_col)
 {
@@ -65,13 +65,13 @@ __global__ void im2col_nopad_kernel(float *im,  int offset,
     int im_row = h_offset + h * stride;
     int im_col = w_offset + w * stride;
 
-    int im_index = offset + im_col + width*(im_row + height*im_channel);
+    int im_index = im_col + width*(im_row + height*im_channel);
     float val = (im_row < 0 || im_col < 0 || im_row >= height || im_col >= width) ? 0 : im[im_index];
 
     data_col[col_index] = val;
 }
 
-extern "C" void im2col_ongpu(float *im, int offset,
+extern "C" void im2col_ongpu(float *im,
         int channels,  int height,  int width,
         int ksize,  int stride,  int pad, float *data_col)
 {
@@ -87,7 +87,7 @@ extern "C" void im2col_ongpu(float *im, int offset,
 
     size_t n = channels_col*height_col*width_col;
 
-    if(pad)im2col_pad_kernel<<<cuda_gridsize(n),BLOCK>>>(im,  offset, channels, height, width, ksize, stride, data_col);
-    else im2col_nopad_kernel<<<cuda_gridsize(n),BLOCK>>>(im,  offset, channels, height, width, ksize, stride, data_col);
+    if(pad)im2col_pad_kernel<<<cuda_gridsize(n),BLOCK>>>(im,  channels, height, width, ksize, stride, data_col);
+    else im2col_nopad_kernel<<<cuda_gridsize(n),BLOCK>>>(im,  channels, height, width, ksize, stride, data_col);
     check_error(cudaPeekAtLastError());
 }

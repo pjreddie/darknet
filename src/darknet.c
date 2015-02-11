@@ -57,8 +57,8 @@ void draw_detection(image im, float *box, int side)
                 int d = im.w/side;
                 int y = r*d+box[j+1]*d;
                 int x = c*d+box[j+2]*d;
-                int h = box[j+3]*256;
-                int w = box[j+4]*256;
+                int h = box[j+3]*im.h;
+                int w = box[j+4]*im.w;
                 //printf("%f %f %f %f\n", box[j+1], box[j+2], box[j+3], box[j+4]);
                 //printf("%d %d %d %d\n", x, y, w, h);
                 //printf("%d %d %d %d\n", x-w/2, y-h/2, x+w/2, y+h/2);
@@ -70,54 +70,79 @@ void draw_detection(image im, float *box, int side)
     cvWaitKey(0);
 }
 
-
-void train_detection_net(char *cfgfile)
+char *basename(char *cfgfile)
 {
+    char *c = cfgfile;
+    char *next;
+    while((next = strchr(c, '/')))
+    {
+        c = next+1;
+    }
+    c = copy_string(c);
+    next = strchr(c, '_');
+    if (next) *next = 0;
+    next = strchr(c, '.');
+    if (next) *next = 0;
+    return c;
+}
+
+void train_detection_net(char *cfgfile, char *weightfile)
+{
+    char *base = basename(cfgfile);
+    printf("%s\n", base);
     float avg_loss = 1;
-    //network net = parse_network_cfg("/home/pjreddie/imagenet_backup/alexnet_1270.cfg");
     network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = 1024;
+    int imgs = 128;
     srand(time(0));
     //srand(23410);
-    int i = 0;
-    list *plist = get_paths("/home/pjreddie/data/imagenet/horse.txt");
+    int i = net.seen/imgs;
+    list *plist = get_paths("/home/pjreddie/data/imagenet/horse_pos.txt");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     data train, buffer;
-    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, 256, 256, 7, 7, 256, &buffer);
+    int im_dim = 512;
+    int jitter = 64;
+    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, im_dim, im_dim, 7, 7, jitter, &buffer);
     clock_t time;
     while(1){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        load_thread = load_data_detection_thread(imgs, paths, plist->size, 256, 256, 7, 7, 256, &buffer);
-        //data train = load_data_detection_random(imgs, paths, plist->size, 224, 224, 7, 7, 256);
+        load_thread = load_data_detection_thread(imgs, paths, plist->size, im_dim, im_dim, 7, 7, jitter, &buffer);
 
-/*
-        image im = float_to_image(224, 224, 3, train.X.vals[923]);
+        /*
+        image im = float_to_image(im_dim - jitter, im_dim-jitter, 3, train.X.vals[923]);
         draw_detection(im, train.y.vals[923], 7);
+        show_image(im, "truth");
+        cvWaitKey(0);
         */
 
-        normalize_data_rows(train);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         float loss = train_network(net, train);
+        net.seen += imgs;
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
         if(i%100==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/detnet_%d.cfg", i);
-            save_network(net, buff);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
+            save_weights(net, buff);
         }
         free_data(train);
     }
 }
 
-void validate_detection_net(char *cfgfile)
+void validate_detection_net(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
@@ -137,7 +162,6 @@ void validate_detection_net(char *cfgfile)
         time=clock();
         pthread_join(load_thread, 0);
         val = buffer;
-        normalize_data_rows(val);
 
         num = (i+1)*m/splits - i*m/splits;
         char **part = paths+(i*m/splits);
@@ -206,20 +230,13 @@ void train_imagenet_distributed(char *address)
 }
 */
 
-char *basename(char *cfgfile)
+void convert(char *cfgfile, char *outfile, char *weightfile)
 {
-    char *c = cfgfile;
-    char *next;
-    while((next = strchr(c, '/')))
-    {
-        c = next+1;
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
     }
-    c = copy_string(c);
-    next = strchr(c, '_');
-    if (next) *next = 0;
-    next = strchr(c, '.');
-    if (next) *next = 0;
-    return c;
+    save_network(net, outfile);
 }
 
 void train_imagenet(char *cfgfile, char *weightfile)
@@ -232,8 +249,6 @@ void train_imagenet(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    //test_learn_bias(*(convolutional_layer *)net.layers[1]);
-    //set_learning_network(&net, net.learning_rate, 0, net.decay);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
     int i = net.seen/imgs;
@@ -279,7 +294,7 @@ void validate_imagenet(char *filename, char *weightfile)
 
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.val.labels.list");
 
-    list *plist = get_paths("/home/pjreddie/data/imagenet/cls.val.list");
+    list *plist = get_paths("/data/imagenet/cls.val.list");
     char **paths = (char **)list_to_array(plist);
     int m = plist->size;
     free_list(plist);
@@ -312,9 +327,12 @@ void validate_imagenet(char *filename, char *weightfile)
     }
 }
 
-void test_detection(char *cfgfile)
+void test_detection(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
@@ -323,7 +341,8 @@ void test_detection(char *cfgfile)
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
         image im = load_image_color(filename, 224, 224);
-        z_normalize_image(im);
+        translate_image(im, -128);
+        scale_image(im, 1/128.);
         printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();
@@ -384,6 +403,30 @@ void test_dog(char *cfgfile)
     float * inter = get_network_output(net);
     pm(1000, 1, inter);
     cvWaitKey(0);
+}
+
+void test_voc_segment(char *cfgfile, char *weightfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    while(1){
+        char filename[256];
+        fgets(filename, 256, stdin);
+        strtok(filename, "\n");
+        image im = load_image_color(filename, 500, 500);
+        //resize_network(net, im.h, im.w, im.c);
+        translate_image(im, -128);
+        scale_image(im, 1/128.);
+        //float *predictions = network_predict(net, im.data);
+        network_predict(net, im.data);
+        free_image(im);
+        image output = get_network_image_layer(net, net.n-2);
+        show_image(output, "Segment Output");
+        cvWaitKey(0);
+    }
 }
 
 void test_imagenet(char *cfgfile)
@@ -764,25 +807,27 @@ int main(int argc, char **argv)
         fprintf(stderr, "usage: %s <function> <filename>\n", argv[0]);
         return 0;
     }
-    else if(0==strcmp(argv[1], "detection")) train_detection_net(argv[2]);
+    else if(0==strcmp(argv[1], "detection")) train_detection_net(argv[2], (argc > 3)? argv[3] : 0);
     else if(0==strcmp(argv[1], "test")) test_imagenet(argv[2]);
     else if(0==strcmp(argv[1], "dog")) test_dog(argv[2]);
     else if(0==strcmp(argv[1], "ctrain")) train_cifar10(argv[2]);
     else if(0==strcmp(argv[1], "nist")) train_nist(argv[2]);
     else if(0==strcmp(argv[1], "ctest")) test_cifar10(argv[2]);
     else if(0==strcmp(argv[1], "train")) train_imagenet(argv[2], (argc > 3)? argv[3] : 0);
+    else if(0==strcmp(argv[1], "testseg")) test_voc_segment(argv[2], (argc > 3)? argv[3] : 0);
     //else if(0==strcmp(argv[1], "client")) train_imagenet_distributed(argv[2]);
-    else if(0==strcmp(argv[1], "detect")) test_detection(argv[2]);
+    else if(0==strcmp(argv[1], "detect")) test_detection(argv[2], (argc > 3)? argv[3] : 0);
     else if(0==strcmp(argv[1], "init")) test_init(argv[2]);
     else if(0==strcmp(argv[1], "visualize")) test_visualize(argv[2]);
     else if(0==strcmp(argv[1], "valid")) validate_imagenet(argv[2], (argc > 3)? argv[3] : 0);
     else if(0==strcmp(argv[1], "testnist")) test_nist(argv[2]);
-    else if(0==strcmp(argv[1], "validetect")) validate_detection_net(argv[2]);
+    else if(0==strcmp(argv[1], "validetect")) validate_detection_net(argv[2], (argc > 3)? argv[3] : 0);
     else if(argc < 4){
         fprintf(stderr, "usage: %s <function> <filename> <filename>\n", argv[0]);
         return 0;
     }
     else if(0==strcmp(argv[1], "compare")) compare_nist(argv[2], argv[3]);
+    else if(0==strcmp(argv[1], "convert")) convert(argv[2], argv[3], (argc > 4)? argv[4] : 0);
     else if(0==strcmp(argv[1], "scale")) scale_rate(argv[2], atof(argv[3]));
     fprintf(stderr, "Success!\n");
     return 0;

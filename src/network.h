@@ -7,6 +7,7 @@
 
 typedef enum {
     CONVOLUTIONAL,
+    DECONVOLUTIONAL,
     CONNECTED,
     MAXPOOL,
     SOFTMAX,

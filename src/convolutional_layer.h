@@ -54,7 +54,7 @@ void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int 
 #endif
 
 convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, float learning_rate, float momentum, float decay);
-void resize_convolutional_layer(convolutional_layer *layer, int h, int w, int c);
+void resize_convolutional_layer(convolutional_layer *layer, int h, int w);
 void forward_convolutional_layer(const convolutional_layer layer, float *in);
 void update_convolutional_layer(convolutional_layer layer);
 image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters);

@@ -3,7 +3,7 @@ extern "C" {
 #include "cuda.h"
 }
 
-__global__ void col2im_kernel(float *data_col, int offset,
+__global__ void col2im_kernel(float *data_col,
         int channels, int height, int width,
         int ksize, int stride, int pad, float *data_im)
 {
@@ -46,17 +46,17 @@ __global__ void col2im_kernel(float *data_col, int offset,
             val += part;
         }
     }
-    data_im[index+offset] = val;
+    data_im[index] = val;
 }
 
 
-extern "C" void col2im_ongpu(float *data_col, int offset,
+extern "C" void col2im_ongpu(float *data_col,
         int channels,  int height,  int width,
         int ksize,  int stride,  int pad, float *data_im)
 {
 
     size_t n = channels*height*width;
 
-    col2im_kernel<<<cuda_gridsize(n), BLOCK>>>(data_col, offset, channels, height, width, ksize, stride, pad, data_im);
+    col2im_kernel<<<cuda_gridsize(n), BLOCK>>>(data_col, channels, height, width, ksize, stride, pad, data_im);
     check_error(cudaPeekAtLastError());
 }

@@ -10,6 +10,7 @@ extern "C" {
 #include "crop_layer.h"
 #include "connected_layer.h"
 #include "convolutional_layer.h"
+#include "deconvolutional_layer.h"
 #include "maxpool_layer.h"
 #include "cost_layer.h"
 #include "normalization_layer.h"
@@ -29,6 +30,11 @@ void forward_network_gpu(network net, float * input, float * truth, int train)
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             forward_convolutional_layer_gpu(layer, input);
+            input = layer.output_gpu;
+        }
+        else if(net.types[i] == DECONVOLUTIONAL){
+            deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+            forward_deconvolutional_layer_gpu(layer, input);
             input = layer.output_gpu;
         }
         else if(net.types[i] == COST){
@@ -84,6 +90,10 @@ void backward_network_gpu(network net, float * input)
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             backward_convolutional_layer_gpu(layer, prev_input, prev_delta);
         }
+        else if(net.types[i] == DECONVOLUTIONAL){
+            deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+            backward_deconvolutional_layer_gpu(layer, prev_input, prev_delta);
+        }
         else if(net.types[i] == COST){
             cost_layer layer = *(cost_layer *)net.layers[i];
             backward_cost_layer_gpu(layer, prev_input, prev_delta);
@@ -116,6 +126,10 @@ void update_network_gpu(network net)
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
             update_convolutional_layer_gpu(layer);
         }
+        else if(net.types[i] == DECONVOLUTIONAL){
+            deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
+            update_deconvolutional_layer_gpu(layer);
+        }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
             update_connected_layer_gpu(layer);
@@ -127,6 +141,10 @@ float * get_network_output_gpu_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.output_gpu;
+    }
+    else if(net.types[i] == DECONVOLUTIONAL){
+        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
         return layer.output_gpu;
     }
     else if(net.types[i] == CONNECTED){
@@ -155,6 +173,10 @@ float * get_network_delta_gpu_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.delta_gpu;
+    }
+    else if(net.types[i] == DECONVOLUTIONAL){
+        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
         return layer.delta_gpu;
     }
     else if(net.types[i] == CONNECTED){
@@ -206,6 +228,10 @@ float *get_network_output_layer_gpu(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){
         convolutional_layer layer = *(convolutional_layer *)net.layers[i];
+        return layer.output;
+    }
+    else if(net.types[i] == DECONVOLUTIONAL){
+        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
         return layer.output;
     }
     else if(net.types[i] == CONNECTED){

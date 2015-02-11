@@ -40,13 +40,22 @@ maxpool_layer *make_maxpool_layer(int batch, int h, int w, int c, int size, int 
     return layer;
 }
 
-void resize_maxpool_layer(maxpool_layer *layer, int h, int w, int c)
+void resize_maxpool_layer(maxpool_layer *layer, int h, int w)
 {
     layer->h = h;
     layer->w = w;
-    layer->c = c;
-    layer->output = realloc(layer->output, ((h-1)/layer->stride+1) * ((w-1)/layer->stride+1) * c * layer->batch* sizeof(float));
-    layer->delta = realloc(layer->delta, ((h-1)/layer->stride+1) * ((w-1)/layer->stride+1) * c * layer->batch*sizeof(float));
+    int output_size = ((h-1)/layer->stride+1) * ((w-1)/layer->stride+1) * layer->c * layer->batch;
+    layer->output = realloc(layer->output, output_size * sizeof(float));
+    layer->delta = realloc(layer->delta, output_size * sizeof(float));
+
+    #ifdef GPU
+    cuda_free((float *)layer->indexes_gpu);
+    cuda_free(layer->output_gpu);
+    cuda_free(layer->delta_gpu);
+    layer->indexes_gpu = cuda_make_int_array(output_size);
+    layer->output_gpu  = cuda_make_array(layer->output, output_size);
+    layer->delta_gpu   = cuda_make_array(layer->delta, output_size);
+    #endif
 }
 
 void forward_maxpool_layer(const maxpool_layer layer, float *input)
