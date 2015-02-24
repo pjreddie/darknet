@@ -21,6 +21,7 @@ extern "C" {
 
 extern "C" float * get_network_output_gpu_layer(network net, int i);
 extern "C" float * get_network_delta_gpu_layer(network net, int i);
+float *get_network_output_gpu(network net);
 
 void forward_network_gpu(network net, float * input, float * truth, int train)
 {
@@ -219,6 +220,10 @@ float train_network_datum_gpu(network net, float *x, float *y)
   //time = clock();
     update_network_gpu(net);
     float error = get_network_cost(net);
+
+    //print_letters(y, 50);
+    //float *out = get_network_output_gpu(net);
+    //print_letters(out, 50);
   //printf("updt %f\n", sec(clock() - time));
   //time = clock();
     return error;

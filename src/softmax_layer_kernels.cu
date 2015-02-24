@@ -34,7 +34,9 @@ extern "C" void pull_softmax_layer_output(const softmax_layer layer)
 
 extern "C" void forward_softmax_layer_gpu(const softmax_layer layer, float *input)
 {
-    forward_softmax_layer_kernel<<<cuda_gridsize(layer.batch), BLOCK>>>(layer.inputs, layer.batch, input, layer.output_gpu);
+    int inputs = layer.inputs / layer.groups;
+    int batch = layer.batch * layer.groups;
+    forward_softmax_layer_kernel<<<cuda_gridsize(batch), BLOCK>>>(inputs, batch, input, layer.output_gpu);
     check_error(cudaPeekAtLastError());
 
     /*

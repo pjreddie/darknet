@@ -14,12 +14,13 @@ typedef struct{
 
 void free_data(data d);
 
+void print_letters(float *pred, int n);
+data load_data_captcha(char **paths, int n, int m, int k, int h, int w);
 data load_data(char **paths, int n, int m, char **labels, int k, int h, int w);
 pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int h, int w, data *d);
 
-pthread_t load_data_detection_thread(int n, char **paths, int m, int h, int w, int nh, int nw, int jitter, data *d);
-data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w, int nh, int nw, int jitter);
-data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw);
+pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter, data *d);
+data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter);
 
 data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w);
 data load_cifar10_data(char *filename);

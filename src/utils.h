@@ -4,6 +4,8 @@
 #include <time.h>
 #include "list.h"
 
+int alphanum_to_int(char c);
+char int_to_alphanum(int i);
 void read_all(int fd, char *buffer, size_t bytes);
 void write_all(int fd, char *buffer, size_t bytes);
 char *find_replace(char *str, char *orig, char *rep);

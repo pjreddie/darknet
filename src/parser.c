@@ -191,6 +191,7 @@ connected_layer *parse_connected(list *options, network *net, int count)
 softmax_layer *parse_softmax(list *options, network *net, int count)
 {
     int input;
+    int groups = option_find_int(options, "groups",1);
     if(count == 0){
         input = option_find_int(options, "input",1);
         net->batch = option_find_int(options, "batch",1);
@@ -198,7 +199,7 @@ softmax_layer *parse_softmax(list *options, network *net, int count)
     }else{
         input =  get_network_output_size_layer(*net, count-1);
     }
-    softmax_layer *layer = make_softmax_layer(net->batch, input);
+    softmax_layer *layer = make_softmax_layer(net->batch, groups, input);
     option_unused(options);
     return layer;
 }

@@ -4,9 +4,23 @@
 
 int windows = 0;
 
-void draw_box(image a, int x1, int y1, int x2, int y2)
+float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
+
+float get_color(int c, int x, int max)
 {
-    int i, c;
+    float ratio = ((float)x/max)*5;
+    int i = floor(ratio);
+    int j = ceil(ratio);
+    ratio -= i;
+    float r = (1-ratio) * colors[i][c] + ratio*colors[j][c];
+    printf("%f\n", r);
+    return r;
+}
+
+void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b)
+{
+    normalize_image(a);
+    int i;
     if(x1 < 0) x1 = 0;
     if(x1 >= a.w) x1 = a.w-1;
     if(x2 < 0) x2 = 0;
@@ -17,17 +31,25 @@ void draw_box(image a, int x1, int y1, int x2, int y2)
     if(y2 < 0) y2 = 0;
     if(y2 >= a.h) y2 = a.h-1;
 
-    for(c = 0; c < a.c; ++c){
-        for(i = x1; i < x2; ++i){
-            a.data[i + y1*a.w + c*a.w*a.h] = (c==0)?1:-1;
-            a.data[i + y2*a.w + c*a.w*a.h] = (c==0)?1:-1;
-        }
+    for(i = x1; i < x2; ++i){
+        a.data[i + y1*a.w + 0*a.w*a.h] = b;
+        a.data[i + y2*a.w + 0*a.w*a.h] = b;
+
+        a.data[i + y1*a.w + 1*a.w*a.h] = g;
+        a.data[i + y2*a.w + 1*a.w*a.h] = g;
+
+        a.data[i + y1*a.w + 2*a.w*a.h] = r;
+        a.data[i + y2*a.w + 2*a.w*a.h] = r;
     }
-    for(c = 0; c < a.c; ++c){
-        for(i = y1; i < y2; ++i){
-            a.data[x1 + i*a.w + c*a.w*a.h] = (c==0)?1:-1;
-            a.data[x2 + i*a.w + c*a.w*a.h] = (c==0)?1:-1;
-        }
+    for(i = y1; i < y2; ++i){
+        a.data[x1 + i*a.w + 0*a.w*a.h] = b;
+        a.data[x2 + i*a.w + 0*a.w*a.h] = b;
+
+        a.data[x1 + i*a.w + 1*a.w*a.h] = g;
+        a.data[x2 + i*a.w + 1*a.w*a.h] = g;
+
+        a.data[x1 + i*a.w + 2*a.w*a.h] = r;
+        a.data[x2 + i*a.w + 2*a.w*a.h] = r;
     }
 }
 
@@ -41,6 +63,22 @@ void jitter_image(image a, int h, int w, int dh, int dw)
                 int dst = j + i*w + k*w*h;
                 //printf("%d %d\n", src, dst);
                 a.data[dst] = a.data[src];
+            }
+        }
+    }
+}
+
+void flip_image(image a)
+{
+    int i,j,k;
+    for(k = 0; k < a.c; ++k){
+        for(i = 0; i < a.h; ++i){
+            for(j = 0; j < a.w/2; ++j){
+                int index = j + a.w*(i + a.h*(k));
+                int flip = (a.w - j - 1) + a.w*(i + a.h*(k));
+                float swap = a.data[flip];
+                a.data[flip] = a.data[index];
+                a.data[index] = swap;
             }
         }
     }

@@ -8,6 +8,17 @@
 
 #include "utils.h"
 
+
+int alphanum_to_int(char c)
+{
+    return (c < 58) ? c - 48 : c-87;
+}
+char int_to_alphanum(int i)
+{
+    if (i == 36) return '.';
+    return (i < 10) ? i + 48 : i + 87;
+}
+
 void pm(int M, int N, float *A)
 {
     int i,j;

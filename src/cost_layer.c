@@ -49,7 +49,7 @@ void forward_cost_layer(cost_layer layer, float *input, float *truth)
     if(layer.type == DETECTION){
         int i;
         for(i = 0; i < layer.batch*layer.inputs; ++i){
-            if((i%5) && !truth[(i/5)*5]) layer.delta[i] = 0;
+            if((i%25) && !truth[(i/25)*25]) layer.delta[i] = 0;
         }
     }
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
@@ -71,7 +71,7 @@ void forward_cost_layer_gpu(cost_layer layer, float * input, float * truth)
     axpy_ongpu(layer.batch*layer.inputs, -1, input, 1, layer.delta_gpu, 1);
 
     if(layer.type==DETECTION){
-        mask_ongpu(layer.inputs*layer.batch, layer.delta_gpu, truth, 5);
+        mask_ongpu(layer.inputs*layer.batch, layer.delta_gpu, truth, 25);
     }
 
     cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);

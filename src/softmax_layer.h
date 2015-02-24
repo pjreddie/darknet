@@ -4,16 +4,16 @@
 typedef struct {
     int inputs;
     int batch;
+    int groups;
     float *delta;
     float *output;
-    float *jacobian;
     #ifdef GPU
     float * delta_gpu;
     float * output_gpu;
     #endif
 } softmax_layer;
 
-softmax_layer *make_softmax_layer(int batch, int inputs);
+softmax_layer *make_softmax_layer(int batch, int groups, int inputs);
 void forward_softmax_layer(const softmax_layer layer, float *input);
 void backward_softmax_layer(const softmax_layer layer, float *delta);
 

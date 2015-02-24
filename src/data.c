@@ -17,6 +17,7 @@ struct load_args{
     int nh;
     int nw;
     int jitter;
+    int classes;
     data *d;
 };
 
@@ -33,53 +34,16 @@ list *get_paths(char *filename)
     return lines;
 }
 
-void fill_truth_detection(char *path, float *truth, int height, int width, int num_height, int num_width, int dy, int dx, int jitter)
+char **get_random_paths(char **paths, int n, int m)
 {
-    int box_height = height/num_height;
-    int box_width = width/num_width;
-    char *labelpath = find_replace(path, "imgs", "det/train");
-    labelpath = find_replace(labelpath, ".JPEG", ".txt");
-    FILE *file = fopen(labelpath, "r");
-    if(!file) file_error(labelpath);
-    float x, y, h, w;
-    while(fscanf(file, "%f %f %f %f", &x, &y, &w, &h) == 4){
-        x *= width + jitter;
-        y *= height + jitter;
-        x -= dx;
-        y -= dy;
-        int i = x/box_width;
-        int j = y/box_height;
-
-        if(i < 0) i = 0;
-        if(i >= num_width) i = num_width-1;
-        if(j < 0) j = 0;
-        if(j >= num_height) j = num_height-1;
-        
-        float dw = (x - i*box_width)/box_width;
-        float dh = (y - j*box_height)/box_height;
-        //printf("%d %d %f %f\n", i, j, dh, dw);
-        int index = (i+j*num_width)*5;
-        truth[index++] = 1;
-        truth[index++] = dh;
-        truth[index++] = dw;
-        truth[index++] = h*(height+jitter)/height;
-        truth[index++] = w*(width+jitter)/width;
-    }
-    fclose(file);
-}
-
-void fill_truth(char *path, char **labels, int k, float *truth)
-{
+    char **random_paths = calloc(n, sizeof(char*));
     int i;
-    memset(truth, 0, k*sizeof(float));
-    int count = 0;
-    for(i = 0; i < k; ++i){
-        if(strstr(path, labels[i])){
-            truth[i] = 1;
-            ++count;
-        }
+    for(i = 0; i < n; ++i){
+        int index = rand()%m;
+        random_paths[i] = paths[index];
+        if(i == 0) printf("%s\n", paths[index]);
     }
-    if(count != 1) printf("%d, %s\n", count, path);
+    return random_paths;
 }
 
 matrix load_image_paths(char **paths, int n, int h, int w)
@@ -98,16 +62,100 @@ matrix load_image_paths(char **paths, int n, int h, int w)
     return X;
 }
 
-char **get_random_paths(char **paths, int n, int m)
+void fill_truth_detection(char *path, float *truth, int classes, int height, int width, int num_height, int num_width, int dy, int dx, int jitter, int flip)
 {
-    char **random_paths = calloc(n, sizeof(char*));
+    int box_height = height/num_height;
+    int box_width = width/num_width;
+    char *labelpath = find_replace(path, "VOC2012/JPEGImages", "labels");
+    labelpath = find_replace(labelpath, ".jpg", ".txt");
+    FILE *file = fopen(labelpath, "r");
+    if(!file) file_error(labelpath);
+    float x, y, h, w;
+    int id;
+    while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
+        if(flip) x = 1-x;
+        x *= width + jitter;
+        y *= height + jitter;
+        x -= dx;
+        y -= dy;
+        int i = x/box_width;
+        int j = y/box_height;
+
+        if(i < 0) i = 0;
+        if(i >= num_width) i = num_width-1;
+        if(j < 0) j = 0;
+        if(j >= num_height) j = num_height-1;
+        
+        float dw = (x - i*box_width)/box_width;
+        float dh = (y - j*box_height)/box_height;
+        //printf("%d %d %d %f %f\n", id, i, j, dh, dw);
+        int index = (i+j*num_width)*(4+classes+1);
+        truth[index++] = 1;
+        truth[index+id] = 1;
+        index += classes;
+        truth[index++] = dh;
+        truth[index++] = dw;
+        truth[index++] = h*(height+jitter)/height;
+        truth[index++] = w*(width+jitter)/width;
+    }
+    fclose(file);
+}
+
+#define NUMCHARS 37
+
+void print_letters(float *pred, int n)
+{
     int i;
     for(i = 0; i < n; ++i){
-        int index = rand()%m;
-        random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
+        int index = max_index(pred+i*NUMCHARS, NUMCHARS);
+        printf("%c", int_to_alphanum(index));
     }
-    return random_paths;
+    printf("\n");
+}
+
+void fill_truth_captcha(char *path, int n, float *truth)
+{
+    char *begin = strrchr(path, '/');
+    ++begin;
+    int i;
+    for(i = 0; i < strlen(begin) && i < n && begin[i] != '.'; ++i){
+        int index = alphanum_to_int(begin[i]);
+        if(index > 35) printf("Bad %c\n", begin[i]);
+        truth[i*NUMCHARS+index] = 1;
+    }
+    for(;i < n; ++i){
+        truth[i*NUMCHARS + NUMCHARS-1] = 1;
+    }
+}
+
+data load_data_captcha(char **paths, int n, int m, int k, int h, int w)
+{
+    if(m) paths = get_random_paths(paths, n, m);
+    data d;
+    d.shallow = 0;
+    d.X = load_image_paths(paths, n, h, w);
+    d.y = make_matrix(n, k*NUMCHARS);
+    int i;
+    for(i = 0; i < n; ++i){
+        fill_truth_captcha(paths[i], k, d.y.vals[i]);
+    }
+    if(m) free(paths);
+    return d;
+}
+
+
+void fill_truth(char *path, char **labels, int k, float *truth)
+{
+    int i;
+    memset(truth, 0, k*sizeof(float));
+    int count = 0;
+    for(i = 0; i < k; ++i){
+        if(strstr(path, labels[i])){
+            truth[i] = 1;
+            ++count;
+        }
+    }
+    if(count != 1) printf("%d, %s\n", count, path);
 }
 
 matrix load_labels_paths(char **paths, int n, char **labels, int k)
@@ -116,17 +164,6 @@ matrix load_labels_paths(char **paths, int n, char **labels, int k)
     int i;
     for(i = 0; i < n && labels; ++i){
         fill_truth(paths[i], labels, k, y.vals[i]);
-    }
-    return y;
-}
-
-matrix load_labels_detection(char **paths, int n, int height, int width, int num_height, int num_width)
-{
-    int k = num_height*num_width*5;
-    matrix y = make_matrix(n, k);
-    int i;
-    for(i = 0; i < n; ++i){
-        fill_truth_detection(paths[i], y.vals[i], height, width, num_height, num_width, 0, 0, 0);
     }
     return y;
 }
@@ -165,20 +202,22 @@ void free_data(data d)
     }
 }
 
-data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w, int nh, int nw, int jitter)
+data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
     data d;
     d.shallow = 0;
     d.X = load_image_paths(random_paths, n, h, w);
-    int k = nh*nw*5;
+    int k = nh*nw*(4+classes+1);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         int dx = rand()%jitter;
         int dy = rand()%jitter;
-        fill_truth_detection(random_paths[i], d.y.vals[i], h-jitter, w-jitter, nh, nw, dy, dx, jitter);
+        int flip = rand()%2;
+        fill_truth_detection(random_paths[i], d.y.vals[i], classes, h-jitter, w-jitter, nh, nw, dy, dx, jitter, flip);
         image a = float_to_image(h, w, 3, d.X.vals[i]);
+        if(flip) flip_image(a);
         jitter_image(a,h-jitter,w-jitter,dy,dx);
     }
     d.X.cols = (h-jitter)*(w-jitter)*3;
@@ -189,14 +228,14 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int h, int w,
 void *load_detection_thread(void *ptr)
 {
     struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.h, a.w, a.nh, a.nw, a.jitter);
+    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.h, a.w, a.nh, a.nw, a.jitter);
     translate_data_rows(*a.d, -128);
     scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;
 }
 
-pthread_t load_data_detection_thread(int n, char **paths, int m, int h, int w, int nh, int nw, int jitter, data *d)
+pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter, data *d)
 {
     pthread_t thread;
     struct load_args *args = calloc(1, sizeof(struct load_args));
@@ -207,23 +246,13 @@ pthread_t load_data_detection_thread(int n, char **paths, int m, int h, int w, i
     args->w = w;
     args->nh = nh;
     args->nw = nw;
+    args->classes = classes;
     args->jitter = jitter;
     args->d = d;
     if(pthread_create(&thread, 0, load_detection_thread, args)) {
         error("Thread creation failed");
     }
     return thread;
-}
-
-data load_data_detection_random(int n, char **paths, int m, int h, int w, int nh, int nw)
-{
-    char **random_paths = get_random_paths(paths, n, m);
-    data d;
-    d.shallow = 0;
-    d.X = load_image_paths(random_paths, n, h, w);
-    d.y = load_labels_detection(random_paths, n, h, w, nh, nw);
-    free(random_paths);
-    return d;
 }
 
 data load_data(char **paths, int n, int m, char **labels, int k, int h, int w)

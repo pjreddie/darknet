@@ -11,8 +11,10 @@ typedef struct {
     float *data;
 } image;
 
+float get_color(int c, int x, int max);
 void jitter_image(image a, int h, int w, int dh, int dw);
-void draw_box(image a, int x1, int y1, int x2, int y2);
+void flip_image(image a);
+void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
 image image_distance(image a, image b);
 void scale_image(image m, float s);
 void translate_image(image m, float s);
