@@ -89,14 +89,19 @@ void fill_truth_detection(char *path, float *truth, int classes, int height, int
         float dw = (x - i*box_width)/box_width;
         float dh = (y - j*box_height)/box_height;
         //printf("%d %d %d %f %f\n", id, i, j, dh, dw);
-        int index = (i+j*num_width)*(4+classes+1);
-        truth[index++] = 1;
+        int index = (i+j*num_width)*(4+classes);
         truth[index+id] = 1;
         index += classes;
         truth[index++] = dh;
         truth[index++] = dw;
         truth[index++] = h*(height+jitter)/height;
         truth[index++] = w*(width+jitter)/width;
+    }
+    int i, j;
+    for(i = 0; i < num_height*num_width*(4+classes); i += 4+classes){
+        int background = 1;
+        for(j = i; j < i+classes; ++j) if (truth[j]) background = 0;
+        truth[i+classes-1] = background;
     }
     fclose(file);
 }
@@ -209,7 +214,7 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
     data d;
     d.shallow = 0;
     d.X = load_image_paths(random_paths, n, h, w);
-    int k = nh*nw*(4+classes+1);
+    int k = nh*nw*(4+classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         int dx = rand()%jitter;

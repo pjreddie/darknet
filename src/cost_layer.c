@@ -10,7 +10,6 @@
 COST_TYPE get_cost_type(char *s)
 {
     if (strcmp(s, "sse")==0) return SSE;
-    if (strcmp(s, "detection")==0) return DETECTION;
     fprintf(stderr, "Couldn't find activation function %s, going with SSE\n", s);
     return SSE;
 }
@@ -20,8 +19,6 @@ char *get_cost_string(COST_TYPE a)
     switch(a){
         case SSE:
             return "sse";
-        case DETECTION:
-            return "detection";
     }
     return "sse";
 }
@@ -41,17 +38,20 @@ cost_layer *make_cost_layer(int batch, int inputs, COST_TYPE type)
     return layer;
 }
 
+void pull_cost_layer(cost_layer layer)
+{
+    cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
+}
+void push_cost_layer(cost_layer layer)
+{
+    cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
+}
+
 void forward_cost_layer(cost_layer layer, float *input, float *truth)
 {
     if (!truth) return;
     copy_cpu(layer.batch*layer.inputs, truth, 1, layer.delta, 1);
     axpy_cpu(layer.batch*layer.inputs, -1, input, 1, layer.delta, 1);
-    if(layer.type == DETECTION){
-        int i;
-        for(i = 0; i < layer.batch*layer.inputs; ++i){
-            if((i%25) && !truth[(i/25)*25]) layer.delta[i] = 0;
-        }
-    }
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
     //printf("cost: %f\n", *layer.output);
 }
@@ -66,13 +66,20 @@ void backward_cost_layer(const cost_layer layer, float *input, float *delta)
 void forward_cost_layer_gpu(cost_layer layer, float * input, float * truth)
 {
     if (!truth) return;
+    
+    /*
+    float *in = calloc(layer.inputs*layer.batch, sizeof(float));
+    float *t = calloc(layer.inputs*layer.batch, sizeof(float));
+    cuda_pull_array(input, in, layer.batch*layer.inputs);
+    cuda_pull_array(truth, t, layer.batch*layer.inputs);
+    forward_cost_layer(layer, in, t);
+    cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
+    free(in);
+    free(t);
+    */
 
     copy_ongpu(layer.batch*layer.inputs, truth, 1, layer.delta_gpu, 1);
     axpy_ongpu(layer.batch*layer.inputs, -1, input, 1, layer.delta_gpu, 1);
-
-    if(layer.type==DETECTION){
-        mask_ongpu(layer.inputs*layer.batch, layer.delta_gpu, truth, 25);
-    }
 
     cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);

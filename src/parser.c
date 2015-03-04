@@ -13,6 +13,7 @@
 #include "normalization_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
+#include "detection_layer.h"
 #include "freeweight_layer.h"
 #include "list.h"
 #include "option_list.h"
@@ -32,6 +33,7 @@ int is_freeweight(section *s);
 int is_softmax(section *s);
 int is_crop(section *s);
 int is_cost(section *s);
+int is_detection(section *s);
 int is_normalization(section *s);
 list *read_cfg(char *filename);
 
@@ -204,6 +206,24 @@ softmax_layer *parse_softmax(list *options, network *net, int count)
     return layer;
 }
 
+detection_layer *parse_detection(list *options, network *net, int count)
+{
+    int input;
+    if(count == 0){
+        input = option_find_int(options, "input",1);
+        net->batch = option_find_int(options, "batch",1);
+        net->seen = option_find_int(options, "seen",0);
+    }else{
+        input =  get_network_output_size_layer(*net, count-1);
+    }
+    int coords = option_find_int(options, "coords", 1);
+    int classes = option_find_int(options, "classes", 1);
+    int rescore = option_find_int(options, "rescore", 1);
+    detection_layer *layer = make_detection_layer(net->batch, input, classes, coords, rescore);
+    option_unused(options);
+    return layer;
+}
+
 cost_layer *parse_cost(list *options, network *net, int count)
 {
     int input;
@@ -368,6 +388,10 @@ network parse_network_cfg(char *filename)
             cost_layer *layer = parse_cost(options, &net, count);
             net.types[count] = COST;
             net.layers[count] = layer;
+        }else if(is_detection(s)){
+            detection_layer *layer = parse_detection(options, &net, count);
+            net.types[count] = DETECTION;
+            net.layers[count] = layer;
         }else if(is_softmax(s)){
             softmax_layer *layer = parse_softmax(options, &net, count);
             net.types[count] = SOFTMAX;
@@ -409,6 +433,10 @@ int is_crop(section *s)
 int is_cost(section *s)
 {
     return (strcmp(s->type, "[cost]")==0);
+}
+int is_detection(section *s)
+{
+    return (strcmp(s->type, "[detection]")==0);
 }
 int is_deconvolutional(section *s)
 {
@@ -684,6 +712,13 @@ void print_softmax_cfg(FILE *fp, softmax_layer *l, network net, int count)
     fprintf(fp, "\n");
 }
 
+void print_detection_cfg(FILE *fp, detection_layer *l, network net, int count)
+{
+    fprintf(fp, "[detection]\n");
+    fprintf(fp, "classes=%d\ncoords=%d\nrescore=%d\n", l->classes, l->coords, l->rescore);
+    fprintf(fp, "\n");
+}
+
 void print_cost_cfg(FILE *fp, cost_layer *l, network net, int count)
 {
     fprintf(fp, "[cost]\ntype=%s\n", get_cost_string(l->type));
@@ -815,6 +850,8 @@ void save_network(network net, char *filename)
             print_normalization_cfg(fp, (normalization_layer *)net.layers[i], net, i);
         else if(net.types[i] == SOFTMAX)
             print_softmax_cfg(fp, (softmax_layer *)net.layers[i], net, i);
+        else if(net.types[i] == DETECTION)
+            print_detection_cfg(fp, (detection_layer *)net.layers[i], net, i);
         else if(net.types[i] == COST)
             print_cost_cfg(fp, (cost_layer *)net.layers[i], net, i);
     }

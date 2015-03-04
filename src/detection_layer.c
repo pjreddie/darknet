@@ -1,72 +1,123 @@
-int detection_out_height(detection_layer layer)
+#include "detection_layer.h"
+#include "activations.h"
+#include "softmax_layer.h"
+#include "blas.h"
+#include "cuda.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+int get_detection_layer_locations(detection_layer layer)
 {
-    return layer.size + layer.h*layer.stride;
+    return layer.inputs / (layer.classes+layer.coords+layer.rescore);
 }
 
-int detection_out_width(detection_layer layer)
+int get_detection_layer_output_size(detection_layer layer)
 {
-    return layer.size + layer.w*layer.stride;
+    return get_detection_layer_locations(layer)*(layer.classes+layer.coords);
 }
 
-detection_layer *make_detection_layer(int batch, int h, int w, int c, int n, int size, int stride, ACTIVATION activation)
+detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore)
 {
-    int i;
-    size = 2*(size/2)+1; //HA! And you thought you'd use an even sized filter...
     detection_layer *layer = calloc(1, sizeof(detection_layer));
-    layer->h = h;
-    layer->w = w;
-    layer->c = c;
-    layer->n = n;
+
     layer->batch = batch;
-    layer->stride = stride;
-    layer->size = size;
-    assert(c%n == 0);
+    layer->inputs = inputs;
+    layer->classes = classes;
+    layer->coords = coords;
+    layer->rescore = rescore;
+    int outputs = get_detection_layer_output_size(*layer);
+    layer->output = calloc(batch*outputs, sizeof(float));
+    layer->delta = calloc(batch*outputs, sizeof(float));
+    #ifdef GPU
+    layer->output_gpu = cuda_make_array(0, batch*outputs);
+    layer->delta_gpu = cuda_make_array(0, batch*outputs);
+    #endif
 
-    layer->filters = calloc(c*size*size, sizeof(float));
-    layer->filter_updates = calloc(c*size*size, sizeof(float));
-    layer->filter_momentum = calloc(c*size*size, sizeof(float));
-
-    float scale = 1./(size*size*c);
-    for(i = 0; i < c*n*size*size; ++i) layer->filters[i] = scale*(rand_uniform());
-
-    int out_h = detection_out_height(*layer);
-    int out_w = detection_out_width(*layer);
-
-    layer->output = calloc(layer->batch * out_h * out_w * n, sizeof(float));
-    layer->delta  = calloc(layer->batch * out_h * out_w * n, sizeof(float));
-
-    layer->activation = activation;
-
-    fprintf(stderr, "Convolutional Layer: %d x %d x %d image, %d filters -> %d x %d x %d image\n", h,w,c,n, out_h, out_w, n);
+    fprintf(stderr, "Detection Layer\n");
     srand(0);
 
     return layer;
 }
 
-void forward_detection_layer(const detection_layer layer, float *in)
+void forward_detection_layer(const detection_layer layer, float *in, float *truth)
 {
-    int out_h = detection_out_height(layer);
-    int out_w = detection_out_width(layer);
-    int i,j,fh, fw,c;
-    memset(layer.output, 0, layer->batch*layer->n*out_h*out_w*sizeof(float));
-    for(c = 0; c < layer.c; ++c){
-        for(i = 0; i < layer.h; ++i){
-            for(j = 0; j < layer.w; ++j){
-                float val = layer->input[j+(i + c*layer.h)*layer.w];
-                for(fh = 0; fh < layer.size; ++fh){
-                    for(fw = 0; fw < layer.size; ++fw){
-                        int h = i*layer.stride + fh;
-                        int w = j*layer.stride + fw;
-                        layer.output[w+(h+c/n*out_h)*out_w] += val*layer->filters[fw+(fh+c*layer.size)*layer.size];
-                    }
-                }
-            }
+    int in_i = 0;
+    int out_i = 0;
+    int locations = get_detection_layer_locations(layer);
+    int i,j;
+    for(i = 0; i < layer.batch*locations; ++i){
+        int mask = (!truth || !truth[out_i + layer.classes - 1]);
+        float scale = 1;
+        if(layer.rescore) scale = in[in_i++];
+        for(j = 0; j < layer.classes; ++j){
+            layer.output[out_i++] = scale*in[in_i++];
         }
+        softmax_array(layer.output + out_i - layer.classes, layer.classes, layer.output + out_i - layer.classes);
+        activate_array(layer.output+out_i, layer.coords, SIGMOID);
+        for(j = 0; j < layer.coords; ++j){
+            layer.output[out_i++] = mask*in[in_i++];
+        }
+        //printf("%d\n", mask);
+        //for(j = 0; j < layer.classes+layer.coords; ++j) printf("%f ", layer.output[i*(layer.classes+layer.coords)+j]);
+        //printf ("\n");
     }
 }
 
-void backward_detection_layer(const detection_layer layer, float *delta)
+void backward_detection_layer(const detection_layer layer, float *in, float *delta)
 {
+    int locations = get_detection_layer_locations(layer);
+    int i,j;
+    int in_i = 0;
+    int out_i = 0;
+    for(i = 0; i < layer.batch*locations; ++i){
+        float scale = 1;
+        float latent_delta = 0;
+        if(layer.rescore) scale = in[in_i++];
+        for(j = 0; j < layer.classes; ++j){
+            latent_delta += in[in_i]*layer.delta[out_i];
+            delta[in_i++] = scale*layer.delta[out_i++];
+        }
+        
+        for(j = 0; j < layer.coords; ++j){
+            delta[in_i++] = layer.delta[out_i++];
+        }
+        gradient_array(in + in_i - layer.coords, layer.coords, SIGMOID, layer.delta + out_i - layer.coords); 
+        if(layer.rescore) delta[in_i-layer.coords-layer.classes-layer.rescore] = latent_delta;
+    }
 }
 
+#ifdef GPU
+
+void forward_detection_layer_gpu(const detection_layer layer, float *in, float *truth)
+{
+    int outputs = get_detection_layer_output_size(layer);
+    float *in_cpu = calloc(layer.batch*layer.inputs, sizeof(float));
+    float *truth_cpu = 0;
+    if(truth){
+        truth_cpu = calloc(layer.batch*outputs, sizeof(float));
+        cuda_pull_array(truth, truth_cpu, layer.batch*outputs);
+    }
+    cuda_pull_array(in, in_cpu, layer.batch*layer.inputs);
+    forward_detection_layer(layer, in_cpu, truth_cpu);
+    cuda_push_array(layer.output_gpu, layer.output, layer.batch*outputs);
+    free(in_cpu);
+    if(truth_cpu) free(truth_cpu);
+}
+
+void backward_detection_layer_gpu(detection_layer layer, float *in, float *delta)
+{
+    int outputs = get_detection_layer_output_size(layer);
+
+    float *in_cpu =    calloc(layer.batch*layer.inputs, sizeof(float));
+    float *delta_cpu = calloc(layer.batch*layer.inputs, sizeof(float));
+
+    cuda_pull_array(in, in_cpu, layer.batch*layer.inputs);
+    cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*outputs);
+    backward_detection_layer(layer, in_cpu, delta_cpu);
+    cuda_push_array(delta, delta_cpu, layer.batch*layer.inputs);
+
+    free(in_cpu);
+    free(delta_cpu);
+}
+#endif
 

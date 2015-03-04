@@ -5,6 +5,7 @@ int gpu_index = 0;
 #include "cuda.h"
 #include "utils.h"
 #include "blas.h"
+#include "assert.h"
 #include <stdlib.h>
 
 
@@ -15,6 +16,7 @@ void check_error(cudaError_t status)
         const char *s = cudaGetErrorString(status);
         char buffer[256];
         printf("CUDA Error: %s\n", s);
+        assert(0);
         snprintf(buffer, 256, "CUDA Error: %s", s);
         error(buffer);
     } 

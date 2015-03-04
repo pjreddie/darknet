@@ -2,12 +2,14 @@
 #define COST_LAYER_H
 
 typedef enum{
-    SSE, DETECTION
+    SSE
 } COST_TYPE;
 
 typedef struct {
     int inputs;
     int batch;
+    int coords;
+    int classes;
     float *delta;
     float *output;
     COST_TYPE type;

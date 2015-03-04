@@ -2,12 +2,18 @@
 *.dSYM
 *.csv
 *.out
+*.png
+*.sh
 mnist/
+data/
+caffe/
+grasp/
 images/
 opencv/
 convnet/
 decaf/
 submission/
+cfg/
 darknet
 
 # OS Generated #

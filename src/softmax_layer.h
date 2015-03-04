@@ -13,6 +13,7 @@ typedef struct {
     #endif
 } softmax_layer;
 
+void softmax_array(float *input, int n, float *output);
 softmax_layer *make_softmax_layer(int batch, int groups, int inputs);
 void forward_softmax_layer(const softmax_layer layer, float *input);
 void backward_softmax_layer(const softmax_layer layer, float *delta);

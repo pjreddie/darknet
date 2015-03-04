@@ -13,7 +13,7 @@ float get_color(int c, int x, int max)
     int j = ceil(ratio);
     ratio -= i;
     float r = (1-ratio) * colors[i][c] + ratio*colors[j][c];
-    printf("%f\n", r);
+    //printf("%f\n", r);
     return r;
 }
 

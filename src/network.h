@@ -11,6 +11,7 @@ typedef enum {
     CONNECTED,
     MAXPOOL,
     SOFTMAX,
+    DETECTION,
     NORMALIZATION,
     DROPOUT,
     FREEWEIGHT,
@@ -48,7 +49,7 @@ char *get_layer_string(LAYER_TYPE a);
 
 network make_network(int n, int batch);
 void forward_network(network net, float *input, float *truth, int train);
-void backward_network(network net, float *input);
+void backward_network(network net, float *input, float *truth);
 void update_network(network net);
 
 float train_network(network net, data d);

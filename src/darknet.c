@@ -36,42 +36,30 @@ char *class_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", 
 void draw_detection(image im, float *box, int side)
 {
     int classes = 20;
-    int elems = 4+classes+1;
+    int elems = 4+classes;
     int j;
     int r, c;
-    float amount[AMNT] = {0};
-    for(r = 0; r < side*side; ++r){
-        float val = box[r*elems];
-        for(j = 0; j < AMNT; ++j){
-            if(val > amount[j]) {
-                float swap = val;
-                val = amount[j];
-                amount[j] = swap;
-            }
-        }
-    }
-    float smallest = amount[AMNT-1];
 
     for(r = 0; r < side; ++r){
         for(c = 0; c < side; ++c){
             j = (r*side + c) * elems;
             //printf("%d\n", j);
             //printf("Prob: %f\n", box[j]);
-            if(box[j] >= smallest){
-                int class = max_index(box+j+1, classes);
-                int z;
-                for(z = 0; z < classes; ++z) printf("%f %s\n", box[j+1+z], class_names[z]);
-                printf("%f %s\n", box[j+1+class], class_names[class]);
+            int class = max_index(box+j, classes);
+            if(box[j+class] > .02 || 1){
+                //int z;
+                //for(z = 0; z < classes; ++z) printf("%f %s\n", box[j+z], class_names[z]);
+                printf("%f %s\n", box[j+class], class_names[class]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
                 float blue = get_color(2,class,classes);
 
                 j += classes;
                 int d = im.w/side;
-                int y = r*d+box[j+1]*d;
-                int x = c*d+box[j+2]*d;
-                int h = box[j+3]*im.h;
-                int w = box[j+4]*im.w;
+                int y = r*d+box[j]*d;
+                int x = c*d+box[j+1]*d;
+                int h = box[j+2]*im.h;
+                int w = box[j+3]*im.w;
                 draw_box(im, x-w/2, y-h/2, x+w/2, y+h/2,red,green,blue);
             }
         }
@@ -117,21 +105,22 @@ void train_detection_net(char *cfgfile, char *weightfile)
     data train, buffer;
     int im_dim = 512;
     int jitter = 64;
-    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, 20, im_dim, im_dim, 7, 7, jitter, &buffer);
+    int classes = 21;
+    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, &buffer);
     clock_t time;
     while(1){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        load_thread = load_data_detection_thread(imgs, paths, plist->size, 20, im_dim, im_dim, 7, 7, jitter, &buffer);
+        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, &buffer);
 
-/*
-        image im = float_to_image(im_dim - jitter, im_dim-jitter, 3, train.X.vals[0]);
-        draw_detection(im, train.y.vals[0], 7);
-        show_image(im, "truth");
-        cvWaitKey(0);
-        */
+        /*
+           image im = float_to_image(im_dim - jitter, im_dim-jitter, 3, train.X.vals[0]);
+           draw_detection(im, train.y.vals[0], 7);
+           show_image(im, "truth");
+           cvWaitKey(0);
+         */
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -139,7 +128,7 @@ void train_detection_net(char *cfgfile, char *weightfile)
         net.seen += imgs;
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
-        if(i%800==0){
+        if(i%100==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
             save_weights(net, buff);
@@ -161,7 +150,7 @@ void validate_detection_net(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
     int num_output = 1225;
     int im_size = 448;
-    int classes = 20;
+    int classes = 21;
 
     int m = plist->size;
     int i = 0;
@@ -180,30 +169,29 @@ void validate_detection_net(char *cfgfile, char *weightfile)
         num = (i+1)*m/splits - i*m/splits;
         char **part = paths+(i*m/splits);
         if(i != splits) load_thread = load_data_thread(part, num, 0, 0, num_output, im_size, im_size, &buffer);
- 
+
         fprintf(stderr, "%d: Loaded: %lf seconds\n", i, sec(clock()-time));
         matrix pred = network_predict_data(net, val);
         int j, k, class;
         for(j = 0; j < pred.rows; ++j){
-            for(k = 0; k < pred.cols; k += classes+4+1){
+            for(k = 0; k < pred.cols; k += classes+4){
 
                 /*
-                int z;
-                for(z = 0; z < 25; ++z) printf("%f, ", pred.vals[j][k+z]);
-                printf("\n");
-                */
+                   int z;
+                   for(z = 0; z < 25; ++z) printf("%f, ", pred.vals[j][k+z]);
+                   printf("\n");
+                 */
 
-                float p = pred.vals[j][k];
                 //if (pred.vals[j][k] > .001){
-                for(class = 0; class < classes; ++class){
-                    int index = (k)/(classes+4+1); 
+                for(class = 0; class < classes-1; ++class){
+                    int index = (k)/(classes+4); 
                     int r = index/7;
                     int c = index%7;
-                    float y = (r + pred.vals[j][k+1+classes])/7.;
-                    float x = (c + pred.vals[j][k+2+classes])/7.;
-                    float h = pred.vals[j][k+3+classes];
-                    float w = pred.vals[j][k+4+classes];
-                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, p*pred.vals[j][k+class+1], y, x, h, w);
+                    float y = (r + pred.vals[j][k+0+classes])/7.;
+                    float x = (c + pred.vals[j][k+1+classes])/7.;
+                    float h = pred.vals[j][k+2+classes];
+                    float w = pred.vals[j][k+3+classes];
+                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, pred.vals[j][k+class], y, x, h, w);
                 }
                 //}
             }
@@ -462,7 +450,7 @@ void test_detection(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int im_size = 224;
+    int im_size = 448;
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
