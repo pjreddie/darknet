@@ -232,6 +232,7 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
 
 void *load_detection_thread(void *ptr)
 {
+    printf("Loading data: %d\n", rand());
     struct load_args a = *(struct load_args*)ptr;
     *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.h, a.w, a.nh, a.nw, a.jitter);
     translate_data_rows(*a.d, -128);

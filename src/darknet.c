@@ -302,7 +302,7 @@ void validate_captcha(char *cfgfile, char *weightfile)
     }
     int imgs = 1000;
     int numchars = 37;
-    list *plist = get_paths("/data/captcha/valid.list");
+    list *plist = get_paths("/data/captcha/valid.base");
     char **paths = (char **)list_to_array(plist);
     data valid = load_data_captcha(paths, imgs, 0, 10, 60, 200);
     translate_data_rows(valid, -128);
@@ -329,9 +329,10 @@ void validate_captcha(char *cfgfile, char *weightfile)
 
 void test_captcha(char *cfgfile, char *weightfile)
 {
+    setbuf(stdout, NULL);
     srand(time(0));
     char *base = basename(cfgfile);
-    printf("%s\n", base);
+    //printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
     set_batch_network(&net, 1);
     if(weightfile){
@@ -340,7 +341,7 @@ void test_captcha(char *cfgfile, char *weightfile)
     clock_t time;
     char filename[256];
     while(1){
-        printf("Enter filename: ");
+        //printf("Enter filename: ");
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
         time = clock();
@@ -350,7 +351,7 @@ void test_captcha(char *cfgfile, char *weightfile)
         float *X = im.data;
         time=clock();
         float *predictions = network_predict(net, X);
-        printf("Predicted in %f\n", sec(clock() - time));
+        //printf("Predicted in %f\n", sec(clock() - time));
         print_letters(predictions, 10);
         free_image(im);
     }
