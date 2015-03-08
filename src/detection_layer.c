@@ -53,7 +53,7 @@ void forward_detection_layer(const detection_layer layer, float *in, float *trut
             layer.output[out_i++] = scale*in[in_i++];
         }
         softmax_array(layer.output + out_i - layer.classes, layer.classes, layer.output + out_i - layer.classes);
-        activate_array(in+in_i, layer.coords, SIGMOID);
+        activate_array(in+in_i, layer.coords, LOGISTIC);
         for(j = 0; j < layer.coords; ++j){
             layer.output[out_i++] = mask*in[in_i++];
         }
@@ -75,7 +75,7 @@ void backward_detection_layer(const detection_layer layer, float *in, float *del
             delta[in_i++] = scale*layer.delta[out_i++];
         }
         
-        gradient_array(layer.output + out_i, layer.coords, SIGMOID, layer.delta + out_i);
+        gradient_array(layer.output + out_i, layer.coords, LOGISTIC, layer.delta + out_i);
         for(j = 0; j < layer.coords; ++j){
             delta[in_i++] = layer.delta[out_i++];
         }

@@ -4,13 +4,13 @@ extern "C" {
 }
 
 __device__ float linear_activate_kernel(float x){return x;}
-__device__ float sigmoid_activate_kernel(float x){return 1./(1. + exp(-x));}
+__device__ float logistic_activate_kernel(float x){return 1./(1. + exp(-x));}
 __device__ float relu_activate_kernel(float x){return x*(x>0);}
 __device__ float ramp_activate_kernel(float x){return x*(x>0)+.1*x;}
 __device__ float tanh_activate_kernel(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
  
 __device__ float linear_gradient_kernel(float x){return 1;}
-__device__ float sigmoid_gradient_kernel(float x){return (1-x)*x;}
+__device__ float logistic_gradient_kernel(float x){return (1-x)*x;}
 __device__ float relu_gradient_kernel(float x){return (x>0);}
 __device__ float ramp_gradient_kernel(float x){return (x>0)+.1;}
 __device__ float tanh_gradient_kernel(float x){return 1-x*x;}
@@ -20,8 +20,8 @@ __device__ float activate_kernel(float x, ACTIVATION a)
     switch(a){
         case LINEAR:
             return linear_activate_kernel(x);
-        case SIGMOID:
-            return sigmoid_activate_kernel(x);
+        case LOGISTIC:
+            return logistic_activate_kernel(x);
         case RELU:
             return relu_activate_kernel(x);
         case RAMP:
@@ -37,8 +37,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
     switch(a){
         case LINEAR:
             return linear_gradient_kernel(x);
-        case SIGMOID:
-            return sigmoid_gradient_kernel(x);
+        case LOGISTIC:
+            return logistic_gradient_kernel(x);
         case RELU:
             return relu_gradient_kernel(x);
         case RAMP:

@@ -8,8 +8,8 @@
 char *get_activation_string(ACTIVATION a)
 {
     switch(a){
-        case SIGMOID:
-            return "sigmoid";
+        case LOGISTIC:
+            return "logistic";
         case RELU:
             return "relu";
         case RAMP:
@@ -26,7 +26,7 @@ char *get_activation_string(ACTIVATION a)
 
 ACTIVATION get_activation(char *s)
 {
-    if (strcmp(s, "sigmoid")==0) return SIGMOID;
+    if (strcmp(s, "logistic")==0) return LOGISTIC;
     if (strcmp(s, "relu")==0) return RELU;
     if (strcmp(s, "linear")==0) return LINEAR;
     if (strcmp(s, "ramp")==0) return RAMP;
@@ -40,8 +40,8 @@ float activate(float x, ACTIVATION a)
     switch(a){
         case LINEAR:
             return linear_activate(x);
-        case SIGMOID:
-            return sigmoid_activate(x);
+        case LOGISTIC:
+            return logistic_activate(x);
         case RELU:
             return relu_activate(x);
         case RAMP:
@@ -65,8 +65,8 @@ float gradient(float x, ACTIVATION a)
     switch(a){
         case LINEAR:
             return linear_gradient(x);
-        case SIGMOID:
-            return sigmoid_gradient(x);
+        case LOGISTIC:
+            return logistic_gradient(x);
         case RELU:
             return relu_gradient(x);
         case RAMP:

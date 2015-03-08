@@ -76,7 +76,7 @@ deconvolutional_layer *parse_deconvolutional(list *options, network *net, int co
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
-    char *activation_s = option_find_str(options, "activation", "sigmoid");
+    char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
     if(count == 0){
         learning_rate = option_find_float(options, "learning_rate", .001);
@@ -120,7 +120,7 @@ convolutional_layer *parse_convolutional(list *options, network *net, int count)
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
     int pad = option_find_int(options, "pad",0);
-    char *activation_s = option_find_str(options, "activation", "sigmoid");
+    char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
     if(count == 0){
         learning_rate = option_find_float(options, "learning_rate", .001);
@@ -161,7 +161,7 @@ connected_layer *parse_connected(list *options, network *net, int count)
     int input;
     float learning_rate, momentum, decay;
     int output = option_find_int(options, "output",1);
-    char *activation_s = option_find_str(options, "activation", "sigmoid");
+    char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
     if(count == 0){
         input = option_find_int(options, "input",1);
