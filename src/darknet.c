@@ -13,15 +13,6 @@ extern void run_imagenet(int argc, char **argv);
 extern void run_detection(int argc, char **argv);
 extern void run_captcha(int argc, char **argv);
 
-void convert(char *cfgfile, char *outfile, char *weightfile)
-{
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    save_network(net, outfile);
-}
-
 void del_arg(int argc, char **argv, int index)
 {
     int i;
@@ -57,18 +48,46 @@ int find_int_arg(int argc, char **argv, char *arg, int def)
     return def;
 }
 
-void scale_rate(char *filename, float scale)
+void change_rate(char *filename, float scale, float add)
 {
     // Ready for some weird shit??
     FILE *fp = fopen(filename, "r+b");
     if(!fp) file_error(filename);
     float rate = 0;
     fread(&rate, sizeof(float), 1, fp);
-    printf("Scaling learning rate from %f to %f\n", rate, rate*scale);
-    rate = rate*scale;
+    printf("Scaling learning rate from %f to %f\n", rate, rate*scale+add);
+    rate = rate*scale + add;
     fseek(fp, 0, SEEK_SET);
     fwrite(&rate, sizeof(float), 1, fp);
     fclose(fp);
+}
+
+void partial(char *cfgfile, char *weightfile, char *outfile, int max)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights_upto(&net, weightfile, max);
+    }
+    save_weights(net, outfile);
+}
+
+void convert(char *cfgfile, char *outfile, char *weightfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    save_network(net, outfile);
+}
+
+void visualize(char *cfgfile, char *weightfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    visualize_network(net);
+    cvWaitKey(0);
 }
 
 int main(int argc, char **argv)
@@ -90,11 +109,21 @@ int main(int argc, char **argv)
 #endif
 
     if(0==strcmp(argv[1], "imagenet")){
-        run_imagenet(argc, argv);   
+        run_imagenet(argc, argv);
     } else if (0 == strcmp(argv[1], "detection")){
-        run_detection(argc, argv);   
+        run_detection(argc, argv);
     } else if (0 == strcmp(argv[1], "captcha")){
-        run_captcha(argc, argv);   
+        run_captcha(argc, argv);
+    } else if (0 == strcmp(argv[1], "change")){
+        change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
+    } else if (0 == strcmp(argv[1], "convert")){
+        convert(argv[2], argv[3], (argc > 4) ? argv[4] : 0);
+    } else if (0 == strcmp(argv[1], "partial")){
+        partial(argv[2], argv[3], argv[4], atoi(argv[5]));
+    } else if (0 == strcmp(argv[1], "visualize")){
+        visualize(argv[2], (argc > 3) ? argv[3] : 0);
+    } else {
+        fprintf(stderr, "Not an option: %s\n", argv[1]);
     }
     return 0;
 }

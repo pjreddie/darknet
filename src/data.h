@@ -16,6 +16,7 @@ void free_data(data d);
 
 void print_letters(float *pred, int n);
 data load_data_captcha(char **paths, int n, int m, int k, int h, int w);
+data load_data_captcha_encode(char **paths, int n, int m, int h, int w);
 data load_data(char **paths, int n, int m, char **labels, int k, int h, int w);
 pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int h, int w, data *d);
 

@@ -90,6 +90,7 @@ void fill_truth_detection(char *path, float *truth, int classes, int height, int
         float dh = (y - j*box_height)/box_height;
         //printf("%d %d %d %f %f\n", id, i, j, dh, dw);
         int index = (i+j*num_width)*(4+classes);
+        if(truth[index+classes]) continue;
         truth[index+id] = 1;
         index += classes;
         truth[index++] = dh;
@@ -148,6 +149,16 @@ data load_data_captcha(char **paths, int n, int m, int k, int h, int w)
     return d;
 }
 
+data load_data_captcha_encode(char **paths, int n, int m, int h, int w)
+{
+    if(m) paths = get_random_paths(paths, n, m);
+    data d;
+    d.shallow = 0;
+    d.X = load_image_paths(paths, n, h, w);
+    d.y = d.X;
+    if(m) free(paths);
+    return d;
+}
 
 void fill_truth(char *path, char **labels, int k, float *truth)
 {

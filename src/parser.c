@@ -775,7 +775,7 @@ void save_weights(network net, char *filename)
     fclose(fp);
 }
 
-void load_weights(network *net, char *filename)
+void load_weights_upto(network *net, char *filename, int cutoff)
 {
     fprintf(stderr, "Loading weights from %s\n", filename);
     FILE *fp = fopen(filename, "r");
@@ -788,7 +788,7 @@ void load_weights(network *net, char *filename)
     set_learning_network(net, net->learning_rate, net->momentum, net->decay);
     
     int i;
-    for(i = 0; i < net->n; ++i){
+    for(i = 0; i < net->n && i < cutoff; ++i){
         if(net->types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *) net->layers[i];
             int num = layer.n*layer.c*layer.size*layer.size;
@@ -823,6 +823,11 @@ void load_weights(network *net, char *filename)
         }
     }
     fclose(fp);
+}
+
+void load_weights(network *net, char *filename)
+{
+    load_weights_upto(net, filename, net->n);
 }
 
 void save_network(network net, char *filename)

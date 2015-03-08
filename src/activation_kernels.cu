@@ -7,7 +7,6 @@ __device__ float linear_activate_kernel(float x){return x;}
 __device__ float sigmoid_activate_kernel(float x){return 1./(1. + exp(-x));}
 __device__ float relu_activate_kernel(float x){return x*(x>0);}
 __device__ float ramp_activate_kernel(float x){return x*(x>0)+.1*x;}
-//__device__ float ramp_activate_kernel(float x){return 0;}
 __device__ float tanh_activate_kernel(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
  
 __device__ float linear_gradient_kernel(float x){return 1;}
