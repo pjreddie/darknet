@@ -32,23 +32,17 @@ extern "C" void pull_softmax_layer_output(const softmax_layer layer)
     cuda_pull_array(layer.output_gpu, layer.output, layer.inputs*layer.batch);
 }
 
-extern "C" void forward_softmax_layer_gpu(const softmax_layer layer, float *input)
+extern "C" void forward_softmax_layer_gpu(const softmax_layer layer, network_state state)
 {
     int inputs = layer.inputs / layer.groups;
     int batch = layer.batch * layer.groups;
-    forward_softmax_layer_kernel<<<cuda_gridsize(batch), BLOCK>>>(inputs, batch, input, layer.output_gpu);
+    forward_softmax_layer_kernel<<<cuda_gridsize(batch), BLOCK>>>(inputs, batch, state.input, layer.output_gpu);
     check_error(cudaPeekAtLastError());
-
-    /*
-    cl_read_array(layer.output_cl, layer.output, layer.inputs*layer.batch);
-    int z;
-    for(z = 0; z < layer.inputs*layer.batch; ++z) printf("%f,",layer.output[z]);
-    */
 }
 
-extern "C" void backward_softmax_layer_gpu(const softmax_layer layer, float *delta)
+extern "C" void backward_softmax_layer_gpu(const softmax_layer layer, network_state state)
 {
-    copy_ongpu(layer.batch*layer.inputs, layer.delta_gpu, 1, delta, 1);
+    copy_ongpu(layer.batch*layer.inputs, layer.delta_gpu, 1, state.delta, 1);
 }
 
 /* This is if you want softmax w/o log-loss classification. You probably don't.

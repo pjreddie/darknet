@@ -14,7 +14,6 @@
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "detection_layer.h"
-#include "freeweight_layer.h"
 #include "list.h"
 #include "option_list.h"
 #include "utils.h"
@@ -24,12 +23,12 @@ typedef struct{
     list *options;
 }section;
 
+int is_network(section *s);
 int is_convolutional(section *s);
 int is_deconvolutional(section *s);
 int is_connected(section *s);
 int is_maxpool(section *s);
 int is_dropout(section *s);
-int is_freeweight(section *s);
 int is_softmax(section *s);
 int is_crop(section *s);
 int is_cost(section *s);
@@ -69,38 +68,31 @@ void parse_data(char *data, float *a, int n)
     }
 }
 
-deconvolutional_layer *parse_deconvolutional(list *options, network *net, int count)
+typedef struct size_params{
+    int batch;
+    int inputs;
+    int h;
+    int w;
+    int c;
+} size_params;
+
+deconvolutional_layer *parse_deconvolutional(list *options, size_params params)
 {
-    int h,w,c;
-    float learning_rate, momentum, decay;
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
-    if(count == 0){
-        learning_rate = option_find_float(options, "learning_rate", .001);
-        momentum = option_find_float(options, "momentum", .9);
-        decay = option_find_float(options, "decay", .0001);
-        h = option_find_int(options, "height",1);
-        w = option_find_int(options, "width",1);
-        c = option_find_int(options, "channels",1);
-        net->batch = option_find_int(options, "batch",1);
-        net->learning_rate = learning_rate;
-        net->momentum = momentum;
-        net->decay = decay;
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        learning_rate = option_find_float_quiet(options, "learning_rate", net->learning_rate);
-        momentum = option_find_float_quiet(options, "momentum", net->momentum);
-        decay = option_find_float_quiet(options, "decay", net->decay);
-        image m =  get_network_image_layer(*net, count-1);
-        h = m.h;
-        w = m.w;
-        c = m.c;
-        if(h == 0) error("Layer before deconvolutional layer must output image.");
-    }
-    deconvolutional_layer *layer = make_deconvolutional_layer(net->batch,h,w,c,n,size,stride,activation,learning_rate,momentum,decay);
+
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before deconvolutional layer must output image.");
+
+    deconvolutional_layer *layer = make_deconvolutional_layer(batch,h,w,c,n,size,stride,activation);
+
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
     parse_data(weights, layer->filters, c*n*size*size);
@@ -112,39 +104,24 @@ deconvolutional_layer *parse_deconvolutional(list *options, network *net, int co
     return layer;
 }
 
-convolutional_layer *parse_convolutional(list *options, network *net, int count)
+convolutional_layer *parse_convolutional(list *options, size_params params)
 {
-    int h,w,c;
-    float learning_rate, momentum, decay;
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
     int pad = option_find_int(options, "pad",0);
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
-    if(count == 0){
-        learning_rate = option_find_float(options, "learning_rate", .001);
-        momentum = option_find_float(options, "momentum", .9);
-        decay = option_find_float(options, "decay", .0001);
-        h = option_find_int(options, "height",1);
-        w = option_find_int(options, "width",1);
-        c = option_find_int(options, "channels",1);
-        net->batch = option_find_int(options, "batch",1);
-        net->learning_rate = learning_rate;
-        net->momentum = momentum;
-        net->decay = decay;
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        learning_rate = option_find_float_quiet(options, "learning_rate", net->learning_rate);
-        momentum = option_find_float_quiet(options, "momentum", net->momentum);
-        decay = option_find_float_quiet(options, "decay", net->decay);
-        image m =  get_network_image_layer(*net, count-1);
-        h = m.h;
-        w = m.w;
-        c = m.c;
-        if(h == 0) error("Layer before convolutional layer must output image.");
-    }
-    convolutional_layer *layer = make_convolutional_layer(net->batch,h,w,c,n,size,stride,pad,activation,learning_rate,momentum,decay);
+
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before convolutional layer must output image.");
+
+    convolutional_layer *layer = make_convolutional_layer(batch,h,w,c,n,size,stride,pad,activation);
+
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
     parse_data(weights, layer->filters, c*n*size*size);
@@ -156,33 +133,18 @@ convolutional_layer *parse_convolutional(list *options, network *net, int count)
     return layer;
 }
 
-connected_layer *parse_connected(list *options, network *net, int count)
+connected_layer *parse_connected(list *options, size_params params)
 {
-    int input;
-    float learning_rate, momentum, decay;
     int output = option_find_int(options, "output",1);
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
-    if(count == 0){
-        input = option_find_int(options, "input",1);
-        net->batch = option_find_int(options, "batch",1);
-        learning_rate = option_find_float(options, "learning_rate", .001);
-        momentum = option_find_float(options, "momentum", .9);
-        decay = option_find_float(options, "decay", .0001);
-        net->learning_rate = learning_rate;
-        net->momentum = momentum;
-        net->decay = decay;
-    }else{
-        learning_rate = option_find_float_quiet(options, "learning_rate", net->learning_rate);
-        momentum = option_find_float_quiet(options, "momentum", net->momentum);
-        decay = option_find_float_quiet(options, "decay", net->decay);
-        input =  get_network_output_size_layer(*net, count-1);
-    }
-    connected_layer *layer = make_connected_layer(net->batch, input, output, activation,learning_rate,momentum,decay);
+
+    connected_layer *layer = make_connected_layer(params.batch, params.inputs, output, activation);
+
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
     parse_data(biases, layer->biases, output);
-    parse_data(weights, layer->weights, input*output);
+    parse_data(weights, layer->weights, params.inputs*output);
     #ifdef GPU
     if(weights || biases) push_connected_layer(*layer);
     #endif
@@ -190,235 +152,188 @@ connected_layer *parse_connected(list *options, network *net, int count)
     return layer;
 }
 
-softmax_layer *parse_softmax(list *options, network *net, int count)
+softmax_layer *parse_softmax(list *options, size_params params)
 {
-    int input;
     int groups = option_find_int(options, "groups",1);
-    if(count == 0){
-        input = option_find_int(options, "input",1);
-        net->batch = option_find_int(options, "batch",1);
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        input =  get_network_output_size_layer(*net, count-1);
-    }
-    softmax_layer *layer = make_softmax_layer(net->batch, groups, input);
+    softmax_layer *layer = make_softmax_layer(params.batch, params.inputs, groups);
     option_unused(options);
     return layer;
 }
 
-detection_layer *parse_detection(list *options, network *net, int count)
+detection_layer *parse_detection(list *options, size_params params)
 {
-    int input;
-    if(count == 0){
-        input = option_find_int(options, "input",1);
-        net->batch = option_find_int(options, "batch",1);
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        input =  get_network_output_size_layer(*net, count-1);
-    }
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
     int rescore = option_find_int(options, "rescore", 1);
-    detection_layer *layer = make_detection_layer(net->batch, input, classes, coords, rescore);
+    detection_layer *layer = make_detection_layer(params.batch, params.inputs, classes, coords, rescore);
     option_unused(options);
     return layer;
 }
 
-cost_layer *parse_cost(list *options, network *net, int count)
+cost_layer *parse_cost(list *options, size_params params)
 {
-    int input;
-    if(count == 0){
-        input = option_find_int(options, "input",1);
-        net->batch = option_find_int(options, "batch",1);
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        input =  get_network_output_size_layer(*net, count-1);
-    }
     char *type_s = option_find_str(options, "type", "sse");
     COST_TYPE type = get_cost_type(type_s);
-    cost_layer *layer = make_cost_layer(net->batch, input, type);
+    cost_layer *layer = make_cost_layer(params.batch, params.inputs, type);
     option_unused(options);
     return layer;
 }
 
-crop_layer *parse_crop(list *options, network *net, int count)
+crop_layer *parse_crop(list *options, size_params params)
 {
-    float learning_rate, momentum, decay;
-    int h,w,c;
     int crop_height = option_find_int(options, "crop_height",1);
     int crop_width = option_find_int(options, "crop_width",1);
     int flip = option_find_int(options, "flip",0);
-    if(count == 0){
-        h = option_find_int(options, "height",1);
-        w = option_find_int(options, "width",1);
-        c = option_find_int(options, "channels",1);
-        net->batch = option_find_int(options, "batch",1);
-        learning_rate = option_find_float(options, "learning_rate", .001);
-        momentum = option_find_float(options, "momentum", .9);
-        decay = option_find_float(options, "decay", .0001);
-        net->learning_rate = learning_rate;
-        net->momentum = momentum;
-        net->decay = decay;
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        image m =  get_network_image_layer(*net, count-1);
-        h = m.h;
-        w = m.w;
-        c = m.c;
-        if(h == 0) error("Layer before crop layer must output image.");
-    }
-    crop_layer *layer = make_crop_layer(net->batch,h,w,c,crop_height,crop_width,flip);
+
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before crop layer must output image.");
+
+    crop_layer *layer = make_crop_layer(batch,h,w,c,crop_height,crop_width,flip);
     option_unused(options);
     return layer;
 }
 
-maxpool_layer *parse_maxpool(list *options, network *net, int count)
+maxpool_layer *parse_maxpool(list *options, size_params params)
 {
-    int h,w,c;
     int stride = option_find_int(options, "stride",1);
     int size = option_find_int(options, "size",stride);
-    if(count == 0){
-        h = option_find_int(options, "height",1);
-        w = option_find_int(options, "width",1);
-        c = option_find_int(options, "channels",1);
-        net->batch = option_find_int(options, "batch",1);
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        image m =  get_network_image_layer(*net, count-1);
-        h = m.h;
-        w = m.w;
-        c = m.c;
-        if(h == 0) error("Layer before convolutional layer must output image.");
-    }
-    maxpool_layer *layer = make_maxpool_layer(net->batch,h,w,c,size,stride);
+
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before maxpool layer must output image.");
+
+    maxpool_layer *layer = make_maxpool_layer(batch,h,w,c,size,stride);
     option_unused(options);
     return layer;
 }
 
-/*
-freeweight_layer *parse_freeweight(list *options, network *net, int count)
+dropout_layer *parse_dropout(list *options, size_params params)
 {
-    int input;
-    if(count == 0){
-        net->batch = option_find_int(options, "batch",1);
-        input = option_find_int(options, "input",1);
-    }else{
-        input =  get_network_output_size_layer(*net, count-1);
-    }
-    freeweight_layer *layer = make_freeweight_layer(net->batch,input);
-    option_unused(options);
-    return layer;
-}
-*/
-
-dropout_layer *parse_dropout(list *options, network *net, int count)
-{
-    int input;
     float probability = option_find_float(options, "probability", .5);
-    if(count == 0){
-        net->batch = option_find_int(options, "batch",1);
-        input = option_find_int(options, "input",1);
-        float learning_rate = option_find_float(options, "learning_rate", .001);
-        float momentum = option_find_float(options, "momentum", .9);
-        float decay = option_find_float(options, "decay", .0001);
-        net->learning_rate = learning_rate;
-        net->momentum = momentum;
-        net->decay = decay;
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        input =  get_network_output_size_layer(*net, count-1);
-    }
-    dropout_layer *layer = make_dropout_layer(net->batch,input,probability);
+    dropout_layer *layer = make_dropout_layer(params.batch, params.inputs, probability);
     option_unused(options);
     return layer;
 }
 
-normalization_layer *parse_normalization(list *options, network *net, int count)
+normalization_layer *parse_normalization(list *options, size_params params)
 {
-    int h,w,c;
     int size = option_find_int(options, "size",1);
     float alpha = option_find_float(options, "alpha", 0.);
     float beta = option_find_float(options, "beta", 1.);
     float kappa = option_find_float(options, "kappa", 1.);
-    if(count == 0){
-        h = option_find_int(options, "height",1);
-        w = option_find_int(options, "width",1);
-        c = option_find_int(options, "channels",1);
-        net->batch = option_find_int(options, "batch",1);
-        net->seen = option_find_int(options, "seen",0);
-    }else{
-        image m =  get_network_image_layer(*net, count-1);
-        h = m.h;
-        w = m.w;
-        c = m.c;
-        if(h == 0) error("Layer before convolutional layer must output image.");
-    }
-    normalization_layer *layer = make_normalization_layer(net->batch,h,w,c,size, alpha, beta, kappa);
+
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before normalization layer must output image.");
+
+    normalization_layer *layer = make_normalization_layer(batch,h,w,c,size, alpha, beta, kappa);
     option_unused(options);
     return layer;
+}
+
+void parse_net_options(list *options, network *net)
+{
+    net->batch = option_find_int(options, "batch",1);
+    net->learning_rate = option_find_float(options, "learning_rate", .001);
+    net->momentum = option_find_float(options, "momentum", .9);
+    net->decay = option_find_float(options, "decay", .0001);
+    net->seen = option_find_int(options, "seen",0);
+
+    net->h = option_find_int_quiet(options, "height",0);
+    net->w = option_find_int_quiet(options, "width",0);
+    net->c = option_find_int_quiet(options, "channels",0);
+    net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
+    if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
 }
 
 network parse_network_cfg(char *filename)
 {
     list *sections = read_cfg(filename);
-    network net = make_network(sections->size, 0);
-
     node *n = sections->front;
+    if(!n) error("Config file has no sections");
+    network net = make_network(sections->size - 1);
+    size_params params;
+
+    section *s = (section *)n->val;
+    list *options = s->options;
+    if(!is_network(s)) error("First section must be [net] or [network]");
+    parse_net_options(options, &net);
+
+    params.h = net.h;
+    params.w = net.w;
+    params.c = net.c;
+    params.inputs = net.inputs;
+    params.batch = net.batch;
+
+    n = n->next;
     int count = 0;
     while(n){
-        section *s = (section *)n->val;
-        list *options = s->options;
+        fprintf(stderr, "%d: ", count);
+        s = (section *)n->val;
+        options = s->options;
         if(is_convolutional(s)){
-            convolutional_layer *layer = parse_convolutional(options, &net, count);
+            convolutional_layer *layer = parse_convolutional(options, params);
             net.types[count] = CONVOLUTIONAL;
             net.layers[count] = layer;
         }else if(is_deconvolutional(s)){
-            deconvolutional_layer *layer = parse_deconvolutional(options, &net, count);
+            deconvolutional_layer *layer = parse_deconvolutional(options, params);
             net.types[count] = DECONVOLUTIONAL;
             net.layers[count] = layer;
         }else if(is_connected(s)){
-            connected_layer *layer = parse_connected(options, &net, count);
+            connected_layer *layer = parse_connected(options, params);
             net.types[count] = CONNECTED;
             net.layers[count] = layer;
         }else if(is_crop(s)){
-            crop_layer *layer = parse_crop(options, &net, count);
+            crop_layer *layer = parse_crop(options, params);
             net.types[count] = CROP;
             net.layers[count] = layer;
         }else if(is_cost(s)){
-            cost_layer *layer = parse_cost(options, &net, count);
+            cost_layer *layer = parse_cost(options, params);
             net.types[count] = COST;
             net.layers[count] = layer;
         }else if(is_detection(s)){
-            detection_layer *layer = parse_detection(options, &net, count);
+            detection_layer *layer = parse_detection(options, params);
             net.types[count] = DETECTION;
             net.layers[count] = layer;
         }else if(is_softmax(s)){
-            softmax_layer *layer = parse_softmax(options, &net, count);
+            softmax_layer *layer = parse_softmax(options, params);
             net.types[count] = SOFTMAX;
             net.layers[count] = layer;
         }else if(is_maxpool(s)){
-            maxpool_layer *layer = parse_maxpool(options, &net, count);
+            maxpool_layer *layer = parse_maxpool(options, params);
             net.types[count] = MAXPOOL;
             net.layers[count] = layer;
         }else if(is_normalization(s)){
-            normalization_layer *layer = parse_normalization(options, &net, count);
+            normalization_layer *layer = parse_normalization(options, params);
             net.types[count] = NORMALIZATION;
             net.layers[count] = layer;
         }else if(is_dropout(s)){
-            dropout_layer *layer = parse_dropout(options, &net, count);
+            dropout_layer *layer = parse_dropout(options, params);
             net.types[count] = DROPOUT;
             net.layers[count] = layer;
-        }else if(is_freeweight(s)){
-            //freeweight_layer *layer = parse_freeweight(options, &net, count);
-            //net.types[count] = FREEWEIGHT;
-            //net.layers[count] = layer;
-            fprintf(stderr, "Type not recognized: %s\n", s->type);
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
         free_section(s);
-        ++count;
         n = n->next;
+        if(n){
+            image im = get_network_image_layer(net, count);
+            params.h = im.h;
+            params.w = im.w;
+            params.c = im.c;
+            params.inputs = get_network_output_size_layer(net, count);
+        }
+        ++count;
     }   
     free_list(sections);
     net.outputs = get_network_output_size(net);
@@ -448,6 +363,11 @@ int is_convolutional(section *s)
     return (strcmp(s->type, "[conv]")==0
             || strcmp(s->type, "[convolutional]")==0);
 }
+int is_network(section *s)
+{
+    return (strcmp(s->type, "[net]")==0
+            || strcmp(s->type, "[network]")==0);
+}
 int is_connected(section *s)
 {
     return (strcmp(s->type, "[conn]")==0
@@ -461,10 +381,6 @@ int is_maxpool(section *s)
 int is_dropout(section *s)
 {
     return (strcmp(s->type, "[dropout]")==0);
-}
-int is_freeweight(section *s)
-{
-    return (strcmp(s->type, "[freeweight]")==0);
 }
 
 int is_softmax(section *s)
@@ -533,29 +449,11 @@ list *read_cfg(char *filename)
 
 void print_convolutional_cfg(FILE *fp, convolutional_layer *l, network net, int count)
 {
-    #ifdef GPU
+#ifdef GPU
     if(gpu_index >= 0)  pull_convolutional_layer(*l);
-    #endif
+#endif
     int i;
     fprintf(fp, "[convolutional]\n");
-    if(count == 0) {
-        fprintf(fp,   "batch=%d\n"
-                "height=%d\n"
-                "width=%d\n"
-                "channels=%d\n"
-                "learning_rate=%g\n"
-                "momentum=%g\n"
-                "decay=%g\n"
-                "seen=%d\n",
-                l->batch,l->h, l->w, l->c, l->learning_rate, l->momentum, l->decay, net.seen);
-    } else {
-        if(l->learning_rate != net.learning_rate)
-            fprintf(fp, "learning_rate=%g\n", l->learning_rate);
-        if(l->momentum != net.momentum)
-            fprintf(fp, "momentum=%g\n", l->momentum);
-        if(l->decay != net.decay)
-            fprintf(fp, "decay=%g\n", l->decay);
-    }
     fprintf(fp, "filters=%d\n"
             "size=%d\n"
             "stride=%d\n"
@@ -573,29 +471,11 @@ void print_convolutional_cfg(FILE *fp, convolutional_layer *l, network net, int 
 
 void print_deconvolutional_cfg(FILE *fp, deconvolutional_layer *l, network net, int count)
 {
-    #ifdef GPU
+#ifdef GPU
     if(gpu_index >= 0)  pull_deconvolutional_layer(*l);
-    #endif
+#endif
     int i;
     fprintf(fp, "[deconvolutional]\n");
-    if(count == 0) {
-        fprintf(fp,   "batch=%d\n"
-                "height=%d\n"
-                "width=%d\n"
-                "channels=%d\n"
-                "learning_rate=%g\n"
-                "momentum=%g\n"
-                "decay=%g\n"
-                "seen=%d\n",
-                l->batch,l->h, l->w, l->c, l->learning_rate, l->momentum, l->decay, net.seen);
-    } else {
-        if(l->learning_rate != net.learning_rate)
-            fprintf(fp, "learning_rate=%g\n", l->learning_rate);
-        if(l->momentum != net.momentum)
-            fprintf(fp, "momentum=%g\n", l->momentum);
-        if(l->decay != net.decay)
-            fprintf(fp, "decay=%g\n", l->decay);
-    }
     fprintf(fp, "filters=%d\n"
             "size=%d\n"
             "stride=%d\n"
@@ -610,47 +490,19 @@ void print_deconvolutional_cfg(FILE *fp, deconvolutional_layer *l, network net, 
     fprintf(fp, "\n\n");
 }
 
-void print_freeweight_cfg(FILE *fp, freeweight_layer *l, network net, int count)
-{
-    fprintf(fp, "[freeweight]\n");
-    if(count == 0){
-        fprintf(fp, "batch=%d\ninput=%d\n",l->batch, l->inputs);
-    }
-    fprintf(fp, "\n");
-}
-
 void print_dropout_cfg(FILE *fp, dropout_layer *l, network net, int count)
 {
     fprintf(fp, "[dropout]\n");
-    if(count == 0){
-        fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
-    }
     fprintf(fp, "probability=%g\n\n", l->probability);
 }
 
 void print_connected_cfg(FILE *fp, connected_layer *l, network net, int count)
 {
-    #ifdef GPU
+#ifdef GPU
     if(gpu_index >= 0) pull_connected_layer(*l);
-    #endif
+#endif
     int i;
     fprintf(fp, "[connected]\n");
-    if(count == 0){
-        fprintf(fp, "batch=%d\n"
-                "input=%d\n"
-                "learning_rate=%g\n"
-                "momentum=%g\n"
-                "decay=%g\n"
-                "seen=%d\n",
-                l->batch, l->inputs, l->learning_rate, l->momentum, l->decay, net.seen);
-    } else {
-        if(l->learning_rate != net.learning_rate)
-            fprintf(fp, "learning_rate=%g\n", l->learning_rate);
-        if(l->momentum != net.momentum)
-            fprintf(fp, "momentum=%g\n", l->momentum);
-        if(l->decay != net.decay)
-            fprintf(fp, "decay=%g\n", l->decay);
-    }
     fprintf(fp, "output=%d\n"
             "activation=%s\n",
             l->outputs,
@@ -666,39 +518,18 @@ void print_connected_cfg(FILE *fp, connected_layer *l, network net, int count)
 void print_crop_cfg(FILE *fp, crop_layer *l, network net, int count)
 {
     fprintf(fp, "[crop]\n");
-    if(count == 0) {
-        fprintf(fp,   "batch=%d\n"
-                "height=%d\n"
-                "width=%d\n"
-                "channels=%d\n"
-                "learning_rate=%g\n"
-                "momentum=%g\n"
-                "decay=%g\n"
-                "seen=%d\n",
-                l->batch,l->h, l->w, l->c, net.learning_rate, net.momentum, net.decay, net.seen);
-    }
     fprintf(fp, "crop_height=%d\ncrop_width=%d\nflip=%d\n\n", l->crop_height, l->crop_width, l->flip);
 }
 
 void print_maxpool_cfg(FILE *fp, maxpool_layer *l, network net, int count)
 {
     fprintf(fp, "[maxpool]\n");
-    if(count == 0) fprintf(fp,   "batch=%d\n"
-            "height=%d\n"
-            "width=%d\n"
-            "channels=%d\n",
-            l->batch,l->h, l->w, l->c);
     fprintf(fp, "size=%d\nstride=%d\n\n", l->size, l->stride);
 }
 
 void print_normalization_cfg(FILE *fp, normalization_layer *l, network net, int count)
 {
     fprintf(fp, "[localresponsenormalization]\n");
-    if(count == 0) fprintf(fp,   "batch=%d\n"
-            "height=%d\n"
-            "width=%d\n"
-            "channels=%d\n",
-            l->batch,l->h, l->w, l->c);
     fprintf(fp, "size=%d\n"
             "alpha=%g\n"
             "beta=%g\n"
@@ -708,7 +539,6 @@ void print_normalization_cfg(FILE *fp, normalization_layer *l, network net, int 
 void print_softmax_cfg(FILE *fp, softmax_layer *l, network net, int count)
 {
     fprintf(fp, "[softmax]\n");
-    if(count == 0) fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
     fprintf(fp, "\n");
 }
 
@@ -722,7 +552,6 @@ void print_detection_cfg(FILE *fp, detection_layer *l, network net, int count)
 void print_cost_cfg(FILE *fp, cost_layer *l, network net, int count)
 {
     fprintf(fp, "[cost]\ntype=%s\n", get_cost_string(l->type));
-    if(count == 0) fprintf(fp, "batch=%d\ninput=%d\n", l->batch, l->inputs);
     fprintf(fp, "\n");
 }
 
@@ -741,33 +570,33 @@ void save_weights(network net, char *filename)
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *) net.layers[i];
-            #ifdef GPU
+#ifdef GPU
             if(gpu_index >= 0){
                 pull_convolutional_layer(layer);
             }
-            #endif
+#endif
             int num = layer.n*layer.c*layer.size*layer.size;
             fwrite(layer.biases, sizeof(float), layer.n, fp);
             fwrite(layer.filters, sizeof(float), num, fp);
         }
         if(net.types[i] == DECONVOLUTIONAL){
             deconvolutional_layer layer = *(deconvolutional_layer *) net.layers[i];
-            #ifdef GPU
+#ifdef GPU
             if(gpu_index >= 0){
                 pull_deconvolutional_layer(layer);
             }
-            #endif
+#endif
             int num = layer.n*layer.c*layer.size*layer.size;
             fwrite(layer.biases, sizeof(float), layer.n, fp);
             fwrite(layer.filters, sizeof(float), num, fp);
         }
         if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *) net.layers[i];
-            #ifdef GPU
+#ifdef GPU
             if(gpu_index >= 0){
                 pull_connected_layer(layer);
             }
-            #endif
+#endif
             fwrite(layer.biases, sizeof(float), layer.outputs, fp);
             fwrite(layer.weights, sizeof(float), layer.outputs*layer.inputs, fp);
         }
@@ -785,8 +614,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fread(&net->momentum, sizeof(float), 1, fp);
     fread(&net->decay, sizeof(float), 1, fp);
     fread(&net->seen, sizeof(int), 1, fp);
-    set_learning_network(net, net->learning_rate, net->momentum, net->decay);
-    
+
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){
         if(net->types[i] == CONVOLUTIONAL){
@@ -794,32 +622,32 @@ void load_weights_upto(network *net, char *filename, int cutoff)
             int num = layer.n*layer.c*layer.size*layer.size;
             fread(layer.biases, sizeof(float), layer.n, fp);
             fread(layer.filters, sizeof(float), num, fp);
-            #ifdef GPU
+#ifdef GPU
             if(gpu_index >= 0){
                 push_convolutional_layer(layer);
             }
-            #endif
+#endif
         }
         if(net->types[i] == DECONVOLUTIONAL){
             deconvolutional_layer layer = *(deconvolutional_layer *) net->layers[i];
             int num = layer.n*layer.c*layer.size*layer.size;
             fread(layer.biases, sizeof(float), layer.n, fp);
             fread(layer.filters, sizeof(float), num, fp);
-            #ifdef GPU
+#ifdef GPU
             if(gpu_index >= 0){
                 push_deconvolutional_layer(layer);
             }
-            #endif
+#endif
         }
         if(net->types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *) net->layers[i];
             fread(layer.biases, sizeof(float), layer.outputs, fp);
             fread(layer.weights, sizeof(float), layer.outputs*layer.inputs, fp);
-            #ifdef GPU
+#ifdef GPU
             if(gpu_index >= 0){
                 push_connected_layer(layer);
             }
-            #endif
+#endif
         }
     }
     fclose(fp);
@@ -847,8 +675,6 @@ void save_network(network net, char *filename)
             print_crop_cfg(fp, (crop_layer *)net.layers[i], net, i);
         else if(net.types[i] == MAXPOOL)
             print_maxpool_cfg(fp, (maxpool_layer *)net.layers[i], net, i);
-        else if(net.types[i] == FREEWEIGHT)
-            print_freeweight_cfg(fp, (freeweight_layer *)net.layers[i], net, i);
         else if(net.types[i] == DROPOUT)
             print_dropout_cfg(fp, (dropout_layer *)net.layers[i], net, i);
         else if(net.types[i] == NORMALIZATION)

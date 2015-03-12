@@ -24,12 +24,12 @@ __global__ void forward_crop_layer_kernel(float *input, int size, int c, int h, 
     output[count] = input[index];
 }
 
-extern "C" void forward_crop_layer_gpu(crop_layer layer, int train, float *input)
+extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
 {
     int flip = (layer.flip && rand()%2);
     int dh = rand()%(layer.h - layer.crop_height + 1);
     int dw = rand()%(layer.w - layer.crop_width + 1);
-    if(!train){
+    if(!state.train){
         flip = 0;
         dh = (layer.h - layer.crop_height)/2;
         dw = (layer.w - layer.crop_width)/2;
@@ -39,7 +39,7 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, int train, float *input
     dim3 dimBlock(BLOCK, 1, 1);
     dim3 dimGrid((size-1)/BLOCK + 1, 1, 1);
 
-    forward_crop_layer_kernel<<<cuda_gridsize(size), BLOCK>>>(input, size, layer.c, layer.h, layer.w,
+    forward_crop_layer_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, size, layer.c, layer.h, layer.w,
                         layer.crop_height, layer.crop_width, dh, dw, flip, layer.output_gpu);
     check_error(cudaPeekAtLastError());
 }

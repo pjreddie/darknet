@@ -18,6 +18,7 @@ struct load_args{
     int nw;
     int jitter;
     int classes;
+    int background;
     data *d;
 };
 
@@ -62,17 +63,62 @@ matrix load_image_paths(char **paths, int n, int h, int w)
     return X;
 }
 
-void fill_truth_detection(char *path, float *truth, int classes, int height, int width, int num_height, int num_width, int dy, int dx, int jitter, int flip)
+typedef struct box{
+    int id;
+    float x,y,w,h;
+} box;
+
+box *read_boxes(char *filename, int *n)
+{
+    box *boxes = calloc(1, sizeof(box));
+    FILE *file = fopen(filename, "r");
+    if(!file) file_error(filename);
+    float x, y, h, w;
+    int id;
+    int count = 0;
+    while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
+        boxes = realloc(boxes, (count+1)*sizeof(box));
+        boxes[count].id = id;
+        boxes[count].x = x;
+        boxes[count].y = y;
+        boxes[count].h = h;
+        boxes[count].w = w;
+        ++count;
+    }
+    fclose(file);
+    *n = count;
+    return boxes;
+}
+
+void randomize_boxes(box *b, int n)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        box swap = b[i];
+        int index = rand()%n;
+        b[i] = b[index];
+        b[index] = swap;
+    }
+}
+
+void fill_truth_detection(char *path, float *truth, int classes, int height, int width, int num_height, int num_width, int dy, int dx, int jitter, int flip, int background)
 {
     int box_height = height/num_height;
     int box_width = width/num_width;
     char *labelpath = find_replace(path, "VOC2012/JPEGImages", "labels");
     labelpath = find_replace(labelpath, ".jpg", ".txt");
-    FILE *file = fopen(labelpath, "r");
-    if(!file) file_error(labelpath);
+    int count = 0;
+    box *boxes = read_boxes(labelpath, &count);
+    randomize_boxes(boxes, count);
     float x, y, h, w;
     int id;
-    while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
+    int i, j;
+    for(i = 0; i < count; ++i){
+        x = boxes[i].x;
+        y = boxes[i].y;
+        w = boxes[i].w;
+        h = boxes[i].h;
+        id = boxes[i].id;
         if(flip) x = 1-x;
         x *= width + jitter;
         y *= height + jitter;
@@ -88,23 +134,24 @@ void fill_truth_detection(char *path, float *truth, int classes, int height, int
         
         float dw = (x - i*box_width)/box_width;
         float dh = (y - j*box_height)/box_height;
-        //printf("%d %d %d %f %f\n", id, i, j, dh, dw);
-        int index = (i+j*num_width)*(4+classes);
-        if(truth[index+classes]) continue;
+
+        int index = (i+j*num_width)*(4+classes+background);
+        if(truth[index+classes+background]) continue;
         truth[index+id] = 1;
-        index += classes;
+        index += classes+background;
         truth[index++] = dh;
         truth[index++] = dw;
         truth[index++] = h*(height+jitter)/height;
         truth[index++] = w*(width+jitter)/width;
     }
-    int i, j;
-    for(i = 0; i < num_height*num_width*(4+classes); i += 4+classes){
-        int background = 1;
-        for(j = i; j < i+classes; ++j) if (truth[j]) background = 0;
-        truth[i+classes-1] = background;
+    free(boxes);
+    if(background){
+        for(i = 0; i < num_height*num_width*(4+classes+background); i += 4+classes+background){
+            int object = 0;
+            for(j = i; j < i+classes; ++j) if (truth[j]) object = 1;
+            truth[i+classes] = !object;
+        }
     }
-    fclose(file);
 }
 
 #define NUMCHARS 37
@@ -218,20 +265,20 @@ void free_data(data d)
     }
 }
 
-data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter)
+data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter, int background)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
     data d;
     d.shallow = 0;
     d.X = load_image_paths(random_paths, n, h, w);
-    int k = nh*nw*(4+classes);
+    int k = nh*nw*(4+classes+background);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         int dx = rand()%jitter;
         int dy = rand()%jitter;
         int flip = rand()%2;
-        fill_truth_detection(random_paths[i], d.y.vals[i], classes, h-jitter, w-jitter, nh, nw, dy, dx, jitter, flip);
+        fill_truth_detection(random_paths[i], d.y.vals[i], classes, h-jitter, w-jitter, nh, nw, dy, dx, jitter, flip, background);
         image a = float_to_image(h, w, 3, d.X.vals[i]);
         if(flip) flip_image(a);
         jitter_image(a,h-jitter,w-jitter,dy,dx);
@@ -245,14 +292,14 @@ void *load_detection_thread(void *ptr)
 {
     printf("Loading data: %d\n", rand());
     struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.h, a.w, a.nh, a.nw, a.jitter);
+    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.h, a.w, a.nh, a.nw, a.jitter, a.background);
     translate_data_rows(*a.d, -128);
     scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;
 }
 
-pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter, data *d)
+pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter, int background, data *d)
 {
     pthread_t thread;
     struct load_args *args = calloc(1, sizeof(struct load_args));
@@ -265,6 +312,7 @@ pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, in
     args->nw = nw;
     args->classes = classes;
     args->jitter = jitter;
+    args->background = background;
     args->d = d;
     if(pthread_create(&thread, 0, load_detection_thread, args)) {
         error("Thread creation failed");

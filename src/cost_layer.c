@@ -47,48 +47,36 @@ void push_cost_layer(cost_layer layer)
     cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
 }
 
-void forward_cost_layer(cost_layer layer, float *input, float *truth)
+void forward_cost_layer(cost_layer layer, network_state state)
 {
-    if (!truth) return;
-    copy_cpu(layer.batch*layer.inputs, truth, 1, layer.delta, 1);
-    axpy_cpu(layer.batch*layer.inputs, -1, input, 1, layer.delta, 1);
+    if (!state.truth) return;
+    copy_cpu(layer.batch*layer.inputs, state.truth, 1, layer.delta, 1);
+    axpy_cpu(layer.batch*layer.inputs, -1, state.input, 1, layer.delta, 1);
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
     //printf("cost: %f\n", *layer.output);
 }
 
-void backward_cost_layer(const cost_layer layer, float *input, float *delta)
+void backward_cost_layer(const cost_layer layer, network_state state)
 {
-    copy_cpu(layer.batch*layer.inputs, layer.delta, 1, delta, 1);
+    copy_cpu(layer.batch*layer.inputs, layer.delta, 1, state.delta, 1);
 }
 
 #ifdef GPU
 
-void forward_cost_layer_gpu(cost_layer layer, float * input, float * truth)
+void forward_cost_layer_gpu(cost_layer layer, network_state state)
 {
-    if (!truth) return;
+    if (!state.truth) return;
     
-    /*
-    float *in = calloc(layer.inputs*layer.batch, sizeof(float));
-    float *t = calloc(layer.inputs*layer.batch, sizeof(float));
-    cuda_pull_array(input, in, layer.batch*layer.inputs);
-    cuda_pull_array(truth, t, layer.batch*layer.inputs);
-    forward_cost_layer(layer, in, t);
-    cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
-    free(in);
-    free(t);
-    */
-
-    copy_ongpu(layer.batch*layer.inputs, truth, 1, layer.delta_gpu, 1);
-    axpy_ongpu(layer.batch*layer.inputs, -1, input, 1, layer.delta_gpu, 1);
+    copy_ongpu(layer.batch*layer.inputs, state.truth, 1, layer.delta_gpu, 1);
+    axpy_ongpu(layer.batch*layer.inputs, -1, state.input, 1, layer.delta_gpu, 1);
 
     cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
-    //printf("cost: %f\n", *layer.output);
 }
 
-void backward_cost_layer_gpu(const cost_layer layer, float * input, float * delta)
+void backward_cost_layer_gpu(const cost_layer layer, network_state state)
 {
-    copy_ongpu(layer.batch*layer.inputs, layer.delta_gpu, 1, delta, 1);
+    copy_ongpu(layer.batch*layer.inputs, layer.delta_gpu, 1, state.delta, 1);
 }
 #endif
 

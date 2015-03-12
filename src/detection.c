@@ -61,15 +61,16 @@ void train_detection(char *cfgfile, char *weightfile)
     data train, buffer;
     int im_dim = 512;
     int jitter = 64;
-    int classes = 21;
-    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, &buffer);
+    int classes = 20;
+    int background = 1;
+    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, background, &buffer);
     clock_t time;
     while(1){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, &buffer);
+        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, background, &buffer);
 
         /*
            image im = float_to_image(im_dim - jitter, im_dim-jitter, 3, train.X.vals[0]);
@@ -103,10 +104,12 @@ void validate_detection(char *cfgfile, char *weightfile)
     srand(time(0));
 
     list *plist = get_paths("/home/pjreddie/data/voc/val.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/train.txt");
     char **paths = (char **)list_to_array(plist);
-    int num_output = 1225;
     int im_size = 448;
-    int classes = 21;
+    int classes = 20;
+    int background = 0;
+    int num_output = 7*7*(4+classes+background);
 
     int m = plist->size;
     int i = 0;
@@ -130,26 +133,18 @@ void validate_detection(char *cfgfile, char *weightfile)
         matrix pred = network_predict_data(net, val);
         int j, k, class;
         for(j = 0; j < pred.rows; ++j){
-            for(k = 0; k < pred.cols; k += classes+4){
-
-                /*
-                   int z;
-                   for(z = 0; z < 25; ++z) printf("%f, ", pred.vals[j][k+z]);
-                   printf("\n");
-                 */
-
-                //if (pred.vals[j][k] > .001){
-                for(class = 0; class < classes-1; ++class){
-                    int index = (k)/(classes+4); 
+            for(k = 0; k < pred.cols; k += classes+4+background){
+                for(class = 0; class < classes; ++class){
+                    int index = (k)/(classes+4+background); 
                     int r = index/7;
                     int c = index%7;
-                    float y = (r + pred.vals[j][k+0+classes])/7.;
-                    float x = (c + pred.vals[j][k+1+classes])/7.;
-                    float h = pred.vals[j][k+2+classes];
-                    float w = pred.vals[j][k+3+classes];
+                    int ci = k+classes+background;
+                    float y = (r + pred.vals[j][ci + 0])/7.;
+                    float x = (c + pred.vals[j][ci + 1])/7.;
+                    float h = pred.vals[j][ci + 2];
+                    float w = pred.vals[j][ci + 3];
                     printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, pred.vals[j][k+class], y, x, h, w);
                 }
-                //}
             }
         }
 

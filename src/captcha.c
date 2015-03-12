@@ -16,7 +16,7 @@ void train_captcha(char *cfgfile, char *weightfile)
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
     int i = net.seen/imgs;
-    list *plist = get_paths("/data/captcha/train.list");
+    list *plist = get_paths("/data/captcha/train.base");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     clock_t time;

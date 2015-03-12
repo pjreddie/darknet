@@ -3,6 +3,7 @@
 #define NETWORK_H
 
 #include "image.h"
+#include "params.h"
 #include "data.h"
 
 typedef enum {
@@ -14,7 +15,6 @@ typedef enum {
     DETECTION,
     NORMALIZATION,
     DROPOUT,
-    FREEWEIGHT,
     CROP,
     COST
 } LAYER_TYPE;
@@ -30,6 +30,9 @@ typedef struct {
     LAYER_TYPE *types;
     int outputs;
     float *output;
+
+    int inputs;
+    int h, w, c;
 
     #ifdef GPU
     float **input_gpu;
@@ -47,9 +50,9 @@ float * get_network_delta_gpu_layer(network net, int i);
 void compare_networks(network n1, network n2, data d);
 char *get_layer_string(LAYER_TYPE a);
 
-network make_network(int n, int batch);
-void forward_network(network net, float *input, float *truth, int train);
-void backward_network(network net, float *input, float *truth);
+network make_network(int n);
+void forward_network(network net, network_state state);
+void backward_network(network net, network_state state);
 void update_network(network net);
 
 float train_network(network net, data d);
@@ -75,7 +78,6 @@ void print_network(network net);
 void visualize_network(network net);
 int resize_network(network net, int h, int w, int c);
 void set_batch_network(network *net, int b);
-void set_learning_network(network *net, float rate, float momentum, float decay);
 int get_network_input_size(network net);
 float get_network_cost(network net);
 

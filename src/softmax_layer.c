@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-softmax_layer *make_softmax_layer(int batch, int groups, int inputs)
+softmax_layer *make_softmax_layer(int batch, int inputs, int groups)
 {
     assert(inputs%groups == 0);
     fprintf(stderr, "Softmax Layer: %d inputs\n", inputs);
@@ -42,21 +42,21 @@ void softmax_array(float *input, int n, float *output)
     }
 }
 
-void forward_softmax_layer(const softmax_layer layer, float *input)
+void forward_softmax_layer(const softmax_layer layer, network_state state)
 {
     int b;
     int inputs = layer.inputs / layer.groups;
     int batch = layer.batch * layer.groups;
     for(b = 0; b < batch; ++b){
-        softmax_array(input+b*inputs, inputs, layer.output+b*inputs);
+        softmax_array(state.input+b*inputs, inputs, layer.output+b*inputs);
     }
 }
 
-void backward_softmax_layer(const softmax_layer layer, float *delta)
+void backward_softmax_layer(const softmax_layer layer, network_state state)
 {
     int i;
     for(i = 0; i < layer.inputs*layer.batch; ++i){
-        delta[i] = layer.delta[i];
+        state.delta[i] = layer.delta[i];
     }
 }
 

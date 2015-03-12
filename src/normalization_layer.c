@@ -59,28 +59,29 @@ void sub_square_array(float *src, float *dest, int n)
     }
 }
 
-void forward_normalization_layer(const normalization_layer layer, float *in)
+void forward_normalization_layer(const normalization_layer layer, network_state state)
 {
     int i,j,k;
     memset(layer.sums, 0, layer.h*layer.w*sizeof(float));
     int imsize = layer.h*layer.w;
     for(j = 0; j < layer.size/2; ++j){
-        if(j < layer.c) add_square_array(in+j*imsize, layer.sums, imsize);
+        if(j < layer.c) add_square_array(state.input+j*imsize, layer.sums, imsize);
     }
     for(k = 0; k < layer.c; ++k){
         int next = k+layer.size/2;
         int prev = k-layer.size/2-1;
-        if(next < layer.c) add_square_array(in+next*imsize, layer.sums, imsize);
-        if(prev > 0)       sub_square_array(in+prev*imsize, layer.sums, imsize);
+        if(next < layer.c) add_square_array(state.input+next*imsize, layer.sums, imsize);
+        if(prev > 0)       sub_square_array(state.input+prev*imsize, layer.sums, imsize);
         for(i = 0; i < imsize; ++i){
-            layer.output[k*imsize + i] = in[k*imsize+i] / pow(layer.kappa + layer.alpha * layer.sums[i], layer.beta);
+            layer.output[k*imsize + i] = state.input[k*imsize+i] / pow(layer.kappa + layer.alpha * layer.sums[i], layer.beta);
         }
     }
 }
 
-void backward_normalization_layer(const normalization_layer layer, float *in, float *delta)
+void backward_normalization_layer(const normalization_layer layer, network_state state)
 {
-    //TODO!
+    // TODO!
+    // OR NOT TODO!!
 }
 
 void visualize_normalization_layer(normalization_layer layer, char *window)

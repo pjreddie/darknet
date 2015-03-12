@@ -54,7 +54,7 @@ extern "C" void backward_bias_gpu(float *bias_updates, float *delta, int batch, 
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, float *in)
+extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, network_state state)
 {
     int i;
     int m = layer.n;
@@ -65,7 +65,7 @@ extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, float
     bias_output_gpu(layer.output_gpu, layer.biases_gpu, layer.batch, layer.n, n);
 
     for(i = 0; i < layer.batch; ++i){
-        im2col_ongpu(in + i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
+        im2col_ongpu(state.input + i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
         float * a = layer.filters_gpu;
         float * b = layer.col_image_gpu;
         float * c = layer.output_gpu;
@@ -74,7 +74,7 @@ extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, float
     activate_array_ongpu(layer.output_gpu, m*n*layer.batch, layer.activation);
 }
 
-extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, float *in, float *delta_gpu)
+extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, network_state state)
 {
     float alpha = 1./layer.batch;
     int i;
@@ -86,17 +86,17 @@ extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, floa
     gradient_array_ongpu(layer.output_gpu, m*k*layer.batch, layer.activation, layer.delta_gpu);
     backward_bias_gpu(layer.bias_updates_gpu, layer.delta_gpu, layer.batch, layer.n, k);
 
-    if(delta_gpu) scal_ongpu(layer.batch*layer.h*layer.w*layer.c, 0, delta_gpu, 1);
+    if(state.delta) scal_ongpu(layer.batch*layer.h*layer.w*layer.c, 0, state.delta, 1);
 
     for(i = 0; i < layer.batch; ++i){
         float * a = layer.delta_gpu;
         float * b = layer.col_image_gpu;
         float * c = layer.filter_updates_gpu;
 
-        im2col_ongpu(in + i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
+        im2col_ongpu(state.input + i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
         gemm_ongpu(0,1,m,n,k,alpha,a + i*m*k,k,b,k,1,c,n);
 
-        if(delta_gpu){
+        if(state.delta){
 
             float * a = layer.filters_gpu;
             float * b = layer.delta_gpu;
@@ -104,7 +104,7 @@ extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, floa
 
             gemm_ongpu(1,0,n,k,m,1,a,n,b + i*k*m,k,0,c,k);
 
-            col2im_ongpu(layer.col_image_gpu, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, delta_gpu + i*layer.c*layer.h*layer.w);
+            col2im_ongpu(layer.col_image_gpu, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, state.delta + i*layer.c*layer.h*layer.w);
         }
     }
 }
@@ -125,22 +125,15 @@ extern "C" void push_convolutional_layer(convolutional_layer layer)
     cuda_push_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
 }
 
-extern "C" void update_convolutional_layer_gpu(convolutional_layer layer)
+extern "C" void update_convolutional_layer_gpu(convolutional_layer layer, float learning_rate, float momentum, float decay)
 {
     int size = layer.size*layer.size*layer.c*layer.n;
 
-/*
-    cuda_pull_array(layer.filter_updates_gpu, layer.filter_updates, size);
-    cuda_pull_array(layer.filters_gpu, layer.filters, size);
-    printf("Filter: %f updates: %f\n", mag_array(layer.filters, size), layer.learning_rate*mag_array(layer.filter_updates, size));
-    */
+    axpy_ongpu(layer.n, learning_rate, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);
+    scal_ongpu(layer.n, momentum, layer.bias_updates_gpu, 1);
 
-    axpy_ongpu(layer.n, layer.learning_rate, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);
-    scal_ongpu(layer.n,layer.momentum, layer.bias_updates_gpu, 1);
-
-    axpy_ongpu(size, -layer.decay, layer.filters_gpu, 1, layer.filter_updates_gpu, 1);
-    axpy_ongpu(size, layer.learning_rate, layer.filter_updates_gpu, 1, layer.filters_gpu, 1);
-    scal_ongpu(size, layer.momentum, layer.filter_updates_gpu, 1);
-    //pull_convolutional_layer(layer);
+    axpy_ongpu(size, -decay, layer.filters_gpu, 1, layer.filter_updates_gpu, 1);
+    axpy_ongpu(size, learning_rate, layer.filter_updates_gpu, 1, layer.filters_gpu, 1);
+    scal_ongpu(size, momentum, layer.filter_updates_gpu, 1);
 }
 

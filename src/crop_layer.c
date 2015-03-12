@@ -28,7 +28,7 @@ crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int
     return layer;
 }
 
-void forward_crop_layer(const crop_layer layer, int train, float *input)
+void forward_crop_layer(const crop_layer layer, network_state state)
 {
     int i,j,c,b,row,col;
     int index;
@@ -36,7 +36,7 @@ void forward_crop_layer(const crop_layer layer, int train, float *input)
     int flip = (layer.flip && rand()%2);
     int dh = rand()%(layer.h - layer.crop_height + 1);
     int dw = rand()%(layer.w - layer.crop_width + 1);
-    if(!train){
+    if(!state.train){
         flip = 0;
         dh = (layer.h - layer.crop_height)/2;
         dw = (layer.w - layer.crop_width)/2;
@@ -52,7 +52,7 @@ void forward_crop_layer(const crop_layer layer, int train, float *input)
                     }
                     row = i + dh;
                     index = col+layer.w*(row+layer.h*(c + layer.c*b)); 
-                    layer.output[count++] = input[index];
+                    layer.output[count++] = state.input[index];
                 }
             }
         }

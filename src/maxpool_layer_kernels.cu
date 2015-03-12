@@ -80,7 +80,7 @@ __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_
     prev_delta[index] = d;
 }
 
-extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, float *input)
+extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
     int h = (layer.h-1)/layer.stride + 1;
     int w = (layer.w-1)/layer.stride + 1;
@@ -88,15 +88,15 @@ extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, float *input)
 
     size_t n = h*w*c*layer.batch;
 
-    forward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, input, layer.output_gpu, layer.indexes_gpu);
+    forward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, state.input, layer.output_gpu, layer.indexes_gpu);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void backward_maxpool_layer_gpu(maxpool_layer layer, float * delta)
+extern "C" void backward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
     size_t n = layer.h*layer.w*layer.c*layer.batch;
 
-    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.delta_gpu, delta, layer.indexes_gpu);
+    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.delta_gpu, state.delta, layer.indexes_gpu);
     check_error(cudaPeekAtLastError());
 }
 

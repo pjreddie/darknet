@@ -2,12 +2,9 @@
 #define CONNECTED_LAYER_H
 
 #include "activations.h"
+#include "params.h"
 
 typedef struct{
-    float learning_rate;
-    float momentum;
-    float decay;
-
     int batch;
     int inputs;
     int outputs;
@@ -37,17 +34,16 @@ typedef struct{
 
 } connected_layer;
 
-void secret_update_connected_layer(connected_layer *layer);
-connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, float learning_rate, float momentum, float decay);
+connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation);
 
-void forward_connected_layer(connected_layer layer, float *input);
-void backward_connected_layer(connected_layer layer, float *input, float *delta);
-void update_connected_layer(connected_layer layer);
+void forward_connected_layer(connected_layer layer, network_state state);
+void backward_connected_layer(connected_layer layer, network_state state);
+void update_connected_layer(connected_layer layer, float learning_rate, float momentum, float decay);
 
 #ifdef GPU
-void forward_connected_layer_gpu(connected_layer layer, float * input);
-void backward_connected_layer_gpu(connected_layer layer, float * input, float * delta);
-void update_connected_layer_gpu(connected_layer layer);
+void forward_connected_layer_gpu(connected_layer layer, network_state state);
+void backward_connected_layer_gpu(connected_layer layer, network_state state);
+void update_connected_layer_gpu(connected_layer layer, float learning_rate, float momentum, float decay);
 void push_connected_layer(connected_layer layer);
 void pull_connected_layer(connected_layer layer);
 #endif

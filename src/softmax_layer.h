@@ -1,5 +1,6 @@
 #ifndef SOFTMAX_LAYER_H
 #define SOFTMAX_LAYER_H
+#include "params.h"
 
 typedef struct {
     int inputs;
@@ -14,14 +15,14 @@ typedef struct {
 } softmax_layer;
 
 void softmax_array(float *input, int n, float *output);
-softmax_layer *make_softmax_layer(int batch, int groups, int inputs);
-void forward_softmax_layer(const softmax_layer layer, float *input);
-void backward_softmax_layer(const softmax_layer layer, float *delta);
+softmax_layer *make_softmax_layer(int batch, int inputs, int groups);
+void forward_softmax_layer(const softmax_layer layer, network_state state);
+void backward_softmax_layer(const softmax_layer layer, network_state state);
 
 #ifdef GPU
 void pull_softmax_layer_output(const softmax_layer layer);
-void forward_softmax_layer_gpu(const softmax_layer layer, float *input);
-void backward_softmax_layer_gpu(const softmax_layer layer, float *delta);
+void forward_softmax_layer_gpu(const softmax_layer layer, network_state state);
+void backward_softmax_layer_gpu(const softmax_layer layer, network_state state);
 #endif
 
 #endif

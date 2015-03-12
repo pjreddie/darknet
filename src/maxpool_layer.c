@@ -58,7 +58,7 @@ void resize_maxpool_layer(maxpool_layer *layer, int h, int w)
     #endif
 }
 
-void forward_maxpool_layer(const maxpool_layer layer, float *input)
+void forward_maxpool_layer(const maxpool_layer layer, network_state state)
 {
     int b,i,j,k,l,m;
     int w_offset = (-layer.size-1)/2 + 1;
@@ -82,7 +82,7 @@ void forward_maxpool_layer(const maxpool_layer layer, float *input)
                             int index = cur_w + layer.w*(cur_h + layer.h*(k + b*layer.c));
                             int valid = (cur_h >= 0 && cur_h < layer.h &&
                                          cur_w >= 0 && cur_w < layer.w);
-                            float val = (valid != 0) ? input[index] : -FLT_MAX;
+                            float val = (valid != 0) ? state.input[index] : -FLT_MAX;
                             max_i = (val > max) ? index : max_i;
                             max   = (val > max) ? val   : max;
                         }
@@ -95,16 +95,16 @@ void forward_maxpool_layer(const maxpool_layer layer, float *input)
     }
 }
 
-void backward_maxpool_layer(const maxpool_layer layer, float *delta)
+void backward_maxpool_layer(const maxpool_layer layer, network_state state)
 {
     int i;
     int h = (layer.h-1)/layer.stride + 1;
     int w = (layer.w-1)/layer.stride + 1;
     int c = layer.c;
-    memset(delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
+    memset(state.delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
     for(i = 0; i < h*w*c*layer.batch; ++i){
         int index = layer.indexes[i];
-        delta[index] += layer.delta[i];
+        state.delta[index] += layer.delta[i];
     }
 }
 
