@@ -56,6 +56,7 @@ extern "C" void backward_bias_gpu(float *bias_updates, float *delta, int batch, 
 
 extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, network_state state)
 {
+clock_t time = clock();
     int i;
     int m = layer.n;
     int k = layer.size*layer.size*layer.c;
@@ -63,15 +64,31 @@ extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, netwo
         convolutional_out_width(layer);
 
     bias_output_gpu(layer.output_gpu, layer.biases_gpu, layer.batch, layer.n, n);
+cudaDeviceSynchronize();
+printf("bias %f\n", sec(clock() - time));
+time = clock();
 
+float imt=0;
+float gemt = 0;
     for(i = 0; i < layer.batch; ++i){
+time = clock();
         im2col_ongpu(state.input + i*layer.c*layer.h*layer.w, layer.c,  layer.h,  layer.w,  layer.size,  layer.stride, layer.pad, layer.col_image_gpu);
+cudaDeviceSynchronize();
+imt += sec(clock()-time);
+time = clock();
         float * a = layer.filters_gpu;
         float * b = layer.col_image_gpu;
         float * c = layer.output_gpu;
         gemm_ongpu(0,0,m,n,k,1.,a,k,b,n,1.,c+i*m*n,n);
+cudaDeviceSynchronize();
+gemt += sec(clock()-time);
+time = clock();
     }
     activate_array_ongpu(layer.output_gpu, m*n*layer.batch, layer.activation);
+cudaDeviceSynchronize();
+printf("activate %f\n", sec(clock() - time));
+printf("im2col %f\n", imt);
+printf("gemm %f\n", gemt);
 }
 
 extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, network_state state)

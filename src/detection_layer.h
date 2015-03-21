@@ -8,6 +8,7 @@ typedef struct {
     int inputs;
     int classes;
     int coords;
+    int background;
     int rescore;
     float *output;
     float *delta;
@@ -17,7 +18,7 @@ typedef struct {
     #endif
 } detection_layer;
 
-detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore);
+detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background);
 void forward_detection_layer(const detection_layer layer, network_state state);
 void backward_detection_layer(const detection_layer layer, network_state state);
 int get_detection_layer_output_size(detection_layer layer);

@@ -16,7 +16,7 @@ void train_captcha(char *cfgfile, char *weightfile)
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
     int i = net.seen/imgs;
-    list *plist = get_paths("/data/captcha/train.base");
+    list *plist = get_paths("/data/captcha/train.auto5");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     clock_t time;
@@ -34,7 +34,7 @@ void train_captcha(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
         free_data(train);
-        if(i%100==0){
+        if(i%10==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
             save_weights(net, buff);
@@ -56,11 +56,11 @@ void decode_captcha(char *cfgfile, char *weightfile)
         printf("Enter filename: ");
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
-        image im = load_image_color(filename, 60, 200);
+        image im = load_image_color(filename, 57, 300);
         scale_image(im, 1./255.);
         float *X = im.data;
         float *predictions = network_predict(net, X);
-        image out  = float_to_image(60, 200, 3, predictions);
+        image out  = float_to_image(57, 300, 1, predictions);
         show_image(out, "decoded");
         cvWaitKey(0);
         free_image(im);
@@ -87,7 +87,7 @@ void encode_captcha(char *cfgfile, char *weightfile)
     while(1){
         ++i;
         time=clock();
-        data train = load_data_captcha_encode(paths, imgs, plist->size, 60, 200);
+        data train = load_data_captcha_encode(paths, imgs, plist->size, 57, 300);
         scale_data_rows(train, 1./255);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -114,10 +114,10 @@ void validate_captcha(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int imgs = 1000;
     int numchars = 37;
-    list *plist = get_paths("/data/captcha/valid.base");
+    list *plist = get_paths("/data/captcha/solved.hard");
     char **paths = (char **)list_to_array(plist);
+    int imgs = plist->size;
     data valid = load_data_captcha(paths, imgs, 0, 10, 60, 200);
     translate_data_rows(valid, -128);
     scale_data_rows(valid, 1./128);

@@ -8,23 +8,24 @@
 
 int get_detection_layer_locations(detection_layer layer)
 {
-    return layer.inputs / (layer.classes+layer.coords+layer.rescore);
+    return layer.inputs / (layer.classes+layer.coords+layer.rescore+layer.background);
 }
 
 int get_detection_layer_output_size(detection_layer layer)
 {
-    return get_detection_layer_locations(layer)*(layer.classes+layer.coords);
+    return get_detection_layer_locations(layer)*(layer.background + layer.classes + layer.coords);
 }
 
-detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore)
+detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background)
 {
     detection_layer *layer = calloc(1, sizeof(detection_layer));
-
+    
     layer->batch = batch;
     layer->inputs = inputs;
     layer->classes = classes;
     layer->coords = coords;
     layer->rescore = rescore;
+    layer->background = background;
     int outputs = get_detection_layer_output_size(*layer);
     layer->output = calloc(batch*outputs, sizeof(float));
     layer->delta = calloc(batch*outputs, sizeof(float));
@@ -39,38 +40,13 @@ detection_layer *make_detection_layer(int batch, int inputs, int classes, int co
     return layer;
 }
 
-
-void forward_detection_layer(const detection_layer layer, network_state state)
+void dark_zone(detection_layer layer, int class, int start, network_state state)
 {
-    int in_i = 0;
-    int out_i = 0;
-    int locations = get_detection_layer_locations(layer);
-    int i,j;
-    for(i = 0; i < layer.batch*locations; ++i){
-        int mask = (!state.truth || state.truth[out_i + layer.classes + 2]);
-        float scale = 1;
-        if(layer.rescore) scale = state.input[in_i++];
-        for(j = 0; j < layer.classes; ++j){
-            layer.output[out_i++] = scale*state.input[in_i++];
-        }
-        if(!layer.rescore){
-            softmax_array(layer.output + out_i - layer.classes, layer.classes, layer.output + out_i - layer.classes);
-            activate_array(state.input+in_i, layer.coords, LOGISTIC);
-        }
-        for(j = 0; j < layer.coords; ++j){
-            layer.output[out_i++] = mask*state.input[in_i++];
-        }
-    }
-}
-
-void dark_zone(detection_layer layer, int index, network_state state)
-{
-    int size = layer.classes+layer.rescore+layer.coords;
+    int index = start+layer.background+class;
+    int size = layer.classes+layer.coords+layer.background;
     int location = (index%(7*7*size)) / size ;
     int r = location / 7;
     int c = location % 7;
-    int class = index%size;
-    if(layer.rescore) --class;
     int dr, dc;
     for(dr = -1; dr <= 1; ++dr){
         for(dc = -1; dc <= 1; ++dc){
@@ -79,7 +55,44 @@ void dark_zone(detection_layer layer, int index, network_state state)
             if((c + dc) > 6 || (c + dc) < 0) continue;
             int di = (dr*7 + dc) * size;
             if(state.truth[index+di]) continue;
-            layer.delta[index + di] = 0;
+            layer.output[index + di] = 0;
+            //if(!state.truth[start+di]) continue;
+            //layer.output[start + di] = 1;
+        }
+    }
+}
+
+void forward_detection_layer(const detection_layer layer, network_state state)
+{
+    int in_i = 0;
+    int out_i = 0;
+    int locations = get_detection_layer_locations(layer);
+    int i,j;
+    for(i = 0; i < layer.batch*locations; ++i){
+        int mask = (!state.truth || state.truth[out_i + layer.background + layer.classes + 2]);
+        float scale = 1;
+        if(layer.rescore) scale = state.input[in_i++];
+        if(layer.background) layer.output[out_i++] = scale*state.input[in_i++];
+
+        for(j = 0; j < layer.classes; ++j){
+            layer.output[out_i++] = scale*state.input[in_i++];
+        }
+        if(layer.background){
+            softmax_array(layer.output + out_i - layer.classes-layer.background, layer.classes+layer.background, layer.output + out_i - layer.classes-layer.background);
+            activate_array(state.input+in_i, layer.coords, LOGISTIC);
+        }
+        for(j = 0; j < layer.coords; ++j){
+            layer.output[out_i++] = mask*state.input[in_i++];
+        }
+    }
+    if(layer.background || 1){
+        for(i = 0; i < layer.batch*locations; ++i){
+            int index = i*(layer.classes+layer.coords+layer.background);
+            for(j= 0; j < layer.classes; ++j){
+                if(state.truth[index+j+layer.background]){
+                    //dark_zone(layer, j, index, state);
+                }
+            }
         }
     }
 }
@@ -94,21 +107,17 @@ void backward_detection_layer(const detection_layer layer, network_state state)
         float scale = 1;
         float latent_delta = 0;
         if(layer.rescore) scale = state.input[in_i++];
-        if(!layer.rescore){
-            for(j = 0; j < layer.classes-1; ++j){
-                if(state.truth[out_i + j]) dark_zone(layer, out_i+j, state);
-            }
-        }
+        if(layer.background) state.delta[in_i++] = scale*layer.delta[out_i++];
         for(j = 0; j < layer.classes; ++j){
             latent_delta += state.input[in_i]*layer.delta[out_i];
             state.delta[in_i++] = scale*layer.delta[out_i++];
         }
 
-        if (!layer.rescore) gradient_array(layer.output + out_i, layer.coords, LOGISTIC, layer.delta + out_i);
+        if (layer.background) gradient_array(layer.output + out_i, layer.coords, LOGISTIC, layer.delta + out_i);
         for(j = 0; j < layer.coords; ++j){
             state.delta[in_i++] = layer.delta[out_i++];
         }
-        if(layer.rescore) state.delta[in_i-layer.coords-layer.classes-layer.rescore] = latent_delta;
+        if(layer.rescore) state.delta[in_i-layer.coords-layer.classes-layer.rescore-layer.background] = latent_delta;
     }
 }
 

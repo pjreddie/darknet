@@ -18,6 +18,8 @@ char *get_activation_string(ACTIVATION a)
             return "linear";
         case TANH:
             return "tanh";
+        case PLSE:
+            return "plse";
         default:
             break;
     }
@@ -28,6 +30,7 @@ ACTIVATION get_activation(char *s)
 {
     if (strcmp(s, "logistic")==0) return LOGISTIC;
     if (strcmp(s, "relu")==0) return RELU;
+    if (strcmp(s, "plse")==0) return PLSE;
     if (strcmp(s, "linear")==0) return LINEAR;
     if (strcmp(s, "ramp")==0) return RAMP;
     if (strcmp(s, "tanh")==0) return TANH;
@@ -48,6 +51,8 @@ float activate(float x, ACTIVATION a)
             return ramp_activate(x);
         case TANH:
             return tanh_activate(x);
+        case PLSE:
+            return plse_activate(x);
     }
     return 0;
 }
@@ -73,6 +78,8 @@ float gradient(float x, ACTIVATION a)
             return ramp_gradient(x);
         case TANH:
             return tanh_gradient(x);
+        case PLSE:
+            return plse_gradient(x);
     }
     return 0;
 }

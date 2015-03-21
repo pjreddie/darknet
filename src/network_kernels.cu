@@ -28,6 +28,7 @@ void forward_network_gpu(network net, network_state state)
 {
     int i;
     for(i = 0; i < net.n; ++i){
+//clock_t time = clock();
         if(net.types[i] == CONVOLUTIONAL){
             forward_convolutional_layer_gpu(*(convolutional_layer *)net.layers[i], state);
         }
@@ -56,6 +57,9 @@ void forward_network_gpu(network net, network_state state)
             forward_crop_layer_gpu(*(crop_layer *)net.layers[i], state);
         }
         state.input = get_network_output_gpu_layer(net, i);
+//cudaDeviceSynchronize();
+//printf("forw %d: %s %f\n", i, get_layer_string(net.types[i]), sec(clock() - time));
+//time = clock();
     }
 }
 
@@ -64,7 +68,7 @@ void backward_network_gpu(network net, network_state state)
     int i;
     float * original_input = state.input;
     for(i = net.n-1; i >= 0; --i){
-        //clock_t time = clock();
+//clock_t time = clock();
         if(i == 0){
             state.input = original_input;
             state.delta = 0;
@@ -96,6 +100,9 @@ void backward_network_gpu(network net, network_state state)
         else if(net.types[i] == SOFTMAX){
             backward_softmax_layer_gpu(*(softmax_layer *)net.layers[i], state);
         }
+//cudaDeviceSynchronize();
+//printf("back %d: %s %f\n", i, get_layer_string(net.types[i]), sec(clock() - time));
+//time = clock();
     }
 }
 
@@ -181,7 +188,7 @@ float * get_network_delta_gpu_layer(network net, int i)
 
 float train_network_datum_gpu(network net, float *x, float *y)
 {
-  //clock_t time = clock();
+ // clock_t time = clock();
     network_state state;
     int x_size = get_network_input_size(net)*net.batch;
     int y_size = get_network_output_size(net)*net.batch;
@@ -195,22 +202,26 @@ float train_network_datum_gpu(network net, float *x, float *y)
     state.input = *net.input_gpu;
     state.truth = *net.truth_gpu;
     state.train = 1;
-  //printf("trans %f\n", sec(clock() - time));
-  //time = clock();
+//cudaDeviceSynchronize();
+//printf("trans %f\n", sec(clock() - time));
+//time = clock();
     forward_network_gpu(net, state);
-  //printf("forw %f\n", sec(clock() - time));
-  //time = clock();
+//cudaDeviceSynchronize();
+//printf("forw %f\n", sec(clock() - time));
+//time = clock();
     backward_network_gpu(net, state);
-  //printf("back %f\n", sec(clock() - time));
-  //time = clock();
+//cudaDeviceSynchronize();
+//printf("back %f\n", sec(clock() - time));
+//time = clock();
     update_network_gpu(net);
     float error = get_network_cost(net);
 
     //print_letters(y, 50);
     //float *out = get_network_output_gpu(net);
     //print_letters(out, 50);
-  //printf("updt %f\n", sec(clock() - time));
-  //time = clock();
+//cudaDeviceSynchronize();
+//printf("updt %f\n", sec(clock() - time));
+//time = clock();
     return error;
 }
 
@@ -256,7 +267,6 @@ float *get_network_output_gpu(network net)
 
 float *network_predict_gpu(network net, float *input)
 {
-
     int size = get_network_input_size(net) * net.batch;
     network_state state;
     state.input = cuda_make_array(input, size);

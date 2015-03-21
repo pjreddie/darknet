@@ -112,7 +112,12 @@ void fill_truth_detection(char *path, float *truth, int classes, int height, int
     randomize_boxes(boxes, count);
     float x, y, h, w;
     int id;
-    int i, j;
+    int i;
+    if(background){
+        for(i = 0; i < num_height*num_width*(4+classes+background); i += 4+classes+background){
+            truth[i] = 1;
+        }
+    }
     for(i = 0; i < count; ++i){
         x = boxes[i].x;
         y = boxes[i].y;
@@ -137,21 +142,15 @@ void fill_truth_detection(char *path, float *truth, int classes, int height, int
 
         int index = (i+j*num_width)*(4+classes+background);
         if(truth[index+classes+background]) continue;
+        if(background) truth[index++] = 0;
         truth[index+id] = 1;
-        index += classes+background;
+        index += classes;
         truth[index++] = dh;
         truth[index++] = dw;
         truth[index++] = h*(height+jitter)/height;
         truth[index++] = w*(width+jitter)/width;
     }
     free(boxes);
-    if(background){
-        for(i = 0; i < num_height*num_width*(4+classes+background); i += 4+classes+background){
-            int object = 0;
-            for(j = i; j < i+classes; ++j) if (truth[j]) object = 1;
-            truth[i+classes] = !object;
-        }
-    }
 }
 
 #define NUMCHARS 37
@@ -202,6 +201,7 @@ data load_data_captcha_encode(char **paths, int n, int m, int h, int w)
     data d;
     d.shallow = 0;
     d.X = load_image_paths(paths, n, h, w);
+    d.X.cols = 17100;
     d.y = d.X;
     if(m) free(paths);
     return d;

@@ -108,7 +108,7 @@ void validate_detection(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
     int im_size = 448;
     int classes = 20;
-    int background = 0;
+    int background = 1;
     int num_output = 7*7*(4+classes+background);
 
     int m = plist->size;
@@ -143,7 +143,7 @@ void validate_detection(char *cfgfile, char *weightfile)
                     float x = (c + pred.vals[j][ci + 1])/7.;
                     float h = pred.vals[j][ci + 2];
                     float w = pred.vals[j][ci + 3];
-                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, pred.vals[j][k+class], y, x, h, w);
+                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, pred.vals[j][k+class+background], y, x, h, w);
                 }
             }
         }

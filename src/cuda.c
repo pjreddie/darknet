@@ -59,6 +59,18 @@ float *cuda_make_array(float *x, int n)
     return x_gpu;
 }
 
+void cuda_random(float *x_gpu, int n)
+{
+    static curandGenerator_t gen;
+    static int init = 0;
+    if(!init){
+        curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+        curandSetPseudoRandomGeneratorSeed(gen, 0ULL);
+    }
+    curandGenerateUniform(gen, x_gpu, n);
+    check_error(cudaPeekAtLastError());
+}
+
 float cuda_compare(float *x_gpu, float *x, int n, char *s)
 {
     float *tmp = calloc(n, sizeof(float));

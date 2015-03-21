@@ -8,12 +8,19 @@ __device__ float logistic_activate_kernel(float x){return 1./(1. + exp(-x));}
 __device__ float relu_activate_kernel(float x){return x*(x>0);}
 __device__ float ramp_activate_kernel(float x){return x*(x>0)+.1*x;}
 __device__ float tanh_activate_kernel(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
+__device__ float plse_activate_kernel(float x)
+{
+    if(x < -4) return .01 * (x + 4);
+    if(x > 4)  return .01 * (x - 4) + 1;
+    return .125*x + .5;
+}
  
 __device__ float linear_gradient_kernel(float x){return 1;}
 __device__ float logistic_gradient_kernel(float x){return (1-x)*x;}
 __device__ float relu_gradient_kernel(float x){return (x>0);}
 __device__ float ramp_gradient_kernel(float x){return (x>0)+.1;}
 __device__ float tanh_gradient_kernel(float x){return 1-x*x;}
+__device__ float plse_gradient_kernel(float x){return (x < 0 || x > 1) ? .01 : .125;}
 
 __device__ float activate_kernel(float x, ACTIVATION a)
 {
@@ -28,6 +35,8 @@ __device__ float activate_kernel(float x, ACTIVATION a)
             return ramp_activate_kernel(x);
         case TANH:
             return tanh_activate_kernel(x);
+        case PLSE:
+            return plse_activate_kernel(x);
     }
     return 0;
 }
@@ -45,6 +54,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
             return ramp_gradient_kernel(x);
         case TANH:
             return tanh_gradient_kernel(x);
+        case PLSE:
+            return plse_gradient_kernel(x);
     }
     return 0;
 }
