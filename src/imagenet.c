@@ -13,7 +13,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
         load_weights(&net, weightfile);
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = 128;
+    int imgs = 1024;
     int i = net.seen/imgs;
     char **labels = get_labels("/home/pjreddie/data/imagenet/cls.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
