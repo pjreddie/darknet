@@ -66,6 +66,7 @@ void cuda_random(float *x_gpu, int n)
     if(!init){
         curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
         curandSetPseudoRandomGeneratorSeed(gen, 0ULL);
+        init = 1;
     }
     curandGenerateUniform(gen, x_gpu, n);
     check_error(cudaPeekAtLastError());

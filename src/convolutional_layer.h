@@ -41,7 +41,7 @@ typedef struct {
 #ifdef GPU
 void forward_convolutional_layer_gpu(convolutional_layer layer, network_state state);
 void backward_convolutional_layer_gpu(convolutional_layer layer, network_state state);
-void update_convolutional_layer_gpu(convolutional_layer layer, float learning_rate, float momentum, float decay);
+void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay);
 
 void push_convolutional_layer(convolutional_layer layer);
 void pull_convolutional_layer(convolutional_layer layer);
@@ -53,7 +53,7 @@ void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int 
 convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation);
 void resize_convolutional_layer(convolutional_layer *layer, int h, int w);
 void forward_convolutional_layer(const convolutional_layer layer, network_state state);
-void update_convolutional_layer(convolutional_layer layer, float learning_rate, float momentum, float decay);
+void update_convolutional_layer(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay);
 image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters);
 
 void backward_convolutional_layer(convolutional_layer layer, network_state state);

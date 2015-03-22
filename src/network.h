@@ -23,6 +23,7 @@ typedef struct {
     int n;
     int batch;
     int seen;
+    int subdivisions;
     float learning_rate;
     float momentum;
     float decay;

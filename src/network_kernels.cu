@@ -28,7 +28,6 @@ void forward_network_gpu(network net, network_state state)
 {
     int i;
     for(i = 0; i < net.n; ++i){
-//clock_t time = clock();
         if(net.types[i] == CONVOLUTIONAL){
             forward_convolutional_layer_gpu(*(convolutional_layer *)net.layers[i], state);
         }
@@ -57,9 +56,6 @@ void forward_network_gpu(network net, network_state state)
             forward_crop_layer_gpu(*(crop_layer *)net.layers[i], state);
         }
         state.input = get_network_output_gpu_layer(net, i);
-//cudaDeviceSynchronize();
-//printf("forw %d: %s %f\n", i, get_layer_string(net.types[i]), sec(clock() - time));
-//time = clock();
     }
 }
 
@@ -68,7 +64,6 @@ void backward_network_gpu(network net, network_state state)
     int i;
     float * original_input = state.input;
     for(i = net.n-1; i >= 0; --i){
-//clock_t time = clock();
         if(i == 0){
             state.input = original_input;
             state.delta = 0;
@@ -100,19 +95,17 @@ void backward_network_gpu(network net, network_state state)
         else if(net.types[i] == SOFTMAX){
             backward_softmax_layer_gpu(*(softmax_layer *)net.layers[i], state);
         }
-//cudaDeviceSynchronize();
-//printf("back %d: %s %f\n", i, get_layer_string(net.types[i]), sec(clock() - time));
-//time = clock();
     }
 }
 
 void update_network_gpu(network net)
 {
     int i;
+    int update_batch = net.batch*net.subdivisions;
     for(i = 0; i < net.n; ++i){
         if(net.types[i] == CONVOLUTIONAL){
             convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            update_convolutional_layer_gpu(layer, net.learning_rate, net.momentum, net.decay);
+            update_convolutional_layer_gpu(layer, update_batch, net.learning_rate, net.momentum, net.decay);
         }
         else if(net.types[i] == DECONVOLUTIONAL){
             deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
@@ -120,7 +113,7 @@ void update_network_gpu(network net)
         }
         else if(net.types[i] == CONNECTED){
             connected_layer layer = *(connected_layer *)net.layers[i];
-            update_connected_layer_gpu(layer, net.learning_rate, net.momentum, net.decay);
+            update_connected_layer_gpu(layer, update_batch, net.learning_rate, net.momentum, net.decay);
         }
     }
 }
@@ -188,7 +181,6 @@ float * get_network_delta_gpu_layer(network net, int i)
 
 float train_network_datum_gpu(network net, float *x, float *y)
 {
- // clock_t time = clock();
     network_state state;
     int x_size = get_network_input_size(net)*net.batch;
     int y_size = get_network_output_size(net)*net.batch;
@@ -202,26 +194,11 @@ float train_network_datum_gpu(network net, float *x, float *y)
     state.input = *net.input_gpu;
     state.truth = *net.truth_gpu;
     state.train = 1;
-//cudaDeviceSynchronize();
-//printf("trans %f\n", sec(clock() - time));
-//time = clock();
     forward_network_gpu(net, state);
-//cudaDeviceSynchronize();
-//printf("forw %f\n", sec(clock() - time));
-//time = clock();
     backward_network_gpu(net, state);
-//cudaDeviceSynchronize();
-//printf("back %f\n", sec(clock() - time));
-//time = clock();
-    update_network_gpu(net);
+    if ((net.seen / net.batch) % net.subdivisions == 0) update_network_gpu(net);
     float error = get_network_cost(net);
 
-    //print_letters(y, 50);
-    //float *out = get_network_output_gpu(net);
-    //print_letters(out, 50);
-//cudaDeviceSynchronize();
-//printf("updt %f\n", sec(clock() - time));
-//time = clock();
     return error;
 }
 

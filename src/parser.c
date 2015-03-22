@@ -249,12 +249,16 @@ void parse_net_options(list *options, network *net)
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
     net->seen = option_find_int(options, "seen",0);
+    int subdivs = option_find_int(options, "subdivisions",1);
+    net->batch /= subdivs;
+    net->subdivisions = subdivs;
 
     net->h = option_find_int_quiet(options, "height",0);
     net->w = option_find_int_quiet(options, "width",0);
     net->c = option_find_int_quiet(options, "channels",0);
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
+    option_unused(options);
 }
 
 network parse_network_cfg(char *filename)

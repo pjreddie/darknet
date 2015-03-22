@@ -55,13 +55,13 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
     return layer;
 }
 
-void update_connected_layer(connected_layer layer, float learning_rate, float momentum, float decay)
+void update_connected_layer(connected_layer layer, int batch, float learning_rate, float momentum, float decay)
 {
-    axpy_cpu(layer.outputs, learning_rate, layer.bias_updates, 1, layer.biases, 1);
+    axpy_cpu(layer.outputs, learning_rate/batch, layer.bias_updates, 1, layer.biases, 1);
     scal_cpu(layer.outputs, momentum, layer.bias_updates, 1);
 
-    axpy_cpu(layer.inputs*layer.outputs, -decay, layer.weights, 1, layer.weight_updates, 1);
-    axpy_cpu(layer.inputs*layer.outputs, learning_rate, layer.weight_updates, 1, layer.weights, 1);
+    axpy_cpu(layer.inputs*layer.outputs, -decay*batch, layer.weights, 1, layer.weight_updates, 1);
+    axpy_cpu(layer.inputs*layer.outputs, learning_rate/batch, layer.weight_updates, 1, layer.weights, 1);
     scal_cpu(layer.inputs*layer.outputs, momentum, layer.weight_updates, 1);
 }
 
@@ -84,10 +84,9 @@ void forward_connected_layer(connected_layer layer, network_state state)
 void backward_connected_layer(connected_layer layer, network_state state)
 {
     int i;
-    float alpha = 1./layer.batch;
     gradient_array(layer.output, layer.outputs*layer.batch, layer.activation, layer.delta);
     for(i = 0; i < layer.batch; ++i){
-        axpy_cpu(layer.outputs, alpha, layer.delta + i*layer.outputs, 1, layer.bias_updates, 1);
+        axpy_cpu(layer.outputs, 1, layer.delta + i*layer.outputs, 1, layer.bias_updates, 1);
     }
     int m = layer.inputs;
     int k = layer.batch;
@@ -95,7 +94,7 @@ void backward_connected_layer(connected_layer layer, network_state state)
     float *a = state.input;
     float *b = layer.delta;
     float *c = layer.weight_updates;
-    gemm(1,0,m,n,k,alpha,a,m,b,n,1,c,n);
+    gemm(1,0,m,n,k,1,a,m,b,n,1,c,n);
 
     m = layer.batch;
     k = layer.outputs;
@@ -126,13 +125,13 @@ void push_connected_layer(connected_layer layer)
     cuda_push_array(layer.bias_updates_gpu, layer.bias_updates, layer.outputs);
 }
 
-void update_connected_layer_gpu(connected_layer layer, float learning_rate, float momentum, float decay)
+void update_connected_layer_gpu(connected_layer layer, int batch, float learning_rate, float momentum, float decay)
 {
-    axpy_ongpu(layer.outputs, learning_rate, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);
+    axpy_ongpu(layer.outputs, learning_rate/batch, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);
     scal_ongpu(layer.outputs, momentum, layer.bias_updates_gpu, 1);
 
-    axpy_ongpu(layer.inputs*layer.outputs, -decay, layer.weights_gpu, 1, layer.weight_updates_gpu, 1);
-    axpy_ongpu(layer.inputs*layer.outputs, learning_rate, layer.weight_updates_gpu, 1, layer.weights_gpu, 1);
+    axpy_ongpu(layer.inputs*layer.outputs, -decay*batch, layer.weights_gpu, 1, layer.weight_updates_gpu, 1);
+    axpy_ongpu(layer.inputs*layer.outputs, learning_rate/batch, layer.weight_updates_gpu, 1, layer.weights_gpu, 1);
     scal_ongpu(layer.inputs*layer.outputs, momentum, layer.weight_updates_gpu, 1);
 }
 
@@ -154,11 +153,10 @@ void forward_connected_layer_gpu(connected_layer layer, network_state state)
 
 void backward_connected_layer_gpu(connected_layer layer, network_state state)
 {
-    float alpha = 1./layer.batch;
     int i;
     gradient_array_ongpu(layer.output_gpu, layer.outputs*layer.batch, layer.activation, layer.delta_gpu);
     for(i = 0; i < layer.batch; ++i){
-        axpy_ongpu_offset(layer.outputs, alpha, layer.delta_gpu, i*layer.outputs, 1, layer.bias_updates_gpu, 0, 1);
+        axpy_ongpu_offset(layer.outputs, 1, layer.delta_gpu, i*layer.outputs, 1, layer.bias_updates_gpu, 0, 1);
     }
     int m = layer.inputs;
     int k = layer.batch;
@@ -166,7 +164,7 @@ void backward_connected_layer_gpu(connected_layer layer, network_state state)
     float * a = state.input;
     float * b = layer.delta_gpu;
     float * c = layer.weight_updates_gpu;
-    gemm_ongpu(1,0,m,n,k,alpha,a,m,b,n,1,c,n);
+    gemm_ongpu(1,0,m,n,k,1,a,m,b,n,1,c,n);
 
     m = layer.batch;
     k = layer.outputs;

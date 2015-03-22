@@ -129,11 +129,10 @@ void bias_output(float *output, float *biases, int batch, int n, int size)
 
 void backward_bias(float *bias_updates, float *delta, int batch, int n, int size)
 {
-    float alpha = 1./batch;
     int i,b;
     for(b = 0; b < batch; ++b){
         for(i = 0; i < n; ++i){
-            bias_updates[i] += alpha * sum_array(delta+size*(i+b*n), size);
+            bias_updates[i] += sum_array(delta+size*(i+b*n), size);
         }
     }
 }
@@ -167,7 +166,6 @@ void forward_convolutional_layer(const convolutional_layer layer, network_state 
 
 void backward_convolutional_layer(convolutional_layer layer, network_state state)
 {
-    float alpha = 1./layer.batch;
     int i;
     int m = layer.n;
     int n = layer.size*layer.size*layer.c;
@@ -188,7 +186,7 @@ void backward_convolutional_layer(convolutional_layer layer, network_state state
 
         im2col_cpu(im, layer.c, layer.h, layer.w, 
                 layer.size, layer.stride, layer.pad, b);
-        gemm(0,1,m,n,k,alpha,a,k,b,k,1,c,n);
+        gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
 
         if(state.delta){
             a = layer.filters;
@@ -202,14 +200,14 @@ void backward_convolutional_layer(convolutional_layer layer, network_state state
     }
 }
 
-void update_convolutional_layer(convolutional_layer layer, float learning_rate, float momentum, float decay)
+void update_convolutional_layer(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay)
 {
     int size = layer.size*layer.size*layer.c*layer.n;
-    axpy_cpu(layer.n, learning_rate, layer.bias_updates, 1, layer.biases, 1);
+    axpy_cpu(layer.n, learning_rate/batch, layer.bias_updates, 1, layer.biases, 1);
     scal_cpu(layer.n, momentum, layer.bias_updates, 1);
 
-    axpy_cpu(size, -decay, layer.filters, 1, layer.filter_updates, 1);
-    axpy_cpu(size, learning_rate, layer.filter_updates, 1, layer.filters, 1);
+    axpy_cpu(size, -decay*batch, layer.filters, 1, layer.filter_updates, 1);
+    axpy_cpu(size, learning_rate/batch, layer.filter_updates, 1, layer.filters, 1);
     scal_cpu(size, momentum, layer.filter_updates, 1);
 }
 
