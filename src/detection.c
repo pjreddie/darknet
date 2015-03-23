@@ -3,11 +3,11 @@
 #include "parser.h"
 
 
-char *class_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
+char *class_names[] = {"bg", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 #define AMNT 3
 void draw_detection(image im, float *box, int side)
 {
-    int classes = 20;
+    int classes = 21;
     int elems = 4+classes;
     int j;
     int r, c;
@@ -50,6 +50,7 @@ void train_detection(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    net.seen = 0;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 128;
     srand(time(0));
@@ -62,7 +63,7 @@ void train_detection(char *cfgfile, char *weightfile)
     int im_dim = 512;
     int jitter = 64;
     int classes = 20;
-    int background = 1;
+    int background = 0;
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, background, &buffer);
     clock_t time;
     while(1){
@@ -72,12 +73,12 @@ void train_detection(char *cfgfile, char *weightfile)
         train = buffer;
         load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, background, &buffer);
 
-        /*
-           image im = float_to_image(im_dim - jitter, im_dim-jitter, 3, train.X.vals[0]);
-           draw_detection(im, train.y.vals[0], 7);
+/*
+           image im = float_to_image(im_dim - jitter, im_dim-jitter, 3, train.X.vals[114]);
+           draw_detection(im, train.y.vals[114], 7);
            show_image(im, "truth");
            cvWaitKey(0);
-         */
+*/
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -108,7 +109,7 @@ void validate_detection(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
     int im_size = 448;
     int classes = 20;
-    int background = 1;
+    int background = 0;
     int num_output = 7*7*(4+classes+background);
 
     int m = plist->size;

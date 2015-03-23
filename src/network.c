@@ -194,24 +194,6 @@ float *get_network_delta(network net)
     return get_network_delta_layer(net, net.n-1);
 }
 
-float calculate_error_network(network net, float *truth)
-{
-    float sum = 0;
-    float *delta = get_network_delta(net);
-    float *out = get_network_output(net);
-    int i;
-    for(i = 0; i < get_network_output_size(net)*net.batch; ++i){
-        //if(i %get_network_output_size(net) == 0) printf("\n");
-        //printf("%5.2f %5.2f, ", out[i], truth[i]);
-        //if(i == get_network_output_size(net)) printf("\n");
-        delta[i] = truth[i] - out[i];
-        //printf("%.10f, ", out[i]);
-        sum += delta[i]*delta[i];
-    }
-    //printf("\n");
-    return sum;
-}
-
 int get_predicted_class_network(network net)
 {
     float *out = get_network_output(net);

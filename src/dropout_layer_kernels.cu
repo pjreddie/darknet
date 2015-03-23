@@ -11,7 +11,7 @@ __global__ void yoloswag420blazeit360noscope(float *input, int size, float *rand
     if(id < size) input[id] = (rand[id] < prob) ? 0 : input[id]*scale;
 }
 
-extern "C" void forward_dropout_layer_gpu(dropout_layer layer, network_state state)
+void forward_dropout_layer_gpu(dropout_layer layer, network_state state)
 {
     if (!state.train) return;
     int size = layer.inputs*layer.batch;
@@ -21,7 +21,7 @@ extern "C" void forward_dropout_layer_gpu(dropout_layer layer, network_state sta
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void backward_dropout_layer_gpu(dropout_layer layer, network_state state)
+void backward_dropout_layer_gpu(dropout_layer layer, network_state state)
 {
     if(!state.delta) return;
     int size = layer.inputs*layer.batch;

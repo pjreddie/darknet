@@ -17,7 +17,7 @@ __global__ void bias_output_kernel(float *output, float *biases, int n, int size
     if(offset < size) output[(batch*n+filter)*size + offset] = biases[filter];
 }
 
-extern "C" void bias_output_gpu(float *output, float *biases, int batch, int n, int size)
+void bias_output_gpu(float *output, float *biases, int batch, int n, int size)
 {
     dim3 dimBlock(BLOCK, 1, 1);
     dim3 dimGrid((size-1)/BLOCK + 1, n, batch);
@@ -46,13 +46,13 @@ __global__ void backward_bias_kernel(float *bias_updates, float *delta, int batc
     }
 }
 
-extern "C" void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
+void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
 {
     backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size, 1);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, network_state state)
+void forward_convolutional_layer_gpu(convolutional_layer layer, network_state state)
 {
     int i;
     int m = layer.n;
@@ -71,7 +71,7 @@ extern "C" void forward_convolutional_layer_gpu(convolutional_layer layer, netwo
     activate_array_ongpu(layer.output_gpu, m*n*layer.batch, layer.activation);
 }
 
-extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, network_state state)
+void backward_convolutional_layer_gpu(convolutional_layer layer, network_state state)
 {
     int i;
     int m = layer.n;
@@ -105,7 +105,7 @@ extern "C" void backward_convolutional_layer_gpu(convolutional_layer layer, netw
     }
 }
 
-extern "C" void pull_convolutional_layer(convolutional_layer layer)
+void pull_convolutional_layer(convolutional_layer layer)
 {
     cuda_pull_array(layer.filters_gpu, layer.filters, layer.c*layer.n*layer.size*layer.size);
     cuda_pull_array(layer.biases_gpu, layer.biases, layer.n);
@@ -113,7 +113,7 @@ extern "C" void pull_convolutional_layer(convolutional_layer layer)
     cuda_pull_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
 }
 
-extern "C" void push_convolutional_layer(convolutional_layer layer)
+void push_convolutional_layer(convolutional_layer layer)
 {
     cuda_push_array(layer.filters_gpu, layer.filters, layer.c*layer.n*layer.size*layer.size);
     cuda_push_array(layer.biases_gpu, layer.biases, layer.n);
@@ -121,7 +121,7 @@ extern "C" void push_convolutional_layer(convolutional_layer layer)
     cuda_push_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
 }
 
-extern "C" void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay)
+void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay)
 {
     int size = layer.size*layer.size*layer.c*layer.n;
 

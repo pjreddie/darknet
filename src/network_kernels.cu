@@ -20,8 +20,8 @@ extern "C" {
 #include "dropout_layer.h"
 }
 
-extern "C" float * get_network_output_gpu_layer(network net, int i);
-extern "C" float * get_network_delta_gpu_layer(network net, int i);
+float * get_network_output_gpu_layer(network net, int i);
+float * get_network_delta_gpu_layer(network net, int i);
 float *get_network_output_gpu(network net);
 
 void forward_network_gpu(network net, network_state state)
@@ -196,8 +196,8 @@ float train_network_datum_gpu(network net, float *x, float *y)
     state.train = 1;
     forward_network_gpu(net, state);
     backward_network_gpu(net, state);
-    if ((net.seen / net.batch) % net.subdivisions == 0) update_network_gpu(net);
     float error = get_network_cost(net);
+    if ((net.seen / net.batch) % net.subdivisions == 0) update_network_gpu(net);
 
     return error;
 }
