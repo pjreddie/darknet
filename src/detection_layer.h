@@ -10,6 +10,7 @@ typedef struct {
     int coords;
     int background;
     int rescore;
+    int nuisance;
     float *output;
     float *delta;
     #ifdef GPU
@@ -18,7 +19,7 @@ typedef struct {
     #endif
 } detection_layer;
 
-detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background);
+detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background, int nuisance);
 void forward_detection_layer(const detection_layer layer, network_state state);
 void backward_detection_layer(const detection_layer layer, network_state state);
 int get_detection_layer_output_size(detection_layer layer);

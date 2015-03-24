@@ -26,7 +26,7 @@ void normalize_array(float *a, int n);
 void scale_array(float *a, int n, float s);
 void translate_array(float *a, int n, float s);
 int max_index(float *a, int n);
-float constrain(float a, float max);
+float constrain(float min, float max, float a);
 float mse_array(float *a, int n);
 float rand_normal();
 float rand_uniform();

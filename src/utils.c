@@ -276,10 +276,10 @@ float variance_array(float *a, int n)
     return variance;
 }
 
-float constrain(float a, float max)
+float constrain(float min, float max, float a)
 {
-    if(a > abs(max)) return abs(max);
-    if(a < -abs(max)) return -abs(max);
+    if (a < min) return min;
+    if (a > max) return max;
     return a;
 }
 

@@ -165,8 +165,9 @@ detection_layer *parse_detection(list *options, size_params params)
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
     int rescore = option_find_int(options, "rescore", 1);
+    int nuisance = option_find_int(options, "nuisance", 0);
     int background = option_find_int(options, "background", 1);
-    detection_layer *layer = make_detection_layer(params.batch, params.inputs, classes, coords, rescore, background);
+    detection_layer *layer = make_detection_layer(params.batch, params.inputs, classes, coords, rescore, background, nuisance);
     option_unused(options);
     return layer;
 }
@@ -550,7 +551,7 @@ void print_softmax_cfg(FILE *fp, softmax_layer *l, network net, int count)
 void print_detection_cfg(FILE *fp, detection_layer *l, network net, int count)
 {
     fprintf(fp, "[detection]\n");
-    fprintf(fp, "classes=%d\ncoords=%d\nrescore=%d\n", l->classes, l->coords, l->rescore);
+    fprintf(fp, "classes=%d\ncoords=%d\nrescore=%d\nnuisance=%d\n", l->classes, l->coords, l->rescore, l->nuisance);
     fprintf(fp, "\n");
 }
 

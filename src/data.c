@@ -137,18 +137,20 @@ void fill_truth_detection(char *path, float *truth, int classes, int height, int
         if(j < 0) j = 0;
         if(j >= num_height) j = num_height-1;
         
-        float dw = (x - i*box_width)/box_width;
-        float dh = (y - j*box_height)/box_height;
+        float dw = constrain(0,1, (x - i*box_width)/box_width );
+        float dh = constrain(0,1, (y - j*box_height)/box_height );
+        float th = constrain(0,1, h*(height+jitter)/height );
+        float tw = constrain(0,1, w*(width+jitter)/width );
 
         int index = (i+j*num_width)*(4+classes+background);
-        if(truth[index+classes+background]) continue;
+        if(truth[index+classes+background+2]) continue;
         if(background) truth[index++] = 0;
         truth[index+id] = 1;
         index += classes;
         truth[index++] = dh;
         truth[index++] = dw;
-        truth[index++] = h*(height+jitter)/height;
-        truth[index++] = w*(width+jitter)/width;
+        truth[index++] = th;
+        truth[index++] = tw;
     }
     free(boxes);
 }

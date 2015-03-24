@@ -50,7 +50,7 @@ void train_detection(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    net.seen = 0;
+    //net.seen = 0;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 128;
     srand(time(0));
@@ -63,7 +63,7 @@ void train_detection(char *cfgfile, char *weightfile)
     int im_dim = 512;
     int jitter = 64;
     int classes = 20;
-    int background = 0;
+    int background = 1;
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, background, &buffer);
     clock_t time;
     while(1){
@@ -109,8 +109,9 @@ void validate_detection(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
     int im_size = 448;
     int classes = 20;
-    int background = 0;
-    int num_output = 7*7*(4+classes+background);
+    int background = 1;
+    int nuisance = 0;
+    int num_output = 7*7*(4+classes+background+nuisance);
 
     int m = plist->size;
     int i = 0;
@@ -134,17 +135,19 @@ void validate_detection(char *cfgfile, char *weightfile)
         matrix pred = network_predict_data(net, val);
         int j, k, class;
         for(j = 0; j < pred.rows; ++j){
-            for(k = 0; k < pred.cols; k += classes+4+background){
+            for(k = 0; k < pred.cols; k += classes+4+background+nuisance){
+                float scale = 1.;
+                if(nuisance) scale = pred.vals[j][k];
                 for(class = 0; class < classes; ++class){
-                    int index = (k)/(classes+4+background); 
+                    int index = (k)/(classes+4+background+nuisance); 
                     int r = index/7;
                     int c = index%7;
-                    int ci = k+classes+background;
+                    int ci = k+classes+background+nuisance;
                     float y = (r + pred.vals[j][ci + 0])/7.;
                     float x = (c + pred.vals[j][ci + 1])/7.;
                     float h = pred.vals[j][ci + 2];
                     float w = pred.vals[j][ci + 3];
-                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, pred.vals[j][k+class+background], y, x, h, w);
+                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, scale*pred.vals[j][k+class+background+nuisance], y, x, h, w);
                 }
             }
         }

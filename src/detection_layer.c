@@ -16,7 +16,7 @@ int get_detection_layer_output_size(detection_layer layer)
     return get_detection_layer_locations(layer)*(layer.background + layer.classes + layer.coords);
 }
 
-detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background)
+detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background, int nuisance)
 {
     detection_layer *layer = calloc(1, sizeof(detection_layer));
     
@@ -25,6 +25,7 @@ detection_layer *make_detection_layer(int batch, int inputs, int classes, int co
     layer->classes = classes;
     layer->coords = coords;
     layer->rescore = rescore;
+    layer->nuisance = nuisance;
     layer->background = background;
     int outputs = get_detection_layer_output_size(*layer);
     layer->output = calloc(batch*outputs, sizeof(float));
@@ -72,12 +73,18 @@ void forward_detection_layer(const detection_layer layer, network_state state)
         int mask = (!state.truth || state.truth[out_i + layer.background + layer.classes + 2]);
         float scale = 1;
         if(layer.rescore) scale = state.input[in_i++];
-        if(layer.background) layer.output[out_i++] = scale*state.input[in_i++];
+        else if(layer.nuisance){
+            layer.output[out_i++] = 1-state.input[in_i++];
+            scale = mask;
+        }
+        else if(layer.background) layer.output[out_i++] = scale*state.input[in_i++];
 
         for(j = 0; j < layer.classes; ++j){
             layer.output[out_i++] = scale*state.input[in_i++];
         }
-        if(layer.background){
+        if(layer.nuisance){
+            
+        }else if(layer.background){
             softmax_array(layer.output + out_i - layer.classes-layer.background, layer.classes+layer.background, layer.output + out_i - layer.classes-layer.background);
             activate_array(state.input+in_i, layer.coords, LOGISTIC);
         }
@@ -85,6 +92,7 @@ void forward_detection_layer(const detection_layer layer, network_state state)
             layer.output[out_i++] = mask*state.input[in_i++];
         }
     }
+    /*
     if(layer.background || 1){
         for(i = 0; i < layer.batch*locations; ++i){
             int index = i*(layer.classes+layer.coords+layer.background);
@@ -95,6 +103,7 @@ void forward_detection_layer(const detection_layer layer, network_state state)
             }
         }
     }
+    */
 }
 
 void backward_detection_layer(const detection_layer layer, network_state state)
@@ -107,13 +116,15 @@ void backward_detection_layer(const detection_layer layer, network_state state)
         float scale = 1;
         float latent_delta = 0;
         if(layer.rescore) scale = state.input[in_i++];
-        if(layer.background) state.delta[in_i++] = scale*layer.delta[out_i++];
+        else if (layer.nuisance)   state.delta[in_i++] = -layer.delta[out_i++];
+        else if (layer.background) state.delta[in_i++] = scale*layer.delta[out_i++];
         for(j = 0; j < layer.classes; ++j){
             latent_delta += state.input[in_i]*layer.delta[out_i];
             state.delta[in_i++] = scale*layer.delta[out_i++];
         }
 
-        if (layer.background) gradient_array(layer.output + out_i, layer.coords, LOGISTIC, layer.delta + out_i);
+        if (layer.nuisance) ;
+        else if (layer.background) gradient_array(layer.output + out_i, layer.coords, LOGISTIC, layer.delta + out_i);
         for(j = 0; j < layer.coords; ++j){
             state.delta[in_i++] = layer.delta[out_i++];
         }
