@@ -11,16 +11,16 @@ extern "C" {
 __global__ void bias_output_kernel(float *output, float *biases, int n, int size)
 {
     int offset = blockIdx.x * blockDim.x + threadIdx.x;
-    int filter = blockIdx.y;
-    int batch = blockIdx.z;
+    int filter = blockIdx.y % n;
+    int batch = blockIdx.y / n;
 
     if(offset < size) output[(batch*n+filter)*size + offset] = biases[filter];
 }
 
 void bias_output_gpu(float *output, float *biases, int batch, int n, int size)
 {
+    dim3 dimGrid((size-1)/BLOCK + 1, n*batch, 1);
     dim3 dimBlock(BLOCK, 1, 1);
-    dim3 dimGrid((size-1)/BLOCK + 1, n, batch);
 
     bias_output_kernel<<<dimGrid, dimBlock>>>(output, biases, n, size);
     check_error(cudaPeekAtLastError());
