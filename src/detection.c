@@ -45,7 +45,7 @@ void train_detection(char *cfgfile, char *weightfile)
 {
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
-    float avg_loss = 1;
+    float avg_loss = -1;
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -84,6 +84,7 @@ void train_detection(char *cfgfile, char *weightfile)
         time=clock();
         float loss = train_network(net, train);
         net.seen += imgs;
+        if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
         if(i%100==0){
@@ -109,8 +110,8 @@ void validate_detection(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
     int im_size = 448;
     int classes = 20;
-    int background = 1;
-    int nuisance = 0;
+    int background = 0;
+    int nuisance = 1;
     int num_output = 7*7*(4+classes+background+nuisance);
 
     int m = plist->size;
@@ -137,7 +138,7 @@ void validate_detection(char *cfgfile, char *weightfile)
         for(j = 0; j < pred.rows; ++j){
             for(k = 0; k < pred.cols; k += classes+4+background+nuisance){
                 float scale = 1.;
-                if(nuisance) scale = pred.vals[j][k];
+                if(nuisance) scale = 1.-pred.vals[j][k];
                 for(class = 0; class < classes; ++class){
                     int index = (k)/(classes+4+background+nuisance); 
                     int r = index/7;

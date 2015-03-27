@@ -26,7 +26,7 @@ void bias_output_gpu(float *output, float *biases, int batch, int n, int size)
     check_error(cudaPeekAtLastError());
 }
 
-__global__ void backward_bias_kernel(float *bias_updates, float *delta, int batch, int n, int size, float scale)
+__global__ void backward_bias_kernel(float *bias_updates, float *delta, int batch, int n, int size)
 {
     __shared__ float part[BLOCK];
     int i,b;
@@ -42,13 +42,13 @@ __global__ void backward_bias_kernel(float *bias_updates, float *delta, int batc
     part[p] = sum;
     __syncthreads();
     if(p == 0){
-        for(i = 0; i < BLOCK; ++i) bias_updates[filter] += scale * part[i];
+        for(i = 0; i < BLOCK; ++i) bias_updates[filter] += part[i];
     }
 }
 
 void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
 {
-    backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size, 1);
+    backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size);
     check_error(cudaPeekAtLastError());
 }
 

@@ -1,6 +1,6 @@
 GPU=1
 DEBUG=0
-ARCH= -arch=sm_35
+ARCH= -arch=sm_50
 
 VPATH=./src/
 EXEC=darknet

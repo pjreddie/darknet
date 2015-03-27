@@ -93,6 +93,19 @@ void forward_detection_layer(const detection_layer layer, network_state state)
         }
     }
     /*
+    int count = 0;
+    for(i = 0; i < layer.batch*locations; ++i){
+        for(j = 0; j < layer.classes+layer.background; ++j){
+            printf("%f, ", layer.output[count++]);
+        }
+        printf("\n");
+        for(j = 0; j < layer.coords; ++j){
+            printf("%f, ", layer.output[count++]);
+        }
+        printf("\n");
+    }
+    */
+    /*
     if(layer.background || 1){
         for(i = 0; i < layer.batch*locations; ++i){
             int index = i*(layer.classes+layer.coords+layer.background);
@@ -123,8 +136,9 @@ void backward_detection_layer(const detection_layer layer, network_state state)
             state.delta[in_i++] = scale*layer.delta[out_i++];
         }
 
-        if (layer.nuisance) ;
-        else if (layer.background) gradient_array(layer.output + out_i, layer.coords, LOGISTIC, layer.delta + out_i);
+        if (layer.nuisance) {
+
+        }else if (layer.background) gradient_array(layer.output + out_i, layer.coords, LOGISTIC, layer.delta + out_i);
         for(j = 0; j < layer.coords; ++j){
             state.delta[in_i++] = layer.delta[out_i++];
         }

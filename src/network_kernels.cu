@@ -71,6 +71,7 @@ void backward_network_gpu(network net, network_state state)
             state.input = get_network_output_gpu_layer(net, i-1);
             state.delta = get_network_delta_gpu_layer(net, i-1);
         }
+
         if(net.types[i] == CONVOLUTIONAL){
             backward_convolutional_layer_gpu(*(convolutional_layer *)net.layers[i], state);
         }

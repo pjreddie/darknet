@@ -37,9 +37,9 @@ __global__ void col2im_gpu_kernel(const int n, const float* data_col,
     }
 }
 
-void col2im_ongpu(float *im,
+void col2im_ongpu(float *data_col,
         int channels, int height, int width,
-        int ksize, int stride, int pad, float *data_col){
+        int ksize, int stride, int pad, float *data_im){
     // We are going to launch channels * height_col * width_col kernels, each
     // kernel responsible for copying a single-channel grid.
     pad = pad ? ksize/2 : 0;
@@ -50,7 +50,7 @@ void col2im_ongpu(float *im,
         BLOCK>>>(
                 num_kernels, data_col, height, width, ksize, pad,
                 stride, height_col,
-                width_col, im);
+                width_col, data_im);
 }
 
 /*
