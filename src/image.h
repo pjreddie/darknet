@@ -66,5 +66,6 @@ void back_convolve(image m, image kernel, int stride, int channel, image out, in
 void kernel_update(image m, image update, int stride, int channel, image out, int edge);
 
 void free_image(image m);
+void test_resize(char *filename);
 #endif
 
