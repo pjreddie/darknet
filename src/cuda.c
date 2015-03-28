@@ -7,6 +7,7 @@ int gpu_index = 0;
 #include "blas.h"
 #include "assert.h"
 #include <stdlib.h>
+#include <time.h>
 
 
 void check_error(cudaError_t status)
@@ -65,7 +66,7 @@ void cuda_random(float *x_gpu, int n)
     static int init = 0;
     if(!init){
         curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-        curandSetPseudoRandomGeneratorSeed(gen, 0ULL);
+        curandSetPseudoRandomGeneratorSeed(gen, time(0));
         init = 1;
     }
     curandGenerateUniform(gen, x_gpu, n);
