@@ -395,6 +395,26 @@ image ipl_to_image(IplImage* src)
     return out;
 }
 
+image crop_image(image im, int dr, int dc, int h, int w)
+{
+    image cropped = make_image(h, w, im.c);
+    int i, j, k;
+    for(k = 0; k < im.c; ++k){
+        for(j = 0; j < h; ++j){
+            for(i = 0; i < w; ++i){
+                int r = j + dr;
+                int c = i + dc;
+                float val = 128;
+                if (r >= 0 && r < im.h && c >= 0 && c < im.w) {
+                    val = get_pixel(im, r, c, k);
+                }
+                set_pixel(cropped, j, i, k, val);
+            }
+        }
+    }
+    return cropped;
+}
+
 // #wikipedia
 image resize_image(image im, int h, int w)
 {
@@ -427,9 +447,13 @@ void test_resize(char *filename)
     image im = load_image(filename, 0,0);
     image small = resize_image(im, 63, 65);
     image big = resize_image(im, 512, 513);
+    image crop = crop_image(im, 10, 50, 100, 100);
+    image crop2 = crop_image(im, -50, -30, 400, 291);
     show_image(im, "original");
     show_image(small, "smaller");
     show_image(big, "bigger");
+    show_image(crop, "crop");
+    show_image(crop2, "crop2");
     cvWaitKey(0);
 }
 

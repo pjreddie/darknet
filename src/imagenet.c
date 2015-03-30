@@ -38,6 +38,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
         free_data(train);
+        //if(i%100 == 0 && net.learning_rate > .00001) net.learning_rate *= .97;
         if(i%100==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);

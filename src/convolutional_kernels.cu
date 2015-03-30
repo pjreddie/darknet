@@ -11,15 +11,15 @@ extern "C" {
 __global__ void bias_output_kernel(float *output, float *biases, int n, int size)
 {
     int offset = blockIdx.x * blockDim.x + threadIdx.x;
-    int filter = blockIdx.y % n;
-    int batch = blockIdx.y / n;
+    int filter = blockIdx.y;
+    int batch = blockIdx.z;
 
     if(offset < size) output[(batch*n+filter)*size + offset] = biases[filter];
 }
 
 void bias_output_gpu(float *output, float *biases, int batch, int n, int size)
 {
-    dim3 dimGrid((size-1)/BLOCK + 1, n*batch, 1);
+    dim3 dimGrid((size-1)/BLOCK + 1, n, batch);
     dim3 dimBlock(BLOCK, 1, 1);
 
     bias_output_kernel<<<dimGrid, dimBlock>>>(output, biases, n, size);

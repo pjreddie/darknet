@@ -66,6 +66,7 @@ matrix load_image_paths(char **paths, int n, int h, int w)
 typedef struct box{
     int id;
     float x,y,w,h;
+    float left, right, top, bottom;
 } box;
 
 box *read_boxes(char *filename, int *n)
@@ -83,6 +84,10 @@ box *read_boxes(char *filename, int *n)
         boxes[count].y = y;
         boxes[count].h = h;
         boxes[count].w = w;
+        boxes[count].left   = x - w/2;
+        boxes[count].right  = x + w/2;
+        boxes[count].top    = y - h/2;
+        boxes[count].bottom = y + h/2;
         ++count;
     }
     fclose(file);
