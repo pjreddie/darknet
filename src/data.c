@@ -114,7 +114,7 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
     int count = 0;
     box *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
-    float l,r,t,b;
+    float x,y,w,h;
     int id;
     int i;
     if(background){
@@ -123,46 +123,41 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
         }
     }
     for(i = 0; i < count; ++i){
-        l = boxes[i].left;
-        r = boxes[i].right;
-        t = boxes[i].top;
-        b = boxes[i].bottom;
+        x = boxes[i].x;
+        y = boxes[i].y;
+        w = boxes[i].w;
+        h = boxes[i].h;
         id = boxes[i].id;
 
         if(flip){
-            float left = l;
-            float right = r;
-            r = 1-left;
-            l = 1-right;
+            x = 1-x;
         }
 
-        l = l*sx-dx;
-        r = r*sx-dx;
-        t = t*sy-dy;
-        b = b*sy-dy;
+        x = x*sx-dx;
+        y = y*sy-dy;
+        w = w*sx;
+        h = h*sy;
         
-        float x = (l+r)/2.;
-        float y = (t+b)/2.;
-
         if (x < 0 || x >= 1 || y < 0 || y >= 1) continue;
 
         int i = (int)(x*num_boxes);
         int j = (int)(y*num_boxes);
 
-        l = constrain(0, 1, l);
-        r = constrain(0, 1, r);
-        t = constrain(0, 1, t);
-        b = constrain(0, 1, b);
+        x = x*num_boxes - i;
+        y = y*num_boxes - j;
+
+        w = constrain(0, 1, w);
+        h = constrain(0, 1, h);
 
         int index = (i+j*num_boxes)*(4+classes+background);
         if(truth[index+classes+background+2]) continue;
         if(background) truth[index++] = 0;
         truth[index+id] = 1;
         index += classes;
-        truth[index++] = l;
-        truth[index++] = r;
-        truth[index++] = t;
-        truth[index++] = b;
+        truth[index++] = y;
+        truth[index++] = x;
+        truth[index++] = w;
+        truth[index++] = h;
     }
     free(boxes);
 }

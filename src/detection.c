@@ -111,7 +111,9 @@ void validate_detection(char *cfgfile, char *weightfile)
     int classes = 20;
     int background = 0;
     int nuisance = 1;
-    int num_output = 7*7*(4+classes+background+nuisance);
+    int num_boxes = 7;
+    int per_box = 4+classes+background+nuisance;
+    int num_output = num_boxes*num_boxes*per_box;
 
     int m = plist->size;
     int i = 0;
@@ -135,16 +137,19 @@ void validate_detection(char *cfgfile, char *weightfile)
         matrix pred = network_predict_data(net, val);
         int j, k, class;
         for(j = 0; j < pred.rows; ++j){
-            for(k = 0; k < pred.cols; k += classes+4+background+nuisance){
+            for(k = 0; k < pred.cols; k += per_box){
                 float scale = 1.;
+                int index = k/per_box;
+                int row = index / num_boxes;
+                int col = index % num_boxes;
                 if (nuisance) scale = 1.-pred.vals[j][k];
                 for (class = 0; class < classes; ++class){
                     int ci = k+classes+background+nuisance;
-                    float left  = pred.vals[j][ci + 0];
-                    float right = pred.vals[j][ci + 1];
-                    float top   = pred.vals[j][ci + 2];
-                    float bot   = pred.vals[j][ci + 3];
-                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, scale*pred.vals[j][k+class+background+nuisance], left, right, top, bot);
+                    float y = (pred.vals[j][ci + 0] + row)/num_boxes;
+                    float x = (pred.vals[j][ci + 1] + col)/num_boxes;
+                    float h = pred.vals[j][ci + 2];
+                    float w = pred.vals[j][ci + 3];
+                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, scale*pred.vals[j][k+class+background+nuisance], y, x, h, w);
                 }
             }
         }
