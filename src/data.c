@@ -16,6 +16,7 @@ struct load_args{
     int w;
     int nh;
     int nw;
+    int num_boxes;
     int jitter;
     int classes;
     int background;
@@ -106,56 +107,62 @@ void randomize_boxes(box *b, int n)
     }
 }
 
-void fill_truth_detection(char *path, float *truth, int classes, int height, int width, int num_height, int num_width, int dy, int dx, int jitter, int flip, int background)
+void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, int flip, int background, float dx, float dy, float sx, float sy)
 {
-    int box_height = height/num_height;
-    int box_width = width/num_width;
     char *labelpath = find_replace(path, "VOC2012/JPEGImages", "labels");
     labelpath = find_replace(labelpath, ".jpg", ".txt");
     int count = 0;
     box *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
-    float x, y, h, w;
+    float l,r,t,b;
     int id;
     int i;
     if(background){
-        for(i = 0; i < num_height*num_width*(4+classes+background); i += 4+classes+background){
+        for(i = 0; i < num_boxes*num_boxes*(4+classes+background); i += 4+classes+background){
             truth[i] = 1;
         }
     }
     for(i = 0; i < count; ++i){
-        x = boxes[i].x;
-        y = boxes[i].y;
-        w = boxes[i].w;
-        h = boxes[i].h;
+        l = boxes[i].left;
+        r = boxes[i].right;
+        t = boxes[i].top;
+        b = boxes[i].bottom;
         id = boxes[i].id;
-        if(flip) x = 1-x;
-        x *= width + jitter;
-        y *= height + jitter;
-        x -= dx;
-        y -= dy;
-        int i = x/box_width;
-        int j = y/box_height;
 
-        if(i < 0) i = 0;
-        if(i >= num_width) i = num_width-1;
-        if(j < 0) j = 0;
-        if(j >= num_height) j = num_height-1;
+        if(flip){
+            float left = l;
+            float right = r;
+            r = 1-left;
+            l = 1-right;
+        }
+
+        l = l*sx-dx;
+        r = r*sx-dx;
+        t = t*sy-dy;
+        b = b*sy-dy;
         
-        float dw = constrain(0,1, (x - i*box_width)/box_width );
-        float dh = constrain(0,1, (y - j*box_height)/box_height );
-        float th = constrain(0,1, h*(height+jitter)/height );
-        float tw = constrain(0,1, w*(width+jitter)/width );
+        float x = (l+r)/2.;
+        float y = (t+b)/2.;
 
-        int index = (i+j*num_width)*(4+classes+background);
+        if (x < 0 || x >= 1 || y < 0 || y >= 1) continue;
+
+        int i = (int)(x*num_boxes);
+        int j = (int)(y*num_boxes);
+
+        l = constrain(0, 1, l);
+        r = constrain(0, 1, r);
+        t = constrain(0, 1, t);
+        b = constrain(0, 1, b);
+
+        int index = (i+j*num_boxes)*(4+classes+background);
         if(truth[index+classes+background+2]) continue;
         if(background) truth[index++] = 0;
         truth[index+id] = 1;
         index += classes;
-        truth[index++] = dh;
-        truth[index++] = dw;
-        truth[index++] = th;
-        truth[index++] = tw;
+        truth[index++] = l;
+        truth[index++] = r;
+        truth[index++] = t;
+        truth[index++] = b;
     }
     free(boxes);
 }
@@ -272,23 +279,30 @@ void free_data(data d)
     }
 }
 
-data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter, int background)
+data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int num_boxes, int jitter, int background)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
     data d;
     d.shallow = 0;
     d.X = load_image_paths(random_paths, n, h, w);
-    int k = nh*nw*(4+classes+background);
+    int k = num_boxes*num_boxes*(4+classes+background);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
-        int dx = rand()%jitter;
-        int dy = rand()%jitter;
+        int px = rand()%jitter;
+        px = 0;
+        int py = rand()%jitter;
+        py = 0;
+        float sy = (float) h / (h-jitter);
+        float sx = (float) w / (w-jitter);
+        float dy = (float) py / (h-jitter);
+        float dx = (float) px / (w-jitter);
+
         int flip = rand()%2;
-        fill_truth_detection(random_paths[i], d.y.vals[i], classes, h-jitter, w-jitter, nh, nw, dy, dx, jitter, flip, background);
+        fill_truth_detection(random_paths[i], d.y.vals[i], classes, num_boxes, flip, background, dx, dy, sx, sy);
         image a = float_to_image(h, w, 3, d.X.vals[i]);
         if(flip) flip_image(a);
-        jitter_image(a,h-jitter,w-jitter,dy,dx);
+        jitter_image(a, h-jitter, w-jitter, py, px);
     }
     d.X.cols = (h-jitter)*(w-jitter)*3;
     free(random_paths);
@@ -299,7 +313,7 @@ void *load_detection_thread(void *ptr)
 {
     printf("Loading data: %d\n", rand());
     struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.h, a.w, a.nh, a.nw, a.jitter, a.background);
+    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.h, a.w, a.num_boxes, a.jitter, a.background);
     translate_data_rows(*a.d, -128);
     scale_data_rows(*a.d, 1./128);
     free(ptr);
@@ -317,6 +331,7 @@ pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, in
     args->w = w;
     args->nh = nh;
     args->nw = nw;
+    args->num_boxes = nw;
     args->classes = classes;
     args->jitter = jitter;
     args->background = background;

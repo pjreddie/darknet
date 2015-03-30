@@ -27,12 +27,11 @@ void draw_detection(image im, float *box, int side)
                 float blue = get_color(2,class,classes);
 
                 j += classes;
-                int d = im.w/side;
-                int y = r*d+box[j]*d;
-                int x = c*d+box[j+1]*d;
-                int h = box[j+2]*im.h;
-                int w = box[j+3]*im.w;
-                draw_box(im, x-w/2, y-h/2, x+w/2, y+h/2,red,green,blue);
+                int left = box[j]  *im.w;
+                int right = box[j+1]*im.w;
+                int top = box[j+2]*im.h;
+                int bot = box[j+3]*im.h;
+                draw_box(im, left, top, right, bot, red, green, blue);
             }
         }
     }
@@ -138,17 +137,14 @@ void validate_detection(char *cfgfile, char *weightfile)
         for(j = 0; j < pred.rows; ++j){
             for(k = 0; k < pred.cols; k += classes+4+background+nuisance){
                 float scale = 1.;
-                if(nuisance) scale = 1.-pred.vals[j][k];
-                for(class = 0; class < classes; ++class){
-                    int index = (k)/(classes+4+background+nuisance); 
-                    int r = index/7;
-                    int c = index%7;
+                if (nuisance) scale = 1.-pred.vals[j][k];
+                for (class = 0; class < classes; ++class){
                     int ci = k+classes+background+nuisance;
-                    float y = (r + pred.vals[j][ci + 0])/7.;
-                    float x = (c + pred.vals[j][ci + 1])/7.;
-                    float h = pred.vals[j][ci + 2];
-                    float w = pred.vals[j][ci + 3];
-                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, scale*pred.vals[j][k+class+background+nuisance], y, x, h, w);
+                    float left  = pred.vals[j][ci + 0];
+                    float right = pred.vals[j][ci + 1];
+                    float top   = pred.vals[j][ci + 2];
+                    float bot   = pred.vals[j][ci + 3];
+                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, scale*pred.vals[j][k+class+background+nuisance], left, right, top, bot);
                 }
             }
         }
