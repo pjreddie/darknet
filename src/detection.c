@@ -26,11 +26,21 @@ void draw_detection(image im, float *box, int side)
                 float green = get_color(1,class,classes);
                 float blue = get_color(2,class,classes);
 
+                //float maxheight = distance_from_edge(r, side);
+                //float maxwidth  = distance_from_edge(c, side);
                 j += classes;
-                int left = box[j]  *im.w;
-                int right = box[j+1]*im.w;
-                int top = box[j+2]*im.h;
-                int bot = box[j+3]*im.h;
+                float y = box[j+0];
+                float x = box[j+1];
+                x = (x+c)/side;
+                y = (y+r)/side;
+                float h = box[j+2]; //*maxheight;
+                float w = box[j+3]; //*maxwidth;
+                //printf("coords %f %f %f %f\n", x, y, w, h);
+
+                int left  = (x-w/2)*im.w;
+                int right = (x+w/2)*im.w;
+                int top   = (y-h/2)*im.h;
+                int bot   = (y+h/2)*im.h;
                 draw_box(im, left, top, right, bot, red, green, blue);
             }
         }
@@ -59,25 +69,20 @@ void train_detection(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     data train, buffer;
-    int im_dim = 512;
-    int jitter = 64;
+    int im_dim = 448;
     int classes = 20;
     int background = 1;
-    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, background, &buffer);
+    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, background, &buffer);
     clock_t time;
     while(1){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, jitter, background, &buffer);
+        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, im_dim, im_dim, 7, 7, background, &buffer);
 
-/*
-           image im = float_to_image(im_dim - jitter, im_dim-jitter, 3, train.X.vals[114]);
-           draw_detection(im, train.y.vals[114], 7);
-           show_image(im, "truth");
-           cvWaitKey(0);
-*/
+           //image im = float_to_image(im_dim, im_dim, 3, train.X.vals[114]);
+           //draw_detection(im, train.y.vals[114], 7);
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -147,8 +152,10 @@ void validate_detection(char *cfgfile, char *weightfile)
                     int ci = k+classes+background+nuisance;
                     float y = (pred.vals[j][ci + 0] + row)/num_boxes;
                     float x = (pred.vals[j][ci + 1] + col)/num_boxes;
-                    float h = pred.vals[j][ci + 2];
-                    float w = pred.vals[j][ci + 3];
+                    float h = pred.vals[j][ci + 2]; //* distance_from_edge(row, num_boxes);
+                    h = h*h;
+                    float w = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
+                    w = w*w;
                     printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, scale*pred.vals[j][k+class+background+nuisance], y, x, h, w);
                 }
             }

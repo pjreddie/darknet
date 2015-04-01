@@ -5,6 +5,18 @@
 #include "matrix.h"
 #include "list.h"
 
+static inline float distance_from_edge(int x, int max)
+{
+    int dx = (max/2) - x;
+    if (dx < 0) dx = -dx;
+    dx = (max/2) + 1 - dx;
+    dx *= 2;
+    float dist = (float)dx/max;
+    if (dist > 1) dist = 1;
+    return dist;
+}
+
+
 typedef struct{
     matrix X;
     matrix y;
@@ -20,8 +32,8 @@ data load_data_captcha_encode(char **paths, int n, int m, int h, int w);
 data load_data(char **paths, int n, int m, char **labels, int k, int h, int w);
 pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int h, int w, data *d);
 
-pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int jitter, int background, data *d);
-data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int num_boxes, int jitter, int background);
+pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int background, data *d);
+data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int num_boxes, int background);
 
 data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w);
 data load_cifar10_data(char *filename);

@@ -17,6 +17,8 @@ void flip_image(image a);
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
 image image_distance(image a, image b);
 void scale_image(image m, float s);
+image crop_image(image im, int dr, int dc, int h, int w);
+image resize_image(image im, int h, int w);
 void translate_image(image m, float s);
 void normalize_image(image p);
 void z_normalize_image(image p);
