@@ -108,8 +108,9 @@ void randomize_boxes(box *b, int n)
 
 void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, int flip, int background, float dx, float dy, float sx, float sy)
 {
-    char *labelpath = find_replace(path, "VOC2012/JPEGImages", "labels");
+    char *labelpath = find_replace(path, "detection_images", "labels");
     labelpath = find_replace(labelpath, ".jpg", ".txt");
+    labelpath = find_replace(labelpath, ".JPEG", ".txt");
     int count = 0;
     box *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
@@ -293,8 +294,6 @@ void free_data(data d)
 
 data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int num_boxes, int background)
 {
-    //float minscale = 0.85;
-    //float maxscale = 1.15;
     char **random_paths = get_random_paths(paths, n, m);
     int i;
     data d;
@@ -310,10 +309,14 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
         image orig = load_image_color(random_paths[i], 0, 0);
         int oh = orig.h;
         int ow = orig.w;
-        int pleft  = (rand_uniform() * 64. - 32.);
-        int pright = (rand_uniform() * 64. - 32.);
-        int ptop   = (rand_uniform() * 64. - 32.);
-        int pbot   = (rand_uniform() * 64. - 32.);
+
+        int dw = ow/10;
+        int dh = oh/10;
+
+        int pleft  = (rand_uniform() * 2*dw - dw);
+        int pright = (rand_uniform() * 2*dw - dw);
+        int ptop   = (rand_uniform() * 2*dh - dh);
+        int pbot   = (rand_uniform() * 2*dh - dh);
 
         int swidth =  ow - pleft - pright;
         int sheight = oh - ptop - pbot;

@@ -3,6 +3,7 @@
 #define NETWORK_H
 
 #include "image.h"
+#include "detection_layer.h"
 #include "params.h"
 #include "data.h"
 
@@ -81,6 +82,10 @@ int resize_network(network net, int h, int w, int c);
 void set_batch_network(network *net, int b);
 int get_network_input_size(network net);
 float get_network_cost(network net);
+detection_layer *get_network_detection_layer(network net);
+
+int get_network_nuisance(network net);
+int get_network_background(network net);
 
 #endif
 

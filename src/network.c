@@ -500,6 +500,18 @@ int get_network_input_size(network net)
     return get_network_input_size_layer(net, 0);
 }
 
+detection_layer *get_network_detection_layer(network net)
+{
+    int i;
+    for(i = 0; i < net.n; ++i){
+        if(net.types[i] == DETECTION){
+            detection_layer *layer = (detection_layer *)net.layers[i];
+            return layer;
+        }
+    }
+    return 0;
+}
+
 image get_network_image_layer(network net, int i)
 {
     if(net.types[i] == CONVOLUTIONAL){

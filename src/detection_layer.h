@@ -23,6 +23,7 @@ detection_layer *make_detection_layer(int batch, int inputs, int classes, int co
 void forward_detection_layer(const detection_layer layer, network_state state);
 void backward_detection_layer(const detection_layer layer, network_state state);
 int get_detection_layer_output_size(detection_layer layer);
+int get_detection_layer_locations(detection_layer layer);
 
 #ifdef GPU
 void forward_detection_layer_gpu(const detection_layer layer, network_state state);
