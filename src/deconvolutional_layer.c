@@ -31,7 +31,7 @@ image get_deconvolutional_image(deconvolutional_layer layer)
     h = deconvolutional_out_height(layer);
     w = deconvolutional_out_width(layer);
     c = layer.n;
-    return float_to_image(h,w,c,layer.output);
+    return float_to_image(w,h,c,layer.output);
 }
 
 image get_deconvolutional_delta(deconvolutional_layer layer)
@@ -40,7 +40,7 @@ image get_deconvolutional_delta(deconvolutional_layer layer)
     h = deconvolutional_out_height(layer);
     w = deconvolutional_out_width(layer);
     c = layer.n;
-    return float_to_image(h,w,c,layer.delta);
+    return float_to_image(w,h,c,layer.delta);
 }
 
 deconvolutional_layer *make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, ACTIVATION activation)

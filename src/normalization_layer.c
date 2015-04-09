@@ -6,7 +6,7 @@ image get_normalization_image(normalization_layer layer)
     int h = layer.h;
     int w = layer.w;
     int c = layer.c;
-    return float_to_image(h,w,c,layer.output);
+    return float_to_image(w,h,c,layer.output);
 }
 
 image get_normalization_delta(normalization_layer layer)
@@ -14,7 +14,7 @@ image get_normalization_delta(normalization_layer layer)
     int h = layer.h;
     int w = layer.w;
     int c = layer.c;
-    return float_to_image(h,w,c,layer.delta);
+    return float_to_image(w,h,c,layer.delta);
 }
 
 normalization_layer *make_normalization_layer(int batch, int h, int w, int c, int size, float alpha, float beta, float kappa)

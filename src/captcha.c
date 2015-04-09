@@ -23,7 +23,7 @@ void train_captcha(char *cfgfile, char *weightfile)
     while(1){
         ++i;
         time=clock();
-        data train = load_data_captcha(paths, imgs, plist->size, 10, 60, 200);
+        data train = load_data_captcha(paths, imgs, plist->size, 10, 200, 60);
         translate_data_rows(train, -128);
         scale_data_rows(train, 1./128);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
@@ -56,11 +56,11 @@ void decode_captcha(char *cfgfile, char *weightfile)
         printf("Enter filename: ");
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
-        image im = load_image_color(filename, 57, 300);
+        image im = load_image_color(filename, 300, 57);
         scale_image(im, 1./255.);
         float *X = im.data;
         float *predictions = network_predict(net, X);
-        image out  = float_to_image(57, 300, 1, predictions);
+        image out  = float_to_image(300, 57, 1, predictions);
         show_image(out, "decoded");
         cvWaitKey(0);
         free_image(im);
@@ -87,7 +87,7 @@ void encode_captcha(char *cfgfile, char *weightfile)
     while(1){
         ++i;
         time=clock();
-        data train = load_data_captcha_encode(paths, imgs, plist->size, 57, 300);
+        data train = load_data_captcha_encode(paths, imgs, plist->size, 300, 57);
         scale_data_rows(train, 1./255);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -118,7 +118,7 @@ void validate_captcha(char *cfgfile, char *weightfile)
     list *plist = get_paths("/data/captcha/solved.hard");
     char **paths = (char **)list_to_array(plist);
     int imgs = plist->size;
-    data valid = load_data_captcha(paths, imgs, 0, 10, 60, 200);
+    data valid = load_data_captcha(paths, imgs, 0, 10, 200, 60);
     translate_data_rows(valid, -128);
     scale_data_rows(valid, 1./128);
     matrix pred = network_predict_data(net, valid);
@@ -157,7 +157,7 @@ void test_captcha(char *cfgfile, char *weightfile)
         //printf("Enter filename: ");
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
-        image im = load_image_color(filename, 60, 200);
+        image im = load_image_color(filename, 200, 60);
         translate_image(im, -128);
         scale_image(im, 1/128.);
         float *X = im.data;

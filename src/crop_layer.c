@@ -7,7 +7,7 @@ image get_crop_image(crop_layer layer)
     int h = layer.crop_height;
     int w = layer.crop_width;
     int c = layer.c;
-    return float_to_image(h,w,c,layer.output);
+    return float_to_image(w,h,c,layer.output);
 }
 
 crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip)

@@ -47,7 +47,7 @@ char **get_random_paths(char **paths, int n, int m)
     return random_paths;
 }
 
-matrix load_image_paths(char **paths, int n, int h, int w)
+matrix load_image_paths(char **paths, int n, int w, int h)
 {
     int i;
     matrix X;
@@ -56,7 +56,7 @@ matrix load_image_paths(char **paths, int n, int h, int w)
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
-        image im = load_image_color(paths[i], h, w);
+        image im = load_image_color(paths[i], w, h);
         X.vals[i] = im.data;
         X.cols = im.h*im.w*im.c;
     }
@@ -207,12 +207,12 @@ void fill_truth_captcha(char *path, int n, float *truth)
     }
 }
 
-data load_data_captcha(char **paths, int n, int m, int k, int h, int w)
+data load_data_captcha(char **paths, int n, int m, int k, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d;
     d.shallow = 0;
-    d.X = load_image_paths(paths, n, h, w);
+    d.X = load_image_paths(paths, n, w, h);
     d.y = make_matrix(n, k*NUMCHARS);
     int i;
     for(i = 0; i < n; ++i){
@@ -222,12 +222,12 @@ data load_data_captcha(char **paths, int n, int m, int k, int h, int w)
     return d;
 }
 
-data load_data_captcha_encode(char **paths, int n, int m, int h, int w)
+data load_data_captcha_encode(char **paths, int n, int m, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d;
     d.shallow = 0;
-    d.X = load_image_paths(paths, n, h, w);
+    d.X = load_image_paths(paths, n, w, h);
     d.X.cols = 17100;
     d.y = d.X;
     if(m) free(paths);
@@ -258,21 +258,6 @@ matrix load_labels_paths(char **paths, int n, char **labels, int k)
     return y;
 }
 
-data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w)
-{
-    list *plist = get_paths(filename);
-    char **paths = (char **)list_to_array(plist);
-    int n = plist->size;
-    data d;
-    d.shallow = 0;
-    d.X = load_image_paths(paths, n, h, w);
-    d.y = load_labels_paths(paths, n, labels, k);
-    free_list_contents(plist);
-    free_list(plist);
-    free(paths);
-    return d;
-}
-
 char **get_labels(char *filename)
 {
     list *plist = get_paths(filename);
@@ -292,7 +277,7 @@ void free_data(data d)
     }
 }
 
-data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int num_boxes, int background)
+data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int w, int h, int num_boxes, int background)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -325,12 +310,12 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
         float sy = (float)sheight / oh;
 
         int flip = rand()%2;
-        image cropped = crop_image(orig, ptop, pleft, sheight, swidth);
+        image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
         float dx = ((float)pleft/ow)/sx;
         float dy = ((float)ptop /oh)/sy;
 
         free_image(orig);
-        image sized = resize_image(cropped, h, w);
+        image sized = resize_image(cropped, w, h);
         free_image(cropped);
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
@@ -345,14 +330,14 @@ void *load_detection_thread(void *ptr)
 {
     printf("Loading data: %d\n", rand());
     struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.h, a.w, a.num_boxes, a.background);
+    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
     translate_data_rows(*a.d, -128);
     scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;
 }
 
-pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int background, data *d)
+pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int w, int h, int nh, int nw, int background, data *d)
 {
     pthread_t thread;
     struct load_args *args = calloc(1, sizeof(struct load_args));
@@ -373,12 +358,12 @@ pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, in
     return thread;
 }
 
-data load_data(char **paths, int n, int m, char **labels, int k, int h, int w)
+data load_data(char **paths, int n, int m, char **labels, int k, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d;
     d.shallow = 0;
-    d.X = load_image_paths(paths, n, h, w);
+    d.X = load_image_paths(paths, n, w, h);
     d.y = load_labels_paths(paths, n, labels, k);
     if(m) free(paths);
     return d;
@@ -387,14 +372,14 @@ data load_data(char **paths, int n, int m, char **labels, int k, int h, int w)
 void *load_in_thread(void *ptr)
 {
     struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data(a.paths, a.n, a.m, a.labels, a.k, a.h, a.w);
+    *a.d = load_data(a.paths, a.n, a.m, a.labels, a.k, a.w, a.h);
     translate_data_rows(*a.d, -128);
     scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;
 }
 
-pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int h, int w, data *d)
+pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int w, int h, data *d)
 {
     pthread_t thread;
     struct load_args *args = calloc(1, sizeof(struct load_args));

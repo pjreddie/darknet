@@ -83,14 +83,14 @@ void train_detection(char *cfgfile, char *weightfile)
         plist = get_paths("/home/pjreddie/data/voc/trainall.txt");
     }
     paths = (char **)list_to_array(plist);
-    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.h, net.w, side, side, background, &buffer);
+    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
     clock_t time;
     while(1){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.h, net.w, side, side, background, &buffer);
+        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
 
 /*
            image im = float_to_image(im_dim, im_dim, 3, train.X.vals[114]);
@@ -124,6 +124,7 @@ void validate_detection(char *cfgfile, char *weightfile)
     srand(time(0));
 
     list *plist = get_paths("/home/pjreddie/data/voc/val.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/val.expanded.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/train.txt");
     char **paths = (char **)list_to_array(plist);
 
@@ -142,7 +143,7 @@ void validate_detection(char *cfgfile, char *weightfile)
 
     fprintf(stderr, "%d\n", m);
     data val, buffer;
-    pthread_t load_thread = load_data_thread(paths, num, 0, 0, num_output, net.h, net.w, &buffer);
+    pthread_t load_thread = load_data_thread(paths, num, 0, 0, num_output, net.w, net.h, &buffer);
     clock_t time;
     for(i = 1; i <= splits; ++i){
         time=clock();
@@ -151,7 +152,7 @@ void validate_detection(char *cfgfile, char *weightfile)
 
         num = (i+1)*m/splits - i*m/splits;
         char **part = paths+(i*m/splits);
-        if(i != splits) load_thread = load_data_thread(part, num, 0, 0, num_output, net.h, net.w, &buffer);
+        if(i != splits) load_thread = load_data_thread(part, num, 0, 0, num_output, net.w, net.h, &buffer);
 
         fprintf(stderr, "%d: Loaded: %lf seconds\n", i, sec(clock()-time));
         matrix pred = network_predict_data(net, val);
@@ -171,7 +172,9 @@ void validate_detection(char *cfgfile, char *weightfile)
                     h = h*h;
                     float w = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
                     w = w*w;
-                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, scale*pred.vals[j][k+class+background+nuisance], y, x, h, w);
+                    float prob = scale*pred.vals[j][k+class+background+nuisance];
+                    if(prob < .001) continue;
+                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, prob, y, x, h, w);
                 }
             }
         }

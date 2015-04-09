@@ -53,21 +53,6 @@ void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b
     }
 }
 
-void jitter_image(image a, int h, int w, int dh, int dw)
-{
-    int i,j,k;
-    for(k = 0; k < a.c; ++k){
-        for(i = 0; i < h; ++i){
-            for(j = 0; j < w; ++j){
-                int src = j + dw + (i+dh)*a.w + k*a.w*a.h;
-                int dst = j + i*w + k*w*h;
-                //printf("%d %d\n", src, dst);
-                a.data[dst] = a.data[src];
-            }
-        }
-    }
-}
-
 void flip_image(image a)
 {
     int i,j,k;
@@ -87,7 +72,7 @@ void flip_image(image a)
 image image_distance(image a, image b)
 {
     int i,j;
-    image dist = make_image(a.h, a.w, 1);
+    image dist = make_image(a.w, a.h, 1);
     for(i = 0; i < a.c; ++i){
         for(j = 0; j < a.h*a.w; ++j){
             dist.data[j] += pow(a.data[i*a.h*a.w+j]-b.data[i*a.h*a.w+j],2);
@@ -99,20 +84,14 @@ image image_distance(image a, image b)
     return dist;
 }
 
-void subtract_image(image a, image b)
+void embed_image(image source, image dest, int dx, int dy)
 {
-    int i;
-    for(i = 0; i < a.h*a.w*a.c; ++i) a.data[i] -= b.data[i];
-}
-
-void embed_image(image source, image dest, int h, int w)
-{
-    int i,j,k;
+    int x,y,k;
     for(k = 0; k < source.c; ++k){
-        for(i = 0; i < source.h; ++i){
-            for(j = 0; j < source.w; ++j){
-                float val = get_pixel(source, i,j,k);
-                set_pixel(dest, h+i, w+j, k, val);
+        for(y = 0; y < source.h; ++y){
+            for(x = 0; x < source.w; ++x){
+                float val = get_pixel(source, x,y,k);
+                set_pixel(dest, dx+x, dy+y, k, val);
             }
         }
     }
@@ -122,20 +101,15 @@ image collapse_image_layers(image source, int border)
 {
     int h = source.h;
     h = (h+border)*source.c - border;
-    image dest = make_image(h, source.w, 1);
+    image dest = make_image(source.w, h, 1);
     int i;
     for(i = 0; i < source.c; ++i){
         image layer = get_image_layer(source, i);
         int h_offset = i*(source.h+border);
-        embed_image(layer, dest, h_offset, 0);
+        embed_image(layer, dest, 0, h_offset);
         free_image(layer);
     }
     return dest;
-}
-
-void z_normalize_image(image p)
-{
-    normalize_array(p.data, p.h*p.w*p.c);
 }
 
 void normalize_image(image p)
@@ -167,24 +141,6 @@ void normalize_image(image p)
     free(max);
 }
 
-float avg_image_layer(image m, int l)
-{
-    int i;
-    float sum = 0;
-    for(i = 0; i < m.h*m.w; ++i){
-        sum += m.data[l*m.h*m.w + i];
-    }
-    return sum/(m.h*m.w);
-}
-
-void threshold_image(image p, float t)
-{
-    int i;
-    for(i = 0; i < p.w*p.h*p.c; ++i){
-        if(p.data[i] < t) p.data[i] = 0;
-    }
-}
-
 image copy_image(image p)
 {
     image copy = p;
@@ -196,7 +152,7 @@ image copy_image(image p)
 
 void show_image(image p, char *name)
 {
-    int i,j,k;
+    int x,y,k;
     image copy = copy_image(p);
     normalize_image(copy);
 
@@ -209,10 +165,10 @@ void show_image(image p, char *name)
     cvNamedWindow(buff, CV_WINDOW_AUTOSIZE); 
     //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
     ++windows;
-    for(i = 0; i < p.h; ++i){
-        for(j = 0; j < p.w; ++j){
+    for(y = 0; y < p.h; ++y){
+        for(x = 0; x < p.w; ++x){
             for(k= 0; k < p.c; ++k){
-                disp->imageData[i*step + j*p.c + k] = (unsigned char)(get_pixel(copy,i,j,k)*255);
+                disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy,x,y,k)*255);
             }
         }
     }
@@ -235,7 +191,7 @@ void show_image(image p, char *name)
 
 void save_image(image p, char *name)
 {
-    int i,j,k;
+    int x,y,k;
     image copy = copy_image(p);
     normalize_image(copy);
 
@@ -245,10 +201,10 @@ void save_image(image p, char *name)
 
     IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
     int step = disp->widthStep;
-    for(i = 0; i < p.h; ++i){
-        for(j = 0; j < p.w; ++j){
+    for(y = 0; y < p.h; ++y){
+        for(x = 0; x < p.w; ++x){
             for(k= 0; k < p.c; ++k){
-                disp->imageData[i*step + j*p.c + k] = (unsigned char)(get_pixel(copy,i,j,k)*255);
+                disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy,x,y,k)*255);
             }
         }
     }
@@ -276,7 +232,7 @@ void show_image_collapsed(image p, char *name)
     free_image(c);
 }
 
-image make_empty_image(int h, int w, int c)
+image make_empty_image(int w, int h, int c)
 {
     image out;
     out.data = 0;
@@ -286,28 +242,18 @@ image make_empty_image(int h, int w, int c)
     return out;
 }
 
-image make_image(int h, int w, int c)
+image make_image(int w, int h, int c)
 {
-    image out = make_empty_image(h,w,c);
+    image out = make_empty_image(w,h,c);
     out.data = calloc(h*w*c, sizeof(float));
     return out;
 }
 
-image float_to_image(int h, int w, int c, float *data)
+image float_to_image(int w, int h, int c, float *data)
 {
-    image out = make_empty_image(h,w,c);
+    image out = make_empty_image(w,h,c);
     out.data = data;
     return out;
-}
-
-void zero_image(image m)
-{
-    memset(m.data, 0, m.h*m.w*m.c*sizeof(float));
-}
-
-void zero_channel(image m, int c)
-{
-    memset(&(m.data[c*m.h*m.w]), 0, m.h*m.w*sizeof(float));
 }
 
 void rotate_image(image m)
@@ -318,29 +264,6 @@ void rotate_image(image m)
             float swap = m.data[j*m.h*m.w + i];
             m.data[j*m.h*m.w + i] = m.data[j*m.h*m.w + (m.h*m.w-1 - i)];
             m.data[j*m.h*m.w + (m.h*m.w-1 - i)] = swap;
-        }
-    }
-}
-
-image make_random_image(int h, int w, int c)
-{
-    image out = make_image(h,w,c);
-    int i;
-    for(i = 0; i < h*w*c; ++i){
-        out.data[i] = rand_normal();
-        //out.data[i] = rand()%3;
-    }
-    return out;
-}
-
-void add_into_image(image src, image dest, int h, int w)
-{
-    int i,j,k;
-    for(k = 0; k < src.c; ++k){
-        for(i = 0; i < src.h; ++i){
-            for(j = 0; j < src.w; ++j){
-                add_pixel(dest, h+i, w+j, k, get_pixel(src, i, j, k));
-            }
         }
     }
 }
@@ -357,24 +280,6 @@ void scale_image(image m, float s)
     for(i = 0; i < m.h*m.w*m.c; ++i) m.data[i] *= s;
 }
 
-image make_random_kernel(int size, int c, float scale)
-{
-    int pad;
-    if((pad=(size%2==0))) ++size;
-    image out = make_random_image(size,size,c);
-    scale_image(out, scale);
-    int i,k;
-    if(pad){
-        for(k = 0; k < out.c; ++k){
-            for(i = 0; i < size; ++i) {
-                set_pixel(out, i, 0, k, 0);
-                set_pixel(out, 0, i, k, 0);
-            }
-        }
-    }
-    return out;
-}
-
 image ipl_to_image(IplImage* src)
 {
     unsigned char *data = (unsigned char *)src->imageData;
@@ -382,7 +287,7 @@ image ipl_to_image(IplImage* src)
     int w = src->width;
     int c = src->nChannels;
     int step = src->widthStep;
-    image out = make_image(h,w,c);
+    image out = make_image(w, h, c);
     int i, j, k, count=0;;
 
     for(k= 0; k < c; ++k){
@@ -395,47 +300,55 @@ image ipl_to_image(IplImage* src)
     return out;
 }
 
-image crop_image(image im, int dr, int dc, int h, int w)
+image crop_image(image im, int dx, int dy, int w, int h)
 {
-    image cropped = make_image(h, w, im.c);
+    image cropped = make_image(w, h, im.c);
     int i, j, k;
     for(k = 0; k < im.c; ++k){
         for(j = 0; j < h; ++j){
             for(i = 0; i < w; ++i){
-                int r = j + dr;
-                int c = i + dc;
+                int r = j + dy;
+                int c = i + dx;
                 float val = 128;
                 if (r >= 0 && r < im.h && c >= 0 && c < im.w) {
-                    val = get_pixel(im, r, c, k);
+                    val = get_pixel(im, c, r, k);
                 }
-                set_pixel(cropped, j, i, k, val);
+                set_pixel(cropped, i, j, k, val);
             }
         }
     }
     return cropped;
 }
 
-// #wikipedia
-image resize_image(image im, int h, int w)
+float billinear_interpolate(image im, float x, float y, int c)
 {
-    image resized = make_image(h, w, im.c);   
+    int ix = (int) x;
+    int iy = (int) y;
+
+    float dx = x - ix;
+    float dy = y - iy;
+
+    float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
+                dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
+                (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
+                dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
+    return val;
+}
+
+// #wikipedia
+image resize_image(image im, int w, int h)
+{
+    image resized = make_image(w, h, im.c);   
     int r, c, k;
-    float h_scale = (float)(im.h - 1) / (h - 1) - .00001;
-    float w_scale = (float)(im.w - 1) / (w - 1) - .00001;
+    float w_scale = (float)(im.w - 1) / (w - 1);
+    float h_scale = (float)(im.h - 1) / (h - 1);
     for(k = 0; k < im.c; ++k){
         for(r = 0; r < h; ++r){
             for(c = 0; c < w; ++c){
-                float sr = r*h_scale;
-                float sc = c*w_scale;
-                int ir = (int)sr;
-                int ic = (int)sc;
-                float x = sr-ir;
-                float y = sc-ic;
-                float val = (1-x) * (1-y) * get_pixel(im, ir, ic, k) + 
-                    x     * (1-y) * get_pixel(im, ir+1, ic, k) + 
-                    (1-x) *   y   * get_pixel(im, ir, ic+1, k) +
-                    x     *   y   * get_pixel(im, ir+1, ic+1, k);
-                set_pixel(resized, r, c, k, val);
+                float sx = c*w_scale;
+                float sy = r*h_scale;
+                float val = billinear_interpolate(im, sx, sy, k);
+                set_pixel(resized, c, r, k, val);
             }
         }
     }
@@ -445,10 +358,10 @@ image resize_image(image im, int h, int w)
 void test_resize(char *filename)
 {
     image im = load_image(filename, 0,0);
-    image small = resize_image(im, 63, 65);
-    image big = resize_image(im, 512, 513);
-    image crop = crop_image(im, 10, 50, 100, 100);
-    image crop2 = crop_image(im, -50, -30, 400, 291);
+    image small = resize_image(im, 65, 63);
+    image big = resize_image(im, 513, 512);
+    image crop = crop_image(im, 50, 10, 100, 100);
+    image crop2 = crop_image(im, -30, -50, 291, 400);
     show_image(im, "original");
     show_image(small, "smaller");
     show_image(big, "bigger");
@@ -457,7 +370,7 @@ void test_resize(char *filename)
     cvWaitKey(0);
 }
 
-image load_image_color(char *filename, int h, int w)
+image load_image_color(char *filename, int w, int h)
 {
     IplImage* src = 0;
     if( (src = cvLoadImage(filename, 1)) == 0 )
@@ -467,7 +380,7 @@ image load_image_color(char *filename, int h, int w)
     }
     image out = ipl_to_image(src);
     if((h && w) && (h != out.h || w != out.w)){
-        image resized = resize_image(out, h, w);
+        image resized = resize_image(out, w, h);
         free_image(out);
         out = resized;
     }
@@ -475,7 +388,7 @@ image load_image_color(char *filename, int h, int w)
     return out;
 }
 
-image load_image(char *filename, int h, int w)
+image load_image(char *filename, int w, int h)
 {
     IplImage* src = 0;
     if( (src = cvLoadImage(filename,-1)) == 0 )
@@ -485,7 +398,7 @@ image load_image(char *filename, int h, int w)
     }
     image out = ipl_to_image(src);
     if((h && w) && (h != out.h || w != out.w)){
-        image resized = resize_image(out, h, w);
+        image resized = resize_image(out, w, h);
         free_image(out);
         out = resized;
     }
@@ -495,209 +408,28 @@ image load_image(char *filename, int h, int w)
 
 image get_image_layer(image m, int l)
 {
-    image out = make_image(m.h, m.w, 1);
+    image out = make_image(m.w, m.h, 1);
     int i;
     for(i = 0; i < m.h*m.w; ++i){
         out.data[i] = m.data[i+l*m.h*m.w];
     }
     return out;
 }
-image get_sub_image(image m, int h, int w, int dh, int dw)
-{
-    image out = make_image(dh, dw, m.c);
-    int i,j,k;
-    for(k = 0; k < out.c; ++k){
-        for(i = 0; i < dh; ++i){
-            for(j = 0; j < dw; ++j){
-                float val = get_pixel(m, h+i, w+j, k);
-                set_pixel(out, i, j, k, val);
-            }
-        }
-    }
-    return out;
-}
 
 float get_pixel(image m, int x, int y, int c)
 {
-    assert(x < m.h && y < m.w && c < m.c);
-    return m.data[c*m.h*m.w + x*m.w + y];
+    assert(x < m.w && y < m.h && c < m.c);
+    return m.data[c*m.h*m.w + y*m.w + x];
 }
 float get_pixel_extend(image m, int x, int y, int c)
 {
-    if(x < 0 || x >= m.h || y < 0 || y >= m.w || c < 0 || c >= m.c) return 0;
+    if(x < 0 || x >= m.w || y < 0 || y >= m.h || c < 0 || c >= m.c) return 0;
     return get_pixel(m, x, y, c);
 }
 void set_pixel(image m, int x, int y, int c, float val)
 {
-    assert(x < m.h && y < m.w && c < m.c);
-    m.data[c*m.h*m.w + x*m.w + y] = val;
-}
-void set_pixel_extend(image m, int x, int y, int c, float val)
-{
-    if(x < 0 || x >= m.h || y < 0 || y >= m.w || c < 0 || c >= m.c) return;
-    set_pixel(m, x, y, c, val);
-}
-
-void add_pixel(image m, int x, int y, int c, float val)
-{
-    assert(x < m.h && y < m.w && c < m.c);
-    m.data[c*m.h*m.w + x*m.w + y] += val;
-}
-
-void add_pixel_extend(image m, int x, int y, int c, float val)
-{
-    if(x < 0 || x >= m.h || y < 0 || y >= m.w || c < 0 || c >= m.c) return;
-    add_pixel(m, x, y, c, val);
-}
-
-void two_d_convolve(image m, int mc, image kernel, int kc, int stride, image out, int oc, int edge)
-{
-    int x,y,i,j;
-    int xstart, xend, ystart, yend;
-    if(edge){
-        xstart = ystart = 0;
-        xend = m.h;
-        yend = m.w;
-    }else{
-        xstart = kernel.h/2;
-        ystart = kernel.w/2;
-        xend = m.h-kernel.h/2;
-        yend = m.w - kernel.w/2;
-    }
-    for(x = xstart; x < xend; x += stride){
-        for(y = ystart; y < yend; y += stride){
-            float sum = 0;
-            for(i = 0; i < kernel.h; ++i){
-                for(j = 0; j < kernel.w; ++j){
-                    sum += get_pixel(kernel, i, j, kc)*get_pixel_extend(m, x+i-kernel.h/2, y+j-kernel.w/2, mc);
-                }
-            }
-            add_pixel(out, (x-xstart)/stride, (y-ystart)/stride, oc, sum);
-        }
-    }
-}
-
-float single_convolve(image m, image kernel, int x, int y)
-{
-    float sum = 0;
-    int i, j, k;
-    for(i = 0; i < kernel.h; ++i){
-        for(j = 0; j < kernel.w; ++j){
-            for(k = 0; k < kernel.c; ++k){
-                sum += get_pixel(kernel, i, j, k)*get_pixel_extend(m, x+i-kernel.h/2, y+j-kernel.w/2, k);
-            }
-        }
-    }
-    return sum;
-}
-
-void convolve(image m, image kernel, int stride, int channel, image out, int edge)
-{
-    assert(m.c == kernel.c);
-    int i;
-    zero_channel(out, channel);
-    for(i = 0; i < m.c; ++i){
-        two_d_convolve(m, i, kernel, i, stride, out, channel, edge);
-    }
-    /*
-       int j;
-       for(i = 0; i < m.h; i += stride){
-       for(j = 0; j < m.w; j += stride){
-       float val = single_convolve(m, kernel, i, j);
-       set_pixel(out, i/stride, j/stride, channel, val);
-       }
-       }
-     */
-}
-
-void upsample_image(image m, int stride, image out)
-{
-    int i,j,k;
-    zero_image(out);
-    for(k = 0; k < m.c; ++k){
-        for(i = 0; i < m.h; ++i){
-            for(j = 0; j< m.w; ++j){
-                float val = get_pixel(m, i, j, k);
-                set_pixel(out, i*stride, j*stride, k, val);
-            }
-        }
-    }
-}
-
-void single_update(image m, image update, int x, int y, float error)
-{
-    int i, j, k;
-    for(i = 0; i < update.h; ++i){
-        for(j = 0; j < update.w; ++j){
-            for(k = 0; k < update.c; ++k){
-                float val = get_pixel_extend(m, x+i-update.h/2, y+j-update.w/2, k);
-                add_pixel(update, i, j, k, val*error);
-            }
-        }
-    }
-}
-
-void kernel_update(image m, image update, int stride, int channel, image out, int edge)
-{
-    assert(m.c == update.c);
-    zero_image(update);
-    int i, j, istart, jstart, iend, jend;
-    if(edge){
-        istart = jstart = 0;
-        iend = m.h;
-        jend = m.w;
-    }else{
-        istart = update.h/2;
-        jstart = update.w/2;
-        iend = m.h-update.h/2;
-        jend = m.w - update.w/2;
-    }
-    for(i = istart; i < iend; i += stride){
-        for(j = jstart; j < jend; j += stride){
-            float error = get_pixel(out, (i-istart)/stride, (j-jstart)/stride, channel);
-            single_update(m, update, i, j, error);
-        }
-    }
-    /*
-       for(i = 0; i < update.h*update.w*update.c; ++i){
-       update.data[i] /= (m.h/stride)*(m.w/stride);
-       }
-     */
-}
-
-void single_back_convolve(image m, image kernel, int x, int y, float val)
-{
-    int i, j, k;
-    for(i = 0; i < kernel.h; ++i){
-        for(j = 0; j < kernel.w; ++j){
-            for(k = 0; k < kernel.c; ++k){
-                float pval = get_pixel(kernel, i, j, k) * val;
-                add_pixel_extend(m, x+i-kernel.h/2, y+j-kernel.w/2, k, pval);
-            }
-        }
-    }
-}
-
-void back_convolve(image m, image kernel, int stride, int channel, image out, int edge)
-{
-    assert(m.c == kernel.c);
-    int i, j, istart, jstart, iend, jend;
-    if(edge){
-        istart = jstart = 0;
-        iend = m.h;
-        jend = m.w;
-    }else{
-        istart = kernel.h/2;
-        jstart = kernel.w/2;
-        iend = m.h-kernel.h/2;
-        jend = m.w - kernel.w/2;
-    }
-    for(i = istart; i < iend; i += stride){
-        for(j = jstart; j < jend; j += stride){
-            float val = get_pixel(out, (i-istart)/stride, (j-jstart)/stride, channel);
-            single_back_convolve(m, kernel, i, j, val);
-        }
-    }
+    assert(x < m.w && y < m.h && c < m.c);
+    m.data[c*m.h*m.w + y*m.w + x] = val;
 }
 
 void print_image(image m)
@@ -730,20 +462,20 @@ image collapse_images_vert(image *ims, int n)
         c = 1;
     }
 
-    image filters = make_image(h,w,c);
+    image filters = make_image(w, h, c);
     int i,j;
     for(i = 0; i < n; ++i){
         int h_offset = i*(ims[0].h+border);
         image copy = copy_image(ims[i]);
         //normalize_image(copy);
         if(c == 3 && color){
-            embed_image(copy, filters, h_offset, 0);
+            embed_image(copy, filters, 0, h_offset);
         }
         else{
             for(j = 0; j < copy.c; ++j){
                 int w_offset = j*(ims[0].w+border);
                 image layer = get_image_layer(copy, j);
-                embed_image(layer, filters, h_offset, w_offset);
+                embed_image(layer, filters, w_offset, h_offset);
                 free_image(layer);
             }
         }
@@ -766,20 +498,20 @@ image collapse_images_horz(image *ims, int n)
         c = 1;
     }
 
-    image filters = make_image(h,w,c);
+    image filters = make_image(w, h, c);
     int i,j;
     for(i = 0; i < n; ++i){
         int w_offset = i*(size+border);
         image copy = copy_image(ims[i]);
         //normalize_image(copy);
         if(c == 3 && color){
-            embed_image(copy, filters, 0, w_offset);
+            embed_image(copy, filters, w_offset, 0);
         }
         else{
             for(j = 0; j < copy.c; ++j){
                 int h_offset = j*(size+border);
                 image layer = get_image_layer(copy, j);
-                embed_image(layer, filters, h_offset, w_offset);
+                embed_image(layer, filters, w_offset, h_offset);
                 free_image(layer);
             }
         }
@@ -794,43 +526,6 @@ void show_images(image *ims, int n, char *window)
     save_image(m, window);
     show_image(m, window);
     free_image(m);
-}
-
-image grid_images(image **ims, int h, int w)
-{
-    int i;
-    image *rows = calloc(h, sizeof(image));
-    for(i = 0; i < h; ++i){
-        rows[i] = collapse_images_horz(ims[i], w);
-    }
-    image out = collapse_images_vert(rows, h);
-    for(i = 0; i < h; ++i){
-        free_image(rows[i]);
-    }
-    free(rows);
-    return out;
-}
-
-void test_grid()
-{
-    int i,j;
-    int num = 3;
-    int topk = 3;
-    image **vizs = calloc(num, sizeof(image*));
-    for(i = 0; i < num; ++i){
-        vizs[i] = calloc(topk, sizeof(image));
-        for(j = 0; j < topk; ++j) vizs[i][j] = make_image(3,3,3);
-    }
-    image grid = grid_images(vizs, num, topk);
-    save_image(grid, "Test Grid");
-    free_image(grid);
-}
-
-void show_images_grid(image **ims, int h, int w, char *window)
-{
-    image out = grid_images(ims, h, w);
-    show_image(out, window);
-    free_image(out);
 }
 
 void free_image(image m)

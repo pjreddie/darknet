@@ -27,17 +27,17 @@ typedef struct{
 void free_data(data d);
 
 void print_letters(float *pred, int n);
-data load_data_captcha(char **paths, int n, int m, int k, int h, int w);
-data load_data_captcha_encode(char **paths, int n, int m, int h, int w);
-data load_data(char **paths, int n, int m, char **labels, int k, int h, int w);
-pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int h, int w, data *d);
+data load_data_captcha(char **paths, int n, int m, int k, int w, int h);
+data load_data_captcha_encode(char **paths, int n, int m, int w, int h);
+data load_data(char **paths, int n, int m, char **labels, int k, int w, int h);
+pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int w, int h, data *d);
 
-pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int h, int w, int nh, int nw, int background, data *d);
-data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int h, int w, int num_boxes, int background);
+pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int w, int h, int nh, int nw, int background, data *d);
+data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int w, int h, int num_boxes, int background);
 
-data load_data_image_pathfile(char *filename, char **labels, int k, int h, int w);
 data load_cifar10_data(char *filename);
 data load_all_cifar10();
+
 list *get_paths(char *filename);
 char **get_labels(char *filename);
 void get_random_batch(data d, int n, float *X, float *y);

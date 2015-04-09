@@ -29,7 +29,7 @@ image get_convolutional_image(convolutional_layer layer)
     h = convolutional_out_height(layer);
     w = convolutional_out_width(layer);
     c = layer.n;
-    return float_to_image(h,w,c,layer.output);
+    return float_to_image(w,h,c,layer.output);
 }
 
 image get_convolutional_delta(convolutional_layer layer)
@@ -38,7 +38,7 @@ image get_convolutional_delta(convolutional_layer layer)
     h = convolutional_out_height(layer);
     w = convolutional_out_width(layer);
     c = layer.n;
-    return float_to_image(h,w,c,layer.delta);
+    return float_to_image(w,h,c,layer.delta);
 }
 
 convolutional_layer *make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation)
@@ -217,42 +217,22 @@ image get_convolutional_filter(convolutional_layer layer, int i)
     int h = layer.size;
     int w = layer.size;
     int c = layer.c;
-    return float_to_image(h,w,c,layer.filters+i*h*w*c);
+    return float_to_image(w,h,c,layer.filters+i*h*w*c);
 }
 
-image *weighted_sum_filters(convolutional_layer layer, image *prev_filters)
+image *get_filters(convolutional_layer layer)
 {
     image *filters = calloc(layer.n, sizeof(image));
-    int i,j,k,c;
-    if(!prev_filters){
-        for(i = 0; i < layer.n; ++i){
-            filters[i] = copy_image(get_convolutional_filter(layer, i));
-        }
-    }
-    else{
-        image base = prev_filters[0];
-        for(i = 0; i < layer.n; ++i){
-            image filter = get_convolutional_filter(layer, i);
-            filters[i] = make_image(base.h, base.w, base.c);
-            for(j = 0; j < layer.size; ++j){
-                for(k = 0; k < layer.size; ++k){
-                    for(c = 0; c < layer.c; ++c){
-                        float weight = get_pixel(filter, j, k, c);
-                        image prev_filter = copy_image(prev_filters[c]);
-                        scale_image(prev_filter, weight);
-                        add_into_image(prev_filter, filters[i], 0,0);
-                        free_image(prev_filter);
-                    }
-                }
-            }
-        }
+    int i;
+    for(i = 0; i < layer.n; ++i){
+        filters[i] = copy_image(get_convolutional_filter(layer, i));
     }
     return filters;
 }
 
 image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters)
 {
-    image *single_filters = weighted_sum_filters(layer, 0);
+    image *single_filters = get_filters(layer);
     show_images(single_filters, layer.n, window);
 
     image delta = get_convolutional_image(layer);

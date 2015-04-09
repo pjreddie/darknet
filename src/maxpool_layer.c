@@ -7,7 +7,7 @@ image get_maxpool_image(maxpool_layer layer)
     int h = (layer.h-1)/layer.stride + 1;
     int w = (layer.w-1)/layer.stride + 1;
     int c = layer.c;
-    return float_to_image(h,w,c,layer.output);
+    return float_to_image(w,h,c,layer.output);
 }
 
 image get_maxpool_delta(maxpool_layer layer)
@@ -15,7 +15,7 @@ image get_maxpool_delta(maxpool_layer layer)
     int h = (layer.h-1)/layer.stride + 1;
     int w = (layer.w-1)/layer.stride + 1;
     int c = layer.c;
-    return float_to_image(h,w,c,layer.delta);
+    return float_to_image(w,h,c,layer.delta);
 }
 
 maxpool_layer *make_maxpool_layer(int batch, int h, int w, int c, int size, int stride)
