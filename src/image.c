@@ -1,6 +1,7 @@
 #include "image.h"
 #include "utils.h"
 #include <stdio.h>
+#include <math.h>
 
 int windows = 0;
 
@@ -256,16 +257,23 @@ image float_to_image(int w, int h, int c, float *data)
     return out;
 }
 
-void rotate_image(image m)
+image rotate_image(image im, float rad)
 {
-    int i,j;
-    for(j = 0; j < m.c; ++j){
-        for(i = 0; i < m.h*m.w/2; ++i){
-            float swap = m.data[j*m.h*m.w + i];
-            m.data[j*m.h*m.w + i] = m.data[j*m.h*m.w + (m.h*m.w-1 - i)];
-            m.data[j*m.h*m.w + (m.h*m.w-1 - i)] = swap;
+    int x, y, c;
+    float cx = im.w/2.;
+    float cy = im.h/2.;
+    image rot = make_image(im.w, im.h, im.c);
+    for(c = 0; c < im.c; ++c){
+        for(y = 0; y < im.h; ++y){
+            for(x = 0; x < im.w; ++x){
+                float rx = cos(rad)*(x-cx) - sin(rad)*(y-cy) + cx;
+                float ry = sin(rad)*(x-cx) + cos(rad)*(y-cy) + cy;
+                float val = billinear_interpolate(im, rx, ry, c);
+                set_pixel(rot, x, y, c, val);
+            }
         }
     }
+    return rot;
 }
 
 void translate_image(image m, float s)
@@ -358,15 +366,22 @@ image resize_image(image im, int w, int h)
 void test_resize(char *filename)
 {
     image im = load_image(filename, 0,0);
+    translate_image(im, -128);
     image small = resize_image(im, 65, 63);
     image big = resize_image(im, 513, 512);
     image crop = crop_image(im, 50, 10, 100, 100);
     image crop2 = crop_image(im, -30, -50, 291, 400);
+    image rot = rotate_image(big, .02);
+    image rot2 = rotate_image(big, 3.14159265/2.);
+    image test = rotate_image(im, .6);
     show_image(im, "original");
     show_image(small, "smaller");
     show_image(big, "bigger");
     show_image(crop, "crop");
     show_image(crop2, "crop2");
+    show_image(rot, "rot");
+    show_image(rot2, "rot2");
+    show_image(test, "test");
     cvWaitKey(0);
 }
 

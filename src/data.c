@@ -57,6 +57,12 @@ matrix load_image_paths(char **paths, int n, int w, int h)
 
     for(i = 0; i < n; ++i){
         image im = load_image_color(paths[i], w, h);
+        translate_image(im, -128);
+        scale_image(im, 1./128);
+        float rad = rand_uniform() - .5;
+        image rot = rotate_image(im, rad);
+        free_image(im);
+        im = rot;
         X.vals[i] = im.data;
         X.cols = im.h*im.w*im.c;
     }
@@ -373,8 +379,6 @@ void *load_in_thread(void *ptr)
 {
     struct load_args a = *(struct load_args*)ptr;
     *a.d = load_data(a.paths, a.n, a.m, a.labels, a.k, a.w, a.h);
-    translate_data_rows(*a.d, -128);
-    scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;
 }

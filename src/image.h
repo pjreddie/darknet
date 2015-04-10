@@ -20,7 +20,7 @@ image crop_image(image im, int dx, int dy, int w, int h);
 image resize_image(image im, int w, int h);
 void translate_image(image m, float s);
 void normalize_image(image p);
-void rotate_image(image m);
+image rotate_image(image m, float rad);
 void embed_image(image source, image dest, int dx, int dy);
 
 image collapse_image_layers(image source, int border);
@@ -47,6 +47,7 @@ image ipl_to_image(IplImage* src);
 float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);
 void set_pixel(image m, int x, int y, int c, float val);
+float billinear_interpolate(image im, float x, float y, int c);
 
 image get_image_layer(image m, int l);
 
