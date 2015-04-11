@@ -330,8 +330,8 @@ image crop_image(image im, int dx, int dy, int w, int h)
 
 float billinear_interpolate(image im, float x, float y, int c)
 {
-    int ix = (int) x;
-    int iy = (int) y;
+    int ix = (int) floorf(x);
+    int iy = (int) floorf(y);
 
     float dx = x - ix;
     float dy = y - iy;

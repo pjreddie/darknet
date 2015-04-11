@@ -59,10 +59,6 @@ matrix load_image_paths(char **paths, int n, int w, int h)
         image im = load_image_color(paths[i], w, h);
         translate_image(im, -128);
         scale_image(im, 1./128);
-        float rad = rand_uniform() - .5;
-        image rot = rotate_image(im, rad);
-        free_image(im);
-        im = rot;
         X.vals[i] = im.data;
         X.cols = im.h*im.w*im.c;
     }
