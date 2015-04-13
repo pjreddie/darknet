@@ -294,6 +294,8 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
+        translate_image(orig, -128);
+        scale_image(orig, 1./128);
         int oh = orig.h;
         int ow = orig.w;
 
@@ -310,6 +312,13 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
 
         float sx = (float)swidth  / ow;
         float sy = (float)sheight / oh;
+        
+        /*
+        float angle = rand_uniform()*.1 - .05;
+        image rot = rotate_image(orig, angle);
+        free_image(orig);
+        orig = rot;
+        */
 
         int flip = rand()%2;
         image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
@@ -333,8 +342,6 @@ void *load_detection_thread(void *ptr)
     printf("Loading data: %d\n", rand());
     struct load_args a = *(struct load_args*)ptr;
     *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
-    translate_data_rows(*a.d, -128);
-    scale_data_rows(*a.d, 1./128);
     free(ptr);
     return 0;
 }
@@ -435,7 +442,7 @@ data load_cifar10_data(char *filename)
             X.vals[i][j] = (double)bytes[j+1];
         }
     }
-    translate_data_rows(d, -144);
+    translate_data_rows(d, -128);
     scale_data_rows(d, 1./128);
     //normalize_data_rows(d);
     fclose(fp);
@@ -491,7 +498,7 @@ data load_all_cifar10()
         fclose(fp);
     }
     //normalize_data_rows(d);
-    translate_data_rows(d, -144);
+    translate_data_rows(d, -128);
     scale_data_rows(d, 1./128);
     return d;
 }

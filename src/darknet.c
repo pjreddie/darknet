@@ -93,7 +93,6 @@ void visualize(char *cfgfile, char *weightfile)
 
 int main(int argc, char **argv)
 {
-    //test_resize(argv[1]);
     //test_convolutional_layer();
     if(argc < 2){
         fprintf(stderr, "usage: %s <function>\n", argv[0]);
@@ -114,6 +113,8 @@ int main(int argc, char **argv)
         run_imagenet(argc, argv);
     } else if (0 == strcmp(argv[1], "detection")){
         run_detection(argc, argv);
+    } else if (0 == strcmp(argv[1], "test")){
+        test_resize(argv[2]);
     } else if (0 == strcmp(argv[1], "captcha")){
         run_captcha(argc, argv);
     } else if (0 == strcmp(argv[1], "change")){

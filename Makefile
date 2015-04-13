@@ -31,16 +31,17 @@ OBJ+=convolutional_kernels.o deconvolutional_kernels.o activation_kernels.o im2c
 endif
 
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
+DEPS = $(wildcard src/*.h) Makefile
 
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
-$(OBJDIR)%.o: %.c 
+$(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)%.o: %.cu 
+$(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
 .PHONY: clean

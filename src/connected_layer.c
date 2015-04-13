@@ -33,7 +33,7 @@ connected_layer *make_connected_layer(int batch, int inputs, int outputs, ACTIVA
 
     float scale = 1./sqrt(inputs);
     for(i = 0; i < inputs*outputs; ++i){
-        //layer->weights[i] = scale*rand_normal();
+        layer->weights[i] = 2*scale*rand_uniform() - scale;
     }
 
     for(i = 0; i < outputs; ++i){

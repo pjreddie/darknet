@@ -150,7 +150,6 @@ image copy_image(image p)
     return copy;
 }
 
-
 void show_image(image p, char *name)
 {
     int x,y,k;
@@ -317,7 +316,7 @@ image crop_image(image im, int dx, int dy, int w, int h)
             for(i = 0; i < w; ++i){
                 int r = j + dy;
                 int c = i + dx;
-                float val = 128;
+                float val = 0;
                 if (r >= 0 && r < im.h && c >= 0 && c < im.w) {
                     val = get_pixel(im, c, r, k);
                 }
@@ -326,6 +325,54 @@ image crop_image(image im, int dx, int dy, int w, int h)
         }
     }
     return cropped;
+}
+
+image grayscale_image(image im)
+{
+    assert(im.c == 3);
+    int i, j, k;
+    image gray = make_image(im.w, im.h, im.c);
+    float scale[] = {0.114, 0.587, 0.299};
+    for(k = 0; k < im.c; ++k){
+        for(j = 0; j < im.h; ++j){
+            for(i = 0; i < im.w; ++i){
+                gray.data[i+im.w*j] += scale[k]*get_pixel(im, i, j, k);
+            }
+        }
+    }
+    memcpy(gray.data + im.w*im.h*1, gray.data, sizeof(float)*im.w*im.h);
+    memcpy(gray.data + im.w*im.h*2, gray.data, sizeof(float)*im.w*im.h);
+    return gray;
+}
+
+image blend_image(image fore, image back, float alpha)
+{
+    assert(fore.w == back.w && fore.h == back.h && fore.c == back.c);
+    image blend = make_image(fore.w, fore.h, fore.c);
+    int i, j, k;
+    for(k = 0; k < fore.c; ++k){
+        for(j = 0; j < fore.h; ++j){
+            for(i = 0; i < fore.w; ++i){
+                float val = alpha * get_pixel(fore, i, j, k) + 
+                            (1 - alpha)* get_pixel(back, i, j, k);
+                set_pixel(blend, i, j, k, val);
+            }
+        }
+    }
+    return blend;
+}
+
+image saturate_image(image im, float sat)
+{
+    image gray = grayscale_image(im);
+    image blend = blend_image(im, gray, sat);
+    free_image(gray);
+    return blend;
+}
+
+image brightness_image(image im, float b)
+{
+    image bright = make_image(im.w, im.h, im.c);
 }
 
 float billinear_interpolate(image im, float x, float y, int c)
@@ -337,9 +384,9 @@ float billinear_interpolate(image im, float x, float y, int c)
     float dy = y - iy;
 
     float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
-                dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
-                (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
-                dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
+        dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
+        (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
+        dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
     return val;
 }
 
@@ -374,14 +421,22 @@ void test_resize(char *filename)
     image rot = rotate_image(big, .02);
     image rot2 = rotate_image(big, 3.14159265/2.);
     image test = rotate_image(im, .6);
+    image gray = grayscale_image(im);
+    image sat = saturate_image(im, 2);
+    image sat2 = saturate_image(im, .5);
     show_image(im, "original");
-    show_image(small, "smaller");
-    show_image(big, "bigger");
-    show_image(crop, "crop");
-    show_image(crop2, "crop2");
-    show_image(rot, "rot");
-    show_image(rot2, "rot2");
-    show_image(test, "test");
+    show_image(gray, "gray");
+    show_image(sat, "sat");
+    show_image(sat2, "sat2");
+    /*
+       show_image(small, "smaller");
+       show_image(big, "bigger");
+       show_image(crop, "crop");
+       show_image(crop2, "crop2");
+       show_image(rot, "rot");
+       show_image(rot2, "rot2");
+       show_image(test, "test");
+     */
     cvWaitKey(0);
 }
 

@@ -10,6 +10,7 @@ typedef struct {
     int crop_width;
     int crop_height;
     int flip;
+    float angle;
     float *output;
 #ifdef GPU
     float *output_gpu;
@@ -17,7 +18,7 @@ typedef struct {
 } crop_layer;
 
 image get_crop_image(crop_layer layer);
-crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip);
+crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip, float angle);
 void forward_crop_layer(const crop_layer layer, network_state state);
 
 #ifdef GPU

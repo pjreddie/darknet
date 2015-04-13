@@ -61,7 +61,8 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
     int flip = (layer.flip && rand()%2);
     int dh = rand()%(layer.h - layer.crop_height + 1);
     int dw = rand()%(layer.w - layer.crop_width + 1);
-    float angle = rand_uniform() - .5;
+    float radians = layer.angle*3.14159/180.;
+    float angle = 2*radians*rand_uniform() - radians;
     if(!state.train){
         angle = 0;
         flip = 0;
@@ -76,5 +77,12 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
     forward_crop_layer_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, size, layer.c, layer.h, layer.w,
                         layer.crop_height, layer.crop_width, dh, dw, flip, angle, layer.output_gpu);
     check_error(cudaPeekAtLastError());
+
+/*
+    cuda_pull_array(layer.output_gpu, layer.output, size);
+    image im = float_to_image(layer.crop_width, layer.crop_height, layer.c, layer.output + 14*(size/layer.batch));
+    show_image(im, "cropped");
+    cvWaitKey(0);
+    */
 }
 

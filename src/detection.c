@@ -93,9 +93,9 @@ void train_detection(char *cfgfile, char *weightfile)
         load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
 
 /*
-           image im = float_to_image(im_dim, im_dim, 3, train.X.vals[114]);
+           image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
            draw_detection(im, train.y.vals[114], 7);
-*/
+           */
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();

@@ -186,6 +186,7 @@ crop_layer *parse_crop(list *options, size_params params)
     int crop_height = option_find_int(options, "crop_height",1);
     int crop_width = option_find_int(options, "crop_width",1);
     int flip = option_find_int(options, "flip",0);
+    float angle = option_find_float(options, "angle",0);
 
     int batch,h,w,c;
     h = params.h;
@@ -194,7 +195,7 @@ crop_layer *parse_crop(list *options, size_params params)
     batch=params.batch;
     if(!(h && w && c)) error("Layer before crop layer must output image.");
 
-    crop_layer *layer = make_crop_layer(batch,h,w,c,crop_height,crop_width,flip);
+    crop_layer *layer = make_crop_layer(batch,h,w,c,crop_height,crop_width,flip, angle);
     option_unused(options);
     return layer;
 }
