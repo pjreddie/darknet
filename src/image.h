@@ -22,6 +22,10 @@ void translate_image(image m, float s);
 void normalize_image(image p);
 image rotate_image(image m, float rad);
 void embed_image(image source, image dest, int dx, int dy);
+void saturate_image(image im, float sat);
+void exposure_image(image im, float sat);
+void saturate_exposure_image(image im, float sat, float exposure);
+void hsv_to_rgb(image im);
 
 image collapse_image_layers(image source, int border);
 image collapse_images_horz(image *ims, int n);

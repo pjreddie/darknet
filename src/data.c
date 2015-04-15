@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+unsigned int data_seed;
+
 struct load_args{
     char **paths;
     int n;
@@ -40,7 +42,7 @@ char **get_random_paths(char **paths, int n, int m)
     char **random_paths = calloc(n, sizeof(char*));
     int i;
     for(i = 0; i < n; ++i){
-        int index = rand()%m;
+        int index = rand_r(&data_seed)%m;
         random_paths[i] = paths[index];
         if(i == 0) printf("%s\n", paths[index]);
     }
@@ -57,8 +59,6 @@ matrix load_image_paths(char **paths, int n, int w, int h)
 
     for(i = 0; i < n; ++i){
         image im = load_image_color(paths[i], w, h);
-        translate_image(im, -128);
-        scale_image(im, 1./128);
         X.vals[i] = im.data;
         X.cols = im.h*im.w*im.c;
     }
@@ -102,7 +102,7 @@ void randomize_boxes(box *b, int n)
     int i;
     for(i = 0; i < n; ++i){
         box swap = b[i];
-        int index = rand()%n;
+        int index = rand_r(&data_seed)%n;
         b[i] = b[index];
         b[index] = swap;
     }
@@ -294,8 +294,12 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
-        translate_image(orig, -128);
-        scale_image(orig, 1./128);
+        float exposure = rand_uniform()+1;
+        if(rand_uniform() > .5) exposure = 1/exposure;
+
+        float saturation = rand_uniform()+1;
+        if(rand_uniform() > .5) saturation = 1/saturation;
+
         int oh = orig.h;
         int ow = orig.w;
 
@@ -320,7 +324,7 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
         orig = rot;
         */
 
-        int flip = rand()%2;
+        int flip = rand_r(&data_seed)%2;
         image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
         float dx = ((float)pleft/ow)/sx;
         float dy = ((float)ptop /oh)/sy;
@@ -339,7 +343,7 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
 
 void *load_detection_thread(void *ptr)
 {
-    printf("Loading data: %d\n", rand());
+    printf("Loading data: %d\n", rand_r(&data_seed));
     struct load_args a = *(struct load_args*)ptr;
     *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
     free(ptr);
@@ -453,7 +457,7 @@ void get_random_batch(data d, int n, float *X, float *y)
 {
     int j;
     for(j = 0; j < n; ++j){
-        int index = rand()%d.X.rows;
+        int index = rand_r(&data_seed)%d.X.rows;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
         memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
     }
@@ -507,7 +511,7 @@ void randomize_data(data d)
 {
     int i;
     for(i = d.X.rows-1; i > 0; --i){
-        int index = rand()%i;
+        int index = rand_r(&data_seed)%i;
         float *swap = d.X.vals[index];
         d.X.vals[index] = d.X.vals[i];
         d.X.vals[i] = swap;

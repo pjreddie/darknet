@@ -4,8 +4,9 @@
 
 void train_imagenet(char *cfgfile, char *weightfile)
 {
-    float avg_loss = -1;
+    data_seed = time(0);
     srand(time(0));
+    float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
@@ -116,8 +117,8 @@ void test_imagenet(char *cfgfile, char *weightfile)
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
         image im = load_image_color(filename, 256, 256);
-        translate_image(im, -128);
-        scale_image(im, 1/128.);
+        scale_image(im, 2.);
+        translate_image(im, -1.);
         printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();

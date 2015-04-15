@@ -57,6 +57,7 @@ void draw_detection(image im, float *box, int side)
 void train_detection(char *cfgfile, char *weightfile)
 {
     srand(time(0));
+    data_seed = time(0);
     int imgnet = 0;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
@@ -94,7 +95,11 @@ void train_detection(char *cfgfile, char *weightfile)
 
 /*
            image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
-           draw_detection(im, train.y.vals[114], 7);
+           image copy = copy_image(im);
+           translate_image(copy, 1);
+           scale_image(copy, .5);
+           draw_detection(copy, train.y.vals[114], 7);
+           free_image(copy);
            */
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
