@@ -1,4 +1,4 @@
-GPU=1
+GPU=0
 DEBUG=0
 ARCH= -arch=sm_52
 

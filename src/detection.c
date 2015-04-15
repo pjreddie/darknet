@@ -203,8 +203,6 @@ void test_detection(char *cfgfile, char *weightfile)
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
         image im = load_image_color(filename, im_size, im_size);
-        translate_image(im, -128);
-        scale_image(im, 1/128.);
         printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();

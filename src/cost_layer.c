@@ -38,15 +38,6 @@ cost_layer *make_cost_layer(int batch, int inputs, COST_TYPE type)
     return layer;
 }
 
-void pull_cost_layer(cost_layer layer)
-{
-    cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
-}
-void push_cost_layer(cost_layer layer)
-{
-    cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
-}
-
 void forward_cost_layer(cost_layer layer, network_state state)
 {
     if (!state.truth) return;
@@ -62,6 +53,16 @@ void backward_cost_layer(const cost_layer layer, network_state state)
 }
 
 #ifdef GPU
+
+void pull_cost_layer(cost_layer layer)
+{
+    cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
+}
+
+void push_cost_layer(cost_layer layer)
+{
+    cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
+}
 
 void forward_cost_layer_gpu(cost_layer layer, network_state state)
 {
