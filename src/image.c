@@ -182,8 +182,8 @@ void show_image(image p, char *name)
         }
     }
     free_image(copy);
-    if(disp->height < 500 || disp->width < 500 || disp->height > 1000){
-        int w = 500;
+    if(disp->height < 448 || disp->width < 448 || disp->height > 1000){
+        int w = 448;
         int h = w*p.h/p.w;
         if(h > 1000){
             h = 1000;
@@ -191,7 +191,7 @@ void show_image(image p, char *name)
         }
         IplImage *buffer = disp;
         disp = cvCreateImage(cvSize(w, h), buffer->depth, buffer->nChannels);
-        cvResize(buffer, disp, CV_INTER_NN);
+        cvResize(buffer, disp, CV_INTER_LINEAR);
         cvReleaseImage(&buffer);
     }
     cvShowImage(buff, disp);

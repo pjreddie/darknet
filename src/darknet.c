@@ -68,7 +68,7 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
     if(weightfile){
         load_weights_upto(&net, weightfile, max);
     }
-    //net.seen = 0;
+    net.seen = 0;
     save_weights(net, outfile);
 }
 

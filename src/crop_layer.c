@@ -10,7 +10,7 @@ image get_crop_image(crop_layer layer)
     return float_to_image(w,h,c,layer.output);
 }
 
-crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip, float angle)
+crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip, float angle, float saturation, float exposure)
 {
     fprintf(stderr, "Crop Layer: %d x %d -> %d x %d x %d image\n", h,w,crop_height,crop_width,c);
     crop_layer *layer = calloc(1, sizeof(crop_layer));
@@ -20,11 +20,14 @@ crop_layer *make_crop_layer(int batch, int h, int w, int c, int crop_height, int
     layer->c = c;
     layer->flip = flip;
     layer->angle = angle;
+    layer->saturation = saturation;
+    layer->exposure = exposure;
     layer->crop_width = crop_width;
     layer->crop_height = crop_height;
     layer->output = calloc(crop_width*crop_height * c*batch, sizeof(float));
     #ifdef GPU
     layer->output_gpu = cuda_make_array(layer->output, crop_width*crop_height*c*batch);
+    layer->rand_gpu = cuda_make_array(0, layer->batch*8);
     #endif
     return layer;
 }

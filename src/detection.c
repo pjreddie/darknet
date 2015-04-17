@@ -82,6 +82,8 @@ void train_detection(char *cfgfile, char *weightfile)
         plist = get_paths("/home/pjreddie/data/imagenet/det.train.list");
     }else{
         plist = get_paths("/home/pjreddie/data/voc/trainall.txt");
+        //plist = get_paths("/home/pjreddie/data/coco/trainval.txt");
+        //plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
     }
     paths = (char **)list_to_array(plist);
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
@@ -94,13 +96,11 @@ void train_detection(char *cfgfile, char *weightfile)
         load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
 
 /*
-           image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
-           image copy = copy_image(im);
-           translate_image(copy, 1);
-           scale_image(copy, .5);
-           draw_detection(copy, train.y.vals[114], 7);
-           free_image(copy);
-           */
+ image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
+ image copy = copy_image(im);
+ draw_detection(copy, train.y.vals[114], 7);
+ free_image(copy);
+ */
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
