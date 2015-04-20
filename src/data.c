@@ -408,6 +408,31 @@ pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int
     return thread;
 }
 
+matrix concat_matrix(matrix m1, matrix m2)
+{
+    int i, count = 0;
+    matrix m;
+    m.cols = m1.cols;
+    m.rows = m1.rows+m2.rows;
+    m.vals = calloc(m1.rows + m2.rows, sizeof(float*));
+    for(i = 0; i < m1.rows; ++i){
+        m.vals[count++] = m1.vals[i];
+    }
+    for(i = 0; i < m2.rows; ++i){
+        m.vals[count++] = m2.vals[i];
+    }
+    return m;
+}
+
+data concat_data(data d1, data d2)
+{
+    data d;
+    d.shallow = 1;
+    d.X = concat_matrix(d1.X, d2.X);
+    d.y = concat_matrix(d1.y, d2.y);
+    return d;
+}
+
 data load_categorical_data_csv(char *filename, int target, int k)
 {
     data d;

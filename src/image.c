@@ -603,12 +603,12 @@ image load_image_color(char *filename, int w, int h)
         exit(0);
     }
     image out = ipl_to_image(src);
+    cvReleaseImage(&src);
     if((h && w) && (h != out.h || w != out.w)){
         image resized = resize_image(out, w, h);
         free_image(out);
         out = resized;
     }
-    cvReleaseImage(&src);
     return out;
 }
 

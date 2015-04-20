@@ -81,9 +81,9 @@ void train_detection(char *cfgfile, char *weightfile)
     if (imgnet){
         plist = get_paths("/home/pjreddie/data/imagenet/det.train.list");
     }else{
-        plist = get_paths("/home/pjreddie/data/voc/trainall.txt");
+        //plist = get_paths("/home/pjreddie/data/voc/trainall.txt");
         //plist = get_paths("/home/pjreddie/data/coco/trainval.txt");
-        //plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
+        plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
     }
     paths = (char **)list_to_array(plist);
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
@@ -118,6 +118,34 @@ void train_detection(char *cfgfile, char *weightfile)
     }
 }
 
+void predict_detections(network net, data d, float threshold, int offset, int classes, int nuisance, int background, int num_boxes, int per_box)
+{
+        matrix pred = network_predict_data(net, d);
+        int j, k, class;
+        for(j = 0; j < pred.rows; ++j){
+            for(k = 0; k < pred.cols; k += per_box){
+                float scale = 1.;
+                int index = k/per_box;
+                int row = index / num_boxes;
+                int col = index % num_boxes;
+                if (nuisance) scale = 1.-pred.vals[j][k];
+                for (class = 0; class < classes; ++class){
+                    int ci = k+classes+background+nuisance;
+                    float y = (pred.vals[j][ci + 0] + row)/num_boxes;
+                    float x = (pred.vals[j][ci + 1] + col)/num_boxes;
+                    float h = pred.vals[j][ci + 2]; //* distance_from_edge(row, num_boxes);
+                    h = h*h;
+                    float w = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
+                    w = w*w;
+                    float prob = scale*pred.vals[j][k+class+background+nuisance];
+                    if(prob < threshold) continue;
+                    printf("%d %d %f %f %f %f %f\n", offset +  j, class, prob, y, x, h, w);
+                }
+            }
+        }
+        free_matrix(pred);
+}
+
 void validate_detection(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
@@ -144,47 +172,37 @@ void validate_detection(char *cfgfile, char *weightfile)
     int m = plist->size;
     int i = 0;
     int splits = 100;
-    int num = (i+1)*m/splits - i*m/splits;
 
-    fprintf(stderr, "%d\n", m);
-    data val, buffer;
-    pthread_t load_thread = load_data_thread(paths, num, 0, 0, num_output, net.w, net.h, &buffer);
+    int nthreads = 4;
+    int t;
+    data *val = calloc(nthreads, sizeof(data));
+    data *buf = calloc(nthreads, sizeof(data));
+    pthread_t *thr = calloc(nthreads, sizeof(data));
+    for(t = 0; t < nthreads; ++t){
+        int num = (i+1+t)*m/splits - (i+t)*m/splits;
+        char **part = paths+((i+t)*m/splits);
+        thr[t] = load_data_thread(part, num, 0, 0, num_output, net.w, net.h, &(buf[t]));
+    }
+
     clock_t time;
-    for(i = 1; i <= splits; ++i){
+    for(i = nthreads; i <= splits; i += nthreads){
         time=clock();
-        pthread_join(load_thread, 0);
-        val = buffer;
-
-        num = (i+1)*m/splits - i*m/splits;
-        char **part = paths+(i*m/splits);
-        if(i != splits) load_thread = load_data_thread(part, num, 0, 0, num_output, net.w, net.h, &buffer);
+        for(t = 0; t < nthreads; ++t){
+            pthread_join(thr[t], 0);
+            val[t] = buf[t];
+        }
+        for(t = 0; t < nthreads && i < splits; ++t){
+            int num = (i+1+t)*m/splits - (i+t)*m/splits;
+            char **part = paths+((i+t)*m/splits);
+            thr[t] = load_data_thread(part, num, 0, 0, num_output, net.w, net.h, &(buf[t]));
+        }
 
         fprintf(stderr, "%d: Loaded: %lf seconds\n", i, sec(clock()-time));
-        matrix pred = network_predict_data(net, val);
-        int j, k, class;
-        for(j = 0; j < pred.rows; ++j){
-            for(k = 0; k < pred.cols; k += per_box){
-                float scale = 1.;
-                int index = k/per_box;
-                int row = index / num_boxes;
-                int col = index % num_boxes;
-                if (nuisance) scale = 1.-pred.vals[j][k];
-                for (class = 0; class < classes; ++class){
-                    int ci = k+classes+background+nuisance;
-                    float y = (pred.vals[j][ci + 0] + row)/num_boxes;
-                    float x = (pred.vals[j][ci + 1] + col)/num_boxes;
-                    float h = pred.vals[j][ci + 2]; //* distance_from_edge(row, num_boxes);
-                    h = h*h;
-                    float w = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
-                    w = w*w;
-                    float prob = scale*pred.vals[j][k+class+background+nuisance];
-                    if(prob < .001) continue;
-                    printf("%d %d %f %f %f %f %f\n", (i-1)*m/splits + j, class, prob, y, x, h, w);
-                }
-            }
+        for(t = 0; t < nthreads; ++t){
+            predict_detections(net, val[t], .01, (i-nthreads+t)*m/splits, classes, nuisance, background, num_boxes, per_box);
+            free_data(val[t]);
         }
         time=clock();
-        free_data(val);
     }
 }
 
