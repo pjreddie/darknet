@@ -8,7 +8,7 @@ OBJDIR=./obj/
 
 CC=gcc
 NVCC=nvcc
-OPTS=-O3
+OPTS=-Ofast
 LDFLAGS=`pkg-config --libs opencv` -lm -pthread -lstdc++
 COMMON=`pkg-config --cflags opencv` -I/usr/local/cuda/include/
 CFLAGS=-Wall -Wfatal-errors

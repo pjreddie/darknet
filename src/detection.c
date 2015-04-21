@@ -157,6 +157,7 @@ void validate_detection(char *cfgfile, char *weightfile)
     srand(time(0));
 
     list *plist = get_paths("/home/pjreddie/data/voc/val.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/test.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/val.expanded.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/train.txt");
     char **paths = (char **)list_to_array(plist);

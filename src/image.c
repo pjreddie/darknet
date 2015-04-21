@@ -605,6 +605,7 @@ image load_image_color(char *filename, int w, int h)
     image out = ipl_to_image(src);
     cvReleaseImage(&src);
     if((h && w) && (h != out.h || w != out.w)){
+        //printf("resize\n");
         image resized = resize_image(out, w, h);
         free_image(out);
         out = resized;
