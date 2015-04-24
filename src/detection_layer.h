@@ -11,6 +11,8 @@ typedef struct {
     int background;
     int rescore;
     int nuisance;
+    int does_cost;
+    float *cost;
     float *output;
     float *delta;
     #ifdef GPU

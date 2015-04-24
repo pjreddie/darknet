@@ -186,6 +186,9 @@ float get_network_cost(network net)
     if(net.types[net.n-1] == COST){
         return ((cost_layer *)net.layers[net.n-1])->output[0];
     }
+    if(net.types[net.n-1] == DETECTION){
+        return ((detection_layer *)net.layers[net.n-1])->cost[0];
+    }
     return 0;
 }
 

@@ -3,7 +3,9 @@
 #include "softmax_layer.h"
 #include "blas.h"
 #include "cuda.h"
+#include "utils.h"
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 
 int get_detection_layer_locations(detection_layer layer)
@@ -26,6 +28,8 @@ detection_layer *make_detection_layer(int batch, int inputs, int classes, int co
     layer->coords = coords;
     layer->rescore = rescore;
     layer->nuisance = nuisance;
+    layer->cost = calloc(1, sizeof(float));
+    layer->does_cost=1;
     layer->background = background;
     int outputs = get_detection_layer_output_size(*layer);
     layer->output = calloc(batch*outputs, sizeof(float));
@@ -63,6 +67,169 @@ void dark_zone(detection_layer layer, int class, int start, network_state state)
     }
 }
 
+typedef struct{
+    float dx, dy, dw, dh;
+} dbox;
+
+dbox derivative(box a, box b)
+{
+    dbox d;
+    d.dx = 0;
+    d.dw = 0;
+    float l1 = a.x - a.w/2;
+    float l2 = b.x - b.w/2;
+    if (l1 > l2){
+        d.dx -= 1;
+        d.dw += .5;
+    }
+    float r1 = a.x + a.w/2;
+    float r2 = b.x + b.w/2;
+    if(r1 < r2){
+        d.dx += 1;
+        d.dw += .5;
+    }
+    if (l1 > r2) {
+        d.dx = -1;
+        d.dw = 0;
+    }
+    if (r1 < l2){
+        d.dx = 1;
+        d.dw = 0;
+    }
+
+    d.dy = 0;
+    d.dh = 0;
+    float t1 = a.y - a.h/2;
+    float t2 = b.y - b.h/2;
+    if (t1 > t2){
+        d.dy -= 1;
+        d.dh += .5;
+    }
+    float b1 = a.y + a.h/2;
+    float b2 = b.y + b.h/2;
+    if(b1 < b2){
+        d.dy += 1;
+        d.dh += .5;
+    }
+    if (t1 > b2) {
+        d.dy = -1;
+        d.dh = 0;
+    }
+    if (b1 < t2){
+        d.dy = 1;
+        d.dh = 0;
+    }
+    return d;
+}
+
+float overlap(float x1, float w1, float x2, float w2)
+{
+    float l1 = x1 - w1/2;
+    float l2 = x2 - w2/2;
+    float left = l1 > l2 ? l1 : l2;
+    float r1 = x1 + w1/2;
+    float r2 = x2 + w2/2;
+    float right = r1 < r2 ? r1 : r2;
+    return right - left;
+}
+
+float box_intersection(box a, box b)
+{
+    float w = overlap(a.x, a.w, b.x, b.w);
+    float h = overlap(a.y, a.h, b.y, b.h);
+    if(w < 0 || h < 0) return 0;
+    float area = w*h;
+    return area;
+}
+
+float box_union(box a, box b)
+{
+    float i = box_intersection(a, b);
+    float u = a.w*a.h + b.w*b.h - i;
+    return u;
+}
+
+float box_iou(box a, box b)
+{
+    return box_intersection(a, b)/box_union(a, b);
+}
+
+dbox dintersect(box a, box b)
+{
+    float w = overlap(a.x, a.w, b.x, b.w);
+    float h = overlap(a.y, a.h, b.y, b.h);
+    dbox dover = derivative(a, b);
+    dbox di;
+
+    di.dw = dover.dw*h;
+    di.dx = dover.dx*h;
+    di.dh = dover.dh*w;
+    di.dy = dover.dy*w;
+    if(h < 0 || w < 0){
+        di.dx = dover.dx;
+        di.dy = dover.dy;
+    }
+    return di;
+}
+
+dbox dunion(box a, box b)
+{
+    dbox du = {0,0,0,0};;
+    float w = overlap(a.x, a.w, b.x, b.w);
+    float h = overlap(a.y, a.h, b.y, b.h);
+    if(w > 0 && h > 0){
+        dbox di = dintersect(a, b);
+        du.dw = h - di.dw;
+        du.dh = w - di.dw;
+        du.dx = -di.dx;
+        du.dy = -di.dy;
+    }
+    return du;
+}
+
+dbox diou(box a, box b)
+{
+    float u = box_union(a,b);
+    float i = box_intersection(a,b);
+    dbox di = dintersect(a,b);
+    dbox du = dunion(a,b);
+    dbox dd = {0,0,0,0};
+    if(i < 0) {
+        dd.dx = b.x - a.x;
+        dd.dy = b.y - a.y;
+        dd.dw = b.w - a.w;
+        dd.dh = b.h - a.h;
+        return dd;
+    }
+    dd.dx = 2*pow((1-(i/u)),1)*(di.dx*u - du.dx*i)/(u*u);
+    dd.dy = 2*pow((1-(i/u)),1)*(di.dy*u - du.dy*i)/(u*u);
+    dd.dw = 2*pow((1-(i/u)),1)*(di.dw*u - du.dw*i)/(u*u);
+    dd.dh = 2*pow((1-(i/u)),1)*(di.dh*u - du.dh*i)/(u*u);
+    return dd;
+}
+
+void test_box()
+{
+    box a = {1, 1, 1, 1};
+    box b = {0, 0, .5, .2};
+    int count = 0;
+    while(count++ < 300){
+        dbox d = diou(a, b);
+        printf("%f %f %f %f\n", a.x, a.y, a.w, a.h);
+        a.x += .1*d.dx;
+        a.w += .1*d.dw;
+        a.y += .1*d.dy;
+        a.h += .1*d.dh;
+        printf("inter: %f\n", box_intersection(a, b));
+        printf("union: %f\n", box_union(a, b));
+        printf("IOU: %f\n", box_iou(a, b));
+        if(d.dx==0 && d.dw==0 && d.dy==0 && d.dh==0) {
+            printf("break!!!\n");
+            break;
+        }
+    }
+}
+
 void forward_detection_layer(const detection_layer layer, network_state state)
 {
     int in_i = 0;
@@ -92,31 +259,63 @@ void forward_detection_layer(const detection_layer layer, network_state state)
             layer.output[out_i++] = mask*state.input[in_i++];
         }
     }
-    /*
-    int count = 0;
-    for(i = 0; i < layer.batch*locations; ++i){
-        for(j = 0; j < layer.classes+layer.background; ++j){
-            printf("%f, ", layer.output[count++]);
-        }
-        printf("\n");
-        for(j = 0; j < layer.coords; ++j){
-            printf("%f, ", layer.output[count++]);
-        }
-        printf("\n");
-    }
-    */
-    /*
-    if(layer.background || 1){
+    if(layer.does_cost){
+        *(layer.cost) = 0;
+        int size = get_detection_layer_output_size(layer) * layer.batch;
+        memset(layer.delta, 0, size * sizeof(float));
         for(i = 0; i < layer.batch*locations; ++i){
-            int index = i*(layer.classes+layer.coords+layer.background);
-            for(j= 0; j < layer.classes; ++j){
-                if(state.truth[index+j+layer.background]){
-                    //dark_zone(layer, j, index, state);
-                }
+            int classes = layer.nuisance+layer.classes;
+            int offset = i*(classes+layer.coords);
+            for(j = offset; j < offset+classes; ++j){
+                *(layer.cost) += pow(state.truth[j] - layer.output[j], 2);
+                layer.delta[j] =  state.truth[j] - layer.output[j];
             }
+            box truth;
+            truth.x = state.truth[j+0];
+            truth.y = state.truth[j+1];
+            truth.w = state.truth[j+2];
+            truth.h = state.truth[j+3];
+            box out;
+            out.x = layer.output[j+0];
+            out.y = layer.output[j+1];
+            out.w = layer.output[j+2];
+            out.h = layer.output[j+3];
+            if(!(truth.w*truth.h)) continue;
+            float iou = box_iou(truth, out);
+            //printf("iou: %f\n", iou);
+            *(layer.cost) += pow((1-iou), 2);
+            dbox d = diou(out, truth);
+            layer.delta[j+0] = d.dx;
+            layer.delta[j+1] = d.dy;
+            layer.delta[j+2] = d.dw;
+            layer.delta[j+3] = d.dh;
         }
     }
-    */
+    /*
+       int count = 0;
+       for(i = 0; i < layer.batch*locations; ++i){
+       for(j = 0; j < layer.classes+layer.background; ++j){
+       printf("%f, ", layer.output[count++]);
+       }
+       printf("\n");
+       for(j = 0; j < layer.coords; ++j){
+       printf("%f, ", layer.output[count++]);
+       }
+       printf("\n");
+       }
+     */
+    /*
+       if(layer.background || 1){
+       for(i = 0; i < layer.batch*locations; ++i){
+       int index = i*(layer.classes+layer.coords+layer.background);
+       for(j= 0; j < layer.classes; ++j){
+       if(state.truth[index+j+layer.background]){
+//dark_zone(layer, j, index, state);
+}
+}
+}
+}
+     */
 }
 
 void backward_detection_layer(const detection_layer layer, network_state state)
@@ -164,6 +363,7 @@ void forward_detection_layer_gpu(const detection_layer layer, network_state stat
     cpu_state.input = in_cpu;
     forward_detection_layer(layer, cpu_state);
     cuda_push_array(layer.output_gpu, layer.output, layer.batch*outputs);
+    cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*outputs);
     free(cpu_state.input);
     if(cpu_state.truth) free(cpu_state.truth);
 }

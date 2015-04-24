@@ -36,5 +36,9 @@ float variance_array(float *a, int n);
 float mag_array(float *a, int n);
 float **one_hot_encode(float *a, int n, int k);
 float sec(clock_t clocks);
+
+typedef struct{
+    float x, y, w, h;
+} box;
 #endif
 

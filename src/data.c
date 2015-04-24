@@ -65,22 +65,22 @@ matrix load_image_paths(char **paths, int n, int w, int h)
     return X;
 }
 
-typedef struct box{
+typedef struct{
     int id;
     float x,y,w,h;
     float left, right, top, bottom;
-} box;
+} box_label;
 
-box *read_boxes(char *filename, int *n)
+box_label *read_boxes(char *filename, int *n)
 {
-    box *boxes = calloc(1, sizeof(box));
+    box_label *boxes = calloc(1, sizeof(box_label));
     FILE *file = fopen(filename, "r");
     if(!file) file_error(filename);
     float x, y, h, w;
     int id;
     int count = 0;
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
-        boxes = realloc(boxes, (count+1)*sizeof(box));
+        boxes = realloc(boxes, (count+1)*sizeof(box_label));
         boxes[count].id = id;
         boxes[count].x = x;
         boxes[count].y = y;
@@ -97,11 +97,11 @@ box *read_boxes(char *filename, int *n)
     return boxes;
 }
 
-void randomize_boxes(box *b, int n)
+void randomize_boxes(box_label *b, int n)
 {
     int i;
     for(i = 0; i < n; ++i){
-        box swap = b[i];
+        box_label swap = b[i];
         int index = rand_r(&data_seed)%n;
         b[i] = b[index];
         b[index] = swap;
@@ -114,7 +114,7 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
     labelpath = find_replace(labelpath, ".jpg", ".txt");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
     int count = 0;
-    box *boxes = read_boxes(labelpath, &count);
+    box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     float x,y,w,h;
     float left, top, right, bot;
@@ -174,10 +174,10 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
         if(background) truth[index++] = 0;
         truth[index+id] = 1;
         index += classes;
-        truth[index++] = y;
         truth[index++] = x;
-        truth[index++] = h;
+        truth[index++] = y;
         truth[index++] = w;
+        truth[index++] = h;
     }
     free(boxes);
 }
