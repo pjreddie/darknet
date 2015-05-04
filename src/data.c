@@ -166,8 +166,10 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
         w = constrain(0, 1, w);
         h = constrain(0, 1, h);
         if (w == 0 || h == 0) continue;
-        w = sqrt(w);
-        h = sqrt(h);
+        if(1){
+            w = sqrt(w);
+            h = sqrt(h);
+        }
 
         int index = (i+j*num_boxes)*(4+classes+background);
         if(truth[index+classes+background+2]) continue;
@@ -316,13 +318,13 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
 
         float sx = (float)swidth  / ow;
         float sy = (float)sheight / oh;
-        
+
         /*
-        float angle = rand_uniform()*.1 - .05;
-        image rot = rotate_image(orig, angle);
-        free_image(orig);
-        orig = rot;
-        */
+           float angle = rand_uniform()*.1 - .05;
+           image rot = rotate_image(orig, angle);
+           free_image(orig);
+           orig = rot;
+         */
 
         int flip = rand_r(&data_seed)%2;
         image cropped = crop_image(orig, pleft, ptop, swidth, sheight);

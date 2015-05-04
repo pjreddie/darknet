@@ -165,26 +165,115 @@ dbox dintersect(box a, box b)
     di.dx = dover.dx*h;
     di.dh = dover.dh*w;
     di.dy = dover.dy*w;
-    if(h < 0 || w < 0){
-        di.dx = dover.dx;
-        di.dy = dover.dy;
-    }
+
     return di;
 }
 
 dbox dunion(box a, box b)
 {
-    dbox du = {0,0,0,0};;
-    float w = overlap(a.x, a.w, b.x, b.w);
-    float h = overlap(a.y, a.h, b.y, b.h);
-    if(w > 0 && h > 0){
-        dbox di = dintersect(a, b);
-        du.dw = h - di.dw;
-        du.dh = w - di.dw;
-        du.dx = -di.dx;
-        du.dy = -di.dy;
-    }
+    dbox du;
+
+    dbox di = dintersect(a, b);
+    du.dw = a.h - di.dw;
+    du.dh = a.w - di.dh;
+    du.dx = -di.dx;
+    du.dy = -di.dy;
+
     return du;
+}
+
+dbox diou(box a, box b);
+
+void test_dunion()
+{
+    box a = {0, 0, 1, 1};
+    box dxa= {0+.0001, 0, 1, 1};
+    box dya= {0, 0+.0001, 1, 1};
+    box dwa= {0, 0, 1+.0001, 1};
+    box dha= {0, 0, 1, 1+.0001};
+
+    box b = {.5, .5, .2, .2};
+    dbox di = dunion(a,b);
+    printf("Union: %f %f %f %f\n", di.dx, di.dy, di.dw, di.dh);
+    float inter =  box_union(a, b);
+    float xinter = box_union(dxa, b);
+    float yinter = box_union(dya, b);
+    float winter = box_union(dwa, b);
+    float hinter = box_union(dha, b);
+    xinter = (xinter - inter)/(.0001);
+    yinter = (yinter - inter)/(.0001);
+    winter = (winter - inter)/(.0001);
+    hinter = (hinter - inter)/(.0001);
+    printf("Union Manual %f %f %f %f\n", xinter, yinter, winter, hinter);
+}
+void test_dintersect()
+{
+    box a = {0, 0, 1, 1};
+    box dxa= {0+.0001, 0, 1, 1};
+    box dya= {0, 0+.0001, 1, 1};
+    box dwa= {0, 0, 1+.0001, 1};
+    box dha= {0, 0, 1, 1+.0001};
+
+    box b = {.5, .5, .2, .2};
+    dbox di = dintersect(a,b);
+    printf("Inter: %f %f %f %f\n", di.dx, di.dy, di.dw, di.dh);
+    float inter =  box_intersection(a, b);
+    float xinter = box_intersection(dxa, b);
+    float yinter = box_intersection(dya, b);
+    float winter = box_intersection(dwa, b);
+    float hinter = box_intersection(dha, b);
+    xinter = (xinter - inter)/(.0001);
+    yinter = (yinter - inter)/(.0001);
+    winter = (winter - inter)/(.0001);
+    hinter = (hinter - inter)/(.0001);
+    printf("Inter Manual %f %f %f %f\n", xinter, yinter, winter, hinter);
+}
+
+void test_box()
+{
+    test_dintersect();
+    test_dunion();
+    box a = {0, 0, 1, 1};
+    box dxa= {0+.00001, 0, 1, 1};
+    box dya= {0, 0+.00001, 1, 1};
+    box dwa= {0, 0, 1+.00001, 1};
+    box dha= {0, 0, 1, 1+.00001};
+
+    box b = {.5, 0, .2, .2};
+
+    float iou = box_iou(a,b);
+    iou = (1-iou)*(1-iou);
+    printf("%f\n", iou);
+    dbox d = diou(a, b);
+    printf("%f %f %f %f\n", d.dx, d.dy, d.dw, d.dh);
+
+    float xiou = box_iou(dxa, b);
+    float yiou = box_iou(dya, b);
+    float wiou = box_iou(dwa, b);
+    float hiou = box_iou(dha, b);
+    xiou = ((1-xiou)*(1-xiou) - iou)/(.00001);
+    yiou = ((1-yiou)*(1-yiou) - iou)/(.00001);
+    wiou = ((1-wiou)*(1-wiou) - iou)/(.00001);
+    hiou = ((1-hiou)*(1-hiou) - iou)/(.00001);
+    printf("manual %f %f %f %f\n", xiou, yiou, wiou, hiou);
+    /*
+
+       while(count++ < 300){
+       dbox d = diou(a, b);
+       printf("%f %f %f %f\n", a.x, a.y, a.w, a.h);
+       a.x += .1*d.dx;
+       a.w += .1*d.dw;
+       a.y += .1*d.dy;
+       a.h += .1*d.dh;
+       printf("inter: %f\n", box_intersection(a, b));
+       printf("union: %f\n", box_union(a, b));
+       printf("IOU: %f\n", box_iou(a, b));
+       if(d.dx==0 && d.dw==0 && d.dy==0 && d.dh==0) {
+       printf("break!!!\n");
+       break;
+       }
+       }
+     */
 }
 
 dbox diou(box a, box b)
@@ -194,40 +283,20 @@ dbox diou(box a, box b)
     dbox di = dintersect(a,b);
     dbox du = dunion(a,b);
     dbox dd = {0,0,0,0};
-    if(i < 0) {
+
+    if(i <= 0 || 1) {
         dd.dx = b.x - a.x;
         dd.dy = b.y - a.y;
         dd.dw = b.w - a.w;
         dd.dh = b.h - a.h;
         return dd;
     }
+
     dd.dx = 2*pow((1-(i/u)),1)*(di.dx*u - du.dx*i)/(u*u);
     dd.dy = 2*pow((1-(i/u)),1)*(di.dy*u - du.dy*i)/(u*u);
     dd.dw = 2*pow((1-(i/u)),1)*(di.dw*u - du.dw*i)/(u*u);
     dd.dh = 2*pow((1-(i/u)),1)*(di.dh*u - du.dh*i)/(u*u);
     return dd;
-}
-
-void test_box()
-{
-    box a = {1, 1, 1, 1};
-    box b = {0, 0, .5, .2};
-    int count = 0;
-    while(count++ < 300){
-        dbox d = diou(a, b);
-        printf("%f %f %f %f\n", a.x, a.y, a.w, a.h);
-        a.x += .1*d.dx;
-        a.w += .1*d.dw;
-        a.y += .1*d.dy;
-        a.h += .1*d.dh;
-        printf("inter: %f\n", box_intersection(a, b));
-        printf("union: %f\n", box_union(a, b));
-        printf("IOU: %f\n", box_iou(a, b));
-        if(d.dx==0 && d.dw==0 && d.dy==0 && d.dh==0) {
-            printf("break!!!\n");
-            break;
-        }
-    }
 }
 
 void forward_detection_layer(const detection_layer layer, network_state state)
@@ -250,7 +319,7 @@ void forward_detection_layer(const detection_layer layer, network_state state)
             layer.output[out_i++] = scale*state.input[in_i++];
         }
         if(layer.nuisance){
-            
+
         }else if(layer.background){
             softmax_array(layer.output + out_i - layer.classes-layer.background, layer.classes+layer.background, layer.output + out_i - layer.classes-layer.background);
             activate_array(state.input+in_i, layer.coords, LOGISTIC);
@@ -259,14 +328,16 @@ void forward_detection_layer(const detection_layer layer, network_state state)
             layer.output[out_i++] = mask*state.input[in_i++];
         }
     }
-    if(layer.does_cost){
+    if(layer.does_cost && state.train && 0){
+        int count = 0;
+        float avg = 0;
         *(layer.cost) = 0;
         int size = get_detection_layer_output_size(layer) * layer.batch;
         memset(layer.delta, 0, size * sizeof(float));
-        for(i = 0; i < layer.batch*locations; ++i){
+        for (i = 0; i < layer.batch*locations; ++i) {
             int classes = layer.nuisance+layer.classes;
             int offset = i*(classes+layer.coords);
-            for(j = offset; j < offset+classes; ++j){
+            for (j = offset; j < offset+classes; ++j) {
                 *(layer.cost) += pow(state.truth[j] - layer.output[j], 2);
                 layer.delta[j] =  state.truth[j] - layer.output[j];
             }
@@ -281,15 +352,26 @@ void forward_detection_layer(const detection_layer layer, network_state state)
             out.w = layer.output[j+2];
             out.h = layer.output[j+3];
             if(!(truth.w*truth.h)) continue;
-            float iou = box_iou(truth, out);
             //printf("iou: %f\n", iou);
-            *(layer.cost) += pow((1-iou), 2);
             dbox d = diou(out, truth);
             layer.delta[j+0] = d.dx;
             layer.delta[j+1] = d.dy;
             layer.delta[j+2] = d.dw;
             layer.delta[j+3] = d.dh;
+
+            int sqr = 1;
+            if(sqr){
+                truth.w *= truth.w;
+                truth.h *= truth.h;
+                out.w *= out.w;
+                out.h *= out.h;
+            }
+            float iou = box_iou(truth, out);
+            *(layer.cost) += pow((1-iou), 2);
+            avg += iou;
+            ++count;
         }
+        fprintf(stderr, "Avg IOU: %f\n", avg/count);
     }
     /*
        int count = 0;

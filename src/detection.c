@@ -81,7 +81,8 @@ void train_detection(char *cfgfile, char *weightfile)
     if (imgnet){
         plist = get_paths("/home/pjreddie/data/imagenet/det.train.list");
     }else{
-        plist = get_paths("/home/pjreddie/data/voc/trainall.txt");
+        plist = get_paths("/home/pjreddie/data/voc/no_2012_val.txt");
+        //plist = get_paths("/home/pjreddie/data/voc/no_2007_test.txt");
         //plist = get_paths("/home/pjreddie/data/coco/trainval.txt");
         //plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
     }
@@ -131,12 +132,12 @@ void predict_detections(network net, data d, float threshold, int offset, int cl
             if (nuisance) scale = 1.-pred.vals[j][k];
             for (class = 0; class < classes; ++class){
                 int ci = k+classes+background+nuisance;
-                float y = (pred.vals[j][ci + 0] + row)/num_boxes;
-                float x = (pred.vals[j][ci + 1] + col)/num_boxes;
-                float h = pred.vals[j][ci + 2]; //* distance_from_edge(row, num_boxes);
-                h = h*h;
-                float w = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
+                float x = (pred.vals[j][ci + 0] + col)/num_boxes;
+                float y = (pred.vals[j][ci + 1] + row)/num_boxes;
+                float w = pred.vals[j][ci + 2]; //* distance_from_edge(row, num_boxes);
+                float h = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
                 w = w*w;
+                h = h*h;
                 float prob = scale*pred.vals[j][k+class+background+nuisance];
                 if(prob < threshold) continue;
                 printf("%d %d %f %f %f %f %f\n", offset +  j, class, prob, y, x, h, w);
@@ -156,7 +157,8 @@ void validate_detection(char *cfgfile, char *weightfile)
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
-    list *plist = get_paths("/home/pjreddie/data/voc/val.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/test_2007.txt");
+    list *plist = get_paths("/home/pjreddie/data/voc/val_2012.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/test.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/val.expanded.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/train.txt");
