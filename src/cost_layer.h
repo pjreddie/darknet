@@ -3,7 +3,7 @@
 #include "params.h"
 
 typedef enum{
-    SSE
+    SSE, MASKED
 } COST_TYPE;
 
 typedef struct {

@@ -15,10 +15,10 @@ __global__ void scal_kernel(int N, float ALPHA, float *X, int INCX)
     if(i < N) X[i*INCX] *= ALPHA;
 }
 
-__global__ void mask_kernel(int n,  float *x, float *mask, int mod)
+__global__ void mask_kernel(int n,  float *x, float *mask)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-    if(i < n) x[i] = (i%mod && !mask[(i/mod)*mod]) ? 0 : x[i];
+    if(i < n && mask[i] == 0) x[i] = 0;
 }
 
 __global__ void copy_kernel(int N,  float *X, int OFFX, int INCX, float *Y, int OFFY, int INCY)
@@ -49,9 +49,9 @@ extern "C" void copy_ongpu_offset(int N, float * X, int OFFX, int INCX, float * 
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void mask_ongpu(int N, float * X, float * mask, float mod)
+extern "C" void mask_ongpu(int N, float * X, float * mask)
 {
-    mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask, mod);
+    mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask);
     check_error(cudaPeekAtLastError());
 }
 

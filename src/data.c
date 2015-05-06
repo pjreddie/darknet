@@ -184,6 +184,57 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
     free(boxes);
 }
 
+void fill_truth_localization(char *path, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
+{
+    char *labelpath = find_replace(path, "objects", "object_labels");
+    labelpath = find_replace(labelpath, ".jpg", ".txt");
+    labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    int count;
+    box_label *boxes = read_boxes(labelpath, &count);
+    box_label box = boxes[0];
+    free(boxes);
+    float x,y,w,h;
+    float left, top, right, bot;
+    int id;
+    int i;
+    for(i = 0; i < count; ++i){
+        left  = box.left  * sx - dx;
+        right = box.right * sx - dx;
+        top   = box.top   * sy - dy;
+        bot   = box.bottom* sy - dy;
+        id = box.id;
+
+        if(flip){
+            float swap = left;
+            left = 1. - right;
+            right = 1. - swap;
+        }
+
+        left =  constrain(0, 1, left);
+        right = constrain(0, 1, right);
+        top =   constrain(0, 1, top);
+        bot =   constrain(0, 1, bot);
+
+        x = (left+right)/2;
+        y = (top+bot)/2;
+        w = (right - left);
+        h = (bot - top);
+
+       if (x <= 0 || x >= 1 || y <= 0 || y >= 1) continue;
+
+        w = constrain(0, 1, w);
+        h = constrain(0, 1, h);
+        if (w == 0 || h == 0) continue;
+
+        int index = id*4;
+        truth[index++] = x;
+        truth[index++] = y;
+        truth[index++] = w;
+        truth[index++] = h;
+    }
+}
+
+
 #define NUMCHARS 37
 
 void print_letters(float *pred, int n)
@@ -281,6 +332,56 @@ void free_data(data d)
     }
 }
 
+data load_data_localization(int n, char **paths, int m, int classes, int w, int h)
+{
+    char **random_paths = get_random_paths(paths, n, m);
+    int i;
+    data d;
+    d.shallow = 0;
+
+    d.X.rows = n;
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.cols = h*w*3;
+
+    int k = (4*classes);
+    d.y = make_matrix(n, k);
+    for(i = 0; i < n; ++i){
+        image orig = load_image_color(random_paths[i], 0, 0);
+
+        int oh = orig.h;
+        int ow = orig.w;
+
+        int dw = 32;
+        int dh = 32;
+
+        int pleft  = (rand_uniform() * dw);
+        int pright = (rand_uniform() * dw);
+        int ptop   = (rand_uniform() * dh);
+        int pbot   = (rand_uniform() * dh);
+
+        int swidth =  ow - pleft - pright;
+        int sheight = oh - ptop - pbot;
+
+        float sx = (float)swidth  / ow;
+        float sy = (float)sheight / oh;
+
+        int flip = rand_r(&data_seed)%2;
+        image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
+        float dx = ((float)pleft/ow)/sx;
+        float dy = ((float)ptop /oh)/sy;
+
+        free_image(orig);
+        image sized = resize_image(cropped, w, h);
+        free_image(cropped);
+        if(flip) flip_image(sized);
+        d.X.vals[i] = sized.data;
+
+        fill_truth_localization(random_paths[i], d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy);
+    }
+    free(random_paths);
+    return d;
+}
+
 data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int w, int h, int num_boxes, int background)
 {
     char **random_paths = get_random_paths(paths, n, m);
@@ -296,11 +397,6 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
-        float exposure = rand_uniform()+1;
-        if(rand_uniform() > .5) exposure = 1/exposure;
-
-        float saturation = rand_uniform()+1;
-        if(rand_uniform() > .5) saturation = 1/saturation;
 
         int oh = orig.h;
         int ow = orig.w;
@@ -341,6 +437,32 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
     }
     free(random_paths);
     return d;
+}
+
+void *load_localization_thread(void *ptr)
+{
+    printf("Loading data: %d\n", rand_r(&data_seed));
+    struct load_args a = *(struct load_args*)ptr;
+    *a.d = load_data_localization(a.n, a.paths, a.m, a.classes, a.w, a.h);
+    free(ptr);
+    return 0;
+}
+
+pthread_t load_data_localization_thread(int n, char **paths, int m, int classes, int w, int h, data *d)
+{
+    pthread_t thread;
+    struct load_args *args = calloc(1, sizeof(struct load_args));
+    args->n = n;
+    args->paths = paths;
+    args->m = m;
+    args->w = w;
+    args->h = h;
+    args->classes = classes;
+    args->d = d;
+    if(pthread_create(&thread, 0, load_localization_thread, args)) {
+        error("Thread creation failed");
+    }
+    return thread;
 }
 
 void *load_detection_thread(void *ptr)

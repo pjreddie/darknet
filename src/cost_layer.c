@@ -10,6 +10,7 @@
 COST_TYPE get_cost_type(char *s)
 {
     if (strcmp(s, "sse")==0) return SSE;
+    if (strcmp(s, "masked")==0) return MASKED;
     fprintf(stderr, "Couldn't find activation function %s, going with SSE\n", s);
     return SSE;
 }
@@ -19,6 +20,8 @@ char *get_cost_string(COST_TYPE a)
     switch(a){
         case SSE:
             return "sse";
+        case MASKED:
+            return "masked";
     }
     return "sse";
 }
@@ -41,6 +44,12 @@ cost_layer *make_cost_layer(int batch, int inputs, COST_TYPE type)
 void forward_cost_layer(cost_layer layer, network_state state)
 {
     if (!state.truth) return;
+    if(layer.type == MASKED){
+        int i;
+        for(i = 0; i < layer.batch*layer.inputs; ++i){
+            if(state.truth[i] == 0) state.input[i] = 0;
+        }
+    }
     copy_cpu(layer.batch*layer.inputs, state.truth, 1, layer.delta, 1);
     axpy_cpu(layer.batch*layer.inputs, -1, state.input, 1, layer.delta, 1);
     *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
@@ -67,6 +76,9 @@ void push_cost_layer(cost_layer layer)
 void forward_cost_layer_gpu(cost_layer layer, network_state state)
 {
     if (!state.truth) return;
+    if (layer.type == MASKED) {
+        mask_ongpu(layer.batch*layer.inputs, state.input, state.truth);
+    }
     
     copy_ongpu(layer.batch*layer.inputs, state.truth, 1, layer.delta_gpu, 1);
     axpy_ongpu(layer.batch*layer.inputs, -1, state.input, 1, layer.delta_gpu, 1);

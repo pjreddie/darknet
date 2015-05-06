@@ -36,6 +36,7 @@ pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int
 
 pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int w, int h, int nh, int nw, int background, data *d);
 data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int w, int h, int num_boxes, int background);
+pthread_t load_data_localization_thread(int n, char **paths, int m, int classes, int w, int h, data *d);
 
 data load_cifar10_data(char *filename);
 data load_all_cifar10();
