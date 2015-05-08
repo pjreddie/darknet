@@ -167,8 +167,10 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
         h = constrain(0, 1, h);
         if (w == 0 || h == 0) continue;
         if(1){
-            w = sqrt(w);
-            h = sqrt(h);
+            //w = sqrt(w);
+            //h = sqrt(h);
+            w = pow(w, 1./2.);
+            h = pow(h, 1./2.);
         }
 
         int index = (i+j*num_boxes)*(4+classes+background);

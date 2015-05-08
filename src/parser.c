@@ -14,6 +14,7 @@
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "detection_layer.h"
+#include "route_layer.h"
 #include "list.h"
 #include "option_list.h"
 #include "utils.h"
@@ -34,6 +35,7 @@ int is_crop(section *s);
 int is_cost(section *s);
 int is_detection(section *s);
 int is_normalization(section *s);
+int is_route(section *s);
 list *read_cfg(char *filename);
 
 void free_section(section *s)
@@ -246,6 +248,32 @@ normalization_layer *parse_normalization(list *options, size_params params)
     return layer;
 }
 
+route_layer *parse_route(list *options, size_params params, network net)
+{
+    char *l = option_find(options, "layers");   
+    int len = strlen(l);
+    if(!l) error("Route Layer must specify input layers");
+    int n = 1;
+    int i;
+    for(i = 0; i < len; ++i){
+        if (l[i] == ',') ++n;
+    }
+
+    int *layers = calloc(n, sizeof(int));
+    int *sizes = calloc(n, sizeof(int));
+    for(i = 0; i < n; ++i){
+        int index = atoi(l);
+        l = strchr(l, ',')+1;
+        layers[i] = index;
+        sizes[i] = get_network_output_size_layer(net, index);
+    }
+    int batch = params.batch;
+
+    route_layer *layer = make_route_layer(batch, n, layers, sizes);
+    option_unused(options);
+    return layer;
+}
+
 void parse_net_options(list *options, network *net)
 {
     net->batch = option_find_int(options, "batch",1);
@@ -326,6 +354,10 @@ network parse_network_cfg(char *filename)
             normalization_layer *layer = parse_normalization(options, params);
             net.types[count] = NORMALIZATION;
             net.layers[count] = layer;
+        }else if(is_route(s)){
+            route_layer *layer = parse_route(options, params, net);
+            net.types[count] = ROUTE;
+            net.layers[count] = layer;
         }else if(is_dropout(s)){
             dropout_layer *layer = parse_dropout(options, params);
             net.types[count] = DROPOUT;
@@ -401,6 +433,10 @@ int is_normalization(section *s)
 {
     return (strcmp(s->type, "[lrnorm]")==0
             || strcmp(s->type, "[localresponsenormalization]")==0);
+}
+int is_route(section *s)
+{
+    return (strcmp(s->type, "[route]")==0);
 }
 
 int read_option(char *s, list *options)

@@ -4,7 +4,6 @@
 
 #include "image.h"
 #include "detection_layer.h"
-#include "params.h"
 #include "data.h"
 
 typedef enum {
@@ -17,6 +16,7 @@ typedef enum {
     NORMALIZATION,
     DROPOUT,
     CROP,
+    ROUTE,
     COST
 } LAYER_TYPE;
 

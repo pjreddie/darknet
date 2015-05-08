@@ -18,11 +18,12 @@ extern "C" {
 #include "normalization_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
+#include "route_layer.h"
 }
 
 float * get_network_output_gpu_layer(network net, int i);
 float * get_network_delta_gpu_layer(network net, int i);
-float *get_network_output_gpu(network net);
+float * get_network_output_gpu(network net);
 
 void forward_network_gpu(network net, network_state state)
 {
@@ -54,6 +55,9 @@ void forward_network_gpu(network net, network_state state)
         }
         else if(net.types[i] == CROP){
             forward_crop_layer_gpu(*(crop_layer *)net.layers[i], state);
+        }
+        else if(net.types[i] == ROUTE){
+            forward_route_layer_gpu(*(route_layer *)net.layers[i], net);
         }
         state.input = get_network_output_gpu_layer(net, i);
     }
@@ -95,6 +99,9 @@ void backward_network_gpu(network net, network_state state)
         }
         else if(net.types[i] == SOFTMAX){
             backward_softmax_layer_gpu(*(softmax_layer *)net.layers[i], state);
+        }
+        else if(net.types[i] == ROUTE){
+            backward_route_layer_gpu(*(route_layer *)net.layers[i], net);
         }
     }
 }
@@ -142,6 +149,9 @@ float * get_network_output_gpu_layer(network net, int i)
     else if(net.types[i] == SOFTMAX){
         return ((softmax_layer *)net.layers[i]) -> output_gpu;
     }
+    else if(net.types[i] == ROUTE){
+        return ((route_layer *)net.layers[i]) -> output_gpu;
+    }
     else if(net.types[i] == DROPOUT){
         return get_network_output_gpu_layer(net, i-1);
     }
@@ -168,6 +178,10 @@ float * get_network_delta_gpu_layer(network net, int i)
     }
     else if(net.types[i] == MAXPOOL){
         maxpool_layer layer = *(maxpool_layer *)net.layers[i];
+        return layer.delta_gpu;
+    }
+    else if(net.types[i] == ROUTE){
+        route_layer layer = *(route_layer *)net.layers[i];
         return layer.delta_gpu;
     }
     else if(net.types[i] == SOFTMAX){
