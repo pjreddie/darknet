@@ -27,14 +27,14 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     l.h = h;
     l.w = w;
     l.c = c;
-    l.out_h = h;
-    l.out_w = w;
+    l.out_h = (h-1)/stride + 1;
+    l.out_w = (w-1)/stride + 1;
     l.out_c = c;
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = l.outputs;
     l.size = size;
     l.stride = stride;
-    int output_size = ((h-1)/stride+1) * ((w-1)/stride+1) * c * batch;
+    int output_size = l.out_h * l.out_w * l.out_c * batch;
     l.indexes = calloc(output_size, sizeof(int));
     l.output =  calloc(output_size, sizeof(float));
     l.delta =   calloc(output_size, sizeof(float));
