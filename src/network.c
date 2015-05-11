@@ -12,7 +12,6 @@
 #include "detection_layer.h"
 #include "maxpool_layer.h"
 #include "cost_layer.h"
-#include "normalization_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "route_layer.h"
@@ -32,8 +31,6 @@ char *get_layer_string(LAYER_TYPE a)
             return "softmax";
         case DETECTION:
             return "detection";
-        case NORMALIZATION:
-            return "normalization";
         case DROPOUT:
             return "dropout";
         case CROP:
@@ -50,16 +47,9 @@ char *get_layer_string(LAYER_TYPE a)
 
 network make_network(int n)
 {
-    network net;
+    network net = {0};
     net.n = n;
-    net.layers = calloc(net.n, sizeof(void *));
-    net.types = calloc(net.n, sizeof(LAYER_TYPE));
-    net.outputs = 0;
-    net.output = 0;
-    net.seen = 0;
-    net.batch = 0;
-    net.inputs = 0;
-    net.h = net.w = net.c = 0;
+    net.layers = calloc(net.n, sizeof(layer));
     #ifdef GPU
     net.input_gpu = calloc(1, sizeof(float *));
     net.truth_gpu = calloc(1, sizeof(float *));
@@ -71,40 +61,29 @@ void forward_network(network net, network_state state)
 {
     int i;
     for(i = 0; i < net.n; ++i){
-        if(net.types[i] == CONVOLUTIONAL){
-            forward_convolutional_layer(*(convolutional_layer *)net.layers[i], state);
+        layer l = net.layers[i];
+        if(l.type == CONVOLUTIONAL){
+            forward_convolutional_layer(l, state);
+        } else if(l.type == DECONVOLUTIONAL){
+            forward_deconvolutional_layer(l, state);
+        } else if(l.type == DETECTION){
+            forward_detection_layer(l, state);
+        } else if(l.type == CONNECTED){
+            forward_connected_layer(l, state);
+        } else if(l.type == CROP){
+            forward_crop_layer(l, state);
+        } else if(l.type == COST){
+            forward_cost_layer(l, state);
+        } else if(l.type == SOFTMAX){
+            forward_softmax_layer(l, state);
+        } else if(l.type == MAXPOOL){
+            forward_maxpool_layer(l, state);
+        } else if(l.type == DROPOUT){
+            forward_dropout_layer(l, state);
+        } else if(l.type == ROUTE){
+            forward_route_layer(l, net);
         }
-        else if(net.types[i] == DECONVOLUTIONAL){
-            forward_deconvolutional_layer(*(deconvolutional_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == DETECTION){
-            forward_detection_layer(*(detection_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == CONNECTED){
-            forward_connected_layer(*(connected_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == CROP){
-            forward_crop_layer(*(crop_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == COST){
-            forward_cost_layer(*(cost_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == SOFTMAX){
-            forward_softmax_layer(*(softmax_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == MAXPOOL){
-            forward_maxpool_layer(*(maxpool_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == NORMALIZATION){
-            forward_normalization_layer(*(normalization_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == DROPOUT){
-            forward_dropout_layer(*(dropout_layer *)net.layers[i], state);
-        }
-        else if(net.types[i] == ROUTE){
-            forward_route_layer(*(route_layer *)net.layers[i], net);
-        }
-        state.input = get_network_output_layer(net, i);
+        state.input = l.output;
     }
 }
 
@@ -113,97 +92,33 @@ void update_network(network net)
     int i;
     int update_batch = net.batch*net.subdivisions;
     for(i = 0; i < net.n; ++i){
-        if(net.types[i] == CONVOLUTIONAL){
-            convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            update_convolutional_layer(layer, update_batch, net.learning_rate, net.momentum, net.decay);
-        }
-        else if(net.types[i] == DECONVOLUTIONAL){
-            deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
-            update_deconvolutional_layer(layer, net.learning_rate, net.momentum, net.decay);
-        }
-        else if(net.types[i] == CONNECTED){
-            connected_layer layer = *(connected_layer *)net.layers[i];
-            update_connected_layer(layer, update_batch, net.learning_rate, net.momentum, net.decay);
+        layer l = net.layers[i];
+        if(l.type == CONVOLUTIONAL){
+            update_convolutional_layer(l, update_batch, net.learning_rate, net.momentum, net.decay);
+        } else if(l.type == DECONVOLUTIONAL){
+            update_deconvolutional_layer(l, net.learning_rate, net.momentum, net.decay);
+        } else if(l.type == CONNECTED){
+            update_connected_layer(l, update_batch, net.learning_rate, net.momentum, net.decay);
         }
     }
-}
-
-float *get_network_output_layer(network net, int i)
-{
-    if(net.types[i] == CONVOLUTIONAL){
-        return ((convolutional_layer *)net.layers[i]) -> output;
-    } else if(net.types[i] == DECONVOLUTIONAL){
-        return ((deconvolutional_layer *)net.layers[i]) -> output;
-    } else if(net.types[i] == MAXPOOL){
-        return ((maxpool_layer *)net.layers[i]) -> output;
-    } else if(net.types[i] == DETECTION){
-        return ((detection_layer *)net.layers[i]) -> output;
-    } else if(net.types[i] == SOFTMAX){
-        return ((softmax_layer *)net.layers[i]) -> output;
-    } else if(net.types[i] == DROPOUT){
-        return get_network_output_layer(net, i-1);
-    } else if(net.types[i] == CONNECTED){
-        return ((connected_layer *)net.layers[i]) -> output;
-    } else if(net.types[i] == CROP){
-        return ((crop_layer *)net.layers[i]) -> output;
-    } else if(net.types[i] == NORMALIZATION){
-        return ((normalization_layer *)net.layers[i]) -> output;
-    } else if(net.types[i] == ROUTE){
-        return ((route_layer *)net.layers[i]) -> output;
-    }
-    return 0;
 }
 
 float *get_network_output(network net)
 {
     int i;
-    for(i = net.n-1; i > 0; --i) if(net.types[i] != COST) break;
-    return get_network_output_layer(net, i);
-}
-
-float *get_network_delta_layer(network net, int i)
-{
-    if(net.types[i] == CONVOLUTIONAL){
-        convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-        return layer.delta;
-    } else if(net.types[i] == DECONVOLUTIONAL){
-        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
-        return layer.delta;
-    } else if(net.types[i] == MAXPOOL){
-        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        return layer.delta;
-    } else if(net.types[i] == SOFTMAX){
-        softmax_layer layer = *(softmax_layer *)net.layers[i];
-        return layer.delta;
-    } else if(net.types[i] == DETECTION){
-        detection_layer layer = *(detection_layer *)net.layers[i];
-        return layer.delta;
-    } else if(net.types[i] == DROPOUT){
-        if(i == 0) return 0;
-        return get_network_delta_layer(net, i-1);
-    } else if(net.types[i] == CONNECTED){
-        connected_layer layer = *(connected_layer *)net.layers[i];
-        return layer.delta;
-    } else if(net.types[i] == ROUTE){
-        return ((route_layer *)net.layers[i]) -> delta;
-    }
-    return 0;
+    for(i = net.n-1; i > 0; --i) if(net.layers[i].type != COST) break;
+    return net.layers[i].output;
 }
 
 float get_network_cost(network net)
 {
-    if(net.types[net.n-1] == COST){
-        return ((cost_layer *)net.layers[net.n-1])->output[0];
+    if(net.layers[net.n-1].type == COST){
+        return net.layers[net.n-1].output[0];
     }
-    if(net.types[net.n-1] == DETECTION){
-        return ((detection_layer *)net.layers[net.n-1])->cost[0];
+    if(net.layers[net.n-1].type == DETECTION){
+        return net.layers[net.n-1].cost[0];
     }
     return 0;
-}
-
-float *get_network_delta(network net)
-{
-    return get_network_delta_layer(net, net.n-1);
 }
 
 int get_predicted_class_network(network net)
@@ -222,46 +137,29 @@ void backward_network(network net, network_state state)
             state.input = original_input;
             state.delta = 0;
         }else{
-            state.input = get_network_output_layer(net, i-1);
-            state.delta = get_network_delta_layer(net, i-1);
+            layer prev = net.layers[i-1];
+            state.input = prev.output;
+            state.delta = prev.delta;
         }
-
-        if(net.types[i] == CONVOLUTIONAL){
-            convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            backward_convolutional_layer(layer, state);
-        } else if(net.types[i] == DECONVOLUTIONAL){
-            deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
-            backward_deconvolutional_layer(layer, state);
-        }
-        else if(net.types[i] == MAXPOOL){
-            maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-            if(i != 0) backward_maxpool_layer(layer, state);
-        }
-        else if(net.types[i] == DROPOUT){
-            dropout_layer layer = *(dropout_layer *)net.layers[i];
-            backward_dropout_layer(layer, state);
-        }
-        else if(net.types[i] == DETECTION){
-            detection_layer layer = *(detection_layer *)net.layers[i];
-            backward_detection_layer(layer, state);
-        }
-        else if(net.types[i] == NORMALIZATION){
-            normalization_layer layer = *(normalization_layer *)net.layers[i];
-            if(i != 0) backward_normalization_layer(layer, state);
-        }
-        else if(net.types[i] == SOFTMAX){
-            softmax_layer layer = *(softmax_layer *)net.layers[i];
-            if(i != 0) backward_softmax_layer(layer, state);
-        }
-        else if(net.types[i] == CONNECTED){
-            connected_layer layer = *(connected_layer *)net.layers[i];
-            backward_connected_layer(layer, state);
-        } else if(net.types[i] == COST){
-            cost_layer layer = *(cost_layer *)net.layers[i];
-            backward_cost_layer(layer, state);
-        } else if(net.types[i] == ROUTE){
-            route_layer layer = *(route_layer *)net.layers[i];
-            backward_route_layer(layer, net);
+        layer l = net.layers[i];
+        if(l.type == CONVOLUTIONAL){
+            backward_convolutional_layer(l, state);
+        } else if(l.type == DECONVOLUTIONAL){
+            backward_deconvolutional_layer(l, state);
+        } else if(l.type == MAXPOOL){
+            if(i != 0) backward_maxpool_layer(l, state);
+        } else if(l.type == DROPOUT){
+            backward_dropout_layer(l, state);
+        } else if(l.type == DETECTION){
+            backward_detection_layer(l, state);
+        } else if(l.type == SOFTMAX){
+            if(i != 0) backward_softmax_layer(l, state);
+        } else if(l.type == CONNECTED){
+            backward_connected_layer(l, state);
+        } else if(l.type == COST){
+            backward_cost_layer(l, state);
+        } else if(l.type == ROUTE){
+            backward_route_layer(l, net);
         }
     }
 }
@@ -347,127 +245,11 @@ void set_batch_network(network *net, int b)
     net->batch = b;
     int i;
     for(i = 0; i < net->n; ++i){
-        if(net->types[i] == CONVOLUTIONAL){
-            convolutional_layer *layer = (convolutional_layer *)net->layers[i];
-            layer->batch = b;
-        }else if(net->types[i] == DECONVOLUTIONAL){
-            deconvolutional_layer *layer = (deconvolutional_layer *)net->layers[i];
-            layer->batch = b;
-        }
-        else if(net->types[i] == MAXPOOL){
-            maxpool_layer *layer = (maxpool_layer *)net->layers[i];
-            layer->batch = b;
-        }
-        else if(net->types[i] == CONNECTED){
-            connected_layer *layer = (connected_layer *)net->layers[i];
-            layer->batch = b;
-        } else if(net->types[i] == DROPOUT){
-            dropout_layer *layer = (dropout_layer *) net->layers[i];
-            layer->batch = b;
-        } else if(net->types[i] == DETECTION){
-            detection_layer *layer = (detection_layer *) net->layers[i];
-            layer->batch = b;
-        }
-        else if(net->types[i] == SOFTMAX){
-            softmax_layer *layer = (softmax_layer *)net->layers[i];
-            layer->batch = b;
-        }
-        else if(net->types[i] == COST){
-            cost_layer *layer = (cost_layer *)net->layers[i];
-            layer->batch = b;
-        }
-        else if(net->types[i] == CROP){
-            crop_layer *layer = (crop_layer *)net->layers[i];
-            layer->batch = b;
-        }
-        else if(net->types[i] == ROUTE){
-            route_layer *layer = (route_layer *)net->layers[i];
-            layer->batch = b;
-        }
+        net->layers[i].batch = b;
     }
 }
 
-
-int get_network_input_size_layer(network net, int i)
-{
-    if(net.types[i] == CONVOLUTIONAL){
-        convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-        return layer.h*layer.w*layer.c;
-    }
-    if(net.types[i] == DECONVOLUTIONAL){
-        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
-        return layer.h*layer.w*layer.c;
-    }
-    else if(net.types[i] == MAXPOOL){
-        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        return layer.h*layer.w*layer.c;
-    }
-    else if(net.types[i] == CONNECTED){
-        connected_layer layer = *(connected_layer *)net.layers[i];
-        return layer.inputs;
-    } else if(net.types[i] == DROPOUT){
-        dropout_layer layer = *(dropout_layer *) net.layers[i];
-        return layer.inputs;
-    } else if(net.types[i] == DETECTION){
-        detection_layer layer = *(detection_layer *) net.layers[i];
-        return layer.inputs;
-    } else if(net.types[i] == CROP){
-        crop_layer layer = *(crop_layer *) net.layers[i];
-        return layer.c*layer.h*layer.w;
-    }
-    else if(net.types[i] == SOFTMAX){
-        softmax_layer layer = *(softmax_layer *)net.layers[i];
-        return layer.inputs;
-    }
-    fprintf(stderr, "Can't find input size\n");
-    return 0;
-}
-
-int get_network_output_size_layer(network net, int i)
-{
-    if(net.types[i] == CONVOLUTIONAL){
-        convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-        image output = get_convolutional_image(layer);
-        return output.h*output.w*output.c;
-    }
-    else if(net.types[i] == DECONVOLUTIONAL){
-        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
-        image output = get_deconvolutional_image(layer);
-        return output.h*output.w*output.c;
-    }
-    else if(net.types[i] == DETECTION){
-        detection_layer layer = *(detection_layer *)net.layers[i];
-        return get_detection_layer_output_size(layer);
-    }
-    else if(net.types[i] == MAXPOOL){
-        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        image output = get_maxpool_image(layer);
-        return output.h*output.w*output.c;
-    }
-    else if(net.types[i] == CROP){
-        crop_layer layer = *(crop_layer *) net.layers[i];
-        return layer.c*layer.crop_height*layer.crop_width;
-    }
-    else if(net.types[i] == CONNECTED){
-        connected_layer layer = *(connected_layer *)net.layers[i];
-        return layer.outputs;
-    }
-    else if(net.types[i] == DROPOUT){
-        dropout_layer layer = *(dropout_layer *) net.layers[i];
-        return layer.inputs;
-    }
-    else if(net.types[i] == SOFTMAX){
-        softmax_layer layer = *(softmax_layer *)net.layers[i];
-        return layer.inputs;
-    }
-    else if(net.types[i] == ROUTE){
-        route_layer layer = *(route_layer *)net.layers[i];
-        return layer.outputs;
-    }
-    fprintf(stderr, "Can't find output size\n");
-    return 0;
-}
-
+/*
 int resize_network(network net, int h, int w, int c)
 {
     fprintf(stderr, "Might be broken, careful!!");
@@ -497,74 +279,47 @@ int resize_network(network net, int h, int w, int c)
         }else if(net.types[i] == DROPOUT){
             dropout_layer *layer = (dropout_layer *)net.layers[i];
             resize_dropout_layer(layer, h*w*c);
-        }else if(net.types[i] == NORMALIZATION){
-            normalization_layer *layer = (normalization_layer *)net.layers[i];
-            resize_normalization_layer(layer, h, w);
-            image output = get_normalization_image(*layer);
-            h = output.h;
-            w = output.w;
-            c = output.c;
         }else{
             error("Cannot resize this type of layer");
         }
     }
     return 0;
 }
+*/
 
 int get_network_output_size(network net)
 {
     int i;
-    for(i = net.n-1; i > 0; --i) if(net.types[i] != COST) break;
-    return get_network_output_size_layer(net, i);
+    for(i = net.n-1; i > 0; --i) if(net.layers[i].type != COST) break;
+    return net.layers[i].outputs;
 }
 
 int get_network_input_size(network net)
 {
-    return get_network_input_size_layer(net, 0);
+    return net.layers[0].inputs;
 }
 
-detection_layer *get_network_detection_layer(network net)
+detection_layer get_network_detection_layer(network net)
 {
     int i;
     for(i = 0; i < net.n; ++i){
-        if(net.types[i] == DETECTION){
-            detection_layer *layer = (detection_layer *)net.layers[i];
-            return layer;
+        if(net.layers[i].type == DETECTION){
+            return net.layers[i];
         }
     }
-    return 0;
+    fprintf(stderr, "Detection layer not found!!\n");
+    detection_layer l = {0};
+    return l;
 }
 
 image get_network_image_layer(network net, int i)
 {
-    if(net.types[i] == CONVOLUTIONAL){
-        convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-        return get_convolutional_image(layer);
+    layer l = net.layers[i];
+    if (l.out_w && l.out_h && l.out_c){
+        return float_to_image(l.out_w, l.out_h, l.out_c, l.output);
     }
-    else if(net.types[i] == DECONVOLUTIONAL){
-        deconvolutional_layer layer = *(deconvolutional_layer *)net.layers[i];
-        return get_deconvolutional_image(layer);
-    }
-    else if(net.types[i] == MAXPOOL){
-        maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-        return get_maxpool_image(layer);
-    }
-    else if(net.types[i] == NORMALIZATION){
-        normalization_layer layer = *(normalization_layer *)net.layers[i];
-        return get_normalization_image(layer);
-    }
-    else if(net.types[i] == DROPOUT){
-        return get_network_image_layer(net, i-1);
-    }
-    else if(net.types[i] == CROP){
-        crop_layer layer = *(crop_layer *)net.layers[i];
-        return get_crop_image(layer);
-    }
-    else if(net.types[i] == ROUTE){
-        route_layer layer = *(route_layer *)net.layers[i];
-        return get_network_image_layer(net, layer.input_layers[0]);
-    }
-    return make_empty_image(0,0,0);
+    image def = {0};
+    return def;
 }
 
 image get_network_image(network net)
@@ -574,7 +329,8 @@ image get_network_image(network net)
         image m = get_network_image_layer(net, i);
         if(m.h != 0) return m;
     }
-    return make_empty_image(0,0,0);
+    image def = {0};
+    return def;
 }
 
 void visualize_network(network net)
@@ -582,16 +338,11 @@ void visualize_network(network net)
     image *prev = 0;
     int i;
     char buff[256];
-    //show_image(get_network_image_layer(net, 0), "Crop");
     for(i = 0; i < net.n; ++i){
         sprintf(buff, "Layer %d", i);
-        if(net.types[i] == CONVOLUTIONAL){
-            convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            prev = visualize_convolutional_layer(layer, buff, prev);
-        }
-        if(net.types[i] == NORMALIZATION){
-            normalization_layer layer = *(normalization_layer *)net.layers[i];
-            visualize_normalization_layer(layer, buff);
+        layer l = net.layers[i];
+        if(l.type == CONVOLUTIONAL){
+            prev = visualize_convolutional_layer(l, buff, prev);
         }
     } 
 }
@@ -672,36 +423,9 @@ void print_network(network net)
 {
     int i,j;
     for(i = 0; i < net.n; ++i){
-        float *output = 0;
-        int n = 0;
-        if(net.types[i] == CONVOLUTIONAL){
-            convolutional_layer layer = *(convolutional_layer *)net.layers[i];
-            output = layer.output;
-            image m = get_convolutional_image(layer);
-            n = m.h*m.w*m.c;
-        }
-        else if(net.types[i] == MAXPOOL){
-            maxpool_layer layer = *(maxpool_layer *)net.layers[i];
-            output = layer.output;
-            image m = get_maxpool_image(layer);
-            n = m.h*m.w*m.c;
-        }
-        else if(net.types[i] == CROP){
-            crop_layer layer = *(crop_layer *)net.layers[i];
-            output = layer.output;
-            image m = get_crop_image(layer);
-            n = m.h*m.w*m.c;
-        }
-        else if(net.types[i] == CONNECTED){
-            connected_layer layer = *(connected_layer *)net.layers[i];
-            output = layer.output;
-            n = layer.outputs;
-        }
-        else if(net.types[i] == SOFTMAX){
-            softmax_layer layer = *(softmax_layer *)net.layers[i];
-            output = layer.output;
-            n = layer.inputs;
-        }
+        layer l = net.layers[i];
+        float *output = l.output;
+        int n = l.outputs;
         float mean = mean_array(output, n);
         float vari = variance_array(output, n);
         fprintf(stderr, "Layer %d - Mean: %f, Variance: %f\n",i,mean, vari);

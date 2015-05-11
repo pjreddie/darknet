@@ -1,3 +1,254 @@
+void save_network(network net, char *filename)
+{
+    FILE *fp = fopen(filename, "w");
+    if(!fp) file_error(filename);
+    int i;
+    for(i = 0; i < net.n; ++i)
+    {
+        if(net.types[i] == CONVOLUTIONAL)
+            print_convolutional_cfg(fp, (convolutional_layer *)net.layers[i], net, i);
+        else if(net.types[i] == DECONVOLUTIONAL)
+            print_deconvolutional_cfg(fp, (deconvolutional_layer *)net.layers[i], net, i);
+        else if(net.types[i] == CONNECTED)
+            print_connected_cfg(fp, (connected_layer *)net.layers[i], net, i);
+        else if(net.types[i] == CROP)
+            print_crop_cfg(fp, (crop_layer *)net.layers[i], net, i);
+        else if(net.types[i] == MAXPOOL)
+            print_maxpool_cfg(fp, (maxpool_layer *)net.layers[i], net, i);
+        else if(net.types[i] == DROPOUT)
+            print_dropout_cfg(fp, (dropout_layer *)net.layers[i], net, i);
+        else if(net.types[i] == SOFTMAX)
+            print_softmax_cfg(fp, (softmax_layer *)net.layers[i], net, i);
+        else if(net.types[i] == DETECTION)
+            print_detection_cfg(fp, (detection_layer *)net.layers[i], net, i);
+        else if(net.types[i] == COST)
+            print_cost_cfg(fp, (cost_layer *)net.layers[i], net, i);
+    }
+    fclose(fp);
+}
+
+void print_convolutional_cfg(FILE *fp, convolutional_layer *l, network net, int count)
+{
+#ifdef GPU
+    if(gpu_index >= 0)  pull_convolutional_layer(*l);
+#endif
+    int i;
+    fprintf(fp, "[convolutional]\n");
+    fprintf(fp, "filters=%d\n"
+            "size=%d\n"
+            "stride=%d\n"
+            "pad=%d\n"
+            "activation=%s\n",
+            l->n, l->size, l->stride, l->pad,
+            get_activation_string(l->activation));
+    fprintf(fp, "biases=");
+    for(i = 0; i < l->n; ++i) fprintf(fp, "%g,", l->biases[i]);
+    fprintf(fp, "\n");
+    fprintf(fp, "weights=");
+    for(i = 0; i < l->n*l->c*l->size*l->size; ++i) fprintf(fp, "%g,", l->filters[i]);
+    fprintf(fp, "\n\n");
+}
+
+void print_deconvolutional_cfg(FILE *fp, deconvolutional_layer *l, network net, int count)
+{
+#ifdef GPU
+    if(gpu_index >= 0)  pull_deconvolutional_layer(*l);
+#endif
+    int i;
+    fprintf(fp, "[deconvolutional]\n");
+    fprintf(fp, "filters=%d\n"
+            "size=%d\n"
+            "stride=%d\n"
+            "activation=%s\n",
+            l->n, l->size, l->stride,
+            get_activation_string(l->activation));
+    fprintf(fp, "biases=");
+    for(i = 0; i < l->n; ++i) fprintf(fp, "%g,", l->biases[i]);
+    fprintf(fp, "\n");
+    fprintf(fp, "weights=");
+    for(i = 0; i < l->n*l->c*l->size*l->size; ++i) fprintf(fp, "%g,", l->filters[i]);
+    fprintf(fp, "\n\n");
+}
+
+void print_dropout_cfg(FILE *fp, dropout_layer *l, network net, int count)
+{
+    fprintf(fp, "[dropout]\n");
+    fprintf(fp, "probability=%g\n\n", l->probability);
+}
+
+void print_connected_cfg(FILE *fp, connected_layer *l, network net, int count)
+{
+#ifdef GPU
+    if(gpu_index >= 0) pull_connected_layer(*l);
+#endif
+    int i;
+    fprintf(fp, "[connected]\n");
+    fprintf(fp, "output=%d\n"
+            "activation=%s\n",
+            l->outputs,
+            get_activation_string(l->activation));
+    fprintf(fp, "biases=");
+    for(i = 0; i < l->outputs; ++i) fprintf(fp, "%g,", l->biases[i]);
+    fprintf(fp, "\n");
+    fprintf(fp, "weights=");
+    for(i = 0; i < l->outputs*l->inputs; ++i) fprintf(fp, "%g,", l->weights[i]);
+    fprintf(fp, "\n\n");
+}
+
+void print_crop_cfg(FILE *fp, crop_layer *l, network net, int count)
+{
+    fprintf(fp, "[crop]\n");
+    fprintf(fp, "crop_height=%d\ncrop_width=%d\nflip=%d\n\n", l->crop_height, l->crop_width, l->flip);
+}
+
+void print_maxpool_cfg(FILE *fp, maxpool_layer *l, network net, int count)
+{
+    fprintf(fp, "[maxpool]\n");
+    fprintf(fp, "size=%d\nstride=%d\n\n", l->size, l->stride);
+}
+
+void print_softmax_cfg(FILE *fp, softmax_layer *l, network net, int count)
+{
+    fprintf(fp, "[softmax]\n");
+    fprintf(fp, "\n");
+}
+
+void print_detection_cfg(FILE *fp, detection_layer *l, network net, int count)
+{
+    fprintf(fp, "[detection]\n");
+    fprintf(fp, "classes=%d\ncoords=%d\nrescore=%d\nnuisance=%d\n", l->classes, l->coords, l->rescore, l->nuisance);
+    fprintf(fp, "\n");
+}
+
+void print_cost_cfg(FILE *fp, cost_layer *l, network net, int count)
+{
+    fprintf(fp, "[cost]\ntype=%s\n", get_cost_string(l->type));
+    fprintf(fp, "\n");
+}
+
+
+#ifndef NORMALIZATION_LAYER_H
+#define NORMALIZATION_LAYER_H
+
+#include "image.h"
+#include "params.h"
+
+typedef struct {
+    int batch;
+    int h,w,c;
+    int size;
+    float alpha;
+    float beta;
+    float kappa;
+    float *delta;
+    float *output;
+    float *sums;
+} normalization_layer;
+
+image get_normalization_image(normalization_layer layer);
+normalization_layer *make_normalization_layer(int batch, int h, int w, int c, int size, float alpha, float beta, float kappa);
+void resize_normalization_layer(normalization_layer *layer, int h, int w);
+void forward_normalization_layer(const normalization_layer layer, network_state state);
+void backward_normalization_layer(const normalization_layer layer, network_state state);
+void visualize_normalization_layer(normalization_layer layer, char *window);
+
+#endif
+#include "normalization_layer.h"
+#include <stdio.h>
+
+image get_normalization_image(normalization_layer layer)
+{
+    int h = layer.h;
+    int w = layer.w;
+    int c = layer.c;
+    return float_to_image(w,h,c,layer.output);
+}
+
+image get_normalization_delta(normalization_layer layer)
+{
+    int h = layer.h;
+    int w = layer.w;
+    int c = layer.c;
+    return float_to_image(w,h,c,layer.delta);
+}
+
+normalization_layer *make_normalization_layer(int batch, int h, int w, int c, int size, float alpha, float beta, float kappa)
+{
+    fprintf(stderr, "Local Response Normalization Layer: %d x %d x %d image, %d size\n", h,w,c,size);
+    normalization_layer *layer = calloc(1, sizeof(normalization_layer));
+    layer->batch = batch;
+    layer->h = h;
+    layer->w = w;
+    layer->c = c;
+    layer->kappa = kappa;
+    layer->size = size;
+    layer->alpha = alpha;
+    layer->beta = beta;
+    layer->output = calloc(h * w * c * batch, sizeof(float));
+    layer->delta = calloc(h * w * c * batch, sizeof(float));
+    layer->sums = calloc(h*w, sizeof(float));
+    return layer;
+}
+
+void resize_normalization_layer(normalization_layer *layer, int h, int w)
+{
+    layer->h = h;
+    layer->w = w;
+    layer->output = realloc(layer->output, h * w * layer->c * layer->batch * sizeof(float));
+    layer->delta = realloc(layer->delta, h * w * layer->c * layer->batch * sizeof(float));
+    layer->sums = realloc(layer->sums, h*w * sizeof(float));
+}
+
+void add_square_array(float *src, float *dest, int n)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        dest[i] += src[i]*src[i];
+    }
+}
+void sub_square_array(float *src, float *dest, int n)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        dest[i] -= src[i]*src[i];
+    }
+}
+
+void forward_normalization_layer(const normalization_layer layer, network_state state)
+{
+    int i,j,k;
+    memset(layer.sums, 0, layer.h*layer.w*sizeof(float));
+    int imsize = layer.h*layer.w;
+    for(j = 0; j < layer.size/2; ++j){
+        if(j < layer.c) add_square_array(state.input+j*imsize, layer.sums, imsize);
+    }
+    for(k = 0; k < layer.c; ++k){
+        int next = k+layer.size/2;
+        int prev = k-layer.size/2-1;
+        if(next < layer.c) add_square_array(state.input+next*imsize, layer.sums, imsize);
+        if(prev > 0)       sub_square_array(state.input+prev*imsize, layer.sums, imsize);
+        for(i = 0; i < imsize; ++i){
+            layer.output[k*imsize + i] = state.input[k*imsize+i] / pow(layer.kappa + layer.alpha * layer.sums[i], layer.beta);
+        }
+    }
+}
+
+void backward_normalization_layer(const normalization_layer layer, network_state state)
+{
+    // TODO!
+    // OR NOT TODO!!
+}
+
+void visualize_normalization_layer(normalization_layer layer, char *window)
+{
+    image delta = get_normalization_image(layer);
+    image dc = collapse_image_layers(delta, 1);
+    char buff[256];
+    sprintf(buff, "%s: Output", window);
+    show_image(dc, buff);
+    save_image(dc, buff);
+    free_image(dc);
+}
 
 void test_load()
 {

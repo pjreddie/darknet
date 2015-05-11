@@ -8,172 +8,179 @@
 #include <stdio.h>
 #include <time.h>
 
-int deconvolutional_out_height(deconvolutional_layer layer)
+int deconvolutional_out_height(deconvolutional_layer l)
 {
-    int h = layer.stride*(layer.h - 1) + layer.size;
+    int h = l.stride*(l.h - 1) + l.size;
     return h;
 }
 
-int deconvolutional_out_width(deconvolutional_layer layer)
+int deconvolutional_out_width(deconvolutional_layer l)
 {
-    int w = layer.stride*(layer.w - 1) + layer.size;
+    int w = l.stride*(l.w - 1) + l.size;
     return w;
 }
 
-int deconvolutional_out_size(deconvolutional_layer layer)
+int deconvolutional_out_size(deconvolutional_layer l)
 {
-    return deconvolutional_out_height(layer) * deconvolutional_out_width(layer);
+    return deconvolutional_out_height(l) * deconvolutional_out_width(l);
 }
 
-image get_deconvolutional_image(deconvolutional_layer layer)
-{
-    int h,w,c;
-    h = deconvolutional_out_height(layer);
-    w = deconvolutional_out_width(layer);
-    c = layer.n;
-    return float_to_image(w,h,c,layer.output);
-}
-
-image get_deconvolutional_delta(deconvolutional_layer layer)
+image get_deconvolutional_image(deconvolutional_layer l)
 {
     int h,w,c;
-    h = deconvolutional_out_height(layer);
-    w = deconvolutional_out_width(layer);
-    c = layer.n;
-    return float_to_image(w,h,c,layer.delta);
+    h = deconvolutional_out_height(l);
+    w = deconvolutional_out_width(l);
+    c = l.n;
+    return float_to_image(w,h,c,l.output);
 }
 
-deconvolutional_layer *make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, ACTIVATION activation)
+image get_deconvolutional_delta(deconvolutional_layer l)
+{
+    int h,w,c;
+    h = deconvolutional_out_height(l);
+    w = deconvolutional_out_width(l);
+    c = l.n;
+    return float_to_image(w,h,c,l.delta);
+}
+
+deconvolutional_layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, ACTIVATION activation)
 {
     int i;
-    deconvolutional_layer *layer = calloc(1, sizeof(deconvolutional_layer));
+    deconvolutional_layer l = {0};
+    l.type = DECONVOLUTIONAL;
 
-    layer->h = h;
-    layer->w = w;
-    layer->c = c;
-    layer->n = n;
-    layer->batch = batch;
-    layer->stride = stride;
-    layer->size = size;
+    l.h = h;
+    l.w = w;
+    l.c = c;
+    l.n = n;
+    l.batch = batch;
+    l.stride = stride;
+    l.size = size;
 
-    layer->filters = calloc(c*n*size*size, sizeof(float));
-    layer->filter_updates = calloc(c*n*size*size, sizeof(float));
+    l.filters = calloc(c*n*size*size, sizeof(float));
+    l.filter_updates = calloc(c*n*size*size, sizeof(float));
 
-    layer->biases = calloc(n, sizeof(float));
-    layer->bias_updates = calloc(n, sizeof(float));
+    l.biases = calloc(n, sizeof(float));
+    l.bias_updates = calloc(n, sizeof(float));
     float scale = 1./sqrt(size*size*c);
-    for(i = 0; i < c*n*size*size; ++i) layer->filters[i] = scale*rand_normal();
+    for(i = 0; i < c*n*size*size; ++i) l.filters[i] = scale*rand_normal();
     for(i = 0; i < n; ++i){
-        layer->biases[i] = scale;
+        l.biases[i] = scale;
     }
-    int out_h = deconvolutional_out_height(*layer);
-    int out_w = deconvolutional_out_width(*layer);
+    int out_h = deconvolutional_out_height(l);
+    int out_w = deconvolutional_out_width(l);
 
-    layer->col_image = calloc(h*w*size*size*n, sizeof(float));
-    layer->output = calloc(layer->batch*out_h * out_w * n, sizeof(float));
-    layer->delta  = calloc(layer->batch*out_h * out_w * n, sizeof(float));
+    l.out_h = out_h;
+    l.out_w = out_w;
+    l.out_c = n;
+    l.outputs = l.out_w * l.out_h * l.out_c;
+    l.inputs = l.w * l.h * l.c;
+
+    l.col_image = calloc(h*w*size*size*n, sizeof(float));
+    l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
+    l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
 
     #ifdef GPU
-    layer->filters_gpu = cuda_make_array(layer->filters, c*n*size*size);
-    layer->filter_updates_gpu = cuda_make_array(layer->filter_updates, c*n*size*size);
+    l.filters_gpu = cuda_make_array(l.filters, c*n*size*size);
+    l.filter_updates_gpu = cuda_make_array(l.filter_updates, c*n*size*size);
 
-    layer->biases_gpu = cuda_make_array(layer->biases, n);
-    layer->bias_updates_gpu = cuda_make_array(layer->bias_updates, n);
+    l.biases_gpu = cuda_make_array(l.biases, n);
+    l.bias_updates_gpu = cuda_make_array(l.bias_updates, n);
 
-    layer->col_image_gpu = cuda_make_array(layer->col_image, h*w*size*size*n);
-    layer->delta_gpu = cuda_make_array(layer->delta, layer->batch*out_h*out_w*n);
-    layer->output_gpu = cuda_make_array(layer->output, layer->batch*out_h*out_w*n);
+    l.col_image_gpu = cuda_make_array(l.col_image, h*w*size*size*n);
+    l.delta_gpu = cuda_make_array(l.delta, l.batch*out_h*out_w*n);
+    l.output_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
     #endif
 
-    layer->activation = activation;
+    l.activation = activation;
 
     fprintf(stderr, "Deconvolutional Layer: %d x %d x %d image, %d filters -> %d x %d x %d image\n", h,w,c,n, out_h, out_w, n);
 
-    return layer;
+    return l;
 }
 
-void resize_deconvolutional_layer(deconvolutional_layer *layer, int h, int w)
+void resize_deconvolutional_layer(deconvolutional_layer *l, int h, int w)
 {
-    layer->h = h;
-    layer->w = w;
-    int out_h = deconvolutional_out_height(*layer);
-    int out_w = deconvolutional_out_width(*layer);
+    l->h = h;
+    l->w = w;
+    int out_h = deconvolutional_out_height(*l);
+    int out_w = deconvolutional_out_width(*l);
 
-    layer->col_image = realloc(layer->col_image,
-                                out_h*out_w*layer->size*layer->size*layer->c*sizeof(float));
-    layer->output = realloc(layer->output,
-                                layer->batch*out_h * out_w * layer->n*sizeof(float));
-    layer->delta  = realloc(layer->delta,
-                                layer->batch*out_h * out_w * layer->n*sizeof(float));
+    l->col_image = realloc(l->col_image,
+                                out_h*out_w*l->size*l->size*l->c*sizeof(float));
+    l->output = realloc(l->output,
+                                l->batch*out_h * out_w * l->n*sizeof(float));
+    l->delta  = realloc(l->delta,
+                                l->batch*out_h * out_w * l->n*sizeof(float));
     #ifdef GPU
-    cuda_free(layer->col_image_gpu);
-    cuda_free(layer->delta_gpu);
-    cuda_free(layer->output_gpu);
+    cuda_free(l->col_image_gpu);
+    cuda_free(l->delta_gpu);
+    cuda_free(l->output_gpu);
 
-    layer->col_image_gpu = cuda_make_array(layer->col_image, out_h*out_w*layer->size*layer->size*layer->c);
-    layer->delta_gpu = cuda_make_array(layer->delta, layer->batch*out_h*out_w*layer->n);
-    layer->output_gpu = cuda_make_array(layer->output, layer->batch*out_h*out_w*layer->n);
+    l->col_image_gpu = cuda_make_array(l->col_image, out_h*out_w*l->size*l->size*l->c);
+    l->delta_gpu = cuda_make_array(l->delta, l->batch*out_h*out_w*l->n);
+    l->output_gpu = cuda_make_array(l->output, l->batch*out_h*out_w*l->n);
     #endif
 }
 
-void forward_deconvolutional_layer(const deconvolutional_layer layer, network_state state)
+void forward_deconvolutional_layer(const deconvolutional_layer l, network_state state)
 {
     int i;
-    int out_h = deconvolutional_out_height(layer);
-    int out_w = deconvolutional_out_width(layer);
+    int out_h = deconvolutional_out_height(l);
+    int out_w = deconvolutional_out_width(l);
     int size = out_h*out_w;
 
-    int m = layer.size*layer.size*layer.n;
-    int n = layer.h*layer.w;
-    int k = layer.c;
+    int m = l.size*l.size*l.n;
+    int n = l.h*l.w;
+    int k = l.c;
 
-    bias_output(layer.output, layer.biases, layer.batch, layer.n, size);
+    bias_output(l.output, l.biases, l.batch, l.n, size);
 
-    for(i = 0; i < layer.batch; ++i){
-        float *a = layer.filters;
-        float *b = state.input + i*layer.c*layer.h*layer.w;
-        float *c = layer.col_image;
+    for(i = 0; i < l.batch; ++i){
+        float *a = l.filters;
+        float *b = state.input + i*l.c*l.h*l.w;
+        float *c = l.col_image;
 
         gemm(1,0,m,n,k,1,a,m,b,n,0,c,n);
 
-        col2im_cpu(c, layer.n, out_h, out_w, layer.size, layer.stride, 0, layer.output+i*layer.n*size);
+        col2im_cpu(c, l.n, out_h, out_w, l.size, l.stride, 0, l.output+i*l.n*size);
     }
-    activate_array(layer.output, layer.batch*layer.n*size, layer.activation);
+    activate_array(l.output, l.batch*l.n*size, l.activation);
 }
 
-void backward_deconvolutional_layer(deconvolutional_layer layer, network_state state)
+void backward_deconvolutional_layer(deconvolutional_layer l, network_state state)
 {
-    float alpha = 1./layer.batch;
-    int out_h = deconvolutional_out_height(layer);
-    int out_w = deconvolutional_out_width(layer);
+    float alpha = 1./l.batch;
+    int out_h = deconvolutional_out_height(l);
+    int out_w = deconvolutional_out_width(l);
     int size = out_h*out_w;
     int i;
 
-    gradient_array(layer.output, size*layer.n*layer.batch, layer.activation, layer.delta);
-    backward_bias(layer.bias_updates, layer.delta, layer.batch, layer.n, size);
+    gradient_array(l.output, size*l.n*l.batch, l.activation, l.delta);
+    backward_bias(l.bias_updates, l.delta, l.batch, l.n, size);
 
-    if(state.delta) memset(state.delta, 0, layer.batch*layer.h*layer.w*layer.c*sizeof(float));
+    if(state.delta) memset(state.delta, 0, l.batch*l.h*l.w*l.c*sizeof(float));
 
-    for(i = 0; i < layer.batch; ++i){
-        int m = layer.c;
-        int n = layer.size*layer.size*layer.n;
-        int k = layer.h*layer.w;
+    for(i = 0; i < l.batch; ++i){
+        int m = l.c;
+        int n = l.size*l.size*l.n;
+        int k = l.h*l.w;
 
         float *a = state.input + i*m*n;
-        float *b = layer.col_image;
-        float *c = layer.filter_updates;
+        float *b = l.col_image;
+        float *c = l.filter_updates;
 
-        im2col_cpu(layer.delta + i*layer.n*size, layer.n, out_h, out_w, 
-                layer.size, layer.stride, 0, b);
+        im2col_cpu(l.delta + i*l.n*size, l.n, out_h, out_w, 
+                l.size, l.stride, 0, b);
         gemm(0,1,m,n,k,alpha,a,k,b,k,1,c,n);
 
         if(state.delta){
-            int m = layer.c;
-            int n = layer.h*layer.w;
-            int k = layer.size*layer.size*layer.n;
+            int m = l.c;
+            int n = l.h*l.w;
+            int k = l.size*l.size*l.n;
 
-            float *a = layer.filters;
-            float *b = layer.col_image;
+            float *a = l.filters;
+            float *b = l.col_image;
             float *c = state.delta + i*n*m;
 
             gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
@@ -181,15 +188,15 @@ void backward_deconvolutional_layer(deconvolutional_layer layer, network_state s
     }
 }
 
-void update_deconvolutional_layer(deconvolutional_layer layer, float learning_rate, float momentum, float decay)
+void update_deconvolutional_layer(deconvolutional_layer l, float learning_rate, float momentum, float decay)
 {
-    int size = layer.size*layer.size*layer.c*layer.n;
-    axpy_cpu(layer.n, learning_rate, layer.bias_updates, 1, layer.biases, 1);
-    scal_cpu(layer.n, momentum, layer.bias_updates, 1);
+    int size = l.size*l.size*l.c*l.n;
+    axpy_cpu(l.n, learning_rate, l.bias_updates, 1, l.biases, 1);
+    scal_cpu(l.n, momentum, l.bias_updates, 1);
 
-    axpy_cpu(size, -decay, layer.filters, 1, layer.filter_updates, 1);
-    axpy_cpu(size, learning_rate, layer.filter_updates, 1, layer.filters, 1);
-    scal_cpu(size, momentum, layer.filter_updates, 1);
+    axpy_cpu(size, -decay, l.filters, 1, l.filter_updates, 1);
+    axpy_cpu(size, learning_rate, l.filter_updates, 1, l.filters, 1);
+    scal_cpu(size, momentum, l.filter_updates, 1);
 }
 
 

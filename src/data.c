@@ -174,7 +174,7 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
         }
 
         int index = (i+j*num_boxes)*(4+classes+background);
-        if(truth[index+classes+background+2]) continue;
+        //if(truth[index+classes+background+2]) continue;
         if(background) truth[index++] = 0;
         truth[index+id] = 1;
         index += classes;

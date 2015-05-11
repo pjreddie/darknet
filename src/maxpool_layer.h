@@ -4,31 +4,19 @@
 #include "image.h"
 #include "params.h"
 #include "cuda.h"
+#include "layer.h"
 
-typedef struct {
-    int batch;
-    int h,w,c;
-    int stride;
-    int size;
-    int *indexes;
-    float *delta;
-    float *output;
-    #ifdef GPU
-    int *indexes_gpu;
-    float *output_gpu;
-    float *delta_gpu;
-    #endif
-} maxpool_layer;
+typedef layer maxpool_layer;
 
-image get_maxpool_image(maxpool_layer layer);
-maxpool_layer *make_maxpool_layer(int batch, int h, int w, int c, int size, int stride);
-void resize_maxpool_layer(maxpool_layer *layer, int h, int w);
-void forward_maxpool_layer(const maxpool_layer layer, network_state state);
-void backward_maxpool_layer(const maxpool_layer layer, network_state state);
+image get_maxpool_image(maxpool_layer l);
+maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride);
+void resize_maxpool_layer(maxpool_layer *l, int h, int w);
+void forward_maxpool_layer(const maxpool_layer l, network_state state);
+void backward_maxpool_layer(const maxpool_layer l, network_state state);
 
 #ifdef GPU
-void forward_maxpool_layer_gpu(maxpool_layer layer, network_state state);
-void backward_maxpool_layer_gpu(maxpool_layer layer, network_state state);
+void forward_maxpool_layer_gpu(maxpool_layer l, network_state state);
+void backward_maxpool_layer_gpu(maxpool_layer l, network_state state);
 #endif
 
 #endif

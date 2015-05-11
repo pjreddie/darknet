@@ -7,21 +7,23 @@
 #include <stdio.h>
 #include <assert.h>
 
-softmax_layer *make_softmax_layer(int batch, int inputs, int groups)
+softmax_layer make_softmax_layer(int batch, int inputs, int groups)
 {
     assert(inputs%groups == 0);
     fprintf(stderr, "Softmax Layer: %d inputs\n", inputs);
-    softmax_layer *layer = calloc(1, sizeof(softmax_layer));
-    layer->batch = batch;
-    layer->groups = groups;
-    layer->inputs = inputs;
-    layer->output = calloc(inputs*batch, sizeof(float));
-    layer->delta = calloc(inputs*batch, sizeof(float));
+    softmax_layer l = {0};
+    l.type = SOFTMAX;
+    l.batch = batch;
+    l.groups = groups;
+    l.inputs = inputs;
+    l.outputs = inputs;
+    l.output = calloc(inputs*batch, sizeof(float));
+    l.delta = calloc(inputs*batch, sizeof(float));
     #ifdef GPU
-    layer->output_gpu = cuda_make_array(layer->output, inputs*batch); 
-    layer->delta_gpu = cuda_make_array(layer->delta, inputs*batch); 
+    l.output_gpu = cuda_make_array(l.output, inputs*batch); 
+    l.delta_gpu = cuda_make_array(l.delta, inputs*batch); 
     #endif
-    return layer;
+    return l;
 }
 
 void softmax_array(float *input, int n, float *output)
@@ -42,21 +44,21 @@ void softmax_array(float *input, int n, float *output)
     }
 }
 
-void forward_softmax_layer(const softmax_layer layer, network_state state)
+void forward_softmax_layer(const softmax_layer l, network_state state)
 {
     int b;
-    int inputs = layer.inputs / layer.groups;
-    int batch = layer.batch * layer.groups;
+    int inputs = l.inputs / l.groups;
+    int batch = l.batch * l.groups;
     for(b = 0; b < batch; ++b){
-        softmax_array(state.input+b*inputs, inputs, layer.output+b*inputs);
+        softmax_array(state.input+b*inputs, inputs, l.output+b*inputs);
     }
 }
 
-void backward_softmax_layer(const softmax_layer layer, network_state state)
+void backward_softmax_layer(const softmax_layer l, network_state state)
 {
     int i;
-    for(i = 0; i < layer.inputs*layer.batch; ++i){
-        state.delta[i] = layer.delta[i];
+    for(i = 0; i < l.inputs*l.batch; ++i){
+        state.delta[i] = l.delta[i];
     }
 }
 

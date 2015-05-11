@@ -2,34 +2,19 @@
 #define DETECTION_LAYER_H
 
 #include "params.h"
+#include "layer.h"
 
-typedef struct {
-    int batch;
-    int inputs;
-    int classes;
-    int coords;
-    int background;
-    int rescore;
-    int nuisance;
-    int does_cost;
-    float *cost;
-    float *output;
-    float *delta;
-    #ifdef GPU
-    float * output_gpu;
-    float * delta_gpu;
-    #endif
-} detection_layer;
+typedef layer detection_layer;
 
-detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background, int nuisance);
-void forward_detection_layer(const detection_layer layer, network_state state);
-void backward_detection_layer(const detection_layer layer, network_state state);
-int get_detection_layer_output_size(detection_layer layer);
-int get_detection_layer_locations(detection_layer layer);
+detection_layer make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background, int nuisance);
+void forward_detection_layer(const detection_layer l, network_state state);
+void backward_detection_layer(const detection_layer l, network_state state);
+int get_detection_layer_output_size(detection_layer l);
+int get_detection_layer_locations(detection_layer l);
 
 #ifdef GPU
-void forward_detection_layer_gpu(const detection_layer layer, network_state state);
-void backward_detection_layer_gpu(detection_layer layer, network_state state);
+void forward_detection_layer_gpu(const detection_layer l, network_state state);
+void backward_detection_layer_gpu(detection_layer l, network_state state);
 #endif
 
 #endif

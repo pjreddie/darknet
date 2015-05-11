@@ -115,6 +115,7 @@ void train_localization(char *cfgfile, char *weightfile)
         time=clock();
         float loss = train_network(net, train);
 
+        //TODO
         float *out = get_network_output_gpu(net);
         image im = float_to_image(net.w, net.h, 3, train.X.vals[127]);
         image copy = copy_image(im);
@@ -149,7 +150,7 @@ void train_detection_teststuff(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer *layer = get_network_detection_layer(net);
+    detection_layer layer = get_network_detection_layer(net);
     net.learning_rate = 0;
     net.decay = 0;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
@@ -157,9 +158,9 @@ void train_detection_teststuff(char *cfgfile, char *weightfile)
     int i = net.seen/imgs;
     data train, buffer;
 
-    int classes = layer->classes;
-    int background = layer->background;
-    int side = sqrt(get_detection_layer_locations(*layer));
+    int classes = layer.classes;
+    int background = layer.background;
+    int side = sqrt(get_detection_layer_locations(layer));
 
     char **paths;
     list *plist;
@@ -174,7 +175,7 @@ void train_detection_teststuff(char *cfgfile, char *weightfile)
     paths = (char **)list_to_array(plist);
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
     clock_t time;
-    cost_layer clayer = *((cost_layer *)net.layers[net.n-1]);
+    cost_layer clayer = net.layers[net.n-1];
     while(1){
         i += 1;
         time=clock();
@@ -235,15 +236,15 @@ void train_detection(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer *layer = get_network_detection_layer(net);
+    detection_layer layer = get_network_detection_layer(net);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 128;
     int i = net.seen/imgs;
     data train, buffer;
 
-    int classes = layer->classes;
-    int background = layer->background;
-    int side = sqrt(get_detection_layer_locations(*layer));
+    int classes = layer.classes;
+    int background = layer.background;
+    int side = sqrt(get_detection_layer_locations(layer));
 
     char **paths;
     list *plist;
@@ -325,7 +326,7 @@ void validate_detection(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer *layer = get_network_detection_layer(net);
+    detection_layer layer = get_network_detection_layer(net);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
@@ -336,10 +337,10 @@ void validate_detection(char *cfgfile, char *weightfile)
     //list *plist = get_paths("/home/pjreddie/data/voc/train.txt");
     char **paths = (char **)list_to_array(plist);
 
-    int classes = layer->classes;
-    int nuisance = layer->nuisance;
-    int background = (layer->background && !nuisance);
-    int num_boxes = sqrt(get_detection_layer_locations(*layer));
+    int classes = layer.classes;
+    int nuisance = layer.nuisance;
+    int background = (layer.background && !nuisance);
+    int num_boxes = sqrt(get_detection_layer_locations(layer));
 
     int per_box = 4+classes+background+nuisance;
     int num_output = num_boxes*num_boxes*per_box;
@@ -393,7 +394,7 @@ void validate_detection_post(char *cfgfile, char *weightfile)
     load_weights(&post, "/home/pjreddie/imagenet_backup/localize_1000.weights");
     set_batch_network(&post, 1);
 
-    detection_layer *layer = get_network_detection_layer(net);
+    detection_layer layer = get_network_detection_layer(net);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
@@ -404,10 +405,10 @@ void validate_detection_post(char *cfgfile, char *weightfile)
     //list *plist = get_paths("/home/pjreddie/data/voc/train.txt");
     char **paths = (char **)list_to_array(plist);
 
-    int classes = layer->classes;
-    int nuisance = layer->nuisance;
-    int background = (layer->background && !nuisance);
-    int num_boxes = sqrt(get_detection_layer_locations(*layer));
+    int classes = layer.classes;
+    int nuisance = layer.nuisance;
+    int background = (layer.background && !nuisance);
+    int num_boxes = sqrt(get_detection_layer_locations(layer));
 
     int per_box = 4+classes+background+nuisance;
 

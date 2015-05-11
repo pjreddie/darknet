@@ -26,70 +26,73 @@ char *get_cost_string(COST_TYPE a)
     return "sse";
 }
 
-cost_layer *make_cost_layer(int batch, int inputs, COST_TYPE type)
+cost_layer make_cost_layer(int batch, int inputs, COST_TYPE cost_type)
 {
     fprintf(stderr, "Cost Layer: %d inputs\n", inputs);
-    cost_layer *layer = calloc(1, sizeof(cost_layer));
-    layer->batch = batch;
-    layer->inputs = inputs;
-    layer->type = type;
-    layer->delta = calloc(inputs*batch, sizeof(float));
-    layer->output = calloc(1, sizeof(float));
+    cost_layer l = {0};
+    l.type = COST;
+
+    l.batch = batch;
+    l.inputs = inputs;
+    l.outputs = inputs;
+    l.cost_type = cost_type;
+    l.delta = calloc(inputs*batch, sizeof(float));
+    l.output = calloc(1, sizeof(float));
     #ifdef GPU
-    layer->delta_gpu = cuda_make_array(layer->delta, inputs*batch);
+    l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
     #endif
-    return layer;
+    return l;
 }
 
-void forward_cost_layer(cost_layer layer, network_state state)
+void forward_cost_layer(cost_layer l, network_state state)
 {
     if (!state.truth) return;
-    if(layer.type == MASKED){
+    if(l.cost_type == MASKED){
         int i;
-        for(i = 0; i < layer.batch*layer.inputs; ++i){
+        for(i = 0; i < l.batch*l.inputs; ++i){
             if(state.truth[i] == 0) state.input[i] = 0;
         }
     }
-    copy_cpu(layer.batch*layer.inputs, state.truth, 1, layer.delta, 1);
-    axpy_cpu(layer.batch*layer.inputs, -1, state.input, 1, layer.delta, 1);
-    *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
-    //printf("cost: %f\n", *layer.output);
+    copy_cpu(l.batch*l.inputs, state.truth, 1, l.delta, 1);
+    axpy_cpu(l.batch*l.inputs, -1, state.input, 1, l.delta, 1);
+    *(l.output) = dot_cpu(l.batch*l.inputs, l.delta, 1, l.delta, 1);
+    //printf("cost: %f\n", *l.output);
 }
 
-void backward_cost_layer(const cost_layer layer, network_state state)
+void backward_cost_layer(const cost_layer l, network_state state)
 {
-    copy_cpu(layer.batch*layer.inputs, layer.delta, 1, state.delta, 1);
+    copy_cpu(l.batch*l.inputs, l.delta, 1, state.delta, 1);
 }
 
 #ifdef GPU
 
-void pull_cost_layer(cost_layer layer)
+void pull_cost_layer(cost_layer l)
 {
-    cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
+    cuda_pull_array(l.delta_gpu, l.delta, l.batch*l.inputs);
 }
 
-void push_cost_layer(cost_layer layer)
+void push_cost_layer(cost_layer l)
 {
-    cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
+    cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
 }
 
-void forward_cost_layer_gpu(cost_layer layer, network_state state)
+void forward_cost_layer_gpu(cost_layer l, network_state state)
 {
     if (!state.truth) return;
-    if (layer.type == MASKED) {
-        mask_ongpu(layer.batch*layer.inputs, state.input, state.truth);
+    if (l.cost_type == MASKED) {
+        mask_ongpu(l.batch*l.inputs, state.input, state.truth);
     }
     
-    copy_ongpu(layer.batch*layer.inputs, state.truth, 1, layer.delta_gpu, 1);
-    axpy_ongpu(layer.batch*layer.inputs, -1, state.input, 1, layer.delta_gpu, 1);
+    copy_ongpu(l.batch*l.inputs, state.truth, 1, l.delta_gpu, 1);
+    axpy_ongpu(l.batch*l.inputs, -1, state.input, 1, l.delta_gpu, 1);
 
-    cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*layer.inputs);
-    *(layer.output) = dot_cpu(layer.batch*layer.inputs, layer.delta, 1, layer.delta, 1);
+    cuda_pull_array(l.delta_gpu, l.delta, l.batch*l.inputs);
+    *(l.output) = dot_cpu(l.batch*l.inputs, l.delta, 1, l.delta, 1);
 }
 
-void backward_cost_layer_gpu(const cost_layer layer, network_state state)
+void backward_cost_layer_gpu(const cost_layer l, network_state state)
 {
-    copy_ongpu(layer.batch*layer.inputs, layer.delta_gpu, 1, state.delta, 1);
+    copy_ongpu(l.batch*l.inputs, l.delta_gpu, 1, state.delta, 1);
 }
 #endif
 

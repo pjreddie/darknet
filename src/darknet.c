@@ -72,15 +72,6 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
     save_weights(net, outfile);
 }
 
-void convert(char *cfgfile, char *outfile, char *weightfile)
-{
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    save_network(net, outfile);
-}
-
 void visualize(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
@@ -120,8 +111,6 @@ int main(int argc, char **argv)
         run_captcha(argc, argv);
     } else if (0 == strcmp(argv[1], "change")){
         change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
-    } else if (0 == strcmp(argv[1], "convert")){
-        convert(argv[2], argv[3], (argc > 4) ? argv[4] : 0);
     } else if (0 == strcmp(argv[1], "partial")){
         partial(argv[2], argv[3], argv[4], atoi(argv[5]));
     } else if (0 == strcmp(argv[1], "visualize")){

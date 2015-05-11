@@ -5,51 +5,53 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-dropout_layer *make_dropout_layer(int batch, int inputs, float probability)
+dropout_layer make_dropout_layer(int batch, int inputs, float probability)
 {
     fprintf(stderr, "Dropout Layer: %d inputs, %f probability\n", inputs, probability);
-    dropout_layer *layer = calloc(1, sizeof(dropout_layer));
-    layer->probability = probability;
-    layer->inputs = inputs;
-    layer->batch = batch;
-    layer->rand = calloc(inputs*batch, sizeof(float));
-    layer->scale = 1./(1.-probability);
+    dropout_layer l = {0};
+    l.type = DROPOUT;
+    l.probability = probability;
+    l.inputs = inputs;
+    l.outputs = inputs;
+    l.batch = batch;
+    l.rand = calloc(inputs*batch, sizeof(float));
+    l.scale = 1./(1.-probability);
     #ifdef GPU
-    layer->rand_gpu = cuda_make_array(layer->rand, inputs*batch);
+    l.rand_gpu = cuda_make_array(l.rand, inputs*batch);
     #endif
-    return layer;
+    return l;
 } 
 
-void resize_dropout_layer(dropout_layer *layer, int inputs)
+void resize_dropout_layer(dropout_layer *l, int inputs)
 {
-    layer->rand = realloc(layer->rand, layer->inputs*layer->batch*sizeof(float));
+    l->rand = realloc(l->rand, l->inputs*l->batch*sizeof(float));
     #ifdef GPU
-    cuda_free(layer->rand_gpu);
+    cuda_free(l->rand_gpu);
 
-    layer->rand_gpu = cuda_make_array(layer->rand, inputs*layer->batch);
+    l->rand_gpu = cuda_make_array(l->rand, inputs*l->batch);
     #endif
 }
 
-void forward_dropout_layer(dropout_layer layer, network_state state)
+void forward_dropout_layer(dropout_layer l, network_state state)
 {
     int i;
     if (!state.train) return;
-    for(i = 0; i < layer.batch * layer.inputs; ++i){
+    for(i = 0; i < l.batch * l.inputs; ++i){
         float r = rand_uniform();
-        layer.rand[i] = r;
-        if(r < layer.probability) state.input[i] = 0;
-        else state.input[i] *= layer.scale;
+        l.rand[i] = r;
+        if(r < l.probability) state.input[i] = 0;
+        else state.input[i] *= l.scale;
     }
 }
 
-void backward_dropout_layer(dropout_layer layer, network_state state)
+void backward_dropout_layer(dropout_layer l, network_state state)
 {
     int i;
     if(!state.delta) return;
-    for(i = 0; i < layer.batch * layer.inputs; ++i){
-        float r = layer.rand[i];
-        if(r < layer.probability) state.delta[i] = 0;
-        else state.delta[i] *= layer.scale;
+    for(i = 0; i < l.batch * l.inputs; ++i){
+        float r = l.rand[i];
+        if(r < l.probability) state.delta[i] = 0;
+        else state.delta[i] *= l.scale;
     }
 }
 

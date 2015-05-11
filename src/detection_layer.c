@@ -8,47 +8,49 @@
 #include <string.h>
 #include <stdlib.h>
 
-int get_detection_layer_locations(detection_layer layer)
+int get_detection_layer_locations(detection_layer l)
 {
-    return layer.inputs / (layer.classes+layer.coords+layer.rescore+layer.background);
+    return l.inputs / (l.classes+l.coords+l.rescore+l.background);
 }
 
-int get_detection_layer_output_size(detection_layer layer)
+int get_detection_layer_output_size(detection_layer l)
 {
-    return get_detection_layer_locations(layer)*(layer.background + layer.classes + layer.coords);
+    return get_detection_layer_locations(l)*(l.background + l.classes + l.coords);
 }
 
-detection_layer *make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background, int nuisance)
+detection_layer make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background, int nuisance)
 {
-    detection_layer *layer = calloc(1, sizeof(detection_layer));
+    detection_layer l = {0};
+    l.type = DETECTION;
     
-    layer->batch = batch;
-    layer->inputs = inputs;
-    layer->classes = classes;
-    layer->coords = coords;
-    layer->rescore = rescore;
-    layer->nuisance = nuisance;
-    layer->cost = calloc(1, sizeof(float));
-    layer->does_cost=1;
-    layer->background = background;
-    int outputs = get_detection_layer_output_size(*layer);
-    layer->output = calloc(batch*outputs, sizeof(float));
-    layer->delta = calloc(batch*outputs, sizeof(float));
+    l.batch = batch;
+    l.inputs = inputs;
+    l.classes = classes;
+    l.coords = coords;
+    l.rescore = rescore;
+    l.nuisance = nuisance;
+    l.cost = calloc(1, sizeof(float));
+    l.does_cost=1;
+    l.background = background;
+    int outputs = get_detection_layer_output_size(l);
+    l.outputs = outputs;
+    l.output = calloc(batch*outputs, sizeof(float));
+    l.delta = calloc(batch*outputs, sizeof(float));
     #ifdef GPU
-    layer->output_gpu = cuda_make_array(0, batch*outputs);
-    layer->delta_gpu = cuda_make_array(0, batch*outputs);
+    l.output_gpu = cuda_make_array(0, batch*outputs);
+    l.delta_gpu = cuda_make_array(0, batch*outputs);
     #endif
 
     fprintf(stderr, "Detection Layer\n");
     srand(0);
 
-    return layer;
+    return l;
 }
 
-void dark_zone(detection_layer layer, int class, int start, network_state state)
+void dark_zone(detection_layer l, int class, int start, network_state state)
 {
-    int index = start+layer.background+class;
-    int size = layer.classes+layer.coords+layer.background;
+    int index = start+l.background+class;
+    int size = l.classes+l.coords+l.background;
     int location = (index%(7*7*size)) / size ;
     int r = location / 7;
     int c = location % 7;
@@ -60,9 +62,9 @@ void dark_zone(detection_layer layer, int class, int start, network_state state)
             if((c + dc) > 6 || (c + dc) < 0) continue;
             int di = (dr*7 + dc) * size;
             if(state.truth[index+di]) continue;
-            layer.output[index + di] = 0;
+            l.output[index + di] = 0;
             //if(!state.truth[start+di]) continue;
-            //layer.output[start + di] = 1;
+            //l.output[start + di] = 1;
         }
     }
 }
@@ -299,47 +301,47 @@ dbox diou(box a, box b)
     return dd;
 }
 
-void forward_detection_layer(const detection_layer layer, network_state state)
+void forward_detection_layer(const detection_layer l, network_state state)
 {
     int in_i = 0;
     int out_i = 0;
-    int locations = get_detection_layer_locations(layer);
+    int locations = get_detection_layer_locations(l);
     int i,j;
-    for(i = 0; i < layer.batch*locations; ++i){
-        int mask = (!state.truth || state.truth[out_i + layer.background + layer.classes + 2]);
+    for(i = 0; i < l.batch*locations; ++i){
+        int mask = (!state.truth || state.truth[out_i + l.background + l.classes + 2]);
         float scale = 1;
-        if(layer.rescore) scale = state.input[in_i++];
-        else if(layer.nuisance){
-            layer.output[out_i++] = 1-state.input[in_i++];
+        if(l.rescore) scale = state.input[in_i++];
+        else if(l.nuisance){
+            l.output[out_i++] = 1-state.input[in_i++];
             scale = mask;
         }
-        else if(layer.background) layer.output[out_i++] = scale*state.input[in_i++];
+        else if(l.background) l.output[out_i++] = scale*state.input[in_i++];
 
-        for(j = 0; j < layer.classes; ++j){
-            layer.output[out_i++] = scale*state.input[in_i++];
+        for(j = 0; j < l.classes; ++j){
+            l.output[out_i++] = scale*state.input[in_i++];
         }
-        if(layer.nuisance){
+        if(l.nuisance){
 
-        }else if(layer.background){
-            softmax_array(layer.output + out_i - layer.classes-layer.background, layer.classes+layer.background, layer.output + out_i - layer.classes-layer.background);
-            activate_array(state.input+in_i, layer.coords, LOGISTIC);
+        }else if(l.background){
+            softmax_array(l.output + out_i - l.classes-l.background, l.classes+l.background, l.output + out_i - l.classes-l.background);
+            activate_array(state.input+in_i, l.coords, LOGISTIC);
         }
-        for(j = 0; j < layer.coords; ++j){
-            layer.output[out_i++] = mask*state.input[in_i++];
+        for(j = 0; j < l.coords; ++j){
+            l.output[out_i++] = mask*state.input[in_i++];
         }
     }
-    if(layer.does_cost && state.train && 0){
+    if(l.does_cost && state.train && 0){
         int count = 0;
         float avg = 0;
-        *(layer.cost) = 0;
-        int size = get_detection_layer_output_size(layer) * layer.batch;
-        memset(layer.delta, 0, size * sizeof(float));
-        for (i = 0; i < layer.batch*locations; ++i) {
-            int classes = layer.nuisance+layer.classes;
-            int offset = i*(classes+layer.coords);
+        *(l.cost) = 0;
+        int size = get_detection_layer_output_size(l) * l.batch;
+        memset(l.delta, 0, size * sizeof(float));
+        for (i = 0; i < l.batch*locations; ++i) {
+            int classes = l.nuisance+l.classes;
+            int offset = i*(classes+l.coords);
             for (j = offset; j < offset+classes; ++j) {
-                *(layer.cost) += pow(state.truth[j] - layer.output[j], 2);
-                layer.delta[j] =  state.truth[j] - layer.output[j];
+                *(l.cost) += pow(state.truth[j] - l.output[j], 2);
+                l.delta[j] =  state.truth[j] - l.output[j];
             }
             box truth;
             truth.x = state.truth[j+0];
@@ -347,17 +349,17 @@ void forward_detection_layer(const detection_layer layer, network_state state)
             truth.w = state.truth[j+2];
             truth.h = state.truth[j+3];
             box out;
-            out.x = layer.output[j+0];
-            out.y = layer.output[j+1];
-            out.w = layer.output[j+2];
-            out.h = layer.output[j+3];
+            out.x = l.output[j+0];
+            out.y = l.output[j+1];
+            out.w = l.output[j+2];
+            out.h = l.output[j+3];
             if(!(truth.w*truth.h)) continue;
             //printf("iou: %f\n", iou);
             dbox d = diou(out, truth);
-            layer.delta[j+0] = d.dx;
-            layer.delta[j+1] = d.dy;
-            layer.delta[j+2] = d.dw;
-            layer.delta[j+3] = d.dh;
+            l.delta[j+0] = d.dx;
+            l.delta[j+1] = d.dy;
+            l.delta[j+2] = d.dw;
+            l.delta[j+3] = d.dh;
 
             int sqr = 1;
             if(sqr){
@@ -367,7 +369,7 @@ void forward_detection_layer(const detection_layer layer, network_state state)
                 out.h *= out.h;
             }
             float iou = box_iou(truth, out);
-            *(layer.cost) += pow((1-iou), 2);
+            *(l.cost) += pow((1-iou), 2);
             avg += iou;
             ++count;
         }
@@ -375,24 +377,24 @@ void forward_detection_layer(const detection_layer layer, network_state state)
     }
     /*
        int count = 0;
-       for(i = 0; i < layer.batch*locations; ++i){
-       for(j = 0; j < layer.classes+layer.background; ++j){
-       printf("%f, ", layer.output[count++]);
+       for(i = 0; i < l.batch*locations; ++i){
+       for(j = 0; j < l.classes+l.background; ++j){
+       printf("%f, ", l.output[count++]);
        }
        printf("\n");
-       for(j = 0; j < layer.coords; ++j){
-       printf("%f, ", layer.output[count++]);
+       for(j = 0; j < l.coords; ++j){
+       printf("%f, ", l.output[count++]);
        }
        printf("\n");
        }
      */
     /*
-       if(layer.background || 1){
-       for(i = 0; i < layer.batch*locations; ++i){
-       int index = i*(layer.classes+layer.coords+layer.background);
-       for(j= 0; j < layer.classes; ++j){
-       if(state.truth[index+j+layer.background]){
-//dark_zone(layer, j, index, state);
+       if(l.background || 1){
+       for(i = 0; i < l.batch*locations; ++i){
+       int index = i*(l.classes+l.coords+l.background);
+       for(j= 0; j < l.classes; ++j){
+       if(state.truth[index+j+l.background]){
+//dark_zone(l, j, index, state);
 }
 }
 }
@@ -400,66 +402,66 @@ void forward_detection_layer(const detection_layer layer, network_state state)
      */
 }
 
-void backward_detection_layer(const detection_layer layer, network_state state)
+void backward_detection_layer(const detection_layer l, network_state state)
 {
-    int locations = get_detection_layer_locations(layer);
+    int locations = get_detection_layer_locations(l);
     int i,j;
     int in_i = 0;
     int out_i = 0;
-    for(i = 0; i < layer.batch*locations; ++i){
+    for(i = 0; i < l.batch*locations; ++i){
         float scale = 1;
         float latent_delta = 0;
-        if(layer.rescore) scale = state.input[in_i++];
-        else if (layer.nuisance)   state.delta[in_i++] = -layer.delta[out_i++];
-        else if (layer.background) state.delta[in_i++] = scale*layer.delta[out_i++];
-        for(j = 0; j < layer.classes; ++j){
-            latent_delta += state.input[in_i]*layer.delta[out_i];
-            state.delta[in_i++] = scale*layer.delta[out_i++];
+        if(l.rescore) scale = state.input[in_i++];
+        else if (l.nuisance)   state.delta[in_i++] = -l.delta[out_i++];
+        else if (l.background) state.delta[in_i++] = scale*l.delta[out_i++];
+        for(j = 0; j < l.classes; ++j){
+            latent_delta += state.input[in_i]*l.delta[out_i];
+            state.delta[in_i++] = scale*l.delta[out_i++];
         }
 
-        if (layer.nuisance) {
+        if (l.nuisance) {
 
-        }else if (layer.background) gradient_array(layer.output + out_i, layer.coords, LOGISTIC, layer.delta + out_i);
-        for(j = 0; j < layer.coords; ++j){
-            state.delta[in_i++] = layer.delta[out_i++];
+        }else if (l.background) gradient_array(l.output + out_i, l.coords, LOGISTIC, l.delta + out_i);
+        for(j = 0; j < l.coords; ++j){
+            state.delta[in_i++] = l.delta[out_i++];
         }
-        if(layer.rescore) state.delta[in_i-layer.coords-layer.classes-layer.rescore-layer.background] = latent_delta;
+        if(l.rescore) state.delta[in_i-l.coords-l.classes-l.rescore-l.background] = latent_delta;
     }
 }
 
 #ifdef GPU
 
-void forward_detection_layer_gpu(const detection_layer layer, network_state state)
+void forward_detection_layer_gpu(const detection_layer l, network_state state)
 {
-    int outputs = get_detection_layer_output_size(layer);
-    float *in_cpu = calloc(layer.batch*layer.inputs, sizeof(float));
+    int outputs = get_detection_layer_output_size(l);
+    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){
-        truth_cpu = calloc(layer.batch*outputs, sizeof(float));
-        cuda_pull_array(state.truth, truth_cpu, layer.batch*outputs);
+        truth_cpu = calloc(l.batch*outputs, sizeof(float));
+        cuda_pull_array(state.truth, truth_cpu, l.batch*outputs);
     }
-    cuda_pull_array(state.input, in_cpu, layer.batch*layer.inputs);
+    cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
     network_state cpu_state;
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
     cpu_state.input = in_cpu;
-    forward_detection_layer(layer, cpu_state);
-    cuda_push_array(layer.output_gpu, layer.output, layer.batch*outputs);
-    cuda_push_array(layer.delta_gpu, layer.delta, layer.batch*outputs);
+    forward_detection_layer(l, cpu_state);
+    cuda_push_array(l.output_gpu, l.output, l.batch*outputs);
+    cuda_push_array(l.delta_gpu, l.delta, l.batch*outputs);
     free(cpu_state.input);
     if(cpu_state.truth) free(cpu_state.truth);
 }
 
-void backward_detection_layer_gpu(detection_layer layer, network_state state)
+void backward_detection_layer_gpu(detection_layer l, network_state state)
 {
-    int outputs = get_detection_layer_output_size(layer);
+    int outputs = get_detection_layer_output_size(l);
 
-    float *in_cpu =    calloc(layer.batch*layer.inputs, sizeof(float));
-    float *delta_cpu = calloc(layer.batch*layer.inputs, sizeof(float));
+    float *in_cpu    = calloc(l.batch*l.inputs, sizeof(float));
+    float *delta_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){
-        truth_cpu = calloc(layer.batch*outputs, sizeof(float));
-        cuda_pull_array(state.truth, truth_cpu, layer.batch*outputs);
+        truth_cpu = calloc(l.batch*outputs, sizeof(float));
+        cuda_pull_array(state.truth, truth_cpu, l.batch*outputs);
     }
     network_state cpu_state;
     cpu_state.train = state.train;
@@ -467,10 +469,10 @@ void backward_detection_layer_gpu(detection_layer layer, network_state state)
     cpu_state.truth = truth_cpu;
     cpu_state.delta = delta_cpu;
 
-    cuda_pull_array(state.input, in_cpu, layer.batch*layer.inputs);
-    cuda_pull_array(layer.delta_gpu, layer.delta, layer.batch*outputs);
-    backward_detection_layer(layer, cpu_state);
-    cuda_push_array(state.delta, delta_cpu, layer.batch*layer.inputs);
+    cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
+    cuda_pull_array(l.delta_gpu, l.delta, l.batch*outputs);
+    backward_detection_layer(l, cpu_state);
+    cuda_push_array(state.delta, delta_cpu, l.batch*l.inputs);
 
     free(in_cpu);
     free(delta_cpu);
