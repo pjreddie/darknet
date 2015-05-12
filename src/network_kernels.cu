@@ -7,6 +7,7 @@ extern "C" {
 #include "data.h"
 #include "utils.h"
 #include "params.h"
+#include "parser.h"
 
 #include "crop_layer.h"
 #include "connected_layer.h"
