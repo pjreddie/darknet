@@ -165,7 +165,7 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
 
         w = constrain(0, 1, w);
         h = constrain(0, 1, h);
-        if (w == 0 || h == 0) continue;
+        if (w < .01 || h < .01) continue;
         if(1){
             //w = sqrt(w);
             //h = sqrt(h);

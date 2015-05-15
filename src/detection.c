@@ -309,8 +309,8 @@ void predict_detections(network net, data d, float threshold, int offset, int cl
                 float y = (pred.vals[j][ci + 1] + row)/num_boxes;
                 float w = pred.vals[j][ci + 2]; //* distance_from_edge(row, num_boxes);
                 float h = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
-                w = pow(w, 2);
-                h = pow(h, 2);
+                w = pow(w, 1);
+                h = pow(h, 1);
                 float prob = scale*pred.vals[j][k+class+background+nuisance];
                 if(prob < threshold) continue;
                 printf("%d %d %f %f %f %f %f\n", offset +  j, class, prob, x, y, w, h);
