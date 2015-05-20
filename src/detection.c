@@ -47,6 +47,8 @@ void draw_detection(image im, float *box, int side, char *label)
                 int top   = (y-h/2)*im.h;
                 int bot   = (y+h/2)*im.h;
                 draw_box(im, left, top, right, bot, red, green, blue);
+                draw_box(im, left+1, top+1, right+1, bot+1, red, green, blue);
+                draw_box(im, left-1, top-1, right-1, bot-1, red, green, blue);
             }
         }
     }
@@ -116,7 +118,11 @@ void train_localization(char *cfgfile, char *weightfile)
         float loss = train_network(net, train);
 
         //TODO
+        #ifdef GPU
         float *out = get_network_output_gpu(net);
+        #else
+        float *out = get_network_output(net);
+        #endif
         image im = float_to_image(net.w, net.h, 3, train.X.vals[127]);
         image copy = copy_image(im);
         draw_localization(copy, &(out[63*80]));
@@ -213,7 +219,7 @@ void train_detection_teststuff(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
         if(i == 100){
-            net.learning_rate *= 10;
+            //net.learning_rate *= 10;
         }
         if(i%100==0){
             char buff[256];
@@ -309,8 +315,8 @@ void predict_detections(network net, data d, float threshold, int offset, int cl
                 float y = (pred.vals[j][ci + 1] + row)/num_boxes;
                 float w = pred.vals[j][ci + 2]; //* distance_from_edge(row, num_boxes);
                 float h = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
-                w = pow(w, 1);
-                h = pow(h, 1);
+                w = pow(w, 2);
+                h = pow(h, 2);
                 float prob = scale*pred.vals[j][k+class+background+nuisance];
                 if(prob < threshold) continue;
                 printf("%d %d %f %f %f %f %f\n", offset +  j, class, prob, x, y, w, h);

@@ -29,7 +29,8 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     l.biases = calloc(outputs, sizeof(float));
 
 
-    float scale = 1./sqrt(inputs);
+    //float scale = 1./sqrt(inputs);
+    float scale = sqrt(2./inputs);
     for(i = 0; i < inputs*outputs; ++i){
         l.weights[i] = 2*scale*rand_uniform() - scale;
     }

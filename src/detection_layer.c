@@ -330,8 +330,9 @@ void forward_detection_layer(const detection_layer l, network_state state)
             l.output[out_i++] = mask*state.input[in_i++];
         }
     }
+    float avg_iou = 0;
+    int count = 0;
     if(l.does_cost && state.train){
-        int count = 0;
         *(l.cost) = 0;
         int size = get_detection_layer_output_size(l) * l.batch;
         memset(l.delta, 0, size * sizeof(float));
@@ -342,65 +343,54 @@ void forward_detection_layer(const detection_layer l, network_state state)
                 *(l.cost) += pow(state.truth[j] - l.output[j], 2);
                 l.delta[j] =  state.truth[j] - l.output[j];
             }
+
             box truth;
-            truth.x = state.truth[j+0];
-            truth.y = state.truth[j+1];
-            truth.w = state.truth[j+2];
-            truth.h = state.truth[j+3];
+            truth.x = state.truth[j+0]/7;
+            truth.y = state.truth[j+1]/7;
+            truth.w = pow(state.truth[j+2], 2);
+            truth.h = pow(state.truth[j+3], 2);
             box out;
-            out.x = l.output[j+0];
-            out.y = l.output[j+1];
-            out.w = l.output[j+2];
-            out.h = l.output[j+3];
+            out.x = l.output[j+0]/7;
+            out.y = l.output[j+1]/7;
+            out.w = pow(l.output[j+2], 2);
+            out.h = pow(l.output[j+3], 2);
+
             if(!(truth.w*truth.h)) continue;
-            l.delta[j+0] = (truth.x - out.x);
-            l.delta[j+1] = (truth.y - out.y);
-            l.delta[j+2] = (truth.w - out.w);
-            l.delta[j+3] = (truth.h - out.h);
-            *(l.cost) += pow((out.x - truth.x), 2);
-            *(l.cost) += pow((out.y - truth.y), 2);
-            *(l.cost) += pow((out.w - truth.w), 2);
-            *(l.cost) += pow((out.h - truth.h), 2);
-
-/*
-            l.delta[j+0] = .1 * (truth.x - out.x) / (49 * truth.w * truth.w);
-            l.delta[j+1] = .1 * (truth.y - out.y) / (49 * truth.h * truth.h);
-            l.delta[j+2] = .1 * (truth.w - out.w) / (     truth.w * truth.w);
-            l.delta[j+3] = .1 * (truth.h - out.h) / (     truth.h * truth.h);
-
-            *(l.cost) += pow((out.x - truth.x)/truth.w/7., 2);
-            *(l.cost) += pow((out.y - truth.y)/truth.h/7., 2);
-            *(l.cost) += pow((out.w - truth.w)/truth.w, 2);
-            *(l.cost) += pow((out.h - truth.h)/truth.h, 2);
-            */
+            float iou = box_iou(out, truth);
+            avg_iou += iou;
             ++count;
+            dbox delta = diou(out, truth);
+
+            l.delta[j+0] = 10 * delta.dx/7;
+            l.delta[j+1] = 10 * delta.dy/7;
+            l.delta[j+2] = 10 * delta.dw * 2 * sqrt(out.w);
+            l.delta[j+3] = 10 * delta.dh * 2 * sqrt(out.h);
+
+
+            *(l.cost) += pow((1-iou), 2);
+            if(0){
+                l.delta[j+0] = (state.truth[j+0] - l.output[j+0]);
+                l.delta[j+1] = (state.truth[j+1] - l.output[j+1]);
+                l.delta[j+2] = (state.truth[j+2] - l.output[j+2]);
+                l.delta[j+3] = (state.truth[j+3] - l.output[j+3]);
+            }else{
+                l.delta[j+0] = 4 * (state.truth[j+0] - l.output[j+0]) / 7;
+                l.delta[j+1] = 4 * (state.truth[j+1] - l.output[j+1]) / 7;
+                l.delta[j+2] = 4 * (state.truth[j+2] - l.output[j+2]);
+                l.delta[j+3] = 4 * (state.truth[j+3] - l.output[j+3]);
+            }
+            if(0){
+                for (j = offset; j < offset+classes; ++j) {
+                    if(state.truth[j]) state.truth[j] = iou;
+                    l.delta[j] =  state.truth[j] - l.output[j];
+                }
+            }
+
+            /*
+             */
         }
+        printf("Avg IOU: %f\n", avg_iou/count);
     }
-    /*
-       int count = 0;
-       for(i = 0; i < l.batch*locations; ++i){
-       for(j = 0; j < l.classes+l.background; ++j){
-       printf("%f, ", l.output[count++]);
-       }
-       printf("\n");
-       for(j = 0; j < l.coords; ++j){
-       printf("%f, ", l.output[count++]);
-       }
-       printf("\n");
-       }
-     */
-    /*
-       if(l.background || 1){
-       for(i = 0; i < l.batch*locations; ++i){
-       int index = i*(l.classes+l.coords+l.background);
-       for(j= 0; j < l.classes; ++j){
-       if(state.truth[index+j+l.background]){
-//dark_zone(l, j, index, state);
-}
-}
-}
-}
-     */
 }
 
 void backward_detection_layer(const detection_layer l, network_state state)

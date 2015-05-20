@@ -61,7 +61,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     l.biases = calloc(n, sizeof(float));
     l.bias_updates = calloc(n, sizeof(float));
-    float scale = 1./sqrt(size*size*c);
+    //float scale = 1./sqrt(size*size*c);
+    float scale = sqrt(2./(size*size*c));
     for(i = 0; i < c*n*size*size; ++i) l.filters[i] = 2*scale*rand_uniform() - scale;
     for(i = 0; i < n; ++i){
         l.biases[i] = scale;
