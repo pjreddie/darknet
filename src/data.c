@@ -49,6 +49,33 @@ char **get_random_paths(char **paths, int n, int m)
     return random_paths;
 }
 
+char **find_replace_paths(char **paths, int n, char *find, char *replace)
+{
+    char **replace_paths = calloc(n, sizeof(char*));
+    int i;
+    for(i = 0; i < n; ++i){
+        char *replaced = find_replace(paths[i], find, replace);
+        replace_paths[i] = copy_string(replaced);
+    }
+    return replace_paths;
+}
+
+matrix load_image_paths_gray(char **paths, int n, int w, int h)
+{
+    int i;
+    matrix X;
+    X.rows = n;
+    X.vals = calloc(X.rows, sizeof(float*));
+    X.cols = 0;
+
+    for(i = 0; i < n; ++i){
+        image im = load_image(paths[i], w, h);
+        X.vals[i] = im.data;
+        X.cols = im.h*im.w*im.c;
+    }
+    return X;
+}
+
 matrix load_image_paths(char **paths, int n, int w, int h)
 {
     int i;
@@ -495,6 +522,21 @@ pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, in
         error("Thread creation failed");
     }
     return thread;
+}
+
+data load_data_writing(char **paths, int n, int m, int w, int h)
+{
+    if(m) paths = get_random_paths(paths, n, m);
+    char **replace_paths = find_replace_paths(paths, n, ".png", "label.png");
+    data d;
+    d.shallow = 0;
+    d.X = load_image_paths(paths, n, w, h);
+    d.y = load_image_paths_gray(replace_paths, n, w/4, h/4);
+    if(m) free(paths);
+    int i;
+    for(i = 0; i < n; ++i) free(replace_paths[i]);
+    free(replace_paths);
+    return d;
 }
 
 data load_data(char **paths, int n, int m, char **labels, int k, int w, int h)

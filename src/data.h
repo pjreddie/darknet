@@ -41,6 +41,8 @@ pthread_t load_data_localization_thread(int n, char **paths, int m, int classes,
 data load_cifar10_data(char *filename);
 data load_all_cifar10();
 
+data load_data_writing(char **paths, int n, int m, int w, int h);
+
 list *get_paths(char *filename);
 char **get_labels(char *filename);
 void get_random_batch(data d, int n, float *X, float *y);
