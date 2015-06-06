@@ -65,21 +65,25 @@ void test_writing(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
     char filename[256];
     while(1){
         // fgets(filename, 256, stdin);
         // strtok(filename, "\n");
-        image im = load_image("/home/pjreddie/darknet/data/figs/C02-1001-Figure-1.png", 0, 0);
+        image im = load_image_color("/home/pjreddie/darknet/data/figs/C02-1001-Figure-1.png", 0, 0);
+	image sized = resize_image(im, 256,256);
         printf("%d %d %d\n", im.h, im.w, im.c);
-        float *X = im.data;
+        float *X = sized.data;
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
-        image pred = float_to_image(im.w, im.h, im.c, predictions);
+        image pred = get_network_image(net);
         show_image(pred, "prediction");
         cvWaitKey(0);
+	free_image(im);
+	free_image(sized);
     }
 }
 
