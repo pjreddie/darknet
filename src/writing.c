@@ -51,7 +51,7 @@ void train_writing(char *cfgfile, char *weightfile)
         free_data(train);
         if((i % 20000) == 0) net.learning_rate *= .1;
         //if(i%100 == 0 && net.learning_rate > .00001) net.learning_rate *= .97;
-        if(i%1000==0){
+        if(i%250==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights", base, i);
             save_weights(net, buff);
@@ -59,7 +59,7 @@ void train_writing(char *cfgfile, char *weightfile)
     }
 }
 
-void test_writing(char *cfgfile, char *weightfile)
+void test_writing(char *cfgfile, char *weightfile, char *outfile)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -69,22 +69,29 @@ void test_writing(char *cfgfile, char *weightfile)
     srand(2222222);
     clock_t time;
     char filename[256];
-    while(1){
-        // fgets(filename, 256, stdin);
-        // strtok(filename, "\n");
-        image im = load_image_color("/home/pjreddie/darknet/data/figs/C02-1001-Figure-1.png", 0, 0);
-	image sized = resize_image(im, 256,256);
-        printf("%d %d %d\n", im.h, im.w, im.c);
-        float *X = sized.data;
-        time=clock();
-        float *predictions = network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
-        image pred = get_network_image(net);
+
+    fgets(filename, 256, stdin);
+    strtok(filename, "\n");
+    image im = load_image_color(filename, 0, 0);
+    //image im = load_image_color("/home/pjreddie/darknet/data/figs/C02-1001-Figure-1.png", 0, 0);
+    image sized = resize_image(im, 256,256);
+    printf("%d %d %d\n", im.h, im.w, im.c);
+    float *X = sized.data;
+    time=clock();
+    float *predictions = network_predict(net, X);
+    printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
+    image pred = get_network_image(net);
+
+    if (outfile) {
+        printf("Save image as %s.png\n", outfile);
+        save_image(pred, outfile);
+    } else {
         show_image(pred, "prediction");
         cvWaitKey(0);
+    }
+
 	free_image(im);
 	free_image(sized);
-    }
 }
 
 void run_writing(int argc, char **argv)
@@ -96,7 +103,8 @@ void run_writing(int argc, char **argv)
 
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
+    char *outfile = (argc > 5) ? argv[5] : 0;
     if(0==strcmp(argv[2], "train")) train_writing(cfg, weights);
-    if(0==strcmp(argv[2], "test")) test_writing(cfg, weights);
+    if(0==strcmp(argv[2], "test")) test_writing(cfg, weights, outfile);
 }
 
