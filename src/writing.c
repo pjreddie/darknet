@@ -74,7 +74,7 @@ void test_writing(char *cfgfile, char *weightfile, char *outfile)
     strtok(filename, "\n");
     image im = load_image_color(filename, 0, 0);
     //image im = load_image_color("/home/pjreddie/darknet/data/figs/C02-1001-Figure-1.png", 0, 0);
-    image sized = resize_image(im, 256,256);
+    image sized = resize_image(im, 256, 256);
     printf("%d %d %d\n", im.h, im.w, im.c);
     float *X = sized.data;
     time=clock();
@@ -83,7 +83,7 @@ void test_writing(char *cfgfile, char *weightfile, char *outfile)
     image pred = get_network_image(net);
 
     if (outfile) {
-        printf("Save image as %s.png\n", outfile);
+        printf("Save image as %s.png (shape: %d %d)\n", outfile, pred.w, pred.h);
         save_image(pred, outfile);
     } else {
         show_image(pred, "prediction");
