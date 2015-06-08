@@ -23,7 +23,7 @@ void train_writing(char *cfgfile, char *weightfile)
     while(1){
         ++i;
         time=clock();
-        data train = load_data_writing(paths, imgs, plist->size, 256, 256);
+        data train = load_data_writing(paths, imgs, plist->size, 256, 256, 4);
         float loss = train_network(net, train);
         #ifdef GPU
         float *out = get_network_output_gpu(net);
