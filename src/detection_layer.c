@@ -372,15 +372,12 @@ void forward_detection_layer(const detection_layer l, network_state state)
             l.delta[j+1] = 4 * (state.truth[j+1] - l.output[j+1]);
             l.delta[j+2] = 4 * (state.truth[j+2] - l.output[j+2]);
             l.delta[j+3] = 4 * (state.truth[j+3] - l.output[j+3]);
-            if(1){
+            if(0){
                 for (j = offset; j < offset+classes; ++j) {
                     if(state.truth[j]) state.truth[j] = iou;
                     l.delta[j] =  state.truth[j] - l.output[j];
                 }
             }
-
-            /*
-             */
         }
         printf("Avg IOU: %f\n", avg_iou/count);
     }

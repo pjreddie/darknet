@@ -133,20 +133,18 @@ float train_network_datum_gpu(network net, float *x, float *y)
 float *get_network_output_layer_gpu(network net, int i)
 {
     layer l = net.layers[i];
+    cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
     if(l.type == CONVOLUTIONAL){
         return l.output;
     } else if(l.type == DECONVOLUTIONAL){
         return l.output;
     } else if(l.type == CONNECTED){
-        cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
         return l.output;
     } else if(l.type == DETECTION){
-        cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
         return l.output;
     } else if(l.type == MAXPOOL){
         return l.output;
     } else if(l.type == SOFTMAX){
-        pull_softmax_layer_output(l);
         return l.output;
     }
     return 0;

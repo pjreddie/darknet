@@ -21,7 +21,7 @@ void draw_detection(image im, float *box, int side, char *label)
             //printf("%d\n", j);
             //printf("Prob: %f\n", box[j]);
             int class = max_index(box+j, classes);
-            if(box[j+class] > .4){
+            if(box[j+class] > .05){
                 //int z;
                 //for(z = 0; z < classes; ++z) printf("%f %s\n", box[j+z], class_names[z]);
                 printf("%f %s\n", box[j+class], class_names[class]);
@@ -32,8 +32,8 @@ void draw_detection(image im, float *box, int side, char *label)
                 //float maxheight = distance_from_edge(r, side);
                 //float maxwidth  = distance_from_edge(c, side);
                 j += classes;
-                float y = box[j+0];
-                float x = box[j+1];
+                float x = box[j+0];
+                float y = box[j+1];
                 x = (x+c)/side;
                 y = (y+r)/side;
                 float w = box[j+2]; //*maxwidth;
@@ -257,10 +257,11 @@ void train_detection(char *cfgfile, char *weightfile)
     if (imgnet){
         plist = get_paths("/home/pjreddie/data/imagenet/det.train.list");
     }else{
-        plist = get_paths("/home/pjreddie/data/voc/no_2012_val.txt");
+        //plist = get_paths("/home/pjreddie/data/voc/no_2012_val.txt");
         //plist = get_paths("/home/pjreddie/data/voc/no_2007_test.txt");
+        //plist = get_paths("/home/pjreddie/data/voc/val_2012.txt");
         //plist = get_paths("/home/pjreddie/data/coco/trainval.txt");
-        //plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
+        plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
     }
     paths = (char **)list_to_array(plist);
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
@@ -272,12 +273,13 @@ void train_detection(char *cfgfile, char *weightfile)
         train = buffer;
         load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
 
-        /*
+/*
            image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
            image copy = copy_image(im);
-           draw_detection(copy, train.y.vals[114], 7);
+           draw_detection(copy, train.y.vals[114], 7, "truth");
+           cvWaitKey(0);
            free_image(copy);
-         */
+           */
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -289,7 +291,7 @@ void train_detection(char *cfgfile, char *weightfile)
         if(i == 100){
             net.learning_rate *= 10;
         }
-        if(i%100==0){
+        if(i%1000==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
             save_weights(net, buff);
@@ -313,8 +315,8 @@ void predict_detections(network net, data d, float threshold, int offset, int cl
                 int ci = k+classes+background+nuisance;
                 float x = (pred.vals[j][ci + 0] + col)/num_boxes;
                 float y = (pred.vals[j][ci + 1] + row)/num_boxes;
-                float w = pred.vals[j][ci + 2]; //* distance_from_edge(row, num_boxes);
-                float h = pred.vals[j][ci + 3]; //* distance_from_edge(col, num_boxes);
+                float w = pred.vals[j][ci + 2]; // distance_from_edge(row, num_boxes);
+                float h = pred.vals[j][ci + 3]; // distance_from_edge(col, num_boxes);
                 w = pow(w, 2);
                 h = pow(h, 2);
                 float prob = scale*pred.vals[j][k+class+background+nuisance];
@@ -337,7 +339,88 @@ void validate_detection(char *cfgfile, char *weightfile)
     srand(time(0));
 
     //list *plist = get_paths("/home/pjreddie/data/voc/test_2007.txt");
-    list *plist = get_paths("/home/pjreddie/data/voc/val_2012.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/val_2012.txt");
+    list *plist = get_paths("/home/pjreddie/data/voc/test.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/val.expanded.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/train.txt");
+    char **paths = (char **)list_to_array(plist);
+
+    int classes = layer.classes;
+    int nuisance = layer.nuisance;
+    int background = (layer.background && !nuisance);
+    int num_boxes = sqrt(get_detection_layer_locations(layer));
+
+    int per_box = 4+classes+background+nuisance;
+    int num_output = num_boxes*num_boxes*per_box;
+
+    int m = plist->size;
+    int i = 0;
+    int splits = 100;
+
+    int nthreads = 4;
+    int t;
+    data *val = calloc(nthreads, sizeof(data));
+    data *buf = calloc(nthreads, sizeof(data));
+    pthread_t *thr = calloc(nthreads, sizeof(data));
+
+    time_t start = time(0);
+
+    for(t = 0; t < nthreads; ++t){
+        int num = (i+1+t)*m/splits - (i+t)*m/splits;
+        char **part = paths+((i+t)*m/splits);
+        thr[t] = load_data_thread(part, num, 0, 0, num_output, net.w, net.h, &(buf[t]));
+    }
+
+    //clock_t time;
+    for(i = nthreads; i <= splits; i += nthreads){
+        //time=clock();
+        for(t = 0; t < nthreads; ++t){
+            pthread_join(thr[t], 0);
+            val[t] = buf[t];
+        }
+        for(t = 0; t < nthreads && i < splits; ++t){
+            int num = (i+1+t)*m/splits - (i+t)*m/splits;
+            char **part = paths+((i+t)*m/splits);
+            thr[t] = load_data_thread(part, num, 0, 0, num_output, net.w, net.h, &(buf[t]));
+        }
+
+        //fprintf(stderr, "%d: Loaded: %lf seconds\n", i, sec(clock()-time));
+        fprintf(stderr, "%d\n", i);
+        for(t = 0; t < nthreads; ++t){
+            predict_detections(net, val[t], .001, (i-nthreads+t)*m/splits, classes, nuisance, background, num_boxes, per_box);
+            free_data(val[t]);
+        }
+    }
+    fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
+}
+
+void do_mask(network net, data d, int offset, int classes, int nuisance, int background, int num_boxes, int per_box)
+{
+    matrix pred = network_predict_data(net, d);
+    int j, k;
+    for(j = 0; j < pred.rows; ++j){
+        printf("%d ", offset +  j);
+        for(k = 0; k < pred.cols; k += per_box){
+            float scale = 1.-pred.vals[j][k];
+            printf("%f ", scale);
+        }
+        printf("\n");
+    }
+    free_matrix(pred);
+}
+
+void mask_detection(char *cfgfile, char *weightfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    detection_layer layer = get_network_detection_layer(net);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    srand(time(0));
+
+    list *plist = get_paths("/home/pjreddie/data/voc/test_2007.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/val_2012.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/test.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/val.expanded.txt");
     //list *plist = get_paths("/home/pjreddie/data/voc/train.txt");
@@ -381,7 +464,7 @@ void validate_detection(char *cfgfile, char *weightfile)
 
         fprintf(stderr, "%d: Loaded: %lf seconds\n", i, sec(clock()-time));
         for(t = 0; t < nthreads; ++t){
-            predict_detections(net, val[t], .01, (i-nthreads+t)*m/splits, classes, nuisance, background, num_boxes, per_box);
+            do_mask(net, val[t], (i-nthreads+t)*m/splits, classes, nuisance, background, num_boxes, per_box);
             free_data(val[t]);
         }
         time=clock();
@@ -526,14 +609,17 @@ void test_detection(char *cfgfile, char *weightfile)
     while(1){
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
-        image im = load_image_color(filename, im_size, im_size);
+        image im = load_image_color(filename,0,0);
+        image sized = resize_image(im, im_size, im_size);
         printf("%d %d %d\n", im.h, im.w, im.c);
-        float *X = im.data;
+        float *X = sized.data;
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
-        draw_detection(im, predictions, 7, "detections");
+        draw_detection(im, predictions, 7, "YOLO#SWAG#BLAZEIT");
         free_image(im);
+        free_image(sized);
+        cvWaitKey(0);
     }
 }
 
@@ -551,5 +637,6 @@ void run_detection(int argc, char **argv)
     else if(0==strcmp(argv[2], "teststuff")) train_detection_teststuff(cfg, weights);
     else if(0==strcmp(argv[2], "trainloc")) train_localization(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_detection(cfg, weights);
+    else if(0==strcmp(argv[2], "mask")) mask_detection(cfg, weights);
     else if(0==strcmp(argv[2], "validpost")) validate_detection_post(cfg, weights);
 }
