@@ -583,33 +583,20 @@ void test_resize(char *filename)
     saturate_image(sat2, 2);
 
     image sat5 = copy_image(im);
-    saturate_image(sat5, 5);
-
-    image sat10 = copy_image(im);
-    saturate_image(sat10, 10);
+    saturate_image(sat5, .5);
 
     image exp2 = copy_image(im);
-    saturate_image(exp2, .5);
     exposure_image(exp2, 2);
 
     image exp5 = copy_image(im);
-    saturate_image(exp5, .5);
     exposure_image(exp5, .5);
 
-    show_image(im, "original");
-    show_image(gray, "gray");
-    show_image(sat2, "sat2");
-    show_image(sat5, "sat5");
-    show_image(sat10, "sat10");
-    /*
-       show_image(small, "smaller");
-       show_image(big, "bigger");
-       show_image(crop, "crop");
-       show_image(crop2, "crop2");
-       show_image(rot, "rot");
-       show_image(rot2, "rot2");
-       show_image(test, "test");
-     */
+    show_image(im, "Original");
+    show_image(gray, "Gray");
+    show_image(sat2, "Saturation-2");
+    show_image(sat5, "Saturation-.5");
+    show_image(exp2, "Exposure-2");
+    show_image(exp5, "Exposure-.5");
     #ifdef OPENCV
     cvWaitKey(0);
     #endif
@@ -666,7 +653,7 @@ image load_image_stb(char *filename, int channels)
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     if (!data) {
-        printf("Cannot load file image %s\n", filename);
+        fprintf(stderr, "Cannot load file image %s\nSTB Reason: %s\n", filename, stbi_failure_reason());
         exit(0);
     }
     if(channels) c = channels;

@@ -106,7 +106,7 @@ void visualize(char *cfgfile, char *weightfile)
 
 int main(int argc, char **argv)
 {
-    //test_resize("data/cat.png");
+    //test_resize("data/bad.jpg");
     //test_box();
     //test_convolutional_layer();
     if(argc < 2){
@@ -142,6 +142,8 @@ int main(int argc, char **argv)
         partial(argv[2], argv[3], argv[4], atoi(argv[5]));
     } else if (0 == strcmp(argv[1], "visualize")){
         visualize(argv[2], (argc > 3) ? argv[3] : 0);
+    } else if (0 == strcmp(argv[1], "imtest")){
+        test_resize(argv[2]);
     } else {
         fprintf(stderr, "Not an option: %s\n", argv[1]);
     }
