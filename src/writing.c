@@ -53,7 +53,7 @@ void train_writing(char *cfgfile, char *weightfile)
         //if(i%100 == 0 && net.learning_rate > .00001) net.learning_rate *= .97;
         if(i%250==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights", base, i);
+            sprintf(buff, "/home/pjreddie/writing_backup/%s_%d.weights", base, i);
             save_weights(net, buff);
         }
     }
