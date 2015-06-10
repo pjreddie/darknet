@@ -1,5 +1,5 @@
-GPU=1
-OPENCV=1
+GPU=0
+OPENCV=0
 DEBUG=0
 
 ARCH= -arch=sm_52
@@ -42,7 +42,7 @@ endif
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile
 
-all: $(EXEC)
+all: obj $(EXEC)
 
 $(EXEC): $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) $(LDFLAGS) $^ -o $@
@@ -52,6 +52,10 @@ $(OBJDIR)%.o: %.c $(DEPS)
 
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+
+obj:
+	mkdir -p obj
+
 
 .PHONY: clean
 

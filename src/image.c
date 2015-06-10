@@ -577,13 +577,6 @@ image resize_image(image im, int w, int h)
 void test_resize(char *filename)
 {
     image im = load_image(filename, 0,0, 3);
-    image small = resize_image(im, 65, 63);
-    image big = resize_image(im, 513, 512);
-    image crop = crop_image(im, 50, 10, 100, 100);
-    image crop2 = crop_image(im, -30, -50, 291, 400);
-    image rot = rotate_image(big, .02);
-    image rot2 = rotate_image(big, 3.14159265/2.);
-    image test = rotate_image(im, .6);
     image gray = grayscale_image(im);
 
     image sat2 = copy_image(im);
