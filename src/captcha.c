@@ -62,7 +62,9 @@ void decode_captcha(char *cfgfile, char *weightfile)
         float *predictions = network_predict(net, X);
         image out  = float_to_image(300, 57, 1, predictions);
         show_image(out, "decoded");
+        #ifdef OPENCV
         cvWaitKey(0);
+        #endif
         free_image(im);
     }
 }

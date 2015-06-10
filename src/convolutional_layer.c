@@ -227,6 +227,15 @@ image get_convolutional_filter(convolutional_layer l, int i)
     return float_to_image(w,h,c,l.filters+i*h*w*c);
 }
 
+void rgbgr_filters(convolutional_layer l)
+{
+    int i;
+    for(i = 0; i < l.n; ++i){
+        image im = get_convolutional_filter(l, i);
+        if (im.c == 3) rgbgr_image(im);
+    }
+}
+
 image *get_filters(convolutional_layer l)
 {
     image *filters = calloc(l.n, sizeof(image));

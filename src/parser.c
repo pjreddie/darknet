@@ -164,10 +164,11 @@ detection_layer parse_detection(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
-    int rescore = option_find_int(options, "rescore", 1);
-    int nuisance = option_find_int(options, "nuisance", 0);
+    int rescore = option_find_int(options, "rescore", 0);
+    int joint = option_find_int(options, "joint", 0);
+    int objectness = option_find_int(options, "objectness", 0);
     int background = option_find_int(options, "background", 1);
-    detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, rescore, background, nuisance);
+    detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, joint, rescore, background, objectness);
     option_unused(options);
     return layer;
 }

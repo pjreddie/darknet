@@ -2,8 +2,17 @@
 #define IMAGE_H
 
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <float.h>
+#include <string.h>
+#include <math.h>
+
+#ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
+#endif
+
 typedef struct {
     int h;
     int w;
@@ -26,6 +35,7 @@ void saturate_image(image im, float sat);
 void exposure_image(image im, float sat);
 void saturate_exposure_image(image im, float sat, float exposure);
 void hsv_to_rgb(image im);
+void rgbgr_image(image im);
 
 image collapse_image_layers(image source, int border);
 image collapse_images_horz(image *ims, int n);
@@ -43,10 +53,8 @@ image make_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);
 image float_to_image(int w, int h, int c, float *data);
 image copy_image(image p);
-image load_image(char *filename, int w, int h);
+image load_image(char *filename, int w, int h, int c);
 image load_image_color(char *filename, int w, int h);
-
-image ipl_to_image(IplImage* src);
 
 float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);

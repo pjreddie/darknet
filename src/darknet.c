@@ -73,6 +73,25 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
     save_weights(net, outfile);
 }
 
+#include "convolutional_layer.h"
+void rgbgr_filters(convolutional_layer l);
+void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    int i;
+    for(i = 0; i < net.n; ++i){
+        layer l = net.layers[i];
+        if(l.type == CONVOLUTIONAL){
+            rgbgr_filters(l);
+            break;
+        }
+    }
+    save_weights(net, outfile);
+}
+
 void visualize(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
@@ -80,11 +99,14 @@ void visualize(char *cfgfile, char *weightfile)
         load_weights(&net, weightfile);
     }
     visualize_network(net);
+    #ifdef OPENCV
     cvWaitKey(0);
+    #endif
 }
 
 int main(int argc, char **argv)
 {
+    //test_resize("data/cat.png");
     //test_box();
     //test_convolutional_layer();
     if(argc < 2){
@@ -114,6 +136,8 @@ int main(int argc, char **argv)
         run_captcha(argc, argv);
     } else if (0 == strcmp(argv[1], "change")){
         change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
+    } else if (0 == strcmp(argv[1], "rgbgr")){
+        rgbgr_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "partial")){
         partial(argv[2], argv[3], argv[4], atoi(argv[5]));
     } else if (0 == strcmp(argv[1], "visualize")){

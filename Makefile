@@ -1,5 +1,7 @@
 GPU=1
+OPENCV=1
 DEBUG=0
+
 ARCH= -arch=sm_52
 
 VPATH=./src/
@@ -9,9 +11,9 @@ OBJDIR=./obj/
 CC=gcc
 NVCC=nvcc
 OPTS=-Ofast
-LDFLAGS=`pkg-config --libs opencv` -lm -pthread -lstdc++
-COMMON=`pkg-config --cflags opencv` -I/usr/local/cuda/include/
-CFLAGS=-Wall -Wfatal-errors
+LDFLAGS= -lm -pthread -lstdc++ 
+COMMON= -I/usr/local/cuda/include/ 
+CFLAGS=-Wall -Wfatal-errors 
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
@@ -19,9 +21,16 @@ endif
 
 CFLAGS+=$(OPTS)
 
+ifeq ($(OPENCV), 1) 
+COMMON+= -DOPENCV
+CFLAGS+= -DOPENCV
+LDFLAGS+= `pkg-config --libs opencv` 
+COMMON+= `pkg-config --cflags opencv` 
+endif
+
 ifeq ($(GPU), 1) 
-COMMON+=-DGPU
-CFLAGS+=-DGPU
+COMMON+= -DGPU
+CFLAGS+= -DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 

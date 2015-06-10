@@ -10,15 +10,15 @@
 
 int get_detection_layer_locations(detection_layer l)
 {
-    return l.inputs / (l.classes+l.coords+l.rescore+l.background);
+    return l.inputs / (l.classes+l.coords+l.joint+(l.background || l.objectness));
 }
 
 int get_detection_layer_output_size(detection_layer l)
 {
-    return get_detection_layer_locations(l)*(l.background + l.classes + l.coords);
+    return get_detection_layer_locations(l)*((l.background || l.objectness) + l.classes + l.coords);
 }
 
-detection_layer make_detection_layer(int batch, int inputs, int classes, int coords, int rescore, int background, int nuisance)
+detection_layer make_detection_layer(int batch, int inputs, int classes, int coords, int joint, int rescore, int background, int objectness)
 {
     detection_layer l = {0};
     l.type = DETECTION;
@@ -28,7 +28,8 @@ detection_layer make_detection_layer(int batch, int inputs, int classes, int coo
     l.classes = classes;
     l.coords = coords;
     l.rescore = rescore;
-    l.nuisance = nuisance;
+    l.objectness = objectness;
+    l.joint = joint;
     l.cost = calloc(1, sizeof(float));
     l.does_cost=1;
     l.background = background;
@@ -45,28 +46,6 @@ detection_layer make_detection_layer(int batch, int inputs, int classes, int coo
     srand(0);
 
     return l;
-}
-
-void dark_zone(detection_layer l, int class, int start, network_state state)
-{
-    int index = start+l.background+class;
-    int size = l.classes+l.coords+l.background;
-    int location = (index%(7*7*size)) / size ;
-    int r = location / 7;
-    int c = location % 7;
-    int dr, dc;
-    for(dr = -1; dr <= 1; ++dr){
-        for(dc = -1; dc <= 1; ++dc){
-            if(!(dr || dc)) continue;
-            if((r + dr) > 6 || (r + dr) < 0) continue;
-            if((c + dc) > 6 || (c + dc) < 0) continue;
-            int di = (dr*7 + dc) * size;
-            if(state.truth[index+di]) continue;
-            l.output[index + di] = 0;
-            //if(!state.truth[start+di]) continue;
-            //l.output[start + di] = 1;
-        }
-    }
 }
 
 typedef struct{
@@ -258,24 +237,6 @@ void test_box()
     wiou = ((1-wiou)*(1-wiou) - iou)/(.00001);
     hiou = ((1-hiou)*(1-hiou) - iou)/(.00001);
     printf("manual %f %f %f %f\n", xiou, yiou, wiou, hiou);
-    /*
-
-       while(count++ < 300){
-       dbox d = diou(a, b);
-       printf("%f %f %f %f\n", a.x, a.y, a.w, a.h);
-       a.x += .1*d.dx;
-       a.w += .1*d.dw;
-       a.y += .1*d.dy;
-       a.h += .1*d.dh;
-       printf("inter: %f\n", box_intersection(a, b));
-       printf("union: %f\n", box_union(a, b));
-       printf("IOU: %f\n", box_iou(a, b));
-       if(d.dx==0 && d.dw==0 && d.dy==0 && d.dh==0) {
-       printf("break!!!\n");
-       break;
-       }
-       }
-     */
 }
 
 dbox diou(box a, box b)
@@ -308,10 +269,10 @@ void forward_detection_layer(const detection_layer l, network_state state)
     int locations = get_detection_layer_locations(l);
     int i,j;
     for(i = 0; i < l.batch*locations; ++i){
-        int mask = (!state.truth || state.truth[out_i + l.background + l.classes + 2]);
+        int mask = (!state.truth || state.truth[out_i + (l.background || l.objectness) + l.classes + 2]);
         float scale = 1;
-        if(l.rescore) scale = state.input[in_i++];
-        else if(l.nuisance){
+        if(l.joint) scale = state.input[in_i++];
+        else if(l.objectness){
             l.output[out_i++] = 1-state.input[in_i++];
             scale = mask;
         }
@@ -320,7 +281,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
         for(j = 0; j < l.classes; ++j){
             l.output[out_i++] = scale*state.input[in_i++];
         }
-        if(l.nuisance){
+        if(l.objectness){
 
         }else if(l.background){
             softmax_array(l.output + out_i - l.classes-l.background, l.classes+l.background, l.output + out_i - l.classes-l.background);
@@ -337,7 +298,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
         int size = get_detection_layer_output_size(l) * l.batch;
         memset(l.delta, 0, size * sizeof(float));
         for (i = 0; i < l.batch*locations; ++i) {
-            int classes = l.nuisance+l.classes;
+            int classes = l.objectness+l.classes;
             int offset = i*(classes+l.coords);
             for (j = offset; j < offset+classes; ++j) {
                 *(l.cost) += pow(state.truth[j] - l.output[j], 2);
@@ -372,7 +333,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
             l.delta[j+1] = 4 * (state.truth[j+1] - l.output[j+1]);
             l.delta[j+2] = 4 * (state.truth[j+2] - l.output[j+2]);
             l.delta[j+3] = 4 * (state.truth[j+3] - l.output[j+3]);
-            if(0){
+            if(l.rescore){
                 for (j = offset; j < offset+classes; ++j) {
                     if(state.truth[j]) state.truth[j] = iou;
                     l.delta[j] =  state.truth[j] - l.output[j];
@@ -392,21 +353,21 @@ void backward_detection_layer(const detection_layer l, network_state state)
     for(i = 0; i < l.batch*locations; ++i){
         float scale = 1;
         float latent_delta = 0;
-        if(l.rescore) scale = state.input[in_i++];
-        else if (l.nuisance)   state.delta[in_i++] = -l.delta[out_i++];
+        if(l.joint) scale = state.input[in_i++];
+        else if (l.objectness)   state.delta[in_i++] = -l.delta[out_i++];
         else if (l.background) state.delta[in_i++] = scale*l.delta[out_i++];
         for(j = 0; j < l.classes; ++j){
             latent_delta += state.input[in_i]*l.delta[out_i];
             state.delta[in_i++] = scale*l.delta[out_i++];
         }
 
-        if (l.nuisance) {
+        if (l.objectness) {
 
         }else if (l.background) gradient_array(l.output + out_i, l.coords, LOGISTIC, l.delta + out_i);
         for(j = 0; j < l.coords; ++j){
             state.delta[in_i++] = l.delta[out_i++];
         }
-        if(l.rescore) state.delta[in_i-l.coords-l.classes-l.rescore-l.background] = latent_delta;
+        if(l.joint) state.delta[in_i-l.coords-l.classes-l.joint] = latent_delta;
     }
 }
 

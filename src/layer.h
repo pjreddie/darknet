@@ -44,8 +44,10 @@ typedef struct {
     int coords;
     int background;
     int rescore;
-    int nuisance;
+    int objectness;
     int does_cost;
+    int joint;
+
     float probability;
     float scale;
     int *indexes;

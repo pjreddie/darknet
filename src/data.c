@@ -69,7 +69,7 @@ matrix load_image_paths_gray(char **paths, int n, int w, int h)
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
-        image im = load_image(paths[i], w, h);
+        image im = load_image(paths[i], w, h, 1);
         X.vals[i] = im.data;
         X.cols = im.h*im.w*im.c;
     }
