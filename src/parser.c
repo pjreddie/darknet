@@ -514,7 +514,8 @@ void save_weights(network net, char *filename)
 
 void load_weights_upto(network *net, char *filename, int cutoff)
 {
-    fprintf(stderr, "Loading weights from %s\n", filename);
+    fprintf(stderr, "Loading weights from %s...", filename);
+    fflush(stdout);
     FILE *fp = fopen(filename, "r");
     if(!fp) file_error(filename);
 
@@ -522,7 +523,6 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fread(&net->momentum, sizeof(float), 1, fp);
     fread(&net->decay, sizeof(float), 1, fp);
     fread(&net->seen, sizeof(int), 1, fp);
-    fprintf(stderr, "%f %f %f %d\n", net->learning_rate, net->momentum, net->decay, net->seen);
 
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){
@@ -557,6 +557,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
 #endif
         }
     }
+    fprintf(stderr, "Done!\n");
     fclose(fp);
 }
 
