@@ -220,6 +220,7 @@ void test_detection(char *cfgfile, char *weightfile)
     char filename[256];
     while(1){
         printf("Image Path: ");
+        fflush(stdout);
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
         image im = load_image_color(filename,0,0);
