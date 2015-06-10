@@ -7,16 +7,16 @@
 
 char *class_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void draw_detection(image im, float *box, int side, int bg, char *label)
+void draw_detection(image im, float *box, int side, char *label)
 {
     int classes = 20;
-    int elems = 4+classes+bg;
+    int elems = 4+classes;
     int j;
     int r, c;
 
     for(r = 0; r < side; ++r){
         for(c = 0; c < side; ++c){
-            j = (r*side + c) * elems + bg;
+            j = (r*side + c) * elems;
             int class = max_index(box+j, classes);
             if(box[j+class] > .2){
                 printf("%f %s\n", box[j+class], class_names[class]);
@@ -212,6 +212,7 @@ void test_detection(char *cfgfile, char *weightfile)
         load_weights(&net, weightfile);
     }
     detection_layer layer = get_network_detection_layer(net);
+    if (!layer.joint) fprintf(stderr, "Detection layer should use joint prediction to draw correctly.\n");
     int im_size = 448;
     set_batch_network(&net, 1);
     srand(2222222);
@@ -227,7 +228,7 @@ void test_detection(char *cfgfile, char *weightfile)
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
-        draw_detection(im, predictions, 7, layer.background || layer.objectness, "predictions");
+        draw_detection(im, predictions, 7, "predictions");
         free_image(im);
         free_image(sized);
         #ifdef OPENCV
