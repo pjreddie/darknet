@@ -219,11 +219,11 @@ void test_detection(char *cfgfile, char *weightfile)
     clock_t time;
     char filename[256];
     while(1){
+        printf("Image Path: ");
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
         image im = load_image_color(filename,0,0);
         image sized = resize_image(im, im_size, im_size);
-        printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = sized.data;
         time=clock();
         float *predictions = network_predict(net, X);
