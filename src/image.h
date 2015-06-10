@@ -4,6 +4,7 @@
 
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
+
 typedef struct {
     int h;
     int w;

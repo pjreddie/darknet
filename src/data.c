@@ -524,14 +524,14 @@ pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, in
     return thread;
 }
 
-data load_data_writing(char **paths, int n, int m, int w, int h)
+data load_data_writing(char **paths, int n, int m, int w, int h, int downsample)
 {
     if(m) paths = get_random_paths(paths, n, m);
     char **replace_paths = find_replace_paths(paths, n, ".png", "-label.png");
     data d;
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
-    d.y = load_image_paths_gray(replace_paths, n, w/8, h/8);
+    d.y = load_image_paths_gray(replace_paths, n, w/downsample, h/downsample);
     if(m) free(paths);
     int i;
     for(i = 0; i < n; ++i) free(replace_paths[i]);

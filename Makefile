@@ -1,6 +1,6 @@
 GPU=1
 DEBUG=0
-ARCH= -arch=sm_52
+ARCH= -arch=sm_35
 
 VPATH=./src/
 EXEC=darknet
@@ -8,7 +8,7 @@ OBJDIR=./obj/
 
 CC=gcc
 NVCC=nvcc
-OPTS=-Ofast
+OPTS=-O3
 LDFLAGS=`pkg-config --libs opencv` -lm -pthread -lstdc++
 COMMON=`pkg-config --cflags opencv` -I/usr/local/cuda/include/
 CFLAGS=-Wall -Wfatal-errors
@@ -36,7 +36,7 @@ DEPS = $(wildcard src/*.h) Makefile
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(CC) $(COMMON) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(COMMON) $^ -o $@ $(CFLAGS) $(LDFLAGS)
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
