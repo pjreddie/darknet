@@ -18,7 +18,7 @@ void draw_detection(image im, float *box, int side, char *label)
         for(c = 0; c < side; ++c){
             j = (r*side + c) * elems;
             int class = max_index(box+j, classes);
-            if(box[j+class] > .2){
+            if(box[j+class] > 0){
                 printf("%f %s\n", box[j+class], class_names[class]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
@@ -77,9 +77,9 @@ void train_detection(char *cfgfile, char *weightfile)
         //plist = get_paths("/home/pjreddie/data/voc/no_2012_val.txt");
         //plist = get_paths("/home/pjreddie/data/voc/no_2007_test.txt");
         //plist = get_paths("/home/pjreddie/data/voc/val_2012.txt");
-        plist = get_paths("/home/pjreddie/data/voc/no_2007_test.txt");
+        //plist = get_paths("/home/pjreddie/data/voc/no_2007_test.txt");
         //plist = get_paths("/home/pjreddie/data/coco/trainval.txt");
-        //plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
+        plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
     }
     paths = (char **)list_to_array(plist);
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);

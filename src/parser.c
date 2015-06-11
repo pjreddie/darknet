@@ -167,7 +167,7 @@ detection_layer parse_detection(list *options, size_params params)
     int rescore = option_find_int(options, "rescore", 0);
     int joint = option_find_int(options, "joint", 0);
     int objectness = option_find_int(options, "objectness", 0);
-    int background = option_find_int(options, "background", 1);
+    int background = option_find_int(options, "background", 0);
     detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, joint, rescore, background, objectness);
     option_unused(options);
     return layer;
