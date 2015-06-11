@@ -77,6 +77,7 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
 void rgbgr_filters(convolutional_layer l);
 void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
 {
+    gpu_index = -1;
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);

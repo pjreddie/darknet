@@ -18,7 +18,7 @@ void draw_detection(image im, float *box, int side, char *label)
         for(c = 0; c < side; ++c){
             j = (r*side + c) * elems;
             int class = max_index(box+j, classes);
-            if(box[j+class] > 0){
+            if(box[j+class] > 0.2){
                 printf("%f %s\n", box[j+class], class_names[class]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
@@ -67,6 +67,7 @@ void train_detection(char *cfgfile, char *weightfile)
 
     int classes = layer.classes;
     int background = (layer.background || layer.objectness);
+    printf("%d\n", background);
     int side = sqrt(get_detection_layer_locations(layer));
 
     char **paths;
@@ -205,8 +206,9 @@ void validate_detection(char *cfgfile, char *weightfile)
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
-void test_detection(char *cfgfile, char *weightfile)
+void test_detection(char *cfgfile, char *weightfile, char *filename)
 {
+
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -217,24 +219,30 @@ void test_detection(char *cfgfile, char *weightfile)
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
-    char filename[256];
+    char input[256];
     while(1){
-        printf("Image Path: ");
-        fflush(stdout);
-        fgets(filename, 256, stdin);
-        strtok(filename, "\n");
-        image im = load_image_color(filename,0,0);
+        if(filename){
+            strncpy(input, filename, 256);
+        } else {
+            printf("Enter Image Path: ");
+            fflush(stdout);
+            fgets(input, 256, stdin);
+            strtok(input, "\n");
+        }
+        image im = load_image_color(input,0,0);
         image sized = resize_image(im, im_size, im_size);
         float *X = sized.data;
         time=clock();
         float *predictions = network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
+        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         draw_detection(im, predictions, 7, "predictions");
         free_image(im);
         free_image(sized);
-        #ifdef OPENCV
+#ifdef OPENCV
         cvWaitKey(0);
-        #endif
+        cvDestroyAllWindows();
+#endif
+        if (filename) break;
     }
 }
 
@@ -247,7 +255,8 @@ void run_detection(int argc, char **argv)
 
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
-    if(0==strcmp(argv[2], "test")) test_detection(cfg, weights);
+    char *filename = (argc > 5) ? argv[5]: 0;
+    if(0==strcmp(argv[2], "test")) test_detection(cfg, weights, filename);
     else if(0==strcmp(argv[2], "train")) train_detection(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_detection(cfg, weights);
 }

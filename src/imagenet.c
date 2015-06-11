@@ -101,37 +101,40 @@ void validate_imagenet(char *filename, char *weightfile)
     }
 }
 
-void test_imagenet(char *cfgfile, char *weightfile)
+void test_imagenet(char *cfgfile, char *weightfile, char *filename)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
     set_batch_network(&net, 1);
-    //imgs=1;
     srand(2222222);
     int i = 0;
-    char **names = get_labels("cfg/shortnames.txt");
+    char **names = get_labels("data/shortnames.txt");
     clock_t time;
-    char filename[256];
+    char input[256];
     int indexes[10];
     while(1){
-        fgets(filename, 256, stdin);
-        strtok(filename, "\n");
-        image im = load_image_color(filename, 256, 256);
-        scale_image(im, 2.);
-        translate_image(im, -1.);
-        printf("%d %d %d\n", im.h, im.w, im.c);
+        if(filename){
+            strncpy(input, filename, 256);
+        }else{
+            printf("Enter Image Path: ");
+            fflush(stdout);
+            fgets(input, 256, stdin);
+            strtok(input, "\n");
+        }
+        image im = load_image_color(input, 256, 256);
         float *X = im.data;
         time=clock();
         float *predictions = network_predict(net, X);
         top_predictions(net, 10, indexes);
-        printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
+        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         for(i = 0; i < 10; ++i){
             int index = indexes[i];
             printf("%s: %f\n", names[index], predictions[index]);
         }
         free_image(im);
+        if (filename) break;
     }
 }
 
@@ -144,7 +147,8 @@ void run_imagenet(int argc, char **argv)
 
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
-    if(0==strcmp(argv[2], "test")) test_imagenet(cfg, weights);
+    char *filename = (argc > 5) ? argv[5]: 0;
+    if(0==strcmp(argv[2], "test")) test_imagenet(cfg, weights, filename);
     else if(0==strcmp(argv[2], "train")) train_imagenet(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_imagenet(cfg, weights);
 }

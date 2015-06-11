@@ -232,7 +232,9 @@ void rgbgr_filters(convolutional_layer l)
     int i;
     for(i = 0; i < l.n; ++i){
         image im = get_convolutional_filter(l, i);
-        if (im.c == 3) rgbgr_image(im);
+        if (im.c == 3) {
+            rgbgr_image(im);
+        }
     }
 }
 

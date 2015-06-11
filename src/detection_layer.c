@@ -29,10 +29,10 @@ detection_layer make_detection_layer(int batch, int inputs, int classes, int coo
     l.coords = coords;
     l.rescore = rescore;
     l.objectness = objectness;
+    l.background = background;
     l.joint = joint;
     l.cost = calloc(1, sizeof(float));
     l.does_cost=1;
-    l.background = background;
     int outputs = get_detection_layer_output_size(l);
     l.outputs = outputs;
     l.output = calloc(batch*outputs, sizeof(float));
