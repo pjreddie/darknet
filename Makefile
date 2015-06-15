@@ -11,7 +11,7 @@ OBJDIR=./obj/
 CC=gcc
 NVCC=nvcc
 OPTS=-Ofast
-LDFLAGS= -lm -pthread -lstdc++ 
+LDFLAGS= -pthread -lstdc++ -lm
 COMMON= -I/usr/local/cuda/include/ 
 CFLAGS=-Wall -Wfatal-errors 
 
@@ -45,7 +45,7 @@ DEPS = $(wildcard src/*.h) Makefile
 all: obj $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(CC) $(COMMON) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(COMMON) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
