@@ -18,8 +18,6 @@ char *basecfg(char *cfgfile)
         c = next+1;
     }
     c = copy_string(c);
-    next = strchr(c, '_');
-    if (next) *next = 0;
     next = strchr(c, '.');
     if (next) *next = 0;
     return c;

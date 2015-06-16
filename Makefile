@@ -1,5 +1,5 @@
-GPU=0
-OPENCV=0
+GPU=1
+OPENCV=1
 DEBUG=0
 
 ARCH= -arch=sm_52
@@ -10,7 +10,7 @@ OBJDIR=./obj/
 
 CC=gcc
 NVCC=nvcc
-OPTS=-Ofast
+OPTS=-O3
 LDFLAGS= -pthread -lstdc++ -lm
 COMMON= -I/usr/local/cuda/include/ 
 CFLAGS=-Wall -Wfatal-errors 
@@ -34,7 +34,7 @@ CFLAGS+= -DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 
-OBJ=gemm.o utils.o cuda.o deconvolutional_layer.o convolutional_layer.o list.o image.o activations.o im2col.o col2im.o blas.o crop_layer.o dropout_layer.o maxpool_layer.o softmax_layer.o data.o matrix.o network.o connected_layer.o cost_layer.o parser.o option_list.o darknet.o detection_layer.o imagenet.o captcha.o detection.o route_layer.o writing.o
+OBJ=gemm.o utils.o cuda.o deconvolutional_layer.o convolutional_layer.o list.o image.o activations.o im2col.o col2im.o blas.o crop_layer.o dropout_layer.o maxpool_layer.o softmax_layer.o data.o matrix.o network.o connected_layer.o cost_layer.o parser.o option_list.o darknet.o detection_layer.o imagenet.o captcha.o detection.o route_layer.o writing.o box.o
 ifeq ($(GPU), 1) 
 OBJ+=convolutional_kernels.o deconvolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_kernels.o blas_kernels.o crop_layer_kernels.o dropout_layer_kernels.o maxpool_layer_kernels.o softmax_layer_kernels.o network_kernels.o
 endif
