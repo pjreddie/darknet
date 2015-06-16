@@ -8,7 +8,7 @@
 
 unsigned int data_seed;
 
-struct load_args{
+typedef struct load_args{
     char **paths;
     int n;
     int m;
@@ -22,7 +22,10 @@ struct load_args{
     int classes;
     int background;
     data *d;
-};
+    char *path;
+    image *im;
+    image *resized;
+} load_args;
 
 list *get_paths(char *filename)
 {
@@ -466,6 +469,30 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
     }
     free(random_paths);
     return d;
+}
+
+void *load_image_in_thread(void *ptr)
+{
+    load_args a = *(load_args*)ptr;
+    free(ptr);
+    *(a.im) = load_image_color(a.path, 0, 0);
+    *(a.resized) = resize_image(*(a.im), a.w, a.h);
+    return 0;
+}
+
+pthread_t load_image_thread(char *path, image *im, image *resized, int w, int h)
+{
+    pthread_t thread;
+    struct load_args *args = calloc(1, sizeof(struct load_args));
+    args->path = path;
+    args->w = w;
+    args->h = h;
+    args->im = im;
+    args->resized = resized;
+    if(pthread_create(&thread, 0, load_image_in_thread, args)) {
+        error("Thread creation failed");
+    }
+    return thread;
 }
 
 void *load_localization_thread(void *ptr)
