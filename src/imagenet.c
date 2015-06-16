@@ -66,8 +66,8 @@ void validate_imagenet(char *filename, char *weightfile)
     }
     srand(time(0));
 
-    char **labels = get_labels("/data/imagenet/inet.val.labels.list");
-    list *plist = get_paths("/data/imagenet/inet.val.list");
+    char **labels = get_labels("data/inet.labels.list");
+    list *plist = get_paths("data/inet.val.list");
 
     char **paths = (char **)list_to_array(plist);
     int m = plist->size;
