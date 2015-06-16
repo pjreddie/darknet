@@ -20,6 +20,7 @@ void draw_detection(image im, float *box, int side, char *label)
             j = (r*side + c) * elems;
             int class = max_index(box+j, classes);
             if(box[j+class] > 0.2){
+                int width = box[j+class]*5 + 1;
                 printf("%f %s\n", box[j+class], class_names[class]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
@@ -39,9 +40,7 @@ void draw_detection(image im, float *box, int side, char *label)
                 int right = (x+w/2)*im.w;
                 int top   = (y-h/2)*im.h;
                 int bot   = (y+h/2)*im.h;
-                draw_box(im, left, top, right, bot, red, green, blue);
-                draw_box(im, left+1, top+1, right+1, bot+1, red, green, blue);
-                draw_box(im, left-1, top-1, right-1, bot-1, red, green, blue);
+                draw_box_width(im, left, top, right, bot, width, red, green, blue);
             }
         }
     }

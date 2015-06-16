@@ -42,7 +42,7 @@ endif
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile
 
-all: obj $(EXEC)
+all: obj results $(EXEC)
 
 $(EXEC): $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) $(LDFLAGS) $^ -o $@
@@ -55,6 +55,8 @@ $(OBJDIR)%.o: %.cu $(DEPS)
 
 obj:
 	mkdir -p obj
+results:
+	mkdir -p results
 
 
 .PHONY: clean

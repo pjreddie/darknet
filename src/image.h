@@ -23,6 +23,7 @@ typedef struct {
 float get_color(int c, int x, int max);
 void flip_image(image a);
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
+void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b);
 image image_distance(image a, image b);
 void scale_image(image m, float s);
 image crop_image(image im, int dx, int dy, int w, int h);
