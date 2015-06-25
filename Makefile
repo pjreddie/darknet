@@ -10,7 +10,7 @@ OBJDIR=./obj/
 
 CC=gcc
 NVCC=nvcc
-OPTS=-O3
+OPTS=-Ofast
 LDFLAGS= -pthread -lstdc++ -lm
 COMMON= -I/usr/local/cuda/include/ 
 CFLAGS=-Wall -Wfatal-errors 
