@@ -2,7 +2,12 @@ GPU=0
 OPENCV=0
 DEBUG=0
 
-ARCH= -arch=sm_52
+ARCH := -gencode arch=compute_20,code=sm_20 \
+		-gencode arch=compute_20,code=sm_21 \
+		-gencode arch=compute_30,code=sm_30 \
+		-gencode arch=compute_35,code=sm_35 \
+		-gencode arch=compute_50,code=sm_50 \
+		-gencode arch=compute_50,code=compute_50
 
 VPATH=./src/
 EXEC=darknet
