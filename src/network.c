@@ -132,10 +132,11 @@ void backward_network(network net, network_state state)
 {
     int i;
     float *original_input = state.input;
+    float *original_delta = state.delta;
     for(i = net.n-1; i >= 0; --i){
         if(i == 0){
             state.input = original_input;
-            state.delta = 0;
+            state.delta = original_delta;
         }else{
             layer prev = net.layers[i-1];
             state.input = prev.output;
@@ -171,6 +172,7 @@ float train_network_datum(network net, float *x, float *y)
     #endif
     network_state state;
     state.input = x;
+    state.delta = 0;
     state.truth = y;
     state.train = 1;
     forward_network(net, state);
@@ -224,6 +226,7 @@ float train_network_batch(network net, data d, int n)
     int i,j;
     network_state state;
     state.train = 1;
+    state.delta = 0;
     float sum = 0;
     int batch = 2;
     for(i = 0; i < n; ++i){
@@ -249,43 +252,30 @@ void set_batch_network(network *net, int b)
     }
 }
 
-/*
-int resize_network(network net, int h, int w, int c)
+int resize_network(network *net, int w, int h)
 {
-    fprintf(stderr, "Might be broken, careful!!");
     int i;
-    for (i = 0; i < net.n; ++i){
-        if(net.types[i] == CONVOLUTIONAL){
-            convolutional_layer *layer = (convolutional_layer *)net.layers[i];
-            resize_convolutional_layer(layer, h, w);
-            image output = get_convolutional_image(*layer);
-            h = output.h;
-            w = output.w;
-            c = output.c;
-        } else if(net.types[i] == DECONVOLUTIONAL){
-            deconvolutional_layer *layer = (deconvolutional_layer *)net.layers[i];
-            resize_deconvolutional_layer(layer, h, w);
-            image output = get_deconvolutional_image(*layer);
-            h = output.h;
-            w = output.w;
-            c = output.c;
-        }else if(net.types[i] == MAXPOOL){
-            maxpool_layer *layer = (maxpool_layer *)net.layers[i];
-            resize_maxpool_layer(layer, h, w);
-            image output = get_maxpool_image(*layer);
-            h = output.h;
-            w = output.w;
-            c = output.c;
-        }else if(net.types[i] == DROPOUT){
-            dropout_layer *layer = (dropout_layer *)net.layers[i];
-            resize_dropout_layer(layer, h*w*c);
+    //if(w == net->w && h == net->h) return 0;
+    net->w = w;
+    net->h = h;
+    //fprintf(stderr, "Resizing to %d x %d...", w, h);
+    //fflush(stderr);
+    for (i = 0; i < net->n; ++i){
+        layer l = net->layers[i];
+        if(l.type == CONVOLUTIONAL){
+            resize_convolutional_layer(&l, w, h);
+        }else if(l.type == MAXPOOL){
+            resize_maxpool_layer(&l, w, h);
         }else{
             error("Cannot resize this type of layer");
         }
+        net->layers[i] = l;
+        w = l.out_w;
+        h = l.out_h;
     }
+    //fprintf(stderr, " Done!\n");
     return 0;
 }
-*/
 
 int get_network_output_size(network net)
 {

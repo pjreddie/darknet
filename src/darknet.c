@@ -13,41 +13,7 @@ extern void run_imagenet(int argc, char **argv);
 extern void run_detection(int argc, char **argv);
 extern void run_writing(int argc, char **argv);
 extern void run_captcha(int argc, char **argv);
-
-void del_arg(int argc, char **argv, int index)
-{
-    int i;
-    for(i = index; i < argc-1; ++i) argv[i] = argv[i+1];
-    argv[i] = 0;
-}
-
-int find_arg(int argc, char* argv[], char *arg)
-{
-    int i;
-    for(i = 0; i < argc; ++i) {
-        if(!argv[i]) continue;
-        if(0==strcmp(argv[i], arg)) {
-            del_arg(argc, argv, i);
-            return 1;
-        }
-    }
-    return 0;
-}
-
-int find_int_arg(int argc, char **argv, char *arg, int def)
-{
-    int i;
-    for(i = 0; i < argc-1; ++i){
-        if(!argv[i]) continue;
-        if(0==strcmp(argv[i], arg)){
-            def = atoi(argv[i+1]);
-            del_arg(argc, argv, i);
-            del_arg(argc, argv, i);
-            break;
-        }
-    }
-    return def;
-}
+extern void run_nightmare(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -135,6 +101,8 @@ int main(int argc, char **argv)
         test_resize(argv[2]);
     } else if (0 == strcmp(argv[1], "captcha")){
         run_captcha(argc, argv);
+    } else if (0 == strcmp(argv[1], "nightmare")){
+        run_nightmare(argc, argv);
     } else if (0 == strcmp(argv[1], "change")){
         change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
     } else if (0 == strcmp(argv[1], "rgbgr")){

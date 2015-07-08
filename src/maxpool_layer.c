@@ -4,16 +4,16 @@
 
 image get_maxpool_image(maxpool_layer l)
 {
-    int h = (l.h-1)/l.stride + 1;
-    int w = (l.w-1)/l.stride + 1;
+    int h = l.out_h;
+    int w = l.out_w;
     int c = l.c;
     return float_to_image(w,h,c,l.output);
 }
 
 image get_maxpool_delta(maxpool_layer l)
 {
-    int h = (l.h-1)/l.stride + 1;
-    int w = (l.w-1)/l.stride + 1;
+    int h = l.out_h;
+    int w = l.out_w;
     int c = l.c;
     return float_to_image(w,h,c,l.delta);
 }
@@ -27,11 +27,11 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     l.h = h;
     l.w = w;
     l.c = c;
-    l.out_h = (h-1)/stride + 1;
     l.out_w = (w-1)/stride + 1;
+    l.out_h = (h-1)/stride + 1;
     l.out_c = c;
     l.outputs = l.out_h * l.out_w * l.out_c;
-    l.inputs = l.outputs;
+    l.inputs = h*w*c;
     l.size = size;
     l.stride = stride;
     int output_size = l.out_h * l.out_w * l.out_c * batch;
@@ -46,11 +46,18 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     return l;
 }
 
-void resize_maxpool_layer(maxpool_layer *l, int h, int w)
+void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 {
+    int stride = l->stride;
     l->h = h;
     l->w = w;
-    int output_size = ((h-1)/l->stride+1) * ((w-1)/l->stride+1) * l->c * l->batch;
+
+    l->out_w = (w-1)/stride + 1;
+    l->out_h = (h-1)/stride + 1;
+    l->outputs = l->out_w * l->out_h * l->c;
+    int output_size = l->outputs * l->batch;
+
+    l->indexes = realloc(l->indexes, output_size * sizeof(int));
     l->output = realloc(l->output, output_size * sizeof(float));
     l->delta = realloc(l->delta, output_size * sizeof(float));
 
@@ -59,8 +66,8 @@ void resize_maxpool_layer(maxpool_layer *l, int h, int w)
     cuda_free(l->output_gpu);
     cuda_free(l->delta_gpu);
     l->indexes_gpu = cuda_make_int_array(output_size);
-    l->output_gpu  = cuda_make_array(l->output, output_size);
-    l->delta_gpu   = cuda_make_array(l->delta, output_size);
+    l->output_gpu  = cuda_make_array(0, output_size);
+    l->delta_gpu   = cuda_make_array(0, output_size);
     #endif
 }
 

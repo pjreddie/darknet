@@ -343,6 +343,7 @@ network parse_network_cfg(char *filename)
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
+        l.dontload = option_find_int_quiet(options, "dontload", 0);
         net.layers[count] = l;
         free_section(s);
         n = n->next;
@@ -527,6 +528,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){
         layer l = net->layers[i];
+        if (l.dontload) continue;
         if(l.type == CONVOLUTIONAL){
             int num = l.n*l.c*l.size*l.size;
             fread(l.biases, sizeof(float), l.n, fp);

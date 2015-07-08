@@ -187,6 +187,7 @@ void show_image_cv(image p, char *name)
 {
     int x,y,k;
     image copy = copy_image(p);
+    constrain_image(copy);
     rgbgr_image(copy);
     //normalize_image(copy);
 
@@ -207,7 +208,8 @@ void show_image_cv(image p, char *name)
         }
     }
     free_image(copy);
-    if(disp->height < 448 || disp->width < 448 || disp->height > 1000){
+    if(0){
+    //if(disp->height < 448 || disp->width < 448 || disp->height > 1000){
         int w = 448;
         int h = w*p.h/p.w;
         if(h > 1000){
