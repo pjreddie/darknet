@@ -97,12 +97,18 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     return l;
 }
 
-void resize_convolutional_layer(convolutional_layer *l, int h, int w)
+void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 {
-    l->h = h;
     l->w = w;
-    int out_h = convolutional_out_height(*l);
+    l->h = h;
     int out_w = convolutional_out_width(*l);
+    int out_h = convolutional_out_height(*l);
+
+    l->out_w = out_w;
+    l->out_h = out_h;
+
+    l->outputs = l->out_h * l->out_w * l->out_c;
+    l->inputs = l->w * l->h * l->c;
 
     l->col_image = realloc(l->col_image,
                                 out_h*out_w*l->size*l->size*l->c*sizeof(float));
@@ -116,9 +122,9 @@ void resize_convolutional_layer(convolutional_layer *l, int h, int w)
     cuda_free(l->delta_gpu);
     cuda_free(l->output_gpu);
 
-    l->col_image_gpu = cuda_make_array(l->col_image, out_h*out_w*l->size*l->size*l->c);
-    l->delta_gpu = cuda_make_array(l->delta, l->batch*out_h*out_w*l->n);
-    l->output_gpu = cuda_make_array(l->output, l->batch*out_h*out_w*l->n);
+    l->col_image_gpu = cuda_make_array(0, out_h*out_w*l->size*l->size*l->c);
+    l->delta_gpu = cuda_make_array(0, l->batch*out_h*out_w*l->n);
+    l->output_gpu = cuda_make_array(0, l->batch*out_h*out_w*l->n);
     #endif
 }
 

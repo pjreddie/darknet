@@ -34,6 +34,8 @@ float *network_predict_gpu(network net, float *input);
 float * get_network_output_gpu_layer(network net, int i);
 float * get_network_delta_gpu_layer(network net, int i);
 float *get_network_output_gpu(network net);
+void forward_network_gpu(network net, network_state state);
+void backward_network_gpu(network net, network_state state);
 #endif
 
 void compare_networks(network n1, network n2, data d);
@@ -65,7 +67,7 @@ image get_network_image_layer(network net, int i);
 int get_predicted_class_network(network net);
 void print_network(network net);
 void visualize_network(network net);
-int resize_network(network net, int h, int w, int c);
+int resize_network(network *net, int w, int h);
 void set_batch_network(network *net, int b);
 int get_network_input_size(network net);
 float get_network_cost(network net);

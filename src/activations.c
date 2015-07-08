@@ -22,6 +22,8 @@ char *get_activation_string(ACTIVATION a)
             return "tanh";
         case PLSE:
             return "plse";
+        case LEAKY:
+            return "leaky";
         default:
             break;
     }
@@ -36,6 +38,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "plse")==0) return PLSE;
     if (strcmp(s, "linear")==0) return LINEAR;
     if (strcmp(s, "ramp")==0) return RAMP;
+    if (strcmp(s, "leaky")==0) return LEAKY;
     if (strcmp(s, "tanh")==0) return TANH;
     fprintf(stderr, "Couldn't find activation function %s, going with ReLU\n", s);
     return RELU;
@@ -54,6 +57,8 @@ float activate(float x, ACTIVATION a)
             return relie_activate(x);
         case RAMP:
             return ramp_activate(x);
+        case LEAKY:
+            return leaky_activate(x);
         case TANH:
             return tanh_activate(x);
         case PLSE:
@@ -83,6 +88,8 @@ float gradient(float x, ACTIVATION a)
             return relie_gradient(x);
         case RAMP:
             return ramp_gradient(x);
+        case LEAKY:
+            return leaky_gradient(x);
         case TANH:
             return tanh_gradient(x);
         case PLSE:

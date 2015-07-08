@@ -36,6 +36,9 @@ float variance_array(float *a, int n);
 float mag_array(float *a, int n);
 float **one_hot_encode(float *a, int n, int k);
 float sec(clock_t clocks);
+int find_int_arg(int argc, char **argv, char *arg, int def);
+float find_float_arg(int argc, char **argv, char *arg, float def);
+int find_arg(int argc, char* argv[], char *arg);
 
 #endif
 

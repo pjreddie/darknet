@@ -48,6 +48,8 @@ typedef struct {
     int does_cost;
     int joint;
 
+    int dontload;
+
     float probability;
     float scale;
     int *indexes;

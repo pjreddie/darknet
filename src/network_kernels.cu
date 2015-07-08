@@ -59,11 +59,12 @@ void backward_network_gpu(network net, network_state state)
 {
     int i;
     float * original_input = state.input;
+    float * original_delta = state.delta;
     for(i = net.n-1; i >= 0; --i){
         layer l = net.layers[i];
         if(i == 0){
             state.input = original_input;
-            state.delta = 0;
+            state.delta = original_delta;
         }else{
             layer prev = net.layers[i-1];
             state.input = prev.output_gpu;
@@ -120,6 +121,7 @@ float train_network_datum_gpu(network net, float *x, float *y)
         cuda_push_array(*net.truth_gpu, y, y_size);
     }
     state.input = *net.input_gpu;
+    state.delta = 0;
     state.truth = *net.truth_gpu;
     state.train = 1;
     forward_network_gpu(net, state);
