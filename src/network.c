@@ -10,6 +10,7 @@
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "detection_layer.h"
+#include "normalization_layer.h"
 #include "maxpool_layer.h"
 #include "cost_layer.h"
 #include "softmax_layer.h"
@@ -39,6 +40,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "cost";
         case ROUTE:
             return "route";
+        case NORMALIZATION:
+            return "normalization";
         default:
             break;
     }
@@ -66,6 +69,8 @@ void forward_network(network net, network_state state)
             forward_convolutional_layer(l, state);
         } else if(l.type == DECONVOLUTIONAL){
             forward_deconvolutional_layer(l, state);
+        } else if(l.type == NORMALIZATION){
+            forward_normalization_layer(l, state);
         } else if(l.type == DETECTION){
             forward_detection_layer(l, state);
         } else if(l.type == CONNECTED){
@@ -147,6 +152,8 @@ void backward_network(network net, network_state state)
             backward_convolutional_layer(l, state);
         } else if(l.type == DECONVOLUTIONAL){
             backward_deconvolutional_layer(l, state);
+        } else if(l.type == NORMALIZATION){
+            backward_normalization_layer(l, state);
         } else if(l.type == MAXPOOL){
             if(i != 0) backward_maxpool_layer(l, state);
         } else if(l.type == DROPOUT){
@@ -266,6 +273,8 @@ int resize_network(network *net, int w, int h)
             resize_convolutional_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
             resize_maxpool_layer(&l, w, h);
+        }else if(l.type == NORMALIZATION){
+            resize_normalization_layer(&l, w, h);
         }else{
             error("Cannot resize this type of layer");
         }
