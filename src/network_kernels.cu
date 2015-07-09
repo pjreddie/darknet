@@ -15,6 +15,7 @@ extern "C" {
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "maxpool_layer.h"
+#include "normalization_layer.h"
 #include "cost_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
@@ -44,6 +45,8 @@ void forward_network_gpu(network net, network_state state)
             forward_cost_layer_gpu(l, state);
         } else if(l.type == SOFTMAX){
             forward_softmax_layer_gpu(l, state);
+        } else if(l.type == NORMALIZATION){
+            forward_normalization_layer_gpu(l, state);
         } else if(l.type == MAXPOOL){
             forward_maxpool_layer_gpu(l, state);
         } else if(l.type == DROPOUT){
@@ -80,6 +83,8 @@ void backward_network_gpu(network net, network_state state)
             backward_dropout_layer_gpu(l, state);
         } else if(l.type == DETECTION){
             backward_detection_layer_gpu(l, state);
+        } else if(l.type == NORMALIZATION){
+            backward_normalization_layer_gpu(l, state);
         } else if(l.type == SOFTMAX){
             if(i != 0) backward_softmax_layer_gpu(l, state);
         } else if(l.type == CONNECTED){
@@ -136,20 +141,7 @@ float *get_network_output_layer_gpu(network net, int i)
 {
     layer l = net.layers[i];
     cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
-    if(l.type == CONVOLUTIONAL){
-        return l.output;
-    } else if(l.type == DECONVOLUTIONAL){
-        return l.output;
-    } else if(l.type == CONNECTED){
-        return l.output;
-    } else if(l.type == DETECTION){
-        return l.output;
-    } else if(l.type == MAXPOOL){
-        return l.output;
-    } else if(l.type == SOFTMAX){
-        return l.output;
-    }
-    return 0;
+    return l.output;
 }
 
 float *get_network_output_gpu(network net)

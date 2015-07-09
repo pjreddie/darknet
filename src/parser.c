@@ -7,6 +7,7 @@
 #include "crop_layer.h"
 #include "cost_layer.h"
 #include "convolutional_layer.h"
+#include "normalization_layer.h"
 #include "deconvolutional_layer.h"
 #include "connected_layer.h"
 #include "maxpool_layer.h"
@@ -30,6 +31,7 @@ int is_connected(section *s);
 int is_maxpool(section *s);
 int is_dropout(section *s);
 int is_softmax(section *s);
+int is_normalization(section *s);
 int is_crop(section *s);
 int is_cost(section *s);
 int is_detection(section *s);
@@ -228,6 +230,17 @@ dropout_layer parse_dropout(list *options, size_params params)
     return layer;
 }
 
+layer parse_normalization(list *options, size_params params)
+{
+    float alpha = option_find_float(options, "alpha", .0001);
+    float beta =  option_find_float(options, "beta" , .75);
+    float kappa = option_find_float(options, "kappa", 1);
+    int size = option_find_int(options, "size", 5);
+    layer l = make_normalization_layer(params.batch, params.w, params.h, params.c, size, alpha, beta, kappa);
+    option_unused(options);
+    return l;
+}
+
 route_layer parse_route(list *options, size_params params, network net)
 {
     char *l = option_find(options, "layers");   
@@ -328,6 +341,8 @@ network parse_network_cfg(char *filename)
             l = parse_detection(options, params);
         }else if(is_softmax(s)){
             l = parse_softmax(options, params);
+        }else if(is_normalization(s)){
+            l = parse_normalization(options, params);
         }else if(is_maxpool(s)){
             l = parse_maxpool(options, params);
         }else if(is_route(s)){
@@ -401,6 +416,12 @@ int is_maxpool(section *s)
 int is_dropout(section *s)
 {
     return (strcmp(s->type, "[dropout]")==0);
+}
+
+int is_normalization(section *s)
+{
+    return (strcmp(s->type, "[lrn]")==0
+            || strcmp(s->type, "[normalization]")==0);
 }
 
 int is_softmax(section *s)

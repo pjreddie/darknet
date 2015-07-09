@@ -130,6 +130,7 @@ void run_nightmare(int argc, char **argv)
     float rate = find_float_arg(argc, argv, "-rate", .04);
     float thresh = find_float_arg(argc, argv, "-thresh", 1.);
     float rotate = find_float_arg(argc, argv, "-rotate", 0);
+    char *prefix = find_char_arg(argc, argv, "-prefix", 0);
 
     network net = parse_network_cfg(cfg);
     load_weights(&net, weights);
@@ -168,7 +169,11 @@ void run_nightmare(int argc, char **argv)
             im = g;
         }
         char buff[256];
-        sprintf(buff, "%s_%s_%d_%06d",imbase, cfgbase, max_layer, e);
+        if (prefix){
+            sprintf(buff, "%s/%s_%s_%d_%06d",prefix, imbase, cfgbase, max_layer, e);
+        }else{
+            sprintf(buff, "%s_%s_%d_%06d",imbase, cfgbase, max_layer, e);
+        }
         printf("%d %s\n", e, buff);
         save_image(im, buff);
         //show_image(im, buff);
