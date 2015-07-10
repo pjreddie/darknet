@@ -102,7 +102,6 @@ deconvolutional_layer parse_deconvolutional(list *options, size_params params)
     #ifdef GPU
     if(weights || biases) push_deconvolutional_layer(layer);
     #endif
-    option_unused(options);
     return layer;
 }
 
@@ -131,7 +130,6 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     #ifdef GPU
     if(weights || biases) push_convolutional_layer(layer);
     #endif
-    option_unused(options);
     return layer;
 }
 
@@ -150,7 +148,6 @@ connected_layer parse_connected(list *options, size_params params)
     #ifdef GPU
     if(weights || biases) push_connected_layer(layer);
     #endif
-    option_unused(options);
     return layer;
 }
 
@@ -158,7 +155,6 @@ softmax_layer parse_softmax(list *options, size_params params)
 {
     int groups = option_find_int(options, "groups",1);
     softmax_layer layer = make_softmax_layer(params.batch, params.inputs, groups);
-    option_unused(options);
     return layer;
 }
 
@@ -171,7 +167,6 @@ detection_layer parse_detection(list *options, size_params params)
     int objectness = option_find_int(options, "objectness", 0);
     int background = option_find_int(options, "background", 0);
     detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, joint, rescore, background, objectness);
-    option_unused(options);
     return layer;
 }
 
@@ -180,7 +175,6 @@ cost_layer parse_cost(list *options, size_params params)
     char *type_s = option_find_str(options, "type", "sse");
     COST_TYPE type = get_cost_type(type_s);
     cost_layer layer = make_cost_layer(params.batch, params.inputs, type);
-    option_unused(options);
     return layer;
 }
 
@@ -201,7 +195,6 @@ crop_layer parse_crop(list *options, size_params params)
     if(!(h && w && c)) error("Layer before crop layer must output image.");
 
     crop_layer l = make_crop_layer(batch,h,w,c,crop_height,crop_width,flip, angle, saturation, exposure);
-    option_unused(options);
     return l;
 }
 
@@ -218,7 +211,6 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     if(!(h && w && c)) error("Layer before maxpool layer must output image.");
 
     maxpool_layer layer = make_maxpool_layer(batch,h,w,c,size,stride);
-    option_unused(options);
     return layer;
 }
 
@@ -226,7 +218,6 @@ dropout_layer parse_dropout(list *options, size_params params)
 {
     float probability = option_find_float(options, "probability", .5);
     dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability);
-    option_unused(options);
     return layer;
 }
 
@@ -237,7 +228,6 @@ layer parse_normalization(list *options, size_params params)
     float kappa = option_find_float(options, "kappa", 1);
     int size = option_find_int(options, "size", 5);
     layer l = make_normalization_layer(params.batch, params.w, params.h, params.c, size, alpha, beta, kappa);
-    option_unused(options);
     return l;
 }
 
@@ -278,7 +268,6 @@ route_layer parse_route(list *options, size_params params, network net)
         }
     }
 
-    option_unused(options);
     return layer;
 }
 
@@ -298,7 +287,6 @@ void parse_net_options(list *options, network *net)
     net->c = option_find_int_quiet(options, "channels",0);
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
-    option_unused(options);
 }
 
 network parse_network_cfg(char *filename)
@@ -359,6 +347,7 @@ network parse_network_cfg(char *filename)
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
         l.dontload = option_find_int_quiet(options, "dontload", 0);
+        option_unused(options);
         net.layers[count] = l;
         free_section(s);
         n = n->next;
