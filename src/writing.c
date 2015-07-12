@@ -30,19 +30,8 @@ void train_writing(char *cfgfile, char *weightfile)
         #else
         float *out = get_network_output(net);
         #endif
-//        image pred = float_to_image(32, 32, 1, out);
-//        print_image(pred);
-
-/*
-        image im = float_to_image(256, 256, 3, train.X.vals[0]);
-        image lab = float_to_image(64, 64, 1, train.y.vals[0]);
-        image pred = float_to_image(64, 64, 1, out);
-        show_image(im, "image");
-        show_image(lab, "label");
-        print_image(lab);
-        show_image(pred, "pred");
-        cvWaitKey(0);
-        */
+        // image pred = float_to_image(32, 32, 1, out);
+        // print_image(pred);
 
         net.seen += imgs;
         if(avg_loss == -1) avg_loss = loss;
@@ -87,7 +76,9 @@ void test_writing(char *cfgfile, char *weightfile, char *outfile)
         save_image(pred, outfile);
     } else {
         show_image(pred, "prediction");
+        #ifdef OPENCV
         cvWaitKey(0);
+        #endif
     }
 
 	free_image(im);
