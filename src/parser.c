@@ -7,6 +7,7 @@
 #include "crop_layer.h"
 #include "cost_layer.h"
 #include "convolutional_layer.h"
+#include "normalization_layer.h"
 #include "deconvolutional_layer.h"
 #include "connected_layer.h"
 #include "maxpool_layer.h"
@@ -30,6 +31,7 @@ int is_connected(section *s);
 int is_maxpool(section *s);
 int is_dropout(section *s);
 int is_softmax(section *s);
+int is_normalization(section *s);
 int is_crop(section *s);
 int is_cost(section *s);
 int is_detection(section *s);
@@ -100,7 +102,6 @@ deconvolutional_layer parse_deconvolutional(list *options, size_params params)
     #ifdef GPU
     if(weights || biases) push_deconvolutional_layer(layer);
     #endif
-    option_unused(options);
     return layer;
 }
 
@@ -129,7 +130,6 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     #ifdef GPU
     if(weights || biases) push_convolutional_layer(layer);
     #endif
-    option_unused(options);
     return layer;
 }
 
@@ -148,7 +148,6 @@ connected_layer parse_connected(list *options, size_params params)
     #ifdef GPU
     if(weights || biases) push_connected_layer(layer);
     #endif
-    option_unused(options);
     return layer;
 }
 
@@ -156,7 +155,6 @@ softmax_layer parse_softmax(list *options, size_params params)
 {
     int groups = option_find_int(options, "groups",1);
     softmax_layer layer = make_softmax_layer(params.batch, params.inputs, groups);
-    option_unused(options);
     return layer;
 }
 
@@ -164,11 +162,11 @@ detection_layer parse_detection(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
-    int rescore = option_find_int(options, "rescore", 1);
-    int nuisance = option_find_int(options, "nuisance", 0);
-    int background = option_find_int(options, "background", 1);
-    detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, rescore, background, nuisance);
-    option_unused(options);
+    int rescore = option_find_int(options, "rescore", 0);
+    int joint = option_find_int(options, "joint", 0);
+    int objectness = option_find_int(options, "objectness", 0);
+    int background = option_find_int(options, "background", 0);
+    detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, joint, rescore, background, objectness);
     return layer;
 }
 
@@ -177,7 +175,6 @@ cost_layer parse_cost(list *options, size_params params)
     char *type_s = option_find_str(options, "type", "sse");
     COST_TYPE type = get_cost_type(type_s);
     cost_layer layer = make_cost_layer(params.batch, params.inputs, type);
-    option_unused(options);
     return layer;
 }
 
@@ -198,7 +195,6 @@ crop_layer parse_crop(list *options, size_params params)
     if(!(h && w && c)) error("Layer before crop layer must output image.");
 
     crop_layer l = make_crop_layer(batch,h,w,c,crop_height,crop_width,flip, angle, saturation, exposure);
-    option_unused(options);
     return l;
 }
 
@@ -215,7 +211,6 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     if(!(h && w && c)) error("Layer before maxpool layer must output image.");
 
     maxpool_layer layer = make_maxpool_layer(batch,h,w,c,size,stride);
-    option_unused(options);
     return layer;
 }
 
@@ -223,8 +218,17 @@ dropout_layer parse_dropout(list *options, size_params params)
 {
     float probability = option_find_float(options, "probability", .5);
     dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability);
-    option_unused(options);
     return layer;
+}
+
+layer parse_normalization(list *options, size_params params)
+{
+    float alpha = option_find_float(options, "alpha", .0001);
+    float beta =  option_find_float(options, "beta" , .75);
+    float kappa = option_find_float(options, "kappa", 1);
+    int size = option_find_int(options, "size", 5);
+    layer l = make_normalization_layer(params.batch, params.w, params.h, params.c, size, alpha, beta, kappa);
+    return l;
 }
 
 route_layer parse_route(list *options, size_params params, network net)
@@ -264,7 +268,6 @@ route_layer parse_route(list *options, size_params params, network net)
         }
     }
 
-    option_unused(options);
     return layer;
 }
 
@@ -284,7 +287,6 @@ void parse_net_options(list *options, network *net)
     net->c = option_find_int_quiet(options, "channels",0);
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
-    option_unused(options);
 }
 
 network parse_network_cfg(char *filename)
@@ -327,6 +329,8 @@ network parse_network_cfg(char *filename)
             l = parse_detection(options, params);
         }else if(is_softmax(s)){
             l = parse_softmax(options, params);
+        }else if(is_normalization(s)){
+            l = parse_normalization(options, params);
         }else if(is_maxpool(s)){
             l = parse_maxpool(options, params);
         }else if(is_route(s)){
@@ -342,6 +346,8 @@ network parse_network_cfg(char *filename)
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
+        l.dontload = option_find_int_quiet(options, "dontload", 0);
+        option_unused(options);
         net.layers[count] = l;
         free_section(s);
         n = n->next;
@@ -399,6 +405,12 @@ int is_maxpool(section *s)
 int is_dropout(section *s)
 {
     return (strcmp(s->type, "[dropout]")==0);
+}
+
+int is_normalization(section *s)
+{
+    return (strcmp(s->type, "[lrn]")==0
+            || strcmp(s->type, "[normalization]")==0);
 }
 
 int is_softmax(section *s)
@@ -513,7 +525,8 @@ void save_weights(network net, char *filename)
 
 void load_weights_upto(network *net, char *filename, int cutoff)
 {
-    fprintf(stderr, "Loading weights from %s\n", filename);
+    fprintf(stderr, "Loading weights from %s...", filename);
+    fflush(stdout);
     FILE *fp = fopen(filename, "r");
     if(!fp) file_error(filename);
 
@@ -521,11 +534,11 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fread(&net->momentum, sizeof(float), 1, fp);
     fread(&net->decay, sizeof(float), 1, fp);
     fread(&net->seen, sizeof(int), 1, fp);
-    fprintf(stderr, "%f %f %f %d\n", net->learning_rate, net->momentum, net->decay, net->seen);
 
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){
         layer l = net->layers[i];
+        if (l.dontload) continue;
         if(l.type == CONVOLUTIONAL){
             int num = l.n*l.c*l.size*l.size;
             fread(l.biases, sizeof(float), l.n, fp);
@@ -556,6 +569,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
 #endif
         }
     }
+    fprintf(stderr, "Done!\n");
     fclose(fp);
 }
 

@@ -13,7 +13,8 @@ typedef enum {
     DROPOUT,
     CROP,
     ROUTE,
-    COST
+    COST,
+    NORMALIZATION
 } LAYER_TYPE;
 
 typedef enum{
@@ -44,8 +45,16 @@ typedef struct {
     int coords;
     int background;
     int rescore;
-    int nuisance;
+    int objectness;
     int does_cost;
+    int joint;
+
+    float alpha;
+    float beta;
+    float kappa;
+
+    int dontload;
+
     float probability;
     float scale;
     int *indexes;
@@ -65,6 +74,8 @@ typedef struct {
     int   * input_sizes;
     float * delta;
     float * output;
+    float * squared;
+    float * norms;
 
     #ifdef GPU
     int *indexes_gpu;
@@ -82,6 +93,8 @@ typedef struct {
     float * output_gpu;
     float * delta_gpu;
     float * rand_gpu;
+    float * squared_gpu;
+    float * norms_gpu;
     #endif
 } layer;
 

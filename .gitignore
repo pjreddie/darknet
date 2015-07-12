@@ -3,7 +3,6 @@
 *.csv
 *.out
 *.png
-*.sh
 mnist/
 data/
 caffe/

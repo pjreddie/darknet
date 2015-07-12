@@ -2,8 +2,16 @@
 #define IMAGE_H
 
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <float.h>
+#include <string.h>
+#include <math.h>
+
+#ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
+#endif
 
 typedef struct {
     int h;
@@ -15,6 +23,7 @@ typedef struct {
 float get_color(int c, int x, int max);
 void flip_image(image a);
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
+void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b);
 image image_distance(image a, image b);
 void scale_image(image m, float s);
 image crop_image(image im, int dx, int dy, int w, int h);
@@ -27,6 +36,9 @@ void saturate_image(image im, float sat);
 void exposure_image(image im, float sat);
 void saturate_exposure_image(image im, float sat, float exposure);
 void hsv_to_rgb(image im);
+void rgbgr_image(image im);
+void constrain_image(image im);
+image grayscale_image(image im);
 
 image collapse_image_layers(image source, int border);
 image collapse_images_horz(image *ims, int n);
@@ -44,10 +56,8 @@ image make_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);
 image float_to_image(int w, int h, int c, float *data);
 image copy_image(image p);
-image load_image(char *filename, int w, int h);
+image load_image(char *filename, int w, int h, int c);
 image load_image_color(char *filename, int w, int h);
-
-image ipl_to_image(IplImage* src);
 
 float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);

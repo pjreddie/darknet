@@ -8,6 +8,71 @@
 
 #include "utils.h"
 
+void del_arg(int argc, char **argv, int index)
+{
+    int i;
+    for(i = index; i < argc-1; ++i) argv[i] = argv[i+1];
+    argv[i] = 0;
+}
+
+int find_arg(int argc, char* argv[], char *arg)
+{
+    int i;
+    for(i = 0; i < argc; ++i) {
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)) {
+            del_arg(argc, argv, i);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int find_int_arg(int argc, char **argv, char *arg, int def)
+{
+    int i;
+    for(i = 0; i < argc-1; ++i){
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)){
+            def = atoi(argv[i+1]);
+            del_arg(argc, argv, i);
+            del_arg(argc, argv, i);
+            break;
+        }
+    }
+    return def;
+}
+
+float find_float_arg(int argc, char **argv, char *arg, float def)
+{
+    int i;
+    for(i = 0; i < argc-1; ++i){
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)){
+            def = atof(argv[i+1]);
+            del_arg(argc, argv, i);
+            del_arg(argc, argv, i);
+            break;
+        }
+    }
+    return def;
+}
+
+char *find_char_arg(int argc, char **argv, char *arg, char *def)
+{
+    int i;
+    for(i = 0; i < argc-1; ++i){
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)){
+            def = argv[i+1];
+            del_arg(argc, argv, i);
+            del_arg(argc, argv, i);
+            break;
+        }
+    }
+    return def;
+}
+
 
 char *basecfg(char *cfgfile)
 {
@@ -18,8 +83,6 @@ char *basecfg(char *cfgfile)
         c = next+1;
     }
     c = copy_string(c);
-    next = strchr(c, '_');
-    if (next) *next = 0;
     next = strchr(c, '.');
     if (next) *next = 0;
     return c;
@@ -73,11 +136,11 @@ float sec(clock_t clocks)
 void top_k(float *a, int n, int k, int *index)
 {
     int i,j;
-    for(j = 0; j < k; ++j) index[j] = 0;
+    for(j = 0; j < k; ++j) index[j] = -1;
     for(i = 0; i < n; ++i){
         int curr = i;
         for(j = 0; j < k; ++j){
-            if(a[curr] > a[index[j]]){
+            if((index[j] < 0) || a[curr] > a[index[j]]){
                 int swap = curr;
                 curr = index[j];
                 index[j] = swap;

@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include <math.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
@@ -51,6 +56,14 @@ void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b
 
         a.data[x1 + i*a.w + 2*a.w*a.h] = r;
         a.data[x2 + i*a.w + 2*a.w*a.h] = r;
+    }
+}
+
+void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b)
+{
+    int i;
+    for(i = 0; i < w; ++i){
+        draw_box(a, x1+i, y1+i, x2-i, y2-i, r, g, b);
     }
 }
 
@@ -159,10 +172,23 @@ image copy_image(image p)
     return copy;
 }
 
-void show_image(image p, char *name)
+void rgbgr_image(image im)
+{
+    int i;
+    for(i = 0; i < im.w*im.h; ++i){
+        float swap = im.data[i];
+        im.data[i] = im.data[i+im.w*im.h*2];
+        im.data[i+im.w*im.h*2] = swap;
+    }
+}
+
+#ifdef OPENCV
+void show_image_cv(image p, char *name)
 {
     int x,y,k;
     image copy = copy_image(p);
+    constrain_image(copy);
+    rgbgr_image(copy);
     //normalize_image(copy);
 
     char buff[256];
@@ -182,7 +208,8 @@ void show_image(image p, char *name)
         }
     }
     free_image(copy);
-    if(disp->height < 448 || disp->width < 448 || disp->height > 1000){
+    if(0){
+    //if(disp->height < 448 || disp->width < 448 || disp->height > 1000){
         int w = 448;
         int h = w*p.h/p.w;
         if(h > 1000){
@@ -197,8 +224,36 @@ void show_image(image p, char *name)
     cvShowImage(buff, disp);
     cvReleaseImage(&disp);
 }
+#endif
 
-void save_image(image p, char *name)
+void show_image(image p, char *name)
+{
+    #ifdef OPENCV
+    show_image_cv(p, name);
+    #else
+    fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
+    save_image(p, name);
+    #endif
+}
+
+void save_image(image im, char *name)
+{
+    char buff[256];
+    //sprintf(buff, "%s (%d)", name, windows);
+    sprintf(buff, "%s.png", name);
+    unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
+    int i,k;
+    for(k = 0; k < im.c; ++k){
+        for(i = 0; i < im.w*im.h; ++i){
+            data[i*im.c+k] = (unsigned char) (255*im.data[i + k*im.w*im.h]);
+        }
+    }
+    int success = stbi_write_png(buff, im.w, im.h, im.c, data, im.w*im.c);
+    if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
+}
+
+/*
+void save_image_cv(image p, char *name)
 {
     int x,y,k;
     image copy = copy_image(p);
@@ -221,6 +276,7 @@ void save_image(image p, char *name)
     cvSaveImage(buff, disp,0);
     cvReleaseImage(&disp);
 }
+*/
 
 void show_image_layers(image p, char *name)
 {
@@ -296,26 +352,6 @@ void scale_image(image m, float s)
     for(i = 0; i < m.h*m.w*m.c; ++i) m.data[i] *= s;
 }
 
-image ipl_to_image(IplImage* src)
-{
-    unsigned char *data = (unsigned char *)src->imageData;
-    int h = src->height;
-    int w = src->width;
-    int c = src->nChannels;
-    int step = src->widthStep;
-    image out = make_image(w, h, c);
-    int i, j, k, count=0;;
-
-    for(k= 0; k < c; ++k){
-        for(i = 0; i < h; ++i){
-            for(j = 0; j < w; ++j){
-                out.data[count++] = data[i*step + j*c + k]/255.;
-            }
-        }
-    }
-    return out;
-}
-
 image crop_image(image im, int dx, int dy, int w, int h)
 {
     image cropped = make_image(w, h, im.c);
@@ -355,9 +391,9 @@ void rgb_to_hsv(image im)
     float h, s, v;
     for(j = 0; j < im.h; ++j){
         for(i = 0; i < im.w; ++i){
-            r = get_pixel(im, i , j, 2);
+            r = get_pixel(im, i , j, 0);
             g = get_pixel(im, i , j, 1);
-            b = get_pixel(im, i , j, 0);
+            b = get_pixel(im, i , j, 2);
             float max = three_way_max(r,g,b);
             float min = three_way_min(r,g,b);
             float delta = max - min;
@@ -417,9 +453,9 @@ void hsv_to_rgb(image im)
                     r = v; g = p; b = q;
                 }
             }
-            set_pixel(im, i, j, 2, r);
+            set_pixel(im, i, j, 0, r);
             set_pixel(im, i, j, 1, g);
-            set_pixel(im, i, j, 0, b);
+            set_pixel(im, i, j, 2, b);
         }
     }
 }
@@ -429,7 +465,7 @@ image grayscale_image(image im)
     assert(im.c == 3);
     int i, j, k;
     image gray = make_image(im.w, im.h, im.c);
-    float scale[] = {0.114, 0.587, 0.299};
+    float scale[] = {0.587, 0.299, 0.114};
     for(k = 0; k < im.c; ++k){
         for(j = 0; j < im.h; ++j){
             for(i = 0; i < im.w; ++i){
@@ -497,21 +533,21 @@ void saturate_exposure_image(image im, float sat, float exposure)
 }
 
 /*
-image saturate_image(image im, float sat)
-{
-    image gray = grayscale_image(im);
-    image blend = blend_image(im, gray, sat);
-    free_image(gray);
-    constrain_image(blend);
-    return blend;
-}
+   image saturate_image(image im, float sat)
+   {
+   image gray = grayscale_image(im);
+   image blend = blend_image(im, gray, sat);
+   free_image(gray);
+   constrain_image(blend);
+   return blend;
+   }
 
-image brightness_image(image im, float b)
-{
-    image bright = make_image(im.w, im.h, im.c);
-    return bright;
-}
-*/
+   image brightness_image(image im, float b)
+   {
+   image bright = make_image(im.w, im.h, im.c);
+   return bright;
+   }
+ */
 
 float billinear_interpolate(image im, float x, float y, int c)
 {
@@ -550,85 +586,121 @@ image resize_image(image im, int w, int h)
 
 void test_resize(char *filename)
 {
-    image im = load_image(filename, 0,0);
-    image small = resize_image(im, 65, 63);
-    image big = resize_image(im, 513, 512);
-    image crop = crop_image(im, 50, 10, 100, 100);
-    image crop2 = crop_image(im, -30, -50, 291, 400);
-    image rot = rotate_image(big, .02);
-    image rot2 = rotate_image(big, 3.14159265/2.);
-    image test = rotate_image(im, .6);
+    image im = load_image(filename, 0,0, 3);
     image gray = grayscale_image(im);
 
     image sat2 = copy_image(im);
     saturate_image(sat2, 2);
-    exposure_image(sat2, 2);
 
     image sat5 = copy_image(im);
-    saturate_image(sat5, 2);
-    exposure_image(sat5, .5);
+    saturate_image(sat5, .5);
 
     image exp2 = copy_image(im);
-    saturate_image(exp2, .5);
     exposure_image(exp2, 2);
 
     image exp5 = copy_image(im);
-    saturate_image(exp5, .5);
     exposure_image(exp5, .5);
 
-    show_image(im, "original");
-    show_image(gray, "gray");
-    show_image(sat2, "sat2");
-    show_image(sat5, "sat5");
-    show_image(exp2, "exp2");
-    show_image(exp5, "exp5");
-    /*
-       show_image(small, "smaller");
-       show_image(big, "bigger");
-       show_image(crop, "crop");
-       show_image(crop2, "crop2");
-       show_image(rot, "rot");
-       show_image(rot2, "rot2");
-       show_image(test, "test");
-     */
+    show_image(im, "Original");
+    show_image(gray, "Gray");
+    show_image(sat2, "Saturation-2");
+    show_image(sat5, "Saturation-.5");
+    show_image(exp2, "Exposure-2");
+    show_image(exp5, "Exposure-.5");
+    #ifdef OPENCV
     cvWaitKey(0);
+    #endif
+}
+
+#ifdef OPENCV
+image ipl_to_image(IplImage* src)
+{
+    unsigned char *data = (unsigned char *)src->imageData;
+    int h = src->height;
+    int w = src->width;
+    int c = src->nChannels;
+    int step = src->widthStep;
+    image out = make_image(w, h, c);
+    int i, j, k, count=0;;
+
+    for(k= 0; k < c; ++k){
+        for(i = 0; i < h; ++i){
+            for(j = 0; j < w; ++j){
+                out.data[count++] = data[i*step + j*c + k]/255.;
+            }
+        }
+    }
+    return out;
+}
+
+image load_image_cv(char *filename, int channels)
+{
+    IplImage* src = 0;
+    int flag = -1;
+    if (channels == 0) flag = -1;
+    else if (channels == 1) flag = 0;
+    else if (channels == 3) flag = 1;
+    else {
+        fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
+    }
+    
+    if( (src = cvLoadImage(filename, flag)) == 0 )
+    {
+        printf("Cannot load file image %s\n", filename);
+        exit(0);
+    }
+    image out = ipl_to_image(src);
+    cvReleaseImage(&src);
+    rgbgr_image(out);
+    return out;
+}
+
+#endif
+
+
+image load_image_stb(char *filename, int channels)
+{
+    int w, h, c;
+    unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
+    if (!data) {
+        fprintf(stderr, "Cannot load file image %s\nSTB Reason: %s\n", filename, stbi_failure_reason());
+        exit(0);
+    }
+    if(channels) c = channels;
+    int i,j,k;
+    image im = make_image(w, h, c);
+    for(k = 0; k < c; ++k){
+        for(j = 0; j < h; ++j){
+            for(i = 0; i < w; ++i){
+                int dst_index = i + w*j + w*h*k;
+                int src_index = k + c*i + c*w*j;
+                im.data[dst_index] = (float)data[src_index]/255.;
+            }
+        }
+    }
+    free(data);
+    return im;
+}
+
+image load_image(char *filename, int w, int h, int c)
+{
+    #ifdef OPENCV
+    image out = load_image_cv(filename, c);
+    #else
+    image out = load_image_stb(filename, c);
+    #endif
+
+    if((h && w) && (h != out.h || w != out.w)){
+        image resized = resize_image(out, w, h);
+        free_image(out);
+        out = resized;
+    }
+    return out;
 }
 
 image load_image_color(char *filename, int w, int h)
 {
-    IplImage* src = 0;
-    if( (src = cvLoadImage(filename, 1)) == 0 )
-    {
-        printf("Cannot load file image %s\n", filename);
-        exit(0);
-    }
-    image out = ipl_to_image(src);
-    cvReleaseImage(&src);
-    if((h && w) && (h != out.h || w != out.w)){
-        //printf("resize\n");
-        image resized = resize_image(out, w, h);
-        free_image(out);
-        out = resized;
-    }
-    return out;
-}
-
-image load_image(char *filename, int w, int h)
-{
-    IplImage* src = 0;
-    if( (src = cvLoadImage(filename,-1)) == 0 )
-    {
-        printf("Cannot load file image %s\n", filename);
-        exit(0);
-    }
-    image out = ipl_to_image(src);
-    if((h && w) && (h != out.h || w != out.w)){
-        image resized = resize_image(out, w, h);
-        free_image(out);
-        out = resized;
-    }
-    cvReleaseImage(&src);
-    return out;
+    return load_image(filename, w, h, 3);
 }
 
 image get_image_layer(image m, int l)

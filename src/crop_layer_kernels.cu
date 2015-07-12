@@ -114,9 +114,9 @@ __global__ void levels_image_kernel(float *image, float *rand, int batch, int w,
 
     size_t offset = id * h * w * 3;
     image += offset;
-    float r = image[x + w*(y + h*2)];
+    float r = image[x + w*(y + h*0)];
     float g = image[x + w*(y + h*1)];
-    float b = image[x + w*(y + h*0)];
+    float b = image[x + w*(y + h*2)];
     float3 rgb = make_float3(r,g,b);
     if(train){
         float3 hsv = rgb_to_hsv_kernel(rgb);
@@ -124,9 +124,9 @@ __global__ void levels_image_kernel(float *image, float *rand, int batch, int w,
         hsv.z *= exposure;
         rgb = hsv_to_rgb_kernel(hsv);
     }
-    image[x + w*(y + h*2)] = rgb.x*scale + translate;
+    image[x + w*(y + h*0)] = rgb.x*scale + translate;
     image[x + w*(y + h*1)] = rgb.y*scale + translate;
-    image[x + w*(y + h*0)] = rgb.z*scale + translate;
+    image[x + w*(y + h*2)] = rgb.z*scale + translate;
 }
 
 __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, int c, int h, int w, int crop_height, int crop_width, int train, int flip, float angle, float *output)

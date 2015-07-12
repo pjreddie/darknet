@@ -4,6 +4,7 @@
 
 #include "matrix.h"
 #include "list.h"
+#include "image.h"
 
 extern unsigned int data_seed;
 
@@ -33,6 +34,7 @@ data load_data_captcha(char **paths, int n, int m, int k, int w, int h);
 data load_data_captcha_encode(char **paths, int n, int m, int w, int h);
 data load_data(char **paths, int n, int m, char **labels, int k, int w, int h);
 pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int w, int h, data *d);
+pthread_t load_image_thread(char *path, image *im, image *resized, int w, int h);
 
 pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int w, int h, int nh, int nw, int background, data *d);
 data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int w, int h, int num_boxes, int background);
