@@ -15,6 +15,7 @@ extern "C" {
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "maxpool_layer.h"
+#include "avgpool_layer.h"
 #include "normalization_layer.h"
 #include "cost_layer.h"
 #include "softmax_layer.h"
@@ -49,6 +50,8 @@ void forward_network_gpu(network net, network_state state)
             forward_normalization_layer_gpu(l, state);
         } else if(l.type == MAXPOOL){
             forward_maxpool_layer_gpu(l, state);
+        } else if(l.type == AVGPOOL){
+            forward_avgpool_layer_gpu(l, state);
         } else if(l.type == DROPOUT){
             forward_dropout_layer_gpu(l, state);
         } else if(l.type == ROUTE){
@@ -79,6 +82,8 @@ void backward_network_gpu(network net, network_state state)
             backward_deconvolutional_layer_gpu(l, state);
         } else if(l.type == MAXPOOL){
             if(i != 0) backward_maxpool_layer_gpu(l, state);
+        } else if(l.type == AVGPOOL){
+            if(i != 0) backward_avgpool_layer_gpu(l, state);
         } else if(l.type == DROPOUT){
             backward_dropout_layer_gpu(l, state);
         } else if(l.type == DETECTION){

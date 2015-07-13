@@ -14,7 +14,8 @@ typedef enum {
     CROP,
     ROUTE,
     COST,
-    NORMALIZATION
+    NORMALIZATION,
+    AVGPOOL
 } LAYER_TYPE;
 
 typedef enum{

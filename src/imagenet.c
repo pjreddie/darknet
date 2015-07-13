@@ -25,7 +25,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
     pthread_t load_thread;
     data train;
     data buffer;
-    load_thread = load_data_thread(paths, imgs, plist->size, labels, 1000, 256, 256, &buffer);
+    load_thread = load_data_thread(paths, imgs, plist->size, labels, 1000, net.w, net.h, &buffer);
     while(1){
         ++i;
         time=clock();
@@ -38,7 +38,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
         cvWaitKey(0);
         */
 
-        load_thread = load_data_thread(paths, imgs, plist->size, labels, 1000, 256, 256, &buffer);
+        load_thread = load_data_thread(paths, imgs, plist->size, labels, 1000, net.w, net.h, &buffer);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         float loss = train_network(net, train);
@@ -47,7 +47,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
         free_data(train);
-        if((i % 30000) == 0) net.learning_rate *= .1;
+        if((i % 20000) == 0) net.learning_rate *= .1;
         if(i%1000==0){
             char buff[256];
             sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);

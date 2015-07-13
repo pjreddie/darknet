@@ -14,6 +14,7 @@
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "detection_layer.h"
+#include "avgpool_layer.h"
 #include "route_layer.h"
 #include "list.h"
 #include "option_list.h"
@@ -29,6 +30,7 @@ int is_convolutional(section *s);
 int is_deconvolutional(section *s);
 int is_connected(section *s);
 int is_maxpool(section *s);
+int is_avgpool(section *s);
 int is_dropout(section *s);
 int is_softmax(section *s);
 int is_normalization(section *s);
@@ -214,6 +216,19 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     return layer;
 }
 
+avgpool_layer parse_avgpool(list *options, size_params params)
+{
+    int batch,w,h,c;
+    w = params.w;
+    h = params.h;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before avgpool layer must output image.");
+
+    avgpool_layer layer = make_avgpool_layer(batch,w,h,c);
+    return layer;
+}
+
 dropout_layer parse_dropout(list *options, size_params params)
 {
     float probability = option_find_float(options, "probability", .5);
@@ -333,6 +348,8 @@ network parse_network_cfg(char *filename)
             l = parse_normalization(options, params);
         }else if(is_maxpool(s)){
             l = parse_maxpool(options, params);
+        }else if(is_avgpool(s)){
+            l = parse_avgpool(options, params);
         }else if(is_route(s)){
             l = parse_route(options, params, net);
         }else if(is_dropout(s)){
@@ -401,6 +418,11 @@ int is_maxpool(section *s)
 {
     return (strcmp(s->type, "[max]")==0
             || strcmp(s->type, "[maxpool]")==0);
+}
+int is_avgpool(section *s)
+{
+    return (strcmp(s->type, "[avg]")==0
+            || strcmp(s->type, "[avgpool]")==0);
 }
 int is_dropout(section *s)
 {

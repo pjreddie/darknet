@@ -12,6 +12,7 @@
 #include "detection_layer.h"
 #include "normalization_layer.h"
 #include "maxpool_layer.h"
+#include "avgpool_layer.h"
 #include "cost_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
@@ -28,6 +29,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "connected";
         case MAXPOOL:
             return "maxpool";
+        case AVGPOOL:
+            return "avgpool";
         case SOFTMAX:
             return "softmax";
         case DETECTION:
@@ -83,6 +86,8 @@ void forward_network(network net, network_state state)
             forward_softmax_layer(l, state);
         } else if(l.type == MAXPOOL){
             forward_maxpool_layer(l, state);
+        } else if(l.type == AVGPOOL){
+            forward_avgpool_layer(l, state);
         } else if(l.type == DROPOUT){
             forward_dropout_layer(l, state);
         } else if(l.type == ROUTE){
@@ -156,6 +161,8 @@ void backward_network(network net, network_state state)
             backward_normalization_layer(l, state);
         } else if(l.type == MAXPOOL){
             if(i != 0) backward_maxpool_layer(l, state);
+        } else if(l.type == AVGPOOL){
+            backward_avgpool_layer(l, state);
         } else if(l.type == DROPOUT){
             backward_dropout_layer(l, state);
         } else if(l.type == DETECTION){
@@ -273,6 +280,9 @@ int resize_network(network *net, int w, int h)
             resize_convolutional_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
             resize_maxpool_layer(&l, w, h);
+        }else if(l.type == AVGPOOL){
+            resize_avgpool_layer(&l, w, h);
+            break;
         }else if(l.type == NORMALIZATION){
             resize_normalization_layer(&l, w, h);
         }else{
