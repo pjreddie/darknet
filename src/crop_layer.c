@@ -48,6 +48,10 @@ void forward_crop_layer(const crop_layer l, network_state state)
     int dw = rand()%(l.w - l.crop_width + 1);
     float scale = 2;
     float trans = -1;
+    if(l.noadjust){
+        scale = 1;
+        trans = 0;
+    }
     if(!state.train){
         flip = 0;
         dh = (l.h - l.crop_height)/2;

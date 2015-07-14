@@ -196,7 +196,10 @@ crop_layer parse_crop(list *options, size_params params)
     batch=params.batch;
     if(!(h && w && c)) error("Layer before crop layer must output image.");
 
+    int noadjust = option_find_int_quiet(options, "noadjust",0);
+
     crop_layer l = make_crop_layer(batch,h,w,c,crop_height,crop_width,flip, angle, saturation, exposure);
+    l.noadjust = noadjust;
     return l;
 }
 

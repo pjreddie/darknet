@@ -181,6 +181,10 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
 
     float scale = 2;
     float translate = -1;
+    if(layer.noadjust){
+        scale = 1;
+        translate = 0;
+    }
 
     int size = layer.batch * layer.w * layer.h;
 

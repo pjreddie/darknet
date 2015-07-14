@@ -49,6 +49,7 @@ typedef struct {
     int objectness;
     int does_cost;
     int joint;
+    int noadjust;
 
     float alpha;
     float beta;
