@@ -4,6 +4,8 @@
 #include <time.h>
 #include "list.h"
 
+#define SECRET_NUM -1234
+
 char *basecfg(char *cfgfile);
 int alphanum_to_int(char c);
 char int_to_alphanum(int i);

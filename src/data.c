@@ -332,7 +332,7 @@ void fill_truth(char *path, char **labels, int k, float *truth)
             ++count;
         }
     }
-    if(count != 1) printf("%d, %s\n", count, path);
+    if(count != 1) printf("Too many or too few labels: %d, %s\n", count, path);
 }
 
 matrix load_labels_paths(char **paths, int n, char **labels, int k)
