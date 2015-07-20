@@ -51,6 +51,8 @@ void draw_detection(image im, float *box, int side, int objectness, char *label)
 
 void train_detection(char *cfgfile, char *weightfile)
 {
+    char *train_images = "/home/pjreddie/data/voc/test/train.txt";
+    char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     data_seed = time(0);
     char *base = basecfg(cfgfile);
@@ -71,7 +73,7 @@ void train_detection(char *cfgfile, char *weightfile)
     int side = sqrt(get_detection_layer_locations(layer));
 
     char **paths;
-    list *plist = get_paths("/home/pjreddie/data/voc/test/train.txt");
+    list *plist = get_paths(train_images);
     int N = plist->size;
 
     paths = (char **)list_to_array(plist);
@@ -96,26 +98,26 @@ void train_detection(char *cfgfile, char *weightfile)
             fprintf(stderr, "Starting second stage...\n");
             net.learning_rate *= 10;
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_first_stage.weights", base);
+            sprintf(buff, "%s/%s_first_stage.weights", backup_directory, base);
             save_weights(net, buff);
         }
         if((i-1)*imgs <= 80*N && i*imgs > N*80){
             fprintf(stderr, "Second stage done.\n");
             net.learning_rate *= .1;
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_second_stage.weights", base);
+            sprintf(buff, "%s/%s_second_stage.weights", backup_directory, base);
             save_weights(net, buff);
             return;
         }
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
+            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         free_data(train);
     }
     char buff[256];
-    sprintf(buff, "/home/pjreddie/imagenet_backup/%s_final.weights",base);
+    sprintf(buff, "%s/%s_final.weights", backup_directory, base);
     save_weights(net, buff);
 }
 
