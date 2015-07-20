@@ -140,7 +140,7 @@ void randomize_boxes(box_label *b, int n)
 
 void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, int flip, int background, float dx, float dy, float sx, float sy)
 {
-    char *labelpath = find_replace(path, "detection_images", "labels");
+    char *labelpath = find_replace(path, "JPEGImages", "labels");
     labelpath = find_replace(labelpath, ".jpg", ".txt");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
     int count = 0;

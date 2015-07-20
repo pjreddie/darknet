@@ -8,20 +8,22 @@
 
 char *class_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void draw_detection(image im, float *box, int side, char *label)
+void draw_detection(image im, float *box, int side, int objectness, char *label)
 {
     int classes = 20;
-    int elems = 4+classes;
+    int elems = 4+classes+objectness;
     int j;
     int r, c;
 
     for(r = 0; r < side; ++r){
         for(c = 0; c < side; ++c){
             j = (r*side + c) * elems;
+            float scale = 1;
+            if(objectness) scale = 1 - box[j++];
             int class = max_index(box+j, classes);
-            if(box[j+class] > 0.2){
+            if(scale * box[j+class] > 0.2){
                 int width = box[j+class]*5 + 1;
-                printf("%f %s\n", box[j+class], class_names[class]);
+                printf("%f %s\n", scale * box[j+class], class_names[class]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
                 float blue = get_color(2,class,classes);
@@ -51,7 +53,6 @@ void train_detection(char *cfgfile, char *weightfile)
 {
     srand(time(0));
     data_seed = time(0);
-    int imgnet = 0;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
@@ -66,39 +67,22 @@ void train_detection(char *cfgfile, char *weightfile)
     data train, buffer;
 
     int classes = layer.classes;
-    int background = (layer.background || layer.objectness);
-    printf("%d\n", background);
+    int background = layer.objectness;
     int side = sqrt(get_detection_layer_locations(layer));
 
     char **paths;
-    list *plist;
-    if (imgnet){
-        plist = get_paths("/home/pjreddie/data/imagenet/det.train.list");
-    }else{
-        //plist = get_paths("/home/pjreddie/data/voc/no_2012_val.txt");
-        //plist = get_paths("/home/pjreddie/data/voc/no_2007_test.txt");
-        //plist = get_paths("/home/pjreddie/data/voc/val_2012.txt");
-        //plist = get_paths("/home/pjreddie/data/voc/no_2007_test.txt");
-        //plist = get_paths("/home/pjreddie/data/coco/trainval.txt");
-        plist = get_paths("/home/pjreddie/data/voc/all2007-2012.txt");
-    }
+    list *plist = get_paths("/home/pjreddie/data/voc/test/train.txt");
+    int N = plist->size;
+
     paths = (char **)list_to_array(plist);
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
     clock_t time;
-    while(1){
+    while(i*imgs < N*120){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
-
-/*
-           image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
-           image copy = copy_image(im);
-           draw_detection(copy, train.y.vals[114], 7, "truth");
-           cvWaitKey(0);
-           free_image(copy);
-           */
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -106,9 +90,22 @@ void train_detection(char *cfgfile, char *weightfile)
         net.seen += imgs;
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
+
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
-        if(i == 100){
+        if((i-1)*imgs <= N && i*imgs > N){
+            fprintf(stderr, "Starting second stage...\n");
             net.learning_rate *= 10;
+            char buff[256];
+            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_first_stage.weights", base);
+            save_weights(net, buff);
+        }
+        if((i-1)*imgs <= 80*N && i*imgs > N*80){
+            fprintf(stderr, "Second stage done.\n");
+            net.learning_rate *= .1;
+            char buff[256];
+            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_second_stage.weights", base);
+            save_weights(net, buff);
+            return;
         }
         if(i%1000==0){
             char buff[256];
@@ -117,6 +114,9 @@ void train_detection(char *cfgfile, char *weightfile)
         }
         free_data(train);
     }
+    char buff[256];
+    sprintf(buff, "/home/pjreddie/imagenet_backup/%s_final.weights",base);
+    save_weights(net, buff);
 }
 
 void convert_detections(float *predictions, int classes, int objectness, int background, int num_boxes, int w, int h, float thresh, float **probs, box *boxes)
@@ -174,7 +174,7 @@ void print_detections(FILE **fps, char *id, box *boxes, float **probs, int num_b
         if (ymin < 0) ymin = 0;
         if (xmax > w) xmax = w;
         if (ymax > h) ymax = h;
-        
+
         for(j = 0; j < classes; ++j){
             if (probs[i][j]) fprintf(fps[j], "%s %f %f %f %f %f\n", id, probs[i][j],
                     xmin, ymin, xmax, ymax);
@@ -267,8 +267,6 @@ void test_detection(char *cfgfile, char *weightfile, char *filename)
         load_weights(&net, weightfile);
     }
     detection_layer layer = get_network_detection_layer(net);
-    if (!layer.joint) fprintf(stderr, "Detection layer should use joint prediction to draw correctly.\n");
-    int im_size = 448;
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
@@ -283,12 +281,12 @@ void test_detection(char *cfgfile, char *weightfile, char *filename)
             strtok(input, "\n");
         }
         image im = load_image_color(input,0,0);
-        image sized = resize_image(im, im_size, im_size);
+        image sized = resize_image(im, net.w, net.h);
         float *X = sized.data;
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        draw_detection(im, predictions, 7, "predictions");
+        draw_detection(im, predictions, 7, layer.objectness, "predictions");
         free_image(im);
         free_image(sized);
 #ifdef OPENCV

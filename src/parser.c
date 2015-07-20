@@ -167,7 +167,7 @@ detection_layer parse_detection(list *options, size_params params)
     int rescore = option_find_int(options, "rescore", 0);
     int joint = option_find_int(options, "joint", 0);
     int objectness = option_find_int(options, "objectness", 0);
-    int background = option_find_int(options, "background", 0);
+    int background = 0;
     detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, joint, rescore, background, objectness);
     return layer;
 }
@@ -295,7 +295,6 @@ void parse_net_options(list *options, network *net)
     net->learning_rate = option_find_float(options, "learning_rate", .001);
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
-    net->seen = option_find_int(options, "seen",0);
     int subdivs = option_find_int(options, "subdivisions",1);
     net->batch /= subdivs;
     net->subdivisions = subdivs;
