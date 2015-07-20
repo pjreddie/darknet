@@ -500,7 +500,7 @@ list *read_cfg(char *filename)
     return sections;
 }
 
-void save_weights(network net, char *filename)
+void save_weights_upto(network net, char *filename, int cutoff)
 {
     fprintf(stderr, "Saving weights to %s\n", filename);
     FILE *fp = fopen(filename, "w");
@@ -512,7 +512,7 @@ void save_weights(network net, char *filename)
     fwrite(&net.seen, sizeof(int), 1, fp);
 
     int i;
-    for(i = 0; i < net.n; ++i){
+    for(i = 0; i < net.n && i < cutoff; ++i){
         layer l = net.layers[i];
         if(l.type == CONVOLUTIONAL){
 #ifdef GPU
@@ -545,6 +545,10 @@ void save_weights(network net, char *filename)
         }
     }
     fclose(fp);
+}
+void save_weights(network net, char *filename)
+{
+    save_weights_upto(net, filename, net.n);
 }
 
 void load_weights_upto(network *net, char *filename, int cutoff)

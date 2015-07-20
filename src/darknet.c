@@ -36,7 +36,7 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
         load_weights_upto(&net, weightfile, max);
     }
     net.seen = 0;
-    save_weights(net, outfile);
+    save_weights_upto(net, outfile, max);
 }
 
 #include "convolutional_layer.h"
