@@ -114,7 +114,6 @@ void backward_maxpool_layer(const maxpool_layer l, network_state state)
     int h = (l.h-1)/l.stride + 1;
     int w = (l.w-1)/l.stride + 1;
     int c = l.c;
-    memset(state.delta, 0, l.batch*l.h*l.w*l.c*sizeof(float));
     for(i = 0; i < h*w*c*l.batch; ++i){
         int index = l.indexes[i];
         state.delta[index] += l.delta[i];

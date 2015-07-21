@@ -58,7 +58,7 @@ void backward_avgpool_layer(const avgpool_layer l, network_state state)
             int out_index = k + b*l.c;
             for(i = 0; i < l.h*l.w; ++i){
                 int in_index = i + l.h*l.w*(k + b*l.c);
-                state.delta[in_index] = l.delta[out_index] / (l.h*l.w);
+                state.delta[in_index] += l.delta[out_index] / (l.h*l.w);
             }
         }
     }

@@ -141,20 +141,20 @@ void backward_detection_layer(const detection_layer l, network_state state)
         float scale = 1;
         float latent_delta = 0;
         if(l.joint) scale = state.input[in_i++];
-        else if (l.objectness)   state.delta[in_i++] = -l.delta[out_i++];
-        else if (l.background) state.delta[in_i++] = scale*l.delta[out_i++];
+        else if (l.objectness)   state.delta[in_i++] += -l.delta[out_i++];
+        else if (l.background) state.delta[in_i++] += scale*l.delta[out_i++];
         for(j = 0; j < l.classes; ++j){
             latent_delta += state.input[in_i]*l.delta[out_i];
-            state.delta[in_i++] = scale*l.delta[out_i++];
+            state.delta[in_i++] += scale*l.delta[out_i++];
         }
 
         if (l.objectness) {
 
         }else if (l.background) gradient_array(l.output + out_i, l.coords, LOGISTIC, l.delta + out_i);
         for(j = 0; j < l.coords; ++j){
-            state.delta[in_i++] = l.delta[out_i++];
+            state.delta[in_i++] += l.delta[out_i++];
         }
-        if(l.joint) state.delta[in_i-l.coords-l.classes-l.joint] = latent_delta;
+        if(l.joint) state.delta[in_i-l.coords-l.classes-l.joint] += latent_delta;
     }
 }
 
@@ -198,7 +198,8 @@ void backward_detection_layer_gpu(detection_layer l, network_state state)
     cpu_state.truth = truth_cpu;
     cpu_state.delta = delta_cpu;
 
-    cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
+    cuda_pull_array(state.input, in_cpu,    l.batch*l.inputs);
+    cuda_pull_array(state.delta, delta_cpu, l.batch*l.inputs);
     cuda_pull_array(l.delta_gpu, l.delta, l.batch*outputs);
     backward_detection_layer(l, cpu_state);
     cuda_push_array(state.delta, delta_cpu, l.batch*l.inputs);

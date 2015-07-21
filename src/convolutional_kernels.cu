@@ -82,8 +82,6 @@ void backward_convolutional_layer_gpu(convolutional_layer layer, network_state s
     gradient_array_ongpu(layer.output_gpu, m*k*layer.batch, layer.activation, layer.delta_gpu);
     backward_bias_gpu(layer.bias_updates_gpu, layer.delta_gpu, layer.batch, layer.n, k);
 
-    if(state.delta) scal_ongpu(layer.batch*layer.h*layer.w*layer.c, 0, state.delta, 1);
-
     for(i = 0; i < layer.batch; ++i){
         float * a = layer.delta_gpu;
         float * b = layer.col_image_gpu;

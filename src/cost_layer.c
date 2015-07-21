@@ -61,7 +61,7 @@ void forward_cost_layer(cost_layer l, network_state state)
 
 void backward_cost_layer(const cost_layer l, network_state state)
 {
-    copy_cpu(l.batch*l.inputs, l.delta, 1, state.delta, 1);
+    axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
 }
 
 #ifdef GPU
@@ -92,7 +92,7 @@ void forward_cost_layer_gpu(cost_layer l, network_state state)
 
 void backward_cost_layer_gpu(const cost_layer l, network_state state)
 {
-    copy_ongpu(l.batch*l.inputs, l.delta_gpu, 1, state.delta, 1);
+    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
 }
 #endif
 

@@ -21,6 +21,7 @@ extern "C" {
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "route_layer.h"
+#include "blas.h"
 }
 
 float * get_network_output_gpu_layer(network net, int i);
@@ -32,6 +33,9 @@ void forward_network_gpu(network net, network_state state)
     int i;
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
+        if(l.delta){
+            scal_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
+        }
         if(l.type == CONVOLUTIONAL){
             forward_convolutional_layer_gpu(l, state);
         } else if(l.type == DECONVOLUTIONAL){

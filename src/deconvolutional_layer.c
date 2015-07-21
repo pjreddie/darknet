@@ -159,8 +159,6 @@ void backward_deconvolutional_layer(deconvolutional_layer l, network_state state
     gradient_array(l.output, size*l.n*l.batch, l.activation, l.delta);
     backward_bias(l.bias_updates, l.delta, l.batch, l.n, size);
 
-    if(state.delta) memset(state.delta, 0, l.batch*l.h*l.w*l.c*sizeof(float));
-
     for(i = 0; i < l.batch; ++i){
         int m = l.c;
         int n = l.size*l.size*l.n;

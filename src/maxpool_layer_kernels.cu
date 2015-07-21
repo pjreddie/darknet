@@ -77,7 +77,7 @@ __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_
             d += (valid && indexes[out_index] == index) ? delta[out_index] : 0;
         }
     }
-    prev_delta[index] = d;
+    prev_delta[index] += d;
 }
 
 extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state state)

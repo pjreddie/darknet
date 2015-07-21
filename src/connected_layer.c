@@ -103,7 +103,7 @@ void backward_connected_layer(connected_layer l, network_state state)
     b = l.weights;
     c = state.delta;
 
-    if(c) gemm(0,1,m,n,k,1,a,k,b,k,0,c,n);
+    if(c) gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
 }
 
 #ifdef GPU
@@ -173,6 +173,6 @@ void backward_connected_layer_gpu(connected_layer l, network_state state)
     b = l.weights_gpu;
     c = state.delta;
 
-    if(c) gemm_ongpu(0,1,m,n,k,1,a,k,b,k,0,c,n);
+    if(c) gemm_ongpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
 }
 #endif

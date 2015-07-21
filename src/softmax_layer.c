@@ -58,7 +58,7 @@ void backward_softmax_layer(const softmax_layer l, network_state state)
 {
     int i;
     for(i = 0; i < l.inputs*l.batch; ++i){
-        state.delta[i] = l.delta[i];
+        state.delta[i] += l.delta[i];
     }
 }
 

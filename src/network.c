@@ -68,6 +68,9 @@ void forward_network(network net, network_state state)
     int i;
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
+        if(l.delta){
+            scal_cpu(l.outputs * l.batch, 0, l.delta, 1);
+        }
         if(l.type == CONVOLUTIONAL){
             forward_convolutional_layer(l, state);
         } else if(l.type == DECONVOLUTIONAL){

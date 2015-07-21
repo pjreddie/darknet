@@ -1,5 +1,5 @@
-GPU=0
-OPENCV=0
+GPU=1
+OPENCV=1
 DEBUG=0
 
 ARCH= -arch=sm_52
