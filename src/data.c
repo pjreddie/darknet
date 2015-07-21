@@ -425,10 +425,18 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
+    clock_t time;
+    clock_t load = 0;
+    clock_t resize = 0;
+    clock_t crop = 0;
+
     int k = num_boxes*num_boxes*(4+classes+background);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
+        time=clock();
         image orig = load_image_color(random_paths[i], 0, 0);
+        load += clock() - time;
+        time = clock();
 
         int oh = orig.h;
         int ow = orig.w;
@@ -456,17 +464,26 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
 
         int flip = rand_r(&data_seed)%2;
         image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
+
+        crop += clock() - time;
+        time = clock();
+
         float dx = ((float)pleft/ow)/sx;
         float dy = ((float)ptop /oh)/sy;
 
-        free_image(orig);
         image sized = resize_image(cropped, w, h);
-        free_image(cropped);
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
 
+        resize += clock() - time;
+        time = clock();
+
         fill_truth_detection(random_paths[i], d.y.vals[i], classes, num_boxes, flip, background, dx, dy, 1./sx, 1./sy);
+
+        free_image(orig);
+        free_image(cropped);
     }
+    printf("load: %f, crop: %f, resize: %f\n", sec(load), sec(crop), sec(resize));
     free(random_paths);
     return d;
 }

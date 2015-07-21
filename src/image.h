@@ -28,6 +28,7 @@ image image_distance(image a, image b);
 void scale_image(image m, float s);
 image crop_image(image im, int dx, int dy, int w, int h);
 image resize_image(image im, int w, int h);
+image resize_image2(image im, int w, int h);
 void translate_image(image m, float s);
 void normalize_image(image p);
 image rotate_image(image m, float rad);
@@ -62,6 +63,7 @@ image load_image_color(char *filename, int w, int h);
 float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);
 void set_pixel(image m, int x, int y, int c, float val);
+void add_pixel(image m, int x, int y, int c, float val);
 float billinear_interpolate(image im, float x, float y, int c);
 
 image get_image_layer(image m, int l);
