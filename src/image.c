@@ -332,7 +332,7 @@ image rotate_image(image im, float rad)
             for(x = 0; x < im.w; ++x){
                 float rx = cos(rad)*(x-cx) - sin(rad)*(y-cy) + cx;
                 float ry = sin(rad)*(x-cx) + cos(rad)*(y-cy) + cy;
-                float val = billinear_interpolate(im, rx, ry, c);
+                float val = bilinear_interpolate(im, rx, ry, c);
                 set_pixel(rot, x, y, c, val);
             }
         }
@@ -549,7 +549,7 @@ void saturate_exposure_image(image im, float sat, float exposure)
    }
  */
 
-float billinear_interpolate(image im, float x, float y, int c)
+float bilinear_interpolate(image im, float x, float y, int c)
 {
     int ix = (int) floorf(x);
     int iy = (int) floorf(y);
@@ -564,27 +564,7 @@ float billinear_interpolate(image im, float x, float y, int c)
     return val;
 }
 
-// #wikipedia
 image resize_image(image im, int w, int h)
-{
-    image resized = make_image(w, h, im.c);   
-    int r, c, k;
-    float w_scale = (float)(im.w - 1) / (w - 1);
-    float h_scale = (float)(im.h - 1) / (h - 1);
-    for(k = 0; k < im.c; ++k){
-        for(r = 0; r < h; ++r){
-            for(c = 0; c < w; ++c){
-                float sx = c*w_scale;
-                float sy = r*h_scale;
-                float val = billinear_interpolate(im, sx, sy, k);
-                set_pixel(resized, c, r, k, val);
-            }
-        }
-    }
-    return resized;
-}
-
-image resize_image2(image im, int w, int h)
 {
     image resized = make_image(w, h, im.c);   
     image part = make_image(w, im.h, im.c);
@@ -607,7 +587,6 @@ image resize_image2(image im, int w, int h)
             }
         }
     }
-
     for(k = 0; k < im.c; ++k){
         for(r = 0; r < h; ++r){
             float sy = r*h_scale;

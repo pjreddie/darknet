@@ -64,7 +64,7 @@ float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);
 void set_pixel(image m, int x, int y, int c, float val);
 void add_pixel(image m, int x, int y, int c, float val);
-float billinear_interpolate(image im, float x, float y, int c);
+float bilinear_interpolate(image im, float x, float y, int c);
 
 image get_image_layer(image m, int l);
 
