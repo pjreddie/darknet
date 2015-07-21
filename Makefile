@@ -1,8 +1,8 @@
-GPU=1
-OPENCV=1
+GPU=0
+OPENCV=0
 DEBUG=0
 
-ARCH= -arch=sm_52
+ARCH= --gpu-architecture=compute_20 --gpu-code=compute_20
 
 VPATH=./src/
 EXEC=darknet
