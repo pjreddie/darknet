@@ -248,6 +248,7 @@ image *get_filters(convolutional_layer l)
     int i;
     for(i = 0; i < l.n; ++i){
         filters[i] = copy_image(get_convolutional_filter(l, i));
+        normalize_image(filters[i]);
     }
     return filters;
 }

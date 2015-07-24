@@ -125,13 +125,20 @@ float *get_network_output(network net)
 
 float get_network_cost(network net)
 {
-    if(net.layers[net.n-1].type == COST){
-        return net.layers[net.n-1].output[0];
+    int i;
+    float sum = 0;
+    int count = 0;
+    for(i = 0; i < net.n; ++i){
+        if(net.layers[net.n-1].type == COST){
+            sum += net.layers[net.n-1].output[0];
+            ++count;
+        }
+        if(net.layers[net.n-1].type == DETECTION){
+            sum += net.layers[net.n-1].cost[0];
+            ++count;
+        }
     }
-    if(net.layers[net.n-1].type == DETECTION){
-        return net.layers[net.n-1].cost[0];
-    }
-    return 0;
+    return sum/count;
 }
 
 int get_predicted_class_network(network net)
@@ -184,9 +191,9 @@ void backward_network(network net, network_state state)
 
 float train_network_datum(network net, float *x, float *y)
 {
-    #ifdef GPU
+#ifdef GPU
     if(gpu_index >= 0) return train_network_datum_gpu(net, x, y);
-    #endif
+#endif
     network_state state;
     state.input = x;
     state.delta = 0;

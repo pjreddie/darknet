@@ -188,7 +188,7 @@ void show_image_cv(image p, char *name)
     int x,y,k;
     image copy = copy_image(p);
     constrain_image(copy);
-    rgbgr_image(copy);
+    if(p.c == 3) rgbgr_image(copy);
     //normalize_image(copy);
 
     char buff[256];
@@ -849,8 +849,16 @@ image collapse_images_horz(image *ims, int n)
 void show_images(image *ims, int n, char *window)
 {
     image m = collapse_images_vert(ims, n);
-    save_image(m, window);
-    show_image(m, window);
+    int w = 448;
+    int h = ((float)m.h/m.w) * 448;
+    if(h > 896){
+        h = 896;
+        w = ((float)m.w/m.h) * 896;
+    }
+    image sized = resize_image(m, w, h);
+    save_image(sized, window);
+    show_image(sized, window);
+    free_image(sized);
     free_image(m);
 }
 

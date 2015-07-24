@@ -41,13 +41,13 @@ void train_captcha2(char *cfgfile, char *weightfile)
     //net.seen=0;
     int imgs = 1024;
     int i = net.seen/imgs;
-    int solved = 1;
+    int solved = 0;
     list *plist;
     char **labels = get_labels("/data/captcha/reimgs.labels2.list");
     if (solved){
         plist = get_paths("/data/captcha/reimgs.solved.list");
     }else{
-        plist = get_paths("/data/captcha/reimgs.train.list");
+        plist = get_paths("/data/captcha/reimgs.raw.list");
     }
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
@@ -96,7 +96,6 @@ void test_captcha2(char *cfgfile, char *weightfile, char *filename)
     srand(2222222);
     int i = 0;
     char **names = get_labels("/data/captcha/reimgs.labels2.list");
-    clock_t time;
     char input[256];
     int indexes[26];
     while(1){
@@ -110,7 +109,6 @@ void test_captcha2(char *cfgfile, char *weightfile, char *filename)
         }
         image im = load_image_color(input, net.w, net.h);
         float *X = im.data;
-        time=clock();
         float *predictions = network_predict(net, X);
         top_predictions(net, 26, indexes);
         //printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
@@ -118,6 +116,47 @@ void test_captcha2(char *cfgfile, char *weightfile, char *filename)
             int index = indexes[i];
             if(i != 0) printf(", ");
             printf("%s %f", names[index], predictions[index]);
+        }
+        printf("\n");
+        fflush(stdout);
+        free_image(im);
+        if (filename) break;
+    }
+}
+
+void valid_captcha(char *cfgfile, char *weightfile, char *filename)
+{
+    char **labels = get_labels("/data/captcha/reimgs.labels.list");
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    list *plist = get_paths("/data/captcha/reimgs.fg.list");
+    char **paths = (char **)list_to_array(plist);
+    int N = plist->size;
+    int outputs = net.outputs;
+
+    set_batch_network(&net, 1);
+    srand(2222222);
+    int i, j;
+    for(i = 0; i < N; ++i){
+        if (i%100 == 0) fprintf(stderr, "%d\n", i);
+        image im = load_image_color(paths[i], net.w, net.h);
+        float *X = im.data;
+        float *predictions = network_predict(net, X);
+        //printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        int truth = -1;
+        for(j = 0; j < 13; ++j){
+            if (strstr(paths[i], labels[j])) truth = j;
+        }
+        if (truth == -1){
+            fprintf(stderr, "bad: %s\n", paths[i]);
+            return;
+        }
+        printf("%d, ", truth);
+        for(j = 0; j < outputs; ++j){
+            if (j != 0) printf(", ");
+            printf("%f", predictions[j]);
         }
         printf("\n");
         fflush(stdout);
@@ -189,7 +228,6 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
     srand(2222222);
     int i = 0;
     char **names = get_labels("/data/captcha/reimgs.labels.list");
-    clock_t time;
     char input[256];
     int indexes[13];
     while(1){
@@ -203,7 +241,6 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
         }
         image im = load_image_color(input, net.w, net.h);
         float *X = im.data;
-        time=clock();
         float *predictions = network_predict(net, X);
         top_predictions(net, 13, indexes);
         //printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
@@ -400,6 +437,7 @@ void run_captcha(int argc, char **argv)
     char *filename = (argc > 5) ? argv[5]: 0;
     if(0==strcmp(argv[2], "train")) train_captcha2(cfg, weights);
     else if(0==strcmp(argv[2], "test")) test_captcha2(cfg, weights, filename);
+    else if(0==strcmp(argv[2], "valid")) valid_captcha(cfg, weights, filename);
     //if(0==strcmp(argv[2], "test")) test_captcha(cfg, weights);
     //else if(0==strcmp(argv[2], "encode")) encode_captcha(cfg, weights);
     //else if(0==strcmp(argv[2], "decode")) decode_captcha(cfg, weights);
