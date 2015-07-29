@@ -33,7 +33,7 @@ void forward_network_gpu(network net, network_state state)
     int i;
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
-        if(l.delta){
+        if(l.delta_gpu){
             scal_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
         if(l.type == CONVOLUTIONAL){

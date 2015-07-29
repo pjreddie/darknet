@@ -41,9 +41,9 @@ void train_captcha2(char *cfgfile, char *weightfile)
     //net.seen=0;
     int imgs = 1024;
     int i = net.seen/imgs;
-    int solved = 0;
+    int solved = 1;
     list *plist;
-    char **labels = get_labels("/data/captcha/reimgs.labels2.list");
+    char **labels = get_labels("/data/captcha/reimgs.labels.list");
     if (solved){
         plist = get_paths("/data/captcha/reimgs.solved.list");
     }else{
@@ -95,7 +95,7 @@ void test_captcha2(char *cfgfile, char *weightfile, char *filename)
     set_batch_network(&net, 1);
     srand(2222222);
     int i = 0;
-    char **names = get_labels("/data/captcha/reimgs.labels2.list");
+    char **names = get_labels("/data/captcha/reimgs.labels.list");
     char input[256];
     int indexes[26];
     while(1){
