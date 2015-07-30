@@ -38,6 +38,8 @@ image get_convolutional_filter(convolutional_layer layer, int i);
 
 int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
+void rescale_filters(convolutional_layer l, float scale, float trans);
+void rgbgr_filters(convolutional_layer l);
 
 #endif
 

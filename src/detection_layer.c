@@ -204,6 +204,7 @@ void backward_detection_layer_gpu(detection_layer l, network_state state)
     backward_detection_layer(l, cpu_state);
     cuda_push_array(state.delta, delta_cpu, l.batch*l.inputs);
 
+    if (truth_cpu) free(truth_cpu);
     free(in_cpu);
     free(delta_cpu);
 }

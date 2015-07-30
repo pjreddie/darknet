@@ -249,6 +249,7 @@ void save_image(image im, char *name)
         }
     }
     int success = stbi_write_png(buff, im.w, im.h, im.c, data, im.w*im.c);
+    free(data);
     if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
 }
 

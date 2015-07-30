@@ -6,11 +6,11 @@
 #include "box.h"
 
 
-char *class_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
+char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
 
-void draw_detection(image im, float *box, int side, int objectness, char *label)
+void draw_coco(image im, float *box, int side, int objectness, char *label)
 {
-    int classes = 20;
+    int classes = 80;
     int elems = 4+classes+objectness;
     int j;
     int r, c;
@@ -23,7 +23,7 @@ void draw_detection(image im, float *box, int side, int objectness, char *label)
             int class = max_index(box+j, classes);
             if(scale * box[j+class] > 0.2){
                 int width = box[j+class]*5 + 1;
-                printf("%f %s\n", scale * box[j+class], class_names[class]);
+                printf("%f %s\n", scale * box[j+class], coco_classes[class]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
                 float blue = get_color(2,class,classes);
@@ -49,9 +49,9 @@ void draw_detection(image im, float *box, int side, int objectness, char *label)
     show_image(im, label);
 }
 
-void train_detection(char *cfgfile, char *weightfile)
+void train_coco(char *cfgfile, char *weightfile)
 {
-    char *train_images = "/home/pjreddie/data/voc/test/train.txt";
+    char *train_images = "/home/pjreddie/data/coco/train.txt";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     data_seed = time(0);
@@ -87,6 +87,15 @@ void train_detection(char *cfgfile, char *weightfile)
         load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
+
+        /*
+           image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
+           image copy = copy_image(im);
+           draw_coco(copy, train.y.vals[114], 7, layer.objectness, "truth");
+           cvWaitKey(0);
+           free_image(copy);
+         */
+
         time=clock();
         float loss = train_network(net, train);
         net.seen += imgs;
@@ -94,34 +103,27 @@ void train_detection(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
 
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
-        if((i-1)*imgs <= N && i*imgs > N){
-            fprintf(stderr, "Starting second stage...\n");
-            net.learning_rate *= 10;
+        if((i-1)*imgs <= 80*N && i*imgs > N*80){
+            fprintf(stderr, "First stage done.\n");
             char buff[256];
             sprintf(buff, "%s/%s_first_stage.weights", backup_directory, base);
             save_weights(net, buff);
-        }
-        if((i-1)*imgs <= 80*N && i*imgs > N*80){
-            fprintf(stderr, "Second stage done.\n");
-            net.learning_rate *= .1;
-            char buff[256];
-            sprintf(buff, "%s/%s_second_stage.weights", backup_directory, base);
-            save_weights(net, buff);
             return;
         }
-        if(i%1000==0){
+        if(i%1000==0 || 1){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         free_data(train);
+        return;
     }
     char buff[256];
     sprintf(buff, "%s/%s_final.weights", backup_directory, base);
     save_weights(net, buff);
 }
 
-void convert_detections(float *predictions, int classes, int objectness, int background, int num_boxes, int w, int h, float thresh, float **probs, box *boxes)
+void convert_cocos(float *predictions, int classes, int objectness, int background, int num_boxes, int w, int h, float thresh, float **probs, box *boxes)
 {
     int i,j;
     int per_box = 4+classes+(background || objectness);
@@ -143,7 +145,7 @@ void convert_detections(float *predictions, int classes, int objectness, int bac
     }
 }
 
-void print_detections(FILE **fps, char *id, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
+void print_cocos(FILE **fps, char *id, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
 {
     int i, j;
     for(i = 0; i < num_boxes*num_boxes; ++i){
@@ -164,7 +166,7 @@ void print_detections(FILE **fps, char *id, box *boxes, float **probs, int num_b
     }
 }
 
-void validate_detection(char *cfgfile, char *weightfile)
+void validate_coco(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -188,7 +190,7 @@ void validate_detection(char *cfgfile, char *weightfile)
     FILE **fps = calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, class_names[j]);
+        snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
         fps[j] = fopen(buff, "w");
     }
     box *boxes = calloc(num_boxes*num_boxes, sizeof(box));
@@ -230,9 +232,9 @@ void validate_detection(char *cfgfile, char *weightfile)
             float *predictions = network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            convert_detections(predictions, classes, objectness, background, num_boxes, w, h, thresh, probs, boxes);
+            convert_cocos(predictions, classes, objectness, background, num_boxes, w, h, thresh, probs, boxes);
             if (nms) do_nms(boxes, probs, num_boxes, classes, iou_thresh);
-            print_detections(fps, id, boxes, probs, num_boxes, classes, w, h);
+            print_cocos(fps, id, boxes, probs, num_boxes, classes, w, h);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
@@ -241,7 +243,7 @@ void validate_detection(char *cfgfile, char *weightfile)
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
-void test_detection(char *cfgfile, char *weightfile, char *filename)
+void test_coco(char *cfgfile, char *weightfile, char *filename)
 {
 
     network net = parse_network_cfg(cfgfile);
@@ -268,7 +270,7 @@ void test_detection(char *cfgfile, char *weightfile, char *filename)
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        draw_detection(im, predictions, 7, layer.objectness, "predictions");
+        draw_coco(im, predictions, 7, layer.objectness, "predictions");
         free_image(im);
         free_image(sized);
 #ifdef OPENCV
@@ -279,7 +281,7 @@ void test_detection(char *cfgfile, char *weightfile, char *filename)
     }
 }
 
-void run_detection(int argc, char **argv)
+void run_coco(int argc, char **argv)
 {
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
@@ -289,7 +291,7 @@ void run_detection(int argc, char **argv)
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5]: 0;
-    if(0==strcmp(argv[2], "test")) test_detection(cfg, weights, filename);
-    else if(0==strcmp(argv[2], "train")) train_detection(cfg, weights);
-    else if(0==strcmp(argv[2], "valid")) validate_detection(cfg, weights);
+    if(0==strcmp(argv[2], "test")) test_coco(cfg, weights, filename);
+    else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
+    else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
 }

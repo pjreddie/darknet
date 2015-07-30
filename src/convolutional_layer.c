@@ -242,6 +242,19 @@ void rgbgr_filters(convolutional_layer l)
     }
 }
 
+void rescale_filters(convolutional_layer l, float scale, float trans)
+{
+    int i;
+    for(i = 0; i < l.n; ++i){
+        image im = get_convolutional_filter(l, i);
+        if (im.c == 3) {
+            scale_image(im, scale);
+            float sum = sum_array(im.data, im.w*im.h*im.c);
+            l.biases[i] += sum*trans;
+        }
+    }
+}
+
 image *get_filters(convolutional_layer l)
 {
     image *filters = calloc(l.n, sizeof(image));

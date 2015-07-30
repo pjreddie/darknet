@@ -211,3 +211,23 @@ dbox diou(box a, box b)
     return dd;
 }
 
+void do_nms(box *boxes, float **probs, int num_boxes, int classes, float thresh)
+{
+    int i, j, k;
+    for(i = 0; i < num_boxes*num_boxes; ++i){
+        int any = 0;
+        for(k = 0; k < classes; ++k) any = any || (probs[i][k] > 0);
+        if(!any) {
+            continue;
+        }
+        for(j = i+1; j < num_boxes*num_boxes; ++j){
+            if (box_iou(boxes[i], boxes[j]) > thresh){
+                for(k = 0; k < classes; ++k){
+                    if (probs[i][k] < probs[j][k]) probs[i][k] = 0;
+                    else probs[j][k] = 0;
+                }
+            }
+        }
+    }
+}
+
