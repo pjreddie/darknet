@@ -110,13 +110,12 @@ void train_coco(char *cfgfile, char *weightfile)
             save_weights(net, buff);
             return;
         }
-        if(i%1000==0 || 1){
+        if(i%1000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         free_data(train);
-        return;
     }
     char buff[256];
     sprintf(buff, "%s/%s_final.weights", backup_directory, base);

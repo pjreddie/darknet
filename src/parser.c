@@ -236,6 +236,9 @@ dropout_layer parse_dropout(list *options, size_params params)
 {
     float probability = option_find_float(options, "probability", .5);
     dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability);
+    layer.out_w = params.w;
+    layer.out_h = params.h;
+    layer.out_c = params.c;
     return layer;
 }
 
