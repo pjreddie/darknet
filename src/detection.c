@@ -79,7 +79,7 @@ void train_detection(char *cfgfile, char *weightfile)
     paths = (char **)list_to_array(plist);
     pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
     clock_t time;
-    while(i*imgs < N*120){
+    while(i*imgs < N*130){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
@@ -95,7 +95,7 @@ void train_detection(char *cfgfile, char *weightfile)
 
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
         if((i-1)*imgs <= N && i*imgs > N){
-            fprintf(stderr, "Starting second stage...\n");
+            fprintf(stderr, "First stage done\n");
             net.learning_rate *= 10;
             char buff[256];
             sprintf(buff, "%s/%s_first_stage.weights", backup_directory, base);
@@ -108,6 +108,13 @@ void train_detection(char *cfgfile, char *weightfile)
             sprintf(buff, "%s/%s_second_stage.weights", backup_directory, base);
             save_weights(net, buff);
             return;
+        }
+        if((i-1)*imgs <= 120*N && i*imgs > N*120){
+            fprintf(stderr, "Third stage done.\n");
+            char buff[256];
+            sprintf(buff, "%s/%s_third_stage.weights", backup_directory, base);
+            net.layers[net.n-1].rescore = 1;
+            save_weights(net, buff);
         }
         if(i%1000==0){
             char buff[256];
@@ -176,7 +183,7 @@ void validate_detection(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    list *plist = get_paths("data/voc.2012test.list");
+    list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
     char **paths = (char **)list_to_array(plist);
 
     int classes = layer.classes;

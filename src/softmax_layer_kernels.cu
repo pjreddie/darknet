@@ -4,8 +4,6 @@ extern "C" {
 #include "blas.h"
 }
 
-#define BLOCK 256
-
 __global__ void forward_softmax_layer_kernel(int n, int batch, float *input, float *output)
 {
     int b = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;

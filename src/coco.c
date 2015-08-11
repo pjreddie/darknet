@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "network.h"
 #include "detection_layer.h"
 #include "cost_layer.h"
@@ -7,6 +9,8 @@
 
 
 char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
+
+int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 void draw_coco(image im, float *box, int side, int objectness, char *label)
 {
@@ -144,7 +148,7 @@ void convert_cocos(float *predictions, int classes, int objectness, int backgrou
     }
 }
 
-void print_cocos(FILE **fps, char *id, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
+void print_cocos(FILE *fp, int image_id, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
 {
     int i, j;
     for(i = 0; i < num_boxes*num_boxes; ++i){
@@ -158,11 +162,21 @@ void print_cocos(FILE **fps, char *id, box *boxes, float **probs, int num_boxes,
         if (xmax > w) xmax = w;
         if (ymax > h) ymax = h;
 
+        float bx = xmin;
+        float by = ymin;
+        float bw = xmax - xmin;
+        float bh = ymax - ymin;
+
         for(j = 0; j < classes; ++j){
-            if (probs[i][j]) fprintf(fps[j], "%s %f %f %f %f %f\n", id, probs[i][j],
-                    xmin, ymin, xmax, ymax);
+            if (probs[i][j]) fprintf(fp, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, probs[i][j]);
         }
     }
+}
+
+int get_coco_image_id(char *filename)
+{
+    char *p = strrchr(filename, '_');
+    return atoi(p+1);
 }
 
 void validate_coco(char *cfgfile, char *weightfile)
@@ -176,8 +190,8 @@ void validate_coco(char *cfgfile, char *weightfile)
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
-    char *base = "results/comp4_det_test_";
-    list *plist = get_paths("data/voc.2012test.list");
+    char *base = "/home/pjreddie/backup/";
+    list *plist = get_paths("data/coco_val_5k.list");
     char **paths = (char **)list_to_array(plist);
 
     int classes = layer.classes;
@@ -186,12 +200,11 @@ void validate_coco(char *cfgfile, char *weightfile)
     int num_boxes = sqrt(get_detection_layer_locations(layer));
 
     int j;
-    FILE **fps = calloc(classes, sizeof(FILE *));
-    for(j = 0; j < classes; ++j){
-        char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
-        fps[j] = fopen(buff, "w");
-    }
+    char buff[1024];
+    snprintf(buff, 1024, "%s/coco_results.json", base);
+    FILE *fp = fopen(buff, "w");
+    fprintf(fp, "[\n");
+
     box *boxes = calloc(num_boxes*num_boxes, sizeof(box));
     float **probs = calloc(num_boxes*num_boxes, sizeof(float *));
     for(j = 0; j < num_boxes*num_boxes; ++j) probs[j] = calloc(classes, sizeof(float *));
@@ -200,7 +213,7 @@ void validate_coco(char *cfgfile, char *weightfile)
     int i=0;
     int t;
 
-    float thresh = .001;
+    float thresh = .01;
     int nms = 1;
     float iou_thresh = .5;
 
@@ -226,19 +239,21 @@ void validate_coco(char *cfgfile, char *weightfile)
         }
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];
-            char *id = basecfg(path);
+            int image_id = get_coco_image_id(path);
             float *X = val_resized[t].data;
             float *predictions = network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
             convert_cocos(predictions, classes, objectness, background, num_boxes, w, h, thresh, probs, boxes);
             if (nms) do_nms(boxes, probs, num_boxes, classes, iou_thresh);
-            print_cocos(fps, id, boxes, probs, num_boxes, classes, w, h);
-            free(id);
+            print_cocos(fp, image_id, boxes, probs, num_boxes, classes, w, h);
             free_image(val[t]);
             free_image(val_resized[t]);
         }
     }
+    fseek(fp, -2, SEEK_CUR); 
+    fprintf(fp, "\n]\n");
+    fclose(fp);
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
