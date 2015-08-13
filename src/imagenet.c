@@ -8,6 +8,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
+    char *backup_directory = "/home/pjreddie/backup/";
     printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -50,7 +51,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
         if((i % 30000) == 0) net.learning_rate *= .1;
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
+            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, i);
             save_weights(net, buff);
         }
     }

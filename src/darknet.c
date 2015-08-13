@@ -15,6 +15,7 @@ extern void run_coco(int argc, char **argv);
 extern void run_writing(int argc, char **argv);
 extern void run_captcha(int argc, char **argv);
 extern void run_nightmare(int argc, char **argv);
+extern void run_dice(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -115,6 +116,8 @@ int main(int argc, char **argv)
         run_detection(argc, argv);
     } else if (0 == strcmp(argv[1], "coco")){
         run_coco(argc, argv);
+    } else if (0 == strcmp(argv[1], "dice")){
+        run_dice(argc, argv);
     } else if (0 == strcmp(argv[1], "writing")){
         run_writing(argc, argv);
     } else if (0 == strcmp(argv[1], "test")){
