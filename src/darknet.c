@@ -6,8 +6,9 @@
 #include "utils.h"
 #include "cuda.h"
 
-#define _GNU_SOURCE
-#include <fenv.h>
+#ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#endif
 
 extern void run_imagenet(int argc, char **argv);
 extern void run_detection(int argc, char **argv);

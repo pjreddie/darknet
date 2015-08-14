@@ -1,17 +1,11 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <float.h>
 #include <string.h>
 #include <math.h>
-
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-#endif
 
 typedef struct {
     int h;
