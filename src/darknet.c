@@ -5,6 +5,7 @@
 #include "parser.h"
 #include "utils.h"
 #include "cuda.h"
+#include "blas.h"
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
@@ -33,8 +34,55 @@ void change_rate(char *filename, float scale, float add)
     fclose(fp);
 }
 
+void average(int argc, char *argv[])
+{
+    char *cfgfile = argv[2];
+    char *outfile = argv[3];
+    gpu_index = -1;
+    network net = parse_network_cfg(cfgfile);
+    network sum = parse_network_cfg(cfgfile);
+
+    char *weightfile = argv[4];   
+    load_weights(&sum, weightfile);
+
+    int i, j;
+    int n = argc - 5;
+    for(i = 0; i < n; ++i){
+        weightfile = argv[i+5];   
+        load_weights(&net, weightfile);
+        for(j = 0; j < net.n; ++j){
+            layer l = net.layers[j];
+            layer out = sum.layers[j];
+            if(l.type == CONVOLUTIONAL){
+                int num = l.n*l.c*l.size*l.size;
+                axpy_cpu(l.n, 1, l.biases, 1, out.biases, 1);
+                axpy_cpu(num, 1, l.filters, 1, out.filters, 1);
+            }
+            if(l.type == CONNECTED){
+                axpy_cpu(l.outputs, 1, l.biases, 1, out.biases, 1);
+                axpy_cpu(l.outputs*l.inputs, 1, l.weights, 1, out.weights, 1);
+            }
+        }
+    }
+    n = n+1;
+    for(j = 0; j < net.n; ++j){
+        layer l = sum.layers[j];
+        if(l.type == CONVOLUTIONAL){
+            int num = l.n*l.c*l.size*l.size;
+            scal_cpu(l.n, 1./n, l.biases, 1);
+            scal_cpu(num, 1./n, l.filters, 1);
+        }
+        if(l.type == CONNECTED){
+            scal_cpu(l.outputs, 1./n, l.biases, 1);
+            scal_cpu(l.outputs*l.inputs, 1./n, l.weights, 1);
+        }
+    }
+    save_weights(sum, outfile);
+}
+
 void partial(char *cfgfile, char *weightfile, char *outfile, int max)
 {
+    gpu_index = -1;
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights_upto(&net, weightfile, max);
@@ -87,9 +135,9 @@ void visualize(char *cfgfile, char *weightfile)
         load_weights(&net, weightfile);
     }
     visualize_network(net);
-    #ifdef OPENCV
+#ifdef OPENCV
     cvWaitKey(0);
-    #endif
+#endif
 }
 
 int main(int argc, char **argv)
@@ -114,6 +162,8 @@ int main(int argc, char **argv)
 
     if(0==strcmp(argv[1], "imagenet")){
         run_imagenet(argc, argv);
+    } else if (0 == strcmp(argv[1], "average")){
+        average(argc, argv);
     } else if (0 == strcmp(argv[1], "detection")){
         run_detection(argc, argv);
     } else if (0 == strcmp(argv[1], "yolo")){
