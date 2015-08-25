@@ -15,41 +15,32 @@ char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","
 
 int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
-void draw_coco(image im, float *box, int side, int objectness, char *label)
+void draw_coco(image im, float *pred, int side, char *label)
 {
-    int classes = 80;
-    int elems = 4+classes+objectness;
+    int classes = 81;
+    int elems = 4+classes;
     int j;
     int r, c;
 
     for(r = 0; r < side; ++r){
         for(c = 0; c < side; ++c){
             j = (r*side + c) * elems;
-            float scale = 1;
-            if(objectness) scale = 1 - box[j++];
-            int class = max_index(box+j, classes);
-            if(scale * box[j+class] > 0.2){
-                int width = box[j+class]*5 + 1;
-                printf("%f %s\n", scale * box[j+class], coco_classes[class]);
+            int class = max_index(pred+j, classes);
+            if (class == 0) continue;
+            if (pred[j+class] > 0.2){
+                int width = pred[j+class]*5 + 1;
+                printf("%f %s\n", pred[j+class], coco_classes[class-1]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
                 float blue = get_color(2,class,classes);
 
                 j += classes;
-                float x = box[j+0];
-                float y = box[j+1];
-                x = (x+c)/side;
-                y = (y+r)/side;
-                float w = box[j+2]; //*maxwidth;
-                float h = box[j+3]; //*maxheight;
-                h = h*h;
-                w = w*w;
 
-                int left  = (x-w/2)*im.w;
-                int right = (x+w/2)*im.w;
-                int top   = (y-h/2)*im.h;
-                int bot   = (y+h/2)*im.h;
-                draw_box_width(im, left, top, right, bot, width, red, green, blue);
+                box predict = {pred[j+0], pred[j+1], pred[j+2], pred[j+3]};
+                box anchor = {(c+.5)/side, (r+.5)/side, .5, .5};
+                box decode = decode_box(predict, anchor);
+                
+                draw_bbox(im, decode, width, red, green, blue);
             }
         }
     }
@@ -69,39 +60,47 @@ void train_coco(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer layer = get_network_detection_layer(net);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 128;
     int i = net.seen/imgs;
     data train, buffer;
 
-    int classes = layer.classes;
-    int background = layer.objectness;
-    int side = sqrt(get_detection_layer_locations(layer));
+    int classes = 81;
+    int side = 7;
 
-    char **paths;
     list *plist = get_paths(train_images);
     int N = plist->size;
+    char **paths = (char **)list_to_array(plist);
 
-    paths = (char **)list_to_array(plist);
-    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
+    load_args args = {0};
+    args.w = net.w;
+    args.h = net.h;
+    args.paths = paths;
+    args.n = imgs;
+    args.m = plist->size;
+    args.classes = classes;
+    args.num_boxes = side;
+    args.d = &buffer;
+    args.type = REGION_DATA;
+
+    pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
     while(i*imgs < N*120){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
+        load_thread = load_data_in_thread(args);
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 
-        /*
-           image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
-           image copy = copy_image(im);
-           draw_coco(copy, train.y.vals[114], 7, layer.objectness, "truth");
-           cvWaitKey(0);
-           free_image(copy);
-         */
+/*
+        image im = float_to_image(net.w, net.h, 3, train.X.vals[114]);
+        image copy = copy_image(im);
+        draw_coco(copy, train.y.vals[114], 7, "truth");
+        cvWaitKey(0);
+        free_image(copy);
+        */
 
         time=clock();
         float loss = train_network(net, train);
@@ -220,6 +219,11 @@ void validate_coco(char *cfgfile, char *weightfile)
     int nms = 1;
     float iou_thresh = .5;
 
+    load_args args = {0};
+    args.w = net.w;
+    args.h = net.h;
+    args.type = IMAGE_DATA;
+
     int nthreads = 8;
     image *val = calloc(nthreads, sizeof(image));
     image *val_resized = calloc(nthreads, sizeof(image));
@@ -227,7 +231,10 @@ void validate_coco(char *cfgfile, char *weightfile)
     image *buf_resized = calloc(nthreads, sizeof(image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
     for(t = 0; t < nthreads; ++t){
-        thr[t] = load_image_thread(paths[i+t], &buf[t], &buf_resized[t], net.w, net.h);
+        args.path = paths[i+t];
+        args.im = &buf[t];
+        args.resized = &buf_resized[t];
+        thr[t] = load_data_in_thread(args);
     }
     time_t start = time(0);
     for(i = nthreads; i < m+nthreads; i += nthreads){
@@ -238,7 +245,10 @@ void validate_coco(char *cfgfile, char *weightfile)
             val_resized[t] = buf_resized[t];
         }
         for(t = 0; t < nthreads && i+t < m; ++t){
-            thr[t] = load_image_thread(paths[i+t], &buf[t], &buf_resized[t], net.w, net.h);
+            args.path = paths[i+t];
+            args.im = &buf[t];
+            args.resized = &buf_resized[t];
+            thr[t] = load_data_in_thread(args);
         }
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];
@@ -267,7 +277,6 @@ void test_coco(char *cfgfile, char *weightfile, char *filename)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer layer = get_network_detection_layer(net);
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
@@ -287,7 +296,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename)
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        draw_coco(im, predictions, 7, layer.objectness, "predictions");
+        draw_coco(im, predictions, 7, "predictions");
         free_image(im);
         free_image(sized);
 #ifdef OPENCV

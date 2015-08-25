@@ -88,14 +88,26 @@ void train_yolo(char *cfgfile, char *weightfile)
     int background = layer.objectness;
     int side = sqrt(get_detection_layer_locations(layer));
 
-    pthread_t load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
+    load_args args = {0};
+    args.w = net.w;
+    args.h = net.h;
+    args.paths = paths;
+    args.n = imgs;
+    args.m = plist->size;
+    args.classes = classes;
+    args.num_boxes = side;
+    args.background = background;
+    args.d = &buffer;
+    args.type = DETECTION_DATA;
+
+    pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
     while(i*imgs < N*130){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
-        load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
+        load_thread = load_data_in_thread(args);
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -126,7 +138,7 @@ void train_yolo(char *cfgfile, char *weightfile)
 
             pthread_join(load_thread, 0);
             free_data(buffer);
-            load_thread = load_data_detection_thread(imgs, paths, plist->size, classes, net.w, net.h, side, side, background, &buffer);
+            load_thread = load_data_in_thread(args);
         }
 
         if((i-1)*imgs <= 120*N && i*imgs > N*120){
@@ -237,8 +249,17 @@ void validate_yolo(char *cfgfile, char *weightfile)
     image *buf = calloc(nthreads, sizeof(image));
     image *buf_resized = calloc(nthreads, sizeof(image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
+
+    load_args args = {0};
+    args.w = net.w;
+    args.h = net.h;
+    args.type = IMAGE_DATA;
+
     for(t = 0; t < nthreads; ++t){
-        thr[t] = load_image_thread(paths[i+t], &buf[t], &buf_resized[t], net.w, net.h);
+        args.path = paths[i+t];
+        args.im = &buf[t];
+        args.resized = &buf_resized[t];
+        thr[t] = load_data_in_thread(args);
     }
     time_t start = time(0);
     for(i = nthreads; i < m+nthreads; i += nthreads){
@@ -249,7 +270,10 @@ void validate_yolo(char *cfgfile, char *weightfile)
             val_resized[t] = buf_resized[t];
         }
         for(t = 0; t < nthreads && i+t < m; ++t){
-            thr[t] = load_image_thread(paths[i+t], &buf[t], &buf_resized[t], net.w, net.h);
+            args.path = paths[i+t];
+            args.im = &buf[t];
+            args.resized = &buf_resized[t];
+            thr[t] = load_data_in_thread(args);
         }
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];

@@ -12,6 +12,7 @@ extern "C" {
 #include "crop_layer.h"
 #include "connected_layer.h"
 #include "detection_layer.h"
+#include "region_layer.h"
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "maxpool_layer.h"
@@ -42,6 +43,8 @@ void forward_network_gpu(network net, network_state state)
             forward_deconvolutional_layer_gpu(l, state);
         } else if(l.type == DETECTION){
             forward_detection_layer_gpu(l, state);
+        } else if(l.type == REGION){
+            forward_region_layer_gpu(l, state);
         } else if(l.type == CONNECTED){
             forward_connected_layer_gpu(l, state);
         } else if(l.type == CROP){
@@ -92,6 +95,8 @@ void backward_network_gpu(network net, network_state state)
             backward_dropout_layer_gpu(l, state);
         } else if(l.type == DETECTION){
             backward_detection_layer_gpu(l, state);
+        } else if(l.type == REGION){
+            backward_region_layer_gpu(l, state);
         } else if(l.type == NORMALIZATION){
             backward_normalization_layer_gpu(l, state);
         } else if(l.type == SOFTMAX){

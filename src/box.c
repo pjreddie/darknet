@@ -231,3 +231,22 @@ void do_nms(box *boxes, float **probs, int num_boxes, int classes, float thresh)
     }
 }
 
+box encode_box(box b, box anchor)
+{
+    box encode;
+    encode.x = (b.x - anchor.x) / anchor.w;
+    encode.y = (b.y - anchor.y) / anchor.h;
+    encode.w = log2(b.w / anchor.w);
+    encode.h = log2(b.h / anchor.h);
+    return encode;
+}
+
+box decode_box(box b, box anchor)
+{
+    box decode;
+    decode.x = b.x * anchor.w + anchor.x;
+    decode.y = b.y * anchor.h + anchor.y;
+    decode.w = pow(2., b.w) * anchor.w;
+    decode.h = pow(2., b.h) * anchor.h;
+    return decode;
+}

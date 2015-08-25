@@ -8,25 +8,6 @@
 
 unsigned int data_seed;
 
-typedef struct load_args{
-    char **paths;
-    int n;
-    int m;
-    char **labels;
-    int k;
-    int h;
-    int w;
-    int nh;
-    int nw;
-    int num_boxes;
-    int classes;
-    int background;
-    data *d;
-    char *path;
-    image *im;
-    image *resized;
-} load_args;
-
 list *get_paths(char *filename)
 {
     char *path;
@@ -138,6 +119,89 @@ void randomize_boxes(box_label *b, int n)
     }
 }
 
+void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        boxes[i].left   = boxes[i].left  * sx - dx;
+        boxes[i].right  = boxes[i].right * sx - dx;
+        boxes[i].top    = boxes[i].top   * sy - dy;
+        boxes[i].bottom = boxes[i].bottom* sy - dy;
+
+        if(flip){
+            float swap = boxes[i].left;
+            boxes[i].left = 1. - boxes[i].right;
+            boxes[i].right = 1. - swap;
+        }
+
+        boxes[i].left =  constrain(0, 1, boxes[i].left);
+        boxes[i].right = constrain(0, 1, boxes[i].right);
+        boxes[i].top =   constrain(0, 1, boxes[i].top);
+        boxes[i].bottom =   constrain(0, 1, boxes[i].bottom);
+
+        boxes[i].x = (boxes[i].left+boxes[i].right)/2;
+        boxes[i].y = (boxes[i].top+boxes[i].bottom)/2;
+        boxes[i].w = (boxes[i].right - boxes[i].left);
+        boxes[i].h = (boxes[i].bottom - boxes[i].top);
+
+        boxes[i].w = constrain(0, 1, boxes[i].w);
+        boxes[i].h = constrain(0, 1, boxes[i].h);
+    }
+}
+
+void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int flip, float dx, float dy, float sx, float sy)
+{
+    char *labelpath = find_replace(path, "images", "labels");
+    labelpath = find_replace(labelpath, ".jpg", ".txt");
+    labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    int count = 0;
+    box_label *boxes = read_boxes(labelpath, &count);
+    randomize_boxes(boxes, count);
+    correct_boxes(boxes, count, dx, dy, sx, sy, flip);
+    float x,y,w,h;
+    int id;
+    int i;
+
+    for(i = 0; i < num_boxes*num_boxes*(4+classes); i += 4+classes){
+        truth[i] = 1;
+    }
+
+    for(i = 0; i < count; ++i){
+        x = boxes[i].x;
+        y = boxes[i].y;
+        w = boxes[i].w;
+        h = boxes[i].h;
+        id = boxes[i].id;
+
+        if (x <= 0 ||  x >= 1 || y <= 0 || y >= 1) continue;
+        if (w < .01 || h < .01) continue;
+
+        int col = (int)(x*num_boxes);
+        int row = (int)(y*num_boxes);
+
+        float xa = (col+.5)/num_boxes;
+        float ya = (row+.5)/num_boxes;
+        float wa = .5;
+        float ha = .5;
+
+        float tx = (x - xa) / wa;
+        float ty = (y - ya) / ha;
+        float tw = log2(w/wa);
+        float th = log2(h/ha);
+
+        int index = (col+row*num_boxes)*(4+classes);
+        if(!truth[index]) continue;
+        truth[index] = 0;
+        truth[index+id+1] = 1;
+        index += classes;
+        truth[index++] = tx;
+        truth[index++] = ty;
+        truth[index++] = tw;
+        truth[index++] = th;
+    }
+    free(boxes);
+}
+
 void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, int flip, int background, float dx, float dy, float sx, float sy)
 {
     char *labelpath = find_replace(path, "JPEGImages", "labels");
@@ -178,20 +242,20 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
         w = (right - left);
         h = (bot - top);
 
-       if (x <= 0 || x >= 1 || y <= 0 || y >= 1) continue;
+        if (x <= 0 || x >= 1 || y <= 0 || y >= 1) continue;
 
-        int i = (int)(x*num_boxes);
-        int j = (int)(y*num_boxes);
+        int col = (int)(x*num_boxes);
+        int row = (int)(y*num_boxes);
 
-        x = x*num_boxes - i;
-        y = y*num_boxes - j;
+        x = x*num_boxes - col;
+        y = y*num_boxes - row;
 
         /*
-        float maxwidth = distance_from_edge(i, num_boxes);
-        float maxheight = distance_from_edge(j, num_boxes);
-        w = w/maxwidth;
-        h = h/maxheight;
-        */
+           float maxwidth = distance_from_edge(i, num_boxes);
+           float maxheight = distance_from_edge(j, num_boxes);
+           w = w/maxwidth;
+           h = h/maxheight;
+         */
 
         w = constrain(0, 1, w);
         h = constrain(0, 1, h);
@@ -201,7 +265,7 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
             h = pow(h, 1./2.);
         }
 
-        int index = (i+j*num_boxes)*(4+classes+background);
+        int index = (col+row*num_boxes)*(4+classes+background);
         if(truth[index+classes+background+2]) continue;
         if(background) truth[index++] = 0;
         truth[index+id] = 1;
@@ -213,57 +277,6 @@ void fill_truth_detection(char *path, float *truth, int classes, int num_boxes, 
     }
     free(boxes);
 }
-
-void fill_truth_localization(char *path, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
-{
-    char *labelpath = find_replace(path, "objects", "object_labels");
-    labelpath = find_replace(labelpath, ".jpg", ".txt");
-    labelpath = find_replace(labelpath, ".JPEG", ".txt");
-    int count;
-    box_label *boxes = read_boxes(labelpath, &count);
-    box_label box = boxes[0];
-    free(boxes);
-    float x,y,w,h;
-    float left, top, right, bot;
-    int id;
-    int i;
-    for(i = 0; i < count; ++i){
-        left  = box.left  * sx - dx;
-        right = box.right * sx - dx;
-        top   = box.top   * sy - dy;
-        bot   = box.bottom* sy - dy;
-        id = box.id;
-
-        if(flip){
-            float swap = left;
-            left = 1. - right;
-            right = 1. - swap;
-        }
-
-        left =  constrain(0, 1, left);
-        right = constrain(0, 1, right);
-        top =   constrain(0, 1, top);
-        bot =   constrain(0, 1, bot);
-
-        x = (left+right)/2;
-        y = (top+bot)/2;
-        w = (right - left);
-        h = (bot - top);
-
-       if (x <= 0 || x >= 1 || y <= 0 || y >= 1) continue;
-
-        w = constrain(0, 1, w);
-        h = constrain(0, 1, h);
-        if (w == 0 || h == 0) continue;
-
-        int index = id*4;
-        truth[index++] = x;
-        truth[index++] = y;
-        truth[index++] = w;
-        truth[index++] = h;
-    }
-}
-
 
 #define NUMCHARS 37
 
@@ -362,7 +375,7 @@ void free_data(data d)
     }
 }
 
-data load_data_localization(int n, char **paths, int m, int classes, int w, int h)
+data load_data_region(int n, char **paths, int m, int classes, int w, int h, int num_boxes)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -373,7 +386,7 @@ data load_data_localization(int n, char **paths, int m, int classes, int w, int 
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
-    int k = (4*classes);
+    int k = num_boxes*num_boxes*(4+classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
@@ -381,13 +394,13 @@ data load_data_localization(int n, char **paths, int m, int classes, int w, int 
         int oh = orig.h;
         int ow = orig.w;
 
-        int dw = 32;
-        int dh = 32;
+        int dw = ow/10;
+        int dh = oh/10;
 
-        int pleft  = (rand_uniform() * dw);
-        int pright = (rand_uniform() * dw);
-        int ptop   = (rand_uniform() * dh);
-        int pbot   = (rand_uniform() * dh);
+        int pleft  = (rand_uniform() * 2*dw - dw);
+        int pright = (rand_uniform() * 2*dw - dw);
+        int ptop   = (rand_uniform() * 2*dh - dh);
+        int pbot   = (rand_uniform() * 2*dh - dh);
 
         int swidth =  ow - pleft - pright;
         int sheight = oh - ptop - pbot;
@@ -397,22 +410,24 @@ data load_data_localization(int n, char **paths, int m, int classes, int w, int 
 
         int flip = rand_r(&data_seed)%2;
         image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
+
         float dx = ((float)pleft/ow)/sx;
         float dy = ((float)ptop /oh)/sy;
 
-        free_image(orig);
         image sized = resize_image(cropped, w, h);
-        free_image(cropped);
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
 
-        fill_truth_localization(random_paths[i], d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy);
+        fill_truth_region(random_paths[i], d.y.vals[i], classes, num_boxes, flip, dx, dy, 1./sx, 1./sy);
+
+        free_image(orig);
+        free_image(cropped);
     }
     free(random_paths);
     return d;
 }
 
-data load_data_detection_jitter_random(int n, char **paths, int m, int classes, int w, int h, int num_boxes, int background)
+data load_data_detection(int n, char **paths, int m, int classes, int w, int h, int num_boxes, int background)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -471,81 +486,30 @@ data load_data_detection_jitter_random(int n, char **paths, int m, int classes, 
     return d;
 }
 
-void *load_image_in_thread(void *ptr)
-{
-    load_args a = *(load_args*)ptr;
-    free(ptr);
-    *(a.im) = load_image_color(a.path, 0, 0);
-    *(a.resized) = resize_image(*(a.im), a.w, a.h);
-    return 0;
-}
-
-pthread_t load_image_thread(char *path, image *im, image *resized, int w, int h)
-{
-    pthread_t thread;
-    struct load_args *args = calloc(1, sizeof(struct load_args));
-    args->path = path;
-    args->w = w;
-    args->h = h;
-    args->im = im;
-    args->resized = resized;
-    if(pthread_create(&thread, 0, load_image_in_thread, args)) {
-        error("Thread creation failed");
-    }
-    return thread;
-}
-
-void *load_localization_thread(void *ptr)
+void *load_thread(void *ptr)
 {
     printf("Loading data: %d\n", rand_r(&data_seed));
-    struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data_localization(a.n, a.paths, a.m, a.classes, a.w, a.h);
-    free(ptr);
-    return 0;
-}
-
-pthread_t load_data_localization_thread(int n, char **paths, int m, int classes, int w, int h, data *d)
-{
-    pthread_t thread;
-    struct load_args *args = calloc(1, sizeof(struct load_args));
-    args->n = n;
-    args->paths = paths;
-    args->m = m;
-    args->w = w;
-    args->h = h;
-    args->classes = classes;
-    args->d = d;
-    if(pthread_create(&thread, 0, load_localization_thread, args)) {
-        error("Thread creation failed");
+    load_args a = *(struct load_args*)ptr;
+    if (a.type == CLASSIFICATION_DATA){
+        *a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
+    } else if (a.type == DETECTION_DATA){
+        *a.d = load_data_detection(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
+    } else if (a.type == REGION_DATA){
+        *a.d = load_data_region(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes);
+    } else if (a.type == IMAGE_DATA){
+        *(a.im) = load_image_color(a.path, 0, 0);
+        *(a.resized) = resize_image(*(a.im), a.w, a.h);
     }
-    return thread;
-}
-
-void *load_detection_thread(void *ptr)
-{
-    printf("Loading data: %d\n", rand_r(&data_seed));
-    struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data_detection_jitter_random(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
     free(ptr);
     return 0;
 }
 
-pthread_t load_data_detection_thread(int n, char **paths, int m, int classes, int w, int h, int nh, int nw, int background, data *d)
+pthread_t load_data_in_thread(load_args args)
 {
     pthread_t thread;
-    struct load_args *args = calloc(1, sizeof(struct load_args));
-    args->n = n;
-    args->paths = paths;
-    args->m = m;
-    args->h = h;
-    args->w = w;
-    args->nh = nh;
-    args->nw = nw;
-    args->num_boxes = nw;
-    args->classes = classes;
-    args->background = background;
-    args->d = d;
-    if(pthread_create(&thread, 0, load_detection_thread, args)) {
+    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    *ptr = args;
+    if(pthread_create(&thread, 0, load_thread, ptr)) {
         error("Thread creation failed");
     }
     return thread;
@@ -575,32 +539,6 @@ data load_data(char **paths, int n, int m, char **labels, int k, int w, int h)
     d.y = load_labels_paths(paths, n, labels, k);
     if(m) free(paths);
     return d;
-}
-
-void *load_in_thread(void *ptr)
-{
-    struct load_args a = *(struct load_args*)ptr;
-    *a.d = load_data(a.paths, a.n, a.m, a.labels, a.k, a.w, a.h);
-    free(ptr);
-    return 0;
-}
-
-pthread_t load_data_thread(char **paths, int n, int m, char **labels, int k, int w, int h, data *d)
-{
-    pthread_t thread;
-    struct load_args *args = calloc(1, sizeof(struct load_args));
-    args->n = n;
-    args->paths = paths;
-    args->m = m;
-    args->labels = labels;
-    args->k = k;
-    args->h = h;
-    args->w = w;
-    args->d = d;
-    if(pthread_create(&thread, 0, load_in_thread, args)) {
-        error("Thread creation failed");
-    }
-    return thread;
 }
 
 matrix concat_matrix(matrix m1, matrix m2)

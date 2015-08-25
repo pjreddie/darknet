@@ -30,7 +30,19 @@ void train_imagenet(char *cfgfile, char *weightfile)
     pthread_t load_thread;
     data train;
     data buffer;
-    load_thread = load_data_thread(paths, imgs, plist->size, labels, 1000, net.w, net.h, &buffer);
+
+    load_args args = {0};
+    args.w = net.w;
+    args.h = net.h;
+    args.paths = paths;
+    args.classes = 1000;
+    args.n = imgs;
+    args.m = plist->size;
+    args.labels = labels;
+    args.d = &buffer;
+    args.type = CLASSIFICATION_DATA;
+
+    load_thread = load_data_in_thread(args);
     while(1){
         ++i;
         time=clock();
@@ -43,7 +55,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
         cvWaitKey(0);
         */
 
-        load_thread = load_data_thread(paths, imgs, plist->size, labels, 1000, net.w, net.h, &buffer);
+        load_thread = load_data_in_thread(args);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         float loss = train_network(net, train);
@@ -84,7 +96,19 @@ void validate_imagenet(char *filename, char *weightfile)
     int num = (i+1)*m/splits - i*m/splits;
 
     data val, buffer;
-    pthread_t load_thread = load_data_thread(paths, num, 0, labels, 1000, 256, 256, &buffer);
+
+    load_args args = {0};
+    args.w = net.w;
+    args.h = net.h;
+    args.paths = paths;
+    args.classes = 1000;
+    args.n = num;
+    args.m = 0;
+    args.labels = labels;
+    args.d = &buffer;
+    args.type = CLASSIFICATION_DATA;
+
+    pthread_t load_thread = load_data_in_thread(args);
     for(i = 1; i <= splits; ++i){
         time=clock();
 
@@ -93,7 +117,10 @@ void validate_imagenet(char *filename, char *weightfile)
 
         num = (i+1)*m/splits - i*m/splits;
         char **part = paths+(i*m/splits);
-        if(i != splits) load_thread = load_data_thread(part, num, 0, labels, 1000, 256, 256, &buffer);
+        if(i != splits){
+            args.paths = part;
+            load_thread = load_data_in_thread(args);
+        }
         printf("Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
 
         time=clock();

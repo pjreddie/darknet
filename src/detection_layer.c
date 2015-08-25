@@ -97,6 +97,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
             truth.y = state.truth[j+1]/7;
             truth.w = pow(state.truth[j+2], 2);
             truth.h = pow(state.truth[j+3], 2);
+
             box out;
             out.x = l.output[j+0]/7;
             out.y = l.output[j+1]/7;
@@ -107,13 +108,6 @@ void forward_detection_layer(const detection_layer l, network_state state)
             float iou = box_iou(out, truth);
             avg_iou += iou;
             ++count;
-            dbox delta = diou(out, truth);
-
-            l.delta[j+0] = 10 * delta.dx/7;
-            l.delta[j+1] = 10 * delta.dy/7;
-            l.delta[j+2] = 10 * delta.dw * 2 * sqrt(out.w);
-            l.delta[j+3] = 10 * delta.dh * 2 * sqrt(out.h);
-
 
             *(l.cost) += pow((1-iou), 2);
             l.delta[j+0] = 4 * (state.truth[j+0] - l.output[j+0]);
