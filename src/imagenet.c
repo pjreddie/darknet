@@ -21,11 +21,11 @@ void train_imagenet(char *cfgfile, char *weightfile)
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     //net.seen=0;
     int imgs = 1024;
-    int i = net.seen/imgs;
     char **labels = get_labels("data/inet.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
+    int N = plist->size;
     clock_t time;
     pthread_t load_thread;
     data train;
@@ -37,14 +37,14 @@ void train_imagenet(char *cfgfile, char *weightfile)
     args.paths = paths;
     args.classes = 1000;
     args.n = imgs;
-    args.m = plist->size;
+    args.m = N;
     args.labels = labels;
     args.d = &buffer;
     args.type = CLASSIFICATION_DATA;
 
     load_thread = load_data_in_thread(args);
+    int epoch = net.seen/N;
     while(1){
-        ++i;
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
@@ -62,15 +62,23 @@ void train_imagenet(char *cfgfile, char *weightfile)
         net.seen += imgs;
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
+        printf("%.3f: %f, %f avg, %lf seconds, %d images\n", (float)net.seen/N, loss, avg_loss, sec(clock()-time), net.seen);
         free_data(train);
-        if((i % 30000) == 0) net.learning_rate *= .1;
-        if(i%1000==0){
+        if(net.seen/N > epoch){
+            epoch = net.seen/N;
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, i);
+            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
+            if(epoch%22 == 0) net.learning_rate *= .1;
         }
     }
+    pthread_join(load_thread, 0);
+    free_data(buffer);
+    free_network(net);
+    free_ptrs((void**)labels, 1000);
+    free_ptrs((void**)paths, plist->size);
+    free_list(plist);
+    free(base);
 }
 
 void validate_imagenet(char *filename, char *weightfile)

@@ -1,6 +1,7 @@
 extern "C" {
 #include <stdio.h>
 #include <time.h>
+#include <assert.h>
 
 #include "network.h"
 #include "image.h"

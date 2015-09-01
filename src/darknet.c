@@ -90,6 +90,17 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
     save_weights_upto(net, outfile, max);
 }
 
+void stacked(char *cfgfile, char *weightfile, char *outfile)
+{
+    gpu_index = -1;
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    net.seen = 0;
+    save_weights_double(net, outfile);
+}
+
 #include "convolutional_layer.h"
 void rescale_net(char *cfgfile, char *weightfile, char *outfile)
 {
@@ -155,7 +166,8 @@ int main(int argc, char **argv)
     gpu_index = -1;
 #else
     if(gpu_index >= 0){
-        cudaSetDevice(gpu_index);
+        cudaError_t status = cudaSetDevice(gpu_index);
+        check_error(status);
     }
 #endif
 
@@ -185,6 +197,8 @@ int main(int argc, char **argv)
         rescale_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "partial")){
         partial(argv[2], argv[3], argv[4], atoi(argv[5]));
+    } else if (0 == strcmp(argv[1], "stacked")){
+        stacked(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "visualize")){
         visualize(argv[2], (argc > 3) ? argv[3] : 0);
     } else if (0 == strcmp(argv[1], "imtest")){

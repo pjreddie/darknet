@@ -6,7 +6,7 @@
 
 typedef layer region_layer;
 
-region_layer make_region_layer(int batch, int inputs, int n, int classes, int coords, int rescore);
+region_layer make_region_layer(int batch, int inputs, int n, int size, int classes, int coords, int rescore);
 void forward_region_layer(const region_layer l, network_state state);
 void backward_region_layer(const region_layer l, network_state state);
 

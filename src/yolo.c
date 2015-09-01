@@ -138,6 +138,7 @@ void train_yolo(char *cfgfile, char *weightfile)
 
             pthread_join(load_thread, 0);
             free_data(buffer);
+            args.background = background;
             load_thread = load_data_in_thread(args);
         }
 
@@ -283,7 +284,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
             int w = val[t].w;
             int h = val[t].h;
             convert_yolo_detections(predictions, classes, objectness, background, num_boxes, w, h, thresh, probs, boxes);
-            if (nms) do_nms(boxes, probs, num_boxes, classes, iou_thresh);
+            if (nms) do_nms(boxes, probs, num_boxes*num_boxes, classes, iou_thresh);
             print_yolo_detections(fps, id, boxes, probs, num_boxes, classes, w, h);
             free(id);
             free_image(val[t]);

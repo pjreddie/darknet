@@ -22,10 +22,10 @@ layer make_normalization_layer(int batch, int w, int h, int c, int size, float a
     layer.inputs = w*h*c;
     layer.outputs = layer.inputs;
     #ifdef GPU
-    layer.output_gpu =  cuda_make_array(0, h * w * c * batch);
-    layer.delta_gpu =   cuda_make_array(0, h * w * c * batch);
-    layer.squared_gpu = cuda_make_array(0, h * w * c * batch);
-    layer.norms_gpu =   cuda_make_array(0, h * w * c * batch);
+    layer.output_gpu =  cuda_make_array(layer.output, h * w * c * batch);
+    layer.delta_gpu =   cuda_make_array(layer.delta, h * w * c * batch);
+    layer.squared_gpu = cuda_make_array(layer.squared, h * w * c * batch);
+    layer.norms_gpu =   cuda_make_array(layer.norms, h * w * c * batch);
     #endif
     return layer;
 }
@@ -49,10 +49,10 @@ void resize_normalization_layer(layer *layer, int w, int h)
     cuda_free(layer->delta_gpu); 
     cuda_free(layer->squared_gpu); 
     cuda_free(layer->norms_gpu);   
-    layer->output_gpu =  cuda_make_array(0, h * w * c * batch);
-    layer->delta_gpu =   cuda_make_array(0, h * w * c * batch);
-    layer->squared_gpu = cuda_make_array(0, h * w * c * batch);
-    layer->norms_gpu =   cuda_make_array(0, h * w * c * batch);
+    layer->output_gpu =  cuda_make_array(layer->output, h * w * c * batch);
+    layer->delta_gpu =   cuda_make_array(layer->delta, h * w * c * batch);
+    layer->squared_gpu = cuda_make_array(layer->squared, h * w * c * batch);
+    layer->norms_gpu =   cuda_make_array(layer->norms, h * w * c * batch);
 #endif
 }
 

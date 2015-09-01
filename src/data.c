@@ -1,6 +1,7 @@
 #include "data.h"
 #include "utils.h"
 #include "image.h"
+#include "cuda.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,12 +77,6 @@ matrix load_image_paths(char **paths, int n, int w, int h)
     return X;
 }
 
-typedef struct{
-    int id;
-    float x,y,w,h;
-    float left, right, top, bottom;
-} box_label;
-
 box_label *read_boxes(char *filename, int *n)
 {
     box_label *boxes = calloc(1, sizeof(box_label));
@@ -152,6 +147,7 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int flip, float dx, float dy, float sx, float sy)
 {
     char *labelpath = find_replace(path, "images", "labels");
+    labelpath = find_replace(labelpath, "JPEGImages", "labels");
     labelpath = find_replace(labelpath, ".jpg", ".txt");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
     int count = 0;
@@ -162,42 +158,30 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     int id;
     int i;
 
-    for(i = 0; i < num_boxes*num_boxes*(4+classes); i += 4+classes){
-        truth[i] = 1;
-    }
-
-    for(i = 0; i < count; ++i){
-        x = boxes[i].x;
-        y = boxes[i].y;
-        w = boxes[i].w;
-        h = boxes[i].h;
+    for (i = 0; i < count; ++i) {
+        x =  boxes[i].x;
+        y =  boxes[i].y;
+        w =  boxes[i].w;
+        h =  boxes[i].h;
         id = boxes[i].id;
 
-        if (x <= 0 ||  x >= 1 || y <= 0 || y >= 1) continue;
         if (w < .01 || h < .01) continue;
 
         int col = (int)(x*num_boxes);
         int row = (int)(y*num_boxes);
 
-        float xa = (col+.5)/num_boxes;
-        float ya = (row+.5)/num_boxes;
-        float wa = .5;
-        float ha = .5;
+        x = x*num_boxes - col;
+        y = y*num_boxes - row;
 
-        float tx = (x - xa) / wa;
-        float ty = (y - ya) / ha;
-        float tw = log2(w/wa);
-        float th = log2(h/ha);
-
-        int index = (col+row*num_boxes)*(4+classes);
-        if(!truth[index]) continue;
-        truth[index] = 0;
-        truth[index+id+1] = 1;
+        int index = (col+row*num_boxes)*(5+classes);
+        if (truth[index]) continue;
+        truth[index++] = 1;
+        if (classes) truth[index+id] = 1;
         index += classes;
-        truth[index++] = tx;
-        truth[index++] = ty;
-        truth[index++] = tw;
-        truth[index++] = th;
+        truth[index++] = x;
+        truth[index++] = y;
+        truth[index++] = w;
+        truth[index++] = h;
     }
     free(boxes);
 }
@@ -375,7 +359,7 @@ void free_data(data d)
     }
 }
 
-data load_data_region(int n, char **paths, int m, int classes, int w, int h, int num_boxes)
+data load_data_region(int n, char **paths, int m, int w, int h, int size, int classes)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -386,7 +370,7 @@ data load_data_region(int n, char **paths, int m, int classes, int w, int h, int
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
-    int k = num_boxes*num_boxes*(4+classes);
+    int k = size*size*(5+classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
@@ -418,10 +402,41 @@ data load_data_region(int n, char **paths, int m, int classes, int w, int h, int
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
 
-        fill_truth_region(random_paths[i], d.y.vals[i], classes, num_boxes, flip, dx, dy, 1./sx, 1./sy);
+        fill_truth_region(random_paths[i], d.y.vals[i], classes, size, flip, dx, dy, 1./sx, 1./sy);
 
         free_image(orig);
         free_image(cropped);
+    }
+    free(random_paths);
+    return d;
+}
+
+data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
+{
+    char **random_paths = get_random_paths(paths, 2*n, m);
+    int i;
+    data d;
+    d.shallow = 0;
+
+    d.X.rows = n;
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.cols = h*w*6;
+
+    int k = 2*(classes);
+    d.y = make_matrix(n, k);
+    for(i = 0; i < n; ++i){
+        image im1 = load_image_color(random_paths[i*2],   w, h);
+        image im2 = load_image_color(random_paths[i*2+1], w, h);
+
+        d.X.vals[i] = calloc(d.X.cols, sizeof(float));
+        memcpy(d.X.vals[i],         im1.data, h*w*3*sizeof(float));
+        memcpy(d.X.vals[i] + h*w*3, im2.data, h*w*3*sizeof(float));
+
+        //char *imlabel1 = find_replace(random_paths[i*2],   "imgs", "labels");
+        //char *imlabel2 = find_replace(random_paths[i*2+1], "imgs", "labels");
+
+        free_image(im1);
+        free_image(im2);
     }
     free(random_paths);
     return d;
@@ -488,6 +503,12 @@ data load_data_detection(int n, char **paths, int m, int classes, int w, int h, 
 
 void *load_thread(void *ptr)
 {
+    
+    #ifdef GPU
+        cudaError_t status = cudaSetDevice(gpu_index);
+        check_error(status);
+    #endif
+
     printf("Loading data: %d\n", rand_r(&data_seed));
     load_args a = *(struct load_args*)ptr;
     if (a.type == CLASSIFICATION_DATA){
@@ -495,7 +516,7 @@ void *load_thread(void *ptr)
     } else if (a.type == DETECTION_DATA){
         *a.d = load_data_detection(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
     } else if (a.type == REGION_DATA){
-        *a.d = load_data_region(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes);
+        *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes);
     } else if (a.type == IMAGE_DATA){
         *(a.im) = load_image_color(a.path, 0, 0);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);

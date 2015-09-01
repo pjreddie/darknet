@@ -180,7 +180,8 @@ region_layer parse_region(list *options, size_params params)
     int classes = option_find_int(options, "classes", 1);
     int rescore = option_find_int(options, "rescore", 0);
     int num = option_find_int(options, "num", 1);
-    region_layer layer = make_region_layer(params.batch, params.inputs, num, classes, coords, rescore);
+    int side = option_find_int(options, "side", 7);
+    region_layer layer = make_region_layer(params.batch, params.inputs, num, side, classes, coords, rescore);
     return layer;
 }
 
@@ -342,6 +343,7 @@ network parse_network_cfg(char *filename)
 
     n = n->next;
     int count = 0;
+    free_section(s);
     while(n){
         fprintf(stderr, "%d: ", count);
         s = (section *)n->val;
@@ -519,6 +521,45 @@ list *read_cfg(char *filename)
     }
     fclose(file);
     return sections;
+}
+
+void save_weights_double(network net, char *filename)
+{
+    fprintf(stderr, "Saving doubled weights to %s\n", filename);
+    FILE *fp = fopen(filename, "w");
+    if(!fp) file_error(filename);
+
+    fwrite(&net.learning_rate, sizeof(float), 1, fp);
+    fwrite(&net.momentum, sizeof(float), 1, fp);
+    fwrite(&net.decay, sizeof(float), 1, fp);
+    fwrite(&net.seen, sizeof(int), 1, fp);
+
+    int i,j,k;
+    for(i = 0; i < net.n; ++i){
+        layer l = net.layers[i];
+        if(l.type == CONVOLUTIONAL){
+#ifdef GPU
+            if(gpu_index >= 0){
+                pull_convolutional_layer(l);
+            }
+#endif
+            float zero = 0;
+            fwrite(l.biases, sizeof(float), l.n, fp);
+            fwrite(l.biases, sizeof(float), l.n, fp);
+
+            for (j = 0; j < l.n; ++j){
+                int index = j*l.c*l.size*l.size;
+                fwrite(l.filters+index, sizeof(float), l.c*l.size*l.size, fp);
+                for (k = 0; k < l.c*l.size*l.size; ++k) fwrite(&zero, sizeof(float), 1, fp);
+            }
+            for (j = 0; j < l.n; ++j){
+                int index = j*l.c*l.size*l.size;
+                for (k = 0; k < l.c*l.size*l.size; ++k) fwrite(&zero, sizeof(float), 1, fp);
+                fwrite(l.filters+index, sizeof(float), l.c*l.size*l.size, fp);
+            }
+        }
+    }
+    fclose(fp);
 }
 
 void save_weights_upto(network net, char *filename, int cutoff)

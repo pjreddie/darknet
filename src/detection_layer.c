@@ -39,8 +39,8 @@ detection_layer make_detection_layer(int batch, int inputs, int classes, int coo
     l.output = calloc(batch*outputs, sizeof(float));
     l.delta = calloc(batch*outputs, sizeof(float));
     #ifdef GPU
-    l.output_gpu = cuda_make_array(0, batch*outputs);
-    l.delta_gpu = cuda_make_array(0, batch*outputs);
+    l.output_gpu = cuda_make_array(l.output, batch*outputs);
+    l.delta_gpu  = cuda_make_array(l.delta,  batch*outputs);
     #endif
 
     fprintf(stderr, "Detection Layer\n");

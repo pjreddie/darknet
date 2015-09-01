@@ -6,6 +6,7 @@
 
 #define SECRET_NUM -1234
 
+void free_ptrs(void **ptrs, int n);
 char *basecfg(char *cfgfile);
 int alphanum_to_int(char c);
 char int_to_alphanum(int i);

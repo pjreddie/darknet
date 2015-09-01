@@ -208,6 +208,13 @@ void strip_char(char *s, char bad)
     s[len-offset] = '\0';
 }
 
+void free_ptrs(void **ptrs, int n)
+{
+    int i;
+    for(i = 0; i < n; ++i) free(ptrs[i]);
+    free(ptrs);
+}
+
 char *fgetl(FILE *fp)
 {
     if(feof(fp)) return 0;

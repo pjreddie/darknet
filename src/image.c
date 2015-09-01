@@ -271,31 +271,27 @@ void show_image_cv(image p, char *name)
         if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
     }
 
-    /*
-       void save_image_cv(image p, char *name)
-       {
-       int x,y,k;
-       image copy = copy_image(p);
-    //normalize_image(copy);
+#ifdef OPENCV
+    void save_image_jpg(image p, char *name)
+    {
+        int x,y,k;
 
-    char buff[256];
-    //sprintf(buff, "%s (%d)", name, windows);
-    sprintf(buff, "%s.png", name);
+        char buff[256];
+        sprintf(buff, "%s.jpg", name);
 
-    IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
-    int step = disp->widthStep;
-    for(y = 0; y < p.h; ++y){
-    for(x = 0; x < p.w; ++x){
-    for(k= 0; k < p.c; ++k){
-    disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy,x,y,k)*255);
+        IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
+        int step = disp->widthStep;
+        for(y = 0; y < p.h; ++y){
+            for(x = 0; x < p.w; ++x){
+                for(k= 0; k < p.c; ++k){
+                    disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(p,x,y,k)*255);
+                }
+            }
+        }
+        cvSaveImage(buff, disp,0);
+        cvReleaseImage(&disp);
     }
-    }
-    }
-    free_image(copy);
-    cvSaveImage(buff, disp,0);
-    cvReleaseImage(&disp);
-    }
-     */
+    #endif
 
     void show_image_layers(image p, char *name)
     {
@@ -868,6 +864,7 @@ void show_image_cv(image p, char *name)
     void show_images(image *ims, int n, char *window)
     {
         image m = collapse_images_vert(ims, n);
+        /*
         int w = 448;
         int h = ((float)m.h/m.w) * 448;
         if(h > 896){
@@ -875,6 +872,9 @@ void show_image_cv(image p, char *name)
             w = ((float)m.w/m.h) * 896;
         }
         image sized = resize_image(m, w, h);
+        */
+        normalize_image(m);
+        image sized = resize_image(m, m.w, m.h);
         save_image(sized, window);
         show_image(sized, window);
         free_image(sized);

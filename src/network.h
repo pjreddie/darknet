@@ -38,6 +38,7 @@ void forward_network_gpu(network net, network_state state);
 void backward_network_gpu(network net, network_state state);
 #endif
 
+void free_network(network net);
 void compare_networks(network n1, network n2, data d);
 char *get_layer_string(LAYER_TYPE a);
 

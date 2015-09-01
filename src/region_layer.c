@@ -6,15 +6,11 @@
 #include "cuda.h"
 #include "utils.h"
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 
-int get_region_layer_locations(region_layer l)
-{
-    return l.inputs / (l.classes+l.coords);
-}
-
-region_layer make_region_layer(int batch, int inputs, int n, int classes, int coords, int rescore)
+region_layer make_region_layer(int batch, int inputs, int n, int side, int classes, int coords, int rescore)
 {
     region_layer l = {0};
     l.type = REGION;
@@ -25,15 +21,17 @@ region_layer make_region_layer(int batch, int inputs, int n, int classes, int co
     l.classes = classes;
     l.coords = coords;
     l.rescore = rescore;
+    l.side = side;
+    assert(side*side*l.coords*l.n == inputs);
     l.cost = calloc(1, sizeof(float));
-    int outputs = inputs;
+    int outputs = l.n*5*side*side;
     l.outputs = outputs;
     l.output = calloc(batch*outputs, sizeof(float));
-    l.delta = calloc(batch*outputs, sizeof(float));
+    l.delta = calloc(batch*inputs, sizeof(float));
     #ifdef GPU
-    l.output_gpu = cuda_make_array(0, batch*outputs);
-    l.delta_gpu = cuda_make_array(0, batch*outputs);
-    #endif
+    l.output_gpu = cuda_make_array(l.output, batch*outputs);
+    l.delta_gpu = cuda_make_array(l.delta, batch*inputs);
+#endif
 
     fprintf(stderr, "Region Layer\n");
     srand(0);
@@ -43,91 +41,121 @@ region_layer make_region_layer(int batch, int inputs, int n, int classes, int co
 
 void forward_region_layer(const region_layer l, network_state state)
 {
-    int locations = get_region_layer_locations(l);
+    int locations = l.side*l.side;
     int i,j;
     for(i = 0; i < l.batch*locations; ++i){
-        int index = i*(l.classes + l.coords);
-        int mask = (!state.truth || !state.truth[index]);
+        for(j = 0; j < l.n; ++j){
+            int in_index =  i*l.n*l.coords + j*l.coords;
+            int out_index = i*l.n*5 + j*5;
 
-        for(j = 0; j < l.classes; ++j){
-            l.output[index+j] = state.input[index+j];
-        }
+            float prob =  state.input[in_index+0];
+            float x =     state.input[in_index+1];
+            float y =     state.input[in_index+2];
+            float w =     state.input[in_index+3];
+            float h =     state.input[in_index+4];
+            /*
+            float min_w = state.input[in_index+5];
+            float max_w = state.input[in_index+6];
+            float min_h = state.input[in_index+7];
+            float max_h = state.input[in_index+8];
+            */
 
-        softmax_array(l.output + index, l.classes, l.output + index);
-        index += l.classes;
+            l.output[out_index+0] = prob;
+            l.output[out_index+1] = x;
+            l.output[out_index+2] = y;
+            l.output[out_index+3] = w;
+            l.output[out_index+4] = h;
 
-        for(j = 0; j < l.coords; ++j){
-            l.output[index+j] = mask*state.input[index+j];
         }
     }
     if(state.train){
         float avg_iou = 0;
         int count = 0;
         *(l.cost) = 0;
-        int size = l.outputs * l.batch;
+        int size = l.inputs * l.batch;
         memset(l.delta, 0, size * sizeof(float));
         for (i = 0; i < l.batch*locations; ++i) {
-            int offset = i*(l.classes+l.coords);
-            int bg = state.truth[offset];
-            for (j = offset; j < offset+l.classes; ++j) {
-                //*(l.cost) += pow(state.truth[j] - l.output[j], 2);
-                //l.delta[j] =  state.truth[j] - l.output[j];
+
+            for(j = 0; j < l.n; ++j){
+                int in_index = i*l.n*l.coords + j*l.coords;
+                l.delta[in_index+0] = .1*(0-state.input[in_index+0]);
             }
 
-            box anchor = {0,0,.5,.5};
-            box truth_code = {state.truth[j+0], state.truth[j+1], state.truth[j+2], state.truth[j+3]};
-            box out_code =   {l.output[j+0], l.output[j+1], l.output[j+2], l.output[j+3]};
-            box out = decode_box(out_code, anchor);
-            box truth = decode_box(truth_code, anchor);
+            int truth_index = i*5;
+            int best_index = -1;
+            float best_iou = 0;
+            float best_rmse = 4;
 
+            int bg = !state.truth[truth_index];
             if(bg) continue;
-            //printf("Box:       %f %f %f %f\n", truth.x, truth.y, truth.w, truth.h);
-            //printf("Code:      %f %f %f %f\n", truth_code.x, truth_code.y, truth_code.w, truth_code.h);
-            //printf("Pred     : %f %f %f %f\n", out.x, out.y, out.w, out.h);
-            // printf("Pred Code: %f %f %f %f\n", out_code.x, out_code.y, out_code.w, out_code.h);
-            float iou = box_iou(out, truth);
-            avg_iou += iou;
-            ++count;
 
-            /*
-             *(l.cost) += pow((1-iou), 2);
-             l.delta[j+0] = (state.truth[j+0] - l.output[j+0]);
-             l.delta[j+1] = (state.truth[j+1] - l.output[j+1]);
-             l.delta[j+2] = (state.truth[j+2] - l.output[j+2]);
-             l.delta[j+3] = (state.truth[j+3] - l.output[j+3]);
-             */
+            box truth = {state.truth[truth_index+1], state.truth[truth_index+2], state.truth[truth_index+3], state.truth[truth_index+4]};
+            truth.x /= l.side;
+            truth.y /= l.side;
 
-            for (j = offset+l.classes; j < offset+l.classes+l.coords; ++j) {
-                //*(l.cost) += pow(state.truth[j] - l.output[j], 2);
-                //l.delta[j] =  state.truth[j] - l.output[j];
-                float diff = state.truth[j] - l.output[j];
-                if (fabs(diff) < 1){
-                    l.delta[j] = diff;
-                    *(l.cost) += .5*pow(state.truth[j] - l.output[j], 2);
-                } else {
-                    l.delta[j] = (diff > 0) ? 1 : -1;
-                    *(l.cost) += fabs(diff) - .5;
+            for(j = 0; j < l.n; ++j){
+                int out_index = i*l.n*5 + j*5;
+                box out = {l.output[out_index+1], l.output[out_index+2], l.output[out_index+3], l.output[out_index+4]};
+
+                //printf("\n%f %f %f %f %f\n", l.output[out_index+0], out.x, out.y, out.w, out.h);
+
+                out.x /= l.side;
+                out.y /= l.side;
+
+                float iou  = box_iou(out, truth);
+                float rmse = box_rmse(out, truth);
+                if(best_iou > 0 || iou > 0){
+                    if(iou > best_iou){
+                        best_iou = iou;
+                        best_index = j;
+                    }
+                }else{
+                    if(rmse < best_rmse){
+                        best_rmse = rmse;
+                        best_index = j;
+                    }
                 }
-                //l.delta[j] = state.truth[j] - l.output[j];
             }
+            printf("%d", best_index);
+            //int out_index = i*l.n*5 + best_index*5;
+            //box out = {l.output[out_index+1], l.output[out_index+2], l.output[out_index+3], l.output[out_index+4]};
+            int in_index =  i*l.n*l.coords + best_index*l.coords;
+
+            l.delta[in_index+0] = (1-state.input[in_index+0]);
+            l.delta[in_index+1] = state.truth[truth_index+1] - state.input[in_index+1];
+            l.delta[in_index+2] = state.truth[truth_index+2] - state.input[in_index+2];
+            l.delta[in_index+3] = state.truth[truth_index+3] - state.input[in_index+3];
+            l.delta[in_index+4] = state.truth[truth_index+4] - state.input[in_index+4];
+            /*
+            l.delta[in_index+5] = 0 - state.input[in_index+5];
+            l.delta[in_index+6] = 1 - state.input[in_index+6];
+            l.delta[in_index+7] = 0 - state.input[in_index+7];
+            l.delta[in_index+8] = 1 - state.input[in_index+8];
+            */
 
             /*
-               if(l.rescore){
-               for (j = offset; j < offset+l.classes; ++j) {
-               if(state.truth[j]) state.truth[j] = iou;
-               l.delta[j] =  state.truth[j] - l.output[j];
-               }
-               }
-             */
+            float x =     state.input[in_index+1];
+            float y =     state.input[in_index+2];
+            float w =     state.input[in_index+3];
+            float h =     state.input[in_index+4];
+            float min_w = state.input[in_index+5];
+            float max_w = state.input[in_index+6];
+            float min_h = state.input[in_index+7];
+            float max_h = state.input[in_index+8];
+            */
+
+
+            avg_iou += best_iou;
+            ++count;
         }
-        printf("Avg IOU: %f\n", avg_iou/count);
+        printf("\nAvg IOU: %f %d\n", avg_iou/count, count);
     }
 }
 
 void backward_region_layer(const region_layer l, network_state state)
 {
-    axpy_cpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
-    //copy_cpu(l.batch*l.inputs, l.delta_gpu, 1, state.delta, 1);
+    axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
+    //copy_cpu(l.batch*l.inputs, l.delta, 1, state.delta, 1);
 }
 
 #ifdef GPU
@@ -147,7 +175,7 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
     cpu_state.input = in_cpu;
     forward_region_layer(l, cpu_state);
     cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-    cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
+    cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
     free(cpu_state.input);
     if(cpu_state.truth) free(cpu_state.truth);
 }

@@ -122,9 +122,9 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     cuda_free(l->delta_gpu);
     cuda_free(l->output_gpu);
 
-    l->col_image_gpu = cuda_make_array(0, out_h*out_w*l->size*l->size*l->c);
-    l->delta_gpu = cuda_make_array(0, l->batch*out_h*out_w*l->n);
-    l->output_gpu = cuda_make_array(0, l->batch*out_h*out_w*l->n);
+    l->col_image_gpu = cuda_make_array(l->col_image, out_h*out_w*l->size*l->size*l->c);
+    l->delta_gpu =     cuda_make_array(l->delta, l->batch*out_h*out_w*l->n);
+    l->output_gpu =    cuda_make_array(l->output, l->batch*out_h*out_w*l->n);
     #endif
 }
 
@@ -261,7 +261,7 @@ image *get_filters(convolutional_layer l)
     int i;
     for(i = 0; i < l.n; ++i){
         filters[i] = copy_image(get_convolutional_filter(l, i));
-        normalize_image(filters[i]);
+        //normalize_image(filters[i]);
     }
     return filters;
 }

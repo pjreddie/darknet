@@ -33,7 +33,7 @@ crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int 
     l.output = calloc(crop_width*crop_height * c*batch, sizeof(float));
     #ifdef GPU
     l.output_gpu = cuda_make_array(l.output, crop_width*crop_height*c*batch);
-    l.rand_gpu = cuda_make_array(0, l.batch*8);
+    l.rand_gpu   = cuda_make_array(0, l.batch*8);
     #endif
     return l;
 }

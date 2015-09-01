@@ -35,6 +35,7 @@ typedef struct {
     int n;
     int groups;
     int size;
+    int side;
     int stride;
     int pad;
     int crop_width;
@@ -60,6 +61,7 @@ typedef struct {
 
     float probability;
     float scale;
+
     int *indexes;
     float *rand;
     float *cost;
@@ -100,5 +102,7 @@ typedef struct {
     float * norms_gpu;
     #endif
 } layer;
+
+void free_layer(layer);
 
 #endif

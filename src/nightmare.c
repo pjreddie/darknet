@@ -49,7 +49,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
 #ifdef GPU
     state.input = cuda_make_array(im.data, im.w*im.h*im.c);
-    state.delta = cuda_make_array(0, im.w*im.h*im.c);
+    state.delta = cuda_make_array(im.data, im.w*im.h*im.c);
 
     forward_network_gpu(*net, state);
     copy_ongpu(last.outputs, last.output_gpu, 1, last.delta_gpu, 1);

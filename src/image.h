@@ -47,6 +47,10 @@ void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);
 void show_image_collapsed(image p, char *name);
 
+#ifdef OPENCV
+void save_image_jpg(image p, char *name);
+#endif
+
 void print_image(image m);
 
 image make_image(int w, int h, int c);

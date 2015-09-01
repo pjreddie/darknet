@@ -21,11 +21,11 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     fprintf(stderr, "\n");
     l.outputs = outputs;
     l.inputs = outputs;
-    l.delta = calloc(outputs*batch, sizeof(float));
+    l.delta =  calloc(outputs*batch, sizeof(float));
     l.output = calloc(outputs*batch, sizeof(float));;
     #ifdef GPU
-    l.delta_gpu = cuda_make_array(0, outputs*batch);
-    l.output_gpu = cuda_make_array(0, outputs*batch);
+    l.delta_gpu =  cuda_make_array(l.delta, outputs*batch);
+    l.output_gpu = cuda_make_array(l.output, outputs*batch);
     #endif
     return l;
 }

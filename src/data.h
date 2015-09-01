@@ -35,7 +35,6 @@ typedef struct load_args{
     int n;
     int m;
     char **labels;
-    int k;
     int h;
     int w;
     int nh;
@@ -49,6 +48,12 @@ typedef struct load_args{
     data_type type;
 } load_args;
 
+typedef struct{
+    int id;
+    float x,y,w,h;
+    float left, right, top, bottom;
+} box_label;
+
 void free_data(data d);
 
 pthread_t load_data_in_thread(load_args args);
@@ -59,6 +64,7 @@ data load_data_captcha_encode(char **paths, int n, int m, int w, int h);
 data load_data(char **paths, int n, int m, char **labels, int k, int w, int h);
 data load_data_detection(int n, char **paths, int m, int classes, int w, int h, int num_boxes, int background);
 
+box_label *read_boxes(char *filename, int *n);
 data load_cifar10_data(char *filename);
 data load_all_cifar10();
 
