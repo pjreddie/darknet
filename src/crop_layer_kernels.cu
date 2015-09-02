@@ -211,6 +211,6 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
        show_image(im2, "cropped2");
        show_image(im3, "cropped3");
        cvWaitKey(0);
-       */
+*/
 }
 
