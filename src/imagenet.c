@@ -19,7 +19,6 @@ void train_imagenet(char *cfgfile, char *weightfile)
         load_weights(&net, weightfile);
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    //net.seen=0;
     int imgs = 1024;
     char **labels = get_labels("data/inet.labels.list");
     list *plist = get_paths("/data/imagenet/cls.train.list");
@@ -43,8 +42,8 @@ void train_imagenet(char *cfgfile, char *weightfile)
     args.type = CLASSIFICATION_DATA;
 
     load_thread = load_data_in_thread(args);
-    int epoch = net.seen/N;
-    while(1){
+    int epoch = (*net.seen)/N;
+    while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
@@ -59,19 +58,21 @@ void train_imagenet(char *cfgfile, char *weightfile)
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         float loss = train_network(net, train);
-        net.seen += imgs;
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%.3f: %f, %f avg, %lf seconds, %d images\n", (float)net.seen/N, loss, avg_loss, sec(clock()-time), net.seen);
+        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         free_data(train);
-        if(net.seen/N > epoch){
-            epoch = net.seen/N;
+        if(*net.seen/N > epoch){
+            epoch = *net.seen/N;
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
-            if(epoch%22 == 0) net.learning_rate *= .1;
         }
     }
+    char buff[256];
+    sprintf(buff, "%s/%s.weights", backup_directory, base);
+    save_weights(net, buff);
+
     pthread_join(load_thread, 0);
     free_data(buffer);
     free_network(net);

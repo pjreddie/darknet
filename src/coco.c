@@ -62,7 +62,7 @@ void train_coco(char *cfgfile, char *weightfile)
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 128;
-    int i = net.seen/imgs;
+    int i = *net.seen/imgs;
     data train, buffer;
 
 
@@ -107,7 +107,6 @@ void train_coco(char *cfgfile, char *weightfile)
 
         time=clock();
         float loss = train_network(net, train);
-        net.seen += imgs;
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
@@ -253,8 +252,9 @@ void validate_recall(char *cfgfile, char *weightfile)
     int total = 0;
     int correct = 0;
     float avg_iou = 0;
-    int nms = 0;
+    int nms = 1;
     int proposals = 0;
+    int save = 1;
 
     for (i = 0; i < N; ++i) {
         char *path = paths[i];
@@ -277,6 +277,27 @@ void validate_recall(char *cfgfile, char *weightfile)
         for(k = 0; k < num_boxes*num_boxes*num; ++k){
             if(probs[k][0] > thresh){
                 ++proposals;
+                if(save){
+                    char buff[256];
+                    sprintf(buff, "/data/extracted/nms_preds/%d", proposals);
+                    int dx = (boxes[k].x - boxes[k].w/2) * orig.w;
+                    int dy = (boxes[k].y - boxes[k].h/2) * orig.h;
+                    int w = boxes[k].w * orig.w;
+                    int h = boxes[k].h * orig.h;
+                    image cropped = crop_image(orig, dx, dy, w, h);
+                    image sized = resize_image(cropped, 224, 224);
+#ifdef OPENCV
+                    save_image_jpg(sized, buff);
+#endif
+                    free_image(sized);
+                    free_image(cropped);
+                    sprintf(buff, "/data/extracted/nms_pred_boxes/%d.txt", proposals);
+                    char *im_id = basecfg(path);
+                    FILE *fp = fopen(buff, "w");
+                    fprintf(fp, "%s %d %d %d %d\n", im_id, dx, dy, dx+w, dy+h);
+                    fclose(fp);
+                    free(im_id);
+                }
             }
         }
         for (j = 0; j < num_labels; ++j) {
@@ -332,7 +353,7 @@ void extract_boxes(char *cfgfile, char *weightfile)
     int k;
 
     int count = 0;
-    float iou_thresh = .1;
+    float iou_thresh = .3;
 
     for (i = 0; i < N; ++i) {
         fprintf(stderr, "%5d %5d\n", i, count);
@@ -361,7 +382,7 @@ void extract_boxes(char *cfgfile, char *weightfile)
                 if (iou > iou_thresh){
                     if (!overlaps) {
                         char buff[256];
-                        sprintf(buff, "/home/pjreddie/extracted/labels/%d.txt", count);
+                        sprintf(buff, "/data/extracted/labels/%d.txt", count);
                         label = fopen(buff, "w");
                         overlaps = 1;
                     }
@@ -370,16 +391,16 @@ void extract_boxes(char *cfgfile, char *weightfile)
             }
             if (overlaps) {
                 char buff[256];
-                sprintf(buff, "/home/pjreddie/extracted/imgs/%d", count++);
+                sprintf(buff, "/data/extracted/imgs/%d", count++);
                 int dx = (boxes[k].x - boxes[k].w/2) * orig.w;
                 int dy = (boxes[k].y - boxes[k].h/2) * orig.h;
                 int w = boxes[k].w * orig.w;
                 int h = boxes[k].h * orig.h;
                 image cropped = crop_image(orig, dx, dy, w, h);
                 image sized = resize_image(cropped, 224, 224);
-                #ifdef OPENCV
+#ifdef OPENCV
                 save_image_jpg(sized, buff);
-                #endif
+#endif
                 free_image(sized);
                 free_image(cropped);
                 fclose(label);

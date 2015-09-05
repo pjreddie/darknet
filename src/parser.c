@@ -189,7 +189,8 @@ cost_layer parse_cost(list *options, size_params params)
 {
     char *type_s = option_find_str(options, "type", "sse");
     COST_TYPE type = get_cost_type(type_s);
-    cost_layer layer = make_cost_layer(params.batch, params.inputs, type);
+    float scale = option_find_float_quiet(options, "scale",1);
+    cost_layer layer = make_cost_layer(params.batch, params.inputs, type, scale);
     return layer;
 }
 
@@ -305,6 +306,16 @@ route_layer parse_route(list *options, size_params params, network net)
     return layer;
 }
 
+learning_rate_policy get_policy(char *s)
+{
+    if (strcmp(s, "poly")==0) return POLY;
+    if (strcmp(s, "constant")==0) return CONSTANT;
+    if (strcmp(s, "step")==0) return STEP;
+    if (strcmp(s, "exp")==0) return EXP;
+    fprintf(stderr, "Couldn't find policy %s, going with constant\n", s);
+    return CONSTANT;
+}
+
 void parse_net_options(list *options, network *net)
 {
     net->batch = option_find_int(options, "batch",1);
@@ -319,7 +330,20 @@ void parse_net_options(list *options, network *net)
     net->w = option_find_int_quiet(options, "width",0);
     net->c = option_find_int_quiet(options, "channels",0);
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
+
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
+
+    char *policy_s = option_find_str(options, "policy", "constant");
+    net->policy = get_policy(policy_s);
+    if(net->policy == STEP){
+        net->step = option_find_int(options, "step", 1);
+        net->gamma = option_find_float(options, "gamma", 1);
+    } else if (net->policy == EXP){
+        net->gamma = option_find_float(options, "gamma", 1);
+    } else if (net->policy == POLY){
+        net->power = option_find_float(options, "power", 1);
+    }
+    net->max_batches = option_find_int(options, "max_batches", 0);
 }
 
 network parse_network_cfg(char *filename)
@@ -532,7 +556,7 @@ void save_weights_double(network net, char *filename)
     fwrite(&net.learning_rate, sizeof(float), 1, fp);
     fwrite(&net.momentum, sizeof(float), 1, fp);
     fwrite(&net.decay, sizeof(float), 1, fp);
-    fwrite(&net.seen, sizeof(int), 1, fp);
+    fwrite(net.seen, sizeof(int), 1, fp);
 
     int i,j,k;
     for(i = 0; i < net.n; ++i){
@@ -571,7 +595,7 @@ void save_weights_upto(network net, char *filename, int cutoff)
     fwrite(&net.learning_rate, sizeof(float), 1, fp);
     fwrite(&net.momentum, sizeof(float), 1, fp);
     fwrite(&net.decay, sizeof(float), 1, fp);
-    fwrite(&net.seen, sizeof(int), 1, fp);
+    fwrite(net.seen, sizeof(int), 1, fp);
 
     int i;
     for(i = 0; i < net.n && i < cutoff; ++i){
@@ -620,10 +644,11 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     FILE *fp = fopen(filename, "r");
     if(!fp) file_error(filename);
 
-    fread(&net->learning_rate, sizeof(float), 1, fp);
-    fread(&net->momentum, sizeof(float), 1, fp);
-    fread(&net->decay, sizeof(float), 1, fp);
-    fread(&net->seen, sizeof(int), 1, fp);
+    float garbage;
+    fread(&garbage, sizeof(float), 1, fp);
+    fread(&garbage, sizeof(float), 1, fp);
+    fread(&garbage, sizeof(float), 1, fp);
+    fread(net->seen, sizeof(int), 1, fp);
 
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){

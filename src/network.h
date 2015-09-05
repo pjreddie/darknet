@@ -7,17 +7,27 @@
 #include "layer.h"
 #include "data.h"
 
+typedef enum {
+    CONSTANT, STEP, EXP, POLY
+} learning_rate_policy;
+
 typedef struct {
     int n;
     int batch;
-    int seen;
+    int *seen;
     int subdivisions;
-    float learning_rate;
     float momentum;
     float decay;
     layer *layers;
     int outputs;
     float *output;
+    learning_rate_policy policy;
+
+    float learning_rate;
+    float gamma;
+    float power;
+    int step;
+    int max_batches;
 
     int inputs;
     int h, w, c;
@@ -38,6 +48,8 @@ void forward_network_gpu(network net, network_state state);
 void backward_network_gpu(network net, network_state state);
 #endif
 
+float get_current_rate(network net);
+int get_current_batch(network net);
 void free_network(network net);
 void compare_networks(network n1, network n2, data d);
 char *get_layer_string(LAYER_TYPE a);

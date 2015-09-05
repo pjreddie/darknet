@@ -18,6 +18,7 @@ extern void run_writing(int argc, char **argv);
 extern void run_captcha(int argc, char **argv);
 extern void run_nightmare(int argc, char **argv);
 extern void run_dice(int argc, char **argv);
+extern void run_compare(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -86,7 +87,7 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
     if(weightfile){
         load_weights_upto(&net, weightfile, max);
     }
-    net.seen = 0;
+    *net.seen = 0;
     save_weights_upto(net, outfile, max);
 }
 
@@ -179,6 +180,8 @@ int main(int argc, char **argv)
         run_yolo(argc, argv);
     } else if (0 == strcmp(argv[1], "coco")){
         run_coco(argc, argv);
+    } else if (0 == strcmp(argv[1], "compare")){
+        run_compare(argc, argv);
     } else if (0 == strcmp(argv[1], "dice")){
         run_dice(argc, argv);
     } else if (0 == strcmp(argv[1], "writing")){

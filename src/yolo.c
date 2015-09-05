@@ -68,7 +68,7 @@ void train_yolo(char *cfgfile, char *weightfile)
     detection_layer layer = get_network_detection_layer(net);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 128;
-    int i = net.seen/imgs;
+    int i = *net.seen/imgs;
 
     char **paths;
     list *plist = get_paths(train_images);
@@ -112,7 +112,6 @@ void train_yolo(char *cfgfile, char *weightfile)
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         float loss = train_network(net, train);
-        net.seen += imgs;
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 

@@ -20,6 +20,30 @@
 #include "dropout_layer.h"
 #include "route_layer.h"
 
+int get_current_batch(network net)
+{
+    int batch_num = (*net.seen)/(net.batch*net.subdivisions);
+    return batch_num;
+}
+
+float get_current_rate(network net)
+{
+    int batch_num = get_current_batch(net);
+    switch (net.policy) {
+        case CONSTANT:
+            return net.learning_rate;
+        case STEP:
+            return net.learning_rate * pow(net.gamma, batch_num/net.step);
+        case EXP:
+            return net.learning_rate * pow(net.gamma, batch_num);
+        case POLY:
+            return net.learning_rate * pow(1 - (float)batch_num / net.max_batches, net.power);
+        default:
+            fprintf(stderr, "Policy is weird!\n");
+            return net.learning_rate;
+    }
+}
+
 char *get_layer_string(LAYER_TYPE a)
 {
     switch(a){
@@ -60,6 +84,7 @@ network make_network(int n)
     network net = {0};
     net.n = n;
     net.layers = calloc(net.n, sizeof(layer));
+    net.seen = calloc(1, sizeof(int));
     #ifdef GPU
     net.input_gpu = calloc(1, sizeof(float *));
     net.truth_gpu = calloc(1, sizeof(float *));
@@ -110,14 +135,15 @@ void update_network(network net)
 {
     int i;
     int update_batch = net.batch*net.subdivisions;
+    float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.type == CONVOLUTIONAL){
-            update_convolutional_layer(l, update_batch, net.learning_rate, net.momentum, net.decay);
+            update_convolutional_layer(l, update_batch, rate, net.momentum, net.decay);
         } else if(l.type == DECONVOLUTIONAL){
-            update_deconvolutional_layer(l, net.learning_rate, net.momentum, net.decay);
+            update_deconvolutional_layer(l, rate, net.momentum, net.decay);
         } else if(l.type == CONNECTED){
-            update_connected_layer(l, update_batch, net.learning_rate, net.momentum, net.decay);
+            update_connected_layer(l, update_batch, rate, net.momentum, net.decay);
         }
     }
 }
@@ -203,6 +229,7 @@ void backward_network(network net, network_state state)
 
 float train_network_datum(network net, float *x, float *y)
 {
+    *net.seen += net.batch;
 #ifdef GPU
     if(gpu_index >= 0) return train_network_datum_gpu(net, x, y);
 #endif
@@ -214,7 +241,7 @@ float train_network_datum(network net, float *x, float *y)
     forward_network(net, state);
     backward_network(net, state);
     float error = get_network_cost(net);
-    if((net.seen/net.batch)%net.subdivisions == 0) update_network(net);
+    if(((*net.seen)/net.batch)%net.subdivisions == 0) update_network(net);
     return error;
 }
 
@@ -227,7 +254,6 @@ float train_network_sgd(network net, data d, int n)
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i){
-        net.seen += batch;
         get_random_batch(d, batch, X, y);
         float err = train_network_datum(net, X, y);
         sum += err;
@@ -248,7 +274,6 @@ float train_network(network net, data d)
     float sum = 0;
     for(i = 0; i < n; ++i){
         get_next_batch(d, batch, i*batch, X, y);
-        net.seen += batch;
         float err = train_network_datum(net, X, y);
         sum += err;
     }

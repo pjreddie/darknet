@@ -15,7 +15,7 @@ void train_writing(char *cfgfile, char *weightfile)
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
-    int i = net.seen/imgs;
+    int i = *net.seen/imgs;
     list *plist = get_paths("figures.list");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
@@ -44,10 +44,9 @@ void train_writing(char *cfgfile, char *weightfile)
         cvWaitKey(0);
         */
 
-        net.seen += imgs;
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
+        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), *net.seen);
         free_data(train);
         if((i % 20000) == 0) net.learning_rate *= .1;
         //if(i%100 == 0 && net.learning_rate > .00001) net.learning_rate *= .97;

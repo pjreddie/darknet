@@ -38,9 +38,8 @@ void train_captcha(char *cfgfile, char *weightfile)
         load_weights(&net, weightfile);
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    //net.seen=0;
     int imgs = 1024;
-    int i = net.seen/imgs;
+    int i = *net.seen/imgs;
     int solved = 1;
     list *plist;
     char **labels = get_labels("/data/captcha/reimgs.labels.list");
@@ -85,10 +84,9 @@ void train_captcha(char *cfgfile, char *weightfile)
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         float loss = train_network(net, train);
-        net.seen += imgs;
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
+        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), *net.seen);
         free_data(train);
         if(i%100==0){
             char buff[256];

@@ -413,8 +413,8 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
 
 data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
 {
-    char **random_paths = get_random_paths(paths, 2*n, m);
-    int i;
+    if(m) paths = get_random_paths(paths, 2*n, m);
+    int i,j;
     data d;
     d.shallow = 0;
 
@@ -425,20 +425,51 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
     int k = 2*(classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
-        image im1 = load_image_color(random_paths[i*2],   w, h);
-        image im2 = load_image_color(random_paths[i*2+1], w, h);
+        image im1 = load_image_color(paths[i*2],   w, h);
+        image im2 = load_image_color(paths[i*2+1], w, h);
 
         d.X.vals[i] = calloc(d.X.cols, sizeof(float));
         memcpy(d.X.vals[i],         im1.data, h*w*3*sizeof(float));
         memcpy(d.X.vals[i] + h*w*3, im2.data, h*w*3*sizeof(float));
 
-        //char *imlabel1 = find_replace(random_paths[i*2],   "imgs", "labels");
-        //char *imlabel2 = find_replace(random_paths[i*2+1], "imgs", "labels");
+        int id;
+        float iou;
+
+        char *imlabel1 = find_replace(paths[i*2],   "imgs", "labels");
+        imlabel1 = find_replace(imlabel1, "jpg", "txt");
+        FILE *fp1 = fopen(imlabel1, "r");
+
+        while(fscanf(fp1, "%d %f", &id, &iou) == 2){
+            if (d.y.vals[i][2*id] < iou) d.y.vals[i][2*id] = iou;
+        }
+
+        char *imlabel2 = find_replace(paths[i*2+1], "imgs", "labels");
+        imlabel2 = find_replace(imlabel2, "jpg", "txt");
+        FILE *fp2 = fopen(imlabel2, "r");
+
+        while(fscanf(fp2, "%d %f", &id, &iou) == 2){
+            if (d.y.vals[i][2*id + 1] < iou) d.y.vals[i][2*id + 1] = iou;
+        }
+        
+        for (j = 0; j < classes; ++j){
+            if (d.y.vals[i][2*j] > .5 &&  d.y.vals[i][2*j+1] < .5){
+                d.y.vals[i][2*j] = 1;
+                d.y.vals[i][2*j+1] = 0;
+            } else if (d.y.vals[i][2*j] < .5 &&  d.y.vals[i][2*j+1] > .5){
+                d.y.vals[i][2*j] = 0;
+                d.y.vals[i][2*j+1] = 1;
+            } else {
+                d.y.vals[i][2*j]   = SECRET_NUM;
+                d.y.vals[i][2*j+1] = SECRET_NUM;
+            }
+        }
+        fclose(fp1);
+        fclose(fp2);
 
         free_image(im1);
         free_image(im2);
     }
-    free(random_paths);
+    if(m) free(paths);
     return d;
 }
 
@@ -503,11 +534,11 @@ data load_data_detection(int n, char **paths, int m, int classes, int w, int h, 
 
 void *load_thread(void *ptr)
 {
-    
-    #ifdef GPU
-        cudaError_t status = cudaSetDevice(gpu_index);
-        check_error(status);
-    #endif
+
+#ifdef GPU
+    cudaError_t status = cudaSetDevice(gpu_index);
+    check_error(status);
+#endif
 
     printf("Loading data: %d\n", rand_r(&data_seed));
     load_args a = *(struct load_args*)ptr;
@@ -517,6 +548,8 @@ void *load_thread(void *ptr)
         *a.d = load_data_detection(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes);
+    } else if (a.type == COMPARE_DATA){
+        *a.d = load_data_compare(a.n, a.paths, a.m, a.classes, a.w, a.h);
     } else if (a.type == IMAGE_DATA){
         *(a.im) = load_image_color(a.path, 0, 0);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);

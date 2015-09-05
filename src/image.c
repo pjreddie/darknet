@@ -274,6 +274,8 @@ void show_image_cv(image p, char *name)
 #ifdef OPENCV
     void save_image_jpg(image p, char *name)
     {
+        image copy = copy_image(p);
+        rgbgr_image(copy);
         int x,y,k;
 
         char buff[256];
@@ -284,12 +286,13 @@ void show_image_cv(image p, char *name)
         for(y = 0; y < p.h; ++y){
             for(x = 0; x < p.w; ++x){
                 for(k= 0; k < p.c; ++k){
-                    disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(p,x,y,k)*255);
+                    disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy,x,y,k)*255);
                 }
             }
         }
         cvSaveImage(buff, disp,0);
         cvReleaseImage(&disp);
+        free_image(copy);
     }
     #endif
 

@@ -116,14 +116,15 @@ void update_network_gpu(network net)
 {
     int i;
     int update_batch = net.batch*net.subdivisions;
+    float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.type == CONVOLUTIONAL){
-            update_convolutional_layer_gpu(l, update_batch, net.learning_rate, net.momentum, net.decay);
+            update_convolutional_layer_gpu(l, update_batch, rate, net.momentum, net.decay);
         } else if(l.type == DECONVOLUTIONAL){
-            update_deconvolutional_layer_gpu(l, net.learning_rate, net.momentum, net.decay);
+            update_deconvolutional_layer_gpu(l, rate, net.momentum, net.decay);
         } else if(l.type == CONNECTED){
-            update_connected_layer_gpu(l, update_batch, net.learning_rate, net.momentum, net.decay);
+            update_connected_layer_gpu(l, update_batch, rate, net.momentum, net.decay);
         }
     }
 }
@@ -147,7 +148,7 @@ float train_network_datum_gpu(network net, float *x, float *y)
     forward_network_gpu(net, state);
     backward_network_gpu(net, state);
     float error = get_network_cost(net);
-    if ((net.seen / net.batch) % net.subdivisions == 0) update_network_gpu(net);
+    if (((*net.seen) / net.batch) % net.subdivisions == 0) update_network_gpu(net);
 
     return error;
 }

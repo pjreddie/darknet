@@ -26,12 +26,13 @@ char *get_cost_string(COST_TYPE a)
     return "sse";
 }
 
-cost_layer make_cost_layer(int batch, int inputs, COST_TYPE cost_type)
+cost_layer make_cost_layer(int batch, int inputs, COST_TYPE cost_type, float scale)
 {
     fprintf(stderr, "Cost Layer: %d inputs\n", inputs);
     cost_layer l = {0};
     l.type = COST;
 
+    l.scale = scale;
     l.batch = batch;
     l.inputs = inputs;
     l.outputs = inputs;
@@ -61,7 +62,7 @@ void forward_cost_layer(cost_layer l, network_state state)
 
 void backward_cost_layer(const cost_layer l, network_state state)
 {
-    axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
+    axpy_cpu(l.batch*l.inputs, l.scale, l.delta, 1, state.delta, 1);
 }
 
 #ifdef GPU
@@ -92,7 +93,7 @@ void forward_cost_layer_gpu(cost_layer l, network_state state)
 
 void backward_cost_layer_gpu(const cost_layer l, network_state state)
 {
-    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
+    axpy_ongpu(l.batch*l.inputs, l.scale, l.delta_gpu, 1, state.delta, 1);
 }
 #endif
 
