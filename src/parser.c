@@ -169,7 +169,7 @@ detection_layer parse_detection(list *options, size_params params)
     int rescore = option_find_int(options, "rescore", 0);
     int joint = option_find_int(options, "joint", 0);
     int objectness = option_find_int(options, "objectness", 0);
-    int background = 0;
+    int background = option_find_int(options, "background", 0);
     detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, joint, rescore, background, objectness);
     return layer;
 }
@@ -312,6 +312,8 @@ learning_rate_policy get_policy(char *s)
     if (strcmp(s, "constant")==0) return CONSTANT;
     if (strcmp(s, "step")==0) return STEP;
     if (strcmp(s, "exp")==0) return EXP;
+    if (strcmp(s, "sigmoid")==0) return SIG;
+    if (strcmp(s, "steps")==0) return STEPS;
     fprintf(stderr, "Couldn't find policy %s, going with constant\n", s);
     return CONSTANT;
 }
@@ -337,9 +339,36 @@ void parse_net_options(list *options, network *net)
     net->policy = get_policy(policy_s);
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
-        net->gamma = option_find_float(options, "gamma", 1);
+        net->scale = option_find_float(options, "scale", 1);
+    } else if (net->policy == STEPS){
+        char *l = option_find(options, "steps");   
+        char *p = option_find(options, "scales");   
+        if(!l || !p) error("STEPS policy must have steps and scales in cfg file");
+
+        int len = strlen(l);
+        int n = 1;
+        int i;
+        for(i = 0; i < len; ++i){
+            if (l[i] == ',') ++n;
+        }
+        int *steps = calloc(n, sizeof(int));
+        float *scales = calloc(n, sizeof(float));
+        for(i = 0; i < n; ++i){
+            int step    = atoi(l);
+            float scale = atof(p);
+            l = strchr(l, ',')+1;
+            p = strchr(p, ',')+1;
+            steps[i] = step;
+            scales[i] = scale;
+        }
+        net->scales = scales;
+        net->steps = steps;
+        net->num_steps = n;
     } else if (net->policy == EXP){
         net->gamma = option_find_float(options, "gamma", 1);
+    } else if (net->policy == SIG){
+        net->gamma = option_find_float(options, "gamma", 1);
+        net->step = option_find_int(options, "step", 1);
     } else if (net->policy == POLY){
         net->power = option_find_float(options, "power", 1);
     }
@@ -401,10 +430,10 @@ network parse_network_cfg(char *filename)
             l = parse_dropout(options, params);
             l.output = net.layers[count-1].output;
             l.delta = net.layers[count-1].delta;
-            #ifdef GPU
+#ifdef GPU
             l.output_gpu = net.layers[count-1].output_gpu;
             l.delta_gpu = net.layers[count-1].delta_gpu;
-            #endif
+#endif
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }

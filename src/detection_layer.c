@@ -85,11 +85,12 @@ void forward_detection_layer(const detection_layer l, network_state state)
         int size = get_detection_layer_output_size(l) * l.batch;
         memset(l.delta, 0, size * sizeof(float));
         for (i = 0; i < l.batch*locations; ++i) {
-            int classes = l.objectness+l.classes;
+            int classes = (l.objectness || l.background)+l.classes;
             int offset = i*(classes+l.coords);
             for (j = offset; j < offset+classes; ++j) {
                 *(l.cost) += pow(state.truth[j] - l.output[j], 2);
                 l.delta[j] =  state.truth[j] - l.output[j];
+                if(l.background && j == offset) l.delta[j] *= .1;
             }
 
             box truth;
@@ -115,9 +116,15 @@ void forward_detection_layer(const detection_layer l, network_state state)
             l.delta[j+2] = 4 * (state.truth[j+2] - l.output[j+2]);
             l.delta[j+3] = 4 * (state.truth[j+3] - l.output[j+3]);
             if(l.rescore){
-                for (j = offset; j < offset+classes; ++j) {
-                    if(state.truth[j]) state.truth[j] = iou;
-                    l.delta[j] =  state.truth[j] - l.output[j];
+                if(l.objectness){
+                    state.truth[offset] = iou;
+                    l.delta[offset] = state.truth[offset] - l.output[offset];
+                }
+                else{
+                    for (j = offset; j < offset+classes; ++j) {
+                        if(state.truth[j]) state.truth[j] = iou;
+                        l.delta[j] =  state.truth[j] - l.output[j];
+                    }
                 }
             }
         }
@@ -145,7 +152,7 @@ void backward_detection_layer(const detection_layer l, network_state state)
         if (l.objectness) {
 
         }else if (l.background) gradient_array(l.output + out_i, l.coords, LOGISTIC, l.delta + out_i);
-        for(j = 0; j < l.coords; ++j){
+        for (j = 0; j < l.coords; ++j){
             state.delta[in_i++] += l.delta[out_i++];
         }
         if(l.joint) state.delta[in_i-l.coords-l.classes-l.joint] += latent_delta;

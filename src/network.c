@@ -29,15 +29,26 @@ int get_current_batch(network net)
 float get_current_rate(network net)
 {
     int batch_num = get_current_batch(net);
+    int i;
+    float rate;
     switch (net.policy) {
         case CONSTANT:
             return net.learning_rate;
         case STEP:
-            return net.learning_rate * pow(net.gamma, batch_num/net.step);
+            return net.learning_rate * pow(net.scale, batch_num/net.step);
+        case STEPS:
+            rate = net.learning_rate;
+            for(i = 0; i < net.num_steps; ++i){
+                if(net.steps[i] > batch_num) return rate;
+                rate *= net.scales[i];
+            }
+            return rate;
         case EXP:
             return net.learning_rate * pow(net.gamma, batch_num);
         case POLY:
             return net.learning_rate * pow(1 - (float)batch_num / net.max_batches, net.power);
+        case SIG:
+            return net.learning_rate * (1/(1+exp(net.gamma*(batch_num - net.step))));
         default:
             fprintf(stderr, "Policy is weird!\n");
             return net.learning_rate;

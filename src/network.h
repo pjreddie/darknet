@@ -8,7 +8,7 @@
 #include "data.h"
 
 typedef enum {
-    CONSTANT, STEP, EXP, POLY
+    CONSTANT, STEP, EXP, POLY, STEPS, SIG
 } learning_rate_policy;
 
 typedef struct {
@@ -25,9 +25,13 @@ typedef struct {
 
     float learning_rate;
     float gamma;
+    float scale;
     float power;
     int step;
     int max_batches;
+    float *scales;
+    int   *steps;
+    int num_steps;
 
     int inputs;
     int h, w, c;

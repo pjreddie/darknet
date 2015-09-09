@@ -9,9 +9,9 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-char *voc_class_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
+char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void draw_yolo(image im, float *box, int side, int objectness, char *label, float thresh)
+void draw_yoloplus(image im, float *box, int side, int objectness, char *label, float thresh)
 {
     int classes = 20;
     int elems = 4+classes+objectness;
@@ -26,7 +26,7 @@ void draw_yolo(image im, float *box, int side, int objectness, char *label, floa
             int class = max_index(box+j, classes);
             if(scale * box[j+class] > thresh){
                 int width = sqrt(scale*box[j+class])*5 + 1;
-                printf("%f %s\n", scale * box[j+class], voc_class_names[class]);
+                printf("%f %s\n", scale * box[j+class], voc_names[class]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
                 float blue = get_color(2,class,classes);
@@ -52,7 +52,7 @@ void draw_yolo(image im, float *box, int side, int objectness, char *label, floa
     show_image(im, label);
 }
 
-void train_yolo(char *cfgfile, char *weightfile)
+void train_yoloplus(char *cfgfile, char *weightfile)
 {
     char *train_images = "/home/pjreddie/data/voc/test/train.txt";
     char *backup_directory = "/home/pjreddie/backup/";
@@ -147,7 +147,7 @@ void train_yolo(char *cfgfile, char *weightfile)
     save_weights(net, buff);
 }
 
-void convert_yolo_detections(float *predictions, int classes, int objectness, int background, int num_boxes, int w, int h, float thresh, float **probs, box *boxes)
+void convert_yoloplus_detections(float *predictions, int classes, int objectness, int background, int num_boxes, int w, int h, float thresh, float **probs, box *boxes)
 {
     int i,j;
     int per_box = 4+classes+(background || objectness);
@@ -169,7 +169,7 @@ void convert_yolo_detections(float *predictions, int classes, int objectness, in
     }
 }
 
-void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
+void print_yoloplus_detections(FILE **fps, char *id, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
 {
     int i, j;
     for(i = 0; i < num_boxes*num_boxes; ++i){
@@ -190,7 +190,7 @@ void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int 
     }
 }
 
-void validate_yolo(char *cfgfile, char *weightfile)
+void validate_yoloplus(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -214,7 +214,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     FILE **fps = calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, voc_class_names[j]);
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
     box *boxes = calloc(num_boxes*num_boxes, sizeof(box));
@@ -268,9 +268,9 @@ void validate_yolo(char *cfgfile, char *weightfile)
             float *predictions = network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            convert_yolo_detections(predictions, classes, objectness, background, num_boxes, w, h, thresh, probs, boxes);
+            convert_yoloplus_detections(predictions, classes, objectness, background, num_boxes, w, h, thresh, probs, boxes);
             if (nms) do_nms(boxes, probs, num_boxes*num_boxes, classes, iou_thresh);
-            print_yolo_detections(fps, id, boxes, probs, num_boxes, classes, w, h);
+            print_yoloplus_detections(fps, id, boxes, probs, num_boxes, classes, w, h);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
@@ -279,7 +279,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
-void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
+void test_yoloplus(char *cfgfile, char *weightfile, char *filename, float thresh)
 {
 
     network net = parse_network_cfg(cfgfile);
@@ -306,7 +306,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        draw_yolo(im, predictions, 7, layer.objectness, "predictions", thresh);
+        draw_yoloplus(im, predictions, 7, layer.objectness, "predictions", thresh);
         free_image(im);
         free_image(sized);
 #ifdef OPENCV
@@ -317,7 +317,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     }
 }
 
-void run_yolo(int argc, char **argv)
+void run_yoloplus(int argc, char **argv)
 {
     float thresh = find_float_arg(argc, argv, "-thresh", .2);
     if(argc < 4){
@@ -328,7 +328,7 @@ void run_yolo(int argc, char **argv)
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5]: 0;
-    if(0==strcmp(argv[2], "test")) test_yolo(cfg, weights, filename, thresh);
-    else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
-    else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
+    if(0==strcmp(argv[2], "test")) test_yoloplus(cfg, weights, filename, thresh);
+    else if(0==strcmp(argv[2], "train")) train_yoloplus(cfg, weights);
+    else if(0==strcmp(argv[2], "valid")) validate_yoloplus(cfg, weights);
 }
