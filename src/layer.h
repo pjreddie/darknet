@@ -30,6 +30,7 @@ typedef struct {
     int batch;
     int inputs;
     int outputs;
+    int truths;
     int h,w,c;
     int out_h, out_w, out_c;
     int n;
@@ -40,10 +41,12 @@ typedef struct {
     int pad;
     int crop_width;
     int crop_height;
+    int sqrt;
     int flip;
     float angle;
     float saturation;
     float exposure;
+    int softmax;
     int classes;
     int coords;
     int background;

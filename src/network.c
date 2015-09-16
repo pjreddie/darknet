@@ -48,7 +48,7 @@ float get_current_rate(network net)
         case POLY:
             return net.learning_rate * pow(1 - (float)batch_num / net.max_batches, net.power);
         case SIG:
-            return net.learning_rate * (1/(1+exp(net.gamma*(batch_num - net.step))));
+            return net.learning_rate * (1./(1.+exp(net.gamma*(batch_num - net.step))));
         default:
             fprintf(stderr, "Policy is weird!\n");
             return net.learning_rate;

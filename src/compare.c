@@ -175,8 +175,8 @@ int bbox_comparator(const void *a, const void *b)
     image im1 = load_image_color(box1.filename, net.w, net.h);
     image im2 = load_image_color(box2.filename, net.w, net.h);
     float *X  = calloc(net.w*net.h*net.c, sizeof(float));
-    memcpy(X,                   im1.data, im1.w*im1.h*im1.c);
-    memcpy(X+im1.w*im1.h*im1.c, im2.data, im2.w*im2.h*im2.c);
+    memcpy(X,                   im1.data, im1.w*im1.h*im1.c*sizeof(float));
+    memcpy(X+im1.w*im1.h*im1.c, im2.data, im2.w*im2.h*im2.c*sizeof(float));
     float *predictions = network_predict(net, X);
     
     free_image(im1);

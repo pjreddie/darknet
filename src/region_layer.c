@@ -14,7 +14,7 @@ region_layer make_region_layer(int batch, int inputs, int n, int side, int class
 {
     region_layer l = {0};
     l.type = REGION;
-    
+
     l.n = n;
     l.batch = batch;
     l.inputs = inputs;
@@ -22,15 +22,15 @@ region_layer make_region_layer(int batch, int inputs, int n, int side, int class
     l.coords = coords;
     l.rescore = rescore;
     l.side = side;
-    assert(side*side*l.coords*l.n == inputs);
+    assert(side*side*((1 + l.coords)*l.n + l.classes) == inputs);
     l.cost = calloc(1, sizeof(float));
-    int outputs = l.n*5*side*side;
-    l.outputs = outputs;
-    l.output = calloc(batch*outputs, sizeof(float));
-    l.delta = calloc(batch*inputs, sizeof(float));
-    #ifdef GPU
-    l.output_gpu = cuda_make_array(l.output, batch*outputs);
-    l.delta_gpu = cuda_make_array(l.delta, batch*inputs);
+    l.outputs = l.inputs;
+    l.truths = l.side*l.side*(1+l.coords+l.classes);
+    l.output = calloc(batch*l.outputs, sizeof(float));
+    l.delta = calloc(batch*l.outputs, sizeof(float));
+#ifdef GPU
+    l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
+    l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 #endif
 
     fprintf(stderr, "Region Layer\n");
@@ -43,64 +43,69 @@ void forward_region_layer(const region_layer l, network_state state)
 {
     int locations = l.side*l.side;
     int i,j;
+    memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
     for(i = 0; i < l.batch*locations; ++i){
-        for(j = 0; j < l.n; ++j){
-            int in_index =  i*l.n*l.coords + j*l.coords;
-            int out_index = i*l.n*5 + j*5;
-
-            float prob =  state.input[in_index+0];
-            float x =     state.input[in_index+1];
-            float y =     state.input[in_index+2];
-            float w =     state.input[in_index+3];
-            float h =     state.input[in_index+4];
-            /*
-            float min_w = state.input[in_index+5];
-            float max_w = state.input[in_index+6];
-            float min_h = state.input[in_index+7];
-            float max_h = state.input[in_index+8];
-            */
-
-            l.output[out_index+0] = prob;
-            l.output[out_index+1] = x;
-            l.output[out_index+2] = y;
-            l.output[out_index+3] = w;
-            l.output[out_index+4] = h;
-
+        int index = i*((1+l.coords)*l.n + l.classes);
+        if(l.softmax){
+            activate_array(l.output + index, l.n*(1+l.coords), LOGISTIC);
+            int offset = l.n*(1+l.coords);
+            softmax_array(l.output + index + offset, l.classes,
+                    l.output + index + offset);
         }
     }
     if(state.train){
         float avg_iou = 0;
+        float avg_cat = 0;
+        float avg_obj = 0;
+        float avg_anyobj = 0;
         int count = 0;
         *(l.cost) = 0;
         int size = l.inputs * l.batch;
         memset(l.delta, 0, size * sizeof(float));
         for (i = 0; i < l.batch*locations; ++i) {
-
+            int index = i*((1+l.coords)*l.n + l.classes);
             for(j = 0; j < l.n; ++j){
-                int in_index = i*l.n*l.coords + j*l.coords;
-                l.delta[in_index+0] = .1*(0-state.input[in_index+0]);
+                int prob_index = index + j*(1 + l.coords);
+                l.delta[prob_index] = (1./l.n)*(0-l.output[prob_index]);
+                if(l.softmax){
+                    l.delta[prob_index] = 1./(l.n*l.side)*(0-l.output[prob_index]);
+                }
+                *(l.cost) += (1./l.n)*pow(l.output[prob_index], 2);
+                //printf("%f\n", l.output[prob_index]);
+                avg_anyobj += l.output[prob_index];
             }
 
-            int truth_index = i*5;
+            int truth_index = i*(1 + l.coords + l.classes);
             int best_index = -1;
             float best_iou = 0;
             float best_rmse = 4;
 
             int bg = !state.truth[truth_index];
-            if(bg) continue;
+            if(bg) {
+                continue;
+            }
 
-            box truth = {state.truth[truth_index+1], state.truth[truth_index+2], state.truth[truth_index+3], state.truth[truth_index+4]};
+            int class_index = index + l.n*(1+l.coords);
+            for(j = 0; j < l.classes; ++j) {
+                l.delta[class_index+j] = state.truth[truth_index+1+j] - l.output[class_index+j];
+                *(l.cost) += pow(state.truth[truth_index+1+j] - l.output[class_index+j], 2);
+                if(state.truth[truth_index + 1 + j]) avg_cat += l.output[class_index+j];
+            }
+            truth_index += l.classes + 1;
+            box truth = {state.truth[truth_index+0], state.truth[truth_index+1], state.truth[truth_index+2], state.truth[truth_index+3]};
             truth.x /= l.side;
             truth.y /= l.side;
 
             for(j = 0; j < l.n; ++j){
-                int out_index = i*l.n*5 + j*5;
+                int out_index = index + j*(1+l.coords);
                 box out = {l.output[out_index+1], l.output[out_index+2], l.output[out_index+3], l.output[out_index+4]};
-
-                //printf("\n%f %f %f %f %f\n", l.output[out_index+0], out.x, out.y, out.w, out.h);
 
                 out.x /= l.side;
                 out.y /= l.side;
+                if (l.sqrt){
+                    out.w = out.w*out.w;
+                    out.h = out.h*out.h;
+                }
 
                 float iou  = box_iou(out, truth);
                 float rmse = box_rmse(out, truth);
@@ -116,46 +121,41 @@ void forward_region_layer(const region_layer l, network_state state)
                     }
                 }
             }
-            printf("%d", best_index);
-            //int out_index = i*l.n*5 + best_index*5;
-            //box out = {l.output[out_index+1], l.output[out_index+2], l.output[out_index+3], l.output[out_index+4]};
-            int in_index =  i*l.n*l.coords + best_index*l.coords;
+            //printf("%d", best_index);
+            int in_index = index + best_index*(1+l.coords);
+            *(l.cost) -= pow(l.output[in_index], 2);
+            *(l.cost) += pow(1-l.output[in_index], 2);
+            avg_obj += l.output[in_index];
+            l.delta[in_index+0] = (1.-l.output[in_index]);
+            if(l.softmax){
+                l.delta[in_index+0] = 5*(1.-l.output[in_index]);
+            }
+            //printf("%f\n", l.output[in_index]);
 
-            l.delta[in_index+0] = (1-state.input[in_index+0]);
-            l.delta[in_index+1] = state.truth[truth_index+1] - state.input[in_index+1];
-            l.delta[in_index+2] = state.truth[truth_index+2] - state.input[in_index+2];
-            l.delta[in_index+3] = state.truth[truth_index+3] - state.input[in_index+3];
-            l.delta[in_index+4] = state.truth[truth_index+4] - state.input[in_index+4];
-            /*
-            l.delta[in_index+5] = 0 - state.input[in_index+5];
-            l.delta[in_index+6] = 1 - state.input[in_index+6];
-            l.delta[in_index+7] = 0 - state.input[in_index+7];
-            l.delta[in_index+8] = 1 - state.input[in_index+8];
-            */
+            l.delta[in_index+1] = 5*(state.truth[truth_index+0] - l.output[in_index+1]);
+            l.delta[in_index+2] = 5*(state.truth[truth_index+1] - l.output[in_index+2]);
+            if(l.sqrt){
+                l.delta[in_index+3] = 5*(sqrt(state.truth[truth_index+2]) - l.output[in_index+3]);
+                l.delta[in_index+4] = 5*(sqrt(state.truth[truth_index+3]) - l.output[in_index+4]);
+            }else{
+                l.delta[in_index+3] = 5*(state.truth[truth_index+2] - l.output[in_index+3]);
+                l.delta[in_index+4] = 5*(state.truth[truth_index+3] - l.output[in_index+4]);
+            }
 
-            /*
-            float x =     state.input[in_index+1];
-            float y =     state.input[in_index+2];
-            float w =     state.input[in_index+3];
-            float h =     state.input[in_index+4];
-            float min_w = state.input[in_index+5];
-            float max_w = state.input[in_index+6];
-            float min_h = state.input[in_index+7];
-            float max_h = state.input[in_index+8];
-            */
-
-
+            *(l.cost) += pow(1-best_iou, 2);
             avg_iou += best_iou;
             ++count;
+            if(l.softmax){
+                gradient_array(l.output + index, l.n*(1+l.coords), LOGISTIC, l.delta + index);
+            }
         }
-        printf("\nAvg IOU: %f %d\n", avg_iou/count, count);
+        printf("Avg IOU: %f, Avg Cat Pred: %f, Avg Obj: %f, Avg Any: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
     }
 }
 
 void backward_region_layer(const region_layer l, network_state state)
 {
     axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
-    //copy_cpu(l.batch*l.inputs, l.delta, 1, state.delta, 1);
 }
 
 #ifdef GPU
@@ -165,8 +165,9 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){
-        truth_cpu = calloc(l.batch*l.outputs, sizeof(float));
-        cuda_pull_array(state.truth, truth_cpu, l.batch*l.outputs);
+        int num_truth = l.batch*l.side*l.side*(1+l.coords+l.classes);
+        truth_cpu = calloc(num_truth, sizeof(float));
+        cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
     network_state cpu_state;

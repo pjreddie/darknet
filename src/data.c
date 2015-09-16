@@ -176,8 +176,10 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         int index = (col+row*num_boxes)*(5+classes);
         if (truth[index]) continue;
         truth[index++] = 1;
-        if (classes) truth[index+id] = 1;
+
+        if (id < classes) truth[index+id] = 1;
         index += classes;
+
         truth[index++] = x;
         truth[index++] = y;
         truth[index++] = w;

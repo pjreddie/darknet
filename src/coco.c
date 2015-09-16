@@ -111,20 +111,6 @@ void train_coco(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
 
         printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
-        if((i-1)*imgs <= N && i*imgs > N){
-            fprintf(stderr, "First stage done\n");
-            net.learning_rate *= 10;
-            char buff[256];
-            sprintf(buff, "%s/%s_first_stage.weights", backup_directory, base);
-            save_weights(net, buff);
-        }
-
-        if((i-1)*imgs <= 80*N && i*imgs > N*80){
-            fprintf(stderr, "Second stage done.\n");
-            char buff[256];
-            sprintf(buff, "%s/%s_second_stage.weights", backup_directory, base);
-            save_weights(net, buff);
-        }
         if(i%1000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
