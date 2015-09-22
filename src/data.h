@@ -26,7 +26,7 @@ typedef struct{
 } data;
 
 typedef enum {
-    CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA
+    CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA
 } data_type;
 
 typedef struct load_args{
@@ -37,6 +37,7 @@ typedef struct load_args{
     char **labels;
     int h;
     int w;
+    int downsample;
     int nh;
     int nw;
     int num_boxes;

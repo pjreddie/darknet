@@ -19,17 +19,34 @@ void train_writing(char *cfgfile, char *weightfile)
         load_weights(&net, weightfile);
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = 1024;
-    int i = *net.seen/imgs;
+    int imgs = net.batch*net.subdivisions;
     list *plist = get_paths("figures.list");
     char **paths = (char **)list_to_array(plist);
-    printf("%d\n", plist->size);
     clock_t time;
-    while(1){
-        ++i;
+    int N = plist->size;
+    printf("N: %d\n", N);
+
+    data train, buffer;
+
+    load_args args = {0};
+    args.w = net.w;
+    args.h = net.h;
+    args.paths = paths;
+    args.n = imgs;
+    args.m = N;
+    args.downsample = 1;
+    args.d = &buffer;
+    args.type = WRITING_DATA;
+
+    pthread_t load_thread = load_data_in_thread(args);
+    int epoch = (*net.seen)/N;
+    while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
-        data train = load_data_writing(paths, imgs, plist->size, 256, 256, 1);
+        pthread_join(load_thread, 0);
+        train = buffer;
+        load_thread = load_data_in_thread(args);
         printf("Loaded %lf seconds\n",sec(clock()-time));
+
         time=clock();
         float loss = train_network(net, train);
 
@@ -51,13 +68,15 @@ void train_writing(char *cfgfile, char *weightfile)
 
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), *net.seen);
+        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         free_data(train);
-        //if(i%100 == 0 && net.learning_rate > .00001) net.learning_rate *= .97;
-        if(i%1000==0){
+        if(*net.seen/N > epoch){
+            epoch = *net.seen/N;
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
-            save_weights(net, buff);
+            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
+            //TODO
+            if(get_current_batch(net)%10 == 0) 
+                save_weights(net, buff);
         }
     }
 }

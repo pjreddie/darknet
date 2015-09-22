@@ -553,6 +553,8 @@ void *load_thread(void *ptr)
         *a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == DETECTION_DATA){
         *a.d = load_data_detection(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
+    } else if (a.type == WRITING_DATA){
+        *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.downsample);
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes);
     } else if (a.type == COMPARE_DATA){
