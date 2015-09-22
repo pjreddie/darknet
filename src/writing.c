@@ -74,9 +74,7 @@ void train_writing(char *cfgfile, char *weightfile)
             epoch = *net.seen/N;
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
-            //TODO
-            if(get_current_batch(net)%10 == 0) 
-                save_weights(net, buff);
+            save_weights(net, buff);
         }
     }
 }
