@@ -591,7 +591,7 @@ image resize_image(image im, int w, int h)
         for(r = 0; r < im.h; ++r){
             for(c = 0; c < w; ++c){
                 float val = 0;
-                if(c == w-1){
+                if(c == w-1 || im.w == 1){
                     val = get_pixel(im, im.w-1, r, k);
                 } else {
                     float sx = c*w_scale;
