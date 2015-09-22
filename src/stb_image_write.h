@@ -279,7 +279,7 @@ void stbiw__write_hdr_scanline(FILE *f, int width, int comp, unsigned char *scra
 {
    unsigned char scanlineheader[4] = { 2, 2, 0, 0 };
    unsigned char rgbe[4];
-   float linear[3];
+   float linear[3] = {0};
    int x;
 
    scanlineheader[2] = (width&0xff00)>>8;

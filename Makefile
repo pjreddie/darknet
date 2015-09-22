@@ -1,5 +1,5 @@
-GPU=1
-OPENCV=1
+GPU=0
+OPENCV=0
 DEBUG=0
 
 ARCH= --gpu-architecture=compute_20 --gpu-code=compute_20
@@ -12,7 +12,7 @@ CC=gcc
 NVCC=nvcc
 OPTS=-Ofast
 LDFLAGS= -lm -pthread -lstdc++ 
-COMMON= -I/usr/local/cuda/include/ 
+COMMON= 
 CFLAGS=-Wall -Wfatal-errors 
 
 ifeq ($(DEBUG), 1) 
@@ -29,7 +29,7 @@ COMMON+= `pkg-config --cflags opencv`
 endif
 
 ifeq ($(GPU), 1) 
-COMMON+= -DGPU
+COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
 endif

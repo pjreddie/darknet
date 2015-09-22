@@ -182,10 +182,14 @@ region_layer parse_region(list *options, size_params params)
     int num = option_find_int(options, "num", 1);
     int side = option_find_int(options, "side", 7);
     region_layer layer = make_region_layer(params.batch, params.inputs, num, side, classes, coords, rescore);
-    int softmax = option_find_int(options, "softmax", 0);
-    int sqrt = option_find_int(options, "sqrt", 0);
-    layer.softmax = softmax;
-    layer.sqrt = sqrt;
+
+    layer.softmax = option_find_int(options, "softmax", 0);
+    layer.sqrt = option_find_int(options, "sqrt", 0);
+
+    layer.coord_scale = option_find_float(options, "coord_scale", 1);
+    layer.object_scale = option_find_float(options, "object_scale", 1);
+    layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
+    layer.class_scale = option_find_float(options, "class_scale", 1);
     return layer;
 }
 

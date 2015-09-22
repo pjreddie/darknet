@@ -241,7 +241,8 @@ void BattleRoyaleWithCheese(char *filename, char *weightfile)
     srand(time(0));
     set_batch_network(&net, 1);
 
-    list *plist = get_paths("data/compare.sort.list");
+    //list *plist = get_paths("data/compare.sort.list");
+    list *plist = get_paths("data/compare.cat.list");
     //list *plist = get_paths("data/compare.val.old");
     char **paths = (char **)list_to_array(plist);
     int N = plist->size;
@@ -256,15 +257,16 @@ void BattleRoyaleWithCheese(char *filename, char *weightfile)
     }
     int round;
     clock_t time=clock();
-    for(round = 1; round <= 40; ++round){
+    for(round = 1; round <= 500; ++round){
         clock_t round_time=clock();
         printf("Round: %d\n", round);
         qsort(boxes, N, sizeof(sortable_bbox), elo_comparator);
         sorta_shuffle(boxes, N, sizeof(sortable_bbox), 10);
+        shuffle(boxes, N, sizeof(sortable_bbox));
         for(i = 0; i < N/2; ++i){
             bbox_fight(boxes+i*2, boxes+i*2+1);
         }
-        if(round >= 4){
+        if(round >= 4 && 0){
             qsort(boxes, N, sizeof(sortable_bbox), elo_comparator);
             if(round == 4){
                 N = N/2;
@@ -275,9 +277,11 @@ void BattleRoyaleWithCheese(char *filename, char *weightfile)
         printf("Round: %f secs, %d remaining\n", sec(clock()-round_time), N);
     }
     qsort(boxes, N, sizeof(sortable_bbox), elo_comparator);
+    FILE *outfp = fopen("results/battle.log", "w");
     for(i = 0; i < N; ++i){
-        printf("%s %f\n", boxes[i].filename, boxes[i].elo);
+        fprintf(outfp, "%s %f\n", boxes[i].filename, boxes[i].elo);
     }
+    fclose(outfp);
     printf("Tournament in %d compares, %f secs\n", total_compares, sec(clock()-time));
 }
 

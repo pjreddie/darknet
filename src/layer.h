@@ -60,6 +60,11 @@ typedef struct {
     float beta;
     float kappa;
 
+    float coord_scale;
+    float object_scale;
+    float noobject_scale;
+    float class_scale;
+
     int dontload;
 
     float probability;

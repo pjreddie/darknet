@@ -77,7 +77,7 @@ void train_swag(char *cfgfile, char *weightfile)
     int classes = l.classes;
 
     list *plist = get_paths(train_images);
-    int N = plist->size;
+    //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};

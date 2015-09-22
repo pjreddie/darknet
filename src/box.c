@@ -2,6 +2,16 @@
 #include <stdio.h>
 #include <math.h>
 
+box float_to_box(float *f)
+{
+    box b;
+    b.x = f[0];
+    b.y = f[1];
+    b.w = f[2];
+    b.h = f[3];
+    return b;
+}
+
 dbox derivative(box a, box b)
 {
     dbox d;
