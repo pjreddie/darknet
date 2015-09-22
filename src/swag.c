@@ -132,21 +132,22 @@ void train_swag(char *cfgfile, char *weightfile)
 void convert_swag_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes)
 {
     int i,j,n;
-    int per_cell = 5*num+classes;
+    //int per_cell = 5*num+classes;
     for (i = 0; i < side*side; ++i){
         int row = i / side;
         int col = i % side;
         for(n = 0; n < num; ++n){
-            int offset = i*per_cell + 5*n;
-            float scale = predictions[offset];
             int index = i*num + n;
-            boxes[index].x = (predictions[offset + 1] + col) / side * w;
-            boxes[index].y = (predictions[offset + 2] + row) / side * h;
-            boxes[index].w = pow(predictions[offset + 3], (square?2:1)) * w;
-            boxes[index].h = pow(predictions[offset + 4], (square?2:1)) * h;
+            int p_index = side*side*classes + i*num + n;
+            float scale = predictions[p_index];
+            int box_index = side*side*(classes + num) + (i*num + n)*4;
+            boxes[index].x = (predictions[box_index + 0] + col) / side * w;
+            boxes[index].y = (predictions[box_index + 1] + row) / side * h;
+            boxes[index].w = pow(predictions[box_index + 2], (square?2:1)) * w;
+            boxes[index].h = pow(predictions[box_index + 3], (square?2:1)) * h;
             for(j = 0; j < classes; ++j){
-                offset = i*per_cell + 5*num;
-                float prob = scale*predictions[offset+j];
+                int class_index = i*classes;
+                float prob = scale*predictions[class_index+j];
                 probs[index][j] = (prob > thresh) ? prob : 0;
             }
         }

@@ -61,6 +61,7 @@ void forward_region_layer(const region_layer l, network_state state)
     if(state.train){
         float avg_iou = 0;
         float avg_cat = 0;
+        float avg_allcat = 0;
         float avg_obj = 0;
         float avg_anyobj = 0;
         int count = 0;
@@ -90,6 +91,7 @@ void forward_region_layer(const region_layer l, network_state state)
                     l.delta[class_index+j] = l.class_scale * (state.truth[truth_index+1+j] - l.output[class_index+j]);
                     *(l.cost) += l.class_scale * pow(state.truth[truth_index+1+j] - l.output[class_index+j], 2);
                     if(state.truth[truth_index + 1 + j]) avg_cat += l.output[class_index+j];
+                    avg_allcat += l.output[class_index+j];
                 }
 
                 box truth = float_to_box(state.truth + truth_index + 1 + l.classes);
@@ -151,7 +153,7 @@ void forward_region_layer(const region_layer l, network_state state)
                         LOGISTIC, l.delta + index + locations*l.classes);
             }
         }
-        printf("Region Avg IOU: %f, Avg Cat Pred: %f, Avg Obj: %f, Avg Any: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
+        printf("Region Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_allcat/(count*l.classes), avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
     }
 }
 
