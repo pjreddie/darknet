@@ -37,7 +37,8 @@ typedef struct load_args{
     char **labels;
     int h;
     int w;
-    int downsample;
+    int out_w;
+    int out_h;
     int nh;
     int nw;
     int num_boxes;
@@ -69,7 +70,7 @@ box_label *read_boxes(char *filename, int *n);
 data load_cifar10_data(char *filename);
 data load_all_cifar10();
 
-data load_data_writing(char **paths, int n, int m, int w, int h, int downsample);
+data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int out_h);
 
 list *get_paths(char *filename);
 char **get_labels(char *filename);

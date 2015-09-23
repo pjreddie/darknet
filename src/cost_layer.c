@@ -45,6 +45,17 @@ cost_layer make_cost_layer(int batch, int inputs, COST_TYPE cost_type, float sca
     return l;
 }
 
+void resize_cost_layer(cost_layer *l, int inputs)
+{
+    l->inputs = inputs;
+    l->outputs = inputs;
+    l->delta = realloc(l->delta, inputs*l->batch*sizeof(float));
+#ifdef GPU
+    cuda_free(l->delta_gpu);
+    l->delta_gpu = cuda_make_array(l->delta, inputs*l->batch);
+#endif
+}
+
 void forward_cost_layer(cost_layer l, network_state state)
 {
     if (!state.truth) return;
@@ -83,7 +94,7 @@ void forward_cost_layer_gpu(cost_layer l, network_state state)
     if (l.cost_type == MASKED) {
         mask_ongpu(l.batch*l.inputs, state.input, SECRET_NUM, state.truth);
     }
-    
+
     copy_ongpu(l.batch*l.inputs, state.truth, 1, l.delta_gpu, 1);
     axpy_ongpu(l.batch*l.inputs, -1, state.input, 1, l.delta_gpu, 1);
 

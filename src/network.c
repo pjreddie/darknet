@@ -330,6 +330,7 @@ int resize_network(network *net, int w, int h)
     //if(w == net->w && h == net->h) return 0;
     net->w = w;
     net->h = h;
+    int inputs = 0;
     //fprintf(stderr, "Resizing to %d x %d...", w, h);
     //fflush(stderr);
     for (i = 0; i < net->n; ++i){
@@ -343,9 +344,12 @@ int resize_network(network *net, int w, int h)
             break;
         }else if(l.type == NORMALIZATION){
             resize_normalization_layer(&l, w, h);
+        }else if(l.type == COST){
+            resize_cost_layer(&l, inputs);
         }else{
             error("Cannot resize this type of layer");
         }
+        inputs = l.outputs;
         net->layers[i] = l;
         w = l.out_w;
         h = l.out_h;

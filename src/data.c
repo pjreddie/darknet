@@ -554,7 +554,7 @@ void *load_thread(void *ptr)
     } else if (a.type == DETECTION_DATA){
         *a.d = load_data_detection(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
     } else if (a.type == WRITING_DATA){
-        *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.downsample);
+        *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.out_w, a.out_h);
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes);
     } else if (a.type == COMPARE_DATA){
@@ -578,14 +578,14 @@ pthread_t load_data_in_thread(load_args args)
     return thread;
 }
 
-data load_data_writing(char **paths, int n, int m, int w, int h, int downsample)
+data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int out_h)
 {
     if(m) paths = get_random_paths(paths, n, m);
     char **replace_paths = find_replace_paths(paths, n, ".png", "-label.png");
     data d;
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
-    d.y = load_image_paths_gray(replace_paths, n, w/downsample, h/downsample);
+    d.y = load_image_paths_gray(replace_paths, n, out_w, out_h);
     if(m) free(paths);
     int i;
     for(i = 0; i < n; ++i) free(replace_paths[i]);

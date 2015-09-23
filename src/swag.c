@@ -274,14 +274,16 @@ void test_swag(char *cfgfile, char *weightfile, char *filename, float thresh)
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
-    char input[256];
+    char buff[256];
+    char *input = buff;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
         } else {
             printf("Enter Image Path: ");
             fflush(stdout);
-            fgets(input, 256, stdin);
+            input = fgets(input, 256, stdin);
+            if(!input) return;
             strtok(input, "\n");
         }
         image im = load_image_color(input,0,0);

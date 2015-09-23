@@ -106,7 +106,8 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
     srand(2222222);
     int i = 0;
     char **names = get_labels("/data/captcha/reimgs.labels.list");
-    char input[256];
+    char buff[256];
+    char *input = buff;
     int indexes[26];
     while(1){
         if(filename){
@@ -114,7 +115,8 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
         }else{
             //printf("Enter Image Path: ");
             //fflush(stdout);
-            fgets(input, 256, stdin);
+            input = fgets(input, 256, stdin);
+            if(!input) return;
             strtok(input, "\n");
         }
         image im = load_image_color(input, net.w, net.h);
