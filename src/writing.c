@@ -102,6 +102,10 @@ void test_writing(char *cfgfile, char *weightfile, char *outfile)
     printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
     image pred = get_network_image(net);
 
+    image t = threshold_image(pred, .2);
+    free_image(pred);
+    pred = t;
+
     if (outfile) {
         printf("Save image as %s.png (shape: %d %d)\n", outfile, pred.w, pred.h);
         save_image(pred, outfile);

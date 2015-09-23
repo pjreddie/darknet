@@ -35,7 +35,9 @@ void saturate_exposure_image(image im, float sat, float exposure);
 void hsv_to_rgb(image im);
 void rgbgr_image(image im);
 void constrain_image(image im);
+
 image grayscale_image(image im);
+image threshold_image(image im, float thresh);
 
 image collapse_image_layers(image source, int border);
 image collapse_images_horz(image *ims, int n);

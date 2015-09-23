@@ -494,6 +494,16 @@ image grayscale_image(image im)
     return gray;
 }
 
+image threshold_image(image im, float thresh)
+{
+    int i;
+    image t = make_image(im.w, im.h, im.c);
+    for(i = 0; i < im.w*im.h*im.c; ++i){
+        t.data[i] = im.data[i]>0 ? 1 : 0;
+    }
+    return t;
+}
+
 image blend_image(image fore, image back, float alpha)
 {
     assert(fore.w == back.w && fore.h == back.h && fore.c == back.c);
