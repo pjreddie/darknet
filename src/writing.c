@@ -69,13 +69,18 @@ void train_writing(char *cfgfile, char *weightfile)
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
-        free_data(train);
-        if(*net.seen/N > epoch){
-            epoch = *net.seen/N;
-            char buff[256];
-            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
-            save_weights(net, buff);
-        }
+	free_data(train);
+	if(get_current_batch(net)%100 == 0){
+		char buff[256];
+		sprintf(buff, "%s/%s_batch_%d.weights", backup_directory, base, get_current_batch(net));
+		save_weights(net, buff);
+	}
+	if(*net.seen/N > epoch){
+		epoch = *net.seen/N;
+		char buff[256];
+		sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
+		save_weights(net, buff);
+	}
     }
 }
 
@@ -102,7 +107,7 @@ void test_writing(char *cfgfile, char *weightfile, char *outfile)
     printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
     image pred = get_network_image(net);
 
-    image t = threshold_image(pred, .2);
+    image t = threshold_image(pred, .5);
     free_image(pred);
     pred = t;
 
@@ -110,28 +115,29 @@ void test_writing(char *cfgfile, char *weightfile, char *outfile)
         printf("Save image as %s.png (shape: %d %d)\n", outfile, pred.w, pred.h);
         save_image(pred, outfile);
     } else {
+        show_image(sized, "orig");
         show_image(pred, "prediction");
 #ifdef OPENCV
-        cvWaitKey(0);
-        cvDestroyAllWindows();
+		cvWaitKey(0);
+		cvDestroyAllWindows();
 #endif
-    }   
+	}   
 
-    free_image(im);
-    free_image(sized);
+	free_image(im);
+	free_image(sized);
 }
 
 void run_writing(int argc, char **argv)
 {
-    if(argc < 4){
-        fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
-        return;
-    }
+	if(argc < 4){
+		fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
+		return;
+	}
 
-    char *cfg = argv[3];
-    char *weights = (argc > 4) ? argv[4] : 0;
-    char *outfile = (argc > 5) ? argv[5] : 0;
-    if(0==strcmp(argv[2], "train")) train_writing(cfg, weights);
-    else if(0==strcmp(argv[2], "test")) test_writing(cfg, weights, outfile);
+	char *cfg = argv[3];
+	char *weights = (argc > 4) ? argv[4] : 0;
+	char *outfile = (argc > 5) ? argv[5] : 0;
+	if(0==strcmp(argv[2], "train")) train_writing(cfg, weights);
+	else if(0==strcmp(argv[2], "test")) test_writing(cfg, weights, outfile);
 }
 

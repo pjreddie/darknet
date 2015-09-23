@@ -499,7 +499,7 @@ image threshold_image(image im, float thresh)
     int i;
     image t = make_image(im.w, im.h, im.c);
     for(i = 0; i < im.w*im.h*im.c; ++i){
-        t.data[i] = im.data[i]>0 ? 1 : 0;
+        t.data[i] = im.data[i]>thresh ? 1 : 0;
     }
     return t;
 }
@@ -622,7 +622,7 @@ image resize_image(image im, int w, int h)
                 float val = (1-dy) * get_pixel(part, c, iy, k);
                 set_pixel(resized, c, r, k, val);
             }
-            if(r == h-1) continue;
+            if(r == h-1 || im.h == 1) continue;
             for(c = 0; c < w; ++c){
                 float val = dy * get_pixel(part, c, iy+1, k);
                 add_pixel(resized, c, r, k, val);
