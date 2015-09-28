@@ -65,7 +65,6 @@ void train_yolo(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer layer = get_network_detection_layer(net);
     int imgs = 128;
     int i = *net.seen/imgs;
 
@@ -74,11 +73,16 @@ void train_yolo(char *cfgfile, char *weightfile)
     int N = plist->size;
     paths = (char **)list_to_array(plist);
 
+    if(i*imgs > N*80){
+        net.layers[net.n-1].objectness = 0;
+        net.layers[net.n-1].joint = 1;
+    }
     if(i*imgs > N*120){
         net.layers[net.n-1].rescore = 1;
     }
     data train, buffer;
 
+    detection_layer layer = get_network_detection_layer(net);
     int classes = layer.classes;
     int background = layer.objectness;
     int side = sqrt(get_detection_layer_locations(layer));

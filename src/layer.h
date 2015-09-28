@@ -28,6 +28,7 @@ typedef struct {
     ACTIVATION activation;
     COST_TYPE cost_type;
     int batch;
+    int forced;
     int inputs;
     int outputs;
     int truths;

@@ -187,6 +187,7 @@ region_layer parse_region(list *options, size_params params)
     layer.sqrt = option_find_int(options, "sqrt", 0);
 
     layer.coord_scale = option_find_float(options, "coord_scale", 1);
+    layer.forced = option_find_int(options, "forced", 0);
     layer.object_scale = option_find_float(options, "object_scale", 1);
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);

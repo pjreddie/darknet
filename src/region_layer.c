@@ -82,9 +82,12 @@ void forward_region_layer(const region_layer l, network_state state)
 
                 int best_index = -1;
                 float best_iou = 0;
-                float best_rmse = 4;
+                float best_rmse = 20;
 
-                if (!is_obj) continue;
+                if (!is_obj){
+                    //printf(".");
+                    continue;
+                }
 
                 int class_index = index + i*l.classes;
                 for(j = 0; j < l.classes; ++j) {
@@ -123,18 +126,38 @@ void forward_region_layer(const region_layer l, network_state state)
                         }
                     }
                 }
-                int p_index = index + locations*l.classes + i*l.n + best_index;
-                *(l.cost) -= l.noobject_scale * pow(l.output[p_index], 2);
-                *(l.cost) += l.object_scale * pow(1-l.output[p_index], 2);
-                avg_obj += l.output[p_index];
-                l.delta[p_index+0] = l.object_scale * (1.-l.output[p_index]);
 
-                if(l.rescore){
-                    l.delta[p_index+0] = l.object_scale * (best_iou - l.output[p_index]);
+                if(l.forced){
+                    if(truth.w*truth.h < .1){
+                        best_index = 1;
+                    }else{
+                        best_index = 0;
+                    }
                 }
 
                 int box_index = index + locations*(l.classes + l.n) + (i*l.n + best_index) * l.coords;
                 int tbox_index = truth_index + 1 + l.classes;
+
+                box out = float_to_box(l.output + box_index);
+                out.x /= l.side;
+                out.y /= l.side;
+                if (l.sqrt) {
+                    out.w = out.w*out.w;
+                    out.h = out.h*out.h;
+                }
+                float iou  = box_iou(out, truth);
+
+                //printf("%d", best_index);
+                int p_index = index + locations*l.classes + i*l.n + best_index;
+                *(l.cost) -= l.noobject_scale * pow(l.output[p_index], 2);
+                *(l.cost) += l.object_scale * pow(1-l.output[p_index], 2);
+                avg_obj += l.output[p_index];
+                l.delta[p_index] = l.object_scale * (1.-l.output[p_index]);
+
+                if(l.rescore){
+                    l.delta[p_index] = l.object_scale * (iou - l.output[p_index]);
+                }
+
                 l.delta[box_index+0] = l.coord_scale*(state.truth[tbox_index + 0] - l.output[box_index + 0]);
                 l.delta[box_index+1] = l.coord_scale*(state.truth[tbox_index + 1] - l.output[box_index + 1]);
                 l.delta[box_index+2] = l.coord_scale*(state.truth[tbox_index + 2] - l.output[box_index + 2]);
@@ -144,14 +167,15 @@ void forward_region_layer(const region_layer l, network_state state)
                     l.delta[box_index+3] = l.coord_scale*(sqrt(state.truth[tbox_index + 3]) - l.output[box_index + 3]);
                 }
 
-                *(l.cost) += pow(1-best_iou, 2);
-                avg_iou += best_iou;
+                *(l.cost) += pow(1-iou, 2);
+                avg_iou += iou;
                 ++count;
             }
             if(l.softmax){
                 gradient_array(l.output + index + locations*l.classes, locations*l.n*(1+l.coords), 
                         LOGISTIC, l.delta + index + locations*l.classes);
             }
+            //printf("\n");
         }
         printf("Region Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_allcat/(count*l.classes), avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
     }

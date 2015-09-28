@@ -1,4 +1,5 @@
 #include "network.h"
+#include "region_layer.h"
 #include "detection_layer.h"
 #include "cost_layer.h"
 #include "utils.h"
@@ -11,40 +12,37 @@
 
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void draw_swag(image im, float *box, int side, int objectness, char *label, float thresh)
+void draw_swag(image im, float *predictions, int side, int num, char *label, float thresh)
 {
     int classes = 20;
-    int elems = 4+classes+objectness;
-    int j;
-    int r, c;
+    int i,n;
 
-    for(r = 0; r < side; ++r){
-        for(c = 0; c < side; ++c){
-            j = (r*side + c) * elems;
-            float scale = 1;
-            if(objectness) scale = 1 - box[j++];
-            int class = max_index(box+j, classes);
-            if(scale * box[j+class] > thresh){
-                int width = sqrt(scale*box[j+class])*5 + 1;
-                printf("%f %s\n", scale * box[j+class], voc_names[class]);
+    for(i = 0; i < side*side; ++i){
+        int row = i / side;
+        int col = i % side;
+        for(n = 0; n < num; ++n){
+            int p_index = side*side*classes + i*num + n;
+            int box_index = side*side*(classes + num) + (i*num + n)*4;
+            int class_index = i*classes;
+            float scale = predictions[p_index];
+            int class = max_index(predictions+class_index, classes);
+            float prob = scale * predictions[class_index + class];
+            if(prob > thresh){
+                int width = sqrt(prob)*5 + 1;
+                printf("%f %s\n", prob, voc_names[class]);
                 float red = get_color(0,class,classes);
                 float green = get_color(1,class,classes);
                 float blue = get_color(2,class,classes);
+                box b = float_to_box(predictions+box_index);
+                b.x = (b.x + col)/side;
+                b.y = (b.y + row)/side;
+                b.w = b.w*b.w;
+                b.h = b.h*b.h;
 
-                j += classes;
-                float x = box[j+0];
-                float y = box[j+1];
-                x = (x+c)/side;
-                y = (y+r)/side;
-                float w = box[j+2]; //*maxwidth;
-                float h = box[j+3]; //*maxheight;
-                h = h*h;
-                w = w*w;
-
-                int left  = (x-w/2)*im.w;
-                int right = (x+w/2)*im.w;
-                int top   = (y-h/2)*im.h;
-                int bot   = (y+h/2)*im.h;
+                int left  = (b.x-b.w/2)*im.w;
+                int right = (b.x+b.w/2)*im.w;
+                int top   = (b.y-b.h/2)*im.h;
+                int bot   = (b.y+b.h/2)*im.h;
                 draw_box_width(im, left, top, right, bot, width, red, green, blue);
             }
         }
@@ -103,13 +101,13 @@ void train_swag(char *cfgfile, char *weightfile)
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 
-/*
-        image im = float_to_image(net.w, net.h, 3, train.X.vals[113]);
-        image copy = copy_image(im);
-        draw_swag(copy, train.y.vals[113], 7, "truth");
-        cvWaitKey(0);
-        free_image(copy);
-        */
+        /*
+           image im = float_to_image(net.w, net.h, 3, train.X.vals[113]);
+           image copy = copy_image(im);
+           draw_swag(copy, train.y.vals[113], 7, "truth");
+           cvWaitKey(0);
+           free_image(copy);
+         */
 
         time=clock();
         float loss = train_network(net, train);
@@ -270,7 +268,7 @@ void test_swag(char *cfgfile, char *weightfile, char *filename, float thresh)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer layer = get_network_detection_layer(net);
+    region_layer layer = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
@@ -292,7 +290,8 @@ void test_swag(char *cfgfile, char *weightfile, char *filename, float thresh)
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        draw_swag(im, predictions, 7, layer.objectness, "predictions", thresh);
+        draw_swag(im, predictions, layer.side, layer.n, "predictions", thresh);
+        show_image(sized, "resized");
         free_image(im);
         free_image(sized);
 #ifdef OPENCV
