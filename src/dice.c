@@ -61,7 +61,7 @@ void validate_dice(char *filename, char *weightfile)
     free_list(plist);
 
     data val = load_data(paths, m, 0, labels, 6, net.w, net.h);
-    float *acc = network_accuracies(net, val);
+    float *acc = network_accuracies(net, val, 2);
     printf("Validation Accuracy: %f, %d images\n", acc[0], m);
     free_data(val);
 }

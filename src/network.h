@@ -70,7 +70,7 @@ float train_network_sgd(network net, data d, int n);
 matrix network_predict_data(network net, data test);
 float *network_predict(network net, float *input);
 float network_accuracy(network net, data d);
-float *network_accuracies(network net, data d);
+float *network_accuracies(network net, data d, int n);
 float network_accuracy_multi(network net, data d, int n);
 void top_predictions(network net, int n, int *index);
 float *get_network_output(network net);

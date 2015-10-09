@@ -9,6 +9,7 @@ typedef struct{
 } kvp;
 
 
+int read_option(char *s, list *options);
 void option_insert(list *l, char *key, char *val);
 char *option_find(list *l, char *key);
 char *option_find_str(list *l, char *key, char *def);

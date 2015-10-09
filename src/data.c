@@ -366,7 +366,7 @@ void free_data(data d)
     }
 }
 
-data load_data_region(int n, char **paths, int m, int w, int h, int size, int classes)
+data load_data_region(int n, char **paths, int m, int w, int h, int size, int classes, float jitter)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -385,8 +385,8 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
         int oh = orig.h;
         int ow = orig.w;
 
-        int dw = ow/10;
-        int dh = oh/10;
+        int dw = (ow*jitter);
+        int dh = (oh*jitter);
 
         int pleft  = (rand_uniform() * 2*dw - dw);
         int pright = (rand_uniform() * 2*dw - dw);
@@ -556,7 +556,7 @@ void *load_thread(void *ptr)
     } else if (a.type == WRITING_DATA){
         *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.out_w, a.out_h);
     } else if (a.type == REGION_DATA){
-        *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes);
+        *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter);
     } else if (a.type == COMPARE_DATA){
         *a.d = load_data_compare(a.n, a.paths, a.m, a.classes, a.w, a.h);
     } else if (a.type == IMAGE_DATA){

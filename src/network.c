@@ -540,12 +540,12 @@ float network_accuracy(network net, data d)
     return acc;
 }
 
-float *network_accuracies(network net, data d)
+float *network_accuracies(network net, data d, int n)
 {
     static float acc[2];
     matrix guess = network_predict_data(net, d);
-    acc[0] = matrix_topk_accuracy(d.y, guess,1);
-    acc[1] = matrix_topk_accuracy(d.y, guess,5);
+    acc[0] = matrix_topk_accuracy(d.y, guess, 1);
+    acc[1] = matrix_topk_accuracy(d.y, guess, n);
     free_matrix(guess);
     return acc;
 }

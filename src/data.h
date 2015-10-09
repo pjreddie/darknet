@@ -44,6 +44,7 @@ typedef struct load_args{
     int num_boxes;
     int classes;
     int background;
+    float jitter;
     data *d;
     image *im;
     image *resized;

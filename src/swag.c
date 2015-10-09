@@ -73,6 +73,7 @@ void train_swag(char *cfgfile, char *weightfile)
 
     int side = l.side;
     int classes = l.classes;
+    float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
     //int N = plist->size;
@@ -85,6 +86,7 @@ void train_swag(char *cfgfile, char *weightfile)
     args.n = imgs;
     args.m = plist->size;
     args.classes = classes;
+    args.jitter = jitter;
     args.num_boxes = side;
     args.d = &buffer;
     args.type = REGION_DATA;
@@ -127,7 +129,7 @@ void train_swag(char *cfgfile, char *weightfile)
     save_weights(net, buff);
 }
 
-void convert_swag_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes)
+void convert_swag_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness)
 {
     int i,j,n;
     //int per_cell = 5*num+classes;
@@ -147,6 +149,9 @@ void convert_swag_detections(float *predictions, int classes, int num, int squar
                 int class_index = i*classes;
                 float prob = scale*predictions[class_index+j];
                 probs[index][j] = (prob > thresh) ? prob : 0;
+            }
+            if(only_objectness){
+                probs[index][0] = scale;
             }
         }
     }
@@ -250,7 +255,7 @@ void validate_swag(char *cfgfile, char *weightfile)
             float *predictions = network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            convert_swag_detections(predictions, classes, l.n, square, side, w, h, thresh, probs, boxes);
+            convert_swag_detections(predictions, classes, l.n, square, side, w, h, thresh, probs, boxes, 0);
             if (nms) do_nms(boxes, probs, side*side*l.n, classes, iou_thresh);
             print_swag_detections(fps, id, boxes, probs, side*side*l.n, classes, w, h);
             free(id);
@@ -259,6 +264,95 @@ void validate_swag(char *cfgfile, char *weightfile)
         }
     }
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
+}
+
+void validate_swag_recall(char *cfgfile, char *weightfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    srand(time(0));
+
+    char *base = "results/comp4_det_test_";
+    list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
+    char **paths = (char **)list_to_array(plist);
+
+    layer l = net.layers[net.n-1];
+    int classes = l.classes;
+    int square = l.sqrt;
+    int side = l.side;
+
+    int j, k;
+    FILE **fps = calloc(classes, sizeof(FILE *));
+    for(j = 0; j < classes; ++j){
+        char buff[1024];
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+        fps[j] = fopen(buff, "w");
+    }
+    box *boxes = calloc(side*side*l.n, sizeof(box));
+    float **probs = calloc(side*side*l.n, sizeof(float *));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+
+    int m = plist->size;
+    int i=0;
+
+    float thresh = .001;
+    int nms = 0;
+    float iou_thresh = .5;
+    float nms_thresh = .5;
+
+    int total = 0;
+    int correct = 0;
+    int proposals = 0;
+    float avg_iou = 0;
+
+    for(i = 0; i < m; ++i){
+        char *path = paths[i];
+        image orig = load_image_color(path, 0, 0);
+        image sized = resize_image(orig, net.w, net.h);
+        char *id = basecfg(path);
+        float *predictions = network_predict(net, sized.data);
+        int w = orig.w;
+        int h = orig.h;
+        convert_swag_detections(predictions, classes, l.n, square, side, 1, 1, thresh, probs, boxes, 1);
+        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
+
+        char *labelpath = find_replace(path, "images", "labels");
+        labelpath = find_replace(labelpath, "JPEGImages", "labels");
+        labelpath = find_replace(labelpath, ".jpg", ".txt");
+        labelpath = find_replace(labelpath, ".JPEG", ".txt");
+
+        int num_labels = 0;
+        box_label *truth = read_boxes(labelpath, &num_labels);
+        for(k = 0; k < side*side*l.n; ++k){
+            if(probs[k][0] > thresh){
+                ++proposals;
+            }
+        }
+        for (j = 0; j < num_labels; ++j) {
+            ++total;
+            box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
+            float best_iou = 0;
+            for(k = 0; k < side*side*l.n; ++k){
+                float iou = box_iou(boxes[k], t);
+                if(probs[k][0] > thresh && iou > best_iou){
+                    best_iou = iou;
+                }
+            }
+            avg_iou += best_iou;
+            if(best_iou > iou_thresh){
+                ++correct;
+            }
+        }
+
+        fprintf(stderr, "%5d %5d %5d\tRPs/Img: %.2f\tIOU: %.2f%%\tRecall:%.2f%%\n", i, correct, total, (float)proposals/(i+1), avg_iou*100/total, 100.*correct/total);
+        free(id);
+        free_image(orig);
+        free_image(sized);
+    }
 }
 
 void test_swag(char *cfgfile, char *weightfile, char *filename, float thresh)
@@ -316,4 +410,5 @@ void run_swag(int argc, char **argv)
     if(0==strcmp(argv[2], "test")) test_swag(cfg, weights, filename, thresh);
     else if(0==strcmp(argv[2], "train")) train_swag(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_swag(cfg, weights);
+    else if(0==strcmp(argv[2], "recall")) validate_swag_recall(cfg, weights);
 }

@@ -186,11 +186,16 @@ region_layer parse_region(list *options, size_params params)
     layer.softmax = option_find_int(options, "softmax", 0);
     layer.sqrt = option_find_int(options, "sqrt", 0);
 
+    layer.object_logistic = option_find_int(options, "object_logistic", 0);
+    layer.class_logistic = option_find_int(options, "class_logistic", 0);
+    layer.coord_logistic = option_find_int(options, "coord_logistic", 0);
+
     layer.coord_scale = option_find_float(options, "coord_scale", 1);
     layer.forced = option_find_int(options, "forced", 0);
     layer.object_scale = option_find_float(options, "object_scale", 1);
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
+    layer.jitter = option_find_float(options, "jitter", .1);
     return layer;
 }
 
@@ -530,24 +535,6 @@ int is_softmax(section *s)
 int is_route(section *s)
 {
     return (strcmp(s->type, "[route]")==0);
-}
-
-int read_option(char *s, list *options)
-{
-    size_t i;
-    size_t len = strlen(s);
-    char *val = 0;
-    for(i = 0; i < len; ++i){
-        if(s[i] == '='){
-            s[i] = '\0';
-            val = s+i+1;
-            break;
-        }
-    }
-    if(i == len-1) return 0;
-    char *key = s;
-    option_insert(options, key, val);
-    return 1;
 }
 
 list *read_cfg(char *filename)

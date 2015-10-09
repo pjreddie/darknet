@@ -135,6 +135,7 @@ void get_probs(float *predictions, int total, int classes, int inc, float **prob
         }
     }
 }
+
 void get_boxes(float *predictions, int n, int num_boxes, int per_box, box *boxes)
 {
     int i,j;

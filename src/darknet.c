@@ -20,6 +20,7 @@ extern void run_captcha(int argc, char **argv);
 extern void run_nightmare(int argc, char **argv);
 extern void run_dice(int argc, char **argv);
 extern void run_compare(int argc, char **argv);
+extern void run_classifier(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -183,6 +184,8 @@ int main(int argc, char **argv)
         run_swag(argc, argv);
     } else if (0 == strcmp(argv[1], "coco")){
         run_coco(argc, argv);
+    } else if (0 == strcmp(argv[1], "classifier")){
+        run_classifier(argc, argv);
     } else if (0 == strcmp(argv[1], "compare")){
         run_compare(argc, argv);
     } else if (0 == strcmp(argv[1], "dice")){

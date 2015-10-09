@@ -29,6 +29,9 @@ typedef struct {
     COST_TYPE cost_type;
     int batch;
     int forced;
+    int object_logistic;
+    int class_logistic;
+    int coord_logistic;
     int inputs;
     int outputs;
     int truths;
@@ -45,6 +48,7 @@ typedef struct {
     int sqrt;
     int flip;
     float angle;
+    float jitter;
     float saturation;
     float exposure;
     int softmax;

@@ -133,7 +133,7 @@ void validate_imagenet(char *filename, char *weightfile)
         printf("Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
 
         time=clock();
-        float *acc = network_accuracies(net, val);
+        float *acc = network_accuracies(net, val, 5);
         avg_acc += acc[0];
         avg_top5 += acc[1];
         printf("%d: top1: %f, top5: %f, %lf seconds, %d images\n", i, avg_acc/i, avg_top5/i, sec(clock()-time), val.X.rows);
