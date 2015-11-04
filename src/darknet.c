@@ -141,6 +141,47 @@ void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
     save_weights(net, outfile);
 }
 
+void normalize_net(char *cfgfile, char *weightfile, char *outfile)
+{
+    gpu_index = -1;
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    int i, j;
+    for(i = 0; i < net.n; ++i){
+        layer l = net.layers[i];
+        if(l.type == CONVOLUTIONAL){
+            net.layers[i].batch_normalize=1;
+            net.layers[i].scales = calloc(l.n, sizeof(float));
+            for(j = 0; j < l.n; ++j){
+                net.layers[i].scales[i] = 1;
+            }
+            net.layers[i].rolling_mean = calloc(l.n, sizeof(float));
+            net.layers[i].rolling_variance = calloc(l.n, sizeof(float));
+        }
+    }
+    save_weights(net, outfile);
+}
+
+void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
+{
+    gpu_index = -1;
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    int i;
+    for(i = 0; i < net.n; ++i){
+        layer l = net.layers[i];
+        if(l.type == CONVOLUTIONAL){
+            denormalize_convolutional_layer(l);
+            net.layers[i].batch_normalize=0;
+        }
+    }
+    save_weights(net, outfile);
+}
+
 void visualize(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
@@ -202,6 +243,10 @@ int main(int argc, char **argv)
         change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
     } else if (0 == strcmp(argv[1], "rgbgr")){
         rgbgr_net(argv[2], argv[3], argv[4]);
+    } else if (0 == strcmp(argv[1], "denormalize")){
+        denormalize_net(argv[2], argv[3], argv[4]);
+    } else if (0 == strcmp(argv[1], "normalize")){
+        normalize_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "rescale")){
         rescale_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "partial")){

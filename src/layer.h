@@ -27,6 +27,7 @@ typedef struct {
     LAYER_TYPE type;
     ACTIVATION activation;
     COST_TYPE cost_type;
+    int batch_normalize;
     int batch;
     int forced;
     int object_logistic;
@@ -51,6 +52,7 @@ typedef struct {
     float jitter;
     float saturation;
     float exposure;
+    float shift;
     int softmax;
     int classes;
     int coords;
@@ -71,6 +73,7 @@ typedef struct {
     float class_scale;
 
     int dontload;
+    int dontloadscales;
 
     float probability;
     float scale;
@@ -84,6 +87,9 @@ typedef struct {
     float *biases;
     float *bias_updates;
 
+    float *scales;
+    float *scale_updates;
+
     float *weights;
     float *weight_updates;
 
@@ -95,18 +101,44 @@ typedef struct {
     float * squared;
     float * norms;
 
+    float * spatial_mean;
+    float * mean;
+    float * variance;
+
+    float * rolling_mean;
+    float * rolling_variance;
+
     #ifdef GPU
     int *indexes_gpu;
     float * filters_gpu;
     float * filter_updates_gpu;
 
+    float * spatial_mean_gpu;
+    float * spatial_variance_gpu;
+
+    float * mean_gpu;
+    float * variance_gpu;
+
+    float * rolling_mean_gpu;
+    float * rolling_variance_gpu;
+
+    float * spatial_mean_delta_gpu;
+    float * spatial_variance_delta_gpu;
+
+    float * variance_delta_gpu;
+    float * mean_delta_gpu;
+
     float * col_image_gpu;
 
+    float * x_gpu;
+    float * x_norm_gpu;
     float * weights_gpu;
     float * biases_gpu;
+    float * scales_gpu;
 
     float * weight_updates_gpu;
     float * bias_updates_gpu;
+    float * scale_updates_gpu;
 
     float * output_gpu;
     float * delta_gpu;

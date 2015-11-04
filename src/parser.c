@@ -124,8 +124,9 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     c = params.c;
     batch=params.batch;
     if(!(h && w && c)) error("Layer before convolutional layer must output image.");
+    int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,pad,activation);
+    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,pad,activation, batch_normalize);
 
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
@@ -227,6 +228,7 @@ crop_layer parse_crop(list *options, size_params params)
     int noadjust = option_find_int_quiet(options, "noadjust",0);
 
     crop_layer l = make_crop_layer(batch,h,w,c,crop_height,crop_width,flip, angle, saturation, exposure);
+    l.shift = option_find_float(options, "shift", 0);
     l.noadjust = noadjust;
     return l;
 }
@@ -452,6 +454,7 @@ network parse_network_cfg(char *filename)
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
         l.dontload = option_find_int_quiet(options, "dontload", 0);
+        l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         option_unused(options);
         net.layers[count] = l;
         free_section(s);
@@ -633,19 +636,13 @@ void save_weights_upto(network net, char *filename, int cutoff)
 #endif
             int num = l.n*l.c*l.size*l.size;
             fwrite(l.biases, sizeof(float), l.n, fp);
-            fwrite(l.filters, sizeof(float), num, fp);
-        }
-        if(l.type == DECONVOLUTIONAL){
-#ifdef GPU
-            if(gpu_index >= 0){
-                pull_deconvolutional_layer(l);
+            if (l.batch_normalize){
+                fwrite(l.scales, sizeof(float), l.n, fp);
+                fwrite(l.rolling_mean, sizeof(float), l.n, fp);
+                fwrite(l.rolling_variance, sizeof(float), l.n, fp);
             }
-#endif
-            int num = l.n*l.c*l.size*l.size;
-            fwrite(l.biases, sizeof(float), l.n, fp);
             fwrite(l.filters, sizeof(float), num, fp);
-        }
-        if(l.type == CONNECTED){
+        } if(l.type == CONNECTED){
 #ifdef GPU
             if(gpu_index >= 0){
                 pull_connected_layer(l);
@@ -682,6 +679,11 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         if(l.type == CONVOLUTIONAL){
             int num = l.n*l.c*l.size*l.size;
             fread(l.biases, sizeof(float), l.n, fp);
+            if (l.batch_normalize && (!l.dontloadscales)){
+                fread(l.scales, sizeof(float), l.n, fp);
+                fread(l.rolling_mean, sizeof(float), l.n, fp);
+                fread(l.rolling_variance, sizeof(float), l.n, fp);
+            }
             fread(l.filters, sizeof(float), num, fp);
 #ifdef GPU
             if(gpu_index >= 0){

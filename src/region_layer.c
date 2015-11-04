@@ -226,6 +226,11 @@ void backward_region_layer(const region_layer l, network_state state)
 
 void forward_region_layer_gpu(const region_layer l, network_state state)
 {
+    if(!state.train){
+        copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
+        return;
+    }
+
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){

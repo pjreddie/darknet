@@ -12,39 +12,28 @@
 
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void draw_swag(image im, float *predictions, int side, int num, char *label, float thresh)
+void draw_swag(image im, int num, float thresh, box *boxes, float **probs, char *label)
 {
     int classes = 20;
-    int i,n;
+    int i;
 
-    for(i = 0; i < side*side; ++i){
-        int row = i / side;
-        int col = i % side;
-        for(n = 0; n < num; ++n){
-            int p_index = side*side*classes + i*num + n;
-            int box_index = side*side*(classes + num) + (i*num + n)*4;
-            int class_index = i*classes;
-            float scale = predictions[p_index];
-            int class = max_index(predictions+class_index, classes);
-            float prob = scale * predictions[class_index + class];
-            if(prob > thresh){
-                int width = sqrt(prob)*5 + 1;
-                printf("%f %s\n", prob, voc_names[class]);
-                float red = get_color(0,class,classes);
-                float green = get_color(1,class,classes);
-                float blue = get_color(2,class,classes);
-                box b = float_to_box(predictions+box_index);
-                b.x = (b.x + col)/side;
-                b.y = (b.y + row)/side;
-                b.w = b.w*b.w;
-                b.h = b.h*b.h;
+    for(i = 0; i < num; ++i){
+        int class = max_index(probs[i], classes);
+        float prob = probs[i][class];
+        if(prob > thresh){
+            int width = pow(prob, 1./3.)*10 + 1;
+            printf("%f %s\n", prob, voc_names[class]);
+            float red = get_color(0,class,classes);
+            float green = get_color(1,class,classes);
+            float blue = get_color(2,class,classes);
+            //red = green = blue = 0;
+            box b = boxes[i];
 
-                int left  = (b.x-b.w/2)*im.w;
-                int right = (b.x+b.w/2)*im.w;
-                int top   = (b.y-b.h/2)*im.h;
-                int bot   = (b.y+b.h/2)*im.h;
-                draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            }
+            int left  = (b.x-b.w/2.)*im.w;
+            int right = (b.x+b.w/2.)*im.w;
+            int top   = (b.y-b.h/2.)*im.h;
+            int bot   = (b.y+b.h/2.)*im.h;
+            draw_box_width(im, left, top, right, bot, width, red, green, blue);
         }
     }
     show_image(im, label);
@@ -52,7 +41,12 @@ void draw_swag(image im, float *predictions, int side, int num, char *label, flo
 
 void train_swag(char *cfgfile, char *weightfile)
 {
+    //char *train_images = "/home/pjreddie/data/voc/person_detection/2010_person.txt";
+    //char *train_images = "/home/pjreddie/data/people-art/train.txt";
+    //char *train_images = "/home/pjreddie/data/voc/test/2012_trainval.txt";
     char *train_images = "/home/pjreddie/data/voc/test/train.txt";
+    //char *train_images = "/home/pjreddie/data/voc/test/train_all.txt";
+    //char *train_images = "/home/pjreddie/data/voc/test/2007_trainval.txt";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     data_seed = time(0);
@@ -116,7 +110,7 @@ void train_swag(char *cfgfile, char *weightfile)
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
-        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), i*imgs);
+        printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
@@ -189,6 +183,9 @@ void validate_swag(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
+    //base = "/home/pjreddie/comp4_det_test_";
+    //list *plist = get_paths("/home/pjreddie/data/people-art/test.txt");
+    //list *plist = get_paths("/home/pjreddie/data/cubist/test.txt");
     list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
     char **paths = (char **)list_to_array(plist);
 
@@ -216,7 +213,7 @@ void validate_swag(char *cfgfile, char *weightfile)
     int nms = 1;
     float iou_thresh = .5;
 
-    int nthreads = 8;
+    int nthreads = 2;
     image *val = calloc(nthreads, sizeof(image));
     image *val_resized = calloc(nthreads, sizeof(image));
     image *buf = calloc(nthreads, sizeof(image));
@@ -256,7 +253,7 @@ void validate_swag(char *cfgfile, char *weightfile)
             int w = val[t].w;
             int h = val[t].h;
             convert_swag_detections(predictions, classes, l.n, square, side, w, h, thresh, probs, boxes, 0);
-            if (nms) do_nms(boxes, probs, side*side*l.n, classes, iou_thresh);
+            if (nms) do_nms_sort(boxes, probs, side*side*l.n, classes, iou_thresh);
             print_swag_detections(fps, id, boxes, probs, side*side*l.n, classes, w, h);
             free(id);
             free_image(val[t]);
@@ -315,8 +312,6 @@ void validate_swag_recall(char *cfgfile, char *weightfile)
         image sized = resize_image(orig, net.w, net.h);
         char *id = basecfg(path);
         float *predictions = network_predict(net, sized.data);
-        int w = orig.w;
-        int h = orig.h;
         convert_swag_detections(predictions, classes, l.n, square, side, 1, 1, thresh, probs, boxes, 1);
         if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
 
@@ -362,12 +357,17 @@ void test_swag(char *cfgfile, char *weightfile, char *filename, float thresh)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    region_layer layer = net.layers[net.n-1];
+    region_layer l = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
     char buff[256];
     char *input = buff;
+    int j;
+    float nms=.5;
+    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
+    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
+    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -384,7 +384,10 @@ void test_swag(char *cfgfile, char *weightfile, char *filename, float thresh)
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        draw_swag(im, predictions, layer.side, layer.n, "predictions", thresh);
+        convert_swag_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
+        if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
+        draw_swag(im, l.side*l.side*l.n, thresh, boxes, probs, "predictions");
+
         show_image(sized, "resized");
         free_image(im);
         free_image(sized);
@@ -395,6 +398,48 @@ void test_swag(char *cfgfile, char *weightfile, char *filename, float thresh)
         if (filename) break;
     }
 }
+
+
+/*
+#ifdef OPENCV
+image ipl_to_image(IplImage* src);
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+
+void demo_swag(char *cfgfile, char *weightfile, float thresh)
+{
+network net = parse_network_cfg(cfgfile);
+if(weightfile){
+load_weights(&net, weightfile);
+}
+region_layer layer = net.layers[net.n-1];
+CvCapture *capture = cvCaptureFromCAM(-1);
+set_batch_network(&net, 1);
+srand(2222222);
+while(1){
+IplImage* frame = cvQueryFrame(capture);
+image im = ipl_to_image(frame);
+cvReleaseImage(&frame);
+rgbgr_image(im);
+
+image sized = resize_image(im, net.w, net.h);
+float *X = sized.data;
+float *predictions = network_predict(net, X);
+draw_swag(im, predictions, layer.side, layer.n, "predictions", thresh);
+free_image(im);
+free_image(sized);
+cvWaitKey(10);
+}
+}
+#else
+void demo_swag(char *cfgfile, char *weightfile, float thresh){}
+#endif
+ */
+
+void demo_swag(char *cfgfile, char *weightfile, float thresh);
+#ifndef GPU
+void demo_swag(char *cfgfile, char *weightfile, float thresh){}
+#endif
 
 void run_swag(int argc, char **argv)
 {
@@ -411,4 +456,5 @@ void run_swag(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_swag(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_swag(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_swag_recall(cfg, weights);
+    else if(0==strcmp(argv[2], "demo")) demo_swag(cfg, weights, thresh);
 }

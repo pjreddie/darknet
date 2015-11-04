@@ -15,6 +15,7 @@ typedef struct {
     int n;
     int batch;
     int *seen;
+    float epoch;
     int subdivisions;
     float momentum;
     float decay;

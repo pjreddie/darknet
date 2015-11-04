@@ -16,6 +16,10 @@ void scal_cpu(int N, float ALPHA, float *X, int INCX);
 float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void test_gpu_blas();
 
+void mean_cpu(float *x, int batch, int filters, int spatial, float *mean);
+void variance_cpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
+void normalize_cpu(float *x, float *mean, float *variance, int batch, int filters, int spatial);
+
 #ifdef GPU
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
@@ -26,6 +30,20 @@ void mask_ongpu(int N, float * X, float mask_num, float * mask);
 void const_ongpu(int N, float ALPHA, float *X, int INCX);
 void pow_ongpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void mul_ongpu(int N, float *X, int INCX, float *Y, int INCY);
+void fill_ongpu(int N, float ALPHA, float * X, int INCX);
 
+void mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
+void variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
+void normalize_gpu(float *x, float *mean, float *variance, int batch, int filters, int spatial);
+
+void mean_delta_gpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta);
+void variance_delta_gpu(float *x, float *delta, float *mean, float *variance, int batch, int filters, int spatial, float *variance_delta);
+void normalize_delta_gpu(float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta);
+
+void fast_mean_delta_gpu(float *delta, float *variance, int batch, int filters, int spatial, float *spatial_mean_delta, float *mean_delta);
+void fast_variance_delta_gpu(float *x, float *delta, float *mean, float *variance, int batch, int filters, int spatial, float *spatial_variance_delta, float *variance_delta);
+
+void fast_variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *spatial_variance, float *variance);
+void fast_mean_gpu(float *x, int batch, int filters, int spatial, float *spatial_mean, float *mean);
 #endif
 #endif

@@ -307,7 +307,7 @@ void BattleRoyaleWithCheese(char *filename, char *weightfile)
         qsort(boxes, N, sizeof(sortable_bbox), elo_comparator);
         N /= 2;
 
-        for(round = 1; round <= 20; ++round){
+        for(round = 1; round <= 100; ++round){
             clock_t round_time=clock();
             printf("Round: %d\n", round);
 
@@ -316,7 +316,7 @@ void BattleRoyaleWithCheese(char *filename, char *weightfile)
                 bbox_fight(net, boxes+i*2, boxes+i*2+1, classes, class);
             }
             qsort(boxes, N, sizeof(sortable_bbox), elo_comparator);
-            N = (N*9/10)/2*2;
+            if(round <= 20) N = (N*9/10)/2*2;
 
             printf("Round: %f secs, %d remaining\n", sec(clock()-round_time), N);
         }

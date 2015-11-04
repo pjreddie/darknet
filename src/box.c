@@ -1,6 +1,7 @@
 #include "box.h"
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 box float_to_box(float *f)
 {
@@ -227,6 +228,52 @@ dbox diou(box a, box b)
     dd.dw = 2*pow((1-(i/u)),1)*(di.dw*u - du.dw*i)/(u*u);
     dd.dh = 2*pow((1-(i/u)),1)*(di.dh*u - du.dh*i)/(u*u);
     return dd;
+}
+
+typedef struct{
+    int index;
+    int class;
+    float **probs;
+} sortable_bbox;
+
+int nms_comparator(const void *pa, const void *pb)
+{
+    sortable_bbox a = *(sortable_bbox *)pa;
+    sortable_bbox b = *(sortable_bbox *)pb;
+    float diff = a.probs[a.index][b.class] - b.probs[b.index][b.class];
+    if(diff < 0) return 1;
+    else if(diff > 0) return -1;
+    return 0;
+}
+
+void do_nms_sort(box *boxes, float **probs, int total, int classes, float thresh)
+{
+    int i, j, k;
+    sortable_bbox *s = calloc(total, sizeof(sortable_bbox));
+
+    for(i = 0; i < total; ++i){
+        s[i].index = i;       
+        s[i].class = 0;
+        s[i].probs = probs;
+    }
+
+    for(k = 0; k < classes; ++k){
+        for(i = 0; i < total; ++i){
+            s[i].class = k;
+        }
+        qsort(s, total, sizeof(sortable_bbox), nms_comparator);
+        for(i = 0; i < total; ++i){
+            if(probs[s[i].index][k] == 0) continue;
+            box a = boxes[s[i].index];
+            for(j = i+1; j < total; ++j){
+                box b = boxes[s[j].index];
+                if (box_iou(a, b) > thresh){
+                    probs[s[j].index][k] = 0;
+                }
+            }
+        }
+    }
+    free(s);
 }
 
 void do_nms(box *boxes, float **probs, int total, int classes, float thresh)

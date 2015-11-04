@@ -215,7 +215,7 @@ void show_image_cv(image p, char *name)
 
     IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
     int step = disp->widthStep;
-    cvNamedWindow(buff, CV_WINDOW_AUTOSIZE); 
+    cvNamedWindow(buff, CV_WINDOW_NORMAL); 
     //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
     ++windows;
     for(y = 0; y < p.h; ++y){
@@ -696,7 +696,7 @@ image load_image_cv(char *filename, int channels)
 
     if( (src = cvLoadImage(filename, flag)) == 0 )
     {
-        printf("Cannot load file image %s\n", filename);
+        printf("Cannot load image \"%s\"\n", filename);
         exit(0);
     }
     image out = ipl_to_image(src);
@@ -713,7 +713,7 @@ image load_image_stb(char *filename, int channels)
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     if (!data) {
-        fprintf(stderr, "Cannot load file image %s\nSTB Reason: %s\n", filename, stbi_failure_reason());
+        fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
         exit(0);
     }
     if(channels) c = channels;

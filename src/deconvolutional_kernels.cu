@@ -20,7 +20,7 @@ extern "C" void forward_deconvolutional_layer_gpu(deconvolutional_layer layer, n
     int n = layer.h*layer.w;
     int k = layer.c;
 
-    bias_output_gpu(layer.output_gpu, layer.biases_gpu, layer.batch, layer.n, size);
+    fill_ongpu(layer.outputs*layer.batch, 0, layer.output_gpu, 1);
 
     for(i = 0; i < layer.batch; ++i){
         float *a = layer.filters_gpu;
@@ -31,6 +31,7 @@ extern "C" void forward_deconvolutional_layer_gpu(deconvolutional_layer layer, n
 
         col2im_ongpu(c, layer.n, out_h, out_w, layer.size, layer.stride, 0, layer.output_gpu+i*layer.n*size);
     }
+    add_bias_gpu(layer.output_gpu, layer.biases_gpu, layer.batch, layer.n, size);
     activate_array(layer.output_gpu, layer.batch*layer.n*size, layer.activation);
 }
 

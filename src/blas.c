@@ -1,6 +1,51 @@
 #include "blas.h"
 #include "math.h"
 
+void mean_cpu(float *x, int batch, int filters, int spatial, float *mean)
+{
+    float scale = 1./(batch * spatial);
+    int i,j,k;
+    for(i = 0; i < filters; ++i){
+        mean[i] = 0;
+        for(j = 0; j < batch; ++j){
+            for(k = 0; k < spatial; ++k){
+                int index = j*filters*spatial + i*spatial + k;
+                mean[i] += x[index];
+            }
+        }
+        mean[i] *= scale;
+    }
+}
+
+void variance_cpu(float *x, float *mean, int batch, int filters, int spatial, float *variance)
+{
+    float scale = 1./(batch * spatial);
+    int i,j,k;
+    for(i = 0; i < filters; ++i){
+        variance[i] = 0;
+        for(j = 0; j < batch; ++j){
+            for(k = 0; k < spatial; ++k){
+                int index = j*filters*spatial + i*spatial + k;
+                variance[i] += pow((x[index] - mean[i]), 2);
+            }
+        }
+        variance[i] *= scale;
+    }
+}
+
+void normalize_cpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
+{
+    int b, f, i;
+    for(b = 0; b < batch; ++b){
+        for(f = 0; f < filters; ++f){
+            for(i = 0; i < spatial; ++i){
+                int index = b*filters*spatial + f*spatial + i;
+                x[index] = (x[index] - mean[f])/(sqrt(variance[f]));
+            }
+        }
+    }
+}
+
 void const_cpu(int N, float ALPHA, float *X, int INCX)
 {
     int i;

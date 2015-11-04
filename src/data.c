@@ -153,7 +153,9 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
 {
     char *labelpath = find_replace(path, "images", "labels");
     labelpath = find_replace(labelpath, "JPEGImages", "labels");
+
     labelpath = find_replace(labelpath, ".jpg", ".txt");
+    labelpath = find_replace(labelpath, ".JPG", ".txt");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
@@ -547,7 +549,7 @@ void *load_thread(void *ptr)
     check_error(status);
 #endif
 
-    printf("Loading data: %d\n", rand_r(&data_seed));
+    //printf("Loading data: %d\n", rand_r(&data_seed));
     load_args a = *(struct load_args*)ptr;
     if (a.type == CLASSIFICATION_DATA){
         *a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
