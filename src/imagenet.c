@@ -48,12 +48,6 @@ void train_imagenet(char *cfgfile, char *weightfile)
         pthread_join(load_thread, 0);
         train = buffer;
 
-        /*
-        image im = float_to_image(256, 256, 3, train.X.vals[114]);
-        show_image(im, "training");
-        cvWaitKey(0);
-        */
-
         load_thread = load_data_in_thread(args);
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();

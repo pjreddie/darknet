@@ -46,13 +46,7 @@ void draw_yolo(image im, int num, float thresh, box *boxes, float **probs, char 
 
 void train_yolo(char *cfgfile, char *weightfile)
 {
-    //char *train_images = "/home/pjreddie/data/voc/person_detection/2010_person.txt";
-    //char *train_images = "/home/pjreddie/data/people-art/train.txt";
-    //char *train_images = "/home/pjreddie/data/voc/test/2012_trainval.txt";
-    //char *train_images = "/home/pjreddie/data/voc/test/2010_trainval.txt";
-    char *train_images = "/home/pjreddie/data/voc/test/train.txt";
-    //char *train_images = "/home/pjreddie/data/voc/test/train_all.txt";
-    //char *train_images = "/home/pjreddie/data/voc/test/2007_trainval.txt";
+    char *train_images = "data/voc.0712.trainval";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     data_seed = time(0);
@@ -189,12 +183,8 @@ void validate_yolo(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    //base = "/home/pjreddie/comp4_det_test_";
-    //list *plist = get_paths("/home/pjreddie/data/people-art/test.txt");
-    //list *plist = get_paths("/home/pjreddie/data/cubist/test.txt");
-
-    list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
-    //list *plist = get_paths("/home/pjreddie/data/voc/test_2012.txt");
+    //list *plist = get_paths("data/voc.2007.test");
+    list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -282,7 +272,7 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
+    list *plist = get_paths("data/voc.2007.test");
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -373,7 +363,6 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     char *input = buff;
     int j;
     float nms=.5;
-    printf("%d %d %d", l.side, l.n, l.classes);
     box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
     float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
     for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
