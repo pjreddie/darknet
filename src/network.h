@@ -89,7 +89,6 @@ int resize_network(network *net, int w, int h);
 void set_batch_network(network *net, int b);
 int get_network_input_size(network net);
 float get_network_cost(network net);
-detection_layer get_network_detection_layer(network net);
 
 int get_network_nuisance(network net);
 int get_network_background(network net);

@@ -11,7 +11,6 @@
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "detection_layer.h"
-#include "region_layer.h"
 #include "normalization_layer.h"
 #include "maxpool_layer.h"
 #include "avgpool_layer.h"
@@ -72,8 +71,6 @@ char *get_layer_string(LAYER_TYPE a)
             return "softmax";
         case DETECTION:
             return "detection";
-        case REGION:
-            return "region";
         case DROPOUT:
             return "dropout";
         case CROP:
@@ -119,8 +116,6 @@ void forward_network(network net, network_state state)
             forward_normalization_layer(l, state);
         } else if(l.type == DETECTION){
             forward_detection_layer(l, state);
-        } else if(l.type == REGION){
-            forward_region_layer(l, state);
         } else if(l.type == CONNECTED){
             forward_connected_layer(l, state);
         } else if(l.type == CROP){
@@ -180,10 +175,6 @@ float get_network_cost(network net)
             sum += net.layers[i].cost[0];
             ++count;
         }
-        if(net.layers[i].type == REGION){
-            sum += net.layers[i].cost[0];
-            ++count;
-        }
     }
     return sum/count;
 }
@@ -224,8 +215,6 @@ void backward_network(network net, network_state state)
             backward_dropout_layer(l, state);
         } else if(l.type == DETECTION){
             backward_detection_layer(l, state);
-        } else if(l.type == REGION){
-            backward_region_layer(l, state);
         } else if(l.type == SOFTMAX){
             if(i != 0) backward_softmax_layer(l, state);
         } else if(l.type == CONNECTED){

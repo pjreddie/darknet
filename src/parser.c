@@ -14,7 +14,6 @@
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "detection_layer.h"
-#include "region_layer.h"
 #include "avgpool_layer.h"
 #include "route_layer.h"
 #include "list.h"
@@ -38,7 +37,6 @@ int is_normalization(section *s);
 int is_crop(section *s);
 int is_cost(section *s);
 int is_detection(section *s);
-int is_region(section *s);
 int is_route(section *s);
 list *read_cfg(char *filename);
 
@@ -168,35 +166,19 @@ detection_layer parse_detection(list *options, size_params params)
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
     int rescore = option_find_int(options, "rescore", 0);
-    int joint = option_find_int(options, "joint", 0);
-    int objectness = option_find_int(options, "objectness", 0);
-    int background = option_find_int(options, "background", 0);
-    detection_layer layer = make_detection_layer(params.batch, params.inputs, classes, coords, joint, rescore, background, objectness);
-    return layer;
-}
-
-region_layer parse_region(list *options, size_params params)
-{
-    int coords = option_find_int(options, "coords", 1);
-    int classes = option_find_int(options, "classes", 1);
-    int rescore = option_find_int(options, "rescore", 0);
     int num = option_find_int(options, "num", 1);
     int side = option_find_int(options, "side", 7);
-    region_layer layer = make_region_layer(params.batch, params.inputs, num, side, classes, coords, rescore);
+    detection_layer layer = make_detection_layer(params.batch, params.inputs, num, side, classes, coords, rescore);
 
     layer.softmax = option_find_int(options, "softmax", 0);
     layer.sqrt = option_find_int(options, "sqrt", 0);
-
-    layer.object_logistic = option_find_int(options, "object_logistic", 0);
-    layer.class_logistic = option_find_int(options, "class_logistic", 0);
-    layer.coord_logistic = option_find_int(options, "coord_logistic", 0);
 
     layer.coord_scale = option_find_float(options, "coord_scale", 1);
     layer.forced = option_find_int(options, "forced", 0);
     layer.object_scale = option_find_float(options, "object_scale", 1);
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
-    layer.jitter = option_find_float(options, "jitter", .1);
+    layer.jitter = option_find_float(options, "jitter", .2);
     return layer;
 }
 
@@ -430,8 +412,6 @@ network parse_network_cfg(char *filename)
             l = parse_cost(options, params);
         }else if(is_detection(s)){
             l = parse_detection(options, params);
-        }else if(is_region(s)){
-            l = parse_region(options, params);
         }else if(is_softmax(s)){
             l = parse_softmax(options, params);
         }else if(is_normalization(s)){
@@ -484,10 +464,6 @@ int is_cost(section *s)
 int is_detection(section *s)
 {
     return (strcmp(s->type, "[detection]")==0);
-}
-int is_region(section *s)
-{
-    return (strcmp(s->type, "[region]")==0);
 }
 int is_deconvolutional(section *s)
 {

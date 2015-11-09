@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "network.h"
-#include "region_layer.h"
+#include "detection_layer.h"
 #include "cost_layer.h"
 #include "utils.h"
 #include "parser.h"
@@ -366,7 +366,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    region_layer l = net.layers[net.n-1];
+    detection_layer l = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;

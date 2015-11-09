@@ -1,6 +1,5 @@
 extern "C" {
 #include "network.h"
-#include "region_layer.h"
 #include "detection_layer.h"
 #include "cost_layer.h"
 #include "utils.h"
@@ -13,16 +12,16 @@ extern "C" {
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 extern "C" image ipl_to_image(IplImage* src);
-extern "C" void convert_swag_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
-extern "C" void draw_swag(image im, int num, float thresh, box *boxes, float **probs, char *label);
+extern "C" void convert_yolo_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
+extern "C" void draw_yolo(image im, int num, float thresh, box *boxes, float **probs, char *label);
 
-extern "C" void demo_swag(char *cfgfile, char *weightfile, float thresh)
+extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    region_layer l = net.layers[net.n-1];
+    detection_layer l = net.layers[net.n-1];
     cv::VideoCapture cap(0);
 
     set_batch_network(&net, 1);
@@ -43,12 +42,12 @@ extern "C" void demo_swag(char *cfgfile, char *weightfile, float thresh)
         image sized = resize_image(im, net.w, net.h);
         float *X = sized.data;
         float *predictions = network_predict(net, X);
-        convert_swag_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
+        convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
         if (nms > 0) do_nms(boxes, probs, l.side*l.side*l.n, l.classes, nms);
         printf("\033[2J");
         printf("\033[1;1H");
         printf("\nObjects:\n\n");
-        draw_swag(im, l.side*l.side*l.n, thresh, boxes, probs, "predictions");
+        draw_yolo(im, l.side*l.side*l.n, thresh, boxes, probs, "predictions");
 
         free_image(im);
         free_image(sized);
@@ -56,6 +55,6 @@ extern "C" void demo_swag(char *cfgfile, char *weightfile, float thresh)
     }
 }
 #else
-extern "C" void demo_swag(char *cfgfile, char *weightfile, float thresh){}
+extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh){}
 #endif
 

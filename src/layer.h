@@ -15,7 +15,6 @@ typedef enum {
     ROUTE,
     COST,
     NORMALIZATION,
-    REGION,
     AVGPOOL
 } LAYER_TYPE;
 
@@ -30,9 +29,6 @@ typedef struct {
     int batch_normalize;
     int batch;
     int forced;
-    int object_logistic;
-    int class_logistic;
-    int coord_logistic;
     int inputs;
     int outputs;
     int truths;

@@ -9,44 +9,36 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-char *voc_class_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
+char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void draw_yolo(image im, float *box, int side, int objectness, char *label, float thresh)
+void draw_yolo(image im, int num, float thresh, box *boxes, float **probs, char *label)
 {
     int classes = 20;
-    int elems = 4+classes+objectness;
-    int j;
-    int r, c;
+    int i;
 
-    for(r = 0; r < side; ++r){
-        for(c = 0; c < side; ++c){
-            j = (r*side + c) * elems;
-            float scale = 1;
-            if(objectness) scale = 1 - box[j++];
-            int class = max_index(box+j, classes);
-            if(scale * box[j+class] > thresh){
-                int width = sqrt(scale*box[j+class])*5 + 1;
-                printf("%f %s\n", scale * box[j+class], voc_class_names[class]);
-                float red = get_color(0,class,classes);
-                float green = get_color(1,class,classes);
-                float blue = get_color(2,class,classes);
+    for(i = 0; i < num; ++i){
+        int class = max_index(probs[i], classes);
+        float prob = probs[i][class];
+        if(prob > thresh){
+            int width = pow(prob, 1./2.)*10;
+            printf("%f %s\n", prob, voc_names[class]);
+            float red = get_color(0,class,classes);
+            float green = get_color(1,class,classes);
+            float blue = get_color(2,class,classes);
+            //red = green = blue = 0;
+            box b = boxes[i];
 
-                j += classes;
-                float x = box[j+0];
-                float y = box[j+1];
-                x = (x+c)/side;
-                y = (y+r)/side;
-                float w = box[j+2]; //*maxwidth;
-                float h = box[j+3]; //*maxheight;
-                h = h*h;
-                w = w*w;
+            int left  = (b.x-b.w/2.)*im.w;
+            int right = (b.x+b.w/2.)*im.w;
+            int top   = (b.y-b.h/2.)*im.h;
+            int bot   = (b.y+b.h/2.)*im.h;
 
-                int left  = (x-w/2)*im.w;
-                int right = (x+w/2)*im.w;
-                int top   = (y-h/2)*im.h;
-                int bot   = (y+h/2)*im.h;
-                draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            }
+            if(left < 0) left = 0;
+            if(right > im.w-1) right = im.w-1;
+            if(top < 0) top = 0;
+            if(bot > im.h-1) bot = im.h-1;
+
+            draw_box_width(im, left, top, right, bot, width, red, green, blue);
         }
     }
     show_image(im, label);
@@ -54,7 +46,13 @@ void draw_yolo(image im, float *box, int side, int objectness, char *label, floa
 
 void train_yolo(char *cfgfile, char *weightfile)
 {
+    //char *train_images = "/home/pjreddie/data/voc/person_detection/2010_person.txt";
+    //char *train_images = "/home/pjreddie/data/people-art/train.txt";
+    //char *train_images = "/home/pjreddie/data/voc/test/2012_trainval.txt";
+    //char *train_images = "/home/pjreddie/data/voc/test/2010_trainval.txt";
     char *train_images = "/home/pjreddie/data/voc/test/train.txt";
+    //char *train_images = "/home/pjreddie/data/voc/test/train_all.txt";
+    //char *train_images = "/home/pjreddie/data/voc/test/2007_trainval.txt";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     data_seed = time(0);
@@ -65,27 +63,21 @@ void train_yolo(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int imgs = 128;
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    int imgs = net.batch*net.subdivisions;
     int i = *net.seen/imgs;
-
-    char **paths;
-    list *plist = get_paths(train_images);
-    int N = plist->size;
-    paths = (char **)list_to_array(plist);
-
-    if(i*imgs > N*80){
-        net.layers[net.n-1].objectness = 0;
-        net.layers[net.n-1].joint = 1;
-    }
-    if(i*imgs > N*120){
-        net.layers[net.n-1].rescore = 1;
-    }
     data train, buffer;
 
-    detection_layer layer = get_network_detection_layer(net);
-    int classes = layer.classes;
-    int background = layer.objectness;
-    int side = sqrt(get_detection_layer_locations(layer));
+
+    layer l = net.layers[net.n - 1];
+
+    int side = l.side;
+    int classes = l.classes;
+    float jitter = l.jitter;
+
+    list *plist = get_paths(train_images);
+    //int N = plist->size;
+    char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
     args.w = net.w;
@@ -94,13 +86,14 @@ void train_yolo(char *cfgfile, char *weightfile)
     args.n = imgs;
     args.m = plist->size;
     args.classes = classes;
+    args.jitter = jitter;
     args.num_boxes = side;
-    args.background = background;
     args.d = &buffer;
-    args.type = DETECTION_DATA;
+    args.type = REGION_DATA;
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
+    //while(i*imgs < N*120){
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
@@ -109,36 +102,21 @@ void train_yolo(char *cfgfile, char *weightfile)
         load_thread = load_data_in_thread(args);
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
+
+        /*
+           image im = float_to_image(net.w, net.h, 3, train.X.vals[113]);
+           image copy = copy_image(im);
+           draw_yolo(copy, train.y.vals[113], 7, "truth");
+           cvWaitKey(0);
+           free_image(copy);
+         */
+
         time=clock();
         float loss = train_network(net, train);
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
-        printf("%d: %f, %f avg, %lf seconds, %f rate, %d images, epoch: %f\n", get_current_batch(net), loss, avg_loss, sec(clock()-time), get_current_rate(net), *net.seen, (float)*net.seen/N);
-
-        if((i-1)*imgs <= 80*N && i*imgs > N*80){
-            fprintf(stderr, "Second stage done.\n");
-            char buff[256];
-            sprintf(buff, "%s/%s_second_stage.weights", backup_directory, base);
-            save_weights(net, buff);
-            net.layers[net.n-1].joint = 1;
-            net.layers[net.n-1].objectness = 0;
-            background = 0;
-
-            pthread_join(load_thread, 0);
-            free_data(buffer);
-            args.background = background;
-            load_thread = load_data_in_thread(args);
-        }
-
-        if((i-1)*imgs <= 120*N && i*imgs > N*120){
-            fprintf(stderr, "Third stage done.\n");
-            char buff[256];
-            sprintf(buff, "%s/%s_final.weights", backup_directory, base);
-            net.layers[net.n-1].rescore = 1;
-            save_weights(net, buff);
-        }
-
+        printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
@@ -147,36 +125,42 @@ void train_yolo(char *cfgfile, char *weightfile)
         free_data(train);
     }
     char buff[256];
-    sprintf(buff, "%s/%s_rescore.weights", backup_directory, base);
+    sprintf(buff, "%s/%s_final.weights", backup_directory, base);
     save_weights(net, buff);
 }
 
-void convert_yolo_detections(float *predictions, int classes, int objectness, int background, int num_boxes, int w, int h, float thresh, float **probs, box *boxes)
+void convert_yolo_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness)
 {
-    int i,j;
-    int per_box = 4+classes+(background || objectness);
-    for (i = 0; i < num_boxes*num_boxes; ++i){
-        float scale = 1;
-        if(objectness) scale = 1-predictions[i*per_box];
-        int offset = i*per_box+(background||objectness);
-        for(j = 0; j < classes; ++j){
-            float prob = scale*predictions[offset+j];
-            probs[i][j] = (prob > thresh) ? prob : 0;
+    int i,j,n;
+    //int per_cell = 5*num+classes;
+    for (i = 0; i < side*side; ++i){
+        int row = i / side;
+        int col = i % side;
+        for(n = 0; n < num; ++n){
+            int index = i*num + n;
+            int p_index = side*side*classes + i*num + n;
+            float scale = predictions[p_index];
+            int box_index = side*side*(classes + num) + (i*num + n)*4;
+            boxes[index].x = (predictions[box_index + 0] + col) / side * w;
+            boxes[index].y = (predictions[box_index + 1] + row) / side * h;
+            boxes[index].w = pow(predictions[box_index + 2], (square?2:1)) * w;
+            boxes[index].h = pow(predictions[box_index + 3], (square?2:1)) * h;
+            for(j = 0; j < classes; ++j){
+                int class_index = i*classes;
+                float prob = scale*predictions[class_index+j];
+                probs[index][j] = (prob > thresh) ? prob : 0;
+            }
+            if(only_objectness){
+                probs[index][0] = scale;
+            }
         }
-        int row = i / num_boxes;
-        int col = i % num_boxes;
-        offset += classes;
-        boxes[i].x = (predictions[offset + 0] + col) / num_boxes * w;
-        boxes[i].y = (predictions[offset + 1] + row) / num_boxes * h;
-        boxes[i].w = pow(predictions[offset + 2], 2) * w;
-        boxes[i].h = pow(predictions[offset + 3], 2) * h;
     }
 }
 
-void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
+void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int total, int classes, int w, int h)
 {
     int i, j;
-    for(i = 0; i < num_boxes*num_boxes; ++i){
+    for(i = 0; i < total; ++i){
         float xmin = boxes[i].x - boxes[i].w/2.;
         float xmax = boxes[i].x + boxes[i].w/2.;
         float ymin = boxes[i].y - boxes[i].h/2.;
@@ -201,29 +185,33 @@ void validate_yolo(char *cfgfile, char *weightfile)
         load_weights(&net, weightfile);
     }
     set_batch_network(&net, 1);
-    detection_layer layer = get_network_detection_layer(net);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
+    //base = "/home/pjreddie/comp4_det_test_";
+    //list *plist = get_paths("/home/pjreddie/data/people-art/test.txt");
+    //list *plist = get_paths("/home/pjreddie/data/cubist/test.txt");
+
     list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
+    //list *plist = get_paths("/home/pjreddie/data/voc/test_2012.txt");
     char **paths = (char **)list_to_array(plist);
 
-    int classes = layer.classes;
-    int objectness = layer.objectness;
-    int background = layer.background;
-    int num_boxes = sqrt(get_detection_layer_locations(layer));
+    layer l = net.layers[net.n-1];
+    int classes = l.classes;
+    int square = l.sqrt;
+    int side = l.side;
 
     int j;
     FILE **fps = calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, voc_class_names[j]);
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
-    box *boxes = calloc(num_boxes*num_boxes, sizeof(box));
-    float **probs = calloc(num_boxes*num_boxes, sizeof(float *));
-    for(j = 0; j < num_boxes*num_boxes; ++j) probs[j] = calloc(classes, sizeof(float *));
+    box *boxes = calloc(side*side*l.n, sizeof(box));
+    float **probs = calloc(side*side*l.n, sizeof(float *));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
 
     int m = plist->size;
     int i=0;
@@ -233,7 +221,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     int nms = 1;
     float iou_thresh = .5;
 
-    int nthreads = 8;
+    int nthreads = 2;
     image *val = calloc(nthreads, sizeof(image));
     image *val_resized = calloc(nthreads, sizeof(image));
     image *buf = calloc(nthreads, sizeof(image));
@@ -272,15 +260,102 @@ void validate_yolo(char *cfgfile, char *weightfile)
             float *predictions = network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            convert_yolo_detections(predictions, classes, objectness, background, num_boxes, w, h, thresh, probs, boxes);
-            if (nms) do_nms(boxes, probs, num_boxes*num_boxes, classes, iou_thresh);
-            print_yolo_detections(fps, id, boxes, probs, num_boxes, classes, w, h);
+            convert_yolo_detections(predictions, classes, l.n, square, side, w, h, thresh, probs, boxes, 0);
+            if (nms) do_nms_sort(boxes, probs, side*side*l.n, classes, iou_thresh);
+            print_yolo_detections(fps, id, boxes, probs, side*side*l.n, classes, w, h);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
         }
     }
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
+}
+
+void validate_yolo_recall(char *cfgfile, char *weightfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    srand(time(0));
+
+    char *base = "results/comp4_det_test_";
+    list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
+    char **paths = (char **)list_to_array(plist);
+
+    layer l = net.layers[net.n-1];
+    int classes = l.classes;
+    int square = l.sqrt;
+    int side = l.side;
+
+    int j, k;
+    FILE **fps = calloc(classes, sizeof(FILE *));
+    for(j = 0; j < classes; ++j){
+        char buff[1024];
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+        fps[j] = fopen(buff, "w");
+    }
+    box *boxes = calloc(side*side*l.n, sizeof(box));
+    float **probs = calloc(side*side*l.n, sizeof(float *));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+
+    int m = plist->size;
+    int i=0;
+
+    float thresh = .001;
+    int nms = 0;
+    float iou_thresh = .5;
+    float nms_thresh = .5;
+
+    int total = 0;
+    int correct = 0;
+    int proposals = 0;
+    float avg_iou = 0;
+
+    for(i = 0; i < m; ++i){
+        char *path = paths[i];
+        image orig = load_image_color(path, 0, 0);
+        image sized = resize_image(orig, net.w, net.h);
+        char *id = basecfg(path);
+        float *predictions = network_predict(net, sized.data);
+        convert_yolo_detections(predictions, classes, l.n, square, side, 1, 1, thresh, probs, boxes, 1);
+        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
+
+        char *labelpath = find_replace(path, "images", "labels");
+        labelpath = find_replace(labelpath, "JPEGImages", "labels");
+        labelpath = find_replace(labelpath, ".jpg", ".txt");
+        labelpath = find_replace(labelpath, ".JPEG", ".txt");
+
+        int num_labels = 0;
+        box_label *truth = read_boxes(labelpath, &num_labels);
+        for(k = 0; k < side*side*l.n; ++k){
+            if(probs[k][0] > thresh){
+                ++proposals;
+            }
+        }
+        for (j = 0; j < num_labels; ++j) {
+            ++total;
+            box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
+            float best_iou = 0;
+            for(k = 0; k < side*side*l.n; ++k){
+                float iou = box_iou(boxes[k], t);
+                if(probs[k][0] > thresh && iou > best_iou){
+                    best_iou = iou;
+                }
+            }
+            avg_iou += best_iou;
+            if(best_iou > iou_thresh){
+                ++correct;
+            }
+        }
+
+        fprintf(stderr, "%5d %5d %5d\tRPs/Img: %.2f\tIOU: %.2f%%\tRecall:%.2f%%\n", i, correct, total, (float)proposals/(i+1), avg_iou*100/total, 100.*correct/total);
+        free(id);
+        free_image(orig);
+        free_image(sized);
+    }
 }
 
 void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
@@ -290,12 +365,18 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer layer = get_network_detection_layer(net);
+    detection_layer l = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
     char buff[256];
     char *input = buff;
+    int j;
+    float nms=.5;
+    printf("%d %d %d", l.side, l.n, l.classes);
+    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
+    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
+    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -312,7 +393,11 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        draw_yolo(im, predictions, 7, layer.objectness, "predictions", thresh);
+        convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
+        if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
+        draw_yolo(im, l.side*l.side*l.n, thresh, boxes, probs, "predictions");
+
+        show_image(sized, "resized");
         free_image(im);
         free_image(sized);
 #ifdef OPENCV
@@ -322,6 +407,47 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         if (filename) break;
     }
 }
+
+/*
+#ifdef OPENCV
+image ipl_to_image(IplImage* src);
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+
+void demo_swag(char *cfgfile, char *weightfile, float thresh)
+{
+network net = parse_network_cfg(cfgfile);
+if(weightfile){
+load_weights(&net, weightfile);
+}
+detection_layer layer = net.layers[net.n-1];
+CvCapture *capture = cvCaptureFromCAM(-1);
+set_batch_network(&net, 1);
+srand(2222222);
+while(1){
+IplImage* frame = cvQueryFrame(capture);
+image im = ipl_to_image(frame);
+cvReleaseImage(&frame);
+rgbgr_image(im);
+
+image sized = resize_image(im, net.w, net.h);
+float *X = sized.data;
+float *predictions = network_predict(net, X);
+draw_swag(im, predictions, layer.side, layer.n, "predictions", thresh);
+free_image(im);
+free_image(sized);
+cvWaitKey(10);
+}
+}
+#else
+void demo_swag(char *cfgfile, char *weightfile, float thresh){}
+#endif
+ */
+
+void demo_yolo(char *cfgfile, char *weightfile, float thresh);
+#ifndef GPU
+void demo_yolo(char *cfgfile, char *weightfile, float thresh){}
+#endif
 
 void run_yolo(int argc, char **argv)
 {
@@ -337,4 +463,6 @@ void run_yolo(int argc, char **argv)
     if(0==strcmp(argv[2], "test")) test_yolo(cfg, weights, filename, thresh);
     else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
+    else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
+    else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh);
 }
