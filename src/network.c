@@ -8,6 +8,7 @@
 
 #include "crop_layer.h"
 #include "connected_layer.h"
+#include "local_layer.h"
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "detection_layer.h"
@@ -59,6 +60,8 @@ char *get_layer_string(LAYER_TYPE a)
     switch(a){
         case CONVOLUTIONAL:
             return "convolutional";
+        case LOCAL:
+            return "local";
         case DECONVOLUTIONAL:
             return "deconvolutional";
         case CONNECTED:
@@ -112,6 +115,8 @@ void forward_network(network net, network_state state)
             forward_convolutional_layer(l, state);
         } else if(l.type == DECONVOLUTIONAL){
             forward_deconvolutional_layer(l, state);
+        } else if(l.type == LOCAL){
+            forward_local_layer(l, state);
         } else if(l.type == NORMALIZATION){
             forward_normalization_layer(l, state);
         } else if(l.type == DETECTION){
@@ -150,6 +155,8 @@ void update_network(network net)
             update_deconvolutional_layer(l, rate, net.momentum, net.decay);
         } else if(l.type == CONNECTED){
             update_connected_layer(l, update_batch, rate, net.momentum, net.decay);
+        } else if(l.type == LOCAL){
+            update_local_layer(l, update_batch, rate, net.momentum, net.decay);
         }
     }
 }
@@ -219,6 +226,8 @@ void backward_network(network net, network_state state)
             if(i != 0) backward_softmax_layer(l, state);
         } else if(l.type == CONNECTED){
             backward_connected_layer(l, state);
+        } else if(l.type == LOCAL){
+            backward_local_layer(l, state);
         } else if(l.type == COST){
             backward_cost_layer(l, state);
         } else if(l.type == ROUTE){

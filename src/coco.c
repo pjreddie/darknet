@@ -15,7 +15,7 @@ char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","
 
 int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
-void draw_coco(image im, int num, float thresh, box *boxes, float **probs, char *label)
+void draw_coco(image im, int num, float thresh, box *boxes, float **probs)
 {
     int classes = 80;
     int i;
@@ -38,7 +38,6 @@ void draw_coco(image im, int num, float thresh, box *boxes, float **probs, char 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
         }
     }
-    show_image(im, label);
 }
 
 void train_coco(char *cfgfile, char *weightfile)
@@ -215,7 +214,7 @@ void validate_coco(char *cfgfile, char *weightfile)
     int i=0;
     int t;
 
-    float thresh = .001;
+    float thresh = .01;
     int nms = 1;
     float iou_thresh = .5;
 
@@ -393,7 +392,8 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         convert_coco_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
-        draw_coco(im, l.side*l.side*l.n, thresh, boxes, probs, "predictions");
+        draw_coco(im, l.side*l.side*l.n, thresh, boxes, probs);
+        show_image(im, "predictions");
 
         show_image(sized, "resized");
         free_image(im);

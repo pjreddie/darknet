@@ -15,7 +15,8 @@ typedef enum {
     ROUTE,
     COST,
     NORMALIZATION,
-    AVGPOOL
+    AVGPOOL,
+    LOCAL
 } LAYER_TYPE;
 
 typedef enum{

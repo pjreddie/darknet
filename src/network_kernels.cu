@@ -19,6 +19,7 @@ extern "C" {
 #include "avgpool_layer.h"
 #include "normalization_layer.h"
 #include "cost_layer.h"
+#include "local_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "route_layer.h"
@@ -41,6 +42,8 @@ void forward_network_gpu(network net, network_state state)
             forward_convolutional_layer_gpu(l, state);
         } else if(l.type == DECONVOLUTIONAL){
             forward_deconvolutional_layer_gpu(l, state);
+        } else if(l.type == LOCAL){
+            forward_local_layer_gpu(l, state);
         } else if(l.type == DETECTION){
             forward_detection_layer_gpu(l, state);
         } else if(l.type == CONNECTED){
@@ -85,6 +88,8 @@ void backward_network_gpu(network net, network_state state)
             backward_convolutional_layer_gpu(l, state);
         } else if(l.type == DECONVOLUTIONAL){
             backward_deconvolutional_layer_gpu(l, state);
+        } else if(l.type == LOCAL){
+            backward_local_layer_gpu(l, state);
         } else if(l.type == MAXPOOL){
             if(i != 0) backward_maxpool_layer_gpu(l, state);
         } else if(l.type == AVGPOOL){
@@ -120,6 +125,8 @@ void update_network_gpu(network net)
             update_deconvolutional_layer_gpu(l, rate, net.momentum, net.decay);
         } else if(l.type == CONNECTED){
             update_connected_layer_gpu(l, update_batch, rate, net.momentum, net.decay);
+        } else if(l.type == LOCAL){
+            update_local_layer_gpu(l, update_batch, rate, net.momentum, net.decay);
         }
     }
 }

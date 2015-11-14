@@ -25,7 +25,7 @@ void calculate_loss(float *output, float *delta, int n, float thresh)
     }
 }
 
-void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh)
+void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh, int norm)
 {
     scale_image(orig, 2);
     translate_image(orig, -1);
@@ -85,7 +85,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
     //rate = rate / abs_mean(out.data, out.w*out.h*out.c);
 
-    normalize_array(out.data, out.w*out.h*out.c);
+    if(norm) normalize_array(out.data, out.w*out.h*out.c);
     axpy_cpu(orig.w*orig.h*orig.c, rate, out.data, 1, orig.data, 1);
 
     /*
@@ -123,6 +123,7 @@ void run_nightmare(int argc, char **argv)
     int max_layer = atoi(argv[5]);
 
     int range = find_int_arg(argc, argv, "-range", 1);
+    int norm = find_int_arg(argc, argv, "-norm", 1);
     int rounds = find_int_arg(argc, argv, "-rounds", 1);
     int iters = find_int_arg(argc, argv, "-iters", 10);
     int octaves = find_int_arg(argc, argv, "-octaves", 4);
@@ -160,7 +161,7 @@ void run_nightmare(int argc, char **argv)
             fflush(stderr);
             int layer = max_layer + rand()%range - range/2;
             int octave = rand()%octaves;
-            optimize_picture(&net, im, layer, 1/pow(1.33333333, octave), rate, thresh);
+            optimize_picture(&net, im, layer, 1/pow(1.33333333, octave), rate, thresh, norm);
         }
         fprintf(stderr, "done\n");
         if(0){

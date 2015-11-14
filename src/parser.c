@@ -15,6 +15,7 @@
 #include "dropout_layer.h"
 #include "detection_layer.h"
 #include "avgpool_layer.h"
+#include "local_layer.h"
 #include "route_layer.h"
 #include "list.h"
 #include "option_list.h"
@@ -27,6 +28,7 @@ typedef struct{
 
 int is_network(section *s);
 int is_convolutional(section *s);
+int is_local(section *s);
 int is_deconvolutional(section *s);
 int is_connected(section *s);
 int is_maxpool(section *s);
@@ -104,6 +106,27 @@ deconvolutional_layer parse_deconvolutional(list *options, size_params params)
     #ifdef GPU
     if(weights || biases) push_deconvolutional_layer(layer);
     #endif
+    return layer;
+}
+
+local_layer parse_local(list *options, size_params params)
+{
+    int n = option_find_int(options, "filters",1);
+    int size = option_find_int(options, "size",1);
+    int stride = option_find_int(options, "stride",1);
+    int pad = option_find_int(options, "pad",0);
+    char *activation_s = option_find_str(options, "activation", "logistic");
+    ACTIVATION activation = get_activation(activation_s);
+
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before local layer must output image.");
+
+    local_layer layer = make_local_layer(batch,h,w,c,n,size,stride,pad,activation);
+
     return layer;
 }
 
@@ -402,6 +425,8 @@ network parse_network_cfg(char *filename)
         layer l = {0};
         if(is_convolutional(s)){
             l = parse_convolutional(options, params);
+        }else if(is_local(s)){
+            l = parse_local(options, params);
         }else if(is_deconvolutional(s)){
             l = parse_deconvolutional(options, params);
         }else if(is_connected(s)){
@@ -464,6 +489,10 @@ int is_cost(section *s)
 int is_detection(section *s)
 {
     return (strcmp(s->type, "[detection]")==0);
+}
+int is_local(section *s)
+{
+    return (strcmp(s->type, "[local]")==0);
 }
 int is_deconvolutional(section *s)
 {
@@ -626,6 +655,16 @@ void save_weights_upto(network net, char *filename, int cutoff)
 #endif
             fwrite(l.biases, sizeof(float), l.outputs, fp);
             fwrite(l.weights, sizeof(float), l.outputs*l.inputs, fp);
+        } if(l.type == LOCAL){
+#ifdef GPU
+            if(gpu_index >= 0){
+                pull_local_layer(l);
+            }
+#endif
+            int locations = l.out_w*l.out_h;
+            int size = l.size*l.size*l.c*l.n*locations;
+            fwrite(l.biases, sizeof(float), l.outputs, fp);
+            fwrite(l.filters, sizeof(float), size, fp);
         }
     }
     fclose(fp);
@@ -683,6 +722,17 @@ void load_weights_upto(network *net, char *filename, int cutoff)
 #ifdef GPU
             if(gpu_index >= 0){
                 push_connected_layer(l);
+            }
+#endif
+        }
+        if(l.type == LOCAL){
+            int locations = l.out_w*l.out_h;
+            int size = l.size*l.size*l.c*l.n*locations;
+            fread(l.biases, sizeof(float), l.outputs, fp);
+            fread(l.filters, sizeof(float), size, fp);
+#ifdef GPU
+            if(gpu_index >= 0){
+                push_local_layer(l);
             }
 #endif
         }

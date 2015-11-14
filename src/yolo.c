@@ -11,7 +11,7 @@
 
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void draw_yolo(image im, int num, float thresh, box *boxes, float **probs, char *label)
+void draw_yolo(image im, int num, float thresh, box *boxes, float **probs)
 {
     int classes = 20;
     int i;
@@ -20,8 +20,10 @@ void draw_yolo(image im, int num, float thresh, box *boxes, float **probs, char 
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
         if(prob > thresh){
-            int width = pow(prob, 1./2.)*10;
-            printf("%f %s\n", prob, voc_names[class]);
+            int width = pow(prob, 1./2.)*10+1;
+            //width = 8;
+            printf("%s: %.2f\n", voc_names[class], prob);
+            class = class * 7 % 20;
             float red = get_color(0,class,classes);
             float green = get_color(1,class,classes);
             float blue = get_color(2,class,classes);
@@ -41,7 +43,6 @@ void draw_yolo(image im, int num, float thresh, box *boxes, float **probs, char 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
         }
     }
-    show_image(im, label);
 }
 
 void train_yolo(char *cfgfile, char *weightfile)
@@ -97,21 +98,13 @@ void train_yolo(char *cfgfile, char *weightfile)
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 
-        /*
-           image im = float_to_image(net.w, net.h, 3, train.X.vals[113]);
-           image copy = copy_image(im);
-           draw_yolo(copy, train.y.vals[113], 7, "truth");
-           cvWaitKey(0);
-           free_image(copy);
-         */
-
         time=clock();
         float loss = train_network(net, train);
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
-        if(i%1000==0){
+        if(i%1000==0 || i == 600){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
@@ -183,8 +176,8 @@ void validate_yolo(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    //list *plist = get_paths("data/voc.2007.test");
-    list *plist = get_paths("data/voc.2012.test");
+    list *plist = get_paths("data/voc.2007.test");
+    //list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -384,7 +377,8 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        draw_yolo(im, l.side*l.side*l.n, thresh, boxes, probs, "predictions");
+        draw_yolo(im, l.side*l.side*l.n, thresh, boxes, probs);
+        show_image(im, "predictions");
 
         show_image(sized, "resized");
         free_image(im);
