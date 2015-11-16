@@ -1,3 +1,7 @@
+#include "cuda_runtime.h"
+#include "curand.h"
+#include "cublas_v2.h"
+
 extern "C" {
 #include "network.h"
 #include "detection_layer.h"

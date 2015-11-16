@@ -1,3 +1,7 @@
+#include "cuda_runtime.h"
+#include "curand.h"
+#include "cublas_v2.h"
+
 extern "C" {
 #include "crop_layer.h"
 #include "utils.h"
