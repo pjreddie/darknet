@@ -21,7 +21,7 @@ void draw_yolo(image im, int num, float thresh, box *boxes, float **probs)
         float prob = probs[i][class];
         if(prob > thresh){
             int width = pow(prob, 1./2.)*10+1;
-            //width = 8;
+            width = 8;
             printf("%s: %.2f\n", voc_names[class], prob);
             class = class * 7 % 20;
             float red = get_color(0,class,classes);
@@ -427,14 +427,18 @@ void demo_swag(char *cfgfile, char *weightfile, float thresh){}
 #endif
  */
 
-void demo_yolo(char *cfgfile, char *weightfile, float thresh);
+void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index);
 #ifndef GPU
-void demo_yolo(char *cfgfile, char *weightfile, float thresh){}
+void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index)
+{
+    fprintf(stderr, "Darknet must be compiled with CUDA for YOLO demo.\n");
+}
 #endif
 
 void run_yolo(int argc, char **argv)
 {
     float thresh = find_float_arg(argc, argv, "-thresh", .2);
+    int cam_index = find_int_arg(argc, argv, "-c", 0);
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
@@ -447,5 +451,5 @@ void run_yolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh);
+    else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh, cam_index);
 }

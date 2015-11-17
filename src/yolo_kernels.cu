@@ -61,7 +61,7 @@ void *detect_in_thread(void *ptr)
     return 0;
 }
 
-extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh)
+extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index)
 {
     printf("YOLO demo\n");
     net = parse_network_cfg(cfgfile);
@@ -72,7 +72,7 @@ extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh)
 
     srand(2222222);
 
-    cv::VideoCapture cam(0);
+    cv::VideoCapture cam(cam_index);
     cap = cam;
     if(!cap.isOpened()) error("Couldn't connect to webcam.\n");
 
@@ -118,7 +118,7 @@ extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh)
     }
 }
 #else
-extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh){
+extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index){
     fprintf(stderr, "YOLO demo needs OpenCV for webcam images.\n");
 }
 #endif

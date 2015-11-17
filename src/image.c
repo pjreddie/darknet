@@ -201,7 +201,7 @@ void rgbgr_image(image im)
 }
 
 #ifdef OPENCV
-void show_image_cv(image p, char *name)
+void show_image_cv(image p, const char *name)
 {
     int x,y,k;
     image copy = copy_image(p);
@@ -244,7 +244,7 @@ void show_image_cv(image p, char *name)
 }
 #endif
 
-void show_image(image p, char *name)
+void show_image(image p, const char *name)
 {
 #ifdef OPENCV
     show_image_cv(p, name);
@@ -254,7 +254,7 @@ void show_image(image p, char *name)
 #endif
 }
 
-void save_image(image im, char *name)
+void save_image(image im, const char *name)
 {
     char buff[256];
     //sprintf(buff, "%s (%d)", name, windows);

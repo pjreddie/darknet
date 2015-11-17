@@ -43,8 +43,8 @@ image collapse_image_layers(image source, int border);
 image collapse_images_horz(image *ims, int n);
 image collapse_images_vert(image *ims, int n);
 
-void show_image(image p, char *name);
-void save_image(image p, char *name);
+void show_image(image p, const char *name);
+void save_image(image p, const char *name);
 void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);
 void show_image_collapsed(image p, char *name);
