@@ -21,7 +21,7 @@ extern "C" void convert_yolo_detections(float *predictions, int classes, int num
 extern "C" void draw_yolo(image im, int num, float thresh, box *boxes, float **probs);
 
 extern "C" char *voc_names[];
-extern "C" image *voc_labels;
+extern "C" image voc_labels[];
 
 static float **probs;
 static box *boxes;

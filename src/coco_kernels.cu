@@ -20,7 +20,7 @@ extern "C" image ipl_to_image(IplImage* src);
 extern "C" void convert_coco_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
 
 extern "C" char *coco_classes[];
-extern "C" image *coco_labels;
+extern "C" image coco_labels[];
 
 static float **probs;
 static box *boxes;
