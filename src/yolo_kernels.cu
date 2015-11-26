@@ -33,7 +33,7 @@ static image det_s;
 static image disp ;
 static cv::VideoCapture cap;
 static float fps = 0;
-static int demo_thresh = 0;
+static float demo_thresh = 0;
 
 void *fetch_in_thread(void *ptr)
 {
