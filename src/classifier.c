@@ -279,7 +279,7 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filen
         
         int i;
         if (target_layer >= 0){
-            layer l = net.layers[target_layer];
+            //layer l = net.layers[target_layer];
         }
 
         for(i = 0; i < val.X.rows; ++i){

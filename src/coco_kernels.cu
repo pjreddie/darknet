@@ -32,6 +32,7 @@ static image det_s;
 static image disp ;
 static cv::VideoCapture cap;
 static float fps = 0;
+static int demo_thresh = 0;
 
 void *fetch_in_thread_coco(void *ptr)
 {
@@ -47,24 +48,24 @@ void *fetch_in_thread_coco(void *ptr)
 void *detect_in_thread_coco(void *ptr)
 {
     float nms = .4;
-    float thresh = .2;
 
     detection_layer l = net.layers[net.n-1];
     float *X = det_s.data;
     float *predictions = network_predict(net, X);
     free_image(det_s);
-    convert_coco_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
+    convert_coco_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, demo_thresh, probs, boxes, 0);
     if (nms > 0) do_nms(boxes, probs, l.side*l.side*l.n, l.classes, nms);
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.0f\n",fps);
     printf("Objects:\n\n");
-    draw_detections(det, l.side*l.side*l.n, thresh, boxes, probs, coco_classes, coco_labels, 80);
+    draw_detections(det, l.side*l.side*l.n, demo_thresh, boxes, probs, coco_classes, coco_labels, 80);
     return 0;
 }
 
 extern "C" void demo_coco(char *cfgfile, char *weightfile, float thresh, int cam_index)
 {
+    demo_thresh = thresh;
     printf("YOLO demo\n");
     net = parse_network_cfg(cfgfile);
     if(weightfile){
