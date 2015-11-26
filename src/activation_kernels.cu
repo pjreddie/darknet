@@ -10,6 +10,7 @@ extern "C" {
 __device__ float linear_activate_kernel(float x){return x;}
 __device__ float logistic_activate_kernel(float x){return 1./(1. + exp(-x));}
 __device__ float relu_activate_kernel(float x){return x*(x>0);}
+__device__ float elu_activate_kernel(float x){return (x >= 0)*x + (x < 0)*(exp(x)-1);}
 __device__ float relie_activate_kernel(float x){return x*(x>0);}
 __device__ float ramp_activate_kernel(float x){return x*(x>0)+.1*x;}
 __device__ float leaky_activate_kernel(float x){return (x>0) ? x : .1*x;}
@@ -24,6 +25,7 @@ __device__ float plse_activate_kernel(float x)
 __device__ float linear_gradient_kernel(float x){return 1;}
 __device__ float logistic_gradient_kernel(float x){return (1-x)*x;}
 __device__ float relu_gradient_kernel(float x){return (x>0);}
+__device__ float elu_gradient_kernel(float x){return (x >= 0) + (x < 0)*(x + 1);}
 __device__ float relie_gradient_kernel(float x){return (x>0) ? 1 : .01;}
 __device__ float ramp_gradient_kernel(float x){return (x>0)+.1;}
 __device__ float leaky_gradient_kernel(float x){return (x>0) ? 1 : .1;}
@@ -39,6 +41,8 @@ __device__ float activate_kernel(float x, ACTIVATION a)
             return logistic_activate_kernel(x);
         case RELU:
             return relu_activate_kernel(x);
+        case ELU:
+            return elu_activate_kernel(x);
         case RELIE:
             return relie_activate_kernel(x);
         case RAMP:
@@ -62,6 +66,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
             return logistic_gradient_kernel(x);
         case RELU:
             return relu_gradient_kernel(x);
+        case ELU:
+            return elu_gradient_kernel(x);
         case RELIE:
             return relie_gradient_kernel(x);
         case RAMP:

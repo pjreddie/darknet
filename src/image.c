@@ -28,6 +28,26 @@ float get_color(int c, int x, int max)
     return r;
 }
 
+void draw_label(image a, int r, int c, image label, const float *rgb)
+{
+    float ratio = (float) label.w / label.h;
+    int h = label.h;
+    int w = ratio * h;
+    image rl = resize_image(label, w, h);
+    if (r - h >= 0) r = r - h;
+
+    int i, j, k;
+    for(j = 0; j < h && j + r < a.h; ++j){
+        for(i = 0; i < w && i + c < a.w; ++i){
+            for(k = 0; k < label.c; ++k){
+                float val = get_pixel(rl, i, j, k);
+                set_pixel(a, i+c, j+r, k, rgb[k] * val);
+            }
+        }
+    }
+    free_image(rl);
+}
+
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b)
 {
     //normalize_image(a);
@@ -42,25 +62,25 @@ void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b
     if(y2 < 0) y2 = 0;
     if(y2 >= a.h) y2 = a.h-1;
 
-    for(i = x1; i < x2; ++i){
-        a.data[i + y1*a.w + 0*a.w*a.h] = b;
-        a.data[i + y2*a.w + 0*a.w*a.h] = b;
+    for(i = x1; i <= x2; ++i){
+        a.data[i + y1*a.w + 0*a.w*a.h] = r;
+        a.data[i + y2*a.w + 0*a.w*a.h] = r;
 
         a.data[i + y1*a.w + 1*a.w*a.h] = g;
         a.data[i + y2*a.w + 1*a.w*a.h] = g;
 
-        a.data[i + y1*a.w + 2*a.w*a.h] = r;
-        a.data[i + y2*a.w + 2*a.w*a.h] = r;
+        a.data[i + y1*a.w + 2*a.w*a.h] = b;
+        a.data[i + y2*a.w + 2*a.w*a.h] = b;
     }
-    for(i = y1; i < y2; ++i){
-        a.data[x1 + i*a.w + 0*a.w*a.h] = b;
-        a.data[x2 + i*a.w + 0*a.w*a.h] = b;
+    for(i = y1; i <= y2; ++i){
+        a.data[x1 + i*a.w + 0*a.w*a.h] = r;
+        a.data[x2 + i*a.w + 0*a.w*a.h] = r;
 
         a.data[x1 + i*a.w + 1*a.w*a.h] = g;
         a.data[x2 + i*a.w + 1*a.w*a.h] = g;
 
-        a.data[x1 + i*a.w + 2*a.w*a.h] = r;
-        a.data[x2 + i*a.w + 2*a.w*a.h] = r;
+        a.data[x1 + i*a.w + 2*a.w*a.h] = b;
+        a.data[x2 + i*a.w + 2*a.w*a.h] = b;
     }
 }
 
@@ -84,6 +104,43 @@ void draw_bbox(image a, box bbox, int w, float r, float g, float b)
         draw_box(a, left+i, top+i, right-i, bot-i, r, g, b);
     }
 }
+
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image *labels, int classes)
+{
+    int i;
+
+    for(i = 0; i < num; ++i){
+        int class = max_index(probs[i], classes);
+        float prob = probs[i][class];
+        if(prob > thresh){
+            int width = pow(prob, 1./2.)*10+1;
+            printf("%s: %.2f\n", names[class], prob);
+            int offset = class*17 % classes;
+            float red = get_color(0,offset,classes);
+            float green = get_color(1,offset,classes);
+            float blue = get_color(2,offset,classes);
+            float rgb[3];
+            rgb[0] = red;
+            rgb[1] = green;
+            rgb[2] = blue;
+            box b = boxes[i];
+
+            int left  = (b.x-b.w/2.)*im.w;
+            int right = (b.x+b.w/2.)*im.w;
+            int top   = (b.y-b.h/2.)*im.h;
+            int bot   = (b.y+b.h/2.)*im.h;
+
+            if(left < 0) left = 0;
+            if(right > im.w-1) right = im.w-1;
+            if(top < 0) top = 0;
+            if(bot > im.h-1) bot = im.h-1;
+
+            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            if (labels) draw_label(im, top + width, left, labels[class], rgb);
+        }
+    }
+}
+
 
 void flip_image(image a)
 {

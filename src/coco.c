@@ -15,30 +15,7 @@ char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","
 
 int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
-void draw_coco(image im, int num, float thresh, box *boxes, float **probs)
-{
-    int classes = 80;
-    int i;
-
-    for(i = 0; i < num; ++i){
-        int class = max_index(probs[i], classes);
-        float prob = probs[i][class];
-        if(prob > thresh){
-            int width = sqrt(prob)*5 + 1;
-            printf("%f %s\n", prob, coco_classes[class]);
-            float red = get_color(0,class,classes);
-            float green = get_color(1,class,classes);
-            float blue = get_color(2,class,classes);
-            box b = boxes[i];
-
-            int left  = (b.x-b.w/2.)*im.w;
-            int right = (b.x+b.w/2.)*im.w;
-            int top   = (b.y-b.h/2.)*im.h;
-            int bot   = (b.y+b.h/2.)*im.h;
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
-        }
-    }
-}
+image coco_labels[80];
 
 void train_coco(char *cfgfile, char *weightfile)
 {
@@ -368,6 +345,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     detection_layer l = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
+    float nms = .4;
     clock_t time;
     char buff[256];
     char *input = buff;
@@ -392,7 +370,8 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         convert_coco_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
-        draw_coco(im, l.side*l.side*l.n, thresh, boxes, probs);
+        if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, coco_classes, coco_labels, 80);
         show_image(im, "predictions");
 
         show_image(sized, "resized");
@@ -406,9 +385,23 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     }
 }
 
+#ifdef OPENCV
+#ifdef GPU
+void demo_coco(char *cfgfile, char *weightfile, float thresh, int cam_index);
+#endif
+#endif
+
 void run_coco(int argc, char **argv)
 {
+    int i;
+    for(i = 0; i < 80; ++i){
+        char buff[256];
+        sprintf(buff, "data/labels/%s.png", coco_classes[i]);
+        coco_labels[i] = load_image_color(buff, 0, 0);
+    }
     float thresh = find_float_arg(argc, argv, "-thresh", .2);
+    int cam_index = find_int_arg(argc, argv, "-c", 0);
+
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
@@ -421,4 +414,9 @@ void run_coco(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
+#ifdef OPENCV
+#ifdef GPU
+    else if(0==strcmp(argv[2], "demo")) demo_coco(cfg, weights, thresh, cam_index);
+#endif
+#endif
 }

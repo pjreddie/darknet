@@ -130,11 +130,12 @@ typedef struct {
     float * x_gpu;
     float * x_norm_gpu;
     float * weights_gpu;
-    float * biases_gpu;
-    float * scales_gpu;
-
     float * weight_updates_gpu;
+
+    float * biases_gpu;
     float * bias_updates_gpu;
+
+    float * scales_gpu;
     float * scale_updates_gpu;
 
     float * output_gpu;

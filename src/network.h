@@ -51,6 +51,7 @@ float * get_network_delta_gpu_layer(network net, int i);
 float *get_network_output_gpu(network net);
 void forward_network_gpu(network net, network_state state);
 void backward_network_gpu(network net, network_state state);
+void update_network_gpu(network net);
 #endif
 
 float get_current_rate(network net);

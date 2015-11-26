@@ -11,40 +11,6 @@
 
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void draw_yolo(image im, int num, float thresh, box *boxes, float **probs)
-{
-    int classes = 20;
-    int i;
-
-    for(i = 0; i < num; ++i){
-        int class = max_index(probs[i], classes);
-        float prob = probs[i][class];
-        if(prob > thresh){
-            int width = pow(prob, 1./2.)*10+1;
-            width = 8;
-            printf("%s: %.2f\n", voc_names[class], prob);
-            class = class * 7 % 20;
-            float red = get_color(0,class,classes);
-            float green = get_color(1,class,classes);
-            float blue = get_color(2,class,classes);
-            //red = green = blue = 0;
-            box b = boxes[i];
-
-            int left  = (b.x-b.w/2.)*im.w;
-            int right = (b.x+b.w/2.)*im.w;
-            int top   = (b.y-b.h/2.)*im.h;
-            int bot   = (b.y+b.h/2.)*im.h;
-
-            if(left < 0) left = 0;
-            if(right > im.w-1) right = im.w-1;
-            if(top < 0) top = 0;
-            if(bot > im.h-1) bot = im.h-1;
-
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
-        }
-    }
-}
-
 void train_yolo(char *cfgfile, char *weightfile)
 {
     char *train_images = "data/voc.0712.trainval";
@@ -377,7 +343,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        draw_yolo(im, l.side*l.side*l.n, thresh, boxes, probs);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, 0, 20);
         show_image(im, "predictions");
 
         show_image(sized, "resized");

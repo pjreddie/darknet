@@ -20,6 +20,8 @@ extern "C" image ipl_to_image(IplImage* src);
 extern "C" void convert_yolo_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
 extern "C" void draw_yolo(image im, int num, float thresh, box *boxes, float **probs);
 
+extern "C" char *voc_names[];
+
 static float **probs;
 static box *boxes;
 static network net;
@@ -57,7 +59,7 @@ void *detect_in_thread(void *ptr)
     printf("\033[1;1H");
     printf("\nFPS:%.0f\n",fps);
     printf("Objects:\n\n");
-    draw_yolo(det, l.side*l.side*l.n, thresh, boxes, probs);
+    draw_detections(det, l.side*l.side*l.n, thresh, boxes, probs, voc_names, 0, 20);
     return 0;
 }
 
