@@ -10,7 +10,7 @@
 #endif
 
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
-image voc_labels[80];
+image voc_labels[20];
 
 void train_yolo(char *cfgfile, char *weightfile)
 {
