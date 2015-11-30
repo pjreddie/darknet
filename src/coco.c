@@ -385,11 +385,15 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     }
 }
 
-#ifdef OPENCV
-#ifdef GPU
-void demo_coco(char *cfgfile, char *weightfile, float thresh, int cam_index);
-#endif
-#endif
+void demo_coco(char *cfgfile, char *weightfile, float thresh, int cam_index, char *filename);
+static void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, char* filename)
+{
+    #if defined(OPENCV) && defined(GPU)
+        demo_coco(cfgfile, weightfile, thresh, cam_index, filename);
+    #else
+        fprintf(stderr, "Need to compile with GPU and OpenCV for demo.\n");
+    #endif
+}
 
 void run_coco(int argc, char **argv)
 {
@@ -401,6 +405,7 @@ void run_coco(int argc, char **argv)
     }
     float thresh = find_float_arg(argc, argv, "-thresh", .2);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
+    char *file = find_char_arg(argc, argv, "-file", 0);
 
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
@@ -414,9 +419,5 @@ void run_coco(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
-#ifdef OPENCV
-#ifdef GPU
-    else if(0==strcmp(argv[2], "demo")) demo_coco(cfg, weights, thresh, cam_index);
-#endif
-#endif
+    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, file);
 }
