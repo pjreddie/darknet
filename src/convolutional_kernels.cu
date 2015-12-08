@@ -122,6 +122,12 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             fast_mean_gpu(l.output_gpu, l.batch, l.n, l.out_h*l.out_w, l.mean_gpu);
             fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.n, l.out_h*l.out_w, l.variance_gpu);
 
+            /*
+            cuda_pull_array(l.variance_gpu, l.mean, 1);
+            printf("%f\n", l.mean[0]);
+            */
+
+
             scal_ongpu(l.n, .95, l.rolling_mean_gpu, 1);
             axpy_ongpu(l.n, .05, l.mean_gpu, 1, l.rolling_mean_gpu, 1);
             scal_ongpu(l.n, .95, l.rolling_variance_gpu, 1);
