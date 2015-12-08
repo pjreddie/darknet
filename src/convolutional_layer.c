@@ -86,9 +86,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         }
 
         l.mean = calloc(n, sizeof(float));
-        l.spatial_mean = calloc(n*l.batch, sizeof(float));
-
         l.variance = calloc(n, sizeof(float));
+
         l.rolling_mean = calloc(n, sizeof(float));
         l.rolling_variance = calloc(n, sizeof(float));
     }
@@ -113,12 +112,6 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
         l.rolling_mean_gpu = cuda_make_array(l.mean, n);
         l.rolling_variance_gpu = cuda_make_array(l.variance, n);
-
-        l.spatial_mean_gpu = cuda_make_array(l.spatial_mean, n*l.batch);
-        l.spatial_variance_gpu = cuda_make_array(l.spatial_mean, n*l.batch);
-
-        l.spatial_mean_delta_gpu = cuda_make_array(l.spatial_mean, n*l.batch);
-        l.spatial_variance_delta_gpu = cuda_make_array(l.spatial_mean, n*l.batch);
 
         l.mean_delta_gpu = cuda_make_array(l.mean, n);
         l.variance_delta_gpu = cuda_make_array(l.variance, n);

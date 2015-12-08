@@ -148,6 +148,12 @@ void forward_connected_layer_gpu(connected_layer l, network_state state)
     float * c = l.output_gpu;
     gemm_ongpu(0,0,m,n,k,1,a,k,b,n,1,c,n);
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
+
+/*
+    cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
+    float avg = mean_array(l.output, l.outputs*l.batch);
+    printf("%f\n", avg);
+    */
 }
 
 void backward_connected_layer_gpu(connected_layer l, network_state state)
