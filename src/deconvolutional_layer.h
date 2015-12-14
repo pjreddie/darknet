@@ -6,6 +6,7 @@
 #include "image.h"
 #include "activations.h"
 #include "layer.h"
+#include "network.h"
 
 typedef layer deconvolutional_layer;
 

@@ -3,6 +3,9 @@
 
 #include "activations.h"
 
+struct layer;
+typedef struct layer layer;
+
 typedef enum {
     CONVOLUTIONAL,
     DECONVOLUTIONAL,
@@ -16,20 +19,22 @@ typedef enum {
     COST,
     NORMALIZATION,
     AVGPOOL,
-    LOCAL
+    LOCAL,
+    SHORTCUT
 } LAYER_TYPE;
 
 typedef enum{
     SSE, MASKED
 } COST_TYPE;
 
-typedef struct {
+struct layer{
     LAYER_TYPE type;
     ACTIVATION activation;
     COST_TYPE cost_type;
     int batch_normalize;
     int batch;
     int forced;
+    int flipped;
     int inputs;
     int outputs;
     int truths;
@@ -45,6 +50,7 @@ typedef struct {
     int crop_height;
     int sqrt;
     int flip;
+    int index;
     float angle;
     float jitter;
     float saturation;
@@ -144,7 +150,7 @@ typedef struct {
     float * squared_gpu;
     float * norms_gpu;
     #endif
-} layer;
+};
 
 void free_layer(layer);
 

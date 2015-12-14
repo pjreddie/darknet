@@ -228,6 +228,7 @@ __global__ void mul_kernel(int N, float *X, int INCX, float *Y, int INCY)
     if(i < N) Y[i*INCY] *= X[i*INCX];
 }
 
+
 extern "C" void normalize_gpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
 {
     size_t N = batch*filters*spatial;
@@ -370,5 +371,29 @@ extern "C" void scal_ongpu(int N, float ALPHA, float * X, int INCX)
 extern "C" void fill_ongpu(int N, float ALPHA, float * X, int INCX)
 {
     fill_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+    check_error(cudaPeekAtLastError());
+}
+
+__global__ void shortcut_kernel(int size, float *out, int w, int h, int c, int batch, int sample, float *add, int stride, int c2, int min_c)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= size) return;
+    int i = id % (w/sample);
+    id /= (w/sample);
+    int j = id % (h/sample);
+    id /= (h/sample);
+    int k = id % min_c;
+    id /= min_c;
+    int b = id;
+    int out_index = i*sample + w*(j*sample + h*(k + c*b));
+    int add_index = b*w*stride/sample*h*stride/sample*c2 + i*stride + w*stride/sample*(j*stride + h*stride/sample*k);
+    out[out_index] += add[add_index];
+}
+
+extern "C" void shortcut_gpu(float *out, int w, int h, int c, int batch, int sample, float *add, int stride, int c2)
+{
+    int min_c = (c < c2) ? c : c2;
+    int size = batch * w/sample * h/sample * min_c;
+    shortcut_kernel<<<cuda_gridsize(size), BLOCK>>>(size, out, w, h, c, batch, sample, add, stride, c2, min_c);
     check_error(cudaPeekAtLastError());
 }

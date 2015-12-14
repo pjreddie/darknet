@@ -67,6 +67,7 @@ float *cuda_make_array(float *x, int n)
         status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
         check_error(status);
     }
+    if(!x_gpu) error("Cuda malloc failed\n");
     return x_gpu;
 }
 

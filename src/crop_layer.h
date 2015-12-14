@@ -4,6 +4,7 @@
 #include "image.h"
 #include "params.h"
 #include "layer.h"
+#include "network.h"
 
 typedef layer crop_layer;
 

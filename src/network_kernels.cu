@@ -27,6 +27,7 @@ extern "C" {
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "route_layer.h"
+#include "shortcut_layer.h"
 #include "blas.h"
 }
 
@@ -38,6 +39,7 @@ void forward_network_gpu(network net, network_state state)
 {
     int i;
     for(i = 0; i < net.n; ++i){
+        state.index = i;
         layer l = net.layers[i];
         if(l.delta_gpu){
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
@@ -68,6 +70,8 @@ void forward_network_gpu(network net, network_state state)
             forward_dropout_layer_gpu(l, state);
         } else if(l.type == ROUTE){
             forward_route_layer_gpu(l, net);
+        } else if(l.type == SHORTCUT){
+            forward_shortcut_layer_gpu(l, state);
         }
         state.input = l.output_gpu;
     }
@@ -79,6 +83,7 @@ void backward_network_gpu(network net, network_state state)
     float * original_input = state.input;
     float * original_delta = state.delta;
     for(i = net.n-1; i >= 0; --i){
+        state.index = i;
         layer l = net.layers[i];
         if(i == 0){
             state.input = original_input;
@@ -112,6 +117,8 @@ void backward_network_gpu(network net, network_state state)
             backward_cost_layer_gpu(l, state);
         } else if(l.type == ROUTE){
             backward_route_layer_gpu(l, net);
+        } else if(l.type == SHORTCUT){
+            backward_shortcut_layer_gpu(l, state);
         }
     }
 }
@@ -138,6 +145,8 @@ void update_network_gpu(network net)
 float train_network_datum_gpu(network net, float *x, float *y)
 {
     network_state state;
+    state.index = 0;
+    state.net = net;
     int x_size = get_network_input_size(net)*net.batch;
     int y_size = get_network_output_size(net)*net.batch;
     if(net.layers[net.n-1].type == DETECTION) y_size = net.layers[net.n-1].truths*net.batch;
@@ -178,6 +187,8 @@ float *network_predict_gpu(network net, float *input)
 {
     int size = get_network_input_size(net) * net.batch;
     network_state state;
+    state.index = 0;
+    state.net = net;
     state.input = cuda_make_array(input, size);
     state.truth = 0;
     state.train = 0;

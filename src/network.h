@@ -3,15 +3,15 @@
 #define NETWORK_H
 
 #include "image.h"
-#include "detection_layer.h"
 #include "layer.h"
 #include "data.h"
+#include "params.h"
 
 typedef enum {
     CONSTANT, STEP, EXP, POLY, STEPS, SIG
 } learning_rate_policy;
 
-typedef struct {
+typedef struct network{
     int n;
     int batch;
     int *seen;
@@ -42,6 +42,15 @@ typedef struct {
     float **truth_gpu;
     #endif
 } network;
+
+typedef struct network_state {
+    float *truth;
+    float *input;
+    float *delta;
+    int train;
+    int index;
+    network net;
+} network_state;
 
 #ifdef GPU
 float train_network_datum_gpu(network net, float *x, float *y);

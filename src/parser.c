@@ -17,6 +17,7 @@
 #include "avgpool_layer.h"
 #include "local_layer.h"
 #include "route_layer.h"
+#include "shortcut_layer.h"
 #include "list.h"
 #include "option_list.h"
 #include "utils.h"
@@ -37,6 +38,7 @@ int is_dropout(section *s);
 int is_softmax(section *s);
 int is_normalization(section *s);
 int is_crop(section *s);
+int is_shortcut(section *s);
 int is_cost(section *s);
 int is_detection(section *s);
 int is_route(section *s);
@@ -80,6 +82,7 @@ typedef struct size_params{
     int h;
     int w;
     int c;
+    int index;
 } size_params;
 
 deconvolutional_layer parse_deconvolutional(list *options, size_params params)
@@ -148,6 +151,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
 
     convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,pad,activation, batch_normalize);
+    layer.flipped = option_find_int_quiet(options, "flipped", 0);
 
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
@@ -287,6 +291,20 @@ layer parse_normalization(list *options, size_params params)
     return l;
 }
 
+layer parse_shortcut(list *options, size_params params, network net)
+{
+    char *l = option_find(options, "from");   
+    int index = atoi(l);
+    if(index < 0) index = params.index + index;
+
+    int batch = params.batch;
+    layer from = net.layers[index];
+
+    layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
+    return s;
+}
+
+
 route_layer parse_route(list *options, size_params params, network net)
 {
     char *l = option_find(options, "layers");   
@@ -303,13 +321,14 @@ route_layer parse_route(list *options, size_params params, network net)
     for(i = 0; i < n; ++i){
         int index = atoi(l);
         l = strchr(l, ',')+1;
+        if(index < 0) index = params.index + index;
         layers[i] = index;
         sizes[i] = net.layers[index].outputs;
     }
     int batch = params.batch;
 
     route_layer layer = make_route_layer(batch, n, layers, sizes);
-    
+
     convolutional_layer first = net.layers[layers[0]];
     layer.out_w = first.out_w;
     layer.out_h = first.out_h;
@@ -419,6 +438,7 @@ network parse_network_cfg(char *filename)
     int count = 0;
     free_section(s);
     while(n){
+        params.index = count;
         fprintf(stderr, "%d: ", count);
         s = (section *)n->val;
         options = s->options;
@@ -447,6 +467,8 @@ network parse_network_cfg(char *filename)
             l = parse_avgpool(options, params);
         }else if(is_route(s)){
             l = parse_route(options, params, net);
+        }else if(is_shortcut(s)){
+            l = parse_shortcut(options, params, net);
         }else if(is_dropout(s)){
             l = parse_dropout(options, params);
             l.output = net.layers[count-1].output;
@@ -464,13 +486,13 @@ network parse_network_cfg(char *filename)
         net.layers[count] = l;
         free_section(s);
         n = n->next;
+        ++count;
         if(n){
             params.h = l.out_h;
             params.w = l.out_w;
             params.c = l.out_c;
             params.inputs = l.outputs;
         }
-        ++count;
     }   
     free_list(sections);
     net.outputs = get_network_output_size(net);
@@ -478,6 +500,10 @@ network parse_network_cfg(char *filename)
     return net;
 }
 
+int is_shortcut(section *s)
+{
+    return (strcmp(s->type, "[shortcut]")==0);
+}
 int is_crop(section *s)
 {
     return (strcmp(s->type, "[crop]")==0);
@@ -625,9 +651,12 @@ void save_weights_upto(network net, char *filename, int cutoff)
     FILE *fp = fopen(filename, "w");
     if(!fp) file_error(filename);
 
-    fwrite(&net.learning_rate, sizeof(float), 1, fp);
-    fwrite(&net.momentum, sizeof(float), 1, fp);
-    fwrite(&net.decay, sizeof(float), 1, fp);
+    int major = 0;
+    int minor = 1;
+    int revision = 0;
+    fwrite(&major, sizeof(int), 1, fp);
+    fwrite(&minor, sizeof(int), 1, fp);
+    fwrite(&revision, sizeof(int), 1, fp);
     fwrite(net.seen, sizeof(int), 1, fp);
 
     int i;
@@ -674,6 +703,19 @@ void save_weights(network net, char *filename)
     save_weights_upto(net, filename, net.n);
 }
 
+void transpose_matrix(float *a, int rows, int cols)
+{
+    float *transpose = calloc(rows*cols, sizeof(float));
+    int x, y;
+    for(x = 0; x < rows; ++x){
+        for(y = 0; y < cols; ++y){
+            transpose[y*rows + x] = a[x*cols + y];
+        }
+    }
+    memcpy(a, transpose, rows*cols*sizeof(float));
+    free(transpose);
+}
+
 void load_weights_upto(network *net, char *filename, int cutoff)
 {
     fprintf(stderr, "Loading weights from %s...", filename);
@@ -681,10 +723,12 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     FILE *fp = fopen(filename, "r");
     if(!fp) file_error(filename);
 
-    float garbage;
-    fread(&garbage, sizeof(float), 1, fp);
-    fread(&garbage, sizeof(float), 1, fp);
-    fread(&garbage, sizeof(float), 1, fp);
+    int major;
+    int minor;
+    int revision;
+    fread(&major, sizeof(int), 1, fp);
+    fread(&minor, sizeof(int), 1, fp);
+    fread(&revision, sizeof(int), 1, fp);
     fread(net->seen, sizeof(int), 1, fp);
 
     int i;
@@ -700,6 +744,9 @@ void load_weights_upto(network *net, char *filename, int cutoff)
                 fread(l.rolling_variance, sizeof(float), l.n, fp);
             }
             fread(l.filters, sizeof(float), num, fp);
+            if (l.flipped) {
+                transpose_matrix(l.filters, l.c*l.size*l.size, l.n);
+            }
 #ifdef GPU
             if(gpu_index >= 0){
                 push_convolutional_layer(l);
@@ -719,6 +766,9 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         if(l.type == CONNECTED){
             fread(l.biases, sizeof(float), l.outputs, fp);
             fread(l.weights, sizeof(float), l.outputs*l.inputs, fp);
+            if(major > 1000 || minor > 1000){
+                transpose_matrix(l.weights, l.inputs, l.outputs);
+            }
 #ifdef GPU
             if(gpu_index >= 0){
                 push_connected_layer(l);

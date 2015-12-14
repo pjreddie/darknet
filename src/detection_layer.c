@@ -146,7 +146,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
                 }
                 float iou  = box_iou(out, truth);
 
-                //printf("%d", best_index);
+                //printf("%d,", best_index);
                 int p_index = index + locations*l.classes + i*l.n + best_index;
                 *(l.cost) -= l.noobject_scale * pow(l.output[p_index], 2);
                 *(l.cost) += l.object_scale * pow(1-l.output[p_index], 2);

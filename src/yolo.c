@@ -255,9 +255,8 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     int i=0;
 
     float thresh = .001;
-    int nms = 0;
     float iou_thresh = .5;
-    float nms_thresh = .5;
+    float nms = 0;
 
     int total = 0;
     int correct = 0;
@@ -271,7 +270,7 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
         char *id = basecfg(path);
         float *predictions = network_predict(net, sized.data);
         convert_yolo_detections(predictions, classes, l.n, square, side, 1, 1, thresh, probs, boxes, 1);
-        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
+        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms);
 
         char *labelpath = find_replace(path, "images", "labels");
         labelpath = find_replace(labelpath, "JPEGImages", "labels");

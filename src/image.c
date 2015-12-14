@@ -1,5 +1,6 @@
 #include "image.h"
 #include "utils.h"
+#include "blas.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -708,8 +709,14 @@ void test_resize(char *filename)
     image exp5 = copy_image(im);
     exposure_image(exp5, .5);
 
+    image r = resize_image(im, im.w/2, im.h/2);
+
+    image black = make_image(im.w, im.h, im.c);
+    shortcut_cpu(black.data, im.w, im.h, im.c, 1, 2, r.data, 1, r.c);
+
     show_image(im, "Original");
     show_image(gray, "Gray");
+    show_image(black, "Black");
     show_image(sat2, "Saturation-2");
     show_image(sat5, "Saturation-.5");
     show_image(exp2, "Exposure-2");

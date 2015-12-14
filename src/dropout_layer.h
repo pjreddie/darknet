@@ -3,6 +3,7 @@
 
 #include "params.h"
 #include "layer.h"
+#include "network.h"
 
 typedef layer dropout_layer;
 

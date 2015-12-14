@@ -131,7 +131,7 @@ void validate_classifier(char *datacfg, char *filename, char *weightfile)
     char *label_list = option_find_str(options, "labels", "data/labels.list");
     char *valid_list = option_find_str(options, "valid", "data/train.list");
     int classes = option_find_int(options, "classes", 2);
-    int topk = option_find_int(options, "topk", 1);
+    int topk = option_find_int(options, "top", 1);
 
     char **labels = get_labels(label_list);
     list *plist = get_paths(valid_list);
@@ -194,11 +194,12 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
 
     list *options = read_data_cfg(datacfg);
 
-    char *label_list = option_find_str(options, "labels", "data/labels.list");
+    char *name_list = option_find_str(options, "names", 0);
+    if(!name_list) name_list = option_find_str(options, "labels", "data/labels.list");
     int top = option_find_int(options, "top", 1);
 
     int i = 0;
-    char **names = get_labels(label_list);
+    char **names = get_labels(name_list);
     clock_t time;
     int indexes[10];
     char buff[256];

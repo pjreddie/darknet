@@ -19,6 +19,7 @@
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "route_layer.h"
+#include "shortcut_layer.h"
 
 int get_current_batch(network net)
 {
@@ -94,6 +95,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "cost";
         case ROUTE:
             return "route";
+        case SHORTCUT:
+            return "shortcut";
         case NORMALIZATION:
             return "normalization";
         default:
@@ -119,6 +122,7 @@ void forward_network(network net, network_state state)
 {
     int i;
     for(i = 0; i < net.n; ++i){
+        state.index = i;
         layer l = net.layers[i];
         if(l.delta){
             scal_cpu(l.outputs * l.batch, 0, l.delta, 1);
@@ -149,6 +153,8 @@ void forward_network(network net, network_state state)
             forward_dropout_layer(l, state);
         } else if(l.type == ROUTE){
             forward_route_layer(l, net);
+        } else if(l.type == SHORTCUT){
+            forward_shortcut_layer(l, state);
         }
         state.input = l.output;
     }
@@ -211,6 +217,7 @@ void backward_network(network net, network_state state)
     float *original_input = state.input;
     float *original_delta = state.delta;
     for(i = net.n-1; i >= 0; --i){
+        state.index = i;
         if(i == 0){
             state.input = original_input;
             state.delta = original_delta;
@@ -244,6 +251,8 @@ void backward_network(network net, network_state state)
             backward_cost_layer(l, state);
         } else if(l.type == ROUTE){
             backward_route_layer(l, net);
+        } else if(l.type == SHORTCUT){
+            backward_shortcut_layer(l, state);
         }
     }
 }
@@ -255,6 +264,8 @@ float train_network_datum(network net, float *x, float *y)
     if(gpu_index >= 0) return train_network_datum_gpu(net, x, y);
 #endif
     network_state state;
+    state.index = 0;
+    state.net = net;
     state.input = x;
     state.delta = 0;
     state.truth = y;
@@ -307,6 +318,8 @@ float train_network_batch(network net, data d, int n)
 {
     int i,j;
     network_state state;
+    state.index = 0;
+    state.net = net;
     state.train = 1;
     state.delta = 0;
     float sum = 0;
@@ -443,6 +456,8 @@ float *network_predict(network net, float *input)
 #endif
 
     network_state state;
+    state.net = net;
+    state.index = 0;
     state.input = input;
     state.truth = 0;
     state.train = 0;

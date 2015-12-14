@@ -25,13 +25,13 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     l.weight_updates = calloc(inputs*outputs, sizeof(float));
     l.bias_updates = calloc(outputs, sizeof(float));
 
-    l.weights = calloc(inputs*outputs, sizeof(float));
+    l.weights = calloc(outputs*inputs, sizeof(float));
     l.biases = calloc(outputs, sizeof(float));
 
 
     //float scale = 1./sqrt(inputs);
     float scale = sqrt(2./inputs);
-    for(i = 0; i < inputs*outputs; ++i){
+    for(i = 0; i < outputs*inputs; ++i){
         l.weights[i] = 2*scale*rand_uniform() - scale;
     }
 
@@ -40,10 +40,10 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     }
 
 #ifdef GPU
-    l.weights_gpu = cuda_make_array(l.weights, inputs*outputs);
+    l.weights_gpu = cuda_make_array(l.weights, outputs*inputs);
     l.biases_gpu = cuda_make_array(l.biases, outputs);
 
-    l.weight_updates_gpu = cuda_make_array(l.weight_updates, inputs*outputs);
+    l.weight_updates_gpu = cuda_make_array(l.weight_updates, outputs*inputs);
     l.bias_updates_gpu = cuda_make_array(l.bias_updates, outputs);
 
     l.output_gpu = cuda_make_array(l.output, outputs*batch);
@@ -76,7 +76,7 @@ void forward_connected_layer(connected_layer l, network_state state)
     float *a = state.input;
     float *b = l.weights;
     float *c = l.output;
-    gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+    gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
     activate_array(l.output, l.outputs*l.batch, l.activation);
 }
 
@@ -87,11 +87,11 @@ void backward_connected_layer(connected_layer l, network_state state)
     for(i = 0; i < l.batch; ++i){
         axpy_cpu(l.outputs, 1, l.delta + i*l.outputs, 1, l.bias_updates, 1);
     }
-    int m = l.inputs;
+    int m = l.outputs;
     int k = l.batch;
-    int n = l.outputs;
-    float *a = state.input;
-    float *b = l.delta;
+    int n = l.inputs;
+    float *a = l.delta;
+    float *b = state.input;
     float *c = l.weight_updates;
     gemm(1,0,m,n,k,1,a,m,b,n,1,c,n);
 
@@ -103,7 +103,7 @@ void backward_connected_layer(connected_layer l, network_state state)
     b = l.weights;
     c = state.delta;
 
-    if(c) gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
+    if(c) gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
 }
 
 #ifdef GPU
@@ -146,7 +146,7 @@ void forward_connected_layer_gpu(connected_layer l, network_state state)
     float * a = state.input;
     float * b = l.weights_gpu;
     float * c = l.output_gpu;
-    gemm_ongpu(0,0,m,n,k,1,a,k,b,n,1,c,n);
+    gemm_ongpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
 
 /*
@@ -163,11 +163,11 @@ void backward_connected_layer_gpu(connected_layer l, network_state state)
     for(i = 0; i < l.batch; ++i){
         axpy_ongpu_offset(l.outputs, 1, l.delta_gpu, i*l.outputs, 1, l.bias_updates_gpu, 0, 1);
     }
-    int m = l.inputs;
+    int m = l.outputs;
     int k = l.batch;
-    int n = l.outputs;
-    float * a = state.input;
-    float * b = l.delta_gpu;
+    int n = l.inputs;
+    float * a = l.delta_gpu;
+    float * b = state.input;
     float * c = l.weight_updates_gpu;
     gemm_ongpu(1,0,m,n,k,1,a,m,b,n,1,c,n);
 
@@ -179,6 +179,6 @@ void backward_connected_layer_gpu(connected_layer l, network_state state)
     b = l.weights_gpu;
     c = state.delta;
 
-    if(c) gemm_ongpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
+    if(c) gemm_ongpu(0,0,m,n,k,1,a,k,b,n,1,c,n);
 }
 #endif
