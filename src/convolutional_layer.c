@@ -194,13 +194,25 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 #endif
 }
 
-void bias_output(float *output, float *biases, int batch, int n, int size)
+void add_bias(float *output, float *biases, int batch, int n, int size)
 {
     int i,j,b;
     for(b = 0; b < batch; ++b){
         for(i = 0; i < n; ++i){
             for(j = 0; j < size; ++j){
-                output[(b*n + i)*size + j] = biases[i];
+                output[(b*n + i)*size + j] += biases[i];
+            }
+        }
+    }
+}
+
+void scale_bias(float *output, float *scales, int batch, int n, int size)
+{
+    int i,j,b;
+    for(b = 0; b < batch; ++b){
+        for(i = 0; i < n; ++i){
+            for(j = 0; j < size; ++j){
+                output[(b*n + i)*size + j] *= scales[i];
             }
         }
     }
@@ -222,7 +234,7 @@ void forward_convolutional_layer(const convolutional_layer l, network_state stat
     int out_w = convolutional_out_width(l);
     int i;
 
-    bias_output(l.output, l.biases, l.batch, l.n, out_h*out_w);
+    fill_cpu(l.outputs*l.batch, 0, l.output, 1);
 
     int m = l.n;
     int k = l.size*l.size*l.c;
@@ -241,10 +253,16 @@ void forward_convolutional_layer(const convolutional_layer l, network_state stat
     }
 
     if(l.batch_normalize){
-        mean_cpu(l.output, l.batch, l.n, l.out_h*l.out_w, l.mean);   
-        variance_cpu(l.output, l.mean, l.batch, l.n, l.out_h*l.out_w, l.variance);   
-        normalize_cpu(l.output, l.mean, l.variance, l.batch, l.n, l.out_h*l.out_w);   
+        if(state.train){
+            mean_cpu(l.output, l.batch, l.n, l.out_h*l.out_w, l.mean);   
+            variance_cpu(l.output, l.mean, l.batch, l.n, l.out_h*l.out_w, l.variance);   
+            normalize_cpu(l.output, l.mean, l.variance, l.batch, l.n, l.out_h*l.out_w);   
+        } else {
+            normalize_cpu(l.output, l.rolling_mean, l.rolling_variance, l.batch, l.n, l.out_h*l.out_w);
+        }
+        scale_bias(l.output, l.scales, l.batch, l.n, out_h*out_w);
     }
+    add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 
     activate_array(l.output, m*n*l.batch, l.activation);
 }

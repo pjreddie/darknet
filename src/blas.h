@@ -13,6 +13,7 @@ void mul_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void copy_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void scal_cpu(int N, float ALPHA, float *X, int INCX);
+void fill_cpu(int N, float ALPHA, float * X, int INCX);
 float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void test_gpu_blas();
 void shortcut_cpu(float *out, int w, int h, int c, int batch, int sample, float *add, int stride, int c2);

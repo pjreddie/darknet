@@ -143,7 +143,7 @@ void validate_classifier(char *datacfg, char *filename, char *weightfile)
     clock_t time;
     float avg_acc = 0;
     float avg_topk = 0;
-    int splits = 50;
+    int splits = m/1000;
     int num = (i+1)*m/splits - i*m/splits;
 
     data val, buffer;
@@ -201,7 +201,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     int i = 0;
     char **names = get_labels(name_list);
     clock_t time;
-    int indexes[10];
+    int *indexes = calloc(top, sizeof(int));
     char buff[256];
     char *input = buff;
     while(1){
@@ -214,7 +214,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, 256, 256);
+        image im = load_image_color(input, net.w, net.h);
         float *X = im.data;
         time=clock();
         float *predictions = network_predict(net, X);
@@ -229,10 +229,10 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     }
 }
 
-void test_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int target_layer)
+void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_layer)
 {
     int curr = 0;
-    network net = parse_network_cfg(filename);
+    network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -241,10 +241,8 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filen
     list *options = read_data_cfg(datacfg);
 
     char *test_list = option_find_str(options, "test", "data/test.list");
-    char *label_list = option_find_str(options, "labels", "data/labels.list");
     int classes = option_find_int(options, "classes", 2);
 
-    char **labels = get_labels(label_list);
     list *plist = get_paths(test_list);
 
     char **paths = (char **)list_to_array(plist);
@@ -262,7 +260,7 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filen
     args.classes = classes;
     args.n = net.batch;
     args.m = 0;
-    args.labels = labels;
+    args.labels = 0;
     args.d = &buffer;
     args.type = CLASSIFICATION_DATA;
 
@@ -283,13 +281,17 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filen
         time=clock();
         matrix pred = network_predict_data(net, val);
         
-        int i;
+        int i, j;
         if (target_layer >= 0){
             //layer l = net.layers[target_layer];
         }
 
-        for(i = 0; i < val.X.rows; ++i){
-
+        for(i = 0; i < pred.rows; ++i){
+            printf("%s", paths[curr-net.batch+i]);
+            for(j = 0; j < pred.cols; ++j){
+                printf("\t%g", pred.vals[i][j]);
+            }
+            printf("\n");
         }
 
         free_matrix(pred);
@@ -315,7 +317,7 @@ void run_classifier(int argc, char **argv)
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename);
     else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights);
-    else if(0==strcmp(argv[2], "test")) test_classifier(data, cfg, weights,filename, layer);
+    else if(0==strcmp(argv[2], "test")) test_classifier(data, cfg, weights, layer);
     else if(0==strcmp(argv[2], "valid")) validate_classifier(data, cfg, weights);
 }
 

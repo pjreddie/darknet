@@ -134,7 +134,7 @@ void forward_deconvolutional_layer(const deconvolutional_layer l, network_state 
     int n = l.h*l.w;
     int k = l.c;
 
-    bias_output(l.output, l.biases, l.batch, l.n, size);
+    fill_cpu(l.outputs*l.batch, 0, l.output, 1);
 
     for(i = 0; i < l.batch; ++i){
         float *a = l.filters;
@@ -145,6 +145,7 @@ void forward_deconvolutional_layer(const deconvolutional_layer l, network_state 
 
         col2im_cpu(c, l.n, out_h, out_w, l.size, l.stride, 0, l.output+i*l.n*size);
     }
+    add_bias(l.output, l.biases, l.batch, l.n, size);
     activate_array(l.output, l.batch*l.n*size, l.activation);
 }
 
