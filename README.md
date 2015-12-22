@@ -52,4 +52,12 @@ For questions or issues please use the [Google Group](https://groups.google.com/
        
    (4) Now we are good to go. If we need to change the number of layers and experiment with various parameters, just mess with the cfg file. For the original yolo configuration, we have the [pre-trained weights](http://pjreddie.com/media/files/extraction.conv.weights) to start from. For arbitrary configuration, I'm afraid we have to generate pre-trained model ourselves.
    
-   If you find any problems regarding the procedure, contact me at [gnxr9@mail.missouri.edu](gnxr9@mail.missouri.edu)
+4. Start Training
+
+Try something like:
+
+./darknet yolo train cfg/yolo.cfg extraction.conv.weights
+
+#Contact#
+If you find any problems regarding the procedure, contact me at [gnxr9@mail.missouri.edu](gnxr9@mail.missouri.edu).
+Or you can join the aforesaid [Google Group](https://groups.google.com/forum/#!forum/darknet); there are many brilliant people answering questions out there.
