@@ -40,8 +40,16 @@ For questions or issues please use the [Google Group](https://groups.google.com/
    
 3. Modify Some Code
 
-   (1)
+   (1) In [src/yolo.c](https://github.com/Guanghan/darknet/blob/master/src/yolo.c), change class numbers and class names. (And also the paths to the training data and the annotations, i.e., the list we obtained from step 2. )
    
-   (2)
+       If we want to train new classes, in order to display correct png Label files, we also need to moidify and run [data/labels/make_labels] (https://github.com/Guanghan/darknet/blob/master/data/labels/make_labels.py)
    
-   (3)
+   (2) In [src/yolo_kernels.cu](https://github.com/Guanghan/darknet/blob/master/src/yolo_kernels.cu), change class numbers.
+   
+   (3) Now we are able to train with new classes, but there is one more thing to deal with. In YOLO, the number of parameters of the second last layer is not arbitrary, instead it is defined by some other parameters including the number of classes, the side(number of splits of the whole image). Please read [the paper](http://arxiv.org/abs/1506.02640)  
+   
+       Therefore, in [cfg/yolo.cfg](https://github.com/Guanghan/darknet/blob/master/cfg/yolo.cfg), change the "output" in line 218, and "classes" in line 222.
+       
+   (4) Now we are good to go. If we need to change the number of layers and experiment with various parameters, just mess with the cfg file. For the original yolo configuration, we have the [pre-trained weights](http://pjreddie.com/media/files/extraction.conv.weights) to start from. For arbitrary configuration, I'm afraid we have to generate pre-trained model ourselves.
+   
+   If you find any problems regarding the procedure, contact me at [gnxr9@mail.missouri.edu](gnxr9@mail.missouri.edu)
