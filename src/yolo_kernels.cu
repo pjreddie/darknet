@@ -13,9 +13,13 @@ extern "C" {
 #include <sys/time.h>
 }
 
+/* Change class number here */
+#define CLS_NUM 2
+
 #ifdef OPENCV
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+extern "C" IplImage* image_to_Ipl(image img, int w, int h, int depth, int c, int step);
 extern "C" image ipl_to_image(IplImage* src);
 extern "C" void convert_yolo_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
 extern "C" void draw_yolo(image im, int num, float thresh, box *boxes, float **probs);
@@ -32,14 +36,27 @@ static image det  ;
 static image det_s;
 static image disp ;
 static cv::VideoCapture cap;
+static cv::VideoWriter cap_out;
 static float fps = 0;
 static float demo_thresh = 0;
+static int w, h, depth, c, step= 0;
+static int MODE = -1;
 
 void *fetch_in_thread(void *ptr)
 {
     cv::Mat frame_m;
     cap >> frame_m;
     IplImage frame = frame_m;
+
+if(step == 0)
+{
+    w = frame.width;
+    h = frame.height;
+    c = frame.nChannels;
+    depth= frame.depth; 
+    step = frame.widthStep;
+}
+
     in = ipl_to_image(&frame);
     rgbgr_image(in);
     in_s = resize_image(in, net.w, net.h);
@@ -60,11 +77,26 @@ void *detect_in_thread(void *ptr)
     printf("\033[1;1H");
     printf("\nFPS:%.0f\n",fps);
     printf("Objects:\n\n");
-    draw_detections(det, l.side*l.side*l.n, demo_thresh, boxes, probs, voc_names, voc_labels, 20);
+    draw_detections(det, l.side*l.side*l.n, demo_thresh, boxes, probs, voc_names, voc_labels, CLS_NUM);
+
+    if(MODE == 1)
+    {
+        IplImage* outputIpl= image_to_Ipl(det, w, h, depth, c, step);
+        cv::Mat outputMat = cv::cvarrToMat(outputIpl, true);
+        /*
+        cvNamedWindow("image", CV_WINDOW_AUTOSIZE);
+        cvShowImage("image", outputIpl); 
+        cvWaitKey(1);  
+        */
+        cvReleaseImage(&outputIpl);
+        cap_out << outputMat;
+        outputMat.release();
+     }
+
     return 0;
 }
 
-extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index)
+extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index, char *videofile)
 {
     demo_thresh = thresh;
     printf("YOLO demo\n");
@@ -76,10 +108,27 @@ extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam
 
     srand(2222222);
 
+if(cam_index != -1)
+{
+    MODE = 0; 
     cv::VideoCapture cam(cam_index);
     cap = cam;
     if(!cap.isOpened()) error("Couldn't connect to webcam.\n");
+}
+else 
+{
+    MODE = 1;
+    printf("Video File name is: %s\n", videofile);
+    cv::VideoCapture videoCap(videofile);
+    cap = videoCap;
+    if(!cap.isOpened()) error("Couldn't read video file.\n");
 
+    cv::Size S = cv::Size((int)videoCap.get(CV_CAP_PROP_FRAME_WIDTH), (int)videoCap.get(CV_CAP_PROP_FRAME_HEIGHT));
+    cv::VideoWriter outputVideo("out.avi", CV_FOURCC('D','I','V','X'), videoCap.get(CV_CAP_PROP_FPS), S, true);
+    if(!outputVideo.isOpened()) error("Couldn't write video file.\n");
+    cap_out = outputVideo;
+}
+ 
     detection_layer l = net.layers[net.n-1];
     int j;
 
@@ -126,4 +175,3 @@ extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam
     fprintf(stderr, "YOLO demo needs OpenCV for webcam images.\n");
 }
 #endif
-
