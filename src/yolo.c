@@ -9,13 +9,21 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
-image voc_labels[20];
+/* Change class number here */
+#define CLASSNUM 2
+
+/* Change class names here */
+char *voc_names[] = {"stopsign", "person"};
+image voc_labels[CLASSNUM];
 
 void train_yolo(char *cfgfile, char *weightfile)
 {
-    char *train_images = "data/voc.0712.trainval";
-    char *backup_directory = "/home/pjreddie/backup/";
+    /* Change training folders here */
+    char *train_images = "BBoxLabelTool/train.txt";
+
+    /* Change output weight folders here */
+    char *backup_directory = "/u03/Guanghan/dev/darknet-master/backup/";
+
     srand(time(0));
     data_seed = time(0);
     char *base = basecfg(cfgfile);
@@ -28,6 +36,7 @@ void train_yolo(char *cfgfile, char *weightfile)
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = net.batch*net.subdivisions;
     int i = *net.seen/imgs;
+    printf("\n\n\n\n\n\n\nimgs = %d,\n i= %d\n", imgs, i);
     data train, buffer;
 
 
@@ -255,8 +264,9 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     int i=0;
 
     float thresh = .001;
+    int nms = 0;
     float iou_thresh = .5;
-    float nms = 0;
+    float nms_thresh = .5;
 
     int total = 0;
     int correct = 0;
@@ -270,7 +280,7 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
         char *id = basecfg(path);
         float *predictions = network_predict(net, sized.data);
         convert_yolo_detections(predictions, classes, l.n, square, side, 1, 1, thresh, probs, boxes, 1);
-        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms);
+        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
 
         char *labelpath = find_replace(path, "images", "labels");
         labelpath = find_replace(labelpath, "JPEGImages", "labels");
@@ -343,7 +353,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, 20);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, CLASSNUM);
         show_image(im, "predictions");
 
         show_image(sized, "resized");
@@ -393,9 +403,9 @@ void demo_swag(char *cfgfile, char *weightfile, float thresh){}
 #endif
  */
 
-void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index);
+void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index, char* filename);
 #ifndef GPU
-void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index)
+void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index, char* filename)
 {
     fprintf(stderr, "Darknet must be compiled with CUDA for YOLO demo.\n");
 }
@@ -404,7 +414,7 @@ void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index)
 void run_yolo(int argc, char **argv)
 {
     int i;
-    for(i = 0; i < 20; ++i){
+    for(i = 0; i < CLASSNUM; ++i){
         char buff[256];
         sprintf(buff, "data/labels/%s.png", voc_names[i]);
         voc_labels[i] = load_image_color(buff, 0, 0);
@@ -424,5 +434,6 @@ void run_yolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh, cam_index);
+    else if(0==strcmp(argv[2], "demo_cam")) demo_yolo(cfg, weights, thresh, cam_index, "NULL");
+    else if(0==strcmp(argv[2], "demo_vid")) demo_yolo(cfg, weights, thresh, -1, filename);
 }
