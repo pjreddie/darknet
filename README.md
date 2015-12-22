@@ -21,6 +21,8 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 2. This fork repository illustrates how to train a customized neural network with our own data, with our own classes.
 
    The procedure is documented in README.md.
+   
+   Or you can see this [article](http://guanghan.info/blog/en/my-works/train-yolo/).
 
 #How to Train With Customized Data and Class Numbers/Labels#
 
