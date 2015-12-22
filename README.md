@@ -34,7 +34,7 @@ For questions or issues please use the [Google Group](https://groups.google.com/
    
    (1). If we choose to use VOC data to train, use [scripts/voc_label.py](https://github.com/Guanghan/darknet/blob/master/scripts/voc_label.py) to convert existing VOC annotations to darknet format.
    
-   (2). If we choose to use our own collected data, use [scripts/] to convert the annotations.
+   (2). If we choose to use our own collected data, use [scripts/convert.py](https://github.com/Guanghan/darknet/blob/master/scripts/convert.py) to convert the annotations.
 
    At this step, we should have darknet annotations(.txt) and a training list(.txt).
    
