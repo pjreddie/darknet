@@ -9,7 +9,7 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 
 #About This Fork#
 
-![Yolo logo](http://guanghan.info/blog/en/wp-content/uploads/2015/12/images-40.jpg)
+->![Yolo logo](http://guanghan.info/blog/en/wp-content/uploads/2015/12/images-40.jpg)<-
 
 1. This fork repository adds some additional niche in addition to the current darkenet from pjreddie. e.g.
 
