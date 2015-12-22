@@ -22,7 +22,7 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 
    The procedure is documented in README.md.
    
-   Or you can see this [article](http://guanghan.info/blog/en/my-works/train-yolo/).
+   Or you can see this article: [Start Training YOLO with Our Own Data](http://guanghan.info/blog/en/my-works/train-yolo/).
 
 #How to Train With Customized Data and Class Numbers/Labels#
 
