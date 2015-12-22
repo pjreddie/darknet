@@ -1,7 +1,5 @@
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
-![Yolo logo](http://guanghan.info/blog/en/wp-content/uploads/2015/12/images-40.jpg)
-
 #Darknet#
 Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
 
@@ -10,6 +8,9 @@ For more information see the [Darknet project website](http://pjreddie.com/darkn
 For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
 
 #About This Fork#
+
+![Yolo logo](http://guanghan.info/blog/en/wp-content/uploads/2015/12/images-40.jpg)
+
 1. This fork repository adds some additional niche in addition to the current darkenet from pjreddie. e.g.
 
    (1). Read a video file, process it, and output a video with boundingboxes.
