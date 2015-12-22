@@ -1,6 +1,5 @@
 #include "image.h"
 #include "utils.h"
-#include "blas.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -709,14 +708,8 @@ void test_resize(char *filename)
     image exp5 = copy_image(im);
     exposure_image(exp5, .5);
 
-    image r = resize_image(im, im.w/2, im.h/2);
-
-    image black = make_image(im.w, im.h, im.c);
-    shortcut_cpu(black.data, im.w, im.h, im.c, 1, 2, r.data, 1, r.c);
-
     show_image(im, "Original");
     show_image(gray, "Gray");
-    show_image(black, "Black");
     show_image(sat2, "Saturation-2");
     show_image(sat5, "Saturation-.5");
     show_image(exp2, "Exposure-2");
@@ -747,6 +740,44 @@ image ipl_to_image(IplImage* src)
     return out;
 }
 
+IplImage* image_to_Ipl(image img, int w, int h, int depth, int c, int step)
+{
+   int i, j, k, count= 0; 
+   IplImage* src= cvCreateImage(cvSize(w, h), depth, c);
+
+    for(k= 0; k < c; ++k){
+        for(i = 0; i < h; ++i){
+            for(j = 0; j < w; ++j){
+		src->imageData[i*step + j*c + k] = img.data[count++] * 255.;
+		}
+	     }
+          }
+   cvCvtColor(src, src, CV_RGB2BGR);
+   return src;
+}
+
+/*
+Mat image_to_Mat(image img, int w, int h, int depth, int c)
+{
+   int i, j, k, count= 0; 
+   IplImage* src= cvCreateImage(cvSize(w, h), depth, c);
+  
+    for(k= 0; k < c; ++k){
+        for(i = 0; i < h; ++i){
+            for(j = 0; j < w; ++j){
+		src->imageData[i*step + j*c + k] = img.data[count++];
+		}
+	     }
+          }
+   cvCvtColor(src, src, CV_RGB2BGR);
+
+   cv::Mat dst = cv::cvarrToMat(src, true);
+   cvReleaseImage(&src);
+    
+   return dst;
+}*/
+
+
 image load_image_cv(char *filename, int channels)
 {
     IplImage* src = 0;
@@ -758,9 +789,13 @@ image load_image_cv(char *filename, int channels)
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
 
+    //add debug
+    //printf("%s\n", filename);
+    //flag = 1;
+
     if( (src = cvLoadImage(filename, flag)) == 0 )
     {
-        printf("Cannot load image \"%s\"\n", filename);
+        printf(" Cannot load image \"%s\"\n", filename);
         exit(0);
     }
     image out = ipl_to_image(src);
