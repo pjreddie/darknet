@@ -66,4 +66,4 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 #Contact#
 If you find any problems regarding the procedure, contact me at [gnxr9@mail.missouri.edu](gnxr9@mail.missouri.edu).
 
-Or you can join the aforesaid [Google Group](https://groups.google.com/forum/#!forum/darknet); there are many brilliant people answering questions out there.
+Or you can join the aforesaid [Google Group](https://groups.google.com/forum/#!forum/darknet); there are many brilliant people asking and answering questions out there.
