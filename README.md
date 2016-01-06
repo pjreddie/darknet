@@ -53,7 +53,7 @@ For questions or issues please use the [Google Group](https://groups.google.com/
    
    (3) Now we are able to train with new classes, but there is one more thing to deal with. In YOLO, the number of parameters of the second last layer is not arbitrary, instead it is defined by some other parameters including the number of classes, the side(number of splits of the whole image). Please read [the paper](http://arxiv.org/abs/1506.02640)  
        
-       (5*2 + number_of_classes)*7*7, as an example, assuming no other parameters are modified.  
+       (5 x 2 + number_of_classes) x 7 x 7, as an example, assuming no other parameters are modified.  
        
        Therefore, in [cfg/yolo.cfg](https://github.com/Guanghan/darknet/blob/master/cfg/yolo.cfg), change the "output" in line 218, and "classes" in line 222.
        
