@@ -27,6 +27,10 @@ For questions or issues please use the [Google Group](https://groups.google.com/
    
    Or you can read this article: [Start Training YOLO with Our Own Data](http://guanghan.info/blog/en/my-works/train-yolo/).
 
+#DEMOS of YOLO trained with our own data#
+Yield Sign: [https://youtu.be/5DJVLV3P47E](https://youtu.be/5DJVLV3P47E)
+Stop Sign: [https://youtu.be/0CQMb3NGlMk](https://youtu.be/0CQMb3NGlMk)
+
 #How to Train With Customized Data and Class Numbers/Labels#
 
 1. Collect Data and Annotation
