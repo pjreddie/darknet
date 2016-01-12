@@ -35,7 +35,7 @@ Stop Sign: [https://youtu.be/0CQMb3NGlMk](https://youtu.be/0CQMb3NGlMk)
 The cfg that I used is here: [darknet/cfg/yolo_2class_box11.cfg](https://github.com/Guanghan/darknet/blob/master/cfg/yolo_2class_box11.cfg)
 
 The weights that I trained can be downloaded here:
-[yolo_2class_box11_3000.weights](guanghan.info/download/yolo_2class_box11_3000.weights)
+[yolo_2class_box11_3000.weights](http://guanghan.info/download/yolo_2class_box11_3000.weights)
 
 #How to Train With Customized Data and Class Numbers/Labels#
 
