@@ -37,6 +37,11 @@ The cfg that I used is here: [darknet/cfg/yolo_2class_box11.cfg](https://github.
 The weights that I trained can be downloaded here:
 [yolo_2class_box11_3000.weights](http://guanghan.info/download/yolo_2class_box11_3000.weights)
 
+The pre-compiled software with source code package for the demo:
+[darknet-video-2class.zip](http://guanghan.info/download/darknet-video-2class.zip)
+
+You can use this as an example.
+
 #How to Train With Customized Data and Class Numbers/Labels#
 
 1. Collect Data and Annotation
