@@ -48,11 +48,10 @@ You can use this as an example.
    
    (1). For Videos, we can use video summary, shot boundary detection or camera take detection, to create static images.
    
-   (2). For Images, we can use [BBox-Label-Tool](https://github.com/puzzledqs/BBox-Label-Tool) to label objects.
+   (2). For Images, we can use [BBox-Label-Tool](https://github.com/puzzledqs/BBox-Label-Tool) to label objects. 
+The data I used for the demo was downloaded from [Google Images](https://images.google.com/), and hand-labeled by my intern employees. (Just kidding, I had to label it myself. Damn it...)
 
-        The data I used for the demo was downloaded from [Google Images](https://images.google.com/), and hand-labeled by my intern employees. (Just kidding, I had to label it myself. Damn it...)
-  
-        Since I am training with only two classes, and that the signs have less distortions and variances (compared to person or car, for example), I only trained around 300 images for each class to get a decent performance. But if you are training with more classes or harder classes, I suggest you have at least 1000 images for each class.
+Since I am training with only two classes, and that the signs have less distortions and variances (compared to person or car, for example), I only trained around 300 images for each class to get a decent performance. But if you are training with more classes or harder classes, I suggest you have at least 1000 images for each class.
 
 2. Create Annotation in Darknet Format 
    
