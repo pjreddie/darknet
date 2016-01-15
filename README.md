@@ -80,6 +80,9 @@ You can use this as an example.
    
    You can download some examples to understand the format:
    
+   [before_conversion.txt](http://guanghan.info/download/before_conversion.txt)
+   [after_conversion.txt](http://guanghan.info/download/after_conversion.txt)
+   [training_list.txt](http://guanghan.info/download/training_list.txt)
    
    
 3. Modify Some Code
