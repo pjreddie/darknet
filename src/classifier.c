@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "parser.h"
 #include "option_list.h"
+#include "blas.h"
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
@@ -183,6 +184,145 @@ void validate_classifier(char *datacfg, char *filename, char *weightfile)
     }
 }
 
+void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
+{
+    int i, j;
+    network net = parse_network_cfg(filename);
+    set_batch_network(&net, 1);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    srand(time(0));
+
+    list *options = read_data_cfg(datacfg);
+
+    char *label_list = option_find_str(options, "labels", "data/labels.list");
+    char *valid_list = option_find_str(options, "valid", "data/train.list");
+    int classes = option_find_int(options, "classes", 2);
+    int topk = option_find_int(options, "top", 1);
+
+    char **labels = get_labels(label_list);
+    list *plist = get_paths(valid_list);
+
+    char **paths = (char **)list_to_array(plist);
+    int m = plist->size;
+    free_list(plist);
+
+    float avg_acc = 0;
+    float avg_topk = 0;
+    int *indexes = calloc(topk, sizeof(int));
+
+    for(i = 0; i < m; ++i){
+        int class = -1;
+        char *path = paths[i];
+        for(j = 0; j < classes; ++j){
+            if(strstr(path, labels[j])){
+                class = j;
+                break;
+            }
+        }
+        image im = load_image_color(paths[i], 256, 256);
+        image images[10];
+        images[0] = crop_image(im, -16, -16, 256, 256);
+        images[1] = crop_image(im, 16, -16, 256, 256);
+        images[2] = crop_image(im, 0, 0, 256, 256);
+        images[3] = crop_image(im, -16, 16, 256, 256);
+        images[4] = crop_image(im, 16, 16, 256, 256);
+        flip_image(im);
+        images[5] = crop_image(im, -16, -16, 256, 256);
+        images[6] = crop_image(im, 16, -16, 256, 256);
+        images[7] = crop_image(im, 0, 0, 256, 256);
+        images[8] = crop_image(im, -16, 16, 256, 256);
+        images[9] = crop_image(im, 16, 16, 256, 256);
+        float *pred = calloc(classes, sizeof(float));
+        for(j = 0; j < 10; ++j){
+            float *p = network_predict(net, images[j].data);
+            axpy_cpu(classes, 1, p, 1, pred, 1);
+            free_image(images[j]);
+        }
+        free_image(im);
+        top_k(pred, classes, topk, indexes);
+        free(pred);
+        if(indexes[0] == class) avg_acc += 1;
+        for(j = 0; j < topk; ++j){
+            if(indexes[j] == class) avg_topk += 1;
+        }
+
+        printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
+    }
+}
+
+void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
+{
+    int i, j;
+    network net = parse_network_cfg(filename);
+    set_batch_network(&net, 1);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    srand(time(0));
+
+    list *options = read_data_cfg(datacfg);
+
+    char *label_list = option_find_str(options, "labels", "data/labels.list");
+    char *valid_list = option_find_str(options, "valid", "data/train.list");
+    int classes = option_find_int(options, "classes", 2);
+    int topk = option_find_int(options, "top", 1);
+
+    char **labels = get_labels(label_list);
+    list *plist = get_paths(valid_list);
+    int scales[] = {224, 256, 384, 480, 640};
+    int nscales = sizeof(scales)/sizeof(scales[0]);
+
+    char **paths = (char **)list_to_array(plist);
+    int m = plist->size;
+    free_list(plist);
+
+    float avg_acc = 0;
+    float avg_topk = 0;
+    int *indexes = calloc(topk, sizeof(int));
+
+    for(i = 0; i < m; ++i){
+        int class = -1;
+        char *path = paths[i];
+        for(j = 0; j < classes; ++j){
+            if(strstr(path, labels[j])){
+                class = j;
+                break;
+            }
+        }
+        float *pred = calloc(classes, sizeof(float));
+        image im = load_image_color(paths[i], 0, 0);
+        for(j = 0; j < nscales; ++j){
+            int w, h;
+            if(im.w < im.h){
+                w = scales[j];
+                h = (im.h*w)/im.w;
+            } else {
+                h = scales[j];
+                w = (im.w * h) / im.h;
+            }
+            resize_network(&net, w, h);
+            image r = resize_image(im, w, h);
+            float *p = network_predict(net, r.data);
+            axpy_cpu(classes, 1, p, 1, pred, 1);
+            flip_image(r);
+            p = network_predict(net, r.data);
+            axpy_cpu(classes, 1, p, 1, pred, 1);
+            free_image(r);
+        }
+        free_image(im);
+        top_k(pred, classes, topk, indexes);
+        free(pred);
+        if(indexes[0] == class) avg_acc += 1;
+        for(j = 0; j < topk; ++j){
+            if(indexes[j] == class) avg_topk += 1;
+        }
+
+        printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
+    }
+}
+
 void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename)
 {
     network net = parse_network_cfg(cfgfile);
@@ -296,7 +436,7 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_
 
         free_matrix(pred);
 
-        fprintf(stderr, "%lf seconds, %d images\n", sec(clock()-time), val.X.rows);
+        fprintf(stderr, "%lf seconds, %d images, %d total\n", sec(clock()-time), val.X.rows, curr);
         free_data(val);
     }
 }
@@ -319,6 +459,8 @@ void run_classifier(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights);
     else if(0==strcmp(argv[2], "test")) test_classifier(data, cfg, weights, layer);
     else if(0==strcmp(argv[2], "valid")) validate_classifier(data, cfg, weights);
+    else if(0==strcmp(argv[2], "valid10")) validate_classifier_10(data, cfg, weights);
+    else if(0==strcmp(argv[2], "validmulti")) validate_classifier_multi(data, cfg, weights);
 }
 
 

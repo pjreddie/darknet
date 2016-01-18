@@ -14,7 +14,7 @@ image voc_labels[20];
 
 void train_yolo(char *cfgfile, char *weightfile)
 {
-    char *train_images = "data/voc.0712.trainval";
+    char *train_images = "/data/voc/train.txt";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     data_seed = time(0);

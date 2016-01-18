@@ -1,15 +1,26 @@
 #include "blas.h"
 #include "math.h"
+#include <assert.h>
 
-void shortcut_cpu(float *out, int w, int h, int c, int batch, int sample, float *add, int stride, int c2)
+void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
 {
+    int stride = w1/w2;
+    int sample = w2/w1;
+    assert(stride == h1/h2);
+    assert(sample == h2/h1);
+    if(stride < 1) stride = 1;
+    if(sample < 1) sample = 1;
+    int minw = (w1 < w2) ? w1 : w2;
+    int minh = (h1 < h2) ? h1 : h2;
+    int minc = (c1 < c2) ? c1 : c2;
+
     int i,j,k,b;
     for(b = 0; b < batch; ++b){
-        for(k = 0; k < c && k < c2; ++k){
-            for(j = 0; j < h/sample; ++j){
-                for(i = 0; i < w/sample; ++i){
-                    int out_index = i*sample + w*(j*sample + h*(k + c*b));
-                    int add_index = b*w*stride/sample*h*stride/sample*c2 + i*stride + w*stride/sample*(j*stride + h*stride/sample*k);
+        for(k = 0; k < minc; ++k){
+            for(j = 0; j < minh; ++j){
+                for(i = 0; i < minw; ++i){
+                    int out_index = i*sample + w2*(j*sample + h2*(k + c2*b));
+                    int add_index = i*stride + w1*(j*stride + h1*(k + c1*b));
                     out[out_index] += add[add_index];
                 }
             }

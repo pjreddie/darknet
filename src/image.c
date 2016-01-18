@@ -390,6 +390,17 @@ image make_image(int w, int h, int c)
     return out;
 }
 
+image make_random_image(int w, int h, int c)
+{
+    image out = make_empty_image(w,h,c);
+    out.data = calloc(h*w*c, sizeof(float));
+    int i;
+    for(i = 0; i < w*h*c; ++i){
+        out.data[i] = (rand_normal() * .25) + .5;
+    }
+    return out;
+}
+
 image float_to_image(int w, int h, int c, float *data)
 {
     image out = make_empty_image(w,h,c);
@@ -692,6 +703,8 @@ image resize_image(image im, int w, int h)
     return resized;
 }
 
+#include "cuda.h"
+
 void test_resize(char *filename)
 {
     image im = load_image(filename, 0,0, 3);
@@ -709,14 +722,27 @@ void test_resize(char *filename)
     image exp5 = copy_image(im);
     exposure_image(exp5, .5);
 
-    image r = resize_image(im, im.w/2, im.h/2);
+    #ifdef GPU
+    image r = resize_image(im, im.w, im.h);
+    image black = make_image(im.w*2 + 3, im.h*2 + 3, 9);
+    image black2 = make_image(im.w, im.h, 3);
 
-    image black = make_image(im.w, im.h, im.c);
-    shortcut_cpu(black.data, im.w, im.h, im.c, 1, 2, r.data, 1, r.c);
+    float *r_gpu = cuda_make_array(r.data, r.w*r.h*r.c);
+    float *black_gpu = cuda_make_array(black.data, black.w*black.h*black.c);
+    float *black2_gpu = cuda_make_array(black2.data, black2.w*black2.h*black2.c);
+    shortcut_gpu(3, r.w, r.h, 1, r_gpu, black.w, black.h, 3, black_gpu);
+    //flip_image(r);
+    //shortcut_gpu(3, r.w, r.h, 1, r.data, black.w, black.h, 3, black.data);
+
+    shortcut_gpu(3, black.w, black.h, 3, black_gpu, black2.w, black2.h, 1, black2_gpu);
+    cuda_pull_array(black_gpu, black.data, black.w*black.h*black.c);
+    cuda_pull_array(black2_gpu, black2.data, black2.w*black2.h*black2.c);
+    show_image_layers(black, "Black");
+    show_image(black2, "Recreate");
+    #endif
 
     show_image(im, "Original");
     show_image(gray, "Gray");
-    show_image(black, "Black");
     show_image(sat2, "Saturation-2");
     show_image(sat5, "Saturation-.5");
     show_image(exp2, "Exposure-2");

@@ -19,24 +19,42 @@ crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int 
     l.h = h;
     l.w = w;
     l.c = c;
+    l.scale = (float)crop_height / h;
     l.flip = flip;
     l.angle = angle;
     l.saturation = saturation;
     l.exposure = exposure;
-    l.crop_width = crop_width;
-    l.crop_height = crop_height;
     l.out_w = crop_width;
     l.out_h = crop_height;
     l.out_c = c;
     l.inputs = l.w * l.h * l.c;
     l.outputs = l.out_w * l.out_h * l.out_c;
-    l.output = calloc(crop_width*crop_height * c*batch, sizeof(float));
+    l.output = calloc(l.outputs*batch, sizeof(float));
     #ifdef GPU
-    l.output_gpu = cuda_make_array(l.output, crop_width*crop_height*c*batch);
+    l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
     l.rand_gpu   = cuda_make_array(0, l.batch*8);
     #endif
     return l;
 }
+
+void resize_crop_layer(layer *l, int w, int h)
+{
+    l->w = w;
+    l->h = h;
+
+    l->out_w =  l->scale*w;
+    l->out_h =  l->scale*h;
+
+    l->inputs = l->w * l->h * l->c;
+    l->outputs = l->out_h * l->out_w * l->out_c;
+
+    l->output = realloc(l->output, l->batch*l->outputs*sizeof(float));
+    #ifdef GPU
+    cuda_free(l->output_gpu);
+    l->output_gpu = cuda_make_array(l->output, l->outputs*l->batch);
+    #endif
+}
+
 
 void forward_crop_layer(const crop_layer l, network_state state)
 {
@@ -44,8 +62,8 @@ void forward_crop_layer(const crop_layer l, network_state state)
     int index;
     int count = 0;
     int flip = (l.flip && rand()%2);
-    int dh = rand()%(l.h - l.crop_height + 1);
-    int dw = rand()%(l.w - l.crop_width + 1);
+    int dh = rand()%(l.h - l.out_h + 1);
+    int dw = rand()%(l.w - l.out_w + 1);
     float scale = 2;
     float trans = -1;
     if(l.noadjust){
@@ -54,13 +72,13 @@ void forward_crop_layer(const crop_layer l, network_state state)
     }
     if(!state.train){
         flip = 0;
-        dh = (l.h - l.crop_height)/2;
-        dw = (l.w - l.crop_width)/2;
+        dh = (l.h - l.out_h)/2;
+        dw = (l.w - l.out_w)/2;
     }
     for(b = 0; b < l.batch; ++b){
         for(c = 0; c < l.c; ++c){
-            for(i = 0; i < l.crop_height; ++i){
-                for(j = 0; j < l.crop_width; ++j){
+            for(i = 0; i < l.out_h; ++i){
+                for(j = 0; j < l.out_w; ++j){
                     if(flip){
                         col = l.w - dw - j - 1;    
                     }else{

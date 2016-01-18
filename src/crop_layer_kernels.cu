@@ -198,9 +198,9 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
     levels_image_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, layer.rand_gpu, layer.batch, layer.w, layer.h, state.train, layer.saturation, layer.exposure, translate, scale, layer.shift);
     check_error(cudaPeekAtLastError());
 
-    size = layer.batch*layer.c*layer.crop_width*layer.crop_height;
+    size = layer.batch*layer.c*layer.out_w*layer.out_h;
 
-    forward_crop_layer_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, layer.rand_gpu, size, layer.c, layer.h, layer.w, layer.crop_height, layer.crop_width, state.train, layer.flip, radians, layer.output_gpu);
+    forward_crop_layer_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, layer.rand_gpu, size, layer.c, layer.h, layer.w, layer.out_h, layer.out_w, state.train, layer.flip, radians, layer.output_gpu);
     check_error(cudaPeekAtLastError());
 
 /*

@@ -7,6 +7,7 @@
 #include "crop_layer.h"
 #include "cost_layer.h"
 #include "convolutional_layer.h"
+#include "activation_layer.h"
 #include "normalization_layer.h"
 #include "deconvolutional_layer.h"
 #include "connected_layer.h"
@@ -29,6 +30,7 @@ typedef struct{
 
 int is_network(section *s);
 int is_convolutional(section *s);
+int is_activation(section *s);
 int is_local(section *s);
 int is_deconvolutional(section *s);
 int is_connected(section *s);
@@ -301,9 +303,30 @@ layer parse_shortcut(list *options, size_params params, network net)
     layer from = net.layers[index];
 
     layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
+
+    char *activation_s = option_find_str(options, "activation", "linear");
+    ACTIVATION activation = get_activation(activation_s);
+    s.activation = activation;
     return s;
 }
 
+
+layer parse_activation(list *options, size_params params)
+{
+    char *activation_s = option_find_str(options, "activation", "linear");
+    ACTIVATION activation = get_activation(activation_s);
+
+    layer l = make_activation_layer(params.batch, params.inputs, activation);
+
+    l.out_h = params.h;
+    l.out_w = params.w;
+    l.out_c = params.c;
+    l.h = params.h;
+    l.w = params.w;
+    l.c = params.c;
+
+    return l;
+}
 
 route_layer parse_route(list *options, size_params params, network net)
 {
@@ -447,6 +470,8 @@ network parse_network_cfg(char *filename)
             l = parse_convolutional(options, params);
         }else if(is_local(s)){
             l = parse_local(options, params);
+        }else if(is_activation(s)){
+            l = parse_activation(options, params);
         }else if(is_deconvolutional(s)){
             l = parse_deconvolutional(options, params);
         }else if(is_connected(s)){
@@ -529,6 +554,10 @@ int is_convolutional(section *s)
 {
     return (strcmp(s->type, "[conv]")==0
             || strcmp(s->type, "[convolutional]")==0);
+}
+int is_activation(section *s)
+{
+    return (strcmp(s->type, "[activation]")==0);
 }
 int is_network(section *s)
 {

@@ -20,7 +20,8 @@ typedef enum {
     NORMALIZATION,
     AVGPOOL,
     LOCAL,
-    SHORTCUT
+    SHORTCUT,
+    ACTIVE
 } LAYER_TYPE;
 
 typedef enum{
@@ -46,8 +47,6 @@ struct layer{
     int side;
     int stride;
     int pad;
-    int crop_width;
-    int crop_height;
     int sqrt;
     int flip;
     int index;

@@ -21,7 +21,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
     char **labels = get_labels("data/inet.labels.list");
-    list *plist = get_paths("/data/imagenet/cls.train.list");
+    list *plist = get_paths("data/inet.train.list");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
@@ -60,6 +60,11 @@ void train_imagenet(char *cfgfile, char *weightfile)
             epoch = *net.seen/N;
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
+            save_weights(net, buff);
+        }
+        if(*net.seen%1000 == 0){
+            char buff[256];
+            sprintf(buff, "%s/%s.backup",backup_directory,base);
             save_weights(net, buff);
         }
     }

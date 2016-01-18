@@ -58,6 +58,7 @@ void save_image_jpg(image p, char *name);
 void print_image(image m);
 
 image make_image(int w, int h, int c);
+image make_random_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);
 image float_to_image(int w, int h, int c, float *data);
 image copy_image(image p);

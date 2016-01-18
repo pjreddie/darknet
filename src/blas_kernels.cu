@@ -1,6 +1,7 @@
 #include "cuda_runtime.h"
 #include "curand.h"
 #include "cublas_v2.h"
+#include <assert.h>
 
 extern "C" {
 #include "blas.h"
@@ -374,26 +375,37 @@ extern "C" void fill_ongpu(int N, float ALPHA, float * X, int INCX)
     check_error(cudaPeekAtLastError());
 }
 
-__global__ void shortcut_kernel(int size, float *out, int w, int h, int c, int batch, int sample, float *add, int stride, int c2, int min_c)
+__global__ void shortcut_kernel(int size, int minw, int minh, int minc, int stride, int sample, int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
 {
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (id >= size) return;
-    int i = id % (w/sample);
-    id /= (w/sample);
-    int j = id % (h/sample);
-    id /= (h/sample);
-    int k = id % min_c;
-    id /= min_c;
-    int b = id;
-    int out_index = i*sample + w*(j*sample + h*(k + c*b));
-    int add_index = b*w*stride/sample*h*stride/sample*c2 + i*stride + w*stride/sample*(j*stride + h*stride/sample*k);
+    int i = id % minw;
+    id /= minw;
+    int j = id % minh;
+    id /= minh;
+    int k = id % minc;
+    id /= minc;
+    int b = id % batch;
+
+    int out_index = i*sample + w2*(j*sample + h2*(k + c2*b));
+    int add_index = i*stride + w1*(j*stride + h1*(k + c1*b));
     out[out_index] += add[add_index];
 }
 
-extern "C" void shortcut_gpu(float *out, int w, int h, int c, int batch, int sample, float *add, int stride, int c2)
+extern "C" void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
 {
-    int min_c = (c < c2) ? c : c2;
-    int size = batch * w/sample * h/sample * min_c;
-    shortcut_kernel<<<cuda_gridsize(size), BLOCK>>>(size, out, w, h, c, batch, sample, add, stride, c2, min_c);
+    int minw = (w1 < w2) ? w1 : w2;
+    int minh = (h1 < h2) ? h1 : h2;
+    int minc = (c1 < c2) ? c1 : c2;
+
+    int stride = w1/w2;
+    int sample = w2/w1;
+    assert(stride == h1/h2);
+    assert(sample == h2/h1);
+    if(stride < 1) stride = 1;
+    if(sample < 1) sample = 1;
+
+    int size = batch * minw * minh * minc;
+    shortcut_kernel<<<cuda_gridsize(size), BLOCK>>>(size, minw, minh, minc, stride, sample, batch, w1, h1, c1, add, w2, h2, c2, out);
     check_error(cudaPeekAtLastError());
 }

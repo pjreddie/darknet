@@ -55,7 +55,7 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c));
-    for(i = 0; i < c*n*size*size; ++i) l.filters[i] = 2*scale*rand_uniform() - scale;
+    for(i = 0; i < c*n*size*size; ++i) l.filters[i] = scale*rand_uniform(-1,1);
 
     l.col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
     l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));

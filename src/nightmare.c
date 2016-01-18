@@ -108,6 +108,69 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
 }
 
+void smooth(image recon, image update, float lambda, int num)
+{
+    int i, j, k;
+    int ii, jj;
+    for(k = 0; k < recon.c; ++k){
+        for(j = 0; j < recon.h; ++j){
+            for(i = 0; i < recon.w; ++i){
+                int out_index = i + recon.w*(j + recon.h*k);
+                for(jj = j-num; jj <= j + num && jj < recon.h; ++jj){
+                    if (jj < 0) continue;
+                    for(ii = i-num; ii <= i + num && ii < recon.w; ++ii){
+                        if (ii < 0) continue;
+                        int in_index = ii + recon.w*(jj + recon.h*k);
+                        update.data[out_index] += lambda * (recon.data[in_index] - recon.data[out_index]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void reconstruct_picture(network net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size)
+{
+    scale_image(recon, 2);
+    translate_image(recon, -1);
+
+    image delta = make_image(recon.w, recon.h, recon.c);
+
+    network_state state = {0};
+#ifdef GPU
+    state.input = cuda_make_array(recon.data, recon.w*recon.h*recon.c);
+    state.delta = cuda_make_array(delta.data, delta.w*delta.h*delta.c);
+    state.truth = cuda_make_array(features, get_network_output_size(net));
+
+    forward_network_gpu(net, state);
+    backward_network_gpu(net, state);
+
+    cuda_pull_array(state.delta, delta.data, delta.w*delta.h*delta.c);
+
+    cuda_free(state.input);
+    cuda_free(state.delta);
+    cuda_free(state.truth);
+#else
+    state.input = recon.data;
+    state.delta = delta.data;
+    state.truth = features;
+
+    forward_network(net, state);
+    backward_network(net, state);
+#endif
+
+    axpy_cpu(recon.w*recon.h*recon.c, 1, delta.data, 1, update.data, 1);
+    smooth(recon, update, lambda, smooth_size);
+
+    axpy_cpu(recon.w*recon.h*recon.c, rate, update.data, 1, recon.data, 1);
+    scal_cpu(recon.w*recon.h*recon.c, momentum, update.data, 1);
+
+    translate_image(recon, 1);
+    scale_image(recon, .5);
+    constrain_image(recon);
+    free_image(delta);
+}
+
 
 void run_nightmare(int argc, char **argv)
 {
@@ -131,7 +194,11 @@ void run_nightmare(int argc, char **argv)
     float rate = find_float_arg(argc, argv, "-rate", .04);
     float thresh = find_float_arg(argc, argv, "-thresh", 1.);
     float rotate = find_float_arg(argc, argv, "-rotate", 0);
+    float momentum = find_float_arg(argc, argv, "-momentum", .9);
+    float lambda = find_float_arg(argc, argv, "-lambda", .01);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
+    int reconstruct = find_arg(argc, argv, "-reconstruct");
+    int smooth_size = find_int_arg(argc, argv, "-smooth", 1);
 
     network net = parse_network_cfg(cfg);
     load_weights(&net, weights);
@@ -151,17 +218,38 @@ void run_nightmare(int argc, char **argv)
         im = resized;
     }
 
+    float *features;
+    image update;
+    if (reconstruct){
+        resize_network(&net, im.w, im.h);
+        int size = get_network_output_size(net);
+        features = calloc(size, sizeof(float));
+        float *out = network_predict(net, im.data);
+        copy_cpu(size, out, 1, features, 1);
+        free_image(im);
+        im = make_random_image(im.w, im.h, im.c);
+        update = make_image(im.w, im.h, im.c);
+    }
+
     int e;
     int n;
     for(e = 0; e < rounds; ++e){
-            fprintf(stderr, "Iteration: ");
-            fflush(stderr);
+        fprintf(stderr, "Iteration: ");
+        fflush(stderr);
         for(n = 0; n < iters; ++n){  
             fprintf(stderr, "%d, ", n);
             fflush(stderr);
-            int layer = max_layer + rand()%range - range/2;
-            int octave = rand()%octaves;
-            optimize_picture(&net, im, layer, 1/pow(1.33333333, octave), rate, thresh, norm);
+            if(reconstruct){
+                reconstruct_picture(net, features, im, update, rate, momentum, lambda, smooth_size);
+                show_image(im, "reconstruction");
+                #ifdef OPENCV
+                cvWaitKey(10);
+                #endif
+            }else{
+                int layer = max_layer + rand()%range - range/2;
+                int octave = rand()%octaves;
+                optimize_picture(&net, im, layer, 1/pow(1.33333333, octave), rate, thresh, norm);
+            }
         }
         fprintf(stderr, "done\n");
         if(0){

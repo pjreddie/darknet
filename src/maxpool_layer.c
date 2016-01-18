@@ -51,6 +51,7 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     int stride = l->stride;
     l->h = h;
     l->w = w;
+    l->inputs = h*w*l->c;
 
     l->out_w = (w-1)/stride + 1;
     l->out_h = (h-1)/stride + 1;

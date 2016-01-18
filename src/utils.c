@@ -485,9 +485,9 @@ float rand_normal()
    }
  */
 
-float rand_uniform()
+float rand_uniform(float min, float max)
 {
-    return (float)rand()/RAND_MAX;
+    return ((float)rand()/RAND_MAX * (max - min)) + min;
 }
 
 float **one_hot_encode(float *a, int n, int k)

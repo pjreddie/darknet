@@ -18,6 +18,7 @@ extern "C" {
 #include "connected_layer.h"
 #include "detection_layer.h"
 #include "convolutional_layer.h"
+#include "activation_layer.h"
 #include "deconvolutional_layer.h"
 #include "maxpool_layer.h"
 #include "avgpool_layer.h"
@@ -48,6 +49,8 @@ void forward_network_gpu(network net, network_state state)
             forward_convolutional_layer_gpu(l, state);
         } else if(l.type == DECONVOLUTIONAL){
             forward_deconvolutional_layer_gpu(l, state);
+        } else if(l.type == ACTIVE){
+            forward_activation_layer_gpu(l, state);
         } else if(l.type == LOCAL){
             forward_local_layer_gpu(l, state);
         } else if(l.type == DETECTION){
@@ -97,6 +100,8 @@ void backward_network_gpu(network net, network_state state)
             backward_convolutional_layer_gpu(l, state);
         } else if(l.type == DECONVOLUTIONAL){
             backward_deconvolutional_layer_gpu(l, state);
+        } else if(l.type == ACTIVE){
+            backward_activation_layer_gpu(l, state);
         } else if(l.type == LOCAL){
             backward_local_layer_gpu(l, state);
         } else if(l.type == MAXPOOL){

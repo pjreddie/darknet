@@ -427,10 +427,10 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
         int dw = (ow*jitter);
         int dh = (oh*jitter);
 
-        int pleft  = (rand_uniform() * 2*dw - dw);
-        int pright = (rand_uniform() * 2*dw - dw);
-        int ptop   = (rand_uniform() * 2*dh - dh);
-        int pbot   = (rand_uniform() * 2*dh - dh);
+        int pleft  = rand_uniform(-dw, dw);
+        int pright = rand_uniform(-dw, dw);
+        int ptop   = rand_uniform(-dh, dh);
+        int pbot   = rand_uniform(-dh, dh);
 
         int swidth =  ow - pleft - pright;
         int sheight = oh - ptop - pbot;
@@ -543,10 +543,10 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     int dw = w*jitter;
     int dh = h*jitter;
 
-    int pleft  = (rand_uniform() * 2*dw - dw);
-    int pright = (rand_uniform() * 2*dw - dw);
-    int ptop   = (rand_uniform() * 2*dh - dh);
-    int pbot   = (rand_uniform() * 2*dh - dh);
+    int pleft  = rand_uniform(-dw, dw);
+    int pright = rand_uniform(-dw, dw);
+    int ptop   = rand_uniform(-dh, dh);
+    int pbot   = rand_uniform(-dh, dh);
 
     int swidth =  w - pleft - pright;
     int sheight = h - ptop - pbot;
@@ -594,10 +594,10 @@ data load_data_detection(int n, char **paths, int m, int classes, int w, int h, 
         int dw = ow/10;
         int dh = oh/10;
 
-        int pleft  = (rand_uniform() * 2*dw - dw);
-        int pright = (rand_uniform() * 2*dw - dw);
-        int ptop   = (rand_uniform() * 2*dh - dh);
-        int pbot   = (rand_uniform() * 2*dh - dh);
+        int pleft  = rand_uniform(-dw, dw);
+        int pright = rand_uniform(-dw, dw);
+        int ptop   = rand_uniform(-dh, dh);
+        int pbot   = rand_uniform(-dh, dh);
 
         int swidth =  ow - pleft - pright;
         int sheight = oh - ptop - pbot;

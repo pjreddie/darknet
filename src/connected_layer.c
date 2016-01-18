@@ -32,7 +32,7 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     //float scale = 1./sqrt(inputs);
     float scale = sqrt(2./inputs);
     for(i = 0; i < outputs*inputs; ++i){
-        l.weights[i] = 2*scale*rand_uniform() - scale;
+        l.weights[i] = scale*rand_uniform(-1, 1);
     }
 
     for(i = 0; i < outputs; ++i){

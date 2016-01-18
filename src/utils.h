@@ -34,7 +34,7 @@ int max_index(float *a, int n);
 float constrain(float min, float max, float a);
 float mse_array(float *a, int n);
 float rand_normal();
-float rand_uniform();
+float rand_uniform(float min, float max);
 float sum_array(float *a, int n);
 float mean_array(float *a, int n);
 void mean_arrays(float **a, int n, int els, float *avg);
