@@ -43,7 +43,7 @@ The pre-compiled software with source code package for the demo:
 You can use this as an example.
 
 
-If you would like to validate the training process or get a feel of YOLO, you can download the data I collected and the annotations I labeled. 
+If you would like to repeat the training process or get a feel of YOLO, you can download the data I collected and the annotations I labeled. 
 
 images: [images.tar.gz](http://guanghan.info/download/images.tar.gz)
 
