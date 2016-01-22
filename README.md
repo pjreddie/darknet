@@ -42,6 +42,12 @@ The pre-compiled software with source code package for the demo:
 
 You can use this as an example.
 
+If you would like to validate the training process or get a feel of YOLO, you can download the data I collected and the annotations I labeled. The demo is trained with these data and annotations.
+
+[images.tar.gz](http://guanghan.info/download/images.tar.gz)
+
+[labels.tar.gz](http://guanghan.info/download/labels.tar.gz)
+
 #How to Train With Customized Data and Class Numbers/Labels#
 
 1. Collect Data and Annotation
