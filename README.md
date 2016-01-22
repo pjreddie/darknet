@@ -44,11 +44,11 @@ You can use this as an example.
 
 If you would like to validate the training process or get a feel of YOLO, you can download the data I collected and the annotations I labeled. 
 
-[images.tar.gz](http://guanghan.info/download/images.tar.gz)
+images: [images.tar.gz](http://guanghan.info/download/images.tar.gz)
 
-[labels.tar.gz](http://guanghan.info/download/labels.tar.gz)
+labels: [labels.tar.gz](http://guanghan.info/download/labels.tar.gz)
 
-The demo is trained with these data and annotations.
+The demo is trained with the above data and annotations.
 
 #How to Train With Customized Data and Class Numbers/Labels#
 
