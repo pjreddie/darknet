@@ -1,5 +1,4 @@
 #include "dropout_layer.h"
-#include "params.h"
 #include "utils.h"
 #include "cuda.h"
 #include <stdlib.h>

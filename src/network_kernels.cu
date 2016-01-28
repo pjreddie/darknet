@@ -11,11 +11,11 @@ extern "C" {
 #include "image.h"
 #include "data.h"
 #include "utils.h"
-#include "params.h"
 #include "parser.h"
 
 #include "crop_layer.h"
 #include "connected_layer.h"
+#include "rnn_layer.h"
 #include "detection_layer.h"
 #include "convolutional_layer.h"
 #include "activation_layer.h"
@@ -57,6 +57,8 @@ void forward_network_gpu(network net, network_state state)
             forward_detection_layer_gpu(l, state);
         } else if(l.type == CONNECTED){
             forward_connected_layer_gpu(l, state);
+        } else if(l.type == RNN){
+            forward_rnn_layer_gpu(l, state);
         } else if(l.type == CROP){
             forward_crop_layer_gpu(l, state);
         } else if(l.type == COST){
@@ -118,6 +120,8 @@ void backward_network_gpu(network net, network_state state)
             if(i != 0) backward_softmax_layer_gpu(l, state);
         } else if(l.type == CONNECTED){
             backward_connected_layer_gpu(l, state);
+        } else if(l.type == RNN){
+            backward_rnn_layer_gpu(l, state);
         } else if(l.type == COST){
             backward_cost_layer_gpu(l, state);
         } else if(l.type == ROUTE){
@@ -141,6 +145,8 @@ void update_network_gpu(network net)
             update_deconvolutional_layer_gpu(l, rate, net.momentum, net.decay);
         } else if(l.type == CONNECTED){
             update_connected_layer_gpu(l, update_batch, rate, net.momentum, net.decay);
+        } else if(l.type == RNN){
+            update_rnn_layer_gpu(l, update_batch, rate, net.momentum, net.decay);
         } else if(l.type == LOCAL){
             update_local_layer_gpu(l, update_batch, rate, net.momentum, net.decay);
         }

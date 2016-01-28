@@ -26,7 +26,7 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
     return l;
 }
 
-void softmax_array(float *input, int n, float *output)
+void softmax_array(float *input, int n, float temp, float *output)
 {
     int i;
     float sum = 0;
@@ -35,12 +35,12 @@ void softmax_array(float *input, int n, float *output)
         if(input[i] > largest) largest = input[i];
     }
     for(i = 0; i < n; ++i){
-        sum += exp(input[i]-largest);
+        sum += exp(input[i]/temp-largest/temp);
     }
-    if(sum) sum = largest+log(sum);
+    if(sum) sum = largest/temp+log(sum);
     else sum = largest-100;
     for(i = 0; i < n; ++i){
-        output[i] = exp(input[i]-sum);
+        output[i] = exp(input[i]/temp-sum);
     }
 }
 
@@ -50,7 +50,7 @@ void forward_softmax_layer(const softmax_layer l, network_state state)
     int inputs = l.inputs / l.groups;
     int batch = l.batch * l.groups;
     for(b = 0; b < batch; ++b){
-        softmax_array(state.input+b*inputs, inputs, l.output+b*inputs);
+        softmax_array(state.input+b*inputs, inputs, l.temperature, l.output+b*inputs);
     }
 }
 

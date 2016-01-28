@@ -12,6 +12,21 @@ extern "C" {
 #include "cuda.h"
 }
 
+__global__ void binarize_filters_kernel(float *filters, int n, int size, float *binary)
+{
+    int f = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (f >= n) return;
+    int i = 0;
+    float mean = 0;
+    for(i = 0; i < size; ++i){
+        mean += abs(filters[f*size + i]);
+    }
+    mean = mean / size;
+    for(i = 0; i < size; ++i){
+        binary[f*size + i] = (filters[f*size + i] > 0) ? mean : -mean;
+    }
+}
+
 __global__ void scale_bias_kernel(float *output, float *biases, int n, int size)
 {
     int offset = blockIdx.x * blockDim.x + threadIdx.x;
@@ -48,6 +63,12 @@ __global__ void backward_scale_kernel(float *x_norm, float *delta, int batch, in
     if (p == 0) {
         for(i = 0; i < BLOCK; ++i) scale_updates[filter] += part[i];
     }
+}
+
+void binarize_filters_gpu(float *filters, int n, int size, float *mean)
+{
+    binarize_filters_kernel<<<cuda_gridsize(n), BLOCK>>>(filters, n, size, mean);
+    check_error(cudaPeekAtLastError());
 }
 
 void backward_scale_gpu(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates)
@@ -100,6 +121,13 @@ void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int 
     check_error(cudaPeekAtLastError());
 }
 
+void swap_binary(convolutional_layer l)
+{
+        float *swap = l.filters_gpu;
+        l.filters_gpu = l.binary_filters_gpu;
+        l.binary_filters_gpu = swap;
+}
+
 void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
     int i;
@@ -109,6 +137,11 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         convolutional_out_width(l);
 
     fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
+    if(l.binary){
+        binarize_filters_gpu(l.filters_gpu, l.n, l.c*l.size*l.size, l.binary_filters_gpu);
+        swap_binary(l);
+    }
+
     for(i = 0; i < l.batch; ++i){
         im2col_ongpu(state.input + i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, l.col_image_gpu);
         float * a = l.filters_gpu;
@@ -121,12 +154,6 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         if(state.train){
             fast_mean_gpu(l.output_gpu, l.batch, l.n, l.out_h*l.out_w, l.mean_gpu);
             fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.n, l.out_h*l.out_w, l.variance_gpu);
-
-            /*
-            cuda_pull_array(l.variance_gpu, l.mean, 1);
-            printf("%f\n", l.mean[0]);
-            */
-
 
             scal_ongpu(l.n, .95, l.rolling_mean_gpu, 1);
             axpy_ongpu(l.n, .05, l.mean_gpu, 1, l.rolling_mean_gpu, 1);
@@ -145,6 +172,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, n);
 
     activate_array_ongpu(l.output_gpu, m*n*l.batch, l.activation);
+    if(l.binary) swap_binary(l);
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
@@ -178,6 +206,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         gemm_ongpu(0,1,m,n,k,1,a + i*m*k,k,b,k,1,c,n);
 
         if(state.delta){
+            if(l.binary) swap_binary(l);
             float * a = l.filters_gpu;
             float * b = l.delta_gpu;
             float * c = l.col_image_gpu;
@@ -185,6 +214,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             gemm_ongpu(1,0,n,k,m,1,a,n,b + i*k*m,k,0,c,k);
 
             col2im_ongpu(l.col_image_gpu, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.delta + i*l.c*l.h*l.w);
+            if(l.binary) swap_binary(l);
         }
     }
 }

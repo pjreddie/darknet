@@ -41,7 +41,65 @@ image get_convolutional_delta(convolutional_layer l)
     return float_to_image(w,h,c,l.delta);
 }
 
-convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, int batch_normalize)
+void backward_scale_cpu(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates)
+{
+    int i,b,f;
+    for(f = 0; f < n; ++f){
+        float sum = 0;
+        for(b = 0; b < batch; ++b){
+            for(i = 0; i < size; ++i){
+                int index = i + size*(f + n*b);
+                sum += delta[index] * x_norm[index];
+            }
+        }
+        scale_updates[f] += sum;
+    }
+}
+
+void mean_delta_cpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta)
+{
+
+    int i,j,k;
+    for(i = 0; i < filters; ++i){
+        mean_delta[i] = 0;
+        for (j = 0; j < batch; ++j) {
+            for (k = 0; k < spatial; ++k) {
+                int index = j*filters*spatial + i*spatial + k;
+                mean_delta[i] += delta[index];
+            }
+        }
+        mean_delta[i] *= (-1./sqrt(variance[i] + .00001f));
+    }
+}
+void  variance_delta_cpu(float *x, float *delta, float *mean, float *variance, int batch, int filters, int spatial, float *variance_delta)
+{
+
+    int i,j,k;
+    for(i = 0; i < filters; ++i){
+        variance_delta[i] = 0;
+        for(j = 0; j < batch; ++j){
+            for(k = 0; k < spatial; ++k){
+                int index = j*filters*spatial + i*spatial + k;
+                variance_delta[i] += delta[index]*(x[index] - mean[i]);
+            }
+        }
+        variance_delta[i] *= -.5 * pow(variance[i] + .00001f, (float)(-3./2.));
+    }
+}
+void normalize_delta_cpu(float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta)
+{
+    int f, j, k;
+    for(j = 0; j < batch; ++j){
+        for(f = 0; f < filters; ++f){
+            for(k = 0; k < spatial; ++k){
+                int index = j*filters*spatial + f*spatial + k;
+                delta[index] = delta[index] * 1./(sqrt(variance[f]) + .00001f) + variance_delta[f] * 2. * (x[index] - mean[f]) / (spatial * batch) + mean_delta[f]/(spatial*batch);
+            }
+        }
+    }
+}
+
+convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int binary)
 {
     int i;
     convolutional_layer l = {0};
@@ -51,6 +109,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.w = w;
     l.c = c;
     l.n = n;
+    l.binary = binary;
     l.batch = batch;
     l.stride = stride;
     l.size = size;
@@ -77,6 +136,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
     l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
     l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
+
+    if(binary){
+        l.binary_filters = calloc(c*n*size*size, sizeof(float));
+    }
 
     if(batch_normalize){
         l.scales = calloc(n, sizeof(float));
@@ -105,6 +168,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.col_image_gpu = cuda_make_array(l.col_image, out_h*out_w*size*size*c);
     l.delta_gpu = cuda_make_array(l.delta, l.batch*out_h*out_w*n);
     l.output_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
+
+    if(binary){
+        l.binary_filters_gpu = cuda_make_array(l.filters, c*n*size*size);
+    }
 
     if(batch_normalize){
         l.mean_gpu = cuda_make_array(l.mean, n);
@@ -141,7 +208,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 
 void test_convolutional_layer()
 {
-    convolutional_layer l = make_convolutional_layer(1, 5, 5, 3, 2, 5, 2, 1, LEAKY, 1);
+    convolutional_layer l = make_convolutional_layer(1, 5, 5, 3, 2, 5, 2, 1, LEAKY, 1, 0);
     l.batch_normalize = 1;
     float data[] = {1,1,1,1,1,
         1,1,1,1,1,

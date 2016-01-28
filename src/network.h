@@ -5,7 +5,6 @@
 #include "image.h"
 #include "layer.h"
 #include "data.h"
-#include "params.h"
 
 typedef enum {
     CONSTANT, STEP, EXP, POLY, STEPS, SIG
@@ -28,6 +27,7 @@ typedef struct network{
     float gamma;
     float scale;
     float power;
+    int time_steps;
     int step;
     int max_batches;
     float *scales;
@@ -77,6 +77,7 @@ void update_network(network net);
 float train_network(network net, data d);
 float train_network_batch(network net, data d, int n);
 float train_network_sgd(network net, data d, int n);
+float train_network_datum(network net, float *x, float *y);
 
 matrix network_predict_data(network net, data test);
 float *network_predict(network net, float *input);

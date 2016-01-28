@@ -4,6 +4,10 @@
 #include "blas.h"
 #include "utils.h"
 
+#ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#endif
+
 float abs_mean(float *x, int n)
 {
     int i;
@@ -167,6 +171,10 @@ void reconstruct_picture(network net, float *features, image recon, image update
 
     translate_image(recon, 1);
     scale_image(recon, .5);
+
+    float mag = mag_array(recon.data, recon.w*recon.h*recon.c);
+    scal_cpu(recon.w*recon.h*recon.c, 600/mag, recon.data, 1);
+
     constrain_image(recon);
     free_image(delta);
 }
@@ -222,10 +230,21 @@ void run_nightmare(int argc, char **argv)
     image update;
     if (reconstruct){
         resize_network(&net, im.w, im.h);
-        int size = get_network_output_size(net);
-        features = calloc(size, sizeof(float));
-        float *out = network_predict(net, im.data);
-        copy_cpu(size, out, 1, features, 1);
+
+        int zz = 0;
+        network_predict(net, im.data);
+        image out_im = get_network_image(net);
+        image crop = crop_image(out_im, zz, zz, out_im.w-2*zz, out_im.h-2*zz);
+        //flip_image(crop);
+        image f_im = resize_image(crop, out_im.w, out_im.h);
+        free_image(crop);
+        printf("%d features\n", out_im.w*out_im.h*out_im.c);
+
+
+        im = resize_image(im, im.w*2, im.h);
+        f_im = resize_image(f_im, f_im.w*2, f_im.h);
+        features = f_im.data;
+
         free_image(im);
         im = make_random_image(im.w, im.h, im.c);
         update = make_image(im.w, im.h, im.c);

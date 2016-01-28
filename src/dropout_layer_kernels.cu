@@ -6,7 +6,6 @@ extern "C" {
 #include "dropout_layer.h"
 #include "cuda.h"
 #include "utils.h"
-#include "params.h"
 }
 
 __global__ void yoloswag420blazeit360noscope(float *input, int size, float *rand, float prob, float scale)

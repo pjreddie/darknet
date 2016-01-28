@@ -184,7 +184,7 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
 {
     cuda_random(layer.rand_gpu, layer.batch*8);
 
-    float radians = layer.angle*3.14159/180.;
+    float radians = layer.angle*3.14159265/180.;
 
     float scale = 2;
     float translate = -1;

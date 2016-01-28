@@ -409,3 +409,19 @@ extern "C" void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int 
     shortcut_kernel<<<cuda_gridsize(size), BLOCK>>>(size, minw, minh, minc, stride, sample, batch, w1, h1, c1, add, w2, h2, c2, out);
     check_error(cudaPeekAtLastError());
 }
+
+__global__ void smooth_l1_kernel(int n, float *pred, float *truth, float *delta)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < n){
+        float diff = truth[i] - pred[i];
+        if(abs(diff) > 1) delta[i] = diff;
+        else delta[i] = (diff > 0) ? 1 : -1;
+    }
+}
+
+extern "C" void smooth_l1_gpu(int n, float *pred, float *truth, float *delta)
+{
+    smooth_l1_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta);
+    check_error(cudaPeekAtLastError());
+}

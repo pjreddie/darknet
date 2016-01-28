@@ -8,6 +8,7 @@
 
 #include "crop_layer.h"
 #include "connected_layer.h"
+#include "rnn_layer.h"
 #include "local_layer.h"
 #include "convolutional_layer.h"
 #include "activation_layer.h"
@@ -82,6 +83,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "deconvolutional";
         case CONNECTED:
             return "connected";
+        case RNN:
+            return "rnn";
         case MAXPOOL:
             return "maxpool";
         case AVGPOOL:
@@ -144,6 +147,8 @@ void forward_network(network net, network_state state)
             forward_detection_layer(l, state);
         } else if(l.type == CONNECTED){
             forward_connected_layer(l, state);
+        } else if(l.type == RNN){
+            forward_rnn_layer(l, state);
         } else if(l.type == CROP){
             forward_crop_layer(l, state);
         } else if(l.type == COST){
@@ -178,6 +183,8 @@ void update_network(network net)
             update_deconvolutional_layer(l, rate, net.momentum, net.decay);
         } else if(l.type == CONNECTED){
             update_connected_layer(l, update_batch, rate, net.momentum, net.decay);
+        } else if(l.type == RNN){
+            update_rnn_layer(l, update_batch, rate, net.momentum, net.decay);
         } else if(l.type == LOCAL){
             update_local_layer(l, update_batch, rate, net.momentum, net.decay);
         }
@@ -252,6 +259,8 @@ void backward_network(network net, network_state state)
             if(i != 0) backward_softmax_layer(l, state);
         } else if(l.type == CONNECTED){
             backward_connected_layer(l, state);
+        } else if(l.type == RNN){
+            backward_rnn_layer(l, state);
         } else if(l.type == LOCAL){
             backward_local_layer(l, state);
         } else if(l.type == COST){

@@ -67,7 +67,7 @@ void normalize_cpu(float *x, float *mean, float *variance, int batch, int filter
         for(f = 0; f < filters; ++f){
             for(i = 0; i < spatial; ++i){
                 int index = b*filters*spatial + f*spatial + i;
-                x[index] = (x[index] - mean[f])/(sqrt(variance[f]));
+                x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .00001f);
             }
         }
     }
@@ -113,6 +113,16 @@ void copy_cpu(int N, float *X, int INCX, float *Y, int INCY)
 {
     int i;
     for(i = 0; i < N; ++i) Y[i*INCY] = X[i*INCX];
+}
+
+void smooth_l1_cpu(int n, float *pred, float *truth, float *delta)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        float diff = truth[i] - pred[i];
+        if(fabs(diff) > 1) delta[i] = diff;
+        else delta[i] = (diff > 0) ? 1 : -1;
+    }
 }
 
 float dot_cpu(int N, float *X, int INCX, float *Y, int INCY)

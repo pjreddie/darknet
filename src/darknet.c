@@ -20,6 +20,7 @@ extern void run_nightmare(int argc, char **argv);
 extern void run_dice(int argc, char **argv);
 extern void run_compare(int argc, char **argv);
 extern void run_classifier(int argc, char **argv);
+extern void run_char_rnn(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -203,7 +204,10 @@ int main(int argc, char **argv)
         return 0;
     }
     gpu_index = find_int_arg(argc, argv, "-i", 0);
-    if(find_arg(argc, argv, "-nogpu")) gpu_index = -1;
+    if(find_arg(argc, argv, "-nogpu")) {
+        gpu_index = -1;
+        printf("nogpu\n");
+    }
 
 #ifndef GPU
     gpu_index = -1;
@@ -220,6 +224,8 @@ int main(int argc, char **argv)
         average(argc, argv);
     } else if (0 == strcmp(argv[1], "yolo")){
         run_yolo(argc, argv);
+    } else if (0 == strcmp(argv[1], "rnn")){
+        run_char_rnn(argc, argv);
     } else if (0 == strcmp(argv[1], "coco")){
         run_coco(argc, argv);
     } else if (0 == strcmp(argv[1], "classifier")){

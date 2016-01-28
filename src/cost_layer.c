@@ -11,7 +11,8 @@ COST_TYPE get_cost_type(char *s)
 {
     if (strcmp(s, "sse")==0) return SSE;
     if (strcmp(s, "masked")==0) return MASKED;
-    fprintf(stderr, "Couldn't find activation function %s, going with SSE\n", s);
+    if (strcmp(s, "smooth")==0) return SMOOTH;
+    fprintf(stderr, "Couldn't find cost type %s, going with SSE\n", s);
     return SSE;
 }
 
@@ -22,6 +23,8 @@ char *get_cost_string(COST_TYPE a)
             return "sse";
         case MASKED:
             return "masked";
+        case SMOOTH:
+            return "smooth";
     }
     return "sse";
 }
@@ -65,8 +68,12 @@ void forward_cost_layer(cost_layer l, network_state state)
             if(state.truth[i] == SECRET_NUM) state.input[i] = SECRET_NUM;
         }
     }
-    copy_cpu(l.batch*l.inputs, state.truth, 1, l.delta, 1);
-    axpy_cpu(l.batch*l.inputs, -1, state.input, 1, l.delta, 1);
+    if(l.cost_type == SMOOTH){
+        smooth_l1_cpu(l.batch*l.inputs, state.input, state.truth, l.delta);
+    } else {
+        copy_cpu(l.batch*l.inputs, state.truth, 1, l.delta, 1);
+        axpy_cpu(l.batch*l.inputs, -1, state.input, 1, l.delta, 1);
+    }
     *(l.output) = dot_cpu(l.batch*l.inputs, l.delta, 1, l.delta, 1);
     //printf("cost: %f\n", *l.output);
 }
@@ -95,8 +102,12 @@ void forward_cost_layer_gpu(cost_layer l, network_state state)
         mask_ongpu(l.batch*l.inputs, state.input, SECRET_NUM, state.truth);
     }
 
-    copy_ongpu(l.batch*l.inputs, state.truth, 1, l.delta_gpu, 1);
-    axpy_ongpu(l.batch*l.inputs, -1, state.input, 1, l.delta_gpu, 1);
+    if(l.cost_type == SMOOTH){
+        smooth_l1_gpu(l.batch*l.inputs, state.input, state.truth, l.delta_gpu);
+    } else {
+        copy_ongpu(l.batch*l.inputs, state.truth, 1, l.delta_gpu, 1);
+        axpy_ongpu(l.batch*l.inputs, -1, state.input, 1, l.delta_gpu, 1);
+    }
 
     cuda_pull_array(l.delta_gpu, l.delta, l.batch*l.inputs);
     *(l.output) = dot_cpu(l.batch*l.inputs, l.delta, 1, l.delta, 1);

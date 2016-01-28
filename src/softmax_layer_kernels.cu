@@ -8,7 +8,7 @@ extern "C" {
 #include "blas.h"
 }
 
-__global__ void forward_softmax_layer_kernel(int n, int batch, float *input, float *output)
+__global__ void forward_softmax_layer_kernel(int n, int batch, float *input, float temp, float *output)
 {
     int b = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(b >= batch) return;
@@ -21,11 +21,11 @@ __global__ void forward_softmax_layer_kernel(int n, int batch, float *input, flo
         largest = (val>largest) ? val : largest;
     }
     for(i = 0; i < n; ++i){
-        sum += exp(input[i+b*n]-largest);
+        sum += exp(input[i+b*n]/temp-largest/temp);
     }
-    sum = (sum != 0) ? largest+log(sum) : largest-100;
+    sum = (sum != 0) ? largest/temp+log(sum) : largest-100;
     for(i = 0; i < n; ++i){
-        output[i+b*n] = exp(input[i+b*n]-sum);
+        output[i+b*n] = exp(input[i+b*n]/temp-sum);
     }
 }
 
@@ -38,7 +38,7 @@ extern "C" void forward_softmax_layer_gpu(const softmax_layer layer, network_sta
 {
     int inputs = layer.inputs / layer.groups;
     int batch = layer.batch * layer.groups;
-    forward_softmax_layer_kernel<<<cuda_gridsize(batch), BLOCK>>>(inputs, batch, state.input, layer.output_gpu);
+    forward_softmax_layer_kernel<<<cuda_gridsize(batch), BLOCK>>>(inputs, batch, state.input, layer.temperature, layer.output_gpu);
     check_error(cudaPeekAtLastError());
 }
 

@@ -2,7 +2,6 @@
 #define CROP_LAYER_H
 
 #include "image.h"
-#include "params.h"
 #include "layer.h"
 #include "network.h"
 
