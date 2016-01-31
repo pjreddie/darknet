@@ -13,7 +13,7 @@ float abs_mean(float *x, int n)
     int i;
     float sum = 0;
     for (i = 0; i < n; ++i){
-        sum += abs(x[i]);
+        sum += fabs(x[i]);
     }
     return sum/n;
 }

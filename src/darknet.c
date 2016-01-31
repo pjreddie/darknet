@@ -206,7 +206,6 @@ int main(int argc, char **argv)
     gpu_index = find_int_arg(argc, argv, "-i", 0);
     if(find_arg(argc, argv, "-nogpu")) {
         gpu_index = -1;
-        printf("nogpu\n");
     }
 
 #ifndef GPU

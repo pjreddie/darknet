@@ -34,6 +34,7 @@ struct layer{
     ACTIVATION activation;
     COST_TYPE cost_type;
     int batch_normalize;
+    int shortcut;
     int batch;
     int forced;
     int flipped;

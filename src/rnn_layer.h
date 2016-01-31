@@ -6,7 +6,7 @@
 #include "layer.h"
 #include "network.h"
 
-layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, ACTIVATION activation, int batch_normalize);
+layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, ACTIVATION activation, int batch_normalize, int log);
 
 void forward_rnn_layer(layer l, network_state state);
 void backward_rnn_layer(layer l, network_state state);

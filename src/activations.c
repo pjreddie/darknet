@@ -10,6 +10,8 @@ char *get_activation_string(ACTIVATION a)
     switch(a){
         case LOGISTIC:
             return "logistic";
+        case LOGGY:
+            return "loggy";
         case RELU:
             return "relu";
         case ELU:
@@ -35,6 +37,7 @@ char *get_activation_string(ACTIVATION a)
 ACTIVATION get_activation(char *s)
 {
     if (strcmp(s, "logistic")==0) return LOGISTIC;
+    if (strcmp(s, "loggy")==0) return LOGGY;
     if (strcmp(s, "relu")==0) return RELU;
     if (strcmp(s, "elu")==0) return ELU;
     if (strcmp(s, "relie")==0) return RELIE;
@@ -54,6 +57,8 @@ float activate(float x, ACTIVATION a)
             return linear_activate(x);
         case LOGISTIC:
             return logistic_activate(x);
+        case LOGGY:
+            return loggy_activate(x);
         case RELU:
             return relu_activate(x);
         case ELU:
@@ -87,6 +92,8 @@ float gradient(float x, ACTIVATION a)
             return linear_gradient(x);
         case LOGISTIC:
             return logistic_gradient(x);
+        case LOGGY:
+            return loggy_gradient(x);
         case RELU:
             return relu_gradient(x);
         case ELU:
