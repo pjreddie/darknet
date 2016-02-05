@@ -18,10 +18,12 @@ void increment_layer(layer *l, int steps)
     l->x += num;
     l->x_norm += num;
 
+#ifdef GPU
     l->output_gpu += num;
     l->delta_gpu += num;
     l->x_gpu += num;
     l->x_norm_gpu += num;
+#endif
 }
 
 layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, ACTIVATION activation, int batch_normalize, int log)

@@ -48,8 +48,6 @@ float_pair get_rnn_data(unsigned char *text, int characters, int len, int batch,
 void train_char_rnn(char *cfgfile, char *weightfile, char *filename)
 {
     FILE *fp = fopen(filename, "rb");
-    //FILE *fp = fopen("data/ab.txt", "r");
-    //FILE *fp = fopen("data/grrm/asoiaf.txt", "r");
 
     fseek(fp, 0, SEEK_END); 
     size_t size = ftell(fp);
