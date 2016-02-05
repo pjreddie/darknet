@@ -12,22 +12,31 @@ typedef struct {
     float *y;
 } float_pair;
 
-float_pair get_rnn_data(char *text, int len, int batch, int steps)
+float_pair get_rnn_data(unsigned char *text, int characters, int len, int batch, int steps)
 {
-    float *x = calloc(batch * steps * 256, sizeof(float));
-    float *y = calloc(batch * steps * 256, sizeof(float));
+    float *x = calloc(batch * steps * characters, sizeof(float));
+    float *y = calloc(batch * steps * characters, sizeof(float));
     int i,j;
     for(i = 0; i < batch; ++i){
         int index = rand() %(len - steps - 1);
+        /*
         int done = 1;
         while(!done){
             index = rand() %(len - steps - 1);
             while(index < len-steps-1 && text[index++] != '\n');
             if (index < len-steps-1) done = 1;
-        }
+            }
+         */
         for(j = 0; j < steps; ++j){
-            x[(j*batch + i)*256 + text[index + j]] = 1;
-            y[(j*batch + i)*256 + text[index + j + 1]] = 1;
+            x[(j*batch + i)*characters + text[index + j]] = 1;
+            y[(j*batch + i)*characters + text[index + j + 1]] = 1;
+
+            if(text[index+j] > 255 || text[index+j] <= 0 || text[index+j+1] > 255 || text[index+j+1] <= 0){
+                text[index+j+2] = 0;
+                printf("%d %d %d %d %d\n", index, j, len, (int)text[index+j], (int)text[index+j+1]);
+                printf("%s", text+index);
+                error("Bad char");
+            }
         }
     }
     float_pair p;
@@ -38,7 +47,7 @@ float_pair get_rnn_data(char *text, int len, int batch, int steps)
 
 void train_char_rnn(char *cfgfile, char *weightfile, char *filename)
 {
-    FILE *fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "rb");
     //FILE *fp = fopen("data/ab.txt", "r");
     //FILE *fp = fopen("data/grrm/asoiaf.txt", "r");
 
@@ -46,7 +55,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename)
     size_t size = ftell(fp);
     fseek(fp, 0, SEEK_SET); 
 
-    char *text = calloc(size, sizeof(char));
+    unsigned char *text = calloc(size+1, sizeof(char));
     fread(text, 1, size, fp);
     fclose(fp);
 
@@ -60,6 +69,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename)
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    int inputs = get_network_input_size(net);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int batch = net.batch;
     int steps = net.time_steps;
@@ -69,7 +79,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename)
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
-        float_pair p = get_rnn_data(text, size, batch/steps, steps);
+        float_pair p = get_rnn_data(text, inputs, size, batch/steps, steps);
 
         float loss = train_network_datum(net, p.x, p.y) / (batch);
         free(p.x);
@@ -104,12 +114,13 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    
+    int inputs = get_network_input_size(net);
+
     int i, j;
     for(i = 0; i < net.n; ++i) net.layers[i].temperature = temp;
-    char c;
+    unsigned char c;
     int len = strlen(seed);
-    float *input = calloc(256, sizeof(float));
+    float *input = calloc(inputs, sizeof(float));
     for(i = 0; i < len-1; ++i){
         c = seed[i];
         input[(int)c] = 1;
@@ -125,7 +136,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
         input[(int)c] = 1;
         float *out = network_predict(net, input);
         input[(int)c] = 0;
-        for(j = 0; j < 256; ++j){
+        for(j = 0; j < inputs; ++j){
             sum += out[j];
             if(sum > r) break;
         }
@@ -134,20 +145,8 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
     printf("\n");
 }
 
-void valid_char_rnn(char *cfgfile, char *weightfile, char *filename)
+void valid_char_rnn(char *cfgfile, char *weightfile)
 {
-    FILE *fp = fopen(filename, "r");
-    //FILE *fp = fopen("data/ab.txt", "r");
-    //FILE *fp = fopen("data/grrm/asoiaf.txt", "r");
-
-    fseek(fp, 0, SEEK_END); 
-    size_t size = ftell(fp);
-    fseek(fp, 0, SEEK_SET); 
-
-    char *text = calloc(size, sizeof(char));
-    fread(text, 1, size, fp);
-    fclose(fp);
-
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
 
@@ -155,19 +154,25 @@ void valid_char_rnn(char *cfgfile, char *weightfile, char *filename)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    
-    int i;
-    char c;
-    float *input = calloc(256, sizeof(float));
+    int inputs = get_network_input_size(net);
+
+    int count = 0;
+    int c;
+    float *input = calloc(inputs, sizeof(float));
     float sum = 0;
-    for(i = 0; i < size-1; ++i){
-        c = text[i];
-        input[(int)c] = 1;
+    c = getc(stdin);
+    float log2 = log(2);
+    while(c != EOF){
+        int next = getc(stdin);
+        if(next == EOF) break;
+        ++count;
+        input[c] = 1;
         float *out = network_predict(net, input);
-        input[(int)c] = 0;
-        sum += log(out[(int)text[i+1]]);
+        input[c] = 0;
+        sum += log(out[next])/log2;
+        c = next;
     }
-    printf("Log Probability: %f\n", sum);
+    printf("Perplexity: %f\n", pow(2, -sum/count));
 }
 
 
@@ -179,13 +184,13 @@ void run_char_rnn(int argc, char **argv)
     }
     char *filename = find_char_arg(argc, argv, "-file", "data/shakespeare.txt");
     char *seed = find_char_arg(argc, argv, "-seed", "\n");
-    int len = find_int_arg(argc, argv, "-len", 100);
-    float temp = find_float_arg(argc, argv, "-temp", 1);
+    int len = find_int_arg(argc, argv, "-len", 1000);
+    float temp = find_float_arg(argc, argv, "-temp", .7);
     int rseed = find_int_arg(argc, argv, "-srand", time(0));
 
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     if(0==strcmp(argv[2], "train")) train_char_rnn(cfg, weights, filename);
-    else if(0==strcmp(argv[2], "valid")) valid_char_rnn(cfg, weights, filename);
+    else if(0==strcmp(argv[2], "valid")) valid_char_rnn(cfg, weights);
     else if(0==strcmp(argv[2], "test")) test_char_rnn(cfg, weights, len, seed, temp, rseed);
 }
