@@ -190,5 +190,5 @@ void run_char_rnn(int argc, char **argv)
     char *weights = (argc > 4) ? argv[4] : 0;
     if(0==strcmp(argv[2], "train")) train_char_rnn(cfg, weights, filename);
     else if(0==strcmp(argv[2], "valid")) valid_char_rnn(cfg, weights);
-    else if(0==strcmp(argv[2], "test")) test_char_rnn(cfg, weights, len, seed, temp, rseed);
+    else if(0==strcmp(argv[2], "generate")) test_char_rnn(cfg, weights, len, seed, temp, rseed);
 }
