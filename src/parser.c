@@ -813,7 +813,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
 {
     fprintf(stderr, "Loading weights from %s...", filename);
     fflush(stdout);
-    FILE *fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "rb");
     if(!fp) file_error(filename);
 
     int major;
