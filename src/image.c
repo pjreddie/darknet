@@ -4,11 +4,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-#endif
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -330,6 +325,16 @@ void save_image(image im, const char *name)
 }
 
 #ifdef OPENCV
+image get_image_from_stream(CvCapture *cap)
+{
+    IplImage* src = cvQueryFrame(cap);
+    image im = ipl_to_image(src);
+    rgbgr_image(im);
+    return im;
+}
+#endif
+
+#ifdef OPENCV
 void save_image_jpg(image p, char *name)
 {
     image copy = copy_image(p);
@@ -457,6 +462,39 @@ image crop_image(image im, int dx, int dy, int w, int h)
         }
     }
     return cropped;
+}
+
+image resize_min(image im, int min)
+{
+    int w = im.w;
+    int h = im.h;
+    if(w < h){
+        h = (h * min) / w;
+        w = min;
+    } else {
+        w = (w * min) / h;
+        h = min;
+    }
+    image resized = resize_image(im, w, h);
+    return resized;
+}
+
+image random_crop_image(image im, int low, int high, int size)
+{
+    int r = rand_int(low, high);
+    image resized = resize_min(im, r);
+    int dx = rand_int(0, resized.w - size);
+    int dy = rand_int(0, resized.h - size);
+    image crop = crop_image(resized, dx, dy, size, size);
+
+    /*
+       show_image(im, "orig");
+       show_image(crop, "cropped");
+       cvWaitKey(0);
+     */
+
+    free_image(resized);
+    return crop;
 }
 
 float three_way_max(float a, float b, float c)
@@ -724,7 +762,7 @@ void test_resize(char *filename)
     image exp5 = copy_image(im);
     exposure_image(exp5, .5);
 
-    #ifdef GPU
+#ifdef GPU
     image r = resize_image(im, im.w, im.h);
     image black = make_image(im.w*2 + 3, im.h*2 + 3, 9);
     image black2 = make_image(im.w, im.h, 3);
@@ -741,7 +779,7 @@ void test_resize(char *filename)
     cuda_pull_array(black2_gpu, black2.data, black2.w*black2.h*black2.c);
     show_image_layers(black, "Black");
     show_image(black2, "Recreate");
-    #endif
+#endif
 
     show_image(im, "Original");
     show_image(gray, "Gray");
@@ -788,8 +826,12 @@ image load_image_cv(char *filename, int channels)
 
     if( (src = cvLoadImage(filename, flag)) == 0 )
     {
-        printf("Cannot load image \"%s\"\n", filename);
-        exit(0);
+        fprintf(stderr, "Cannot load image \"%s\"\n", filename);
+        char buff[256];
+        sprintf(buff, "echo %s >> bad.list", filename);
+        system(buff);
+        return make_image(10,10,3);
+        //exit(0);
     }
     image out = ipl_to_image(src);
     cvReleaseImage(&src);

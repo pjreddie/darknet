@@ -9,6 +9,7 @@
 #include "crop_layer.h"
 #include "connected_layer.h"
 #include "rnn_layer.h"
+#include "crnn_layer.h"
 #include "local_layer.h"
 #include "convolutional_layer.h"
 #include "activation_layer.h"
@@ -85,6 +86,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "connected";
         case RNN:
             return "rnn";
+        case CRNN:
+            return "crnn";
         case MAXPOOL:
             return "maxpool";
         case AVGPOOL:
@@ -149,6 +152,8 @@ void forward_network(network net, network_state state)
             forward_connected_layer(l, state);
         } else if(l.type == RNN){
             forward_rnn_layer(l, state);
+        } else if(l.type == CRNN){
+            forward_crnn_layer(l, state);
         } else if(l.type == CROP){
             forward_crop_layer(l, state);
         } else if(l.type == COST){
@@ -185,6 +190,8 @@ void update_network(network net)
             update_connected_layer(l, update_batch, rate, net.momentum, net.decay);
         } else if(l.type == RNN){
             update_rnn_layer(l, update_batch, rate, net.momentum, net.decay);
+        } else if(l.type == CRNN){
+            update_crnn_layer(l, update_batch, rate, net.momentum, net.decay);
         } else if(l.type == LOCAL){
             update_local_layer(l, update_batch, rate, net.momentum, net.decay);
         }
@@ -205,7 +212,7 @@ float get_network_cost(network net)
     int count = 0;
     for(i = 0; i < net.n; ++i){
         if(net.layers[i].type == COST){
-            sum += net.layers[i].output[0];
+            sum += net.layers[i].cost[0];
             ++count;
         }
         if(net.layers[i].type == DETECTION){
@@ -261,6 +268,8 @@ void backward_network(network net, network_state state)
             backward_connected_layer(l, state);
         } else if(l.type == RNN){
             backward_rnn_layer(l, state);
+        } else if(l.type == CRNN){
+            backward_crnn_layer(l, state);
         } else if(l.type == LOCAL){
             backward_local_layer(l, state);
         } else if(l.type == COST){

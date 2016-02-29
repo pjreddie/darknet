@@ -82,6 +82,27 @@ matrix load_image_paths(char **paths, int n, int w, int h)
     return X;
 }
 
+matrix load_image_cropped_paths(char **paths, int n, int min, int max, int size)
+{
+    int i;
+    matrix X;
+    X.rows = n;
+    X.vals = calloc(X.rows, sizeof(float*));
+    X.cols = 0;
+
+    for(i = 0; i < n; ++i){
+        image im = load_image_color(paths[i], 0, 0);
+        image crop = random_crop_image(im, min, max, size);
+        int flip = rand_r(&data_seed)%2;
+        if (flip) flip_image(crop);
+        free_image(im);
+        X.vals[i] = crop.data;
+        X.cols = crop.h*crop.w*crop.c;
+    }
+    return X;
+}
+
+
 box_label *read_boxes(char *filename, int *n)
 {
     box_label *boxes = calloc(1, sizeof(box_label));
@@ -386,6 +407,33 @@ matrix load_labels_paths(char **paths, int n, char **labels, int k)
     return y;
 }
 
+matrix load_tags_paths(char **paths, int n, int k)
+{
+    matrix y = make_matrix(n, k);
+    int i;
+    int count = 0;
+    for(i = 0; i < n; ++i){
+        char *label = find_replace(paths[i], "imgs", "labels");
+        label = find_replace(label, "_iconl.jpeg", ".txt");
+        FILE *file = fopen(label, "r");
+        if(!file){
+            label = find_replace(label, "labels", "labels2");
+            file = fopen(label, "r");
+            if(!file) continue;
+        }
+        ++count;
+        int tag;
+        while(fscanf(file, "%d", &tag) == 1){
+            if(tag < k){
+                y.vals[i][tag] = 1;
+            }
+        }
+        fclose(file);
+    }
+    printf("%d/%d\n", count, n);
+    return y;
+}
+
 char **get_labels(char *filename)
 {
     list *plist = get_paths(filename);
@@ -641,8 +689,10 @@ void *load_thread(void *ptr)
 
     //printf("Loading data: %d\n", rand_r(&data_seed));
     load_args a = *(struct load_args*)ptr;
-    if (a.type == CLASSIFICATION_DATA){
+    if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
+    } else if (a.type == CLASSIFICATION_DATA){
+        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.min, a.max, a.size);
     } else if (a.type == DETECTION_DATA){
         *a.d = load_data_detection(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
     } else if (a.type == WRITING_DATA){
@@ -656,6 +706,9 @@ void *load_thread(void *ptr)
     } else if (a.type == IMAGE_DATA){
         *(a.im) = load_image_color(a.path, 0, 0);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);
+    } else if (a.type == TAG_DATA){
+        *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size);
+        //*a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     }
     free(ptr);
     return 0;
@@ -692,6 +745,30 @@ data load_data(char **paths, int n, int m, char **labels, int k, int w, int h)
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
     d.y = load_labels_paths(paths, n, labels, k);
+    if(m) free(paths);
+    return d;
+}
+
+data load_data_augment(char **paths, int n, int m, char **labels, int k, int min, int max, int size)
+{
+    if(m) paths = get_random_paths(paths, n, m);
+    data d;
+    d.shallow = 0;
+    d.X = load_image_cropped_paths(paths, n, min, max, size);
+    d.y = load_labels_paths(paths, n, labels, k);
+    if(m) free(paths);
+    return d;
+}
+
+data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size)
+{
+    if(m) paths = get_random_paths(paths, n, m);
+    data d = {0};
+    d.w = size;
+    d.h = size;
+    d.shallow = 0;
+    d.X = load_image_cropped_paths(paths, n, min, max, size);
+    d.y = load_tags_paths(paths, n, k);
     if(m) free(paths);
     return d;
 }
@@ -759,8 +836,8 @@ data load_cifar10_data(char *filename)
             X.vals[i][j] = (double)bytes[j+1];
         }
     }
-    translate_data_rows(d, -128);
-    scale_data_rows(d, 1./128);
+    //translate_data_rows(d, -128);
+    scale_data_rows(d, 1./255);
     //normalize_data_rows(d);
     fclose(fp);
     return d;
@@ -800,7 +877,7 @@ data load_all_cifar10()
 
     for(b = 0; b < 5; ++b){
         char buff[256];
-        sprintf(buff, "data/cifar10/data_batch_%d.bin", b+1);
+        sprintf(buff, "data/cifar/cifar-10-batches-bin/data_batch_%d.bin", b+1);
         FILE *fp = fopen(buff, "rb");
         if(!fp) file_error(buff);
         for(i = 0; i < 10000; ++i){
@@ -815,8 +892,8 @@ data load_all_cifar10()
         fclose(fp);
     }
     //normalize_data_rows(d);
-    translate_data_rows(d, -128);
-    scale_data_rows(d, 1./128);
+    //translate_data_rows(d, -128);
+    scale_data_rows(d, 1./255);
     return d;
 }
 

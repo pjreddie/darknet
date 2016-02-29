@@ -12,6 +12,7 @@
 #include "deconvolutional_layer.h"
 #include "connected_layer.h"
 #include "rnn_layer.h"
+#include "crnn_layer.h"
 #include "maxpool_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
@@ -36,6 +37,7 @@ int is_local(section *s);
 int is_deconvolutional(section *s);
 int is_connected(section *s);
 int is_rnn(section *s);
+int is_crnn(section *s);
 int is_maxpool(section *s);
 int is_avgpool(section *s);
 int is_dropout(section *s);
@@ -167,6 +169,21 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     if(weights || biases) push_convolutional_layer(layer);
     #endif
     return layer;
+}
+
+layer parse_crnn(list *options, size_params params)
+{
+    int output_filters = option_find_int(options, "output_filters",1);
+    int hidden_filters = option_find_int(options, "hidden_filters",1);
+    char *activation_s = option_find_str(options, "activation", "logistic");
+    ACTIVATION activation = get_activation(activation_s);
+    int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+
+    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, params.time_steps, activation, batch_normalize);
+
+    l.shortcut = option_find_int_quiet(options, "shortcut", 0);
+
+    return l;
 }
 
 layer parse_rnn(list *options, size_params params)
@@ -419,6 +436,7 @@ void parse_net_options(list *options, network *net)
     net->w = option_find_int_quiet(options, "width",0);
     net->c = option_find_int_quiet(options, "channels",0);
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
+    net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
 
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
 
@@ -501,6 +519,8 @@ network parse_network_cfg(char *filename)
             l = parse_deconvolutional(options, params);
         }else if(is_rnn(s)){
             l = parse_rnn(options, params);
+        }else if(is_crnn(s)){
+            l = parse_crnn(options, params);
         }else if(is_connected(s)){
             l = parse_connected(options, params);
         }else if(is_crop(s)){
@@ -590,6 +610,10 @@ int is_network(section *s)
 {
     return (strcmp(s->type, "[net]")==0
             || strcmp(s->type, "[network]")==0);
+}
+int is_crnn(section *s)
+{
+    return (strcmp(s->type, "[crnn]")==0);
 }
 int is_rnn(section *s)
 {
@@ -705,6 +729,23 @@ void save_weights_double(network net, char *filename)
     fclose(fp);
 }
 
+void save_convolutional_weights(layer l, FILE *fp)
+{
+#ifdef GPU
+    if(gpu_index >= 0){
+        pull_convolutional_layer(l);
+    }
+#endif
+    int num = l.n*l.c*l.size*l.size;
+    fwrite(l.biases, sizeof(float), l.n, fp);
+    if (l.batch_normalize){
+        fwrite(l.scales, sizeof(float), l.n, fp);
+        fwrite(l.rolling_mean, sizeof(float), l.n, fp);
+        fwrite(l.rolling_variance, sizeof(float), l.n, fp);
+    }
+    fwrite(l.filters, sizeof(float), num, fp);
+}
+
 void save_connected_weights(layer l, FILE *fp)
 {
 #ifdef GPU
@@ -739,25 +780,17 @@ void save_weights_upto(network net, char *filename, int cutoff)
     for(i = 0; i < net.n && i < cutoff; ++i){
         layer l = net.layers[i];
         if(l.type == CONVOLUTIONAL){
-#ifdef GPU
-            if(gpu_index >= 0){
-                pull_convolutional_layer(l);
-            }
-#endif
-            int num = l.n*l.c*l.size*l.size;
-            fwrite(l.biases, sizeof(float), l.n, fp);
-            if (l.batch_normalize){
-                fwrite(l.scales, sizeof(float), l.n, fp);
-                fwrite(l.rolling_mean, sizeof(float), l.n, fp);
-                fwrite(l.rolling_variance, sizeof(float), l.n, fp);
-            }
-            fwrite(l.filters, sizeof(float), num, fp);
+            save_convolutional_weights(l, fp);
         } if(l.type == CONNECTED){
             save_connected_weights(l, fp);
         } if(l.type == RNN){
             save_connected_weights(*(l.input_layer), fp);
             save_connected_weights(*(l.self_layer), fp);
             save_connected_weights(*(l.output_layer), fp);
+        } if(l.type == CRNN){
+            save_convolutional_weights(*(l.input_layer), fp);
+            save_convolutional_weights(*(l.self_layer), fp);
+            save_convolutional_weights(*(l.output_layer), fp);
         } if(l.type == LOCAL){
 #ifdef GPU
             if(gpu_index >= 0){
@@ -809,6 +842,27 @@ void load_connected_weights(layer l, FILE *fp, int transpose)
 #endif
 }
 
+void load_convolutional_weights(layer l, FILE *fp)
+{
+    int num = l.n*l.c*l.size*l.size;
+    fread(l.biases, sizeof(float), l.n, fp);
+    if (l.batch_normalize && (!l.dontloadscales)){
+        fread(l.scales, sizeof(float), l.n, fp);
+        fread(l.rolling_mean, sizeof(float), l.n, fp);
+        fread(l.rolling_variance, sizeof(float), l.n, fp);
+    }
+    fread(l.filters, sizeof(float), num, fp);
+    if (l.flipped) {
+        transpose_matrix(l.filters, l.c*l.size*l.size, l.n);
+    }
+#ifdef GPU
+    if(gpu_index >= 0){
+        push_convolutional_layer(l);
+    }
+#endif
+}
+
+
 void load_weights_upto(network *net, char *filename, int cutoff)
 {
     fprintf(stderr, "Loading weights from %s...", filename);
@@ -830,22 +884,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         layer l = net->layers[i];
         if (l.dontload) continue;
         if(l.type == CONVOLUTIONAL){
-            int num = l.n*l.c*l.size*l.size;
-            fread(l.biases, sizeof(float), l.n, fp);
-            if (l.batch_normalize && (!l.dontloadscales)){
-                fread(l.scales, sizeof(float), l.n, fp);
-                fread(l.rolling_mean, sizeof(float), l.n, fp);
-                fread(l.rolling_variance, sizeof(float), l.n, fp);
-            }
-            fread(l.filters, sizeof(float), num, fp);
-            if (l.flipped) {
-                transpose_matrix(l.filters, l.c*l.size*l.size, l.n);
-            }
-#ifdef GPU
-            if(gpu_index >= 0){
-                push_convolutional_layer(l);
-            }
-#endif
+            load_convolutional_weights(l, fp);
         }
         if(l.type == DECONVOLUTIONAL){
             int num = l.n*l.c*l.size*l.size;
@@ -859,6 +898,11 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         }
         if(l.type == CONNECTED){
             load_connected_weights(l, fp, transpose);
+        }
+        if(l.type == CRNN){
+            load_convolutional_weights(*(l.input_layer), fp);
+            load_convolutional_weights(*(l.self_layer), fp);
+            load_convolutional_weights(*(l.output_layer), fp);
         }
         if(l.type == RNN){
             load_connected_weights(*(l.input_layer), fp, transpose);

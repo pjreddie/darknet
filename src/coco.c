@@ -389,10 +389,10 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
 void demo_coco(char *cfgfile, char *weightfile, float thresh, int cam_index, char *filename);
 static void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, char* filename)
 {
-    #if defined(OPENCV) && defined(GPU)
+    #if defined(OPENCV)
         demo_coco(cfgfile, weightfile, thresh, cam_index, filename);
     #else
-        fprintf(stderr, "Need to compile with GPU and OpenCV for demo.\n");
+        fprintf(stderr, "Need to compile with OpenCV for demo.\n");
     #endif
 }
 

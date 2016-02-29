@@ -8,6 +8,11 @@
 #include <math.h>
 #include "box.h"
 
+#ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+#endif
+
 typedef struct {
     int h;
     int w;
@@ -25,8 +30,9 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 image image_distance(image a, image b);
 void scale_image(image m, float s);
 image crop_image(image im, int dx, int dy, int w, int h);
+image random_crop_image(image im, int low, int high, int size);
 image resize_image(image im, int w, int h);
-image resize_image2(image im, int w, int h);
+image resize_min(image im, int min);
 void translate_image(image m, float s);
 void normalize_image(image p);
 image rotate_image(image m, float rad);
@@ -53,6 +59,8 @@ void show_image_collapsed(image p, char *name);
 
 #ifdef OPENCV
 void save_image_jpg(image p, char *name);
+image get_image_from_stream(CvCapture *cap);
+image ipl_to_image(IplImage* src);
 #endif
 
 void print_image(image m);

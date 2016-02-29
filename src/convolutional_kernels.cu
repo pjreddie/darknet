@@ -121,11 +121,11 @@ void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int 
     check_error(cudaPeekAtLastError());
 }
 
-void swap_binary(convolutional_layer l)
+void swap_binary(convolutional_layer *l)
 {
-        float *swap = l.filters_gpu;
-        l.filters_gpu = l.binary_filters_gpu;
-        l.binary_filters_gpu = swap;
+        float *swap = l->filters_gpu;
+        l->filters_gpu = l->binary_filters_gpu;
+        l->binary_filters_gpu = swap;
 }
 
 void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
@@ -139,7 +139,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
     if(l.binary){
         binarize_filters_gpu(l.filters_gpu, l.n, l.c*l.size*l.size, l.binary_filters_gpu);
-        swap_binary(l);
+        swap_binary(&l);
     }
 
     for(i = 0; i < l.batch; ++i){
@@ -172,7 +172,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, n);
 
     activate_array_ongpu(l.output_gpu, m*n*l.batch, l.activation);
-    if(l.binary) swap_binary(l);
+    if(l.binary) swap_binary(&l);
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
@@ -206,7 +206,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         gemm_ongpu(0,1,m,n,k,1,a + i*m*k,k,b,k,1,c,n);
 
         if(state.delta){
-            if(l.binary) swap_binary(l);
+            if(l.binary) swap_binary(&l);
             float * a = l.filters_gpu;
             float * b = l.delta_gpu;
             float * c = l.col_image_gpu;
@@ -214,7 +214,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             gemm_ongpu(1,0,n,k,m,1,a,n,b + i*k*m,k,0,c,k);
 
             col2im_ongpu(l.col_image_gpu, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.delta + i*l.c*l.h*l.w);
-            if(l.binary) swap_binary(l);
+            if(l.binary) swap_binary(&l);
         }
     }
 }

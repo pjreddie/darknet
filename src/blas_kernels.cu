@@ -410,18 +410,41 @@ extern "C" void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int 
     check_error(cudaPeekAtLastError());
 }
 
-__global__ void smooth_l1_kernel(int n, float *pred, float *truth, float *delta)
+__global__ void smooth_l1_kernel(int n, float *pred, float *truth, float *delta, float *error)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(i < n){
         float diff = truth[i] - pred[i];
-        if(abs(diff) > 1) delta[i] = diff;
-        else delta[i] = (diff > 0) ? 1 : -1;
+        float abs_val = abs(diff);
+        if(abs_val < 1) {
+            error[i] = diff * diff;
+            delta[i] = diff;
+        }
+        else {
+            error[i] = 2*abs_val - 1;
+            delta[i] = (diff < 0) ? -1 : 1;
+        }
     }
 }
 
-extern "C" void smooth_l1_gpu(int n, float *pred, float *truth, float *delta)
+extern "C" void smooth_l1_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
-    smooth_l1_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta);
+    smooth_l1_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+    check_error(cudaPeekAtLastError());
+}
+
+__global__ void l2_kernel(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < n){
+        float diff = truth[i] - pred[i];
+        error[i] = diff * diff; //I know this is technically wrong, deal with it.
+        delta[i] = diff;
+    }
+}
+
+extern "C" void l2_gpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    l2_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
     check_error(cudaPeekAtLastError());
 }

@@ -39,7 +39,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
     args.m = N;
     args.labels = labels;
     args.d = &buffer;
-    args.type = CLASSIFICATION_DATA;
+    args.type = OLD_CLASSIFICATION_DATA;
 
     load_thread = load_data_in_thread(args);
     int epoch = (*net.seen)/N;
@@ -115,7 +115,7 @@ void validate_imagenet(char *filename, char *weightfile)
     args.m = 0;
     args.labels = labels;
     args.d = &buffer;
-    args.type = CLASSIFICATION_DATA;
+    args.type = OLD_CLASSIFICATION_DATA;
 
     pthread_t load_thread = load_data_in_thread(args);
     for(i = 1; i <= splits; ++i){
