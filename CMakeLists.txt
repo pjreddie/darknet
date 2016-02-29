@@ -43,7 +43,11 @@ endif()
 #BOOST
 FIND_PACKAGE(Boost REQUIRED python)
 FIND_PACKAGE(PythonLibs REQUIRED)
-FIND_PACKAGE(OpenCV REQUIRED)
+FIND_PACKAGE(OpenCV)
+
+if(OpenCV_FOUND)
+    add_definitions(-DOPENCV)
+endif()
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 include_directories(SYSTEM ${PYTHON_INCLUDE_DIR})
