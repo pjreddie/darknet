@@ -161,11 +161,12 @@ void test_go(char *filename, char *weightfile)
     set_batch_network(&net, 1);
     float *board = calloc(19*19, sizeof(float));
     float *move = calloc(19*19, sizeof(float));
-    image bim = float_to_image(19, 19, 1, board);
     while(1){
         float *output = network_predict(net, board);
         copy_cpu(19*19, output, 1, move, 1);
         int i;
+        #ifdef GPU
+        image bim = float_to_image(19, 19, 1, board);
         for(i = 1; i < 8; ++i){
             rotate_image_cw(bim, i);
             if(i >= 4) flip_image(bim);
@@ -182,6 +183,7 @@ void test_go(char *filename, char *weightfile)
             rotate_image_cw(bim, -i);
         }
         scal_cpu(19*19, 1./8., move, 1);
+        #endif
         for(i = 0; i < 19*19; ++i){
             if(board[i]) move[i] = 0;
         }
@@ -196,30 +198,37 @@ void test_go(char *filename, char *weightfile)
             col = index % 19;
             printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7), 19 - row, move[index]*100);
         }
-            int index = indexes[0];
-            row = index / 19;
-            col = index % 19;
+        int index = indexes[0];
+        int rec_row = index / 19;
+        int rec_col = index % 19;
 
         printf("\u25C9 Enter move: ");
         char c;
         char *line = fgetl(stdin);
         int num = sscanf(line, "%c %d", &c, &row);
-        if (c < 'A' || c > 'T'){
+        if (strlen(line) == 0){
+            row = rec_row;
+            col = rec_col;
+            board[row*19 + col] = 1;
+        }else if (c < 'A' || c > 'T'){
             if (c == 'p'){
-                board[row*19 + col] = 1;
+                flip_board(board);
+                continue;
             }else{
                 char g;
                 num = sscanf(line, "%c %c %d", &g, &c, &row);
                 row = 19 - row;
                 col = c - 'A';
                 if (col > 7) col -= 1;
-                board[row*19 + col] = 0;
+                if (num == 2) board[row*19 + col] = 0;
             }
-        } else {
+        } else if(num == 2){
             row = 19 - row;
             col = c - 'A';
             if (col > 7) col -= 1;
-            if(num == 2) board[row*19 + col] = 1;
+            board[row*19 + col] = 1;
+        }else{
+            continue;
         }
         update_board(board);
         flip_board(board);
