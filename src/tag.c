@@ -99,6 +99,7 @@ void test_tag(char *cfgfile, char *weightfile, char *filename)
     int indexes[10];
     char buff[256];
     char *input = buff;
+    int size = net.w;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -109,11 +110,12 @@ void test_tag(char *cfgfile, char *weightfile, char *filename)
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, net.w, net.h);
-        //resize_network(&net, im.w, im.h);
-        printf("%d %d\n", im.w, im.h);
+        image im = load_image_color(input, 0, 0);
+        image r = resize_min(im, size);
+        resize_network(&net, r.w, r.h);
+        printf("%d %d\n", r.w, r.h);
 
-        float *X = im.data;
+        float *X = r.data;
         time=clock();
         float *predictions = network_predict(net, X);
         top_predictions(net, 10, indexes);
@@ -122,6 +124,7 @@ void test_tag(char *cfgfile, char *weightfile, char *filename)
             int index = indexes[i];
             printf("%.1f%%: %s\n", predictions[index]*100, names[index]);
         }
+        free_image(r);
         free_image(im);
         if (filename) break;
     }

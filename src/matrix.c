@@ -33,6 +33,35 @@ float matrix_topk_accuracy(matrix truth, matrix guess, int k)
     return (float)correct/truth.rows;
 }
 
+void scale_matrix(matrix m, float scale)
+{
+    int i,j;
+    for(i = 0; i < m.rows; ++i){
+        for(j = 0; j < m.cols; ++j){
+            m.vals[i][j] *= scale;
+        }
+    }
+}
+
+matrix resize_matrix(matrix m, int size)
+{
+    int i;
+    if (m.rows == size) return m;
+    if (m.rows < size) {
+        m.vals = realloc(m.vals, size*sizeof(float*));
+        for (i = m.rows; i < size; ++i) {
+            m.vals[i] = calloc(m.cols, sizeof(float));
+        }
+    } else if (m.rows > size) {
+        for (i = size; i < m.rows; ++i) {
+            free(m.vals[i]);
+        }
+        m.vals = realloc(m.vals, size*sizeof(float*));
+    }
+    m.rows = size;
+    return m;
+}
+
 void matrix_add_matrix(matrix from, matrix to)
 {
     assert(from.rows == to.rows && from.cols == to.cols);
@@ -112,6 +141,19 @@ matrix csv_to_matrix(char *filename)
     m.vals = realloc(m.vals, n*sizeof(float*));
     m.rows = n;
     return m;
+}
+
+void matrix_to_csv(matrix m)
+{
+    int i, j;
+
+    for(i = 0; i < m.rows; ++i){
+        for(j = 0; j < m.cols; ++j){
+            if(j > 0) printf(",");
+            printf("%.17g", m.vals[i][j]);
+        }
+        printf("\n");
+    }
 }
 
 void print_matrix(matrix m)

@@ -36,6 +36,7 @@ image resize_min(image im, int min);
 void translate_image(image m, float s);
 void normalize_image(image p);
 image rotate_image(image m, float rad);
+void rotate_image_cw(image im, int times);
 void embed_image(image source, image dest, int dx, int dy);
 void saturate_image(image im, float sat);
 void exposure_image(image im, float sat);
@@ -52,6 +53,7 @@ image collapse_images_horz(image *ims, int n);
 image collapse_images_vert(image *ims, int n);
 
 void show_image(image p, const char *name);
+void show_image_normalized(image im, const char *name);
 void save_image(image p, const char *name);
 void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);

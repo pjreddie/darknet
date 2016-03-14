@@ -160,6 +160,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
 
     convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,pad,activation, batch_normalize, binary);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
+    layer.dot = option_find_float_quiet(options, "dot", 0);
 
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
@@ -850,7 +851,15 @@ void load_convolutional_weights(layer l, FILE *fp)
         fread(l.scales, sizeof(float), l.n, fp);
         fread(l.rolling_mean, sizeof(float), l.n, fp);
         fread(l.rolling_variance, sizeof(float), l.n, fp);
+        /*
+        int i;
+        for(i = 0; i < l.n; ++i){
+            if(l.rolling_mean[i] > 1 || l.rolling_mean[i] < -1 || l.rolling_variance[i] > 1 || l.rolling_variance[i] < -1)
+            printf("%f %f\n", l.rolling_mean[i], l.rolling_variance[i]);
+        }
+        */
     }
+    fflush(stdout);
     fread(l.filters, sizeof(float), num, fp);
     if (l.flipped) {
         transpose_matrix(l.filters, l.c*l.size*l.size, l.n);

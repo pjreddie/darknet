@@ -395,13 +395,7 @@ void demo_swag(char *cfgfile, char *weightfile, float thresh){}
 #endif
  */
 
-void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index);
-#ifndef GPU
-void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index)
-{
-    fprintf(stderr, "Darknet must be compiled with CUDA for YOLO demo.\n");
-}
-#endif
+void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index, char *filename);
 
 void run_yolo(int argc, char **argv)
 {
@@ -426,5 +420,5 @@ void run_yolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh, cam_index);
+    else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh, cam_index, filename);
 }

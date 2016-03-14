@@ -46,7 +46,7 @@ void mean_cpu(float *x, int batch, int filters, int spatial, float *mean)
 
 void variance_cpu(float *x, float *mean, int batch, int filters, int spatial, float *variance)
 {
-    float scale = 1./(batch * spatial);
+    float scale = 1./(batch * spatial - 1);
     int i,j,k;
     for(i = 0; i < filters; ++i){
         variance[i] = 0;
@@ -67,7 +67,7 @@ void normalize_cpu(float *x, float *mean, float *variance, int batch, int filter
         for(f = 0; f < filters; ++f){
             for(i = 0; i < spatial; ++i){
                 int index = b*filters*spatial + f*spatial + i;
-                x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .00001f);
+                x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .000001f);
             }
         }
     }

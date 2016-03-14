@@ -95,6 +95,11 @@ matrix load_image_cropped_paths(char **paths, int n, int min, int max, int size)
         image crop = random_crop_image(im, min, max, size);
         int flip = rand_r(&data_seed)%2;
         if (flip) flip_image(crop);
+        /*
+        show_image(im, "orig");
+        show_image(crop, "crop");
+        cvWaitKey(0);
+        */
         free_image(im);
         X.vals[i] = crop.data;
         X.cols = crop.h*crop.w*crop.c;
@@ -863,6 +868,17 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)
     }
 }
 
+void smooth_data(data d)
+{
+    int i, j;
+    int scale = 1. / d.y.cols;
+    int eps = .1;
+    for(i = 0; i < d.y.rows; ++i){
+        for(j = 0; j < d.y.cols; ++j){
+            d.y.vals[i][j] = eps * scale + (1-eps) * d.y.vals[i][j];
+        }
+    }
+}
 
 data load_all_cifar10()
 {
@@ -894,8 +910,54 @@ data load_all_cifar10()
     //normalize_data_rows(d);
     //translate_data_rows(d, -128);
     scale_data_rows(d, 1./255);
+   // smooth_data(d);
     return d;
 }
+
+data load_go(char *filename)
+{
+    FILE *fp = fopen(filename, "rb");
+    matrix X = make_matrix(128, 361);
+    matrix y = make_matrix(128, 361);
+    int row, col;
+
+    if(!fp) file_error(filename);
+    char *label;
+    int count = 0;
+    while((label = fgetl(fp))){
+        int i;
+        if(count == X.rows){
+            X = resize_matrix(X, count*2);
+            y = resize_matrix(y, count*2);
+        }
+        sscanf(label, "%d %d", &row, &col);
+        char *board = fgetl(fp);
+
+        int index = row*19 + col;
+        y.vals[count][index] = 1;
+
+        for(i = 0; i < 19*19; ++i){
+            float val = 0;
+            if(board[i] == '1') val = 1;
+            else if(board[i] == '2') val = -1;
+            X.vals[count][i] = val;
+        }
+        ++count;
+    }
+    X = resize_matrix(X, count);
+    y = resize_matrix(y, count);
+
+    data d;
+    d.shallow = 0;
+    d.X = X;
+    d.y = y;
+
+
+    fclose(fp);
+
+    return d;
+}
+
 
 void randomize_data(data d)
 {
@@ -934,6 +996,29 @@ void normalize_data_rows(data d)
     for(i = 0; i < d.X.rows; ++i){
         normalize_array(d.X.vals[i], d.X.cols);
     }
+}
+
+data get_random_data(data d, int num)
+{
+    data r = {0};
+    r.shallow = 1;
+
+    r.X.rows = num;
+    r.y.rows = num;
+
+    r.X.cols = d.X.cols;
+    r.y.cols = d.y.cols;
+
+    r.X.vals = calloc(num, sizeof(float *));
+    r.y.vals = calloc(num, sizeof(float *));
+
+    int i;
+    for(i = 0; i < num; ++i){
+        int index = rand()%d.X.rows;
+        r.X.vals[i] = d.X.vals[index];
+        r.y.vals[i] = d.y.vals[index];
+    }
+    return r;
 }
 
 data *split_data(data d, int part, int total)

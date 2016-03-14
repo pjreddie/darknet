@@ -56,6 +56,7 @@ struct layer{
     int binary;
     int steps;
     int hidden;
+    float dot;
     float angle;
     float jitter;
     float saturation;
