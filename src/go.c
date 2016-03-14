@@ -117,7 +117,7 @@ void update_board(float *board)
     int i;
     int *l = calculate_liberties(board);
     for(i = 0; i < 19*19; ++i){
-        if (board[i] && !l[i]) board[i] = 0;
+        if (board[i] < 0 && !l[i]) board[i] = 0;
     }
     free(l);
 }
