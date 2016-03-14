@@ -917,8 +917,8 @@ data load_all_cifar10()
 data load_go(char *filename)
 {
     FILE *fp = fopen(filename, "rb");
-    matrix X = make_matrix(128, 361);
-    matrix y = make_matrix(128, 361);
+    matrix X = make_matrix(3363059, 361);
+    matrix y = make_matrix(3363059, 361);
     int row, col;
 
     if(!fp) file_error(filename);
@@ -943,6 +943,8 @@ data load_go(char *filename)
             X.vals[count][i] = val;
         }
         ++count;
+        free(label);
+        free(board);
     }
     X = resize_matrix(X, count);
     y = resize_matrix(y, count);

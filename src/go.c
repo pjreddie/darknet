@@ -23,7 +23,11 @@ void train_go(char *cfgfile, char *weightfile)
 
     char *backup_directory = "/home/pjreddie/backup/";
 
-    data train = load_go("/home/pjreddie/backup/go.train");
+
+    char buff[256];
+    sprintf(buff, "/home/pjreddie/go.train.%02d", rand()%10);
+    data train = load_go(buff);
+
     int N = train.X.rows;
     int epoch = (*net.seen)/N;
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
@@ -58,6 +62,10 @@ void train_go(char *cfgfile, char *weightfile)
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
+
+            free_data(train);
+            sprintf(buff, "/home/pjreddie/go.train.%02d", epoch%10);
+            train = load_go(buff);
         }
         if(get_current_batch(net)%100 == 0){
             char buff[256];
@@ -65,7 +73,6 @@ void train_go(char *cfgfile, char *weightfile)
             save_weights(net, buff);
         }
     }
-    char buff[256];
     sprintf(buff, "%s/%s.weights", backup_directory, base);
     save_weights(net, buff);
 
@@ -122,9 +129,9 @@ void update_board(float *board)
     free(l);
 }
 
-void print_board(float *board, int swap)
+void print_board(float *board, int swap, int *indexes)
 {
-    int i,j;
+    int i,j,n;
     printf("\n\n");
     printf("   ");
     for(i = 0; i < 19; ++i){
@@ -135,9 +142,21 @@ void print_board(float *board, int swap)
         printf("%2d ", 19-j);
         for(i = 0; i < 19; ++i){
             int index = j*19 + i;
+            if(indexes){
+                int found = 0;
+                for(n = 0; n < 3; ++n){
+                    if(index == indexes[n]){
+                        found = 1;
+                        if(n == 0) printf("\uff11");
+                        else if(n == 1) printf("\uff12");
+                        else if(n == 2) printf("\uff13");
+                    }
+                }
+                if(found) continue;
+            }
             if(board[index]*-swap > 0) printf("\u25C9 ");
             else if(board[index]*-swap < 0) printf("\u25EF ");
-            else printf("  ");
+            else printf("\uFF0b");
         }
         printf("\n");
     }
@@ -166,7 +185,7 @@ void test_go(char *filename, char *weightfile)
         float *output = network_predict(net, board);
         copy_cpu(19*19, output, 1, move, 1);
         int i;
-        #ifdef GPU
+#ifdef GPU
         image bim = float_to_image(19, 19, 1, board);
         for(i = 1; i < 8; ++i){
             rotate_image_cw(bim, i);
@@ -184,7 +203,7 @@ void test_go(char *filename, char *weightfile)
             rotate_image_cw(bim, -i);
         }
         scal_cpu(19*19, 1./8., move, 1);
-        #endif
+#endif
         for(i = 0; i < 19*19; ++i){
             if(board[i]) move[i] = 0;
         }
@@ -192,7 +211,7 @@ void test_go(char *filename, char *weightfile)
         int indexes[3];
         int row, col;
         top_k(move, 19*19, 3, indexes);
-        print_board(board, color);
+        print_board(board, color, indexes);
         for(i = 0; i < 3; ++i){
             int index = indexes[i];
             row = index / 19;
@@ -217,6 +236,7 @@ void test_go(char *filename, char *weightfile)
             if (c == 'p'){
                 flip_board(board);
                 color = -color;
+                free(line);
                 continue;
             }else{
                 char g;
@@ -232,8 +252,10 @@ void test_go(char *filename, char *weightfile)
             if (col > 7) col -= 1;
             board[row*19 + col] = 1;
         }else{
+            free(line);
             continue;
         }
+        free(line);
         update_board(board);
         flip_board(board);
         color = -color;
