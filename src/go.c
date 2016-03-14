@@ -99,7 +99,6 @@ int *calculate_liberties(float *board)
             memset(visited, 0, 19*19*sizeof(int));
             int index = j*19 + i;
             if(board[index]){
-                printf("%d %d\n", j, i);
                 int side = board[index];
                 int num = 0;
                 if (i > 0  && board[j*19 + i -  1] == 0) ++num;
@@ -176,11 +175,6 @@ void test_go(char *filename, char *weightfile)
 
             if(i >= 4) flip_image(oim);
             rotate_image_cw(oim, -i);
-
-            int index = max_index(output, 19*19);
-            int row = index / 19;
-            int col = index % 19;
-            printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7), 19 - row, output[index]*100);
 
             axpy_cpu(19*19, 1, output, 1, move, 1);
 
