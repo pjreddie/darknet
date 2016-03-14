@@ -871,8 +871,8 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)
 void smooth_data(data d)
 {
     int i, j;
-    int scale = 1. / d.y.cols;
-    int eps = .1;
+    float scale = 1. / d.y.cols;
+    float eps = .1;
     for(i = 0; i < d.y.rows; ++i){
         for(j = 0; j < d.y.cols; ++j){
             d.y.vals[i][j] = eps * scale + (1-eps) * d.y.vals[i][j];
