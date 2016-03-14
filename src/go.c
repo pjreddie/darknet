@@ -122,7 +122,7 @@ void update_board(float *board)
     free(l);
 }
 
-void print_board(float *board)
+void print_board(float *board, int swap)
 {
     int i,j;
     printf("\n\n");
@@ -135,8 +135,8 @@ void print_board(float *board)
         printf("%2d ", 19-j);
         for(i = 0; i < 19; ++i){
             int index = j*19 + i;
-            if(board[index] > 0) printf("\u25C9 ");
-            else if(board[index] < 0) printf("\u25EF ");
+            if(board[index]*-swap > 0) printf("\u25C9 ");
+            else if(board[index]*-swap < 0) printf("\u25EF ");
             else printf("  ");
         }
         printf("\n");
@@ -161,6 +161,7 @@ void test_go(char *filename, char *weightfile)
     set_batch_network(&net, 1);
     float *board = calloc(19*19, sizeof(float));
     float *move = calloc(19*19, sizeof(float));
+    int color = 1;
     while(1){
         float *output = network_predict(net, board);
         copy_cpu(19*19, output, 1, move, 1);
@@ -191,7 +192,7 @@ void test_go(char *filename, char *weightfile)
         int indexes[3];
         int row, col;
         top_k(move, 19*19, 3, indexes);
-        print_board(board);
+        print_board(board, color);
         for(i = 0; i < 3; ++i){
             int index = indexes[i];
             row = index / 19;
@@ -202,7 +203,9 @@ void test_go(char *filename, char *weightfile)
         int rec_row = index / 19;
         int rec_col = index % 19;
 
-        printf("\u25C9 Enter move: ");
+        if(color == 1) printf("\u25EF Enter move: ");
+        else printf("\u25C9 Enter move: ");
+
         char c;
         char *line = fgetl(stdin);
         int num = sscanf(line, "%c %d", &c, &row);
@@ -213,6 +216,7 @@ void test_go(char *filename, char *weightfile)
         }else if (c < 'A' || c > 'T'){
             if (c == 'p'){
                 flip_board(board);
+                color = -color;
                 continue;
             }else{
                 char g;
@@ -232,6 +236,7 @@ void test_go(char *filename, char *weightfile)
         }
         update_board(board);
         flip_board(board);
+        color = -color;
     }
 
 }
