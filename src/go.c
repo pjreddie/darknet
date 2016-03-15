@@ -9,6 +9,7 @@
 #endif
 
 int inverted = 0;
+int noi = 0;
 
 void train_go(char *cfgfile, char *weightfile)
 {
@@ -137,7 +138,7 @@ void print_board(float *board, int swap, int *indexes)
     printf("\n\n");
     printf("   ");
     for(i = 0; i < 19; ++i){
-        printf("%c ", 'A' + i + 1*(i > 7));
+        printf("%c ", 'A' + i + 1*(i > 7 && noi));
     }
     printf("\n");
     for(j = 0; j < 19; ++j){
@@ -218,7 +219,7 @@ void test_go(char *filename, char *weightfile)
             int index = indexes[i];
             row = index / 19;
             col = index % 19;
-            printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7), (inverted)?19 - row : row+1, move[index]*100);
+            printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row+1, move[index]*100);
         }
         int index = indexes[0];
         int rec_row = index / 19;
@@ -245,13 +246,13 @@ void test_go(char *filename, char *weightfile)
                 num = sscanf(line, "%c %c %d", &g, &c, &row);
                 row = (inverted)?19 - row : row+1;
                 col = c - 'A';
-                if (col > 7) col -= 1;
+                if (col > 7 && noi) col -= 1;
                 if (num == 3) board[row*19 + col] = 0;
             }
         } else if(num == 2){
             row = (inverted)?19 - row : row+1;
             col = c - 'A';
-            if (col > 7) col -= 1;
+            if (col > 7 && noi) col -= 1;
             board[row*19 + col] = 1;
         }else{
             free(line);
