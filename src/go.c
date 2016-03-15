@@ -244,7 +244,7 @@ void test_go(char *filename, char *weightfile)
                 row = 19 - row;
                 col = c - 'A';
                 if (col > 7) col -= 1;
-                if (num == 2) board[row*19 + col] = 0;
+                if (num == 3) board[row*19 + col] = 0;
             }
         } else if(num == 2){
             row = 19 - row;
