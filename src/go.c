@@ -8,6 +8,8 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
+int inverted = 0;
+
 void train_go(char *cfgfile, char *weightfile)
 {
     data_seed = time(0);
@@ -139,7 +141,7 @@ void print_board(float *board, int swap, int *indexes)
     }
     printf("\n");
     for(j = 0; j < 19; ++j){
-        printf("%2d ", 19-j);
+        printf("%2d ", (inverted) ? 19-j : j+1);
         for(i = 0; i < 19; ++i){
             int index = j*19 + i;
             if(indexes){
@@ -156,7 +158,7 @@ void print_board(float *board, int swap, int *indexes)
             }
             if(board[index]*-swap > 0) printf("\u25C9 ");
             else if(board[index]*-swap < 0) printf("\u25EF ");
-            else printf("\uFF0b");
+            else printf("  ");
         }
         printf("\n");
     }
@@ -216,7 +218,7 @@ void test_go(char *filename, char *weightfile)
             int index = indexes[i];
             row = index / 19;
             col = index % 19;
-            printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7), 19 - row, move[index]*100);
+            printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7), (inverted)?19 - row : row+1, move[index]*100);
         }
         int index = indexes[0];
         int rec_row = index / 19;
@@ -241,13 +243,13 @@ void test_go(char *filename, char *weightfile)
             }else{
                 char g;
                 num = sscanf(line, "%c %c %d", &g, &c, &row);
-                row = 19 - row;
+                row = (inverted)?19 - row : row+1;
                 col = c - 'A';
                 if (col > 7) col -= 1;
                 if (num == 3) board[row*19 + col] = 0;
             }
         } else if(num == 2){
-            row = 19 - row;
+            row = (inverted)?19 - row : row+1;
             col = c - 'A';
             if (col > 7) col -= 1;
             board[row*19 + col] = 1;
