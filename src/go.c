@@ -219,7 +219,7 @@ void test_go(char *filename, char *weightfile)
             int index = indexes[i];
             row = index / 19;
             col = index % 19;
-            printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row-1, move[index]*100);
+            printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row+1, move[index]*100);
         }
         int index = indexes[0];
         int rec_row = index / 19;
