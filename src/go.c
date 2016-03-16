@@ -8,8 +8,8 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-int inverted = 0;
-int noi = 0;
+int inverted = 1;
+int noi = 1;
 
 void train_go(char *cfgfile, char *weightfile)
 {
