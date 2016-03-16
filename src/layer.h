@@ -92,6 +92,7 @@ struct layer{
     float *rand;
     float *cost;
     float *filters;
+    char  *cfilters;
     float *filter_updates;
     float *state;
 

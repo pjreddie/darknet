@@ -142,15 +142,15 @@ void transpose_image(image im)
     assert(im.w == im.h);
     int n, m;
     int c;
-        for(c = 0; c < im.c; ++c){
-            for(n = 0; n < im.w-1; ++n){
-                for(m = n + 1; m < im.w; ++m){
-                    float swap = im.data[m + im.w*(n + im.h*c)];
-                    im.data[m + im.w*(n + im.h*c)] = im.data[n + im.w*(m + im.h*c)];
-                    im.data[n + im.w*(m + im.h*c)] = swap;
-                }
+    for(c = 0; c < im.c; ++c){
+        for(n = 0; n < im.w-1; ++n){
+            for(m = n + 1; m < im.w; ++m){
+                float swap = im.data[m + im.w*(n + im.h*c)];
+                im.data[m + im.w*(n + im.h*c)] = im.data[n + im.w*(m + im.h*c)];
+                im.data[n + im.w*(m + im.h*c)] = swap;
             }
         }
+    }
 }
 
 void rotate_image_cw(image im, int times)
@@ -676,6 +676,17 @@ void show_image_cv(image p, const char *name)
         }
     }
 
+    image binarize_image(image im)
+    {
+        image c = copy_image(im);
+        int i;
+        for(i = 0; i < im.w * im.h * im.c; ++i){
+            if(c.data[i] > .5) c.data[i] = 1;
+            else c.data[i] = 0;
+        }
+        return c;
+    }
+
     void saturate_image(image im, float sat)
     {
         rgb_to_hsv(im);
@@ -798,6 +809,8 @@ void show_image_cv(image p, const char *name)
         image exp5 = copy_image(im);
         exposure_image(exp5, .5);
 
+        image bin = binarize_image(im);
+
 #ifdef GPU
         image r = resize_image(im, im.w, im.h);
         image black = make_image(im.w*2 + 3, im.h*2 + 3, 9);
@@ -817,7 +830,8 @@ void show_image_cv(image p, const char *name)
         show_image(black2, "Recreate");
 #endif
 
-        show_image(im, "Original");
+        show_image(im,   "Original");
+        show_image(bin,  "Binary");
         show_image(gray, "Gray");
         show_image(sat2, "Saturation-2");
         show_image(sat5, "Saturation-.5");

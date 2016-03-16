@@ -7,6 +7,52 @@
 #include <stdio.h>
 #include <time.h>
 
+void swap_binary(convolutional_layer *l)
+{
+    float *swap = l->filters;
+    l->filters = l->binary_filters;
+    l->binary_filters = swap;
+
+    #ifdef GPU
+    swap = l->filters_gpu;
+    l->filters_gpu = l->binary_filters_gpu;
+    l->binary_filters_gpu = swap;
+    #endif
+}
+
+void binarize_filters2(float *filters, int n, int size, char *binary, float *scales)
+{
+    int i, k, f;
+    for(f = 0; f < n; ++f){
+        float mean = 0;
+        for(i = 0; i < size; ++i){
+            mean += fabs(filters[f*size + i]);
+        }
+        mean = mean / size;
+        scales[f] = mean;
+        for(i = 0; i < size/8; ++i){
+            binary[f*size + i] = (filters[f*size + i] > 0) ? 1 : 0;
+            for(k = 0; k < 8; ++k){
+            }
+        }
+    }
+}
+
+void binarize_filters(float *filters, int n, int size, float *binary)
+{
+    int i, f;
+    for(f = 0; f < n; ++f){
+        float mean = 0;
+        for(i = 0; i < size; ++i){
+            mean += fabs(filters[f*size + i]);
+        }
+        mean = mean / size;
+        for(i = 0; i < size; ++i){
+            binary[f*size + i] = (filters[f*size + i] > 0) ? mean : -mean;
+        }
+    }
+}
+
 int convolutional_out_height(convolutional_layer l)
 {
     int h = l.h;
@@ -139,6 +185,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     if(binary){
         l.binary_filters = calloc(c*n*size*size, sizeof(float));
+        l.cfilters = calloc(c*n*size*size, sizeof(char));
+        l.scales = calloc(n, sizeof(float));
     }
 
     if(batch_normalize){
@@ -295,13 +343,42 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
     }
 }
 
-void forward_convolutional_layer(const convolutional_layer l, network_state state)
+void forward_convolutional_layer(convolutional_layer l, network_state state)
 {
     int out_h = convolutional_out_height(l);
     int out_w = convolutional_out_width(l);
     int i;
 
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
+    /*
+    if(l.binary){
+        binarize_filters(l.filters, l.n, l.c*l.size*l.size, l.binary_filters);
+        binarize_filters2(l.filters, l.n, l.c*l.size*l.size, l.cfilters, l.scales);
+        swap_binary(&l);
+    }
+    */
+
+    if(l.binary){
+        int m = l.n;
+        int k = l.size*l.size*l.c;
+        int n = out_h*out_w;
+
+        char  *a = l.cfilters;
+        float *b = l.col_image;
+        float *c = l.output;
+
+        for(i = 0; i < l.batch; ++i){
+            im2col_cpu(state.input, l.c, l.h, l.w, 
+                    l.size, l.stride, l.pad, b);
+            gemm_bin(m,n,k,1,a,k,b,n,c,n);
+            c += n*m;
+            state.input += l.c*l.h*l.w;
+        }
+        scale_bias(l.output, l.scales, l.batch, l.n, out_h*out_w);
+        add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
+        activate_array(l.output, m*n*l.batch, l.activation);
+        return;
+    }
 
     int m = l.n;
     int k = l.size*l.size*l.c;

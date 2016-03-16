@@ -410,7 +410,7 @@ void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
 
     char **labels = get_labels(label_list);
     list *plist = get_paths(valid_list);
-    int scales[] = {160, 192, 224, 288, 320, 352, 384};
+    int scales[] = {192, 224, 288, 320, 352};
     int nscales = sizeof(scales)/sizeof(scales[0]);
 
     char **paths = (char **)list_to_array(plist);

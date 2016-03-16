@@ -65,9 +65,9 @@ __global__ void backward_scale_kernel(float *x_norm, float *delta, int batch, in
     }
 }
 
-void binarize_filters_gpu(float *filters, int n, int size, float *mean)
+void binarize_filters_gpu(float *filters, int n, int size, float *binary)
 {
-    binarize_filters_kernel<<<cuda_gridsize(n), BLOCK>>>(filters, n, size, mean);
+    binarize_filters_kernel<<<cuda_gridsize(n), BLOCK>>>(filters, n, size, binary);
     check_error(cudaPeekAtLastError());
 }
 
@@ -159,13 +159,6 @@ void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int 
 {
     backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size);
     check_error(cudaPeekAtLastError());
-}
-
-void swap_binary(convolutional_layer *l)
-{
-    float *swap = l->filters_gpu;
-    l->filters_gpu = l->binary_filters_gpu;
-    l->binary_filters_gpu = swap;
 }
 
 void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)

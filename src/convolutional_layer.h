@@ -27,6 +27,9 @@ void resize_convolutional_layer(convolutional_layer *layer, int w, int h);
 void forward_convolutional_layer(const convolutional_layer layer, network_state state);
 void update_convolutional_layer(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay);
 image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters);
+void binarize_filters(float *filters, int n, int size, float *binary);
+void swap_binary(convolutional_layer *l);
+void binarize_filters2(float *filters, int n, int size, char *binary, float *scales);
 
 void backward_convolutional_layer(convolutional_layer layer, network_state state);
 

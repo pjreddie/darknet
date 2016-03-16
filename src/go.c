@@ -10,6 +10,7 @@
 
 int inverted = 1;
 int noi = 1;
+static const int nind = 5;
 
 void train_go(char *cfgfile, char *weightfile)
 {
@@ -147,12 +148,14 @@ void print_board(float *board, int swap, int *indexes)
             int index = j*19 + i;
             if(indexes){
                 int found = 0;
-                for(n = 0; n < 3; ++n){
+                for(n = 0; n < nind; ++n){
                     if(index == indexes[n]){
                         found = 1;
                         if(n == 0) printf("\uff11");
                         else if(n == 1) printf("\uff12");
                         else if(n == 2) printf("\uff13");
+                        else if(n == 3) printf("\uff14");
+                        else if(n == 4) printf("\uff15");
                     }
                 }
                 if(found) continue;
@@ -211,59 +214,56 @@ void test_go(char *filename, char *weightfile)
             if(board[i]) move[i] = 0;
         }
 
-        int indexes[3];
+        int indexes[nind];
         int row, col;
-        top_k(move, 19*19, 3, indexes);
+        top_k(move, 19*19, nind, indexes);
         print_board(board, color, indexes);
-        for(i = 0; i < 3; ++i){
+        for(i = 0; i < nind; ++i){
             int index = indexes[i];
             row = index / 19;
             col = index % 19;
-            printf("Suggested: %c %d, %.2f%%\n", col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row+1, move[index]*100);
+            printf("%d: %c %d, %.2f%%\n", i+1, col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row+1, move[index]*100);
         }
-        int index = indexes[0];
-        int rec_row = index / 19;
-        int rec_col = index % 19;
-
         if(color == 1) printf("\u25EF Enter move: ");
         else printf("\u25C9 Enter move: ");
 
         char c;
         char *line = fgetl(stdin);
-        int num = sscanf(line, "%c %d", &c, &row);
-        if (strlen(line) == 0){
-            row = rec_row;
-            col = rec_col;
-            board[row*19 + col] = 1;
-        }else if (c < 'A' || c > 'T'){
-            if (c == 'p'){
-                flip_board(board);
-                color = -color;
-                free(line);
-                continue;
+        int picked = 1;
+        int dnum = sscanf(line, "%d", &picked);
+        int cnum = sscanf(line, "%c", &c);
+        if (strlen(line) == 0 || dnum) {
+            --picked;
+            if (picked < nind){
+                int index = indexes[picked];
+                row = index / 19;
+                col = index % 19;
+                board[row*19 + col] = 1;
+            }
+        } else if (cnum){
+            if (c <= 'T' && c >= 'A'){
+                int num = sscanf(line, "%c %d", &c, &row);
+                row = (inverted)?19 - row : row-1;
+                col = c - 'A';
+                if (col > 7 && noi) col -= 1;
+                if (num == 2) board[row*19 + col] = 1;
+            } else if (c == 'p') {
+                // Pass
             } else if(c=='b' || c == 'w'){
                 char g;
-                num = sscanf(line, "%c %c %d", &g, &c, &row);
+                int num = sscanf(line, "%c %c %d", &g, &c, &row);
                 row = (inverted)?19 - row : row-1;
                 col = c - 'A';
                 if (col > 7 && noi) col -= 1;
                 if (num == 3) board[row*19 + col] = (g == 'b') ? color : -color;
-            }else{
+            } else if(c == 'c'){
                 char g;
-                num = sscanf(line, "%c %c %d", &g, &c, &row);
+                int num = sscanf(line, "%c %c %d", &g, &c, &row);
                 row = (inverted)?19 - row : row-1;
                 col = c - 'A';
                 if (col > 7 && noi) col -= 1;
                 if (num == 3) board[row*19 + col] = 0;
             }
-        } else if(num == 2){
-            row = (inverted)?19 - row : row-1;
-            col = c - 'A';
-            if (col > 7 && noi) col -= 1;
-            board[row*19 + col] = 1;
-        }else{
-            free(line);
-            continue;
         }
         free(line);
         update_board(board);
