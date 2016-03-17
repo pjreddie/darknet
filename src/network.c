@@ -136,40 +136,59 @@ void forward_network(network net, network_state state)
         if(l.delta){
             scal_cpu(l.outputs * l.batch, 0, l.delta, 1);
         }
-        if(l.type == CONVOLUTIONAL){
-            forward_convolutional_layer(l, state);
-        } else if(l.type == DECONVOLUTIONAL){
+
+        switch(l.type) {
+          case CONVOLUTIONAL:
+            forward_convolutional_layer(l,state);
+            break;
+          case DECONVOLUTIONAL:
             forward_deconvolutional_layer(l, state);
-        } else if(l.type == ACTIVE){
+            break;
+          case ACTIVE:
             forward_activation_layer(l, state);
-        } else if(l.type == LOCAL){
+            break;
+          case LOCAL:
             forward_local_layer(l, state);
-        } else if(l.type == NORMALIZATION){
+            break;
+          case NORMALIZATION:
             forward_normalization_layer(l, state);
-        } else if(l.type == DETECTION){
+            break;
+          case DETECTION:
             forward_detection_layer(l, state);
-        } else if(l.type == CONNECTED){
+            break;
+          case CONNECTED:
             forward_connected_layer(l, state);
-        } else if(l.type == RNN){
+            break;
+          case RNN:
             forward_rnn_layer(l, state);
-        } else if(l.type == CRNN){
+            break;
+          case CRNN:
             forward_crnn_layer(l, state);
-        } else if(l.type == CROP){
+            break;
+          case CROP:
             forward_crop_layer(l, state);
-        } else if(l.type == COST){
+            break;
+          case COST:
             forward_cost_layer(l, state);
-        } else if(l.type == SOFTMAX){
+            break;
+          case SOFTMAX:
             forward_softmax_layer(l, state);
-        } else if(l.type == MAXPOOL){
+            break;
+          case MAXPOOL:
             forward_maxpool_layer(l, state);
-        } else if(l.type == AVGPOOL){
+            break;
+          case AVGPOOL:
             forward_avgpool_layer(l, state);
-        } else if(l.type == DROPOUT){
+            break;
+          case DROPOUT:
             forward_dropout_layer(l, state);
-        } else if(l.type == ROUTE){
+            break;
+          case ROUTE:
             forward_route_layer(l, net);
-        } else if(l.type == SHORTCUT){
+            break;
+          case SHORTCUT:
             forward_shortcut_layer(l, state);
+            break;
         }
         state.input = l.output;
     }
@@ -465,7 +484,7 @@ void visualize_network(network net)
         if(l.type == CONVOLUTIONAL){
             prev = visualize_convolutional_layer(l, buff, prev);
         }
-    } 
+    }
 }
 
 void top_predictions(network net, int k, int *index)
@@ -516,7 +535,7 @@ matrix network_predict_data_multi(network net, data test, int n)
         }
     }
     free(X);
-    return pred;   
+    return pred;
 }
 
 matrix network_predict_data(network net, data test)
@@ -539,7 +558,7 @@ matrix network_predict_data(network net, data test)
         }
     }
     free(X);
-    return pred;   
+    return pred;
 }
 
 void print_network(network net)
@@ -581,7 +600,7 @@ void compare_networks(network n1, network n2, data test)
     printf("%5d %5d\n%5d %5d\n", a, b, c, d);
     float num = pow((abs(b - c) - 1.), 2.);
     float den = b + c;
-    printf("%f\n", num/den); 
+    printf("%f\n", num/den);
 }
 
 float network_accuracy(network net, data d)
