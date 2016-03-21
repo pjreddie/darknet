@@ -724,7 +724,7 @@ void save_connected_weights(layer l, FILE *fp)
 void save_weights_upto(network net, char *filename, int cutoff)
 {
     fprintf(stderr, "Saving weights to %s\n", filename);
-    FILE *fp = fopen(filename, "w");
+    FILE *fp = fopen(filename, "wb");
     if(!fp) file_error(filename);
 
     int major = 0;
