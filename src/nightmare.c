@@ -8,6 +8,8 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
+// ./darknet nightmare cfg/extractor.recon.cfg ~/trained/yolo-coco.conv frame6.png -reconstruct -iters 500 -i 3 -lambda .1 -rate .01 -smooth 2
+
 float abs_mean(float *x, int n)
 {
     int i;
@@ -31,8 +33,8 @@ void calculate_loss(float *output, float *delta, int n, float thresh)
 
 void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh, int norm)
 {
-    scale_image(orig, 2);
-    translate_image(orig, -1);
+    //scale_image(orig, 2);
+    //translate_image(orig, -1);
     net->n = max_layer + 1;
 
     int dx = rand()%16 - 8;
@@ -98,8 +100,8 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
        translate_image(orig, mean);
      */
 
-    translate_image(orig, 1);
-    scale_image(orig, .5);
+    //translate_image(orig, 1);
+    //scale_image(orig, .5);
     //normalize_image(orig);
 
     constrain_image(orig);
@@ -133,50 +135,47 @@ void smooth(image recon, image update, float lambda, int num)
     }
 }
 
-void reconstruct_picture(network net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size)
+void reconstruct_picture(network net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size, int iters)
 {
-    scale_image(recon, 2);
-    translate_image(recon, -1);
+    int iter = 0;
+    for (iter = 0; iter < iters; ++iter) {
+        image delta = make_image(recon.w, recon.h, recon.c);
 
-    image delta = make_image(recon.w, recon.h, recon.c);
-
-    network_state state = {0};
+        network_state state = {0};
 #ifdef GPU
-    state.input = cuda_make_array(recon.data, recon.w*recon.h*recon.c);
-    state.delta = cuda_make_array(delta.data, delta.w*delta.h*delta.c);
-    state.truth = cuda_make_array(features, get_network_output_size(net));
+        state.input = cuda_make_array(recon.data, recon.w*recon.h*recon.c);
+        state.delta = cuda_make_array(delta.data, delta.w*delta.h*delta.c);
+        state.truth = cuda_make_array(features, get_network_output_size(net));
 
-    forward_network_gpu(net, state);
-    backward_network_gpu(net, state);
+        forward_network_gpu(net, state);
+        backward_network_gpu(net, state);
 
-    cuda_pull_array(state.delta, delta.data, delta.w*delta.h*delta.c);
+        cuda_pull_array(state.delta, delta.data, delta.w*delta.h*delta.c);
 
-    cuda_free(state.input);
-    cuda_free(state.delta);
-    cuda_free(state.truth);
+        cuda_free(state.input);
+        cuda_free(state.delta);
+        cuda_free(state.truth);
 #else
-    state.input = recon.data;
-    state.delta = delta.data;
-    state.truth = features;
+        state.input = recon.data;
+        state.delta = delta.data;
+        state.truth = features;
 
-    forward_network(net, state);
-    backward_network(net, state);
+        forward_network(net, state);
+        backward_network(net, state);
 #endif
 
-    axpy_cpu(recon.w*recon.h*recon.c, 1, delta.data, 1, update.data, 1);
-    smooth(recon, update, lambda, smooth_size);
+        axpy_cpu(recon.w*recon.h*recon.c, 1, delta.data, 1, update.data, 1);
+        smooth(recon, update, lambda, smooth_size);
 
-    axpy_cpu(recon.w*recon.h*recon.c, rate, update.data, 1, recon.data, 1);
-    scal_cpu(recon.w*recon.h*recon.c, momentum, update.data, 1);
+        axpy_cpu(recon.w*recon.h*recon.c, rate, update.data, 1, recon.data, 1);
+        scal_cpu(recon.w*recon.h*recon.c, momentum, update.data, 1);
 
-    translate_image(recon, 1);
-    scale_image(recon, .5);
+        //float mag = mag_array(recon.data, recon.w*recon.h*recon.c);
+        //scal_cpu(recon.w*recon.h*recon.c, 600/mag, recon.data, 1);
 
-    float mag = mag_array(recon.data, recon.w*recon.h*recon.c);
-    scal_cpu(recon.w*recon.h*recon.c, 600/mag, recon.data, 1);
-
-    constrain_image(recon);
-    free_image(delta);
+        constrain_image(recon);
+        free_image(delta);
+    }
 }
 
 
@@ -226,7 +225,7 @@ void run_nightmare(int argc, char **argv)
         im = resized;
     }
 
-    float *features;
+    float *features = 0;
     image update;
     if (reconstruct){
         resize_network(&net, im.w, im.h);
@@ -241,13 +240,19 @@ void run_nightmare(int argc, char **argv)
         printf("%d features\n", out_im.w*out_im.h*out_im.c);
 
 
-        im = resize_image(im, im.w*2, im.h);
-        f_im = resize_image(f_im, f_im.w*2, f_im.h);
+        im = resize_image(im, im.w, im.h);
+        f_im = resize_image(f_im, f_im.w, f_im.h);
         features = f_im.data;
+
+        int i;
+        for(i = 0; i < 14*14*512; ++i){
+            features[i] += rand_uniform(-.19, .19);
+        }
 
         free_image(im);
         im = make_random_image(im.w, im.h, im.c);
         update = make_image(im.w, im.h, im.c);
+
     }
 
     int e;
@@ -259,11 +264,12 @@ void run_nightmare(int argc, char **argv)
             fprintf(stderr, "%d, ", n);
             fflush(stderr);
             if(reconstruct){
-                reconstruct_picture(net, features, im, update, rate, momentum, lambda, smooth_size);
+                reconstruct_picture(net, features, im, update, rate, momentum, lambda, smooth_size, 1);
+                //if ((n+1)%30 == 0) rate *= .5;
                 show_image(im, "reconstruction");
-                #ifdef OPENCV
+#ifdef OPENCV
                 cvWaitKey(10);
-                #endif
+#endif
             }else{
                 int layer = max_layer + rand()%range - range/2;
                 int octave = rand()%octaves;

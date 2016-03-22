@@ -21,6 +21,10 @@ extern void run_dice(int argc, char **argv);
 extern void run_compare(int argc, char **argv);
 extern void run_classifier(int argc, char **argv);
 extern void run_char_rnn(int argc, char **argv);
+extern void run_vid_rnn(int argc, char **argv);
+extern void run_tag(int argc, char **argv);
+extern void run_cifar(int argc, char **argv);
+extern void run_go(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -168,13 +172,13 @@ void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
     network net = parse_network_cfg(cfgfile);
-    if(weightfile){
+    if (weightfile) {
         load_weights(&net, weightfile);
     }
     int i;
-    for(i = 0; i < net.n; ++i){
+    for (i = 0; i < net.n; ++i) {
         layer l = net.layers[i];
-        if(l.type == CONVOLUTIONAL){
+        if (l.type == CONVOLUTIONAL && l.batch_normalize) {
             denormalize_convolutional_layer(l);
             net.layers[i].batch_normalize=0;
         }
@@ -223,12 +227,20 @@ int main(int argc, char **argv)
         average(argc, argv);
     } else if (0 == strcmp(argv[1], "yolo")){
         run_yolo(argc, argv);
+    } else if (0 == strcmp(argv[1], "cifar")){
+        run_cifar(argc, argv);
+    } else if (0 == strcmp(argv[1], "go")){
+        run_go(argc, argv);
     } else if (0 == strcmp(argv[1], "rnn")){
         run_char_rnn(argc, argv);
+    } else if (0 == strcmp(argv[1], "vid")){
+        run_vid_rnn(argc, argv);
     } else if (0 == strcmp(argv[1], "coco")){
         run_coco(argc, argv);
     } else if (0 == strcmp(argv[1], "classifier")){
         run_classifier(argc, argv);
+    } else if (0 == strcmp(argv[1], "tag")){
+        run_tag(argc, argv);
     } else if (0 == strcmp(argv[1], "compare")){
         run_compare(argc, argv);
     } else if (0 == strcmp(argv[1], "dice")){

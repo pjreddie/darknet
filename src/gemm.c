@@ -5,6 +5,28 @@
 #include <stdio.h>
 #include <math.h>
 
+void gemm_bin(int M, int N, int K, float ALPHA, 
+        char  *A, int lda, 
+        float *B, int ldb,
+        float *C, int ldc)
+{
+    int i,j,k;
+    for(i = 0; i < M; ++i){
+        for(k = 0; k < K; ++k){
+            char A_PART = A[i*lda+k];
+            if(A_PART){
+                for(j = 0; j < N; ++j){
+                    C[i*ldc+j] += B[k*ldb+j];
+                }
+            } else {
+                for(j = 0; j < N; ++j){
+                    C[i*ldc+j] -= B[k*ldb+j];
+                }
+            }
+        }
+    }
+}
+
 float *random_matrix(int rows, int cols)
 {
     int i;
@@ -151,7 +173,7 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
 {
     cublasHandle_t handle = blas_handle();
     cudaError_t status = cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N), 
-                        (TA ? CUBLAS_OP_T : CUBLAS_OP_N), N, M, K, &ALPHA, B_gpu, ldb, A_gpu, lda, &BETA, C_gpu, ldc);
+            (TA ? CUBLAS_OP_T : CUBLAS_OP_N), N, M, K, &ALPHA, B_gpu, ldb, A_gpu, lda, &BETA, C_gpu, ldc);
     check_error(status);
 }
 
@@ -276,7 +298,7 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
 
 int test_gpu_blas()
 {
-/*
+    /*
        test_gpu_accuracy(0,0,10,576,75); 
 
        test_gpu_accuracy(0,0,17,10,10); 
@@ -289,18 +311,18 @@ int test_gpu_blas()
        test_gpu_accuracy(0,1,1000,10,100); 
        test_gpu_accuracy(1,1,1000,10,100); 
 
-    test_gpu_accuracy(0,0,10,10,10); 
+       test_gpu_accuracy(0,0,10,10,10); 
 
-    time_ongpu(0,0,64,2916,363); 
-    time_ongpu(0,0,64,2916,363); 
-    time_ongpu(0,0,64,2916,363); 
-    time_ongpu(0,0,192,729,1600); 
-    time_ongpu(0,0,384,196,1728); 
-    time_ongpu(0,0,256,196,3456); 
-    time_ongpu(0,0,256,196,2304); 
-    time_ongpu(0,0,128,4096,12544); 
-    time_ongpu(0,0,128,4096,4096); 
-    */
+       time_ongpu(0,0,64,2916,363); 
+       time_ongpu(0,0,64,2916,363); 
+       time_ongpu(0,0,64,2916,363); 
+       time_ongpu(0,0,192,729,1600); 
+       time_ongpu(0,0,384,196,1728); 
+       time_ongpu(0,0,256,196,3456); 
+       time_ongpu(0,0,256,196,2304); 
+       time_ongpu(0,0,128,4096,12544); 
+       time_ongpu(0,0,128,4096,4096); 
+     */
     time_ongpu(0,0,64,75,12544); 
     time_ongpu(0,0,64,75,12544); 
     time_ongpu(0,0,64,75,12544); 
@@ -310,7 +332,7 @@ int test_gpu_blas()
     time_ongpu(0,0,512,4608,196); 
     time_ongpu(1,1,4608,512,196); 
 
-return 0;
+    return 0;
 }
 #endif
 

@@ -22,7 +22,8 @@ typedef enum {
     LOCAL,
     SHORTCUT,
     ACTIVE,
-    RNN
+    RNN,
+    CRNN
 } LAYER_TYPE;
 
 typedef enum{
@@ -55,6 +56,7 @@ struct layer{
     int binary;
     int steps;
     int hidden;
+    float dot;
     float angle;
     float jitter;
     float saturation;
@@ -90,6 +92,7 @@ struct layer{
     float *rand;
     float *cost;
     float *filters;
+    char  *cfilters;
     float *filter_updates;
     float *state;
 

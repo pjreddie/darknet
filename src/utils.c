@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #include <unistd.h>
 #include <float.h>
 #include <limits.h>
@@ -137,15 +138,18 @@ void pm(int M, int N, float *A)
 char *find_replace(char *str, char *orig, char *rep)
 {
     static char buffer[4096];
+    static char buffer2[4096];
+    static char buffer3[4096];
     char *p;
 
     if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
         return str;
 
-    strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
-    buffer[p-str] = '\0';
+    strncpy(buffer2, str, p-str); // Copy characters from 'str' start to 'orig' st$
+    buffer2[p-str] = '\0';
 
-    sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+    sprintf(buffer3, "%s%s%s", buffer2, rep, p+strlen(orig));
+    sprintf(buffer, "%s", buffer3);
 
     return buffer;
 }
@@ -174,7 +178,8 @@ void top_k(float *a, int n, int k, int *index)
 void error(const char *s)
 {
     perror(s);
-    exit(0);
+    assert(0);
+    exit(-1);
 }
 
 void malloc_error()
@@ -448,6 +453,12 @@ int max_index(float *a, int n)
         }
     }
     return max_i;
+}
+
+int rand_int(int min, int max)
+{
+    int r = (rand()%(max - min + 1)) + min;
+    return r;
 }
 
 // From http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform

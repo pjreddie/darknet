@@ -46,7 +46,7 @@ void mean_cpu(float *x, int batch, int filters, int spatial, float *mean)
 
 void variance_cpu(float *x, float *mean, int batch, int filters, int spatial, float *variance)
 {
-    float scale = 1./(batch * spatial);
+    float scale = 1./(batch * spatial - 1);
     int i,j,k;
     for(i = 0; i < filters; ++i){
         variance[i] = 0;
@@ -67,7 +67,7 @@ void normalize_cpu(float *x, float *mean, float *variance, int batch, int filter
         for(f = 0; f < filters; ++f){
             for(i = 0; i < spatial; ++i){
                 int index = b*filters*spatial + f*spatial + i;
-                x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .00001f);
+                x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .000001f);
             }
         }
     }
@@ -115,13 +115,30 @@ void copy_cpu(int N, float *X, int INCX, float *Y, int INCY)
     for(i = 0; i < N; ++i) Y[i*INCY] = X[i*INCX];
 }
 
-void smooth_l1_cpu(int n, float *pred, float *truth, float *delta)
+void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
 {
     int i;
     for(i = 0; i < n; ++i){
         float diff = truth[i] - pred[i];
-        if(fabs(diff) > 1) delta[i] = diff;
-        else delta[i] = (diff > 0) ? 1 : -1;
+        float abs_val = fabs(diff);
+        if(abs_val < 1) {
+            error[i] = diff * diff;
+            delta[i] = diff;
+        }
+        else {
+            error[i] = 2*abs_val - 1;
+            delta[i] = (diff < 0) ? -1 : 1;
+        }
+    }
+}
+
+void l2_cpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        float diff = truth[i] - pred[i];
+        error[i] = diff * diff;
+        delta[i] = diff;
     }
 }
 

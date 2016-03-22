@@ -65,9 +65,9 @@ __global__ void backward_scale_kernel(float *x_norm, float *delta, int batch, in
     }
 }
 
-void binarize_filters_gpu(float *filters, int n, int size, float *mean)
+void binarize_filters_gpu(float *filters, int n, int size, float *binary)
 {
-    binarize_filters_kernel<<<cuda_gridsize(n), BLOCK>>>(filters, n, size, mean);
+    binarize_filters_kernel<<<cuda_gridsize(n), BLOCK>>>(filters, n, size, binary);
     check_error(cudaPeekAtLastError());
 }
 
@@ -115,17 +115,50 @@ __global__ void backward_bias_kernel(float *bias_updates, float *delta, int batc
     }
 }
 
+__global__ void dot_kernel(float *output, float scale, int batch, int n, int size, float *delta)
+{
+    int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    int f1 = index / n;
+    int f2 = index % n;
+    if (f2 <= f1) return;
+    
+    float sum = 0;
+    float norm1 = 0;
+    float norm2 = 0;
+    int b, i;
+    for(b = 0; b <  batch; ++b){
+        for(i = 0; i < size; ++i){
+            int i1 = b * size * n + f1 * size + i;
+            int i2 = b * size * n + f2 * size + i;
+            sum += output[i1] * output[i2];
+            norm1 += output[i1] * output[i1];
+            norm2 += output[i2] * output[i2];
+        }
+    }
+    norm1 = sqrt(norm1);
+    norm2 = sqrt(norm2);
+    float norm = norm1 * norm2;
+    sum = sum / norm;
+    for(b = 0; b <  batch; ++b){
+        for(i = 0; i < size; ++i){
+            int i1 = b * size * n + f1 * size + i;
+            int i2 = b * size * n + f2 * size + i;
+            delta[i1] += - scale * sum * output[i2] / norm;
+            delta[i2] += - scale * sum * output[i1] / norm;
+        }
+    }
+}
+
+void dot_error_gpu(layer l)
+{
+    dot_kernel<<<cuda_gridsize(l.n*l.n), BLOCK>>>(l.output_gpu, l.dot, l.batch, l.n, l.out_w * l.out_h, l.delta_gpu);
+    check_error(cudaPeekAtLastError());
+}
+
 void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
 {
     backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size);
     check_error(cudaPeekAtLastError());
-}
-
-void swap_binary(convolutional_layer l)
-{
-        float *swap = l.filters_gpu;
-        l.filters_gpu = l.binary_filters_gpu;
-        l.binary_filters_gpu = swap;
 }
 
 void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
@@ -139,7 +172,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
     if(l.binary){
         binarize_filters_gpu(l.filters_gpu, l.n, l.c*l.size*l.size, l.binary_filters_gpu);
-        swap_binary(l);
+        swap_binary(&l);
     }
 
     for(i = 0; i < l.batch; ++i){
@@ -150,8 +183,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         gemm_ongpu(0,0,m,n,k,1.,a,k,b,n,1.,c+i*m*n,n);
     }
 
-    if(l.batch_normalize){
-        if(state.train){
+    if (l.batch_normalize) {
+        if (state.train) {
             fast_mean_gpu(l.output_gpu, l.batch, l.n, l.out_h*l.out_w, l.mean_gpu);
             fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.n, l.out_h*l.out_w, l.variance_gpu);
 
@@ -172,7 +205,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, n);
 
     activate_array_ongpu(l.output_gpu, m*n*l.batch, l.activation);
-    if(l.binary) swap_binary(l);
+    if(l.dot > 0) dot_error_gpu(l);
+    if(l.binary) swap_binary(&l);
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
@@ -206,7 +240,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         gemm_ongpu(0,1,m,n,k,1,a + i*m*k,k,b,k,1,c,n);
 
         if(state.delta){
-            if(l.binary) swap_binary(l);
+            if(l.binary) swap_binary(&l);
             float * a = l.filters_gpu;
             float * b = l.delta_gpu;
             float * c = l.col_image_gpu;
@@ -214,7 +248,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             gemm_ongpu(1,0,n,k,m,1,a,n,b + i*k*m,k,0,c,k);
 
             col2im_ongpu(l.col_image_gpu, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.delta + i*l.c*l.h*l.w);
-            if(l.binary) swap_binary(l);
+            if(l.binary) swap_binary(&l);
         }
     }
 }
