@@ -122,13 +122,18 @@ void demo_coco(char *cfgfile, char *weightfile, float thresh, int cam_index, con
         det_s = in_s;
     }
 
+    int count = 0;
     while(1){
+        ++count;
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
         if(pthread_create(&fetch_thread, 0, fetch_in_thread_coco, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread_coco, 0)) error("Thread creation failed");
-        show_image(disp, "COCO");
-        //save_image(disp, "COCO");
+        //show_image(disp, "COCO");
+        char buff[256];
+        sprintf(buff, "/home/pjreddie/coco/coco_%05d", count);
+        save_image(disp, buff);
+
         free_image(disp);
         cvWaitKey(10);
         pthread_join(fetch_thread, 0);

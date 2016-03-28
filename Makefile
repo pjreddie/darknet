@@ -1,5 +1,5 @@
-GPU=0
-OPENCV=0
+GPU=1
+OPENCV=1
 DEBUG=0
 
 ARCH= --gpu-architecture=compute_20 --gpu-code=compute_20 
