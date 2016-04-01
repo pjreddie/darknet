@@ -173,7 +173,7 @@ struct layer{
     float * bias_updates_gpu;
 
     float * vbiases_gpu; // for rbm
-    float * vbias_updates_gpu; // for rbm
+    float * vbiases_updates_gpu; // for rbm
     float * vinput_gpu; // for rbm v2, v1:input in state
     float * houtput_gpu; // for rbm h2, h1:output
 

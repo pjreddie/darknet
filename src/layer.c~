@@ -42,7 +42,7 @@ void free_layer(layer l)
     if(l.weight_updates_gpu)   cuda_free(l.weight_updates_gpu);
     if(l.bias_updates_gpu)     cuda_free(l.bias_updates_gpu);
     if(l.vbiases_gpu)          cuda_free(l.vbiases_gpu); // for rbm
-    if(l.vbias_updates_gpu)    cuda_free(l.vbias_updates_gpu); // for rbm
+    if(l.vbias_updates_gpu)  cuda_free(l.vbiases_updates_gpu); // for rbm
     if(l.vinput_gpu)           cuda_free(l.vinput_gpu); // for rbm
     if(l.houtput_gpu)          cuda_free(l.houtput_gpu); // for rbm
     if(l.output_gpu)           cuda_free(l.output_gpu);
