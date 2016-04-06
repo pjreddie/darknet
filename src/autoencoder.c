@@ -114,7 +114,8 @@ void pretrain_autoencoder(network net, data d)
 }
 
 void mirror_autoencoder(network net) {
-    for(int i=0; i<(net.n-1)/2; i++) {
+    int i;
+    for(i=0; i<(net.n-1)/2; i++) {
         mirror_rbm_layer(net.layers[i], net.layers[net.n-1-1-i]);
     }
 }
@@ -134,11 +135,12 @@ void finetune_autoencoder(network net, data d) {
 }
 
 void predict_autoencoder(network net, network_state state) {
-    for(int i=0; i<net.n-1; i++) {
+    int i;
+    for(i=0; i<net.n-1; i++) {
         net.layers[i].type = CONNECTED;
     }
     forward_network(net, state);
-    for(int i=0; i<net.n-1; i++) {
+    for(i=0; i<net.n-1; i++) {
         net.layers[i].type = RBM;
     }
 }
@@ -245,8 +247,9 @@ int run_autoencoder(int argc, char **argv) {
 
     //save pretrain test result image  
     image pretrain_test = make_image(w, h, 1);
-    for(int ii=0; ii<h; ii++) {
-        for(int jj=0; jj<w; jj++) {
+    int ii, jj;
+    for(ii=0; ii<h; ii++) {
+        for(jj=0; jj<w; jj++) {
             pretrain_test.data[ii*w+jj] = output[ii*w+jj];
         }
     }
@@ -283,8 +286,8 @@ int run_autoencoder(int argc, char **argv) {
 
     //save finetune test result image  
     image finetune_test = make_image(w, h, 1);
-    for(int ii=0; ii<h; ii++) {
-        for(int jj=0; jj<w; jj++) {
+    for(ii=0; ii<h; ii++) {
+        for(jj=0; jj<w; jj++) {
             finetune_test.data[ii*w+jj] = output[ii*w+jj];
         }
     }
@@ -298,8 +301,8 @@ int run_autoencoder(int argc, char **argv) {
     printf("Test error....\n");
     float pretrain_error=0;
     float finetune_error=0;
-    for(int ii=0; ii<h; ii++) {
-        for(int jj=0; jj<w; jj++) {
+    for(ii=0; ii<h; ii++) {
+        for(jj=0; jj<w; jj++) {
             pretrain_error += (test.data[ii*w+jj]-pretrain_test.data[ii*w+jj])*(test.data[ii*w+jj]-pretrain_test.data[ii*w+jj]);
             finetune_error += (test.data[ii*w+jj]-finetune_test.data[ii*w+jj])*(test.data[ii*w+jj]-finetune_test.data[ii*w+jj]);
         }
