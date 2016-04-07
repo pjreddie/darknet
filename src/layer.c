@@ -18,6 +18,10 @@ void free_layer(layer l)
     if(l.filter_updates) free(l.filter_updates);
     if(l.biases)         free(l.biases);
     if(l.bias_updates)   free(l.bias_updates);
+    if(l.vbiases)        free(l.vbiases); // for rbm
+    if(l.vbias_updates)  free(l.vbias_updates); // for rbm
+    if(l.vinput)         free(l.vinput); // for rbm
+    if(l.houtput)        free(l.houtput); // for rbm
     if(l.weights)        free(l.weights);
     if(l.weight_updates) free(l.weight_updates);
     if(l.col_image)      free(l.col_image);
@@ -37,6 +41,10 @@ void free_layer(layer l)
     if(l.biases_gpu)           cuda_free(l.biases_gpu);
     if(l.weight_updates_gpu)   cuda_free(l.weight_updates_gpu);
     if(l.bias_updates_gpu)     cuda_free(l.bias_updates_gpu);
+    if(l.vbiases_gpu)          cuda_free(l.vbiases_gpu); // for rbm
+    if(l.vbias_updates_gpu)    cuda_free(l.vbias_updates_gpu); // for rbm
+    if(l.vinput_gpu)           cuda_free(l.vinput_gpu); // for rbm
+    if(l.houtput_gpu)          cuda_free(l.houtput_gpu); // for rbm
     if(l.output_gpu)           cuda_free(l.output_gpu);
     if(l.delta_gpu)            cuda_free(l.delta_gpu);
     if(l.rand_gpu)             cuda_free(l.rand_gpu);

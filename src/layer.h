@@ -10,6 +10,7 @@ typedef enum {
     CONVOLUTIONAL,
     DECONVOLUTIONAL,
     CONNECTED,
+    RBM,
     MAXPOOL,
     SOFTMAX,
     DETECTION,
@@ -107,6 +108,11 @@ struct layer{
     float *weights;
     float *weight_updates;
 
+    float *vbiases; // for rbm
+    float *vbias_updates; // for rbm
+    float *vinput; // for rbm v2, v1:input in state
+    float *houtput; // for rbm h2, h1:output
+
     float *col_image;
     int   * input_layers;
     int   * input_sizes;
@@ -165,6 +171,11 @@ struct layer{
 
     float * biases_gpu;
     float * bias_updates_gpu;
+
+    float * vbiases_gpu; // for rbm
+    float * vbias_updates_gpu; // for rbm
+    float * vinput_gpu; // for rbm v2, v1:input in state
+    float * houtput_gpu; // for rbm h2, h1:output
 
     float * scales_gpu;
     float * scale_updates_gpu;

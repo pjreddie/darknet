@@ -25,6 +25,7 @@ extern void run_vid_rnn(int argc, char **argv);
 extern void run_tag(int argc, char **argv);
 extern void run_cifar(int argc, char **argv);
 extern void run_go(int argc, char **argv);
+extern void run_autoencoder(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -249,7 +250,9 @@ int main(int argc, char **argv)
         run_writing(argc, argv);
     } else if (0 == strcmp(argv[1], "test")){
         test_resize(argv[2]);
-    } else if (0 == strcmp(argv[1], "captcha")){
+    } else if (0 == strcmp(argv[1], "autoencoder")){
+        run_autoencoder(argc, argv);
+    }else if (0 == strcmp(argv[1], "captcha")){
         run_captcha(argc, argv);
     } else if (0 == strcmp(argv[1], "nightmare")){
         run_nightmare(argc, argv);

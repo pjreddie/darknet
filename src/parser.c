@@ -11,6 +11,7 @@
 #include "normalization_layer.h"
 #include "deconvolutional_layer.h"
 #include "connected_layer.h"
+#include "rbm_layer.h"
 #include "rnn_layer.h"
 #include "crnn_layer.h"
 #include "maxpool_layer.h"
@@ -48,6 +49,7 @@ int is_shortcut(section *s);
 int is_cost(section *s);
 int is_detection(section *s);
 int is_route(section *s);
+int is_rbm(section *s);
 list *read_cfg(char *filename);
 
 void free_section(section *s)
@@ -221,6 +223,30 @@ connected_layer parse_connected(list *options, size_params params)
     #endif
     return layer;
 }
+
+rbm_layer parse_rbm(list *options, size_params params)
+{
+    int outputs = option_find_int(options, "output", 1);
+    char *activation_s = option_find_str(options, "activation", "logistic");
+    ACTIVATION activation = get_activation(activation_s);
+    int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+
+    rbm_layer layer = make_rbm_layer(params.batch, params.inputs, outputs, activation, batch_normalize);
+
+    char *weights = option_find_str(options, "weights", 0);
+    char *biases = option_find_str(options, "biases", 0);
+    char *vbiases = option_find_str(options, "vbiases", 0);
+    parse_data(biases, layer.biases, outputs);
+    parse_data(vbiases, layer.vbiases, params.inputs);
+    parse_data(weights, layer.weights, params.inputs*outputs);
+
+    #ifdef GPU
+    if(weights || biases || vbiases) push_rbm_layer(layer);
+    #endif
+
+    return layer;
+}
+
 
 softmax_layer parse_softmax(list *options, size_params params)
 {
@@ -524,6 +550,8 @@ network parse_network_cfg(char *filename)
             l = parse_crnn(options, params);
         }else if(is_connected(s)){
             l = parse_connected(options, params);
+        }else if(is_rbm(s)) {
+            l = parse_rbm(options, params);
         }else if(is_crop(s)){
             l = parse_crop(options, params);
         }else if(is_cost(s)){
@@ -624,6 +652,10 @@ int is_connected(section *s)
 {
     return (strcmp(s->type, "[conn]")==0
             || strcmp(s->type, "[connected]")==0);
+}
+int is_rbm(section *s)
+{
+    return (strcmp(s->type, "[rbm]")==0);
 }
 int is_maxpool(section *s)
 {
