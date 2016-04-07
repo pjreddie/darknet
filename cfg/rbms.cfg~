@@ -9,22 +9,22 @@ momentum=0.9
 decay=0.0005
 
 [rbm]
-output=30
+outputs=30
 
 [rbm]
-output=1000
+outputs=1000
 
 [rbm]
-output=500
+outputs=500
 
 [rbm]
-output=1000
+outputs=1000
 
 [rbm]
-output=30
+outputs=30
 
 [rbm]
-output=1024
+outputs=1024
 
 [cost]
 type = sse
