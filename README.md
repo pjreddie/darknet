@@ -42,7 +42,7 @@ The pre-compiled software with source code package for the demo:
 
 You can use this as an example. In order to run the demo on a video file, just type: 
 
-./darknet yolo vid_demo cfg/yolo_2class_box11.cfg model/yolo_2class_box11_3000.weights /video/test.mp4
+./darknet yolo demo_vid cfg/yolo_2class_box11.cfg model/yolo_2class_box11_3000.weights /video/test.mp4
 
 
 If you would like to repeat the training process or get a feel of YOLO, you can download the data I collected and the annotations I labeled. 
