@@ -1,4 +1,5 @@
 #include "connected_layer.h"
+#include "batchnorm_layer.h"
 #include "utils.h"
 #include "cuda.h"
 #include "blas.h"
@@ -19,6 +20,12 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     l.outputs = outputs;
     l.batch=batch;
     l.batch_normalize = batch_normalize;
+    l.h = 1;
+    l.w = 1;
+    l.c = inputs;
+    l.out_h = 1;
+    l.out_w = 1;
+    l.out_c = outputs;
 
     l.output = calloc(batch*outputs, sizeof(float));
     l.delta = calloc(batch*outputs, sizeof(float));
@@ -29,7 +36,6 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     l.weights = calloc(outputs*inputs, sizeof(float));
     l.biases = calloc(outputs, sizeof(float));
 
-
     //float scale = 1./sqrt(inputs);
     float scale = sqrt(2./inputs);
     for(i = 0; i < outputs*inputs; ++i){
@@ -37,7 +43,7 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     }
 
     for(i = 0; i < outputs; ++i){
-        l.biases[i] = scale;
+        l.biases[i] = 0;
     }
 
     if(batch_normalize){
@@ -176,6 +182,19 @@ void backward_connected_layer(connected_layer l, network_state state)
     if(c) gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
 }
 
+
+void denormalize_connected_layer(layer l)
+{
+    int i, j;
+    for(i = 0; i < l.outputs; ++i){
+        float scale = l.scales[i]/sqrt(l.rolling_variance[i] + .00001);
+        for(j = 0; j < l.inputs; ++j){
+            l.weights[i*l.inputs + j] *= scale;
+        }
+        l.biases[i] -= l.rolling_mean[i] * scale;
+    }
+}
+
 #ifdef GPU
 
 void pull_connected_layer(connected_layer l)
@@ -223,11 +242,7 @@ void forward_connected_layer_gpu(connected_layer l, network_state state)
 {
     int i;
     fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
-    /*
-       for(i = 0; i < l.batch; ++i){
-       copy_ongpu_offset(l.outputs, l.biases_gpu, 0, 1, l.output_gpu, i*l.outputs, 1);
-       }
-     */
+
     int m = l.batch;
     int k = l.inputs;
     int n = l.outputs;
@@ -236,52 +251,26 @@ void forward_connected_layer_gpu(connected_layer l, network_state state)
     float * c = l.output_gpu;
     gemm_ongpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
     if(l.batch_normalize){
-        if(state.train){
-            fast_mean_gpu(l.output_gpu, l.batch, l.outputs, 1, l.mean_gpu);
-            fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.outputs, 1, l.variance_gpu);
-
-            scal_ongpu(l.outputs, .95, l.rolling_mean_gpu, 1);
-            axpy_ongpu(l.outputs, .05, l.mean_gpu, 1, l.rolling_mean_gpu, 1);
-            scal_ongpu(l.outputs, .95, l.rolling_variance_gpu, 1);
-            axpy_ongpu(l.outputs, .05, l.variance_gpu, 1, l.rolling_variance_gpu, 1);
-
-            copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
-            normalize_gpu(l.output_gpu, l.mean_gpu, l.variance_gpu, l.batch, l.outputs, 1);
-            copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_norm_gpu, 1);
-        } else {
-            normalize_gpu(l.output_gpu, l.rolling_mean_gpu, l.rolling_variance_gpu, l.batch, l.outputs, 1);
-        }
-
-        scale_bias_gpu(l.output_gpu, l.scales_gpu, l.batch, l.outputs, 1);
+        forward_batchnorm_layer_gpu(l, state);
     }
     for(i = 0; i < l.batch; ++i){
         axpy_ongpu(l.outputs, 1, l.biases_gpu, 1, l.output_gpu + i*l.outputs, 1);
     }
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
 
-    /*
-       cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
-       float avg = mean_array(l.output, l.outputs*l.batch);
-       printf("%f\n", avg);
-     */
 }
 
 void backward_connected_layer_gpu(connected_layer l, network_state state)
 {
     int i;
+    constrain_ongpu(l.outputs*l.batch, 5, l.delta_gpu, 1);
     gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
     for(i = 0; i < l.batch; ++i){
         axpy_ongpu(l.outputs, 1, l.delta_gpu + i*l.outputs, 1, l.bias_updates_gpu, 1);
     }
 
     if(l.batch_normalize){
-        backward_scale_gpu(l.x_norm_gpu, l.delta_gpu, l.batch, l.outputs, 1, l.scale_updates_gpu);
-
-        scale_bias_gpu(l.delta_gpu, l.scales_gpu, l.batch, l.outputs, 1);
-
-        fast_mean_delta_gpu(l.delta_gpu, l.variance_gpu, l.batch, l.outputs, 1, l.mean_delta_gpu);
-        fast_variance_delta_gpu(l.x_gpu, l.delta_gpu, l.mean_gpu, l.variance_gpu, l.batch, l.outputs, 1, l.variance_delta_gpu);
-        normalize_delta_gpu(l.x_gpu, l.mean_gpu, l.variance_gpu, l.mean_delta_gpu, l.variance_delta_gpu, l.batch, l.outputs, 1, l.delta_gpu);
+        backward_batchnorm_layer_gpu(l, state);
     }
 
     int m = l.outputs;

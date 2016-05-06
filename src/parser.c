@@ -9,9 +9,11 @@
 #include "convolutional_layer.h"
 #include "activation_layer.h"
 #include "normalization_layer.h"
+#include "batchnorm_layer.h"
 #include "deconvolutional_layer.h"
 #include "connected_layer.h"
 #include "rnn_layer.h"
+#include "gru_layer.h"
 #include "crnn_layer.h"
 #include "maxpool_layer.h"
 #include "softmax_layer.h"
@@ -37,12 +39,14 @@ int is_local(section *s);
 int is_deconvolutional(section *s);
 int is_connected(section *s);
 int is_rnn(section *s);
+int is_gru(section *s);
 int is_crnn(section *s);
 int is_maxpool(section *s);
 int is_avgpool(section *s);
 int is_dropout(section *s);
 int is_softmax(section *s);
 int is_normalization(section *s);
+int is_batchnorm(section *s);
 int is_crop(section *s);
 int is_shortcut(section *s);
 int is_cost(section *s);
@@ -157,8 +161,9 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     if(!(h && w && c)) error("Layer before convolutional layer must output image.");
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int binary = option_find_int_quiet(options, "binary", 0);
+    int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,pad,activation, batch_normalize, binary);
+    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,pad,activation, batch_normalize, binary, xnor);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -199,6 +204,16 @@ layer parse_rnn(list *options, size_params params)
     layer l = make_rnn_layer(params.batch, params.inputs, hidden, output, params.time_steps, activation, batch_normalize, logistic);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
+
+    return l;
+}
+
+layer parse_gru(list *options, size_params params)
+{
+    int output = option_find_int(options, "output",1);
+    int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+
+    layer l = make_gru_layer(params.batch, params.inputs, output, params.time_steps, batch_normalize);
 
     return l;
 }
@@ -333,6 +348,12 @@ layer parse_normalization(list *options, size_params params)
     return l;
 }
 
+layer parse_batchnorm(list *options, size_params params)
+{
+    layer l = make_batchnorm_layer(params.batch, params.w, params.h, params.c);
+    return l;
+}
+
 layer parse_shortcut(list *options, size_params params, network net)
 {
     char *l = option_find(options, "from");   
@@ -438,6 +459,7 @@ void parse_net_options(list *options, network *net)
     net->c = option_find_int_quiet(options, "channels",0);
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
     net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
+    net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
 
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
 
@@ -520,6 +542,8 @@ network parse_network_cfg(char *filename)
             l = parse_deconvolutional(options, params);
         }else if(is_rnn(s)){
             l = parse_rnn(options, params);
+        }else if(is_gru(s)){
+            l = parse_gru(options, params);
         }else if(is_crnn(s)){
             l = parse_crnn(options, params);
         }else if(is_connected(s)){
@@ -534,6 +558,8 @@ network parse_network_cfg(char *filename)
             l = parse_softmax(options, params);
         }else if(is_normalization(s)){
             l = parse_normalization(options, params);
+        }else if(is_batchnorm(s)){
+            l = parse_batchnorm(options, params);
         }else if(is_maxpool(s)){
             l = parse_maxpool(options, params);
         }else if(is_avgpool(s)){
@@ -571,6 +597,40 @@ network parse_network_cfg(char *filename)
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
     return net;
+}
+
+LAYER_TYPE string_to_layer_type(char * type)
+{
+
+    if (strcmp(type, "[shortcut]")==0) return SHORTCUT;
+    if (strcmp(type, "[crop]")==0) return CROP;
+    if (strcmp(type, "[cost]")==0) return COST;
+    if (strcmp(type, "[detection]")==0) return DETECTION;
+    if (strcmp(type, "[local]")==0) return LOCAL;
+    if (strcmp(type, "[deconv]")==0
+            || strcmp(type, "[deconvolutional]")==0) return DECONVOLUTIONAL;
+    if (strcmp(type, "[conv]")==0
+            || strcmp(type, "[convolutional]")==0) return CONVOLUTIONAL;
+    if (strcmp(type, "[activation]")==0) return ACTIVE;
+    if (strcmp(type, "[net]")==0
+            || strcmp(type, "[network]")==0) return NETWORK;
+    if (strcmp(type, "[crnn]")==0) return CRNN;
+    if (strcmp(type, "[gru]")==0) return GRU;
+    if (strcmp(type, "[rnn]")==0) return RNN;
+    if (strcmp(type, "[conn]")==0
+            || strcmp(type, "[connected]")==0) return CONNECTED;
+    if (strcmp(type, "[max]")==0
+            || strcmp(type, "[maxpool]")==0) return MAXPOOL;
+    if (strcmp(type, "[avg]")==0
+            || strcmp(type, "[avgpool]")==0) return AVGPOOL;
+    if (strcmp(type, "[dropout]")==0) return DROPOUT;
+    if (strcmp(type, "[lrn]")==0
+            || strcmp(type, "[normalization]")==0) return NORMALIZATION;
+    if (strcmp(type, "[batchnorm]")==0) return BATCHNORM;
+    if (strcmp(type, "[soft]")==0
+            || strcmp(type, "[softmax]")==0) return SOFTMAX;
+    if (strcmp(type, "[route]")==0) return ROUTE;
+    return BLANK;
 }
 
 int is_shortcut(section *s)
@@ -616,6 +676,10 @@ int is_crnn(section *s)
 {
     return (strcmp(s->type, "[crnn]")==0);
 }
+int is_gru(section *s)
+{
+    return (strcmp(s->type, "[gru]")==0);
+}
 int is_rnn(section *s)
 {
     return (strcmp(s->type, "[rnn]")==0);
@@ -644,6 +708,11 @@ int is_normalization(section *s)
 {
     return (strcmp(s->type, "[lrn]")==0
             || strcmp(s->type, "[normalization]")==0);
+}
+
+int is_batchnorm(section *s)
+{
+    return (strcmp(s->type, "[batchnorm]")==0);
 }
 
 int is_softmax(section *s)
@@ -824,6 +893,13 @@ void save_weights_upto(network net, char *filename, int cutoff)
             save_connected_weights(*(l.input_layer), fp);
             save_connected_weights(*(l.self_layer), fp);
             save_connected_weights(*(l.output_layer), fp);
+        } if(l.type == GRU){
+            save_connected_weights(*(l.input_z_layer), fp);
+            save_connected_weights(*(l.input_r_layer), fp);
+            save_connected_weights(*(l.input_h_layer), fp);
+            save_connected_weights(*(l.state_z_layer), fp);
+            save_connected_weights(*(l.state_r_layer), fp);
+            save_connected_weights(*(l.state_h_layer), fp);
         } if(l.type == CRNN){
             save_convolutional_weights(*(l.input_layer), fp);
             save_convolutional_weights(*(l.self_layer), fp);
@@ -867,10 +943,15 @@ void load_connected_weights(layer l, FILE *fp, int transpose)
     if(transpose){
         transpose_matrix(l.weights, l.inputs, l.outputs);
     }
+        //printf("Biases: %f mean %f variance\n", mean_array(l.biases, l.outputs), variance_array(l.biases, l.outputs));
+        //printf("Weights: %f mean %f variance\n", mean_array(l.weights, l.outputs*l.inputs), variance_array(l.weights, l.outputs*l.inputs));
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.outputs, fp);
         fread(l.rolling_mean, sizeof(float), l.outputs, fp);
         fread(l.rolling_variance, sizeof(float), l.outputs, fp);
+        //printf("Scales: %f mean %f variance\n", mean_array(l.scales, l.outputs), variance_array(l.scales, l.outputs));
+        //printf("rolling_mean: %f mean %f variance\n", mean_array(l.rolling_mean, l.outputs), variance_array(l.rolling_mean, l.outputs));
+        //printf("rolling_variance: %f mean %f variance\n", mean_array(l.rolling_variance, l.outputs), variance_array(l.rolling_variance, l.outputs));
     }
 #ifdef GPU
     if(gpu_index >= 0){
@@ -981,6 +1062,14 @@ void load_weights_upto(network *net, char *filename, int cutoff)
             load_connected_weights(*(l.input_layer), fp, transpose);
             load_connected_weights(*(l.self_layer), fp, transpose);
             load_connected_weights(*(l.output_layer), fp, transpose);
+        }
+        if(l.type == GRU){
+            load_connected_weights(*(l.input_z_layer), fp, transpose);
+            load_connected_weights(*(l.input_r_layer), fp, transpose);
+            load_connected_weights(*(l.input_h_layer), fp, transpose);
+            load_connected_weights(*(l.state_z_layer), fp, transpose);
+            load_connected_weights(*(l.state_r_layer), fp, transpose);
+            load_connected_weights(*(l.state_h_layer), fp, transpose);
         }
         if(l.type == LOCAL){
             int locations = l.out_w*l.out_h;

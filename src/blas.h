@@ -7,6 +7,7 @@ void time_random_matrix(int TA, int TB, int m, int k, int n);
 void test_blas();
 
 void const_cpu(int N, float ALPHA, float *X, int INCX);
+void constrain_ongpu(int N, float ALPHA, float * X, int INCX);
 void pow_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void mul_cpu(int N, float *X, int INCX, float *Y, int INCY);
 
@@ -58,8 +59,15 @@ void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2,
 void scale_bias_gpu(float *output, float *biases, int batch, int n, int size);
 void backward_scale_gpu(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates);
 void scale_bias_gpu(float *output, float *biases, int batch, int n, int size);
+void add_bias_gpu(float *output, float *biases, int batch, int n, int size);
+void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size);
 
 void smooth_l1_gpu(int n, float *pred, float *truth, float *delta, float *error);
 void l2_gpu(int n, float *pred, float *truth, float *delta, float *error);
+void weighted_delta_gpu(float *a, float *b, float *s, float *da, float *db, float *ds, int num, float *dc);
+void weighted_sum_gpu(float *a, float *b, float *s, int num, float *c);
+void mult_add_into_gpu(int num, float *a, float *b, float *c);
+
+
 #endif
 #endif

@@ -71,7 +71,7 @@ void train_yolo(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
 
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
-        if(i%1000==0 || i == 600){
+        if(i%1000==0 || (i < 1000 && i%100 == 0)){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
@@ -143,7 +143,8 @@ void validate_yolo(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    list *plist = get_paths("data/voc.2007.test");
+    //list *plist = get_paths("data/voc.2007.test");
+    list *plist = get_paths("/home/pjreddie/data/voc/2007_test.txt");
     //list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
@@ -344,7 +345,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
         //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, 20);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, 0, 20);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, 20);
         show_image(im, "predictions");
         save_image(im, "predictions");
 
@@ -358,42 +359,6 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         if (filename) break;
     }
 }
-
-/*
-#ifdef OPENCV
-image ipl_to_image(IplImage* src);
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-
-void demo_swag(char *cfgfile, char *weightfile, float thresh)
-{
-network net = parse_network_cfg(cfgfile);
-if(weightfile){
-load_weights(&net, weightfile);
-}
-detection_layer layer = net.layers[net.n-1];
-CvCapture *capture = cvCaptureFromCAM(-1);
-set_batch_network(&net, 1);
-srand(2222222);
-while(1){
-IplImage* frame = cvQueryFrame(capture);
-image im = ipl_to_image(frame);
-cvReleaseImage(&frame);
-rgbgr_image(im);
-
-image sized = resize_image(im, net.w, net.h);
-float *X = sized.data;
-float *predictions = network_predict(net, X);
-draw_swag(im, predictions, layer.side, layer.n, "predictions", thresh);
-free_image(im);
-free_image(sized);
-cvWaitKey(10);
-}
-}
-#else
-void demo_swag(char *cfgfile, char *weightfile, float thresh){}
-#endif
- */
 
 void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index, char *filename);
 

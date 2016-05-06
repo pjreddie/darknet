@@ -273,6 +273,42 @@ char *fgetl(FILE *fp)
     return line;
 }
 
+int read_int(int fd)
+{
+    int n = 0;
+    int next = read(fd, &n, sizeof(int));
+    if(next <= 0) return -1;
+    return n;
+}
+
+void write_int(int fd, int n)
+{
+    int next = write(fd, &n, sizeof(int));
+    if(next <= 0) error("read failed");
+}
+
+int read_all_fail(int fd, char *buffer, size_t bytes)
+{
+    size_t n = 0;
+    while(n < bytes){
+        int next = read(fd, buffer + n, bytes-n);
+        if(next <= 0) return 1;
+        n += next;
+    }
+    return 0;
+}
+
+int write_all_fail(int fd, char *buffer, size_t bytes)
+{
+    size_t n = 0;
+    while(n < bytes){
+        size_t next = write(fd, buffer + n, bytes-n);
+        if(next <= 0) return 1;
+        n += next;
+    }
+    return 0;
+}
+
 void read_all(int fd, char *buffer, size_t bytes)
 {
     size_t n = 0;
@@ -441,6 +477,19 @@ void scale_array(float *a, int n, float s)
     }
 }
 
+int sample_array(float *a, int n)
+{
+    float sum = sum_array(a, n);
+    scale_array(a, n, 1./sum);
+    float r = rand_uniform(0, 1);
+    int i;
+    for(i = 0; i < n; ++i){
+        r = r - a[i];
+        if (r <= 0) return i;
+    }
+    return n-1;
+}
+
 int max_index(float *a, int n)
 {
     if(n <= 0) return -1;
@@ -494,6 +543,18 @@ float rand_normal()
    return sum-n/2.;
    }
  */
+
+size_t rand_size_t()
+{
+    return  ((size_t)(rand()&0xff) << 56) | 
+            ((size_t)(rand()&0xff) << 48) |
+            ((size_t)(rand()&0xff) << 40) |
+            ((size_t)(rand()&0xff) << 32) |
+            ((size_t)(rand()&0xff) << 24) |
+            ((size_t)(rand()&0xff) << 16) |
+            ((size_t)(rand()&0xff) << 8) |
+            ((size_t)(rand()&0xff) << 0);
+}
 
 float rand_uniform(float min, float max)
 {

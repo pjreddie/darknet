@@ -23,7 +23,11 @@ typedef enum {
     SHORTCUT,
     ACTIVE,
     RNN,
-    CRNN
+    GRU,
+    CRNN,
+    BATCHNORM,
+    NETWORK,
+    BLANK
 } LAYER_TYPE;
 
 typedef enum{
@@ -54,6 +58,7 @@ struct layer{
     int flip;
     int index;
     int binary;
+    int xnor;
     int steps;
     int hidden;
     float dot;
@@ -95,6 +100,10 @@ struct layer{
     char  *cfilters;
     float *filter_updates;
     float *state;
+    float *state_delta;
+
+    float *concat;
+    float *concat_delta;
 
     float *binary_filters;
 
@@ -132,26 +141,50 @@ struct layer{
     struct layer *self_layer;
     struct layer *output_layer;
 
+    struct layer *input_gate_layer;
+    struct layer *state_gate_layer;
+    struct layer *input_save_layer;
+    struct layer *state_save_layer;
+    struct layer *input_state_layer;
+    struct layer *state_state_layer;
+
+    struct layer *input_z_layer;
+    struct layer *state_z_layer;
+
+    struct layer *input_r_layer;
+    struct layer *state_r_layer;
+
+    struct layer *input_h_layer;
+    struct layer *state_h_layer;
+
     #ifdef GPU
+    float *z_gpu;
+    float *r_gpu;
+    float *h_gpu;
+
     int *indexes_gpu;
+    float * prev_state_gpu;
+    float * forgot_state_gpu;
+    float * forgot_delta_gpu;
     float * state_gpu;
+    float * state_delta_gpu;
+    float * gate_gpu;
+    float * gate_delta_gpu;
+    float * save_gpu;
+    float * save_delta_gpu;
+    float * concat_gpu;
+    float * concat_delta_gpu;
     float * filters_gpu;
     float * filter_updates_gpu;
 
+    float *binary_input_gpu;
     float *binary_filters_gpu;
-    float *mean_filters_gpu;
-
-    float * spatial_mean_gpu;
-    float * spatial_variance_gpu;
 
     float * mean_gpu;
     float * variance_gpu;
 
     float * rolling_mean_gpu;
     float * rolling_variance_gpu;
-
-    float * spatial_mean_delta_gpu;
-    float * spatial_variance_delta_gpu;
 
     float * variance_delta_gpu;
     float * mean_delta_gpu;

@@ -110,6 +110,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
         float prob = probs[i][class];
         if(prob > thresh){
             int width = pow(prob, 1./2.)*10+1;
+            width = 8;
             printf("%s: %.2f\n", names[class], prob);
             int offset = class*17 % classes;
             float red = get_color(0,offset,classes);
@@ -511,6 +512,7 @@ void show_image_cv(image p, const char *name)
             w = (w * min) / h;
             h = min;
         }
+        if(w == im.w && h == im.h) return im;
         image resized = resize_image(im, w, h);
         return resized;
     }
@@ -523,13 +525,7 @@ void show_image_cv(image p, const char *name)
         int dy = rand_int(0, resized.h - size);
         image crop = crop_image(resized, dx, dy, size, size);
 
-        /*
-           show_image(im, "orig");
-           show_image(crop, "cropped");
-           cvWaitKey(0);
-         */
-
-        free_image(resized);
+        if(resized.data != im.data) free_image(resized);
         return crop;
     }
 

@@ -12,8 +12,12 @@ void free_ptrs(void **ptrs, int n);
 char *basecfg(char *cfgfile);
 int alphanum_to_int(char c);
 char int_to_alphanum(int i);
+int read_int(int fd);
+void write_int(int fd, int n);
 void read_all(int fd, char *buffer, size_t bytes);
 void write_all(int fd, char *buffer, size_t bytes);
+int read_all_fail(int fd, char *buffer, size_t bytes);
+int write_all_fail(int fd, char *buffer, size_t bytes);
 char *find_replace(char *str, char *orig, char *rep);
 void error(const char *s);
 void malloc_error();
@@ -34,6 +38,7 @@ int max_index(float *a, int n);
 float constrain(float min, float max, float a);
 float mse_array(float *a, int n);
 float rand_normal();
+size_t rand_size_t();
 float rand_uniform(float min, float max);
 int rand_int(int min, int max);
 float sum_array(float *a, int n);
@@ -47,6 +52,7 @@ int find_int_arg(int argc, char **argv, char *arg, int def);
 float find_float_arg(int argc, char **argv, char *arg, float def);
 int find_arg(int argc, char* argv[], char *arg);
 char *find_char_arg(int argc, char **argv, char *arg, char *def);
+int sample_array(float *a, int n);
 
 #endif
 

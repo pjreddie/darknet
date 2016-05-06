@@ -4,7 +4,7 @@
 #include "math.h"
 
 typedef enum{
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR
 }ACTIVATION;
 
 ACTIVATION get_activation(char *s);
@@ -19,6 +19,12 @@ void activate_array_ongpu(float *x, int n, ACTIVATION a);
 void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta);
 #endif
 
+static inline float stair_activate(float x)
+{
+    int n = floor(x);
+    if (n%2 == 0) return floor(x/2.);
+    else return (x - n) + floor(x/2.);
+}
 static inline float linear_activate(float x){return x;}
 static inline float logistic_activate(float x){return 1./(1. + exp(-x));}
 static inline float loggy_activate(float x){return 2./(1. + exp(-x)) - 1;}
@@ -41,6 +47,11 @@ static inline float loggy_gradient(float x)
 {
     float y = (x+1.)/2.;
     return 2*(1-y)*y;
+}
+static inline float stair_gradient(float x)
+{
+    if (floor(x) == x) return 0;
+    return 1;
 }
 static inline float relu_gradient(float x){return (x>0);}
 static inline float elu_gradient(float x){return (x >= 0) + (x < 0)*(x + 1);}

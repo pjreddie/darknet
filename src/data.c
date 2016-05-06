@@ -22,6 +22,19 @@ list *get_paths(char *filename)
     return lines;
 }
 
+char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
+{
+    char **random_paths = calloc(n, sizeof(char*));
+    int i;
+    for(i = 0; i < n; ++i){
+        int index = rand_r(&data_seed)%m;
+        indexes[i] = index;
+        random_paths[i] = paths[index];
+        if(i == 0) printf("%s\n", paths[index]);
+    }
+    return random_paths;
+}
+
 char **get_random_paths(char **paths, int n, int m)
 {
     char **random_paths = calloc(n, sizeof(char*));
@@ -364,7 +377,7 @@ void fill_truth_captcha(char *path, int n, float *truth)
 data load_data_captcha(char **paths, int n, int m, int k, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d;
+    data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
     d.y = make_matrix(n, k*NUMCHARS);
@@ -379,7 +392,7 @@ data load_data_captcha(char **paths, int n, int m, int k, int w, int h)
 data load_data_captcha_encode(char **paths, int n, int m, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d;
+    data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
     d.X.cols = 17100;
@@ -449,6 +462,9 @@ char **get_labels(char *filename)
 
 void free_data(data d)
 {
+    if(d.indexes){
+        free(d.indexes);
+    }
     if(!d.shallow){
         free_matrix(d.X);
         free_matrix(d.y);
@@ -462,7 +478,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
-    data d;
+    data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -514,7 +530,7 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
 {
     if(m) paths = get_random_paths(paths, 2*n, m);
     int i,j;
-    data d;
+    data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -581,7 +597,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     int h = orig.h;
     int w = orig.w;
 
-    data d;
+    data d = {0};
     d.shallow = 0;
     d.w = w;
     d.h = h;
@@ -629,7 +645,7 @@ data load_data_detection(int n, char **paths, int m, int classes, int w, int h, 
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
-    data d;
+    data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -698,6 +714,8 @@ void *load_thread(void *ptr)
         *a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == CLASSIFICATION_DATA){
         *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.min, a.max, a.size);
+    } else if (a.type == STUDY_DATA){
+        *a.d = load_data_study(a.paths, a.n, a.m, a.labels, a.classes, a.min, a.max, a.size);
     } else if (a.type == DETECTION_DATA){
         *a.d = load_data_detection(a.n, a.paths, a.m, a.classes, a.w, a.h, a.num_boxes, a.background);
     } else if (a.type == WRITING_DATA){
@@ -732,7 +750,7 @@ data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int 
 {
     if(m) paths = get_random_paths(paths, n, m);
     char **replace_paths = find_replace_paths(paths, n, ".png", "-label.png");
-    data d;
+    data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
     d.y = load_image_paths_gray(replace_paths, n, out_w, out_h);
@@ -746,9 +764,21 @@ data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int 
 data load_data(char **paths, int n, int m, char **labels, int k, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d;
+    data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
+    d.y = load_labels_paths(paths, n, labels, k);
+    if(m) free(paths);
+    return d;
+}
+
+data load_data_study(char **paths, int n, int m, char **labels, int k, int min, int max, int size)
+{
+    data d = {0};
+    d.indexes = calloc(n, sizeof(int));
+    if(m) paths = get_random_paths_indexes(paths, n, m, d.indexes);
+    d.shallow = 0;
+    d.X = load_image_cropped_paths(paths, n, min, max, size);
     d.y = load_labels_paths(paths, n, labels, k);
     if(m) free(paths);
     return d;
@@ -757,7 +787,7 @@ data load_data(char **paths, int n, int m, char **labels, int k, int w, int h)
 data load_data_augment(char **paths, int n, int m, char **labels, int k, int min, int max, int size)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d;
+    data d = {0};
     d.shallow = 0;
     d.X = load_image_cropped_paths(paths, n, min, max, size);
     d.y = load_labels_paths(paths, n, labels, k);
@@ -796,7 +826,7 @@ matrix concat_matrix(matrix m1, matrix m2)
 
 data concat_data(data d1, data d2)
 {
-    data d;
+    data d = {0};
     d.shallow = 1;
     d.X = concat_matrix(d1.X, d2.X);
     d.y = concat_matrix(d1.y, d2.y);
@@ -805,7 +835,7 @@ data concat_data(data d1, data d2)
 
 data load_categorical_data_csv(char *filename, int target, int k)
 {
-    data d;
+    data d = {0};
     d.shallow = 0;
     matrix X = csv_to_matrix(filename);
     float *truth_1d = pop_column(&X, target);
@@ -822,7 +852,7 @@ data load_categorical_data_csv(char *filename, int target, int k)
 
 data load_cifar10_data(char *filename)
 {
-    data d;
+    data d = {0};
     d.shallow = 0;
     long i,j;
     matrix X = make_matrix(10000, 3072);
@@ -882,7 +912,7 @@ void smooth_data(data d)
 
 data load_all_cifar10()
 {
-    data d;
+    data d = {0};
     d.shallow = 0;
     int i,j,b;
     matrix X = make_matrix(50000, 3072);
@@ -910,7 +940,7 @@ data load_all_cifar10()
     //normalize_data_rows(d);
     //translate_data_rows(d, -128);
     scale_data_rows(d, 1./255);
-   // smooth_data(d);
+    smooth_data(d);
     return d;
 }
 
@@ -949,7 +979,7 @@ data load_go(char *filename)
     X = resize_matrix(X, count);
     y = resize_matrix(y, count);
 
-    data d;
+    data d = {0};
     d.shallow = 0;
     d.X = X;
     d.y = y;

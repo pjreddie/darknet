@@ -12,7 +12,6 @@
 #include "opencv2/imgproc/imgproc.hpp"
 image ipl_to_image(IplImage* src);
 void convert_yolo_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
-void draw_yolo(image im, int num, float thresh, box *boxes, float **probs);
 
 extern char *voc_names[];
 extern image voc_labels[];
