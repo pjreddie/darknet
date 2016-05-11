@@ -135,6 +135,20 @@ void backward_batchnorm_layer(const layer layer, network_state state)
 }
 
 #ifdef GPU
+
+void pull_batchnorm_layer(layer l)
+{
+    cuda_pull_array(l.scales_gpu, l.scales, l.c);
+    cuda_pull_array(l.rolling_mean_gpu, l.rolling_mean, l.c);
+    cuda_pull_array(l.rolling_variance_gpu, l.rolling_variance, l.c);
+}
+void push_batchnorm_layer(layer l)
+{
+    cuda_push_array(l.scales_gpu, l.scales, l.c);
+    cuda_push_array(l.rolling_mean_gpu, l.rolling_mean, l.c);
+    cuda_push_array(l.rolling_variance_gpu, l.rolling_variance, l.c);
+}
+
 void forward_batchnorm_layer_gpu(layer l, network_state state)
 {
     if(l.type == BATCHNORM) copy_ongpu(l.outputs*l.batch, state.input, 1, l.output_gpu, 1);

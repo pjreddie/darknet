@@ -852,6 +852,18 @@ void save_convolutional_weights(layer l, FILE *fp)
     fwrite(l.filters, sizeof(float), num, fp);
 }
 
+void save_batchnorm_weights(layer l, FILE *fp)
+{
+#ifdef GPU
+    if(gpu_index >= 0){
+        pull_batchnorm_layer(l);
+    }
+#endif
+    fwrite(l.scales, sizeof(float), l.c, fp);
+    fwrite(l.rolling_mean, sizeof(float), l.c, fp);
+    fwrite(l.rolling_variance, sizeof(float), l.c, fp);
+}
+
 void save_connected_weights(layer l, FILE *fp)
 {
 #ifdef GPU
@@ -889,6 +901,8 @@ void save_weights_upto(network net, char *filename, int cutoff)
             save_convolutional_weights(l, fp);
         } if(l.type == CONNECTED){
             save_connected_weights(l, fp);
+        } if(l.type == BATCHNORM){
+            save_batchnorm_weights(l, fp);
         } if(l.type == RNN){
             save_connected_weights(*(l.input_layer), fp);
             save_connected_weights(*(l.self_layer), fp);
@@ -943,8 +957,8 @@ void load_connected_weights(layer l, FILE *fp, int transpose)
     if(transpose){
         transpose_matrix(l.weights, l.inputs, l.outputs);
     }
-        //printf("Biases: %f mean %f variance\n", mean_array(l.biases, l.outputs), variance_array(l.biases, l.outputs));
-        //printf("Weights: %f mean %f variance\n", mean_array(l.weights, l.outputs*l.inputs), variance_array(l.weights, l.outputs*l.inputs));
+    //printf("Biases: %f mean %f variance\n", mean_array(l.biases, l.outputs), variance_array(l.biases, l.outputs));
+    //printf("Weights: %f mean %f variance\n", mean_array(l.weights, l.outputs*l.inputs), variance_array(l.weights, l.outputs*l.inputs));
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.outputs, fp);
         fread(l.rolling_mean, sizeof(float), l.outputs, fp);
@@ -956,6 +970,18 @@ void load_connected_weights(layer l, FILE *fp, int transpose)
 #ifdef GPU
     if(gpu_index >= 0){
         push_connected_layer(l);
+    }
+#endif
+}
+
+void load_batchnorm_weights(layer l, FILE *fp)
+{
+    fread(l.scales, sizeof(float), l.c, fp);
+    fread(l.rolling_mean, sizeof(float), l.c, fp);
+    fread(l.rolling_variance, sizeof(float), l.c, fp);
+#ifdef GPU
+    if(gpu_index >= 0){
+        push_batchnorm_layer(l);
     }
 #endif
 }
@@ -1052,6 +1078,9 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         }
         if(l.type == CONNECTED){
             load_connected_weights(l, fp, transpose);
+        }
+        if(l.type == BATCHNORM){
+            load_batchnorm_weights(l, fp);
         }
         if(l.type == CRNN){
             load_convolutional_weights(*(l.input_layer), fp);
