@@ -7,7 +7,7 @@
 #include "data.h"
 
 typedef enum {
-    CONSTANT, STEP, EXP, POLY, STEPS, SIG
+    CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
 } learning_rate_policy;
 
 typedef struct network{

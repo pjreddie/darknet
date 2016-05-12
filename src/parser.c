@@ -432,6 +432,7 @@ route_layer parse_route(list *options, size_params params, network net)
 
 learning_rate_policy get_policy(char *s)
 {
+    if (strcmp(s, "random")==0) return RANDOM;
     if (strcmp(s, "poly")==0) return POLY;
     if (strcmp(s, "constant")==0) return CONSTANT;
     if (strcmp(s, "step")==0) return STEP;
@@ -497,7 +498,7 @@ void parse_net_options(list *options, network *net)
     } else if (net->policy == SIG){
         net->gamma = option_find_float(options, "gamma", 1);
         net->step = option_find_int(options, "step", 1);
-    } else if (net->policy == POLY){
+    } else if (net->policy == POLY || net->policy == RANDOM){
         net->power = option_find_float(options, "power", 1);
     }
     net->max_batches = option_find_int(options, "max_batches", 0);

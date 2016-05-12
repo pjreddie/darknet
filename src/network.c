@@ -65,6 +65,8 @@ float get_current_rate(network net)
             return net.learning_rate * pow(net.gamma, batch_num);
         case POLY:
             return net.learning_rate * pow(1 - (float)batch_num / net.max_batches, net.power);
+        case RANDOM:
+            return net.learning_rate * pow(rand_uniform(0,1), net.power);
         case SIG:
             return net.learning_rate * (1./(1.+exp(net.gamma*(batch_num - net.step))));
         default:
