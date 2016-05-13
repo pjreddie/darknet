@@ -85,7 +85,6 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
     if(l.xnor){
         binarize_filters_gpu(l.filters_gpu, l.n, l.c*l.size*l.size, l.binary_filters_gpu);
-        //binarize_gpu(l.filters_gpu, l.n*l.c*l.size*l.size, l.binary_filters_gpu);
         swap_binary(&l);
         for(i = 0; i < l.batch; ++i){
             binarize_input_gpu(state.input + i*l.inputs, l.c, l.h*l.w, l.binary_input_gpu + i*l.inputs);
@@ -93,13 +92,31 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         state.input = l.binary_input_gpu;
     }
 
+#ifdef CUDNN
+    float one = 1;
+    cudnnConvolutionForward(cudnn_handle(),
+                &one,
+                l.srcTensorDesc,
+                state.input,
+                l.filterDesc,
+                l.filters_gpu,
+                l.convDesc,
+                l.fw_algo,
+                state.workspace,
+                l.workspace_size,
+                &one,
+                l.dstTensorDesc,
+                l.output_gpu);
+
+#else
     for(i = 0; i < l.batch; ++i){
-        im2col_ongpu(state.input + i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, l.col_image_gpu);
+        im2col_ongpu(state.input + i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.workspace);
         float * a = l.filters_gpu;
-        float * b = l.col_image_gpu;
+        float * b = state.workspace;
         float * c = l.output_gpu;
         gemm_ongpu(0,0,m,n,k,1.,a,k,b,n,1.,c+i*m*n,n);
     }
+#endif
 
     if (l.batch_normalize) {
         forward_batchnorm_layer_gpu(l, state);
@@ -113,7 +130,6 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
-    int i;
     int m = l.n;
     int n = l.size*l.size*l.c;
     int k = convolutional_out_height(l)*
@@ -128,26 +144,61 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
     }
 
     if(l.xnor) state.input = l.binary_input_gpu;
+#ifdef CUDNN
+    float one = 1;
+    cudnnConvolutionBackwardFilter(cudnn_handle(),
+            &one,
+            l.srcTensorDesc,
+            state.input,
+            l.ddstTensorDesc,
+            l.delta_gpu,
+            l.convDesc,
+            l.bf_algo,
+            state.workspace,
+            l.workspace_size,
+            &one,
+            l.dfilterDesc,
+            l.filter_updates_gpu);
+
+    if(state.delta){
+        cudnnConvolutionBackwardData(cudnn_handle(),
+                &one,
+                l.filterDesc,
+                l.filters_gpu,
+                l.ddstTensorDesc,
+                l.delta_gpu,
+                l.convDesc,
+                l.bd_algo,
+                state.workspace,
+                l.workspace_size,
+                &one,
+                l.dsrcTensorDesc,
+                state.delta);
+    }
+
+#else
+    int i;
     for(i = 0; i < l.batch; ++i){
         float * a = l.delta_gpu;
-        float * b = l.col_image_gpu;
+        float * b = state.workspace;
         float * c = l.filter_updates_gpu;
 
-        im2col_ongpu(state.input + i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, l.col_image_gpu);
+        im2col_ongpu(state.input + i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.workspace);
         gemm_ongpu(0,1,m,n,k,1,a + i*m*k,k,b,k,1,c,n);
 
         if(state.delta){
             if(l.binary || l.xnor) swap_binary(&l);
             float * a = l.filters_gpu;
             float * b = l.delta_gpu;
-            float * c = l.col_image_gpu;
+            float * c = state.workspace;
 
             gemm_ongpu(1,0,n,k,m,1,a,n,b + i*k*m,k,0,c,k);
 
-            col2im_ongpu(l.col_image_gpu, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.delta + i*l.c*l.h*l.w);
+            col2im_ongpu(state.workspace, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.delta + i*l.c*l.h*l.w);
             if(l.binary || l.xnor) swap_binary(&l);
         }
     }
+#endif
 }
 
 void pull_convolutional_layer(convolutional_layer layer)

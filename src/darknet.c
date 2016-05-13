@@ -26,6 +26,7 @@ extern void run_vid_rnn(int argc, char **argv);
 extern void run_tag(int argc, char **argv);
 extern void run_cifar(int argc, char **argv);
 extern void run_go(int argc, char **argv);
+extern void run_art(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -259,6 +260,8 @@ int main(int argc, char **argv)
         run_coco(argc, argv);
     } else if (0 == strcmp(argv[1], "classifier")){
         run_classifier(argc, argv);
+    } else if (0 == strcmp(argv[1], "art")){
+        run_art(argc, argv);
     } else if (0 == strcmp(argv[1], "tag")){
         run_tag(argc, argv);
     } else if (0 == strcmp(argv[1], "compare")){

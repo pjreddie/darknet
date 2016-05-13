@@ -524,6 +524,7 @@ network parse_network_cfg(char *filename)
     params.batch = net.batch;
     params.time_steps = net.time_steps;
 
+    size_t workspace_size = 0;
     n = n->next;
     int count = 0;
     free_section(s);
@@ -584,6 +585,7 @@ network parse_network_cfg(char *filename)
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         option_unused(options);
         net.layers[count] = l;
+        if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;
         free_section(s);
         n = n->next;
         ++count;
@@ -597,6 +599,11 @@ network parse_network_cfg(char *filename)
     free_list(sections);
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
+    if(workspace_size){
+#ifdef GPU
+        net.workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
+#endif
+    }
     return net;
 }
 

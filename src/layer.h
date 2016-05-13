@@ -2,6 +2,7 @@
 #define BASE_LAYER_H
 
 #include "activations.h"
+#include "stddef.h"
 
 struct layer;
 typedef struct layer layer;
@@ -157,6 +158,8 @@ struct layer{
     struct layer *input_h_layer;
     struct layer *state_h_layer;
 
+    size_t workspace_size;
+
     #ifdef GPU
     float *z_gpu;
     float *r_gpu;
@@ -207,6 +210,16 @@ struct layer{
     float * rand_gpu;
     float * squared_gpu;
     float * norms_gpu;
+    #ifdef CUDNN
+    cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
+    cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
+    cudnnFilterDescriptor_t filterDesc;
+    cudnnFilterDescriptor_t dfilterDesc;
+    cudnnConvolutionDescriptor_t convDesc;
+    cudnnConvolutionFwdAlgo_t fw_algo;
+    cudnnConvolutionBwdDataAlgo_t bd_algo;
+    cudnnConvolutionBwdFilterAlgo_t bf_algo;
+    #endif
     #endif
 };
 

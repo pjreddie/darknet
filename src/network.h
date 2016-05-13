@@ -11,6 +11,7 @@ typedef enum {
 } learning_rate_policy;
 
 typedef struct network{
+    float *workspace;
     int n;
     int batch;
     int *seen;
@@ -49,6 +50,7 @@ typedef struct network_state {
     float *truth;
     float *input;
     float *delta;
+    float *workspace;
     int train;
     int index;
     network net;

@@ -41,6 +41,7 @@ float * get_network_output_gpu(network net);
 
 void forward_network_gpu(network net, network_state state)
 {
+    state.workspace = net.workspace;
     int i;
     for(i = 0; i < net.n; ++i){
         state.index = i;
@@ -93,6 +94,7 @@ void forward_network_gpu(network net, network_state state)
 
 void backward_network_gpu(network net, network_state state)
 {
+    state.workspace = net.workspace;
     int i;
     float * original_input = state.input;
     float * original_delta = state.delta;

@@ -46,6 +46,19 @@ dim3 cuda_gridsize(size_t n){
     return d;
 }
 
+#ifdef CUDNN
+cudnnHandle_t cudnn_handle()
+{
+    static int init = 0;
+    static cudnnHandle_t handle;
+    if(!init) {
+        cudnnCreate(&handle);
+        init = 1;
+    }
+    return handle;
+}
+#endif
+
 cublasHandle_t blas_handle()
 {
     static int init = 0;
@@ -57,7 +70,7 @@ cublasHandle_t blas_handle()
     return handle;
 }
 
-float *cuda_make_array(float *x, int n)
+float *cuda_make_array(float *x, size_t n)
 {
     float *x_gpu;
     size_t size = sizeof(float)*n;
@@ -71,7 +84,7 @@ float *cuda_make_array(float *x, int n)
     return x_gpu;
 }
 
-void cuda_random(float *x_gpu, int n)
+void cuda_random(float *x_gpu, size_t n)
 {
     static curandGenerator_t gen;
     static int init = 0;
@@ -84,7 +97,7 @@ void cuda_random(float *x_gpu, int n)
     check_error(cudaPeekAtLastError());
 }
 
-float cuda_compare(float *x_gpu, float *x, int n, char *s)
+float cuda_compare(float *x_gpu, float *x, size_t n, char *s)
 {
     float *tmp = calloc(n, sizeof(float));
     cuda_pull_array(x_gpu, tmp, n);
@@ -97,7 +110,7 @@ float cuda_compare(float *x_gpu, float *x, int n, char *s)
     return err;
 }
 
-int *cuda_make_int_array(int n)
+int *cuda_make_int_array(size_t n)
 {
     int *x_gpu;
     size_t size = sizeof(int)*n;
@@ -112,14 +125,14 @@ void cuda_free(float *x_gpu)
     check_error(status);
 }
 
-void cuda_push_array(float *x_gpu, float *x, int n)
+void cuda_push_array(float *x_gpu, float *x, size_t n)
 {
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
     check_error(status);
 }
 
-void cuda_pull_array(float *x_gpu, float *x, int n)
+void cuda_pull_array(float *x_gpu, float *x, size_t n)
 {
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpy(x, x_gpu, size, cudaMemcpyDeviceToHost);
