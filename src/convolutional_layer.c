@@ -155,6 +155,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.inputs = l.w * l.h * l.c;
 
     l.col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
+    l.workspace_size = out_h*out_w*size*size*c*sizeof(float);
     l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
     l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
 
@@ -188,7 +189,6 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.scales_gpu = cuda_make_array(l.scales, n);
     l.scale_updates_gpu = cuda_make_array(l.scale_updates, n);
 
-    l.workspace_size = out_h*out_w*size*size*c;
     l.delta_gpu = cuda_make_array(l.delta, l.batch*out_h*out_w*n);
     l.output_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
 
