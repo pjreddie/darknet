@@ -270,6 +270,8 @@ int main(int argc, char **argv)
         run_dice(argc, argv);
     } else if (0 == strcmp(argv[1], "writing")){
         run_writing(argc, argv);
+    } else if (0 == strcmp(argv[1], "3d")){
+        composite_3d(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "test")){
         test_resize(argv[2]);
     } else if (0 == strcmp(argv[1], "captcha")){

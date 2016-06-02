@@ -271,7 +271,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
-void fill_truth_detection(char *path, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
+void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
 {
     char *labelpath = find_replace(path, "images", "labels");
     labelpath = find_replace(labelpath, "JPEGImages", "labels");
@@ -283,7 +283,7 @@ void fill_truth_detection(char *path, float *truth, int classes, int flip, float
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
-    if(count > 17) count = 17;
+    if(count > num_boxes) count = num_boxes;
     float x,y,w,h;
     int id;
     int i;
@@ -297,11 +297,11 @@ void fill_truth_detection(char *path, float *truth, int classes, int flip, float
 
         if (w < .01 || h < .01) continue;
 
-        truth[i*5] = id;
-        truth[i*5+2] = x;
-        truth[i*5+3] = y;
-        truth[i*5+4] = w;
-        truth[i*5+5] = h;
+        truth[i*5+0] = id;
+        truth[i*5+1] = x;
+        truth[i*5+2] = y;
+        truth[i*5+3] = w;
+        truth[i*5+4] = h;
     }
     free(boxes);
 }
@@ -601,7 +601,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     return d;
 }
 
-data load_data_detection(int n, int boxes, char **paths, int m, int w, int h, int classes, float jitter)
+data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -643,7 +643,7 @@ data load_data_detection(int n, int boxes, char **paths, int m, int w, int h, in
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
 
-        fill_truth_detection(random_paths[i], d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy);
+        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy);
 
         free_image(orig);
         free_image(cropped);
@@ -669,12 +669,12 @@ void *load_thread(void *ptr)
         *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.min, a.max, a.size);
     } else if (a.type == STUDY_DATA){
         *a.d = load_data_study(a.paths, a.n, a.m, a.labels, a.classes, a.min, a.max, a.size);
-    } else if (a.type == DETECTION_DATA){
-        *a.d = load_data_detection(a.n, a.num_boxes, a.paths, a.m, a.classes, a.w, a.h, a.background);
     } else if (a.type == WRITING_DATA){
         *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.out_w, a.out_h);
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter);
+    } else if (a.type == DETECTION_DATA){
+        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter);
     } else if (a.type == SWAG_DATA){
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
     } else if (a.type == COMPARE_DATA){

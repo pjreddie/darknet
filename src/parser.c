@@ -257,6 +257,7 @@ detection_layer parse_detection(list *options, size_params params)
     layer.softmax = option_find_int(options, "softmax", 0);
     layer.sqrt = option_find_int(options, "sqrt", 0);
 
+    layer.max_boxes = option_find_int_quiet(options, "max",30);
     layer.coord_scale = option_find_float(options, "coord_scale", 1);
     layer.forced = option_find_int(options, "forced", 0);
     layer.object_scale = option_find_float(options, "object_scale", 1);
@@ -600,8 +601,11 @@ network parse_network_cfg(char *filename)
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
     if(workspace_size){
+    //printf("%ld\n", workspace_size);
 #ifdef GPU
         net.workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
+#else
+        net.workspace = calloc(1, workspace_size);
 #endif
     }
     return net;

@@ -161,6 +161,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             l.filter_updates_gpu);
 
     if(state.delta){
+        if(l.binary || l.xnor) swap_binary(&l);
         cudnnConvolutionBackwardData(cudnn_handle(),
                 &one,
                 l.filterDesc,
@@ -174,6 +175,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 &one,
                 l.dsrcTensorDesc,
                 state.delta);
+        if(l.binary || l.xnor) swap_binary(&l);
     }
 
 #else

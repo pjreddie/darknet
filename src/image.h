@@ -44,6 +44,7 @@ void saturate_exposure_image(image im, float sat, float exposure);
 void hsv_to_rgb(image im);
 void rgbgr_image(image im);
 void constrain_image(image im);
+void composite_3d(char *f1, char *f2, char *out);
 
 image grayscale_image(image im);
 image threshold_image(image im, float thresh);

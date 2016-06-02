@@ -137,6 +137,7 @@ network make_network(int n)
 
 void forward_network(network net, network_state state)
 {
+    state.workspace = net.workspace;
     int i;
     for(i = 0; i < net.n; ++i){
         state.index = i;
@@ -400,6 +401,7 @@ int resize_network(network *net, int w, int h)
     net->w = w;
     net->h = h;
     int inputs = 0;
+    size_t workspace_size = 0;
     //fprintf(stderr, "Resizing to %d x %d...", w, h);
     //fflush(stderr);
     for (i = 0; i < net->n; ++i){
@@ -419,12 +421,20 @@ int resize_network(network *net, int w, int h)
         }else{
             error("Cannot resize this type of layer");
         }
+        if(l.workspace_size > workspace_size) workspace_size = l.workspace_size;
         inputs = l.outputs;
         net->layers[i] = l;
         w = l.out_w;
         h = l.out_h;
         if(l.type == AVGPOOL) break;
     }
+#ifdef GPU
+        cuda_free(net->workspace);
+        net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
+#else
+        free(net->workspace);
+        net->workspace = calloc(1, (workspace_size-1)/sizeof(float)+1);
+#endif
     //fprintf(stderr, " Done!\n");
     return 0;
 }

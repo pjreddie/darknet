@@ -50,6 +50,7 @@ struct layer{
     int h,w,c;
     int out_h, out_w, out_c;
     int n;
+    int max_boxes;
     int groups;
     int size;
     int side;

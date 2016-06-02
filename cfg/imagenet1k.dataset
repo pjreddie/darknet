@@ -1,0 +1,9 @@
+classes=1000
+labels = data/inet.labels.list
+names = data/shortnames.txt
+train = /data/imagenet/imagenet1k.train.list
+valid = /data/imagenet/imagenet1k.valid.list
+top=5
+test = /Users/pjreddie/Documents/sites/selfie/paths.list
+backup = /home/pjreddie/backup/
+

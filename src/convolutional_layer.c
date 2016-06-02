@@ -88,8 +88,8 @@ image get_convolutional_delta(convolutional_layer l)
     return float_to_image(w,h,c,l.delta);
 }
 
-#ifdef CUDNN
 size_t get_workspace_size(layer l){
+    #ifdef CUDNN
     size_t most = 0;
     size_t s = 0;
     cudnnGetConvolutionForwardWorkspaceSize(cudnn_handle(),
@@ -117,8 +117,10 @@ size_t get_workspace_size(layer l){
             &s);
     if (s > most) most = s;
     return most;
+    #else
+    return (size_t)l.out_h*l.out_w*l.size*l.size*l.c*sizeof(float);
+    #endif
 }
-#endif
 
 convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int binary, int xnor)
 {
@@ -154,8 +156,6 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = l.w * l.h * l.c;
 
-    l.col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
-    l.workspace_size = out_h*out_w*size*size*c*sizeof(float);
     l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
     l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
 
@@ -255,10 +255,9 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
             CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
             0,
             &l.bf_algo);
+#endif
+#endif
     l.workspace_size = get_workspace_size(l);
-
-#endif
-#endif
     l.activation = activation;
 
     fprintf(stderr, "Convolutional Layer: %d x %d x %d image, %d filters -> %d x %d x %d image\n", h,w,c,n, out_h, out_w, n);
@@ -315,8 +314,6 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     l->outputs = l->out_h * l->out_w * l->out_c;
     l->inputs = l->w * l->h * l->c;
 
-    l->col_image = realloc(l->col_image,
-            out_h*out_w*l->size*l->size*l->c*sizeof(float));
     l->output = realloc(l->output,
             l->batch*out_h * out_w * l->n*sizeof(float));
     l->delta  = realloc(l->delta,
@@ -328,7 +325,43 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 
     l->delta_gpu =     cuda_make_array(l->delta, l->batch*out_h*out_w*l->n);
     l->output_gpu =    cuda_make_array(l->output, l->batch*out_h*out_w*l->n);
+    #ifdef CUDNN
+    cudnnSetTensor4dDescriptor(l->dsrcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w); 
+    cudnnSetTensor4dDescriptor(l->ddstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w); 
+    cudnnSetFilter4dDescriptor(l->dfilterDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size); 
+
+    cudnnSetTensor4dDescriptor(l->srcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w); 
+    cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w); 
+    cudnnSetFilter4dDescriptor(l->filterDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size); 
+    int padding = l->pad ? l->size/2 : 0;
+    cudnnSetConvolution2dDescriptor(l->convDesc, padding, padding, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION);
+    cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
+            l->srcTensorDesc,
+            l->filterDesc,
+            l->convDesc,
+            l->dstTensorDesc,
+            CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
+            0,
+            &l->fw_algo);
+    cudnnGetConvolutionBackwardDataAlgorithm(cudnn_handle(),
+            l->filterDesc,
+            l->ddstTensorDesc,
+            l->convDesc,
+            l->dsrcTensorDesc,
+            CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
+            0,
+            &l->bd_algo);
+    cudnnGetConvolutionBackwardFilterAlgorithm(cudnn_handle(),
+            l->srcTensorDesc,
+            l->ddstTensorDesc,
+            l->convDesc,
+            l->dfilterDesc,
+            CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
+            0,
+            &l->bf_algo);
+    #endif
 #endif
+    l->workspace_size = get_workspace_size(*l);
 }
 
 void add_bias(float *output, float *biases, int batch, int n, int size)
@@ -386,7 +419,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         int n = out_h*out_w;
 
         char  *a = l.cfilters;
-        float *b = l.col_image;
+        float *b = state.workspace;
         float *c = l.output;
 
         for(i = 0; i < l.batch; ++i){
@@ -407,7 +440,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     int n = out_h*out_w;
 
     float *a = l.filters;
-    float *b = l.col_image;
+    float *b = state.workspace;
     float *c = l.output;
 
     for(i = 0; i < l.batch; ++i){
@@ -439,7 +472,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
 
     for(i = 0; i < l.batch; ++i){
         float *a = l.delta + i*m*k;
-        float *b = l.col_image;
+        float *b = state.workspace;
         float *c = l.filter_updates;
 
         float *im = state.input+i*l.c*l.h*l.w;
@@ -451,11 +484,11 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
         if(state.delta){
             a = l.filters;
             b = l.delta + i*m*k;
-            c = l.col_image;
+            c = state.workspace;
 
             gemm(1,0,n,k,m,1,a,n,b,k,0,c,k);
 
-            col2im_cpu(l.col_image, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.delta+i*l.c*l.h*l.w);
+            col2im_cpu(state.workspace, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.delta+i*l.c*l.h*l.w);
         }
     }
 }

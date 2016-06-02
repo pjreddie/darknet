@@ -424,11 +424,26 @@ float variance_array(float *a, int n)
     return variance;
 }
 
+int constrain_int(int a, int min, int max)
+{
+    if (a < min) return min;
+    if (a > max) return max;
+    return a;
+}
+
 float constrain(float min, float max, float a)
 {
     if (a < min) return min;
     if (a > max) return max;
     return a;
+}
+
+float dist_array(float *a, float *b, int n, int sub)
+{
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; i += sub) sum += pow(a[i]-b[i], 2);
+    return sqrt(sum);
 }
 
 float mse_array(float *a, int n)
