@@ -9,12 +9,12 @@ VPATH=./src/
 EXEC=darknet
 OBJDIR=./obj/
 
-CC=gcc
-NVCC=nvcc
-OPTS=-Ofast
-LDFLAGS= -lm -pthread 
-COMMON= 
-CFLAGS=-Wall -Wfatal-errors 
+CC ?= gcc
+NVCC ?= nvcc
+OPTS += -Ofast
+LDFLAGS += -lm -pthread
+COMMON=
+CFLAGS +=-Wall -Wfatal-errors
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
