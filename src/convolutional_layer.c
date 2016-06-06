@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#ifndef AI2
+#define AI2 0
+#endif
+
 void swap_binary(convolutional_layer *l)
 {
     float *swap = l->filters;
@@ -21,24 +25,6 @@ void swap_binary(convolutional_layer *l)
     #endif
 }
 
-void binarize_filters2(float *filters, int n, int size, char *binary, float *scales)
-{
-    int i, k, f;
-    for(f = 0; f < n; ++f){
-        float mean = 0;
-        for(i = 0; i < size; ++i){
-            mean += fabs(filters[f*size + i]);
-        }
-        mean = mean / size;
-        scales[f] = mean;
-        for(i = 0; i < size/8; ++i){
-            binary[f*size + i] = (filters[f*size + i] > 0) ? 1 : 0;
-            for(k = 0; k < 8; ++k){
-            }
-        }
-    }
-}
-
 void binarize_filters(float *filters, int n, int size, float *binary)
 {
     int i, f;
@@ -50,6 +36,21 @@ void binarize_filters(float *filters, int n, int size, float *binary)
         mean = mean / size;
         for(i = 0; i < size; ++i){
             binary[f*size + i] = (filters[f*size + i] > 0) ? mean : -mean;
+        }
+    }
+}
+
+void binarize_input(float *input, int n, int size, float *binary)
+{
+    int i, s;
+    for(s = 0; s < size; ++s){
+        float mean = 0;
+        for(i = 0; i < n; ++i){
+            mean += fabs(input[i*size + s]);
+        }
+        mean = mean / n;
+        for(i = 0; i < n; ++i){
+            binary[i*size + s] = (input[i*size + s] > 0) ? mean : -mean;
         }
     }
 }
@@ -89,7 +90,7 @@ image get_convolutional_delta(convolutional_layer l)
 }
 
 size_t get_workspace_size(layer l){
-    #ifdef CUDNN
+#ifdef CUDNN
     size_t most = 0;
     size_t s = 0;
     cudnnGetConvolutionForwardWorkspaceSize(cudnn_handle(),
@@ -117,9 +118,9 @@ size_t get_workspace_size(layer l){
             &s);
     if (s > most) most = s;
     return most;
-    #else
+#else
     return (size_t)l.out_h*l.out_w*l.size*l.size*l.c*sizeof(float);
-    #endif
+#endif
 }
 
 convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int binary, int xnor)
@@ -133,6 +134,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.c = c;
     l.n = n;
     l.binary = binary;
+    l.xnor = xnor;
     l.batch = batch;
     l.stride = stride;
     l.size = size;
@@ -163,6 +165,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.binary_filters = calloc(c*n*size*size, sizeof(float));
         l.cfilters = calloc(c*n*size*size, sizeof(char));
         l.scales = calloc(n, sizeof(float));
+    }
+    if(xnor){
+        l.binary_filters = calloc(c*n*size*size, sizeof(float));
+        l.binary_input = calloc(l.inputs*l.batch, sizeof(float));
     }
 
     if(batch_normalize){
@@ -199,7 +205,6 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.binary_filters_gpu = cuda_make_array(l.filters, c*n*size*size);
         l.binary_input_gpu = cuda_make_array(0, l.inputs*l.batch);
     }
-    l.xnor = xnor;
 
     if(batch_normalize){
         l.mean_gpu = cuda_make_array(l.mean, n);
@@ -325,7 +330,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 
     l->delta_gpu =     cuda_make_array(l->delta, l->batch*out_h*out_w*l->n);
     l->output_gpu =    cuda_make_array(l->output, l->batch*out_h*out_w*l->n);
-    #ifdef CUDNN
+#ifdef CUDNN
     cudnnSetTensor4dDescriptor(l->dsrcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w); 
     cudnnSetTensor4dDescriptor(l->ddstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w); 
     cudnnSetFilter4dDescriptor(l->dfilterDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size); 
@@ -359,7 +364,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
             CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
             0,
             &l->bf_algo);
-    #endif
+#endif
 #endif
     l->workspace_size = get_workspace_size(*l);
 }
@@ -404,7 +409,9 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     int out_w = convolutional_out_width(l);
     int i;
 
+
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
+
     /*
        if(l.binary){
        binarize_filters(l.filters, l.n, l.c*l.size*l.size, l.binary_filters);
@@ -413,44 +420,59 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
        }
      */
 
-/*
-    if(l.binary){
-        int m = l.n;
-        int k = l.size*l.size*l.c;
-        int n = out_h*out_w;
+    /*
+       if(l.binary){
+       int m = l.n;
+       int k = l.size*l.size*l.c;
+       int n = out_h*out_w;
 
-        char  *a = l.cfilters;
+       char  *a = l.cfilters;
+       float *b = state.workspace;
+       float *c = l.output;
+
+       for(i = 0; i < l.batch; ++i){
+       im2col_cpu(state.input, l.c, l.h, l.w, 
+       l.size, l.stride, l.pad, b);
+       gemm_bin(m,n,k,1,a,k,b,n,c,n);
+       c += n*m;
+       state.input += l.c*l.h*l.w;
+       }
+       scale_bias(l.output, l.scales, l.batch, l.n, out_h*out_w);
+       add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
+       activate_array(l.output, m*n*l.batch, l.activation);
+       return;
+       }
+     */
+
+    if(l.xnor && (l.c%32 != 0 || !AI2)){
+        binarize_filters(l.filters, l.n, l.c*l.size*l.size, l.binary_filters);
+        swap_binary(&l);
+        for(i = 0; i < l.batch; ++i){
+            binarize_input(state.input + i*l.inputs, l.c, l.h*l.w, l.binary_input + i*l.inputs);
+        }
+        state.input = l.binary_input;
+    }
+
+    int m = l.n;
+    int k = l.size*l.size*l.c;
+    int n = out_h*out_w;
+
+    if (l.xnor && l.c%32 == 0 && AI2) {
+        forward_xnor_layer(l, state);
+        printf("xnor\n");
+    } else {
+
+        float *a = l.filters;
         float *b = state.workspace;
         float *c = l.output;
 
         for(i = 0; i < l.batch; ++i){
             im2col_cpu(state.input, l.c, l.h, l.w, 
                     l.size, l.stride, l.pad, b);
-            gemm_bin(m,n,k,1,a,k,b,n,c,n);
+            gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
             c += n*m;
             state.input += l.c*l.h*l.w;
         }
-        scale_bias(l.output, l.scales, l.batch, l.n, out_h*out_w);
-        add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
-        activate_array(l.output, m*n*l.batch, l.activation);
-        return;
-    }
-    */
-
-    int m = l.n;
-    int k = l.size*l.size*l.c;
-    int n = out_h*out_w;
-
-    float *a = l.filters;
-    float *b = state.workspace;
-    float *c = l.output;
-
-    for(i = 0; i < l.batch; ++i){
-        im2col_cpu(state.input, l.c, l.h, l.w, 
-                l.size, l.stride, l.pad, b);
-        gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
-        c += n*m;
-        state.input += l.c*l.h*l.w;
     }
 
     if(l.batch_normalize){
@@ -459,6 +481,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 
     activate_array(l.output, m*n*l.batch, l.activation);
+    if(l.binary || l.xnor) swap_binary(&l);
 }
 
 void backward_convolutional_layer(convolutional_layer l, network_state state)

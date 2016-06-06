@@ -167,6 +167,8 @@ struct layer{
     float *r_cpu;
     float *h_cpu;
 
+    float *binary_input;
+
     size_t workspace_size;
 
     #ifdef GPU

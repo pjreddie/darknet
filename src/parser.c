@@ -1021,7 +1021,6 @@ void load_convolutional_weights_binary(layer l, FILE *fp)
             }
         }
     }
-    binarize_filters2(l.filters, l.n, l.c*l.size*l.size, l.cfilters, l.scales);
 #ifdef GPU
     if(gpu_index >= 0){
         push_convolutional_layer(l);
@@ -1046,7 +1045,7 @@ void load_convolutional_weights(layer l, FILE *fp)
     if (l.flipped) {
         transpose_matrix(l.filters, l.c*l.size*l.size, l.n);
     }
-    if (l.binary) binarize_filters(l.filters, l.n, l.c*l.size*l.size, l.filters);
+    //if (l.binary) binarize_filters(l.filters, l.n, l.c*l.size*l.size, l.filters);
 #ifdef GPU
     if(gpu_index >= 0){
         push_convolutional_layer(l);
