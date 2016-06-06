@@ -31,6 +31,7 @@ void normalize_delta_cpu(float *x, float *mean, float *variance, float *mean_del
 
 void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error);
 void l2_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void weighted_sum_cpu(float *a, float *b, float *s, int num, float *c);
 
 #ifdef GPU
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);

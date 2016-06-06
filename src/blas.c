@@ -2,6 +2,14 @@
 #include "math.h"
 #include <assert.h>
 
+void weighted_sum_cpu(float *a, float *b, float *s, int n, float *c)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        c[i] = s[i]*a[i] + (1-s[i])*(b ? b[i] : 0);
+    }
+}
+
 void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
 {
     int stride = w1/w2;

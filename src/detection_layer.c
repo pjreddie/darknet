@@ -175,6 +175,38 @@ void forward_detection_layer(const detection_layer l, network_state state)
                         LOGISTIC, l.delta + index + locations*l.classes);
             }
         }
+
+        if(1){
+            float *costs = calloc(l.batch*locations*l.n, sizeof(float));
+            for (b = 0; b < l.batch; ++b) {
+                int index = b*l.inputs;
+                for (i = 0; i < locations; ++i) {
+                    int truth_index = (b*locations + i)*(1+l.coords+l.classes);
+                    for (j = 0; j < l.n; ++j) {
+                        int p_index = index + locations*l.classes + i*l.n + j;
+                        costs[b*locations*l.n + i*l.n + j] = l.delta[p_index]*l.delta[p_index];
+                    }
+                }
+            }
+            int indexes[100];
+            top_k(costs, l.batch*locations*l.n, 100, indexes);
+            float cutoff = costs[indexes[99]];
+            for (b = 0; b < l.batch; ++b) {
+                int index = b*l.inputs;
+                for (i = 0; i < locations; ++i) {
+                    int truth_index = (b*locations + i)*(1+l.coords+l.classes);
+                    for (j = 0; j < l.n; ++j) {
+                        int p_index = index + locations*l.classes + i*l.n + j;
+                        if (l.delta[p_index]*l.delta[p_index] < cutoff) l.delta[p_index] = 0;
+                    }
+                }
+            }
+            free(costs);
+        }
+
+
+
+
         printf("Detection Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_allcat/(count*l.classes), avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
     }
 }

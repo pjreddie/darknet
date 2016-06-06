@@ -6,7 +6,7 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-void train_tag(char *cfgfile, char *weightfile)
+void train_tag(char *cfgfile, char *weightfile, int clear)
 {
     data_seed = time(0);
     srand(time(0));
@@ -18,6 +18,7 @@ void train_tag(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    if(clear) *net.seen = 0;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
     list *plist = get_paths("/home/pjreddie/tag/train.list");
@@ -138,10 +139,11 @@ void run_tag(int argc, char **argv)
         return;
     }
 
+    int clear = find_arg(argc, argv, "-clear");
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5] : 0;
-    if(0==strcmp(argv[2], "train")) train_tag(cfg, weights);
+    if(0==strcmp(argv[2], "train")) train_tag(cfg, weights, clear);
     else if(0==strcmp(argv[2], "test")) test_tag(cfg, weights, filename);
 }
 

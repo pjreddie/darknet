@@ -413,6 +413,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
        }
      */
 
+/*
     if(l.binary){
         int m = l.n;
         int k = l.size*l.size*l.c;
@@ -434,6 +435,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         activate_array(l.output, m*n*l.batch, l.activation);
         return;
     }
+    */
 
     int m = l.n;
     int k = l.size*l.size*l.c;
