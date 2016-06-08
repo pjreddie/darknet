@@ -176,7 +176,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
             }
         }
 
-        if(1){
+        if(0){
             float *costs = calloc(l.batch*locations*l.n, sizeof(float));
             for (b = 0; b < l.batch; ++b) {
                 int index = b*l.inputs;

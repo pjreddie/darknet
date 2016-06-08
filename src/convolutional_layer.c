@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#ifdef AI2
+#include "xnor_layer.h"
+#endif
+
 #ifndef AI2
 #define AI2 0
 #endif
