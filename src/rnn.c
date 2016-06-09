@@ -199,7 +199,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
             }
         }
 
-        if(i%100==0){
+        if(i%1000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);

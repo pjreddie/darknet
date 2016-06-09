@@ -253,6 +253,7 @@ void backward_network(network net, network_state state)
     int i;
     float *original_input = state.input;
     float *original_delta = state.delta;
+    state.workspace = net.workspace;
     for(i = net.n-1; i >= 0; --i){
         state.index = i;
         if(i == 0){
