@@ -434,7 +434,7 @@ int resize_network(network *net, int w, int h)
         net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
 #else
         free(net->workspace);
-        net->workspace = calloc(1, (workspace_size-1)/sizeof(float)+1);
+        net->workspace = calloc(1, workspace_size);
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;

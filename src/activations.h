@@ -4,7 +4,7 @@
 #include "math.h"
 
 typedef enum{
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN
 }ACTIVATION;
 
 ACTIVATION get_activation(char *s);
@@ -25,6 +25,12 @@ static inline float stair_activate(float x)
     if (n%2 == 0) return floor(x/2.);
     else return (x - n) + floor(x/2.);
 }
+static inline float hardtan_activate(float x)
+{
+    if (x < -1) return -1;
+    if (x > 1) return 1;
+    return x;
+}
 static inline float linear_activate(float x){return x;}
 static inline float logistic_activate(float x){return 1./(1. + exp(-x));}
 static inline float loggy_activate(float x){return 2./(1. + exp(-x)) - 1;}
@@ -41,6 +47,11 @@ static inline float plse_activate(float x)
     return .125*x + .5;
 }
 
+static inline float hardtan_gradient(float x)
+{
+    if (x > -1 && x < 1) return 1;
+    return 0;
+}
 static inline float linear_gradient(float x){return 1;}
 static inline float logistic_gradient(float x){return (1-x)*x;}
 static inline float loggy_gradient(float x)

@@ -142,6 +142,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
     if(l.batch_normalize){
         backward_batchnorm_layer_gpu(l, state);
     }
+    float *original_input = state.input;
 
     if(l.xnor) state.input = l.binary_input_gpu;
 #ifdef CUDNN
@@ -176,6 +177,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 l.dsrcTensorDesc,
                 state.delta);
         if(l.binary || l.xnor) swap_binary(&l);
+        if(l.xnor) gradient_array_ongpu(original_input, l.batch*l.c*l.h*l.w, HARDTAN, state.delta);
     }
 
 #else
@@ -197,7 +199,10 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             gemm_ongpu(1,0,n,k,m,1,a,n,b + i*k*m,k,0,c,k);
 
             col2im_ongpu(state.workspace, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.delta + i*l.c*l.h*l.w);
-            if(l.binary || l.xnor) swap_binary(&l);
+            if(l.binary || l.xnor) {
+                swap_binary(&l);
+            }
+            if(l.xnor) gradient_array_ongpu(original_input + i*l.c*l.h*l.w, l.c*l.h*l.w, HARDTAN, state.delta + i*l.c*l.h*l.w);
         }
     }
 #endif

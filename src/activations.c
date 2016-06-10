@@ -30,6 +30,8 @@ char *get_activation_string(ACTIVATION a)
             return "leaky";
         case STAIR:
             return "stair";
+        case HARDTAN:
+            return "hardtan";
         default:
             break;
     }
@@ -44,6 +46,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "elu")==0) return ELU;
     if (strcmp(s, "relie")==0) return RELIE;
     if (strcmp(s, "plse")==0) return PLSE;
+    if (strcmp(s, "hardtan")==0) return HARDTAN;
     if (strcmp(s, "linear")==0) return LINEAR;
     if (strcmp(s, "ramp")==0) return RAMP;
     if (strcmp(s, "leaky")==0) return LEAKY;
@@ -78,6 +81,8 @@ float activate(float x, ACTIVATION a)
             return plse_activate(x);
         case STAIR:
             return stair_activate(x);
+        case HARDTAN:
+            return hardtan_activate(x);
     }
     return 0;
 }
@@ -115,6 +120,8 @@ float gradient(float x, ACTIVATION a)
             return plse_gradient(x);
         case STAIR:
             return stair_gradient(x);
+        case HARDTAN:
+            return hardtan_gradient(x);
     }
     return 0;
 }

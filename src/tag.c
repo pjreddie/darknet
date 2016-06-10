@@ -125,7 +125,7 @@ void test_tag(char *cfgfile, char *weightfile, char *filename)
             int index = indexes[i];
             printf("%.1f%%: %s\n", predictions[index]*100, names[index]);
         }
-        free_image(r);
+        if(r.data != im.data) free_image(r);
         free_image(im);
         if (filename) break;
     }

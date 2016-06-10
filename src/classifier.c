@@ -477,6 +477,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     int *indexes = calloc(top, sizeof(int));
     char buff[256];
     char *input = buff;
+    int size = net.w;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -487,8 +488,12 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, net.w, net.h);
-        float *X = im.data;
+        image im = load_image_color(input, 0, 0);
+        image r = resize_min(im, size);
+        resize_network(&net, r.w, r.h);
+        printf("%d %d\n", r.w, r.h);
+
+        float *X = r.data;
         time=clock();
         float *predictions = network_predict(net, X);
         top_predictions(net, top, indexes);
@@ -497,6 +502,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             int index = indexes[i];
             printf("%s: %f\n", names[index], predictions[index]);
         }
+        if(r.data != im.data) free_image(r);
         free_image(im);
         if (filename) break;
     }
