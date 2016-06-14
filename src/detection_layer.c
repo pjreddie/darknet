@@ -133,6 +133,9 @@ void forward_detection_layer(const detection_layer l, network_state state)
                         best_index = 0;
                     }
                 }
+                if(1 && *(state.net.seen) < 100000){
+                    best_index = rand()%l.n;
+                }
 
                 int box_index = index + locations*(l.classes + l.n) + (i*l.n + best_index) * l.coords;
                 int tbox_index = truth_index + 1 + l.classes;
@@ -181,7 +184,6 @@ void forward_detection_layer(const detection_layer l, network_state state)
             for (b = 0; b < l.batch; ++b) {
                 int index = b*l.inputs;
                 for (i = 0; i < locations; ++i) {
-                    int truth_index = (b*locations + i)*(1+l.coords+l.classes);
                     for (j = 0; j < l.n; ++j) {
                         int p_index = index + locations*l.classes + i*l.n + j;
                         costs[b*locations*l.n + i*l.n + j] = l.delta[p_index]*l.delta[p_index];
@@ -194,7 +196,6 @@ void forward_detection_layer(const detection_layer l, network_state state)
             for (b = 0; b < l.batch; ++b) {
                 int index = b*l.inputs;
                 for (i = 0; i < locations; ++i) {
-                    int truth_index = (b*locations + i)*(1+l.coords+l.classes);
                     for (j = 0; j < l.n; ++j) {
                         int p_index = index + locations*l.classes + i*l.n + j;
                         if (l.delta[p_index]*l.delta[p_index] < cutoff) l.delta[p_index] = 0;
@@ -233,7 +234,7 @@ void forward_detection_layer_gpu(const detection_layer l, network_state state)
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
-    network_state cpu_state;
+    network_state cpu_state = state;
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
     cpu_state.input = in_cpu;

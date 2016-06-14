@@ -53,7 +53,7 @@ void demo_art(char *cfgfile, char *weightfile, int cam_index)
         printf("[");
 	int upper = 30;
         for(i = 0; i < upper; ++i){
-            printf("%s", ((i+.5) < score*upper) ? "\u2588" : " ");
+            printf("%c", ((i+.5) < score*upper) ? 219 : ' ');
         }
         printf("]\n");
 

@@ -280,7 +280,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
     printf("\n");
 }
 
-void test_tactic_rnn(char *cfgfile, char *weightfile, int num, char *seed, float temp, int rseed, char *token_file)
+void test_tactic_rnn(char *cfgfile, char *weightfile, int num, float temp, int rseed, char *token_file)
 {
     char **tokens = 0;
     if(token_file){
@@ -301,9 +301,8 @@ void test_tactic_rnn(char *cfgfile, char *weightfile, int num, char *seed, float
     int i, j;
     for(i = 0; i < net.n; ++i) net.layers[i].temperature = temp;
     int c = 0;
-    int len = strlen(seed);
     float *input = calloc(inputs, sizeof(float));
-    float *out;
+    float *out = 0;
 
     while((c = getc(stdin)) != EOF){
         input[c] = 1;
@@ -490,5 +489,5 @@ void run_char_rnn(int argc, char **argv)
     else if(0==strcmp(argv[2], "validtactic")) valid_tactic_rnn(cfg, weights, seed);
     else if(0==strcmp(argv[2], "vec")) vec_char_rnn(cfg, weights, seed);
     else if(0==strcmp(argv[2], "generate")) test_char_rnn(cfg, weights, len, seed, temp, rseed, tokens);
-    else if(0==strcmp(argv[2], "generatetactic")) test_tactic_rnn(cfg, weights, len, seed, temp, rseed, tokens);
+    else if(0==strcmp(argv[2], "generatetactic")) test_tactic_rnn(cfg, weights, len, temp, rseed, tokens);
 }

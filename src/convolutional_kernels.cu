@@ -72,10 +72,6 @@ void binarize_filters_gpu(float *filters, int n, int size, float *binary)
 void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
     int i;
-    int m = l.n;
-    int k = l.size*l.size*l.c;
-    int n = convolutional_out_height(l)*
-        convolutional_out_width(l);
 
     fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
     if(l.binary){
@@ -109,6 +105,9 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 l.output_gpu);
 
 #else
+    int m = l.n;
+    int k = l.size*l.size*l.c;
+    int n = l.out_w*l.out_h;
     for(i = 0; i < l.batch; ++i){
         im2col_ongpu(state.input + i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.workspace);
         float * a = l.filters_gpu;
@@ -121,23 +120,18 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     if (l.batch_normalize) {
         forward_batchnorm_layer_gpu(l, state);
     }
-    add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, n);
+    add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
 
-    activate_array_ongpu(l.output_gpu, m*n*l.batch, l.activation);
+    activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
     //if(l.dot > 0) dot_error_gpu(l);
     if(l.binary || l.xnor) swap_binary(&l);
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
-    int m = l.n;
-    int n = l.size*l.size*l.c;
-    int k = convolutional_out_height(l)*
-        convolutional_out_width(l);
+    gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
 
-    gradient_array_ongpu(l.output_gpu, m*k*l.batch, l.activation, l.delta_gpu);
-
-    backward_bias_gpu(l.bias_updates_gpu, l.delta_gpu, l.batch, l.n, k);
+    backward_bias_gpu(l.bias_updates_gpu, l.delta_gpu, l.batch, l.n, l.out_w*l.out_h);
 
     if(l.batch_normalize){
         backward_batchnorm_layer_gpu(l, state);
@@ -181,6 +175,10 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
     }
 
 #else
+    int m = l.n;
+    int n = l.size*l.size*l.c;
+    int k = l.out_w*l.out_h;
+
     int i;
     for(i = 0; i < l.batch; ++i){
         float * a = l.delta_gpu;

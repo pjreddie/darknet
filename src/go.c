@@ -217,7 +217,7 @@ void print_board(float *board, int swap, int *indexes)
     }
     fprintf(stream, "\n");
     for(j = 0; j < 19; ++j){
-        fprintf(stream, "%2d ", (inverted) ? 19-j : j+1);
+        fprintf(stream, "%2d", (inverted) ? 19-j : j+1);
         for(i = 0; i < 19; ++i){
             int index = j*19 + i;
             if(indexes){
@@ -225,17 +225,26 @@ void print_board(float *board, int swap, int *indexes)
                 for(n = 0; n < nind; ++n){
                     if(index == indexes[n]){
                         found = 1;
+                        /*
                         if(n == 0) fprintf(stream, "\uff11");
                         else if(n == 1) fprintf(stream, "\uff12");
                         else if(n == 2) fprintf(stream, "\uff13");
                         else if(n == 3) fprintf(stream, "\uff14");
                         else if(n == 4) fprintf(stream, "\uff15");
+                        */
+                        if(n == 0) fprintf(stream, " 1");
+                        else if(n == 1) fprintf(stream, " 2");
+                        else if(n == 2) fprintf(stream, " 3");
+                        else if(n == 3) fprintf(stream, " 4");
+                        else if(n == 4) fprintf(stream, " 5");
                     }
                 }
                 if(found) continue;
             }
-            if(board[index]*-swap > 0) fprintf(stream, "\u25C9 ");
-            else if(board[index]*-swap < 0) fprintf(stream, "\u25EF ");
+            //if(board[index]*-swap > 0) fprintf(stream, "\u25C9 ");
+            //else if(board[index]*-swap < 0) fprintf(stream, "\u25EF ");
+            if(board[index]*-swap > 0) fprintf(stream, " O");
+            else if(board[index]*-swap < 0) fprintf(stream, " X");
             else fprintf(stream, "  ");
         }
         fprintf(stream, "\n");
@@ -640,8 +649,10 @@ void test_go(char *cfg, char *weights, int multi)
             col = index % 19;
             printf("%d: %c %d, %.2f%%\n", i+1, col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row+1, move[index]*100);
         }
-        if(color == 1) printf("\u25EF Enter move: ");
-        else printf("\u25C9 Enter move: ");
+        //if(color == 1) printf("\u25EF Enter move: ");
+        //else printf("\u25C9 Enter move: ");
+        if(color == 1) printf("X Enter move: ");
+        else printf("O Enter move: ");
 
         char c;
         char *line = fgetl(stdin);

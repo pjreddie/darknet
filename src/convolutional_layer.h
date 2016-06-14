@@ -19,6 +19,9 @@ void pull_convolutional_layer(convolutional_layer layer);
 
 void add_bias_gpu(float *output, float *biases, int batch, int n, int size);
 void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size);
+#ifdef CUDNN
+void cudnn_convolutional_setup(layer *l);
+#endif
 #endif
 
 convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, int batch_normalization, int binary, int xnor);

@@ -51,7 +51,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
     }
     if(clear) *net.seen = 0;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = net.batch;
+    int imgs = net.batch*net.subdivisions;
 
     list *options = read_data_cfg(datacfg);
 
@@ -338,10 +338,10 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
     network net = parse_network_cfg(filename);
-    set_batch_network(&net, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    set_batch_network(&net, 1);
     srand(time(0));
 
     list *options = read_data_cfg(datacfg);
