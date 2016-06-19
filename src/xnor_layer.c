@@ -66,7 +66,7 @@ void forward_xnor_layer(const layer l, network_state state)
     ai2_bin_conv_layer al = ai2_make_bin_conv_layer(b, c, ix, iy, wx, wy, s, pad);
 
     // OPTIONAL: You need to set the real-valued input like:
-    ai2_setFltInput(&al, state.input);
+    ai2_setFltInput_unpadded(&al, state.input);
     // The above function will automatically binarize the input for the layer (channel wise).
     // If commented: using the default 0-valued input.
 

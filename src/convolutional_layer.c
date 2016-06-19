@@ -45,6 +45,14 @@ void binarize_filters(float *filters, int n, int size, float *binary)
     }
 }
 
+void binarize_cpu(float *input, int n, float *binary)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        binary[i] = (input[i] > 0) ? 1 : -1;
+    }
+}
+
 void binarize_input(float *input, int n, int size, float *binary)
 {
     int i, s;
@@ -426,12 +434,10 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
        }
      */
 
-    if(l.xnor && (l.c%32 != 0 || !AI2)){
+    if(l.xnor ){
         binarize_filters(l.filters, l.n, l.c*l.size*l.size, l.binary_filters);
         swap_binary(&l);
-        for(i = 0; i < l.batch; ++i){
-            binarize_input(state.input + i*l.inputs, l.c, l.h*l.w, l.binary_input + i*l.inputs);
-        }
+        binarize_cpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input);
         state.input = l.binary_input;
     }
 

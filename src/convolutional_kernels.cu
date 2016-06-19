@@ -82,9 +82,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     if(l.xnor){
         binarize_filters_gpu(l.filters_gpu, l.n, l.c*l.size*l.size, l.binary_filters_gpu);
         swap_binary(&l);
-        for(i = 0; i < l.batch; ++i){
-            binarize_input_gpu(state.input + i*l.inputs, l.c, l.h*l.w, l.binary_input_gpu + i*l.inputs);
-        }
+        binarize_gpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input_gpu);
         state.input = l.binary_input_gpu;
     }
 
