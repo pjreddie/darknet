@@ -14,10 +14,10 @@
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 image voc_labels[CLASSES_NUM];
 
-char * g_train_images_path = "/usr/local/darknet/2007_train.txt";
-char * g_val_images_path = "/usr/local/darknet/2007_val.txt";
-char * g_test_images_path = "/usr/local/darknet/2007_test.txt";
-char * g_backup_directory_path = "/data/darknet/darknet_backup/darknet_my_test/";
+char * g_train_images_path = "/darknet/train.txt";
+char * g_val_images_path = "/darknet/val.txt";
+char * g_test_images_path = "/darknet/test.txt";
+char * g_backup_directory_path = "/darknet/darknet_backup/";
 
 void train_yolo(char *cfgfile, char *weightfile)
 {
