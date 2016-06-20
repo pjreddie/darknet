@@ -98,6 +98,7 @@ void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index, cha
     while(1){
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
+        /*
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
         show_image(disp, "YOLO");
@@ -109,6 +110,16 @@ void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index, cha
         disp  = det;
         det   = in;
         det_s = in_s;
+        */
+
+        fetch_in_thread(0);
+        det = in;
+        det_s = in_s;
+        detect_in_thread(0);
+        disp = det;
+        show_image(disp, "YOLO");
+        free_image(disp);
+        cvWaitKey(1);
 
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
