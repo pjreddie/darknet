@@ -34,6 +34,7 @@ typedef struct network{
     float *scales;
     int   *steps;
     int num_steps;
+    int burn_in;
 
     int inputs;
     int h, w, c;
