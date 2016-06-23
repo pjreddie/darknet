@@ -99,6 +99,10 @@ extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam
     det = in;
     det_s = in_s;
 
+    cvNamedWindow("YOLO", CV_WINDOW_NORMAL); 
+    cvMoveWindow("YOLO", 0, 0);
+    cvResizeWindow("YOLO", 1352, 1013);
+
     while(1){
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);

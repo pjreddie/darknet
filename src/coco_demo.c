@@ -87,8 +87,6 @@ void demo_coco(char *cfgfile, char *weightfile, float thresh, int cam_index, con
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow("COCO", CV_WINDOW_NORMAL); 
-    cvResizeWindow("COCO", 512, 512);
 
     detection_layer l = net.layers[net.n-1];
     int j;
@@ -123,16 +121,22 @@ void demo_coco(char *cfgfile, char *weightfile, float thresh, int cam_index, con
     }
 
     int count = 0;
+    cvNamedWindow("COCO", CV_WINDOW_NORMAL); 
+    cvMoveWindow("COCO", 0, 0);
+    cvResizeWindow("COCO", 1352, 1013);
+
     while(1){
         ++count;
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
         if(pthread_create(&fetch_thread, 0, fetch_in_thread_coco, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread_coco, 0)) error("Thread creation failed");
-        //show_image(disp, "COCO");
+        show_image(disp, "COCO");
+        /*
         char buff[256];
         sprintf(buff, "/home/pjreddie/coco/coco_%05d", count);
         save_image(disp, buff);
+        */
 
         free_image(disp);
         cvWaitKey(10);
