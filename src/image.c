@@ -365,6 +365,7 @@ void show_image_cv(image p, const char *name)
     image get_image_from_stream(CvCapture *cap)
     {
         IplImage* src = cvQueryFrame(cap);
+        if (!src) return make_empty_image(0,0,0);
         image im = ipl_to_image(src);
         rgbgr_image(im);
         return im;

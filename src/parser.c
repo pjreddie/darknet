@@ -264,6 +264,7 @@ detection_layer parse_detection(list *options, size_params params)
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
     layer.jitter = option_find_float(options, "jitter", .2);
+    layer.random = option_find_int_quiet(options, "random", 0);
     return layer;
 }
 
