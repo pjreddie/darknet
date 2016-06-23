@@ -8,6 +8,18 @@ extern "C" {
 }
 
 
+__device__ float lhtan_activate_kernel(float x)
+{
+    if(x < 0) return .001*x;
+    if(x > 1) return .001*(x-1) + 1;
+    return x;
+}
+__device__ float lhtan_gradient_kernel(float x)
+{
+    if(x > 0 && x < 1) return 1;
+    return .001;
+}
+
 __device__ float hardtan_activate_kernel(float x)
 {
     if (x < -1) return -1;
@@ -89,6 +101,8 @@ __device__ float activate_kernel(float x, ACTIVATION a)
             return stair_activate_kernel(x);
         case HARDTAN:
             return hardtan_activate_kernel(x);
+        case LHTAN:
+            return lhtan_activate_kernel(x);
     }
     return 0;
 }
@@ -120,6 +134,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
             return stair_gradient_kernel(x);
         case HARDTAN:
             return hardtan_gradient_kernel(x);
+        case LHTAN:
+            return lhtan_gradient_kernel(x);
     }
     return 0;
 }

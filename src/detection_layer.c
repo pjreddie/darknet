@@ -53,8 +53,6 @@ void forward_detection_layer(const detection_layer l, network_state state)
                 softmax_array(l.output + index + offset, l.classes, 1,
                         l.output + index + offset);
             }
-            int offset = locations*l.classes;
-            activate_array(l.output + index + offset, locations*l.n*(1+l.coords), LOGISTIC);
         }
     }
     if(state.train){
@@ -133,11 +131,9 @@ void forward_detection_layer(const detection_layer l, network_state state)
                         best_index = 0;
                     }
                 }
-                /*
-                if(1 && *(state.net.seen) < 100000){
+                if(l.random && *(state.net.seen) < 64000){
                     best_index = rand()%l.n;
                 }
-                */
 
                 int box_index = index + locations*(l.classes + l.n) + (i*l.n + best_index) * l.coords;
                 int tbox_index = truth_index + 1 + l.classes;
@@ -175,10 +171,6 @@ void forward_detection_layer(const detection_layer l, network_state state)
                 avg_iou += iou;
                 ++count;
             }
-            if(l.softmax){
-                gradient_array(l.output + index + locations*l.classes, locations*l.n*(1+l.coords), 
-                        LOGISTIC, l.delta + index + locations*l.classes);
-            }
         }
 
         if(0){
@@ -208,6 +200,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
         }
 
 
+        *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
 
 
         printf("Detection Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_allcat/(count*l.classes), avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
