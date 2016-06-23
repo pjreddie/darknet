@@ -15,9 +15,6 @@
 #include "opencv2/imgproc/imgproc_c.h"
 void convert_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
 
-#define DELAY 0
-static int delay = DELAY;
-
 static char **demo_names;
 static image *demo_labels;
 static int demo_classes;
@@ -43,14 +40,9 @@ void *fetch_in_thread(void *ptr)
 {
     in = get_image_from_stream(cap);
     if(!in.data){
-        in = disp;
-        if(delay == DELAY) error("Stream closed.");
-    }else{
-        if(disp.data){
-            free_image(disp);
-        }
-        in_s = resize_image(in, net.w, net.h);
+        error("Stream closed.");
     }
+    in_s = resize_image(in, net.w, net.h);
     return 0;
 }
 
@@ -63,9 +55,7 @@ void *detect_in_thread(void *ptr)
     float *prediction = network_predict(net, X);
 
     memcpy(predictions[demo_index], prediction, l.outputs*sizeof(float));
-    if(delay == DELAY){
-        mean_arrays(predictions, FRAMES, l.outputs, avg);
-    }
+    mean_arrays(predictions, FRAMES, l.outputs, avg);
 
     free_image(det_s);
     convert_detections(avg, l.classes, l.n, l.sqrt, l.side, 1, 1, demo_thresh, probs, boxes, 0);
@@ -80,11 +70,7 @@ void *detect_in_thread(void *ptr)
     demo_index = (demo_index + 1)%FRAMES;
 
     draw_detections(det, l.side*l.side*l.n, demo_thresh, boxes, probs, demo_names, demo_labels, demo_classes);
-    if(delay == 0){
-        delay = DELAY;
-    } else {
-        --delay;
-    }
+
     return 0;
 }
 
@@ -97,8 +83,10 @@ double get_wall_time()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes, int frame_skip)
 {
+    //skip = frame_skip;
+    int delay = frame_skip;
     demo_names = names;
     demo_labels = labels;
     demo_classes = classes;
@@ -161,27 +149,44 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     while(1){
         ++count;
-        if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-        if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
-        //fetch_in_thread(0);
-        //detect_in_thread(0);
+        if(1){
+            if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
+            if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 
-        show_image(disp, "Demo");
-        cvWaitKey(1);
-        //char buff[256];
-        //sprintf(buff, "coco/coco_%05d", count);
-        //save_image(disp, buff);
+            show_image(disp, "Demo");
+            int c = cvWaitKey(1);
+            if (c == 10){
+                if(frame_skip == 0) frame_skip = 60;
+                else if(frame_skip == 4) frame_skip = 0;
+                else if(frame_skip == 60) frame_skip = 4;   
+                else frame_skip = 0;
+            }
 
-        //free_image(disp);
-        //cvWaitKey(10);
-        pthread_join(fetch_thread, 0);
-        pthread_join(detect_thread, 0);
+            pthread_join(fetch_thread, 0);
+            pthread_join(detect_thread, 0);
 
-        disp  = det;
-        det   = in;
-        det_s = in_s;
+            if(delay == 0){
+                free_image(disp);
+                disp  = det;
+            }
+            det   = in;
+            det_s = in_s;
+        }else {
+            fetch_in_thread(0);
+            det   = in;
+            det_s = in_s;
+            detect_in_thread(0);
+            if(delay == 0) {
+                free_image(disp);
+                disp = det;
+            }
+            show_image(disp, "Demo");
+            cvWaitKey(1);
+        }
+        --delay;
+        if(delay < 0){
+            delay = frame_skip;
 
-        if(delay == DELAY){
             double after = get_wall_time();
             float curr = 1./(after - before);
             fps = curr;
@@ -190,7 +195,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes, int frame_skip)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
