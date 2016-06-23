@@ -15,8 +15,8 @@
 #include "opencv2/imgproc/imgproc_c.h"
 void convert_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
 
-#define DELAY 5
-static int delay = DELAY;
+static int skip = 0;
+static int skipped = 0;
 
 static char **demo_names;
 static image *demo_labels;
@@ -44,7 +44,7 @@ void *fetch_in_thread(void *ptr)
     in = get_image_from_stream(cap);
     if(!in.data){
         in = disp;
-        if(delay == DELAY) error("Stream closed.");
+        if(skipped == skip) error("Stream closed.");
     }else{
         if(disp.data){
             free_image(disp);
@@ -63,7 +63,7 @@ void *detect_in_thread(void *ptr)
     float *prediction = network_predict(net, X);
 
     memcpy(predictions[demo_index], prediction, l.outputs*sizeof(float));
-    if(delay == DELAY){
+    if(skipped == skip){
         mean_arrays(predictions, FRAMES, l.outputs, avg);
     }
 
@@ -80,16 +80,14 @@ void *detect_in_thread(void *ptr)
     demo_index = (demo_index + 1)%FRAMES;
 
     draw_detections(det, l.side*l.side*l.n, demo_thresh, boxes, probs, demo_names, demo_labels, demo_classes);
-    if(delay == 0){
-        delay = DELAY;
-    } else {
-        --delay;
-    }
+
+    skipped = (skipped + 1)%skip;
     return 0;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes, int frame_skip)
 {
+    skip = frame_skip;
     demo_names = names;
     demo_labels = labels;
     demo_classes = classes;
@@ -176,7 +174,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes, int frame_skip)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
