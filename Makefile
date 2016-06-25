@@ -1,6 +1,6 @@
 GPU=0
-OPENCV=0
 CUDNN=0
+OPENCV=0
 DEBUG=0
 
 ARCH= --gpu-architecture=compute_52 --gpu-code=compute_52
