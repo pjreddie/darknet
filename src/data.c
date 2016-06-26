@@ -196,6 +196,19 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
     labelpath = find_replace(labelpath, ".jpg", ".txt");
     labelpath = find_replace(labelpath, ".JPG", ".txt");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    labelpath = find_replace(labelpath, ".bmp", ".txt");
+    labelpath = find_replace(labelpath, ".dib", ".txt");
+    labelpath = find_replace(labelpath, ".jpe", ".txt");
+    labelpath = find_replace(labelpath, ".jp2", ".txt");
+    labelpath = find_replace(labelpath, ".png", ".txt");
+    labelpath = find_replace(labelpath, ".pbm", ".txt");
+    labelpath = find_replace(labelpath, ".pgm", ".txt");
+    labelpath = find_replace(labelpath, ".ppm", ".txt");
+    labelpath = find_replace(labelpath, ".sr", ".txt");
+    labelpath = find_replace(labelpath, ".ras", ".txt");
+    labelpath = find_replace(labelpath, ".tiff", ".txt");
+    labelpath = find_replace(labelpath, ".tif", ".txt");
+    
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
@@ -233,6 +246,19 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     labelpath = find_replace(labelpath, ".jpg", ".txt");
     labelpath = find_replace(labelpath, ".JPG", ".txt");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    labelpath = find_replace(labelpath, ".bmp", ".txt");
+    labelpath = find_replace(labelpath, ".dib", ".txt");
+    labelpath = find_replace(labelpath, ".jpe", ".txt");
+    labelpath = find_replace(labelpath, ".jp2", ".txt");
+    labelpath = find_replace(labelpath, ".png", ".txt");
+    labelpath = find_replace(labelpath, ".pbm", ".txt");
+    labelpath = find_replace(labelpath, ".pgm", ".txt");
+    labelpath = find_replace(labelpath, ".ppm", ".txt");
+    labelpath = find_replace(labelpath, ".sr", ".txt");
+    labelpath = find_replace(labelpath, ".ras", ".txt");
+    labelpath = find_replace(labelpath, ".tiff", ".txt");
+    labelpath = find_replace(labelpath, ".tif", ".txt");
+    
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
@@ -279,6 +305,19 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     labelpath = find_replace(labelpath, ".jpg", ".txt");
     labelpath = find_replace(labelpath, ".JPG", ".txt");
     labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    labelpath = find_replace(labelpath, ".bmp", ".txt");
+    labelpath = find_replace(labelpath, ".dib", ".txt");
+    labelpath = find_replace(labelpath, ".jpe", ".txt");
+    labelpath = find_replace(labelpath, ".jp2", ".txt");
+    labelpath = find_replace(labelpath, ".png", ".txt");
+    labelpath = find_replace(labelpath, ".pbm", ".txt");
+    labelpath = find_replace(labelpath, ".pgm", ".txt");
+    labelpath = find_replace(labelpath, ".ppm", ".txt");
+    labelpath = find_replace(labelpath, ".sr", ".txt");
+    labelpath = find_replace(labelpath, ".ras", ".txt");
+    labelpath = find_replace(labelpath, ".tiff", ".txt");
+    labelpath = find_replace(labelpath, ".tif", ".txt");
+    
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
