@@ -327,6 +327,129 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     }
 }
 
+
+void validate_yolo_classify(char *cfgfile, char *weightfile)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    srand(time(0));
+
+    char *base = "results/comp4_det_test_";
+    //list *plist = get_paths("data/voc.2007.test");
+    list *plist = get_paths("/data/darknet/TrainingData1/yolo_training_data/test_list.txt");
+    
+    char **paths = (char **)list_to_array(plist);
+
+    layer l = net.layers[net.n-1];
+    int classes = l.classes;
+    int square = l.sqrt;
+    int side = l.side;
+
+    int j, k;
+    FILE **fps = calloc(classes, sizeof(FILE *));
+    for(j = 0; j < classes; ++j){
+        char buff[1024];
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+        fps[j] = fopen(buff, "w");
+    }
+    box *boxes = calloc(side*side*l.n, sizeof(box));
+    float **probs = calloc(side*side*l.n, sizeof(float *));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+
+    int m = plist->size;
+    int i=0;
+
+    //float thresh = .001;
+    float thresh = .2;
+    float iou_thresh = .5;
+    //float nms = 0;
+    float nms = 0.5;
+    
+
+    int total = 0;
+    int correct = 0;
+    int class_correct = 0;
+    int proposals = 0;
+    float avg_iou = 0;
+
+    for(i = 0; i < m; ++i){
+        char *path = paths[i];
+        image orig = load_image_color(path, 0, 0);
+        image sized = resize_image(orig, net.w, net.h);
+        char *id = basecfg(path);
+        float *predictions = network_predict(net, sized.data);
+        convert_yolo_detections(predictions, classes, l.n, square, side, 1, 1, thresh, probs, boxes, 0);
+        //if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms);
+        if (nms) do_nms(boxes, probs, side*side*l.n, classes, nms);
+
+        char *labelpath = find_replace(path, "images", "labels");
+        labelpath = find_replace(labelpath, "JPEGImages", "labels");
+        labelpath = find_replace(labelpath, ".jpg", ".txt");
+        labelpath = find_replace(labelpath, ".JPEG", ".txt");
+        labelpath = find_replace(labelpath, ".bmp", ".txt");
+        labelpath = find_replace(labelpath, ".dib", ".txt");
+        labelpath = find_replace(labelpath, ".jpe", ".txt");
+        labelpath = find_replace(labelpath, ".jp2", ".txt");
+        labelpath = find_replace(labelpath, ".png", ".txt");
+        labelpath = find_replace(labelpath, ".pbm", ".txt");
+        labelpath = find_replace(labelpath, ".pgm", ".txt");
+        labelpath = find_replace(labelpath, ".ppm", ".txt");
+        labelpath = find_replace(labelpath, ".sr", ".txt");
+        labelpath = find_replace(labelpath, ".ras", ".txt");
+        labelpath = find_replace(labelpath, ".tiff", ".txt");
+        labelpath = find_replace(labelpath, ".tif", ".txt");
+
+        int num_labels = 0;
+        box_label *truth = read_boxes(labelpath, &num_labels);
+        for(k = 0; k < side*side*l.n; ++k){
+            int class = max_index(probs[k], classes);
+            float prob = probs[k][class];
+            //fprintf(stderr, "path=%s\t\tk=%d\tprob=%f\tclass=%d\n", path, k, prob, class);
+        
+            if(prob > thresh){
+                ++proposals;
+            }
+        }
+        for (j = 0; j < num_labels; ++j) {
+            ++total;
+            box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
+            float best_iou = 0;
+            int pre_class = -1;
+            for(k = 0; k < side*side*l.n; ++k){
+                float iou = box_iou(boxes[k], t);
+                int class = max_index(probs[k], classes);
+                float prob = probs[k][class];
+                //fprintf(stderr, "path=%s\t\tk=%d\tprob=%f\tclass=%d\n", path, k, prob, class);
+                if(prob > thresh && iou > best_iou){
+                    best_iou = iou;
+                    pre_class = class;
+                }
+            }
+            avg_iou += best_iou;
+            
+            if(best_iou > iou_thresh){
+                ++correct;
+            }
+            
+            if(pre_class == truth[j].id){
+                ++class_correct;
+            }
+            
+            //fprintf(stderr, "true_class=%d\tpre_class=%d\n", truth[j].id, pre_class);
+        
+        }
+
+        fprintf(stderr, "%5d %5d %5d\tRPs/Img: %.2f\tIOU: %.2f%%\tRecall:%.2f%%\t\tClassify:%.2f%%\n", i, correct, total, (float)proposals/(i+1), avg_iou*100/total, 100.*correct/total, 100.*class_correct/total);
+        free(id);
+        free_image(orig);
+        free_image(sized);
+    }
+}
+
 void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
 {
 
@@ -404,5 +527,6 @@ void run_yolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
+    else if(0==strcmp(argv[2], "recall_classify")) validate_yolo_classify(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh, cam_index, filename);
 }
