@@ -120,6 +120,43 @@ The demo is trained with the above data and annotations.
 
    ./darknet yolo train cfg/yolo.cfg extraction.conv.weights
 
+#Windows Version#
+
+I also have a windows version for darknet available:
+
+http://guanghan.info/projects/YOLO/darknet-windows.zip
+
+But you need to use Visual Studio 2015 to open the project.
+
+Here is a quick hand-on guide:
+
+1. Open VS2015. If you don't have it, you can install it for free from the offcial microsoft website.
+
+2. Open: 
+
+darknet-windows\darknet\darknet.sln
+
+3. Comiple
+
+4.
+Copy the exe file from:
+
+darknet-windows\darknet\x64\Debug\darknet.exe
+
+to the root folder:
+
+darknet-windows\darknet.exe
+
+5. Open cmd 
+
+Run: darknet yolo test [cfg_file] [weight_file] [img_name]
+
+6. The image will be output to:
+
+darknet-windows\prediction.png
+
+darknet-windows\resized.png
+
 #Contact#
 If you find any problems regarding the procedure, contact me at [gnxr9@mail.missouri.edu](gnxr9@mail.missouri.edu).
 
