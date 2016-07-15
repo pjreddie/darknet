@@ -138,8 +138,7 @@ darknet-windows\darknet\darknet.sln
 
 3. Comiple
 
-4.
-Copy the exe file from:
+4. Copy the exe file from:
 
 darknet-windows\darknet\x64\Debug\darknet.exe
 
