@@ -9,10 +9,10 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-//#define CLASSES_NUM (20)
+#define CLASSES_NUM (20)
 
-//char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", //"horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
-//image voc_labels[CLASSES_NUM];
+char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
+image voc_labels[CLASSES_NUM];
 
 
 void train_yolo(char *datacfg, char *cfgfile, char *weightfile)
@@ -168,7 +168,7 @@ void validate_yolo(char *datacfg, char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    list *plist = get_paths(valid_images);
+    list *plist = get_paths(valid_list);
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -180,7 +180,7 @@ void validate_yolo(char *datacfg, char *cfgfile, char *weightfile)
     FILE **fps = calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, labels[j]);
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
     box *boxes = calloc(side*side*l.n, sizeof(box));
@@ -269,7 +269,7 @@ void validate_yolo_recall(char *datacfg, char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    list *plist = get_paths(g_test_images_path);
+    list *plist = get_paths(test_list);
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
