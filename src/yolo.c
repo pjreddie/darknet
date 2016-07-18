@@ -20,8 +20,8 @@ void train_yolo(char *datacfg, char *cfgfile, char *weightfile)
     list *options = read_data_cfg(datacfg);
     
     char *train_list = option_find_str(options, "train", "data/train_list.txt");
-    char *test_list = option_find_str(options, "train", "data/test_list.txt");
-    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    char *test_list = option_find_str(options, "test", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
     char *backup_directory = option_find_str(options, "backup", "/backup/");
     //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
@@ -149,10 +149,10 @@ void validate_yolo(char *datacfg, char *cfgfile, char *weightfile)
     list *options = read_data_cfg(datacfg);
     
     char *train_list = option_find_str(options, "train", "data/train_list.txt");
-    char *test_list = option_find_str(options, "train", "data/test_list.txt");
-    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    char *test_list = option_find_str(options, "test", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
-    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *backup_directory = option_find_str(options, "backup", "/backup/");
     //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
     
     //int classes = option_find_int(options, "classes", 2);
@@ -250,10 +250,10 @@ void validate_yolo_recall(char *datacfg, char *cfgfile, char *weightfile)
     list *options = read_data_cfg(datacfg);
     
     char *train_list = option_find_str(options, "train", "data/train_list.txt");
-    char *test_list = option_find_str(options, "train", "data/test_list.txt");
-    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    char *test_list = option_find_str(options, "test", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
-    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *backup_directory = option_find_str(options, "backup", "/backup/");
     //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
     
     //int classes = option_find_int(options, "classes", 2);
@@ -363,10 +363,10 @@ void validate_yolo_classify(char *datacfg, char *cfgfile, char *weightfile)
     list *options = read_data_cfg(datacfg);
     
     char *train_list = option_find_str(options, "train", "data/train_list.txt");
-    char *test_list = option_find_str(options, "train", "data/test_list.txt");
-    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    char *test_list = option_find_str(options, "test", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
-    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *backup_directory = option_find_str(options, "backup", "/backup/");
     //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
     
     //int classes = option_find_int(options, "classes", 2);
@@ -498,10 +498,10 @@ void test_yolo(char *datacfg, char *cfgfile, char *weightfile, char *filename, f
     list *options = read_data_cfg(datacfg);
     
     char *train_list = option_find_str(options, "train", "data/train_list.txt");
-    char *test_list = option_find_str(options, "train", "data/test_list.txt");
-    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    char *test_list = option_find_str(options, "test", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
-    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *backup_directory = option_find_str(options, "backup", "/backup/");
     //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
     
     //int classes = option_find_int(options, "classes", 2);
