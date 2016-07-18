@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "parser.h"
 #include "box.h"
+#include "option_list.h"
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
@@ -20,8 +21,8 @@ void train_yolo(char *datacfg, char *cfgfile, char *weightfile)
     list *options = read_data_cfg(datacfg);
     
     char *train_list = option_find_str(options, "train", "data/train_list.txt");
-    char *test_list = option_find_str(options, "test", "data/test_list.txt");
-    char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
+    //char *test_list = option_find_str(options, "test", "data/test_list.txt");
+    //char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
     char *backup_directory = option_find_str(options, "backup", "/backup/");
     //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
@@ -148,8 +149,8 @@ void validate_yolo(char *datacfg, char *cfgfile, char *weightfile)
 {
     list *options = read_data_cfg(datacfg);
     
-    char *train_list = option_find_str(options, "train", "data/train_list.txt");
-    char *test_list = option_find_str(options, "test", "data/test_list.txt");
+    //char *train_list = option_find_str(options, "train", "data/train_list.txt");
+    //char *test_list = option_find_str(options, "test", "data/test_list.txt");
     char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
     //char *backup_directory = option_find_str(options, "backup", "/backup/");
@@ -249,9 +250,9 @@ void validate_yolo_recall(char *datacfg, char *cfgfile, char *weightfile)
 {
     list *options = read_data_cfg(datacfg);
     
-    char *train_list = option_find_str(options, "train", "data/train_list.txt");
+    //char *train_list = option_find_str(options, "train", "data/train_list.txt");
     char *test_list = option_find_str(options, "test", "data/test_list.txt");
-    char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
+    //char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
     //char *backup_directory = option_find_str(options, "backup", "/backup/");
     //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
@@ -281,7 +282,7 @@ void validate_yolo_recall(char *datacfg, char *cfgfile, char *weightfile)
     FILE **fps = calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, labels[j]);
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
     box *boxes = calloc(side*side*l.n, sizeof(box));
@@ -362,8 +363,8 @@ void validate_yolo_classify(char *datacfg, char *cfgfile, char *weightfile)
 {
     list *options = read_data_cfg(datacfg);
     
-    char *train_list = option_find_str(options, "train", "data/train_list.txt");
-    char *test_list = option_find_str(options, "test", "data/test_list.txt");
+    //char *train_list = option_find_str(options, "train", "data/train_list.txt");
+    //char *test_list = option_find_str(options, "test", "data/test_list.txt");
     char *valid_list = option_find_str(options, "valid", "data/valid_list.txt");
     
     //char *backup_directory = option_find_str(options, "backup", "/backup/");
@@ -383,7 +384,7 @@ void validate_yolo_classify(char *datacfg, char *cfgfile, char *weightfile)
 
     char *base = "results/comp4_det_test_";
     //list *plist = get_paths("data/voc.2007.test");
-    list *plist = get_paths("/data/darknet/TrainingData1/yolo_training_data/test_list.txt");
+    list *plist = get_paths(valid_list);
     
     char **paths = (char **)list_to_array(plist);
 
@@ -542,7 +543,7 @@ void test_yolo(char *datacfg, char *cfgfile, char *weightfile, char *filename, f
         convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
         //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, 20);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, classes);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, l.classes);
         save_image(im, "predictions");
         show_image(im, "predictions");
 
@@ -575,13 +576,15 @@ void run_yolo(int argc, char **argv)
         return;
     }
 
-    char *cfg = argv[3];
-    char *weights = (argc > 4) ? argv[4] : 0;
-    char *filename = (argc > 5) ? argv[5]: 0;
-    if(0==strcmp(argv[2], "test")) test_yolo(cfg, weights, filename, thresh);
-    else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
-    else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
-    else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "recall_classify")) validate_yolo_classify(cfg, weights);
+    char *data = argv[3];
+    
+    char *cfg = argv[4];
+    char *weights = (argc > 5) ? argv[5] : 0;
+    char *filename = (argc > 6) ? argv[6]: 0;
+    if(0==strcmp(argv[2], "test")) test_yolo(data, cfg, weights, filename, thresh);
+    else if(0==strcmp(argv[2], "train")) train_yolo(data, cfg, weights);
+    else if(0==strcmp(argv[2], "valid")) validate_yolo(data, cfg, weights);
+    else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(data, cfg, weights);
+    else if(0==strcmp(argv[2], "recall_classify")) validate_yolo_classify(data, cfg, weights);
     else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh, cam_index, filename);
 }
