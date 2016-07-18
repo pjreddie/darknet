@@ -1,2 +1,2 @@
 
-//list *read_data_cfg(char *filename);
+list *read_data_cfg(char *filename);

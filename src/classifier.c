@@ -10,7 +10,6 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-/*
 list *read_data_cfg(char *filename)
 {
     FILE *file = fopen(filename, "r");
@@ -38,7 +37,6 @@ list *read_data_cfg(char *filename)
     fclose(file);
     return options;
 }
-*/
 
 void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
 {

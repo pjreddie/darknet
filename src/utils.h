@@ -56,8 +56,5 @@ int find_arg(int argc, char* argv[], char *arg);
 char *find_char_arg(int argc, char **argv, char *arg, char *def);
 int sample_array(float *a, int n);
 
-
-list *read_data_cfg(char *filename);
-
 #endif
 
