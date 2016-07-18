@@ -9,20 +9,25 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-#define CLASSES_NUM (20)
+//#define CLASSES_NUM (20)
 
-char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
-image voc_labels[CLASSES_NUM];
+//char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", //"horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
+//image voc_labels[CLASSES_NUM];
 
-char * g_train_images_path = "/darknet/train.txt";
-char * g_val_images_path = "/darknet/val.txt";
-char * g_test_images_path = "/darknet/test.txt";
-char * g_backup_directory_path = "/darknet/darknet_backup/";
 
-void train_yolo(char *cfgfile, char *weightfile)
-{
-    char *train_images = g_train_images_path;
-    char *backup_directory = g_backup_directory_path;
+void train_yolo(char *datacfg, char *cfgfile, char *weightfile)
+{    
+    list *options = read_data_cfg(datacfg);
+    
+    char *train_list = option_find_str(options, "train", "data/train_list.txt");
+    char *test_list = option_find_str(options, "train", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    
+    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
+    
+    //int classes = option_find_int(options, "classes", 2);
+    
     srand(time(0));
     data_seed = time(0);
     char *base = basecfg(cfgfile);
@@ -44,7 +49,7 @@ void train_yolo(char *cfgfile, char *weightfile)
     int classes = l.classes;
     float jitter = l.jitter;
 
-    list *plist = get_paths(train_images);
+    list *plist = get_paths(train_list);
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
@@ -80,7 +85,7 @@ void train_yolo(char *cfgfile, char *weightfile)
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0 || (i < 1000 && i%100 == 0)){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%d06.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         free_data(train);
@@ -139,8 +144,21 @@ void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int 
     }
 }
 
-void validate_yolo(char *cfgfile, char *weightfile)
+void validate_yolo(char *datacfg, char *cfgfile, char *weightfile)
 {
+    list *options = read_data_cfg(datacfg);
+    
+    char *train_list = option_find_str(options, "train", "data/train_list.txt");
+    char *test_list = option_find_str(options, "train", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    
+    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
+    
+    //int classes = option_find_int(options, "classes", 2);
+    
+    //char **labels = get_labels(label_list);
+    
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -150,9 +168,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    //list *plist = get_paths("data/voc.2007.test");
-    list *plist = get_paths(g_val_images_path);
-    //list *plist = get_paths("data/voc.2012.test");
+    list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -164,7 +180,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     FILE **fps = calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+        snprintf(buff, 1024, "%s%s.txt", base, labels[j]);
         fps[j] = fopen(buff, "w");
     }
     box *boxes = calloc(side*side*l.n, sizeof(box));
@@ -229,8 +245,21 @@ void validate_yolo(char *cfgfile, char *weightfile)
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
-void validate_yolo_recall(char *cfgfile, char *weightfile)
+void validate_yolo_recall(char *datacfg, char *cfgfile, char *weightfile)
 {
+    list *options = read_data_cfg(datacfg);
+    
+    char *train_list = option_find_str(options, "train", "data/train_list.txt");
+    char *test_list = option_find_str(options, "train", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    
+    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
+    
+    //int classes = option_find_int(options, "classes", 2);
+    
+    //char **labels = get_labels(label_list);
+    
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -252,7 +281,7 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     FILE **fps = calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+        snprintf(buff, 1024, "%s%s.txt", base, labels[j]);
         fps[j] = fopen(buff, "w");
     }
     box *boxes = calloc(side*side*l.n, sizeof(box));
@@ -262,7 +291,8 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     int m = plist->size;
     int i=0;
 
-    float thresh = .001;
+    //float thresh = .001;
+    float thresh = .2;
     float iou_thresh = .5;
     float nms = 0;
 
@@ -328,8 +358,21 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
 }
 
 
-void validate_yolo_classify(char *cfgfile, char *weightfile)
+void validate_yolo_classify(char *datacfg, char *cfgfile, char *weightfile)
 {
+    list *options = read_data_cfg(datacfg);
+    
+    char *train_list = option_find_str(options, "train", "data/train_list.txt");
+    char *test_list = option_find_str(options, "train", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    
+    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
+    
+    //int classes = option_find_int(options, "classes", 2);
+    
+    //char **labels = get_labels(label_list);
+    
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -450,8 +493,20 @@ void validate_yolo_classify(char *cfgfile, char *weightfile)
     }
 }
 
-void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
+void test_yolo(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh)
 {
+    list *options = read_data_cfg(datacfg);
+    
+    char *train_list = option_find_str(options, "train", "data/train_list.txt");
+    char *test_list = option_find_str(options, "train", "data/test_list.txt");
+    char *valid_list = option_find_str(options, "train", "data/valid_list.txt");
+    
+    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    //char *label_list = option_find_str(options, "labels", "data/labels_list.txt");
+    
+    //int classes = option_find_int(options, "classes", 2);
+    
+    //char **labels = get_labels(label_list);
 
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -487,7 +542,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
         //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, 20);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, CLASSES_NUM);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, classes);
         save_image(im, "predictions");
         show_image(im, "predictions");
 
