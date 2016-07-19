@@ -29,6 +29,7 @@ typedef enum {
     BATCHNORM,
     NETWORK,
     XNOR,
+    REGION,
     BLANK
 } LAYER_TYPE;
 

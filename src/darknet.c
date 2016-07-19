@@ -14,6 +14,7 @@
 
 extern void run_imagenet(int argc, char **argv);
 extern void run_yolo(int argc, char **argv);
+extern void run_detector(int argc, char **argv);
 extern void run_coco(int argc, char **argv);
 extern void run_writing(int argc, char **argv);
 extern void run_captcha(int argc, char **argv);
@@ -97,12 +98,13 @@ void operations(char *cfgfile)
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.type == CONVOLUTIONAL){
-            ops += 2 * l.n * l.size*l.size*l.c * l.out_h*l.out_w;
+            ops += 2l * l.n * l.size*l.size*l.c * l.out_h*l.out_w;
         } else if(l.type == CONNECTED){
-            ops += 2 * l.inputs * l.outputs;
+            ops += 2l * l.inputs * l.outputs;
         }
     }
     printf("Floating Point Operations: %ld\n", ops);
+    printf("Floating Point Operations: %.2f Bn\n", (float)ops/1000000000.);
 }
 
 void partial(char *cfgfile, char *weightfile, char *outfile, int max)
@@ -164,6 +166,47 @@ void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
     save_weights(net, outfile);
 }
 
+void reset_normalize_net(char *cfgfile, char *weightfile, char *outfile)
+{
+    gpu_index = -1;
+    network net = parse_network_cfg(cfgfile);
+    if (weightfile) {
+        load_weights(&net, weightfile);
+    }
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        layer l = net.layers[i];
+        if (l.type == CONVOLUTIONAL && l.batch_normalize) {
+            denormalize_convolutional_layer(l);
+        }
+        if (l.type == CONNECTED && l.batch_normalize) {
+            denormalize_connected_layer(l);
+        }
+        if (l.type == GRU && l.batch_normalize) {
+            denormalize_connected_layer(*l.input_z_layer);
+            denormalize_connected_layer(*l.input_r_layer);
+            denormalize_connected_layer(*l.input_h_layer);
+            denormalize_connected_layer(*l.state_z_layer);
+            denormalize_connected_layer(*l.state_r_layer);
+            denormalize_connected_layer(*l.state_h_layer);
+        }
+    }
+    save_weights(net, outfile);
+}
+
+layer normalize_layer(layer l, int n)
+{
+    int j;
+    l.batch_normalize=1;
+    l.scales = calloc(n, sizeof(float));
+    for(j = 0; j < n; ++j){
+        l.scales[j] = 1;
+    }
+    l.rolling_mean = calloc(n, sizeof(float));
+    l.rolling_variance = calloc(n, sizeof(float));
+    return l;
+}
+
 void normalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
@@ -171,17 +214,23 @@ void normalize_net(char *cfgfile, char *weightfile, char *outfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int i, j;
+    int i;
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
-        if(l.type == CONVOLUTIONAL){
+        if(l.type == CONVOLUTIONAL && !l.batch_normalize){
+            net.layers[i] = normalize_layer(l, l.n);
+        }
+        if (l.type == CONNECTED && !l.batch_normalize) {
+            net.layers[i] = normalize_layer(l, l.outputs);
+        }
+        if (l.type == GRU && l.batch_normalize) {
+            *l.input_z_layer = normalize_layer(*l.input_z_layer, l.input_z_layer->outputs);
+            *l.input_r_layer = normalize_layer(*l.input_r_layer, l.input_r_layer->outputs);
+            *l.input_h_layer = normalize_layer(*l.input_h_layer, l.input_h_layer->outputs);
+            *l.state_z_layer = normalize_layer(*l.state_z_layer, l.state_z_layer->outputs);
+            *l.state_r_layer = normalize_layer(*l.state_r_layer, l.state_r_layer->outputs);
+            *l.state_h_layer = normalize_layer(*l.state_h_layer, l.state_h_layer->outputs);
             net.layers[i].batch_normalize=1;
-            net.layers[i].scales = calloc(l.n, sizeof(float));
-            for(j = 0; j < l.n; ++j){
-                net.layers[i].scales[i] = 1;
-            }
-            net.layers[i].rolling_mean = calloc(l.n, sizeof(float));
-            net.layers[i].rolling_variance = calloc(l.n, sizeof(float));
         }
     }
     save_weights(net, outfile);
@@ -265,6 +314,8 @@ int main(int argc, char **argv)
         average(argc, argv);
     } else if (0 == strcmp(argv[1], "yolo")){
         run_yolo(argc, argv);
+    } else if (0 == strcmp(argv[1], "detector")){
+        run_detector(argc, argv);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
     } else if (0 == strcmp(argv[1], "go")){
@@ -299,6 +350,8 @@ int main(int argc, char **argv)
         change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
     } else if (0 == strcmp(argv[1], "rgbgr")){
         rgbgr_net(argv[2], argv[3], argv[4]);
+    } else if (0 == strcmp(argv[1], "reset")){
+        reset_normalize_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "denormalize")){
         denormalize_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "normalize")){

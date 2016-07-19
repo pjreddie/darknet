@@ -19,6 +19,7 @@
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "detection_layer.h"
+#include "region_layer.h"
 #include "avgpool_layer.h"
 #include "local_layer.h"
 #include "route_layer.h"
@@ -51,6 +52,7 @@ int is_crop(section *s);
 int is_shortcut(section *s);
 int is_cost(section *s);
 int is_detection(section *s);
+int is_region(section *s);
 int is_route(section *s);
 list *read_cfg(char *filename);
 
@@ -245,6 +247,25 @@ softmax_layer parse_softmax(list *options, size_params params)
     return layer;
 }
 
+layer parse_region(list *options, size_params params)
+{
+    int coords = option_find_int(options, "coords", 4);
+    int classes = option_find_int(options, "classes", 20);
+    int num = option_find_int(options, "num", 1);
+    layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords);
+    assert(l.outputs == params.inputs);
+
+    l.softmax = option_find_int(options, "softmax", 0);
+    l.max_boxes = option_find_int_quiet(options, "max",30);
+    l.jitter = option_find_float(options, "jitter", .2);
+    l.rescore = option_find_int_quiet(options, "rescore",0);
+
+    l.coord_scale = option_find_float(options, "coord_scale", 1);
+    l.object_scale = option_find_float(options, "object_scale", 1);
+    l.noobject_scale = option_find_float(options, "noobject_scale", 1);
+    l.class_scale = option_find_float(options, "class_scale", 1);
+    return l;
+}
 detection_layer parse_detection(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 1);
@@ -557,6 +578,8 @@ network parse_network_cfg(char *filename)
             l = parse_crop(options, params);
         }else if(is_cost(s)){
             l = parse_cost(options, params);
+        }else if(is_region(s)){
+            l = parse_region(options, params);
         }else if(is_detection(s)){
             l = parse_detection(options, params);
         }else if(is_softmax(s)){
@@ -620,6 +643,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[crop]")==0) return CROP;
     if (strcmp(type, "[cost]")==0) return COST;
     if (strcmp(type, "[detection]")==0) return DETECTION;
+    if (strcmp(type, "[region]")==0) return REGION;
     if (strcmp(type, "[local]")==0) return LOCAL;
     if (strcmp(type, "[deconv]")==0
             || strcmp(type, "[deconvolutional]")==0) return DECONVOLUTIONAL;
@@ -658,6 +682,10 @@ int is_crop(section *s)
 int is_cost(section *s)
 {
     return (strcmp(s->type, "[cost]")==0);
+}
+int is_region(section *s)
+{
+    return (strcmp(s->type, "[region]")==0);
 }
 int is_detection(section *s)
 {

@@ -192,6 +192,9 @@ void denormalize_connected_layer(layer l)
             l.weights[i*l.inputs + j] *= scale;
         }
         l.biases[i] -= l.rolling_mean[i] * scale;
+        l.scales[i] = 1;
+        l.rolling_mean[i] = 0;
+        l.rolling_variance[i] = 1;
     }
 }
 
@@ -257,7 +260,6 @@ void forward_connected_layer_gpu(connected_layer l, network_state state)
         axpy_ongpu(l.outputs, 1, l.biases_gpu, 1, l.output_gpu + i*l.outputs, 1);
     }
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
-
 }
 
 void backward_connected_layer_gpu(connected_layer l, network_state state)

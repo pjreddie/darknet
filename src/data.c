@@ -297,11 +297,11 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
 
         if (w < .01 || h < .01) continue;
 
-        truth[i*5+0] = id;
-        truth[i*5+1] = x;
-        truth[i*5+2] = y;
-        truth[i*5+3] = w;
-        truth[i*5+4] = h;
+        truth[i*5+0] = x;
+        truth[i*5+1] = y;
+        truth[i*5+2] = w;
+        truth[i*5+3] = h;
+        truth[i*5+4] = id;
     }
     free(boxes);
 }

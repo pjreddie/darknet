@@ -301,6 +301,9 @@ void denormalize_convolutional_layer(convolutional_layer l)
             l.filters[i*l.c*l.size*l.size + j] *= scale;
         }
         l.biases[i] -= l.rolling_mean[i] * scale;
+        l.scales[i] = 1;
+        l.rolling_mean[i] = 0;
+        l.rolling_variance[i] = 1;
     }
 }
 
@@ -434,7 +437,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
        }
      */
 
-    if(l.xnor ){
+    if(l.xnor){
         binarize_filters(l.filters, l.n, l.c*l.size*l.size, l.binary_filters);
         swap_binary(&l);
         binarize_cpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input);

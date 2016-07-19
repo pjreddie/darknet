@@ -109,14 +109,17 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
         if(prob > thresh){
-            int width = pow(prob, 1./2.)*10+1;
-            width = 8;
+            //int width = pow(prob, 1./2.)*30+1;
+            int width = 8;
             printf("%s: %.0f%%\n", names[class], prob*100);
             int offset = class*1 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
             float blue = get_color(0,offset,classes);
             float rgb[3];
+
+            //width = prob*20+2;
+
             rgb[0] = red;
             rgb[1] = green;
             rgb[2] = blue;

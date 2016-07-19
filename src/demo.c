@@ -8,7 +8,7 @@
 #include "demo.h"
 #include <sys/time.h>
 
-#define FRAMES 3
+#define FRAMES 1
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"

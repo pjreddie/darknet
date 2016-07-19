@@ -16,6 +16,7 @@
 #include "activation_layer.h"
 #include "deconvolutional_layer.h"
 #include "detection_layer.h"
+#include "region_layer.h"
 #include "normalization_layer.h"
 #include "batchnorm_layer.h"
 #include "maxpool_layer.h"
@@ -103,6 +104,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "softmax";
         case DETECTION:
             return "detection";
+        case REGION:
+            return "region";
         case DROPOUT:
             return "dropout";
         case CROP:
@@ -160,6 +163,8 @@ void forward_network(network net, network_state state)
             forward_batchnorm_layer(l, state);
         } else if(l.type == DETECTION){
             forward_detection_layer(l, state);
+        } else if(l.type == REGION){
+            forward_region_layer(l, state);
         } else if(l.type == CONNECTED){
             forward_connected_layer(l, state);
         } else if(l.type == RNN){
@@ -230,11 +235,7 @@ float get_network_cost(network net)
     float sum = 0;
     int count = 0;
     for(i = 0; i < net.n; ++i){
-        if(net.layers[i].type == COST){
-            sum += net.layers[i].cost[0];
-            ++count;
-        }
-        if(net.layers[i].type == DETECTION){
+        if(net.layers[i].cost){
             sum += net.layers[i].cost[0];
             ++count;
         }
@@ -284,6 +285,8 @@ void backward_network(network net, network_state state)
             backward_dropout_layer(l, state);
         } else if(l.type == DETECTION){
             backward_detection_layer(l, state);
+        } else if(l.type == REGION){
+            backward_region_layer(l, state);
         } else if(l.type == SOFTMAX){
             if(i != 0) backward_softmax_layer(l, state);
         } else if(l.type == CONNECTED){

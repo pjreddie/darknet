@@ -348,9 +348,8 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         convert_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
         draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, coco_classes, coco_labels, 80);
+        save_image(im, "prediction");
         show_image(im, "predictions");
-
-        show_image(sized, "resized");
         free_image(im);
         free_image(sized);
 #ifdef OPENCV
