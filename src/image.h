@@ -30,7 +30,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 image image_distance(image a, image b);
 void scale_image(image m, float s);
 image crop_image(image im, int dx, int dy, int w, int h);
-image random_crop_image(image im, int low, int high, int size);
+image random_crop_image(image im, int w, int h);
+image random_resize_crop_image(image im, int low, int high, int size);
 image resize_image(image im, int w, int h);
 image resize_min(image im, int min);
 void translate_image(image m, float s);
@@ -44,7 +45,8 @@ void saturate_exposure_image(image im, float sat, float exposure);
 void hsv_to_rgb(image im);
 void rgbgr_image(image im);
 void constrain_image(image im);
-void composite_3d(char *f1, char *f2, char *out);
+void composite_3d(char *f1, char *f2, char *out, int delta);
+int best_3d_shift_r(image a, image b, int min, int max);
 
 image grayscale_image(image im);
 image threshold_image(image im, float thresh);
@@ -61,7 +63,7 @@ void show_image_layers(image p, char *name);
 void show_image_collapsed(image p, char *name);
 
 #ifdef OPENCV
-void save_image_jpg(image p, char *name);
+void save_image_jpg(image p, const char *name);
 image get_image_from_stream(CvCapture *cap);
 image ipl_to_image(IplImage* src);
 #endif

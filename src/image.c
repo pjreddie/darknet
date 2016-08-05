@@ -347,23 +347,6 @@ void show_image_cv(image p, const char *name)
 #endif
     }
 
-    void save_image(image im, const char *name)
-    {
-        char buff[256];
-        //sprintf(buff, "%s (%d)", name, windows);
-        sprintf(buff, "%s.png", name);
-        unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
-        int i,k;
-        for(k = 0; k < im.c; ++k){
-            for(i = 0; i < im.w*im.h; ++i){
-                data[i*im.c+k] = (unsigned char) (255*im.data[i + k*im.w*im.h]);
-            }
-        }
-        int success = stbi_write_png(buff, im.w, im.h, im.c, data, im.w*im.c);
-        free(data);
-        if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
-    }
-
 #ifdef OPENCV
     image get_image_from_stream(CvCapture *cap)
     {
@@ -376,7 +359,7 @@ void show_image_cv(image p, const char *name)
 #endif
 
 #ifdef OPENCV
-    void save_image_jpg(image p, char *name)
+    void save_image_jpg(image p, const char *name)
     {
         image copy = copy_image(p);
         rgbgr_image(copy);
@@ -399,6 +382,28 @@ void show_image_cv(image p, const char *name)
         free_image(copy);
     }
 #endif
+
+    void save_image(image im, const char *name)
+    {
+        #ifdef OPENCV
+        save_image_jpg(im, name);
+        #else
+        char buff[256];
+        //sprintf(buff, "%s (%d)", name, windows);
+        sprintf(buff, "%s.png", name);
+        unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
+        int i,k;
+        for(k = 0; k < im.c; ++k){
+            for(i = 0; i < im.w*im.h; ++i){
+                data[i*im.c+k] = (unsigned char) (255*im.data[i + k*im.w*im.h]);
+            }
+        }
+        int success = stbi_write_png(buff, im.w, im.h, im.c, data, im.w*im.c);
+        free(data);
+        if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
+        #endif
+    }
+
 
     void show_image_layers(image p, char *name)
     {
@@ -539,7 +544,7 @@ int best_3d_shift(image a, image b, int min, int max)
     return best;
 }
 
-void composite_3d(char *f1, char *f2, char *out)
+void composite_3d(char *f1, char *f2, char *out, int delta)
 {
     if(!out) out = "out";
     image a = load_image(f1, 0,0,0);
@@ -551,7 +556,7 @@ void composite_3d(char *f1, char *f2, char *out)
     image c2 = crop_image(b, -10, shift, b.w, b.h);
     float d2 = dist_array(c2.data, a.data, a.w*a.h*a.c, 100);
 
-    if(d2 < d1){
+    if(d2 < d1 && 0){
         image swap = a;
         a = b;
         b = swap;
@@ -562,7 +567,7 @@ void composite_3d(char *f1, char *f2, char *out)
         printf("%d\n", shift);
     }
 
-    image c = crop_image(b, 0, shift, a.w, a.h);
+    image c = crop_image(b, delta, shift, a.w, a.h);
     int i;
     for(i = 0; i < c.w*c.h; ++i){
         c.data[i] = a.data[i];
@@ -590,7 +595,15 @@ image resize_min(image im, int min)
     return resized;
 }
 
-image random_crop_image(image im, int low, int high, int size)
+image random_crop_image(image im, int w, int h)
+{
+    int dx = rand_int(0, im.w - w);
+    int dy = rand_int(0, im.h - h);
+    image crop = crop_image(im, dx, dy, w, h);
+    return crop;
+}
+
+image random_resize_crop_image(image im, int low, int high, int size)
 {
     int r = rand_int(low, high);
     image resized = resize_min(im, r);

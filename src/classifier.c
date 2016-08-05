@@ -3,6 +3,7 @@
 #include "parser.h"
 #include "option_list.h"
 #include "blas.h"
+#include "assert.h"
 #include "classifier.h"
 #include <sys/time.h>
 
@@ -40,6 +41,9 @@ list *read_data_cfg(char *filename)
 
 void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
 {
+    int nthreads = 2;
+    int i;
+
     data_seed = time(0);
     srand(time(0));
     float avg_loss = -1;
@@ -51,7 +55,8 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
     }
     if(clear) *net.seen = 0;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = net.batch*net.subdivisions;
+    int imgs = net.batch*net.subdivisions/nthreads;
+    assert(net.batch*net.subdivisions % nthreads == 0);
 
     list *options = read_data_cfg(datacfg);
 
@@ -66,9 +71,10 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
     printf("%d\n", plist->size);
     int N = plist->size;
     clock_t time;
-    pthread_t load_thread;
-    data train;
-    data buffer;
+
+    pthread_t *load_threads = calloc(nthreads, sizeof(pthread_t));
+    data *trains  = calloc(nthreads, sizeof(data));
+    data *buffers = calloc(nthreads, sizeof(data));
 
     load_args args = {0};
     args.w = net.w;
@@ -83,17 +89,27 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
     args.n = imgs;
     args.m = N;
     args.labels = labels;
-    args.d = &buffer;
     args.type = CLASSIFICATION_DATA;
 
-    load_thread = load_data_in_thread(args);
+    for(i = 0; i < nthreads; ++i){
+        args.d = buffers + i;
+        load_threads[i] = load_data_in_thread(args);
+    }
+
     int epoch = (*net.seen)/N;
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
-        pthread_join(load_thread, 0);
-        train = buffer;
+        for(i = 0; i < nthreads; ++i){
+            pthread_join(load_threads[i], 0);
+            trains[i] = buffers[i];
+        }
+        data train = concat_datas(trains, nthreads);
 
-        load_thread = load_data_in_thread(args);
+        for(i = 0; i < nthreads; ++i){
+            args.d = buffers + i;
+            load_threads[i] = load_data_in_thread(args);
+        }
+
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
 
@@ -111,6 +127,9 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         free_data(train);
+        for(i = 0; i < nthreads; ++i){
+            free_data(trains[i]);
+        }
         if(*net.seen/N > epoch){
             epoch = *net.seen/N;
             char buff[256];
@@ -127,8 +146,14 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
     sprintf(buff, "%s/%s.weights", backup_directory, base);
     save_weights(net, buff);
 
-    pthread_join(load_thread, 0);
-    free_data(buffer);
+    for(i = 0; i < nthreads; ++i){
+        pthread_join(load_threads[i], 0);
+        free_data(buffers[i]);
+    }
+    free(buffers);
+    free(trains);
+    free(load_threads);
+
     free_network(net);
     free_ptrs((void**)labels, classes);
     free_ptrs((void**)paths, plist->size);
@@ -136,7 +161,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
     free(base);
 }
 
-void validate_classifier(char *datacfg, char *filename, char *weightfile)
+void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
 {
     int i = 0;
     network net = parse_network_cfg(filename);
@@ -708,10 +733,10 @@ void run_classifier(int argc, char **argv)
     else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "test")) test_classifier(data, cfg, weights, layer);
     else if(0==strcmp(argv[2], "label")) label_classifier(data, cfg, weights);
-    else if(0==strcmp(argv[2], "valid")) validate_classifier(data, cfg, weights);
-    else if(0==strcmp(argv[2], "valid10")) validate_classifier_10(data, cfg, weights);
+    else if(0==strcmp(argv[2], "valid")) validate_classifier_single(data, cfg, weights);
     else if(0==strcmp(argv[2], "validmulti")) validate_classifier_multi(data, cfg, weights);
-    else if(0==strcmp(argv[2], "validsingle")) validate_classifier_single(data, cfg, weights);
+    else if(0==strcmp(argv[2], "valid10")) validate_classifier_10(data, cfg, weights);
+    else if(0==strcmp(argv[2], "validcrop")) validate_classifier_crop(data, cfg, weights);
     else if(0==strcmp(argv[2], "validfull")) validate_classifier_full(data, cfg, weights);
 }
 

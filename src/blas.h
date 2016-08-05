@@ -1,5 +1,6 @@
 #ifndef BLAS_H
 #define BLAS_H
+void reorg(float *x, int size, int layers, int batch, int forward);
 void pm(int M, int N, float *A);
 float *random_matrix(int rows, int cols);
 void time_random_matrix(int TA, int TB, int m, int k, int n);
@@ -69,6 +70,7 @@ void weighted_delta_gpu(float *a, float *b, float *s, float *da, float *db, floa
 void weighted_sum_gpu(float *a, float *b, float *s, int num, float *c);
 void mult_add_into_gpu(int num, float *a, float *b, float *c);
 
+void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
 
 #endif
 #endif

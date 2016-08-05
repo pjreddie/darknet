@@ -30,6 +30,7 @@ typedef enum {
     NETWORK,
     XNOR,
     REGION,
+    REORG,
     BLANK
 } LAYER_TYPE;
 
@@ -80,6 +81,7 @@ struct layer{
     int does_cost;
     int joint;
     int noadjust;
+    int reorg;
 
     float alpha;
     float beta;

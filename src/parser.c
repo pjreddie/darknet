@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "parser.h"
+#include "assert.h"
 #include "activations.h"
 #include "crop_layer.h"
 #include "cost_layer.h"
@@ -16,6 +17,7 @@
 #include "gru_layer.h"
 #include "crnn_layer.h"
 #include "maxpool_layer.h"
+#include "reorg_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "detection_layer.h"
@@ -43,6 +45,7 @@ int is_rnn(section *s);
 int is_gru(section *s);
 int is_crnn(section *s);
 int is_maxpool(section *s);
+int is_reorg(section *s);
 int is_avgpool(section *s);
 int is_dropout(section *s);
 int is_softmax(section *s);
@@ -115,13 +118,6 @@ deconvolutional_layer parse_deconvolutional(list *options, size_params params)
 
     deconvolutional_layer layer = make_deconvolutional_layer(batch,h,w,c,n,size,stride,activation);
 
-    char *weights = option_find_str(options, "weights", 0);
-    char *biases = option_find_str(options, "biases", 0);
-    parse_data(weights, layer.filters, c*n*size*size);
-    parse_data(biases, layer.biases, n);
-    #ifdef GPU
-    if(weights || biases) push_deconvolutional_layer(layer);
-    #endif
     return layer;
 }
 
@@ -169,13 +165,6 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
-    char *weights = option_find_str(options, "weights", 0);
-    char *biases = option_find_str(options, "biases", 0);
-    parse_data(weights, layer.filters, c*n*size*size);
-    parse_data(biases, layer.biases, n);
-    #ifdef GPU
-    if(weights || biases) push_convolutional_layer(layer);
-    #endif
     return layer;
 }
 
@@ -229,13 +218,6 @@ connected_layer parse_connected(list *options, size_params params)
 
     connected_layer layer = make_connected_layer(params.batch, params.inputs, output, activation, batch_normalize);
 
-    char *weights = option_find_str(options, "weights", 0);
-    char *biases = option_find_str(options, "biases", 0);
-    parse_data(biases, layer.biases, output);
-    parse_data(weights, layer.weights, params.inputs*output);
-    #ifdef GPU
-    if(weights || biases) push_connected_layer(layer);
-    #endif
     return layer;
 }
 
@@ -286,6 +268,7 @@ detection_layer parse_detection(list *options, size_params params)
     layer.class_scale = option_find_float(options, "class_scale", 1);
     layer.jitter = option_find_float(options, "jitter", .2);
     layer.random = option_find_int_quiet(options, "random", 0);
+    layer.reorg = option_find_int_quiet(options, "reorg", 0);
     return layer;
 }
 
@@ -320,6 +303,21 @@ crop_layer parse_crop(list *options, size_params params)
     l.shift = option_find_float(options, "shift", 0);
     l.noadjust = noadjust;
     return l;
+}
+
+layer parse_reorg(list *options, size_params params)
+{
+    int stride = option_find_int(options, "stride",1);
+
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before reorg layer must output image.");
+
+    layer layer = make_reorg_layer(batch,w,h,c,stride);
+    return layer;
 }
 
 maxpool_layer parse_maxpool(list *options, size_params params)
@@ -590,6 +588,8 @@ network parse_network_cfg(char *filename)
             l = parse_batchnorm(options, params);
         }else if(is_maxpool(s)){
             l = parse_maxpool(options, params);
+        }else if(is_reorg(s)){
+            l = parse_reorg(options, params);
         }else if(is_avgpool(s)){
             l = parse_avgpool(options, params);
         }else if(is_route(s)){
@@ -626,9 +626,13 @@ network parse_network_cfg(char *filename)
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
     if(workspace_size){
-    //printf("%ld\n", workspace_size);
+        //printf("%ld\n", workspace_size);
 #ifdef GPU
-        net.workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
+        if(gpu_index >= 0){
+            net.workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
+        }else {
+            net.workspace = calloc(1, workspace_size);
+        }
 #else
         net.workspace = calloc(1, workspace_size);
 #endif
@@ -659,6 +663,7 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[connected]")==0) return CONNECTED;
     if (strcmp(type, "[max]")==0
             || strcmp(type, "[maxpool]")==0) return MAXPOOL;
+    if (strcmp(type, "[reorg]")==0) return REORG;
     if (strcmp(type, "[avg]")==0
             || strcmp(type, "[avgpool]")==0) return AVGPOOL;
     if (strcmp(type, "[dropout]")==0) return DROPOUT;
@@ -730,6 +735,10 @@ int is_connected(section *s)
 {
     return (strcmp(s->type, "[conn]")==0
             || strcmp(s->type, "[connected]")==0);
+}
+int is_reorg(section *s)
+{
+    return (strcmp(s->type, "[reorg]")==0);
 }
 int is_maxpool(section *s)
 {

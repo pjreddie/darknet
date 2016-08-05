@@ -24,6 +24,7 @@ extern "C" {
 #include "activation_layer.h"
 #include "deconvolutional_layer.h"
 #include "maxpool_layer.h"
+#include "reorg_layer.h"
 #include "avgpool_layer.h"
 #include "normalization_layer.h"
 #include "batchnorm_layer.h"
@@ -82,6 +83,8 @@ void forward_network_gpu(network net, network_state state)
             forward_batchnorm_layer_gpu(l, state);
         } else if(l.type == MAXPOOL){
             forward_maxpool_layer_gpu(l, state);
+        } else if(l.type == REORG){
+            forward_reorg_layer_gpu(l, state);
         } else if(l.type == AVGPOOL){
             forward_avgpool_layer_gpu(l, state);
         } else if(l.type == DROPOUT){
@@ -122,6 +125,8 @@ void backward_network_gpu(network net, network_state state)
             backward_local_layer_gpu(l, state);
         } else if(l.type == MAXPOOL){
             if(i != 0) backward_maxpool_layer_gpu(l, state);
+        } else if(l.type == REORG){
+            backward_reorg_layer_gpu(l, state);
         } else if(l.type == AVGPOOL){
             if(i != 0) backward_avgpool_layer_gpu(l, state);
         } else if(l.type == DROPOUT){
@@ -179,7 +184,7 @@ void update_network_gpu(network net)
     }
 }
 
-float train_network_datum_gpu(network net, float *x, float *y)
+void forward_backward_network_gpu(network net, float *x, float *y)
 {
     network_state state;
     state.index = 0;
@@ -200,10 +205,62 @@ float train_network_datum_gpu(network net, float *x, float *y)
     state.train = 1;
     forward_network_gpu(net, state);
     backward_network_gpu(net, state);
+}
+
+float train_network_datum_gpu(network net, float *x, float *y)
+{
+    forward_backward_network_gpu(net, x, y);
     float error = get_network_cost(net);
     if (((*net.seen) / net.batch) % net.subdivisions == 0) update_network_gpu(net);
 
     return error;
+}
+
+typedef struct {
+    network net;
+    float *X;
+    float *y;
+} train_args;
+
+void *train_thread(void *ptr)
+{
+    train_args args = *(train_args*)ptr;
+
+    cudaError_t status = cudaSetDevice(args.net.gpu_index);
+    check_error(status);
+    forward_backward_network_gpu(args.net, args.X, args.y);
+    free(ptr);
+    return 0;
+}
+
+pthread_t train_network_in_thread(train_args args)
+{
+    pthread_t thread;
+    train_args *ptr = (train_args *)calloc(1, sizeof(train_args));
+    *ptr = args;
+    if(pthread_create(&thread, 0, train_thread, ptr)) error("Thread creation failed");
+    return thread;
+}
+
+float train_networks(network *nets, int n, data d)
+{
+    int batch = nets[0].batch;
+    float **X = (float **) calloc(n, sizeof(float *));
+    float **y = (float **) calloc(n, sizeof(float *));
+    pthread_t *threads = (pthread_t *) calloc(n, sizeof(pthread_t));
+
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; ++i){
+        X[i] = (float *) calloc(batch*d.X.cols, sizeof(float));
+        y[i] = (float *) calloc(batch*d.y.cols, sizeof(float));
+        get_next_batch(d, batch, i*batch, X[i], y[i]);
+        float err = train_network_datum(nets[i], X[i], y[i]);
+        sum += err;
+    }
+    free(X);
+    free(y);
+    return (float)sum/(n*batch);
 }
 
 float *get_network_output_layer_gpu(network net, int i)

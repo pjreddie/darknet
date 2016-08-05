@@ -12,6 +12,7 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
+extern void run_voxel(int argc, char **argv);
 extern void run_imagenet(int argc, char **argv);
 extern void run_yolo(int argc, char **argv);
 extern void run_detector(int argc, char **argv);
@@ -28,6 +29,7 @@ extern void run_tag(int argc, char **argv);
 extern void run_cifar(int argc, char **argv);
 extern void run_go(int argc, char **argv);
 extern void run_art(int argc, char **argv);
+extern void run_super(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -87,6 +89,23 @@ void average(int argc, char *argv[])
         }
     }
     save_weights(sum, outfile);
+}
+
+void speed(char *cfgfile, int tics)
+{
+    if (tics == 0) tics = 1000;
+    network net = parse_network_cfg(cfgfile);
+    set_batch_network(&net, 1);
+    int i;
+    time_t start = time(0);
+    image im = make_image(net.w, net.h, net.c);
+    for(i = 0; i < tics; ++i){
+        network_predict(net, im.data);
+    }
+    double t = difftime(time(0), start);
+    printf("\n%d evals, %f Seconds\n", tics, t);
+    printf("Speed: %f sec/eval\n", t/tics);
+    printf("Speed: %f Hz\n", tics/t);
 }
 
 void operations(char *cfgfile)
@@ -314,6 +333,10 @@ int main(int argc, char **argv)
         average(argc, argv);
     } else if (0 == strcmp(argv[1], "yolo")){
         run_yolo(argc, argv);
+    } else if (0 == strcmp(argv[1], "voxel")){
+        run_voxel(argc, argv);
+    } else if (0 == strcmp(argv[1], "super")){
+        run_super(argc, argv);
     } else if (0 == strcmp(argv[1], "detector")){
         run_detector(argc, argv);
     } else if (0 == strcmp(argv[1], "cifar")){
@@ -339,7 +362,7 @@ int main(int argc, char **argv)
     } else if (0 == strcmp(argv[1], "writing")){
         run_writing(argc, argv);
     } else if (0 == strcmp(argv[1], "3d")){
-        composite_3d(argv[2], argv[3], argv[4]);
+        composite_3d(argv[2], argv[3], argv[4], (argc > 5) ? atof(argv[5]) : 0);
     } else if (0 == strcmp(argv[1], "test")){
         test_resize(argv[2]);
     } else if (0 == strcmp(argv[1], "captcha")){
@@ -360,6 +383,8 @@ int main(int argc, char **argv)
         rescale_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "ops")){
         operations(argv[2]);
+    } else if (0 == strcmp(argv[1], "speed")){
+        speed(argv[2], (argc > 3) ? atoi(argv[3]) : 0);
     } else if (0 == strcmp(argv[1], "partial")){
         partial(argv[2], argv[3], argv[4], atoi(argv[5]));
     } else if (0 == strcmp(argv[1], "average")){

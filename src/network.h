@@ -41,6 +41,8 @@ typedef struct network{
     int max_crop;
     int min_crop;
 
+    int gpu_index;
+
     #ifdef GPU
     float **input_gpu;
     float **truth_gpu;

@@ -20,6 +20,7 @@
 #include "normalization_layer.h"
 #include "batchnorm_layer.h"
 #include "maxpool_layer.h"
+#include "reorg_layer.h"
 #include "avgpool_layer.h"
 #include "cost_layer.h"
 #include "softmax_layer.h"
@@ -98,6 +99,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "crnn";
         case MAXPOOL:
             return "maxpool";
+        case REORG:
+            return "reorg";
         case AVGPOOL:
             return "avgpool";
         case SOFTMAX:
@@ -181,6 +184,8 @@ void forward_network(network net, network_state state)
             forward_softmax_layer(l, state);
         } else if(l.type == MAXPOOL){
             forward_maxpool_layer(l, state);
+        } else if(l.type == REORG){
+            forward_reorg_layer(l, state);
         } else if(l.type == AVGPOOL){
             forward_avgpool_layer(l, state);
         } else if(l.type == DROPOUT){
@@ -222,7 +227,7 @@ void update_network(network net)
 float *get_network_output(network net)
 {
     #ifdef GPU
-        return get_network_output_gpu(net);
+        if (gpu_index >= 0) return get_network_output_gpu(net);
     #endif 
     int i;
     for(i = net.n-1; i > 0; --i) if(net.layers[i].type != COST) break;
@@ -279,6 +284,8 @@ void backward_network(network net, network_state state)
             backward_batchnorm_layer(l, state);
         } else if(l.type == MAXPOOL){
             if(i != 0) backward_maxpool_layer(l, state);
+        } else if(l.type == REORG){
+            backward_reorg_layer(l, state);
         } else if(l.type == AVGPOOL){
             backward_avgpool_layer(l, state);
         } else if(l.type == DROPOUT){
@@ -366,6 +373,7 @@ float train_network(network net, data d)
     return (float)sum/(n*batch);
 }
 
+
 float train_network_batch(network net, data d, int n)
 {
     int i,j;
@@ -422,6 +430,8 @@ int resize_network(network *net, int w, int h)
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
             resize_maxpool_layer(&l, w, h);
+        }else if(l.type == REORG){
+            resize_reorg_layer(&l, w, h);
         }else if(l.type == AVGPOOL){
             resize_avgpool_layer(&l, w, h);
         }else if(l.type == NORMALIZATION){
@@ -439,11 +449,16 @@ int resize_network(network *net, int w, int h)
         if(l.type == AVGPOOL) break;
     }
 #ifdef GPU
+    if(gpu_index >= 0){
         cuda_free(net->workspace);
         net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
-#else
+    }else {
         free(net->workspace);
         net->workspace = calloc(1, workspace_size);
+    }
+#else
+    free(net->workspace);
+    net->workspace = calloc(1, workspace_size);
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;
@@ -659,10 +674,10 @@ void free_network(network net)
         free_layer(net.layers[i]);
     }
     free(net.layers);
-    #ifdef GPU
+#ifdef GPU
     if(*net.input_gpu) cuda_free(*net.input_gpu);
     if(*net.truth_gpu) cuda_free(*net.truth_gpu);
     if(net.input_gpu) free(net.input_gpu);
     if(net.truth_gpu) free(net.truth_gpu);
-    #endif
+#endif
 }

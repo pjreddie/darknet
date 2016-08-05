@@ -521,6 +521,11 @@ int max_index(float *a, int n)
 
 int rand_int(int min, int max)
 {
+    if (max < min){
+        int s = min;
+        min = max;
+        max = s;
+    }
     int r = (rand()%(max - min + 1)) + min;
     return r;
 }

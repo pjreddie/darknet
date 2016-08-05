@@ -8,6 +8,7 @@
 #include <string.h>
 
 unsigned int data_seed;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 list *get_paths(char *filename)
 {
@@ -26,12 +27,14 @@ char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
+    pthread_mutex_lock(&mutex);
     for(i = 0; i < n; ++i){
         int index = rand_r(&data_seed)%m;
         indexes[i] = index;
         random_paths[i] = paths[index];
         if(i == 0) printf("%s\n", paths[index]);
     }
+    pthread_mutex_unlock(&mutex);
     return random_paths;
 }
 
@@ -39,11 +42,13 @@ char **get_random_paths(char **paths, int n, int m)
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
+    pthread_mutex_lock(&mutex);
     for(i = 0; i < n; ++i){
         int index = rand_r(&data_seed)%m;
         random_paths[i] = paths[index];
         if(i == 0) printf("%s\n", paths[index]);
     }
+    pthread_mutex_unlock(&mutex);
     return random_paths;
 }
 
@@ -105,7 +110,7 @@ matrix load_image_cropped_paths(char **paths, int n, int min, int max, int size)
 
     for(i = 0; i < n; ++i){
         image im = load_image_color(paths[i], 0, 0);
-        image crop = random_crop_image(im, min, max, size);
+        image crop = random_resize_crop_image(im, min, max, size);
         int flip = rand_r(&data_seed)%2;
         if (flip) flip_image(crop);
         /*
@@ -667,6 +672,8 @@ void *load_thread(void *ptr)
         *a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == CLASSIFICATION_DATA){
         *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.min, a.max, a.size);
+    } else if (a.type == SUPER_DATA){
+        *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == STUDY_DATA){
         *a.d = load_data_study(a.paths, a.n, a.m, a.labels, a.classes, a.min, a.max, a.size);
     } else if (a.type == WRITING_DATA){
@@ -737,6 +744,36 @@ data load_data_study(char **paths, int n, int m, char **labels, int k, int min, 
     return d;
 }
 
+data load_data_super(char **paths, int n, int m, int w, int h, int scale)
+{
+    if(m) paths = get_random_paths(paths, n, m);
+    data d = {0};
+    d.shallow = 0;
+
+    int i;
+    d.X.rows = n;
+    d.X.vals = calloc(n, sizeof(float*));
+    d.X.cols = w*h*3;
+
+    d.y.rows = n;
+    d.y.vals = calloc(n, sizeof(float*));
+    d.y.cols = w*scale * h*scale * 3;
+
+    for(i = 0; i < n; ++i){
+        image im = load_image_color(paths[i], 0, 0);
+        image crop = random_crop_image(im, w*scale, h*scale);
+        int flip = rand_r(&data_seed)%2;
+        if (flip) flip_image(crop);
+        image resize = resize_image(crop, w, h);
+        d.X.vals[i] = resize.data;
+        d.y.vals[i] = crop.data;
+        free_image(im);
+    }
+
+    if(m) free(paths);
+    return d;
+}
+
 data load_data_augment(char **paths, int n, int m, char **labels, int k, int min, int max, int size)
 {
     if(m) paths = get_random_paths(paths, n, m);
@@ -784,6 +821,19 @@ data concat_data(data d1, data d2)
     d.X = concat_matrix(d1.X, d2.X);
     d.y = concat_matrix(d1.y, d2.y);
     return d;
+}
+
+data concat_datas(data *d, int n)
+{
+    int i;
+    data out = {0};
+    out.shallow = 1;
+    for(i = 0; i < n; ++i){
+        data new = concat_data(d[i], out);
+        free_data(out);
+        out = new;
+    }
+    return out;
 }
 
 data load_categorical_data_csv(char *filename, int target, int k)
