@@ -41,7 +41,7 @@ list *read_data_cfg(char *filename)
 
 void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
 {
-    int nthreads = 2;
+    int nthreads = 8;
     int i;
 
     data_seed = time(0);
@@ -82,6 +82,9 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
 
     args.min = net.min_crop;
     args.max = net.max_crop;
+    args.angle = net.angle;
+    args.exposure = net.exposure;
+    args.saturation = net.saturation;
     args.size = net.w;
 
     args.paths = paths;
@@ -113,14 +116,14 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
 
-        /*
-           int u;
-           for(u = 0; u < net.batch; ++u){
-           image im = float_to_image(net.w, net.h, 3, train.X.vals[u]);
-           show_image(im, "loaded");
-           cvWaitKey(0);
-           }
-         */
+        if(0){
+            int u;
+            for(u = 0; u < imgs; ++u){
+                image im = float_to_image(net.w, net.h, 3, train.X.vals[u]);
+                show_image(im, "loaded");
+                cvWaitKey(0);
+            }
+        }
 
         float loss = train_network(net, train);
         if(avg_loss == -1) avg_loss = loss;

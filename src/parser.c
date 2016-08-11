@@ -483,6 +483,10 @@ void parse_net_options(list *options, network *net)
     net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
 
+    net->angle = option_find_float_quiet(options, "angle", 0);
+    net->saturation = option_find_float_quiet(options, "saturation", 1);
+    net->exposure = option_find_float_quiet(options, "exposure", 1);
+
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
 
     char *policy_s = option_find_str(options, "policy", "constant");

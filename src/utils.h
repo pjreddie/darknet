@@ -5,6 +5,7 @@
 #include "list.h"
 
 #define SECRET_NUM -1234
+#define TWO_PI 6.2831853071795864769252866
 
 void shuffle(void *arr, size_t n, size_t size);
 void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections);

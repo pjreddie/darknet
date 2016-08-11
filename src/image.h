@@ -31,7 +31,7 @@ image image_distance(image a, image b);
 void scale_image(image m, float s);
 image crop_image(image im, int dx, int dy, int w, int h);
 image random_crop_image(image im, int w, int h);
-image random_resize_crop_image(image im, int low, int high, int size);
+image random_augment_image(image im, float angle, int low, int high, int size);
 image resize_image(image im, int w, int h);
 image resize_min(image im, int min);
 void translate_image(image m, float s);

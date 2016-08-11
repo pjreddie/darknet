@@ -132,7 +132,7 @@ void train_go(char *cfgfile, char *weightfile)
     char buff[256];
     float *board = calloc(19*19*net.batch, sizeof(float));
     float *move = calloc(19*19*net.batch, sizeof(float));
-    moves m = load_go_moves("/home/pjreddie/go.train");
+    moves m = load_go_moves("/home/pjreddie/backup/go.train");
     //moves m = load_go_moves("games.txt");
 
     int N = m.n;

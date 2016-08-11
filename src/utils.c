@@ -531,7 +531,6 @@ int rand_int(int min, int max)
 }
 
 // From http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-#define TWO_PI 6.2831853071795864769252866
 float rand_normal()
 {
     static int haveSpare = 0;
@@ -578,6 +577,11 @@ size_t rand_size_t()
 
 float rand_uniform(float min, float max)
 {
+    if(max < min){
+        float swap = min;
+        min = max;
+        max = swap;
+    }
     return ((float)rand()/RAND_MAX * (max - min)) + min;
 }
 

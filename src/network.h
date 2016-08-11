@@ -40,6 +40,9 @@ typedef struct network{
     int h, w, c;
     int max_crop;
     int min_crop;
+    float angle;
+    float exposure;
+    float saturation;
 
     int gpu_index;
 

@@ -265,7 +265,7 @@ void forward_connected_layer_gpu(connected_layer l, network_state state)
 void backward_connected_layer_gpu(connected_layer l, network_state state)
 {
     int i;
-    constrain_ongpu(l.outputs*l.batch, 5, l.delta_gpu, 1);
+    constrain_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
     gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
     for(i = 0; i < l.batch; ++i){
         axpy_ongpu(l.outputs, 1, l.delta_gpu + i*l.outputs, 1, l.bias_updates_gpu, 1);

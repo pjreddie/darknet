@@ -459,6 +459,25 @@ void show_image_cv(image p, const char *name)
         return out;
     }
 
+    image rotate_crop_image(image im, float rad, float s, int w, int h, int dx, int dy)
+    {
+        int x, y, c;
+        float cx = im.w/2.;
+        float cy = im.h/2.;
+        image rot = make_image(w, h, im.c);
+        for(c = 0; c < im.c; ++c){
+            for(y = 0; y < h; ++y){
+                for(x = 0; x < w; ++x){
+                    float rx = cos(rad)*(x/s + dx/s -cx) - sin(rad)*(y/s + dy/s -cy) + cx;
+                    float ry = sin(rad)*(x/s + dx/s -cx) + cos(rad)*(y/s + dy/s -cy) + cy;
+                    float val = bilinear_interpolate(im, rx, ry, c);
+                    set_pixel(rot, x, y, c, val);
+                }
+            }
+        }
+        return rot;
+    }
+
     image rotate_image(image im, float rad)
     {
         int x, y, c;
@@ -603,15 +622,19 @@ image random_crop_image(image im, int w, int h)
     return crop;
 }
 
-image random_resize_crop_image(image im, int low, int high, int size)
+image random_augment_image(image im, float angle, int low, int high, int size)
 {
     int r = rand_int(low, high);
-    image resized = resize_min(im, r);
-    int dx = rand_int(0, resized.w - size);
-    int dy = rand_int(0, resized.h - size);
-    image crop = crop_image(resized, dx, dy, size, size);
+    int min = (im.h < im.w) ? im.h : im.w;
+    float scale = (float)r / min;
 
-    if(resized.data != im.data) free_image(resized);
+    float rad = rand_uniform(-angle, angle) * TWO_PI / 360.;
+    int dx = rand_int(0, scale * im.w - size);
+    int dy = rand_int(0, scale * im.h - size);
+    //printf("%d %d\n", dx, dy);
+
+    image crop = rotate_crop_image(im, rad, scale, size, size, dx, dy);
+
     return crop;
 }
 
@@ -794,23 +817,6 @@ void saturate_exposure_image(image im, float sat, float exposure)
     constrain_image(im);
 }
 
-/*
-   image saturate_image(image im, float sat)
-   {
-   image gray = grayscale_image(im);
-   image blend = blend_image(im, gray, sat);
-   free_image(gray);
-   constrain_image(blend);
-   return blend;
-   }
-
-   image brightness_image(image im, float b)
-   {
-   image bright = make_image(im.w, im.h, im.c);
-   return bright;
-   }
- */
-
 float bilinear_interpolate(image im, float x, float y, int c)
 {
     int ix = (int) floorf(x);
@@ -893,6 +899,7 @@ void test_resize(char *filename)
 
     image bin = binarize_image(im);
 
+/*
 #ifdef GPU
     image r = resize_image(im, im.w, im.h);
     image black = make_image(im.w*2 + 3, im.h*2 + 3, 9);
@@ -911,7 +918,16 @@ void test_resize(char *filename)
     show_image_layers(black, "Black");
     show_image(black2, "Recreate");
 #endif
+*/
+    image rot = rotate_crop_image(im, -.2618, 1, im.w/2, im.h/2, 0, 0);
+    image rot3 = rotate_crop_image(im, -.2618, 2, im.w, im.h, im.w/2, 0);
+    image rot2 = rotate_crop_image(im, -.2618, 1, im.w, im.h, 0, 0);
+    show_image(rot, "Rotated");
+    show_image(rot2, "base");
 
+    show_image(rot3, "Rotated2");
+
+/*
     show_image(im,   "Original");
     show_image(bin,  "Binary");
     show_image(gray, "Gray");
@@ -919,6 +935,7 @@ void test_resize(char *filename)
     show_image(sat5, "Saturation-.5");
     show_image(exp2, "Exposure-2");
     show_image(exp5, "Exposure-.5");
+    */
 #ifdef OPENCV
     cvWaitKey(0);
 #endif
@@ -1036,7 +1053,11 @@ float get_pixel(image m, int x, int y, int c)
 }
 float get_pixel_extend(image m, int x, int y, int c)
 {
-    if(x < 0 || x >= m.w || y < 0 || y >= m.h || c < 0 || c >= m.c) return 0;
+    if(x < 0) x = 0;
+    if(x >= m.w) x = m.w-1;
+    if(y < 0) y = 0;
+    if(y >= m.h) y = m.h-1;
+    if(c < 0 || c >= m.c) return 0;
     return get_pixel(m, x, y, c);
 }
 void set_pixel(image m, int x, int y, int c, float val)
