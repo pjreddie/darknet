@@ -25,6 +25,7 @@ void train_coco(char *cfgfile, char *weightfile)
     //char *train_images = "/home/pjreddie/data/voc/test/train.txt";
     //char *train_images = "/home/pjreddie/data/coco/train.txt";
     char *train_images = "data/coco.trainval.txt";
+    //char *train_images = "data/bags.train.list";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     data_seed = time(0);
@@ -63,6 +64,11 @@ void train_coco(char *cfgfile, char *weightfile)
     args.d = &buffer;
     args.type = REGION_DATA;
 
+    args.angle = net.angle;
+    args.exposure = net.exposure;
+    args.saturation = net.saturation;
+    args.hue = net.hue;
+
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
     //while(i*imgs < N*120){
@@ -92,6 +98,11 @@ void train_coco(char *cfgfile, char *weightfile)
         if(i%1000==0 || (i < 1000 && i%100 == 0)){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            save_weights(net, buff);
+        }
+        if(i%100==0){
+            char buff[256];
+            sprintf(buff, "%s/%s.backup", backup_directory, base);
             save_weights(net, buff);
         }
         free_data(train);

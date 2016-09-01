@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "blas.h"
 #include "parser.h"
 #include "assert.h"
 #include "activations.h"
@@ -147,7 +148,10 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
-    int pad = option_find_int(options, "pad",0);
+    int pad = option_find_int_quiet(options, "pad",0);
+    int padding = option_find_int_quiet(options, "padding",0);
+    if(pad) padding = size/2;
+
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
 
@@ -161,7 +165,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int binary = option_find_int_quiet(options, "binary", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,pad,activation, batch_normalize, binary, xnor);
+    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -234,8 +238,15 @@ layer parse_region(list *options, size_params params)
     int coords = option_find_int(options, "coords", 4);
     int classes = option_find_int(options, "classes", 20);
     int num = option_find_int(options, "num", 1);
+
+    params.w = option_find_int(options, "side", params.w);
+    params.h = option_find_int(options, "side", params.h);
+
     layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords);
     assert(l.outputs == params.inputs);
+
+    l.log = option_find_int_quiet(options, "log", 0);
+    l.sqrt = option_find_int_quiet(options, "sqrt", 0);
 
     l.softmax = option_find_int(options, "softmax", 0);
     l.max_boxes = option_find_int_quiet(options, "max",30);
@@ -278,6 +289,7 @@ cost_layer parse_cost(list *options, size_params params)
     COST_TYPE type = get_cost_type(type_s);
     float scale = option_find_float_quiet(options, "scale",1);
     cost_layer layer = make_cost_layer(params.batch, params.inputs, type, scale);
+    layer.ratio =  option_find_float_quiet(options, "ratio",0);
     return layer;
 }
 
@@ -324,6 +336,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
 {
     int stride = option_find_int(options, "stride",1);
     int size = option_find_int(options, "size",stride);
+    int padding = option_find_int_quiet(options, "padding", (size-1)/2);
 
     int batch,h,w,c;
     h = params.h;
@@ -332,7 +345,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     batch=params.batch;
     if(!(h && w && c)) error("Layer before maxpool layer must output image.");
 
-    maxpool_layer layer = make_maxpool_layer(batch,h,w,c,size,stride);
+    maxpool_layer layer = make_maxpool_layer(batch,h,w,c,size,stride,padding);
     return layer;
 }
 
@@ -486,6 +499,7 @@ void parse_net_options(list *options, network *net)
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->saturation = option_find_float_quiet(options, "saturation", 1);
     net->exposure = option_find_float_quiet(options, "exposure", 1);
+    net->hue = option_find_float_quiet(options, "hue", 0);
 
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
 
@@ -1085,6 +1099,7 @@ void load_convolutional_weights(layer l, FILE *fp)
         fread(l.rolling_variance, sizeof(float), l.n, fp);
     }
     fread(l.filters, sizeof(float), num, fp);
+    //if(l.c == 3) scal_cpu(num, 1./256, l.filters, 1);
     if (l.flipped) {
         transpose_matrix(l.filters, l.c*l.size*l.size, l.n);
     }

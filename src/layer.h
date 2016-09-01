@@ -72,6 +72,7 @@ struct layer{
     float saturation;
     float exposure;
     float shift;
+    float ratio;
     int softmax;
     int classes;
     int coords;
@@ -82,6 +83,7 @@ struct layer{
     int joint;
     int noadjust;
     int reorg;
+    int log;
 
     float alpha;
     float beta;

@@ -17,7 +17,7 @@ __global__ void binarize_kernel(float *x, int n, float *binary)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (i >= n) return;
-    binary[i] = (x[i] > 0) ? 1 : -1;
+    binary[i] = (x[i] >= 0) ? 1 : -1;
 }
 
 void binarize_gpu(float *x, int n, float *binary)
@@ -60,6 +60,7 @@ __global__ void binarize_filters_kernel(float *filters, int n, int size, float *
     mean = mean / size;
     for(i = 0; i < size; ++i){
         binary[f*size + i] = (filters[f*size + i] > 0) ? mean : -mean;
+        //binary[f*size + i] = filters[f*size + i];
     }
 }
 

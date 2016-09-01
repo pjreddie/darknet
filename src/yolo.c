@@ -54,6 +54,11 @@ void train_yolo(char *cfgfile, char *weightfile)
     args.d = &buffer;
     args.type = REGION_DATA;
 
+    args.angle = net.angle;
+    args.exposure = net.exposure;
+    args.saturation = net.saturation;
+    args.hue = net.hue;
+
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
     //while(i*imgs < N*120){

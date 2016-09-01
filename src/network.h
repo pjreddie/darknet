@@ -43,6 +43,7 @@ typedef struct network{
     float angle;
     float exposure;
     float saturation;
+    float hue;
 
     int gpu_index;
 

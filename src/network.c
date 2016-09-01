@@ -420,7 +420,7 @@ int resize_network(network *net, int w, int h)
     net->h = h;
     int inputs = 0;
     size_t workspace_size = 0;
-    //fprintf(stderr, "Resizing to %d x %d...", w, h);
+    //fprintf(stderr, "Resizing to %d x %d...\n", w, h);
     //fflush(stderr);
     for (i = 0; i < net->n; ++i){
         layer l = net->layers[i];

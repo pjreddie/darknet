@@ -45,6 +45,11 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     args.d = &buffer;
     args.type = TAG_DATA;
 
+    args.angle = net.angle;
+    args.exposure = net.exposure;
+    args.saturation = net.saturation;
+    args.hue = net.hue;
+
     fprintf(stderr, "%d classes\n", net.outputs);
 
     load_thread = load_data_in_thread(args);

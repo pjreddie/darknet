@@ -368,6 +368,14 @@ __global__ void constrain_kernel(int N, float ALPHA, float *X, int INCX)
     if(i < N) X[i*INCX] = min(ALPHA, max(-ALPHA, X[i*INCX]));
 }
 
+__global__ void supp_kernel(int N, float ALPHA, float *X, int INCX)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < N) {
+        if((X[i*INCX] * X[i*INCX]) < (ALPHA * ALPHA)) X[i*INCX] = 0;
+    }
+}
+
 __global__ void scal_kernel(int N, float ALPHA, float *X, int INCX)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -552,6 +560,12 @@ extern "C" void scal_ongpu(int N, float ALPHA, float * X, int INCX)
     check_error(cudaPeekAtLastError());
 }
 
+extern "C" void supp_ongpu(int N, float ALPHA, float * X, int INCX)
+{
+    supp_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+    check_error(cudaPeekAtLastError());
+}
+
 extern "C" void fill_ongpu(int N, float ALPHA, float * X, int INCX)
 {
     fill_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
@@ -631,6 +645,7 @@ extern "C" void l2_gpu(int n, float *pred, float *truth, float *delta, float *er
     l2_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
     check_error(cudaPeekAtLastError());
 }
+
 
 
 __global__ void weighted_sum_kernel(int n, float *a, float *b, float *s, float *c)

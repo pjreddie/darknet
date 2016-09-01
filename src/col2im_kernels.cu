@@ -46,7 +46,6 @@ void col2im_ongpu(float *data_col,
         int ksize, int stride, int pad, float *data_im){
     // We are going to launch channels * height_col * width_col kernels, each
     // kernel responsible for copying a single-channel grid.
-    pad = pad ? ksize/2 : 0;
     int height_col = (height + 2 * pad - ksize) / stride + 1;
     int width_col = (width + 2 * pad - ksize) / stride + 1;
     int num_kernels = channels * height * width;

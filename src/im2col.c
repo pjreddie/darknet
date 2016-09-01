@@ -18,13 +18,9 @@ void im2col_cpu(float* data_im,
      int ksize,  int stride, int pad, float* data_col) 
 {
     int c,h,w;
-    int height_col = (height - ksize) / stride + 1;
-    int width_col = (width - ksize) / stride + 1;
-    if (pad){
-        height_col = 1 + (height-1) / stride;
-        width_col = 1 + (width-1) / stride;
-        pad = ksize/2;
-    }
+    int height_col = (height + 2*pad - ksize) / stride + 1;
+    int width_col = (width + 2*pad - ksize) / stride + 1;
+
     int channels_col = channels * ksize * ksize;
     for (c = 0; c < channels_col; ++c) {
         int w_offset = c % ksize;

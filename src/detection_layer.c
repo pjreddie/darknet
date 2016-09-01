@@ -22,6 +22,8 @@ detection_layer make_detection_layer(int batch, int inputs, int n, int side, int
     l.coords = coords;
     l.rescore = rescore;
     l.side = side;
+    l.w = side;
+    l.h = side;
     assert(side*side*((1 + l.coords)*l.n + l.classes) == inputs);
     l.cost = calloc(1, sizeof(float));
     l.outputs = l.inputs;
@@ -44,6 +46,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
     int locations = l.side*l.side;
     int i,j;
     memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
+    //if(l.reorg) reorg(l.output, l.w*l.h, size*l.n, l.batch, 1);
     int b;
     if (l.softmax){
         for(b = 0; b < l.batch; ++b){
@@ -204,6 +207,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
 
 
         printf("Detection Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_allcat/(count*l.classes), avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
+        //if(l.reorg) reorg(l.delta, l.w*l.h, size*l.n, l.batch, 0);
     }
 }
 

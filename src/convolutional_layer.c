@@ -70,18 +70,12 @@ void binarize_input(float *input, int n, int size, float *binary)
 
 int convolutional_out_height(convolutional_layer l)
 {
-    int h = l.h;
-    if (!l.pad) h -= l.size;
-    else h -= 1;
-    return h/l.stride + 1;
+    return (l.h + 2*l.pad - l.size) / l.stride + 1;
 }
 
 int convolutional_out_width(convolutional_layer l)
 {
-    int w = l.w;
-    if (!l.pad) w -= l.size;
-    else w -= 1;
-    return w/l.stride + 1;
+    return (l.w + 2*l.pad - l.size) / l.stride + 1;
 }
 
 image get_convolutional_image(convolutional_layer l)
@@ -148,8 +142,7 @@ void cudnn_convolutional_setup(layer *l)
     cudnnSetTensor4dDescriptor(l->srcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w); 
     cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w); 
     cudnnSetFilter4dDescriptor(l->filterDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size); 
-    int padding = l->pad ? l->size/2 : 0;
-    cudnnSetConvolution2dDescriptor(l->convDesc, padding, padding, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION);
+    cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION);
     cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
             l->srcTensorDesc,
             l->filterDesc,
@@ -178,7 +171,7 @@ void cudnn_convolutional_setup(layer *l)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int binary, int xnor)
+convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor)
 {
     int i;
     convolutional_layer l = {0};
@@ -193,7 +186,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.batch = batch;
     l.stride = stride;
     l.size = size;
-    l.pad = pad;
+    l.pad = padding;
     l.batch_normalize = batch_normalize;
 
     l.filters = calloc(c*n*size*size, sizeof(float));
