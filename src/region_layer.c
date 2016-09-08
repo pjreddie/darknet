@@ -80,8 +80,8 @@ box get_region_box(float *x, int index, int i, int j, int w, int h, int adjust, 
         b.w = logistic_activate(x[index + 2]);
         b.h = logistic_activate(x[index + 3]);
     }
-    //if(adjust && b.w < .01) b.w = .01;
-    //if(adjust && b.h < .01) b.h = .01;
+    if(adjust && b.w < .01) b.w = .01;
+    if(adjust && b.h < .01) b.h = .01;
     return b;
 }
 
@@ -149,7 +149,6 @@ void forward_region_layer(const region_layer l, network_state state)
                     l.delta[index + 4] = l.noobject_scale * ((0 - l.output[index + 4]) * logistic_gradient(l.output[index + 4]));
                     if(best_iou > .5) l.delta[index + 4] = 0;
 
-                    /*
                     if(*(state.net.seen) < 6400){
                         box truth = {0};
                         truth.x = (i + .5)/l.w;
@@ -158,7 +157,6 @@ void forward_region_layer(const region_layer l, network_state state)
                         truth.h = .5;
                         delta_region_box(truth, l.output, index, i, j, l.w, l.h, l.delta, LOG, 1);
                     }
-                    */
                 }
             }
         }

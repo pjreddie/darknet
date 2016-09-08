@@ -187,7 +187,7 @@ void denormalize_connected_layer(layer l)
 {
     int i, j;
     for(i = 0; i < l.outputs; ++i){
-        float scale = l.scales[i]/sqrt(l.rolling_variance[i] + .00001);
+        float scale = l.scales[i]/sqrt(l.rolling_variance[i] + .000001);
         for(j = 0; j < l.inputs; ++j){
             l.weights[i*l.inputs + j] *= scale;
         }
@@ -196,6 +196,23 @@ void denormalize_connected_layer(layer l)
         l.rolling_mean[i] = 0;
         l.rolling_variance[i] = 1;
     }
+}
+
+
+void statistics_connected_layer(layer l)
+{
+    if(l.batch_normalize){
+        printf("Scales ");
+        print_statistics(l.scales, l.outputs);
+        printf("Rolling Mean ");
+        print_statistics(l.rolling_mean, l.outputs);
+        printf("Rolling Variance ");
+        print_statistics(l.rolling_variance, l.outputs);
+    }
+    printf("Biases ");
+    print_statistics(l.biases, l.outputs);
+    printf("Weights ");
+    print_statistics(l.weights, l.outputs);
 }
 
 #ifdef GPU

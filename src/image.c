@@ -479,7 +479,8 @@ image float_to_image(int w, int h, int c, float *data)
     return out;
 }
 
-image rotate_crop_image(image im, float rad, float s, int w, int h, int dx, int dy)
+
+image rotate_crop_image(image im, float rad, float s, int w, int h, float dx, float dy, float aspect)
 {
     int x, y, c;
     float cx = im.w/2.;
@@ -488,8 +489,8 @@ image rotate_crop_image(image im, float rad, float s, int w, int h, int dx, int 
     for(c = 0; c < im.c; ++c){
         for(y = 0; y < h; ++y){
             for(x = 0; x < w; ++x){
-                float rx = cos(rad)*(x/s + dx/s -cx) - sin(rad)*(y/s + dy/s -cy) + cx;
-                float ry = sin(rad)*(x/s + dx/s -cx) + cos(rad)*(y/s + dy/s -cy) + cy;
+                float rx = cos(rad)*((x - w/2.)/s*aspect + dx/s*aspect) - sin(rad)*((y - h/2.)/s + dy/s) + cx;
+                float ry = sin(rad)*((x - w/2.)/s*aspect + dx/s*aspect) + cos(rad)*((y - h/2.)/s + dy/s) + cy;
                 float val = bilinear_interpolate(im, rx, ry, c);
                 set_pixel(rot, x, y, c, val);
             }
@@ -642,18 +643,23 @@ image random_crop_image(image im, int w, int h)
     return crop;
 }
 
-image random_augment_image(image im, float angle, int low, int high, int size)
+image random_augment_image(image im, float angle, float aspect, int low, int high, int size)
 {
+    aspect = rand_scale(aspect);
     int r = rand_int(low, high);
-    int min = (im.h < im.w) ? im.h : im.w;
+    int min = (im.h < im.w*aspect) ? im.h : im.w*aspect;
     float scale = (float)r / min;
 
     float rad = rand_uniform(-angle, angle) * TWO_PI / 360.;
-    int dx = rand_int(0, scale * im.w - size);
-    int dy = rand_int(0, scale * im.h - size);
-    //printf("%d %d\n", dx, dy);
 
-    image crop = rotate_crop_image(im, rad, scale, size, size, dx, dy);
+    float dx = (im.w*scale/aspect - size) / 2.;
+    float dy = (im.h*scale - size) / 2.;
+    if(dx < 0) dx = 0;
+    if(dy < 0) dy = 0;
+    dx = rand_uniform(-dx, dx);
+    dy = rand_uniform(-dy, dy);
+
+    image crop = rotate_crop_image(im, rad, scale, size, size, dx, dy, aspect);
 
     return crop;
 }
@@ -971,6 +977,11 @@ void test_resize(char *filename)
     show_image(c4, "C4");
 #ifdef OPENCV
     while(1){
+        image aug = random_augment_image(im, 0, 320, 448, 320, .75);
+        show_image(aug, "aug");
+        free_image(aug);
+        
+
         float exposure = 1.15;
         float saturation = 1.15;
         float hue = .05;

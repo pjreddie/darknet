@@ -497,6 +497,7 @@ void parse_net_options(list *options, network *net)
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
+    net->aspect = option_find_float_quiet(options, "aspect", 1);
     net->saturation = option_find_float_quiet(options, "saturation", 1);
     net->exposure = option_find_float_quiet(options, "exposure", 1);
     net->hue = option_find_float_quiet(options, "hue", 0);

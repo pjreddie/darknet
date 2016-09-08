@@ -414,6 +414,13 @@ void mean_arrays(float **a, int n, int els, float *avg)
     }
 }
 
+void print_statistics(float *a, int n)
+{
+    float m = mean_array(a, n);
+    float v = variance_array(a, n);
+    printf("MSE: %.6f, Mean: %.6f, Variance: %.6f\n", mse_array(a, n), m, v);
+}
+
 float variance_array(float *a, int n)
 {
     int i;

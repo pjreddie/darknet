@@ -117,6 +117,10 @@ static void convert_detections(float *predictions, int classes, int num, int squ
             int box_index = index * (classes + 5);
             boxes[index].x = (predictions[box_index + 0] + col + .5) / side * w;
             boxes[index].y = (predictions[box_index + 1] + row + .5) / side * h;
+            if(1){
+                boxes[index].x = (logistic_activate(predictions[box_index + 0]) + col) / side * w;
+                boxes[index].y = (logistic_activate(predictions[box_index + 1]) + row) / side * h;
+            }
             boxes[index].w = pow(logistic_activate(predictions[box_index + 2]), (square?2:1)) * w;
             boxes[index].h = pow(logistic_activate(predictions[box_index + 3]), (square?2:1)) * h;
             for(j = 0; j < classes; ++j){
@@ -236,6 +240,9 @@ void validate_detector(char *cfgfile, char *weightfile)
             free_image(val[t]);
             free_image(val_resized[t]);
         }
+    }
+    for(j = 0; j < classes; ++j){
+        fclose(fps[j]);
     }
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }

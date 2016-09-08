@@ -254,6 +254,39 @@ void normalize_net(char *cfgfile, char *weightfile, char *outfile)
     save_weights(net, outfile);
 }
 
+void statistics_net(char *cfgfile, char *weightfile)
+{
+    gpu_index = -1;
+    network net = parse_network_cfg(cfgfile);
+    if (weightfile) {
+        load_weights(&net, weightfile);
+    }
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        layer l = net.layers[i];
+        if (l.type == CONNECTED && l.batch_normalize) {
+            printf("Connected Layer %d\n", i);
+            statistics_connected_layer(l);
+        }
+        if (l.type == GRU && l.batch_normalize) {
+            printf("GRU Layer %d\n", i);
+            printf("Input Z\n");
+            statistics_connected_layer(*l.input_z_layer);
+            printf("Input R\n");
+            statistics_connected_layer(*l.input_r_layer);
+            printf("Input H\n");
+            statistics_connected_layer(*l.input_h_layer);
+            printf("State Z\n");
+            statistics_connected_layer(*l.state_z_layer);
+            printf("State R\n");
+            statistics_connected_layer(*l.state_r_layer);
+            printf("State H\n");
+            statistics_connected_layer(*l.state_h_layer);
+        }
+        printf("\n");
+    }
+}
+
 void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
@@ -374,6 +407,8 @@ int main(int argc, char **argv)
         reset_normalize_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "denormalize")){
         denormalize_net(argv[2], argv[3], argv[4]);
+    } else if (0 == strcmp(argv[1], "statistics")){
+        statistics_net(argv[2], argv[3]);
     } else if (0 == strcmp(argv[1], "normalize")){
         normalize_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "rescale")){
