@@ -48,7 +48,7 @@ void *fetch_in_thread(void *ptr)
 
 void *detect_in_thread(void *ptr)
 {
-    float nms = .1;
+    float nms = .4;
 
     detection_layer l = net.layers[net.n-1];
     float *X = det_s.data;
