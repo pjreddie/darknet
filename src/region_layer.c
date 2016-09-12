@@ -22,11 +22,18 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     l.classes = classes;
     l.coords = coords;
     l.cost = calloc(1, sizeof(float));
+    l.biases = calloc(n*2, sizeof(float));
+    l.bias_updates = calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + coords + 1);
     l.inputs = l.outputs;
     l.truths = 30*(5);
     l.delta = calloc(batch*l.outputs, sizeof(float));
     l.output = calloc(batch*l.outputs, sizeof(float));
+    int i;
+    for(i = 0; i < n*2; ++i){
+        l.biases[i] = .5;
+    }
+
 #ifdef GPU
     l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
@@ -38,62 +45,30 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     return l;
 }
 
-box get_region_box2(float *x, int index, int i, int j, int w, int h)
+box get_region_box(float *x, float *biases, int n, int index, int i, int j, int w, int h)
 {
-    float aspect = exp(x[index+0]);
-    float scale  = logistic_activate(x[index+1]);
-    float move_x = x[index+2];
-    float move_y = x[index+3];
-
     box b;
-    b.w = sqrt(scale * aspect);
-    b.h = b.w * 1./aspect;
-    b.x = move_x * b.w + (i + .5)/w;
-    b.y = move_y * b.h + (j + .5)/h;
+    b.x = (i + .5)/w + x[index + 0] * biases[2*n];
+    b.y = (j + .5)/h + x[index + 1] * biases[2*n + 1];
+    b.w = exp(x[index + 2]) * biases[2*n];
+    b.h = exp(x[index + 3]) * biases[2*n+1];
     return b;
 }
 
-float delta_region_box2(box truth, float *output, int index, int i, int j, int w, int h, float *delta)
+float delta_region_box(box truth, float *x, float *biases, int n, int index, int i, int j, int w, int h, float *delta, float scale)
 {
-    box pred = get_region_box2(output, index, i, j, w, h);
-    float iou = box_iou(pred, truth);
-    float true_aspect = truth.w/truth.h;
-    float true_scale = truth.w*truth.h;
-
-    float true_dx = (truth.x - (i+.5)/w) / truth.w;
-    float true_dy = (truth.y - (j+.5)/h) / truth.h;
-    delta[index + 0] = (true_aspect - exp(output[index + 0])) * exp(output[index + 0]);
-    delta[index + 1] = (true_scale - logistic_activate(output[index + 1])) * logistic_gradient(logistic_activate(output[index + 1]));
-    delta[index + 2] = true_dx - output[index + 2];
-    delta[index + 3] = true_dy - output[index + 3];
-    return iou;
-}
-
-box get_region_box(float *x, int index, int i, int j, int w, int h, int adjust, int logistic)
-{
-    box b;
-    b.x = (x[index + 0] + i + .5)/w;
-    b.y = (x[index + 1] + j + .5)/h;
-    b.w = x[index + 2];
-    b.h = x[index + 3];
-    if(logistic){
-        b.w = logistic_activate(x[index + 2]);
-        b.h = logistic_activate(x[index + 3]);
-    }
-    if(adjust && b.w < .01) b.w = .01;
-    if(adjust && b.h < .01) b.h = .01;
-    return b;
-}
-
-float delta_region_box(box truth, float *output, int index, int i, int j, int w, int h, float *delta, int logistic, float scale)
-{
-    box pred = get_region_box(output, index, i, j, w, h, 0, logistic);
+    box pred = get_region_box(x, biases, n, index, i, j, w, h);
     float iou = box_iou(pred, truth);
 
-    delta[index + 0] = scale * (truth.x - pred.x);
-    delta[index + 1] = scale * (truth.y - pred.y);
-    delta[index + 2] = scale * ((truth.w - pred.w)*(logistic ? logistic_gradient(pred.w) : 1));
-    delta[index + 3] = scale * ((truth.h - pred.h)*(logistic ? logistic_gradient(pred.h) : 1));
+    float tx = (truth.x - (i + .5)/w) / biases[2*n];
+    float ty = (truth.y - (j + .5)/h) / biases[2*n + 1];
+    float tw = log(truth.w / biases[2*n]);
+    float th = log(truth.h / biases[2*n + 1]);
+
+    delta[index + 0] = scale * (tx - x[index + 0]);
+    delta[index + 1] = scale * (ty - x[index + 1]);
+    delta[index + 2] = scale * (tw - x[index + 2]);
+    delta[index + 3] = scale * (th - x[index + 3]);
     return iou;
 }
 
@@ -107,7 +82,7 @@ float tisnan(float x)
     return (x != x);
 }
 
-#define LOG 1
+#define LOG 0
 
 void forward_region_layer(const region_layer l, network_state state)
 {
@@ -127,6 +102,7 @@ void forward_region_layer(const region_layer l, network_state state)
     if(!state.train) return;
     memset(l.delta, 0, l.outputs * l.batch * sizeof(float));
     float avg_iou = 0;
+    float recall = 0;
     float avg_cat = 0;
     float avg_obj = 0;
     float avg_anyobj = 0;
@@ -137,7 +113,7 @@ void forward_region_layer(const region_layer l, network_state state)
             for (i = 0; i < l.w; ++i) {
                 for (n = 0; n < l.n; ++n) {
                     int index = size*(j*l.w*l.n + i*l.n + n) + b*l.outputs;
-                    box pred = get_region_box(l.output, index, i, j, l.w, l.h, 1, LOG);
+                    box pred = get_region_box(l.output, l.biases, n, index, i, j, l.w, l.h);
                     float best_iou = 0;
                     for(t = 0; t < 30; ++t){
                         box truth = float_to_box(state.truth + t*5 + b*l.truths);
@@ -155,7 +131,11 @@ void forward_region_layer(const region_layer l, network_state state)
                         truth.y = (j + .5)/l.h;
                         truth.w = .5;
                         truth.h = .5;
-                        delta_region_box(truth, l.output, index, i, j, l.w, l.h, l.delta, LOG, 1);
+                        delta_region_box(truth, l.output, l.biases, n, index, i, j, l.w, l.h, l.delta, .01);
+                        //l.delta[index + 0] = .1 * (0 - l.output[index + 0]);
+                        //l.delta[index + 1] = .1 * (0 - l.output[index + 1]);
+                        //l.delta[index + 2] = .1 * (0 - l.output[index + 2]);
+                        //l.delta[index + 3] = .1 * (0 - l.output[index + 3]);
                     }
                 }
             }
@@ -176,8 +156,8 @@ void forward_region_layer(const region_layer l, network_state state)
             printf("index %d %d\n",i, j);
             for(n = 0; n < l.n; ++n){
                 int index = size*(j*l.w*l.n + i*l.n + n) + b*l.outputs;
-                box pred = get_region_box(l.output, index, i, j, l.w, l.h, 1, LOG);
-                printf("pred: (%f, %f) %f x %f\n", pred.x, pred.y, pred.w, pred.h);
+                box pred = get_region_box(l.output, l.biases, n, index, i, j, l.w, l.h);
+                printf("pred: (%f, %f) %f x %f\n", pred.x*l.w - i - .5, pred.y * l.h - j - .5, pred.w, pred.h);
                 pred.x = 0;
                 pred.y = 0;
                 float iou = box_iou(pred, truth_shift);
@@ -187,9 +167,10 @@ void forward_region_layer(const region_layer l, network_state state)
                     best_n = n;
                 }
             }
-            printf("%d %f (%f, %f) %f x %f\n", best_n, best_iou, truth.x, truth.y, truth.w, truth.h);
+            printf("%d %f (%f, %f) %f x %f\n", best_n, best_iou, truth.x * l.w - i - .5, truth.y*l.h - j - .5, truth.w, truth.h);
 
-            float iou = delta_region_box(truth, l.output, best_index, i, j, l.w, l.h, l.delta, LOG, l.coord_scale);
+            float iou = delta_region_box(truth, l.output, l.biases, best_n, best_index, i, j, l.w, l.h, l.delta, l.coord_scale);
+            if(iou > .5) recall += 1;
             avg_iou += iou;
 
             //l.delta[best_index + 4] = iou - l.output[best_index + 4];
@@ -239,7 +220,7 @@ void forward_region_layer(const region_layer l, network_state state)
     printf("\n");
     reorg(l.delta, l.w*l.h, size*l.n, l.batch, 0);
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
-    printf("Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), count);
+    printf("Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, Avg Recall: %f,  count: %d\n", avg_iou/count, avg_cat/count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count);
 }
 
 void backward_region_layer(const region_layer l, network_state state)

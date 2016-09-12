@@ -14,8 +14,6 @@ void free_layer(layer l)
     if(l.indexes)        free(l.indexes);
     if(l.rand)           free(l.rand);
     if(l.cost)           free(l.cost);
-    if(l.filters)        free(l.filters);
-    if(l.filter_updates) free(l.filter_updates);
     if(l.biases)         free(l.biases);
     if(l.bias_updates)   free(l.bias_updates);
     if(l.weights)        free(l.weights);
@@ -30,8 +28,8 @@ void free_layer(layer l)
 
 #ifdef GPU
     if(l.indexes_gpu)          cuda_free((float *)l.indexes_gpu);
-    if(l.filters_gpu)          cuda_free(l.filters_gpu);
-    if(l.filter_updates_gpu)   cuda_free(l.filter_updates_gpu);
+    if(l.weights_gpu)          cuda_free(l.weights_gpu);
+    if(l.weight_updates_gpu)   cuda_free(l.weight_updates_gpu);
     if(l.col_image_gpu)        cuda_free(l.col_image_gpu);
     if(l.weights_gpu)          cuda_free(l.weights_gpu);
     if(l.biases_gpu)           cuda_free(l.biases_gpu);

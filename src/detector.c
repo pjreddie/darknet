@@ -117,12 +117,18 @@ static void convert_detections(float *predictions, int classes, int num, int squ
             int box_index = index * (classes + 5);
             boxes[index].x = (predictions[box_index + 0] + col + .5) / side * w;
             boxes[index].y = (predictions[box_index + 1] + row + .5) / side * h;
-            if(1){
+            if(0){
                 boxes[index].x = (logistic_activate(predictions[box_index + 0]) + col) / side * w;
                 boxes[index].y = (logistic_activate(predictions[box_index + 1]) + row) / side * h;
             }
             boxes[index].w = pow(logistic_activate(predictions[box_index + 2]), (square?2:1)) * w;
             boxes[index].h = pow(logistic_activate(predictions[box_index + 3]), (square?2:1)) * h;
+            if(1){
+                boxes[index].x = ((col + .5)/side + predictions[box_index + 0] * .5) * w;
+                boxes[index].y = ((row + .5)/side + predictions[box_index + 1] * .5) * h;
+                boxes[index].w = (exp(predictions[box_index + 2]) * .5) * w;
+                boxes[index].h = (exp(predictions[box_index + 3]) * .5) * h;
+            }
             for(j = 0; j < classes; ++j){
                 int class_index = index * (classes + 5) + 5;
                 float prob = scale*predictions[class_index+j];

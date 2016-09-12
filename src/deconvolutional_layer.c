@@ -57,13 +57,13 @@ deconvolutional_layer make_deconvolutional_layer(int batch, int h, int w, int c,
     l.stride = stride;
     l.size = size;
 
-    l.filters = calloc(c*n*size*size, sizeof(float));
-    l.filter_updates = calloc(c*n*size*size, sizeof(float));
+    l.weights = calloc(c*n*size*size, sizeof(float));
+    l.weight_updates = calloc(c*n*size*size, sizeof(float));
 
     l.biases = calloc(n, sizeof(float));
     l.bias_updates = calloc(n, sizeof(float));
     float scale = 1./sqrt(size*size*c);
-    for(i = 0; i < c*n*size*size; ++i) l.filters[i] = scale*rand_normal();
+    for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_normal();
     for(i = 0; i < n; ++i){
         l.biases[i] = scale;
     }
@@ -81,8 +81,8 @@ deconvolutional_layer make_deconvolutional_layer(int batch, int h, int w, int c,
     l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
 
     #ifdef GPU
-    l.filters_gpu = cuda_make_array(l.filters, c*n*size*size);
-    l.filter_updates_gpu = cuda_make_array(l.filter_updates, c*n*size*size);
+    l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
+    l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
 
     l.biases_gpu = cuda_make_array(l.biases, n);
     l.bias_updates_gpu = cuda_make_array(l.bias_updates, n);
@@ -137,7 +137,7 @@ void forward_deconvolutional_layer(const deconvolutional_layer l, network_state 
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
 
     for(i = 0; i < l.batch; ++i){
-        float *a = l.filters;
+        float *a = l.weights;
         float *b = state.input + i*l.c*l.h*l.w;
         float *c = l.col_image;
 
@@ -167,7 +167,7 @@ void backward_deconvolutional_layer(deconvolutional_layer l, network_state state
 
         float *a = state.input + i*m*n;
         float *b = l.col_image;
-        float *c = l.filter_updates;
+        float *c = l.weight_updates;
 
         im2col_cpu(l.delta + i*l.n*size, l.n, out_h, out_w, 
                 l.size, l.stride, 0, b);
@@ -178,7 +178,7 @@ void backward_deconvolutional_layer(deconvolutional_layer l, network_state state
             int n = l.h*l.w;
             int k = l.size*l.size*l.n;
 
-            float *a = l.filters;
+            float *a = l.weights;
             float *b = l.col_image;
             float *c = state.delta + i*n*m;
 
@@ -193,9 +193,9 @@ void update_deconvolutional_layer(deconvolutional_layer l, float learning_rate, 
     axpy_cpu(l.n, learning_rate, l.bias_updates, 1, l.biases, 1);
     scal_cpu(l.n, momentum, l.bias_updates, 1);
 
-    axpy_cpu(size, -decay, l.filters, 1, l.filter_updates, 1);
-    axpy_cpu(size, learning_rate, l.filter_updates, 1, l.filters, 1);
-    scal_cpu(size, momentum, l.filter_updates, 1);
+    axpy_cpu(size, -decay, l.weights, 1, l.weight_updates, 1);
+    axpy_cpu(size, learning_rate, l.weight_updates, 1, l.weights, 1);
+    scal_cpu(size, momentum, l.weight_updates, 1);
 }
 
 

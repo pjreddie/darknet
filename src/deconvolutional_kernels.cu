@@ -27,7 +27,7 @@ extern "C" void forward_deconvolutional_layer_gpu(deconvolutional_layer layer, n
     fill_ongpu(layer.outputs*layer.batch, 0, layer.output_gpu, 1);
 
     for(i = 0; i < layer.batch; ++i){
-        float *a = layer.filters_gpu;
+        float *a = layer.weights_gpu;
         float *b = state.input + i*layer.c*layer.h*layer.w;
         float *c = layer.col_image_gpu;
 
@@ -59,7 +59,7 @@ extern "C" void backward_deconvolutional_layer_gpu(deconvolutional_layer layer, 
 
         float *a = state.input + i*m*n;
         float *b = layer.col_image_gpu;
-        float *c = layer.filter_updates_gpu;
+        float *c = layer.weight_updates_gpu;
 
         im2col_ongpu(layer.delta_gpu + i*layer.n*size, layer.n, out_h, out_w, 
                 layer.size, layer.stride, 0, b);
@@ -70,7 +70,7 @@ extern "C" void backward_deconvolutional_layer_gpu(deconvolutional_layer layer, 
             int n = layer.h*layer.w;
             int k = layer.size*layer.size*layer.n;
 
-            float *a = layer.filters_gpu;
+            float *a = layer.weights_gpu;
             float *b = layer.col_image_gpu;
             float *c = state.delta + i*n*m;
 
@@ -81,17 +81,17 @@ extern "C" void backward_deconvolutional_layer_gpu(deconvolutional_layer layer, 
 
 extern "C" void pull_deconvolutional_layer(deconvolutional_layer layer)
 {
-    cuda_pull_array(layer.filters_gpu, layer.filters, layer.c*layer.n*layer.size*layer.size);
+    cuda_pull_array(layer.weights_gpu, layer.weights, layer.c*layer.n*layer.size*layer.size);
     cuda_pull_array(layer.biases_gpu, layer.biases, layer.n);
-    cuda_pull_array(layer.filter_updates_gpu, layer.filter_updates, layer.c*layer.n*layer.size*layer.size);
+    cuda_pull_array(layer.weight_updates_gpu, layer.weight_updates, layer.c*layer.n*layer.size*layer.size);
     cuda_pull_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
 }
 
 extern "C" void push_deconvolutional_layer(deconvolutional_layer layer)
 {
-    cuda_push_array(layer.filters_gpu, layer.filters, layer.c*layer.n*layer.size*layer.size);
+    cuda_push_array(layer.weights_gpu, layer.weights, layer.c*layer.n*layer.size*layer.size);
     cuda_push_array(layer.biases_gpu, layer.biases, layer.n);
-    cuda_push_array(layer.filter_updates_gpu, layer.filter_updates, layer.c*layer.n*layer.size*layer.size);
+    cuda_push_array(layer.weight_updates_gpu, layer.weight_updates, layer.c*layer.n*layer.size*layer.size);
     cuda_push_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
 }
 
@@ -102,8 +102,8 @@ extern "C" void update_deconvolutional_layer_gpu(deconvolutional_layer layer, fl
     axpy_ongpu(layer.n, learning_rate, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);
     scal_ongpu(layer.n, momentum, layer.bias_updates_gpu, 1);
 
-    axpy_ongpu(size, -decay, layer.filters_gpu, 1, layer.filter_updates_gpu, 1);
-    axpy_ongpu(size, learning_rate, layer.filter_updates_gpu, 1, layer.filters_gpu, 1);
-    scal_ongpu(size, momentum, layer.filter_updates_gpu, 1);
+    axpy_ongpu(size, -decay, layer.weights_gpu, 1, layer.weight_updates_gpu, 1);
+    axpy_ongpu(size, learning_rate, layer.weight_updates_gpu, 1, layer.weights_gpu, 1);
+    scal_ongpu(size, momentum, layer.weight_updates_gpu, 1);
 }
 

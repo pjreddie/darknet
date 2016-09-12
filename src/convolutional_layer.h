@@ -29,10 +29,10 @@ void denormalize_convolutional_layer(convolutional_layer l);
 void resize_convolutional_layer(convolutional_layer *layer, int w, int h);
 void forward_convolutional_layer(const convolutional_layer layer, network_state state);
 void update_convolutional_layer(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay);
-image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_filters);
-void binarize_filters(float *filters, int n, int size, float *binary);
+image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_weights);
+void binarize_weights(float *weights, int n, int size, float *binary);
 void swap_binary(convolutional_layer *l);
-void binarize_filters2(float *filters, int n, int size, char *binary, float *scales);
+void binarize_weights2(float *weights, int n, int size, char *binary, float *scales);
 
 void backward_convolutional_layer(convolutional_layer layer, network_state state);
 
@@ -41,12 +41,12 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
 
 image get_convolutional_image(convolutional_layer layer);
 image get_convolutional_delta(convolutional_layer layer);
-image get_convolutional_filter(convolutional_layer layer, int i);
+image get_convolutional_weight(convolutional_layer layer, int i);
 
 int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
-void rescale_filters(convolutional_layer l, float scale, float trans);
-void rgbgr_filters(convolutional_layer l);
+void rescale_weights(convolutional_layer l, float scale, float trans);
+void rgbgr_weights(convolutional_layer l);
 
 #endif
 

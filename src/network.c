@@ -318,11 +318,11 @@ void backward_network(network net, network_state state)
 
 float train_network_datum(network net, float *x, float *y)
 {
-    *net.seen += net.batch;
 #ifdef GPU
     if(gpu_index >= 0) return train_network_datum_gpu(net, x, y);
 #endif
     network_state state;
+    *net.seen += net.batch;
     state.index = 0;
     state.net = net;
     state.input = x;

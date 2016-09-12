@@ -47,23 +47,23 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = l.w * l.h * l.c;
 
-    l.filters = calloc(c*n*size*size*locations, sizeof(float));
-    l.filter_updates = calloc(c*n*size*size*locations, sizeof(float));
+    l.weights = calloc(c*n*size*size*locations, sizeof(float));
+    l.weight_updates = calloc(c*n*size*size*locations, sizeof(float));
 
     l.biases = calloc(l.outputs, sizeof(float));
     l.bias_updates = calloc(l.outputs, sizeof(float));
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c));
-    for(i = 0; i < c*n*size*size; ++i) l.filters[i] = scale*rand_uniform(-1,1);
+    for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1,1);
 
     l.col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
     l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
     l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
 
 #ifdef GPU
-    l.filters_gpu = cuda_make_array(l.filters, c*n*size*size*locations);
-    l.filter_updates_gpu = cuda_make_array(l.filter_updates, c*n*size*size*locations);
+    l.weights_gpu = cuda_make_array(l.weights, c*n*size*size*locations);
+    l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size*locations);
 
     l.biases_gpu = cuda_make_array(l.biases, l.outputs);
     l.bias_updates_gpu = cuda_make_array(l.bias_updates, l.outputs);
@@ -97,7 +97,7 @@ void forward_local_layer(const local_layer l, network_state state)
                 l.size, l.stride, l.pad, l.col_image);
         float *output = l.output + i*l.outputs;
         for(j = 0; j < locations; ++j){
-            float *a = l.filters + j*l.size*l.size*l.c*l.n;
+            float *a = l.weights + j*l.size*l.size*l.c*l.n;
             float *b = l.col_image + j;
             float *c = output + j;
 
@@ -130,7 +130,7 @@ void backward_local_layer(local_layer l, network_state state)
         for(j = 0; j < locations; ++j){ 
             float *a = l.delta + i*l.outputs + j;
             float *b = l.col_image + j;
-            float *c = l.filter_updates + j*l.size*l.size*l.c*l.n;
+            float *c = l.weight_updates + j*l.size*l.size*l.c*l.n;
             int m = l.n;
             int n = l.size*l.size*l.c;
             int k = 1;
@@ -140,7 +140,7 @@ void backward_local_layer(local_layer l, network_state state)
 
         if(state.delta){
             for(j = 0; j < locations; ++j){ 
-                float *a = l.filters + j*l.size*l.size*l.c*l.n;
+                float *a = l.weights + j*l.size*l.size*l.c*l.n;
                 float *b = l.delta + i*l.outputs + j;
                 float *c = l.col_image + j;
 
@@ -163,9 +163,9 @@ void update_local_layer(local_layer l, int batch, float learning_rate, float mom
     axpy_cpu(l.outputs, learning_rate/batch, l.bias_updates, 1, l.biases, 1);
     scal_cpu(l.outputs, momentum, l.bias_updates, 1);
 
-    axpy_cpu(size, -decay*batch, l.filters, 1, l.filter_updates, 1);
-    axpy_cpu(size, learning_rate/batch, l.filter_updates, 1, l.filters, 1);
-    scal_cpu(size, momentum, l.filter_updates, 1);
+    axpy_cpu(size, -decay*batch, l.weights, 1, l.weight_updates, 1);
+    axpy_cpu(size, learning_rate/batch, l.weight_updates, 1, l.weights, 1);
+    scal_cpu(size, momentum, l.weight_updates, 1);
 }
 
 #ifdef GPU
@@ -187,7 +187,7 @@ void forward_local_layer_gpu(const local_layer l, network_state state)
                 l.size, l.stride, l.pad, l.col_image_gpu);
         float *output = l.output_gpu + i*l.outputs;
         for(j = 0; j < locations; ++j){
-            float *a = l.filters_gpu + j*l.size*l.size*l.c*l.n;
+            float *a = l.weights_gpu + j*l.size*l.size*l.c*l.n;
             float *b = l.col_image_gpu + j;
             float *c = output + j;
 
@@ -219,7 +219,7 @@ void backward_local_layer_gpu(local_layer l, network_state state)
         for(j = 0; j < locations; ++j){ 
             float *a = l.delta_gpu + i*l.outputs + j;
             float *b = l.col_image_gpu + j;
-            float *c = l.filter_updates_gpu + j*l.size*l.size*l.c*l.n;
+            float *c = l.weight_updates_gpu + j*l.size*l.size*l.c*l.n;
             int m = l.n;
             int n = l.size*l.size*l.c;
             int k = 1;
@@ -229,7 +229,7 @@ void backward_local_layer_gpu(local_layer l, network_state state)
 
         if(state.delta){
             for(j = 0; j < locations; ++j){ 
-                float *a = l.filters_gpu + j*l.size*l.size*l.c*l.n;
+                float *a = l.weights_gpu + j*l.size*l.size*l.c*l.n;
                 float *b = l.delta_gpu + i*l.outputs + j;
                 float *c = l.col_image_gpu + j;
 
@@ -252,16 +252,16 @@ void update_local_layer_gpu(local_layer l, int batch, float learning_rate, float
     axpy_ongpu(l.outputs, learning_rate/batch, l.bias_updates_gpu, 1, l.biases_gpu, 1);
     scal_ongpu(l.outputs, momentum, l.bias_updates_gpu, 1);
 
-    axpy_ongpu(size, -decay*batch, l.filters_gpu, 1, l.filter_updates_gpu, 1);
-    axpy_ongpu(size, learning_rate/batch, l.filter_updates_gpu, 1, l.filters_gpu, 1);
-    scal_ongpu(size, momentum, l.filter_updates_gpu, 1);
+    axpy_ongpu(size, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);
+    axpy_ongpu(size, learning_rate/batch, l.weight_updates_gpu, 1, l.weights_gpu, 1);
+    scal_ongpu(size, momentum, l.weight_updates_gpu, 1);
 }
 
 void pull_local_layer(local_layer l)
 {
     int locations = l.out_w*l.out_h;
     int size = l.size*l.size*l.c*l.n*locations;
-    cuda_pull_array(l.filters_gpu, l.filters, size);
+    cuda_pull_array(l.weights_gpu, l.weights, size);
     cuda_pull_array(l.biases_gpu, l.biases, l.outputs);
 }
 
@@ -269,7 +269,7 @@ void push_local_layer(local_layer l)
 {
     int locations = l.out_w*l.out_h;
     int size = l.size*l.size*l.c*l.n*locations;
-    cuda_push_array(l.filters_gpu, l.filters, size);
+    cuda_push_array(l.weights_gpu, l.weights, size);
     cuda_push_array(l.biases_gpu, l.biases, l.outputs);
 }
 #endif

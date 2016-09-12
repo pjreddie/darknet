@@ -66,7 +66,7 @@ void average(int argc, char *argv[])
             if(l.type == CONVOLUTIONAL){
                 int num = l.n*l.c*l.size*l.size;
                 axpy_cpu(l.n, 1, l.biases, 1, out.biases, 1);
-                axpy_cpu(num, 1, l.filters, 1, out.filters, 1);
+                axpy_cpu(num, 1, l.weights, 1, out.weights, 1);
             }
             if(l.type == CONNECTED){
                 axpy_cpu(l.outputs, 1, l.biases, 1, out.biases, 1);
@@ -80,7 +80,7 @@ void average(int argc, char *argv[])
         if(l.type == CONVOLUTIONAL){
             int num = l.n*l.c*l.size*l.size;
             scal_cpu(l.n, 1./n, l.biases, 1);
-            scal_cpu(num, 1./n, l.filters, 1);
+            scal_cpu(num, 1./n, l.weights, 1);
         }
         if(l.type == CONNECTED){
             scal_cpu(l.outputs, 1./n, l.biases, 1);
@@ -159,7 +159,7 @@ void rescale_net(char *cfgfile, char *weightfile, char *outfile)
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.type == CONVOLUTIONAL){
-            rescale_filters(l, 2, -.5);
+            rescale_weights(l, 2, -.5);
             break;
         }
     }
@@ -177,7 +177,7 @@ void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.type == CONVOLUTIONAL){
-            rgbgr_filters(l);
+            rgbgr_weights(l);
             break;
         }
     }
@@ -354,8 +354,7 @@ int main(int argc, char **argv)
     gpu_index = -1;
 #else
     if(gpu_index >= 0){
-        cudaError_t status = cudaSetDevice(gpu_index);
-        check_error(status);
+        cuda_set_device(gpu_index);
     }
 #endif
 

@@ -9,6 +9,20 @@ int gpu_index = 0;
 #include <stdlib.h>
 #include <time.h>
 
+void cuda_set_device(int n)
+{
+    gpu_index = n;
+    cudaError_t status = cudaSetDevice(n);
+    check_error(status);
+}
+
+int cuda_get_device()
+{
+    int n = 0;
+    cudaError_t status = cudaGetDevice(&n);
+    check_error(status);
+    return n;
+}
 
 void check_error(cudaError_t status)
 {
@@ -38,8 +52,8 @@ dim3 cuda_gridsize(size_t n){
     size_t x = k;
     size_t y = 1;
     if(x > 65535){
-         x = ceil(sqrt(k));
-         y = (n-1)/(x*BLOCK) + 1;
+        x = ceil(sqrt(k));
+        y = (n-1)/(x*BLOCK) + 1;
     }
     dim3 d = {x, y, 1};
     //printf("%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
@@ -49,25 +63,27 @@ dim3 cuda_gridsize(size_t n){
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle()
 {
-    static int init = 0;
-    static cudnnHandle_t handle;
-    if(!init) {
-        cudnnCreate(&handle);
-        init = 1;
+    static int init[16] = {0};
+    static cudnnHandle_t handle[16];
+    int i = cuda_get_device();
+    if(!init[i]) {
+        cudnnCreate(&handle[i]);
+        init[i] = 1;
     }
-    return handle;
+    return handle[i];
 }
 #endif
 
 cublasHandle_t blas_handle()
 {
-    static int init = 0;
-    static cublasHandle_t handle;
-    if(!init) {
-        cublasCreate(&handle);
-        init = 1;
+    static int init[16] = {0};
+    static cublasHandle_t handle[16];
+    int i = cuda_get_device();
+    if(!init[i]) {
+        cublasCreate(&handle[i]);
+        init[i] = 1;
     }
-    return handle;
+    return handle[i];
 }
 
 float *cuda_make_array(float *x, size_t n)
@@ -86,14 +102,15 @@ float *cuda_make_array(float *x, size_t n)
 
 void cuda_random(float *x_gpu, size_t n)
 {
-    static curandGenerator_t gen;
-    static int init = 0;
-    if(!init){
-        curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-        curandSetPseudoRandomGeneratorSeed(gen, time(0));
-        init = 1;
+    static curandGenerator_t gen[16];
+    static int init[16] = {0};
+    int i = cuda_get_device();
+    if(!init[i]){
+        curandCreateGenerator(&gen[i], CURAND_RNG_PSEUDO_DEFAULT);
+        curandSetPseudoRandomGeneratorSeed(gen[i], time(0));
+        init[i] = 1;
     }
-    curandGenerateUniform(gen, x_gpu, n);
+    curandGenerateUniform(gen[i], x_gpu, n);
     check_error(cudaPeekAtLastError());
 }
 
