@@ -1,0 +1,8 @@
+classes=21842
+train  = /data/imagenet/imagenet22k.train.list
+valid  = /data/imagenet/imagenet22k.valid.list
+backup = /home/pjreddie/backup/
+labels = data/imagenet.labels.list
+names  = data/imagenet.shortnames.list
+top = 5
+
