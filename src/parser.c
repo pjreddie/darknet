@@ -954,7 +954,9 @@ void save_connected_weights(layer l, FILE *fp)
 void save_weights_upto(network net, char *filename, int cutoff)
 {
 #ifdef GPU
+    if(net.gpu_index >= 0){
     cuda_set_device(net.gpu_index);
+    }
 #endif
     fprintf(stderr, "Saving weights to %s\n", filename);
     FILE *fp = fopen(filename, "w");
@@ -1120,7 +1122,9 @@ void load_convolutional_weights(layer l, FILE *fp)
 void load_weights_upto(network *net, char *filename, int cutoff)
 {
 #ifdef GPU
+    if(net->gpu_index >= 0){
     cuda_set_device(net->gpu_index);
+    }
 #endif
     fprintf(stderr, "Loading weights from %s...", filename);
     fflush(stdout);

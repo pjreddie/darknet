@@ -204,10 +204,12 @@ void statistics_connected_layer(layer l)
     if(l.batch_normalize){
         printf("Scales ");
         print_statistics(l.scales, l.outputs);
+        /*
         printf("Rolling Mean ");
         print_statistics(l.rolling_mean, l.outputs);
         printf("Rolling Variance ");
         print_statistics(l.rolling_variance, l.outputs);
+        */
     }
     printf("Biases ");
     print_statistics(l.biases, l.outputs);

@@ -116,7 +116,6 @@ void random_go_moves(moves m, float *boards, float *labels, int n)
 
 void train_go(char *cfgfile, char *weightfile)
 {
-    data_seed = time(0);
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
@@ -401,7 +400,6 @@ int generate_move(network net, int player, float *board, int multi, float thresh
 
 void valid_go(char *cfgfile, char *weightfile, int multi)
 {
-    data_seed = time(0);
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);

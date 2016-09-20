@@ -10,7 +10,6 @@
 
 void train_cifar(char *cfgfile, char *weightfile)
 {
-    data_seed = time(0);
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
@@ -59,7 +58,6 @@ void train_cifar(char *cfgfile, char *weightfile)
 
 void train_cifar_distill(char *cfgfile, char *weightfile)
 {
-    data_seed = time(0);
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);

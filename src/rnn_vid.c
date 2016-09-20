@@ -76,7 +76,6 @@ void train_vid_rnn(char *cfgfile, char *weightfile)
     char *train_videos = "data/vid/train.txt";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
-    data_seed = time(0);
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;

@@ -9,7 +9,6 @@
 void train_writing(char *cfgfile, char *weightfile)
 {
     char *backup_directory = "/home/pjreddie/backup/";
-    data_seed = time(0);
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);

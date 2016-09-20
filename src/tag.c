@@ -8,7 +8,6 @@
 
 void train_tag(char *cfgfile, char *weightfile, int clear)
 {
-    data_seed = time(0);
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);

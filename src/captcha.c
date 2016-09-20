@@ -28,7 +28,6 @@ void fix_data_captcha(data d, int mask)
 
 void train_captcha(char *cfgfile, char *weightfile)
 {
-    data_seed = time(0);
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);

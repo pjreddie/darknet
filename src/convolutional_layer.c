@@ -241,9 +241,6 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.biases_gpu = cuda_make_array(l.biases, n);
         l.bias_updates_gpu = cuda_make_array(l.bias_updates, n);
 
-        l.scales_gpu = cuda_make_array(l.scales, n);
-        l.scale_updates_gpu = cuda_make_array(l.scale_updates, n);
-
         l.delta_gpu = cuda_make_array(l.delta, l.batch*out_h*out_w*n);
         l.output_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
 
@@ -264,6 +261,9 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
             l.mean_delta_gpu = cuda_make_array(l.mean, n);
             l.variance_delta_gpu = cuda_make_array(l.variance, n);
+
+            l.scales_gpu = cuda_make_array(l.scales, n);
+            l.scale_updates_gpu = cuda_make_array(l.scale_updates, n);
 
             l.x_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
             l.x_norm_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
@@ -510,6 +510,11 @@ void update_convolutional_layer(convolutional_layer l, int batch, float learning
     int size = l.size*l.size*l.c*l.n;
     axpy_cpu(l.n, learning_rate/batch, l.bias_updates, 1, l.biases, 1);
     scal_cpu(l.n, momentum, l.bias_updates, 1);
+
+    if(l.scales){
+        axpy_cpu(l.n, learning_rate/batch, l.scale_updates, 1, l.scales, 1);
+        scal_cpu(l.n, momentum, l.scale_updates, 1);
+    }
 
     axpy_cpu(size, -decay*batch, l.weights, 1, l.weight_updates, 1);
     axpy_cpu(size, learning_rate/batch, l.weight_updates, 1, l.weights, 1);

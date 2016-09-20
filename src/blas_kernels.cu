@@ -365,7 +365,7 @@ __global__ void const_kernel(int N, float ALPHA, float *X, int INCX)
 __global__ void constrain_kernel(int N, float ALPHA, float *X, int INCX)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-    if(i < N) X[i*INCX] = min(ALPHA, max(-ALPHA, X[i*INCX]));
+    if(i < N) X[i*INCX] = fminf(ALPHA, fmaxf(-ALPHA, X[i*INCX]));
 }
 
 __global__ void supp_kernel(int N, float ALPHA, float *X, int INCX)

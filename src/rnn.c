@@ -129,7 +129,6 @@ void reset_rnn_state(network net, int b)
 void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, int tokenized)
 {
     srand(time(0));
-    data_seed = time(0);
     unsigned char *text = 0;
     int *tokens = 0;
     size_t size;

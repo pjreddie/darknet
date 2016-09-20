@@ -237,8 +237,10 @@ void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float 
     axpy_ongpu(layer.n, learning_rate/batch, layer.bias_updates_gpu, 1, layer.biases_gpu, 1);
     scal_ongpu(layer.n, momentum, layer.bias_updates_gpu, 1);
 
-    axpy_ongpu(layer.n, learning_rate/batch, layer.scale_updates_gpu, 1, layer.scales_gpu, 1);
-    scal_ongpu(layer.n, momentum, layer.scale_updates_gpu, 1);
+    if(layer.scales_gpu){
+        axpy_ongpu(layer.n, learning_rate/batch, layer.scale_updates_gpu, 1, layer.scales_gpu, 1);
+        scal_ongpu(layer.n, momentum, layer.scale_updates_gpu, 1);
+    }
 
     axpy_ongpu(size, -decay*batch, layer.weights_gpu, 1, layer.weight_updates_gpu, 1);
     axpy_ongpu(size, learning_rate/batch, layer.weight_updates_gpu, 1, layer.weights_gpu, 1);

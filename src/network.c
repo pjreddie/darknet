@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include <assert.h>
 #include "network.h"
 #include "image.h"
 #include "data.h"
@@ -356,6 +357,7 @@ float train_network_sgd(network net, data d, int n)
 
 float train_network(network net, data d)
 {
+    assert(d.X.rows % net.batch == 0);
     int batch = net.batch;
     int n = d.X.rows / batch;
     float *X = calloc(batch*d.X.cols, sizeof(float));

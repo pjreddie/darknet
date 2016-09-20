@@ -14,7 +14,6 @@ void train_swag(char *cfgfile, char *weightfile)
     char *train_images = "data/voc.0712.trainval";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
-    data_seed = time(0);
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
