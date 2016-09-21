@@ -73,9 +73,9 @@ The demo is trained with the above data and annotations.
    
    class_number
    
-   box1_x1 box1_y1 box1_width box1_height
+   box1_x1 box1_y1 box1_x2 box1_y2
    
-   box2_x1 box2_y1 box2_width box2_height
+   box2_x1 box2_y1 box2_x2 box2_y2
    
    ....
    
