@@ -21,7 +21,12 @@ layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
     l.output = calloc(batch*inputs, sizeof(float*));
     l.delta = calloc(batch*inputs, sizeof(float*));
 
+    l.forward = forward_activation_layer;
+    l.backward = backward_activation_layer;
 #ifdef GPU
+    l.forward_gpu = forward_activation_layer_gpu;
+    l.backward_gpu = backward_activation_layer_gpu;
+
     l.output_gpu = cuda_make_array(l.output, inputs*batch);
     l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
 #endif

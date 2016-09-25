@@ -85,7 +85,15 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
     l.z_cpu = calloc(outputs*batch, sizeof(float));
     l.h_cpu = calloc(outputs*batch, sizeof(float));
 
+    l.forward = forward_gru_layer;
+    l.backward = backward_gru_layer;
+    l.update = update_gru_layer;
+
 #ifdef GPU
+    l.forward_gpu = forward_gru_layer_gpu;
+    l.backward_gpu = backward_gru_layer_gpu;
+    l.update_gpu = update_gru_layer_gpu;
+
     l.forgot_state_gpu = cuda_make_array(l.output, batch*outputs);
     l.forgot_delta_gpu = cuda_make_array(l.output, batch*outputs);
     l.prev_state_gpu = cuda_make_array(l.output, batch*outputs);

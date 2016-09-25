@@ -12,13 +12,9 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-void convert_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
-
 char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
 
 int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
-
-image coco_labels[80];
 
 void train_coco(char *cfgfile, char *weightfile)
 {
@@ -160,7 +156,6 @@ void validate_coco(char *cfgfile, char *weightfile)
 
     layer l = net.layers[net.n-1];
     int classes = l.classes;
-    int square = l.sqrt;
     int side = l.side;
 
     int j;
@@ -217,10 +212,10 @@ void validate_coco(char *cfgfile, char *weightfile)
             char *path = paths[i+t-nthreads];
             int image_id = get_coco_image_id(path);
             float *X = val_resized[t].data;
-            float *predictions = network_predict(net, X);
+            network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            convert_detections(predictions, classes, l.n, square, side, w, h, thresh, probs, boxes, 0);
+            get_detection_boxes(l, w, h, thresh, probs, boxes, 0);
             if (nms) do_nms_sort(boxes, probs, side*side*l.n, classes, iou_thresh);
             print_cocos(fp, image_id, boxes, probs, side*side*l.n, classes, w, h);
             free_image(val[t]);
@@ -250,7 +245,6 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
 
     layer l = net.layers[net.n-1];
     int classes = l.classes;
-    int square = l.sqrt;
     int side = l.side;
 
     int j, k;
@@ -282,14 +276,15 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
         image orig = load_image_color(path, 0, 0);
         image sized = resize_image(orig, net.w, net.h);
         char *id = basecfg(path);
-        float *predictions = network_predict(net, sized.data);
-        convert_detections(predictions, classes, l.n, square, side, 1, 1, thresh, probs, boxes, 1);
+        network_predict(net, sized.data);
+        get_detection_boxes(l, 1, 1, thresh, probs, boxes, 1);
         if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
 
-        char *labelpath = find_replace(path, "images", "labels");
-        labelpath = find_replace(labelpath, "JPEGImages", "labels");
-        labelpath = find_replace(labelpath, ".jpg", ".txt");
-        labelpath = find_replace(labelpath, ".JPEG", ".txt");
+        char labelpath[4096];
+        find_replace(path, "images", "labels", labelpath);
+        find_replace(labelpath, "JPEGImages", "labels", labelpath);
+        find_replace(labelpath, ".jpg", ".txt", labelpath);
+        find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
         int num_labels = 0;
         box_label *truth = read_boxes(labelpath, &num_labels);
@@ -323,7 +318,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
 
 void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
 {
-
+    image *alphabet = load_alphabet();
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -353,11 +348,11 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         image sized = resize_image(im, net.w, net.h);
         float *X = sized.data;
         time=clock();
-        float *predictions = network_predict(net, X);
+        network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        convert_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
+        get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, coco_classes, coco_labels, 80);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, coco_classes, alphabet, 80);
         save_image(im, "prediction");
         show_image(im, "predictions");
         free_image(im);
@@ -372,12 +367,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
 
 void run_coco(int argc, char **argv)
 {
-    int i;
-    for(i = 0; i < 80; ++i){
-        char buff[256];
-        sprintf(buff, "data/labels/%s.png", coco_classes[i]);
-        coco_labels[i] = load_image_color(buff, 0, 0);
-    }
+    char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .2);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
@@ -394,5 +384,5 @@ void run_coco(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, coco_classes, coco_labels, 80, frame_skip);
+    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, coco_classes, 80, frame_skip, prefix);
 }

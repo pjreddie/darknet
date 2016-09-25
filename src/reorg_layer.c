@@ -22,7 +22,13 @@ layer make_reorg_layer(int batch, int h, int w, int c, int stride)
     int output_size = l.out_h * l.out_w * l.out_c * batch;
     l.output =  calloc(output_size, sizeof(float));
     l.delta =   calloc(output_size, sizeof(float));
+
+    l.forward = forward_reorg_layer;
+    l.backward = backward_reorg_layer;
     #ifdef GPU
+    l.forward_gpu = forward_reorg_layer_gpu;
+    l.backward_gpu = backward_reorg_layer_gpu;
+
     l.output_gpu  = cuda_make_array(l.output, output_size);
     l.delta_gpu   = cuda_make_array(l.delta, output_size);
     #endif

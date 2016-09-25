@@ -58,7 +58,13 @@ layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, 
     l.output = l.output_layer->output;
     l.delta = l.output_layer->delta;
 
+    l.forward = forward_rnn_layer;
+    l.backward = backward_rnn_layer;
+    l.update = update_rnn_layer;
 #ifdef GPU
+    l.forward_gpu = forward_rnn_layer_gpu;
+    l.backward_gpu = backward_rnn_layer_gpu;
+    l.update_gpu = update_rnn_layer_gpu;
     l.state_gpu = cuda_make_array(l.state, batch*hidden*(steps+1));
     l.output_gpu = l.output_layer->output_gpu;
     l.delta_gpu = l.output_layer->delta_gpu;

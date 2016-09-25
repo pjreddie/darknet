@@ -47,7 +47,7 @@ char **get_random_paths(char **paths, int n, int m)
     for(i = 0; i < n; ++i){
         int index = rand()%m;
         random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
+        //if(i == 0) printf("%s\n", paths[index]);
     }
     pthread_mutex_unlock(&mutex);
     return random_paths;
@@ -58,7 +58,8 @@ char **find_replace_paths(char **paths, int n, char *find, char *replace)
     char **replace_paths = calloc(n, sizeof(char*));
     int i;
     for(i = 0; i < n; ++i){
-        char *replaced = find_replace(paths[i], find, replace);
+        char replaced[4096];
+        find_replace(paths[i], find, replace, replaced);
         replace_paths[i] = copy_string(replaced);
     }
     return replace_paths;
@@ -198,12 +199,13 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 
 void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
 {
-    char *labelpath = find_replace(path, "images", "labels");
-    labelpath = find_replace(labelpath, "JPEGImages", "labels");
+    char labelpath[4096];
+    find_replace(path, "images", "labels", labelpath);
+    find_replace(labelpath, "JPEGImages", "labels", labelpath);
+    find_replace(labelpath, ".jpg", ".txt", labelpath);
+    find_replace(labelpath, ".JPG", ".txt", labelpath);
+    find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
-    labelpath = find_replace(labelpath, ".jpg", ".txt");
-    labelpath = find_replace(labelpath, ".JPG", ".txt");
-    labelpath = find_replace(labelpath, ".JPEG", ".txt");
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
@@ -235,13 +237,14 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
 
 void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int flip, float dx, float dy, float sx, float sy)
 {
-    char *labelpath = find_replace(path, "images", "labels");
-    labelpath = find_replace(labelpath, "JPEGImages", "labels");
+    char labelpath[4096];
+    find_replace(path, "images", "labels", labelpath);
+    find_replace(labelpath, "JPEGImages", "labels", labelpath);
 
-    labelpath = find_replace(labelpath, ".jpg", ".txt");
-    labelpath = find_replace(labelpath, ".png", ".txt");
-    labelpath = find_replace(labelpath, ".JPG", ".txt");
-    labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    find_replace(labelpath, ".jpg", ".txt", labelpath);
+    find_replace(labelpath, ".png", ".txt", labelpath);
+    find_replace(labelpath, ".JPG", ".txt", labelpath);
+    find_replace(labelpath, ".JPEG", ".txt", labelpath);
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
@@ -282,13 +285,14 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
 
 void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
 {
-    char *labelpath = find_replace(path, "images", "labels");
-    labelpath = find_replace(labelpath, "JPEGImages", "labels");
+    char labelpath[4096];
+    find_replace(path, "images", "labels", labelpath);
+    find_replace(labelpath, "JPEGImages", "labels", labelpath);
 
-    labelpath = find_replace(labelpath, ".jpg", ".txt");
-    labelpath = find_replace(labelpath, ".png", ".txt");
-    labelpath = find_replace(labelpath, ".JPG", ".txt");
-    labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    find_replace(labelpath, ".jpg", ".txt", labelpath);
+    find_replace(labelpath, ".png", ".txt", labelpath);
+    find_replace(labelpath, ".JPG", ".txt", labelpath);
+    find_replace(labelpath, ".JPEG", ".txt", labelpath);
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
@@ -400,11 +404,12 @@ matrix load_tags_paths(char **paths, int n, int k)
     int i;
     int count = 0;
     for(i = 0; i < n; ++i){
-        char *label = find_replace(paths[i], "imgs", "labels");
-        label = find_replace(label, "_iconl.jpeg", ".txt");
+        char label[4096];
+        find_replace(paths[i], "imgs", "labels", label);
+        find_replace(label, "_iconl.jpeg", ".txt", label);
         FILE *file = fopen(label, "r");
         if(!file){
-            label = find_replace(label, "labels", "labels2");
+            find_replace(label, "labels", "labels2", label);
             file = fopen(label, "r");
             if(!file) continue;
         }
@@ -518,16 +523,18 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
         int id;
         float iou;
 
-        char *imlabel1 = find_replace(paths[i*2],   "imgs", "labels");
-        imlabel1 = find_replace(imlabel1, "jpg", "txt");
+        char imlabel1[4096];
+        char imlabel2[4096];
+        find_replace(paths[i*2],   "imgs", "labels", imlabel1);
+        find_replace(imlabel1, "jpg", "txt", imlabel1);
         FILE *fp1 = fopen(imlabel1, "r");
 
         while(fscanf(fp1, "%d %f", &id, &iou) == 2){
             if (d.y.vals[i][2*id] < iou) d.y.vals[i][2*id] = iou;
         }
 
-        char *imlabel2 = find_replace(paths[i*2+1], "imgs", "labels");
-        imlabel2 = find_replace(imlabel2, "jpg", "txt");
+        find_replace(paths[i*2+1], "imgs", "labels", imlabel2);
+        find_replace(imlabel2, "jpg", "txt", imlabel2);
         FILE *fp2 = fopen(imlabel2, "r");
 
         while(fscanf(fp2, "%d %f", &id, &iou) == 2){
@@ -709,6 +716,7 @@ void *load_threads(void *ptr)
 {
     int i;
     load_args args = *(load_args *)ptr;
+    if (args.threads == 0) args.threads = 1;
     data *out = args.d;
     int total = args.n;
     free(ptr);

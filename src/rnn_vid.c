@@ -6,6 +6,8 @@
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
+image get_image_from_stream(CvCapture *cap);
+image ipl_to_image(IplImage* src);
 
 void reconstruct_picture(network net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size, int iters);
 

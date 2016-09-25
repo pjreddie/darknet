@@ -34,7 +34,11 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
         l.biases[i] = .5;
     }
 
+    l.forward = forward_region_layer;
+    l.backward = backward_region_layer;
 #ifdef GPU
+    l.forward_gpu = forward_region_layer_gpu;
+    l.backward_gpu = backward_region_layer_gpu;
     l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 #endif
@@ -226,6 +230,45 @@ void forward_region_layer(const region_layer l, network_state state)
 void backward_region_layer(const region_layer l, network_state state)
 {
     axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
+}
+
+void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness)
+{
+    int i,j,n;
+    float *predictions = l.output;
+    //int per_cell = 5*num+classes;
+    for (i = 0; i < l.w*l.h; ++i){
+        int row = i / l.w;
+        int col = i % l.w;
+        for(n = 0; n < l.n; ++n){
+            int index = i*l.n + n;
+            int p_index = index * (l.classes + 5) + 4;
+            float scale = predictions[p_index];
+            int box_index = index * (l.classes + 5);
+            boxes[index].x = (predictions[box_index + 0] + col + .5) / l.w * w;
+            boxes[index].y = (predictions[box_index + 1] + row + .5) / l.h * h;
+            if(0){
+                boxes[index].x = (logistic_activate(predictions[box_index + 0]) + col) / l.w * w;
+                boxes[index].y = (logistic_activate(predictions[box_index + 1]) + row) / l.h * h;
+            }
+            boxes[index].w = pow(logistic_activate(predictions[box_index + 2]), (l.sqrt?2:1)) * w;
+            boxes[index].h = pow(logistic_activate(predictions[box_index + 3]), (l.sqrt?2:1)) * h;
+            if(1){
+                boxes[index].x = ((col + .5)/l.w + predictions[box_index + 0] * .5) * w;
+                boxes[index].y = ((row + .5)/l.h + predictions[box_index + 1] * .5) * h;
+                boxes[index].w = (exp(predictions[box_index + 2]) * .5) * w;
+                boxes[index].h = (exp(predictions[box_index + 3]) * .5) * h;
+            }
+            for(j = 0; j < l.classes; ++j){
+                int class_index = index * (l.classes + 5) + 5;
+                float prob = scale*predictions[class_index+j];
+                probs[index][j] = (prob > thresh) ? prob : 0;
+            }
+            if(only_objectness){
+                probs[index][0] = scale;
+            }
+        }
+    }
 }
 
 #ifdef GPU

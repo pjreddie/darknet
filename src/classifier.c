@@ -10,6 +10,7 @@
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
+image get_image_from_stream(CvCapture *cap);
 #endif
 
 list *read_data_cfg(char *filename)
@@ -57,25 +58,26 @@ void train_classifier_multi(char *datacfg, char *cfgfile, char *weightfile, int 
 #ifdef GPU
     int i;
 
-    srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
     network *nets = calloc(ngpus, sizeof(network));
+
+    srand(time(0));
+    int seed = rand();
     for(i = 0; i < ngpus; ++i){
+        srand(seed);
         cuda_set_device(gpus[i]);
         nets[i] = parse_network_cfg(cfgfile);
-        if(clear) *nets[i].seen = 0;
         if(weightfile){
             load_weights(&nets[i], weightfile);
         }
-    }
-    network net = nets[0];
-    for(i = 0; i < ngpus; ++i){
-        *nets[i].seen = *net.seen;
+        if(clear) *nets[i].seen = 0;
         nets[i].learning_rate *= ngpus;
     }
+    srand(time(0));
+    network net = nets[0];
 
     int imgs = net.batch * net.subdivisions * ngpus;
 

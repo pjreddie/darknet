@@ -15,7 +15,6 @@
 #include "local_layer.h"
 #include "convolutional_layer.h"
 #include "activation_layer.h"
-#include "deconvolutional_layer.h"
 #include "detection_layer.h"
 #include "region_layer.h"
 #include "normalization_layer.h"
@@ -153,49 +152,7 @@ void forward_network(network net, network_state state)
         if(l.delta){
             scal_cpu(l.outputs * l.batch, 0, l.delta, 1);
         }
-        if(l.type == CONVOLUTIONAL){
-            forward_convolutional_layer(l, state);
-        } else if(l.type == DECONVOLUTIONAL){
-            forward_deconvolutional_layer(l, state);
-        } else if(l.type == ACTIVE){
-            forward_activation_layer(l, state);
-        } else if(l.type == LOCAL){
-            forward_local_layer(l, state);
-        } else if(l.type == NORMALIZATION){
-            forward_normalization_layer(l, state);
-        } else if(l.type == BATCHNORM){
-            forward_batchnorm_layer(l, state);
-        } else if(l.type == DETECTION){
-            forward_detection_layer(l, state);
-        } else if(l.type == REGION){
-            forward_region_layer(l, state);
-        } else if(l.type == CONNECTED){
-            forward_connected_layer(l, state);
-        } else if(l.type == RNN){
-            forward_rnn_layer(l, state);
-        } else if(l.type == GRU){
-            forward_gru_layer(l, state);
-        } else if(l.type == CRNN){
-            forward_crnn_layer(l, state);
-        } else if(l.type == CROP){
-            forward_crop_layer(l, state);
-        } else if(l.type == COST){
-            forward_cost_layer(l, state);
-        } else if(l.type == SOFTMAX){
-            forward_softmax_layer(l, state);
-        } else if(l.type == MAXPOOL){
-            forward_maxpool_layer(l, state);
-        } else if(l.type == REORG){
-            forward_reorg_layer(l, state);
-        } else if(l.type == AVGPOOL){
-            forward_avgpool_layer(l, state);
-        } else if(l.type == DROPOUT){
-            forward_dropout_layer(l, state);
-        } else if(l.type == ROUTE){
-            forward_route_layer(l, net);
-        } else if(l.type == SHORTCUT){
-            forward_shortcut_layer(l, state);
-        }
+        l.forward(l, state);
         state.input = l.output;
     }
 }
@@ -207,29 +164,17 @@ void update_network(network net)
     float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
-        if(l.type == CONVOLUTIONAL){
-            update_convolutional_layer(l, update_batch, rate, net.momentum, net.decay);
-        } else if(l.type == DECONVOLUTIONAL){
-            update_deconvolutional_layer(l, rate, net.momentum, net.decay);
-        } else if(l.type == CONNECTED){
-            update_connected_layer(l, update_batch, rate, net.momentum, net.decay);
-        } else if(l.type == RNN){
-            update_rnn_layer(l, update_batch, rate, net.momentum, net.decay);
-        } else if(l.type == GRU){
-            update_gru_layer(l, update_batch, rate, net.momentum, net.decay);
-        } else if(l.type == CRNN){
-            update_crnn_layer(l, update_batch, rate, net.momentum, net.decay);
-        } else if(l.type == LOCAL){
-            update_local_layer(l, update_batch, rate, net.momentum, net.decay);
+        if(l.update){
+            l.update(l, update_batch, rate, net.momentum, net.decay);
         }
     }
 }
 
 float *get_network_output(network net)
 {
-    #ifdef GPU
-        if (gpu_index >= 0) return get_network_output_gpu(net);
-    #endif 
+#ifdef GPU
+    if (gpu_index >= 0) return get_network_output_gpu(net);
+#endif 
     int i;
     for(i = net.n-1; i > 0; --i) if(net.layers[i].type != COST) break;
     return net.layers[i].output;
@@ -273,47 +218,7 @@ void backward_network(network net, network_state state)
             state.delta = prev.delta;
         }
         layer l = net.layers[i];
-        if(l.type == CONVOLUTIONAL){
-            backward_convolutional_layer(l, state);
-        } else if(l.type == DECONVOLUTIONAL){
-            backward_deconvolutional_layer(l, state);
-        } else if(l.type == ACTIVE){
-            backward_activation_layer(l, state);
-        } else if(l.type == NORMALIZATION){
-            backward_normalization_layer(l, state);
-        } else if(l.type == BATCHNORM){
-            backward_batchnorm_layer(l, state);
-        } else if(l.type == MAXPOOL){
-            if(i != 0) backward_maxpool_layer(l, state);
-        } else if(l.type == REORG){
-            backward_reorg_layer(l, state);
-        } else if(l.type == AVGPOOL){
-            backward_avgpool_layer(l, state);
-        } else if(l.type == DROPOUT){
-            backward_dropout_layer(l, state);
-        } else if(l.type == DETECTION){
-            backward_detection_layer(l, state);
-        } else if(l.type == REGION){
-            backward_region_layer(l, state);
-        } else if(l.type == SOFTMAX){
-            if(i != 0) backward_softmax_layer(l, state);
-        } else if(l.type == CONNECTED){
-            backward_connected_layer(l, state);
-        } else if(l.type == RNN){
-            backward_rnn_layer(l, state);
-        } else if(l.type == GRU){
-            backward_gru_layer(l, state);
-        } else if(l.type == CRNN){
-            backward_crnn_layer(l, state);
-        } else if(l.type == LOCAL){
-            backward_local_layer(l, state);
-        } else if(l.type == COST){
-            backward_cost_layer(l, state);
-        } else if(l.type == ROUTE){
-            backward_route_layer(l, net);
-        } else if(l.type == SHORTCUT){
-            backward_shortcut_layer(l, state);
-        }
+        l.backward(l, state);
     }
 }
 
@@ -406,11 +311,11 @@ void set_batch_network(network *net, int b)
     int i;
     for(i = 0; i < net->n; ++i){
         net->layers[i].batch = b;
-        #ifdef CUDNN
+#ifdef CUDNN
         if(net->layers[i].type == CONVOLUTIONAL){
             cudnn_convolutional_setup(net->layers + i);
         }
-        #endif
+#endif
     }
 }
 

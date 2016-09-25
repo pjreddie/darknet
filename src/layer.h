@@ -4,6 +4,8 @@
 #include "activations.h"
 #include "stddef.h"
 
+struct network_state;
+
 struct layer;
 typedef struct layer layer;
 
@@ -42,6 +44,12 @@ struct layer{
     LAYER_TYPE type;
     ACTIVATION activation;
     COST_TYPE cost_type;
+    void (*forward)   (struct layer, struct network_state);
+    void (*backward)  (struct layer, struct network_state);
+    void (*update)    (struct layer, int, float, float, float);
+    void (*forward_gpu)   (struct layer, struct network_state);
+    void (*backward_gpu)  (struct layer, struct network_state);
+    void (*update_gpu)    (struct layer, int, float, float, float);
     int batch_normalize;
     int shortcut;
     int batch;

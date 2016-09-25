@@ -10,6 +10,9 @@ image get_crop_image(crop_layer l)
     return float_to_image(w,h,c,l.output);
 }
 
+void backward_crop_layer(const crop_layer l, network_state state){}
+void backward_crop_layer_gpu(const crop_layer l, network_state state){}
+
 crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip, float angle, float saturation, float exposure)
 {
     fprintf(stderr, "Crop Layer: %d x %d -> %d x %d x %d image\n", h,w,crop_height,crop_width,c);
@@ -30,7 +33,12 @@ crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int 
     l.inputs = l.w * l.h * l.c;
     l.outputs = l.out_w * l.out_h * l.out_c;
     l.output = calloc(l.outputs*batch, sizeof(float));
+    l.forward = forward_crop_layer;
+    l.backward = backward_crop_layer;
+
     #ifdef GPU
+    l.forward_gpu = forward_crop_layer_gpu;
+    l.backward_gpu = backward_crop_layer_gpu;
     l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
     l.rand_gpu   = cuda_make_array(0, l.batch*8);
     #endif

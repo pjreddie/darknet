@@ -28,7 +28,13 @@ layer make_batchnorm_layer(int batch, int w, int h, int c)
 
     layer.rolling_mean = calloc(c, sizeof(float));
     layer.rolling_variance = calloc(c, sizeof(float));
+
+    layer.forward = forward_batchnorm_layer;
+    layer.backward = backward_batchnorm_layer;
 #ifdef GPU
+    layer.forward_gpu = forward_batchnorm_layer_gpu;
+    layer.backward_gpu = backward_batchnorm_layer_gpu;
+
     layer.output_gpu =  cuda_make_array(layer.output, h * w * c * batch);
     layer.delta_gpu =   cuda_make_array(layer.delta, h * w * c * batch);
 

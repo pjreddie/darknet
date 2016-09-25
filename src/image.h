@@ -8,11 +8,6 @@
 #include <math.h>
 #include "box.h"
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-#endif
-
 typedef struct {
     int h;
     int w;
@@ -26,6 +21,7 @@ void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b
 void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b);
 void draw_bbox(image a, box bbox, int w, float r, float g, float b);
 void draw_label(image a, int r, int c, image label, const float *rgb);
+void write_label(image a, int r, int c, image *characters, char *string, float *rgb);
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image *labels, int classes);
 image image_distance(image a, image b);
 void scale_image(image m, float s);
@@ -64,12 +60,6 @@ void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);
 void show_image_collapsed(image p, char *name);
 
-#ifdef OPENCV
-void save_image_jpg(image p, const char *name);
-image get_image_from_stream(CvCapture *cap);
-image ipl_to_image(IplImage* src);
-#endif
-
 void print_image(image m);
 
 image make_image(int w, int h, int c);
@@ -79,6 +69,7 @@ image float_to_image(int w, int h, int c, float *data);
 image copy_image(image p);
 image load_image(char *filename, int w, int h, int c);
 image load_image_color(char *filename, int w, int h);
+image *load_alphabet();
 
 float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);

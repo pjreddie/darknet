@@ -60,8 +60,16 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
     l.col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
     l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
     l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
+    
+    l.forward = forward_local_layer;
+    l.backward = backward_local_layer;
+    l.update = update_local_layer;
 
 #ifdef GPU
+    l.forward_gpu = forward_local_layer_gpu;
+    l.backward_gpu = backward_local_layer_gpu;
+    l.update_gpu = update_local_layer_gpu;
+
     l.weights_gpu = cuda_make_array(l.weights, c*n*size*size*locations);
     l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size*locations);
 

@@ -12,7 +12,6 @@
 #include "activation_layer.h"
 #include "normalization_layer.h"
 #include "batchnorm_layer.h"
-#include "deconvolutional_layer.h"
 #include "connected_layer.h"
 #include "rnn_layer.h"
 #include "gru_layer.h"
@@ -36,29 +35,41 @@ typedef struct{
     list *options;
 }section;
 
-int is_network(section *s);
-int is_convolutional(section *s);
-int is_activation(section *s);
-int is_local(section *s);
-int is_deconvolutional(section *s);
-int is_connected(section *s);
-int is_rnn(section *s);
-int is_gru(section *s);
-int is_crnn(section *s);
-int is_maxpool(section *s);
-int is_reorg(section *s);
-int is_avgpool(section *s);
-int is_dropout(section *s);
-int is_softmax(section *s);
-int is_normalization(section *s);
-int is_batchnorm(section *s);
-int is_crop(section *s);
-int is_shortcut(section *s);
-int is_cost(section *s);
-int is_detection(section *s);
-int is_region(section *s);
-int is_route(section *s);
 list *read_cfg(char *filename);
+
+LAYER_TYPE string_to_layer_type(char * type)
+{
+
+    if (strcmp(type, "[shortcut]")==0) return SHORTCUT;
+    if (strcmp(type, "[crop]")==0) return CROP;
+    if (strcmp(type, "[cost]")==0) return COST;
+    if (strcmp(type, "[detection]")==0) return DETECTION;
+    if (strcmp(type, "[region]")==0) return REGION;
+    if (strcmp(type, "[local]")==0) return LOCAL;
+    if (strcmp(type, "[conv]")==0
+            || strcmp(type, "[convolutional]")==0) return CONVOLUTIONAL;
+    if (strcmp(type, "[activation]")==0) return ACTIVE;
+    if (strcmp(type, "[net]")==0
+            || strcmp(type, "[network]")==0) return NETWORK;
+    if (strcmp(type, "[crnn]")==0) return CRNN;
+    if (strcmp(type, "[gru]")==0) return GRU;
+    if (strcmp(type, "[rnn]")==0) return RNN;
+    if (strcmp(type, "[conn]")==0
+            || strcmp(type, "[connected]")==0) return CONNECTED;
+    if (strcmp(type, "[max]")==0
+            || strcmp(type, "[maxpool]")==0) return MAXPOOL;
+    if (strcmp(type, "[reorg]")==0) return REORG;
+    if (strcmp(type, "[avg]")==0
+            || strcmp(type, "[avgpool]")==0) return AVGPOOL;
+    if (strcmp(type, "[dropout]")==0) return DROPOUT;
+    if (strcmp(type, "[lrn]")==0
+            || strcmp(type, "[normalization]")==0) return NORMALIZATION;
+    if (strcmp(type, "[batchnorm]")==0) return BATCHNORM;
+    if (strcmp(type, "[soft]")==0
+            || strcmp(type, "[softmax]")==0) return SOFTMAX;
+    if (strcmp(type, "[route]")==0) return ROUTE;
+    return BLANK;
+}
 
 void free_section(section *s)
 {
@@ -101,26 +112,6 @@ typedef struct size_params{
     int index;
     int time_steps;
 } size_params;
-
-deconvolutional_layer parse_deconvolutional(list *options, size_params params)
-{
-    int n = option_find_int(options, "filters",1);
-    int size = option_find_int(options, "size",1);
-    int stride = option_find_int(options, "stride",1);
-    char *activation_s = option_find_str(options, "activation", "logistic");
-    ACTIVATION activation = get_activation(activation_s);
-
-    int batch,h,w,c;
-    h = params.h;
-    w = params.w;
-    c = params.c;
-    batch=params.batch;
-    if(!(h && w && c)) error("Layer before deconvolutional layer must output image.");
-
-    deconvolutional_layer layer = make_deconvolutional_layer(batch,h,w,c,n,size,stride,activation);
-
-    return layer;
-}
 
 local_layer parse_local(list *options, size_params params)
 {
@@ -545,6 +536,12 @@ void parse_net_options(list *options, network *net)
     net->max_batches = option_find_int(options, "max_batches", 0);
 }
 
+int is_network(section *s)
+{
+    return (strcmp(s->type, "[net]")==0
+            || strcmp(s->type, "[network]")==0);
+}
+
 network parse_network_cfg(char *filename)
 {
     list *sections = read_cfg(filename);
@@ -576,47 +573,46 @@ network parse_network_cfg(char *filename)
         s = (section *)n->val;
         options = s->options;
         layer l = {0};
-        if(is_convolutional(s)){
+        LAYER_TYPE lt = string_to_layer_type(s->type);
+        if(lt == CONVOLUTIONAL){
             l = parse_convolutional(options, params);
-        }else if(is_local(s)){
+        }else if(lt == LOCAL){
             l = parse_local(options, params);
-        }else if(is_activation(s)){
+        }else if(lt == ACTIVE){
             l = parse_activation(options, params);
-        }else if(is_deconvolutional(s)){
-            l = parse_deconvolutional(options, params);
-        }else if(is_rnn(s)){
+        }else if(lt == RNN){
             l = parse_rnn(options, params);
-        }else if(is_gru(s)){
+        }else if(lt == GRU){
             l = parse_gru(options, params);
-        }else if(is_crnn(s)){
+        }else if(lt == CRNN){
             l = parse_crnn(options, params);
-        }else if(is_connected(s)){
+        }else if(lt == CONNECTED){
             l = parse_connected(options, params);
-        }else if(is_crop(s)){
+        }else if(lt == CROP){
             l = parse_crop(options, params);
-        }else if(is_cost(s)){
+        }else if(lt == COST){
             l = parse_cost(options, params);
-        }else if(is_region(s)){
+        }else if(lt == REGION){
             l = parse_region(options, params);
-        }else if(is_detection(s)){
+        }else if(lt == DETECTION){
             l = parse_detection(options, params);
-        }else if(is_softmax(s)){
+        }else if(lt == SOFTMAX){
             l = parse_softmax(options, params);
-        }else if(is_normalization(s)){
+        }else if(lt == NORMALIZATION){
             l = parse_normalization(options, params);
-        }else if(is_batchnorm(s)){
+        }else if(lt == BATCHNORM){
             l = parse_batchnorm(options, params);
-        }else if(is_maxpool(s)){
+        }else if(lt == MAXPOOL){
             l = parse_maxpool(options, params);
-        }else if(is_reorg(s)){
+        }else if(lt == REORG){
             l = parse_reorg(options, params);
-        }else if(is_avgpool(s)){
+        }else if(lt == AVGPOOL){
             l = parse_avgpool(options, params);
-        }else if(is_route(s)){
+        }else if(lt == ROUTE){
             l = parse_route(options, params, net);
-        }else if(is_shortcut(s)){
+        }else if(lt == SHORTCUT){
             l = parse_shortcut(options, params, net);
-        }else if(is_dropout(s)){
+        }else if(lt == DROPOUT){
             l = parse_dropout(options, params);
             l.output = net.layers[count-1].output;
             l.delta = net.layers[count-1].delta;
@@ -660,142 +656,6 @@ network parse_network_cfg(char *filename)
     return net;
 }
 
-LAYER_TYPE string_to_layer_type(char * type)
-{
-
-    if (strcmp(type, "[shortcut]")==0) return SHORTCUT;
-    if (strcmp(type, "[crop]")==0) return CROP;
-    if (strcmp(type, "[cost]")==0) return COST;
-    if (strcmp(type, "[detection]")==0) return DETECTION;
-    if (strcmp(type, "[region]")==0) return REGION;
-    if (strcmp(type, "[local]")==0) return LOCAL;
-    if (strcmp(type, "[deconv]")==0
-            || strcmp(type, "[deconvolutional]")==0) return DECONVOLUTIONAL;
-    if (strcmp(type, "[conv]")==0
-            || strcmp(type, "[convolutional]")==0) return CONVOLUTIONAL;
-    if (strcmp(type, "[activation]")==0) return ACTIVE;
-    if (strcmp(type, "[net]")==0
-            || strcmp(type, "[network]")==0) return NETWORK;
-    if (strcmp(type, "[crnn]")==0) return CRNN;
-    if (strcmp(type, "[gru]")==0) return GRU;
-    if (strcmp(type, "[rnn]")==0) return RNN;
-    if (strcmp(type, "[conn]")==0
-            || strcmp(type, "[connected]")==0) return CONNECTED;
-    if (strcmp(type, "[max]")==0
-            || strcmp(type, "[maxpool]")==0) return MAXPOOL;
-    if (strcmp(type, "[reorg]")==0) return REORG;
-    if (strcmp(type, "[avg]")==0
-            || strcmp(type, "[avgpool]")==0) return AVGPOOL;
-    if (strcmp(type, "[dropout]")==0) return DROPOUT;
-    if (strcmp(type, "[lrn]")==0
-            || strcmp(type, "[normalization]")==0) return NORMALIZATION;
-    if (strcmp(type, "[batchnorm]")==0) return BATCHNORM;
-    if (strcmp(type, "[soft]")==0
-            || strcmp(type, "[softmax]")==0) return SOFTMAX;
-    if (strcmp(type, "[route]")==0) return ROUTE;
-    return BLANK;
-}
-
-int is_shortcut(section *s)
-{
-    return (strcmp(s->type, "[shortcut]")==0);
-}
-int is_crop(section *s)
-{
-    return (strcmp(s->type, "[crop]")==0);
-}
-int is_cost(section *s)
-{
-    return (strcmp(s->type, "[cost]")==0);
-}
-int is_region(section *s)
-{
-    return (strcmp(s->type, "[region]")==0);
-}
-int is_detection(section *s)
-{
-    return (strcmp(s->type, "[detection]")==0);
-}
-int is_local(section *s)
-{
-    return (strcmp(s->type, "[local]")==0);
-}
-int is_deconvolutional(section *s)
-{
-    return (strcmp(s->type, "[deconv]")==0
-            || strcmp(s->type, "[deconvolutional]")==0);
-}
-int is_convolutional(section *s)
-{
-    return (strcmp(s->type, "[conv]")==0
-            || strcmp(s->type, "[convolutional]")==0);
-}
-int is_activation(section *s)
-{
-    return (strcmp(s->type, "[activation]")==0);
-}
-int is_network(section *s)
-{
-    return (strcmp(s->type, "[net]")==0
-            || strcmp(s->type, "[network]")==0);
-}
-int is_crnn(section *s)
-{
-    return (strcmp(s->type, "[crnn]")==0);
-}
-int is_gru(section *s)
-{
-    return (strcmp(s->type, "[gru]")==0);
-}
-int is_rnn(section *s)
-{
-    return (strcmp(s->type, "[rnn]")==0);
-}
-int is_connected(section *s)
-{
-    return (strcmp(s->type, "[conn]")==0
-            || strcmp(s->type, "[connected]")==0);
-}
-int is_reorg(section *s)
-{
-    return (strcmp(s->type, "[reorg]")==0);
-}
-int is_maxpool(section *s)
-{
-    return (strcmp(s->type, "[max]")==0
-            || strcmp(s->type, "[maxpool]")==0);
-}
-int is_avgpool(section *s)
-{
-    return (strcmp(s->type, "[avg]")==0
-            || strcmp(s->type, "[avgpool]")==0);
-}
-int is_dropout(section *s)
-{
-    return (strcmp(s->type, "[dropout]")==0);
-}
-
-int is_normalization(section *s)
-{
-    return (strcmp(s->type, "[lrn]")==0
-            || strcmp(s->type, "[normalization]")==0);
-}
-
-int is_batchnorm(section *s)
-{
-    return (strcmp(s->type, "[batchnorm]")==0);
-}
-
-int is_softmax(section *s)
-{
-    return (strcmp(s->type, "[soft]")==0
-            || strcmp(s->type, "[softmax]")==0);
-}
-int is_route(section *s)
-{
-    return (strcmp(s->type, "[route]")==0);
-}
-
 list *read_cfg(char *filename)
 {
     FILE *file = fopen(filename, "r");
@@ -829,45 +689,6 @@ list *read_cfg(char *filename)
     }
     fclose(file);
     return sections;
-}
-
-void save_weights_double(network net, char *filename)
-{
-    fprintf(stderr, "Saving doubled weights to %s\n", filename);
-    FILE *fp = fopen(filename, "w");
-    if(!fp) file_error(filename);
-
-    fwrite(&net.learning_rate, sizeof(float), 1, fp);
-    fwrite(&net.momentum, sizeof(float), 1, fp);
-    fwrite(&net.decay, sizeof(float), 1, fp);
-    fwrite(net.seen, sizeof(int), 1, fp);
-
-    int i,j,k;
-    for(i = 0; i < net.n; ++i){
-        layer l = net.layers[i];
-        if(l.type == CONVOLUTIONAL){
-#ifdef GPU
-            if(gpu_index >= 0){
-                pull_convolutional_layer(l);
-            }
-#endif
-            float zero = 0;
-            fwrite(l.biases, sizeof(float), l.n, fp);
-            fwrite(l.biases, sizeof(float), l.n, fp);
-
-            for (j = 0; j < l.n; ++j){
-                int index = j*l.c*l.size*l.size;
-                fwrite(l.weights+index, sizeof(float), l.c*l.size*l.size, fp);
-                for (k = 0; k < l.c*l.size*l.size; ++k) fwrite(&zero, sizeof(float), 1, fp);
-            }
-            for (j = 0; j < l.n; ++j){
-                int index = j*l.c*l.size*l.size;
-                for (k = 0; k < l.c*l.size*l.size; ++k) fwrite(&zero, sizeof(float), 1, fp);
-                fwrite(l.weights+index, sizeof(float), l.c*l.size*l.size, fp);
-            }
-        }
-    }
-    fclose(fp);
 }
 
 void save_convolutional_weights_binary(layer l, FILE *fp)
@@ -1146,16 +967,6 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         if (l.dontload) continue;
         if(l.type == CONVOLUTIONAL){
             load_convolutional_weights(l, fp);
-        }
-        if(l.type == DECONVOLUTIONAL){
-            int num = l.n*l.c*l.size*l.size;
-            fread(l.biases, sizeof(float), l.n, fp);
-            fread(l.weights, sizeof(float), num, fp);
-#ifdef GPU
-            if(gpu_index >= 0){
-                push_deconvolutional_layer(l);
-            }
-#endif
         }
         if(l.type == CONNECTED){
             load_connected_weights(l, fp, transpose);

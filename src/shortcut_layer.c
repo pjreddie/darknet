@@ -23,7 +23,13 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
 
     l.delta =  calloc(l.outputs*batch, sizeof(float));
     l.output = calloc(l.outputs*batch, sizeof(float));;
+
+    l.forward = forward_shortcut_layer;
+    l.backward = backward_shortcut_layer;
     #ifdef GPU
+    l.forward_gpu = forward_shortcut_layer_gpu;
+    l.backward_gpu = backward_shortcut_layer_gpu;
+
     l.delta_gpu =  cuda_make_array(l.delta, l.outputs*batch);
     l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
     #endif

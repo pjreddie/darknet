@@ -80,6 +80,10 @@ deconvolutional_layer make_deconvolutional_layer(int batch, int h, int w, int c,
     l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
     l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
 
+    l.forward = forward_deconvolutional_layer;
+    l.backward = backward_deconvolutional_layer;
+    l.update = update_deconvolutional_layer;
+
     #ifdef GPU
     l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
     l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size);

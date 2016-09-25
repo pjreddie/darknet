@@ -36,6 +36,10 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     l.weights = calloc(outputs*inputs, sizeof(float));
     l.biases = calloc(outputs, sizeof(float));
 
+    l.forward = forward_connected_layer;
+    l.backward = backward_connected_layer;
+    l.update = update_connected_layer;
+
     //float scale = 1./sqrt(inputs);
     float scale = sqrt(2./inputs);
     for(i = 0; i < outputs*inputs; ++i){
@@ -66,6 +70,10 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     }
 
 #ifdef GPU
+    l.forward_gpu = forward_connected_layer_gpu;
+    l.backward_gpu = backward_connected_layer_gpu;
+    l.update_gpu = update_connected_layer_gpu;
+
     l.weights_gpu = cuda_make_array(l.weights, outputs*inputs);
     l.biases_gpu = cuda_make_array(l.biases, outputs);
 

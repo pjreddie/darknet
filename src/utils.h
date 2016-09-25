@@ -19,7 +19,7 @@ void read_all(int fd, char *buffer, size_t bytes);
 void write_all(int fd, char *buffer, size_t bytes);
 int read_all_fail(int fd, char *buffer, size_t bytes);
 int write_all_fail(int fd, char *buffer, size_t bytes);
-char *find_replace(char *str, char *orig, char *rep);
+void find_replace(char *str, char *orig, char *rep, char *output);
 void error(const char *s);
 void malloc_error();
 void file_error(char *s);

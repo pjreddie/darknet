@@ -21,7 +21,13 @@ layer make_normalization_layer(int batch, int w, int h, int c, int size, float a
     layer.norms = calloc(h * w * c * batch, sizeof(float));
     layer.inputs = w*h*c;
     layer.outputs = layer.inputs;
+
+    layer.forward = forward_normalization_layer;
+    layer.backward = backward_normalization_layer;
     #ifdef GPU
+    layer.forward_gpu = forward_normalization_layer_gpu;
+    layer.backward_gpu = backward_normalization_layer_gpu;
+
     layer.output_gpu =  cuda_make_array(layer.output, h * w * c * batch);
     layer.delta_gpu =   cuda_make_array(layer.delta, h * w * c * batch);
     layer.squared_gpu = cuda_make_array(layer.squared, h * w * c * batch);

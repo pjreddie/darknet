@@ -209,6 +209,9 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
     l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
 
+    l.forward = forward_convolutional_layer;
+    l.backward = backward_convolutional_layer;
+    l.update = update_convolutional_layer;
     if(binary){
         l.binary_weights = calloc(c*n*size*size, sizeof(float));
         l.cweights = calloc(c*n*size*size, sizeof(char));
@@ -234,6 +237,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     }
 
 #ifdef GPU
+    l.forward_gpu = forward_convolutional_layer_gpu;
+    l.backward_gpu = backward_convolutional_layer_gpu;
+    l.update_gpu = update_convolutional_layer_gpu;
+
     if(gpu_index >= 0){
         l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
         l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size);

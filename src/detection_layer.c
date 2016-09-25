@@ -30,7 +30,12 @@ detection_layer make_detection_layer(int batch, int inputs, int n, int side, int
     l.truths = l.side*l.side*(1+l.coords+l.classes);
     l.output = calloc(batch*l.outputs, sizeof(float));
     l.delta = calloc(batch*l.outputs, sizeof(float));
+
+    l.forward = forward_detection_layer;
+    l.backward = backward_detection_layer;
 #ifdef GPU
+    l.forward_gpu = forward_detection_layer_gpu;
+    l.backward_gpu = backward_detection_layer_gpu;
     l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 #endif
@@ -214,6 +219,35 @@ void forward_detection_layer(const detection_layer l, network_state state)
 void backward_detection_layer(const detection_layer l, network_state state)
 {
     axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
+}
+
+void get_detection_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness)
+{
+    int i,j,n;
+    float *predictions = l.output;
+    //int per_cell = 5*num+classes;
+    for (i = 0; i < l.side*l.side; ++i){
+        int row = i / l.side;
+        int col = i % l.side;
+        for(n = 0; n < l.n; ++n){
+            int index = i*l.n + n;
+            int p_index = l.side*l.side*l.classes + i*l.n + n;
+            float scale = predictions[p_index];
+            int box_index = l.side*l.side*(l.classes + l.n) + (i*l.n + n)*4;
+            boxes[index].x = (predictions[box_index + 0] + col) / l.side * w;
+            boxes[index].y = (predictions[box_index + 1] + row) / l.side * h;
+            boxes[index].w = pow(predictions[box_index + 2], (l.sqrt?2:1)) * w;
+            boxes[index].h = pow(predictions[box_index + 3], (l.sqrt?2:1)) * h;
+            for(j = 0; j < l.classes; ++j){
+                int class_index = i*l.classes;
+                float prob = scale*predictions[class_index+j];
+                probs[index][j] = (prob > thresh) ? prob : 0;
+            }
+            if(only_objectness){
+                probs[index][0] = scale;
+            }
+        }
+    }
 }
 
 #ifdef GPU
