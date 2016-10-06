@@ -1099,7 +1099,7 @@ void test_resize(char *filename)
     show_image(c4, "C4");
 #ifdef OPENCV
     while(1){
-        image aug = random_augment_image(im, 0, 320, 448, 320, .75);
+        image aug = random_augment_image(im, 0, .75, 320, 448, 320);
         show_image(aug, "aug");
         free_image(aug);
 
