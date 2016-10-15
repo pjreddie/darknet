@@ -191,6 +191,12 @@ void file_error(char *s)
     exit(0);
 }
 
+void fread_error()
+{
+    fprintf(stderr, "error fread\n");
+    exit(-1);
+}
+
 list *split_str(char *s, char delim)
 {
     size_t i;
@@ -262,7 +268,9 @@ char *fgetl(FILE *fp)
         }
         size_t readsize = size-curr;
         if(readsize > INT_MAX) readsize = INT_MAX-1;
-        fgets(&line[curr], readsize, fp);
+        char *ret_fgets = NULL;
+        ret_fgets = fgets(&line[curr], readsize, fp);
+        if(ret_fgets == NULL) error("fgets failed");
         curr = strlen(line);
     }
     if(line[curr-1] == '\n') line[curr-1] = '\0';

@@ -912,7 +912,8 @@ data load_cifar10_data(char *filename)
     if(!fp) file_error(filename);
     for(i = 0; i < 10000; ++i){
         unsigned char bytes[3073];
-        fread(bytes, 1, 3073, fp);
+        size_t ret_fread = fread(bytes, 1, 3073, fp);
+        if(ret_fread == 0) error("fread error");
         int class = bytes[0];
         y.vals[i][class] = 1;
         for(j = 0; j < X.cols; ++j){
@@ -976,7 +977,8 @@ data load_all_cifar10()
         if(!fp) file_error(buff);
         for(i = 0; i < 10000; ++i){
             unsigned char bytes[3073];
-            fread(bytes, 1, 3073, fp);
+            size_t ret_fread = fread(bytes, 1, 3073, fp);
+            if(ret_fread == 0) error("fread error");
             int class = bytes[0];
             y.vals[i+b*10000][class] = 1;
             for(j = 0; j < X.cols; ++j){

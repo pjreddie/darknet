@@ -849,17 +849,23 @@ void transpose_matrix(float *a, int rows, int cols)
 
 void load_connected_weights(layer l, FILE *fp, int transpose)
 {
-    fread(l.biases, sizeof(float), l.outputs, fp);
-    fread(l.weights, sizeof(float), l.outputs*l.inputs, fp);
+    size_t ret_fread = 0;
+    ret_fread = fread(l.biases, sizeof(float), l.outputs, fp);
+    if(ret_fread == 0) fread_error();
+    ret_fread = fread(l.weights, sizeof(float), l.outputs*l.inputs, fp);
+    if(ret_fread == 0) fread_error();
     if(transpose){
         transpose_matrix(l.weights, l.inputs, l.outputs);
     }
     //printf("Biases: %f mean %f variance\n", mean_array(l.biases, l.outputs), variance_array(l.biases, l.outputs));
     //printf("Weights: %f mean %f variance\n", mean_array(l.weights, l.outputs*l.inputs), variance_array(l.weights, l.outputs*l.inputs));
     if (l.batch_normalize && (!l.dontloadscales)){
-        fread(l.scales, sizeof(float), l.outputs, fp);
-        fread(l.rolling_mean, sizeof(float), l.outputs, fp);
-        fread(l.rolling_variance, sizeof(float), l.outputs, fp);
+        ret_fread = fread(l.scales, sizeof(float), l.outputs, fp);
+        if(ret_fread == 0) fread_error();
+        ret_fread = fread(l.rolling_mean, sizeof(float), l.outputs, fp);
+        if(ret_fread == 0) fread_error();
+        ret_fread = fread(l.rolling_variance, sizeof(float), l.outputs, fp);
+        if(ret_fread == 0) fread_error();
         //printf("Scales: %f mean %f variance\n", mean_array(l.scales, l.outputs), variance_array(l.scales, l.outputs));
         //printf("rolling_mean: %f mean %f variance\n", mean_array(l.rolling_mean, l.outputs), variance_array(l.rolling_mean, l.outputs));
         //printf("rolling_variance: %f mean %f variance\n", mean_array(l.rolling_variance, l.outputs), variance_array(l.rolling_variance, l.outputs));
@@ -873,9 +879,13 @@ void load_connected_weights(layer l, FILE *fp, int transpose)
 
 void load_batchnorm_weights(layer l, FILE *fp)
 {
-    fread(l.scales, sizeof(float), l.c, fp);
-    fread(l.rolling_mean, sizeof(float), l.c, fp);
-    fread(l.rolling_variance, sizeof(float), l.c, fp);
+    size_t ret_fread = 0;
+    ret_fread = fread(l.scales, sizeof(float), l.c, fp);
+    if(ret_fread == 0) fread_error();
+    ret_fread = fread(l.rolling_mean, sizeof(float), l.c, fp);
+    if(ret_fread == 0) fread_error();
+    ret_fread = fread(l.rolling_variance, sizeof(float), l.c, fp);
+    if(ret_fread == 0) fread_error();
 #ifdef GPU
     if(gpu_index >= 0){
         push_batchnorm_layer(l);
@@ -885,21 +895,28 @@ void load_batchnorm_weights(layer l, FILE *fp)
 
 void load_convolutional_weights_binary(layer l, FILE *fp)
 {
-    fread(l.biases, sizeof(float), l.n, fp);
+    size_t ret_fread = 0;
+    ret_fread = fread(l.biases, sizeof(float), l.n, fp);
+    if(ret_fread == 0) fread_error();
     if (l.batch_normalize && (!l.dontloadscales)){
-        fread(l.scales, sizeof(float), l.n, fp);
-        fread(l.rolling_mean, sizeof(float), l.n, fp);
-        fread(l.rolling_variance, sizeof(float), l.n, fp);
+        ret_fread = fread(l.scales, sizeof(float), l.n, fp);
+        if(ret_fread == 0) fread_error();
+        ret_fread = fread(l.rolling_mean, sizeof(float), l.n, fp);
+        if(ret_fread == 0) fread_error();
+        ret_fread = fread(l.rolling_variance, sizeof(float), l.n, fp);
+        if(ret_fread == 0) fread_error();
     }
     int size = l.c*l.size*l.size;
     int i, j, k;
     for(i = 0; i < l.n; ++i){
         float mean = 0;
-        fread(&mean, sizeof(float), 1, fp);
+        ret_fread = fread(&mean, sizeof(float), 1, fp);
+        if(ret_fread == 0) fread_error();
         for(j = 0; j < size/8; ++j){
             int index = i*size + j*8;
             unsigned char c = 0;
-            fread(&c, sizeof(char), 1, fp);
+            ret_fread = fread(&c, sizeof(char), 1, fp);
+            if(ret_fread == 0) fread_error();
             for(k = 0; k < 8; ++k){
                 if (j*8 + k >= size) break;
                 l.weights[index + k] = (c & 1<<k) ? mean : -mean;
@@ -920,13 +937,18 @@ void load_convolutional_weights(layer l, FILE *fp)
         //return;
     }
     int num = l.n*l.c*l.size*l.size;
-    fread(l.biases, sizeof(float), l.n, fp);
+    size_t ret_fread = 0;
+    ret_fread = fread(l.biases, sizeof(float), l.n, fp);
+    if(ret_fread == 0) fread_error();
     if (l.batch_normalize && (!l.dontloadscales)){
-        fread(l.scales, sizeof(float), l.n, fp);
-        fread(l.rolling_mean, sizeof(float), l.n, fp);
-        fread(l.rolling_variance, sizeof(float), l.n, fp);
+        ret_fread = fread(l.scales, sizeof(float), l.n, fp);
+        if(ret_fread == 0) fread_error();
+        ret_fread = fread(l.rolling_mean, sizeof(float), l.n, fp);
+        if(ret_fread == 0) fread_error();
+        ret_fread = fread(l.rolling_variance, sizeof(float), l.n, fp);
+        if(ret_fread == 0) fread_error();
     }
-    fread(l.weights, sizeof(float), num, fp);
+    ret_fread = fread(l.weights, sizeof(float), num, fp);
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
@@ -955,10 +977,15 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     int major;
     int minor;
     int revision;
-    fread(&major, sizeof(int), 1, fp);
-    fread(&minor, sizeof(int), 1, fp);
-    fread(&revision, sizeof(int), 1, fp);
-    fread(net->seen, sizeof(int), 1, fp);
+    size_t ret_fread = 0;
+    ret_fread = fread(&major, sizeof(int), 1, fp);
+    if(ret_fread == 0) fread_error();
+    ret_fread = fread(&minor, sizeof(int), 1, fp);
+    if(ret_fread == 0) fread_error();
+    ret_fread = fread(&revision, sizeof(int), 1, fp);
+    if(ret_fread == 0) fread_error();
+    ret_fread = fread(net->seen, sizeof(int), 1, fp);
+    if(ret_fread == 0) fread_error();
     int transpose = (major > 1000) || (minor > 1000);
 
     int i;
@@ -995,8 +1022,10 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         if(l.type == LOCAL){
             int locations = l.out_w*l.out_h;
             int size = l.size*l.size*l.c*l.n*locations;
-            fread(l.biases, sizeof(float), l.outputs, fp);
-            fread(l.weights, sizeof(float), size, fp);
+            ret_fread = fread(l.biases, sizeof(float), l.outputs, fp);
+            if(ret_fread == 0) fread_error();
+            ret_fread = fread(l.weights, sizeof(float), size, fp);
+            if(ret_fread == 0) fread_error();
 #ifdef GPU
             if(gpu_index >= 0){
                 push_local_layer(l);
