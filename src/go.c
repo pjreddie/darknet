@@ -446,8 +446,8 @@ void engine_go(char *filename, char *weightfile, int multi)
         char buff[256];
         int id = 0;
         int has_id = (scanf("%d", &id) == 1);
-        scanf("%s", buff);
-        if (feof(stdin)) break;
+        int n = scanf("%s", buff);
+        if (feof(stdin) || n == 0) break;
         char ids[256];
         sprintf(ids, "%d", id);
         //fprintf(stderr, "%s\n", buff);
@@ -460,7 +460,8 @@ void engine_go(char *filename, char *weightfile, int multi)
             printf("=%s 1.0\n\n", ids);
         } else if (!strcmp(buff, "known_command")){
             char comm[256];
-            scanf("%s", comm);
+            n = scanf("%s", comm);
+            if(n == 0) error("error scanf");
             int known = (!strcmp(comm, "protocol_version") || 
                     !strcmp(comm, "name") || 
                     !strcmp(comm, "version") || 
@@ -481,7 +482,8 @@ void engine_go(char *filename, char *weightfile, int multi)
             break;
         } else if (!strcmp(buff, "boardsize")){
             int boardsize = 0;
-            scanf("%d", &boardsize);
+            n = scanf("%d", &boardsize);
+            if(n == 0) error("error scanf");
             //fprintf(stderr, "%d\n", boardsize);
             if(boardsize != 19){
                 printf("?%s unacceptable size\n\n", ids);
@@ -494,11 +496,13 @@ void engine_go(char *filename, char *weightfile, int multi)
             printf("=%s \n\n", ids);
         } else if (!strcmp(buff, "komi")){
             float komi = 0;
-            scanf("%f", &komi);
+            n = scanf("%f", &komi);
+            if(n == 0) error("error scanf");
             printf("=%s \n\n", ids);
         } else if (!strcmp(buff, "play")){
             char color[256];
-            scanf("%s ", color);
+            n = scanf("%s ", color);
+            if(n == 0) error("error scanf");
             char c;
             int r;
             int count = scanf("%c%d", &c, &r);
@@ -530,7 +534,8 @@ void engine_go(char *filename, char *weightfile, int multi)
             print_board(board, 1, 0);
         } else if (!strcmp(buff, "genmove")){
             char color[256];
-            scanf("%s", color);
+            n = scanf("%s", color);
+            if(n == 0) error("error scanf");
             int player = (color[0] == 'b' || color[0] == 'B') ? 1 : -1;
 
             int index = generate_move(net, player, board, multi, .1, .7, two, 1);
@@ -557,7 +562,8 @@ void engine_go(char *filename, char *weightfile, int multi)
             //print_board(board, 1, 0);
         } else if (!strcmp(buff, "final_status_list")){
             char type[256];
-            scanf("%s", type);
+            n = scanf("%s", type);
+            if(n == 0) error("error scanf");
             fprintf(stderr, "final_status\n");
             char *line = fgetl(stdin);
             free(line);
