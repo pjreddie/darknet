@@ -256,7 +256,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     }
     box *boxes = calloc(side*side*l.n, sizeof(box));
     float **probs = calloc(side*side*l.n, sizeof(float *));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -333,7 +333,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     int j;
     box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
     float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
-    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float));
     while(1){
         if(filename){
             strncpy(input, filename, 256);
