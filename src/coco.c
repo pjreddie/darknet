@@ -166,7 +166,7 @@ void validate_coco(char *cfgfile, char *weightfile)
 
     box *boxes = calloc(side*side*l.n, sizeof(box));
     float **probs = calloc(side*side*l.n, sizeof(float *));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float));
 
     int m = plist->size;
     int i=0;
