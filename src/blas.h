@@ -34,7 +34,11 @@ void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
 void l2_cpu(int n, float *pred, float *truth, float *delta, float *error);
 void weighted_sum_cpu(float *a, float *b, float *s, int num, float *c);
 
+void softmax(float *input, int n, float temp, float *output);
+
 #ifdef GPU
+#include "cuda.h"
+
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
 void copy_ongpu(int N, float * X, int INCX, float * Y, int INCY);
@@ -72,6 +76,8 @@ void weighted_sum_gpu(float *a, float *b, float *s, int num, float *c);
 void mult_add_into_gpu(int num, float *a, float *b, float *c);
 
 void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
+
+void softmax_gpu(float *input, int n, int groups, float temp, float *output, cudaStream_t stream);
 
 #endif
 #endif

@@ -5,6 +5,7 @@
 #include "image.h"
 #include "layer.h"
 #include "data.h"
+#include "tree.h"
 
 typedef enum {
     CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
@@ -47,6 +48,7 @@ typedef struct network{
     float hue;
 
     int gpu_index;
+    tree *hierarchy;
 
     #ifdef GPU
     float **input_gpu;

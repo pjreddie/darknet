@@ -565,7 +565,6 @@ float *network_accuracies(network net, data d, int n)
     return acc;
 }
 
-
 float network_accuracy_multi(network net, data d, int n)
 {
     matrix guess = network_predict_data_multi(net, d, n);

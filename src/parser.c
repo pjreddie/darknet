@@ -221,6 +221,8 @@ softmax_layer parse_softmax(list *options, size_params params)
     int groups = option_find_int_quiet(options, "groups",1);
     softmax_layer layer = make_softmax_layer(params.batch, params.inputs, groups);
     layer.temperature = option_find_float_quiet(options, "temperature", 1);
+    char *tree_file = option_find_str(options, "tree", 0);
+    if (tree_file) layer.softmax_tree = read_tree(tree_file);
     return layer;
 }
 
@@ -598,6 +600,7 @@ network parse_network_cfg(char *filename)
             l = parse_detection(options, params);
         }else if(lt == SOFTMAX){
             l = parse_softmax(options, params);
+            net.hierarchy = l.softmax_tree;
         }else if(lt == NORMALIZATION){
             l = parse_normalization(options, params);
         }else if(lt == BATCHNORM){
