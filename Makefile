@@ -1,20 +1,31 @@
-GPU=0
-CUDNN=0
-OPENCV=0
-DEBUG=0
+GPU=1
+CUDNN=1
+OPENCV=1
+DEBUG=1
 
 ARCH= --gpu-architecture=compute_52 --gpu-code=compute_52
+
+# C Definitions
 
 VPATH=./src/
 EXEC=darknet
 OBJDIR=./obj/
-
 CC=gcc
+
+# C++ Definitions
+SRC_CPP=./src-cpp/
+EXEC_CPP=darknet-cpp
+OBJDIR_CPP=./obj-cpp/
+CC_CPP=g++
+CFLAGS_CPP=-Wno-write-strings
+
 NVCC=nvcc
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
 COMMON= 
 CFLAGS=-Wall -Wfatal-errors 
+
+
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
@@ -28,6 +39,9 @@ CFLAGS+= -DOPENCV
 LDFLAGS+= `pkg-config --libs opencv` 
 COMMON+= `pkg-config --cflags opencv` 
 endif
+
+# Place the IPP .a file from OpenCV here for easy linking
+LDFLAGS += -L./3rdparty
 
 ifeq ($(GPU), 1) 
 COMMON+= -DGPU -I/usr/local/cuda/include/
@@ -50,7 +64,10 @@ endif
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile
 
-all: obj results $(EXEC)
+OBJS_CPP = $(addprefix $(OBJDIR_CPP), $(OBJ))
+DEPS_CPP = $(wildcard src-cpp/*.h) Makefile
+
+all: obj obj-cpp results $(EXEC) $(EXEC_CPP)
 
 $(EXEC): $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
@@ -58,11 +75,25 @@ $(EXEC): $(OBJS)
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
+$(EXEC_CPP): $(OBJS_CPP)
+	$(CC_CPP) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+$(OBJDIR_CPP)%.o: $(SRC_CPP)%.cpp $(DEPS_CPP)
+	$(CC_CPP) $(COMMON) $(CFLAGS_CPP) $(CFLAGS) -c $< -o $@
+
+
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
+$(OBJDIR_CPP)%.o: $(SRC_CPP)%.cu $(DEPS)
+	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+
+
 obj:
 	mkdir -p obj
+obj-cpp:
+	mkdir -p obj-cpp
+
 results:
 	mkdir -p results
 
@@ -70,4 +101,5 @@ results:
 
 clean:
 	rm -rf $(OBJS) $(EXEC)
+	rm -rf $(OBJS_CPP) $(EXEC_CPP)
 
