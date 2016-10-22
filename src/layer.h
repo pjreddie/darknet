@@ -3,6 +3,7 @@
 
 #include "activations.h"
 #include "stddef.h"
+#include "tree.h"
 
 struct network_state;
 
@@ -92,6 +93,8 @@ struct layer{
     int noadjust;
     int reorg;
     int log;
+
+    tree *softmax_tree;
 
     float alpha;
     float beta;

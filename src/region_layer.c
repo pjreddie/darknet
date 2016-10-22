@@ -1,6 +1,5 @@
 #include "region_layer.h"
 #include "activations.h"
-#include "softmax_layer.h"
 #include "blas.h"
 #include "box.h"
 #include "cuda.h"
@@ -99,7 +98,7 @@ void forward_region_layer(const region_layer l, network_state state)
             int index = size*i + b*l.outputs;
             l.output[index + 4] = logistic_activate(l.output[index + 4]);
             if(l.softmax){
-                softmax_array(l.output + index + 5, l.classes, 1, l.output + index + 5);
+                softmax(l.output + index + 5, l.classes, 1, l.output + index + 5);
             }
         }
     }

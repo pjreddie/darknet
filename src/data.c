@@ -388,12 +388,47 @@ void fill_truth(char *path, char **labels, int k, float *truth)
     if(count != 1) printf("Too many or too few labels: %d, %s\n", count, path);
 }
 
-matrix load_labels_paths(char **paths, int n, char **labels, int k)
+void fill_hierarchy(float *truth, int k, tree *hierarchy)
+{
+    int j;
+    for(j = 0; j < k; ++j){
+        if(truth[j]){
+            int parent = hierarchy->parent[j];
+            while(parent >= 0){
+                truth[parent] = 1;
+                parent = hierarchy->parent[parent];
+            }
+        }
+    }
+    int i;
+    int count = 0;
+    for(j = 0; j < hierarchy->groups; ++j){
+        //printf("%d\n", count);
+        int mask = 1;
+        for(i = 0; i < hierarchy->group_size[j]; ++i){
+            if(truth[count + i]){
+                mask = 0;
+                break;
+            }
+        }
+        if (mask) {
+            for(i = 0; i < hierarchy->group_size[j]; ++i){
+                truth[count + i] = SECRET_NUM;
+            }
+        }
+        count += hierarchy->group_size[j];
+    }
+}
+
+matrix load_labels_paths(char **paths, int n, char **labels, int k, tree *hierarchy)
 {
     matrix y = make_matrix(n, k);
     int i;
     for(i = 0; i < n && labels; ++i){
         fill_truth(paths[i], labels, k, y.vals[i]);
+        if(hierarchy){
+            fill_hierarchy(y.vals[i], k, hierarchy);
+        }
     }
     return y;
 }
@@ -540,7 +575,7 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
         while(fscanf(fp2, "%d %f", &id, &iou) == 2){
             if (d.y.vals[i][2*id + 1] < iou) d.y.vals[i][2*id + 1] = iou;
         }
-        
+
         for (j = 0; j < classes; ++j){
             if (d.y.vals[i][2*j] > .5 &&  d.y.vals[i][2*j+1] < .5){
                 d.y.vals[i][2*j] = 1;
@@ -567,7 +602,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
 {
     int index = rand()%n;
     char *random_path = paths[index];
-    
+
     image orig = load_image_color(random_path, 0, 0);
     int h = orig.h;
     int w = orig.w;
@@ -680,7 +715,7 @@ void *load_thread(void *ptr)
     if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == CLASSIFICATION_DATA){
-        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == SUPER_DATA){
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
@@ -771,24 +806,24 @@ data load_data_old(char **paths, int n, int m, char **labels, int k, int w, int 
     data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
-    d.y = load_labels_paths(paths, n, labels, k);
+    d.y = load_labels_paths(paths, n, labels, k, 0);
     if(m) free(paths);
     return d;
 }
 
 /*
-data load_data_study(char **paths, int n, int m, char **labels, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
-{
-    data d = {0};
-    d.indexes = calloc(n, sizeof(int));
-    if(m) paths = get_random_paths_indexes(paths, n, m, d.indexes);
-    d.shallow = 0;
-    d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure);
-    d.y = load_labels_paths(paths, n, labels, k);
-    if(m) free(paths);
-    return d;
-}
-*/
+   data load_data_study(char **paths, int n, int m, char **labels, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+   {
+   data d = {0};
+   d.indexes = calloc(n, sizeof(int));
+   if(m) paths = get_random_paths_indexes(paths, n, m, d.indexes);
+   d.shallow = 0;
+   d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure);
+   d.y = load_labels_paths(paths, n, labels, k);
+   if(m) free(paths);
+   return d;
+   }
+ */
 
 data load_data_super(char **paths, int n, int m, int w, int h, int scale)
 {
@@ -820,13 +855,13 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     return d;
 }
 
-data load_data_augment(char **paths, int n, int m, char **labels, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
     d.shallow = 0;
     d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure);
-    d.y = load_labels_paths(paths, n, labels, k);
+    d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);
     return d;
 }

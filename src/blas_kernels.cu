@@ -691,3 +691,33 @@ extern "C" void mult_add_into_gpu(int num, float *a, float *b, float *c)
     mult_add_into_kernel<<<cuda_gridsize(num), BLOCK>>>(num, a, b, c);
     check_error(cudaPeekAtLastError());
 }
+
+
+__global__ void softmax_kernel(int n, int batch, float *input, float temp, float *output)
+{
+    int b = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(b >= batch) return;
+
+    int i;
+    float sum = 0;
+    float largest = -INFINITY;
+    for(i = 0; i < n; ++i){
+        int val = input[i+b*n];
+        largest = (val>largest) ? val : largest;
+    }
+    for(i = 0; i < n; ++i){
+        sum += exp(input[i+b*n]/temp-largest/temp);
+    }
+    sum = (sum != 0) ? largest/temp+log(sum) : largest-100;
+    for(i = 0; i < n; ++i){
+        output[i+b*n] = exp(input[i+b*n]/temp-sum);
+    }
+}
+
+extern "C" void softmax_gpu(float *input, int n, int groups, float temp, float *output, cudaStream_t stream)
+{
+    int inputs = n;
+    int batch = groups;
+    softmax_kernel<<<cuda_gridsize(batch), BLOCK, 0, stream>>>(inputs, batch, input, temp, output);
+    check_error(cudaPeekAtLastError());
+}
