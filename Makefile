@@ -1,6 +1,20 @@
-GPU=0
-CUDNN=0
-OPENCV=1
+#
+# Default make builds both original darknet, and its CPP equivalent darknet-cpp
+# make darknet - only darknet (original code)
+# make darknet-cpp - only the CPP version
+# 
+# CPP version supports OpenCV3. Tested on Ubuntu 16.04
+#
+# OPENCV=1 (C++ && CV3, or C && CV2 only - check with pkg-config --modversion opencv)
+# When building CV3 and C version, will get errors like
+# ./obj/image.o: In function `cvPointFrom32f':
+# /usr/local/include/opencv2/core/types_c.h:929: undefined reference to `cvRound'
+#
+#
+
+GPU=1
+CUDNN=1
+OPENCV=0
 DEBUG=1
 
 ARCH= --gpu-architecture=compute_52 --gpu-code=compute_52
@@ -67,14 +81,14 @@ OBJS_CPP = $(addprefix $(OBJDIR_CPP), $(OBJ))
 
 all: obj obj-cpp results $(EXEC) $(EXEC_CPP)
 
-$(EXEC): $(OBJS)
-	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+$(EXEC): obj clean $(OBJS)
+	$(CC) $(COMMON) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS)
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
-$(EXEC_CPP): $(OBJS_CPP)
-	$(CC_CPP) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+$(EXEC_CPP): obj-cpp clean-cpp $(OBJS_CPP)
+	$(CC_CPP) $(COMMON) $(CFLAGS) $(OBJS_CPP) -o $@ $(LDFLAGS)
 
 $(OBJDIR_CPP)%.o: %.c $(DEPS_CPP)
 	$(CC_CPP) $(COMMON) $(CFLAGS_CPP) $(CFLAGS) -c $< -o $@
@@ -99,5 +113,6 @@ results:
 
 clean:
 	rm -rf $(OBJS) $(EXEC)
+clean-cpp:
 	rm -rf $(OBJS_CPP) $(EXEC_CPP)
 

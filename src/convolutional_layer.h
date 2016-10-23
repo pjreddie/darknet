@@ -9,6 +9,10 @@
 
 typedef layer convolutional_layer;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef GPU
 void forward_convolutional_layer_gpu(convolutional_layer layer, network_state state);
 void backward_convolutional_layer_gpu(convolutional_layer layer, network_state state);
@@ -47,6 +51,11 @@ int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
 void rescale_weights(convolutional_layer l, float scale, float trans);
 void rgbgr_weights(convolutional_layer l);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
 

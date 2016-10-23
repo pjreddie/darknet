@@ -15,6 +15,9 @@ extern int gpu_index;
 #include "cudnn.h"
 #endif
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
 void check_error(cudaError_t status);
 void check_cublas_error(cublasStatus_t status);
 
@@ -32,6 +35,11 @@ dim3 cuda_gridsize(size_t n);
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();
 #endif
+
+#ifdef __cplusplus 
+}
+#endif
+
 
 #endif
 #endif
