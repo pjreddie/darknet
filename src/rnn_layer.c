@@ -30,26 +30,26 @@ layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, 
 {
     fprintf(stderr, "RNN Layer: %d inputs, %d outputs\n", inputs, outputs);
     batch = batch / steps;
-    layer l = {0};
+    layer l = {};
     l.batch = batch;
     l.type = RNN;
     l.steps = steps;
     l.hidden = hidden;
     l.inputs = inputs;
 
-    l.state = calloc(batch*hidden*(steps+1), sizeof(float));
+    l.state = (float*)calloc(batch*hidden*(steps+1), sizeof(float));
 
-    l.input_layer = malloc(sizeof(layer));
+    l.input_layer = (layer*)malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.input_layer) = make_connected_layer(batch*steps, inputs, hidden, activation, batch_normalize);
     l.input_layer->batch = batch;
 
-    l.self_layer = malloc(sizeof(layer));
+    l.self_layer = (layer*)malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.self_layer) = make_connected_layer(batch*steps, hidden, hidden, (log==2)?LOGGY:(log==1?LOGISTIC:activation), batch_normalize);
     l.self_layer->batch = batch;
 
-    l.output_layer = malloc(sizeof(layer));
+    l.output_layer = (layer*)malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.output_layer) = make_connected_layer(batch*steps, hidden, outputs, activation, batch_normalize);
     l.output_layer->batch = batch;

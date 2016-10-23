@@ -11,7 +11,7 @@
 
 region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 {
-    region_layer l = {0};
+    region_layer l = {};
     l.type = REGION;
 
     l.n = n;
@@ -20,14 +20,14 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     l.w = w;
     l.classes = classes;
     l.coords = coords;
-    l.cost = calloc(1, sizeof(float));
-    l.biases = calloc(n*2, sizeof(float));
-    l.bias_updates = calloc(n*2, sizeof(float));
+    l.cost = (float*)calloc(1, sizeof(float));
+    l.biases = (float*)calloc(n*2, sizeof(float));
+    l.bias_updates = (float*)calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + coords + 1);
     l.inputs = l.outputs;
     l.truths = 30*(5);
-    l.delta = calloc(batch*l.outputs, sizeof(float));
-    l.output = calloc(batch*l.outputs, sizeof(float));
+    l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
+    l.output = (float*)calloc(batch*l.outputs, sizeof(float));
     int i;
     for(i = 0; i < n*2; ++i){
         l.biases[i] = .5;
@@ -145,7 +145,7 @@ void forward_region_layer(const region_layer l, network_state state)
         }
         for(t = 0; t < 30; ++t){
             box truth = float_to_box(state.truth + t*5 + b*l.truths);
-            int class = state.truth[t*5 + b*l.truths + 4];
+            int classtype = state.truth[t*5 + b*l.truths + 4];
             if(!truth.x) break;
             float best_iou = 0;
             int best_index = 0;
@@ -193,8 +193,8 @@ void forward_region_layer(const region_layer l, network_state state)
                }
              */
             for(n = 0; n < l.classes; ++n){
-                l.delta[best_index + 5 + n] = l.class_scale * (((n == class)?1 : 0) - l.output[best_index + 5 + n]);
-                if(n == class) avg_cat += l.output[best_index + 5 + n];
+                l.delta[best_index + 5 + n] = l.class_scale * (((n == classtype)?1 : 0) - l.output[best_index + 5 + n]);
+                if(n == classtype) avg_cat += l.output[best_index + 5 + n];
             }
             /*
                if(0){
@@ -223,7 +223,7 @@ void forward_region_layer(const region_layer l, network_state state)
     printf("\n");
     reorg(l.delta, l.w*l.h, size*l.n, l.batch, 0);
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
-    printf("Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, Avg Recall: %f,  count: %d\n", avg_iou/count, avg_cat/count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count);
+    printf("Region Avg IOU: %f, classtype: %f, Obj: %f, No Obj: %f, Avg Recall: %f,  count: %d\n", avg_iou/count, avg_cat/count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count);
 }
 
 void backward_region_layer(const region_layer l, network_state state)
@@ -259,8 +259,8 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
                 boxes[index].h = (exp(predictions[box_index + 3]) * .5) * h;
             }
             for(j = 0; j < l.classes; ++j){
-                int class_index = index * (l.classes + 5) + 5;
-                float prob = scale*predictions[class_index+j];
+                int classtype_index = index * (l.classes + 5) + 5;
+                float prob = scale*predictions[classtype_index+j];
                 probs[index][j] = (prob > thresh) ? prob : 0;
             }
             if(only_objectness){
@@ -281,11 +281,11 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
        }
      */
 
-    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
+    float *in_cpu = (float*)calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){
         int num_truth = l.batch*l.truths;
-        truth_cpu = calloc(num_truth, sizeof(float));
+        truth_cpu = (float*)calloc(num_truth, sizeof(float));
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);

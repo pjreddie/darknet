@@ -13,7 +13,6 @@ OBJDIR=./obj/
 CC=gcc
 
 # C++ Definitions
-SRC_CPP=./src-cpp/
 EXEC_CPP=darknet-cpp
 OBJDIR_CPP=./obj-cpp/
 CC_CPP=g++
@@ -65,7 +64,6 @@ OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile
 
 OBJS_CPP = $(addprefix $(OBJDIR_CPP), $(OBJ))
-DEPS_CPP = $(wildcard src-cpp/*.h) Makefile
 
 all: obj obj-cpp results $(EXEC) $(EXEC_CPP)
 
@@ -78,14 +76,14 @@ $(OBJDIR)%.o: %.c $(DEPS)
 $(EXEC_CPP): $(OBJS_CPP)
 	$(CC_CPP) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(OBJDIR_CPP)%.o: $(SRC_CPP)%.c $(DEPS_CPP)
+$(OBJDIR_CPP)%.o: %.c $(DEPS_CPP)
 	$(CC_CPP) $(COMMON) $(CFLAGS_CPP) $(CFLAGS) -c $< -o $@
 
 
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
-$(OBJDIR_CPP)%.o: $(SRC_CPP)%.cu $(DEPS)
+$(OBJDIR_CPP)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
 

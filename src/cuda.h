@@ -16,6 +16,8 @@ extern int gpu_index;
 #endif
 
 void check_error(cudaError_t status);
+void check_cublas_error(cublasStatus_t status);
+
 cublasHandle_t blas_handle();
 float *cuda_make_array(float *x, size_t n);
 int *cuda_make_int_array(size_t n);

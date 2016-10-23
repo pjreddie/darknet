@@ -7,7 +7,7 @@
 layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2)
 {
     fprintf(stderr,"Shortcut Layer: %d\n", index);
-    layer l = {0};
+    layer l = {};
     l.type = SHORTCUT;
     l.batch = batch;
     l.w = w2;
@@ -21,8 +21,8 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
 
     l.index = index;
 
-    l.delta =  calloc(l.outputs*batch, sizeof(float));
-    l.output = calloc(l.outputs*batch, sizeof(float));;
+    l.delta =  (float*)calloc(l.outputs*batch, sizeof(float));
+    l.output = (float*)calloc(l.outputs*batch, sizeof(float));;
 
     l.forward = forward_shortcut_layer;
     l.backward = backward_shortcut_layer;

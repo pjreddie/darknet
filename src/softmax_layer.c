@@ -11,14 +11,14 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
 {
     assert(inputs%groups == 0);
     fprintf(stderr, "Softmax Layer: %d inputs\n", inputs);
-    softmax_layer l = {0};
+    softmax_layer l = {};
     l.type = SOFTMAX;
     l.batch = batch;
     l.groups = groups;
     l.inputs = inputs;
     l.outputs = inputs;
-    l.output = calloc(inputs*batch, sizeof(float));
-    l.delta = calloc(inputs*batch, sizeof(float));
+    l.output = (float*)calloc(inputs*batch, sizeof(float));
+    l.delta = (float*)calloc(inputs*batch, sizeof(float));
 
     l.forward = forward_softmax_layer;
     l.backward = backward_softmax_layer;
@@ -76,7 +76,7 @@ void forward_softmax_layer_gpu(const softmax_layer l, network_state state)
     int b;
     if(l.softmax_tree){
         if(0){
-            float *buff = calloc(inputs * batch, sizeof(float));
+            float *buff = (float*)calloc(inputs * batch, sizeof(float));
             cuda_pull_array(state.input, buff, batch * inputs);
             state.input = buff;
             forward_softmax_layer(l, state);

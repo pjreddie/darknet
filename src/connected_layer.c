@@ -13,7 +13,7 @@
 connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, int batch_normalize)
 {
     int i;
-    connected_layer l = {0};
+    connected_layer l = {};
     l.type = CONNECTED;
 
     l.inputs = inputs;
@@ -27,14 +27,14 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     l.out_w = 1;
     l.out_c = outputs;
 
-    l.output = calloc(batch*outputs, sizeof(float));
-    l.delta = calloc(batch*outputs, sizeof(float));
+    l.output = (float*)calloc(batch*outputs, sizeof(float));
+    l.delta = (float*)calloc(batch*outputs, sizeof(float));
 
-    l.weight_updates = calloc(inputs*outputs, sizeof(float));
-    l.bias_updates = calloc(outputs, sizeof(float));
+    l.weight_updates = (float*)calloc(inputs*outputs, sizeof(float));
+    l.bias_updates = (float*)calloc(outputs, sizeof(float));
 
-    l.weights = calloc(outputs*inputs, sizeof(float));
-    l.biases = calloc(outputs, sizeof(float));
+    l.weights = (float*)calloc(outputs*inputs, sizeof(float));
+    l.biases = (float*)calloc(outputs, sizeof(float));
 
     l.forward = forward_connected_layer;
     l.backward = backward_connected_layer;
@@ -51,22 +51,22 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     }
 
     if(batch_normalize){
-        l.scales = calloc(outputs, sizeof(float));
-        l.scale_updates = calloc(outputs, sizeof(float));
+        l.scales = (float*)calloc(outputs, sizeof(float));
+        l.scale_updates = (float*)calloc(outputs, sizeof(float));
         for(i = 0; i < outputs; ++i){
             l.scales[i] = 1;
         }
 
-        l.mean = calloc(outputs, sizeof(float));
-        l.mean_delta = calloc(outputs, sizeof(float));
-        l.variance = calloc(outputs, sizeof(float));
-        l.variance_delta = calloc(outputs, sizeof(float));
+        l.mean = (float*)calloc(outputs, sizeof(float));
+        l.mean_delta = (float*)calloc(outputs, sizeof(float));
+        l.variance = (float*)calloc(outputs, sizeof(float));
+        l.variance_delta = (float*)calloc(outputs, sizeof(float));
 
-        l.rolling_mean = calloc(outputs, sizeof(float));
-        l.rolling_variance = calloc(outputs, sizeof(float));
+        l.rolling_mean = (float*)calloc(outputs, sizeof(float));
+        l.rolling_variance = (float*)calloc(outputs, sizeof(float));
 
-        l.x = calloc(batch*outputs, sizeof(float));
-        l.x_norm = calloc(batch*outputs, sizeof(float));
+        l.x = (float*)calloc(batch*outputs, sizeof(float));
+        l.x_norm = (float*)calloc(batch*outputs, sizeof(float));
     }
 
 #ifdef GPU
