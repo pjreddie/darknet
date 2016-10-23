@@ -5,6 +5,7 @@
 #include "matrix.h"
 #include "list.h"
 #include "image.h"
+#include "tree.h"
 
 static inline float distance_from_edge(int x, int max)
 {
@@ -58,6 +59,7 @@ typedef struct load_args{
     image *im;
     image *resized;
     data_type type;
+    tree *hierarchy;
 } load_args;
 
 typedef struct{
@@ -80,7 +82,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure);
 matrix load_image_augment_paths(char **paths, int n, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure);
 data load_data_super(char **paths, int n, int m, int w, int h, int scale);
-data load_data_augment(char **paths, int n, int m, char **labels, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure);
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure);
 data load_go(char *filename);
 
 box_label *read_boxes(char *filename, int *n);

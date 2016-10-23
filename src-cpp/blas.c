@@ -1,6 +1,7 @@
 #include "blas.h"
 #include "math.h"
 #include <assert.h>
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -179,3 +180,20 @@ float dot_cpu(int N, float *X, int INCX, float *Y, int INCY)
     return dot;
 }
 
+void softmax(float *input, int n, float temp, float *output)
+{
+    int i;
+    float sum = 0;
+    float largest = -FLT_MAX;
+    for(i = 0; i < n; ++i){
+        if(input[i] > largest) largest = input[i];
+    }
+    for(i = 0; i < n; ++i){
+        sum += exp(input[i]/temp-largest/temp);
+    }
+    if(sum) sum = largest/temp+log(sum);
+    else sum = largest-100;
+    for(i = 0; i < n; ++i){
+        output[i] = exp(input[i]/temp-sum);
+    }
+}

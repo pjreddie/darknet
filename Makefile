@@ -1,5 +1,5 @@
-GPU=1
-CUDNN=1
+GPU=0
+CUDNN=0
 OPENCV=1
 DEBUG=1
 
@@ -78,7 +78,7 @@ $(OBJDIR)%.o: %.c $(DEPS)
 $(EXEC_CPP): $(OBJS_CPP)
 	$(CC_CPP) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(OBJDIR_CPP)%.o: $(SRC_CPP)%.cpp $(DEPS_CPP)
+$(OBJDIR_CPP)%.o: $(SRC_CPP)%.c $(DEPS_CPP)
 	$(CC_CPP) $(COMMON) $(CFLAGS_CPP) $(CFLAGS) -c $< -o $@
 
 
