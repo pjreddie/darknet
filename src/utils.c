@@ -30,6 +30,7 @@ void shuffle(void *arr, size_t n, size_t size)
         memcpy(arr+(j*size), arr+(i*size), size);
         memcpy(arr+(i*size), swp,          size);
     }
+    free(swp);
 }
 
 void del_arg(int argc, char **argv, int index)
