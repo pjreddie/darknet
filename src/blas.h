@@ -77,7 +77,7 @@ void mult_add_into_gpu(int num, float *a, float *b, float *c);
 
 void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
 
-void softmax_gpu(float *input, int n, int groups, float temp, float *output, cudaStream_t stream);
+void softmax_gpu(float *input, int n, int offset, int groups, float temp, float *output);
 
 #endif
 #endif

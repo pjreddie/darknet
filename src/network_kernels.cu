@@ -134,6 +134,7 @@ void *train_thread(void *ptr)
     free(ptr);
     cuda_set_device(args.net.gpu_index);
     *args.err = train_network(args.net, args.d);
+    printf("%d\n", args.net.gpu_index);
     return 0;
 }
 
@@ -359,11 +360,14 @@ float train_networks(network *nets, int n, data d, int interval)
         //printf("%f\n", errors[i]);
         sum += errors[i];
     }
+    //cudaDeviceSynchronize();
     if (get_current_batch(nets[0]) % interval == 0) {
         printf("Syncing... ");
+        fflush(stdout);
         sync_nets(nets, n, interval);
         printf("Done!\n");
     }
+    //cudaDeviceSynchronize();
     free(threads);
     free(errors);
     return (float)sum/(n);
