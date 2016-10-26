@@ -142,7 +142,9 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
         fseek(fp, 0, SEEK_SET); 
 
         text = calloc(size+1, sizeof(char));
-        fread(text, 1, size, fp);
+        size_t ret_fread = 0;
+        ret_fread = fread(text, 1, size, fp);
+        if(ret_fread == 0) fread_error();
         fclose(fp);
     }
 

@@ -23,6 +23,7 @@ void find_replace(char *str, char *orig, char *rep, char *output);
 void error(const char *s);
 void malloc_error();
 void file_error(char *s);
+void fread_error();
 void strip(char *s);
 void strip_char(char *s, char bad);
 void top_k(float *a, int n, int k, int *index);
