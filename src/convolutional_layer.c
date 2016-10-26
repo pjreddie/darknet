@@ -171,7 +171,7 @@ void cudnn_convolutional_setup(layer *l)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor)
+convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam)
 {
     int i;
     convolutional_layer l = {0};
@@ -242,6 +242,12 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.update_gpu = update_convolutional_layer_gpu;
 
     if(gpu_index >= 0){
+        if (adam) {
+            l.adam = 1;
+            l.m_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
+            l.v_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
+        }
+
         l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
         l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
 
@@ -312,7 +318,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 
 void test_convolutional_layer()
 {
-    convolutional_layer l = make_convolutional_layer(1, 5, 5, 3, 2, 5, 2, 1, LEAKY, 1, 0, 0);
+    convolutional_layer l = make_convolutional_layer(1, 5, 5, 3, 2, 5, 2, 1, LEAKY, 1, 0, 0, 0);
     l.batch_normalize = 1;
     float data[] = {1,1,1,1,1,
         1,1,1,1,1,
