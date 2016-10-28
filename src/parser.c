@@ -111,6 +111,7 @@ typedef struct size_params{
     int c;
     int index;
     int time_steps;
+    network net;
 } size_params;
 
 local_layer parse_local(list *options, size_params params)
@@ -156,9 +157,14 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int binary = option_find_int_quiet(options, "binary", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor);
+    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
+    if(params.net.adam){
+        layer.B1 = params.net.B1;
+        layer.B2 = params.net.B2;
+        layer.eps = params.net.eps;
+    }
 
     return layer;
 }
@@ -482,6 +488,13 @@ void parse_net_options(list *options, network *net)
     net->batch *= net->time_steps;
     net->subdivisions = subdivs;
 
+    net->adam = option_find_int_quiet(options, "adam", 0);
+    if(net->adam){
+        net->B1 = option_find_float(options, "B1", .9);
+        net->B2 = option_find_float(options, "B2", .999);
+        net->eps = option_find_float(options, "eps", .000001);
+    }
+
     net->h = option_find_int_quiet(options, "height",0);
     net->w = option_find_int_quiet(options, "width",0);
     net->c = option_find_int_quiet(options, "channels",0);
@@ -564,6 +577,7 @@ network parse_network_cfg(char *filename)
     params.inputs = net.inputs;
     params.batch = net.batch;
     params.time_steps = net.time_steps;
+    params.net = net;
 
     size_t workspace_size = 0;
     n = n->next;
@@ -779,7 +793,7 @@ void save_weights_upto(network net, char *filename, int cutoff)
 {
 #ifdef GPU
     if(net.gpu_index >= 0){
-    cuda_set_device(net.gpu_index);
+        cuda_set_device(net.gpu_index);
     }
 #endif
     fprintf(stderr, "Saving weights to %s\n", filename);
@@ -947,7 +961,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
 {
 #ifdef GPU
     if(net->gpu_index >= 0){
-    cuda_set_device(net->gpu_index);
+        cuda_set_device(net->gpu_index);
     }
 #endif
     fprintf(stderr, "Loading weights from %s...", filename);

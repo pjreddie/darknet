@@ -94,6 +94,14 @@ struct layer{
     int reorg;
     int log;
 
+    int adam;
+    float B1;
+    float B2;
+    float eps;
+    float *m_gpu;
+    float *v_gpu;
+    int t;
+
     tree *softmax_tree;
 
     float alpha;

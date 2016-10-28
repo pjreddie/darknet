@@ -82,6 +82,7 @@ void update_network_gpu(network net)
     float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
+        l.t = get_current_batch(net);
         if(l.update_gpu){
             l.update_gpu(l, update_batch, rate, net.momentum, net.decay);
         }
@@ -175,6 +176,7 @@ void update_layer(layer l, network net)
 {
     int update_batch = net.batch*net.subdivisions;
     float rate = get_current_rate(net);
+    l.t = get_current_batch(net);
     if(l.update_gpu){
         l.update_gpu(l, update_batch, rate, net.momentum, net.decay);
     }
@@ -358,11 +360,14 @@ float train_networks(network *nets, int n, data d, int interval)
         //printf("%f\n", errors[i]);
         sum += errors[i];
     }
+    //cudaDeviceSynchronize();
     if (get_current_batch(nets[0]) % interval == 0) {
         printf("Syncing... ");
+        fflush(stdout);
         sync_nets(nets, n, interval);
         printf("Done!\n");
     }
+    //cudaDeviceSynchronize();
     free(threads);
     free(errors);
     return (float)sum/(n);

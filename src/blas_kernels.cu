@@ -138,6 +138,21 @@ void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int 
 }
 
 
+__global__ void adam_kernel(int N, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t)
+{
+    int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (index >= N) return;
+    
+    x[index] = x[index] - (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps));
+    //if(index == 0) printf("%f %f %f %f\n", m[index], v[index], (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps)));
+}
+
+extern "C" void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t)
+{
+    adam_kernel<<<cuda_gridsize(n), BLOCK>>>(n, x, m, v, B1, B2, rate, eps, t);
+    check_error(cudaPeekAtLastError());
+}
+
 __global__ void normalize_kernel(int N, float *x, float *mean, float *variance, int batch, int filters, int spatial)
 {
     int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -689,31 +704,35 @@ void mult_add_into_gpu(int num, float *a, float *b, float *c)
     mult_add_into_kernel<<<cuda_gridsize(num), BLOCK>>>(num, a, b, c);
     check_error(cudaPeekAtLastError());
 }
-__global__ void softmax_kernel(int n, int batch, float *input, float temp, float *output)
+__device__ void softmax_device(int n, float *input, float temp, float *output)
 {
-    int b = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-    if(b >= batch) return;
-
     int i;
     float sum = 0;
     float largest = -INFINITY;
     for(i = 0; i < n; ++i){
-        int val = input[i+b*n];
+        int val = input[i];
         largest = (val>largest) ? val : largest;
     }
     for(i = 0; i < n; ++i){
-        sum += exp(input[i+b*n]/temp-largest/temp);
+        sum += exp(input[i]/temp-largest/temp);
     }
     sum = (sum != 0) ? largest/temp+log(sum) : largest-100;
     for(i = 0; i < n; ++i){
-        output[i+b*n] = exp(input[i+b*n]/temp-sum);
+        output[i] = exp(input[i]/temp-sum);
     }
 }
 
-void softmax_gpu(float *input, int n, int groups, float temp, float *output, cudaStream_t stream)
+__global__ void softmax_kernel(int n, int offset, int batch, float *input, float temp, float *output)
+{
+    int b = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(b >= batch) return;
+    softmax_device(n, input + b*offset, temp, output + b*offset);
+}
+
+void softmax_gpu(float *input, int n, int offset, int groups, float temp, float *output)
 {
     int inputs = n;
     int batch = groups;
-    softmax_kernel<<<cuda_gridsize(batch), BLOCK, 0, stream>>>(inputs, batch, input, temp, output);
+    softmax_kernel<<<cuda_gridsize(batch), BLOCK>>>(inputs, offset, batch, input, temp, output);
     check_error(cudaPeekAtLastError());
 }

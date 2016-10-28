@@ -41,7 +41,7 @@ list *read_data_cfg(char *filename)
     return options;
 }
 
-void hierarchy_predictions(float *predictions, int n, tree *hier)
+void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves)
 {
     int j;
     for(j = 0; j < n; ++j){
@@ -50,8 +50,10 @@ void hierarchy_predictions(float *predictions, int n, tree *hier)
             predictions[j] *= predictions[parent]; 
         }
     }
-    for(j = 0; j < n; ++j){
-        if(!hier->leaf[j]) predictions[j] = 0;
+    if(only_leaves){
+        for(j = 0; j < n; ++j){
+            if(!hier->leaf[j]) predictions[j] = 0;
+        }
     }
 }
 float *get_regression_values(char **labels, int n)
@@ -409,7 +411,7 @@ void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
         float *pred = (float*)calloc(classes, sizeof(float));
         for(j = 0; j < 10; ++j){
             float *p = network_predict(net, images[j].data);
-            if(net.hierarchy) hierarchy_predictions(p, net.outputs, net.hierarchy);
+            if(net.hierarchy) hierarchy_predictions(p, net.outputs, net.hierarchy, 1);
             axpy_cpu(classes, 1, p, 1, pred, 1);
             free_image(images[j]);
         }
@@ -470,7 +472,7 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
         //show_image(crop, "cropped");
         //cvWaitKey(0);
         float *pred = network_predict(net, resized.data);
-        if(net.hierarchy) hierarchy_predictions(pred, net.outputs, net.hierarchy);
+        if(net.hierarchy) hierarchy_predictions(pred, net.outputs, net.hierarchy, 1);
 
         free_image(im);
         free_image(resized);
@@ -483,6 +485,26 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
 
         printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
+}
+
+void change_leaves(tree *t, char *leaf_list)
+{
+    list *llist = get_paths(leaf_list);
+    char **leaves = (char **)list_to_array(llist);
+    int n = llist->size;
+    int i,j;
+    int found = 0;
+    for(i = 0; i < t->n; ++i){
+        t->leaf[i] = 0;
+        for(j = 0; j < n; ++j){
+            if (0==strcmp(t->name[i], leaves[j])){
+                t->leaf[i] = 1;
+                ++found;
+                break;
+            }
+        }
+    }
+    fprintf(stderr, "Found %d leaves.\n", found);
 }
 
 
@@ -499,6 +521,8 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
     list *options = read_data_cfg(datacfg);
 
     char *label_list = option_find_str(options, "labels", "data/labels.list");
+    char *leaf_list = option_find_str(options, "leaves", 0);
+    if(leaf_list) change_leaves(net.hierarchy, leaf_list);
     char *valid_list = option_find_str(options, "valid", "data/train.list");
     int classes = option_find_int(options, "classes", 2);
     int topk = option_find_int(options, "top", 1);
@@ -530,7 +554,7 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
         //show_image(crop, "cropped");
         //cvWaitKey(0);
         float *pred = network_predict(net, crop.data);
-        if(net.hierarchy) hierarchy_predictions(pred, net.outputs, net.hierarchy);
+        if(net.hierarchy) hierarchy_predictions(pred, net.outputs, net.hierarchy, 1);
 
         if(resized.data != im.data) free_image(resized);
         free_image(im);
@@ -591,7 +615,7 @@ void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
             image r = resize_min(im, scales[j]);
             resize_network(&net, r.w, r.h);
             float *p = network_predict(net, r.data);
-            if(net.hierarchy) hierarchy_predictions(p, net.outputs, net.hierarchy);
+            if(net.hierarchy) hierarchy_predictions(p, net.outputs, net.hierarchy, 1);
             axpy_cpu(classes, 1, p, 1, pred, 1);
             flip_image(r);
             p = network_predict(net, r.data);
@@ -691,8 +715,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
     }
 }
 
-
-void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename)
+void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -705,7 +728,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
 
     char *name_list = option_find_str(options, "names", 0);
     if(!name_list) name_list = option_find_str(options, "labels", "data/labels.list");
-    int top = option_find_int(options, "top", 1);
+    if(top == 0) top = option_find_int(options, "top", 1);
 
     int i = 0;
     char **names = get_labels(name_list);
@@ -732,7 +755,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         float *X = r.data;
         time=clock();
         float *predictions = network_predict(net, X);
-        if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy);
+        if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 0);
         top_k(predictions, net.outputs, top, indexes);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         for(i = 0; i < top; ++i){
@@ -1113,7 +1136,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         show_image(in, "Classifier");
 
         float *predictions = network_predict(net, in_s.data);
-        if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy);
+        if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 1);
         top_predictions(net, top, indexes);
 
         printf("\033[2J");
@@ -1165,6 +1188,7 @@ void run_classifier(int argc, char **argv)
     }
 
     int cam_index = find_int_arg(argc, argv, "-c", 0);
+    int top = find_int_arg(argc, argv, "-t", 0);
     int clear = find_arg(argc, argv, "-clear");
     char *data = argv[3];
     char *cfg = argv[4];
@@ -1172,7 +1196,7 @@ void run_classifier(int argc, char **argv)
     char *filename = (argc > 6) ? argv[6]: 0;
     char *layer_s = (argc > 7) ? argv[7]: 0;
     int layer = layer_s ? atoi(layer_s) : -1;
-    if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename);
+    if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
     else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, clear);
     else if(0==strcmp(argv[2], "trainm")) train_classifier_multi(data, cfg, weights, gpus, ngpus, clear);

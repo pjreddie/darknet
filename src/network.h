@@ -37,6 +37,11 @@ typedef struct network{
     int num_steps;
     int burn_in;
 
+    int adam;
+    float B1;
+    float B2;
+    float eps;
+
     int inputs;
     int h, w, c;
     int max_crop;

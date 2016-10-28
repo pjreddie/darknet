@@ -14,7 +14,7 @@
 
 GPU=1
 CUDNN=1
-OPENCV=0
+OPENCV=1
 DEBUG=1
 
 ARCH= --gpu-architecture=compute_52 --gpu-code=compute_52
@@ -33,6 +33,7 @@ CC_CPP=g++
 CFLAGS_CPP=-Wno-write-strings
 
 NVCC=nvcc
+
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
 COMMON= 
