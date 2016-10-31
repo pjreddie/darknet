@@ -1,35 +1,35 @@
-GPU=0
-CUDNN=0
-OPENCV=0
-DEBUG=0
+GPU    := 0
+CUDNN  := 0
+OPENCV := 0
+DEBUG  := 0
 
-ARCH= --gpu-architecture=compute_52 --gpu-code=compute_52
+ARCH   := --gpu-architecture=compute_52 --gpu-code=compute_52
 
-VPATH=./src/
-EXEC=darknet
-OBJDIR=./obj/
+VPATH  := ./src/
+EXEC   := darknet
+OBJDIR := ./obj/
 
-CC=gcc
-NVCC=nvcc 
-OPTS=-Ofast
-LDFLAGS= -lm -pthread 
-COMMON= 
-CFLAGS=-Wall -Wfatal-errors 
+CC      := cc
+NVCC    := nvcc
+OPTS    := -Ofast
+LDFLAGS := -lm -pthread
+COMMON  :=
+CFLAGS  := -Wall -Wfatal-errors
 
-ifeq ($(DEBUG), 1) 
+ifeq ($(DEBUG), 1)
 OPTS=-O0 -g
 endif
 
 CFLAGS+=$(OPTS)
 
-ifeq ($(OPENCV), 1) 
+ifeq ($(OPENCV), 1)
 COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
-LDFLAGS+= `pkg-config --libs opencv` 
-COMMON+= `pkg-config --cflags opencv` 
+LDFLAGS+= `pkg-config --libs opencv`
+COMMON+= `pkg-config --cflags opencv`
 endif
 
-ifeq ($(GPU), 1) 
+ifeq ($(GPU), 1)
 COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
