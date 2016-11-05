@@ -5,9 +5,9 @@ DEBUG  := 0
 
 ARCH   := --gpu-architecture=compute_52 --gpu-code=compute_52
 
-VPATH  := ./src/
-EXEC   := darknet
-OBJDIR := ./obj/
+VPATH   := ./src/
+EXEC    := darknet
+OBJDIR  := ./obj/
 
 CC      := cc
 NVCC    := nvcc
