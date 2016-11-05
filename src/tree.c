@@ -2,6 +2,43 @@
 #include <stdlib.h>
 #include "tree.h"
 #include "utils.h"
+#include "data.h"
+
+void change_leaves(tree *t, char *leaf_list)
+{
+    list *llist = get_paths(leaf_list);
+    char **leaves = (char **)list_to_array(llist);
+    int n = llist->size;
+    int i,j;
+    int found = 0;
+    for(i = 0; i < t->n; ++i){
+        t->leaf[i] = 0;
+        for(j = 0; j < n; ++j){
+            if (0==strcmp(t->name[i], leaves[j])){
+                t->leaf[i] = 1;
+                ++found;
+                break;
+            }
+        }
+    }
+    fprintf(stderr, "Found %d leaves.\n", found);
+}
+
+void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves)
+{
+    int j;
+    for(j = 0; j < n; ++j){
+        int parent = hier->parent[j];
+        if(parent >= 0){
+            predictions[j] *= predictions[parent]; 
+        }
+    }
+    if(only_leaves){
+        for(j = 0; j < n; ++j){
+            if(!hier->leaf[j]) predictions[j] = 0;
+        }
+    }
+}
 
 tree *read_tree(char *filename)
 {
@@ -19,19 +56,26 @@ tree *read_tree(char *filename)
         sscanf(line, "%s %d", id, &parent);
         t.parent = realloc(t.parent, (n+1)*sizeof(int));
         t.parent[n] = parent;
+
         t.name = realloc(t.name, (n+1)*sizeof(char *));
         t.name[n] = id;
         if(parent != last_parent){
             ++groups;
+            t.group_offset = realloc(t.group_offset, groups * sizeof(int));
+            t.group_offset[groups - 1] = n - group_size;
             t.group_size = realloc(t.group_size, groups * sizeof(int));
             t.group_size[groups - 1] = group_size;
             group_size = 0;
             last_parent = parent;
         }
+        t.group = realloc(t.group, (n+1)*sizeof(int));
+        t.group[n] = groups;
         ++n;
         ++group_size;
     }
     ++groups;
+    t.group_offset = realloc(t.group_offset, groups * sizeof(int));
+    t.group_offset[groups - 1] = n - group_size;
     t.group_size = realloc(t.group_size, groups * sizeof(int));
     t.group_size[groups - 1] = group_size;
     t.n = n;

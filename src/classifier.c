@@ -13,50 +13,6 @@
 image get_image_from_stream(CvCapture *cap);
 #endif
 
-list *read_data_cfg(char *filename)
-{
-    FILE *file = fopen(filename, "r");
-    if(file == 0) file_error(filename);
-    char *line;
-    int nu = 0;
-    list *options = make_list();
-    while((line=fgetl(file)) != 0){
-        ++ nu;
-        strip(line);
-        switch(line[0]){
-            case '\0':
-            case '#':
-            case ';':
-                free(line);
-                break;
-            default:
-                if(!read_option(line, options)){
-                    fprintf(stderr, "Config file error line %d, could parse: %s\n", nu, line);
-                    free(line);
-                }
-                break;
-        }
-    }
-    fclose(file);
-    return options;
-}
-
-void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves)
-{
-    int j;
-    for(j = 0; j < n; ++j){
-        int parent = hier->parent[j];
-        if(parent >= 0){
-            predictions[j] *= predictions[parent]; 
-        }
-    }
-    if(only_leaves){
-        for(j = 0; j < n; ++j){
-            if(!hier->leaf[j]) predictions[j] = 0;
-        }
-    }
-}
-
 float *get_regression_values(char **labels, int n)
 {
     float *v = calloc(n, sizeof(float));
@@ -486,26 +442,6 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
 
         printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
-}
-
-void change_leaves(tree *t, char *leaf_list)
-{
-    list *llist = get_paths(leaf_list);
-    char **leaves = (char **)list_to_array(llist);
-    int n = llist->size;
-    int i,j;
-    int found = 0;
-    for(i = 0; i < t->n; ++i){
-        t->leaf[i] = 0;
-        for(j = 0; j < n; ++j){
-            if (0==strcmp(t->name[i], leaves[j])){
-                t->leaf[i] = 1;
-                ++found;
-                break;
-            }
-        }
-    }
-    fprintf(stderr, "Found %d leaves.\n", found);
 }
 
 

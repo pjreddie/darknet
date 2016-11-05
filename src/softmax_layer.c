@@ -32,21 +32,27 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
     return l;
 }
 
+void softmax_tree(float *input, int batch, int inputs, float temp, tree *hierarchy, float *output)
+{
+    int b;
+    for(b = 0; b < batch; ++b){
+        int i;
+        int count = 0;
+        for(i = 0; i < hierarchy->groups; ++i){
+            int group_size = hierarchy->group_size[i];
+            softmax(input+b*inputs + count, group_size, temp, output+b*inputs + count);
+            count += group_size;
+        }
+    }
+}
+
 void forward_softmax_layer(const softmax_layer l, network_state state)
 {
     int b;
     int inputs = l.inputs / l.groups;
     int batch = l.batch * l.groups;
     if(l.softmax_tree){
-        for(b = 0; b < batch; ++b){
-            int i;
-            int count = 0;
-            for(i = 0; i < l.softmax_tree->groups; ++i){
-                int group_size = l.softmax_tree->group_size[i];
-                softmax(state.input+b*inputs + count, group_size, l.temperature, l.output+b*inputs + count);
-                count += group_size;
-            }
-        }
+        softmax_tree(state.input, batch, inputs, l.temperature, l.softmax_tree, l.output);
     } else {
         for(b = 0; b < batch; ++b){
             softmax(state.input+b*inputs, inputs, l.temperature, l.output+b*inputs);

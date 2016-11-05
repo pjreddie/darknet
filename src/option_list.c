@@ -2,6 +2,35 @@
 #include <stdio.h>
 #include <string.h>
 #include "option_list.h"
+#include "utils.h"
+
+list *read_data_cfg(char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if(file == 0) file_error(filename);
+    char *line;
+    int nu = 0;
+    list *options = make_list();
+    while((line=fgetl(file)) != 0){
+        ++ nu;
+        strip(line);
+        switch(line[0]){
+            case '\0':
+            case '#':
+            case ';':
+                free(line);
+                break;
+            default:
+                if(!read_option(line, options)){
+                    fprintf(stderr, "Config file error line %d, could parse: %s\n", nu, line);
+                    free(line);
+                }
+                break;
+        }
+    }
+    fclose(file);
+    return options;
+}
 
 int read_option(char *s, list *options)
 {

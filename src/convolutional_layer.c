@@ -235,6 +235,11 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.rolling_mean = calloc(n, sizeof(float));
         l.rolling_variance = calloc(n, sizeof(float));
     }
+    if(adam){
+        l.adam = 1;
+        l.m = calloc(c*n*size*size, sizeof(float));
+        l.v = calloc(c*n*size*size, sizeof(float));
+    }
 
 #ifdef GPU
     l.forward_gpu = forward_convolutional_layer_gpu;
@@ -243,9 +248,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     if(gpu_index >= 0){
         if (adam) {
-            l.adam = 1;
-            l.m_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
-            l.v_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
+            l.m_gpu = cuda_make_array(l.m, c*n*size*size);
+            l.v_gpu = cuda_make_array(l.v, c*n*size*size);
         }
 
         l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);

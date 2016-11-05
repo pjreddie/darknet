@@ -53,6 +53,7 @@ image border_image(image a, int border)
         for(y = 0; y < b.h; ++y){
             for(x = 0; x < b.w; ++x){
                 float val = get_pixel_extend(a, x - border, y - border, k);
+                if(x - border < 0 || x - border >= a.w || y - border < 0 || y - border >= a.h) val = 1;
                 set_pixel(b, x, y, k, val);
             }
         }
@@ -70,12 +71,13 @@ image tile_images(image a, image b, int dx)
     return c;
 }
 
-image get_label(image *characters, char *string)
+image get_label(image **characters, char *string, int size)
 {
+    if(size > 7) size = 7;
     image label = make_empty_image(0,0,0);
     while(*string){
-        image l = characters[(int)*string];
-        image n = tile_images(label, l, -4);
+        image l = characters[size][(int)*string];
+        image n = tile_images(label, l, -size - 1 + (size+1)/2);
         free_image(label);
         label = n;
         ++string;
@@ -87,24 +89,19 @@ image get_label(image *characters, char *string)
 
 void draw_label(image a, int r, int c, image label, const float *rgb)
 {
-    float ratio = (float) label.w / label.h;
-    int h = a.h * .04;
-    h = label.h;
-    h = a.h * .06;
-    int w = ratio * h;
-    image rl = resize_image(label, w, h);
+    int w = label.w;
+    int h = label.h;
     if (r - h >= 0) r = r - h;
 
     int i, j, k;
     for(j = 0; j < h && j + r < a.h; ++j){
         for(i = 0; i < w && i + c < a.w; ++i){
             for(k = 0; k < label.c; ++k){
-                float val = get_pixel(rl, i, j, k);
+                float val = get_pixel(label, i, j, k);
                 set_pixel(a, i+c, j+r, k, rgb[k] * val);
             }
         }
     }
-    free_image(rl);
 }
 
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b)
@@ -164,19 +161,23 @@ void draw_bbox(image a, box bbox, int w, float r, float g, float b)
     }
 }
 
-image *load_alphabet()
+image **load_alphabet()
 {
-    int i;
-    image *alphabet = calloc(128, sizeof(image));
-    for(i = 32; i < 127; ++i){
-        char buff[256];
-        sprintf(buff, "data/labels/%d.png", i);
-        alphabet[i] = load_image_color(buff, 0, 0);
+    int i, j;
+    const int nsize = 8;
+    image **alphabets = calloc(nsize, sizeof(image));
+    for(j = 0; j < nsize; ++j){
+        alphabets[j] = calloc(128, sizeof(image));
+        for(i = 32; i < 127; ++i){
+            char buff[256];
+            sprintf(buff, "data/labels/%d_%d.png", i, j);
+            alphabets[j][i] = load_image_color(buff, 0, 0);
+        }
     }
-    return alphabet;
+    return alphabets;
 }
 
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image *alphabet, int classes)
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
 {
     int i;
 
@@ -212,7 +213,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, names[class]);
+                image label = get_label(alphabet, names[class], (im.h*.03)/10);
                 draw_label(im, top + width, left, label, rgb);
             }
         }

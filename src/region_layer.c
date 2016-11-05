@@ -48,11 +48,17 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     return l;
 }
 
+#define LOG 1
+
 box get_region_box(float *x, float *biases, int n, int index, int i, int j, int w, int h)
 {
     box b;
     b.x = (i + .5)/w + x[index + 0] * biases[2*n];
     b.y = (j + .5)/h + x[index + 1] * biases[2*n + 1];
+    if(LOG){
+        b.x = (i + logistic_activate(x[index + 0])) / w;
+        b.y = (j + logistic_activate(x[index + 1])) / h;
+    }
     b.w = exp(x[index + 2]) * biases[2*n];
     b.h = exp(x[index + 3]) * biases[2*n+1];
     return b;
@@ -65,11 +71,19 @@ float delta_region_box(box truth, float *x, float *biases, int n, int index, int
 
     float tx = (truth.x - (i + .5)/w) / biases[2*n];
     float ty = (truth.y - (j + .5)/h) / biases[2*n + 1];
+    if(LOG){
+        tx = (truth.x*w - i);
+        ty = (truth.y*h - j);
+    }
     float tw = log(truth.w / biases[2*n]);
     float th = log(truth.h / biases[2*n + 1]);
 
     delta[index + 0] = scale * (tx - x[index + 0]);
     delta[index + 1] = scale * (ty - x[index + 1]);
+    if(LOG){
+        delta[index + 0] = scale * (tx - logistic_activate(x[index + 0])) * logistic_gradient(logistic_activate(x[index + 0]));
+        delta[index + 1] = scale * (ty - logistic_activate(x[index + 1])) * logistic_gradient(logistic_activate(x[index + 1]));
+    }
     delta[index + 2] = scale * (tw - x[index + 2]);
     delta[index + 3] = scale * (th - x[index + 3]);
     return iou;
@@ -85,8 +99,7 @@ float tisnan(float x)
     return (x != x);
 }
 
-#define LOG 0
-
+void softmax_tree(float *input, int batch, int inputs, float temp, tree *hierarchy, float *output);
 void forward_region_layer(const region_layer l, network_state state)
 {
     int i,j,b,t,n;
@@ -97,7 +110,9 @@ void forward_region_layer(const region_layer l, network_state state)
         for(i = 0; i < l.h*l.w*l.n; ++i){
             int index = size*i + b*l.outputs;
             l.output[index + 4] = logistic_activate(l.output[index + 4]);
-            if(l.softmax){
+            if(l.softmax_tree){
+                softmax_tree(l.output + index + 5, 1, 0, 1, l.softmax_tree, l.output + index + 5);
+            } else if(l.softmax){
                 softmax(l.output + index + 5, l.classes, 1, l.output + index + 5);
             }
         }
@@ -128,12 +143,12 @@ void forward_region_layer(const region_layer l, network_state state)
                     l.delta[index + 4] = l.noobject_scale * ((0 - l.output[index + 4]) * logistic_gradient(l.output[index + 4]));
                     if(best_iou > .5) l.delta[index + 4] = 0;
 
-                    if(*(state.net.seen) < 6400){
+                    if(*(state.net.seen) < 12800){
                         box truth = {0};
                         truth.x = (i + .5)/l.w;
                         truth.y = (j + .5)/l.h;
-                        truth.w = .5;
-                        truth.h = .5;
+                        truth.w = l.biases[2*n];
+                        truth.h = l.biases[2*n+1];
                         delta_region_box(truth, l.output, l.biases, n, index, i, j, l.w, l.h, l.delta, .01);
                         //l.delta[index + 0] = .1 * (0 - l.output[index + 0]);
                         //l.delta[index + 1] = .1 * (0 - l.output[index + 1]);
@@ -145,7 +160,7 @@ void forward_region_layer(const region_layer l, network_state state)
         }
         for(t = 0; t < 30; ++t){
             box truth = float_to_box(state.truth + t*5 + b*l.truths);
-            int class = state.truth[t*5 + b*l.truths + 4];
+
             if(!truth.x) break;
             float best_iou = 0;
             int best_index = 0;
@@ -160,7 +175,11 @@ void forward_region_layer(const region_layer l, network_state state)
             for(n = 0; n < l.n; ++n){
                 int index = size*(j*l.w*l.n + i*l.n + n) + b*l.outputs;
                 box pred = get_region_box(l.output, l.biases, n, index, i, j, l.w, l.h);
-                printf("pred: (%f, %f) %f x %f\n", pred.x*l.w - i - .5, pred.y * l.h - j - .5, pred.w, pred.h);
+                if(l.bias_match){
+                    pred.w = l.biases[2*n];
+                    pred.h = l.biases[2*n+1];
+                }
+                printf("pred: (%f, %f) %f x %f\n", pred.x, pred.y, pred.w, pred.h);
                 pred.x = 0;
                 pred.y = 0;
                 float iou = box_iou(pred, truth_shift);
@@ -170,7 +189,7 @@ void forward_region_layer(const region_layer l, network_state state)
                     best_n = n;
                 }
             }
-            printf("%d %f (%f, %f) %f x %f\n", best_n, best_iou, truth.x * l.w - i - .5, truth.y*l.h - j - .5, truth.w, truth.h);
+            printf("%d %f (%f, %f) %f x %f\n", best_n, best_iou, truth.x, truth.y, truth.w, truth.h);
 
             float iou = delta_region_box(truth, l.output, l.biases, best_n, best_index, i, j, l.w, l.h, l.delta, l.coord_scale);
             if(iou > .5) recall += 1;
@@ -182,41 +201,32 @@ void forward_region_layer(const region_layer l, network_state state)
             if (l.rescore) {
                 l.delta[best_index + 4] = l.object_scale * (iou - l.output[best_index + 4]) * logistic_gradient(l.output[best_index + 4]);
             }
-            //printf("%f\n", l.delta[best_index+1]);
-            /*
-               if(isnan(l.delta[best_index+1])){
-               printf("%f\n", true_scale);
-               printf("%f\n", l.output[best_index + 1]);
-               printf("%f\n", truth.w);
-               printf("%f\n", truth.h);
-               error("bad");
-               }
-             */
-            for(n = 0; n < l.classes; ++n){
-                l.delta[best_index + 5 + n] = l.class_scale * (((n == class)?1 : 0) - l.output[best_index + 5 + n]);
-                if(n == class) avg_cat += l.output[best_index + 5 + n];
-            }
-            /*
-               if(0){
-               printf("truth: %f %f %f %f\n", truth.x, truth.y, truth.w, truth.h);
-               printf("pred: %f %f %f %f\n\n", pred.x, pred.y, pred.w, pred.h);
-               float aspect = exp(true_aspect);
-               float scale  = logistic_activate(true_scale);
-               float move_x = true_dx;
-               float move_y = true_dy;
 
-               box b;
-               b.w = sqrt(scale * aspect);
-               b.h = b.w * 1./aspect;
-               b.x = move_x * b.w + (i + .5)/l.w;
-               b.y = move_y * b.h + (j + .5)/l.h;
-               printf("%f %f\n", b.x, truth.x);
-               printf("%f %f\n", b.y, truth.y);
-               printf("%f %f\n", b.w, truth.w);
-               printf("%f %f\n", b.h, truth.h);
-            //printf("%f\n", box_iou(b, truth));
+
+            int class = state.truth[t*5 + b*l.truths + 4];
+            if (l.map) class = l.map[class];
+            if(l.softmax_tree){
+                float pred = 1;
+                while(class >= 0){
+                    pred *= l.output[best_index + 5 + class];
+                    int g = l.softmax_tree->group[class];
+                    int i;
+                    int offset = l.softmax_tree->group_offset[g];
+                    for(i = 0; i < l.softmax_tree->group_size[g]; ++i){
+                        int index = best_index + 5 + offset + i;
+                        l.delta[index] = l.class_scale * (0 - l.output[index]);
+                    }
+                    l.delta[best_index + 5 + class] = l.class_scale * (1 - l.output[best_index + 5 + class]);
+
+                    class = l.softmax_tree->parent[class];
+                }
+                avg_cat += pred;
+            } else {
+                for(n = 0; n < l.classes; ++n){
+                    l.delta[best_index + 5 + n] = l.class_scale * (((n == class)?1 : 0) - l.output[best_index + 5 + n]);
+                    if(n == class) avg_cat += l.output[best_index + 5 + n];
+                }
             }
-             */
             ++count;
         }
     }
@@ -244,24 +254,31 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
             int p_index = index * (l.classes + 5) + 4;
             float scale = predictions[p_index];
             int box_index = index * (l.classes + 5);
-            boxes[index].x = (predictions[box_index + 0] + col + .5) / l.w * w;
-            boxes[index].y = (predictions[box_index + 1] + row + .5) / l.h * h;
-            if(0){
-                boxes[index].x = (logistic_activate(predictions[box_index + 0]) + col) / l.w * w;
-                boxes[index].y = (logistic_activate(predictions[box_index + 1]) + row) / l.h * h;
-            }
-            boxes[index].w = pow(logistic_activate(predictions[box_index + 2]), (l.sqrt?2:1)) * w;
-            boxes[index].h = pow(logistic_activate(predictions[box_index + 3]), (l.sqrt?2:1)) * h;
-            if(1){
-                boxes[index].x = ((col + .5)/l.w + predictions[box_index + 0] * .5) * w;
-                boxes[index].y = ((row + .5)/l.h + predictions[box_index + 1] * .5) * h;
-                boxes[index].w = (exp(predictions[box_index + 2]) * .5) * w;
-                boxes[index].h = (exp(predictions[box_index + 3]) * .5) * h;
-            }
-            for(j = 0; j < l.classes; ++j){
-                int class_index = index * (l.classes + 5) + 5;
-                float prob = scale*predictions[class_index+j];
-                probs[index][j] = (prob > thresh) ? prob : 0;
+            boxes[index] = get_region_box(predictions, l.biases, n, box_index, col, row, l.w, l.h);
+            boxes[index].x *= w;
+            boxes[index].y *= h;
+            boxes[index].w *= w;
+            boxes[index].h *= h;
+
+            int class_index = index * (l.classes + 5) + 5;
+            if(l.softmax_tree){
+                
+                hierarchy_predictions(predictions + class_index, l.classes, l.softmax_tree, 0);
+                int found = 0;
+                for(j = l.classes - 1; j >= 0; --j){
+                    if(!found && predictions[class_index + j] > .5){
+                        found = 1;
+                    } else {
+                        predictions[class_index + j] = 0;
+                    }
+                    float prob = predictions[class_index+j];
+                    probs[index][j] = (scale > thresh) ? prob : 0;
+                }
+            }else{
+                for(j = 0; j < l.classes; ++j){
+                    float prob = scale*predictions[class_index+j];
+                    probs[index][j] = (prob > thresh) ? prob : 0;
+                }
             }
             if(only_objectness){
                 probs[index][0] = scale;
