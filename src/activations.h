@@ -7,6 +7,10 @@ typedef enum{
     LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN
 }ACTIVATION;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ACTIVATION get_activation(char *s);
 
 char *get_activation_string(ACTIVATION a);
@@ -83,6 +87,12 @@ static inline float ramp_gradient(float x){return (x>0)+.1;}
 static inline float leaky_gradient(float x){return (x>0) ? 1 : .1;}
 static inline float tanh_gradient(float x){return 1-x*x;}
 static inline float plse_gradient(float x){return (x < 0 || x > 1) ? .01 : .125;}
+
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
 

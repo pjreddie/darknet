@@ -68,6 +68,11 @@ typedef struct{
     float left, right, top, bottom;
 } box_label;
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void free_data(data d);
 
 pthread_t load_data(load_args args);
@@ -106,5 +111,10 @@ data *split_data(data d, int part, int total);
 data concat_data(data d1, data d2);
 data concat_datas(data *d, int n);
 void fill_truth(char *path, char **labels, int k, float *truth);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

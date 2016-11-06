@@ -47,6 +47,47 @@ void check_error(cudaError_t status)
     } 
 }
 
+void check_cublas_error(cublasStatus_t status)
+{
+    const char *s;
+    switch(status)
+    {
+        case CUBLAS_STATUS_SUCCESS: 
+		s = "CUBLAS_STATUS_SUCCESS";
+		break;
+        case CUBLAS_STATUS_NOT_INITIALIZED: 
+		s = "CUBLAS_STATUS_NOT_INITIALIZED";
+		break;
+        case CUBLAS_STATUS_ALLOC_FAILED: 
+		s = "CUBLAS_STATUS_ALLOC_FAILED";
+		break;
+        case CUBLAS_STATUS_INVALID_VALUE: 
+		s = "CUBLAS_STATUS_INVALID_VALUE";
+		break; 
+        case CUBLAS_STATUS_ARCH_MISMATCH: 
+		s = "CUBLAS_STATUS_ARCH_MISMATCH";
+		break; 
+        case CUBLAS_STATUS_MAPPING_ERROR: 
+		s = "CUBLAS_STATUS_MAPPING_ERROR";
+		break;
+        case CUBLAS_STATUS_EXECUTION_FAILED: 
+		s = "CUBLAS_STATUS_EXECUTION_FAILED";
+		break; 
+        case CUBLAS_STATUS_INTERNAL_ERROR: 
+		s = "CUBLAS_STATUS_INTERNAL_ERROR";
+		break; 
+   	default:
+    		s = "CUBLAS unknown error";
+    }
+
+	char buffer[256];
+	printf("CUBLAS Error : %s, value = %d\n", s, status);
+	assert(0);
+	snprintf(buffer, 256, "CUBLAS Error Prev: %s", s);
+	error(buffer);
+}
+
+
 dim3 cuda_gridsize(size_t n){
     size_t k = (n-1) / BLOCK + 1;
     size_t x = k;
@@ -55,7 +96,11 @@ dim3 cuda_gridsize(size_t n){
         x = ceil(sqrt(k));
         y = (n-1)/(x*BLOCK) + 1;
     }
+#ifdef __cplusplus    
+    dim3 d (x, y, 1);
+#else
     dim3 d = {x, y, 1};
+#endif
     //printf("%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
     return d;
 }
@@ -116,7 +161,7 @@ void cuda_random(float *x_gpu, size_t n)
 
 float cuda_compare(float *x_gpu, float *x, size_t n, char *s)
 {
-    float *tmp = calloc(n, sizeof(float));
+    float *tmp = (float*)calloc(n, sizeof(float));
     cuda_pull_array(x_gpu, tmp, n);
     //int i;
     //for(i = 0; i < n; ++i) printf("%f %f\n", tmp[i], x[i]);

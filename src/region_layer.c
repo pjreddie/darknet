@@ -11,7 +11,7 @@
 
 region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 {
-    region_layer l = {0};
+    region_layer l = {};
     l.type = REGION;
 
     l.n = n;
@@ -20,14 +20,14 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     l.w = w;
     l.classes = classes;
     l.coords = coords;
-    l.cost = calloc(1, sizeof(float));
-    l.biases = calloc(n*2, sizeof(float));
-    l.bias_updates = calloc(n*2, sizeof(float));
+    l.cost = (float*)calloc(1, sizeof(float));
+    l.biases = (float*)calloc(n*2, sizeof(float));
+    l.bias_updates = (float*)calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + coords + 1);
     l.inputs = l.outputs;
     l.truths = 30*(5);
-    l.delta = calloc(batch*l.outputs, sizeof(float));
-    l.output = calloc(batch*l.outputs, sizeof(float));
+    l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
+    l.output = (float*)calloc(batch*l.outputs, sizeof(float));
     int i;
     for(i = 0; i < n*2; ++i){
         l.biases[i] = .5;
@@ -160,7 +160,6 @@ void forward_region_layer(const region_layer l, network_state state)
         }
         for(t = 0; t < 30; ++t){
             box truth = float_to_box(state.truth + t*5 + b*l.truths);
-
             if(!truth.x) break;
             float best_iou = 0;
             int best_index = 0;
@@ -203,28 +202,28 @@ void forward_region_layer(const region_layer l, network_state state)
             }
 
 
-            int class = state.truth[t*5 + b*l.truths + 4];
-            if (l.map) class = l.map[class];
+            int class1 = state.truth[t*5 + b*l.truths + 4];
+            if (l.map) class1 = l.map[class1];
             if(l.softmax_tree){
                 float pred = 1;
-                while(class >= 0){
-                    pred *= l.output[best_index + 5 + class];
-                    int g = l.softmax_tree->group[class];
+                while(class1 >= 0){
+                    pred *= l.output[best_index + 5 + class1];
+                    int g = l.softmax_tree->group[class1];
                     int i;
                     int offset = l.softmax_tree->group_offset[g];
                     for(i = 0; i < l.softmax_tree->group_size[g]; ++i){
                         int index = best_index + 5 + offset + i;
                         l.delta[index] = l.class_scale * (0 - l.output[index]);
                     }
-                    l.delta[best_index + 5 + class] = l.class_scale * (1 - l.output[best_index + 5 + class]);
+                    l.delta[best_index + 5 + class1] = l.class_scale * (1 - l.output[best_index + 5 + class1]);
 
-                    class = l.softmax_tree->parent[class];
+                    class1 = l.softmax_tree->parent[class1];
                 }
                 avg_cat += pred;
             } else {
                 for(n = 0; n < l.classes; ++n){
-                    l.delta[best_index + 5 + n] = l.class_scale * (((n == class)?1 : 0) - l.output[best_index + 5 + n]);
-                    if(n == class) avg_cat += l.output[best_index + 5 + n];
+                    l.delta[best_index + 5 + n] = l.class_scale * (((n == class1)?1 : 0) - l.output[best_index + 5 + n]);
+                    if(n == class1) avg_cat += l.output[best_index + 5 + n];
                 }
             }
             ++count;
@@ -298,11 +297,11 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
        }
      */
 
-    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
+    float *in_cpu = (float*)calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){
         int num_truth = l.batch*l.truths;
-        truth_cpu = calloc(num_truth, sizeof(float));
+        truth_cpu = (float*)calloc(num_truth, sizeof(float));
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);

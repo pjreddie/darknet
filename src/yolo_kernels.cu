@@ -2,7 +2,6 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "network.h"
 #include "detection_layer.h"
 #include "cost_layer.h"
@@ -11,16 +10,16 @@ extern "C" {
 #include "box.h"
 #include "image.h"
 #include <sys/time.h>
-}
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-extern "C" image ipl_to_image(IplImage* src);
-extern "C" void convert_yolo_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
 
-extern "C" char *voc_names[];
-extern "C" image voc_labels[];
+image ipl_to_image(IplImage* src);
+void convert_yolo_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
+
+char *voc_names[];
+image voc_labels[];
 
 static float **probs;
 static box *boxes;
@@ -63,7 +62,7 @@ void *detect_in_thread(void *ptr)
     return 0;
 }
 
-extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index)
+void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index)
 {
     demo_thresh = thresh;
     printf("YOLO demo\n");
@@ -125,7 +124,7 @@ extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam
     }
 }
 #else
-extern "C" void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index){
+void demo_yolo(char *cfgfile, char *weightfile, float thresh, int cam_index){
     fprintf(stderr, "YOLO demo needs OpenCV for webcam images.\n");
 }
 #endif

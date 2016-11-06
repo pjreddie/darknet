@@ -1,5 +1,10 @@
 #ifndef BLAS_H
 #define BLAS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void reorg(float *x, int size, int layers, int batch, int forward);
 void pm(int M, int N, float *A);
 float *random_matrix(int rows, int cols);
@@ -35,9 +40,18 @@ void l2_cpu(int n, float *pred, float *truth, float *delta, float *error);
 void weighted_sum_cpu(float *a, float *b, float *s, int num, float *c);
 
 void softmax(float *input, int n, float temp, float *output);
+#ifdef __cplusplus
+}
+#endif
+
 
 #ifdef GPU
 #include "cuda.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
@@ -80,5 +94,13 @@ void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forwa
 void softmax_gpu(float *input, int n, int offset, int groups, float temp, float *output);
 void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t);
 
+#ifdef __cplusplus
+}
 #endif
+
+
+#endif
+
+
+
 #endif
