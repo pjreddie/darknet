@@ -54,7 +54,7 @@ void check_cublas_error(cublasStatus_t status)
     {
         case CUBLAS_STATUS_SUCCESS: 
 		s = "CUBLAS_STATUS_SUCCESS";
-		break;
+		return;
         case CUBLAS_STATUS_NOT_INITIALIZED: 
 		s = "CUBLAS_STATUS_NOT_INITIALIZED";
 		break;
