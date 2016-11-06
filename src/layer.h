@@ -117,6 +117,7 @@ struct layer{
     float class_scale;
     int bias_match;
     int random;
+    float thresh;
 
     int dontload;
     int dontloadscales;

@@ -141,7 +141,7 @@ void forward_region_layer(const region_layer l, network_state state)
                     }
                     avg_anyobj += l.output[index + 4];
                     l.delta[index + 4] = l.noobject_scale * ((0 - l.output[index + 4]) * logistic_gradient(l.output[index + 4]));
-                    if(best_iou > .5) l.delta[index + 4] = 0;
+                    if(best_iou > l.thresh) l.delta[index + 4] = 0;
 
                     if(*(state.net.seen) < 12800){
                         box truth = {0};
@@ -171,7 +171,7 @@ void forward_region_layer(const region_layer l, network_state state)
             box truth_shift = truth;
             truth_shift.x = 0;
             truth_shift.y = 0;
-            printf("index %d %d\n",i, j);
+            //printf("index %d %d\n",i, j);
             for(n = 0; n < l.n; ++n){
                 int index = size*(j*l.w*l.n + i*l.n + n) + b*l.outputs;
                 box pred = get_region_box(l.output, l.biases, n, index, i, j, l.w, l.h);
@@ -179,7 +179,7 @@ void forward_region_layer(const region_layer l, network_state state)
                     pred.w = l.biases[2*n];
                     pred.h = l.biases[2*n+1];
                 }
-                printf("pred: (%f, %f) %f x %f\n", pred.x, pred.y, pred.w, pred.h);
+                //printf("pred: (%f, %f) %f x %f\n", pred.x, pred.y, pred.w, pred.h);
                 pred.x = 0;
                 pred.y = 0;
                 float iou = box_iou(pred, truth_shift);
@@ -189,7 +189,7 @@ void forward_region_layer(const region_layer l, network_state state)
                     best_n = n;
                 }
             }
-            printf("%d %f (%f, %f) %f x %f\n", best_n, best_iou, truth.x, truth.y, truth.w, truth.h);
+            //printf("%d %f (%f, %f) %f x %f\n", best_n, best_iou, truth.x, truth.y, truth.w, truth.h);
 
             float iou = delta_region_box(truth, l.output, l.biases, best_n, best_index, i, j, l.w, l.h, l.delta, l.coord_scale);
             if(iou > .5) recall += 1;
@@ -230,7 +230,7 @@ void forward_region_layer(const region_layer l, network_state state)
             ++count;
         }
     }
-    printf("\n");
+    //printf("\n");
     reorg(l.delta, l.w*l.h, size*l.n, l.batch, 0);
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
     printf("Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, Avg Recall: %f,  count: %d\n", avg_iou/count, avg_cat/count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count);
