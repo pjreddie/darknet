@@ -213,6 +213,10 @@ void pull_convolutional_layer(convolutional_layer layer)
         cuda_pull_array(layer.rolling_mean_gpu, layer.rolling_mean, layer.n);
         cuda_pull_array(layer.rolling_variance_gpu, layer.rolling_variance, layer.n);
     }
+    if (layer.adam){
+        cuda_pull_array(layer.m_gpu, layer.m, layer.c*layer.n*layer.size*layer.size);
+        cuda_pull_array(layer.v_gpu, layer.v, layer.c*layer.n*layer.size*layer.size);
+    }
 }
 
 void push_convolutional_layer(convolutional_layer layer)
@@ -225,6 +229,10 @@ void push_convolutional_layer(convolutional_layer layer)
         cuda_push_array(layer.scales_gpu, layer.scales, layer.n);
         cuda_push_array(layer.rolling_mean_gpu, layer.rolling_mean, layer.n);
         cuda_push_array(layer.rolling_variance_gpu, layer.rolling_variance, layer.n);
+    }
+    if (layer.adam){
+        cuda_push_array(layer.m_gpu, layer.m, layer.c*layer.n*layer.size*layer.size);
+        cuda_push_array(layer.v_gpu, layer.v, layer.c*layer.n*layer.size*layer.size);
     }
 }
 

@@ -232,6 +232,21 @@ softmax_layer parse_softmax(list *options, size_params params)
     return layer;
 }
 
+int *read_map(char *filename)
+{
+    int n = 0;
+    int *map = 0;
+    char *str;
+    FILE *file = fopen(filename, "r");
+    if(!file) file_error(filename);
+    while((str=fgetl(file))){
+        ++n;
+        map = (int*)realloc(map, n*sizeof(int));
+        map[n-1] = atoi(str);
+    }
+    return map;
+}
+
 layer parse_region(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 4);
@@ -252,10 +267,33 @@ layer parse_region(list *options, size_params params)
     l.jitter = option_find_float(options, "jitter", .2);
     l.rescore = option_find_int_quiet(options, "rescore",0);
 
+    l.thresh = option_find_float(options, "thresh", .5);
+
     l.coord_scale = option_find_float(options, "coord_scale", 1);
     l.object_scale = option_find_float(options, "object_scale", 1);
     l.noobject_scale = option_find_float(options, "noobject_scale", 1);
     l.class_scale = option_find_float(options, "class_scale", 1);
+    l.bias_match = option_find_int_quiet(options, "bias_match",0);
+
+    char *tree_file = option_find_str(options, "tree", 0);
+    if (tree_file) l.softmax_tree = read_tree(tree_file);
+    char *map_file = option_find_str(options, "map", 0);
+    if (map_file) l.map = read_map(map_file);
+
+    char *a = option_find_str(options, "anchors", 0);
+    if(a){
+        int len = strlen(a);
+        int n = 1;
+        int i;
+        for(i = 0; i < len; ++i){
+            if (a[i] == ',') ++n;
+        }
+        for(i = 0; i < n; ++i){
+            float bias = atof(a);
+            l.biases[i] = bias;
+            a = strchr(a, ',')+1;
+        }
+    }
     return l;
 }
 detection_layer parse_detection(list *options, size_params params)
@@ -759,6 +797,10 @@ void save_convolutional_weights(layer l, FILE *fp)
         fwrite(l.rolling_variance, sizeof(float), l.n, fp);
     }
     fwrite(l.weights, sizeof(float), num, fp);
+    if(l.adam){
+        fwrite(l.m, sizeof(float), num, fp);
+        fwrite(l.v, sizeof(float), num, fp);
+    }
 }
 
 void save_batchnorm_weights(layer l, FILE *fp)
@@ -937,13 +979,27 @@ void load_convolutional_weights(layer l, FILE *fp)
         //return;
     }
     int num = l.n*l.c*l.size*l.size;
-    fread(l.biases, sizeof(float), l.n, fp);
-    if (l.batch_normalize && (!l.dontloadscales)){
-        fread(l.scales, sizeof(float), l.n, fp);
-        fread(l.rolling_mean, sizeof(float), l.n, fp);
-        fread(l.rolling_variance, sizeof(float), l.n, fp);
+    if(0){
+        fread(l.biases + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+        if (l.batch_normalize && (!l.dontloadscales)){
+            fread(l.scales + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+            fread(l.rolling_mean + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+            fread(l.rolling_variance + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+        }
+        fread(l.weights + ((l.n != 1374)?0:5*l.c*l.size*l.size), sizeof(float), num, fp);
+    }else{
+        fread(l.biases, sizeof(float), l.n, fp);
+        if (l.batch_normalize && (!l.dontloadscales)){
+            fread(l.scales, sizeof(float), l.n, fp);
+            fread(l.rolling_mean, sizeof(float), l.n, fp);
+            fread(l.rolling_variance, sizeof(float), l.n, fp);
+        }
+        fread(l.weights, sizeof(float), num, fp);
     }
-    fread(l.weights, sizeof(float), num, fp);
+    if(l.adam){
+        fread(l.m, sizeof(float), num, fp);
+        fread(l.v, sizeof(float), num, fp);
+    }
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);

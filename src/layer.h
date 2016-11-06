@@ -101,8 +101,11 @@ struct layer{
     float *m_gpu;
     float *v_gpu;
     int t;
+    float *m;
+    float *v;
 
     tree *softmax_tree;
+    int  *map;
 
     float alpha;
     float beta;
@@ -112,7 +115,9 @@ struct layer{
     float object_scale;
     float noobject_scale;
     float class_scale;
+    int bias_match;
     int random;
+    float thresh;
 
     int dontload;
     int dontloadscales;

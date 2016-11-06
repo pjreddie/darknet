@@ -17,7 +17,7 @@
 image get_image_from_stream(CvCapture *cap);
 
 static char **demo_names;
-static image *demo_alphabet;
+static image **demo_alphabet;
 static int demo_classes;
 
 static float **probs;
@@ -94,7 +94,7 @@ double get_wall_time()
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix)
 {
     //skip = frame_skip;
-    image *alphabet = load_alphabet();
+    image **alphabet = load_alphabet();
     int delay = frame_skip;
     demo_names = names;
     demo_alphabet = alphabet;
