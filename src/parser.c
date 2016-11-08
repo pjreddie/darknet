@@ -268,6 +268,7 @@ layer parse_region(list *options, size_params params)
     l.rescore = option_find_int_quiet(options, "rescore",0);
 
     l.thresh = option_find_float(options, "thresh", .5);
+    l.classfix = option_find_int_quiet(options, "classfix", 0);
 
     l.coord_scale = option_find_float(options, "coord_scale", 1);
     l.object_scale = option_find_float(options, "object_scale", 1);
@@ -357,6 +358,7 @@ crop_layer parse_crop(list *options, size_params params)
 layer parse_reorg(list *options, size_params params)
 {
     int stride = option_find_int(options, "stride",1);
+    int reverse = option_find_int_quiet(options, "reverse",0);
 
     int batch,h,w,c;
     h = params.h;
@@ -365,7 +367,7 @@ layer parse_reorg(list *options, size_params params)
     batch=params.batch;
     if(!(h && w && c)) error("Layer before reorg layer must output image.");
 
-    layer layer = make_reorg_layer(batch,w,h,c,stride);
+    layer layer = make_reorg_layer(batch,w,h,c,stride,reverse);
     return layer;
 }
 

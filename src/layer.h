@@ -67,6 +67,7 @@ struct layer{
     int size;
     int side;
     int stride;
+    int reverse;
     int pad;
     int sqrt;
     int flip;
@@ -118,6 +119,7 @@ struct layer{
     int bias_match;
     int random;
     float thresh;
+    int classfix;
 
     int dontload;
     int dontloadscales;
