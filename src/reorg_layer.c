@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 
-layer make_reorg_layer(int batch, int h, int w, int c, int stride)
+layer make_reorg_layer(int batch, int h, int w, int c, int stride, int reverse)
 {
     layer l = {0};
     l.type = REORG;
@@ -13,9 +13,15 @@ layer make_reorg_layer(int batch, int h, int w, int c, int stride)
     l.h = h;
     l.w = w;
     l.c = c;
-    l.out_w = w*stride;
-    l.out_h = h*stride;
-    l.out_c = c/(stride*stride);
+    if(reverse){
+        l.out_w = w*stride;
+        l.out_h = h*stride;
+        l.out_c = c/(stride*stride);
+    }else{
+        l.out_w = w/stride;
+        l.out_h = h/stride;
+        l.out_c = c*(stride*stride);
+    }
     fprintf(stderr, "Reorg Layer: %d x %d x %d image -> %d x %d x %d image, \n", w,h,c,l.out_w, l.out_h, l.out_c);
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = h*w*c;
@@ -25,13 +31,13 @@ layer make_reorg_layer(int batch, int h, int w, int c, int stride)
 
     l.forward = forward_reorg_layer;
     l.backward = backward_reorg_layer;
-    #ifdef GPU
+#ifdef GPU
     l.forward_gpu = forward_reorg_layer_gpu;
     l.backward_gpu = backward_reorg_layer_gpu;
 
     l.output_gpu  = cuda_make_array(l.output, output_size);
     l.delta_gpu   = cuda_make_array(l.delta, output_size);
-    #endif
+#endif
     return l;
 }
 
@@ -52,12 +58,12 @@ void resize_reorg_layer(layer *l, int w, int h)
     l->output = realloc(l->output, output_size * sizeof(float));
     l->delta = realloc(l->delta, output_size * sizeof(float));
 
-    #ifdef GPU
+#ifdef GPU
     cuda_free(l->output_gpu);
     cuda_free(l->delta_gpu);
     l->output_gpu  = cuda_make_array(l->output, output_size);
     l->delta_gpu   = cuda_make_array(l->delta,  output_size);
-    #endif
+#endif
 }
 
 void forward_reorg_layer(const layer l, network_state state)
@@ -107,11 +113,19 @@ void backward_reorg_layer(const layer l, network_state state)
 #ifdef GPU
 void forward_reorg_layer_gpu(layer l, network_state state)
 {
-    reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_gpu);
+    if(l.reverse){
+        reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_gpu);
+    }else {
+        reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 0, l.output_gpu);
+    }
 }
 
 void backward_reorg_layer_gpu(layer l, network_state state)
 {
-    reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
+    if(l.reverse){
+        reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
+    }else{
+        reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
+    }
 }
 #endif
