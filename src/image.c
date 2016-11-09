@@ -214,6 +214,11 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
                 image label = get_label(alphabet, names[class], (im.h*.03)/10);
+                if (im.c == 1) {
+                    rgb[0] = 0.5;
+                    rgb[1] = 0.5;
+                    rgb[2] = 0.5;
+                }
                 draw_label(im, top + width, left, label, rgb);
             }
         }
