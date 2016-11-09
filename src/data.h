@@ -40,6 +40,7 @@ typedef struct load_args{
     char **labels;
     int h;
     int w;
+    int c;
     int out_w;
     int out_h;
     int nh;

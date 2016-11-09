@@ -43,6 +43,7 @@ void train_yolo(char *cfgfile, char *weightfile)
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
+    args.c = net.c;
     args.paths = paths;
     args.n = imgs;
     args.m = plist->size;
@@ -310,7 +311,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input,0,0);
+        image im = load_image(input,0,0,net.c);
         image sized = resize_image(im, net.w, net.h);
         float *X = sized.data;
         time=clock();
