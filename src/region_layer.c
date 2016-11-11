@@ -48,19 +48,18 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     return l;
 }
 
-#define LOG 1
-
+#define DOABS 1
 box get_region_box(float *x, float *biases, int n, int index, int i, int j, int w, int h)
 {
     box b;
-    b.x = (i + .5)/w + x[index + 0] * biases[2*n];
-    b.y = (j + .5)/h + x[index + 1] * biases[2*n + 1];
-    if(LOG){
-        b.x = (i + logistic_activate(x[index + 0])) / w;
-        b.y = (j + logistic_activate(x[index + 1])) / h;
-    }
+    b.x = (i + logistic_activate(x[index + 0])) / w;
+    b.y = (j + logistic_activate(x[index + 1])) / h;
     b.w = exp(x[index + 2]) * biases[2*n];
     b.h = exp(x[index + 3]) * biases[2*n+1];
+    if(DOABS){
+        b.w = exp(x[index + 2]) * biases[2*n]   / w;
+        b.h = exp(x[index + 3]) * biases[2*n+1] / h;
+    }
     return b;
 }
 
@@ -69,21 +68,17 @@ float delta_region_box(box truth, float *x, float *biases, int n, int index, int
     box pred = get_region_box(x, biases, n, index, i, j, w, h);
     float iou = box_iou(pred, truth);
 
-    float tx = (truth.x - (i + .5)/w) / biases[2*n];
-    float ty = (truth.y - (j + .5)/h) / biases[2*n + 1];
-    if(LOG){
-        tx = (truth.x*w - i);
-        ty = (truth.y*h - j);
-    }
+    float tx = (truth.x*w - i);
+    float ty = (truth.y*h - j);
     float tw = log(truth.w / biases[2*n]);
     float th = log(truth.h / biases[2*n + 1]);
-
-    delta[index + 0] = scale * (tx - x[index + 0]);
-    delta[index + 1] = scale * (ty - x[index + 1]);
-    if(LOG){
-        delta[index + 0] = scale * (tx - logistic_activate(x[index + 0])) * logistic_gradient(logistic_activate(x[index + 0]));
-        delta[index + 1] = scale * (ty - logistic_activate(x[index + 1])) * logistic_gradient(logistic_activate(x[index + 1]));
+    if(DOABS){
+        tw = log(truth.w*w / biases[2*n]);
+        th = log(truth.h*h / biases[2*n + 1]);
     }
+
+    delta[index + 0] = scale * (tx - logistic_activate(x[index + 0])) * logistic_gradient(logistic_activate(x[index + 0]));
+    delta[index + 1] = scale * (ty - logistic_activate(x[index + 1])) * logistic_gradient(logistic_activate(x[index + 1]));
     delta[index + 2] = scale * (tw - x[index + 2]);
     delta[index + 3] = scale * (th - x[index + 3]);
     return iou;
@@ -135,9 +130,33 @@ void forward_region_layer(const region_layer l, network_state state)
         for(i = 0; i < l.h*l.w*l.n; ++i){
             int index = size*i + b*l.outputs;
             l.output[index + 4] = logistic_activate(l.output[index + 4]);
-            if(l.softmax_tree){
+        }
+    }
+
+
+    if (l.softmax_tree){
+#ifdef GPU
+        cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
+        int i;
+        int count = 5;
+        for (i = 0; i < l.softmax_tree->groups; ++i) {
+            int group_size = l.softmax_tree->group_size[i];
+            softmax_gpu(l.output_gpu+count, group_size, l.classes + 5, l.w*l.h*l.n*l.batch, 1, l.output_gpu + count);
+            count += group_size;
+        }
+        cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+#else
+        for (b = 0; b < l.batch; ++b){
+            for(i = 0; i < l.h*l.w*l.n; ++i){
+                int index = size*i + b*l.outputs;
                 softmax_tree(l.output + index + 5, 1, 0, 1, l.softmax_tree, l.output + index + 5);
-            } else if(l.softmax){
+            }
+        }
+#endif
+    } else if (l.softmax){
+        for (b = 0; b < l.batch; ++b){
+            for(i = 0; i < l.h*l.w*l.n; ++i){
+                int index = size*i + b*l.outputs;
                 softmax(l.output + index + 5, l.classes, 1, l.output + index + 5);
             }
         }
@@ -188,11 +207,11 @@ void forward_region_layer(const region_layer l, network_state state)
                         truth.y = (j + .5)/l.h;
                         truth.w = l.biases[2*n];
                         truth.h = l.biases[2*n+1];
+                        if(DOABS){
+                            truth.w = l.biases[2*n]/l.w;
+                            truth.h = l.biases[2*n+1]/l.h;
+                        }
                         delta_region_box(truth, l.output, l.biases, n, index, i, j, l.w, l.h, l.delta, .01);
-                        //l.delta[index + 0] = .1 * (0 - l.output[index + 0]);
-                        //l.delta[index + 1] = .1 * (0 - l.output[index + 1]);
-                        //l.delta[index + 2] = .1 * (0 - l.output[index + 2]);
-                        //l.delta[index + 3] = .1 * (0 - l.output[index + 3]);
                     }
                 }
             }
@@ -217,6 +236,10 @@ void forward_region_layer(const region_layer l, network_state state)
                 if(l.bias_match){
                     pred.w = l.biases[2*n];
                     pred.h = l.biases[2*n+1];
+                    if(DOABS){
+                        pred.w = l.biases[2*n]/l.w;
+                        pred.h = l.biases[2*n+1]/l.h;
+                    }
                 }
                 //printf("pred: (%f, %f) %f x %f\n", pred.x, pred.y, pred.w, pred.h);
                 pred.x = 0;
