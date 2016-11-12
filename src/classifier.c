@@ -25,9 +25,8 @@ float *get_regression_values(char **labels, int n)
     return v;
 }
 
-void train_classifier_multi(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
+void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
-#ifdef GPU
     int i;
 
     float avg_loss = -1;
@@ -40,7 +39,9 @@ void train_classifier_multi(char *datacfg, char *cfgfile, char *weightfile, int 
     int seed = rand();
     for(i = 0; i < ngpus; ++i){
         srand(seed);
+#ifdef GPU
         cuda_set_device(gpus[i]);
+#endif
         nets[i] = parse_network_cfg(cfgfile);
         if(weightfile){
             load_weights(&nets[i], weightfile);
@@ -107,7 +108,16 @@ void train_classifier_multi(char *datacfg, char *cfgfile, char *weightfile, int 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
 
-        float loss = train_networks(nets, ngpus, train, 4);
+        float loss = 0;
+#ifdef GPU
+        if(ngpus == 1){
+            loss = train_network(net, train);
+        } else {
+            loss = train_networks(nets, ngpus, train, 4);
+        }
+#else
+        loss = train_network(net, train);
+#endif
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
@@ -133,117 +143,118 @@ void train_classifier_multi(char *datacfg, char *cfgfile, char *weightfile, int 
     free_ptrs((void**)paths, plist->size);
     free_list(plist);
     free(base);
-#endif
 }
 
 
-void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
-{
-    srand(time(0));
-    float avg_loss = -1;
-    char *base = basecfg(cfgfile);
-    printf("%s\n", base);
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    if(clear) *net.seen = 0;
+/*
+   void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int clear)
+   {
+   srand(time(0));
+   float avg_loss = -1;
+   char *base = basecfg(cfgfile);
+   printf("%s\n", base);
+   network net = parse_network_cfg(cfgfile);
+   if(weightfile){
+   load_weights(&net, weightfile);
+   }
+   if(clear) *net.seen = 0;
 
-    int imgs = net.batch * net.subdivisions;
+   int imgs = net.batch * net.subdivisions;
 
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    list *options = read_data_cfg(datacfg);
+   printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+   list *options = read_data_cfg(datacfg);
 
-    char *backup_directory = option_find_str(options, "backup", "/backup/");
-    char *label_list = option_find_str(options, "labels", "data/labels.list");
-    char *train_list = option_find_str(options, "train", "data/train.list");
-    int classes = option_find_int(options, "classes", 2);
+   char *backup_directory = option_find_str(options, "backup", "/backup/");
+   char *label_list = option_find_str(options, "labels", "data/labels.list");
+   char *train_list = option_find_str(options, "train", "data/train.list");
+   int classes = option_find_int(options, "classes", 2);
 
-    char **labels = get_labels(label_list);
-    list *plist = get_paths(train_list);
-    char **paths = (char **)list_to_array(plist);
-    printf("%d\n", plist->size);
-    int N = plist->size;
-    clock_t time;
+   char **labels = get_labels(label_list);
+   list *plist = get_paths(train_list);
+   char **paths = (char **)list_to_array(plist);
+   printf("%d\n", plist->size);
+   int N = plist->size;
+   clock_t time;
 
-    load_args args = {0};
-    args.w = net.w;
-    args.h = net.h;
-    args.threads = 8;
+   load_args args = {0};
+   args.w = net.w;
+   args.h = net.h;
+   args.threads = 8;
 
-    args.min = net.min_crop;
-    args.max = net.max_crop;
-    args.angle = net.angle;
-    args.aspect = net.aspect;
-    args.exposure = net.exposure;
-    args.saturation = net.saturation;
-    args.hue = net.hue;
-    args.size = net.w;
-    args.hierarchy = net.hierarchy;
+   args.min = net.min_crop;
+   args.max = net.max_crop;
+   args.angle = net.angle;
+   args.aspect = net.aspect;
+   args.exposure = net.exposure;
+   args.saturation = net.saturation;
+   args.hue = net.hue;
+   args.size = net.w;
+   args.hierarchy = net.hierarchy;
 
-    args.paths = paths;
-    args.classes = classes;
-    args.n = imgs;
-    args.m = N;
-    args.labels = labels;
-    args.type = CLASSIFICATION_DATA;
+   args.paths = paths;
+   args.classes = classes;
+   args.n = imgs;
+   args.m = N;
+   args.labels = labels;
+   args.type = CLASSIFICATION_DATA;
 
-    data train;
-    data buffer;
-    pthread_t load_thread;
-    args.d = &buffer;
-    load_thread = load_data(args);
+   data train;
+   data buffer;
+   pthread_t load_thread;
+   args.d = &buffer;
+   load_thread = load_data(args);
 
-    int epoch = (*net.seen)/N;
-    while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
-        time=clock();
+   int epoch = (*net.seen)/N;
+   while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
+   time=clock();
 
-        pthread_join(load_thread, 0);
-        train = buffer;
-        load_thread = load_data(args);
+   pthread_join(load_thread, 0);
+   train = buffer;
+   load_thread = load_data(args);
 
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
-        time=clock();
+   printf("Loaded: %lf seconds\n", sec(clock()-time));
+   time=clock();
 
 #ifdef OPENCV
-        if(0){
-            int u;
-            for(u = 0; u < imgs; ++u){
-                image im = float_to_image(net.w, net.h, 3, train.X.vals[u]);
-                show_image(im, "loaded");
-                cvWaitKey(0);
-            }
-        }
+if(0){
+int u;
+for(u = 0; u < imgs; ++u){
+    image im = float_to_image(net.w, net.h, 3, train.X.vals[u]);
+    show_image(im, "loaded");
+    cvWaitKey(0);
+}
+}
 #endif
 
-        float loss = train_network(net, train);
-        free_data(train);
+float loss = train_network(net, train);
+free_data(train);
 
-        if(avg_loss == -1) avg_loss = loss;
-        avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
-        if(*net.seen/N > epoch){
-            epoch = *net.seen/N;
-            char buff[256];
-            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
-            save_weights(net, buff);
-        }
-        if(get_current_batch(net)%100 == 0){
-            char buff[256];
-            sprintf(buff, "%s/%s.backup",backup_directory,base);
-            save_weights(net, buff);
-        }
-    }
+if(avg_loss == -1) avg_loss = loss;
+avg_loss = avg_loss*.9 + loss*.1;
+printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+if(*net.seen/N > epoch){
+    epoch = *net.seen/N;
     char buff[256];
-    sprintf(buff, "%s/%s.weights", backup_directory, base);
+    sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
     save_weights(net, buff);
-
-    free_network(net);
-    free_ptrs((void**)labels, classes);
-    free_ptrs((void**)paths, plist->size);
-    free_list(plist);
-    free(base);
 }
+if(get_current_batch(net)%100 == 0){
+    char buff[256];
+    sprintf(buff, "%s/%s.backup",backup_directory,base);
+    save_weights(net, buff);
+}
+}
+char buff[256];
+sprintf(buff, "%s/%s.weights", backup_directory, base);
+save_weights(net, buff);
+
+free_network(net);
+free_ptrs((void**)labels, classes);
+free_ptrs((void**)paths, plist->size);
+free_list(plist);
+free(base);
+}
+*/
 
 void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
 {
@@ -1108,6 +1119,7 @@ void run_classifier(int argc, char **argv)
 
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
+    int gpu = 0;
     int ngpus = 0;
     if(gpu_list){
         printf("%s\n", gpu_list);
@@ -1122,6 +1134,10 @@ void run_classifier(int argc, char **argv)
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',')+1;
         }
+    } else {
+        gpu = gpu_index;
+        gpus = &gpu;
+        ngpus = 1;
     }
 
     int cam_index = find_int_arg(argc, argv, "-c", 0);
@@ -1135,8 +1151,7 @@ void run_classifier(int argc, char **argv)
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
-    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, clear);
-    else if(0==strcmp(argv[2], "trainm")) train_classifier_multi(data, cfg, weights, gpus, ngpus, clear);
+    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "gun")) gun_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "threat")) threat_classifier(data, cfg, weights, cam_index, filename);

@@ -30,20 +30,6 @@ extern void run_go(int argc, char **argv);
 extern void run_art(int argc, char **argv);
 extern void run_super(int argc, char **argv);
 
-void change_rate(char *filename, float scale, float add)
-{
-    // Ready for some weird shit??
-    FILE *fp = fopen(filename, "r+b");
-    if(!fp) file_error(filename);
-    float rate = 0;
-    fread(&rate, sizeof(float), 1, fp);
-    printf("Scaling learning rate from %f to %f\n", rate, rate*scale+add);
-    rate = rate*scale + add;
-    fseek(fp, 0, SEEK_SET);
-    fwrite(&rate, sizeof(float), 1, fp);
-    fclose(fp);
-}
-
 void average(int argc, char *argv[])
 {
     char *cfgfile = argv[2];
@@ -67,6 +53,11 @@ void average(int argc, char *argv[])
                 int num = l.n*l.c*l.size*l.size;
                 axpy_cpu(l.n, 1, l.biases, 1, out.biases, 1);
                 axpy_cpu(num, 1, l.weights, 1, out.weights, 1);
+                if(l.batch_normalize){
+                    axpy_cpu(l.n, 1, l.scales, 1, out.scales, 1);
+                    axpy_cpu(l.n, 1, l.rolling_mean, 1, out.rolling_mean, 1);
+                    axpy_cpu(l.n, 1, l.rolling_variance, 1, out.rolling_variance, 1);
+                }
             }
             if(l.type == CONNECTED){
                 axpy_cpu(l.outputs, 1, l.biases, 1, out.biases, 1);
@@ -81,6 +72,11 @@ void average(int argc, char *argv[])
             int num = l.n*l.c*l.size*l.size;
             scal_cpu(l.n, 1./n, l.biases, 1);
             scal_cpu(num, 1./n, l.weights, 1);
+                if(l.batch_normalize){
+                    scal_cpu(l.n, 1./n, l.scales, 1);
+                    scal_cpu(l.n, 1./n, l.rolling_mean, 1);
+                    scal_cpu(l.n, 1./n, l.rolling_variance, 1);
+                }
         }
         if(l.type == CONNECTED){
             scal_cpu(l.outputs, 1./n, l.biases, 1);
@@ -123,6 +119,31 @@ void operations(char *cfgfile)
     }
     printf("Floating Point Operations: %ld\n", ops);
     printf("Floating Point Operations: %.2f Bn\n", (float)ops/1000000000.);
+}
+
+void oneoff(char *cfgfile, char *weightfile, char *outfile)
+{
+    gpu_index = -1;
+    network net = parse_network_cfg(cfgfile);
+    int oldn = net.layers[net.n - 2].n;
+    int c = net.layers[net.n - 2].c;
+    net.layers[net.n - 2].n = 7879;
+    net.layers[net.n - 2].biases += 5;
+    net.layers[net.n - 2].weights += 5*c;
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    net.layers[net.n - 2].biases -= 5;
+    net.layers[net.n - 2].weights -= 5*c;
+    net.layers[net.n - 2].n = oldn;
+    printf("%d\n", oldn);
+    layer l = net.layers[net.n - 2];
+    copy_cpu(l.n/3, l.biases, 1, l.biases +   l.n/3, 1);
+    copy_cpu(l.n/3, l.biases, 1, l.biases + 2*l.n/3, 1);
+    copy_cpu(l.n/3*l.c, l.weights, 1, l.weights +   l.n/3*l.c, 1);
+    copy_cpu(l.n/3*l.c, l.weights, 1, l.weights + 2*l.n/3*l.c, 1);
+    *net.seen = 0;
+    save_weights(net, outfile);
 }
 
 void partial(char *cfgfile, char *weightfile, char *outfile, int max)
@@ -387,8 +408,6 @@ int main(int argc, char **argv)
         run_captcha(argc, argv);
     } else if (0 == strcmp(argv[1], "nightmare")){
         run_nightmare(argc, argv);
-    } else if (0 == strcmp(argv[1], "change")){
-        change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
     } else if (0 == strcmp(argv[1], "rgbgr")){
         rgbgr_net(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "reset")){
@@ -404,7 +423,9 @@ int main(int argc, char **argv)
     } else if (0 == strcmp(argv[1], "ops")){
         operations(argv[2]);
     } else if (0 == strcmp(argv[1], "speed")){
-        speed(argv[2], (argc > 3) ? atoi(argv[3]) : 0);
+        speed(argv[2], (argc > 3 && argv[3]) ? atoi(argv[3]) : 0);
+    } else if (0 == strcmp(argv[1], "oneoff")){
+        oneoff(argv[2], argv[3], argv[4]);
     } else if (0 == strcmp(argv[1], "partial")){
         partial(argv[2], argv[3], argv[4], atoi(argv[5]));
     } else if (0 == strcmp(argv[1], "average")){
