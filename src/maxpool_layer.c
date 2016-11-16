@@ -20,7 +20,6 @@ image get_maxpool_delta(maxpool_layer l)
 
 maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride, int padding)
 {
-    fprintf(stderr, "Maxpool Layer: %d x %d x %d image, %d size, %d stride\n", h,w,c,size,stride);
     maxpool_layer l = {0};
     l.type = MAXPOOL;
     l.batch = batch;
@@ -48,6 +47,7 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     l.output_gpu  = cuda_make_array(l.output, output_size);
     l.delta_gpu   = cuda_make_array(l.delta, output_size);
     #endif
+    fprintf(stderr, "max          %d x %d / %d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c);
     return l;
 }
 

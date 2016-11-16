@@ -610,9 +610,10 @@ network parse_network_cfg(char *filename)
     n = n->next;
     int count = 0;
     free_section(s);
+    fprintf(stderr, "layer     filters    size              input                output\n");
     while(n){
         params.index = count;
-        fprintf(stderr, "%d: ", count);
+        fprintf(stderr, "%5d ", count);
         s = (section *)n->val;
         options = s->options;
         layer l = {0};
