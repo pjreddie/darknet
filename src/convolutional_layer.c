@@ -368,6 +368,14 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 
     l->delta_gpu =     cuda_make_array(l->delta, l->batch*out_h*out_w*l->n);
     l->output_gpu =    cuda_make_array(l->output, l->batch*out_h*out_w*l->n);
+
+    if(l->batch_normalize){
+        cuda_free(l->x_gpu);
+        cuda_free(l->x_norm_gpu);
+
+        l->x_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+        l->x_norm_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+    }
 #ifdef CUDNN
     cudnn_convolutional_setup(l);
 #endif

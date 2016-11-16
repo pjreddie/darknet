@@ -22,6 +22,7 @@ layer make_reorg_layer(int batch, int h, int w, int c, int stride, int reverse)
         l.out_h = h/stride;
         l.out_c = c*(stride*stride);
     }
+    l.reverse = reverse;
     fprintf(stderr, "Reorg Layer: %d x %d x %d image -> %d x %d x %d image, \n", w,h,c,l.out_w, l.out_h, l.out_c);
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = h*w*c;
@@ -44,12 +45,20 @@ layer make_reorg_layer(int batch, int h, int w, int c, int stride, int reverse)
 void resize_reorg_layer(layer *l, int w, int h)
 {
     int stride = l->stride;
+    int c = l->c;
 
     l->h = h;
     l->w = w;
 
-    l->out_w = w*stride;
-    l->out_h = h*stride;
+    if(l->reverse){
+        l->out_w = w*stride;
+        l->out_h = h*stride;
+        l->out_c = c/(stride*stride);
+    }else{
+        l->out_w = w/stride;
+        l->out_h = h/stride;
+        l->out_c = c*(stride*stride);
+    }
 
     l->outputs = l->out_h * l->out_w * l->out_c;
     l->inputs = l->outputs;

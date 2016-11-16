@@ -36,6 +36,40 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     return l;
 }
 
+void resize_route_layer(route_layer *l, network *net)
+{
+    int i;
+    layer first = net->layers[l->input_layers[0]];
+    l->out_w = first.out_w;
+    l->out_h = first.out_h;
+    l->out_c = first.out_c;
+    l->outputs = first.outputs;
+    l->input_sizes[0] = first.outputs;
+    for(i = 1; i < l->n; ++i){
+        int index = l->input_layers[i];
+        layer next = net->layers[index];
+        l->outputs += next.outputs;
+        l->input_sizes[i] = next.outputs;
+        if(next.out_w == first.out_w && next.out_h == first.out_h){
+            l->out_c += next.out_c;
+        }else{
+            printf("%d %d, %d %d\n", next.out_w, next.out_h, first.out_w, first.out_h);
+            l->out_h = l->out_w = l->out_c = 0;
+        }
+    }
+    l->inputs = l->outputs;
+    l->delta =  realloc(l->delta, l->outputs*l->batch*sizeof(float));
+    l->output = realloc(l->output, l->outputs*l->batch*sizeof(float));
+
+#ifdef GPU
+    cuda_free(l->output_gpu);
+    cuda_free(l->delta_gpu);
+    l->output_gpu  = cuda_make_array(l->output, l->outputs*l->batch);
+    l->delta_gpu   = cuda_make_array(l->delta,  l->outputs*l->batch);
+#endif
+    
+}
+
 void forward_route_layer(const route_layer l, network_state state)
 {
     int i, j;

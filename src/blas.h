@@ -1,6 +1,6 @@
 #ifndef BLAS_H
 #define BLAS_H
-void reorg(float *x, int size, int layers, int batch, int forward);
+void flatten(float *x, int size, int layers, int batch, int forward);
 void pm(int M, int N, float *A);
 float *random_matrix(int rows, int cols);
 void time_random_matrix(int TA, int TB, int m, int k, int n);
@@ -79,6 +79,8 @@ void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forwa
 
 void softmax_gpu(float *input, int n, int offset, int groups, float temp, float *output);
 void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t);
+
+void flatten_ongpu(float *x, int spatial, int layers, int batch, int forward, float *out);
 
 #endif
 #endif

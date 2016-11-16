@@ -7,6 +7,7 @@
 #define SECRET_NUM -1234
 #define TWO_PI 6.2831853071795864769252866
 
+int *read_map(char *filename);
 void shuffle(void *arr, size_t n, size_t size);
 void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections);
 void free_ptrs(void **ptrs, int n);

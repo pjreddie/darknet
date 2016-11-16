@@ -2,32 +2,32 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "blas.h"
-#include "parser.h"
-#include "assert.h"
-#include "activations.h"
-#include "crop_layer.h"
-#include "cost_layer.h"
-#include "convolutional_layer.h"
 #include "activation_layer.h"
-#include "normalization_layer.h"
-#include "batchnorm_layer.h"
-#include "connected_layer.h"
-#include "rnn_layer.h"
-#include "gru_layer.h"
-#include "crnn_layer.h"
-#include "maxpool_layer.h"
-#include "reorg_layer.h"
-#include "softmax_layer.h"
-#include "dropout_layer.h"
-#include "detection_layer.h"
-#include "region_layer.h"
+#include "activations.h"
+#include "assert.h"
 #include "avgpool_layer.h"
+#include "batchnorm_layer.h"
+#include "blas.h"
+#include "connected_layer.h"
+#include "convolutional_layer.h"
+#include "cost_layer.h"
+#include "crnn_layer.h"
+#include "crop_layer.h"
+#include "detection_layer.h"
+#include "dropout_layer.h"
+#include "gru_layer.h"
+#include "list.h"
 #include "local_layer.h"
+#include "maxpool_layer.h"
+#include "normalization_layer.h"
+#include "option_list.h"
+#include "parser.h"
+#include "region_layer.h"
+#include "reorg_layer.h"
+#include "rnn_layer.h"
 #include "route_layer.h"
 #include "shortcut_layer.h"
-#include "list.h"
-#include "option_list.h"
+#include "softmax_layer.h"
 #include "utils.h"
 
 typedef struct{
@@ -232,21 +232,6 @@ softmax_layer parse_softmax(list *options, size_params params)
     return layer;
 }
 
-int *read_map(char *filename)
-{
-    int n = 0;
-    int *map = 0;
-    char *str;
-    FILE *file = fopen(filename, "r");
-    if(!file) file_error(filename);
-    while((str=fgetl(file))){
-        ++n;
-        map = realloc(map, n*sizeof(int));
-        map[n-1] = atoi(str);
-    }
-    return map;
-}
-
 layer parse_region(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 4);
@@ -269,6 +254,8 @@ layer parse_region(list *options, size_params params)
 
     l.thresh = option_find_float(options, "thresh", .5);
     l.classfix = option_find_int_quiet(options, "classfix", 0);
+    l.absolute = option_find_int_quiet(options, "absolute", 0);
+    l.random = option_find_int_quiet(options, "random", 0);
 
     l.coord_scale = option_find_float(options, "coord_scale", 1);
     l.object_scale = option_find_float(options, "object_scale", 1);

@@ -166,10 +166,10 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
         fast_mean_gpu(l.output_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.mean_gpu);
         fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.variance_gpu);
 
-        scal_ongpu(l.out_c, .95, l.rolling_mean_gpu, 1);
-        axpy_ongpu(l.out_c, .05, l.mean_gpu, 1, l.rolling_mean_gpu, 1);
-        scal_ongpu(l.out_c, .95, l.rolling_variance_gpu, 1);
-        axpy_ongpu(l.out_c, .05, l.variance_gpu, 1, l.rolling_variance_gpu, 1);
+        scal_ongpu(l.out_c, .99, l.rolling_mean_gpu, 1);
+        axpy_ongpu(l.out_c, .01, l.mean_gpu, 1, l.rolling_mean_gpu, 1);
+        scal_ongpu(l.out_c, .99, l.rolling_variance_gpu, 1);
+        axpy_ongpu(l.out_c, .01, l.variance_gpu, 1, l.rolling_variance_gpu, 1);
 
         copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
         normalize_gpu(l.output_gpu, l.mean_gpu, l.variance_gpu, l.batch, l.out_c, l.out_h*l.out_w);

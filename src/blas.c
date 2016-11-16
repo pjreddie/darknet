@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void reorg(float *x, int size, int layers, int batch, int forward)
+void flatten(float *x, int size, int layers, int batch, int forward)
 {
     float *swap = calloc(size*layers*batch, sizeof(float));
     int i,c,b;
@@ -189,12 +189,12 @@ void softmax(float *input, int n, float temp, float *output)
         if(input[i] > largest) largest = input[i];
     }
     for(i = 0; i < n; ++i){
-        sum += exp(input[i]/temp-largest/temp);
+        float e = exp(input[i]/temp - largest/temp);
+        sum += e;
+        output[i] = e;
     }
-    if(sum) sum = largest/temp+log(sum);
-    else sum = largest-100;
     for(i = 0; i < n; ++i){
-        output[i] = exp(input[i]/temp-sum);
+        output[i] /= sum;
     }
 }
 

@@ -127,7 +127,7 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
     network net = parse_network_cfg(cfgfile);
     int oldn = net.layers[net.n - 2].n;
     int c = net.layers[net.n - 2].c;
-    net.layers[net.n - 2].n = 7879;
+    net.layers[net.n - 2].n = 9372;
     net.layers[net.n - 2].biases += 5;
     net.layers[net.n - 2].weights += 5*c;
     if(weightfile){
