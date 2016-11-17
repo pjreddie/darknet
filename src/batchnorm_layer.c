@@ -127,6 +127,11 @@ void forward_batchnorm_layer(layer l, network_state state)
         l.out_h = l.out_w = 1;
     }
     if(state.train){
+	    scal_cpu(l.n, .95, l.rolling_mean, 1);
+        axpy_cpu(l.n, .05, l.mean, 1, l.rolling_mean, 1);
+        scal_cpu(l.n, .95, l.rolling_variance, 1);
+        axpy_cpu(l.n, .05, l.variance, 1, l.rolling_variance, 1);
+
         mean_cpu(l.output, l.batch, l.out_c, l.out_h*l.out_w, l.mean);   
         variance_cpu(l.output, l.mean, l.batch, l.out_c, l.out_h*l.out_w, l.variance);   
         normalize_cpu(l.output, l.mean, l.variance, l.batch, l.out_c, l.out_h*l.out_w);   
