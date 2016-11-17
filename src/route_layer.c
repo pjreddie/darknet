@@ -5,7 +5,7 @@
 
 route_layer make_route_layer(int batch, int n, int *input_layers, int *input_sizes)
 {
-    fprintf(stderr,"Route Layer:");
+    fprintf(stderr,"route ");
     route_layer l = {0};
     l.type = ROUTE;
     l.batch = batch;

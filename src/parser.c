@@ -238,9 +238,6 @@ layer parse_region(list *options, size_params params)
     int classes = option_find_int(options, "classes", 20);
     int num = option_find_int(options, "num", 1);
 
-    params.w = option_find_int(options, "side", params.w);
-    params.h = option_find_int(options, "side", params.h);
-
     layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords);
     assert(l.outputs == params.inputs);
 
