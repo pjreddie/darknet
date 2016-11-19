@@ -14,7 +14,7 @@
 
 GPU=1
 CUDNN=1
-OPENCV=1
+OPENCV=0
 DEBUG=1
 
 ARCH= --gpu-architecture=compute_52 --gpu-code=compute_52
@@ -80,7 +80,7 @@ DEPS = $(wildcard src/*.h) Makefile
 
 OBJS_CPP = $(addprefix $(OBJDIR_CPP), $(OBJ))
 
-all: obj obj-cpp results $(EXEC) $(EXEC_CPP)
+all: backup obj obj-cpp results $(EXEC) $(EXEC_CPP)
 
 $(EXEC): obj clean $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS)
@@ -106,6 +106,9 @@ obj:
 	mkdir -p obj
 obj-cpp:
 	mkdir -p obj-cpp
+
+backup:
+	mkdir -p backup
 
 results:
 	mkdir -p results

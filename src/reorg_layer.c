@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 
-layer make_reorg_layer(int batch, int h, int w, int c, int stride, int reverse)
+layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse)
 {
     layer l = {};
     l.type = REORG;
@@ -22,7 +22,8 @@ layer make_reorg_layer(int batch, int h, int w, int c, int stride, int reverse)
         l.out_h = h/stride;
         l.out_c = c*(stride*stride);
     }
-    fprintf(stderr, "Reorg Layer: %d x %d x %d image -> %d x %d x %d image, \n", w,h,c,l.out_w, l.out_h, l.out_c);
+    l.reverse = reverse;
+    fprintf(stderr, "reorg              /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n",  stride, w, h, c, l.out_w, l.out_h, l.out_c);
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = h*w*c;
     int output_size = l.out_h * l.out_w * l.out_c * batch;
@@ -44,12 +45,20 @@ layer make_reorg_layer(int batch, int h, int w, int c, int stride, int reverse)
 void resize_reorg_layer(layer *l, int w, int h)
 {
     int stride = l->stride;
+    int c = l->c;
 
     l->h = h;
     l->w = w;
 
-    l->out_w = w*stride;
-    l->out_h = h*stride;
+    if(l->reverse){
+        l->out_w = w*stride;
+        l->out_h = h*stride;
+        l->out_c = c/(stride*stride);
+    }else{
+        l->out_w = w/stride;
+        l->out_h = h/stride;
+        l->out_c = c*(stride*stride);
+    }
 
     l->outputs = l->out_h * l->out_w * l->out_c;
     l->inputs = l->outputs;
@@ -68,45 +77,19 @@ void resize_reorg_layer(layer *l, int w, int h)
 
 void forward_reorg_layer(const layer l, network_state state)
 {
-    int b,i,j,k;
-
-    for(b = 0; b < l.batch; ++b){
-        for(k = 0; k < l.c; ++k){
-            for(j = 0; j < l.h; ++j){
-                for(i = 0; i < l.w; ++i){
-                    int in_index  = i + l.w*(j + l.h*(k + l.c*b));
-
-                    int c2 = k % l.out_c;
-                    int offset = k / l.out_c;
-                    int w2 = i*l.stride + offset % l.stride;
-                    int h2 = j*l.stride + offset / l.stride;
-                    int out_index = w2 + l.out_w*(h2 + l.out_h*(c2 + l.out_c*b));
-                    l.output[out_index] = state.input[in_index];
-                }
-            }
-        }
+    if(l.reverse){
+        reorg_cpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output);
+    }else {
+        reorg_cpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 0, l.output);
     }
 }
 
 void backward_reorg_layer(const layer l, network_state state)
 {
-    int b,i,j,k;
-
-    for(b = 0; b < l.batch; ++b){
-        for(k = 0; k < l.c; ++k){
-            for(j = 0; j < l.h; ++j){
-                for(i = 0; i < l.w; ++i){
-                    int in_index  = i + l.w*(j + l.h*(k + l.c*b));
-
-                    int c2 = k % l.out_c;
-                    int offset = k / l.out_c;
-                    int w2 = i*l.stride + offset % l.stride;
-                    int h2 = j*l.stride + offset / l.stride;
-                    int out_index = w2 + l.out_w*(h2 + l.out_h*(c2 + l.out_c*b));
-                    state.delta[in_index] = l.delta[out_index];
-                }
-            }
-        }
+    if(l.reverse){
+        reorg_cpu(l.delta, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
+    }else{
+        reorg_cpu(l.delta, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
     }
 }
 

@@ -24,6 +24,16 @@ void change_leaves(tree *t, char *leaf_list)
     fprintf(stderr, "Found %d leaves.\n", found);
 }
 
+float get_hierarchy_probability(float *x, tree *hier, int c)
+{
+    float p = 1;
+    while(c >= 0){
+        p = p * x[c];
+        c = hier->parent[c];
+    }
+    return p;
+}
+
 void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves)
 {
     int j;

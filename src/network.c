@@ -41,7 +41,7 @@ void reset_momentum(network net)
     net.momentum = 0;
     net.decay = 0;
     #ifdef GPU
-        if(gpu_index >= 0) update_network_gpu(net);
+        //if(net.gpu_index >= 0) update_network_gpu(net);
     #endif
 }
 
@@ -60,7 +60,7 @@ float get_current_rate(network net)
             for(i = 0; i < net.num_steps; ++i){
                 if(net.steps[i] > batch_num) return rate;
                 rate *= net.scales[i];
-                if(net.steps[i] > batch_num - 1) reset_momentum(net);
+                //if(net.steps[i] > batch_num - 1 && net.scales[i] > 1) reset_momentum(net);
             }
             return rate;
         case EXP:
@@ -321,6 +321,12 @@ void set_batch_network(network *net, int b)
 
 int resize_network(network *net, int w, int h)
 {
+#ifdef GPU
+    cuda_set_device(net->gpu_index);
+    if(gpu_index >= 0){
+        cuda_free(net->workspace);
+    }
+#endif
     int i;
     //if(w == net->w && h == net->h) return 0;
     net->w = w;
@@ -337,6 +343,10 @@ int resize_network(network *net, int w, int h)
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
             resize_maxpool_layer(&l, w, h);
+        }else if(l.type == REGION){
+            resize_region_layer(&l, w, h);
+        }else if(l.type == ROUTE){
+            resize_route_layer(&l, net);
         }else if(l.type == REORG){
             resize_reorg_layer(&l, w, h);
         }else if(l.type == AVGPOOL){
@@ -357,7 +367,12 @@ int resize_network(network *net, int w, int h)
     }
 #ifdef GPU
     if(gpu_index >= 0){
-        cuda_free(net->workspace);
+        if(net->input_gpu) {
+            cuda_free(*net->input_gpu);
+            *net->input_gpu = 0;
+            cuda_free(*net->truth_gpu);
+            *net->truth_gpu = 0;
+        }
         net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
     }else {
         free(net->workspace);

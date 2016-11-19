@@ -120,6 +120,7 @@ struct layer{
     int random;
     float thresh;
     int classfix;
+    int absolute;
 
     int dontload;
     int dontloadscales;

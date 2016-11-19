@@ -26,6 +26,7 @@ int cuda_get_device()
 
 void check_error(cudaError_t status)
 {
+    //cudaDeviceSynchronize();
     cudaError_t status2 = cudaGetLastError();
     if (status != cudaSuccess)
     {   

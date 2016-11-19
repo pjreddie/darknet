@@ -77,6 +77,7 @@ void backward_network_gpu(network net, network_state state)
 
 void update_network_gpu(network net)
 {
+    cuda_set_device(net.gpu_index);
     int i;
     int update_batch = net.batch*net.subdivisions;
     float rate = get_current_rate(net);
@@ -376,7 +377,7 @@ float train_networks(network *nets, int n, data d, int interval)
 float *get_network_output_layer_gpu(network net, int i)
 {
     layer l = net.layers[i];
-    cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
+    if(l.type != REGION) cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
     return l.output;
 }
 

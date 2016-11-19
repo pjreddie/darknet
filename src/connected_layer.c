@@ -100,7 +100,7 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     }
 #endif
     l.activation = activation;
-    fprintf(stderr, "Connected Layer: %d inputs, %d outputs\n", inputs, outputs);
+    fprintf(stderr, "connected                            %4d  ->  %4d\n", inputs, outputs);
     return l;
 }
 

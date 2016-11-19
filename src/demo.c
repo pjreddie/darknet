@@ -110,6 +110,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     srand(2222222);
 
     if(filename){
+        printf("video file: %s\n", filename);
         cap = cvCaptureFromFile(filename);
     }else{
         cap = cvCaptureFromCAM(cam_index);
