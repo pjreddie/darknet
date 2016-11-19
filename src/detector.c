@@ -444,7 +444,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    layer l = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
@@ -452,9 +451,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char *input = buff;
     int j;
     float nms=.4;
-    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -467,6 +463,12 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         }
         image im = load_image_color(input,0,0);
         image sized = resize_image(im, net.w, net.h);
+        layer l = net.layers[net.n-1];
+
+        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+
         float *X = sized.data;
         time=clock();
         network_predict(net, X);
@@ -479,6 +481,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         free_image(im);
         free_image(sized);
+        free(boxes);
+        free_ptrs((void **)probs, l.w*l.h*l.n);
 #ifdef OPENCV
         cvWaitKey(0);
         cvDestroyAllWindows();

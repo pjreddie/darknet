@@ -31,6 +31,7 @@ image random_augment_image(image im, float angle, float aspect, int low, int hig
 void random_distort_image(image im, float hue, float saturation, float exposure);
 image resize_image(image im, int w, int h);
 image resize_min(image im, int min);
+image resize_max(image im, int max);
 void translate_image(image m, float s);
 void normalize_image(image p);
 image rotate_image(image m, float rad);
@@ -55,6 +56,7 @@ image collapse_images_vert(image *ims, int n);
 
 void show_image(image p, const char *name);
 void show_image_normalized(image im, const char *name);
+void save_image_png(image im, const char *name);
 void save_image(image p, const char *name);
 void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);

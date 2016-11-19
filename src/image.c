@@ -532,11 +532,8 @@ void save_image_jpg(image p, const char *name)
 }
 #endif
 
-void save_image(image im, const char *name)
+void save_image_png(image im, const char *name)
 {
-#ifdef OPENCV
-    save_image_jpg(im, name);
-#else
     char buff[256];
     //sprintf(buff, "%s (%d)", name, windows);
     sprintf(buff, "%s.png", name);
@@ -550,6 +547,14 @@ void save_image(image im, const char *name)
     int success = stbi_write_png(buff, im.w, im.h, im.c, data, im.w*im.c);
     free(data);
     if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
+}
+
+void save_image(image im, const char *name)
+{
+#ifdef OPENCV
+    save_image_jpg(im, name);
+#else
+    save_image_png(im, name);
 #endif
 }
 
@@ -746,6 +751,22 @@ void composite_3d(char *f1, char *f2, char *out, int delta)
 #else
     save_image(c, out);
 #endif
+}
+
+image resize_max(image im, int max)
+{
+    int w = im.w;
+    int h = im.h;
+    if(w > h){
+        h = (h * max) / w;
+        w = max;
+    } else {
+        w = (w * max) / h;
+        h = max;
+    }
+    if(w == im.w && h == im.h) return im;
+    image resized = resize_image(im, w, h);
+    return resized;
 }
 
 image resize_min(image im, int min)

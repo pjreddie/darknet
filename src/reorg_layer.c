@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 
-layer make_reorg_layer(int batch, int h, int w, int c, int stride, int reverse)
+layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse)
 {
     layer l = {0};
     l.type = REORG;

@@ -127,17 +127,33 @@ void forward_batchnorm_layer(layer l, network_state state)
         l.out_h = l.out_w = 1;
     }
     if(state.train){
-        mean_cpu(l.output, l.batch, l.out_c, l.out_h*l.out_w, l.mean);   
-        variance_cpu(l.output, l.mean, l.batch, l.out_c, l.out_h*l.out_w, l.variance);   
+        mean_cpu(l.output, l.batch, l.out_c, l.out_h*l.out_w, l.mean);
+        variance_cpu(l.output, l.mean, l.batch, l.out_c, l.out_h*l.out_w, l.variance);
+
+        scal_cpu(l.out_c, .99, l.rolling_mean, 1);
+        axpy_cpu(l.out_c, .01, l.mean, 1, l.rolling_mean, 1);
+        scal_cpu(l.out_c, .99, l.rolling_variance, 1);
+        axpy_cpu(l.out_c, .01, l.variance, 1, l.rolling_variance, 1);
+
+        copy_cpu(l.outputs*l.batch, l.output, 1, l.x, 1);
         normalize_cpu(l.output, l.mean, l.variance, l.batch, l.out_c, l.out_h*l.out_w);   
+        copy_cpu(l.outputs*l.batch, l.output, 1, l.x_norm, 1);
     } else {
         normalize_cpu(l.output, l.rolling_mean, l.rolling_variance, l.batch, l.out_c, l.out_h*l.out_w);
     }
     scale_bias(l.output, l.scales, l.batch, l.out_c, l.out_h*l.out_w);
 }
 
-void backward_batchnorm_layer(const layer layer, network_state state)
+void backward_batchnorm_layer(const layer l, network_state state)
 {
+    backward_scale_cpu(l.x_norm, l.delta, l.batch, l.out_c, l.out_w*l.out_h, l.scale_updates);
+
+    scale_bias(l.delta, l.scales, l.batch, l.out_c, l.out_h*l.out_w);
+
+    mean_delta_cpu(l.delta, l.variance, l.batch, l.out_c, l.out_w*l.out_h, l.mean_delta);
+    variance_delta_cpu(l.x, l.delta, l.mean, l.variance, l.batch, l.out_c, l.out_w*l.out_h, l.variance_delta);
+    normalize_delta_cpu(l.x, l.mean, l.variance, l.mean_delta, l.variance_delta, l.batch, l.out_c, l.out_w*l.out_h, l.delta);
+    if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, l.delta, 1, state.delta, 1);
 }
 
 #ifdef GPU
