@@ -22,7 +22,7 @@ void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, flo
 void draw_bbox(image a, box bbox, int w, float r, float g, float b);
 void draw_label(image a, int r, int c, image label, const float *rgb);
 void write_label(image a, int r, int c, image *characters, char *string, float *rgb);
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image *labels, int classes);
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **labels, int classes);
 image image_distance(image a, image b);
 void scale_image(image m, float s);
 image crop_image(image im, int dx, int dy, int w, int h);
@@ -31,6 +31,7 @@ image random_augment_image(image im, float angle, float aspect, int low, int hig
 void random_distort_image(image im, float hue, float saturation, float exposure);
 image resize_image(image im, int w, int h);
 image resize_min(image im, int min);
+image resize_max(image im, int max);
 void translate_image(image m, float s);
 void normalize_image(image p);
 image rotate_image(image m, float rad);
@@ -55,6 +56,7 @@ image collapse_images_vert(image *ims, int n);
 
 void show_image(image p, const char *name);
 void show_image_normalized(image im, const char *name);
+void save_image_png(image im, const char *name);
 void save_image(image p, const char *name);
 void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);
@@ -69,7 +71,7 @@ image float_to_image(int w, int h, int c, float *data);
 image copy_image(image p);
 image load_image(char *filename, int w, int h, int c);
 image load_image_color(char *filename, int w, int h);
-image *load_alphabet();
+image **load_alphabet();
 
 float get_pixel(image m, int x, int y, int c);
 float get_pixel_extend(image m, int x, int y, int c);

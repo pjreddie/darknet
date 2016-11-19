@@ -9,6 +9,21 @@
 
 #include "utils.h"
 
+int *read_map(char *filename)
+{
+    int n = 0;
+    int *map = 0;
+    char *str;
+    FILE *file = fopen(filename, "r");
+    if(!file) file_error(filename);
+    while((str=fgetl(file))){
+        ++n;
+        map = realloc(map, n*sizeof(int));
+        map[n-1] = atoi(str);
+    }
+    return map;
+}
+
 void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections)
 {
     size_t i;

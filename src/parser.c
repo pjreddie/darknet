@@ -2,32 +2,32 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "blas.h"
-#include "parser.h"
-#include "assert.h"
-#include "activations.h"
-#include "crop_layer.h"
-#include "cost_layer.h"
-#include "convolutional_layer.h"
 #include "activation_layer.h"
-#include "normalization_layer.h"
-#include "batchnorm_layer.h"
-#include "connected_layer.h"
-#include "rnn_layer.h"
-#include "gru_layer.h"
-#include "crnn_layer.h"
-#include "maxpool_layer.h"
-#include "reorg_layer.h"
-#include "softmax_layer.h"
-#include "dropout_layer.h"
-#include "detection_layer.h"
-#include "region_layer.h"
+#include "activations.h"
+#include "assert.h"
 #include "avgpool_layer.h"
+#include "batchnorm_layer.h"
+#include "blas.h"
+#include "connected_layer.h"
+#include "convolutional_layer.h"
+#include "cost_layer.h"
+#include "crnn_layer.h"
+#include "crop_layer.h"
+#include "detection_layer.h"
+#include "dropout_layer.h"
+#include "gru_layer.h"
+#include "list.h"
 #include "local_layer.h"
+#include "maxpool_layer.h"
+#include "normalization_layer.h"
+#include "option_list.h"
+#include "parser.h"
+#include "region_layer.h"
+#include "reorg_layer.h"
+#include "rnn_layer.h"
 #include "route_layer.h"
 #include "shortcut_layer.h"
-#include "list.h"
-#include "option_list.h"
+#include "softmax_layer.h"
 #include "utils.h"
 
 typedef struct{
@@ -238,9 +238,6 @@ layer parse_region(list *options, size_params params)
     int classes = option_find_int(options, "classes", 20);
     int num = option_find_int(options, "num", 1);
 
-    params.w = option_find_int(options, "side", params.w);
-    params.h = option_find_int(options, "side", params.h);
-
     layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords);
     assert(l.outputs == params.inputs);
 
@@ -252,10 +249,36 @@ layer parse_region(list *options, size_params params)
     l.jitter = option_find_float(options, "jitter", .2);
     l.rescore = option_find_int_quiet(options, "rescore",0);
 
+    l.thresh = option_find_float(options, "thresh", .5);
+    l.classfix = option_find_int_quiet(options, "classfix", 0);
+    l.absolute = option_find_int_quiet(options, "absolute", 0);
+    l.random = option_find_int_quiet(options, "random", 0);
+
     l.coord_scale = option_find_float(options, "coord_scale", 1);
     l.object_scale = option_find_float(options, "object_scale", 1);
     l.noobject_scale = option_find_float(options, "noobject_scale", 1);
     l.class_scale = option_find_float(options, "class_scale", 1);
+    l.bias_match = option_find_int_quiet(options, "bias_match",0);
+
+    char *tree_file = option_find_str(options, "tree", 0);
+    if (tree_file) l.softmax_tree = read_tree(tree_file);
+    char *map_file = option_find_str(options, "map", 0);
+    if (map_file) l.map = read_map(map_file);
+
+    char *a = option_find_str(options, "anchors", 0);
+    if(a){
+        int len = strlen(a);
+        int n = 1;
+        int i;
+        for(i = 0; i < len; ++i){
+            if (a[i] == ',') ++n;
+        }
+        for(i = 0; i < n; ++i){
+            float bias = atof(a);
+            l.biases[i] = bias;
+            a = strchr(a, ',')+1;
+        }
+    }
     return l;
 }
 detection_layer parse_detection(list *options, size_params params)
@@ -319,6 +342,7 @@ crop_layer parse_crop(list *options, size_params params)
 layer parse_reorg(list *options, size_params params)
 {
     int stride = option_find_int(options, "stride",1);
+    int reverse = option_find_int_quiet(options, "reverse",0);
 
     int batch,h,w,c;
     h = params.h;
@@ -327,7 +351,7 @@ layer parse_reorg(list *options, size_params params)
     batch=params.batch;
     if(!(h && w && c)) error("Layer before reorg layer must output image.");
 
-    layer layer = make_reorg_layer(batch,w,h,c,stride);
+    layer layer = make_reorg_layer(batch,w,h,c,stride,reverse);
     return layer;
 }
 
@@ -583,9 +607,10 @@ network parse_network_cfg(char *filename)
     n = n->next;
     int count = 0;
     free_section(s);
+    fprintf(stderr, "layer     filters    size              input                output\n");
     while(n){
         params.index = count;
-        fprintf(stderr, "%d: ", count);
+        fprintf(stderr, "%5d ", count);
         s = (section *)n->val;
         options = s->options;
         layer l = {0};
@@ -759,6 +784,10 @@ void save_convolutional_weights(layer l, FILE *fp)
         fwrite(l.rolling_variance, sizeof(float), l.n, fp);
     }
     fwrite(l.weights, sizeof(float), num, fp);
+    if(l.adam){
+        fwrite(l.m, sizeof(float), num, fp);
+        fwrite(l.v, sizeof(float), num, fp);
+    }
 }
 
 void save_batchnorm_weights(layer l, FILE *fp)
@@ -937,13 +966,27 @@ void load_convolutional_weights(layer l, FILE *fp)
         //return;
     }
     int num = l.n*l.c*l.size*l.size;
-    fread(l.biases, sizeof(float), l.n, fp);
-    if (l.batch_normalize && (!l.dontloadscales)){
-        fread(l.scales, sizeof(float), l.n, fp);
-        fread(l.rolling_mean, sizeof(float), l.n, fp);
-        fread(l.rolling_variance, sizeof(float), l.n, fp);
+    if(0){
+        fread(l.biases + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+        if (l.batch_normalize && (!l.dontloadscales)){
+            fread(l.scales + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+            fread(l.rolling_mean + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+            fread(l.rolling_variance + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+        }
+        fread(l.weights + ((l.n != 1374)?0:5*l.c*l.size*l.size), sizeof(float), num, fp);
+    }else{
+        fread(l.biases, sizeof(float), l.n, fp);
+        if (l.batch_normalize && (!l.dontloadscales)){
+            fread(l.scales, sizeof(float), l.n, fp);
+            fread(l.rolling_mean, sizeof(float), l.n, fp);
+            fread(l.rolling_variance, sizeof(float), l.n, fp);
+        }
+        fread(l.weights, sizeof(float), num, fp);
     }
-    fread(l.weights, sizeof(float), num, fp);
+    if(l.adam){
+        fread(l.m, sizeof(float), num, fp);
+        fread(l.v, sizeof(float), num, fp);
+    }
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);

@@ -10,6 +10,7 @@ region_layer make_region_layer(int batch, int h, int w, int n, int classes, int 
 void forward_region_layer(const region_layer l, network_state state);
 void backward_region_layer(const region_layer l, network_state state);
 void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
+void resize_region_layer(layer *l, int w, int h);
 
 #ifdef GPU
 void forward_region_layer_gpu(const region_layer l, network_state state);

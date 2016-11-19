@@ -543,6 +543,30 @@ extern "C" void copy_ongpu_offset(int N, float * X, int OFFX, int INCX, float * 
     check_error(cudaPeekAtLastError());
 }
 
+__global__ void flatten_kernel(int N, float *x, int spatial, int layers, int batch, int forward, float *out)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i >= N) return;
+    int in_s = i%spatial;
+    i = i/spatial;
+    int in_c = i%layers;
+    i = i/layers;
+    int b = i;
+
+    int i1 = b*layers*spatial + in_c*spatial + in_s;
+    int i2 = b*layers*spatial + in_s*layers +  in_c;
+
+    if (forward) out[i2] = x[i1];
+    else out[i1] = x[i2];
+}
+
+extern "C" void flatten_ongpu(float *x, int spatial, int layers, int batch, int forward, float *out)
+{
+    int size = spatial*batch*layers;
+    flatten_kernel<<<cuda_gridsize(size), BLOCK>>>(size, x, spatial, layers, batch, forward, out);
+    check_error(cudaPeekAtLastError());
+}
+
 extern "C" void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
 {
     int size = w*h*c*batch;
@@ -718,11 +742,12 @@ __device__ void softmax_device(int n, float *input, float temp, float *output)
         largest = (val>largest) ? val : largest;
     }
     for(i = 0; i < n; ++i){
-        sum += exp(input[i]/temp-largest/temp);
+        float e = exp(input[i]/temp - largest/temp);
+        sum += e;
+        output[i] = e;
     }
-    sum = (sum != 0) ? largest/temp+log(sum) : largest-100;
     for(i = 0; i < n; ++i){
-        output[i] = exp(input[i]/temp-sum);
+        output[i] /= sum;
     }
 }
 

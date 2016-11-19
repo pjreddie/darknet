@@ -318,7 +318,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
 
 void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
 {
-    image *alphabet = load_alphabet();
+    image **alphabet = load_alphabet();
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);

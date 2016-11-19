@@ -12,26 +12,26 @@ EXEC     = darknet
 OBJDIR   = ./obj/
 
 CC       = cc
-NVCC     = nvcc
+NVCC     = nvcc 
 OPTS     = -Ofast
-LDFLAGS  = -lm -pthread
-COMMON   = 
-CFLAGS   = -Wall -Wfatal-errors
+LDFLAGS  = -lm -pthread 
+COMMON   =
+CFLAGS   = -Wall -Wfatal-errors 
 
-ifeq ($(DEBUG), 1)
+ifeq ($(DEBUG), 1) 
 OPTS     = -O0 -g
 endif
 
 CFLAGS  += $(OPTS)
 
-ifeq ($(OPENCV), 1)
+ifeq ($(OPENCV), 1) 
 COMMON  += -DOPENCV
 CFLAGS  += -DOPENCV
-LDFLAGS += `pkg-config --libs opencv`
-COMMON  += `pkg-config --cflags opencv`
+LDFLAGS += `pkg-config --libs opencv` 
+COMMON  += `pkg-config --cflags opencv` 
 endif
 
-ifeq ($(GPU), 1)
+ifeq ($(GPU), 1) 
 COMMON  += -DGPU -I/usr/local/cuda/include/
 CFLAGS  += -DGPU
 LDFLAGS += -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
@@ -51,9 +51,9 @@ OBJ     += convolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_
 endif
 
 OBJS     = $(addprefix $(OBJDIR), $(OBJ))
-DEPS     = $(wildcard src/*.h) makefile
+DEPS     = $(wildcard src/*.h) Makefile
 
-all: obj results $(EXEC)
+all: obj backup results $(EXEC)
 
 $(EXEC): $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
@@ -66,6 +66,8 @@ $(OBJDIR)%.o: %.cu $(DEPS)
 
 obj:
 	mkdir -p obj
+backup:
+	mkdir -p backup
 results:
 	mkdir -p results
 

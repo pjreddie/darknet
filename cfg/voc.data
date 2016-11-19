@@ -1,0 +1,6 @@
+classes= 20
+train  = /home/pjreddie/data/voc/train.txt
+valid  = /home/pjreddie/data/voc/2007_test.txt
+names = data/pascal.names
+backup = /home/pjreddie/backup/
+
