@@ -8,6 +8,7 @@
 #include "avgpool_layer.h"
 #include "batchnorm_layer.h"
 #include "blas.h"
+#include "box.h"
 #include "connected_layer.h"
 #include "convolutional_layer.h"
 #include "cost_layer.h"
@@ -1078,3 +1079,39 @@ void load_weights(network *net, char *filename)
     load_weights_upto(net, filename, net->n);
 }
 
+void save_detections(char *image_id, char *csv_filename, int num, int width, int height, float thresh,
+                     box *boxes, float **probs, char **names, int classes)
+{
+    FILE *fp;
+    if ((fp = fopen(csv_filename, "w")) == NULL) {
+        printf("File open error: %s\n", csv_filename);
+        exit(1);
+    }
+    fprintf(fp, "image_id,width,height,thresh,box_left,box_right,box_top,box_bottom,class_prob,class_name\n");
+
+    int i;
+    for (i = 0; i < num; ++i) {
+        int class = max_index(probs[i], classes);
+        float prob = probs[i][class];
+        if (! prob > thresh) {
+            continue;
+        }
+
+        box b = boxes[i];
+
+        int left  = (b.x - b.w / 2.) * width;
+        int right = (b.x + b.w / 2.) * width;
+        int top   = (b.y - b.h / 2.) * height;
+        int bot   = (b.y + b.h / 2.) * height;
+
+        if (left < 0) left = 0;
+        if (right > width - 1) right = width - 1;
+        if (top < 0) top = 0;
+        if (bot > height - 1) bot = height - 1;
+
+        fprintf(fp, "%s,%d,%d,%f,%d,%d,%d,%d,%f,%s\n",
+                image_id, width, height, thresh, left, right, top, bot, prob, names[class]);
+    }
+
+    fclose(fp);
+}

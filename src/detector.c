@@ -436,11 +436,15 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     }
 }
 
-void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh)
+void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, char *prefix)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
+    if (!prefix)
+    {
+        prefix = "predictions";
+    }
 
     image **alphabet = load_alphabet();
     network net = parse_network_cfg(cfgfile);
@@ -479,8 +483,15 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
         if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
-        save_image(im, "predictions");
-        show_image(im, "predictions");
+        save_image(im, prefix);
+        show_image(im, prefix);
+
+        char *csv_filename;
+        csv_filename = malloc(strlen(prefix) + strlen(".csv"));
+        strcpy(csv_filename, prefix);
+        strcat(csv_filename, ".csv");
+        save_detections(filename, csv_filename, l.w*l.h*l.n, im.w, im.h, thresh, boxes, probs, names, l.classes);
+        printf("Wrote result to: %s.\n", csv_filename);
 
         free_image(im);
         free_image(sized);
@@ -533,7 +544,7 @@ void run_detector(int argc, char **argv)
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh);
+    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, prefix);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
