@@ -196,7 +196,8 @@ void forward_region_layer(const region_layer l, network_state state)
                 if(truth.x > 100000 && truth.y > 100000){
                     for(n = 0; n < l.n*l.w*l.h; ++n){
                         int index = size*n + b*l.outputs + 5;
-                        float p = get_hierarchy_probability(l.output + index, l.softmax_tree, class);
+                        float scale =  l.output[index-1];
+                        float p = scale*get_hierarchy_probability(l.output + index, l.softmax_tree, class);
                         if(p > maxp){
                             maxp = p;
                             maxi = n;
@@ -324,7 +325,7 @@ void backward_region_layer(const region_layer l, network_state state)
     axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
 }
 
-void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness)
+void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness, int *map)
 {
     int i,j,n;
     float *predictions = l.output;
@@ -348,8 +349,13 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
 
                 hierarchy_predictions(predictions + class_index, l.classes, l.softmax_tree, 0);
                 int found = 0;
-                for(j = l.classes - 1; j >= 0; --j){
-                    if(1){
+                if(map){
+                    for(j = 0; j < 200; ++j){
+                        float prob = scale*predictions[class_index+map[j]];
+                        probs[index][j] = (prob > thresh) ? prob : 0;
+                    }
+                } else {
+                    for(j = l.classes - 1; j >= 0; --j){
                         if(!found && predictions[class_index + j] > .5){
                             found = 1;
                         } else {
@@ -357,12 +363,9 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
                         }
                         float prob = predictions[class_index+j];
                         probs[index][j] = (scale > thresh) ? prob : 0;
-                    }else{
-                        float prob = scale*predictions[class_index+j];
-                        probs[index][j] = (prob > thresh) ? prob : 0;
                     }
                 }
-            }else{
+            } else {
                 for(j = 0; j < l.classes; ++j){
                     float prob = scale*predictions[class_index+j];
                     probs[index][j] = (prob > thresh) ? prob : 0;
