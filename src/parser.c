@@ -1082,15 +1082,15 @@ void load_weights(network *net, char *filename)
 void save_detections(char *image_id, char *csv_filename, int num, int width, int height, float thresh,
                      box *boxes, float **probs, char **names, int classes)
 {
-    int i;
-
     FILE *fp;
     if ((fp = fopen(csv_filename, "w")) == NULL) {
         printf("File open error: %s\n", csv_filename);
         exit(1);
     }
     fprintf(fp, "image_id,width,height,thresh,box_left,box_right,box_top,box_bottom,class_prob,class_name\n");
-    for(i = 0; i < num; ++i) {
+
+    int i;
+    for (i = 0; i < num; ++i) {
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
         if (! prob > thresh) {
@@ -1112,5 +1112,6 @@ void save_detections(char *image_id, char *csv_filename, int num, int width, int
         fprintf(fp, "%s,%d,%d,%f,%d,%d,%d,%d,%f,%s\n",
                 image_id, width, height, thresh, left, right, top, bot, prob, names[class]);
     }
+
     fclose(fp);
 }
