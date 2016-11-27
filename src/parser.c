@@ -1112,4 +1112,5 @@ void save_detections(char *image_id, char *csv_filename, int num, int width, int
         fprintf(fp, "%s,%d,%d,%f,%d,%d,%d,%d,%f,%s\n",
                 image_id, width, height, thresh, left, right, top, bot, prob, names[class]);
     }
+    fclose(fp);
 }
