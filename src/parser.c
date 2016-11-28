@@ -966,23 +966,28 @@ void load_convolutional_weights(layer l, FILE *fp)
         //return;
     }
     int num = l.n*l.c*l.size*l.size;
-    if(0){
-        fread(l.biases + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
-        if (l.batch_normalize && (!l.dontloadscales)){
-            fread(l.scales + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
-            fread(l.rolling_mean + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
-            fread(l.rolling_variance + ((l.n != 1374)?0:5), sizeof(float), l.n, fp);
+    fread(l.biases, sizeof(float), l.n, fp);
+    if (l.batch_normalize && (!l.dontloadscales)){
+        fread(l.scales, sizeof(float), l.n, fp);
+        fread(l.rolling_mean, sizeof(float), l.n, fp);
+        fread(l.rolling_variance, sizeof(float), l.n, fp);
+        if(0){
+            int i;
+            for(i = 0; i < l.n; ++i){
+                printf("%g, ", l.rolling_mean[i]);
+            }
+            printf("\n");
+            for(i = 0; i < l.n; ++i){
+                printf("%g, ", l.rolling_variance[i]);
+            }
+            printf("\n");
         }
-        fread(l.weights + ((l.n != 1374)?0:5*l.c*l.size*l.size), sizeof(float), num, fp);
-    }else{
-        fread(l.biases, sizeof(float), l.n, fp);
-        if (l.batch_normalize && (!l.dontloadscales)){
-            fread(l.scales, sizeof(float), l.n, fp);
-            fread(l.rolling_mean, sizeof(float), l.n, fp);
-            fread(l.rolling_variance, sizeof(float), l.n, fp);
+        if(0){
+            fill_cpu(l.n, 0, l.rolling_mean, 1);
+            fill_cpu(l.n, 0, l.rolling_variance, 1);
         }
-        fread(l.weights, sizeof(float), num, fp);
     }
+    fread(l.weights, sizeof(float), num, fp);
     if(l.adam){
         fread(l.m, sizeof(float), num, fp);
         fread(l.v, sizeof(float), num, fp);
