@@ -1,3 +1,6 @@
+# Smartvid #
+svdata/
+yolo.weights
 *.o
 *.dSYM
 *.csv
