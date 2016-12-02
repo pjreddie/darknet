@@ -10,7 +10,8 @@
 
 int inverted = 1;
 int noi = 1;
-static const int nind = 5;
+//static const int nind = 5;
+#define nind 5
 
 typedef struct {
     char **data;
@@ -575,8 +576,12 @@ void engine_go(char *filename, char *weightfile, int multi)
                     }
                 }
                 fprintf(f, "final_status_list dead\n");
-                fclose(f);
-                FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
+                fclose(f);                
+#ifdef _WIN32
+				FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
+#else
+				FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
+#endif
                 for(i = 0; i < count; ++i){
                     free(fgetl(p));
                     free(fgetl(p));
@@ -712,8 +717,12 @@ float score_game(float *board)
         }
     }
     fprintf(f, "final_score\n");
-    fclose(f);
-    FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
+    fclose(f);  
+#ifdef _WIN32
+	FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
+#else
+	FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
+#endif
     for(i = 0; i < count; ++i){
         free(fgetl(p));
         free(fgetl(p));
@@ -728,7 +737,11 @@ float score_game(float *board)
         if (n == 2) break;
     }
     if(player == 'W') score = -score;
-    pclose(p);
+#ifdef _WIN32
+	_pclose(p);
+#else
+	pclose(p);
+#endif
     return score;
 }
 
