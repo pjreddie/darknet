@@ -63,9 +63,9 @@ darknet.exe yolo demo yolo-voc.cfg yolo-voc.weights http://192.168.0.80:8080/vid
 
 ### How to compile:
 
-1. If you have CUDA 8.0, OpenCV 2.4.9 (C:\opencv_2.4.9) and MSVS 2015 then start MSVS, open `yolo-windows\build\darknet\darknet.sln` and do the: Build -> Build darknet
+1. If you have CUDA 8.0, OpenCV 2.4.9 (C:\opencv_2.4.9) and MSVS 2015 then start MSVS, open `build\darknet\darknet.sln` and do the: Build -> Build darknet
 
-2. If you have other version of CUDA (not 8.0) then open `darknet\build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 8.0" and change it to your CUDA-version, then do step 1
+2. If you have other version of CUDA (not 8.0) then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 8.0" and change it to your CUDA-version, then do step 1
 
 3. If you have other version of OpenCV 2.4.x (not 2.4.9) then you should change pathes after `\darknet.sln` is opened
 
