@@ -826,7 +826,7 @@ void save_weights_upto(network net, char *filename, int cutoff)
     }
 #endif
     fprintf(stderr, "Saving weights to %s\n", filename);
-    FILE *fp = fopen(filename, "w");
+    FILE *fp = fopen(filename, "wb");
     if(!fp) file_error(filename);
 
     int major = 0;
