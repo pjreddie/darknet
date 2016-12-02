@@ -131,8 +131,8 @@
       <OutputFile>$(OutDir)\..\$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <CudaCompile>
-      <TargetMachinePlatform>32</TargetMachinePlatform>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_30,sm_30;compute_52,sm_52</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
