@@ -30,10 +30,14 @@ Put it near compiled: darknet.exe
 
 Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
-##### Example of usage in cmd-files:
+### How to use:
+
+##### Example of usage in cmd-files from `build\darknet\x64\`:
 
 * `darknet_demo_voc.cmd` - initialization with 256 MB model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4
 * `darknet_net_cam_voc.cmd` - initialization with 256 MB model, play video from network video-camera mjpeg-stream (also from you phone)
+
+How to use from command line with 256 MB model: `darknet.exe yolo demo yolo-voc.cfg yolo-voc.weights test.mp4 -i 0`
 
 ##### For using network video-camera mjpeg-stream with any Android smartphone:
 
@@ -48,8 +52,14 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 4. Replace the address below, on shown in the phone application (Smart WebCam) and launch:
 
 ```
-darknet.exe yolo demo yolo.cfg yolo.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0
+darknet.exe yolo demo yolo-voc.cfg yolo-voc.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0
 ```
+
+##### How to use COCO instead of VOC:
+
+* Get synset names from `build\darknet\x64\data\coco.names`: https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/data/coco.names
+* And change list `char *voc_names[] = ` to COCO-names in file `yolo.c`: https://github.com/AlexeyAB/darknet/blob/master/src/yolo.c#L30
+
 
 ### How to compile:
 
