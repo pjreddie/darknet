@@ -2,6 +2,10 @@
 #define DATA_H
 #include <pthread.h>
 
+#if defined(_MSC_VER) && _MSC_VER < 1900
+	#define inline __inline
+#endif
+
 #include "matrix.h"
 #include "list.h"
 #include "image.h"

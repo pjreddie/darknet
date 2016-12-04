@@ -1,6 +1,10 @@
 #ifndef CUDA_H
 #define CUDA_H
 
+#if defined(_MSC_VER) && _MSC_VER < 1900
+	#define inline __inline
+#endif
+
 extern int gpu_index;
 
 #ifdef GPU
