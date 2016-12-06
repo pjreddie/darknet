@@ -44,6 +44,7 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 ##### How to use on the command line:
 * 256 MB COCO-model - image: `darknet.exe detector test data/coco.data yolo.cfg yolo.weights -i 0 -thresh 0.2`
+* Alternative method 256 MB COCO-model - image: `darknet.exe detect yolo.cfg yolo.weights -i 0 -thresh 0.2`
 * 256 MB VOC-model - image: `darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights -i 0`
 * 256 MB COCO-model - video: `darknet.exe detector demo data/coco.data yolo.cfg yolo.weights test.mp4 -i 0`
 * 256 MB VOC-model - video: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights test.mp4 -i 0`
@@ -64,14 +65,9 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 3. Start Smart WebCam on your phone
 4. Replace the address below, on shown in the phone application (Smart WebCam) and launch:
 
-```
-darknet.exe yolo demo yolo-voc.cfg yolo-voc.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0
-```
 
-##### How to use COCO instead of VOC:
-
-* Get synset names from `build\darknet\x64\data\coco.names`: https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/data/coco.names
-* And change list `char *voc_names[] = ` to COCO-names in file `yolo.c`: https://github.com/AlexeyAB/darknet/blob/master/src/yolo.c#L30
+* 256 MB COCO-model: `darknet.exe detector demo data/coco.data yolo.cfg yolo.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
+* 256 MB VOC-model: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
 
 
 ### How to compile:
@@ -97,7 +93,7 @@ Then add to your created project:
 
 `C:\opencv_2.4.9\opencv\build\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(cudnn)\include`
 - right click on project -> Build dependecies -> Build Customizations -> set check on CUDA 8.0 or what version you have - for example as here: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/01/VS2013-R-5.jpg
-- add to project all .c & .cu files from yolo-windows\src
+- add to project all .c & .cu files from `\src`
 -  (right click on project) -> properties  -> Linker -> General -> Additional Library Directories, put here: 
 
 `C:\opencv_2.4.9\opencv\build\x64\vc12\lib;$(CUDA_PATH)lib\$(PlatformName);$(cudnn)\lib\x64;%(AdditionalLibraryDirectories)`
@@ -109,7 +105,7 @@ Then add to your created project:
 `OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;GPU;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
 - compile to .exe (X64 & Release) and put .dll`s near with .exe:
 
-`pthreadVC2.dll, pthreadGC2.dll` from yolo-windows\3rdparty\dll\x64
+`pthreadVC2.dll, pthreadGC2.dll` from \3rdparty\dll\x64
 
 `cusolver64_80.dll, curand64_80.dll, cudart64_80.dll, cublas64_80.dll` - 80 for CUDA 8.0 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin
 
