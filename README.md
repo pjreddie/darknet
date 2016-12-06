@@ -19,10 +19,14 @@ More details: http://pjreddie.com/darknet/yolo/
   - With OpenCV will show image or video detection in window
 
 ##### Pre-trained models for different cfg-files can be downloaded from (smaller -> faster & lower quality):
-* `yolo.cfg` (256 MB) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo-voc.weights
-* `yolo-tiny.cfg` (60 MB) - require 1 GB GPU-RAM: http://pjreddie.com/media/files/tiny-yolo-voc.weights
+* `yolo.cfg` (256 MB COCO-model) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo.weights
+* `yolo-voc.cfg` (256 MB VOC-model) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo-voc.weights
+* `tiny-yolo.cfg` (60 MB COCO-model) - require 1 GB GPU-RAM: http://pjreddie.com/media/files/tiny-yolo.weights
+* `tiny-yolo-voc.cfg` (60 MB VOC-model) - require 1 GB GPU-RAM: http://pjreddie.com/media/files/tiny-yolo-voc.weights
 
 Put it near compiled: darknet.exe
+
+You can get cfg-files by path: `darknet/cfg/`
 
 ##### Examples of results:
 
