@@ -16,7 +16,7 @@ More details: http://pjreddie.com/darknet/yolo/
 * **OpenCV 2.4.9**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.9/opencv-2.4.9.exe/download
   - To compile without OpenCV - remove define OPENCV from: Visual Studio->Project->Properties->C/C++->Preprocessor
   - To compile with different OpenCV version - change in file yolo.c each string look like **#pragma comment(lib, "opencv_core249.lib")** from 249 to required version.
-  - With OpenCV will show image or video detection in window
+  - With OpenCV will show image or video detection in window and store result to: test_dnn_out.avi
 
 ##### Pre-trained models for different cfg-files can be downloaded from (smaller -> faster & lower quality):
 * `yolo.cfg` (256 MB COCO-model) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo.weights
@@ -39,8 +39,8 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 ##### Example of usage in cmd-files from `build\darknet\x64\`:
 
 * `darknet_voc.cmd` - initialization with 256 MB VOC-model yolo-voc.weights & yolo-voc.cfg and waiting for entering the name of the image file
-* `darknet_demo_voc.cmd` - initialization with 256 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4
-* `darknet_net_cam_voc.cmd` - initialization with 256 MB VOC-model, play video from network video-camera mjpeg-stream (also from you phone)
+* `darknet_demo_voc.cmd` - initialization with 256 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4, and store result to: test_dnn_out.avi
+* `darknet_net_cam_voc.cmd` - initialization with 256 MB VOC-model, play video from network video-camera mjpeg-stream (also from you phone) and store result to: test_dnn_out.avi
 
 ##### How to use on the command line:
 * 256 MB COCO-model - image: `darknet.exe detector test data/coco.data yolo.cfg yolo.weights -i 0 -thresh 0.2`
