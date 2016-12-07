@@ -437,6 +437,28 @@ void show_image_cv(image p, const char *name)
         cvReleaseImage(&buffer);
     }
     cvShowImage(buff, disp);
+
+	{
+		CvSize size;
+		{
+			size.width = disp->width, size.height = disp->height;
+		}
+
+		static CvVideoWriter* output_video = NULL;    // cv::VideoWriter output_video;
+		if (output_video == NULL)
+		{
+			printf("\n SRC output_video = %p \n", output_video);
+			const char* output_name = "test_dnn_out.avi";
+			//output_video = cvCreateVideoWriter(output_name, CV_FOURCC('H', '2', '6', '4'), 25, size, 1);
+			output_video = cvCreateVideoWriter(output_name, CV_FOURCC('D', 'I', 'V', 'X'), 25, size, 1);
+			//output_video = cvCreateVideoWriter(output_name, CV_FOURCC('M', 'J', 'P', 'G'), 25, size, 1);
+			printf("\n cvCreateVideoWriter, DST output_video = %p  \n", output_video);
+		}
+
+		cvWriteFrame(output_video, disp);
+		printf("\n cvWriteFrame \n");
+	}
+
     cvReleaseImage(&disp);
 }
 #endif
