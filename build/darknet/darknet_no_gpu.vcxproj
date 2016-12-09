@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C10E27DE-1ADE-431F-BC42-99ECE2C610CD}</ProjectGuid>
+    <ProjectGuid>{621B3914-936D-4BD9-843A-AD50F22B178D}</ProjectGuid>
     <RootNamespace>darknet</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
