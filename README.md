@@ -41,6 +41,7 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 * `darknet_voc.cmd` - initialization with 256 MB VOC-model yolo-voc.weights & yolo-voc.cfg and waiting for entering the name of the image file
 * `darknet_demo_voc.cmd` - initialization with 256 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4, and store result to: test_dnn_out.avi
 * `darknet_net_cam_voc.cmd` - initialization with 256 MB VOC-model, play video from network video-camera mjpeg-stream (also from you phone) and store result to: test_dnn_out.avi
+* `darknet_web_cam_voc.cmd` - initialization with 256 MB VOC-model, play video from Web-Camera number #0 and store result to: test_dnn_out.avi
 
 ##### How to use on the command line:
 * 256 MB COCO-model - image: `darknet.exe detector test data/coco.data yolo.cfg yolo.weights -i 0 -thresh 0.2`
@@ -52,6 +53,7 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 * 60 MB VOC-model for video: `darknet.exe detector demo data/voc.data tiny-yolo-voc.cfg tiny-yolo-voc.weights test.mp4 -i 0`
 * 256 MB COCO-model for net-videocam - Smart WebCam: `darknet.exe detector demo data/coco.data yolo.cfg yolo.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
 * 256 MB VOC-model for net-videocam - Smart WebCam: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
+* 256 MB VOC-model - WebCamera #0: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights -c 0`
 
 ##### For using network video-camera mjpeg-stream with any Android smartphone:
 
