@@ -11,14 +11,14 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
 {
     assert(inputs%groups == 0);
     fprintf(stderr, "softmax                                        %4d\n",  inputs);
-    softmax_layer l = {0};
+    softmax_layer l = {};
     l.type = SOFTMAX;
     l.batch = batch;
     l.groups = groups;
     l.inputs = inputs;
     l.outputs = inputs;
-    l.output = calloc(inputs*batch, sizeof(float));
-    l.delta = calloc(inputs*batch, sizeof(float));
+    l.output = (float*)calloc(inputs*batch, sizeof(float));
+    l.delta = (float*)calloc(inputs*batch, sizeof(float));
 
     l.forward = forward_softmax_layer;
     l.backward = backward_softmax_layer;

@@ -20,7 +20,7 @@ image get_maxpool_delta(maxpool_layer l)
 
 maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride, int padding)
 {
-    maxpool_layer l = {0};
+    maxpool_layer l = {};
     l.type = MAXPOOL;
     l.batch = batch;
     l.h = h;
@@ -35,9 +35,9 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     l.size = size;
     l.stride = stride;
     int output_size = l.out_h * l.out_w * l.out_c * batch;
-    l.indexes = calloc(output_size, sizeof(int));
-    l.output =  calloc(output_size, sizeof(float));
-    l.delta =   calloc(output_size, sizeof(float));
+    l.indexes = (int*)calloc(output_size, sizeof(int));
+    l.output =  (float*)calloc(output_size, sizeof(float));
+    l.delta =   (float*)calloc(output_size, sizeof(float));
     l.forward = forward_maxpool_layer;
     l.backward = backward_maxpool_layer;
     #ifdef GPU
@@ -62,9 +62,9 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     l->outputs = l->out_w * l->out_h * l->c;
     int output_size = l->outputs * l->batch;
 
-    l->indexes = realloc(l->indexes, output_size * sizeof(int));
-    l->output = realloc(l->output, output_size * sizeof(float));
-    l->delta = realloc(l->delta, output_size * sizeof(float));
+    l->indexes = (int*)realloc(l->indexes, output_size * sizeof(int));
+    l->output = (float*)realloc(l->output, output_size * sizeof(float));
+    l->delta = (float*)realloc(l->delta, output_size * sizeof(float));
 
     #ifdef GPU
     cuda_free((float *)l->indexes_gpu);

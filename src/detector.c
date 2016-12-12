@@ -22,7 +22,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network *nets = calloc(ngpus, sizeof(network));
+    network *nets = (network*)calloc(ngpus, sizeof(network));
 
     srand(time(0));
     int seed = rand();
@@ -224,8 +224,8 @@ void print_imagenet_detections(FILE *fp, int id, box *boxes, float **probs, int 
         if (ymax > h) ymax = h;
 
         for(j = 0; j < classes; ++j){
-            int class = j;
-            if (probs[i][class]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, probs[i][class],
+            int class1 = j;
+            if (probs[i][class1]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, probs[i][class1],
                     xmin, ymin, xmax, ymax);
         }
     }
@@ -275,7 +275,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile)
         imagenet = 1;
         classes = 200;
     } else {
-        fps = calloc(classes, sizeof(FILE *));
+        fps = (FILE**)calloc(classes, sizeof(FILE *));
         for(j = 0; j < classes; ++j){
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, base, names[j]);
             fps[j] = fopen(buff, "w");
@@ -283,9 +283,9 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile)
     }
 
 
-    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    box *boxes = (box*)calloc(l.w*l.h*l.n, sizeof(box));
+    float **probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float *));
 
     int m = plist->size;
     int i=0;
@@ -295,11 +295,11 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile)
     float nms = .45;
 
     int nthreads = 4;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
-    pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
+    image *val = (image*)calloc(nthreads, sizeof(image));
+    image *val_resized = (image*)calloc(nthreads, sizeof(image));
+    image *buf = (image*)calloc(nthreads, sizeof(image));
+    image *buf_resized = (image*)calloc(nthreads, sizeof(image));
+    pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
 
     load_args args = {0};
     args.w = net.w;
@@ -375,9 +375,9 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     int classes = l.classes;
 
     int j, k;
-    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    box *boxes = (box*)calloc(l.w*l.h*l.n, sizeof(box));
+    float **probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float *));
 
     int m = plist->size;
     int i=0;
@@ -468,9 +468,9 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         image sized = resize_image(im, net.w, net.h);
         layer l = net.layers[net.n-1];
 
-        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+        box *boxes = (box*)calloc(l.w*l.h*l.n, sizeof(box));
+        float **probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
+        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(l.classes, sizeof(float *));
 
         float *X = sized.data;
         time=clock();
@@ -516,7 +516,7 @@ void run_detector(int argc, char **argv)
         for(i = 0; i < len; ++i){
             if (gpu_list[i] == ',') ++ngpus;
         }
-        gpus = calloc(ngpus, sizeof(int));
+        gpus = (int*)calloc(ngpus, sizeof(int));
         for(i = 0; i < ngpus; ++i){
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',')+1;
