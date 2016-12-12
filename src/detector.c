@@ -6,6 +6,7 @@
 #include "box.h"
 #include "demo.h"
 #include "option_list.h"
+#include "stdio.h"
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
@@ -454,6 +455,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char *input = buff;
     int j;
     float nms=.4;
+    FILE *fp = fopen("/home/pgrad/Documents/Github/darknet/results.csv","a");
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -475,23 +477,30 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         float *X = sized.data;
         time=clock();
         network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+//        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
         if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
-        save_image(im, "predictions");
-        show_image(im, "predictions");
+        if(draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes)) {
+            fprintf(fp,filename);
+            fflush(fp);
+            fprintf(fp,"\n");
+            fflush(fp);
+            printf("Detected!\n");
+        }
+       // save_image(im, "predictions");
+        //show_image(im, "predictions");
 
         free_image(im);
         free_image(sized);
         free(boxes);
         free_ptrs((void **)probs, l.w*l.h*l.n);
 #ifdef OPENCV
-        cvWaitKey(0);
-        cvDestroyAllWindows();
+        //cvWaitKey(0);
+        //cvDestroyAllWindows();
 #endif
         if (filename) break;
     }
+    fclose(fp);
 }
 
 void run_detector(int argc, char **argv)
