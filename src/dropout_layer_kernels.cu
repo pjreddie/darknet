@@ -2,7 +2,13 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
+#endif
+
+EXTERNC {
 #include "dropout_layer.h"
 #include "cuda.h"
 #include "utils.h"

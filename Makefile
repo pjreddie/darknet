@@ -1,27 +1,44 @@
-GPU=0
-CUDNN=0
-OPENCV=0
-DEBUG=0
+#
+# Default make builds both original darknet, and its CPP equivalent darknet-cpp
+# make darknet - only darknet (original code)
+# make darknet-cpp - only the CPP version
+# 
+# CPP version supports OpenCV3. Tested on Ubuntu 16.04
+#
+# OPENCV=1 (C++ && CV3, or C && CV2 only - check with pkg-config --modversion opencv)
+# When building CV3 and C version, will get errors like
+# ./obj/image.o: In function `cvPointFrom32f':
+# /usr/local/include/opencv2/core/types_c.h:929: undefined reference to `cvRound'
+#
+#
 
-ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
-      -gencode arch=compute_30,code=sm_30 \
-      -gencode arch=compute_35,code=sm_35 \
-      -gencode arch=compute_50,code=[sm_50,compute_50] \
-      -gencode arch=compute_52,code=[sm_52,compute_52]
+GPU=1
+CUDNN=1
+OPENCV=1
+DEBUG=1
 
-# This is what I use, uncomment if you know your arch and want to specify
-# ARCH=  -gencode arch=compute_52,code=compute_52
+ARCH= --gpu-architecture=compute_52 --gpu-code=compute_52
+
+# C Definitions
 
 VPATH=./src/
 EXEC=darknet
 OBJDIR=./obj/
-
 CC=gcc
-NVCC=nvcc 
+
+# C++ Definitions
+EXEC_CPP=darknet-cpp
+OBJDIR_CPP=./obj-cpp/
+CC_CPP=g++
+CFLAGS_CPP=-Wno-write-strings
+
+NVCC=nvcc -ccbin /usr/bin/g++
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
 COMMON= 
 CFLAGS=-Wall -Wfatal-errors 
+
+
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
@@ -35,6 +52,9 @@ CFLAGS+= -DOPENCV
 LDFLAGS+= `pkg-config --libs opencv` 
 COMMON+= `pkg-config --cflags opencv` 
 endif
+
+# Place the IPP .a file from OpenCV here for easy linking
+LDFLAGS += -L/usr/local/share/OpenCV/3rdparty/lib
 
 ifeq ($(GPU), 1) 
 COMMON+= -DGPU -I/usr/local/cuda/include/
@@ -57,21 +77,35 @@ endif
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile
 
-all: obj backup results $(EXEC)
+OBJS_CPP = $(addprefix $(OBJDIR_CPP), $(OBJ))
 
-$(EXEC): $(OBJS)
-	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+all: obj obj-cpp results $(EXEC) $(EXEC_CPP)
+
+$(EXEC): obj clean $(OBJS)
+	$(CC) $(COMMON) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS)
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
+$(EXEC_CPP): obj-cpp clean-cpp $(OBJS_CPP)
+	$(CC_CPP) $(COMMON) $(CFLAGS) $(OBJS_CPP) -o $@ $(LDFLAGS)
+
+$(OBJDIR_CPP)%.o: %.c $(DEPS_CPP)
+	$(CC_CPP) $(COMMON) $(CFLAGS_CPP) $(CFLAGS) -c $< -o $@
+
+
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
+$(OBJDIR_CPP)%.o: %.cu $(DEPS)
+	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+
+
 obj:
 	mkdir -p obj
-backup:
-	mkdir -p backup
+obj-cpp:
+	mkdir -p obj-cpp
+
 results:
 	mkdir -p results
 
@@ -79,4 +113,6 @@ results:
 
 clean:
 	rm -rf $(OBJS) $(EXEC)
+clean-cpp:
+	rm -rf $(OBJS_CPP) $(EXEC_CPP)
 

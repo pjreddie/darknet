@@ -2,7 +2,13 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
+#endif
+
+EXTERNC {
 #include "crop_layer.h"
 #include "utils.h"
 #include "cuda.h"
@@ -180,7 +186,7 @@ __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, i
     output[count] = bilinear_interpolate_kernel(input, w, h, rx, ry, k);
 }
 
-extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
+EXTERNC void forward_crop_layer_gpu(crop_layer layer, network_state state)
 {
     cuda_random(layer.rand_gpu, layer.batch*8);
 

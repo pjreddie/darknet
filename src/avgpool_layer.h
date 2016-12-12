@@ -15,8 +15,14 @@ void forward_avgpool_layer(const avgpool_layer l, network_state state);
 void backward_avgpool_layer(const avgpool_layer l, network_state state);
 
 #ifdef GPU
+#ifdef __cplusplus
+extern "C" {
+#endif
 void forward_avgpool_layer_gpu(avgpool_layer l, network_state state);
 void backward_avgpool_layer_gpu(avgpool_layer l, network_state state);
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 #endif
