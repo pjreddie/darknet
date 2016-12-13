@@ -132,8 +132,8 @@ More information about training by the link: http://pjreddie.com/darknet/yolo/#t
 
 ## How to train with multi-GPU:
 
-1. Train it first on 1 gpu for like 1000 iterations: `darknet.exe detector train data/voc.data yolo-voc.cfg darknet19_448.conv.23`
+1. Train it first on 1 GPU for like 1000 iterations: `darknet.exe detector train data/voc.data yolo-voc.cfg darknet19_448.conv.23`
 
-2. Then stop and run training with multigpu (up to 4 GPUs): `darknet.exe detector train data/voc.data yolo-voc.cfg darknet19_448.conv.23 -gpus 0,1,2,3`
+2. Then stop and by using partially-trained model `/backup/yolo-voc_1000.weights` run training with multigpu (up to 4 GPUs): `darknet.exe detector train data/voc.data yolo-voc.cfg yolo-voc_1000.weights -gpus 0,1,2,3`
 
 https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
