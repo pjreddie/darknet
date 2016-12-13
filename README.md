@@ -130,3 +130,10 @@ If required change pathes in the file `build\darknet\x64\data\voc.data`
 
 More information about training by the link: http://pjreddie.com/darknet/yolo/#train-voc
 
+## How to train with multi-GPU:
+
+1. Train it first on 1 gpu for like 1000 iterations: `darknet.exe detector train data/voc.data yolo-voc.cfg darknet19_448.conv.23`
+
+2. Then stop and run training with multigpu (up to 4 GPUs): `darknet.exe detector train data/voc.data yolo-voc.cfg darknet19_448.conv.23 -gpus 0,1,2,3`
+
+https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
