@@ -105,10 +105,28 @@ Then add to your created project:
 - (right click on project) -> properties -> C/C++ -> Preprocessor -> Preprocessor Definitions
 
 `OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;GPU;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
-- compile to .exe (X64 & Release) and put .dll`s near with .exe:
+- compile to .exe (X64 & Release) and put .dll-s near with .exe:
 
 `pthreadVC2.dll, pthreadGC2.dll` from \3rdparty\dll\x64
 
 `cusolver64_80.dll, curand64_80.dll, cudart64_80.dll, cublas64_80.dll` - 80 for CUDA 8.0 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin
 
+
+## How to train (Pascal VOC Data):
+
+1. Download pre-trained weights for the convolutional layers (76 MB): http://pjreddie.com/media/files/darknet19_448.conv.23 and put to the directory `build\darknet\x64`
+
+2. Download The Pascal VOC Data and unpack it to directory `build\darknet\x64\data\voc`: http://pjreddie.com/projects/pascal-voc-dataset-mirror/ will be created file `voc_label.py` and `\VOCdevkit\` dir
+
+3. Download and install Python for Windows: https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe
+
+4. Run command: `python build\darknet\x64\data\voc\voc_label.py` (to generate files: 2007_test.txt, 2007_train.txt, 2007_val.txt, 2012_train.txt, 2012_val.txt)
+
+5. Run command: `type 2007_train.txt 2007_val.txt 2012_*.txt > train.txt`
+
+6. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.cfg darknet19_448.conv.23`
+
+If required change pathes in the file `build\darknet\x64\data\voc.data`
+
+More information about training by the link: http://pjreddie.com/darknet/yolo/#train-voc
 
