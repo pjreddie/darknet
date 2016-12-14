@@ -6,7 +6,6 @@ def match(prefix,testFN,expectedFN):
     prefixLen = len(prefix)
     with open(testFN,'r') as testF:
         testData = [filename[prefixLen:] for filename in testF.read().split("\n")][:-1]
-    print(testData)
     with open(expectedFN,'r') as expectedF:
         expectedData = set(expectedF.read().split("\n")[:-1])
     numTest = len(testData)
