@@ -190,15 +190,23 @@ int check_enter_exit(int box_left, int box_right, int box_bottom) {
     return 0;
 }
 
+char ** getPeople(int num, char ** names) {
+    char ** people;
+    int numPeople = 0;
+}
+
 int draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
 {
     int i;
     int isEnterExit = 0;
+    int isPerson = 0;
     for(i = 0; i < num; ++i){
+        isPerson = 0;
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
         if(prob > thresh){
-
+            if(strcmp(names[class],"person") == 0)
+                isPerson = 1;
             int width = im.h * .012;
 
   //          printf("%s: %.0f%%\n", names[class], prob*100);
@@ -220,7 +228,7 @@ int draw_detections(image im, int num, float thresh, box *boxes, float **probs, 
             int top   = (b.y-b.h/2.)*im.h;
             int bot   = (b.y+b.h/2.)*im.h;
             
-            if(check_enter_exit(left,right,bot))
+            if(isPerson && check_enter_exit(left,right,bot))
                 isEnterExit = 1; 
 
             if(left < 0) left = 0;
