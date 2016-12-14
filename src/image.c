@@ -177,23 +177,39 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
+int check_enter_exit(int box_left, int box_right, int box_bottom) {
+    static const int num_doors = 2,
+                     DOOR_LEFT[2] = {512, 1108},
+                     DOOR_RIGHT[2] = {640, 1377},
+                     DOOR_BOTTOM[2] = {0, 495},
+                     DOOR_CENTER[2] = {576, 1242};
+    int i = 0;
+    for(; i < num_doors; ++i)
+        if ((box_left < DOOR_RIGHT[i] && box_right > DOOR_LEFT[i] && box_bottom >= DOOR_BOTTOM[i]) || (DOOR_CENTER[i] > box_left && DOOR_CENTER[i] < box_right))
+            return 1;
+    return 0;
+}
+
+char ** getPeople(int num, char ** names) {
+    char ** people;
+    int numPeople = 0;
+}
+
+int draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
 {
     int i;
-
+    int isEnterExit = 0;
+    int isPerson = 0;
     for(i = 0; i < num; ++i){
+        isPerson = 0;
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
         if(prob > thresh){
-
+            if(strcmp(names[class],"person") == 0)
+                isPerson = 1;
             int width = im.h * .012;
 
-            if(0){
-                width = pow(prob, 1./2.)*10+1;
-                alphabet = 0;
-            }
-
-            printf("%s: %.0f%%\n", names[class], prob*100);
+  //          printf("%s: %.0f%%\n", names[class], prob*100);
             int offset = class*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
@@ -211,6 +227,9 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             int right = (b.x+b.w/2.)*im.w;
             int top   = (b.y-b.h/2.)*im.h;
             int bot   = (b.y+b.h/2.)*im.h;
+            
+            if(isPerson && check_enter_exit(left,right,bot))
+                isEnterExit = 1; 
 
             if(left < 0) left = 0;
             if(right > im.w-1) right = im.w-1;
@@ -224,6 +243,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             }
         }
     }
+    return isEnterExit;
 }
 
 void transpose_image(image im)
