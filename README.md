@@ -137,3 +137,62 @@ More information about training by the link: http://pjreddie.com/darknet/yolo/#t
 2. Then stop and by using partially-trained model `/backup/yolo-voc_1000.weights` run training with multigpu (up to 4 GPUs): `darknet.exe detector train data/voc.data yolo-voc.cfg yolo-voc_1000.weights -gpus 0,1,2,3`
 
 https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
+
+## How to train (to detect your custom objects):
+
+1. Create file `yolo-obj.cfg` with the same content as in `yolo-voc.cfg` (or copy `yolo-voc.cfg` to `yolo-obj.cfg)` and:
+
+  * change line `classes=20` to your number of objects
+  * change line `filters=425` to `filters=(classes + 5)*5` (generally this depends on the `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
+
+  For example, for 2 objects, your file `yolo-obj.cfg` should differ from `yolo-voc.cfg` in such lines:
+
+  ```
+  [convolutional]
+  filters=35
+
+  [region]
+  classes=2
+  ```
+
+2. Create file `obj.names` in the directory `build\darknet\x64\data\`, with objects names - each in new line
+
+3. Create file `obj.data` in the directory `build\darknet\x64\data\`, containing (where **classes = number of objects**):
+
+  ```
+  classes= 2
+  train  = train.txt
+  valid  = test.txt
+  names = obj.names
+  backup = backup/
+  ```
+
+4. Put image-files (.jpg) of your objects in the directory `build\darknet\x64\data\obj\`
+
+5. Create `.txt`-file for each `.jpg`-image-file - with the same name, but with `.txt`-extension, and put to file: object number and object coordinates on this image, for each object in new line: `<object-class> <x> <y> <width> <height>`
+
+  Where: 
+  * `<object-class>` - integer number of object from `0` to `(classes-1)`
+  * `<x> <y> <width> <height>` - float values relative to width and height of image, it can be equal from 0.0 to 1.0
+  * atention: `<x> <y>` - are center of rectangle (are not top-left corner)
+
+  For example for `img1.jpg` you should create `img1.txt` containing:
+
+  ```
+  1 0.716797 0.395833 0.216406 0.147222
+  0 0.687109 0.379167 0.255469 0.158333
+  1 0.420312 0.395833 0.140625 0.166667
+  ```
+
+6. Create file `train.txt` in directory `build\darknet\x64\data\`, with filenames of your images, each filename in new line, with path relative to `darknet.exe`, for example containing:
+
+  ```
+  data/obj/img1.jpg
+  data/obj/img2.jpg
+  data/obj/img3.jpg
+  ```
+
+7. Download pre-trained weights for the convolutional layers (76 MB): http://pjreddie.com/media/files/darknet19_448.conv.23 and put to the directory `build\darknet\x64`
+
+8. Start training by using the command line: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet19_448.conv.23`
+
