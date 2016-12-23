@@ -510,7 +510,7 @@ void print_detector_csv(FILE *fp, char *id, char **names, box *boxes, float **pr
         
         for(j = 0; j < classes; ++j){
             if (probs[i][j] >= thresh)
-                fprintf(fp, "%s,%s,%f,%f,%f,%f,%f\n", id, names[j],probs[i][j], xmin, ymin, xmax, ymax);
+                fprintf(fp, "\"%s\",%s,%f,%f,%f,%f,%f\n", id, names[j],probs[i][j], xmin, ymin, xmax, ymax);
         }
     }
 }
@@ -540,7 +540,7 @@ void stream_detector(float thresh, char *stream_path, char *ostream_path, char *
     char buf[1024];
     char *input = buf;
     while(1){
-        input = fgets(input, sizeof(buf), infp);
+        input = fgets(buf, sizeof(buf), infp);
         if(!input) return;
         strtok(input, "\n");
         image im = load_image_color(input,0,0);
