@@ -126,7 +126,7 @@ void reset_rnn_state(network net, int b)
     }
 }
 
-void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, int tokenized)
+void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, int tokenized, char *backup_directory)
 {
     srand(time(0));
     unsigned char *text = 0;
@@ -146,7 +146,6 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
         fclose(fp);
     }
 
-    char *backup_directory = "/home/pjreddie/backup/";
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
     float avg_loss = -1;
@@ -480,10 +479,11 @@ void run_char_rnn(int argc, char **argv)
     int clear = find_arg(argc, argv, "-clear");
     int tokenized = find_arg(argc, argv, "-tokenized");
     char *tokens = find_char_arg(argc, argv, "-tokens", 0);
+    char *backup_directory = find_char_arg(argc, argv, "-backup", "./backup/");
 
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
-    if(0==strcmp(argv[2], "train")) train_char_rnn(cfg, weights, filename, clear, tokenized);
+    if(0==strcmp(argv[2], "train")) train_char_rnn(cfg, weights, filename, clear, tokenized, backup_directory);
     else if(0==strcmp(argv[2], "valid")) valid_char_rnn(cfg, weights, seed);
     else if(0==strcmp(argv[2], "validtactic")) valid_tactic_rnn(cfg, weights, seed);
     else if(0==strcmp(argv[2], "vec")) vec_char_rnn(cfg, weights, seed);
