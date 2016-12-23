@@ -441,7 +441,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
-
+    
     image **alphabet = load_alphabet();
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -467,11 +467,11 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         image im = load_image_color(input,0,0);
         image sized = resize_image(im, net.w, net.h);
         layer l = net.layers[net.n-1];
-
+        
         box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
         float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
         for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
-
+        
         float *X = sized.data;
         time=clock();
         network_predict(net, X);
@@ -481,7 +481,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
         save_image(im, "predictions");
         show_image(im, "predictions");
-
+        
         free_image(im);
         free_image(sized);
         free(boxes);
@@ -493,6 +493,74 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (filename) break;
     }
 }
+
+void print_detector_csv(FILE *fp, char *id, char **names, box *boxes, float **probs, int total, int classes, int w, int h, float thresh)
+{
+    int i, j;
+    for(i = 0; i < total; ++i){
+        float xmin = boxes[i].x - boxes[i].w/2.;
+        float xmax = boxes[i].x + boxes[i].w/2.;
+        float ymin = boxes[i].y - boxes[i].h/2.;
+        float ymax = boxes[i].y + boxes[i].h/2.;
+        
+        if (xmin < 0) xmin = 0;
+        if (ymin < 0) ymin = 0;
+        if (xmax > w) xmax = w;
+        if (ymax > h) ymax = h;
+        
+        for(j = 0; j < classes; ++j){
+            if (probs[i][j] >= thresh)
+                fprintf(fp, "\"%s\",%s,%f,%f,%f,%f,%f\n", id, names[j],probs[i][j], xmin, ymin, xmax, ymax);
+        }
+    }
+}
+void stream_detector(float thresh, char *stream_path, char *ostream_path, char *datacfg, char *cfgfile, char *weightfile)
+{
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    char **names = get_labels(name_list);
+    
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    srand(2222222);
+    FILE *infp = stdin;
+    if (strcmp(stream_path,"-") != 0) {
+        infp = fopen(stream_path, "r");
+    }
+    FILE *outfp = stdout;
+    if (strcmp(ostream_path,"-") != 0) {
+        outfp = fopen(ostream_path, "w");
+    }
+    fprintf(outfp, "image,category,prob,xmin,ymin,xmax,ymax\n");
+    int j;
+    float nms=.4;
+    char buf[1024];
+    char *input = buf;
+    while(1){
+        input = fgets(buf, sizeof(buf), infp);
+        if(!input) return;
+        strtok(input, "\n");
+        image im = load_image_color(input,0,0);
+        image sized = resize_image(im, net.w, net.h);
+        layer l = net.layers[net.n-1];
+        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+        float *X = sized.data;
+        network_predict(net, X);
+        get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
+        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        print_detector_csv(outfp, input, names, boxes, probs, l.w*l.h*l.n, l.classes, l.w, l.h, thresh);
+        free_image(im);
+        free_image(sized);
+        free(boxes);
+        free_ptrs((void **)probs, l.w*l.h*l.n);
+    }
+}
+
 
 void run_detector(int argc, char **argv)
 {
@@ -528,7 +596,6 @@ void run_detector(int argc, char **argv)
     }
 
     int clear = find_arg(argc, argv, "-clear");
-
     char *datacfg = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;

@@ -1,31 +1,4 @@
-![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
-
-#Darknet#
-Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
-
-For more information see the [Darknet project website](http://pjreddie.com/darknet).
-
-For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
-
-# Added command
-
-* Supports a new command: `darknet stream` for batch processing. Default for `-in` is `stdin`, default for `-out` is `stdout`
-
-Running `darknet stream cfg/yolo.cfg yolo.weights -thresh 0.15 -in images.txt -out images.result.txt`
-
-where `images.txt` has
-
-```data/dog.jpg
-data/eagle.jpg
-data/giraffe.jpg
-data/horses.jpg
-data/person.jpg
-data/scream.jpg
-```
-
-produces `images.result.txt` with
-
-```image,category,prob,xmin,ymin,xmax,ymax
+image,category,prob,xmin,ymin,xmax,ymax
 "data/dog.jpg",car,0.542268,0.594182,0.135254,0.876864,0.302098
 "data/dog.jpg",truck,0.261111,0.594182,0.135254,0.876864,0.302098
 "data/dog.jpg",bicycle,0.218625,0.066853,0.160006,0.348404,0.675097
@@ -44,5 +17,3 @@ produces `images.result.txt` with
 "data/person.jpg",horse,0.886999,0.631595,0.315156,0.946103,0.804331
 "data/person.jpg",dog,0.746660,0.105581,0.609787,0.318202,0.831716
 "data/scream.jpg",person,0.357746,0.354842,0.480332,0.646520,1.005375
-```
-

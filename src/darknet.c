@@ -31,6 +31,8 @@ extern void run_cifar(int argc, char **argv);
 extern void run_go(int argc, char **argv);
 extern void run_art(int argc, char **argv);
 extern void run_super(int argc, char **argv);
+void stream_detector(float thresh, char *stream_path, char *ostream_path, char *datacfg, char *cfgfile, char *weightfile);
+
 
 void average(int argc, char *argv[])
 {
@@ -380,6 +382,11 @@ int main(int argc, char **argv)
         run_super(argc, argv);
     } else if (0 == strcmp(argv[1], "detector")){
         run_detector(argc, argv);
+    } else if (0 == strcmp(argv[1], "stream")){
+        float thresh = find_float_arg(argc, argv, "-thresh", .24);
+        char *instream = find_char_arg(argc, argv, "-in", "-");
+        char *outstream = find_char_arg(argc, argv, "-out", "-");
+        stream_detector(thresh, instream, outstream, "cfg/coco.data", argv[2], argv[3]);
     } else if (0 == strcmp(argv[1], "detect")){
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
         char *filename = (argc > 4) ? argv[4]: 0;
