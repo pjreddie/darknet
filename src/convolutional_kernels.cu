@@ -133,6 +133,9 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
     if(l.batch_normalize){
         backward_batchnorm_layer_gpu(l, state);
+        //axpy_ongpu(l.outputs*l.batch, -state.net.decay, l.x_gpu, 1, l.delta_gpu, 1);
+    } else {
+        //axpy_ongpu(l.outputs*l.batch, -state.net.decay, l.output_gpu, 1, l.delta_gpu, 1);
     }
     float *original_input = state.input;
 
