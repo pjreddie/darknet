@@ -1,4 +1,6 @@
-![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
+|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://cloud.githubusercontent.com/assets/4096485/21550284/88f81b8a-ce09-11e6-9516-8c3dd35dfaa7.jpg) https://arxiv.org/abs/1612.08242 |
+|---|---|
+
 
 # Yolo-Windows v2
 # "You Only Look Once: Unified, Real-Time Object Detection (version 2)"
