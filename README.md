@@ -85,6 +85,13 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
   3.1 (right click on project) -> properties  -> C/C++ -> General -> Additional Include Directories
   
   3.2 (right click on project) -> properties  -> Linker -> General -> Additional Library Directories
+  
+  3.3 Open file: `\src\yolo.c` and change 3 lines to your OpenCV-version - `249` (for 2.4.9), `2413` (for 2.4.13), ... : 
+
+    * `#pragma comment(lib, "opencv_core249.lib")`
+    * `#pragma comment(lib, "opencv_imgproc249.lib")`
+    * `#pragma comment(lib, "opencv_highgui249.lib")` 
+
 
 4. If you have other version of OpenCV 3.x (not 2.4.x) then you should change many places in code by yourself.
 
