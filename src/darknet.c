@@ -13,7 +13,7 @@
 #endif
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
-extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh);
+extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh);
 extern void run_voxel(int argc, char **argv);
 extern void run_yolo(int argc, char **argv);
 extern void run_detector(int argc, char **argv);
@@ -129,7 +129,9 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
     network net = parse_network_cfg(cfgfile);
     int oldn = net.layers[net.n - 2].n;
     int c = net.layers[net.n - 2].c;
-    net.layers[net.n - 2].n = 9372;
+    scal_cpu(oldn*c, .1, net.layers[net.n - 2].weights, 1);
+    scal_cpu(oldn, 0, net.layers[net.n - 2].biases, 1);
+    net.layers[net.n - 2].n = 9418;
     net.layers[net.n - 2].biases += 5;
     net.layers[net.n - 2].weights += 5*c;
     if(weightfile){
@@ -383,7 +385,7 @@ int main(int argc, char **argv)
     } else if (0 == strcmp(argv[1], "detect")){
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
         char *filename = (argc > 4) ? argv[4]: 0;
-        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh);
+        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, .5);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
     } else if (0 == strcmp(argv[1], "go")){

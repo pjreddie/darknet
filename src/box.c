@@ -246,6 +246,34 @@ int nms_comparator(const void *pa, const void *pb)
     return 0;
 }
 
+void do_nms_obj(box *boxes, float **probs, int total, int classes, float thresh)
+{
+    int i, j, k;
+    sortable_bbox *s = calloc(total, sizeof(sortable_bbox));
+
+    for(i = 0; i < total; ++i){
+        s[i].index = i;       
+        s[i].class = classes;
+        s[i].probs = probs;
+    }
+
+    qsort(s, total, sizeof(sortable_bbox), nms_comparator);
+    for(i = 0; i < total; ++i){
+        if(probs[s[i].index][classes] == 0) continue;
+        box a = boxes[s[i].index];
+        for(j = i+1; j < total; ++j){
+            box b = boxes[s[j].index];
+            if (box_iou(a, b) > thresh){
+                for(k = 0; k < classes+1; ++k){
+                    probs[s[j].index][k] = 0;
+                }
+            }
+        }
+    }
+    free(s);
+}
+
+
 void do_nms_sort(box *boxes, float **probs, int total, int classes, float thresh)
 {
     int i, j, k;

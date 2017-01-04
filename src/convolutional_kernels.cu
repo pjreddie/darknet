@@ -127,6 +127,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
+    //constrain_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
     gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
 
     backward_bias_gpu(l.bias_updates_gpu, l.delta_gpu, l.batch, l.n, l.out_w*l.out_h);

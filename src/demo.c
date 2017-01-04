@@ -31,6 +31,7 @@ static image disp = {0};
 static CvCapture * cap;
 static float fps = 0;
 static float demo_thresh = 0;
+static float demo_hier_thresh = .5;
 
 static float *predictions[FRAMES];
 static int demo_index = 0;
@@ -63,7 +64,7 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
-        get_region_boxes(l, 1, 1, demo_thresh, probs, boxes, 0, 0);
+        get_region_boxes(l, 1, 1, demo_thresh, probs, boxes, 0, 0, demo_hier_thresh);
     } else {
         error("Last layer must produce detections\n");
     }
@@ -91,7 +92,7 @@ double get_wall_time()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, float hier_thresh)
 {
     //skip = frame_skip;
     image **alphabet = load_alphabet();
@@ -100,6 +101,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     demo_alphabet = alphabet;
     demo_classes = classes;
     demo_thresh = thresh;
+    demo_hier_thresh = hier_thresh;
     printf("Demo\n");
     net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -127,7 +129,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     boxes = (box *)calloc(l.w*l.h*l.n, sizeof(box));
     probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes, sizeof(float));
 
     pthread_t fetch_thread;
     pthread_t detect_thread;
@@ -213,7 +215,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, float hier_thresh)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
