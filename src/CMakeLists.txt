@@ -223,8 +223,9 @@ install( TARGETS darknet_lib darknet
   ARCHIVE DESTINATION     lib
   LIBRARY DESTINATION     lib
   RUNTIME DESTINATION     bin
+  COMPONENT    runtime
   )
 
-install( FILES ${public_headers}
-  DESTINATION "include"
+install( FILES ${headers}
+  DESTINATION "include/darknet"
   )
