@@ -226,6 +226,11 @@ install( TARGETS darknet_lib darknet
   COMPONENT    runtime
   )
 
-install( FILES ${headers}
-  DESTINATION "include/darknet"
-  )
+
+OPTION( INSTALL_HEADER_FILES "Install header files needed for development" FALSE )
+
+if (INSTALL_HEADER_FILES)
+  install( FILES ${headers}
+    DESTINATION "include/darknet"
+    )
+endif()
