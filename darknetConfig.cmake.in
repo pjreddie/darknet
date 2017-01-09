@@ -1,0 +1,7 @@
+#
+# Package config file for darkent
+#
+# From build tree
+set( darknet_INCLUDE_DIR "@CMAKE_SOURCE_DIR@/src" )
+set( darknet_LIBRARY_DIR "@CMAKE_BINARY_DIR@/lib" )
+set( darknet_LIBRARIES "darknet_lib" )
