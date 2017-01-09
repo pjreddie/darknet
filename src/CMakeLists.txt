@@ -174,6 +174,7 @@ if (USE_OPENCV)
     message( FATAL_ERROR "OpenCV version must be at least 2.4" )
   endif()
 
+  add_definitions( -DOPENCV )
   list( APPEND libs opencv_core opencv_highgui )
 endif()
 
