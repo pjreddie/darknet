@@ -132,24 +132,28 @@ set( libs m )
 
 if (USE_GPU)
   find_package(CUDA QUIET REQUIRED)
+  include_directories( ${CUDA_TOOLKIT_ROOT_DIR}/include )
+  add_definitions( -DGPU )
 
   set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
     -gencode arch=compute_20,code=[sm_20,sm_21]
     -gencode arch=compute_30,code=sm_30
     -gencode arch=compute_35,code=sm_35
     -gencode arch=compute_50,code=[sm_50,compute_50]
-    -gencode arch=compute_52,code=[sm_52,compute_52] )
+    -gencode arch=compute_52,code=[sm_52,compute_52]
+    -Xcompiler -fPIC )
 
-  #  COMMON+= -DGPU -I/usr/local/cuda/include/
-  #  CFLAGS+= -DGPU
-  #  LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
-  #  LDFLAGS+= -lstdc++
-  list( APPEND libs cuda cudart cublas curand )
-  add_definitions( -DGPU )
-  set( source ${source} ${gpu_source} )
+  CUDA_COMPILE( CUDA_SRC ${gpu_source} )
+  list( APPEND libs cuda
+    ${CUDA_LIBRARIES}
+    ${CUDA_CUBLAS_LIBRARIES}
+    ${CUDA_curand_LIBRARY}
+    )
 endif()
 
 if (USE_CUDNN)
+  find_package(CUDNN REQUIRED)
+
   # COMMON+= -DCUDNN
   # CFLAGS+= -DCUDNN
   # LDFLAGS+= -lcudnn
@@ -160,20 +164,8 @@ endif()
 
 if (USE_OPENCV)
   find_package( OpenCV 2.4.6 REQUIRED )
+
   include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
-
-  if( OpenCV_VERSION VERSION_GREATER "2.4" )
-    set( USE_OPENCV True )
-    if( OpenCV_VERSION VERSION_GREATER "3.0" OR
-        OpenCV_VERSION VERSION_EQUAL "3.0")
-      message(STATUS "Found OPENCV 3.0")
-      set (KWIVER_HAS_OPENCV_VER_3 True)
-    endif()
-
-  else()
-    message( FATAL_ERROR "OpenCV version must be at least 2.4" )
-  endif()
-
   add_definitions( -DOPENCV )
   list( APPEND libs opencv_core opencv_highgui )
 endif()
@@ -186,11 +178,12 @@ set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors")
 add_library( darknet_lib
   ${headers}
   ${source}
+  ${CUDA_SRC}
   )
 
 target_link_libraries( darknet_lib
   PRIVATE  ${CMAKE_THREAD_LIBS_INIT}
-           ${libs}
+	   ${libs}
   )
 
 set_target_properties( darknet_lib
