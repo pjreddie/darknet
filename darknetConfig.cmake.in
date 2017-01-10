@@ -5,3 +5,4 @@
 set( darknet_INCLUDE_DIR "@CMAKE_SOURCE_DIR@/src" )
 set( darknet_LIBRARY_DIR "@CMAKE_BINARY_DIR@/lib" )
 set( darknet_LIBRARIES "darknet_lib" )
+set( DARKNET_USE_GPU   @USE_GPU@ )
