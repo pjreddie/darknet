@@ -211,6 +211,16 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 8. Start training by using the command line: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet19_448.conv.23`
 
+9. After training is complete - get result `yolo-obj_final.weights` from path `build\darknet\x64\backup\`
+
+ * Also you can get result earlier than all 45000 iterations, for example, usually sufficient 2000 iterations for each class(object). I.e. for 6 classes to avoid overfitting - you can stop training after 12000 iterations and use `yolo-obj_12000.weights` to detection.
+ 
+### Custom object detection:
+
+Example of custom object detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_3000.weights`
+
+| ![Yolo_v2_training](https://hsto.org/files/d12/1e7/515/d121e7515f6a4eb694913f10de5f2b61.jpg) | ![Yolo_v2_training](https://hsto.org/files/727/c7e/5e9/727c7e5e99bf4d4aa34027bb6a5e4bab.jpg) |
+|---|---|
 
 ## How to mark bounded boxes of objects and create annotation files:
 
