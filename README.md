@@ -76,7 +76,16 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 ### How to compile:
 
-1. If you have CUDA 8.0, OpenCV 2.4.9 (C:\opencv_2.4.9) and MSVS 2015 then start MSVS, open `build\darknet\darknet.sln` and do the: Build -> Build darknet
+1. If you have MSVS 2015, CUDA 8.0 and OpenCV 2.4.9 (with paths: `C:\opencv_2.4.9\opencv\build\include` & `C:\opencv_2.4.9\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
+
+  1.1 If you want to build with CUDNN to speed up, then:
+      
+    * download and install CUDNN: https://developer.nvidia.com/cudnn
+      
+    * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
+      
+    * open `\darknet.sln` -> (right click on project) -> properties  -> C/C++ -> Preprocessor -> Preprocessor Definitions, and add at the beginning of line: `CUDNN;`
+      
 
 2. If you have other version of CUDA (not 8.0) then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 8.0" and change it to your CUDA-version, then do step 1
 
