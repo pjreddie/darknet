@@ -2,6 +2,8 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
+#pragma comment(lib, "cudnn.lib")  
+
 extern "C" {
 #include "convolutional_layer.h"
 #include "batchnorm_layer.h"

@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#pragma comment(lib, "cudnn.lib")  
+
 #ifdef AI2
 #include "xnor_layer.h"
 #endif
