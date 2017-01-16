@@ -2,7 +2,9 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
+#ifdef CUDNN
 #pragma comment(lib, "cudnn.lib")  
+#endif
 
 extern "C" {
 #include "convolutional_layer.h"
