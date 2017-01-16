@@ -1,8 +1,15 @@
+# Yolo-Windows v2
+
+1. [How to use](#how-to-use)
+2. [How to compile](#how-to-compile)
+3. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
+4. [How to train (to detect your custom objects)](t#how-to-train-to-detect-your-custom-objects)
+5. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://cloud.githubusercontent.com/assets/4096485/21550284/88f81b8a-ce09-11e6-9516-8c3dd35dfaa7.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
 
 
-# Yolo-Windows v2
 # "You Only Look Once: Unified, Real-Time Object Detection (version 2)"
 A yolo windows version (for object detection)
 
@@ -76,7 +83,7 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 ### How to compile:
 
-1. If you have MSVS 2015, CUDA 8.0 and OpenCV 2.4.9 (with paths: `C:\opencv_2.4.9\opencv\build\include` & `C:\opencv_2.4.9\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
+1. If you have MSVS 2015, CUDA 8.0 and OpenCV 2.4.9 (with paths: `C:\opencv_2.4.9\opencv\build\include` & `C:\opencv_2.4.9\opencv\build\x64\vc12\lib` or `vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
 
 2. If you have other version of CUDA (not 8.0) then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 8.0" and change it to your CUDA-version, then do step 1
 
