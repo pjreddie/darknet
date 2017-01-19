@@ -152,14 +152,15 @@ if (USE_GPU)
 endif()
 
 if (USE_CUDNN)
-  find_package(CUDNN REQUIRED)
+  find_library( CUDNN_LIBRARIES
+    NAMES cudnn libcudnn.so libcudnn.so.5
+    PATHS ${CUDA_TOOLKIT_ROOT_DIR}/targets/aarch64-linux
+          ${CUDA_TOOLKIT_ROOT_DIR}
+    PATH_SUFFIXES lib lib64
+  )
 
-  # COMMON+= -DCUDNN
-  # CFLAGS+= -DCUDNN
-  # LDFLAGS+= -lcudnn
-  list( APPEND libs cudnn )
+  list( APPEND libs ${CUDNN_LIBRARIES} )
   add_definitions( -DCUDNN )
-
 endif()
 
 if (USE_OPENCV)
