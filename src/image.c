@@ -165,7 +165,7 @@ image **load_alphabet()
 {
     int i, j;
     const int nsize = 8;
-    image **alphabets = (image**)calloc(nsize, sizeof(image));
+    image **alphabets = (image**)calloc(nsize, sizeof(image*));
     for(j = 0; j < nsize; ++j){
         alphabets[j] = (image*)calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
@@ -462,6 +462,11 @@ image ipl_to_image(IplImage* src)
     int c = src->nChannels;
     int step = src->widthStep;
     image out = make_image(w, h, c);
+    if(!out.data)
+    {
+        printf("@ ipl_to_image, out.data is NULL\n");
+        exit(-1);
+    }
     int i, j, k, count=0;;
 
     for(k= 0; k < c; ++k){
@@ -586,7 +591,7 @@ image make_empty_image(int w, int h, int c)
     out.h = h;
     out.w = w;
     out.c = c;
-    return out;
+    return out;  
 }
 
 image make_image(int w, int h, int c)
@@ -1352,5 +1357,6 @@ void free_image(image m)
 {
     if(m.data){
         free(m.data);
+        m.data = 0;
     }
 }

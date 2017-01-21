@@ -291,7 +291,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
     box *boxes = (box*)calloc(l.w*l.h*l.n, sizeof(box));
     float **probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float));
 
 
     int m = plist->size;
@@ -385,7 +385,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     int j, k;
     box *boxes = (box*)calloc(l.w*l.h*l.n, sizeof(box));
     float **probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -479,7 +479,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         box *boxes = (box*)calloc(l.w*l.h*l.n, sizeof(box));
         float **probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(l.classes + 1, sizeof(float *));
+        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(l.classes + 1, sizeof(float));
 
         float *X = sized.data;
         time=clock();

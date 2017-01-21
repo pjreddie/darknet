@@ -318,6 +318,13 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
             int p_index = index * (l.classes + 5) + 4;
             float scale = predictions[p_index];
             int box_index = index * (l.classes + 5);
+
+            if(index >= l.w*l.h*l.n)
+            {
+                printf("%s Error - exceeded boxes index bounds, index = %d\n", __FUNCTION__, index);
+                break;
+            }
+
             boxes[index] = get_region_box(predictions, l.biases, n, box_index, col, row, l.w, l.h);
             boxes[index].x *= w;
             boxes[index].y *= h;
@@ -330,13 +337,28 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
                 hierarchy_predictions(predictions + class_index, l.classes, l.softmax_tree, 0);
                 if(map){
                     for(j = 0; j < 200; ++j){
+
+                        if(j >= l.classes)
+                        {
+                            printf("%s Error - exceeded probs index bounds, j = %d\n", __FUNCTION__, j);
+                            break;
+                        }
+
                         float prob = scale*predictions[class_index+map[j]];
                         probs[index][j] = (prob > thresh) ? prob : 0;
                     }
                 } else {
                     int j =  hierarchy_top_prediction(predictions + class_index, l.softmax_tree, tree_thresh);
+
+                    if(j >= l.classes)
+                    {
+                        printf("%s Error - exceeded probs index bounds, j = %d\n", __FUNCTION__, j);
+                        break;
+                    }
                     probs[index][j] = (scale > thresh) ? scale : 0;
+#if 0 // cannot be l.classes - what is this doing here ?
                     probs[index][l.classes] = scale;
+#endif
                 }
             } else {
                 for(j = 0; j < l.classes; ++j){
