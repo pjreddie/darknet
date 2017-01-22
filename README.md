@@ -3,7 +3,7 @@
 1. [How to use](#how-to-use)
 2. [How to compile](#how-to-compile)
 3. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
-4. [How to train (to detect your custom objects)](t#how-to-train-to-detect-your-custom-objects)
+4. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
 5. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://cloud.githubusercontent.com/assets/4096485/21550284/88f81b8a-ce09-11e6-9516-8c3dd35dfaa7.jpg) https://arxiv.org/abs/1612.08242 |
