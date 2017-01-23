@@ -99,14 +99,7 @@ struct layer{
     float B1;
     float B2;
     float eps;
-    float *m_gpu;
-    float *v_gpu;
     int t;
-    float *m;
-    float *v;
-
-    tree *softmax_tree;
-    int  *map;
 
     float alpha;
     float beta;
@@ -129,33 +122,34 @@ struct layer{
     float probability;
     float scale;
 
-    int *indexes;
-    float *rand;
-    float *cost;
-    char  *cweights;
-    float *state;
-    float *prev_state;
-    float *forgot_state;
-    float *forgot_delta;
-    float *state_delta;
-
-    float *concat;
-    float *concat_delta;
-
-    float *binary_weights;
-
-    float *biases;
-    float *bias_updates;
-
-    float *scales;
-    float *scale_updates;
-
-    float *weights;
-    float *weight_updates;
-
-    float *col_image;
+    char  * cweights;
+    int   * indexes;
     int   * input_layers;
     int   * input_sizes;
+    int   * map;
+    float * rand;
+    float * cost;
+    float * state;
+    float * prev_state;
+    float * forgot_state;
+    float * forgot_delta;
+    float * state_delta;
+
+    float * concat;
+    float * concat_delta;
+
+    float * binary_weights;
+
+    float * biases;
+    float * bias_updates;
+
+    float * scales;
+    float * scale_updates;
+
+    float * weights;
+    float * weight_updates;
+
+    float * col_image;
     float * delta;
     float * output;
     float * squared;
@@ -173,6 +167,15 @@ struct layer{
 
     float * x;
     float * x_norm;
+
+    float * m;
+    float * v;
+
+    float * z_cpu;
+    float * r_cpu;
+    float * h_cpu;
+
+    float * binary_input;
 
     struct layer *input_layer;
     struct layer *self_layer;
@@ -194,20 +197,20 @@ struct layer{
     struct layer *input_h_layer;
     struct layer *state_h_layer;
 
-    float *z_cpu;
-    float *r_cpu;
-    float *h_cpu;
-
-    float *binary_input;
+    tree *softmax_tree;
 
     size_t workspace_size;
 
     #ifdef GPU
+    int *indexes_gpu;
+
     float *z_gpu;
     float *r_gpu;
     float *h_gpu;
 
-    int *indexes_gpu;
+    float *m_gpu;
+    float *v_gpu;
+
     float * prev_state_gpu;
     float * forgot_state_gpu;
     float * forgot_delta_gpu;

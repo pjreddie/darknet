@@ -267,7 +267,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         h =  boxes[i].h;
         id = boxes[i].id;
 
-        if (w < .01 || h < .01) continue;
+        if (w < .005 || h < .005) continue;
 
         int col = (int)(x*num_boxes);
         int row = (int)(y*num_boxes);
@@ -317,7 +317,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         h =  boxes[i].h;
         id = boxes[i].id;
 
-        if ((w < .01 || h < .01)) continue;
+        if ((w < .005 || h < .005)) continue;
 
         truth[i*5+0] = x;
         truth[i*5+1] = y;
