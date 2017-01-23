@@ -165,9 +165,9 @@ image **load_alphabet()
 {
     int i, j;
     const int nsize = 8;
-    image **alphabets = calloc(nsize, sizeof(image));
+    image **alphabets = (image**)calloc(nsize, sizeof(image));
     for(j = 0; j < nsize; ++j){
-        alphabets[j] = calloc(128, sizeof(image));
+        alphabets[j] = (image*)calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
             char buff[256];
             sprintf(buff, "data/labels/%d_%d.png", i, j);
@@ -181,9 +181,9 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 {
     int i;
 
-    for(i = 0; i < num; ++i){
-        int class = max_index(probs[i], classes);
-        float prob = probs[i][class];
+    for(i = 0; i < num; ++i) {
+        int class1 = max_index(probs[i], classes);
+        float prob = probs[i][class1];
         if(prob > thresh){
 
             int width = im.h * .012;
@@ -193,8 +193,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
                 alphabet = 0;
             }
 
-            printf("%s: %.0f%%\n", names[class], prob*100);
-            int offset = class*123457 % classes;
+            printf("%s: %.0f%%\n", names[class1], prob*100);
+            int offset = class1*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
             float blue = get_color(0,offset,classes);
@@ -219,7 +219,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, names[class], (im.h*.03)/10);
+                image label = get_label(alphabet, names[class1], (im.h*.03)/10);
                 draw_label(im, top + width, left, label, rgb);
             }
         }
@@ -353,8 +353,8 @@ void normalize_image(image p)
 
 void normalize_image2(image p)
 {
-    float *min = calloc(p.c, sizeof(float));
-    float *max = calloc(p.c, sizeof(float));
+    float *min = (float*)calloc(p.c, sizeof(float));
+    float *max = (float*)calloc(p.c, sizeof(float));
     int i,j;
     for(i = 0; i < p.c; ++i) min[i] = max[i] = p.data[i*p.h*p.w];
 
@@ -383,7 +383,7 @@ void normalize_image2(image p)
 image copy_image(image p)
 {
     image copy = p;
-    copy.data = calloc(p.h*p.w*p.c, sizeof(float));
+    copy.data = (float*)calloc(p.h*p.w*p.c, sizeof(float));
     memcpy(copy.data, p.data, p.h*p.w*p.c*sizeof(float));
     return copy;
 }
@@ -537,7 +537,7 @@ void save_image_png(image im, const char *name)
     char buff[256];
     //sprintf(buff, "%s (%d)", name, windows);
     sprintf(buff, "%s.png", name);
-    unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
+    unsigned char *data = (unsigned char*)calloc(im.w*im.h*im.c, sizeof(char));
     int i,k;
     for(k = 0; k < im.c; ++k){
         for(i = 0; i < im.w*im.h; ++i){
@@ -591,14 +591,14 @@ image make_empty_image(int w, int h, int c)
 image make_image(int w, int h, int c)
 {
     image out = make_empty_image(w,h,c);
-    out.data = calloc(h*w*c, sizeof(float));
+    out.data = (float*)calloc(h*w*c, sizeof(float));
     return out;
 }
 
 image make_random_image(int w, int h, int c)
 {
     image out = make_empty_image(w,h,c);
-    out.data = calloc(h*w*c, sizeof(float));
+    out.data = (float*)calloc(h*w*c, sizeof(float));
     int i;
     for(i = 0; i < w*h*c; ++i){
         out.data[i] = (rand_normal() * .25) + .5;

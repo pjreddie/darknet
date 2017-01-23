@@ -2,7 +2,13 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
+#endif
+
+EXTERNC {
 #include "maxpool_layer.h"
 #include "cuda.h"
 }
@@ -84,7 +90,7 @@ __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_
     prev_delta[index] += d;
 }
 
-extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
+EXTERNC void forward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
     int h = layer.out_h;
     int w = layer.out_w;
@@ -96,7 +102,7 @@ extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state sta
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void backward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
+EXTERNC void backward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
     size_t n = layer.h*layer.w*layer.c*layer.batch;
 

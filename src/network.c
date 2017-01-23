@@ -133,11 +133,11 @@ network make_network(int n)
 {
     network net = {0};
     net.n = n;
-    net.layers = calloc(net.n, sizeof(layer));
-    net.seen = calloc(1, sizeof(int));
+    net.layers = (layer*)calloc(net.n, sizeof(layer));
+    net.seen = (int*)calloc(1, sizeof(int));
     #ifdef GPU
-    net.input_gpu = calloc(1, sizeof(float *));
-    net.truth_gpu = calloc(1, sizeof(float *));
+    net.input_gpu = (float**)calloc(1, sizeof(float *));
+    net.truth_gpu = (float**)calloc(1, sizeof(float *));
     #endif
     return net;
 }
@@ -245,8 +245,8 @@ float train_network_datum(network net, float *x, float *y)
 float train_network_sgd(network net, data d, int n)
 {
     int batch = net.batch;
-    float *X = calloc(batch*d.X.cols, sizeof(float));
-    float *y = calloc(batch*d.y.cols, sizeof(float));
+    float *X = (float*)calloc(batch*d.X.cols, sizeof(float));
+    float *y = (float*)calloc(batch*d.y.cols, sizeof(float));
 
     int i;
     float sum = 0;
@@ -265,8 +265,8 @@ float train_network(network net, data d)
     assert(d.X.rows % net.batch == 0);
     int batch = net.batch;
     int n = d.X.rows / batch;
-    float *X = calloc(batch*d.X.cols, sizeof(float));
-    float *y = calloc(batch*d.y.cols, sizeof(float));
+    float *X = (float*)calloc(batch*d.X.cols, sizeof(float));
+    float *y = (float*)calloc(batch*d.y.cols, sizeof(float));
 
     int i;
     float sum = 0;
@@ -376,11 +376,11 @@ int resize_network(network *net, int w, int h)
         net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
     }else {
         free(net->workspace);
-        net->workspace = calloc(1, workspace_size);
+        net->workspace = (float*)calloc(1, workspace_size);
     }
 #else
     free(net->workspace);
-    net->workspace = calloc(1, workspace_size);
+    net->workspace = (float*)calloc(1, workspace_size);
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;
@@ -407,7 +407,7 @@ detection_layer get_network_detection_layer(network net)
         }
     }
     fprintf(stderr, "Detection layer not found!!\n");
-    detection_layer l = {0};
+    detection_layer l = {};
     return l;
 }
 
@@ -477,7 +477,7 @@ matrix network_predict_data_multi(network net, data test, int n)
     int i,j,b,m;
     int k = get_network_output_size(net);
     matrix pred = make_matrix(test.X.rows, k);
-    float *X = calloc(net.batch*test.X.rows, sizeof(float));
+    float *X = (float*)calloc(net.batch*test.X.rows, sizeof(float));
     for(i = 0; i < test.X.rows; i += net.batch){
         for(b = 0; b < net.batch; ++b){
             if(i+b == test.X.rows) break;
@@ -502,7 +502,7 @@ matrix network_predict_data(network net, data test)
     int i,j,b;
     int k = get_network_output_size(net);
     matrix pred = make_matrix(test.X.rows, k);
-    float *X = calloc(net.batch*test.X.cols, sizeof(float));
+    float *X = (float*)calloc(net.batch*test.X.cols, sizeof(float));
     for(i = 0; i < test.X.rows; i += net.batch){
         for(b = 0; b < net.batch; ++b){
             if(i+b == test.X.rows) break;

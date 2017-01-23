@@ -10,8 +10,14 @@ void forward_batchnorm_layer(layer l, network_state state);
 void backward_batchnorm_layer(layer l, network_state state);
 
 #ifdef GPU
+#ifdef __cplusplus
+extern "C" {
+#endif
 void forward_batchnorm_layer_gpu(layer l, network_state state);
 void backward_batchnorm_layer_gpu(layer l, network_state state);
+#ifdef __cplusplus
+}
+#endif
 void pull_batchnorm_layer(layer l);
 void push_batchnorm_layer(layer l);
 #endif

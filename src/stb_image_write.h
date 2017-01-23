@@ -80,7 +80,7 @@ CREDITS:
 #ifndef INCLUDE_STB_IMAGE_WRITE_H
 #define INCLUDE_STB_IMAGE_WRITE_H
 
-#ifdef __cplusplus
+#ifndef __cplusplus
 extern "C" {
 #endif
 
@@ -89,7 +89,7 @@ extern int stbi_write_bmp(char const *filename, int w, int h, int comp, const vo
 extern int stbi_write_tga(char const *filename, int w, int h, int comp, const void  *data);
 extern int stbi_write_hdr(char const *filename, int w, int h, int comp, const float *data);
 
-#ifdef __cplusplus
+#ifndef __cplusplus
 }
 #endif
 

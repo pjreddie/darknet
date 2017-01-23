@@ -2,7 +2,13 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
+#endif
+
+EXTERNC {
 #include "convolutional_layer.h"
 #include "batchnorm_layer.h"
 #include "gemm.h"
