@@ -11,7 +11,7 @@
 
 layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 {
-    region_layer l = {0};
+    layer l = {0};
     l.type = REGION;
 
     l.n = n;
