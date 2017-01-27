@@ -52,7 +52,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
-    //int N = plist->size;
+    
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
@@ -76,13 +76,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     pthread_t load_thread = load_data(args);
     clock_t time;
     int count = 0;
-    //while(i*imgs < N*120){
+    
     while(get_current_batch(net) < net.max_batches){
         if(l.random && count++%10 == 0){
             printf("Resizing\n");
             int dim = (rand() % 10 + 10) * 32;
             if (get_current_batch(net)+200 > net.max_batches) dim = 608;
-            //int dim = (rand() % 4 + 16) * 32;
+            
             printf("%d\n", dim);
             args.w = dim;
             args.h = dim;
@@ -102,22 +102,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         train = buffer;
         load_thread = load_data(args);
 
-        /*
-           int k;
-           for(k = 0; k < l.max_boxes; ++k){
-           box b = float_to_box(train.y.vals[10] + 1 + k*5);
-           if(!b.x) break;
-           printf("loaded: %f %f %f %f\n", b.x, b.y, b.w, b.h);
-           }
-           image im = float_to_image(448, 448, 3, train.X.vals[10]);
-           int k;
-           for(k = 0; k < l.max_boxes; ++k){
-           box b = float_to_box(train.y.vals[10] + 1 + k*5);
-           printf("%d %d %d %d\n", truth.x, truth.y, truth.w, truth.h);
-           draw_bbox(im, b, 8, 1,0,0);
-           }
-           save_image(im, "truth11");
-         */
+        
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 

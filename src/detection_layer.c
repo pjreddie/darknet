@@ -51,7 +51,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
     int locations = l.side*l.side;
     int i,j;
     memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
-    //if(l.reorg) reorg(l.output, l.w*l.h, size*l.n, l.batch, 1);
+    
     int b;
     if (l.softmax){
         for(b = 0; b < l.batch; ++b){
@@ -117,7 +117,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
                     }
 
                     float iou  = box_iou(out, truth);
-                    //iou = 0;
+                    
                     float rmse = box_rmse(out, truth);
                     if(best_iou > 0 || iou > 0){
                         if(iou > best_iou){
@@ -155,7 +155,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
                 }
                 float iou  = box_iou(out, truth);
 
-                //printf("%d,", best_index);
+                
                 int p_index = index + locations*l.classes + i*l.n + best_index;
                 *(l.cost) -= l.noobject_scale * pow(l.output[p_index], 2);
                 *(l.cost) += l.object_scale * pow(1-l.output[p_index], 2);
@@ -212,7 +212,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
 
 
         printf("Detection Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_allcat/(count*l.classes), avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
-        //if(l.reorg) reorg(l.delta, l.w*l.h, size*l.n, l.batch, 0);
+        
     }
 }
 
@@ -225,7 +225,7 @@ void get_detection_boxes(layer l, int w, int h, float thresh, float **probs, box
 {
     int i,j,n;
     float *predictions = l.output;
-    //int per_cell = 5*num+classes;
+    
     for (i = 0; i < l.side*l.side; ++i){
         int row = i / l.side;
         int col = i % l.side;
@@ -281,7 +281,7 @@ void forward_detection_layer_gpu(const detection_layer l, network_state state)
 void backward_detection_layer_gpu(detection_layer l, network_state state)
 {
     axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
-    //copy_ongpu(l.batch*l.inputs, l.delta_gpu, 1, state.delta, 1);
+    
 }
 #endif
 

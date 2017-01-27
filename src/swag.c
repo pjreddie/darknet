@@ -33,7 +33,7 @@ void train_swag(char *cfgfile, char *weightfile)
     float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
-    //int N = plist->size;
+    
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
@@ -50,7 +50,7 @@ void train_swag(char *cfgfile, char *weightfile)
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
-    //while(i*imgs < N*120){
+    
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();

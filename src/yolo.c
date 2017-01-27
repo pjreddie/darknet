@@ -37,7 +37,7 @@ void train_yolo(char *cfgfile, char *weightfile)
     float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
-    //int N = plist->size;
+    
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
@@ -59,7 +59,7 @@ void train_yolo(char *cfgfile, char *weightfile)
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
-    //while(i*imgs < N*120){
+    
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
@@ -119,9 +119,9 @@ void validate_yolo(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    //list *plist = get_paths("data/voc.2007.test");
+    
     list *plist = get_paths("/home/pjreddie/data/voc/2007_test.txt");
-    //list *plist = get_paths("data/voc.2012.test");
+    
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -318,7 +318,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
+        
         draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
         save_image(im, "predictions");
         show_image(im, "predictions");

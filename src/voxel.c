@@ -63,7 +63,7 @@ void train_voxel(char *cfgfile, char *weightfile)
 
 
     list *plist = get_paths(train_images);
-    //int N = plist->size;
+    
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
@@ -78,7 +78,7 @@ void train_voxel(char *cfgfile, char *weightfile)
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
-    //while(i*imgs < N*120){
+    
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
@@ -163,7 +163,5 @@ void run_voxel(int argc, char **argv)
     if(0==strcmp(argv[2], "train")) train_voxel(cfg, weights);
     else if(0==strcmp(argv[2], "test")) test_voxel(cfg, weights, filename);
     else if(0==strcmp(argv[2], "extract")) extract_voxel(argv[3], argv[4], argv[5]);
-    /*
-       else if(0==strcmp(argv[2], "valid")) validate_voxel(cfg, weights);
-     */
+    
 }

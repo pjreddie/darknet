@@ -18,10 +18,10 @@ int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25
 
 void train_coco(char *cfgfile, char *weightfile)
 {
-    //char *train_images = "/home/pjreddie/data/voc/test/train.txt";
-    //char *train_images = "/home/pjreddie/data/coco/train.txt";
+    
+    
     char *train_images = "data/coco.trainval.txt";
-    //char *train_images = "data/bags.train.list";
+    
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
@@ -44,7 +44,7 @@ void train_coco(char *cfgfile, char *weightfile)
     float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
-    //int N = plist->size;
+    
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
@@ -66,7 +66,7 @@ void train_coco(char *cfgfile, char *weightfile)
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
-    //while(i*imgs < N*120){
+    
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
@@ -76,13 +76,7 @@ void train_coco(char *cfgfile, char *weightfile)
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 
-        /*
-           image im = float_to_image(net.w, net.h, 3, train.X.vals[113]);
-           image copy = copy_image(im);
-           draw_coco(copy, train.y.vals[113], 7, "truth");
-           cvWaitKey(0);
-           free_image(copy);
-         */
+        
 
         time=clock();
         float loss = train_network(net, train);
@@ -150,8 +144,8 @@ void validate_coco(char *cfgfile, char *weightfile)
 
     char *base = "results/";
     list *plist = get_paths("data/coco_val_5k.list");
-    //list *plist = get_paths("/home/pjreddie/data/people-art/test.txt");
-    //list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
+    
+    
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];

@@ -27,7 +27,7 @@ float get_color(int c, int x, int max)
     int j = ceil(ratio);
     ratio -= i;
     float r = (1-ratio) * colors[i][c] + ratio*colors[j][c];
-    //printf("%f\n", r);
+    
     return r;
 }
 
@@ -106,7 +106,7 @@ void draw_label(image a, int r, int c, image label, const float *rgb)
 
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b)
 {
-    //normalize_image(a);
+    
     int i;
     if(x1 < 0) x1 = 0;
     if(x1 >= a.w) x1 = a.w-1;
@@ -200,7 +200,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             float blue = get_color(0,offset,classes);
             float rgb[3];
 
-            //width = prob*20+2;
+            
 
             rgb[0] = red;
             rgb[1] = green;
@@ -405,16 +405,16 @@ void show_image_cv(image p, const char *name)
     image copy = copy_image(p);
     constrain_image(copy);
     if(p.c == 3) rgbgr_image(copy);
-    //normalize_image(copy);
+    
 
     char buff[256];
-    //sprintf(buff, "%s (%d)", name, windows);
+    
     sprintf(buff, "%s", name);
 
     IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
     int step = disp->widthStep;
     cvNamedWindow(buff, CV_WINDOW_NORMAL); 
-    //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
+    
     ++windows;
     for(y = 0; y < p.h; ++y){
         for(x = 0; x < p.w; ++x){
@@ -491,7 +491,7 @@ image load_image_cv(char *filename, int channels)
         sprintf(buff, "echo %s >> bad.list", filename);
         system(buff);
         return make_image(10,10,3);
-        //exit(0);
+        
     }
     image out = ipl_to_image(src);
     cvReleaseImage(&src);
@@ -535,7 +535,7 @@ void save_image_jpg(image p, const char *name)
 void save_image_png(image im, const char *name)
 {
     char buff[256];
-    //sprintf(buff, "%s (%d)", name, windows);
+    
     sprintf(buff, "%s.png", name);
     unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
     int i,k;
@@ -824,7 +824,7 @@ float three_way_min(float a, float b, float c)
     return (a < b) ? ( (a < c) ? a : c) : ( (b < c) ? b : c) ;
 }
 
-// http://www.cs.rit.edu/~ncs/color/t_convert.html
+
 void rgb_to_hsv(image im)
 {
     assert(im.c == 3);
@@ -1268,7 +1268,7 @@ image collapse_images_vert(image *ims, int n)
     for(i = 0; i < n; ++i){
         int h_offset = i*(ims[0].h+border);
         image copy = copy_image(ims[i]);
-        //normalize_image(copy);
+        
         if(c == 3 && color){
             embed_image(copy, filters, 0, h_offset);
         }
@@ -1304,7 +1304,7 @@ image collapse_images_horz(image *ims, int n)
     for(i = 0; i < n; ++i){
         int w_offset = i*(size+border);
         image copy = copy_image(ims[i]);
-        //normalize_image(copy);
+        
         if(c == 3 && color){
             embed_image(copy, filters, w_offset, 0);
         }
@@ -1332,15 +1332,7 @@ void show_image_normalized(image im, const char *name)
 void show_images(image *ims, int n, char *window)
 {
     image m = collapse_images_vert(ims, n);
-    /*
-       int w = 448;
-       int h = ((float)m.h/m.w) * 448;
-       if(h > 896){
-       h = 896;
-       w = ((float)m.w/m.h) * 896;
-       }
-       image sized = resize_image(m, w, h);
-     */
+    
     normalize_image(m);
     save_image(m, window);
     show_image(m, window);

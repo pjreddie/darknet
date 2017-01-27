@@ -245,11 +245,11 @@ void forward_region_layer(const layer l, network_state state)
             int best_n = 0;
             i = (truth.x * l.w);
             j = (truth.y * l.h);
-            //printf("%d %f %d %f\n", i, truth.x*l.w, j, truth.y*l.h);
+            
             box truth_shift = truth;
             truth_shift.x = 0;
             truth_shift.y = 0;
-            //printf("index %d %d\n",i, j);
+            
             for(n = 0; n < l.n; ++n){
                 int index = size*(j*l.w*l.n + i*l.n + n) + b*l.outputs;
                 box pred = get_region_box(l.output, l.biases, n, index, i, j, l.w, l.h);
@@ -257,7 +257,7 @@ void forward_region_layer(const layer l, network_state state)
                     pred.w = l.biases[2*n]/l.w;
                     pred.h = l.biases[2*n+1]/l.h;
                 }
-                //printf("pred: (%f, %f) %f x %f\n", pred.x, pred.y, pred.w, pred.h);
+                
                 pred.x = 0;
                 pred.y = 0;
                 float iou = box_iou(pred, truth_shift);
@@ -267,13 +267,13 @@ void forward_region_layer(const layer l, network_state state)
                     best_n = n;
                 }
             }
-            //printf("%d %f (%f, %f) %f x %f\n", best_n, best_iou, truth.x, truth.y, truth.w, truth.h);
+            
 
             float iou = delta_region_box(truth, l.output, l.biases, best_n, best_index, i, j, l.w, l.h, l.delta, l.coord_scale);
             if(iou > .5) recall += 1;
             avg_iou += iou;
 
-            //l.delta[best_index + 4] = iou - l.output[best_index + 4];
+            
             avg_obj += l.output[best_index + 4];
             l.delta[best_index + 4] = l.object_scale * (1 - l.output[best_index + 4]) * logistic_gradient(l.output[best_index + 4]);
             if (l.rescore) {
@@ -288,7 +288,7 @@ void forward_region_layer(const layer l, network_state state)
             ++class_count;
         }
     }
-    //printf("\n");
+    
 #ifndef GPU
     flatten(l.delta, l.w*l.h, size*l.n, l.batch, 0);
 #endif
@@ -350,12 +350,7 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
 
 void forward_region_layer_gpu(const layer l, network_state state)
 {
-    /*
-       if(!state.train){
-       copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
-       return;
-       }
-     */
+    
     flatten_ongpu(state.input, l.h*l.w, l.n*(l.coords + l.classes + 1), l.batch, 1, l.output_gpu);
     if(l.softmax_tree){
         int i;
@@ -382,7 +377,7 @@ void forward_region_layer_gpu(const layer l, network_state state)
     cpu_state.truth = truth_cpu;
     cpu_state.input = in_cpu;
     forward_region_layer(l, cpu_state);
-    //cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
+    
     free(cpu_state.input);
     if(!state.train) return;
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);

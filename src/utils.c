@@ -156,7 +156,7 @@ void find_replace(char *str, char *orig, char *rep, char *output)
     char *p;
 
     sprintf(buffer, "%s", str);
-    if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
+    if(!(p = strstr(buffer, orig))){  
         sprintf(output, "%s", str);
         return;
     }
@@ -390,7 +390,7 @@ float *parse_fields(char *line, int n)
             *c = '\0';
             field[count] = strtod(p, &end);
             if(p == c) field[count] = nan("");
-            if(end != c && (end != c-1 || *end != '\r')) field[count] = nan(""); //DOS file formats!
+            if(end != c && (end != c-1 || *end != '\r')) field[count] = nan(""); 
             p = c+1;
             ++count;
         }
@@ -549,7 +549,7 @@ int rand_int(int min, int max)
     return r;
 }
 
-// From http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+
 float rand_normal()
 {
     static int haveSpare = 0;
@@ -571,16 +571,7 @@ float rand_normal()
     return sqrt(rand1) * cos(rand2);
 }
 
-/*
-   float rand_normal()
-   {
-   int n = 12;
-   int i;
-   float sum= 0;
-   for(i = 0; i < n; ++i) sum += (float)rand()/RAND_MAX;
-   return sum-n/2.;
-   }
- */
+
 
 size_t rand_size_t()
 {

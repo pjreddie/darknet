@@ -55,7 +55,7 @@ moves load_go_moves(char *filename)
 void string_to_board(char *s, float *board)
 {
     int i, j;
-    //memset(board, 0, 1*19*19*sizeof(float));
+    
     int count = 0;
     for(i = 0; i < 91; ++i){
         char c = s[i];
@@ -132,7 +132,7 @@ void train_go(char *cfgfile, char *weightfile)
     float *board = calloc(19*19*net.batch, sizeof(float));
     float *move = calloc(19*19*net.batch, sizeof(float));
     moves m = load_go_moves("/home/pjreddie/backup/go.train");
-    //moves m = load_go_moves("games.txt");
+    
 
     int N = m.n;
     int epoch = (*net.seen)/N;
@@ -206,7 +206,7 @@ int *calculate_liberties(float *board)
 
 void print_board(float *board, int swap, int *indexes)
 {
-    //FILE *stream = stdout;
+    
     FILE *stream = stderr;
     int i,j,n;
     fprintf(stream, "\n\n");
@@ -224,13 +224,7 @@ void print_board(float *board, int swap, int *indexes)
                 for(n = 0; n < nind; ++n){
                     if(index == indexes[n]){
                         found = 1;
-                        /*
-                        if(n == 0) fprintf(stream, "\uff11");
-                        else if(n == 1) fprintf(stream, "\uff12");
-                        else if(n == 2) fprintf(stream, "\uff13");
-                        else if(n == 3) fprintf(stream, "\uff14");
-                        else if(n == 4) fprintf(stream, "\uff15");
-                        */
+                        
                         if(n == 0) fprintf(stream, " 1");
                         else if(n == 1) fprintf(stream, " 2");
                         else if(n == 2) fprintf(stream, " 3");
@@ -240,8 +234,8 @@ void print_board(float *board, int swap, int *indexes)
                 }
                 if(found) continue;
             }
-            //if(board[index]*-swap > 0) fprintf(stream, "\u25C9 ");
-            //else if(board[index]*-swap < 0) fprintf(stream, "\u25EF ");
+            
+            
             if(board[index]*-swap > 0) fprintf(stream, " O");
             else if(board[index]*-swap < 0) fprintf(stream, " X");
             else fprintf(stream, "  ");
@@ -450,7 +444,7 @@ void engine_go(char *filename, char *weightfile, int multi)
         if (feof(stdin)) break;
         char ids[256];
         sprintf(ids, "%d", id);
-        //fprintf(stderr, "%s\n", buff);
+        
         if (!has_id) ids[0] = 0;
         if (!strcmp(buff, "protocol_version")){
             printf("=%s 2\n\n", ids);
@@ -482,7 +476,7 @@ void engine_go(char *filename, char *weightfile, int multi)
         } else if (!strcmp(buff, "boardsize")){
             int boardsize = 0;
             scanf("%d", &boardsize);
-            //fprintf(stderr, "%d\n", boardsize);
+            
             if(boardsize != 19){
                 printf("?%s unacceptable size\n\n", ids);
             } else {
@@ -554,7 +548,7 @@ void engine_go(char *filename, char *weightfile, int multi)
             }
 
         } else if (!strcmp(buff, "p")){
-            //print_board(board, 1, 0);
+            
         } else if (!strcmp(buff, "final_status_list")){
             char type[256];
             scanf("%s", type);
@@ -647,8 +641,8 @@ void test_go(char *cfg, char *weights, int multi)
             col = index % 19;
             printf("%d: %c %d, %.2f%%\n", i+1, col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row+1, move[index]*100);
         }
-        //if(color == 1) printf("\u25EF Enter move: ");
-        //else printf("\u25C9 Enter move: ");
+        
+        
         if(color == 1) printf("X Enter move: ");
         else printf("O Enter move: ");
 
@@ -673,7 +667,7 @@ void test_go(char *cfg, char *weights, int multi)
                 if (col > 7 && noi) col -= 1;
                 if (num == 2) board[row*19 + col] = 1;
             } else if (c == 'p') {
-                // Pass
+                
             } else if(c=='b' || c == 'w'){
                 char g;
                 int num = sscanf(line, "%c %c %d", &g, &c, &row);
@@ -781,8 +775,8 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
             fflush(stdout);
             fflush(stderr);
         }
-        //print_board(board, 1, 0);
-        //sleep(1);
+        
+        
         network use = ((total%2==0) == (player==1)) ? net : net2;
         int index = generate_move(use, player, board, multi, .1, .7, two, 0);
         if(index < 0){
@@ -812,7 +806,7 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
 
 void run_go(int argc, char **argv)
 {
-    //boards_go();
+    
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;

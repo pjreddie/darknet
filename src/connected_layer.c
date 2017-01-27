@@ -40,7 +40,7 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
     l.backward = backward_connected_layer;
     l.update = update_connected_layer;
 
-    //float scale = 1./sqrt(inputs);
+    
     float scale = sqrt(2./inputs);
     for(i = 0; i < outputs*inputs; ++i){
         l.weights[i] = scale*rand_uniform(-1, 1);
@@ -212,12 +212,7 @@ void statistics_connected_layer(layer l)
     if(l.batch_normalize){
         printf("Scales ");
         print_statistics(l.scales, l.outputs);
-        /*
-        printf("Rolling Mean ");
-        print_statistics(l.rolling_mean, l.outputs);
-        printf("Rolling Variance ");
-        print_statistics(l.rolling_variance, l.outputs);
-        */
+        
     }
     printf("Biases ");
     print_statistics(l.biases, l.outputs);

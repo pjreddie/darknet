@@ -8,7 +8,7 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-// ./darknet nightmare cfg/extractor.recon.cfg ~/trained/yolo-coco.conv frame6.png -reconstruct -iters 500 -i 3 -lambda .1 -rate .01 -smooth 2
+
 
 float abs_mean(float *x, int n)
 {
@@ -33,8 +33,8 @@ void calculate_loss(float *output, float *delta, int n, float thresh)
 
 void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh, int norm)
 {
-    //scale_image(orig, 2);
-    //translate_image(orig, -1);
+    
+    
     net->n = max_layer + 1;
 
     int dx = rand()%16 - 8;
@@ -47,7 +47,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
     resize_network(net, im.w, im.h);
     layer last = net->layers[net->n-1];
-    //net->layers[net->n - 1].activation = LINEAR;
+    
 
     image delta = make_image(im.w, im.h, im.c);
 
@@ -79,30 +79,22 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 #endif
 
     if(flip) flip_image(delta);
-    //normalize_array(delta.data, delta.w*delta.h*delta.c);
+    
     image resized = resize_image(delta, orig.w, orig.h);
     image out = crop_image(resized, -dx, -dy, orig.w, orig.h);
 
-    /*
-       image g = grayscale_image(out);
-       free_image(out);
-       out = g;
-     */
+    
 
-    //rate = rate / abs_mean(out.data, out.w*out.h*out.c);
+    
 
     if(norm) normalize_array(out.data, out.w*out.h*out.c);
     axpy_cpu(orig.w*orig.h*orig.c, rate, out.data, 1, orig.data, 1);
 
-    /*
-       normalize_array(orig.data, orig.w*orig.h*orig.c);
-       scale_image(orig, sqrt(var));
-       translate_image(orig, mean);
-     */
+    
 
-    //translate_image(orig, 1);
-    //scale_image(orig, .5);
-    //normalize_image(orig);
+    
+    
+    
 
     constrain_image(orig);
 
@@ -170,8 +162,8 @@ void reconstruct_picture(network net, float *features, image recon, image update
         axpy_cpu(recon.w*recon.h*recon.c, rate, update.data, 1, recon.data, 1);
         scal_cpu(recon.w*recon.h*recon.c, momentum, update.data, 1);
 
-        //float mag = mag_array(recon.data, recon.w*recon.h*recon.c);
-        //scal_cpu(recon.w*recon.h*recon.c, 600/mag, recon.data, 1);
+        
+        
 
         constrain_image(recon);
         free_image(delta);
@@ -234,7 +226,7 @@ void run_nightmare(int argc, char **argv)
         network_predict(net, im.data);
         image out_im = get_network_image(net);
         image crop = crop_image(out_im, zz, zz, out_im.w-2*zz, out_im.h-2*zz);
-        //flip_image(crop);
+        
         image f_im = resize_image(crop, out_im.w, out_im.h);
         free_image(crop);
         printf("%d features\n", out_im.w*out_im.h*out_im.c);
@@ -265,7 +257,7 @@ void run_nightmare(int argc, char **argv)
             fflush(stderr);
             if(reconstruct){
                 reconstruct_picture(net, features, im, update, rate, momentum, lambda, smooth_size, 1);
-                //if ((n+1)%30 == 0) rate *= .5;
+                
                 show_image(im, "reconstruction");
 #ifdef OPENCV
                 cvWaitKey(10);
@@ -290,8 +282,8 @@ void run_nightmare(int argc, char **argv)
         }
         printf("%d %s\n", e, buff);
         save_image(im, buff);
-        //show_image(im, buff);
-        //cvWaitKey(0);
+        
+        
 
         if(rotate){
             image rot = rotate_image(im, rotate);

@@ -60,7 +60,7 @@ __global__ void binarize_weights_kernel(float *weights, int n, int size, float *
     mean = mean / size;
     for(i = 0; i < size; ++i){
         binary[f*size + i] = (weights[f*size + i] > 0) ? mean : -mean;
-        //binary[f*size + i] = weights[f*size + i];
+        
     }
 }
 
@@ -121,22 +121,22 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
 
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
-    //if(l.dot > 0) dot_error_gpu(l);
+    
     if(l.binary || l.xnor) swap_binary(&l);
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
-    //constrain_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
+    
     gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
 
     backward_bias_gpu(l.bias_updates_gpu, l.delta_gpu, l.batch, l.n, l.out_w*l.out_h);
 
     if(l.batch_normalize){
         backward_batchnorm_layer_gpu(l, state);
-        //axpy_ongpu(l.outputs*l.batch, -state.net.decay, l.x_gpu, 1, l.delta_gpu, 1);
+        
     } else {
-        //axpy_ongpu(l.outputs*l.batch, -state.net.decay, l.output_gpu, 1, l.delta_gpu, 1);
+        
     }
     float *original_input = state.input;
 

@@ -26,7 +26,7 @@ int cuda_get_device()
 
 void check_error(cudaError_t status)
 {
-    //cudaDeviceSynchronize();
+    
     cudaError_t status2 = cudaGetLastError();
     if (status != cudaSuccess)
     {   
@@ -57,7 +57,7 @@ dim3 cuda_gridsize(size_t n){
         y = (n-1)/(x*BLOCK) + 1;
     }
     dim3 d = {x, y, 1};
-    //printf("%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
+    
     return d;
 }
 
@@ -119,8 +119,8 @@ float cuda_compare(float *x_gpu, float *x, size_t n, char *s)
 {
     float *tmp = calloc(n, sizeof(float));
     cuda_pull_array(x_gpu, tmp, n);
-    //int i;
-    //for(i = 0; i < n; ++i) printf("%f %f\n", tmp[i], x[i]);
+    
+    
     axpy_cpu(n, -1, x, 1, tmp, 1);
     float err = dot_cpu(n, tmp, 1, tmp, 1);
     printf("Error %s: %f\n", s, sqrt(err/n));

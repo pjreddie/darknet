@@ -88,7 +88,7 @@ void validate_compare(char *filename, char *weightfile)
     srand(time(0));
 
     list *plist = get_paths("data/compare.val.list");
-    //list *plist = get_paths("data/compare.val.old");
+    
     char **paths = (char **)list_to_array(plist);
     int N = plist->size/2;
     free_list(plist);
@@ -235,7 +235,7 @@ void SortMaster3000(char *filename, char *weightfile)
     set_batch_network(&net, 1);
 
     list *plist = get_paths("data/compare.sort.list");
-    //list *plist = get_paths("data/compare.val.old");
+    
     char **paths = (char **)list_to_array(plist);
     int N = plist->size;
     free_list(plist);
@@ -267,9 +267,9 @@ void BattleRoyaleWithCheese(char *filename, char *weightfile)
     set_batch_network(&net, 1);
 
     list *plist = get_paths("data/compare.sort.list");
-    //list *plist = get_paths("data/compare.small.list");
-    //list *plist = get_paths("data/compare.cat.list");
-    //list *plist = get_paths("data/compare.val.old");
+    
+    
+    
     char **paths = (char **)list_to_array(plist);
     int N = plist->size;
     int total = N;
@@ -339,14 +339,10 @@ void run_compare(int argc, char **argv)
 
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
-    //char *filename = (argc > 5) ? argv[5]: 0;
+    
     if(0==strcmp(argv[2], "train")) train_compare(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_compare(cfg, weights);
     else if(0==strcmp(argv[2], "sort")) SortMaster3000(cfg, weights);
     else if(0==strcmp(argv[2], "battle")) BattleRoyaleWithCheese(cfg, weights);
-    /*
-       else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
-       else if(0==strcmp(argv[2], "extract")) extract_boxes(cfg, weights);
-       else if(0==strcmp(argv[2], "valid")) validate_recall(cfg, weights);
-     */
+    
 }

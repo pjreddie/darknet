@@ -41,7 +41,7 @@ void reset_momentum(network net)
     net.momentum = 0;
     net.decay = 0;
     #ifdef GPU
-        //if(net.gpu_index >= 0) update_network_gpu(net);
+        
     #endif
 }
 
@@ -60,7 +60,7 @@ float get_current_rate(network net)
             for(i = 0; i < net.num_steps; ++i){
                 if(net.steps[i] > batch_num) return rate;
                 rate *= net.scales[i];
-                //if(net.steps[i] > batch_num - 1 && net.scales[i] > 1) reset_momentum(net);
+                
             }
             return rate;
         case EXP:
@@ -328,13 +328,13 @@ int resize_network(network *net, int w, int h)
     }
 #endif
     int i;
-    //if(w == net->w && h == net->h) return 0;
+    
     net->w = w;
     net->h = h;
     int inputs = 0;
     size_t workspace_size = 0;
-    //fprintf(stderr, "Resizing to %d x %d...\n", w, h);
-    //fflush(stderr);
+    
+    
     for (i = 0; i < net->n; ++i){
         layer l = net->layers[i];
         if(l.type == CONVOLUTIONAL){
@@ -382,7 +382,7 @@ int resize_network(network *net, int w, int h)
     free(net->workspace);
     net->workspace = calloc(1, workspace_size);
 #endif
-    //fprintf(stderr, " Done!\n");
+    
     return 0;
 }
 

@@ -144,7 +144,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         float *C, int ldc)
 {
-    //printf("cpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
+    
     int i, j;
     for(i = 0; i < M; ++i){
         for(j = 0; j < N; ++j){
@@ -276,17 +276,17 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
     memset(c, 0, m*n*sizeof(float));
     memset(c_gpu, 0, m*n*sizeof(float));
     int i;
-    //pm(m,k,b);
+    
     gemm_gpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c_gpu,n);
-    //printf("GPU\n");
-    //pm(m, n, c_gpu);
+    
+    
 
     gemm_cpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
-    //printf("\n\nCPU\n");
-    //pm(m, n, c);
+    
+    
     double sse = 0;
     for(i = 0; i < m*n; ++i) {
-        //printf("%f %f\n", c[i], c_gpu[i]);
+        
         sse += pow(c[i]-c_gpu[i], 2);
     }
     printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g SSE\n",m,k,k,n, TA, TB, sse/(m*n));
@@ -298,31 +298,7 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
 
 int test_gpu_blas()
 {
-    /*
-       test_gpu_accuracy(0,0,10,576,75); 
-
-       test_gpu_accuracy(0,0,17,10,10); 
-       test_gpu_accuracy(1,0,17,10,10); 
-       test_gpu_accuracy(0,1,17,10,10); 
-       test_gpu_accuracy(1,1,17,10,10); 
-
-       test_gpu_accuracy(0,0,1000,10,100); 
-       test_gpu_accuracy(1,0,1000,10,100); 
-       test_gpu_accuracy(0,1,1000,10,100); 
-       test_gpu_accuracy(1,1,1000,10,100); 
-
-       test_gpu_accuracy(0,0,10,10,10); 
-
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,192,729,1600); 
-       time_ongpu(0,0,384,196,1728); 
-       time_ongpu(0,0,256,196,3456); 
-       time_ongpu(0,0,256,196,2304); 
-       time_ongpu(0,0,128,4096,12544); 
-       time_ongpu(0,0,128,4096,4096); 
-     */
+    
     time_ongpu(0,0,64,75,12544); 
     time_ongpu(0,0,64,75,12544); 
     time_ongpu(0,0,64,75,12544); 

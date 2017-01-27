@@ -99,10 +99,7 @@ float_pair get_rnn_data(unsigned char *text, size_t *offsets, int characters, si
             offsets[i] = (offsets[i] + 1) % len;
 
             if(curr > 255 || curr <= 0 || next > 255 || next <= 0){
-                /*text[(index+j+2)%len] = 0;
-                printf("%ld %d %d %d %d\n", index, j, len, (int)text[index+j], (int)text[index+j+1]);
-                printf("%s", text+index);
-                */
+                
                 error("Bad char");
             }
         }
@@ -190,9 +187,9 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
         fprintf(stderr, "%d: %f, %f avg, %f rate, %lf seconds, %f epochs\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), (float) chars/size);
 
         for(j = 0; j < streams; ++j){
-            //printf("%d\n", j);
+            
             if(rand()%10 == 0){
-                //fprintf(stderr, "Reset\n");
+                
                 offsets[j] = rand_size_t()%size;
                 reset_rnn_state(net, j);
             }
@@ -246,13 +243,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
     int len = strlen(seed);
     float *input = calloc(inputs, sizeof(float));
 
-    /*
-       fill_cpu(inputs, 0, input, 1);
-       for(i = 0; i < 10; ++i){
-       network_predict(net, input);
-       }
-       fill_cpu(inputs, 0, input, 1);
-     */
+    
 
     for(i = 0; i < len-1; ++i){
         c = seed[i];
@@ -268,7 +259,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
         float *out = network_predict(net, input);
         input[c] = 0;
         for(j = 32; j < 127; ++j){
-            //printf("%d %c %f\n",j, j, out[j]);
+            
         }
         for(j = 0; j < inputs; ++j){
             if (out[j] < .0001) out[j] = 0;

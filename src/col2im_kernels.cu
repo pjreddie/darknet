@@ -7,8 +7,8 @@ extern "C" {
 #include "cuda.h"
 }
 
-// src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu
-// You may also want to read: https://github.com/BVLC/caffe/blob/master/LICENSE
+
+
 
 __global__ void col2im_gpu_kernel(const int n, const float* data_col,
         const int height, const int width, const int ksize,
@@ -22,12 +22,12 @@ __global__ void col2im_gpu_kernel(const int n, const float* data_col,
         int w = index % width + pad;
         int h = (index / width) % height + pad;
         int c = index / (width * height);
-        // compute the start and end of the output
+        
         int w_col_start = (w < ksize) ? 0 : (w - ksize) / stride + 1;
         int w_col_end = min(w / stride + 1, width_col);
         int h_col_start = (h < ksize) ? 0 : (h - ksize) / stride + 1;
         int h_col_end = min(h / stride + 1, height_col);
-        // equivalent implementation
+        
         int offset =
             (c * ksize * ksize + h * ksize + w) * height_col * width_col;
         int coeff_h_col = (1 - stride * ksize * height_col) * width_col;
@@ -44,8 +44,8 @@ __global__ void col2im_gpu_kernel(const int n, const float* data_col,
 void col2im_ongpu(float *data_col,
         int channels, int height, int width,
         int ksize, int stride, int pad, float *data_im){
-    // We are going to launch channels * height_col * width_col kernels, each
-    // kernel responsible for copying a single-channel grid.
+    
+    
     int height_col = (height + 2 * pad - ksize) / stride + 1;
     int width_col = (width + 2 * pad - ksize) / stride + 1;
     int num_kernels = channels * height * width;
