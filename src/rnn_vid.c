@@ -47,8 +47,8 @@ float_pair get_rnn_vid_data(network net, char **files, int n, int batch, int ste
             image im = ipl_to_image(src);
             rgbgr_image(im);
             image re = resize_image(im, net.w, net.h);
-            //show_image(re, "loaded");
-            //cvWaitKey(10);
+            
+            
             memcpy(input + i*input_size, re.data, input_size*sizeof(float));
             free_image(im);
             free_image(re);
@@ -64,10 +64,10 @@ float_pair get_rnn_vid_data(network net, char **files, int n, int batch, int ste
         cvReleaseCapture(&cap);
     }
 
-    //printf("%d %d %d\n", out_im.w, out_im.h, out_im.c);
+    
     float_pair p = {0};
     p.x = feats;
-    p.y = feats + output_size*batch; //+ out_im.w*out_im.h*out_im.c;
+    p.y = feats + output_size*batch; 
 
     return p;
 }
@@ -201,7 +201,7 @@ void run_vid_rnn(int argc, char **argv)
 
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
-    //char *filename = (argc > 5) ? argv[5]: 0;
+    
     if(0==strcmp(argv[2], "train")) train_vid_rnn(cfg, weights);
     else if(0==strcmp(argv[2], "generate")) generate_vid_rnn(cfg, weights);
 }

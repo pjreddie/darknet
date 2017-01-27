@@ -132,6 +132,6 @@ tree *read_tree(char *filename)
     fclose(fp);
     tree *tree_ptr = calloc(1, sizeof(tree));
     *tree_ptr = t;
-    //error(0);
+    
     return tree_ptr;
 }

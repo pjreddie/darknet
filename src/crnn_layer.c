@@ -152,14 +152,7 @@ void backward_crnn_layer(layer l, network_state state)
         backward_convolutional_layer(output_layer, s);
 
         l.state -= l.hidden*l.batch;
-        /*
-           if(i > 0){
-           copy_cpu(l.hidden * l.batch, input_layer.output - l.hidden*l.batch, 1, l.state, 1);
-           axpy_cpu(l.hidden * l.batch, 1, self_layer.output - l.hidden*l.batch, 1, l.state, 1);
-           }else{
-           fill_cpu(l.hidden * l.batch, 0, l.state, 1);
-           }
-         */
+        
 
         s.input = l.state;
         s.delta = self_layer.delta - l.hidden*l.batch;

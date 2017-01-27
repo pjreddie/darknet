@@ -26,7 +26,7 @@ void train_super(char *cfgfile, char *weightfile)
 
 
     list *plist = get_paths(train_images);
-    //int N = plist->size;
+    
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
@@ -41,7 +41,7 @@ void train_super(char *cfgfile, char *weightfile)
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
-    //while(i*imgs < N*120){
+    
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
@@ -125,7 +125,5 @@ void run_super(int argc, char **argv)
     char *filename = (argc > 5) ? argv[5] : 0;
     if(0==strcmp(argv[2], "train")) train_super(cfg, weights);
     else if(0==strcmp(argv[2], "test")) test_super(cfg, weights, filename);
-    /*
-    else if(0==strcmp(argv[2], "valid")) validate_super(cfg, weights);
-    */
+    
 }

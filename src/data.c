@@ -22,22 +22,7 @@ list *get_paths(char *filename)
     return lines;
 }
 
-/*
-char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
-{
-    char **random_paths = calloc(n, sizeof(char*));
-    int i;
-    pthread_mutex_lock(&mutex);
-    for(i = 0; i < n; ++i){
-        int index = rand()%m;
-        indexes[i] = index;
-        random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
-    }
-    pthread_mutex_unlock(&mutex);
-    return random_paths;
-}
-*/
+
 
 char **get_random_paths(char **paths, int n, int m)
 {
@@ -47,7 +32,7 @@ char **get_random_paths(char **paths, int n, int m)
     for(i = 0; i < n; ++i){
         int index = rand()%m;
         random_paths[i] = paths[index];
-        //if(i == 0) printf("%s\n", paths[index]);
+        
     }
     pthread_mutex_unlock(&mutex);
     return random_paths;
@@ -117,11 +102,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
         if (flip) flip_image(crop);
         random_distort_image(crop, hue, saturation, exposure);
 
-        /*
-        show_image(im, "orig");
-        show_image(crop, "crop");
-        cvWaitKey(0);
-        */
+        
         free_image(im);
         X.vals[i] = crop.data;
         X.cols = crop.h*crop.w*crop.c;
@@ -411,7 +392,7 @@ void fill_hierarchy(float *truth, int k, tree *hierarchy)
     int i;
     int count = 0;
     for(j = 0; j < hierarchy->groups; ++j){
-        //printf("%d\n", count);
+        
         int mask = 1;
         for(i = 0; i < hierarchy->group_size[j]; ++i){
             if(truth[count + i]){
@@ -714,7 +695,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
 void *load_thread(void *ptr)
 {
-    //printf("Loading data: %d\n", rand());
+    
     load_args a = *(struct load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
     if(a.saturation == 0) a.saturation = 1;
@@ -819,19 +800,7 @@ data load_data_old(char **paths, int n, int m, char **labels, int k, int w, int 
     return d;
 }
 
-/*
-   data load_data_study(char **paths, int n, int m, char **labels, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
-   {
-   data d = {0};
-   d.indexes = calloc(n, sizeof(int));
-   if(m) paths = get_random_paths_indexes(paths, n, m, d.indexes);
-   d.shallow = 0;
-   d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure);
-   d.y = load_labels_paths(paths, n, labels, k);
-   if(m) free(paths);
-   return d;
-   }
- */
+
 
 data load_data_super(char **paths, int n, int m, int w, int h, int scale)
 {
@@ -962,9 +931,9 @@ data load_cifar10_data(char *filename)
             X.vals[i][j] = (double)bytes[j+1];
         }
     }
-    //translate_data_rows(d, -128);
+    
     scale_data_rows(d, 1./255);
-    //normalize_data_rows(d);
+    
     fclose(fp);
     return d;
 }
@@ -1028,8 +997,8 @@ data load_all_cifar10()
         }
         fclose(fp);
     }
-    //normalize_data_rows(d);
-    //translate_data_rows(d, -128);
+    
+    
     scale_data_rows(d, 1./255);
     smooth_data(d);
     return d;

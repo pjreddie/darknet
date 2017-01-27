@@ -53,7 +53,7 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
     l.biases = calloc(l.outputs, sizeof(float));
     l.bias_updates = calloc(l.outputs, sizeof(float));
 
-    // float scale = 1./sqrt(size*size*c);
+    
     float scale = sqrt(2./(size*size*c));
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1,1);
 

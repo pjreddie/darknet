@@ -11,19 +11,7 @@ list *make_list()
 	return l;
 }
 
-/*
-void transfer_node(list *s, list *d, node *n)
-{
-    node *prev, *next;
-    prev = n->prev;
-    next = n->next;
-    if(prev) prev->next = next;
-    if(next) next->prev = prev;
-    --s->size;
-    if(s->front == n) s->front = next;
-    if(s->back == n) s->back = prev;
-}
-*/
+
 
 void *list_pop(list *l){
     if(!l->back) return 0;

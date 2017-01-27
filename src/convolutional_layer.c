@@ -195,7 +195,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.biases = calloc(n, sizeof(float));
     l.bias_updates = calloc(n, sizeof(float));
 
-    // float scale = 1./sqrt(size*size*c);
+    
     float scale = sqrt(2./(size*size*c));
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1, 1);
     int out_h = convolutional_out_height(l);
@@ -558,7 +558,7 @@ image *get_weights(convolutional_layer l)
     int i;
     for(i = 0; i < l.n; ++i){
         weights[i] = copy_image(get_convolutional_weight(l, i));
-        //normalize_image(weights[i]);
+        
     }
     return weights;
 }
@@ -572,8 +572,8 @@ image *visualize_convolutional_layer(convolutional_layer l, char *window, image 
     image dc = collapse_image_layers(delta, 1);
     char buff[256];
     sprintf(buff, "%s: Output", window);
-    //show_image(dc, buff);
-    //save_image(dc, buff);
+    
+    
     free_image(dc);
     return single_weights;
 }

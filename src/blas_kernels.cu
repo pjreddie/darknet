@@ -91,47 +91,7 @@ __global__ void backward_bias_kernel(float *bias_updates, float *delta, int batc
     }
 }
 
-/*
-__global__ void dot_kernel(float *output, float scale, int batch, int n, int size, float *delta)
-{
-    int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-    int f1 = index / n;
-    int f2 = index % n;
-    if (f2 <= f1) return;
-    
-    float sum = 0;
-    float norm1 = 0;
-    float norm2 = 0;
-    int b, i;
-    for(b = 0; b <  batch; ++b){
-        for(i = 0; i < size; ++i){
-            int i1 = b * size * n + f1 * size + i;
-            int i2 = b * size * n + f2 * size + i;
-            sum += output[i1] * output[i2];
-            norm1 += output[i1] * output[i1];
-            norm2 += output[i2] * output[i2];
-        }
-    }
-    norm1 = sqrt(norm1);
-    norm2 = sqrt(norm2);
-    float norm = norm1 * norm2;
-    sum = sum / norm;
-    for(b = 0; b <  batch; ++b){
-        for(i = 0; i < size; ++i){
-            int i1 = b * size * n + f1 * size + i;
-            int i2 = b * size * n + f2 * size + i;
-            delta[i1] += - scale * sum * output[i2] / norm;
-            delta[i2] += - scale * sum * output[i1] / norm;
-        }
-    }
-}
 
-void dot_error_gpu(layer l)
-{
-    dot_kernel<<<cuda_gridsize(l.n*l.n), BLOCK>>>(l.output_gpu, l.dot, l.batch, l.n, l.out_w * l.out_h, l.delta_gpu);
-    check_error(cudaPeekAtLastError());
-}
-*/
 
 void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
 {
@@ -146,7 +106,7 @@ __global__ void adam_kernel(int N, float *x, float *m, float *v, float B1, float
     if (index >= N) return;
     
     x[index] = x[index] - (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps));
-    //if(index == 0) printf("%f %f %f %f\n", m[index], v[index], (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps)));
+    
 }
 
 extern "C" void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t)
@@ -346,17 +306,17 @@ __global__ void reorg_kernel(int N, float *x, int w, int h, int c, int batch, in
     int offset = in_c / out_c;
     int w2 = in_w*stride + offset % stride;
     int h2 = in_h*stride + offset / stride;
-    //printf("%d\n", offset);
+    
     int out_index = w2 + w*stride*(h2 + h*stride*(c2 + out_c*b));
 
-   // printf("%d %d %d\n", w2, h2, c2);
-    //printf("%d %d\n", in_index, out_index);
-    //if(out_index >= N || out_index < 0) printf("bad bad bad \n");
+   
+    
+    
 
     if(forward) out[out_index] = x[in_index];
     else out[in_index] = x[out_index];
-    //if(forward) out[1] = x[1];
-    //else out[0] = x[0];
+    
+    
 }
 
 __global__ void axpy_kernel(int N, float ALPHA, float *X, int OFFX, int INCX,  float *Y, int OFFY, int INCY)
@@ -674,7 +634,7 @@ __global__ void l2_kernel(int n, float *pred, float *truth, float *delta, float 
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(i < n){
         float diff = truth[i] - pred[i];
-        error[i] = diff * diff; //I know this is technically wrong, deal with it.
+        error[i] = diff * diff; 
         delta[i] = diff;
     }
 }

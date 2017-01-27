@@ -144,14 +144,7 @@ void backward_rnn_layer(layer l, network_state state)
         backward_connected_layer(output_layer, s);
 
         l.state -= l.hidden*l.batch;
-        /*
-           if(i > 0){
-           copy_cpu(l.hidden * l.batch, input_layer.output - l.hidden*l.batch, 1, l.state, 1);
-           axpy_cpu(l.hidden * l.batch, 1, self_layer.output - l.hidden*l.batch, 1, l.state, 1);
-           }else{
-           fill_cpu(l.hidden * l.batch, 0, l.state, 1);
-           }
-         */
+        
 
         s.input = l.state;
         s.delta = self_layer.delta - l.hidden*l.batch;
@@ -262,7 +255,7 @@ void backward_rnn_layer_gpu(layer l, network_state state)
         if (i == 0) s.delta = 0;
         backward_connected_layer_gpu(self_layer, s);
 
-        //copy_ongpu(l.hidden*l.batch, self_layer.delta_gpu, 1, input_layer.delta_gpu, 1);
+        
         if (i > 0 && l.shortcut) axpy_ongpu(l.hidden*l.batch, 1, self_layer.delta_gpu, 1, self_layer.delta_gpu - l.hidden*l.batch, 1);
         s.input = state.input + i*l.inputs*l.batch;
         if(state.delta) s.delta = state.delta + i*l.inputs*l.batch;

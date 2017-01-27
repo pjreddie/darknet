@@ -7,8 +7,8 @@ extern "C" {
 #include "cuda.h"
 }
 
-// src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu
-// You may also want to read: https://github.com/BVLC/caffe/blob/master/LICENSE
+
+
 
 __global__ void im2col_gpu_kernel(const int n, const float* data_im,
         const int height, const int width, const int ksize,
@@ -37,7 +37,7 @@ __global__ void im2col_gpu_kernel(const int n, const float* data_im,
                 *data_col_ptr = (h >= 0 && w >= 0 && h < height && w < width) ?
                     data_im_ptr[i * width + j] : 0;
 
-                //*data_col_ptr = data_im_ptr[ii * width + jj];
+                
 
                 data_col_ptr += height_col * width_col;
             }
@@ -48,8 +48,8 @@ __global__ void im2col_gpu_kernel(const int n, const float* data_im,
 void im2col_ongpu(float *im,
          int channels, int height, int width,
          int ksize, int stride, int pad, float *data_col){
-    // We are going to launch channels * height_col * width_col kernels, each
-    // kernel responsible for copying a single-channel grid.
+    
+    
     int height_col = (height + 2 * pad - ksize) / stride + 1;
     int width_col = (width + 2 * pad - ksize) / stride + 1;
     int num_kernels = channels * height_col * width_col;
