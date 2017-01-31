@@ -199,7 +199,7 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 4. Put image-files (.jpg) of your objects in the directory `build\darknet\x64\data\obj\`
 
-5. Create `.txt`-file for each `.jpg`-image-file - with the same name, but with `.txt`-extension, and put to file: object number and object coordinates on this image, for each object in new line: `<object-class> <x> <y> <width> <height>`
+5. Create `.txt`-file for each `.jpg`-image-file - in the same directory and with the same name, but with `.txt`-extension, and put to file: object number and object coordinates on this image, for each object in new line: `<object-class> <x> <y> <width> <height>`
 
   Where: 
   * `<object-class>` - integer number of object from `0` to `(classes-1)`
