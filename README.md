@@ -173,7 +173,7 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 1. Create file `yolo-obj.cfg` with the same content as in `yolo-voc.cfg` (or copy `yolo-voc.cfg` to `yolo-obj.cfg)` and:
 
   * change line `classes=20` to your number of objects
-  * change line `filters=425` to `filters=(classes + 5)*5` (generally this depends on the `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
+  * change line #224 from [`filters=125`](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.cfg#L224) to `filters=(classes + 5)*5` (generally this depends on the `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
 
   For example, for 2 objects, your file `yolo-obj.cfg` should differ from `yolo-voc.cfg` in such lines:
 
