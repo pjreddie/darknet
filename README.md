@@ -16,13 +16,11 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 
 **Usage**
 
- make darknet - only darknet (original code), OPENCV=0
- make darknet-cpp - only the CPP version, OPENCV=1
- make darknet-cpp-shared - build the shared-lib version (without darknet.c calling wrapper), OPENCV=1
+ * `make darknet` - only darknet (original code), with OPENCV=0
+ * `make darknet-cpp` - only the CPP version, with OPENCV=1
+ * `make darknet-cpp-shared` - build the shared-lib version (without darknet.c calling wrapper), OPENCV=1
  
- darknet-cpp version supports OpenCV3. Tested on Ubuntu 16.04
-
- OPENCV=1 (C++ && CV3, or C && CV2 only in some cases - check with pkg-config --modversion opencv)
+ darknet-cpp version supports OpenCV3. Tested on Ubuntu 16.04 anad CUDA 8.x
 
 **Steps to train (Yolov2)**
 
