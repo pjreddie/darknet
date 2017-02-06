@@ -14,6 +14,8 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 
 * Can use bounding boxes directly from Euclid object labeller (https://github.com/prabindh/euclid)
 
+* Work in progress C++ API - arapaho
+
 **Usage**
 
  * `make darknet` - only darknet (original code), with OPENCV=0
