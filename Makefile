@@ -3,6 +3,8 @@ CUDNN=0
 OPENCV=0
 DEBUG=0
 
+PREFIX = /usr/local
+
 ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
       -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
@@ -56,8 +58,9 @@ endif
 
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile
+HEADERS = $(wildcard src/*.h)
 
-all: obj backup results $(EXEC)
+all: obj backup results $(EXEC) darknet.a
 
 $(EXEC): $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
@@ -67,6 +70,9 @@ $(OBJDIR)%.o: %.c $(DEPS)
 
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+
+darknet.a: $(OBJS)
+	ar rcs $@ $^
 
 obj:
 	mkdir -p obj
@@ -78,5 +84,17 @@ results:
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJS) $(EXEC)
+	rm -rf $(OBJS) $(EXEC) darknet.a
 
+.PHONY: install
+
+install:
+	mkdir -p $(PREFIX)/include/darknet
+	cp darknet.a $(PREFIX)/lib/libdarknet.a
+	cp ${HEADERS} $(PREFIX)/include/darknet
+
+.PHONY: uninstall
+
+uninstall:
+	rm -f $(PREFIX)/lib/libdarknet.a
+	rm -rf $(PREFIX)/include/darknet
