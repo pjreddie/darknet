@@ -1,16 +1,16 @@
 #ifndef LIST_H
 #define LIST_H
 
-typedef struct node{
+typedef struct dn_node{
     void *val;
-    struct node *next;
-    struct node *prev;
-} node;
+    struct dn_node *next;
+    struct dn_node *prev;
+} dn_node;
 
 typedef struct list{
     int size;
-    node *front;
-    node *back;
+    dn_node *front;
+    dn_node *back;
 } list;
 
 list *make_list();
