@@ -146,7 +146,12 @@ Then add to your created project:
 
 1. Download pre-trained weights for the convolutional layers (76 MB): http://pjreddie.com/media/files/darknet19_448.conv.23 and put to the directory `build\darknet\x64`
 
-2. Download The Pascal VOC Data and unpack it to directory `build\darknet\x64\data\voc`: http://pjreddie.com/projects/pascal-voc-dataset-mirror/ will be created file `voc_label.py` and `\VOCdevkit\` dir
+2. Download The Pascal VOC Data and unpack it to directory `build\darknet\x64\data\voc` will be created dir `build\darknet\x64\data\voc\VOCdevkit\`:
+    * http://pjreddie.com/media/files/VOCtrainval_11-May-2012.tar
+    * http://pjreddie.com/media/files/VOCtrainval_06-Nov-2007.tar
+    * http://pjreddie.com/media/files/VOCtest_06-Nov-2007.tar
+    
+    2.1 Download file `voc_label.py` to dir `build\darknet\x64\data\voc`: http://pjreddie.com/media/files/voc_label.py
 
 3. Download and install Python for Windows: https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe
 
