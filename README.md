@@ -69,8 +69,8 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 1. Download for Android phone mjpeg-stream soft: IP Webcam / Smart WebCam
 
 
- Smart WebCam - preferably: https://play.google.com/store/apps/details?id=com.acontech.android.SmartWebCam
- IP Webcam: https://play.google.com/store/apps/details?id=com.pas.webcam
+    * Smart WebCam - preferably: https://play.google.com/store/apps/details?id=com.acontech.android.SmartWebCam2
+    * IP Webcam: https://play.google.com/store/apps/details?id=com.pas.webcam
 
 2. Connect your Android phone to computer by WiFi (through a WiFi-router) or USB
 3. Start Smart WebCam on your phone
