@@ -13,6 +13,7 @@
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
+#include "opencv2/videoio/videoio_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
 image get_image_from_stream(CvCapture *cap);
 
@@ -154,7 +155,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     int count = 0;
     if(!prefix){
-        cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
+        cvNamedWindow("Demo", CV_WINDOW_NORMAL);
         cvMoveWindow("Demo", 0, 0);
         cvResizeWindow("Demo", 1352, 1013);
     }
@@ -173,7 +174,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
                 if (c == 10){
                     if(frame_skip == 0) frame_skip = 60;
                     else if(frame_skip == 4) frame_skip = 0;
-                    else if(frame_skip == 60) frame_skip = 4;   
+                    else if(frame_skip == 60) frame_skip = 4;
                     else frame_skip = 0;
                 }
             }else{
@@ -220,4 +221,3 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
 #endif
-
