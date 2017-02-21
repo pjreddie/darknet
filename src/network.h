@@ -13,6 +13,7 @@ typedef enum {
 
 typedef struct network{
     float *workspace;
+    size_t workspace_size;
     int n;
     int batch;
     int *seen;
