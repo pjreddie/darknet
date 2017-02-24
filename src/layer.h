@@ -5,6 +5,10 @@
 #include "stddef.h"
 #include "tree.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct network_state;
 
 struct layer;
@@ -267,5 +271,9 @@ struct layer{
 };
 
 void free_layer(layer);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

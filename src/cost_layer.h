@@ -3,6 +3,10 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef layer cost_layer;
 
 COST_TYPE get_cost_type(char *s);
@@ -15,6 +19,10 @@ void resize_cost_layer(cost_layer *l, int inputs);
 #ifdef GPU
 void forward_cost_layer_gpu(cost_layer l, network_state state);
 void backward_cost_layer_gpu(const cost_layer l, network_state state);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

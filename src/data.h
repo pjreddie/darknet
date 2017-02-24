@@ -7,6 +7,10 @@
 #include "image.h"
 #include "tree.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static inline float distance_from_edge(int x, int max)
 {
     int dx = (max/2) - x;
@@ -106,5 +110,9 @@ data *split_data(data d, int part, int total);
 data concat_data(data d1, data d2);
 data concat_datas(data *d, int n);
 void fill_truth(char *path, char **labels, int k, float *truth);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,6 +1,10 @@
 #ifndef TREE_H
 #define TREE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct{
     int *leaf;
     int n;
@@ -19,5 +23,9 @@ void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leave
 void change_leaves(tree *t, char *leaf_list);
 int hierarchy_top_prediction(float *predictions, tree *hier, float thresh);
 float get_hierarchy_probability(float *x, tree *hier, int c);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

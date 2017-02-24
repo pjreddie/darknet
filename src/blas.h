@@ -1,5 +1,10 @@
 #ifndef BLAS_H
 #define BLAS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void flatten(float *x, int size, int layers, int batch, int forward);
 void pm(int M, int N, float *A);
 float *random_matrix(int rows, int cols);
@@ -83,5 +88,9 @@ void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rat
 
 void flatten_ongpu(float *x, int spatial, int layers, int batch, int forward, float *out);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 #endif

@@ -6,6 +6,10 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef layer avgpool_layer;
 
 image get_avgpool_image(avgpool_layer l);
@@ -19,5 +23,8 @@ void forward_avgpool_layer_gpu(avgpool_layer l, network_state state);
 void backward_avgpool_layer_gpu(avgpool_layer l, network_state state);
 #endif
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

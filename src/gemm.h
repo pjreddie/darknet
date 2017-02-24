@@ -1,6 +1,10 @@
 #ifndef GEMM_H
 #define GEMM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void gemm_bin(int M, int N, int K, float ALPHA, 
         char  *A, int lda, 
         float *B, int ldb,
@@ -31,4 +35,9 @@ void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         float *C, int ldc);
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

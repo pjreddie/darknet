@@ -12,7 +12,7 @@ list *make_list()
 }
 
 /*
-void transfer_node(list *s, list *d, dn_node *n)
+void transfer_dn_node(list *s, list *d, dn_node *n)
 {
     dn_node *prev, *next;
     prev = n->prev;
@@ -54,7 +54,7 @@ void list_insert(list *l, void *val)
 	++l->size;
 }
 
-void free_node(dn_node *n)
+void free_dn_node(dn_node *n)
 {
 	dn_node *next;
 	while(n) {
@@ -66,7 +66,7 @@ void free_node(dn_node *n)
 
 void free_list(list *l)
 {
-	free_node(l->front);
+	free_dn_node(l->front);
 	free(l);
 }
 

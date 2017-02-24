@@ -7,6 +7,10 @@
 #include "data.h"
 #include "tree.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
 } learning_rate_policy;
@@ -124,6 +128,10 @@ float get_network_cost(network net);
 
 int get_network_nuisance(network net);
 int get_network_background(network net);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

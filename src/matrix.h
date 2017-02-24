@@ -1,5 +1,10 @@
 #ifndef MATRIX_H
 #define MATRIX_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct matrix{
     int rows, cols;
     float **vals;
@@ -18,5 +23,9 @@ void scale_matrix(matrix m, float scale);
 matrix resize_matrix(matrix m, int size);
 
 float *pop_column(matrix *m, int c);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

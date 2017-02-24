@@ -7,6 +7,10 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef layer convolutional_layer;
 
 #ifdef GPU
@@ -47,6 +51,10 @@ int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
 void rescale_weights(convolutional_layer l, float scale, float trans);
 void rgbgr_weights(convolutional_layer l);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

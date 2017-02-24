@@ -7,6 +7,10 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef layer deconvolutional_layer;
 
 #ifdef GPU
@@ -29,6 +33,10 @@ image get_deconvolutional_filter(deconvolutional_layer layer, int i);
 
 int deconvolutional_out_height(deconvolutional_layer layer);
 int deconvolutional_out_width(deconvolutional_layer layer);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

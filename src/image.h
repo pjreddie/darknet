@@ -8,6 +8,10 @@
 #include <math.h>
 #include "box.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     int h;
     int w;
@@ -83,5 +87,9 @@ image get_image_layer(image m, int l);
 
 void free_image(image m);
 void test_resize(char *filename);
+
+#ifdef __cplusplus
+}
+#endif
 #endif
 

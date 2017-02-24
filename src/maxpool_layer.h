@@ -6,6 +6,10 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef layer maxpool_layer;
 
 image get_maxpool_image(maxpool_layer l);
@@ -17,6 +21,10 @@ void backward_maxpool_layer(const maxpool_layer l, network_state state);
 #ifdef GPU
 void forward_maxpool_layer_gpu(maxpool_layer l, network_state state);
 void backward_maxpool_layer_gpu(maxpool_layer l, network_state state);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
