@@ -25,6 +25,7 @@ bool ArapahoV2::Setup(
 {
     expectedHeight = expectedWidth = 0;
     
+#if 0    
     if(!p.datacfg)
     {
         printf("No data configuration file specified!\n");
@@ -34,6 +35,7 @@ bool ArapahoV2::Setup(
     list *options = read_data_cfg(p.datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
+#endif    
     int j;
     bool ret = false;
         
@@ -43,21 +45,26 @@ bool ArapahoV2::Setup(
         return false;
     }
 
-    nms = p.nms;
-    net = parse_network_cfg(p.cfgfile);
-    
     if(!p.weightfile)
     {
         printf("No weights file specified!\n");
         return false;
     }    
-    load_weights(&net, p.weightfile);
+
+    nms = p.nms;
+    net = parse_network_cfg(p.cfgfile);
     
+    printf("net.layers[i].batch = %d\n", net.layers[0].batch);
+    
+    load_weights(&net, p.weightfile);
     set_batch_network(&net, 1);     
     l = net.layers[net.n-1];
+    printf("Setup: layers = %d, %d, %d\n", l.w, l.h, l.n);
     
     expectedHeight = net.h;
     expectedWidth = net.w;
+    printf("Image expected w,h = [%d][%d]!\n", net.w, net.h);            
+    
     
     boxes = (box*)calloc(l.w*l.h*l.n, sizeof(box));
     probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
@@ -78,6 +85,7 @@ bool ArapahoV2::Setup(
         }
     }
     ret = true;
+    printf("Setup: Done\n");
     return ret;
     
 clean_exit:        
@@ -96,7 +104,7 @@ bool ArapahoV2::Detect(
             int   maximumClasses,
             int & objectCount)
 {
-    int i;
+    int i, j, k, count=0;
         
     objectCount = 0;
     threshold = thresh;
@@ -109,14 +117,28 @@ bool ArapahoV2::Detect(
     }        
     
     // Get the image to suit darknet
-    image inputImage;
-    inputImage.data = imageBuff.bgr;
+    image inputImage = make_image(imageBuff.w, imageBuff.h, imageBuff.channels);
+    if(!inputImage.data || inputImage.w != net.w || inputImage.h != net.h)
+    {
+        printf("Error in inputImage! [Checked bgr = %d, w = %d, h = %d]\n", !inputImage.data, inputImage.w != net.w, inputImage.h != net.h);
+        return false;        
+    }     
+    // Now fill the data
+    int step = imageBuff.channels*imageBuff.w;
+    for(k= 0; k < imageBuff.channels; ++k){
+        for(i = 0; i < imageBuff.h; ++i){
+            for(j = 0; j < imageBuff.w; ++j){
+                inputImage.data[count++] = (float)imageBuff.bgr[i*step + j*imageBuff.channels + k]/(float)255.;
+            }
+        }
+    }
     inputImage.h = imageBuff.h;
     inputImage.w = imageBuff.w;
     inputImage.c = imageBuff.channels;
     
     if (inputImage.h != net.h || inputImage.w != net.w)
     {
+        printf("Detect: Resizing image\n");
         inputImage = resize_image(inputImage, net.w, net.h);
     }
     // Predict

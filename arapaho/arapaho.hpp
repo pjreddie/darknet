@@ -24,7 +24,7 @@ struct ArapahoV2Params
 };
 struct ArapahoV2ImageBuff
 {
-    float* bgr;
+    unsigned char* bgr;
     int w;
     int h;
     int channels;
