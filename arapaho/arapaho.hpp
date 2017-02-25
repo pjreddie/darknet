@@ -27,6 +27,7 @@ struct ArapahoV2ImageBuff
     float* bgr;
     int w;
     int h;
+    int channels;
 };
 
 class ArapahoV2
@@ -35,7 +36,9 @@ public:
     ArapahoV2();    
     ~ArapahoV2();
     
-    bool Setup(ArapahoV2Params & p);
+    bool Setup(ArapahoV2Params & p,
+            int & expectedWidth,
+            int & expectedHeight);
     bool Detect(
             ArapahoV2ImageBuff & imageBuff, 
             float thresh, 
