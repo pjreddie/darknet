@@ -5,6 +5,10 @@ ArapahoV2::ArapahoV2()
 {
         boxes = 0;
         probs = 0;    
+        l = {};
+        net = {};
+        maxClasses = 0;
+        threshold = 0;
 }
     
 ArapahoV2::~ArapahoV2()
@@ -53,10 +57,12 @@ bool ArapahoV2::Setup(
 
     nms = p.nms;
     net = parse_network_cfg(p.cfgfile);
-    
+   
     printf("net.layers[i].batch = %d\n", net.layers[0].batch);
     
     load_weights(&net, p.weightfile);
+    printf("Setup: layers = %d, %d, %d\n", l.w, l.h, l.n);
+
     set_batch_network(&net, 1);     
     l = net.layers[net.n-1];
     printf("Setup: layers = %d, %d, %d\n", l.w, l.h, l.n);
