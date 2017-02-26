@@ -8,6 +8,7 @@ int main()
 {
     bool ret = false;
     int expectedW = 0, expectedH = 0;
+    box* boxes = 0;
     
     ArapahoV2* p = new ArapahoV2();
     if(!p)
@@ -22,7 +23,15 @@ int main()
     ap.weightfile = "input.weights";
     ap.nms = 0.4;
     
-    p->Setup(ap, expectedW, expectedH);
+    ret = p->Setup(ap, expectedW, expectedH);
+    if(false == ret)
+    {
+        printf("Setup failed!\n");
+        if(p) delete p;
+        p = 0;
+        return -1;
+    }
+    
     
     //Setup image buffer here
     ArapahoV2ImageBuff arapahoImage;
@@ -52,19 +61,21 @@ int main()
         numObjects);
     printf("Detected %d objects\n", numObjects);
     
-    box* boxes = new box[numObjects];
-    if(!boxes)
-    {
-        if(p) delete p;
-        p = 0;
-        return -1;
+    if(numObjects > 0)
+    {    
+        boxes = new box[numObjects];
+        if(!boxes)
+        {
+            if(p) delete p;
+            p = 0;
+            return -1;
+        }
+        p->GetBoxes(
+            boxes,
+            numObjects);
     }
-    p->GetBoxes(
-        boxes,
-        numObjects);
-
-    
-    delete[] boxes;
+clean_exit:    
+    if(boxes) delete[] boxes;
     if(p) delete p;
 
     return 0;
