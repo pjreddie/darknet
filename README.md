@@ -39,7 +39,7 @@ This creates a training list file that will be needed in next step.
 2. Change 3 files per below:
 
   * yolo-voc.cfg - change line classes=20 to suit desired number of classes
-  * yolo-voc.cfg - change the number of filters in the CONV layer above the region layer - #classes + #coords(4) + 1)*(NUM)
+  * yolo-voc.cfg - change the number of filters in the CONV layer above the region layer - (#classes + 4 + 1)*(5)
   * voc.data - change line classes=20, and paths to training image list file
   * voc.names - number of lines must be equal the number of classes
 
