@@ -10,12 +10,17 @@
 #include <sys/time.h>
 
 #define FRAMES 3
+#define SAVEVIDEO
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/videoio/videoio_c.h"
 image get_image_from_stream(CvCapture *cap);
+
+#ifdef SAVEVIDEO
+static CvVideoWriter *mVideoWriter;
+#endif
 
 static char **demo_names;
 static image **demo_alphabet;
@@ -69,7 +74,8 @@ void *detect_in_thread(void *ptr)
     } else {
         error("Last layer must produce detections\n");
     }
-    if (nms > 0) do_nms(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    if (l.softmax_tree && nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    else if (nms) do_nms(boxes, probs, l.w*l.h*l.n, l.classes, nms);
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
@@ -115,8 +121,20 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     if(filename){
         printf("video file: %s\n", filename);
         cap = cvCaptureFromFile(filename);
+#ifdef SAVEVIDEO
+        if(cap){
+            int mfps = cvGetCaptureProperty(cap,CV_CAP_PROP_FPS);
+            mVideoWriter=cvCreateVideoWriter("Output.avi",CV_FOURCC('M','J','P','G'),mfps,cvSize(cvGetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH),cvGetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT)),1);
+        }
+#endif
     }else{
         cap = cvCaptureFromCAM(cam_index);
+#ifdef SAVEVIDEO
+        if(cap){
+            int mfps = cvGetCaptureProperty(cap,CV_CAP_PROP_FPS);
+            mVideoWriter=cvCreateVideoWriter("Output.avi",CV_FOURCC('M','J','P','G'),mfps,cvSize(cvGetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH),cvGetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT)),1);
+        }
+#endif
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");
@@ -169,6 +187,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 
             if(!prefix){
+#ifdef SAVEVIDEO
+                save_video(disp,mVideoWriter);    
+#endif
                 show_image(disp, "Demo");
                 int c = cvWaitKey(1);
                 if (c == 10){
@@ -180,7 +201,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             }else{
                 char buff[256];
                 sprintf(buff, "%s_%08d", prefix, count);
+#ifdef SAVEVIDEO
+                save_video(disp,mVideoWriter);
+#else
                 save_image(disp, buff);
+#endif
             }
 
             pthread_join(fetch_thread, 0);
