@@ -147,4 +147,3 @@ void run_writing(int argc, char **argv)
     if(0==strcmp(argv[2], "train")) train_writing(cfg, weights);
     else if(0==strcmp(argv[2], "test")) test_writing(cfg, weights, filename);
 }
-
