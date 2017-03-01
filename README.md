@@ -264,7 +264,9 @@ For example, you stopped training after 9000 iterations, but the best result can
 
 ![Overfitting](https://hsto.org/files/5dc/7ae/7fa/5dc7ae7fad9d4e3eb3a484c58bfc1ff5.png) 
 
- If training is stopped after 9000 iterations, to validate some of previous weights use this commands:
+  2.1. At first, you should put filenames of validation images to file `data\voc.2007.test` (format as in `train.txt`) or if you haven't validation images - simply copy `data\train.txt` to `data\voc.2007.test`.
+
+  2.2 If training is stopped after 9000 iterations, to validate some of previous weights use this commands:
 
 * `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
 * `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_8000.weights`
