@@ -4,7 +4,8 @@
 2. [How to compile](#how-to-compile)
 3. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
 4. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
-5. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+5. [When should I stop training](#when-should-i-stop-training)
+6. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://cloud.githubusercontent.com/assets/4096485/21550284/88f81b8a-ce09-11e6-9516-8c3dd35dfaa7.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
@@ -84,6 +85,8 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 ### How to compile:
 
 1. If you have MSVS 2015, CUDA 8.0 and OpenCV 2.4.9 (with paths: `C:\opencv_2.4.9\opencv\build\include` & `C:\opencv_2.4.9\opencv\build\x64\vc12\lib` or `vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
+
+  1.1. Find files `opencv_core249.dll`, `opencv_highgui249.dll` and `opencv_ffmpeg249_64.dll` in `C:\opencv_2.4.9\opencv\build\x64\vc12\bin` or `vc14\bin` and put it near with `darknet.exe`
 
 2. If you have other version of CUDA (not 8.0) then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 8.0" and change it to your CUDA-version, then do step 1
 
@@ -236,11 +239,52 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
  * After each 1000 iterations you can stop and later start training from this point. For example, after 2000 iterations you can stop training, and later just copy `yolo-obj_2000.weights` from `build\darknet\x64\backup\` to `build\darknet\x64\` and start training using: `darknet.exe detector train data/obj.data yolo-obj.cfg yolo-obj_2000.weights`
 
- * Also you can get result earlier than all 45000 iterations, for example, usually sufficient 2000 iterations for each class(object). I.e. for 6 classes to avoid overfitting - you can stop training after 12000 iterations and use `yolo-obj_12000.weights` to detection.
+ * Also you can get result earlier than all 45000 iterations.
  
+## When should I stop training:
+
+Usually sufficient 2000 iterations for each class(object). But for a more precise definition when you should stop training, use the following manual:
+
+1. During training, you will see varying indicators of error, and you should stop when no longer decreases **0.060730 avg**:
+
+  > Region Avg IOU: 0.798363, Class: 0.893232, Obj: 0.700808, No Obj: 0.004567, Avg Recall: 1.000000,  count: 8
+  > Region Avg IOU: 0.800677, Class: 0.892181, Obj: 0.701590, No Obj: 0.004574, Avg Recall: 1.000000,  count: 8
+  >
+  > **9002**: 0.211667, **0.060730 avg**, 0.001000 rate, 3.868000 seconds, 576128 images
+  > Loaded: 0.000000 seconds
+
+  * **9002** - iteration number (number of batch)
+  * **0.060730 avg** - average loss (error) - **the lower, the better**
+
+  When you see that average loss **0.060730 avg** enough low at many iterations and no longer decreases then you should stop training.
+
+2. Once training is stopped, you should take some of last `.weights`-files from `darknet\build\darknet\x64\backup` and choose the best of them:
+
+For example, you stopped training after 9000 iterations, but the best result can give one of previous weights (7000, 8000, 9000). It can happen due to overfitting. **Overfitting** - is case when you can detect objects on images from training-dataset, but can't detect ojbects on any others images. You should get weights from **Early Stopping Point**:
+
+![Overfitting](https://hsto.org/files/5dc/7ae/7fa/5dc7ae7fad9d4e3eb3a484c58bfc1ff5.png) 
+
+ If training is stopped after 9000 iterations, to validate some of previous weights use this commands:
+
+* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
+* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_8000.weights`
+* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_9000.weights`
+
+And comapre last output lines for each weights (7000, 8000, 9000):
+
+> 7586 7612 7689 RPs/Img: 68.23 **IOU: 77.86%** Recall:99.00%
+
+* **IOU** - the bigger, the better (says about accuracy) - **better to use**
+* **Recall** - the bigger, the better (says about accuracy)
+
+For example, **bigger IUO** gives weights `yolo-obj_8000.weights` - then **use this weights for detection**.
+
+
+![precision_recall_iou](https://hsto.org/files/ca8/866/d76/ca8866d76fb840228940dbf442a7f06a.jpg)
+
 ### Custom object detection:
 
-Example of custom object detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_3000.weights`
+Example of custom object detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_8000.weights`
 
 | ![Yolo_v2_training](https://hsto.org/files/d12/1e7/515/d121e7515f6a4eb694913f10de5f2b61.jpg) | ![Yolo_v2_training](https://hsto.org/files/727/c7e/5e9/727c7e5e99bf4d4aa34027bb6a5e4bab.jpg) |
 |---|---|
