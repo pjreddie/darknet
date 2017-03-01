@@ -11,3 +11,4 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 This version of darknet has been modified to return a custom data representation. The only network that has been modified is the YOLO one.
 The purpose of the modification is to get all the information about the bounding boxes that YOLO detetects.
 This version of darkent is used in the [SR-Clustering](https://github.com/MarcBS/SR-Clustering/tree/SR-Clustering-w/-YOLO) project at the University of Barcelona.
+You may need yolo9000.weights. You can download it from [here](http://pjreddie.com/media/files/yolo9000.weights).
