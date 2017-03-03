@@ -353,7 +353,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         if(fps) fclose(fps[j]);
     }
     if(coco){
-        fseek(fp, -2, SEEK_CUR); 
+        fseek(fp, -2, SEEK_CUR);
         fprintf(fp, "\n]\n");
         fclose(fp);
     }
@@ -438,7 +438,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     }
 }
 
-void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh)
+void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outputfile)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -482,8 +482,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (l.softmax_tree && nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
-        save_image(im, "predictions");
-        show_image(im, "predictions");
+        save_image(im, outputfile);
+        show_image(im, outputfile);
 
         free_image(im);
         free_image(sized);
@@ -505,7 +505,7 @@ void run_detector(int argc, char **argv)
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
     if(argc < 4){
-        fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
+        fprintf(stderr, "usage: %s %s [train/test/valid] [data] [cfg] [weights (optional)] [image (optional)] [outputfile (optional, default to predictions)]\n", argv[0], argv[1]);
         return;
     }
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
@@ -538,7 +538,8 @@ void run_detector(int argc, char **argv)
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh);
+    char *outputfile = (argc > 7) ? argv[7]: "predictions";
+    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outputfile);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
