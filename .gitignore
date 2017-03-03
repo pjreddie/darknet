@@ -16,6 +16,7 @@ decaf/
 submission/
 cfg/
 darknet
+darknet.a
 .fuse*
 
 # OS Generated #
