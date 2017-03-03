@@ -45,6 +45,7 @@ void shuffle(void *arr, size_t n, size_t size)
         memcpy(arr+(j*size), arr+(i*size), size);
         memcpy(arr+(i*size), swp,          size);
     }
+    free(swp);
 }
 
 void del_arg(int argc, char **argv, int index)
@@ -498,7 +499,7 @@ float mag_array(float *a, int n)
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i){
-        sum += a[i]*a[i];   
+        sum += a[i]*a[i];
     }
     return sqrt(sum);
 }
@@ -584,7 +585,7 @@ float rand_normal()
 
 size_t rand_size_t()
 {
-    return  ((size_t)(rand()&0xff) << 56) | 
+    return  ((size_t)(rand()&0xff) << 56) |
             ((size_t)(rand()&0xff) << 48) |
             ((size_t)(rand()&0xff) << 40) |
             ((size_t)(rand()&0xff) << 32) |
@@ -622,4 +623,3 @@ float **one_hot_encode(float *a, int n, int k)
     }
     return t;
 }
-
