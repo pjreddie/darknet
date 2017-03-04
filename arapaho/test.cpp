@@ -71,6 +71,7 @@ int main()
     ap.cfgfile = INPUT_CFG_FILE;
     ap.weightfile = INPUT_WEIGHTS_FILE;
     ap.nms = 0.4;
+    ap.maxClasses = 2;
     
     // Always setup before detect
     ret = p->Setup(ap, expectedW, expectedH);
@@ -121,7 +122,6 @@ int main()
             arapahoImage,
             0.24,
             0.5,
-            ARAPAHO_MAX_CLASSES,
             numObjects);
         printf("Detected %d objects\n", numObjects);
         

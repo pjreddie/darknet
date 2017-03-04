@@ -42,6 +42,7 @@ struct ArapahoV2Params
     char* cfgfile;
     char* weightfile;
     float nms;
+    int maxClasses;
 };
 struct ArapahoV2ImageBuff
 {
@@ -66,8 +67,7 @@ public:
     bool Detect(
             ArapahoV2ImageBuff & imageBuff, 
             float thresh, 
-            float hier_thresh,
-            int   maxClasses,            
+            float hier_thresh,         
             int & objectCount);
     
     bool GetBoxes(box* outBoxes, int boxCount);

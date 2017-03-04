@@ -76,6 +76,8 @@ bool ArapahoV2::Setup(
 
     // Print some debug info
     nms = p.nms;
+    maxClasses = p.maxClasses;
+    
     net = parse_network_cfg(p.cfgfile);
     DPRINTF("Setup: net.n = %d\n", net.n);   
     DPRINTF("net.layers[0].batch = %d\n", net.layers[0].batch);
@@ -84,6 +86,12 @@ bool ArapahoV2::Setup(
     set_batch_network(&net, 1);     
     l = net.layers[net.n-1];
     DPRINTF("Setup: layers = %d, %d, %d\n", l.w, l.h, l.n);
+
+    // Class limiter
+    if(l.classes > maxClasses)
+    {
+        DPRINTF("Warning: Read classes from cfg (%d) > maxClasses (%d)", l.classes, maxClasses);
+    }    
     
     expectedHeight = net.h;
     expectedWidth = net.w;
@@ -95,7 +103,7 @@ bool ArapahoV2::Setup(
     // Error exits
     if(!boxes || !probs)
     {
-        DPRINTF("Error allocating boxes/probs, %x/%x !\n", boxes, probs);
+        DPRINTF("Error allocating boxes/probs, %p/%p !\n", boxes, probs);
         goto clean_exit;
     }
 
@@ -130,14 +138,12 @@ bool ArapahoV2::Detect(
             ArapahoV2ImageBuff & imageBuff, 
             float thresh, 
             float hier_thresh,
-            int   maximumClasses,
             int & objectCount)
 {
     int i, j, k, count=0;
         
     objectCount = 0;
     threshold = thresh;
-    maxClasses = maximumClasses;
     
     // Early exits
     if(!bSetup)
@@ -197,14 +203,17 @@ bool ArapahoV2::Detect(
     network_predict(net, inputImage.data);
     get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0, hier_thresh);
     
+    DPRINTF("l.softmax_tree = %p, nms = %f\n", l.softmax_tree, nms);
     if (l.softmax_tree && nms)
+    {
         do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    }
     else if (nms) 
         do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
     
     // Update object counts
     for(i = 0; i < (l.w*l.h*l.n); ++i){
-        int class1 = max_index(probs[i], maxClasses);
+        int class1 = max_index(probs[i], l.classes);
         float prob = probs[i][class1];
         if(prob > thresh){
             objectCount ++;
@@ -225,12 +234,12 @@ bool ArapahoV2::GetBoxes(box* outBoxes, int boxCount)
     
     if(!boxes || !probs)
     {
-        DPRINTF("Error NULL boxes/probs, %x/%x !\n", boxes, probs);
+        DPRINTF("Error NULL boxes/probs, %p/%p !\n", boxes, probs);
         return false;
     }
     for(i = 0; i < (l.w*l.h*l.n); ++i)
     {
-        int class1 = max_index(probs[i], maxClasses);
+        int class1 = max_index(probs[i], l.classes);
         float prob = probs[i][class1];
         if(prob > threshold && count < boxCount)
         {
