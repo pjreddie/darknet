@@ -14,7 +14,7 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 
 * Can use bounding boxes directly from Euclid object labeller (https://github.com/prabindh/euclid)
 
-* Work in progress C++ API - arapaho
+* C++ API - arapaho, that works in conjunction with libdarknet-cpp-shared.so
 
 **Usage**
 
@@ -51,7 +51,7 @@ This creates a training list file that will be needed in next step.
 
   `./darknet-cpp detector train ./cfg/voc-myclasses.data ./cfg/yolo-myconfig.cfg darknet19_448.conv.23`
 
-Atleast for the few initial iterations, observe the log output, and ensure all images are found and being used. After convergence, detection can be performed using standard steps.
+  * Atleast for the few initial iterations, observe the log output, and ensure all images are found and being used. After convergence, detection can be performed using standard steps.
 
 
 #Darknet#
