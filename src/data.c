@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __linux__
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 list *get_paths(char *filename)
 {
@@ -44,13 +46,17 @@ char **get_random_paths(char **paths, int n, int m)
 {
     char **random_paths = (char**)calloc(n, sizeof(char*));
     int i;
-    pthread_mutex_lock(&mutex);
+#ifdef __linux__
+	pthread_mutex_lock(&mutex);
+#endif
     for(i = 0; i < n; ++i){
         int index = rand()%m;
         random_paths[i] = paths[index];
         //if(i == 0) printf("%s\n", paths[index]);
     }
+#ifdef __linux__
     pthread_mutex_unlock(&mutex);
+#endif
     return random_paths;
 }
 
@@ -747,6 +753,7 @@ void *load_thread(void *ptr)
     return 0;
 }
 
+#ifdef __linux__
 pthread_t load_data_in_thread(load_args args)
 {
     pthread_t thread;
@@ -793,6 +800,7 @@ pthread_t load_data(load_args args)
     if(pthread_create(&thread, 0, load_threads, ptr)) error("Thread creation failed");
     return thread;
 }
+#endif
 
 data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int out_h)
 {

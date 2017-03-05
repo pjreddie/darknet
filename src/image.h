@@ -29,7 +29,9 @@ image crop_image(image im, int dx, int dy, int w, int h);
 image random_crop_image(image im, int w, int h);
 image random_augment_image(image im, float angle, float aspect, int low, int high, int size);
 void random_distort_image(image im, float hue, float saturation, float exposure);
+
 image resize_image(image im, int w, int h);
+image make_image(int w, int h, int c);
 image resize_min(image im, int min);
 image resize_max(image im, int max);
 void translate_image(image m, float s);
@@ -64,7 +66,6 @@ void show_image_collapsed(image p, char *name);
 
 void print_image(image m);
 
-image make_image(int w, int h, int c);
 image make_random_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);
 image float_to_image(int w, int h, int c, float *data);

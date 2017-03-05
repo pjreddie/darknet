@@ -73,7 +73,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.saturation = net.saturation;
     args.hue = net.hue;
 
+#ifdef __linux__
     pthread_t load_thread = load_data(args);
+#endif
     clock_t time;
     int count = 0;
     //while(i*imgs < N*120){
@@ -87,21 +89,27 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             args.w = dim;
             args.h = dim;
 
+#ifdef __linux__
             pthread_join(load_thread, 0);
+#endif
             train = buffer;
             free_data(train);
+#ifdef __linux__
             load_thread = load_data(args);
-
+#endif
             for(i = 0; i < ngpus; ++i){
                 resize_network(nets + i, dim, dim);
             }
             net = nets[0];
         }
         time=clock();
+#ifdef __linux__
         pthread_join(load_thread, 0);
+#endif
         train = buffer;
+#ifdef __linux__
         load_thread = load_data(args);
-
+#endif
         /*
            int k;
            for(k = 0; k < l.max_boxes; ++k){
@@ -267,13 +275,21 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int imagenet = 0;
     if(0==strcmp(type, "coco")){
         if(!outfile) outfile = "coco_results";
+#ifdef __linux__
         snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
+#else
+		_snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
+#endif
         fp = fopen(buff, "w");
         fprintf(fp, "[\n");
         coco = 1;
     } else if(0==strcmp(type, "imagenet")){
         if(!outfile) outfile = "imagenet-detection";
+#ifdef __linux__
         snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
+#else
+		_snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
+#endif
         fp = fopen(buff, "w");
         imagenet = 1;
         classes = 200;
@@ -282,7 +298,11 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         if(!outfile) outfile = "comp4_det_test_";
         fps = (FILE**)calloc(classes, sizeof(FILE *));
         for(j = 0; j < classes; ++j){
+#ifdef __linux__
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+#else
+			_snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+#endif
             fps[j] = fopen(buff, "w");
         }
     }
@@ -306,8 +326,9 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     image *val_resized = (image*)calloc(nthreads, sizeof(image));
     image *buf = (image*)calloc(nthreads, sizeof(image));
     image *buf_resized = (image*)calloc(nthreads, sizeof(image));
+#ifdef __linux__
     pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
-
+#endif
 
     load_args args = {0};
     args.w = net.w;
@@ -318,13 +339,17 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         args.path = paths[i+t];
         args.im = &buf[t];
         args.resized = &buf_resized[t];
+#ifdef __linux__
         thr[t] = load_data_in_thread(args);
-    }
+#endif
+	}
     time_t start = time(0);
     for(i = nthreads; i < m+nthreads; i += nthreads){
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
+#ifdef __linux__
             pthread_join(thr[t], 0);
+#endif
             val[t] = buf[t];
             val_resized[t] = buf_resized[t];
         }
@@ -332,7 +357,9 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             args.path = paths[i+t];
             args.im = &buf[t];
             args.resized = &buf_resized[t];
+#ifdef __linux__
             thr[t] = load_data_in_thread(args);
+#endif
         }
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];

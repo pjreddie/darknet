@@ -129,6 +129,8 @@ typedef struct {
     float *err;
 } train_args;
 
+#ifdef __linux__
+
 void *train_thread(void *ptr)
 {
     train_args args = *(train_args*)ptr;
@@ -148,6 +150,7 @@ pthread_t train_network_in_thread(network net, data d, float *err)
     if(pthread_create(&thread, 0, train_thread, ptr)) error("Thread creation failed");
     return thread;
 }
+#endif
 
 void pull_updates(layer l)
 {
@@ -304,6 +307,7 @@ typedef struct{
     int j;
 } sync_args;
 
+
 void *sync_layer_thread(void *ptr)
 {
     sync_args args = *(sync_args*)ptr;
@@ -312,6 +316,7 @@ void *sync_layer_thread(void *ptr)
     return 0;
 }
 
+#ifdef __linux__
 pthread_t sync_layer_in_thread(network *nets, int n, int j)
 {
     pthread_t thread;
@@ -322,6 +327,7 @@ pthread_t sync_layer_in_thread(network *nets, int n, int j)
     if(pthread_create(&thread, 0, sync_layer_thread, ptr)) error("Thread creation failed");
     return thread;
 }
+
 
 void sync_nets(network *nets, int n, int interval)
 {
@@ -341,6 +347,13 @@ void sync_nets(network *nets, int n, int interval)
     }
     free(threads);
 }
+#else
+void sync_nets(network *nets, int n, int interval)
+{
+	error("Sync_nets unsupported in Windows");
+}
+#endif
+
 
 float train_networks(network *nets, int n, data d, int interval)
 {
@@ -348,6 +361,7 @@ float train_networks(network *nets, int n, data d, int interval)
     int batch = nets[0].batch;
     int subdivisions = nets[0].subdivisions;
     assert(batch * subdivisions * n == d.X.rows);
+#ifdef __linux__
     pthread_t *threads = (pthread_t *) calloc(n, sizeof(pthread_t));
     float *errors = (float *) calloc(n, sizeof(float));
 
@@ -372,7 +386,12 @@ float train_networks(network *nets, int n, data d, int interval)
     free(threads);
     free(errors);
     return (float)sum/(n);
+#else
+	error("Training for GPUs > 1 not supported in Windows...");
+	return 0.f;
+#endif
 }
+
 
 float *get_network_output_layer_gpu(network net, int i)
 {

@@ -1,6 +1,9 @@
 #ifndef DATA_H
 #define DATA_H
+
+#ifdef __linux__
 #include <pthread.h>
+#endif
 
 #include "matrix.h"
 #include "list.h"
@@ -75,9 +78,11 @@ extern "C" {
 
 void free_data(data d);
 
+#ifdef __linux__
 pthread_t load_data(load_args args);
 
 pthread_t load_data_in_thread(load_args args);
+#endif
 
 void print_letters(float *pred, int n);
 data load_data_captcha(char **paths, int n, int m, int k, int w, int h);

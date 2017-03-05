@@ -432,6 +432,7 @@ void valid_go(char *cfgfile, char *weightfile, int multi)
 
 void engine_go(char *filename, char *weightfile, int multi)
 {
+#ifdef __linux__
     network net = parse_network_cfg(filename);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -597,6 +598,9 @@ void engine_go(char *filename, char *weightfile, int multi)
         fflush(stdout);
         fflush(stderr);
     }
+#else
+	printf("go is unsupported on Windows because popen is being used. Might be supported in the future.\n");
+#endif
 }
 
 void test_go(char *cfg, char *weights, int multi)
@@ -698,6 +702,7 @@ void test_go(char *cfg, char *weights, int multi)
 
 float score_game(float *board)
 {
+#ifdef __linux__
     FILE *f = fopen("game.txt", "w");
     int i, j;
     int count = 3;
@@ -730,6 +735,10 @@ float score_game(float *board)
     if(player == 'W') score = -score;
     pclose(p);
     return score;
+#else
+	printf("GO is unsupported in Windows port.\n");
+	return 0.f;
+#endif
 }
 
 void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)

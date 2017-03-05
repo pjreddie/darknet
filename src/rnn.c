@@ -349,7 +349,7 @@ void valid_tactic_rnn(char *cfgfile, char *weightfile, char *seed)
     }
     float sum = 0;
     c = getc(stdin);
-    float log2 = log(2);
+    float log2 = log(2.f);
     int in = 0;
     while(c != EOF){
         int next = getc(stdin);
@@ -401,7 +401,7 @@ void valid_char_rnn(char *cfgfile, char *weightfile, char *seed)
     }
     float sum = 0;
     c = getc(stdin);
-    float log2 = log(2);
+    float log2 = log(2.f);
     while(c != EOF){
         int next = getc(stdin);
         if(next == EOF) break;

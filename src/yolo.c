@@ -57,15 +57,22 @@ void train_yolo(char *cfgfile, char *weightfile)
     args.saturation = net.saturation;
     args.hue = net.hue;
 
+#ifdef __linux__
     pthread_t load_thread = load_data_in_thread(args);
+#endif
     clock_t time;
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
+#ifdef __linux__
         pthread_join(load_thread, 0);
+#endif
         train = buffer;
+
+#ifdef __linux__
         load_thread = load_data_in_thread(args);
+#endif
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 
@@ -131,7 +138,11 @@ void validate_yolo(char *cfgfile, char *weightfile)
     FILE **fps = (FILE**)calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
+#ifdef __linux__
         snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+#else
+		_snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+#endif
         fps[j] = fopen(buff, "w");
     }
     box *boxes = (box*)calloc(l.side*l.side*l.n, sizeof(box));
@@ -151,8 +162,10 @@ void validate_yolo(char *cfgfile, char *weightfile)
     image *val_resized = (image*)calloc(nthreads, sizeof(image));
     image *buf = (image*)calloc(nthreads, sizeof(image));
     image *buf_resized = (image*)calloc(nthreads, sizeof(image));
+#ifdef __linux__
     pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
-
+#else
+#endif
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
@@ -162,13 +175,19 @@ void validate_yolo(char *cfgfile, char *weightfile)
         args.path = paths[i+t];
         args.im = &buf[t];
         args.resized = &buf_resized[t];
+#ifdef __linux__
         thr[t] = load_data_in_thread(args);
+#else
+#endif
     }
     time_t start = time(0);
     for(i = nthreads; i < m+nthreads; i += nthreads){
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
+#ifdef __linux__
             pthread_join(thr[t], 0);
+#else
+#endif
             val[t] = buf[t];
             val_resized[t] = buf_resized[t];
         }
@@ -176,7 +195,10 @@ void validate_yolo(char *cfgfile, char *weightfile)
             args.path = paths[i+t];
             args.im = &buf[t];
             args.resized = &buf_resized[t];
+#ifdef __linux__
             thr[t] = load_data_in_thread(args);
+#else
+#endif
         }
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];
@@ -218,7 +240,10 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     FILE **fps = (FILE**)calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+#ifdef __linux__
+        _snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+#else
+#endif
         fps[j] = fopen(buff, "w");
     }
     box *boxes = (box*)calloc(side*side*l.n, sizeof(box));
