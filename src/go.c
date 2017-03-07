@@ -432,7 +432,7 @@ void valid_go(char *cfgfile, char *weightfile, int multi)
 
 void engine_go(char *filename, char *weightfile, int multi)
 {
-#ifdef __linux__
+#if defined __linux__
     network net = parse_network_cfg(filename);
     if(weightfile){
         load_weights(&net, weightfile);

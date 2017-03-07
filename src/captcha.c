@@ -50,7 +50,7 @@ void train_captcha(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     clock_t time;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread;
 #else
 #endif
@@ -68,13 +68,13 @@ void train_captcha(char *cfgfile, char *weightfile)
     args.d = &buffer;
     args.type = CLASSIFICATION_DATA;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     load_thread = load_data_in_thread(args);
 #endif
     while(1){
         ++i;
         time=clock();
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         train = buffer;
@@ -86,7 +86,7 @@ void train_captcha(char *cfgfile, char *weightfile)
            cvWaitKey(0);
          */
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         load_thread = load_data_in_thread(args);
 #endif
         printf("Loaded: %lf seconds\n", sec(clock()-time));

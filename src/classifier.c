@@ -95,11 +95,11 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
     data train;
     data buffer;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread;
 #endif
     args.d = &buffer;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     load_thread = load_data(args);
 #endif
 
@@ -107,11 +107,11 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         train = buffer;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         load_thread = load_data(args);
 #endif
 
@@ -309,13 +309,13 @@ void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
     args.d = &buffer;
     args.type = OLD_CLASSIFICATION_DATA;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
 #endif
     for(i = 1; i <= splits; ++i){
         time=clock();
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         val = buffer;
@@ -324,7 +324,7 @@ void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
         char **part = paths+(i*m/splits);
         if(i != splits){
             args.paths = part;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             load_thread = load_data_in_thread(args);
 #endif
         }
@@ -808,12 +808,12 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_
     args.d = &buffer;
     args.type = OLD_CLASSIFICATION_DATA;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
 #endif
 	for(curr = net.batch; curr < m; curr += net.batch){
         time=clock();
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         val = buffer;
@@ -821,7 +821,7 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_
         if(curr < m){
             args.paths = paths + curr;
             if (curr + net.batch > m) args.n = m - curr;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             load_thread = load_data_in_thread(args);
 #endif
         }

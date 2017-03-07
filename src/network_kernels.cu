@@ -129,7 +129,7 @@ typedef struct {
     float *err;
 } train_args;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
 
 void *train_thread(void *ptr)
 {
@@ -316,7 +316,7 @@ void *sync_layer_thread(void *ptr)
     return 0;
 }
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
 pthread_t sync_layer_in_thread(network *nets, int n, int j)
 {
     pthread_t thread;
@@ -361,7 +361,7 @@ float train_networks(network *nets, int n, data d, int interval)
     int batch = nets[0].batch;
     int subdivisions = nets[0].subdivisions;
     assert(batch * subdivisions * n == d.X.rows);
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t *threads = (pthread_t *) calloc(n, sizeof(pthread_t));
     float *errors = (float *) calloc(n, sizeof(float));
 

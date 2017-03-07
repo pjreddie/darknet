@@ -73,7 +73,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.saturation = net.saturation;
     args.hue = net.hue;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data(args);
 #endif
     clock_t time;
@@ -89,12 +89,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             args.w = dim;
             args.h = dim;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             pthread_join(load_thread, 0);
 #endif
             train = buffer;
             free_data(train);
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             load_thread = load_data(args);
 #endif
             for(i = 0; i < ngpus; ++i){
@@ -103,11 +103,11 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             net = nets[0];
         }
         time=clock();
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         train = buffer;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         load_thread = load_data(args);
 #endif
         /*
@@ -326,7 +326,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     image *val_resized = (image*)calloc(nthreads, sizeof(image));
     image *buf = (image*)calloc(nthreads, sizeof(image));
     image *buf_resized = (image*)calloc(nthreads, sizeof(image));
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
 #endif
 
@@ -339,7 +339,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         args.path = paths[i+t];
         args.im = &buf[t];
         args.resized = &buf_resized[t];
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         thr[t] = load_data_in_thread(args);
 #endif
 	}
@@ -347,7 +347,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     for(i = nthreads; i < m+nthreads; i += nthreads){
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             pthread_join(thr[t], 0);
 #endif
             val[t] = buf[t];
@@ -357,7 +357,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             args.path = paths[i+t];
             args.im = &buf[t];
             args.resized = &buf_resized[t];
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             thr[t] = load_data_in_thread(args);
 #endif
         }

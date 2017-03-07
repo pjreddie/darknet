@@ -64,7 +64,7 @@ void train_coco(char *cfgfile, char *weightfile)
     args.saturation = net.saturation;
     args.hue = net.hue;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
 #endif
     clock_t time;
@@ -72,12 +72,12 @@ void train_coco(char *cfgfile, char *weightfile)
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         train = buffer;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         load_thread = load_data_in_thread(args);
 #endif
 
@@ -193,7 +193,7 @@ void validate_coco(char *cfgfile, char *weightfile)
     image *buf = (image*)calloc(nthreads, sizeof(image));
     image *buf_resized = (image*)calloc(nthreads, sizeof(image));
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
 #else
 #endif
@@ -207,7 +207,7 @@ void validate_coco(char *cfgfile, char *weightfile)
         args.path = paths[i+t];
         args.im = &buf[t];
         args.resized = &buf_resized[t];
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         thr[t] = load_data_in_thread(args);
 #endif
     }
@@ -216,7 +216,7 @@ void validate_coco(char *cfgfile, char *weightfile)
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             pthread_join(thr[t], 0);
 #endif
             val[t] = buf[t];
@@ -226,7 +226,7 @@ void validate_coco(char *cfgfile, char *weightfile)
             args.path = paths[i+t];
             args.im = &buf[t];
             args.resized = &buf_resized[t];
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             thr[t] = load_data_in_thread(args);
 #endif
         }

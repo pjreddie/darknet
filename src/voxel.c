@@ -75,7 +75,7 @@ void train_voxel(char *cfgfile, char *weightfile)
     args.m = plist->size;
     args.d = &buffer;
     args.type = SUPER_DATA;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
 #endif
     clock_t time;
@@ -83,12 +83,12 @@ void train_voxel(char *cfgfile, char *weightfile)
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
 
         pthread_join(load_thread, 0);
 #endif
         train = buffer;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
 
         load_thread = load_data_in_thread(args);
 #endif

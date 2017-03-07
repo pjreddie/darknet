@@ -26,7 +26,7 @@ void train_compare(char *cfgfile, char *weightfile)
     printf("%d\n", N);
     clock_t time;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread;
 #endif
     data train;
@@ -42,7 +42,7 @@ void train_compare(char *cfgfile, char *weightfile)
     args.d = &buffer;
     args.type = COMPARE_DATA;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     load_thread = load_data_in_thread(args);
 #endif
     int epoch = *net.seen/N;
@@ -50,12 +50,12 @@ void train_compare(char *cfgfile, char *weightfile)
     while(1){
         ++i;
         time=clock();
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         train = buffer;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         load_thread = load_data_in_thread(args);
 #endif
         printf("Loaded: %lf seconds\n", sec(clock()-time));
@@ -79,7 +79,7 @@ void train_compare(char *cfgfile, char *weightfile)
             if(epoch%22 == 0) net.learning_rate *= .1;
         }
     }
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_join(load_thread, 0);
 #endif
     free_data(buffer);
@@ -122,13 +122,13 @@ void validate_compare(char *filename, char *weightfile)
     args.d = &buffer;
     args.type = COMPARE_DATA;
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
 #endif
     for(i = 1; i <= splits; ++i){
         time=clock();
 
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         val = buffer;
@@ -137,7 +137,7 @@ void validate_compare(char *filename, char *weightfile)
         char **part = paths+(i*N/splits);
         if(i != splits){
             args.paths = part;
-#ifdef __linux__
+#if defined __linux__ || defined PTHREAD_WINDOWS
             load_thread = load_data_in_thread(args);
 #endif
         }
