@@ -53,6 +53,18 @@ This creates a training list file that will be needed in next step.
 
   * Atleast for the few initial iterations, observe the log output, and ensure all images are found and being used. After convergence, detection can be performed using standard steps.
 
+#How to file issues#
+If there is a need to report an issue with the darknet-cpp port, use the link - https://github.com/prabindh/darknet/issues.
+
+Information required for filing an issue:
+
+  * Output of `git log --format="%H" -n 1`
+
+  * Options enabled in Makefile (GPU,CUDNN)
+
+  * If using Arapaho C++ wrapper, what options were used to build
+
+  * Platform being used (OS version, GPU type, CUDA version, and OpenCV version)
 
 #Darknet#
 Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
