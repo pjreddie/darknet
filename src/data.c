@@ -39,18 +39,23 @@ char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
 }
 */
 
+int mt_seed = 0;
+
 char **get_random_paths(char **paths, int n, int m)
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
     pthread_mutex_lock(&mutex);
+	if (mt_seed == 0) mt_seed = time(0);
+	srand(mt_seed);
 	//printf("n = %d \n", n);
-    for(i = 0; i < n; ++i){
-        int index = (rand()*rand())%m;
+    for(i = 0; i < n; ++i){		
+        int index = rand()%m;		
         random_paths[i] = paths[index];
         //if(i == 0) printf("%s\n", paths[index]);
-		//printf("%s\n", paths[index]);
+		//printf("grp: %s\n", paths[index]);
     }
+	mt_seed = rand();
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
