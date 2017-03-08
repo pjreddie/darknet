@@ -6,7 +6,6 @@
 *.jpg
 old/
 mnist/
-data/
 caffe/
 grasp/
 images/
