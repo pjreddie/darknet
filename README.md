@@ -7,7 +7,10 @@
 5. [When should I stop training](#when-should-i-stop-training)
 6. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
 
-|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://cloud.githubusercontent.com/assets/4096485/21550284/88f81b8a-ce09-11e6-9516-8c3dd35dfaa7.jpg) https://arxiv.org/abs/1612.08242 |
+|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg) https://arxiv.org/abs/1612.08242 |
+|---|---|
+
+|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/978/a64/7ca/978a647caaee40b7b0a64f7770f11e99.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
 
 
