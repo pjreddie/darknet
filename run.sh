@@ -3,7 +3,7 @@
 path_folder="$1"
 
 ## declare an array variable
-declare -a arr=( $(ls $path_folder*.$2) )
+declare -a arr=( $(ls $path_folder*$2) )
 
 ## results
 result=""
