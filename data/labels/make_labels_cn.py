@@ -13,7 +13,7 @@ l=["人","自行车","车","摩托车","飞机","大巴","火车","卡车","船"
 def make_labels(s): 
     i = 0 
     for word in l:   
-        os.system("convert -fill black -background white -bordercolor white -border 4  -font /usr/share/fonts/truetype/arphic/ukai.ttc -pointsize %d label:\"%s\" \"byd_%d_%d.png\""%(s,word,i,s/12-1)) 
+        os.system("convert -fill black -background white -bordercolor white -border 4  -font /usr/share/fonts/truetype/arphic/ukai.ttc -pointsize %d label:\"%s\" \"cn_%d_%d.png\""%(s,word,i,s/12-1)) 
         i = i + 1 
 
 
