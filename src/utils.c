@@ -252,7 +252,8 @@ void strip_char(char *s, char bad)
 void free_ptrs(void **ptrs, int n)
 {
     int i;
-    for(i = 0; i < n; ++i) free(ptrs[i]);
+    for(i = 0; i < n; ++i) 
+		free(ptrs[i]);
     free(ptrs);
 }
 
