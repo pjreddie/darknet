@@ -26,9 +26,9 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 
 **Steps to train (Yolov2)**
 
-Download latest tag of darknet-cpp, ex
+Download latest commit of darknet-cpp, ex
 
-https://github.com/prabindh/darknet/tree/v3.76
+git clone https://github.com/prabindh/darknet
 
 1. Create Yolo compatible training data-set. I use this to create Yolo compatible bounding box format file, and training list file. 
 
