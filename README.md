@@ -26,28 +26,28 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 
 **Steps to train (Yolov2)**
 
-Download latest commit of darknet-cpp, ex
+1. Download latest commit of darknet-cpp, ex
 
 git clone https://github.com/prabindh/darknet
 
-1. Create Yolo compatible training data-set. I use this to create Yolo compatible bounding box format file, and training list file. 
+2. Create Yolo compatible training data-set. I use this to create Yolo compatible bounding box format file, and training list file. 
 
 https://github.com/prabindh/euclid
 
 This creates a training list file that will be needed in next step.
 
-2. Change 3 files per below:
+3. Change the files per below:
 
   * yolo-voc.cfg - change line classes=20 to suit desired number of classes
   * yolo-voc.cfg - change the number of filters in the CONV layer above the region layer - (#classes + 4 + 1)*(5)
   * voc.data - change line classes=20, and paths to training image list file
   * voc.names - number of lines must be equal the number of classes
 
-3. Place label-images corresponding to name of classes in data/labels, ex - data/labels/myclassname1.png
+4. Place label-images corresponding to name of classes in data/labels, ex - data/labels/myclassname1.png
 
-4. Download http://pjreddie.com/media/files/darknet19_448.conv.23
+5. Download http://pjreddie.com/media/files/darknet19_448.conv.23
 
-5. Train as below
+6. Train as below
 
   `./darknet-cpp detector train ./cfg/voc-myclasses.data ./cfg/yolo-myconfig.cfg darknet19_448.conv.23`
 
