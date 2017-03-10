@@ -171,8 +171,9 @@ if (USE_OPENCV)
   list( APPEND libs opencv_core opencv_highgui )
 endif()
 
-set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors")
-
+if( NOT WIN32 )
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors")
+endif()
 
 ###
 #
