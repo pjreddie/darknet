@@ -5,7 +5,8 @@
 3. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
 4. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
 5. [When should I stop training](#when-should-i-stop-training)
-6. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+6. [How to improve object detection](#how-to-improve-object-detection)
+7. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
@@ -293,6 +294,17 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
 | ![Yolo_v2_training](https://hsto.org/files/d12/1e7/515/d121e7515f6a4eb694913f10de5f2b61.jpg) | ![Yolo_v2_training](https://hsto.org/files/727/c7e/5e9/727c7e5e99bf4d4aa34027bb6a5e4bab.jpg) |
 |---|---|
+
+## How to improve object detection:
+
+1. Before training:
+  * set flag `random=1` in your `.cfg`-file - it will increase precision by training Yolo for different resolutions: [link](https://github.com/AlexeyAB/darknet/blob/47409529d0eb935fa7bafbe2b3484431117269f5/cfg/yolo-voc.cfg#L244)
+
+2. After training - for detection:
+
+  * Increase network-resolution by set in your `.cfg`-file (`height=608` and `width=608`) or (`height=832` and `width=832`) or (any value multiple of 32): [link](https://github.com/AlexeyAB/darknet/blob/47409529d0eb935fa7bafbe2b3484431117269f5/cfg/yolo-voc.cfg#L4)
+    * you do not need to train the network again, just use `.weights`-file already trained for 416x416 resolution
+    * if error `Out of memory` occurs then in `.cfg`-file you should increase `subdivisions=16`, 32 or 64: [link](https://github.com/AlexeyAB/darknet/blob/47409529d0eb935fa7bafbe2b3484431117269f5/cfg/yolo-voc.cfg#L3)
 
 ## How to mark bounded boxes of objects and create annotation files:
 
