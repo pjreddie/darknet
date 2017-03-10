@@ -171,7 +171,9 @@ if (USE_OPENCV)
   list( APPEND libs opencv_core opencv_highgui )
 endif()
 
-if( NOT WIN32 )
+if( WIN32 )
+  include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/include )
+else()
   set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors")
 endif()
 
