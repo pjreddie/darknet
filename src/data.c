@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -46,7 +46,7 @@ char **get_random_paths(char **paths, int n, int m)
 {
     char **random_paths = (char**)calloc(n, sizeof(char*));
     int i;
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 	pthread_mutex_lock(&mutex);
 #endif
     for(i = 0; i < n; ++i){
@@ -54,7 +54,7 @@ char **get_random_paths(char **paths, int n, int m)
         random_paths[i] = paths[index];
         //if(i == 0) printf("%s\n", paths[index]);
     }
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_mutex_unlock(&mutex);
 #endif
     return random_paths;
@@ -753,7 +753,7 @@ void *load_thread(void *ptr)
     return 0;
 }
 
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 pthread_t load_data_in_thread(load_args args)
 {
     pthread_t thread;

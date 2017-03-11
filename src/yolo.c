@@ -57,7 +57,7 @@ void train_yolo(char *cfgfile, char *weightfile)
     args.saturation = net.saturation;
     args.hue = net.hue;
 
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
 #endif
     clock_t time;
@@ -65,12 +65,12 @@ void train_yolo(char *cfgfile, char *weightfile)
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
 #endif
         train = buffer;
 
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         load_thread = load_data_in_thread(args);
 #endif
 
@@ -162,7 +162,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     image *val_resized = (image*)calloc(nthreads, sizeof(image));
     image *buf = (image*)calloc(nthreads, sizeof(image));
     image *buf_resized = (image*)calloc(nthreads, sizeof(image));
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
 #else
 #endif
@@ -175,7 +175,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
         args.path = paths[i+t];
         args.im = &buf[t];
         args.resized = &buf_resized[t];
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         thr[t] = load_data_in_thread(args);
 #else
 #endif
@@ -184,7 +184,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     for(i = nthreads; i < m+nthreads; i += nthreads){
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
             pthread_join(thr[t], 0);
 #else
 #endif
@@ -195,7 +195,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
             args.path = paths[i+t];
             args.im = &buf[t];
             args.resized = &buf_resized[t];
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
             thr[t] = load_data_in_thread(args);
 #else
 #endif
