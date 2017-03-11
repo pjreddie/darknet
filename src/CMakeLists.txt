@@ -136,6 +136,20 @@ set( headers
   )
 
 if( WIN32 )
+  set( source
+    ${source}
+    cpu_gemm.c
+    getopt.c
+    gettimeofday.c )
+
+  set( headers
+    ${headers}
+    getopt.h
+    gettimeofday.h
+    unistd.h )
+endif()
+
+if( WIN32 )
   set( DARKNET_LINKED_LIBS )
   include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/include )
   add_definitions( -D_TIMESPEC_DEFINED )
@@ -207,7 +221,7 @@ add_library( darknet_lib
 
 target_link_libraries( darknet_lib
   PRIVATE  ${CMAKE_THREAD_LIBS_INIT}
-	       ${DARKNET_LINKED_LIBS}
+	         ${DARKNET_LINKED_LIBS}
   )
 
 set_target_properties( darknet_lib
