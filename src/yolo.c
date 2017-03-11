@@ -6,13 +6,6 @@
 #include "box.h"
 #include "demo.h"
 
-#pragma comment(lib, "opencv_core249.lib")  
-#pragma comment(lib, "opencv_imgproc249.lib")  
-#pragma comment(lib, "opencv_highgui249.lib")  
-//#pragma comment(lib, "opencv_gpu249.lib")  
-//#pragma comment(lib, "opencv_photo249.lib")  
-//#pragma comment(lib, "opencv_video249.lib")  
-
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #endif
