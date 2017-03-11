@@ -137,7 +137,7 @@ int main()
             p->GetBoxes(
                 boxes,
                 numObjects);
-			printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]", 0, boxes[0].x, boxes[0].y, boxes[0].w, boxes[0].h);
+            printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n\n", 0, boxes[0].x, boxes[0].y, boxes[0].w, boxes[0].h);
         }
     }
     

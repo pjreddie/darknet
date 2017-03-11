@@ -241,8 +241,9 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     for(j = 0; j < classes; ++j){
         char buff[1024];
 #ifdef __linux__
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+#else        
         _snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
-#else
 #endif
         fps[j] = fopen(buff, "w");
     }
