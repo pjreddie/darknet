@@ -29,6 +29,7 @@ static inline float stair_activate(float x)
     if (n%2 == 0) return floor(x/2.);
     else return (x - n) + floor(x/2.);
 }
+
 static inline float hardtan_activate(float x)
 {
     if (x < -1) return -1;

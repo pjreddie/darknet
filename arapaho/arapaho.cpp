@@ -24,7 +24,7 @@ ArapahoV2::ArapahoV2()
     
 ArapahoV2::~ArapahoV2()
 {
-    // TODO - Massive cleanup here
+	// TODO - Massive cleanup here
     
     if(boxes) 
         free(boxes);
@@ -126,7 +126,8 @@ clean_exit:
         free(boxes);
     if(probs)
         free_ptrs((void **)probs, l.w*l.h*l.n);
-    
+	boxes = NULL;
+	probs = NULL;
     return ret;
 }
 

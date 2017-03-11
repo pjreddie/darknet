@@ -30,7 +30,7 @@ static char INPUT_DATA_FILE[]    = "input.data";
 static char INPUT_CFG_FILE[]     = "input.cfg";
 static char INPUT_WEIGHTS_FILE[] = "input.weights";
 static char INPUT_IMAGE_FILE[]   = "input.jpg";
-
+#define MAX_OBJECTS_PER_FRAME (100)
 //
 // Some utility functions
 // 
@@ -54,7 +54,7 @@ int main()
     // Early exits
     if(!fileExists(INPUT_DATA_FILE) || !fileExists(INPUT_CFG_FILE) || !fileExists(INPUT_WEIGHTS_FILE))
     {
-        printf("Setup failed as inputs files do not exist or not readable!\n");
+        printf("Setup failed as input files do not exist or not readable!\n");
         return -1;       
     }
     
@@ -125,7 +125,7 @@ int main()
             numObjects);
         printf("Detected %d objects\n", numObjects);
         
-        if(numObjects > 0)
+        if(numObjects > 0 && numObjects < MAX_OBJECTS_PER_FRAME) // Realistic maximum
         {    
             boxes = new box[numObjects];
             if(!boxes)
@@ -137,6 +137,7 @@ int main()
             p->GetBoxes(
                 boxes,
                 numObjects);
+			printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]", 0, boxes[0].x, boxes[0].y, boxes[0].w, boxes[0].h);
         }
     }
     

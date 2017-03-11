@@ -189,7 +189,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             int width = im.h * .012;
 
             if(0){
-                width = pow(prob, 1./2.)*10+1;
+                width = pow(prob, 1.f/2.f)*10+1;
                 alphabet = 0;
             }
 

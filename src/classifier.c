@@ -6,7 +6,9 @@
 #include "assert.h"
 #include "classifier.h"
 #include "cuda.h"
+#ifdef __linux__
 #include <sys/time.h>
+#endif
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
@@ -93,17 +95,25 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
     data train;
     data buffer;
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread;
+#endif
     args.d = &buffer;
+#if defined __linux__ || defined PTHREAD_WINDOWS
     load_thread = load_data(args);
+#endif
 
     int epoch = (*net.seen)/N;
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
 
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
+#endif
         train = buffer;
+#if defined __linux__ || defined PTHREAD_WINDOWS
         load_thread = load_data(args);
+#endif
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -299,18 +309,24 @@ void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
     args.d = &buffer;
     args.type = OLD_CLASSIFICATION_DATA;
 
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
+#endif
     for(i = 1; i <= splits; ++i){
         time=clock();
 
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
+#endif
         val = buffer;
 
         num = (i+1)*m/splits - i*m/splits;
         char **part = paths+(i*m/splits);
         if(i != splits){
             args.paths = part;
+#if defined __linux__ || defined PTHREAD_WINDOWS
             load_thread = load_data_in_thread(args);
+#endif
         }
         printf("Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
 
@@ -792,17 +808,22 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_
     args.d = &buffer;
     args.type = OLD_CLASSIFICATION_DATA;
 
+#if defined __linux__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
-    for(curr = net.batch; curr < m; curr += net.batch){
+#endif
+	for(curr = net.batch; curr < m; curr += net.batch){
         time=clock();
-
+#if defined __linux__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
+#endif
         val = buffer;
 
         if(curr < m){
             args.paths = paths + curr;
             if (curr + net.batch > m) args.n = m - curr;
+#if defined __linux__ || defined PTHREAD_WINDOWS
             load_thread = load_data_in_thread(args);
+#endif
         }
         fprintf(stderr, "Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
 

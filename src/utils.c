@@ -3,7 +3,9 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
+#ifdef __linux__
 #include <unistd.h>
+#endif
 #include <float.h>
 #include <limits.h>
 
@@ -31,7 +33,7 @@ void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections)
         size_t start = n*i/sections;
         size_t end = n*(i+1)/sections;
         size_t num = end-start;
-        shuffle(arr+(start*size), num, size);
+		shuffle((char*)arr + (start*size), num, size);
     }
 }
 
@@ -41,9 +43,9 @@ void shuffle(void *arr, size_t n, size_t size)
     void *swp = calloc(1, size);
     for(i = 0; i < n-1; ++i){
         size_t j = i + rand()/(RAND_MAX / (n-i)+1);
-        memcpy(swp,          arr+(j*size), size);
-        memcpy(arr+(j*size), arr+(i*size), size);
-        memcpy(arr+(i*size), swp,          size);
+        memcpy(swp,          (char*)arr+(j*size), size);
+		memcpy((char*)arr + (j*size), (char*)arr + (i*size), size);
+		memcpy((char*)arr + (i*size), swp, size);
     }
 }
 
@@ -250,7 +252,8 @@ void strip_char(char *s, char bad)
 void free_ptrs(void **ptrs, int n)
 {
     int i;
-    for(i = 0; i < n; ++i) free(ptrs[i]);
+    for(i = 0; i < n; ++i) 
+		free(ptrs[i]);
     free(ptrs);
 }
 
@@ -288,14 +291,24 @@ char *fgetl(FILE *fp)
 int read_int(int fd)
 {
     int n = 0;
+#ifdef __linux__
     int next = read(fd, &n, sizeof(int));
+#else
+	int next = 0;
+	printf("Unsupported operation on Windows ..\n");
+#endif
     if(next <= 0) return -1;
     return n;
 }
 
 void write_int(int fd, int n)
 {
+#ifdef __linux__
     int next = write(fd, &n, sizeof(int));
+#else
+	int next = 0;
+	printf("Unsupported operation on Windows ..\n");
+#endif
     if(next <= 0) error("read failed");
 }
 
@@ -303,7 +316,12 @@ int read_all_fail(int fd, char *buffer, size_t bytes)
 {
     size_t n = 0;
     while(n < bytes){
+#ifdef __linux__
         int next = read(fd, buffer + n, bytes-n);
+#else
+	int next = 0;
+	printf("Unsupported operation on Windows ..\n");
+#endif
         if(next <= 0) return 1;
         n += next;
     }
@@ -314,7 +332,12 @@ int write_all_fail(int fd, char *buffer, size_t bytes)
 {
     size_t n = 0;
     while(n < bytes){
+#ifdef __linux__
         size_t next = write(fd, buffer + n, bytes-n);
+#else
+	int next = 0;
+	printf("Unsupported operation on Windows ..\n");
+#endif
         if(next <= 0) return 1;
         n += next;
     }
@@ -325,7 +348,12 @@ void read_all(int fd, char *buffer, size_t bytes)
 {
     size_t n = 0;
     while(n < bytes){
+#ifdef __linux__
         int next = read(fd, buffer + n, bytes-n);
+#else
+int next = 0;
+printf("Unsupported operation on Windows ..\n");
+#endif
         if(next <= 0) error("read failed");
         n += next;
     }
@@ -335,7 +363,12 @@ void write_all(int fd, char *buffer, size_t bytes)
 {
     size_t n = 0;
     while(n < bytes){
+#ifdef __linux__
         size_t next = write(fd, buffer + n, bytes-n);
+#else
+	int next = 0;
+	printf("Unsupported operation on Windows ..\n");
+#endif
         if(next <= 0) error("write failed");
         n += next;
     }

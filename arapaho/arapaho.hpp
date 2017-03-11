@@ -34,54 +34,55 @@
 #define DPRINTF
 #endif
 
-//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 
-struct ArapahoV2Params
-{
-    char* datacfg;
-    char* cfgfile;
-    char* weightfile;
-    float nms;
-    int maxClasses;
-};
-struct ArapahoV2ImageBuff
-{
-    unsigned char* bgr;
-    int w;
-    int h;
-    int channels;
-};
+	struct ArapahoV2Params
+	{
+		char* datacfg;
+		char* cfgfile;
+		char* weightfile;
+		float nms;
+		int maxClasses;
+	};
+	struct ArapahoV2ImageBuff
+	{
+		unsigned char* bgr;
+		int w;
+		int h;
+		int channels;
+	};
 
-//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 
-class ArapahoV2
-{
-public:
-    ArapahoV2();    
-    ~ArapahoV2();
-    
-    bool Setup(ArapahoV2Params & p,
-            int & expectedWidth,
-            int & expectedHeight);
-    
-    bool Detect(
-            ArapahoV2ImageBuff & imageBuff, 
-            float thresh, 
-            float hier_thresh,         
-            int & objectCount);
-    
-    bool GetBoxes(box* outBoxes, int boxCount);
-private:    
-    box     *boxes;
-    float   **probs;
-    bool    bSetup;
-    network net;
-    layer   l;
-    float   nms;
-    int     maxClasses;
-    int     threshold;
-};
+	class ArapahoV2
+	{
+	public:
+		ArapahoV2();
+		~ArapahoV2();
 
-//////////////////////////////////////////////////////////////////////////
+		bool Setup(ArapahoV2Params & p,
+			int & expectedWidth,
+			int & expectedHeight);
+
+		bool Detect(
+			ArapahoV2ImageBuff & imageBuff,
+			float thresh,
+			float hier_thresh,
+			int & objectCount);
+
+		bool GetBoxes(box* outBoxes, int boxCount);
+	private:
+		box     *boxes;
+		float   **probs;
+		bool    bSetup;
+		network net;
+		layer   l;
+		float   nms;
+		int     maxClasses;
+		int     threshold;
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
 
 #endif // _ENABLE_ARAPAHO
