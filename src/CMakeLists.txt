@@ -2,13 +2,13 @@
 # Build file for Darknet
 #
 
-OPTION(BUILD_SHARED_LIBS     "Build components shared or not" TRUE )
+OPTION( BUILD_SHARED_LIBS  "Build components shared or not"  TRUE )
 
-OPTION( USE_GPU "Use GPU support" FALSE )
-OPTION( USE_CUDNN "Use CUDNN support" FALSE )
-OPTION( USE_OPENCV "Use OpenCV support" FALSE )
+OPTION( USE_GPU      "Use GPU support"      FALSE )
+OPTION( USE_CUDNN    "Use CUDNN support"    FALSE )
+OPTION( USE_OPENCV   "Use OpenCV support"   FALSE )
 
-find_package (Threads)
+find_package( Threads )
 
 set( gpu_source
   convolutional_kernels.cu
@@ -128,10 +128,14 @@ set( headers
   utils.h
   )
 
-set( libs m )
+if( WIN32 )
+  set( libs )
+else()
+  set( libs m )
+endif()
 
-if (USE_GPU)
-  find_package(CUDA QUIET REQUIRED)
+if( USE_GPU )
+  find_package( CUDA QUIET REQUIRED )
   include_directories( ${CUDA_TOOLKIT_ROOT_DIR}/include )
   add_definitions( -DGPU )
 
@@ -151,7 +155,7 @@ if (USE_GPU)
     )
 endif()
 
-if (USE_CUDNN)
+if( USE_CUDNN )
   find_library( CUDNN_LIBRARIES
     NAMES cudnn libcudnn.so libcudnn.so.5
     PATHS ${CUDA_TOOLKIT_ROOT_DIR}/targets/aarch64-linux
@@ -163,22 +167,28 @@ if (USE_CUDNN)
   add_definitions( -DCUDNN )
 endif()
 
-if (USE_OPENCV)
-  find_package( OpenCV 2.4.6 REQUIRED )
+if( USE_OPENCV )
+  find_package( OpenCV REQUIRED )
 
-  include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
+  include_directories( SYSTEM ${OpenCV_INCLUDE_DIRS} )
   add_definitions( -DOPENCV )
   list( APPEND libs opencv_core opencv_highgui )
 endif()
 
 if( WIN32 )
   include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/include )
+  if( NOT "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)" )
+    link_directories( ${CMAKE_SOURCE_DIR}/3rdparty/lib/x86 )
+  else()
+    link_directories( ${CMAKE_SOURCE_DIR}/3rdparty/lib/x64 )
+  endif()
+
+  add_definitions( -DHAVE_STRUCT_TIMESPEC )
+  list( APPEND libs pthreadVC2 )
 else()
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors")
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors" )
 endif()
 
-###
-#
 add_library( darknet_lib
   ${headers}
   ${source}
@@ -187,7 +197,7 @@ add_library( darknet_lib
 
 target_link_libraries( darknet_lib
   PRIVATE  ${CMAKE_THREAD_LIBS_INIT}
-	   ${libs}
+	       ${libs}
   )
 
 set_target_properties( darknet_lib
@@ -197,9 +207,13 @@ set_target_properties( darknet_lib
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
+install( TARGETS darknet_lib
+  ARCHIVE DESTINATION     lib
+  LIBRARY DESTINATION     lib
+  RUNTIME DESTINATION     bin
+  COMPONENT    runtime
+  )
 
-###
-#
 add_executable( darknet
   darknet.c )
 
@@ -215,19 +229,16 @@ set_target_properties( darknet
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
-###
-#
-install( TARGETS darknet_lib darknet
+install( TARGETS darknet
   ARCHIVE DESTINATION     lib
   LIBRARY DESTINATION     lib
   RUNTIME DESTINATION     bin
   COMPONENT    runtime
   )
 
-
 OPTION( INSTALL_HEADER_FILES "Install header files needed for development" FALSE )
 
-if (INSTALL_HEADER_FILES)
+if( INSTALL_HEADER_FILES )
   install( FILES ${headers}
     DESTINATION "include/darknet"
     )
