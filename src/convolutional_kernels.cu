@@ -2,7 +2,7 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-#ifdef CUDNN
+#if defined(WIN32) && defined(CUDNN)
 #pragma comment(lib, "cudnn.lib")  
 #endif
 

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#ifdef CUDNN
+#if defined(WIN32) && defined(CUDNN)
 #pragma comment(lib, "cudnn.lib")  
 #endif
 
