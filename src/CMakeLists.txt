@@ -145,8 +145,7 @@ if( WIN32 )
   set( headers
     ${headers}
     getopt.h
-    gettimeofday.h
-    unistd.h )
+    gettimeofday.h )
 endif()
 
 if( WIN32 )
@@ -259,8 +258,6 @@ install( TARGETS darknet
   RUNTIME DESTINATION     bin
   COMPONENT    runtime
   )
-
-OPTION( INSTALL_HEADER_FILES "Install header files needed for development" FALSE )
 
 if( INSTALL_HEADER_FILES )
   install( FILES ${headers}
