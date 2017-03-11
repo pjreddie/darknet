@@ -1,9 +1,12 @@
-#
+##
 # Build file for Darknet
-#
-
+##
 if( WIN32 )
   OPTION( BUILD_SHARED_LIBS  "Build components shared or not"  FALSE )
+
+  if( BUILD_SHARED_LIBS )
+    message( FATAL_ERROR "Currently only static builds are supported on windows" )
+  endif()
 else()
   OPTION( BUILD_SHARED_LIBS  "Build components shared or not"  TRUE )
 endif()
@@ -133,11 +136,11 @@ set( headers
   )
 
 if( WIN32 )
-  set( libs )
+  set( DARKNET_LINKED_LIBS )
   include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/include )
   add_definitions( -D_TIMESPEC_DEFINED )
 else()
-  set( libs m )
+  set( DARKNET_LINKED_LIBS m )
 endif()
 
 if( USE_GPU )
@@ -158,7 +161,7 @@ if( USE_GPU )
   endif()
 
   CUDA_COMPILE( CUDA_SRC ${gpu_source} )
-  list( APPEND libs
+  list( APPEND DARKNET_LINKED_LIBS
     ${CUDA_CUDA_LIBRARY}
     ${CUDA_LIBRARIES}
     ${CUDA_CUBLAS_LIBRARIES}
@@ -173,7 +176,7 @@ if( USE_CUDNN )
     PATH_SUFFIXES lib lib64
   )
 
-  list( APPEND libs ${CUDNN_LIBRARIES} )
+  list( APPEND DARKNET_LINKED_LIBS ${CUDNN_LIBRARIES} )
   add_definitions( -DCUDNN )
 endif()
 
@@ -182,7 +185,7 @@ if( USE_OPENCV )
 
   include_directories( SYSTEM ${OpenCV_INCLUDE_DIRS} )
   add_definitions( -DOPENCV )
-  list( APPEND libs opencv_core opencv_highgui )
+  list( APPEND DARKNET_LINKED_LIBS opencv_core opencv_highgui )
 endif()
 
 if( WIN32 )
@@ -191,7 +194,7 @@ if( WIN32 )
   else()
     link_directories( ${CMAKE_SOURCE_DIR}/3rdparty/lib/x64 )
   endif()
-  list( APPEND libs pthreadVC2 )
+  list( APPEND DARKNET_LINKED_LIBS pthreadVC2 )
 else()
   set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors" )
 endif()
@@ -204,7 +207,7 @@ add_library( darknet_lib
 
 target_link_libraries( darknet_lib
   PRIVATE  ${CMAKE_THREAD_LIBS_INIT}
-	       ${libs}
+	       ${DARKNET_LINKED_LIBS}
   )
 
 set_target_properties( darknet_lib
@@ -226,7 +229,7 @@ add_executable( darknet
 
 target_link_libraries( darknet
   darknet_lib
-  ${CMAKE_THREAD_LIBS_INIT} ${libs}
+  ${CMAKE_THREAD_LIBS_INIT} ${DARKNET_LINKED_LIBS}
   )
 
 set_target_properties( darknet
