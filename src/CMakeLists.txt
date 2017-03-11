@@ -2,7 +2,11 @@
 # Build file for Darknet
 #
 
-OPTION( BUILD_SHARED_LIBS  "Build components shared or not"  TRUE )
+if( WIN32 )
+  OPTION( BUILD_SHARED_LIBS  "Build components shared or not"  FALSE )
+else()
+  OPTION( BUILD_SHARED_LIBS  "Build components shared or not"  TRUE )
+endif()
 
 OPTION( USE_GPU      "Use GPU support"      FALSE )
 OPTION( USE_CUDNN    "Use CUDNN support"    FALSE )
@@ -130,6 +134,8 @@ set( headers
 
 if( WIN32 )
   set( libs )
+  include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/include )
+  add_definitions( -D_TIMESPEC_DEFINED )
 else()
   set( libs m )
 endif()
@@ -145,14 +151,18 @@ if( USE_GPU )
     -gencode arch=compute_35,code=sm_35
     -gencode arch=compute_50,code=[sm_50,compute_50]
     -gencode arch=compute_52,code=[sm_52,compute_52]
-    -Xcompiler -fPIC )
+    -Xcompiler )
+
+  if( NOT WIN32 )
+    set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -fPIC )
+  endif()
 
   CUDA_COMPILE( CUDA_SRC ${gpu_source} )
-  list( APPEND libs cuda
+  list( APPEND libs
+    ${CUDA_CUDA_LIBRARY}
     ${CUDA_LIBRARIES}
     ${CUDA_CUBLAS_LIBRARIES}
-    ${CUDA_curand_LIBRARY}
-    )
+    ${CUDA_curand_LIBRARY} )
 endif()
 
 if( USE_CUDNN )
@@ -176,14 +186,11 @@ if( USE_OPENCV )
 endif()
 
 if( WIN32 )
-  include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/include )
   if( NOT "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)" )
     link_directories( ${CMAKE_SOURCE_DIR}/3rdparty/lib/x86 )
   else()
     link_directories( ${CMAKE_SOURCE_DIR}/3rdparty/lib/x64 )
   endif()
-
-  add_definitions( -DHAVE_STRUCT_TIMESPEC )
   list( APPEND libs pthreadVC2 )
 else()
   set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors" )
