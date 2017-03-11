@@ -966,6 +966,9 @@ void load_convolutional_weights(layer l, FILE *fp)
         //return;
     }
     int num = l.n*l.c*l.size*l.size;
+    
+    printf("load_convolutional_weights: l.n*l.c*l.size*l.size = %d\n", l.n*l.c*l.size*l.size);
+    
     fread(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.n, fp);
@@ -1025,6 +1028,8 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fread(&revision, sizeof(int), 1, fp);
     fread(net->seen, sizeof(int), 1, fp);
     int transpose = (major > 1000) || (minor > 1000);
+    
+    printf("mj = %d, mn = %d, *(net->seen) = %d\n", major, minor, net->seen ? *(net->seen) : 0);
 
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){

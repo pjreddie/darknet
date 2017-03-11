@@ -290,6 +290,9 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         load_weights(&net, weightfile);
     }
     detection_layer l = net.layers[net.n-1];
+    
+    printf("test_yolo: layers = %d, %d, %d\n", l.w, l.h, l.n);    
+    
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
