@@ -6,14 +6,18 @@
 #include "assert.h"
 #include "classifier.h"
 #include "cuda.h"
-//#include <sys/time.h>
+
+#ifdef WIN32
 #include <time.h>
 #include <winsock.h>
 #include "gettimeofday.h"
+#else
+#include <sys/time.h>
+#endif
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-image get_image_from_stream(CvCapture *cap);
+  #include "opencv2/highgui/highgui_c.h"
+  image get_image_from_stream(CvCapture *cap);
 #endif
 
 float *get_regression_values(char **labels, int n)

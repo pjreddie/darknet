@@ -10,7 +10,7 @@
 
 int inverted = 1;
 int noi = 1;
-//static const int nind = 5;
+
 #define nind 5
 
 typedef struct {
