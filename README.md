@@ -26,33 +26,45 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 
 **Steps to train (Yolov2)**
 
-Download latest tag of darknet-cpp, ex
+* Download latest commit of darknet-cpp, ex
 
-https://github.com/prabindh/darknet/tree/v3.76
+git clone https://github.com/prabindh/darknet
 
-1. Create Yolo compatible training data-set. I use this to create Yolo compatible bounding box format file, and training list file. 
+* Create Yolo compatible training data-set. I use this to create Yolo compatible bounding box format file, and training list file. 
 
 https://github.com/prabindh/euclid
 
 This creates a training list file that will be needed in next step.
 
-2. Change 3 files per below:
+* Change the files per below:
 
   * yolo-voc.cfg - change line classes=20 to suit desired number of classes
   * yolo-voc.cfg - change the number of filters in the CONV layer above the region layer - (#classes + 4 + 1)*(5)
   * voc.data - change line classes=20, and paths to training image list file
   * voc.names - number of lines must be equal the number of classes
 
-3. Place label-images corresponding to name of classes in data/labels, ex - data/labels/myclassname1.png
+* Place label-images corresponding to name of classes in data/labels, ex - data/labels/myclassname1.png
 
-4. Download http://pjreddie.com/media/files/darknet19_448.conv.23
+* Download http://pjreddie.com/media/files/darknet19_448.conv.23
 
-5. Train as below
+* Train as below
 
   `./darknet-cpp detector train ./cfg/voc-myclasses.data ./cfg/yolo-myconfig.cfg darknet19_448.conv.23`
 
   * Atleast for the few initial iterations, observe the log output, and ensure all images are found and being used. After convergence, detection can be performed using standard steps.
 
+#How to file issues#
+If there is a need to report an issue with the darknet-cpp port, use the link - https://github.com/prabindh/darknet/issues.
+
+Information required for filing an issue:
+
+  * Output of `git log --format="%H" -n 1`
+
+  * Options enabled in Makefile (GPU,CUDNN)
+
+  * If using Arapaho C++ wrapper, what options were used to build
+
+  * Platform being used (OS version, GPU type, CUDA version, and OpenCV version)
 
 #Darknet#
 Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
