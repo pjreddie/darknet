@@ -302,7 +302,8 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
 2. After training - for detection:
 
-  * Increase network-resolution by set in your `.cfg`-file (`height=608` and `width=608`) or (`height=832` and `width=832`) or (any value multiple of 32): [link](https://github.com/AlexeyAB/darknet/blob/47409529d0eb935fa7bafbe2b3484431117269f5/cfg/yolo-voc.cfg#L4)
+  * Increase network-resolution by set in your `.cfg`-file (`height=608` and `width=608`) or (`height=832` and `width=832`) or (any value multiple of 32) - this increases the precision and makes it possible to detect small objects: [link](https://github.com/AlexeyAB/darknet/blob/47409529d0eb935fa7bafbe2b3484431117269f5/cfg/yolo-voc.cfg#L4)
+  
     * you do not need to train the network again, just use `.weights`-file already trained for 416x416 resolution
     * if error `Out of memory` occurs then in `.cfg`-file you should increase `subdivisions=16`, 32 or 64: [link](https://github.com/AlexeyAB/darknet/blob/47409529d0eb935fa7bafbe2b3484431117269f5/cfg/yolo-voc.cfg#L3)
 
