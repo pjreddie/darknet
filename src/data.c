@@ -29,7 +29,7 @@ char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
     int i;
     pthread_mutex_lock(&mutex);
     for(i = 0; i < n; ++i){
-        int index = rand()%m;
+        int index = random_gen()%m;
         indexes[i] = index;
         random_paths[i] = paths[index];
         if(i == 0) printf("%s\n", paths[index]);
@@ -39,23 +39,25 @@ char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
 }
 */
 
-int mt_seed = 0;
+inline unsigned int random_gen()
+{
+	unsigned int Num = 0;
+	rand_s(&Num);
+	return Num;
+}
 
 char **get_random_paths(char **paths, int n, int m)
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
     pthread_mutex_lock(&mutex);
-	if (mt_seed == 0) mt_seed = time(0);
-	srand(mt_seed);
 	//printf("n = %d \n", n);
     for(i = 0; i < n; ++i){		
-        int index = rand()%m;		
+        int index = random_gen() % m;
         random_paths[i] = paths[index];
         //if(i == 0) printf("%s\n", paths[index]);
 		//printf("grp: %s\n", paths[index]);
     }
-	mt_seed = rand();
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
@@ -120,7 +122,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
     for(i = 0; i < n; ++i){
         image im = load_image_color(paths[i], 0, 0);
         image crop = random_augment_image(im, angle, aspect, min, max, size);
-        int flip = rand()%2;
+        int flip = random_gen()%2;
         if (flip) flip_image(crop);
         random_distort_image(crop, hue, saturation, exposure);
 
@@ -168,7 +170,7 @@ void randomize_boxes(box_label *b, int n)
     int i;
     for(i = 0; i < n; ++i){
         box_label swap = b[i];
-        int index = rand()%n;
+        int index = random_gen()%n;
         b[i] = b[index];
         b[index] = swap;
     }
@@ -529,7 +531,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
         float sx = (float)swidth  / ow;
         float sy = (float)sheight / oh;
 
-        int flip = rand()%2;
+        int flip = random_gen()%2;
         image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
         float dx = ((float)pleft/ow)/sx;
@@ -615,7 +617,7 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
 
 data load_data_swag(char **paths, int n, int classes, float jitter)
 {
-    int index = rand()%n;
+    int index = random_gen()%n;
     char *random_path = paths[index];
 
     image orig = load_image_color(random_path, 0, 0);
@@ -648,7 +650,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     float sx = (float)swidth  / w;
     float sy = (float)sheight / h;
 
-    int flip = rand()%2;
+    int flip = random_gen()%2;
     image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
     float dx = ((float)pleft/w)/sx;
@@ -698,7 +700,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         float sx = (float)swidth  / ow;
         float sy = (float)sheight / oh;
 
-        int flip = rand()%2;
+        int flip = random_gen()%2;
         image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
         float dx = ((float)pleft/ow)/sx;
@@ -722,7 +724,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 void *load_thread(void *ptr)
 {
 	srand(time(0));
-    //printf("Loading data: %d\n", rand());
+    //printf("Loading data: %d\n", random_gen());
     load_args a = *(struct load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
     if(a.saturation == 0) a.saturation = 1;
@@ -860,7 +862,7 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     for(i = 0; i < n; ++i){
         image im = load_image_color(paths[i], 0, 0);
         image crop = random_crop_image(im, w*scale, h*scale);
-        int flip = rand()%2;
+        int flip = random_gen()%2;
         if (flip) flip_image(crop);
         image resize = resize_image(crop, w, h);
         d.X.vals[i] = resize.data;
@@ -982,7 +984,7 @@ void get_random_batch(data d, int n, float *X, float *y)
 {
     int j;
     for(j = 0; j < n; ++j){
-        int index = rand()%d.X.rows;
+        int index = random_gen()%d.X.rows;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
         memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
     }
@@ -1095,7 +1097,7 @@ void randomize_data(data d)
 {
     int i;
     for(i = d.X.rows-1; i > 0; --i){
-        int index = rand()%i;
+        int index = random_gen()%i;
         float *swap = d.X.vals[index];
         d.X.vals[index] = d.X.vals[i];
         d.X.vals[i] = swap;
@@ -1159,7 +1161,7 @@ data get_random_data(data d, int num)
 
     int i;
     for(i = 0; i < num; ++i){
-        int index = rand()%d.X.rows;
+        int index = random_gen()%d.X.rows;
         r.X.vals[i] = d.X.vals[index];
         r.y.vals[i] = d.y.vals[index];
     }
