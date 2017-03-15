@@ -7,6 +7,7 @@
 5. [When should I stop training](#when-should-i-stop-training)
 6. [How to improve object detection](#how-to-improve-object-detection)
 7. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+8. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
@@ -312,3 +313,17 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 Here you can find repository with GUI-software for marking bounded boxes of objects and generating annotation files for Yolo v2: https://github.com/AlexeyAB/Yolo_mark
 
 With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`.txt`, `bird`1-4`.txt` for 2 classes of objects (air, bird) and `train_obj.cmd` with example how to train this image-set with Yolo v2
+
+## How to use Yolo as DLL
+
+1. To compile Yolo as C++ DLL-file `yolo_cpp_dll.dll` - open in MSVS2015 file `build\darknet\yolo_cpp_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_cpp_dll
+    * You should have installed **CUDA 8.0**
+    * To use cuDNN do: (right click on project) -> properties -> C/C++ -> Preprocessor -> Preprocessor Definitions, and add at the beginning of line: `CUDNN;`
+
+2. To use Yolo as DLL-file in your C++ console application - open in MSVS2015 file `build\darknet\yolo_console_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_console_dll
+
+    * you can run your console application from Windows Explorer `build\darknet\x64\yolo_console_dll.exe`
+    * or you can run from MSVS2015 (before this - you should copy 2 files `yolo-voc.cfg` and `yolo-voc.weights` to the directory `build\darknet\` )
+    * after launching your console application and entering the image file name - you will see info for each object: 
+    `<obj_id> <left_x> <top_y> <width> <height> <probability>`
+    * to use simple OpenCV-GUI you should uncomment line `//#define OPENCV` in `yolo_console_dll.cpp`-file: [link](https://github.com/AlexeyAB/darknet/blob/a6cbaeecde40f91ddc3ea09aa26a03ab5bbf8ba8/src/yolo_console_dll.cpp#L5)
