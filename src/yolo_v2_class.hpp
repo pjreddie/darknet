@@ -8,10 +8,6 @@
 #include "opencv2/imgproc/imgproc_c.h"	// C
 #endif	// OPENCV
 
-//extern "C" {
-//#include "image.h"
-//}
-
 #ifdef YOLODLL_EXPORTS
 #define YOLODLL_API __declspec(dllexport) 
 #else
@@ -39,7 +35,7 @@ public:
 	YOLODLL_API Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
 	YOLODLL_API ~Detector();
 
-	YOLODLL_API std::vector<bbox_t> Detector::detect(std::string image_filename, float thresh = 0.2);
+	YOLODLL_API std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2);
 
 	YOLODLL_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2);
 
