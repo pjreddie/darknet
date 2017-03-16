@@ -15,17 +15,17 @@
 #endif
 
 struct bbox_t {
-	unsigned int x, y, w, h;
-	float prob;
-	unsigned int obj_id;
+	unsigned int x, y, w, h;	// (x,y) - top-left corner, (w, h) - width & height of bounded box
+	float prob;					// confidence - probability that the object was found correctly
+	unsigned int obj_id;		// class of object - from range [0, classes-1]
 };
 
-typedef struct {
-	int h;
-	int w;
-	int c;
-	float *data;
-} image_t;
+struct image_t {
+	int h;						// height
+	int w;						// width
+	int c;						// number of chanels (3 - for RGB)
+	float *data;				// pointer to the image data
+};
 
 
 class Detector {
@@ -37,11 +37,15 @@ public:
 
 	YOLODLL_API std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2);
 	YOLODLL_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2);
+	static YOLODLL_API image_t load_image(std::string image_filename);
+	static YOLODLL_API void free_image(image_t m);
 
 #ifdef OPENCV
 	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2) 
 	{
-		std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); } );
+		if(mat.data == NULL)
+			throw std::runtime_error("file not found");
+		std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); delete img; });
 		*image_ptr = mat_to_image(mat);
 		return detect(*image_ptr, thresh);
 	}
@@ -102,12 +106,6 @@ private:
 		}
 	}
 
-	static void free_image(image_t m)
-	{
-		if (m.data) {
-			free(m.data);
-		}
-	}
 #endif	// OPENCV
 };
 

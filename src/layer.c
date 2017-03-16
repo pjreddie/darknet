@@ -28,8 +28,8 @@ void free_layer(layer l)
 
 #ifdef GPU
     if(l.indexes_gpu)          cuda_free((float *)l.indexes_gpu);
-    if(l.weights_gpu)          cuda_free(l.weights_gpu);
-    if(l.weight_updates_gpu)   cuda_free(l.weight_updates_gpu);
+    //if(l.weights_gpu)          cuda_free(l.weights_gpu);			// duplicated
+    //if(l.weight_updates_gpu)   cuda_free(l.weight_updates_gpu);	// duplicated
     if(l.col_image_gpu)        cuda_free(l.col_image_gpu);
     if(l.weights_gpu)          cuda_free(l.weights_gpu);
     if(l.biases_gpu)           cuda_free(l.biases_gpu);
