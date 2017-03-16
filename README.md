@@ -149,6 +149,7 @@ Then add to your created project:
 
 `cusolver64_80.dll, curand64_80.dll, cudart64_80.dll, cublas64_80.dll` - 80 for CUDA 8.0 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin
 
+`opencv_core249.dll`, `opencv_highgui249.dll` and `opencv_ffmpeg249_64.dll` in `C:\opencv_2.4.9\opencv\build\x64\vc12\bin` or `vc14\bin`
 
 ## How to train (Pascal VOC Data):
 
@@ -327,3 +328,19 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
     * after launching your console application and entering the image file name - you will see info for each object: 
     `<obj_id> <left_x> <top_y> <width> <height> <probability>`
     * to use simple OpenCV-GUI you should uncomment line `//#define OPENCV` in `yolo_console_dll.cpp`-file: [link](https://github.com/AlexeyAB/darknet/blob/a6cbaeecde40f91ddc3ea09aa26a03ab5bbf8ba8/src/yolo_console_dll.cpp#L5)
+   
+`yolo_cpp_dll.dll`-API: [link](https://github.com/AlexeyAB/darknet/blob/master/src/yolo_v2_class.hpp#L31)
+```
+class Detector {
+public:
+	Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
+	~Detector();
+
+	std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2);
+	std::vector<bbox_t> detect(image_t img, float thresh = 0.2);
+
+#ifdef OPENCV
+	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2);
+#endif
+};
+```
