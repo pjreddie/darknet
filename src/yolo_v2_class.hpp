@@ -15,7 +15,7 @@
 #endif
 
 struct bbox_t {
-	float x, y, w, h;
+	unsigned int x, y, w, h;
 	float prob;
 	unsigned int obj_id;
 };
@@ -36,12 +36,11 @@ public:
 	YOLODLL_API ~Detector();
 
 	YOLODLL_API std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2);
-
 	YOLODLL_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2);
 
-
 #ifdef OPENCV
-	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2) {
+	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2) 
+	{
 		std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); } );
 		*image_ptr = mat_to_image(mat);
 		return detect(*image_ptr, thresh);
