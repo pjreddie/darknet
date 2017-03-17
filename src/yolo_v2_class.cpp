@@ -18,6 +18,7 @@ extern "C" {
 
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 #define FRAMES 3
 
@@ -182,8 +183,8 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh)
 		if (prob > thresh) 
 		{
 			bbox_t bbox;
-			bbox.x = (b.x - b.w / 2.)*im.w;
-			bbox.y = (b.y - b.h / 2.)*im.h;
+			bbox.x = std::max((double)0, (b.x - b.w / 2.)*im.w);
+			bbox.y = std::max((double)0, (b.y - b.h / 2.)*im.h);
 			bbox.w = b.w*im.w;
 			bbox.h = b.h*im.h;
 			bbox.obj_id = obj_id;
