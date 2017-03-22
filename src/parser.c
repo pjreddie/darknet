@@ -683,6 +683,9 @@ network parse_network_cfg(char *filename)
     free_list(sections);
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
+#ifdef _ENABLE_COOLVISION_93b0d61c8570df0292b51b3c0fc8d23655274eb5
+    net.workspace_size = workspace_size;
+#endif
     if(workspace_size){
         //printf("%ld\n", workspace_size);
 #ifdef GPU

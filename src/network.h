@@ -2,10 +2,12 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "bugfixes.h"
 #include "image.h"
 #include "layer.h"
 #include "data.h"
 #include "tree.h"
+
 
 typedef enum {
     CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
@@ -13,6 +15,9 @@ typedef enum {
 
 typedef struct network{
     float *workspace;
+#ifdef _ENABLE_COOLVISION_93b0d61c8570df0292b51b3c0fc8d23655274eb5
+    size_t workspace_size;
+#endif
     int n;
     int batch;
     int *seen;
