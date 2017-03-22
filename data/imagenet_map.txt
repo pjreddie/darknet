@@ -1,0 +1,6 @@
+1,apple,n07739125     
+3,backpack,n02769748  
+5,banana,n07753592   
+6,baseball,n02799071 
+7,basketball,n02802426      
+9,bench,n02828884 

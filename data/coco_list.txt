@@ -1,0 +1,5 @@
+1,apple
+3,backpack
+5,banana
+8,bed
+9,bench

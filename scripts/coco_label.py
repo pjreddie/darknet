@@ -21,19 +21,20 @@ def convert(size, box):
     h = h*dh
     return (x,y,w,h)
 
+def get_classes_and_index(path):
+    D = {}
+    f = open(path)
+    for line in f:
+        temp = line.rstrip().split(',', 2)
+        print("temp[0]:"+temp[0]+"\n")
+        print("temp[1]:" + temp[1]+"\n")
+        D[temp[1]] = temp[0]
+    return D
 
 dataDir = '/mnt/large4t/pengchong_data/Data/COCO'
 dataType = 'train2014'
 annFile = '%s/annotations/instances_%s.json' % (dataDir, dataType)
-classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-           'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
-           'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-           'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-           'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'fork', 'knife', 'spoon', 'bowl', 'banana',
-           'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-           'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
-           'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
-           'hair drier', 'toothbrush']
+classes = get_classes_and_index('/mnt/large4t/pengchong_data/Tools/Yolo_paul/darknet/data/coco_list.txt')
 
 coco = COCO(annFile)
 list_file = open('%s/filelist/%s.txt' % (dataDir,dataType), 'w')
@@ -43,15 +44,15 @@ catIds = coco.getCatIds()
 
 for imgId in imgIds:
     objCount = 0
-    print 'imgId :%s'%imgId
+    print('imgId :%s'%imgId)
     Img = coco.loadImgs(imgId)[0]
-    print 'Img :%s' % Img
+    print('Img :%s' % Img)
     filename = Img['file_name']
     width = Img['width']
     height = Img['height']
-    print 'filename :%s, width :%s ,height :%s' % (filename,width,height)
+    print('filename :%s, width :%s ,height :%s' % (filename,width,height))
     annIds = coco.getAnnIds(imgIds=imgId, catIds=catIds, iscrowd=None)
-    print 'annIds :%s' % annIds
+    print('annIds :%s' % annIds)
     for annId in annIds:
         anns = coco.loadAnns(annId)[0]
         catId = anns['category_id']
@@ -60,17 +61,15 @@ for imgId in imgIds:
         #print 'catId :%s , cat :%s' % (catId,cat)
         if cat in classes:
             objCount = objCount + 1
-            out_file = open('%s/%s/test/%s.txt' % (dataDir, dataType, filename[:-4]), 'a')
-            cls_id = classes.index(cat)
+            out_file = open('%s/%s/labels/%s.txt' % (dataDir, dataType, filename[:-4]), 'a')
+            cls_id = classes[cat]
             box = anns['bbox']
             size = [width,height]
             bb=convert(size, box)
             out_file.write(str(cls_id) + " " + " ".join([str(a) for a in bb]) + '\n')
             out_file.close()
-        #break
 
     if objCount > 0:
         list_file.write('%s/%s/JPEGImages/%s\n' % (dataDir, dataType, filename))
-    #break
 
 list_file.close()

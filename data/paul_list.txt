@@ -1,0 +1,10 @@
+0,ambulance
+1,apple
+2,automat
+3,backpack
+4,baggage
+5,banana
+6,baseball
+7,basketball
+8,bed
+9,bench
