@@ -3,11 +3,11 @@
 #使用说明
 
 #要转换的数据集目录结构为：
-#BYD/time/annotations/xml文件
-#BYD/time/images/jpg文件
-#BYD/time/labels/即将生成的yolo需要的txt文件
+#Paul/time/annotations/xml文件
+#Paul/time/images/jpg文件
+#Paul/time/labels/即将生成的yolo需要的txt文件
 
-#该文件需放在BYD同级目录下，该目录下将会生成名为“日期”的txt文件，文件内容为日期文件夹下所有图片的路径
+#该文件需放在Paul同级目录下，该目录下将会生成名为“日期”的txt文件，文件内容为日期文件夹下所有图片的路径
 
 #有多少个日期的文件夹，就将多少个文件夹的名字加入sets
 
@@ -40,8 +40,8 @@ def convert(size, box):
     return (x,y,w,h)
 
 def convert_annotation(time, image_id):
-    in_file = open('BYD/%s/annotations/%s.xml'%(time, image_id))
-    out_file = open('BYD/%s/labels/%s.txt'%(time, image_id), 'w')
+    in_file = open('Paul/%s/annotations/%s.xml'%(time, image_id))
+    out_file = open('Paul/%s/labels/%s.txt'%(time, image_id), 'w')
     tree=ET.parse(in_file)
     root = tree.getroot()
     size = root.find('size')
@@ -88,13 +88,13 @@ def GetFileList(FindPath,FlagStr=[]):
 wd = getcwd()
 
 for time in sets:
-    if not os.path.exists('BYD/%s/annotations/'%time):
-        os.makedirs('BYD/%s/annotations/'%time)
-    image_ids=GetFileList('BYD/'+time+'/annotations/',['xml'])
+    if not os.path.exists('Paul/%s/annotations/'%time):
+        os.makedirs('Paul/%s/annotations/'%time)
+    image_ids=GetFileList('Paul/'+time+'/annotations/',['xml'])
     list_file = open('%s.txt'%time, 'w')
     for image_id in image_ids:
         print(image_id)
-        list_file.write('%s/BYD/%s/images/%s.jpg\n'%(wd, time, image_id))
+        list_file.write('%s/Paul/%s/images/%s.jpg\n'%(wd, time, image_id))
         convert_annotation(time, image_id)
     list_file.close()
 
