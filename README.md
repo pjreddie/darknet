@@ -1,13 +1,14 @@
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
-#Darknet-cpp#
-Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an open source neural network framework written in C and CUDA.
+# Darknet-cpp
+
+Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an open source neural network framework written in C and CUDA. Darknet-cpp builds on Linux, Windows and also tested on Mac by users.
 
 **Features**
 
 * Uses same code-base as original darknet (ie same .c files are used). Modification is done only for runtime bug-fixes, compile time fixes for c++, and the build system itself. For list of bugs fixed, refer to this thread - https://groups.google.com/forum/#!topic/darknet/4Hb159aZBbA, and https://github.com/prabindh/darknet/issues
 
-* Build system supports 3 targets - 
+* The Linux build system supports 3 targets - 
   * original darknet (with gcc compiler), 
   * darknet-cpp (with g++ compiler), and 
   * Shared library (libdarknet-cpp-shared.so)
@@ -19,6 +20,8 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 * darknet-cpp supports OpenCV3. Tested on Ubuntu 16.04 and CUDA 8.x
 
 **Usage**
+
+Using the Makefile in the root directory of the darknet source repository,
 
  * `make darknet` - only darknet (original code), with OPENCV=0
  * `make darknet-cpp` - only the CPP version, with OPENCV=1
@@ -53,7 +56,8 @@ This creates a training list file that will be needed in next step.
 
   * Atleast for the few initial iterations, observe the log output, and ensure all images are found and being used. After convergence, detection can be performed using standard steps.
 
-#How to file issues#
+# How to file issues
+
 If there is a need to report an issue with the darknet-cpp port, use the link - https://github.com/prabindh/darknet/issues.
 
 Information required for filing an issue:
@@ -66,7 +70,18 @@ Information required for filing an issue:
 
   * Platform being used (OS version, GPU type, CUDA version, and OpenCV version)
 
-#Darknet#
+# Darknet-cpp for Windows
+
+Currently tested with VS2013, CUDA8.0 on Win10. 
+
+The solution file requires the below repository.
+
+https://github.com/prabindh/darknet-cpp-windows
+
+The Windows port does not require any additional downloads (like pthreads), and builds the same darknet code-base for Windows, to generate the darknet.dll. Building the Arapaho C++ API and test wrapper, creates arapaho.exe, that works exactly the same way as arapaho on Linux.
+
+# Darknet
+
 Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
 
 For more information see the [Darknet project website](http://pjreddie.com/darknet).
