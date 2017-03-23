@@ -93,7 +93,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\opencv_2.4.9\opencv\build\x64\vc12\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <OutputFile>$(OutDir)\..\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)\$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>..\..\3rdparty\lib\x64\pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
@@ -140,7 +140,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>C:\opencv_2.4.9\opencv\build\x64\vc12\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>..\..\3rdparty\lib\x64\pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)\..\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)\$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
