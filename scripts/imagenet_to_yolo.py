@@ -58,9 +58,9 @@ def convert_annotation(image_dir, image_id):
             continue
         obj_num = obj_num + 1
         if obj_num == 1:
-            if not os.path.exists('Labels/%s' % (image_dir)):
-                os.makedirs('Labels/%s' % (image_dir))
-            out_file = open('Labels/%s/%s.txt' % (image_dir, image_id), 'w')
+            if not os.path.exists('labels/%s' % (image_dir)):
+                os.makedirs('labels/%s' % (image_dir))
+            out_file = open('labels/%s/%s.txt' % (image_dir, image_id), 'w')
         cls_id = classes[cls]
         xmlbox = obj.find('bndbox')
         b = (float(xmlbox.find('xmin').text), float(xmlbox.find('xmax').text), float(xmlbox.find('ymin').text),
