@@ -31,11 +31,6 @@ result['seconds']=pd.to_numeric(result['seconds'])
 result['images']=pd.to_numeric(result['images'])
 result.dtypes
 
-result['loss'].plot()
-
-p=result['avg'].plot()
-
-result['avg'].values
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
