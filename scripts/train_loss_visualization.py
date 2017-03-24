@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 #%matplotlib inline
 
-result = pd.read_csv('W:/Tools/darknet/trainlog.txt', skiprows=[x for x in range(96000) if (x%10!=9)] ,error_bad_lines=False, names=['loss', 'avg', 'rate', 'seconds', 'images'])
+lines =10322
+result = pd.read_csv('W:/Tools/darknet/trainlog.txt', skiprows=[x for x in range(lines) if (x%10!=9)] ,error_bad_lines=False, names=['loss', 'avg', 'rate', 'seconds', 'images'])
 result.head()
 
 result['loss']=result['loss'].str.split(' ').str.get(1)
