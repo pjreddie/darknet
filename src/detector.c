@@ -76,6 +76,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     pthread_t load_thread = load_data(args);
     clock_t time;
     int count = 0;
+    int time_to_save; // the variable will assure that backup is saved even if we miss multitudes of 100 or 1000
+
+    if(get_current_batch(net) <900){
+               time_to_save=get_current_batch(net)+100;
+                                   }
+    else{ 
+               time_to_save=get_current_batch(net)+1000;
+        } 
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net.max_batches){
         if(l.random && count++%10 == 0){
@@ -137,13 +145,20 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         i = get_current_batch(net);
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
-        if(i%1000==0 || (i < 1000 && i%100 == 0)){
+        if(time_to_save<=i){
 #ifdef GPU
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
+            if(get_current_batch(net) <900){
+               time_to_save=i+100;
+                }
+            else{ 
+               time_to_save=i+1000;
+                } 
+
         }
         free_data(train);
     }
