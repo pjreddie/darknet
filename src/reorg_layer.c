@@ -4,15 +4,17 @@
 #include <stdio.h>
 
 
-layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse)
+layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse, int flatten, int extra)
 {
     layer l = {0};
     l.type = REORG;
     l.batch = batch;
     l.stride = stride;
+    l.extra = extra;
     l.h = h;
     l.w = w;
     l.c = c;
+    l.flatten = flatten;
     if(reverse){
         l.out_w = w*stride;
         l.out_h = h*stride;
@@ -23,10 +25,20 @@ layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse)
         l.out_c = c*(stride*stride);
     }
     l.reverse = reverse;
-    fprintf(stderr, "reorg              /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n",  stride, w, h, c, l.out_w, l.out_h, l.out_c);
+
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = h*w*c;
-    int output_size = l.out_h * l.out_w * l.out_c * batch;
+    if(l.extra){
+        l.out_w = l.out_h = l.out_c = 0;
+        l.outputs = l.inputs + l.extra;
+    }
+
+    if(extra){
+        fprintf(stderr, "reorg              %4d   ->  %4d\n",  l.inputs, l.outputs);
+    } else {
+        fprintf(stderr, "reorg              /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n",  stride, w, h, c, l.out_w, l.out_h, l.out_c);
+    }
+    int output_size = l.outputs * batch;
     l.output =  calloc(output_size, sizeof(float));
     l.delta =   calloc(output_size, sizeof(float));
 
@@ -77,17 +89,41 @@ void resize_reorg_layer(layer *l, int w, int h)
 
 void forward_reorg_layer(const layer l, network_state state)
 {
-    if(l.reverse){
+    int i;
+    if(l.flatten){
+        memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
+        if(l.reverse){
+            flatten(l.output, l.w*l.h, l.c, l.batch, 0);
+        }else{
+            flatten(l.output, l.w*l.h, l.c, l.batch, 1);
+        }
+    } else if (l.extra) {
+        for(i = 0; i < l.batch; ++i){
+            copy_cpu(l.inputs, state.input + i*l.inputs, 1, l.output + i*l.outputs, 1);
+        }
+    } else if (l.reverse){
         reorg_cpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output);
-    }else {
+    } else {
         reorg_cpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 0, l.output);
     }
 }
 
 void backward_reorg_layer(const layer l, network_state state)
 {
-    if(l.reverse){
+    int i;
+    if(l.flatten){
+        memcpy(state.delta, l.delta, l.outputs*l.batch*sizeof(float));
+        if(l.reverse){
+            flatten(state.delta, l.w*l.h, l.c, l.batch, 1);
+        }else{
+            flatten(state.delta, l.w*l.h, l.c, l.batch, 0);
+        }
+    } else if(l.reverse){
         reorg_cpu(l.delta, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
+    } else if (l.extra) {
+        for(i = 0; i < l.batch; ++i){
+            copy_cpu(l.inputs, l.delta + i*l.outputs, 1, state.delta + i*l.inputs, 1);
+        }
     }else{
         reorg_cpu(l.delta, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
     }
@@ -96,7 +132,18 @@ void backward_reorg_layer(const layer l, network_state state)
 #ifdef GPU
 void forward_reorg_layer_gpu(layer l, network_state state)
 {
-    if(l.reverse){
+    int i;
+    if(l.flatten){
+        if(l.reverse){
+            flatten_ongpu(state.input, l.w*l.h, l.c, l.batch, 0, l.output_gpu);
+        }else{
+            flatten_ongpu(state.input, l.w*l.h, l.c, l.batch, 1, l.output_gpu);
+        }
+    } else if (l.extra) {
+        for(i = 0; i < l.batch; ++i){
+            copy_ongpu(l.inputs, state.input + i*l.inputs, 1, l.output_gpu + i*l.outputs, 1);
+        }
+    } else if (l.reverse) {
         reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_gpu);
     }else {
         reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 0, l.output_gpu);
@@ -105,9 +152,20 @@ void forward_reorg_layer_gpu(layer l, network_state state)
 
 void backward_reorg_layer_gpu(layer l, network_state state)
 {
-    if(l.reverse){
+    if(l.flatten){
+        if(l.reverse){
+            flatten_ongpu(l.delta_gpu, l.w*l.h, l.c, l.batch, 1, state.delta);
+        }else{
+            flatten_ongpu(l.delta_gpu, l.w*l.h, l.c, l.batch, 0, state.delta);
+        }
+    } else if (l.extra) {
+        int i;
+        for(i = 0; i < l.batch; ++i){
+            copy_ongpu(l.inputs, l.delta_gpu + i*l.outputs, 1, state.delta + i*l.inputs, 1);
+        }
+    } else if(l.reverse){
         reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
-    }else{
+    } else {
         reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
     }
 }

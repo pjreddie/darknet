@@ -157,4 +157,13 @@ void cuda_pull_array(float *x_gpu, float *x, size_t n)
     check_error(status);
 }
 
+float cuda_mag_array(float *x_gpu, size_t n)
+{
+    float *temp = calloc(n, sizeof(float));
+    cuda_pull_array(x_gpu, temp, n);
+    float m = mag_array(temp, n);
+    free(temp);
+    return m;
+}
+
 #endif

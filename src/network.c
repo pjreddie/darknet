@@ -27,6 +27,35 @@
 #include "dropout_layer.h"
 #include "route_layer.h"
 #include "shortcut_layer.h"
+#include "parser.h"
+#include "data.h"
+
+load_args get_base_args(network net)
+{
+    load_args args = {0};
+    args.w = net.w;
+    args.h = net.h;
+    args.size = net.w;
+
+    args.min = net.min_crop;
+    args.max = net.max_crop;
+    args.angle = net.angle;
+    args.aspect = net.aspect;
+    args.exposure = net.exposure;
+    args.saturation = net.saturation;
+    args.hue = net.hue;
+    return args;
+}
+
+network load_network(char *cfg, char *weights, int clear)
+{
+    network net = parse_network_cfg(cfg);
+    if(weights && weights[0] != 0){
+        load_weights(&net, weights);
+    }
+    if(clear) *net.seen = 0;
+    return net;
+}
 
 int get_current_batch(network net)
 {
@@ -50,6 +79,7 @@ float get_current_rate(network net)
     int batch_num = get_current_batch(net);
     int i;
     float rate;
+    if (batch_num < net.burn_in) return net.learning_rate * pow((float)batch_num / net.burn_in, net.power);
     switch (net.policy) {
         case CONSTANT:
             return net.learning_rate;
@@ -66,7 +96,6 @@ float get_current_rate(network net)
         case EXP:
             return net.learning_rate * pow(net.gamma, batch_num);
         case POLY:
-            if (batch_num < net.burn_in) return net.learning_rate * pow((float)batch_num / net.burn_in, net.power);
             return net.learning_rate * pow(1 - (float)batch_num / net.max_batches, net.power);
         case RANDOM:
             return net.learning_rate * pow(rand_uniform(0,1), net.power);
@@ -150,7 +179,7 @@ void forward_network(network net, network_state state)
         state.index = i;
         layer l = net.layers[i];
         if(l.delta){
-            scal_cpu(l.outputs * l.batch, 0, l.delta, 1);
+            fill_cpu(l.outputs * l.batch, 0, l.delta, 1);
         }
         l.forward(l, state);
         state.input = l.output;
@@ -165,7 +194,7 @@ void update_network(network net)
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.update){
-            l.update(l, update_batch, rate, net.momentum, net.decay);
+            l.update(l, update_batch, rate*l.learning_rate_scale, net.momentum, net.decay);
         }
     }
 }
@@ -218,6 +247,7 @@ void backward_network(network net, network_state state)
             state.delta = prev.delta;
         }
         layer l = net.layers[i];
+        if(l.stopbackward) break;
         l.backward(l, state);
     }
 }
@@ -414,6 +444,9 @@ detection_layer get_network_detection_layer(network net)
 image get_network_image_layer(network net, int i)
 {
     layer l = net.layers[i];
+    #ifdef GPU
+        cuda_pull_array(l.output_gpu, l.output, l.outputs);
+    #endif
     if (l.out_w && l.out_h && l.out_c){
         return float_to_image(l.out_w, l.out_h, l.out_c, l.output);
     }

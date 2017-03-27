@@ -38,7 +38,7 @@ typedef enum {
 } LAYER_TYPE;
 
 typedef enum{
-    SSE, MASKED, SMOOTH
+    SSE, MASKED, L1, SMOOTH
 } COST_TYPE;
 
 struct layer{
@@ -58,6 +58,7 @@ struct layer{
     int flipped;
     int inputs;
     int outputs;
+    int extra;
     int truths;
     int h,w,c;
     int out_h, out_w, out_c;
@@ -68,6 +69,7 @@ struct layer{
     int side;
     int stride;
     int reverse;
+    int flatten;
     int pad;
     int sqrt;
     int flip;
@@ -76,6 +78,8 @@ struct layer{
     int xnor;
     int steps;
     int hidden;
+    int truth;
+    float smooth;
     float dot;
     float angle;
     float jitter;
@@ -83,6 +87,7 @@ struct layer{
     float exposure;
     float shift;
     float ratio;
+    float learning_rate_scale;
     int softmax;
     int classes;
     int coords;
@@ -115,6 +120,8 @@ struct layer{
     int classfix;
     int absolute;
 
+    int onlyforward;
+    int stopbackward;
     int dontload;
     int dontloadscales;
 
@@ -149,7 +156,6 @@ struct layer{
     float * weights;
     float * weight_updates;
 
-    float * col_image;
     float * delta;
     float * output;
     float * squared;
@@ -235,8 +241,6 @@ struct layer{
     float * variance_delta_gpu;
     float * mean_delta_gpu;
 
-    float * col_image_gpu;
-
     float * x_gpu;
     float * x_norm_gpu;
     float * weights_gpu;
@@ -256,6 +260,7 @@ struct layer{
     #ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
     cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
+    cudnnTensorDescriptor_t normTensorDesc;
     cudnnFilterDescriptor_t weightDesc;
     cudnnFilterDescriptor_t dweightDesc;
     cudnnConvolutionDescriptor_t convDesc;

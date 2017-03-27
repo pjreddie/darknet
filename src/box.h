@@ -9,7 +9,7 @@ typedef struct{
     float dx, dy, dw, dh;
 } dbox;
 
-box float_to_box(float *f);
+box float_to_box(float *f, int stride);
 float box_iou(box a, box b);
 float box_rmse(box a, box b);
 dbox diou(box a, box b);

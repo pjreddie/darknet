@@ -32,7 +32,6 @@ void free_layer(layer l)
     if(l.scale_updates)      free(l.scale_updates);
     if(l.weights)            free(l.weights);
     if(l.weight_updates)     free(l.weight_updates);
-    if(l.col_image)          free(l.col_image);
     if(l.delta)              free(l.delta);
     if(l.output)             free(l.output);
     if(l.squared)            free(l.squared);
@@ -80,7 +79,6 @@ void free_layer(layer l)
     if(l.rolling_variance_gpu)    cuda_free(l.rolling_variance_gpu);
     if(l.variance_delta_gpu)      cuda_free(l.variance_delta_gpu);
     if(l.mean_delta_gpu)          cuda_free(l.mean_delta_gpu);
-    if(l.col_image_gpu)           cuda_free(l.col_image_gpu);
     if(l.x_gpu)                   cuda_free(l.x_gpu);
     if(l.x_norm_gpu)              cuda_free(l.x_norm_gpu);
     if(l.weights_gpu)             cuda_free(l.weights_gpu);
