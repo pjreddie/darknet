@@ -14,18 +14,14 @@ Para questões ou erro use o [Google Group](https://groups.google.com/forum/#!fo
 ## Instalação
 
 Requesitos
-- OpenCV
 
-- CUDA
- 
-Verificar qual a versão do CUDA instalado
-`nvcc --version`
-
-Para verificar qual a gráfica instalada:
-`nvidia-smi`
-
-
-- Cmake
+* **CUDA**: https://developer.nvidia.com/cuda-downloads
+   - Funciona sem CUDA, mas o desempenho é muito mais lento, porque só utiliza 1 core do CPU. 
+   - Para verificar qual a versão do CUDA instalado `nvcc --version`
+   - Para verificar qual a gráfica instalada: `nvidia-smi`
+* **OpenCV 2.4.9**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.9/opencv-2.4.9.exe/download 
+   - Não testado com OpenCV 3
+* **Cmake** 
 
 1) Intalar Darknet ([Instruções](https://pjreddie.com/darknet/install/))
 
