@@ -1,8 +1,179 @@
-![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
+# Darknet em Português ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
-#Darknet#
+> Este  um fork independente. O trabalho original está em [github/pjreddie](https://github.com/pjreddie/darknet)
+
 Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
 
-For more information see the [Darknet project website](http://pjreddie.com/darknet).
+Para mais informações, consulte o site oficial [Darknet website](http://pjreddie.com/darknet).
 
-For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
+Para questões ou erro use o [Google Group](https://groups.google.com/forum/#!forum/darknet).
+
+
+## Instalação
+
+Requesitos
+- OpenCV
+
+- CUDA
+ 
+Verificar qual a versão do CUDA instalado
+`nvcc --version`
+
+Para verificar qual a gráfica instalada:
+`nvidia-smi`
+
+
+- Cmake
+
+1) Intalar Darknet ([Instruções](https://pjreddie.com/darknet/install/))
+
+`git clone https://github.com/pjreddie/darknet`
+
+> NOTA: Deve-se compilar o depois de fazer as alterações dos directórios nos ficheiros.
+
+2) Fazer train.txt
+
+3) Criar o obj.name
+
+4) Criar o obj.data
+
+5) Alterar a Makefile.
+```
+GPU=1
+CUDNN=0
+OPENCV=1
+DEBUG=0
+```
+Ver também se a arquitetura da gráfica é a correta. ([Compute Capability](https://developer.nvidia.com/cuda-gpus))
+
+`LN.6 ARCH=  -gencode arch=compute_52,code=compute_52`
+
+Para o caso da NVIDIA Quadro K2000 GK107GL (LSA/ISEP) - Compute Capability 3.0
+
+`ARCH=  -gencode arch=compute_30,code=compute_35`
+
+6) Alterar o detector.c / yolo.c - Diretoriio do backup e train.txt
+
+alterar as linhas de nº x de backups
+
+7) Compilar o Darknet já com os directórios corretos.
+```
+cd darknet
+make
+```
+
+8 ) alterar o yolo.cfg
+
+## How to improve object detection:
+
+ Before training:
+
+set flag `random=1` in your `.cfg-file` - it will increase precision by training Yolo for different resolutions
+
+ After training - for detection:
+
+Increase network-resolution by set in your `.cfg-file` (height=608 and width=608) or (height=832 and width=832) or (any value multiple of 32) - this increases the precision and makes it possible to detect small objects.
+
+you do not need to train the network again, just use `.weights-file` already trained for 416x416 resolution
+
+if `error Out of memory` occurs then in `.cfg-file` you should increase `subdivisions=16, 32 or 64`.
+
+
+## Treinar
+
+## Testar
+
+`./darknet detector test dataObjTeste_D/obj.data cfg/yolo-voc.cfg backup/tiny-yolo-voc_1730.weights dataObjTeste_D/images/1.jpg -thresh 0`
+
+
+--------------------
+
+# Project Title
+
+One Paragraph of project description goes here
+
+## Getting Started
+
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+
+### Prerequisites
+
+What things you need to install the software and how to install them
+
+```
+Give examples
+```
+
+### Installing
+
+A step by step series of examples that tell you have to get a development env running
+
+Say what the step will be
+
+```
+Give the example
+```
+
+And repeat
+
+```
+until finished
+```
+
+End with an example of getting some data out of the system or using it for a little demo
+
+## Running the tests
+
+Explain how to run the automated tests for this system
+
+### Break down into end to end tests
+
+Explain what these tests test and why
+
+```
+Give an example
+```
+
+### And coding style tests
+
+Explain what these tests test and why
+
+```
+Give an example
+```
+
+## Deployment
+
+Add additional notes about how to deploy this on a live system
+
+## Built With
+
+* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
+* [Maven](https://maven.apache.org/) - Dependency Management
+* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+
+## Contributing
+
+Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+
+## Versioning
+
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
+
+## Authors
+
+* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+
+See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+
+## Acknowledgments
+
+* Hat tip to anyone who's code was used
+* Inspiration
+* etc
+
+
