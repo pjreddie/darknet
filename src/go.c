@@ -23,7 +23,7 @@ char *fgetgo(FILE *fp)
 {
     if(feof(fp)) return 0;
     size_t size = 94;
-    char *line = malloc(size*sizeof(char));
+    char *line = (char*)malloc(size*sizeof(char));
     if(size != fread(line, sizeof(char), size, fp)){
         free(line);
         return 0;
@@ -36,21 +36,21 @@ moves load_go_moves(char *filename)
 {
     moves m;
     m.n = 128;
-    m.data = calloc(128, sizeof(char*));
+    m.data = (char**)calloc(128, sizeof(char*));
     FILE *fp = fopen(filename, "rb");
     int count = 0;
     char *line = 0;
     while((line = fgetgo(fp))){
         if(count >= m.n){
             m.n *= 2;
-            m.data = realloc(m.data, m.n*sizeof(char*));
+            m.data = (char**)realloc(m.data, m.n*sizeof(char*));
         }
         m.data[count] = line;
         ++count;
     }
     printf("%d\n", count);
     m.n = count;
-    m.data = realloc(m.data, count*sizeof(char*));
+    m.data = (char**)realloc(m.data, count*sizeof(char*));
     return m;
 }
 
@@ -132,7 +132,7 @@ void train_go(char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network *nets = calloc(ngpus, sizeof(network));
+    network *nets = (network *)calloc(ngpus, sizeof(network));
 
     srand(time(0));
     int seed = rand();
@@ -150,6 +150,7 @@ void train_go(char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
     char *backup_directory = "/home/pjreddie/backup/";
 
     char buff[256];
+
     moves m = load_go_moves("/home/pjreddie/backup/go.train");
     //moves m = load_go_moves("games.txt");
 
@@ -220,7 +221,7 @@ void propagate_liberty(float *board, int *lib, int *visited, int row, int col, i
 
 int *calculate_liberties(float *board)
 {
-    int *lib = calloc(19*19, sizeof(int));
+    int *lib = (int*)calloc(19*19, sizeof(int));
     int visited[361];
     int i, j;
     for(j = 0; j < 19; ++j){
@@ -454,8 +455,8 @@ void valid_go(char *cfgfile, char *weightfile, int multi, char *filename)
     set_batch_network(&net, 1);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
-    float *board = calloc(19*19, sizeof(float));
-    float *move = calloc(19*19+1, sizeof(float));
+    float *board = (float*)calloc(19*19, sizeof(float));
+    float *move = (float*)calloc(19*19+1, sizeof(float));
    // moves m = load_go_moves("/home/pjreddie/backup/go.test");
     moves m = load_go_moves(filename);
 
@@ -494,15 +495,16 @@ int print_game(float *board, FILE *fp)
 
 void engine_go(char *filename, char *weightfile, int multi)
 {
+#if defined __linux__
     network net = parse_network_cfg(filename);
     if(weightfile){
         load_weights(&net, weightfile);
     }
     srand(time(0));
     set_batch_network(&net, 1);
-    float *board = calloc(19*19, sizeof(float));
-    char *one = calloc(91, sizeof(char));
-    char *two = calloc(91, sizeof(char));
+    float *board = (float*)calloc(19*19, sizeof(float));
+    char *one = (char*)calloc(91, sizeof(char));
+    char *two = (char*)calloc(91, sizeof(char));
     int passed = 0;
     while(1){
         char buff[256];
@@ -683,6 +685,9 @@ void engine_go(char *filename, char *weightfile, int multi)
         fflush(stdout);
         fflush(stderr);
     }
+#else
+	printf("go is unsupported on Windows because popen is being used. Might be supported in the future.\n");
+#endif
 }
 
 void test_go(char *cfg, char *weights, int multi)
@@ -693,8 +698,9 @@ void test_go(char *cfg, char *weights, int multi)
     }
     srand(time(0));
     set_batch_network(&net, 1);
-    float *board = calloc(19*19, sizeof(float));
-    float *move = calloc(19*19+1, sizeof(float));
+    float *board = (float*)calloc(19*19, sizeof(float));
+    float *move = (float*)calloc(19*19+1, sizeof(float));
+
     int color = 1;
     while(1){
         int i;
@@ -767,7 +773,11 @@ void test_go(char *cfg, char *weights, int multi)
 
 float score_game(float *board)
 {
+
+#ifdef __linux__
+
     int i;
+
     FILE *f = fopen("game.txt", "w");
     int count = print_game(board, f);
     fprintf(f, "final_score\n");
@@ -789,6 +799,10 @@ float score_game(float *board)
     if(player == 'W') score = -score;
     pclose(p);
     return score;
+#else
+	printf("GO is unsupported in Windows port.\n");
+	return 0.f;
+#endif
 }
 
 void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
@@ -810,9 +824,9 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
     int count = 0;
     set_batch_network(&net, 1);
     set_batch_network(&net2, 1);
-    float *board = calloc(19*19, sizeof(float));
-    char *one = calloc(91, sizeof(char));
-    char *two = calloc(91, sizeof(char));
+    float *board = (float*)calloc(19*19, sizeof(float));
+    char *one = (char*)calloc(91, sizeof(char));
+    char *two = (char*)calloc(91, sizeof(char));
     int done = 0;
     int player = 1;
     int p1 = 0;
@@ -892,7 +906,7 @@ void run_go(int argc, char **argv)
         for(i = 0; i < len; ++i){
             if (gpu_list[i] == ',') ++ngpus;
         }
-        gpus = calloc(ngpus, sizeof(int));
+        gpus = (int*)calloc(ngpus, sizeof(int));
         for(i = 0; i < ngpus; ++i){
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',')+1;

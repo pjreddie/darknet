@@ -39,13 +39,22 @@ void train_writing(char *cfgfile, char *weightfile)
     args.d = &buffer;
     args.type = WRITING_DATA;
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
+#else
+#endif
     int epoch = (*net.seen)/N;
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
+#else
+#endif
         train = buffer;
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         load_thread = load_data_in_thread(args);
+#else
+#endif
         printf("Loaded %lf seconds\n",sec(clock()-time));
 
         time=clock();

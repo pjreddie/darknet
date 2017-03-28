@@ -1,6 +1,9 @@
 #ifndef DATA_H
 #define DATA_H
+
+#if defined __linux__ || defined PTHREAD_WINDOWS
 #include <pthread.h>
+#endif
 
 #include "matrix.h"
 #include "list.h"
@@ -68,11 +71,18 @@ typedef struct{
     float left, right, top, bottom;
 } box_label;
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void free_data(data d);
 
+#if defined __linux__ || defined PTHREAD_WINDOWS
 pthread_t load_data(load_args args);
 
 pthread_t load_data_in_thread(load_args args);
+#endif
 
 void print_letters(float *pred, int n);
 data load_data_captcha(char **paths, int n, int m, int k, int w, int h);
@@ -108,5 +118,10 @@ data concat_data(data d1, data d2);
 data concat_datas(data *d, int n);
 void fill_truth(char *path, char **labels, int k, float *truth);
 data copy_data(data d);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

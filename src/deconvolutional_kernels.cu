@@ -2,7 +2,6 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "batchnorm_layer.h"
@@ -12,9 +11,8 @@ extern "C" {
 #include "col2im.h"
 #include "utils.h"
 #include "cuda.h"
-}
 
-extern "C" void forward_deconvolutional_layer_gpu(layer l, network_state state)
+void forward_deconvolutional_layer_gpu(layer l, network_state state)
 {
     int i;
     int out_h = l.out_h;
@@ -44,7 +42,7 @@ extern "C" void forward_deconvolutional_layer_gpu(layer l, network_state state)
     activate_array_ongpu(l.output_gpu, l.batch*l.n*size, l.activation);
 }
 
-extern "C" void backward_deconvolutional_layer_gpu(layer l, network_state state)
+void backward_deconvolutional_layer_gpu(layer l, network_state state)
 {
     int out_h = l.out_h;
     int out_w = l.out_w;
@@ -88,7 +86,7 @@ extern "C" void backward_deconvolutional_layer_gpu(layer l, network_state state)
     }
 }
 
-extern "C" void pull_deconvolutional_layer(layer l)
+void pull_deconvolutional_layer(layer l)
 {
     cuda_pull_array(l.weights_gpu, l.weights, l.c*l.n*l.size*l.size);
     cuda_pull_array(l.biases_gpu, l.biases, l.n);
@@ -101,7 +99,7 @@ extern "C" void pull_deconvolutional_layer(layer l)
     }
 }
 
-extern "C" void push_deconvolutional_layer(layer l)
+void push_deconvolutional_layer(layer l)
 {
     cuda_push_array(l.weights_gpu, l.weights, l.c*l.n*l.size*l.size);
     cuda_push_array(l.biases_gpu, l.biases, l.n);

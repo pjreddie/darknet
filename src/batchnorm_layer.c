@@ -6,31 +6,34 @@
 layer make_batchnorm_layer(int batch, int w, int h, int c)
 {
     fprintf(stderr, "Batch Normalization Layer: %d x %d x %d image\n", w,h,c);
-    layer l = {0};
+
+    layer l = {};
     l.type = BATCHNORM;
     l.batch = batch;
     l.h = l.out_h = h;
     l.w = l.out_w = w;
     l.c = l.out_c = c;
-    l.output = calloc(h * w * c * batch, sizeof(float));
-    l.delta  = calloc(h * w * c * batch, sizeof(float));
+    l.output = (float*)calloc(h * w * c * batch, sizeof(float));
+    l.delta  = (float*)calloc(h * w * c * batch, sizeof(float));
     l.inputs = w*h*c;
     l.outputs = l.inputs;
 
-    l.scales = calloc(c, sizeof(float));
-    l.scale_updates = calloc(c, sizeof(float));
-    l.biases = calloc(c, sizeof(float));
-    l.bias_updates = calloc(c, sizeof(float));
+    l.scales = (float*)calloc(c, sizeof(float));
+    l.scale_updates = (float*)calloc(c, sizeof(float));
+    l.biases = (float*)calloc(c, sizeof(float));
+    l.bias_updates = (float*)calloc(c, sizeof(float));
+
     int i;
     for(i = 0; i < c; ++i){
         l.scales[i] = 1;
     }
 
-    l.mean = calloc(c, sizeof(float));
-    l.variance = calloc(c, sizeof(float));
+    l.mean = (float*)calloc(c, sizeof(float));
+    l.variance = (float*)calloc(c, sizeof(float));
 
-    l.rolling_mean = calloc(c, sizeof(float));
-    l.rolling_variance = calloc(c, sizeof(float));
+    l.rolling_mean = (float*)calloc(c, sizeof(float));
+    l.rolling_variance = (float*)calloc(c, sizeof(float));
+
 
     l.forward = forward_batchnorm_layer;
     l.backward = backward_batchnorm_layer;

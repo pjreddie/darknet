@@ -30,7 +30,7 @@ void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward
 
 void flatten(float *x, int size, int layers, int batch, int forward)
 {
-    float *swap = calloc(size*layers*batch, sizeof(float));
+    float *swap = (float*)calloc(size*layers*batch, sizeof(float));
     int i,c,b;
     for(b = 0; b < batch; ++b){
         for(c = 0; c < layers; ++c){
@@ -240,4 +240,3 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
         }
     }
 }
-

@@ -20,7 +20,7 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network *nets = calloc(ngpus, sizeof(network));
+    network *nets = (network*)calloc(ngpus, sizeof(network));
 
     srand(time(0));
     int seed = rand();
@@ -185,7 +185,6 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
     cvNamedWindow("Regressor", CV_WINDOW_NORMAL); 
     cvResizeWindow("Regressor", 512, 512);
     float fps = 0;
-    int i;
 
     while(1){
         struct timeval tval_before, tval_after, tval_result;
@@ -236,7 +235,7 @@ void run_regressor(int argc, char **argv)
         for(i = 0; i < len; ++i){
             if (gpu_list[i] == ',') ++ngpus;
         }
-        gpus = calloc(ngpus, sizeof(int));
+        gpus = (int*)calloc(ngpus, sizeof(int));
         for(i = 0; i < ngpus; ++i){
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',')+1;

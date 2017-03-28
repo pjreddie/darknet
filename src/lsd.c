@@ -62,7 +62,7 @@ void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg
     float aloss_avg = -1;
     float floss_avg = -1;
 
-    network_state fstate = {0};
+    network_state fstate = {};
     fstate.index = 0;
     fstate.net = fnet;
     int x_size = get_network_input_size(fnet)*fnet.batch;
@@ -71,15 +71,15 @@ void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg
     fstate.truth = cuda_make_array(0, y_size);
     fstate.delta = cuda_make_array(0, x_size);
     fstate.train = 1;
-    float *X = calloc(x_size, sizeof(float));
-    float *y = calloc(y_size, sizeof(float));
+    float *X = (float*)calloc(x_size, sizeof(float));
+    float *y = (float*)calloc(y_size, sizeof(float));
 
     float *ones = cuda_make_array(0, anet.batch);
     float *zeros = cuda_make_array(0, anet.batch);
     fill_ongpu(anet.batch, .99, ones, 1);
     fill_ongpu(anet.batch, .01, zeros, 1);
 
-    network_state astate = {0};
+    network_state astate = {};
     astate.index = 0;
     astate.net = anet;
     int ax_size = get_network_input_size(anet)*anet.batch;
@@ -89,7 +89,7 @@ void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg
     astate.delta = cuda_make_array(0, ax_size);
     astate.train = 1;
 
-    network_state gstate = {0};
+    network_state gstate = {};
     gstate.index = 0;
     gstate.net = gnet;
     int gx_size = get_network_input_size(gnet)*gnet.batch;
@@ -226,7 +226,7 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
     network anet = load_network(acfg, aweight, clear);
 
     int i, j, k;
-    layer imlayer = {0};
+    layer imlayer = {};
     for (i = 0; i < net.n; ++i) {
         if (net.layers[i].out_c == 3) {
             imlayer = net.layers[i];
@@ -244,7 +244,7 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = {0};
+    load_args args = {};
     args.w = net.w;
     args.h = net.h;
     args.paths = paths;
@@ -268,7 +268,7 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
 
-    network_state gstate = {0};
+    network_state gstate = {};
     gstate.index = 0;
     gstate.net = net;
     int x_size = get_network_input_size(net)*net.batch;
@@ -277,11 +277,11 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
     gstate.truth = cuda_make_array(0, y_size);
     gstate.delta = 0;
     gstate.train = 1;
-    float *pixs = calloc(x_size, sizeof(float));
-    float *graypixs = calloc(x_size, sizeof(float));
-    float *y = calloc(y_size, sizeof(float));
+    float *pixs = (float*)calloc(x_size, sizeof(float));
+    float *graypixs = (float*)calloc(x_size, sizeof(float));
+    float *y = (float*)calloc(y_size, sizeof(float));
 
-    network_state astate = {0};
+    network_state astate = {};
     astate.index = 0;
     astate.net = anet;
     int ay_size = get_network_output_size(anet)*anet.batch;
@@ -414,7 +414,7 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     network anet = load_network(acfg, aweight, clear);
 
     int i, j, k;
-    layer imlayer = {0};
+    layer imlayer = {};
     for (i = 0; i < net.n; ++i) {
         if (net.layers[i].out_c == 3) {
             imlayer = net.layers[i];
@@ -432,7 +432,7 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = {0};
+    load_args args = {};
     args.w = net.w;
     args.h = net.h;
     args.paths = paths;
@@ -456,7 +456,7 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
 
-    network_state gstate = {0};
+    network_state gstate = {};
     gstate.index = 0;
     gstate.net = net;
     int x_size = get_network_input_size(net)*net.batch;
@@ -465,11 +465,11 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     gstate.truth = cuda_make_array(0, y_size);
     gstate.delta = 0;
     gstate.train = 1;
-    float *pixs = calloc(x_size, sizeof(float));
-    float *graypixs = calloc(x_size, sizeof(float));
-    float *y = calloc(y_size, sizeof(float));
+    float *pixs = (float*)calloc(x_size, sizeof(float));
+    float *graypixs = (float*)calloc(x_size, sizeof(float));
+    float *y = (float*)calloc(y_size, sizeof(float));
 
-    network_state astate = {0};
+    network_state astate = {};
     astate.index = 0;
     astate.net = anet;
     int ay_size = get_network_output_size(anet)*anet.batch;
@@ -609,7 +609,7 @@ void train_lsd2(char *cfgfile, char *weightfile, char *acfgfile, char *aweightfi
     if(clear) *anet.seen = 0;
 
     int i, j, k;
-    layer imlayer = {0};
+    layer imlayer = {};
     for (i = 0; i < net.n; ++i) {
         if (net.layers[i].out_c == 3) {
             imlayer = net.layers[i];
@@ -627,7 +627,7 @@ void train_lsd2(char *cfgfile, char *weightfile, char *acfgfile, char *aweightfi
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = {0};
+    load_args args = {};
     args.w = net.w;
     args.h = net.h;
     args.paths = paths;
@@ -651,7 +651,7 @@ void train_lsd2(char *cfgfile, char *weightfile, char *acfgfile, char *aweightfi
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
 
-    network_state gstate = {0};
+    network_state gstate = {};
     gstate.index = 0;
     gstate.net = net;
     int x_size = get_network_input_size(net)*net.batch;
@@ -660,10 +660,10 @@ void train_lsd2(char *cfgfile, char *weightfile, char *acfgfile, char *aweightfi
     gstate.truth = 0;
     gstate.delta = 0;
     gstate.train = 1;
-    float *X = calloc(x_size, sizeof(float));
-    float *y = calloc(y_size, sizeof(float));
+    float *X = (float*)calloc(x_size, sizeof(float));
+    float *y = (float*)calloc(y_size, sizeof(float));
 
-    network_state astate = {0};
+    network_state astate = {};
     astate.index = 0;
     astate.net = anet;
     int ay_size = get_network_output_size(anet)*anet.batch;
@@ -784,7 +784,7 @@ void train_lsd(char *cfgfile, char *weightfile, int clear)
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = {0};
+    load_args args = {};
     args.w = net.w;
     args.h = net.h;
     args.paths = paths;

@@ -7,7 +7,7 @@
 #include "opencv2/highgui/highgui_c.h"
 image get_image_from_stream(CvCapture *cap);
 #endif
-
+ 
 void extract_voxel(char *lfile, char *rfile, char *prefix)
 {
 #ifdef OPENCV
@@ -75,17 +75,23 @@ void train_voxel(char *cfgfile, char *weightfile)
     args.m = plist->size;
     args.d = &buffer;
     args.type = SUPER_DATA;
-
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
+#endif
     clock_t time;
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net.max_batches){
         i += 1;
         time=clock();
-        pthread_join(load_thread, 0);
-        train = buffer;
-        load_thread = load_data_in_thread(args);
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 
+        pthread_join(load_thread, 0);
+#endif
+        train = buffer;
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
+
+        load_thread = load_data_in_thread(args);
+#endif
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 
         time=clock();

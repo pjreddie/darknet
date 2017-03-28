@@ -11,15 +11,15 @@
 
 layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
 {
-    layer l = {0};
+    layer l = {};
     l.type = ACTIVE;
 
     l.inputs = inputs;
     l.outputs = inputs;
     l.batch=batch;
 
-    l.output = calloc(batch*inputs, sizeof(float*));
-    l.delta = calloc(batch*inputs, sizeof(float*));
+    l.output = (float*)calloc(batch*inputs, sizeof(float));
+    l.delta = (float*)calloc(batch*inputs, sizeof(float));
 
     l.forward = forward_activation_layer;
     l.backward = backward_activation_layer;

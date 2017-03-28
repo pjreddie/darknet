@@ -25,7 +25,9 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     printf("%d\n", plist->size);
     int N = plist->size;
     clock_t time;
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_t load_thread;
+#endif
     data train;
     data buffer;
 
@@ -51,14 +53,20 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
 
     fprintf(stderr, "%d classes\n", net.outputs);
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     load_thread = load_data_in_thread(args);
+#endif
     int epoch = (*net.seen)/N;
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
+#endif
         train = buffer;
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         load_thread = load_data_in_thread(args);
+#endif
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         float loss = train_network(net, train);
@@ -82,7 +90,9 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     sprintf(buff, "%s/%s.weights", backup_directory, base);
     save_weights(net, buff);
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_join(load_thread, 0);
+#endif
     free_data(buffer);
     free_network(net);
     free_ptrs((void**)paths, plist->size);

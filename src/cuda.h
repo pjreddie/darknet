@@ -15,7 +15,12 @@ extern int gpu_index;
 #include "cudnn.h"
 #endif
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
 void check_error(cudaError_t status);
+void check_cublas_error(cublasStatus_t status);
+
 cublasHandle_t blas_handle();
 float *cuda_make_array(float *x, size_t n);
 int *cuda_make_int_array(size_t n);
@@ -31,6 +36,11 @@ float cuda_mag_array(float *x_gpu, size_t n);
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();
 #endif
+
+#ifdef __cplusplus 
+}
+#endif
+
 
 #endif
 #endif
