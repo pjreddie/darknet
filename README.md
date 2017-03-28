@@ -56,7 +56,7 @@ Para o caso de:
 
 1) Alterar o detector.c / yolo.c - Diretoriio do backup e train.txt
 
-alterar as linhas de nº x de backups
+1) (Opcional) Alterar as linhas de código para criar mais backups do ficheiro *.weights
 
 1) Compilar o Darknet já com os directórios corretos.
 ```
