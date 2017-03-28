@@ -22,6 +22,7 @@ Para questões ou erro use o [Google Group](https://groups.google.com/forum/#!fo
 * **OpenCV 2.4.9**: http://docs.opencv.org/2.4/doc/tutorials/introduction/linux_install/linux_install.html
    - Não testado com OpenCV 3
 * **Cmake** 
+* **CuDnn** (Opcional)
 
 
 1) Instalar Darknet ([Instruções](https://pjreddie.com/darknet/install/))
@@ -39,7 +40,7 @@ Para questões ou erro use o [Google Group](https://groups.google.com/forum/#!fo
 5) Alterar a Makefile.
 ```
 GPU=1
-CUDNN=0
+CUDNN=0 (opcional)
 OPENCV=1
 DEBUG=0
 ```
