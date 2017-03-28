@@ -44,15 +44,15 @@ CUDNN=0 (opcional)
 OPENCV=1
 DEBUG=0
 ```
-Ver também se a arquitetura da gráfica é a correta. ([Compute Capability](https://developer.nvidia.com/cuda-gpus); [Wiki](https://en.wikipedia.org/wiki/CUDA#Supported_GPUs))
+Ver também se a arquitetura da gráfica é a correta. ([Compute Capability](https://developer.nvidia.com/cuda-gpus); [Wikipédia](https://en.wikipedia.org/wiki/CUDA#Supported_GPUs))
 
-`LN.6 ARCH=  -gencode arch=compute_52,code=compute_52`
+`LN.6 "ARCH=  -gencode arch=compute_52,code=compute_52"`
 
 Para o caso de:
 
-* NVIDIA Quadro K2000 GK107GL - Compute Capability 3.0 `ARCH=  -gencode arch=compute_30,code=compute_35`
+* NVIDIA Quadro K2000 GK107GL - `"ARCH=  -gencode arch=compute_30,code=sm_35"`
 
-* Tegra TX1 - Compute Capability 5.3 `"arch=compute_53,code=sm_53"`  
+* Tegra TX1 - `"ARCH=  -gencode arch=compute_53,code=sm_53"`  
 
 1) Alterar o detector.c / yolo.c - Diretoriio do backup e train.txt
 
