@@ -49,8 +49,10 @@ void forward_network_gpu(network net, network_state state)
         if(l.delta_gpu){
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
+        //if(l.c ==3 && i > 5) state.input = *net.input_gpu;
         l.forward_gpu(l, state);
         state.input = l.output_gpu;
+        if(l.truth) state.truth = l.output_gpu;
     }
 }
 
@@ -63,6 +65,7 @@ void backward_network_gpu(network net, network_state state)
     for(i = net.n-1; i >= 0; --i){
         state.index = i;
         layer l = net.layers[i];
+        if(l.stopbackward) break;
         if(i == 0){
             state.input = original_input;
             state.delta = original_delta;
@@ -85,9 +88,16 @@ void update_network_gpu(network net)
         layer l = net.layers[i];
         l.t = get_current_batch(net);
         if(l.update_gpu){
-            l.update_gpu(l, update_batch, rate, net.momentum, net.decay);
+            l.update_gpu(l, update_batch, rate*l.learning_rate_scale, net.momentum, net.decay);
         }
     }
+}
+
+void harmless_update_network_gpu(network net)
+{
+    net.learning_rate = 0;
+    net.momentum = 1;
+    update_network_gpu(net);
 }
 
 void forward_backward_network_gpu(network net, float *x, float *y)
@@ -100,10 +110,10 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     if(net.layers[net.n-1].truths) y_size = net.layers[net.n-1].truths*net.batch;
     if(!*net.input_gpu){
         *net.input_gpu = cuda_make_array(x, x_size);
-        *net.truth_gpu = cuda_make_array(y, y_size);
+        if(!net.notruth) *net.truth_gpu = cuda_make_array(y, y_size);
     }else{
         cuda_push_array(*net.input_gpu, x, x_size);
-        cuda_push_array(*net.truth_gpu, y, y_size);
+        if(!net.notruth) cuda_push_array(*net.truth_gpu, y, y_size);
     }
     state.input = *net.input_gpu;
     state.delta = 0;
@@ -182,7 +192,7 @@ void update_layer(layer l, network net)
     float rate = get_current_rate(net);
     l.t = get_current_batch(net);
     if(l.update_gpu){
-        l.update_gpu(l, update_batch, rate, net.momentum, net.decay);
+        l.update_gpu(l, update_batch, rate*l.learning_rate_scale, net.momentum, net.decay);
     }
 }
 

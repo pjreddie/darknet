@@ -3,13 +3,13 @@
 #include <math.h>
 #include <stdlib.h>
 
-box float_to_box(float *f)
+box float_to_box(float *f, int stride)
 {
     box b;
     b.x = f[0];
-    b.y = f[1];
-    b.w = f[2];
-    b.h = f[3];
+    b.y = f[1*stride];
+    b.w = f[2*stride];
+    b.h = f[3*stride];
     return b;
 }
 

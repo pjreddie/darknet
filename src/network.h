@@ -48,6 +48,7 @@ typedef struct network{
     float eps;
 
     int inputs;
+    int notruth;
     int h, w, c;
     int max_crop;
     int min_crop;
@@ -91,6 +92,7 @@ float *get_network_output_gpu(network net);
 void forward_network_gpu(network net, network_state state);
 void backward_network_gpu(network net, network_state state);
 void update_network_gpu(network net);
+void harmless_update_network_gpu(network net);
 #endif
 
 float get_current_rate(network net);
@@ -131,6 +133,8 @@ void visualize_network(network net);
 int resize_network(network *net, int w, int h);
 int get_network_input_size(network net);
 float get_network_cost(network net);
+network load_network(char *cfg, char *weights, int clear);
+load_args get_base_args(network net);
 
 int get_network_nuisance(network net);
 int get_network_background(network net);

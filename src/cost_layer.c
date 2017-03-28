@@ -12,6 +12,7 @@ COST_TYPE get_cost_type(char *s)
     if (strcmp(s, "sse")==0) return SSE;
     if (strcmp(s, "masked")==0) return MASKED;
     if (strcmp(s, "smooth")==0) return SMOOTH;
+    if (strcmp(s, "L1")==0) return L1;
     fprintf(stderr, "Couldn't find cost type %s, going with SSE\n", s);
     return SSE;
 }
@@ -25,6 +26,8 @@ char *get_cost_string(COST_TYPE a)
             return "masked";
         case SMOOTH:
             return "smooth";
+        case L1:
+            return "L1";
     }
     return "sse";
 }
@@ -82,6 +85,8 @@ void forward_cost_layer(cost_layer l, network_state state)
     }
     if(l.cost_type == SMOOTH){
         smooth_l1_cpu(l.batch*l.inputs, state.input, state.truth, l.delta, l.output);
+    }else if(l.cost_type == L1){
+        l1_cpu(l.batch*l.inputs, state.input, state.truth, l.delta, l.output);
     } else {
         l2_cpu(l.batch*l.inputs, state.input, state.truth, l.delta, l.output);
     }
@@ -117,12 +122,18 @@ int float_abs_compare (const void * a, const void * b)
 void forward_cost_layer_gpu(cost_layer l, network_state state)
 {
     if (!state.truth) return;
+    if(l.smooth){
+        scal_ongpu(l.batch*l.inputs, (1-l.smooth), state.truth, 1);
+        add_ongpu(l.batch*l.inputs, l.smooth * 1./l.inputs, state.truth, 1);
+    }
     if (l.cost_type == MASKED) {
         mask_ongpu(l.batch*l.inputs, state.input, SECRET_NUM, state.truth);
     }
 
     if(l.cost_type == SMOOTH){
         smooth_l1_gpu(l.batch*l.inputs, state.input, state.truth, l.delta_gpu, l.output_gpu);
+    } else if (l.cost_type == L1){
+        l1_gpu(l.batch*l.inputs, state.input, state.truth, l.delta_gpu, l.output_gpu);
     } else {
         l2_gpu(l.batch*l.inputs, state.input, state.truth, l.delta_gpu, l.output_gpu);
     }
@@ -135,6 +146,10 @@ void forward_cost_layer_gpu(cost_layer l, network_state state)
         thresh = 0;
         printf("%f\n", thresh);
         supp_ongpu(l.batch*l.inputs, thresh, l.delta_gpu, 1);
+    }
+
+    if(l.thresh){
+        supp_ongpu(l.batch*l.inputs, l.thresh*1./l.inputs, l.delta_gpu, 1);
     }
 
     cuda_pull_array(l.output_gpu, l.output, l.batch*l.inputs);

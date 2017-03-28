@@ -23,11 +23,11 @@ void swap_binary(convolutional_layer *l)
     l->weights = l->binary_weights;
     l->binary_weights = swap;
 
-    #ifdef GPU
+#ifdef GPU
     swap = l->weights_gpu;
     l->weights_gpu = l->binary_weights_gpu;
     l->binary_weights_gpu = swap;
-    #endif
+#endif
 }
 
 void binarize_weights(float *weights, int n, int size, float *binary)
@@ -80,23 +80,15 @@ int convolutional_out_width(convolutional_layer l)
 
 image get_convolutional_image(convolutional_layer l)
 {
-    int h,w,c;
-    h = convolutional_out_height(l);
-    w = convolutional_out_width(l);
-    c = l.n;
-    return float_to_image(w,h,c,l.output);
+    return float_to_image(l.out_w,l.out_h,l.out_c,l.output);
 }
 
 image get_convolutional_delta(convolutional_layer l)
 {
-    int h,w,c;
-    h = convolutional_out_height(l);
-    w = convolutional_out_width(l);
-    c = l.n;
-    return float_to_image(w,h,c,l.delta);
+    return float_to_image(l.out_w,l.out_h,l.out_c,l.delta);
 }
 
-size_t get_workspace_size(layer l){
+static size_t get_workspace_size(layer l){
 #ifdef CUDNN
     if(gpu_index >= 0){
         size_t most = 0;
@@ -127,7 +119,7 @@ size_t get_workspace_size(layer l){
         if (s > most) most = s;
         return most;
     }
-    #endif
+#endif
     return (size_t)l.out_h*l.out_w*l.size*l.size*l.c*sizeof(float);
 }
 
@@ -141,6 +133,7 @@ void cudnn_convolutional_setup(layer *l)
 
     cudnnSetTensor4dDescriptor(l->srcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w); 
     cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w); 
+    cudnnSetTensor4dDescriptor(l->normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l->out_c, 1, 1); 
     cudnnSetFilter4dDescriptor(l->weightDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size); 
     cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION);
     cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
@@ -198,8 +191,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c));
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1, 1);
-    int out_h = convolutional_out_height(l);
     int out_w = convolutional_out_width(l);
+    int out_h = convolutional_out_height(l);
     l.out_h = out_h;
     l.out_w = out_w;
     l.out_c = n;
@@ -292,6 +285,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
             l.x_norm_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
         }
 #ifdef CUDNN
+        cudnnCreateTensorDescriptor(&l.normTensorDesc);
         cudnnCreateTensorDescriptor(&l.srcTensorDesc);
         cudnnCreateTensorDescriptor(&l.dstTensorDesc);
         cudnnCreateFilterDescriptor(&l.weightDesc);
@@ -428,8 +422,8 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
 
 void forward_convolutional_layer(convolutional_layer l, network_state state)
 {
-    int out_h = convolutional_out_height(l);
-    int out_w = convolutional_out_width(l);
+    int out_h = l.out_h;
+    int out_w = l.out_w;
     int i;
 
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
@@ -460,8 +454,9 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
     if(l.batch_normalize){
         forward_batchnorm_layer(l, state);
+    } else {
+        add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
     }
-    add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 
     activate_array(l.output, m*n*l.batch, l.activation);
     if(l.binary || l.xnor) swap_binary(&l);
@@ -472,14 +467,14 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
     int i;
     int m = l.n;
     int n = l.size*l.size*l.c;
-    int k = convolutional_out_height(l)*
-        convolutional_out_width(l);
+    int k = l.out_w*l.out_h;
 
     gradient_array(l.output, m*k*l.batch, l.activation, l.delta);
-    backward_bias(l.bias_updates, l.delta, l.batch, l.n, k);
 
     if(l.batch_normalize){
         backward_batchnorm_layer(l, state);
+    } else {
+        backward_bias(l.bias_updates, l.delta, l.batch, l.n, k);
     }
 
     for(i = 0; i < l.batch; ++i){
