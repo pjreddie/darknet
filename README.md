@@ -88,3 +88,4 @@ if `error Out of memory` occurs then in `.cfg-file` you should increase `subdivi
 - [Darknet website](http://pjreddie.com/darknet) - Página oficial do projeto
 - [Google Group](https://groups.google.com/forum/#!forum/darknet) - Forum de dúvidas
 - [Github/AlexeyAB](https://github.com/AlexeyAB/darknet) - Versão para Windows
+- [Paper IEEE CVPR 2016](http://ieeexplore.ieee.org/document/7780460/)
