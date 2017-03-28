@@ -13,7 +13,7 @@ Para questões ou erro use o [Google Group](https://groups.google.com/forum/#!fo
 
 ## Instalação
 
-Requesitos
+#### Requisitos
 
 * **CUDA**: https://developer.nvidia.com/cuda-downloads
    - Funciona sem CUDA, mas o desempenho é muito mais lento, porque só utiliza 1 core do CPU. 
@@ -23,7 +23,8 @@ Requesitos
    - Não testado com OpenCV 3
 * **Cmake** 
 
-1) Intalar Darknet ([Instruções](https://pjreddie.com/darknet/install/))
+
+1) Instalar Darknet ([Instruções](https://pjreddie.com/darknet/install/))
 
 `git clone https://github.com/pjreddie/darknet`
 
