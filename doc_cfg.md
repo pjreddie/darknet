@@ -79,9 +79,9 @@ anchors = 0.738768,0.874946,  2.42204,2.65704,  4.30971,7.04493,  10.246,4.59428
 bias_match=1
 classes=80  | Numero de classes a detetar
 coords=4    |
-num=5       |
-softmax=1
-jitter=.2
+num=5       | means each cell predict 5 objects
+softmax=1   | It seems means use softmax.
+jitter=.2   | means in load picture random cut 0.2*width 0.2*height.
 rescore=1
 
 object_scale=5
