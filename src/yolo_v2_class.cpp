@@ -79,9 +79,9 @@ YOLODLL_API Detector::~Detector()
 	for (int j = 0; j < FRAMES; ++j) free(detector_gpu.predictions[j]);
 	for (int j = 0; j < FRAMES; ++j) if(detector_gpu.images[j].data) free(detector_gpu.images[j].data);
 
+	for (int j = 0; j < l.w*l.h*l.n; ++j) free(detector_gpu.probs[j]);
 	free(detector_gpu.boxes);
 	free(detector_gpu.probs);
-	for (int j = 0; j < l.w*l.h*l.n; ++j) free(detector_gpu.probs[j]);
 
 	int old_gpu_index;
 	cudaGetDevice(&old_gpu_index);
