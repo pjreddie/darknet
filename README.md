@@ -2,7 +2,7 @@
 
    ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
-> Este  um fork independente. O trabalho original está em [github/pjreddie](https://github.com/pjreddie/darknet)
+> Este é um fork independente. O trabalho original está em [github/pjreddie](https://github.com/pjreddie/darknet)
 
 Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
 
@@ -86,3 +86,8 @@ if `error Out of memory` occurs then in `.cfg-file` you should increase `subdivi
 ## Testar
 
 `./darknet detector test dataObjTeste_D/obj.data cfg/yolo-voc.cfg backup/tiny-yolo-voc_1730.weights dataObjTeste_D/images/1.jpg -thresh 0`
+
+## Fontes
+- [Darknet website](http://pjreddie.com/darknet) - Página oficial do projeto
+- [Google Group](https://groups.google.com/forum/#!forum/darknet) - Forum de dúvidas
+- [Github/AlexeyAB](https://github.com/AlexeyAB/darknet) - Versão para Windows
