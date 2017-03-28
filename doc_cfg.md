@@ -11,8 +11,8 @@ subdivisions=1
 ```
 
 ```
-width=416   | Resizing da imagens para estas dimensões, multiples of 32. Because network downsamples images by factors of 32.
-height=416  |
+width=416   | Resizing da imagens para estas dimensões, multiples of 32. 
+height=416  | Because network downsamples images by factors of 32.
 channels=3  | 3 para RGB
 ```
 
@@ -29,7 +29,8 @@ hue=.1              |
 ```
 
 ```
-learning_rate=0.001     | The learning rate is a parameter that determines how much an updating step influences the current value of the weights.
+learning_rate=0.001     | The learning rate is a parameter that determines how much an updating 
+                        | step influences the current value of the weights.
 max_batches = 120000    | Número max de iterações
 policy=steps            |
 steps=-1,100,80000,100000   |
@@ -42,7 +43,7 @@ A rede é essencialmente constituida por dois tipos de camadas, Convulutional e 
 
 As Conculutional podem ser fully conected ou não. 
 
-### Convolução
+#### Convolução
 
 ```
 [convolutional]
@@ -70,7 +71,7 @@ filters=40    | output of network: filters = (classes + coords + 1)*num
 activation=linear
 ```
 
-### Max Pool
+#### Max Pool
 Camada para reduzir a informação. Faz um pooling aos valores mais altos da matriz.
 ```
 [maxpool]
@@ -78,7 +79,7 @@ size=2      | Matrix
 stride=2    | A matriz move-se de 2 me dois
 ```
 
-## Outros parametros
+#### Outros parametros
 
 ```
 [region]
