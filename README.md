@@ -44,7 +44,7 @@ CUDNN=0 (opcional)
 OPENCV=1
 DEBUG=0
 ```
-Ver também se a arquitetura da gráfica é a correta. ([Compute Capability](https://developer.nvidia.com/cuda-gpus) [Wiki](https://en.wikipedia.org/wiki/CUDA#Supported_GPUs))
+Ver também se a arquitetura da gráfica é a correta. ([Compute Capability](https://developer.nvidia.com/cuda-gpus); [Wiki](https://en.wikipedia.org/wiki/CUDA#Supported_GPUs))
 
 `LN.6 ARCH=  -gencode arch=compute_52,code=compute_52`
 
