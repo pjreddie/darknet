@@ -19,7 +19,7 @@ Para questões ou erro use o [Google Group](https://groups.google.com/forum/#!fo
    - Funciona sem CUDA, mas o desempenho é muito mais lento, porque só utiliza 1 core do CPU. 
    - Para verificar qual a versão do CUDA instalado `nvcc --version`
    - Para verificar qual a gráfica instalada: `nvidia-smi`
-* **OpenCV 2.4.9**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.9/opencv-2.4.9.exe/download 
+* **OpenCV 2.4.9**: http://docs.opencv.org/2.4/doc/tutorials/introduction/linux_install/linux_install.html
    - Não testado com OpenCV 3
 * **Cmake** 
 
