@@ -31,13 +31,13 @@ Para questões ou erro use o [Google Group](https://groups.google.com/forum/#!fo
 
 > NOTA: Deve-se compilar o depois de fazer as alterações dos directórios nos ficheiros.
 
-2) Fazer train.txt
+1) Fazer train.txt
 
-3) Criar o obj.name
+1) Criar o obj.name
 
-4) Criar o obj.data
+1) Criar o obj.data
 
-5) Alterar a Makefile.
+1) Alterar a Makefile.
 ```
 GPU=1
 CUDNN=0 (opcional)
@@ -54,17 +54,17 @@ Para o caso de:
 
 * Tegra TX1 - Compute Capability 5.3 `"arch=compute_53,code=sm_53"`  
 
-6) Alterar o detector.c / yolo.c - Diretoriio do backup e train.txt
+1) Alterar o detector.c / yolo.c - Diretoriio do backup e train.txt
 
 alterar as linhas de nº x de backups
 
-7) Compilar o Darknet já com os directórios corretos.
+1) Compilar o Darknet já com os directórios corretos.
 ```
 cd darknet
 make
 ```
 
-8 ) alterar o yolo.cfg
+8) alterar o yolo.cfg
 
 ## How to improve object detection:
 
