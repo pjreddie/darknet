@@ -6,12 +6,12 @@ Contem a estrutura da rede (número de camadas, tipo de camadas, parametros hype
 
 ```
 [net]
-batch=1
+batch=1 | Network is processing 1 image in one forward pass
 subdivisions=1
 ```
 
 ```
-width=416   | Resizing da imagens para estas dimensões
+width=416   | Resizing da imagens para estas dimensões, multiples of 32. Because network downsamples images by factors of 32.
 height=416  |
 channels=3  | 3 para RGB
 ```
@@ -50,7 +50,7 @@ batch_normalize=1
 size=3
 stride=1
 pad=1
-filters=1024
+filters=1024    | output of network: filters = (classes + coords + 1)*num
 activation=leaky
 
 [route]
@@ -61,6 +61,13 @@ stride=2
 
 [route]
 layers=-1,-3
+
+[convolutional]
+size=1
+stride=1
+pad=1
+filters=40    | output of network: filters = (classes + coords + 1)*num
+activation=linear
 ```
 
 ### Max Pool
@@ -79,7 +86,7 @@ anchors = 0.738768,0.874946,  2.42204,2.65704,  4.30971,7.04493,  10.246,4.59428
 bias_match=1
 classes=80  | Numero de classes a detetar
 coords=4    |
-num=5       | means each cell predict 5 objects
+num=5       | number of anchors
 softmax=1   | It seems means use softmax.
 jitter=.2   | means in load picture random cut 0.2*width 0.2*height.
 rescore=1
