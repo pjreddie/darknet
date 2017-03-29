@@ -24,7 +24,7 @@ $ make darknet-cpp-shared
 
 This will generate the shared library, libdarknet-cpp-shared.so. Copy this into arapaho folder
 
-2. Copy the weights, cfg, data and image files for detection into the arapaho folder
+2. Copy the weights, cfg, data and image files for detection into the arapaho folder. These should be named as input.cfg, input.data, input.weights, input.jpg or input.mp4 etc
 
 $ cd arapaho
 $ ls input*
@@ -36,9 +36,9 @@ make arapaho
 
 NOTE: GPU and CUDNN flags have to match what was specified in the build of darknet library, in step 1. Change in the arapaho Makefile appropriately.
 
-4. Run arapaho
+4. Run arapaho test wrapper as below
 
-$ ./arapaho
+$ ./arapaho.out
 
 This will generate the below output from the test application. Using GetBoxes() API, this can be easily integrated into any C++ application.
 

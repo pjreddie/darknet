@@ -64,13 +64,13 @@ bool ArapahoV2::Setup(
     // Early exits
     if(!p.cfgfile)
     {
-        DPRINTF("No cfg file specified!\n");
+        EPRINTF("No cfg file specified!\n");
         return false;
     }
 
     if(!p.weightfile)
     {
-        DPRINTF("No weights file specified!\n");
+        EPRINTF("No weights file specified!\n");
         return false;
     }    
 
@@ -90,7 +90,7 @@ bool ArapahoV2::Setup(
     // Class limiter
     if(l.classes > maxClasses)
     {
-        DPRINTF("Warning: Read classes from cfg (%d) > maxClasses (%d)", l.classes, maxClasses);
+        EPRINTF("Warning: Read classes from cfg (%d) > maxClasses (%d)", l.classes, maxClasses);
     }    
     
     expectedHeight = net.h;
@@ -103,7 +103,7 @@ bool ArapahoV2::Setup(
     // Error exits
     if(!boxes || !probs)
     {
-        DPRINTF("Error allocating boxes/probs, %p/%p !\n", boxes, probs);
+        EPRINTF("Error allocating boxes/probs, %p/%p !\n", boxes, probs);
         goto clean_exit;
     }
 
@@ -112,7 +112,7 @@ bool ArapahoV2::Setup(
         probs[j] = (float*)calloc(l.classes + 1, sizeof(float));
         if(!probs[j])
         {
-            DPRINTF("Error allocating probs[%d]!\n", j);            
+            EPRINTF("Error allocating probs[%d]!\n", j);            
             goto clean_exit;
         }
     }
@@ -149,12 +149,12 @@ bool ArapahoV2::Detect(
     // Early exits
     if(!bSetup)
     {
-        DPRINTF("Not Setup!\n");
+        EPRINTF("Not Setup!\n");
         return false;
     }
     if(!imageBuff.bgr)
     {
-        DPRINTF("Error in imageBuff! [bgr = %d, w = %d, h = %d]\n",
+        EPRINTF("Error in imageBuff! [bgr = %d, w = %d, h = %d]\n",
                     !imageBuff.bgr, imageBuff.w != net.w, 
                         imageBuff.h != net.h);
         return false;        
@@ -166,7 +166,7 @@ bool ArapahoV2::Detect(
     if(!inputImage.data || inputImage.w != imageBuff.w || 
             inputImage.h != imageBuff.h)
     {
-        DPRINTF("Error in inputImage! [bgr = %d, w = %d, h = %d]\n", 
+        EPRINTF("Error in inputImage! [bgr = %d, w = %d, h = %d]\n", 
                     !inputImage.data, inputImage.w != net.w, 
                         inputImage.h != net.h);
         return false;        
@@ -193,7 +193,7 @@ bool ArapahoV2::Detect(
         if(!inputImage.data || inputImage.w != net.w || 
                 inputImage.h != net.h)
         {
-            DPRINTF("Error in resized img! [data = %d, w = %d, h = %d]\n",
+            EPRINTF("Error in resized img! [data = %d, w = %d, h = %d]\n",
                         !inputImage.data, inputImage.w != net.w, 
                             inputImage.h != net.h);
             return false;        
@@ -235,7 +235,7 @@ bool ArapahoV2::GetBoxes(box* outBoxes, int boxCount)
     
     if(!boxes || !probs)
     {
-        DPRINTF("Error NULL boxes/probs, %p/%p !\n", boxes, probs);
+        EPRINTF("Error NULL boxes/probs, %p/%p !\n", boxes, probs);
         return false;
     }
     for(i = 0; i < (l.w*l.h*l.n); ++i)
