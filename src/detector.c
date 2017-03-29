@@ -283,13 +283,21 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     int imagenet = 0;
     if(0==strcmp(type, "coco")){
         if(!outfile) outfile = "coco_results";
+#ifdef __linux__
         snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
+#else
+        _snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
+#endif
         fp = fopen(buff, "w");
         fprintf(fp, "[\n");
         coco = 1;
     } else if(0==strcmp(type, "imagenet")){
         if(!outfile) outfile = "imagenet-detection";
+#ifdef __linux__
         snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
+#else
+        _snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
+#endif
         fp = fopen(buff, "w");
         imagenet = 1;
         classes = 200;
@@ -297,7 +305,11 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
         if(!outfile) outfile = "comp4_det_test_";
         fps = (FILE**)calloc(classes, sizeof(FILE *));
         for(j = 0; j < classes; ++j){
+#ifdef __linux__
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+#else
+            _snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+#endif
             fps[j] = fopen(buff, "w");
         }
     }

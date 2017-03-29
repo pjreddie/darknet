@@ -43,7 +43,7 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
 
     l.biases = (float*)calloc(n, sizeof(float));
     l.bias_updates = (float*)calloc(n, sizeof(float));
-    float scale = 1./sqrt(size*size*c);
+    float scale = 1./sqrt((float)size*size*c);
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_normal();
     for(i = 0; i < n; ++i){
         l.biases[i] = scale;
