@@ -1,4 +1,4 @@
-![Darknet Logo](https://github.com/prabindh/darknet/arapaho/darknetcpplogo.png)
+![Darknet Logo](https://github.com/prabindh/darknet/blob/master/arapaho/darknetcpplogo.png)
 
 # Darknet-cpp
 
