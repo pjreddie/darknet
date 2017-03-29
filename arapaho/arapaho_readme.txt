@@ -99,9 +99,11 @@ load_convolutional_weights: l.n*l.c*l.size*l.size = 9437184
 load_convolutional_weights: l.n*l.c*l.size*l.size = 28311552
 load_convolutional_weights: l.n*l.c*l.size*l.size = 35840
 Done!
-Image data = 0x1e729100, w = 992, h = 620
-Detected 1 objects
-Box #0: x,y,w,h = [0.406521, 0.283362, 0.383790, 0.508666]
+Image data = 0x1de6e2c0, w = 256, h = 145
+Detect: Resizing image to match network 
+l.softmax_tree = (nil), nms = 0.400000
+==> Detected [1] objects in [0.160705] seconds
+Box #0: center {x,y}, box {w,h} = [0.173209, 0.341205, 0.252983, 0.250536]
 
 Exiting...
 
