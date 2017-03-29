@@ -10,14 +10,16 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 
 * The Linux build system supports 3 targets - 
   * original darknet (with gcc compiler), 
-  * darknet-cpp (with g++ compiler), and 
+  * darknet-cpp (with g++ compiler and Visual Studio compiler), and 
   * Shared library (libdarknet-cpp-shared.so)
 
 * Can use bounding boxes directly from Euclid object labeller (https://github.com/prabindh/euclid)
 
-* C++ API - arapaho, that works in conjunction with libdarknet-cpp-shared.so
+* C++ API - arapaho, that works in conjunction with libdarknet-cpp-shared.so, and a test wrapper that can read images or video files, and show detected regions in a complete C++ application.
 
 * darknet-cpp supports OpenCV3. Tested on Ubuntu 16.04 and windows, with CUDA 8.x
+
+* Note: darknet-cpp requires a C++11 compiler for arapaho builds.
 
 **Usage**
 
@@ -26,6 +28,7 @@ Using the Makefile in the root directory of the darknet source repository,
  * `make darknet` - only darknet (original code), with OPENCV=0
  * `make darknet-cpp` - only the CPP version, with OPENCV=1
  * `make darknet-cpp-shared` - build the shared-lib version (without darknet.c calling wrapper), OPENCV=1
+ * `make arapaho` - build arapaho and its test wrapper (from within arapaho folder)
  
 **Steps to train (Yolov2)**
 
