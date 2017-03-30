@@ -15,7 +15,7 @@ Refer arapaho.hpp,
 		bool GetBoxes(box* outBoxes, int boxCount);
 		
 
-Steps to build arapaho:
+Steps to build arapaho on Linux:
 
 1. Build the darknet shared library
 
@@ -113,3 +113,5 @@ NOTES:
 - Cleanup in the destructor is not properly done (core issue in darknet itself). This will be resolved in a later release.
 
 - For memory usage on GPU, refer to https://github.com/prabindh/darknet/blob/master/arapaho/Arapaho-GPU-Z%20Sensor-Log.txt
+
+- Windows build of Arapaho is supported through .sln files at https://github.com/prabindh/darknet-cpp-windows
