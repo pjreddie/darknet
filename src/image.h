@@ -8,12 +8,30 @@
 #include <math.h>
 #include "box.h"
 
+#ifndef __cplusplus
+#ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/core/version.hpp"
+#if CV_MAJOR_VERSION == 3
+#include "opencv2/videoio/videoio_c.h"
+#endif
+#endif
+#endif
+
 typedef struct {
     int h;
     int w;
     int c;
     float *data;
 } image;
+
+#ifndef __cplusplus
+#ifdef OPENCV
+image get_image_from_stream(CvCapture *cap);
+image ipl_to_image(IplImage* src);
+#endif
+#endif
 
 float get_color(int c, int x, int max);
 void flip_image(image a);

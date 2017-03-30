@@ -8,10 +8,6 @@
 #include "blas.h"
 #include "connected_layer.h"
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#endif
-
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh);
 extern void run_voxel(int argc, char **argv);

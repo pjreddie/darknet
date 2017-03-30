@@ -70,6 +70,15 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
     *(l.state_h_layer) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize);
     l.state_h_layer->batch = batch;
 
+#ifdef CUDNN
+        cudnnSetTensor4dDescriptor(l.input_z_layer->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.input_z_layer->out_c, l.input_z_layer->out_h, l.input_z_layer->out_w); 
+        cudnnSetTensor4dDescriptor(l.input_h_layer->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.input_h_layer->out_c, l.input_h_layer->out_h, l.input_h_layer->out_w); 
+        cudnnSetTensor4dDescriptor(l.input_r_layer->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.input_r_layer->out_c, l.input_r_layer->out_h, l.input_r_layer->out_w); 
+        cudnnSetTensor4dDescriptor(l.state_z_layer->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.state_z_layer->out_c, l.state_z_layer->out_h, l.state_z_layer->out_w); 
+        cudnnSetTensor4dDescriptor(l.state_h_layer->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.state_h_layer->out_c, l.state_h_layer->out_h, l.state_h_layer->out_w); 
+        cudnnSetTensor4dDescriptor(l.state_r_layer->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.state_r_layer->out_c, l.state_r_layer->out_h, l.state_r_layer->out_w); 
+#endif
+
     l.batch_normalize = batch_normalize;
 
 

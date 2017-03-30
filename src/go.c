@@ -6,10 +6,6 @@
 #include "data.h"
 #include <unistd.h>
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#endif
-
 int inverted = 1;
 int noi = 1;
 static const int nind = 2;
@@ -125,7 +121,7 @@ data random_go_moves(moves m, int n)
 }
 
 
-void train_go(char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
+void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ngpus, int clear)
 {
     int i;
     float avg_loss = -1;
@@ -150,7 +146,7 @@ void train_go(char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
     char *backup_directory = "/home/pjreddie/backup/";
 
     char buff[256];
-    moves m = load_go_moves("/home/pjreddie/backup/go.train");
+    moves m = load_go_moves(filename);
     //moves m = load_go_moves("games.txt");
 
     int N = m.n;
@@ -909,7 +905,7 @@ void run_go(int argc, char **argv)
     char *c2 = (argc > 5) ? argv[5] : 0;
     char *w2 = (argc > 6) ? argv[6] : 0;
     int multi = find_arg(argc, argv, "-multi");
-    if(0==strcmp(argv[2], "train")) train_go(cfg, weights, gpus, ngpus, clear);
+    if(0==strcmp(argv[2], "train")) train_go(cfg, weights, c2, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) valid_go(cfg, weights, multi, c2);
     else if(0==strcmp(argv[2], "self")) self_go(cfg, weights, c2, w2, multi);
     else if(0==strcmp(argv[2], "test")) test_go(cfg, weights, multi);

@@ -7,11 +7,6 @@
 #include "cuda.h"
 #include <sys/time.h>
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-image get_image_from_stream(CvCapture *cap);
-#endif
-
 void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
     int i;
@@ -185,7 +180,6 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
     cvNamedWindow("Regressor", CV_WINDOW_NORMAL); 
     cvResizeWindow("Regressor", 512, 512);
     float fps = 0;
-    int i;
 
     while(1){
         struct timeval tval_before, tval_after, tval_result;

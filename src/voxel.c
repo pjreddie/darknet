@@ -3,11 +3,6 @@
 #include "utils.h"
 #include "parser.h"
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-image get_image_from_stream(CvCapture *cap);
-#endif
-
 void extract_voxel(char *lfile, char *rfile, char *prefix)
 {
 #ifdef OPENCV

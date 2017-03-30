@@ -97,6 +97,12 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
 
         l.x_gpu = cuda_make_array(l.output, l.batch*outputs);
         l.x_norm_gpu = cuda_make_array(l.output, l.batch*outputs);
+#ifdef CUDNN
+        cudnnCreateTensorDescriptor(&l.normTensorDesc);
+        cudnnCreateTensorDescriptor(&l.dstTensorDesc);
+        cudnnSetTensor4dDescriptor(l.dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l.batch, l.out_c, l.out_h, l.out_w); 
+        cudnnSetTensor4dDescriptor(l.normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l.out_c, 1, 1); 
+#endif
     }
 #endif
     l.activation = activation;
@@ -213,11 +219,11 @@ void statistics_connected_layer(layer l)
         printf("Scales ");
         print_statistics(l.scales, l.outputs);
         /*
-        printf("Rolling Mean ");
-        print_statistics(l.rolling_mean, l.outputs);
-        printf("Rolling Variance ");
-        print_statistics(l.rolling_variance, l.outputs);
-        */
+           printf("Rolling Mean ");
+           print_statistics(l.rolling_mean, l.outputs);
+           printf("Rolling Variance ");
+           print_statistics(l.rolling_variance, l.outputs);
+         */
     }
     printf("Biases ");
     print_statistics(l.biases, l.outputs);

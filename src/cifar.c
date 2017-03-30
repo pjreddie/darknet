@@ -4,10 +4,6 @@
 #include "option_list.h"
 #include "blas.h"
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#endif
-
 void train_cifar(char *cfgfile, char *weightfile)
 {
     srand(time(0));
