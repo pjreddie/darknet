@@ -40,7 +40,7 @@ git clone https://github.com/prabindh/darknet
 
 https://github.com/prabindh/euclid
 
-This creates a training list file that will be needed in next step.
+This creates a training list file (train.txt) that will be needed in next step of training.
 
 * Change the files per below:
 
@@ -58,6 +58,16 @@ This creates a training list file that will be needed in next step.
   `./darknet-cpp detector train ./cfg/voc-myclasses.data ./cfg/yolo-myconfig.cfg darknet19_448.conv.23`
 
   * Atleast for the few initial iterations, observe the log output, and ensure all images are found and being used. After convergence, detection can be performed using standard steps.
+
+* Testing with Arapaho C++ API for detection
+
+  Arapaho needs the darknet-cpp shared library (.so file on Linux, .dll on Windows). This can be built as below on Linux.
+
+  `make darknet-cpp-shared`
+
+  On Windows port, the .dll is built by default.
+
+  Refer the file https://github.com/prabindh/darknet/blob/master/arapaho/arapaho_readme.txt for more details.
 
 # How to file issues
 
