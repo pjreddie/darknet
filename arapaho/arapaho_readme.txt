@@ -111,3 +111,5 @@ Exiting...
 NOTES:
 
 - Cleanup in the destructor is not properly done (core issue in darknet itself). This will be resolved in a later release.
+
+- For memory usage on GPU, refer to https://github.com/prabindh/darknet/blob/master/arapaho/Arapaho-GPU-Z%20Sensor-Log.txt
