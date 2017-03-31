@@ -154,7 +154,7 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh)
 	cudaSetDevice(net.gpu_index);
 	//std::cout << "net.gpu_index = " << net.gpu_index << std::endl;
 
-	float nms = .4;
+	//float nms = .4;
 
 	image im;
 	im.c = img.c;
@@ -189,6 +189,7 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh)
 			bbox.h = b.h*im.h;
 			bbox.obj_id = obj_id;
 			bbox.prob = prob;
+			bbox.track_id = 0;
 
 			bbox_vec.push_back(bbox);
 		}

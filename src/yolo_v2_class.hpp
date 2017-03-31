@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <deque>
+#include <algorithm>
 
 #ifdef OPENCV
 #include <opencv2/opencv.hpp>			// C++
@@ -18,6 +20,7 @@ struct bbox_t {
 	unsigned int x, y, w, h;	// (x,y) - top-left corner, (w, h) - width & height of bounded box
 	float prob;					// confidence - probability that the object was found correctly
 	unsigned int obj_id;		// class of object - from range [0, classes-1]
+	unsigned int track_id;		// tracking id for video (0 - untracked, 1 - inf - tracked object)
 };
 
 struct image_t {
@@ -31,6 +34,7 @@ struct image_t {
 class Detector {
 	std::shared_ptr<void> detector_gpu_ptr;
 public:
+	float nms = .4;
 
 	YOLODLL_API Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
 	YOLODLL_API ~Detector();
@@ -107,6 +111,59 @@ private:
 	}
 
 #endif	// OPENCV
+
+	std::deque<std::vector<bbox_t>> prev_bbox_vec_deque;
+
+public:
+	std::vector<bbox_t> tracking(std::vector<bbox_t> cur_bbox_vec, int const frames_story = 4)
+	{
+		bool prev_track_id_present = false;
+		for (auto &i : prev_bbox_vec_deque)
+			if (i.size() > 0) prev_track_id_present = true;
+
+		static unsigned int track_id = 1;
+
+		if(!prev_track_id_present) {
+			//track_id = 1;
+			for (size_t i = 0; i < cur_bbox_vec.size(); ++i)
+				cur_bbox_vec[i].track_id = track_id++;
+			prev_bbox_vec_deque.push_front(cur_bbox_vec);
+			if (prev_bbox_vec_deque.size() > frames_story) prev_bbox_vec_deque.pop_back();
+			return cur_bbox_vec;
+		}
+
+		std::vector<unsigned int> dist_vec(cur_bbox_vec.size(), std::numeric_limits<unsigned int>::max());
+
+		for (auto &prev_bbox_vec : prev_bbox_vec_deque) {
+			for (auto &i : prev_bbox_vec) {
+				int cur_index = -1;
+				for (size_t m = 0; m < cur_bbox_vec.size(); ++m) {
+					bbox_t const& k = cur_bbox_vec[m];
+					if (i.obj_id == k.obj_id) {
+						unsigned int cur_dist = sqrt(((float)i.x - k.x)*((float)i.x - k.x) + ((float)i.y - k.y)*((float)i.y - k.y));
+						if (cur_dist < 100 && (k.track_id == 0 || dist_vec[m] > cur_dist)) {
+							dist_vec[m] = cur_dist;
+							cur_index = m;
+						}
+					}
+				}
+
+				bool track_id_absent = !std::any_of(cur_bbox_vec.begin(), cur_bbox_vec.end(), [&](bbox_t const& b) { return b.track_id == i.track_id; });
+
+				if (cur_index >= 0 && track_id_absent)
+					cur_bbox_vec[cur_index].track_id = i.track_id;
+			}
+		}
+
+		for (size_t i = 0; i < cur_bbox_vec.size(); ++i)
+			if (cur_bbox_vec[i].track_id == 0)
+				cur_bbox_vec[i].track_id = track_id++;
+
+		prev_bbox_vec_deque.push_front(cur_bbox_vec);
+		if (prev_bbox_vec_deque.size() > frames_story) prev_bbox_vec_deque.pop_back();
+
+		return cur_bbox_vec;
+	}
 };
 
 
