@@ -35,7 +35,7 @@ static char INPUT_WEIGHTS_FILE[] = "input.weights";
 static char INPUT_AV_FILE[]      = "input.mp4"; //"input.jpg"; // Can take in either Video or Image file
 #define MAX_OBJECTS_PER_FRAME (100)
 
-#define TARGET_SHOW_FPS (1)
+#define TARGET_SHOW_FPS (10)
 
 //
 // Some utility functions
@@ -179,15 +179,15 @@ int main()
                         cvPoint(1 + arapahoImage.w*(boxes[0].x - boxes[0].w/2), 1 + arapahoImage.h*(boxes[0].y - boxes[0].h/2)),
                         cvPoint(1 + arapahoImage.w*(boxes[0].x + boxes[0].w/2), 1 + arapahoImage.h*(boxes[0].y + boxes[0].h/2)),
                         CV_RGB(255,0,0), 1, 8, 0);
-                imshow("Arapaho", image);
-                waitKey((1000/TARGET_SHOW_FPS));
-                
-                if(boxes) 
-                {
-                    delete[] boxes;
-                    boxes = NULL;
-                }
             }// If objects were detected
+            imshow("Arapaho", image);
+            waitKey((1000 / TARGET_SHOW_FPS));
+
+            if (boxes)
+            {
+                delete[] boxes;
+                boxes = NULL;
+            }
         } //If a frame was read
     }// Detection loop
     
