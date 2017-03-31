@@ -112,7 +112,7 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 5. If you want to build with CUDNN to speed up then:
       
-    * download and install CUDNN: https://developer.nvidia.com/cudnn
+    * download and install **cuDNN 5.1 for CUDA 8.0**: https://developer.nvidia.com/cudnn
       
     * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
       
