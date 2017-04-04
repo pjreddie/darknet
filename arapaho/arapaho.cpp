@@ -44,7 +44,7 @@ bool ArapahoV2::Setup(
     expectedHeight = expectedWidth = 0;
     
     // TODO
-#if 0    
+#if 1    
     if(!p.datacfg)
     {
         DPRINTF("No data configuration file specified!\n");
@@ -54,7 +54,7 @@ bool ArapahoV2::Setup(
     list *options = read_data_cfg(p.datacfg);
     char *name_list = option_find_str(options, "names", 
                             "data/names.list");
-    char **names = get_labels(name_list);
+    names = get_labels(name_list);
 #endif    
     int j;
     bool ret = false;
@@ -227,7 +227,7 @@ bool ArapahoV2::Detect(
 //
 // Query API to get box coordinates for objects detected
 //
-bool ArapahoV2::GetBoxes(box* outBoxes, int boxCount)
+bool ArapahoV2::GetBoxes(box* outBoxes, int boxCount, std::string* labels)
 {
     
     int count = 0;
@@ -244,6 +244,7 @@ bool ArapahoV2::GetBoxes(box* outBoxes, int boxCount)
         float prob = probs[i][class1];
         if(prob > threshold && count < boxCount)
         {
+            labels[count] = std::string(names[class1]);
             outBoxes[count ++] = boxes[i];
         }
     }

@@ -17,6 +17,7 @@
  *************************************************************************/
 
 #include "arapaho.hpp"
+#include <string>
 #include "opencv2/core/core.hpp"
 #include <opencv2/imgproc.hpp>
 #include "opencv2/highgui/highgui.hpp"
@@ -56,6 +57,7 @@ int main()
     bool ret = false;
     int expectedW = 0, expectedH = 0;
     box* boxes = 0;
+    std::string* labels;
     
     // Early exits
     if(!fileExists(INPUT_DATA_FILE) || !fileExists(INPUT_CFG_FILE) || !fileExists(INPUT_WEIGHTS_FILE))
@@ -162,6 +164,7 @@ int main()
             if(numObjects > 0 && numObjects < MAX_OBJECTS_PER_FRAME) // Realistic maximum
             {    
                 boxes = new box[numObjects];
+                labels = new std::string[numObjects];
                 if(!boxes)
                 {
                     if(p) delete p;
@@ -170,8 +173,9 @@ int main()
                 }
                 p->GetBoxes(
                     boxes,
-                    numObjects);
-                DPRINTF("Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n\n", 0, boxes[0].x, boxes[0].y, boxes[0].w, boxes[0].h);
+                    numObjects,
+                    labels);
+                DPRINTF("Label:%s, Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n\n", labels[0].c_str(), 0, boxes[0].x, boxes[0].y, boxes[0].w, boxes[0].h);
                 
                 
                 // Show image and overlay using OpenCV
