@@ -136,13 +136,14 @@ Then add to your created project:
 `..\..\3rdparty\lib\x64\pthreadVC2.lib;cublas.lib;curand.lib;cudart.lib;cudnn.lib;%(AdditionalDependencies)`
 - (right click on project) -> properties -> C/C++ -> Preprocessor -> Preprocessor Definitions
 
+`OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;GPU;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
+
 - open file: `\src\yolo.c` and change 3 lines to your OpenCV-version - `249` (for 2.4.9), `2413` (for 2.4.13), ... : 
 
     * `#pragma comment(lib, "opencv_core249.lib")`
     * `#pragma comment(lib, "opencv_imgproc249.lib")`
     * `#pragma comment(lib, "opencv_highgui249.lib")` 
 
-`OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;GPU;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
 - compile to .exe (X64 & Release) and put .dll-s near with .exe:
 
 `pthreadVC2.dll, pthreadGC2.dll` from \3rdparty\dll\x64
