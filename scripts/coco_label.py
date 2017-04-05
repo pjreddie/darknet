@@ -3,7 +3,8 @@
 # 需要先安装coco tools
 # git clone https://github.com/pdollar/coco.git
 # cd coco/PythonAPI
-# make install
+# make install(可能会缺少相关依赖，根据提示安装依赖即可)
+# 执行脚本前需在train2014和val2014目录下分别创建JPEGImages和labels目录，并将原来train2014和val2014目录下的图片移到JPEGImages下
 
 
 from pycocotools.coco import COCO
