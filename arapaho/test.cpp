@@ -171,27 +171,55 @@ int main()
                     p = 0;
                     return -1;
                 }
+                if(!labels)
+                {
+                    if(p) delete p;
+                    p = 0;
+                    if(boxes)
+                    {
+                        delete[] boxes;
+                        boxes = NULL;                        
+                    }
+                    return -1;
+                }
+                
+                // Get boxes and labels
                 p->GetBoxes(
                     boxes,
-                    numObjects,
-                    labels);
-                DPRINTF("Label:%s, Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n\n", labels[0].c_str(), 0, boxes[0].x, boxes[0].y, boxes[0].w, boxes[0].h);
-                
+                    labels,
+                    numObjects
+                    );
+
+                DPRINTF("Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n", 0, boxes[0].x, boxes[0].y, boxes[0].w, boxes[0].h);                
                 
                 // Show image and overlay using OpenCV
                 rectangle(image,
                         cvPoint(1 + arapahoImage.w*(boxes[0].x - boxes[0].w/2), 1 + arapahoImage.h*(boxes[0].y - boxes[0].h/2)),
                         cvPoint(1 + arapahoImage.w*(boxes[0].x + boxes[0].w/2), 1 + arapahoImage.h*(boxes[0].y + boxes[0].h/2)),
                         CV_RGB(255,0,0), 1, 8, 0);
+                // Show labels
+                if(labels[0].c_str())
+                {
+                    DPRINTF("Label:%s\n\n", labels[0].c_str());
+                    putText(image, labels[0].c_str(), cvPoint(1 + arapahoImage.w*(boxes[0].x - boxes[0].w/2), 1 + arapahoImage.h*(boxes[0].y - boxes[0].h/2)), 
+                             FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);        
+                }
+                
+                if (boxes)
+                {
+                    delete[] boxes;
+                    boxes = NULL;
+                }
+                if (labels)
+                {
+                    delete[] labels;
+                    labels = NULL;
+                }   
+                
             }// If objects were detected
             imshow("Arapaho", image);
             waitKey((1000 / TARGET_SHOW_FPS));
-
-            if (boxes)
-            {
-                delete[] boxes;
-                boxes = NULL;
-            }
+         
         } //If a frame was read
     }// Detection loop
     

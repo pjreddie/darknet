@@ -12,7 +12,7 @@ Refer arapaho.hpp,
 			float hier_thresh,
 			int & objectCount);
 
-		bool GetBoxes(box* outBoxes, int boxCount);
+		bool GetBoxes(box* outBoxes, std::string* outLabels, int boxCount);
 		
 
 Steps to build arapaho on Linux:
@@ -40,7 +40,7 @@ NOTE: GPU and CUDNN flags have to match what was specified in the build of darkn
 
 $ ./arapaho.out
 
-This will generate the below output from the test application. Using GetBoxes() API, this can be easily integrated into any C++ application.
+This will generate the below output from the test application. Using GetBoxes() API, this can be easily integrated into any C++ application
 
 ./a.out 
 layer     filters    size              input                output
@@ -104,7 +104,7 @@ Detect: Resizing image to match network
 l.softmax_tree = (nil), nms = 0.400000
 ==> Detected [1] objects in [0.160705] seconds
 Box #0: center {x,y}, box {w,h} = [0.173209, 0.341205, 0.252983, 0.250536]
-
+Label:<label_name>
 Exiting...
 
 

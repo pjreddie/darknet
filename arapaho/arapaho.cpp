@@ -14,7 +14,8 @@
 ArapahoV2::ArapahoV2()
 {
         boxes = 0;
-        probs = 0;    
+        probs = 0;
+        classNames = 0;
         l = {};
         net = {};
         maxClasses = 0;
@@ -30,8 +31,13 @@ ArapahoV2::~ArapahoV2()
         free(boxes);
     if(probs)
         free_ptrs((void **)probs, l.w*l.h*l.n);
+    if(classNames)
+    {
+        //todo
+    }
     boxes = 0;
     probs = 0;
+    classNames = 0;
     bSetup = false;
 }
     
@@ -43,8 +49,6 @@ bool ArapahoV2::Setup(
 {
     expectedHeight = expectedWidth = 0;
     
-    // TODO
-#if 1    
     if(!p.datacfg)
     {
         DPRINTF("No data configuration file specified!\n");
@@ -52,10 +56,21 @@ bool ArapahoV2::Setup(
     }    
     
     list *options = read_data_cfg(p.datacfg);
-    char *name_list = option_find_str(options, "names", 
-                            "data/names.list");
-    names = get_labels(name_list);
-#endif    
+    char nameField[] = "names";
+    char defaultName[] = "data/names.list";
+    char *nameListFile = option_find_str(options, nameField, defaultName);
+    if(!nameListFile)
+    {
+        DPRINTF("No valid nameList file specified in options file [%s]!\n", p.datacfg);
+        return false;
+    }
+    classNames = get_labels(nameListFile);
+    if(!classNames)
+    {
+        DPRINTF("No valid class names specified in nameList file [%s]!\n", nameListFile);
+        return false;
+    }
+
     int j;
     bool ret = false;
     
@@ -225,27 +240,28 @@ bool ArapahoV2::Detect(
 }
     
 //
-// Query API to get box coordinates for objects detected
+// Query API to get box coordinates and box labels for objects detected
 //
-bool ArapahoV2::GetBoxes(box* outBoxes, int boxCount, std::string* labels)
+bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
 {
     
     int count = 0;
     int i;
     
-    if(!boxes || !probs)
+    if(!boxes || !probs || !outLabels || !outBoxes)
     {
-        EPRINTF("Error NULL boxes/probs, %p/%p !\n", boxes, probs);
+        EPRINTF("Error NULL boxes/probs, %p, %p !\n", boxes, probs);
         return false;
     }
     for(i = 0; i < (l.w*l.h*l.n); ++i)
     {
-        int class1 = max_index(probs[i], l.classes);
-        float prob = probs[i][class1];
+        int classIndex = max_index(probs[i], l.classes);
+        float prob = probs[i][classIndex];
         if(prob > threshold && count < boxCount)
         {
-            labels[count] = std::string(names[class1]);
-            outBoxes[count ++] = boxes[i];
+            outLabels[count] = std::string(classNames[classIndex]);
+            outBoxes[count]  = boxes[i];
+            count ++;
         }
     }
     

@@ -73,10 +73,10 @@
 			float hier_thresh,
 			int & objectCount);
 
-		bool GetBoxes(box* outBoxes, int boxCount, std::string* labels);
+		bool GetBoxes(box* outBoxes, std::string* outLabels, int boxCount);
 	private:
 		box     *boxes;
-        char    **names;
+        char    **classNames;
 		float   **probs;
 		bool    bSetup;
 		network net;
