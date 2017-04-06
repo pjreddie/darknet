@@ -105,7 +105,7 @@ bool ArapahoV2::Setup(
     // Class limiter
     if(l.classes > maxClasses)
     {
-        EPRINTF("Warning: Read classes from cfg (%d) > maxClasses (%d)", l.classes, maxClasses);
+        EPRINTF("Warning: Read classes from cfg (%d) > maxClasses (%d)\n", l.classes, maxClasses);
     }    
     
     expectedHeight = net.h;
