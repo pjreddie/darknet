@@ -33,7 +33,7 @@ using namespace cv;
 static char INPUT_DATA_FILE[]    = "input.data"; 
 static char INPUT_CFG_FILE[]     = "input.cfg";
 static char INPUT_WEIGHTS_FILE[] = "input.weights";
-static char INPUT_AV_FILE[]      = "input.mp4"; //"input.jpg"; // Can take in either Video or Image file
+static char INPUT_AV_FILE[]      = "input.jpg"; //"input.mp4"; //// Can take in either Video or Image file
 #define MAX_OBJECTS_PER_FRAME (100)
 
 #define TARGET_SHOW_FPS (10)
@@ -126,6 +126,7 @@ int main()
             EPRINTF("cap.read failed/EoF - AV file %s\n", INPUT_AV_FILE);
             if(p) delete p;
             p = 0;
+            waitKey();
             return -1;
         }    
         if( image.empty() ) 
@@ -133,6 +134,7 @@ int main()
             EPRINTF("image.empty error - AV file %s\n", INPUT_AV_FILE);
             if(p) delete p;
             p = 0;
+            waitKey();
             return -1;
         }
         else
