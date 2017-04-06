@@ -191,20 +191,28 @@ int main()
                     labels,
                     numObjects
                     );
-
-                DPRINTF("Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n", 0, boxes[0].x, boxes[0].y, boxes[0].w, boxes[0].h);                
                 
-                // Show image and overlay using OpenCV
-                rectangle(image,
-                        cvPoint(1 + arapahoImage.w*(boxes[0].x - boxes[0].w/2), 1 + arapahoImage.h*(boxes[0].y - boxes[0].h/2)),
-                        cvPoint(1 + arapahoImage.w*(boxes[0].x + boxes[0].w/2), 1 + arapahoImage.h*(boxes[0].y + boxes[0].h/2)),
-                        CV_RGB(255,0,0), 1, 8, 0);
-                // Show labels
-                if(labels[0].c_str())
+                int objId = 0;
+                int leftTopX = 0, leftTopY = 0, rightBotX = 0,rightBotY = 0;
+                for (objId = 0; objId < numObjects; objId++)
                 {
-                    DPRINTF("Label:%s\n\n", labels[0].c_str());
-                    putText(image, labels[0].c_str(), cvPoint(1 + arapahoImage.w*(boxes[0].x - boxes[0].w/2), 1 + arapahoImage.h*(boxes[0].y - boxes[0].h/2)), 
-                             FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);        
+                    leftTopX = 1 + arapahoImage.w*(boxes[objId].x - boxes[objId].w / 2);
+                    leftTopY = 1 + arapahoImage.h*(boxes[objId].y - boxes[objId].h / 2);
+                    rightBotX = 1 + arapahoImage.w*(boxes[objId].x + boxes[objId].w / 2);
+                    rightBotY = 1 + arapahoImage.h*(boxes[objId].y + boxes[objId].h / 2);
+                    DPRINTF("Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n", objId, boxes[objId].x, boxes[objId].y, boxes[objId].w, boxes[objId].h);
+                    // Show image and overlay using OpenCV
+                    rectangle(image,
+                        cvPoint(leftTopX, leftTopY),
+                        cvPoint(rightBotX, rightBotY),
+                        CV_RGB(255, 0, 0), 1, 8, 0);
+                    // Show labels
+                    if (labels[objId].c_str())
+                    {
+                        DPRINTF("Label:%s\n\n", labels[objId].c_str());
+                        putText(image, labels[objId].c_str(), cvPoint(leftTopX, leftTopY),
+                            FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200, 200, 250), 1, CV_AA);
+                    }
                 }
                 
                 if (boxes)
