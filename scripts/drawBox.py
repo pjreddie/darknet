@@ -7,9 +7,19 @@ import os
 from os import listdir, getcwd
 from os.path import join
 
-sets = ['lxy']
+sets = ['ImageNet','20170401']
 
-classes = ['scissors', "tree"]
+#classes = ['door', 'jack', 'respirator']
+
+wd = getcwd()
+
+
+def get_dirs(sub_dir):
+    dirs = []
+    dirs_name = os.listdir(wd+'/'+sub_dir)
+    for dir_name in dirs_name:
+        dirs.append(dir_name)
+    return dirs
 
 
 def draw_box(img_path, ann_path, output_path):
@@ -22,7 +32,9 @@ def draw_box(img_path, ann_path, output_path):
         xmlbox = obj.find('bndbox')
         b = (int(xmlbox.find('xmin').text), int(xmlbox.find('xmax').text), int(xmlbox.find('ymin').text),
              int(xmlbox.find('ymax').text))
-        cv2.rectangle(input_img, (b[0], b[2]), (b[1], b[3]), (0, 0, 255))
+        cv2.rectangle(input_img, (b[0], b[2]), (b[1], b[3]), (0, 0, 255), thickness=2)
+        # cv2.putText(input_img, cls, (b[0], b[2]), cv2.FONT_HERSHEY_COMPLEX_SMALL, (0, 255, 0))
+        cv2.putText(input_img, cls, (b[0], b[2]), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), thickness=2)
     cv2.imwrite(out_path, input_img)
 
 
@@ -53,16 +65,19 @@ def GetFileList(FindPath, FlagStr=[]):
     return FileList
 
 
-wd = getcwd()
-
 for worker in sets:
-    for cat in classes:
+    dirs = get_dirs(worker)
+    for cat in dirs:
         if not os.path.exists('%s/%s/annotations/' % (worker, cat)):
             os.makedirs('%s/%s/annotations/' % (worker, cat))
-        image_ids = GetFileList('' + worker + '/' + cat + '/annotations/', ['xml'])
+        if not os.path.exists('%s/%s/output/' % (worker, cat)):
+            os.makedirs('%s/%s/output/' % (worker, cat))
+        image_ids = GetFileList(worker + '/' + cat + '/annotations/', ['xml'])
         for image_id in image_ids:
             print(image_id)
             img_path = worker + '/' + cat + '/images/' + image_id + '.jpg'
             ann_path = worker + '/' + cat + '/annotations/' + image_id + '.xml'
             out_path = worker + '/' + cat + '/output/' + image_id + '.jpg'
+            #print(img_path)
+            #print(out_path)
             draw_box(img_path, ann_path, out_path)
