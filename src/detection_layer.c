@@ -254,10 +254,10 @@ void get_detection_boxes(layer l, int w, int h, float thresh, float **probs, box
 
 void forward_detection_layer_gpu(const detection_layer l, network_state state)
 {
-    if(!state.train){
+    /*if(!state.train){
         copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
         return;
-    }
+    }*/
 
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
