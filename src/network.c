@@ -634,4 +634,16 @@ void free_network(network net)
     if(net.input_gpu) free(net.input_gpu);
     if(net.truth_gpu) free(net.truth_gpu);
 #endif
+
+    if(net.workspace_size){
+#ifdef GPU
+        if(net.gpu_index >= 0){
+            cuda_free(net.workspace);
+        }else {
+            free(net.workspace);
+        }
+#else
+        free(net.workspace);
+#endif
+    }
 }

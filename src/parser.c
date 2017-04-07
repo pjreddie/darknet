@@ -720,6 +720,7 @@ network parse_network_cfg(char *filename)
     free_list(sections);
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
+    net.workspace_size = workspace_size;
     if(workspace_size){
         //printf("%ld\n", workspace_size);
 #ifdef GPU
