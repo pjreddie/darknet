@@ -214,6 +214,11 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
                 image label = get_label(alphabet, names[class], (im.h*.03)/10);
+                if (im.c == 1) {
+                    rgb[0] = 0.5;
+                    rgb[1] = 0.5;
+                    rgb[2] = 0.5;
+                }
                 draw_label(im, top + width, left, label, rgb);
             }
         }
@@ -489,7 +494,7 @@ image load_image_cv(char *filename, int channels)
     }
     image out = ipl_to_image(src);
     cvReleaseImage(&src);
-    rgbgr_image(out);
+    if(channels == 3) rgbgr_image(out);
     return out;
 }
 
@@ -1112,16 +1117,19 @@ void exposure_image(image im, float sat)
 
 void distort_image(image im, float hue, float sat, float val)
 {
-    rgb_to_hsv(im);
-    scale_image_channel(im, 1, sat);
-    scale_image_channel(im, 2, val);
+    if(im.c == 3){
+        rgb_to_hsv(im);
+        scale_image_channel(im, 1, sat);
+        scale_image_channel(im, 2, val);
+    }
+
     int i;
     for(i = 0; i < im.w*im.h; ++i){
         im.data[i] = im.data[i] + hue;
         if (im.data[i] > 1) im.data[i] -= 1;
         if (im.data[i] < 0) im.data[i] += 1;
     }
-    hsv_to_rgb(im);
+    if(im.c == 3) hsv_to_rgb(im);
     constrain_image(im);
 }
 

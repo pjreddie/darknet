@@ -95,7 +95,7 @@ __device__ float bilinear_interpolate_kernel(float *image, int w, int h, float x
     return val;
 }
 
-__global__ void levels_image_kernel(float *image, float *rand, int batch, int w, int h, int train, float saturation, float exposure, float translate, float scale, float shift)
+__global__ void levels_image_kernel(float *image, float *rand, int batch, int w, int h, int c, int train, float saturation, float exposure, float translate, float scale, float shift)
 {
     int size = batch * w * h;
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -117,23 +117,34 @@ __global__ void levels_image_kernel(float *image, float *rand, int batch, int w,
     exposure = r2*(exposure - 1) + 1;
     exposure = (r3 > .5) ? 1./exposure : exposure;
 
-    size_t offset = id * h * w * 3;
+    size_t offset = id * h * w * c;
     image += offset;
-    float r = image[x + w*(y + h*0)];
-    float g = image[x + w*(y + h*1)];
-    float b = image[x + w*(y + h*2)];
-    float3 rgb = make_float3(r,g,b);
-    if(train){
-        float3 hsv = rgb_to_hsv_kernel(rgb);
-        hsv.y *= saturation;
-        hsv.z *= exposure;
-        rgb = hsv_to_rgb_kernel(hsv);
-    } else {
-        shift = 0;
-    }
-    image[x + w*(y + h*0)] = rgb.x*scale + translate + (rshift - .5)*shift;
-    image[x + w*(y + h*1)] = rgb.y*scale + translate + (gshift - .5)*shift;
-    image[x + w*(y + h*2)] = rgb.z*scale + translate + (bshift - .5)*shift;
+
+	if(c == 1) {
+		float g = image[x + w*(y + h*0)];
+		if(train) {
+			g *= exposure;
+		} else {
+			shift = 0;
+		}
+		image[x + w*(y + h*0)] = g*scale + translate + (rshift - .5)*shift;
+	} else {
+		float r = image[x + w*(y + h*0)];
+		float g = image[x + w*(y + h*1)];
+		float b = image[x + w*(y + h*2)];
+		float3 rgb = make_float3(r,g,b);
+		if(train){
+			float3 hsv = rgb_to_hsv_kernel(rgb);
+			hsv.y *= saturation;
+			hsv.z *= exposure;
+			rgb = hsv_to_rgb_kernel(hsv);
+		} else {
+			shift = 0;
+		}
+		image[x + w*(y + h*0)] = rgb.x*scale + translate + (rshift - .5)*shift;
+		image[x + w*(y + h*1)] = rgb.y*scale + translate + (gshift - .5)*shift;
+		image[x + w*(y + h*2)] = rgb.z*scale + translate + (bshift - .5)*shift;
+	}
 }
 
 __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, int c, int h, int w, int crop_height, int crop_width, int train, int flip, float angle, float *output)
@@ -195,7 +206,7 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
 
     int size = layer.batch * layer.w * layer.h;
 
-    levels_image_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, layer.rand_gpu, layer.batch, layer.w, layer.h, state.train, layer.saturation, layer.exposure, translate, scale, layer.shift);
+	levels_image_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, layer.rand_gpu, layer.batch, layer.w, layer.h, layer.c, state.train, layer.saturation, layer.exposure, translate, scale, layer.shift);
     check_error(cudaPeekAtLastError());
 
     size = layer.batch*layer.c*layer.out_w*layer.out_h;
