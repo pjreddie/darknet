@@ -178,6 +178,15 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 {
     int i;
     for(i = 0; i < n; ++i){
+#ifdef _ENABLE_ZERO_COORD_LABEL_FIX
+        if(boxes[i].x == 0 && boxes[i].y == 0) {
+            boxes[i].x = 0.001;
+            boxes[i].y = 0.001;
+            boxes[i].w = 0.001;
+            boxes[i].h = 0.001;
+            continue;
+        }        
+#else        
         if(boxes[i].x == 0 && boxes[i].y == 0) {
             boxes[i].x = 999999;
             boxes[i].y = 999999;
@@ -185,6 +194,7 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             boxes[i].h = 999999;
             continue;
         }
+#endif
         boxes[i].left   = boxes[i].left  * sx - dx;
         boxes[i].right  = boxes[i].right * sx - dx;
         boxes[i].top    = boxes[i].top   * sy - dy;

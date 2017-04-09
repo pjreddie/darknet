@@ -34,7 +34,7 @@ Using the Makefile in the root directory of the darknet source repository,
 
 * Download latest commit of darknet-cpp, ex
 
-git clone https://github.com/prabindh/darknet
+`git clone https://github.com/prabindh/darknet`
 
 * Create Yolo compatible training data-set. I use this to create Yolo compatible bounding box format file, and training list file. 
 
