@@ -347,6 +347,9 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
         int col = i % l.w;
         for(n = 0; n < l.n; ++n){
             int index = n*l.w*l.h + i;
+            for(j = 0; j < l.classes; ++j){
+                probs[index][j] = 0;
+            }
             int obj_index = entry_index(l, 0, n*l.w*l.h + i, 4);
             int box_index = entry_index(l, 0, n*l.w*l.h + i, 0);
             float scale = predictions[obj_index];
