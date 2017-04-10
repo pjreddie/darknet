@@ -5,7 +5,8 @@
 #include "stddef.h"
 #include "tree.h"
 
-struct network_state;
+struct network;
+typedef struct network network;
 
 struct layer;
 typedef struct layer layer;
@@ -45,11 +46,11 @@ struct layer{
     LAYER_TYPE type;
     ACTIVATION activation;
     COST_TYPE cost_type;
-    void (*forward)   (struct layer, struct network_state);
-    void (*backward)  (struct layer, struct network_state);
+    void (*forward)   (struct layer, struct network);
+    void (*backward)  (struct layer, struct network);
     void (*update)    (struct layer, int, float, float, float);
-    void (*forward_gpu)   (struct layer, struct network_state);
-    void (*backward_gpu)  (struct layer, struct network_state);
+    void (*forward_gpu)   (struct layer, struct network);
+    void (*backward_gpu)  (struct layer, struct network);
     void (*update_gpu)    (struct layer, int, float, float, float);
     int batch_normalize;
     int shortcut;
@@ -58,6 +59,8 @@ struct layer{
     int flipped;
     int inputs;
     int outputs;
+    int nweights;
+    int nbiases;
     int extra;
     int truths;
     int h,w,c;
@@ -176,6 +179,11 @@ struct layer{
 
     float * m;
     float * v;
+    
+    float * bias_m;
+    float * bias_v;
+    float * scale_m;
+    float * scale_v;
 
     float * z_cpu;
     float * r_cpu;
@@ -216,6 +224,10 @@ struct layer{
 
     float *m_gpu;
     float *v_gpu;
+    float *bias_m_gpu;
+    float *scale_m_gpu;
+    float *bias_v_gpu;
+    float *scale_v_gpu;
 
     float * prev_state_gpu;
     float * forgot_state_gpu;

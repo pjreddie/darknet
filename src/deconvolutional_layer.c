@@ -11,20 +11,11 @@
 
 
 static size_t get_workspace_size(layer l){
-    return (size_t)l.h*l.w*l.size*l.size*l.c*sizeof(float);
+    return (size_t)l.h*l.w*l.size*l.size*l.n*sizeof(float);
 }
 
-int deconvolutional_out_height(layer l)
-{
-    return (l.h) * l.stride + l.size/2 - l.pad;
-}
 
-int deconvolutional_out_width(layer l)
-{
-    return (l.w) * l.stride + l.size/2 - l.pad;
-}
-
-layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, ACTIVATION activation, int batch_normalize)
+layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int adam)
 {
     int i;
     layer l = {0};
@@ -38,26 +29,29 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
     l.stride = stride;
     l.size = size;
 
+    l.nweights = c*n*size*size;
+    l.nbiases = n;
+
     l.weights = calloc(c*n*size*size, sizeof(float));
     l.weight_updates = calloc(c*n*size*size, sizeof(float));
 
     l.biases = calloc(n, sizeof(float));
     l.bias_updates = calloc(n, sizeof(float));
-    float scale = 1./sqrt(size*size*c);
+    float scale = .02;
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_normal();
     for(i = 0; i < n; ++i){
-        l.biases[i] = scale;
+        l.biases[i] = 0;
     }
-    l.pad = l.size/2;
+    l.pad = padding;
 
-    l.out_h = (l.h) * l.stride + l.size/2 - l.pad;
-    l.out_w = (l.w) * l.stride + l.size/2 - l.pad;
+    l.out_h = (l.h - 1) * l.stride + l.size - 2*l.pad;
+    l.out_w = (l.w - 1) * l.stride + l.size - 2*l.pad;
     l.out_c = n;
     l.outputs = l.out_w * l.out_h * l.out_c;
     l.inputs = l.w * l.h * l.c;
 
-    l.output = calloc(l.batch*l.out_h * l.out_w * n, sizeof(float));
-    l.delta  = calloc(l.batch*l.out_h * l.out_w * n, sizeof(float));
+    l.output = calloc(l.batch*l.outputs, sizeof(float));
+    l.delta  = calloc(l.batch*l.outputs, sizeof(float));
 
     l.forward = forward_deconvolutional_layer;
     l.backward = backward_deconvolutional_layer;
@@ -83,6 +77,15 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
         l.x = calloc(l.batch*l.outputs, sizeof(float));
         l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
     }
+    if(adam){
+        l.adam = 1;
+        l.m = calloc(c*n*size*size, sizeof(float));
+        l.v = calloc(c*n*size*size, sizeof(float));
+        l.bias_m = calloc(n, sizeof(float));
+        l.scale_m = calloc(n, sizeof(float));
+        l.bias_v = calloc(n, sizeof(float));
+        l.scale_v = calloc(n, sizeof(float));
+    }
 
 #ifdef GPU
     l.forward_gpu = forward_deconvolutional_layer_gpu;
@@ -91,6 +94,14 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
 
     if(gpu_index >= 0){
 
+        if (adam) {
+            l.m_gpu = cuda_make_array(l.m, c*n*size*size);
+            l.v_gpu = cuda_make_array(l.v, c*n*size*size);
+            l.bias_m_gpu = cuda_make_array(l.bias_m, n);
+            l.bias_v_gpu = cuda_make_array(l.bias_v, n);
+            l.scale_m_gpu = cuda_make_array(l.scale_m, n);
+            l.scale_v_gpu = cuda_make_array(l.scale_v, n);
+        }
         l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
         l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
 
@@ -137,8 +148,8 @@ void resize_deconvolutional_layer(layer *l, int h, int w)
 {
     l->h = h;
     l->w = w;
-    l->out_h = (l->h) * l->stride + l->size/2 - l->pad;
-    l->out_w = (l->w) * l->stride + l->size/2 - l->pad;
+    l->out_h = (l->h - 1) * l->stride + l->size - 2*l->pad;
+    l->out_w = (l->w - 1) * l->stride + l->size - 2*l->pad;
 
     l->outputs = l->out_h * l->out_w * l->out_c;
     l->inputs = l->w * l->h * l->c;
@@ -172,12 +183,9 @@ void resize_deconvolutional_layer(layer *l, int h, int w)
     l->workspace_size = get_workspace_size(*l);
 }
 
-void forward_deconvolutional_layer(const layer l, network_state state)
+void forward_deconvolutional_layer(const layer l, network net)
 {
     int i;
-    int out_h = l.out_h;
-    int out_w = l.out_w;
-    int size = out_h*out_w;
 
     int m = l.size*l.size*l.n;
     int n = l.h*l.w;
@@ -187,60 +195,58 @@ void forward_deconvolutional_layer(const layer l, network_state state)
 
     for(i = 0; i < l.batch; ++i){
         float *a = l.weights;
-        float *b = state.input + i*l.c*l.h*l.w;
-        float *c = state.workspace;
+        float *b = net.input + i*l.c*l.h*l.w;
+        float *c = net.workspace;
 
-        gemm(1,0,m,n,k,1,a,m,b,n,0,c,n);
+        gemm_cpu(1,0,m,n,k,1,a,m,b,n,0,c,n);
 
-        col2im_cpu(c, l.n, out_h, out_w, l.size, l.stride, 0, l.output+i*l.n*size);
+        col2im_cpu(net.workspace, l.out_c, l.out_h, l.out_w, l.size, l.stride, l.pad, l.output+i*l.outputs);
     }
-
-    if(l.batch_normalize){
-        forward_batchnorm_layer(l, state);
+    if (l.batch_normalize) {
+        forward_batchnorm_layer(l, net);
     } else {
-        add_bias(l.output, l.biases, l.batch, l.n, l.out_h*l.out_w);
+        add_bias(l.output, l.biases, l.batch, l.n, l.out_w*l.out_h);
     }
-    activate_array(l.output, l.batch*l.n*size, l.activation);
+    activate_array(l.output, l.batch*l.n*l.out_w*l.out_h, l.activation);
 }
 
-void backward_deconvolutional_layer(layer l, network_state state)
+void backward_deconvolutional_layer(layer l, network net)
 {
-    float alpha = 1./l.batch;
-    int out_h = deconvolutional_out_height(l);
-    int out_w = deconvolutional_out_width(l);
-    int size = out_h*out_w;
     int i;
 
-    gradient_array(l.output, size*l.n*l.batch, l.activation, l.delta);
+    gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
+
     if(l.batch_normalize){
-        backward_batchnorm_layer(l, state);
+        backward_batchnorm_layer(l, net);
     } else {
         backward_bias(l.bias_updates, l.delta, l.batch, l.n, l.out_w*l.out_h);
     }
+
+    //if(net.delta) memset(net.delta, 0, l.batch*l.h*l.w*l.c*sizeof(float));
 
     for(i = 0; i < l.batch; ++i){
         int m = l.c;
         int n = l.size*l.size*l.n;
         int k = l.h*l.w;
 
-        float *a = state.input + i*m*n;
-        float *b = state.workspace;
+        float *a = net.input + i*m*k;
+        float *b = net.workspace;
         float *c = l.weight_updates;
 
-        im2col_cpu(l.delta + i*l.n*size, l.n, out_h, out_w, 
-                l.size, l.stride, 0, b);
-        gemm(0,1,m,n,k,alpha,a,k,b,k,1,c,n);
+        im2col_cpu(l.delta + i*l.outputs, l.out_c, l.out_h, l.out_w, 
+                l.size, l.stride, l.pad, b);
+        gemm_cpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
 
-        if(state.delta){
+        if(net.delta){
             int m = l.c;
             int n = l.h*l.w;
             int k = l.size*l.size*l.n;
 
             float *a = l.weights;
-            float *b = state.workspace;
-            float *c = state.delta + i*n*m;
+            float *b = net.workspace;
+            float *c = net.delta + i*n*m;
 
-            gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+            gemm_cpu(0,0,m,n,k,1,a,k,b,n,1,c,n);
         }
     }
 }

@@ -288,6 +288,25 @@ image image_distance(image a, image b)
     return dist;
 }
 
+void ghost_image(image source, image dest, int dx, int dy)
+{
+    int x,y,k;
+    float max_dist = sqrt((-source.w/2. + .5)*(-source.w/2. + .5));
+    for(k = 0; k < source.c; ++k){
+        for(y = 0; y < source.h; ++y){
+            for(x = 0; x < source.w; ++x){
+                float dist = sqrt((x - source.w/2. + .5)*(x - source.w/2. + .5) + (y - source.h/2. + .5)*(y - source.h/2. + .5));
+                float alpha = (1 - dist/max_dist);
+                if(alpha < 0) alpha = 0;
+                float v1 = get_pixel(source, x,y,k);
+                float v2 = get_pixel(dest, dx+x,dy+y,k);
+                float val = alpha*v1 + (1-alpha)*v2;
+                set_pixel(dest, dx+x, dy+y, k, val);
+            }
+        }
+    }
+}
+
 void embed_image(image source, image dest, int dx, int dy)
 {
     int x,y,k;

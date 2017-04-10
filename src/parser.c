@@ -154,8 +154,11 @@ layer parse_deconvolutional(list *options, size_params params)
     batch=params.batch;
     if(!(h && w && c)) error("Layer before deconvolutional layer must output image.");
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+    int pad = option_find_int_quiet(options, "pad",0);
+    int padding = option_find_int_quiet(options, "padding",0);
+    if(pad) padding = size/2;
 
-    layer l = make_deconvolutional_layer(batch,h,w,c,n,size,stride,activation, batch_normalize);
+    layer l = make_deconvolutional_layer(batch,h,w,c,n,size,stride,padding, activation, batch_normalize, params.net.adam);
 
     return l;
 }
@@ -546,7 +549,7 @@ void parse_net_options(list *options, network *net)
     if(net->adam){
         net->B1 = option_find_float(options, "B1", .9);
         net->B2 = option_find_float(options, "B2", .999);
-        net->eps = option_find_float(options, "eps", .000001);
+        net->eps = option_find_float(options, "eps", .00000001);
     }
 
     net->h = option_find_int_quiet(options, "height",0);
@@ -718,8 +721,18 @@ network parse_network_cfg(char *filename)
         }
     }   
     free_list(sections);
-    net.outputs = get_network_output_size(net);
-    net.output = get_network_output(net);
+    layer out = get_network_output_layer(net);
+    net.outputs = out.outputs;
+    net.truths = out.outputs;
+    if(net.layers[net.n-1].truths) net.truths = net.layers[net.n-1].truths;
+    net.output = out.output;
+    net.input = calloc(net.inputs*net.batch, sizeof(float));
+    net.truth = calloc(net.truths*net.batch, sizeof(float));
+#ifdef GPU
+    net.output_gpu = out.output_gpu;
+    net.input_gpu = cuda_make_array(net.input, net.inputs*net.batch);
+    net.truth_gpu = cuda_make_array(net.truth, net.truths*net.batch);
+#endif
     if(workspace_size){
         //printf("%ld\n", workspace_size);
 #ifdef GPU

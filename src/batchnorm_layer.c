@@ -132,14 +132,15 @@ void resize_batchnorm_layer(layer *layer, int w, int h)
     fprintf(stderr, "Not implemented\n");
 }
 
-void forward_batchnorm_layer(layer l, network_state state)
+void forward_batchnorm_layer(layer l, network net)
 {
-    if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, state.input, 1, l.output, 1);
+    if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, net.input, 1, l.output, 1);
     if(l.type == CONNECTED){
         l.out_c = l.outputs;
         l.out_h = l.out_w = 1;
     }
-    if(state.train){
+    copy_cpu(l.outputs*l.batch, l.output, 1, l.x, 1);
+    if(net.train){
         mean_cpu(l.output, l.batch, l.out_c, l.out_h*l.out_w, l.mean);
         variance_cpu(l.output, l.mean, l.batch, l.out_c, l.out_h*l.out_w, l.variance);
 
@@ -148,7 +149,6 @@ void forward_batchnorm_layer(layer l, network_state state)
         scal_cpu(l.out_c, .99, l.rolling_variance, 1);
         axpy_cpu(l.out_c, .01, l.variance, 1, l.rolling_variance, 1);
 
-        copy_cpu(l.outputs*l.batch, l.output, 1, l.x, 1);
         normalize_cpu(l.output, l.mean, l.variance, l.batch, l.out_c, l.out_h*l.out_w);   
         copy_cpu(l.outputs*l.batch, l.output, 1, l.x_norm, 1);
     } else {
@@ -158,8 +158,12 @@ void forward_batchnorm_layer(layer l, network_state state)
     add_bias(l.output, l.biases, l.batch, l.out_c, l.out_h*l.out_w);
 }
 
-void backward_batchnorm_layer(const layer l, network_state state)
+void backward_batchnorm_layer(layer l, network net)
 {
+    if(!net.train){
+        l.mean = l.rolling_mean;
+        l.variance = l.rolling_variance;
+    }
     backward_bias(l.bias_updates, l.delta, l.batch, l.out_c, l.out_w*l.out_h);
     backward_scale_cpu(l.x_norm, l.delta, l.batch, l.out_c, l.out_w*l.out_h, l.scale_updates);
 
@@ -168,7 +172,7 @@ void backward_batchnorm_layer(const layer l, network_state state)
     mean_delta_cpu(l.delta, l.variance, l.batch, l.out_c, l.out_w*l.out_h, l.mean_delta);
     variance_delta_cpu(l.x, l.delta, l.mean, l.variance, l.batch, l.out_c, l.out_w*l.out_h, l.variance_delta);
     normalize_delta_cpu(l.x, l.mean, l.variance, l.mean_delta, l.variance_delta, l.batch, l.out_c, l.out_w*l.out_h, l.delta);
-    if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, l.delta, 1, state.delta, 1);
+    if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, l.delta, 1, net.delta, 1);
 }
 
 #ifdef GPU
@@ -186,35 +190,35 @@ void push_batchnorm_layer(layer l)
     cuda_push_array(l.rolling_variance_gpu, l.rolling_variance, l.c);
 }
 
-void forward_batchnorm_layer_gpu(layer l, network_state state)
+void forward_batchnorm_layer_gpu(layer l, network net)
 {
-    if(l.type == BATCHNORM) copy_ongpu(l.outputs*l.batch, state.input, 1, l.output_gpu, 1);
+    if(l.type == BATCHNORM) copy_ongpu(l.outputs*l.batch, net.input_gpu, 1, l.output_gpu, 1);
     if(l.type == CONNECTED){
         l.out_c = l.outputs;
         l.out_h = l.out_w = 1;
     }
-    if (state.train) {
+    copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
+    if (net.train) {
 #ifdef CUDNN
-        copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
         float one = 1;
         float zero = 0;
         cudnnBatchNormalizationForwardTraining(cudnn_handle(),
-                    CUDNN_BATCHNORM_SPATIAL,
-                    &one,
-                    &zero,
-                    l.dstTensorDesc,
-                    l.x_gpu,
-                    l.dstTensorDesc,
-                    l.output_gpu,
-                    l.normTensorDesc,
-                    l.scales_gpu,
-                    l.biases_gpu,
-                    .01,
-                    l.rolling_mean_gpu,
-                    l.rolling_variance_gpu,
-                    .00001,
-                    l.mean_gpu,
-                    l.variance_gpu);
+                CUDNN_BATCHNORM_SPATIAL,
+                &one,
+                &zero,
+                l.dstTensorDesc,
+                l.x_gpu,
+                l.dstTensorDesc,
+                l.output_gpu,
+                l.normTensorDesc,
+                l.scales_gpu,
+                l.biases_gpu,
+                .01,
+                l.rolling_mean_gpu,
+                l.rolling_variance_gpu,
+                .00001,
+                l.mean_gpu,
+                l.variance_gpu);
 #else
         fast_mean_gpu(l.output_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.mean_gpu);
         fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.variance_gpu);
@@ -239,8 +243,12 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
 
 }
 
-void backward_batchnorm_layer_gpu(const layer l, network_state state)
+void backward_batchnorm_layer_gpu(layer l, network net)
 {
+    if(!net.train){
+        l.mean_gpu = l.rolling_mean_gpu;
+        l.variance_gpu = l.rolling_variance_gpu;
+    }
 #ifdef CUDNN
     float one = 1;
     float zero = 0;
@@ -274,6 +282,6 @@ void backward_batchnorm_layer_gpu(const layer l, network_state state)
     fast_variance_delta_gpu(l.x_gpu, l.delta_gpu, l.mean_gpu, l.variance_gpu, l.batch, l.out_c, l.out_w*l.out_h, l.variance_delta_gpu);
     normalize_delta_gpu(l.x_gpu, l.mean_gpu, l.variance_gpu, l.mean_delta_gpu, l.variance_delta_gpu, l.batch, l.out_c, l.out_w*l.out_h, l.delta_gpu);
 #endif
-    if(l.type == BATCHNORM) copy_ongpu(l.outputs*l.batch, l.delta_gpu, 1, state.delta, 1);
+    if(l.type == BATCHNORM) copy_ongpu(l.outputs*l.batch, l.delta_gpu, 1, net.delta_gpu, 1);
 }
 #endif

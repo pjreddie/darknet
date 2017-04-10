@@ -123,7 +123,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
         }
-        if(get_current_batch(net)%100 == 0){
+        if(get_current_batch(net)%1000 == 0){
             char buff[256];
             sprintf(buff, "%s/%s.backup",backup_directory,base);
             save_weights(net, buff);

@@ -142,10 +142,10 @@ int entry_index(layer l, int batch, int location, int entry)
 }
 
 void softmax_tree(float *input, int batch, int inputs, float temp, tree *hierarchy, float *output);
-void forward_region_layer(const layer l, network_state state)
+void forward_region_layer(const layer l, network net)
 {
     int i,j,b,t,n;
-    memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
+    memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
 
 #ifndef GPU
     for (b = 0; b < l.batch; ++b){
@@ -161,17 +161,17 @@ void forward_region_layer(const layer l, network_state state)
         int count = 5;
         for (i = 0; i < l.softmax_tree->groups; ++i) {
             int group_size = l.softmax_tree->group_size[i];
-            softmax_cpu(state.input + count, group_size, l.batch, l.inputs, l.n*l.w*l.h, 1, l.n*l.w*l.h, l.temperature, l.output + count);
+            softmax_cpu(net.input + count, group_size, l.batch, l.inputs, l.n*l.w*l.h, 1, l.n*l.w*l.h, l.temperature, l.output + count);
             count += group_size;
         }
     } else if (l.softmax){
         int index = entry_index(l, 0, 0, 5);
-        softmax_cpu(state.input + index, l.classes, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output + index);
+        softmax_cpu(net.input + index, l.classes, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output + index);
     }
 #endif
 
     memset(l.delta, 0, l.outputs * l.batch * sizeof(float));
-    if(!state.train) return;
+    if(!net.train) return;
     float avg_iou = 0;
     float recall = 0;
     float avg_cat = 0;
@@ -184,9 +184,9 @@ void forward_region_layer(const layer l, network_state state)
         if(l.softmax_tree){
             int onlyclass = 0;
             for(t = 0; t < 30; ++t){
-                box truth = float_to_box(state.truth + t*5 + b*l.truths, 1);
+                box truth = float_to_box(net.truth + t*5 + b*l.truths, 1);
                 if(!truth.x) break;
-                int class = state.truth[t*5 + b*l.truths + 4];
+                int class = net.truth[t*5 + b*l.truths + 4];
                 float maxp = 0;
                 int maxi = 0;
                 if(truth.x > 100000 && truth.y > 100000){
@@ -220,7 +220,7 @@ void forward_region_layer(const layer l, network_state state)
                     box pred = get_region_box(l.output, l.biases, n, box_index, i, j, l.w, l.h, l.w*l.h);
                     float best_iou = 0;
                     for(t = 0; t < 30; ++t){
-                        box truth = float_to_box(state.truth + t*5 + b*l.truths, 1);
+                        box truth = float_to_box(net.truth + t*5 + b*l.truths, 1);
                         if(!truth.x) break;
                         float iou = box_iou(pred, truth);
                         if (iou > best_iou) {
@@ -234,7 +234,7 @@ void forward_region_layer(const layer l, network_state state)
                         l.delta[obj_index] = 0;
                     }
 
-                    if(*(state.net.seen) < 12800){
+                    if(*(net.seen) < 12800){
                         box truth = {0};
                         truth.x = (i + .5)/l.w;
                         truth.y = (j + .5)/l.h;
@@ -246,7 +246,7 @@ void forward_region_layer(const layer l, network_state state)
             }
         }
         for(t = 0; t < 30; ++t){
-            box truth = float_to_box(state.truth + t*5 + b*l.truths, 1);
+            box truth = float_to_box(net.truth + t*5 + b*l.truths, 1);
 
             if(!truth.x) break;
             float best_iou = 0;
@@ -289,7 +289,7 @@ void forward_region_layer(const layer l, network_state state)
                 l.delta[obj_index] = l.object_scale * (iou - l.output[obj_index]);
             }
 
-            int class = state.truth[t*5 + b*l.truths + 4];
+            int class = net.truth[t*5 + b*l.truths + 4];
             if (l.map) class = l.map[class];
             int class_index = entry_index(l, b, best_n*l.w*l.h + j*l.w + i, 5);
             delta_region_class(l.output, l.delta, class_index, class, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat);
@@ -302,7 +302,7 @@ void forward_region_layer(const layer l, network_state state)
     printf("Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, Avg Recall: %f,  count: %d\n", avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count);
 }
 
-void backward_region_layer(const layer l, network_state state)
+void backward_region_layer(const layer l, network net)
 {
     /*
        int b;
@@ -311,11 +311,11 @@ void backward_region_layer(const layer l, network_state state)
        int index = (b*size + 4)*l.w*l.h;
        gradient_array(l.output + index, l.w*l.h, LOGISTIC, l.delta + index);
        }
-       axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
+       axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, net.delta, 1);
      */
 }
 
-void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness, int *map, float tree_thresh)
+void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness, int *map, float tree_thresh, int nomult)
 {
     int i,j,n,z;
     float *predictions = l.output;
@@ -358,10 +358,12 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
                 boxes[index].w *= (float)max/w;
                 boxes[index].h *= (float)max/h;
             }
-            boxes[index].x *= w;
-            boxes[index].y *= h;
-            boxes[index].w *= w;
-            boxes[index].h *= h;
+            if(!nomult){
+                boxes[index].x *= w;
+                boxes[index].y *= h;
+                boxes[index].w *= w;
+                boxes[index].h *= h;
+            }
 
             int class_index = entry_index(l, 0, n*l.w*l.h + i, 5);
             if(l.softmax_tree){
@@ -383,6 +385,9 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
                     int class_index = entry_index(l, 0, n*l.w*l.h + i, 5 + j);
                     float prob = scale*predictions[class_index];
                     probs[index][j] = (prob > thresh) ? prob : 0;
+                    // TODO REMOVE
+                    // if (j != 15 && j != 16) probs[index][j] = 0; 
+                    // if (j != 0) probs[index][j] = 0; 
                 }
             }
             if(only_objectness){
@@ -394,9 +399,9 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
 
 #ifdef GPU
 
-void forward_region_layer_gpu(const layer l, network_state state)
+void forward_region_layer_gpu(const layer l, network net)
 {
-    copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
+    copy_ongpu(l.batch*l.inputs, net.input_gpu, 1, l.output_gpu, 1);
     int b, n;
     for (b = 0; b < l.batch; ++b){
         for(n = 0; n < l.n; ++n){
@@ -412,40 +417,33 @@ void forward_region_layer_gpu(const layer l, network_state state)
         for (i = 0; i < l.softmax_tree->groups; ++i) {
             int group_size = l.softmax_tree->group_size[i];
             int index = entry_index(l, 0, 0, count);
-            softmax_gpu(state.input + index, group_size, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu + index);
+            softmax_gpu(net.input_gpu + index, group_size, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu + index);
             count += group_size;
         }
     } else if (l.softmax) {
         int index = entry_index(l, 0, 0, 5);
         //printf("%d\n", index);
-        softmax_gpu(state.input + index, l.classes, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu + index);
+        softmax_gpu(net.input_gpu + index, l.classes, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu + index);
     }
-    if(!state.train || l.onlyforward){
+    if(!net.train || l.onlyforward){
         cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
         return;
     }
 
-    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
-    if(state.truth){
+    if(net.truth_gpu){
         int num_truth = l.batch*l.truths;
         truth_cpu = calloc(num_truth, sizeof(float));
-        cuda_pull_array(state.truth, truth_cpu, num_truth);
+        cuda_pull_array(net.truth_gpu, truth_cpu, num_truth);
     }
-    cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
-    network_state cpu_state = state;
-    cpu_state.train = state.train;
-    cpu_state.truth = truth_cpu;
-    cpu_state.input = in_cpu;
-    forward_region_layer(l, cpu_state);
+    cuda_pull_array(l.output_gpu, net.input, l.batch*l.inputs);
+    forward_region_layer(l, net);
     //cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-    free(cpu_state.input);
-    if(!state.train) return;
+    if(!net.train) return;
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
-    if(cpu_state.truth) free(cpu_state.truth);
 }
 
-void backward_region_layer_gpu(const layer l, network_state state)
+void backward_region_layer_gpu(const layer l, network net)
 {
     int b, n;
     for (b = 0; b < l.batch; ++b){
@@ -456,7 +454,7 @@ void backward_region_layer_gpu(const layer l, network_state state)
             gradient_array_ongpu(l.output_gpu + index,   l.w*l.h, LOGISTIC, l.delta_gpu + index);
         }
     }
-   axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
+    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, net.delta_gpu, 1);
 }
 #endif
 

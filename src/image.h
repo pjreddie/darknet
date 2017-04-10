@@ -57,6 +57,7 @@ void normalize_image(image p);
 image rotate_image(image m, float rad);
 void rotate_image_cw(image im, int times);
 void embed_image(image source, image dest, int dx, int dy);
+void ghost_image(image source, image dest, int dx, int dy);
 void place_image(image im, int w, int h, int dx, int dy, image canvas);
 void saturate_image(image im, float sat);
 void exposure_image(image im, float sat);

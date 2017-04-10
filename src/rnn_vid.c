@@ -103,7 +103,9 @@ void train_vid_rnn(char *cfgfile, char *weightfile)
         time=clock();
         float_pair p = get_rnn_vid_data(extractor, paths, N, batch, steps);
 
-        float loss = train_network_datum(net, p.x, p.y) / (net.batch);
+        memcpy(net.input, p.x, net.inputs*net.batch);
+        memcpy(net.truth, p.y, net.truths*net.batch);
+        float loss = train_network_datum(net) / (net.batch);
 
 
         free(p.x);

@@ -348,6 +348,32 @@ void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
     save_weights(net, outfile);
 }
 
+void mkimg(char *cfgfile, char *weightfile, int h, int w, int num, char *prefix)
+{
+    network net = load_network(cfgfile, weightfile, 0);
+    image *ims = get_weights(net.layers[0]);
+    int n = net.layers[0].n;
+    int z;
+    for(z = 0; z < num; ++z){
+        image im = make_image(h, w, 3);
+        fill_image(im, .5);
+        int i;
+        for(i = 0; i < 100; ++i){
+            image r = copy_image(ims[rand()%n]);
+            rotate_image_cw(r, rand()%4);
+            random_distort_image(r, 1, 1.5, 1.5);
+            int dx = rand()%(w-r.w);
+            int dy = rand()%(h-r.h);
+            ghost_image(r, im, dx, dy);
+            free_image(r);
+        }
+        char buff[256];
+        sprintf(buff, "%s/gen_%d", prefix, z);
+        save_image(im, buff);
+        free_image(im);
+    }
+}
+
 void visualize(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
@@ -458,6 +484,8 @@ int main(int argc, char **argv)
         average(argc, argv);
     } else if (0 == strcmp(argv[1], "visualize")){
         visualize(argv[2], (argc > 3) ? argv[3] : 0);
+    } else if (0 == strcmp(argv[1], "mkimg")){
+        mkimg(argv[2], argv[3], atoi(argv[4]), atoi(argv[5]), atoi(argv[6]), argv[7]);
     } else if (0 == strcmp(argv[1], "imtest")){
         test_resize(argv[2]);
     } else {
