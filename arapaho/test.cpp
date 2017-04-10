@@ -102,7 +102,6 @@ int main()
     //
     
     // Setup image buffer here
-    ArapahoV2ImageBuff arapahoImage;
     Mat image;
 
     // Setup show window
@@ -144,18 +143,13 @@ int main()
             // Remember the time
             auto detectionStartTime = std::chrono::system_clock::now();
 
-            // Process the image
-            arapahoImage.bgr = image.data;
-            arapahoImage.w = image.size().width;
-            arapahoImage.h = image.size().height;
-            arapahoImage.channels = 3;
             // Using expectedW/H, can optimise scaling using HW in platforms where available
             
             int numObjects = 0;
             
             // Detect the objects in the image
             p->Detect(
-                arapahoImage,
+                image,
                 0.24,
                 0.5,
                 numObjects);
@@ -196,10 +190,10 @@ int main()
                 int leftTopX = 0, leftTopY = 0, rightBotX = 0,rightBotY = 0;
                 for (objId = 0; objId < numObjects; objId++)
                 {
-                    leftTopX = 1 + arapahoImage.w*(boxes[objId].x - boxes[objId].w / 2);
-                    leftTopY = 1 + arapahoImage.h*(boxes[objId].y - boxes[objId].h / 2);
-                    rightBotX = 1 + arapahoImage.w*(boxes[objId].x + boxes[objId].w / 2);
-                    rightBotY = 1 + arapahoImage.h*(boxes[objId].y + boxes[objId].h / 2);
+                    leftTopX = 1 + image.cols*(boxes[objId].x - boxes[objId].w / 2);
+                    leftTopY = 1 + image.rows*(boxes[objId].y - boxes[objId].h / 2);
+                    rightBotX = 1 + image.cols*(boxes[objId].x + boxes[objId].w / 2);
+                    rightBotY = 1 + image.rows*(boxes[objId].y + boxes[objId].h / 2);
                     DPRINTF("Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n", objId, boxes[objId].x, boxes[objId].y, boxes[objId].w, boxes[objId].h);
                     // Show image and overlay using OpenCV
                     rectangle(image,

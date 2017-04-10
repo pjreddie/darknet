@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <opencv2/opencv.hpp>
 #include "network.h"
 #include "detection_layer.h"
 #include "cost_layer.h"
@@ -47,13 +48,6 @@
 		float nms;
 		int maxClasses;
 	};
-	struct ArapahoV2ImageBuff
-	{
-		unsigned char* bgr;
-		int w;
-		int h;
-		int channels;
-	};
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +62,7 @@
 			int & expectedHeight);
 
 		bool Detect(
-			ArapahoV2ImageBuff & imageBuff,
+			const cv::Mat & inputMat,
 			float thresh,
 			float hier_thresh,
 			int & objectCount);
