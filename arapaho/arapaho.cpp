@@ -204,7 +204,9 @@ bool ArapahoV2::Detect(
     if (inputImage.h != net.h || inputImage.w != net.w)
     {
         DPRINTF("Detect: Resizing image to match network \n");
-        inputImage = resize_image(inputImage, net.w, net.h);
+        image inputpushImageTemp = resize_image(inputImage, net.w, net.h);
+        free_image(inputImage);
+        inputImage=inputImageTemp;
         if(!inputImage.data || inputImage.w != net.w || 
                 inputImage.h != net.h)
         {
@@ -235,7 +237,7 @@ bool ArapahoV2::Detect(
             objectCount ++;
         }
     }
-
+    free_image(inputImage);
     return true;
 }
     
