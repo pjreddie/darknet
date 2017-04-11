@@ -26,7 +26,7 @@ ArapahoV2::ArapahoV2()
     
 ArapahoV2::~ArapahoV2()
 {
-	// TODO - Massive cleanup here
+    // TODO - Massive cleanup here
     
     if(boxes) 
         free(boxes);
@@ -142,13 +142,96 @@ clean_exit:
         free(boxes);
     if(probs)
         free_ptrs((void **)probs, l.w*l.h*l.n);
-	boxes = NULL;
-	probs = NULL;
+    boxes = NULL;
+    probs = NULL;
     return ret;
 }
 
 //
 // Detect API to get objects detected
+// \warning Takes in raw image input as argument, converts to float and uses darknet image functions to resize. Can be slower.
+// Use the CV variant for performance
+// \warning Setup must have been done on the object before
+//
+bool ArapahoV2::Detect(
+    ArapahoV2ImageBuff & imageBuff,
+    float thresh,
+    float hier_thresh,
+    int & objectCount)
+{
+    int i, j, k, count = 0;
+
+    objectCount = 0;
+    threshold = thresh;
+
+    // Early exits
+    if (!bSetup)
+    {
+        EPRINTF("Not Setup!\n");
+        return false;
+    }
+    if (!imageBuff.bgr)
+    {
+        EPRINTF("Error in imageBuff! [bgr = %d, w = %d, h = %d]\n",
+            !imageBuff.bgr, imageBuff.w != net.w,
+            imageBuff.h != net.h);
+        return false;
+    }
+
+    // Get the image to suit darknet
+    image inputImage = make_image(imageBuff.w,
+        imageBuff.h, imageBuff.channels);
+    if (!inputImage.data || inputImage.w != imageBuff.w ||
+        inputImage.h != imageBuff.h)
+    {
+        EPRINTF("Error in inputImage! [bgr = %d, w = %d, h = %d]\n",
+            !inputImage.data, inputImage.w != net.w,
+            inputImage.h != net.h);
+        free_image(inputImage);
+        return false;
+    }
+    // Convert the bytes to float
+    int step = imageBuff.channels*imageBuff.w;
+    for (k = 0; k < imageBuff.channels; ++k){
+        for (i = 0; i < imageBuff.h; ++i){
+            for (j = 0; j < imageBuff.w; ++j){
+                int offset = i*step + j*imageBuff.channels + k;
+                inputImage.data[count++] =
+                    (float)imageBuff.bgr[offset] / (float)255.;
+            }
+        }
+    }
+    inputImage.h = imageBuff.h;
+    inputImage.w = imageBuff.w;
+    inputImage.c = imageBuff.channels;
+
+    if (inputImage.h != net.h || inputImage.w != net.w)
+    {
+        DPRINTF("Detect: Resizing image to match network \n");
+        // Free the original buffer, and assign a new resized buffer
+        image inputImageTemp = resize_image(inputImage, net.w, net.h);
+        free_image(inputImage);
+        inputImage = inputImageTemp;
+        if (!inputImage.data || inputImage.w != net.w ||
+            inputImage.h != net.h)
+        {
+            EPRINTF("Error in resized img! [data = %d, w = %d, h = %d]\n",
+                !inputImage.data, inputImage.w != net.w,
+                inputImage.h != net.h);
+            return false;
+        }
+    }
+    
+    __Detect(inputImage.data, thresh, hier_thresh, objectCount);
+
+    free_image(inputImage);
+    return true;
+}
+
+
+//
+// Detect API to get objects detected
+// \warning Takes in OpenCV Mat image structure as argument
 // \warning Setup must have been done on the object before
 //
 bool ArapahoV2::Detect(
@@ -157,7 +240,7 @@ bool ArapahoV2::Detect(
             float hier_thresh,
             int & objectCount)
 {
-    int i, j, k, count=0;
+    int i, count=0;
         
     objectCount = 0;
     threshold = thresh;
@@ -191,27 +274,7 @@ bool ArapahoV2::Detect(
     split(floatMat, floatMatChannels);
     vconcat(floatMatChannels, floatMat);
 
-    // Onto safe lands from here
-    // Predict
-    network_predict(net, (float*)floatMat.data);
-    get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0, hier_thresh);
-    
-    DPRINTF("l.softmax_tree = %p, nms = %f\n", l.softmax_tree, nms);
-    if (l.softmax_tree && nms)
-    {
-        do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-    }
-    else if (nms) 
-        do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-    
-    // Update object counts
-    for(i = 0; i < (l.w*l.h*l.n); ++i){
-        int class1 = max_index(probs[i], l.classes);
-        float prob = probs[i][class1];
-        if(prob > thresh){
-            objectCount ++;
-        }
-    }
+    __Detect((float*)floatMat.data, thresh, hier_thresh, objectCount);
 
     return true;
 }
@@ -243,4 +306,32 @@ bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
     }
     
     return true;
+}
+
+//////////////////////////////////////////////////////////////////
+/// Private APIs
+//////////////////////////////////////////////////////////////////
+void ArapahoV2::__Detect(float* inData, float thresh, float hier_thresh, int & objectCount)
+{
+    int i;
+    // Predict
+    network_predict(net, inData);
+    get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0, hier_thresh);
+
+    DPRINTF("l.softmax_tree = %p, nms = %f\n", l.softmax_tree, nms);
+    if (l.softmax_tree && nms)
+    {
+        do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    }
+    else if (nms)
+        do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+
+    // Update object counts
+    for (i = 0; i < (l.w*l.h*l.n); ++i){
+        int class1 = max_index(probs[i], l.classes);
+        float prob = probs[i][class1];
+        if (prob > thresh){
+            objectCount++;
+        }
+    }
 }

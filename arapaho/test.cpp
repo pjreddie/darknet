@@ -25,6 +25,9 @@
 #include <sys/stat.h>
 #include <chrono>
 
+// Use OpenCV for scaling the image (faster)
+#define _ENABLE_OPENCV_SCALING
+
 using namespace cv;
 
 //
@@ -33,7 +36,7 @@ using namespace cv;
 static char INPUT_DATA_FILE[]    = "input.data"; 
 static char INPUT_CFG_FILE[]     = "input.cfg";
 static char INPUT_WEIGHTS_FILE[] = "input.weights";
-static char INPUT_AV_FILE[]      = "input.jpg"; //"input.mp4"; //// Can take in either Video or Image file
+static char INPUT_AV_FILE[]      = "input.mp4"; //"input.jpg"; //// Can take in either Video or Image file
 #define MAX_OBJECTS_PER_FRAME (100)
 
 #define TARGET_SHOW_FPS (10)
@@ -102,6 +105,7 @@ int main()
     //
     
     // Setup image buffer here
+    ArapahoV2ImageBuff arapahoImage;
     Mat image;
 
     // Setup show window
@@ -119,6 +123,7 @@ int main()
     // Detection loop
     while(1)
     {
+        int imageWidthPixels = 0, imageHeightPixels = 0;
         bool success = cap.read(image); 
         if(!success)
         {
@@ -138,21 +143,36 @@ int main()
         }
         else
         {
-            DPRINTF("Image data = %p, w = %d, h = %d\n", image.data, image.size().width, image.size().height);
+            imageWidthPixels = image.size().width;
+            imageHeightPixels = image.size().height;
+            DPRINTF("Image data = %p, w = %d, h = %d\n", image.data, imageWidthPixels, imageHeightPixels);
             
             // Remember the time
             auto detectionStartTime = std::chrono::system_clock::now();
 
+            // Process the image
+            arapahoImage.bgr = image.data;
+            arapahoImage.w = imageWidthPixels;
+            arapahoImage.h = imageHeightPixels;
+            arapahoImage.channels = 3;
             // Using expectedW/H, can optimise scaling using HW in platforms where available
             
             int numObjects = 0;
             
+#ifdef _ENABLE_OPENCV_SCALING
             // Detect the objects in the image
             p->Detect(
                 image,
                 0.24,
                 0.5,
                 numObjects);
+#else
+            p->Detect(
+                arapahoImage,
+                0.24,
+                0.5,
+                numObjects);
+#endif
             std::chrono::duration<double> detectionTime = (std::chrono::system_clock::now() - detectionStartTime);
             
             printf("==> Detected [%d] objects in [%f] seconds\n", numObjects, detectionTime.count());
@@ -190,11 +210,12 @@ int main()
                 int leftTopX = 0, leftTopY = 0, rightBotX = 0,rightBotY = 0;
                 for (objId = 0; objId < numObjects; objId++)
                 {
-                    leftTopX = 1 + image.cols*(boxes[objId].x - boxes[objId].w / 2);
-                    leftTopY = 1 + image.rows*(boxes[objId].y - boxes[objId].h / 2);
-                    rightBotX = 1 + image.cols*(boxes[objId].x + boxes[objId].w / 2);
-                    rightBotY = 1 + image.rows*(boxes[objId].y + boxes[objId].h / 2);
-                    DPRINTF("Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n", objId, boxes[objId].x, boxes[objId].y, boxes[objId].w, boxes[objId].h);
+                    leftTopX = 1 + imageWidthPixels*(boxes[objId].x - boxes[objId].w / 2);
+                    leftTopY = 1 + imageHeightPixels*(boxes[objId].y - boxes[objId].h / 2);
+                    rightBotX = 1 + imageWidthPixels*(boxes[objId].x + boxes[objId].w / 2);
+                    rightBotY = 1 + imageHeightPixels*(boxes[objId].y + boxes[objId].h / 2);
+                    DPRINTF("Box #%d: center {x,y}, box {w,h} = [%f, %f, %f, %f]\n", 
+                            objId, boxes[objId].x, boxes[objId].y, boxes[objId].w, boxes[objId].h);
                     // Show image and overlay using OpenCV
                     rectangle(image,
                         cvPoint(leftTopX, leftTopY),
