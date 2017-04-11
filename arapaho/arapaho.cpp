@@ -184,6 +184,7 @@ bool ArapahoV2::Detect(
         EPRINTF("Error in inputImage! [bgr = %d, w = %d, h = %d]\n", 
                     !inputImage.data, inputImage.w != net.w, 
                         inputImage.h != net.h);
+        free_image(inputImage);                        
         return false;        
     }     
     // Convert the bytes to float
@@ -204,9 +205,10 @@ bool ArapahoV2::Detect(
     if (inputImage.h != net.h || inputImage.w != net.w)
     {
         DPRINTF("Detect: Resizing image to match network \n");
-        image inputpushImageTemp = resize_image(inputImage, net.w, net.h);
+        // Free the original buffer, and assign a new resized buffer
+        image inputImageTemp = resize_image(inputImage, net.w, net.h);
         free_image(inputImage);
-        inputImage=inputImageTemp;
+        inputImage = inputImageTemp;
         if(!inputImage.data || inputImage.w != net.w || 
                 inputImage.h != net.h)
         {
