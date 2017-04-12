@@ -558,6 +558,7 @@ void parse_net_options(list *options, network *net)
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
     net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
+    net->center = option_find_int_quiet(options, "center",0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);
@@ -835,8 +836,8 @@ void save_convolutional_weights(layer l, FILE *fp)
     }
     fwrite(l.weights, sizeof(float), num, fp);
     if(l.adam){
-        fwrite(l.m, sizeof(float), num, fp);
-        fwrite(l.v, sizeof(float), num, fp);
+        //fwrite(l.m, sizeof(float), num, fp);
+        //fwrite(l.v, sizeof(float), num, fp);
     }
 }
 
@@ -1039,8 +1040,8 @@ void load_convolutional_weights(layer l, FILE *fp)
     }
     fread(l.weights, sizeof(float), num, fp);
     if(l.adam){
-        fread(l.m, sizeof(float), num, fp);
-        fread(l.v, sizeof(float), num, fp);
+        //fread(l.m, sizeof(float), num, fp);
+        //fread(l.v, sizeof(float), num, fp);
     }
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {

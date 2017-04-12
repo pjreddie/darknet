@@ -42,6 +42,7 @@ load_args get_base_args(network net)
     args.angle = net.angle;
     args.aspect = net.aspect;
     args.exposure = net.exposure;
+    args.center = net.center;
     args.saturation = net.saturation;
     args.hue = net.hue;
     return args;
@@ -385,7 +386,7 @@ image get_network_image_layer(network net, int i)
 {
     layer l = net.layers[i];
 #ifdef GPU
-    cuda_pull_array(l.output_gpu, l.output, l.outputs);
+    //cuda_pull_array(l.output_gpu, l.output, l.outputs);
 #endif
     if (l.out_w && l.out_h && l.out_c){
         return float_to_image(l.out_w, l.out_h, l.out_c, l.output);

@@ -1113,27 +1113,9 @@ void run_classifier(int argc, char **argv)
     }
 
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
-    int *gpus = 0;
-    int gpu = 0;
-    int ngpus = 0;
-    if(gpu_list){
-        printf("%s\n", gpu_list);
-        int len = strlen(gpu_list);
-        ngpus = 1;
-        int i;
-        for(i = 0; i < len; ++i){
-            if (gpu_list[i] == ',') ++ngpus;
-        }
-        gpus = calloc(ngpus, sizeof(int));
-        for(i = 0; i < ngpus; ++i){
-            gpus[i] = atoi(gpu_list);
-            gpu_list = strchr(gpu_list, ',')+1;
-        }
-    } else {
-        gpu = gpu_index;
-        gpus = &gpu;
-        ngpus = 1;
-    }
+    int ngpus;
+    int *gpus = read_intlist(gpu_list, &ngpus, gpu_index);
+
 
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int top = find_int_arg(argc, argv, "-t", 0);

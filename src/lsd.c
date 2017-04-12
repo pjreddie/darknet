@@ -599,14 +599,14 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
         aloss_avg = aloss_avg*.9 + aloss*.1;
 
         printf("%d: adv: %f | adv_avg: %f, %f rate, %lf seconds, %d images\n", i, aloss, aloss_avg, get_current_rate(gnet), sec(clock()-time), i*imgs);
-        if(i%1000==0){
+        if(i%10000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(gnet, buff);
             sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
-        if(i%100==0){
+        if(i%1000==0){
             char buff[256];
             sprintf(buff, "%s/%s.backup", backup_directory, base);
             save_weights(gnet, buff);
@@ -620,8 +620,7 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
 #endif
 }
 
-/*
-void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int clear)
+void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int clear, int display)
 {
 #ifdef GPU
     //char *train_images = "/home/pjreddie/data/coco/train1.txt";
@@ -668,31 +667,19 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
 
-    network_state gstate = {0};
-    gstate.index = 0;
-    gstate.net = net;
-    int x_size = get_network_input_size(net)*net.batch;
+    int x_size = net.inputs*net.batch;
     int y_size = x_size;
-    gstate.input = cuda_make_array(0, x_size);
-    gstate.truth = cuda_make_array(0, y_size);
-    gstate.delta = 0;
-    gstate.train = 1;
+    net.delta = 0;
+    net.train = 1;
     float *pixs = calloc(x_size, sizeof(float));
     float *graypixs = calloc(x_size, sizeof(float));
     float *y = calloc(y_size, sizeof(float));
 
-    network_state astate = {0};
-    astate.index = 0;
-    astate.net = anet;
-    int ay_size = get_network_output_size(anet)*anet.batch;
-    astate.input = 0;
-    astate.truth = 0;
-    astate.delta = 0;
-    astate.train = 1;
+    int ay_size = anet.outputs*anet.batch;
+    anet.delta = 0;
+    anet.train = 1;
 
     float *imerror = cuda_make_array(0, imlayer.outputs*imlayer.batch);
-    float *ones_gpu = cuda_make_array(0, ay_size);
-    fill_ongpu(ay_size, 1, ones_gpu, 1);
 
     float aloss_avg = -1;
     float gloss_avg = -1;
@@ -712,8 +699,8 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
         for(j = 0; j < imgs; ++j){
             image gim = float_to_image(net.w, net.h, net.c, gray.X.vals[j]);
             grayscale_image_3c(gim);
-            train.y.vals[j][0] = 1;
-            gray.y.vals[j][0] = 0;
+            train.y.vals[j][0] = .95;
+            gray.y.vals[j][0] = .05;
         }
         time=clock();
         float gloss = 0;
@@ -721,9 +708,8 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
         for(j = 0; j < net.subdivisions; ++j){
             get_next_batch(train, net.batch, j*net.batch, pixs, 0);
             get_next_batch(gray, net.batch, j*net.batch, graypixs, 0);
-            cuda_push_array(gstate.input, graypixs, x_size);
-            cuda_push_array(gstate.truth, pixs, y_size);
-            */
+            cuda_push_array(net.input_gpu, graypixs, net.inputs*net.batch);
+            cuda_push_array(net.truth_gpu, pixs, net.truths*net.batch);
             /*
                image origi = float_to_image(net.w, net.h, 3, pixs);
                image grayi = float_to_image(net.w, net.h, 3, graypixs);
@@ -731,16 +717,15 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
                show_image(origi, "orig");
                cvWaitKey(0);
              */
-             /*
             *net.seen += net.batch;
-            forward_network_gpu(net, gstate);
+            forward_network_gpu(net);
 
             fill_ongpu(imlayer.outputs*imlayer.batch, 0, imerror, 1);
-            astate.input = imlayer.output_gpu;
-            astate.delta = imerror;
-            astate.truth = ones_gpu;
-            forward_network_gpu(anet, astate);
-            backward_network_gpu(anet, astate);
+            copy_ongpu(anet.inputs*anet.batch, imlayer.output_gpu, 1, anet.input_gpu, 1);
+            fill_ongpu(anet.inputs*anet.batch, .95, anet.truth_gpu, 1);
+            anet.delta_gpu = imerror;
+            forward_network_gpu(anet);
+            backward_network_gpu(anet);
 
             scal_ongpu(imlayer.outputs*imlayer.batch, 1./100., net.layers[net.n-1].delta_gpu, 1);
 
@@ -751,12 +736,11 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
 
             axpy_ongpu(imlayer.outputs*imlayer.batch, 1, imerror, 1, net.layers[net.n-1].delta_gpu, 1);
 
-            backward_network_gpu(net, gstate);
+            backward_network_gpu(net);
 
 
-            gloss += get_network_cost(net) /(net.subdivisions*net.batch);
+            gloss += *net.cost /(net.subdivisions*net.batch);
 
-            cuda_pull_array(imlayer.output_gpu, imlayer.output, imlayer.outputs*imlayer.batch);
             for(k = 0; k < net.batch; ++k){
                 int index = j*net.batch + k;
                 copy_cpu(imlayer.outputs, imlayer.output + k*imlayer.outputs, 1, gray.X.vals[index], 1);
@@ -769,6 +753,16 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
         float aloss = train_network(anet, merge);
 
         update_network_gpu(net);
+
+            #ifdef OPENCV
+        if(display){
+            image im = float_to_image(anet.w, anet.h, anet.c, gray.X.vals[0]);
+            image im2 = float_to_image(anet.w, anet.h, anet.c, train.X.vals[0]);
+            show_image(im, "gen");
+            show_image(im2, "train");
+            cvWaitKey(50);
+        }
+        #endif
         free_data(merge);
         free_data(train);
         free_data(gray);
@@ -797,7 +791,6 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     save_weights(net, buff);
 #endif
 }
-*/
 
 /*
 void train_lsd2(char *cfgfile, char *weightfile, char *acfgfile, char *aweightfile, int clear)
@@ -1136,6 +1129,7 @@ void run_lsd(int argc, char **argv)
     //else if(0==strcmp(argv[2], "traincolor")) train_colorizer(cfg, weights, acfg, aweights, clear);
     //else if(0==strcmp(argv[2], "train3")) train_lsd3(argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], clear);
     if(0==strcmp(argv[2], "traingan")) train_dcgan(cfg, weights, acfg, aweights, clear, display, file);
+    else if(0==strcmp(argv[2], "traincolor")) train_colorizer(cfg, weights, acfg, aweights, clear, display);
     else if(0==strcmp(argv[2], "gan")) test_dcgan(cfg, weights);
     else if(0==strcmp(argv[2], "test")) test_lsd(cfg, weights, filename, 0);
     else if(0==strcmp(argv[2], "color")) test_lsd(cfg, weights, filename, 1);

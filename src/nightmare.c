@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "blas.h"
 #include "utils.h"
+#include "region_layer.h"
 
 // ./darknet nightmare cfg/extractor.recon.cfg ~/trained/yolo-coco.conv frame6.png -reconstruct -iters 500 -i 3 -lambda .1 -rate .01 -smooth 2
 
@@ -137,11 +138,11 @@ void reconstruct_picture(network net, float *features, image recon, image update
 
 #ifdef GPU
         cuda_push_array(net.input_gpu, recon.data, recon.w*recon.h*recon.c);
-        cuda_push_array(net.truth_gpu, features, net.truths);
+        //cuda_push_array(net.truth_gpu, features, net.truths);
         net.delta_gpu = cuda_make_array(delta.data, delta.w*delta.h*delta.c);
 
         forward_network_gpu(net);
-        copy_ongpu(l.outputs, net.truth_gpu, 1, l.delta_gpu, 1);
+        cuda_push_array(l.delta_gpu, features, l.outputs);
         axpy_ongpu(l.outputs, -1, l.output_gpu, 1, l.delta_gpu, 1);
         backward_network_gpu(net);
 
@@ -157,13 +158,15 @@ void reconstruct_picture(network net, float *features, image recon, image update
         backward_network(net);
 #endif
 
+        //normalize_array(delta.data, delta.w*delta.h*delta.c);
         axpy_cpu(recon.w*recon.h*recon.c, 1, delta.data, 1, update.data, 1);
-        smooth(recon, update, lambda, smooth_size);
+        //smooth(recon, update, lambda, smooth_size);
 
         axpy_cpu(recon.w*recon.h*recon.c, rate, update.data, 1, recon.data, 1);
         scal_cpu(recon.w*recon.h*recon.c, momentum, update.data, 1);
 
-        //float mag = mag_array(recon.data, recon.w*recon.h*recon.c);
+        float mag = mag_array(delta.data, recon.w*recon.h*recon.c);
+        printf("mag: %f\n", mag);
         //scal_cpu(recon.w*recon.h*recon.c, 600/mag, recon.data, 1);
 
         constrain_image(recon);
@@ -330,28 +333,33 @@ void run_nightmare(int argc, char **argv)
     image update;
     if (reconstruct){
         net.n = max_layer;
-        resize_network(&net, im.w, im.h);
+        im = letterbox_image(im, net.w, net.h);
+        //resize_network(&net, im.w, im.h);
 
-        int zz = 0;
         network_predict(net, im.data);
-        image out_im = get_network_image(net);
-        image crop = crop_image(out_im, zz, zz, out_im.w-2*zz, out_im.h-2*zz);
+        if(net.layers[net.n-1].type == REGION){
+            printf("region!\n");
+            zero_objectness(net.layers[net.n-1]);
+        }
+        image out_im = copy_image(get_network_image(net));
+        /*
+           image crop = crop_image(out_im, zz, zz, out_im.w-2*zz, out_im.h-2*zz);
         //flip_image(crop);
         image f_im = resize_image(crop, out_im.w, out_im.h);
         free_image(crop);
+         */
         printf("%d features\n", out_im.w*out_im.h*out_im.c);
 
+        features = out_im.data;
 
-        im = resize_image(im, im.w, im.h);
-        f_im = resize_image(f_im, f_im.w, f_im.h);
-        features = f_im.data;
-
+        /*
         int i;
-        for(i = 0; i < 14*14*512; ++i){
-            //features[i] += rand_uniform(-.19, .19);
+           for(i = 0; i < 14*14*512; ++i){
+        //features[i] += rand_uniform(-.19, .19);
         }
         free_image(im);
         im = make_random_image(im.w, im.h, im.c);
+         */
         update = make_image(im.w, im.h, im.c);
     }
 

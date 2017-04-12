@@ -286,7 +286,7 @@ void push_convolutional_layer(convolutional_layer layer)
     }
 }
 
-void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch)
+void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t)
 {
     scal_ongpu(n, B1, m, 1);
     scal_ongpu(n, B2, v, 1);
@@ -296,7 +296,7 @@ void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2,
     mul_ongpu(n, d, 1, d, 1);
     axpy_ongpu(n, (1-B2), d, 1, v, 1);
 
-    adam_gpu(n, w, m, v, B1, B2, rate/batch, eps, 1000);
+    adam_gpu(n, w, m, v, B1, B2, rate/batch, eps, t);
     fill_ongpu(n, 0, d, 1);
 }
 
@@ -305,10 +305,10 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate, flo
     int size = l.size*l.size*l.c*l.n;
 
     if(l.adam){
-        adam_update_gpu(l.weights_gpu, l.weight_updates_gpu, l.m_gpu, l.v_gpu, l.B1, l.B2, l.eps, decay, learning_rate, size, batch);
-        adam_update_gpu(l.biases_gpu, l.bias_updates_gpu, l.bias_m_gpu, l.bias_v_gpu, l.B1, l.B2, l.eps, decay, learning_rate, l.n, batch);
+        adam_update_gpu(l.weights_gpu, l.weight_updates_gpu, l.m_gpu, l.v_gpu, l.B1, l.B2, l.eps, decay, learning_rate, size, batch, l.t);
+        adam_update_gpu(l.biases_gpu, l.bias_updates_gpu, l.bias_m_gpu, l.bias_v_gpu, l.B1, l.B2, l.eps, decay, learning_rate, l.n, batch, l.t);
         if(l.scales_gpu){
-            adam_update_gpu(l.scales_gpu, l.scale_updates_gpu, l.scale_m_gpu, l.scale_v_gpu, l.B1, l.B2, l.eps, decay, learning_rate, l.n, batch);
+            adam_update_gpu(l.scales_gpu, l.scale_updates_gpu, l.scale_m_gpu, l.scale_v_gpu, l.B1, l.B2, l.eps, decay, learning_rate, l.n, batch, l.t);
         }
     }else{
         axpy_ongpu(size, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);

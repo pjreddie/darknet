@@ -9,6 +9,7 @@ void forward_region_layer(const layer l, network net);
 void backward_region_layer(const layer l, network net);
 void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness, int *map, float tree_thresh, int nomult);
 void resize_region_layer(layer *l, int w, int h);
+void zero_objectness(layer l);
 
 #ifdef GPU
 void forward_region_layer_gpu(const layer l, network net);

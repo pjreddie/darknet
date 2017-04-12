@@ -187,6 +187,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
                 alphabet = 0;
             }
 
+            //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
             printf("%s: %.0f%%\n", names[class], prob*100);
             int offset = class*123457 % classes;
             float red = get_color(2,offset,classes);
@@ -641,6 +642,14 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)
     }
 }
 
+image center_crop_image(image im, int w, int h)
+{
+    int m = (im.w < im.h) ? im.w : im.h;   
+    image c = crop_image(im, (im.w - m) / 2, (im.h - m)/2, m, m);
+    image r = resize_image(c, w, h);
+    free_image(c);
+    return r;
+}
 
 image rotate_crop_image(image im, float rad, float s, int w, int h, float dx, float dy, float aspect)
 {

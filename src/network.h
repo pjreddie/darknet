@@ -47,6 +47,7 @@ typedef struct network{
     int h, w, c;
     int max_crop;
     int min_crop;
+    int center;
     float angle;
     float aspect;
     float exposure;

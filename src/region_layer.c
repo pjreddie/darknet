@@ -384,14 +384,24 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
                     probs[index][l.classes] = scale;
                 }
             } else {
+                float max = 0;
                 for(j = 0; j < l.classes; ++j){
                     int class_index = entry_index(l, 0, n*l.w*l.h + i, 5 + j);
                     float prob = scale*predictions[class_index];
                     probs[index][j] = (prob > thresh) ? prob : 0;
+                    if(prob > max) max = prob;
                     // TODO REMOVE
                     // if (j != 15 && j != 16) probs[index][j] = 0; 
-                    // if (j != 0) probs[index][j] = 0; 
+                    /*
+                     if (j != 0) probs[index][j] = 0; 
+                     int blacklist[] = {121, 497, 482, 504, 122, 518,481, 418, 542, 491, 914, 478, 120, 510,500};
+                     int bb;
+                     for (bb = 0; bb < sizeof(blacklist)/sizeof(int); ++bb){
+                        if(index == blacklist[bb]) probs[index][j] = 0;
+                     }
+                     */
                 }
+                probs[index][l.classes] = max;
             }
             if(only_objectness){
                 probs[index][0] = scale;
@@ -460,4 +470,15 @@ void backward_region_layer_gpu(const layer l, network net)
     axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, net.delta_gpu, 1);
 }
 #endif
+
+void zero_objectness(layer l)
+{
+    int i, n;
+    for (i = 0; i < l.w*l.h; ++i){
+        for(n = 0; n < l.n; ++n){
+            int obj_index = entry_index(l, 0, n*l.w*l.h + i, 4);
+            l.output[obj_index] = 0;
+        }
+    }
+}
 
