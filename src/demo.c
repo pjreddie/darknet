@@ -140,6 +140,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
     for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes, sizeof(float));
 
+    if(!prefix){
+        cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
+        cvMoveWindow("Demo", 0, 0);
+        cvResizeWindow("Demo", 1352, 1013);
+    }
+
     pthread_t fetch_thread;
     pthread_t detect_thread;
 
@@ -162,11 +168,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 
     int count = 0;
-    if(!prefix){
-        cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
-        cvMoveWindow("Demo", 0, 0);
-        cvResizeWindow("Demo", 1352, 1013);
-    }
 
     double before = get_wall_time();
 
