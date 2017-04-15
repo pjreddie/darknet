@@ -1,4 +1,3 @@
-
 ## images directory
 path_folder="$1"
 
