@@ -68,7 +68,7 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
-        get_region_boxes(l, in.w, in.h, demo_thresh, probs, boxes, 0, 0, demo_hier_thresh, 1);
+        get_region_boxes(l, in.w, in.h, net.w, net.h, demo_thresh, probs, boxes, 0, 0, demo_hier_thresh, 1);
     } else {
         error("Last layer must produce detections\n");
     }
@@ -96,7 +96,7 @@ double get_wall_time()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, float hier_thresh)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, float hier_thresh, int w, int h, int fps, int fullscreen)
 {
     //skip = frame_skip;
     image **alphabet = load_alphabet();
@@ -120,10 +120,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         cap = cvCaptureFromFile(filename);
     }else{
         cap = cvCaptureFromCAM(cam_index);
-        if(DEMO){
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, 1920);
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, 1080);
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, 60);
+
+        if(w){
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+        }
+        if(h){
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+        }
+        if(fps){
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, fps);
         }
     }
 
@@ -164,8 +169,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     int count = 0;
     if(!prefix){
         cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
-        cvMoveWindow("Demo", 0, 0);
-        cvResizeWindow("Demo", 1352, 1013);
+        if(fullscreen){
+            cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+        } else {
+            cvMoveWindow("Demo", 0, 0);
+            cvResizeWindow("Demo", 1352, 1013);
+        }
     }
 
     double before = get_wall_time();
@@ -184,6 +193,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
                     else if(frame_skip == 4) frame_skip = 0;
                     else if(frame_skip == 60) frame_skip = 4;   
                     else frame_skip = 0;
+                } else if (c == 27) {
+                    return;
+                } else if (c == 63232) {
+                    demo_thresh += .01;
+                } else if (c == 63233) {
+                    demo_thresh -= .01;
                 }
             }else{
                 char buff[256];
@@ -224,7 +239,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, float hier_thresh)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, float hier_thresh, int w, int h, int fps, int fullscreen)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

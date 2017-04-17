@@ -346,7 +346,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
             network_predict(net, input.data);
             int w = val[t].w;
             int h = val[t].h;
-            get_region_boxes(l, w, h, thresh, probs, boxes, 0, map, .5, 0);
+            get_region_boxes(l, w, h, net.w, net.h, thresh, probs, boxes, 0, map, .5, 0);
             if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, classes, nms);
             if (coco){
                 print_cocos(fp, path, boxes, probs, l.w*l.h*l.n, classes, w, h);
@@ -477,7 +477,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            get_region_boxes(l, w, h, thresh, probs, boxes, 0, map, .5, 0);
+            get_region_boxes(l, w, h, net.w, net.h, thresh, probs, boxes, 0, map, .5, 0);
             if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, classes, nms);
             if (coco){
                 print_cocos(fp, path, boxes, probs, l.w*l.h*l.n, classes, w, h);
@@ -541,7 +541,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
         image sized = resize_image(orig, net.w, net.h);
         char *id = basecfg(path);
         network_predict(net, sized.data);
-        get_region_boxes(l, 1, 1, thresh, probs, boxes, 1, 0, .5, 0);
+        get_region_boxes(l, sized.w, sized.h, net.w, net.h, thresh, probs, boxes, 1, 0, .5, 1);
         if (nms) do_nms(boxes, probs, l.w*l.h*l.n, 1, nms);
 
         char labelpath[4096];
@@ -624,16 +624,16 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         time=clock();
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0, hier_thresh, 0);
+        get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, 0, 0, hier_thresh, 1);
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(sized, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
+        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
         if(outfile){
-            save_image(sized, outfile);
+            save_image(im, outfile);
         }
         else{
-            save_image(sized, "predictions");
-            show_image(sized, "predictions");
+            save_image(im, "predictions");
+            show_image(im, "predictions");
 #ifdef OPENCV
             cvWaitKey(0);
             cvDestroyAllWindows();
@@ -684,6 +684,10 @@ void run_detector(int argc, char **argv)
     }
 
     int clear = find_arg(argc, argv, "-clear");
+    int fullscreen = find_arg(argc, argv, "-fullscreen");
+    int height = find_int_arg(argc, argv, "-h", 0);
+    int width = find_int_arg(argc, argv, "-w", 0);
+    int fps = find_int_arg(argc, argv, "-fps", 0);
 
     char *datacfg = argv[3];
     char *cfg = argv[4];
@@ -699,6 +703,6 @@ void run_detector(int argc, char **argv)
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, hier_thresh);
+        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, hier_thresh, width, height, fps, fullscreen);
     }
 }

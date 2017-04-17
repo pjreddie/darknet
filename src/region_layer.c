@@ -315,7 +315,35 @@ void backward_region_layer(const layer l, network net)
      */
 }
 
-void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness, int *map, float tree_thresh, int nomult)
+void correct_region_boxes(box *boxes, int n, int w, int h, int netw, int neth, int relative)
+{
+    int i;
+    int new_w=0;
+    int new_h=0;
+    if (((float)netw/w) < ((float)neth/h)) {
+        new_w = netw;
+        new_h = (h * netw)/w;
+    } else {
+        new_h = neth;
+        new_w = (w * neth)/h;
+    }
+    for (i = 0; i < n; ++i){
+        box b = boxes[i];
+        b.x =  (b.x - (netw - new_w)/2./netw) / ((float)new_w/netw); 
+        b.y =  (b.y - (neth - new_h)/2./neth) / ((float)new_h/neth); 
+        b.w *= (float)netw/new_w;
+        b.h *= (float)neth/new_h;
+        if(!relative){
+            b.x *= w;
+            b.w *= w;
+            b.y *= h;
+            b.h *= h;
+        }
+        boxes[i] = b;
+    }
+}
+
+void get_region_boxes(layer l, int w, int h, int netw, int neth, float thresh, float **probs, box *boxes, int only_objectness, int *map, float tree_thresh, int relative)
 {
     int i,j,n,z;
     float *predictions = l.output;
@@ -354,19 +382,6 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
             int box_index = entry_index(l, 0, n*l.w*l.h + i, 0);
             float scale = predictions[obj_index];
             boxes[index] = get_region_box(predictions, l.biases, n, box_index, col, row, l.w, l.h, l.w*l.h);
-            if(1){
-                int max = w > h ? w : h;
-                boxes[index].x =  (boxes[index].x - (max - w)/2./max) / ((float)w/max); 
-                boxes[index].y =  (boxes[index].y - (max - h)/2./max) / ((float)h/max); 
-                boxes[index].w *= (float)max/w;
-                boxes[index].h *= (float)max/h;
-            }
-            if(!nomult){
-                boxes[index].x *= w;
-                boxes[index].y *= h;
-                boxes[index].w *= w;
-                boxes[index].h *= h;
-            }
 
             int class_index = entry_index(l, 0, n*l.w*l.h + i, 5);
             if(l.softmax_tree){
@@ -393,12 +408,12 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
                     // TODO REMOVE
                     // if (j != 15 && j != 16) probs[index][j] = 0; 
                     /*
-                     if (j != 0) probs[index][j] = 0; 
-                     int blacklist[] = {121, 497, 482, 504, 122, 518,481, 418, 542, 491, 914, 478, 120, 510,500};
-                     int bb;
-                     for (bb = 0; bb < sizeof(blacklist)/sizeof(int); ++bb){
-                        if(index == blacklist[bb]) probs[index][j] = 0;
-                     }
+                       if (j != 0) probs[index][j] = 0; 
+                       int blacklist[] = {121, 497, 482, 504, 122, 518,481, 418, 542, 491, 914, 478, 120, 510,500};
+                       int bb;
+                       for (bb = 0; bb < sizeof(blacklist)/sizeof(int); ++bb){
+                       if(index == blacklist[bb]) probs[index][j] = 0;
+                       }
                      */
                 }
                 probs[index][l.classes] = max;
@@ -408,6 +423,7 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
             }
         }
     }
+    correct_region_boxes(boxes, l.w*l.h*l.n, w, h, netw, neth, relative);
 }
 
 #ifdef GPU
