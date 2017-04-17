@@ -29,7 +29,7 @@ static image disp = {0};
 static CvCapture * cap;
 static float fps = 0;
 static float demo_thresh = 0;
-static float demo_hier_thresh = .5;
+static float demo_hier = .5;
 
 static float *predictions[FRAMES];
 static int demo_index = 0;
@@ -38,13 +38,7 @@ static float *avg;
 
 void *fetch_in_thread(void *ptr)
 {
-    image raw = get_image_from_stream(cap);
-    if(DEMO){
-        in = center_crop_image(raw, 1440, 1080);
-        free_image(raw);
-    }else{
-        in = raw;
-    }
+    in = get_image_from_stream(cap);
     if(!in.data){
         error("Stream closed.");
     }
@@ -68,7 +62,7 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
-        get_region_boxes(l, in.w, in.h, net.w, net.h, demo_thresh, probs, boxes, 0, 0, demo_hier_thresh, 1);
+        get_region_boxes(l, in.w, in.h, net.w, net.h, demo_thresh, probs, boxes, 0, 0, demo_hier, 1);
     } else {
         error("Last layer must produce detections\n");
     }
@@ -96,7 +90,7 @@ double get_wall_time()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, float hier_thresh, int w, int h, int fps, int fullscreen)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, float hier, int w, int h, int frames, int fullscreen)
 {
     //skip = frame_skip;
     image **alphabet = load_alphabet();
@@ -105,7 +99,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     demo_alphabet = alphabet;
     demo_classes = classes;
     demo_thresh = thresh;
-    demo_hier_thresh = hier_thresh;
+    demo_hier = hier;
     printf("Demo\n");
     net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -127,8 +121,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         if(h){
             cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
         }
-        if(fps){
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, fps);
+        if(frames){
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, frames);
         }
     }
 
@@ -188,6 +182,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             if(!prefix){
                 show_image(disp, "Demo");
                 int c = cvWaitKey(1);
+                printf("%d\n", c);
                 if (c == 10){
                     if(frame_skip == 0) frame_skip = 60;
                     else if(frame_skip == 4) frame_skip = 0;
@@ -195,10 +190,16 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
                     else frame_skip = 0;
                 } else if (c == 27) {
                     return;
-                } else if (c == 63232) {
-                    demo_thresh += .01;
-                } else if (c == 63233) {
-                    demo_thresh -= .01;
+                } else if (c == 65362) {
+                    demo_thresh += .02;
+                } else if (c == 65364) {
+                    demo_thresh -= .02;
+                    if(demo_thresh <= .02) demo_thresh = .02;
+                } else if (c == 65363) {
+                    demo_hier += .02;
+                } else if (c == 65361) {
+                    demo_hier -= .02;
+                    if(demo_hier <= .0) demo_hier = .0;
                 }
             }else{
                 char buff[256];

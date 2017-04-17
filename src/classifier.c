@@ -703,8 +703,9 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         for(i = 0; i < top; ++i){
             int index = indexes[i];
-            if(net.hierarchy) printf("%d, %s: %f, parent: %s \n",index, names[index], predictions[index], (net.hierarchy->parent[index] >= 0) ? names[net.hierarchy->parent[index]] : "Root");
-            else printf("%s: %f\n",names[index], predictions[index]);
+            //if(net.hierarchy) printf("%d, %s: %f, parent: %s \n",index, names[index], predictions[index], (net.hierarchy->parent[index] >= 0) ? names[net.hierarchy->parent[index]] : "Root");
+            //else printf("%s: %f\n",names[index], predictions[index]);
+            printf("%5.2f%%: %s\n", predictions[index]*100, names[index]);
         }
         if(r.data != im.data) free_image(r);
         free_image(im);

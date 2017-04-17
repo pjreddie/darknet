@@ -685,8 +685,8 @@ void run_detector(int argc, char **argv)
 
     int clear = find_arg(argc, argv, "-clear");
     int fullscreen = find_arg(argc, argv, "-fullscreen");
-    int height = find_int_arg(argc, argv, "-h", 0);
     int width = find_int_arg(argc, argv, "-w", 0);
+    int height = find_int_arg(argc, argv, "-h", 0);
     int fps = find_int_arg(argc, argv, "-fps", 0);
 
     char *datacfg = argv[3];

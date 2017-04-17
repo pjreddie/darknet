@@ -719,9 +719,7 @@ image crop_image(image im, int dx, int dy, int w, int h)
                 float val = 0;
                 r = constrain_int(r, 0, im.h-1);
                 c = constrain_int(c, 0, im.w-1);
-                if (r >= 0 && r < im.h && c >= 0 && c < im.w) {
-                    val = get_pixel(im, c, r, k);
-                }
+                val = get_pixel(im, c, r, k);
                 set_pixel(cropped, i, j, k, val);
             }
         }
@@ -899,7 +897,7 @@ void yuv_to_rgb(image im)
             y = get_pixel(im, i , j, 0);
             u = get_pixel(im, i , j, 1);
             v = get_pixel(im, i , j, 2);
-            
+
             r = y + 1.13983*v;
             g = y + -.39465*u + -.58060*v;
             b = y + 2.03211*u;
@@ -922,7 +920,7 @@ void rgb_to_yuv(image im)
             r = get_pixel(im, i , j, 0);
             g = get_pixel(im, i , j, 1);
             b = get_pixel(im, i , j, 2);
-            
+
             y = .299*r + .587*g + .114*b;
             u = -.14713*r + -.28886*g + .436*b;
             v = .615*r + -.51499*g + -.10001*b;
