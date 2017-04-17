@@ -70,13 +70,13 @@ void resize_route_layer(route_layer *l, network *net)
     
 }
 
-void forward_route_layer(const route_layer l, network_state state)
+void forward_route_layer(const route_layer l, network net)
 {
     int i, j;
     int offset = 0;
     for(i = 0; i < l.n; ++i){
         int index = l.input_layers[i];
-        float *input = state.net.layers[index].output;
+        float *input = net.layers[index].output;
         int input_size = l.input_sizes[i];
         for(j = 0; j < l.batch; ++j){
             copy_cpu(input_size, input + j*input_size, 1, l.output + offset + j*l.outputs, 1);
@@ -85,13 +85,13 @@ void forward_route_layer(const route_layer l, network_state state)
     }
 }
 
-void backward_route_layer(const route_layer l, network_state state)
+void backward_route_layer(const route_layer l, network net)
 {
     int i, j;
     int offset = 0;
     for(i = 0; i < l.n; ++i){
         int index = l.input_layers[i];
-        float *delta = state.net.layers[index].delta;
+        float *delta = net.layers[index].delta;
         int input_size = l.input_sizes[i];
         for(j = 0; j < l.batch; ++j){
             axpy_cpu(input_size, 1, l.delta + offset + j*l.outputs, 1, delta + j*input_size, 1);
@@ -101,13 +101,13 @@ void backward_route_layer(const route_layer l, network_state state)
 }
 
 #ifdef GPU
-void forward_route_layer_gpu(const route_layer l, network_state state)
+void forward_route_layer_gpu(const route_layer l, network net)
 {
     int i, j;
     int offset = 0;
     for(i = 0; i < l.n; ++i){
         int index = l.input_layers[i];
-        float *input = state.net.layers[index].output_gpu;
+        float *input = net.layers[index].output_gpu;
         int input_size = l.input_sizes[i];
         for(j = 0; j < l.batch; ++j){
             copy_ongpu(input_size, input + j*input_size, 1, l.output_gpu + offset + j*l.outputs, 1);
@@ -116,13 +116,13 @@ void forward_route_layer_gpu(const route_layer l, network_state state)
     }
 }
 
-void backward_route_layer_gpu(const route_layer l, network_state state)
+void backward_route_layer_gpu(const route_layer l, network net)
 {
     int i, j;
     int offset = 0;
     for(i = 0; i < l.n; ++i){
         int index = l.input_layers[i];
-        float *delta = state.net.layers[index].delta_gpu;
+        float *delta = net.layers[index].delta_gpu;
         int input_size = l.input_sizes[i];
         for(j = 0; j < l.batch; ++j){
             axpy_ongpu(input_size, 1, l.delta_gpu + offset + j*l.outputs, 1, delta + j*input_size, 1);

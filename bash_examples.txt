@@ -1,5 +1,0 @@
-./darknet detector test cfg/coco.data cfg/yolo.cfg yolo.weights data/dog.jpg
-
-./darknet detector test cfg/coco.data cfg/yolo.cfg yolo.weights data/dog.jpg -thresh 0.1
-
-./darknet detector test cfg/combine9k.data cfg/yolo9000.cfg yolo9000.weights data/dog.jpg

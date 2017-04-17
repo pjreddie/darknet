@@ -6,14 +6,14 @@
 #include "layer.h"
 #include "network.h"
 
-layer make_reorg_layer(int batch, int h, int w, int c, int stride, int reverse);
+layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse, int flatten, int extra);
 void resize_reorg_layer(layer *l, int w, int h);
-void forward_reorg_layer(const layer l, network_state state);
-void backward_reorg_layer(const layer l, network_state state);
+void forward_reorg_layer(const layer l, network net);
+void backward_reorg_layer(const layer l, network net);
 
 #ifdef GPU
-void forward_reorg_layer_gpu(layer l, network_state state);
-void backward_reorg_layer_gpu(layer l, network_state state);
+void forward_reorg_layer_gpu(layer l, network net);
+void backward_reorg_layer_gpu(layer l, network net);
 #endif
 
 #endif

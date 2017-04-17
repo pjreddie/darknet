@@ -10,11 +10,9 @@
 #include <sys/time.h>
 
 #define FRAMES 3
+#define DEMO 1
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-image get_image_from_stream(CvCapture *cap);
 
 static char **demo_names;
 static image **demo_alphabet;
@@ -40,11 +38,17 @@ static float *avg;
 
 void *fetch_in_thread(void *ptr)
 {
-    in = get_image_from_stream(cap);
+    image raw = get_image_from_stream(cap);
+    if(DEMO){
+        in = center_crop_image(raw, 1440, 1080);
+        free_image(raw);
+    }else{
+        in = raw;
+    }
     if(!in.data){
         error("Stream closed.");
     }
-    in_s = resize_image(in, net.w, net.h);
+    in_s = letterbox_image(in, net.w, net.h);
     return 0;
 }
 
@@ -64,11 +68,11 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
-        get_region_boxes(l, 1, 1, demo_thresh, probs, boxes, 0, 0, demo_hier_thresh);
+        get_region_boxes(l, in.w, in.h, demo_thresh, probs, boxes, 0, 0, demo_hier_thresh, 1);
     } else {
         error("Last layer must produce detections\n");
     }
-    if (nms > 0) do_nms(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    if (nms > 0) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
@@ -116,6 +120,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         cap = cvCaptureFromFile(filename);
     }else{
         cap = cvCaptureFromCAM(cam_index);
+        if(DEMO){
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, 1920);
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, 1080);
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, 60);
+        }
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");

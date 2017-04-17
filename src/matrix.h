@@ -6,6 +6,7 @@ typedef struct matrix{
 } matrix;
 
 matrix make_matrix(int rows, int cols);
+matrix copy_matrix(matrix m);
 void free_matrix(matrix m);
 void print_matrix(matrix m);
 
