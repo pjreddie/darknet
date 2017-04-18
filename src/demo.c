@@ -182,7 +182,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             if(!prefix){
                 show_image(disp, "Demo");
                 int c = cvWaitKey(1);
-                printf("%d\n", c);
+		if (c != -1) c = c%256;
                 if (c == 10){
                     if(frame_skip == 0) frame_skip = 60;
                     else if(frame_skip == 4) frame_skip = 0;
@@ -190,14 +190,14 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
                     else frame_skip = 0;
                 } else if (c == 27) {
                     return;
-                } else if (c == 65362) {
+                } else if (c == 82) {
                     demo_thresh += .02;
-                } else if (c == 65364) {
+                } else if (c == 84) {
                     demo_thresh -= .02;
                     if(demo_thresh <= .02) demo_thresh = .02;
-                } else if (c == 65363) {
+                } else if (c == 83) {
                     demo_hier += .02;
-                } else if (c == 65361) {
+                } else if (c == 81) {
                     demo_hier -= .02;
                     if(demo_hier <= .0) demo_hier = .0;
                 }
