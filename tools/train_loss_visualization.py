@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 #%matplotlib inline
 
-lines =10322
-result = pd.read_csv('W:/Tools/darknet/trainlog.txt', skiprows=[x for x in range(lines) if (x%10!=9)] ,error_bad_lines=False, names=['loss', 'avg', 'rate', 'seconds', 'images'])
+lines =1878760
+result = pd.read_csv('S:/Tools/Paul_YOLO/paul_train_log_new.txt', skiprows=[x for x in range(lines) if ((x%10!=9) |(x<1000))] ,error_bad_lines=False, names=['loss', 'avg', 'rate', 'seconds', 'images'])
 result.head()
 
 result['loss']=result['loss'].str.split(' ').str.get(1)
@@ -35,9 +35,10 @@ result.dtypes
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
-#ax.plot(result['avg'].values,label='avg_loss')
-ax.plot(result['loss'].values,label='loss')
+ax.plot(result['avg'].values,label='avg_loss')
+#ax.plot(result['loss'].values,label='loss')
 ax.legend(loc='best')
 ax.set_title('The loss curves')
 ax.set_xlabel('batches')
 fig.savefig('avg_loss')
+#fig.savefig('loss')

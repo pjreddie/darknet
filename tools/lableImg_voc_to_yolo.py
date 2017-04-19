@@ -20,12 +20,14 @@ import pickle
 import os
 from os import listdir, getcwd
 from os.path import join
+import shutil
 
-sets = ['20170401', 'ImageNet']
+sets = ['20170401', '20170414']
 
 
-# classes = ['dog','person','car','train','sofa']
-
+# 获取所需要的类名和id
+# path为类名和id的对应关系列表的地址（标注文件中可能有很多类，我们只加载该path指向文件中的类）
+# 返回值是一个字典，键名是类名，键值是id
 def get_classes_and_index(path):
     D = {}
     f = open(path)
@@ -33,10 +35,14 @@ def get_classes_and_index(path):
         temp = line.rstrip().split(',', 2)
         print("temp[0]:" + temp[0] + "\n")
         print("temp[1]:" + temp[1] + "\n")
-        D[temp[1]] = temp[0]
+        D[temp[1].replace(' ', '')] = temp[0]
     return D
 
 
+# 将ROI的坐标转换为yolo需要的坐标
+# size是图片的w和h
+# box里保存的是ROI的坐标（x，y的最大值和最小值）
+# 返回值为ROI中心点相对于图片大小的比例坐标，和ROI的w、h相对于图片大小的比例
 def convert(size, box):
     dw = 1. / size[0]
     dh = 1. / size[1]
@@ -51,9 +57,10 @@ def convert(size, box):
     return (x, y, w, h)
 
 
+# 将labelImg 生成的xml文件转换为yolo需要的txt文件
+# path到类名一级的目录路径
+# image_id图片名
 def convert_annotation(path, image_id):
-    if not os.path.exists('%s/labels/' % path):
-        os.makedirs('%s/labels/' % path)
     in_file = open('%s/annotations/%s.xml' % (path, image_id))
     out_file = open('%s/labels/%s.txt' % (path, image_id), 'w')
     tree = ET.parse(in_file)
@@ -63,10 +70,11 @@ def convert_annotation(path, image_id):
     h = int(size.find('height').text)
 
     for obj in root.iter('object'):
-        cls = obj.find('name').text
+        cls = obj.find('name').text.replace(' ', '')
+        # 如果该类物体不在我们的yolo训练列表中，跳过
         if cls not in classes:
             continue
-        cls_id = classes[cls]
+        cls_id = classes[cls]  # 获取该类物体在yolo训练列表中的id
         xmlbox = obj.find('bndbox')
         b = (float(xmlbox.find('xmin').text), float(xmlbox.find('xmax').text), float(xmlbox.find('ymin').text),
              float(xmlbox.find('ymax').text))
@@ -83,6 +91,7 @@ def IsSubString(SubStrList, Str):
     return flag
 
 
+# 获取FindPath路径下指定格式（FlagStr）的文件名（不包含后缀名）列表
 def GetFileList(FindPath, FlagStr=[]):
     import os
     FileList = []
@@ -101,6 +110,7 @@ def GetFileList(FindPath, FlagStr=[]):
     return FileList
 
 
+# 获取目录下子目录的目录名列表
 def get_dirs(time):
     dirs = []
     dirs_temp = os.listdir(time)
@@ -115,11 +125,16 @@ classes = get_classes_and_index('/raid/pengchong_data/Tools/Paul_YOLO/data/Paul_
 
 for time in sets:
     dirs = get_dirs(time)
-    list_file = open('%s.txt' % time, 'w')
+    list_file = open('%s.txt' % time, 'w')  # 数据集的图片list保存路径
     for path in dirs:
         print(path)
         if not os.path.exists('%s/annotations/' % path):
             os.makedirs('%s/annotations/' % path)
+        if not os.path.exists('%s/labels/' % path):
+            os.makedirs('%s/labels/' % path)
+        else:
+            shutil.rmtree('%s/labels/' % path)
+            os.makedirs('%s/labels/' % path)
         image_ids = GetFileList(path + '/annotations/', ['xml'])
         for image_id in image_ids:
             print(image_id)
