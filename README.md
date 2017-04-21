@@ -83,6 +83,10 @@ if `error Out of memory` occurs then in `.cfg-file` you should increase `subdivi
 
 ## Treinar
 
+`./darknet detector train cfg/voc.data cfg/yolo-voc.cfg darknet19_448.conv.23`
+
+Caso não esteja a treinar, deve-se aumentar o numero de batch na no ficheiro cfg. Isto porque o numero de batch  guardado no ficheiro _weights_.
+
 ## Testar
 
 `./darknet detector test dataObjTeste_D/obj.data cfg/yolo-voc.cfg backup/tiny-yolo-voc_1730.weights dataObjTeste_D/images/1.jpg -thresh 0`
