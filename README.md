@@ -169,7 +169,9 @@ Then add to your created project:
 
 5. Run command: `type 2007_train.txt 2007_val.txt 2012_*.txt > train.txt`
 
-6. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.cfg darknet19_448.conv.23`
+6. Set `batch=64` and `subdivisions=8` in the file `yolo-voc.cfg`: [link](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.cfg#L3)
+
+7. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.cfg darknet19_448.conv.23`
 
 If required change pathes in the file `build\darknet\x64\data\voc.data`
 
@@ -187,6 +189,8 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 1. Create file `yolo-obj.cfg` with the same content as in `yolo-voc.cfg` (or copy `yolo-voc.cfg` to `yolo-obj.cfg)` and:
 
+  * change line batch to [`batch=64`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.cfg#L3)
+  * change line subdivisions to [`subdivisions=8`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.cfg#L4)
   * change line `classes=20` to your number of objects
   * change line #224 from [`filters=125`](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.cfg#L224) to `filters=(classes + 5)*5` (generally this depends on the `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
 
