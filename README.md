@@ -26,7 +26,7 @@ This repository is forked from Linux-version: https://github.com/pjreddie/darkne
 More details: http://pjreddie.com/darknet/yolo/
 
 ##### Requires: 
-* **MS Visual Studio 2015 (v140)**: https://www.microsoft.com/download/details.aspx?id=48146
+* **MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
 * **CUDA 8.0 for Windows x64**: https://developer.nvidia.com/cuda-downloads
 * **OpenCV 2.4.9**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.9/opencv-2.4.9.exe/download
   - To compile without OpenCV - remove define OPENCV from: Visual Studio->Project->Properties->C/C++->Preprocessor
