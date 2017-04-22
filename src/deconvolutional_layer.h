@@ -7,6 +7,10 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef GPU
 void forward_deconvolutional_layer_gpu(layer l, network_state state);
 void backward_deconvolutional_layer_gpu(layer l, network_state state);
@@ -20,6 +24,10 @@ void resize_deconvolutional_layer(layer *l, int h, int w);
 void forward_deconvolutional_layer(const layer l, network_state state);
 void update_deconvolutional_layer(layer l, int batch, float learning_rate, float momentum, float decay);
 void backward_deconvolutional_layer(layer l, network_state state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
