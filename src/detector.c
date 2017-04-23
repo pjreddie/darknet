@@ -547,6 +547,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
         char labelpath[4096];
         find_replace(path, "images", "labels", labelpath);
         find_replace(labelpath, "JPEGImages", "labels", labelpath);
+        find_replace(labelpath, ".png", ".txt", labelpath);
         find_replace(labelpath, ".jpg", ".txt", labelpath);
         find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
