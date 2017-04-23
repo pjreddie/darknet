@@ -11,46 +11,46 @@ void free_layer(layer l)
 #endif
         return;
     }
-    if(l.cweights)           free(l.cweights);
-    if(l.indexes)            free(l.indexes);
-    if(l.input_layers)       free(l.input_layers);
-    if(l.input_sizes)        free(l.input_sizes);
-    if(l.map)                free(l.map);
-    if(l.rand)               free(l.rand);
-    if(l.cost)               free(l.cost);
-    if(l.state)              free(l.state);
-    if(l.prev_state)         free(l.prev_state);
-    if(l.forgot_state)       free(l.forgot_state);
-    if(l.forgot_delta)       free(l.forgot_delta);
-    if(l.state_delta)        free(l.state_delta);
-    if(l.concat)             free(l.concat);
-    if(l.concat_delta)       free(l.concat_delta);
-    if(l.binary_weights)     free(l.binary_weights);
-    if(l.biases)             free(l.biases);
-    if(l.bias_updates)       free(l.bias_updates);
-    if(l.scales)             free(l.scales);
-    if(l.scale_updates)      free(l.scale_updates);
-    if(l.weights)            free(l.weights);
-    if(l.weight_updates)     free(l.weight_updates);
-    if(l.delta)              free(l.delta);
-    if(l.output)             free(l.output);
-    if(l.squared)            free(l.squared);
-    if(l.norms)              free(l.norms);
-    if(l.spatial_mean)       free(l.spatial_mean);
-    if(l.mean)               free(l.mean);
-    if(l.variance)           free(l.variance);
-    if(l.mean_delta)         free(l.mean_delta);
-    if(l.variance_delta)     free(l.variance_delta);
-    if(l.rolling_mean)       free(l.rolling_mean);
-    if(l.rolling_variance)   free(l.rolling_variance);
-    if(l.x)                  free(l.x);
-    if(l.x_norm)             free(l.x_norm);
-    if(l.m)                  free(l.m);
-    if(l.v)                  free(l.v);
-    if(l.z_cpu)              free(l.z_cpu);
-    if(l.r_cpu)              free(l.r_cpu);
-    if(l.h_cpu)              free(l.h_cpu);
-    if(l.binary_input)       free(l.binary_input);
+    if(l.cweights)           { free(l.cweights); l.cweights = 0;}
+    if(l.indexes)            { free(l.indexes); l.indexes = 0;}
+    if(l.input_layers)       { free(l.input_layers); l.input_layers = 0;}
+    if(l.input_sizes)        { free(l.input_sizes); l.input_sizes = 0;}
+    if(l.map)                { free(l.map); l.map = 0;}
+    if(l.rand)               { free(l.rand); l.rand = 0;}
+    if(l.cost)               { free(l.cost); l.cost = 0;}
+    if(l.state)              { free(l.state); l.state = 0;}
+    if(l.prev_state)         { free(l.prev_state); l.prev_state = 0;}
+    if(l.forgot_state)       { free(l.forgot_state); l.forgot_state = 0;}
+    if(l.forgot_delta)       { free(l.forgot_delta); l.forgot_delta = 0;}
+    if(l.state_delta)        { free(l.state_delta); l.state_delta = 0;}
+    if(l.concat)             { free(l.concat); l.concat = 0;}
+    if(l.concat_delta)       { free(l.concat_delta); l.concat_delta = 0;}
+    if(l.binary_weights)     { free(l.binary_weights); l.binary_weights = 0;}
+    if(l.biases)             { free(l.biases); l.biases = 0;}
+    if(l.bias_updates)       { free(l.bias_updates); l.bias_updates = 0;}
+    if(l.scales)             { free(l.scales); l.scales = 0;}
+    if(l.scale_updates)      { free(l.scale_updates); l.scale_updates = 0;}
+    if(l.weights)            { free(l.weights); l.weights = 0;}
+    if(l.weight_updates)     { free(l.weight_updates); l.weight_updates = 0;}
+    if(l.delta)              { free(l.delta); l.delta = 0;}
+    if(l.output)             { free(l.output); l.output = 0;}
+    if(l.squared)            { free(l.squared); l.squared = 0;}
+    if(l.norms)              { free(l.norms); l.norms = 0;}
+    if(l.spatial_mean)       { free(l.spatial_mean); l.spatial_mean = 0;}
+    if(l.mean)               { free(l.mean); l.mean = 0;}
+    if(l.variance)           { free(l.variance); l.variance = 0;}
+    if(l.mean_delta)         { free(l.mean_delta); l.mean_delta = 0;}
+    if(l.variance_delta)     { free(l.variance_delta); l.variance_delta = 0;}
+    if(l.rolling_mean)       { free(l.rolling_mean); l.rolling_mean = 0;}
+    if(l.rolling_variance)   { free(l.rolling_variance); l.rolling_variance = 0;}
+    if(l.x)                  { free(l.x); l.x = 0;}
+    if(l.x_norm)             { free(l.x_norm); l.x_norm = 0;}
+    if(l.m)                  { free(l.m); l.m = 0;}
+    if(l.v)                  { free(l.v); l.v = 0;}
+    if(l.z_cpu)              { free(l.z_cpu); l.z_cpu = 0;}
+    if(l.r_cpu)              { free(l.r_cpu); l.r_cpu = 0;}
+    if(l.h_cpu)              { free(l.h_cpu); l.h_cpu = 0;}
+    if(l.binary_input)       { free(l.binary_input); l.binary_input = 0;}
 
 #ifdef GPU
 

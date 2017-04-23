@@ -35,6 +35,8 @@ float cuda_mag_array(float *x_gpu, size_t n);
 
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();
+void cudnn_handle_reset();
+void blas_handle_reset();
 #endif
 
 #ifdef __cplusplus 
