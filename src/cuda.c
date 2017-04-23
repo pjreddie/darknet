@@ -150,6 +150,12 @@ cublasHandle_t blas_handle()
 }
 
 #ifdef _ENABLE_CUDA_MEM_DEBUG
+void cuda_dump_mem_stat()
+{
+    size_t free, total;
+    cudaMemGetInfo(&free, &total);
+    printf("CUDA Memory Status: Free/Total = [%lu]/[%lu]\n", free, total);
+}
 void cudnn_handle_reset()
 {
     for(int i = 0;i < MAX_CUDNN;i ++) 
@@ -265,12 +271,19 @@ void cuda_free(float *x_gpu)
     }
     cudaError_t status = cudaFree(x_gpu);
     check_error(status);
+#ifdef _ENABLE_CUDA_MEM_DEBUG       
     cuda_free_cnt ++;
     printf("cuda_free freed [%p]\n", x_gpu);
+#endif    
 }
 
 void cuda_push_array(float *x_gpu, float *x, size_t n)
 {
+    if(!x_gpu)
+    {
+        printf("cuda_push_array called with nil x_gpu\n");
+        return;
+    }    
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
     check_error(status);
@@ -278,6 +291,11 @@ void cuda_push_array(float *x_gpu, float *x, size_t n)
 
 void cuda_pull_array(float *x_gpu, float *x, size_t n)
 {
+    if(!x_gpu || !x)
+    {
+        printf("cuda_pull_array called with nil x_gpu or nil x\n");
+        return;
+    }    
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpy(x, x_gpu, size, cudaMemcpyDeviceToHost);
     check_error(status);
@@ -288,7 +306,7 @@ float cuda_mag_array(float *x_gpu, size_t n)
     float *temp = (float*)calloc(n, sizeof(float));
     cuda_pull_array(x_gpu, temp, n);
     float m = mag_array(temp, n);
-    free(temp);
+    if(temp) free(temp);
     return m;
 }
 

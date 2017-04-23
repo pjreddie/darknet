@@ -356,6 +356,10 @@ int resize_network(network *net, int w, int h)
     if(gpu_index >= 0){
         cuda_free(net->workspace);
     }
+#ifdef _ENABLE_CUDA_MEM_DEBUG
+    cuda_dump_mem_stat();
+#endif
+    
 #endif
     int i;
     //if(w == net->w && h == net->h) return 0;
