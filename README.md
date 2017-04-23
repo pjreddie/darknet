@@ -192,7 +192,7 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
   * change line batch to [`batch=64`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.cfg#L3)
   * change line subdivisions to [`subdivisions=8`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.cfg#L4)
   * change line `classes=20` to your number of objects
-  * change line #224 from [`filters=125`](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.cfg#L224) to `filters=(classes + 5)*5` (generally this depends on the `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
+  * change line #237 from [`filters=125`](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.cfg#L237) to `filters=(classes + 5)*5` (generally this depends on the `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
 
   For example, for 2 objects, your file `yolo-obj.cfg` should differ from `yolo-voc.cfg` in such lines:
 
@@ -306,6 +306,8 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
 1. Before training:
   * set flag `random=1` in your `.cfg`-file - it will increase precision by training Yolo for different resolutions: [link](https://github.com/AlexeyAB/darknet/blob/47409529d0eb935fa7bafbe2b3484431117269f5/cfg/yolo-voc.cfg#L244)
+  
+  * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides
 
 2. After training - for detection:
 
