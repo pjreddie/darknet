@@ -351,6 +351,9 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     int out_w = convolutional_out_width(*l);
     int out_h = convolutional_out_height(*l);
 
+#if 1
+    printf("resize_convolutional_layer: out_w, out_h = [%d, %d], new out_w, out_h [%d, %d], batch, outputs [%d, %d] \n", l->out_w, l->out_h, out_w, out_h, l->batch, l->outputs);
+#endif
     l->out_w = out_w;
     l->out_h = out_h;
 

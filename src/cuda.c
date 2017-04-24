@@ -134,11 +134,30 @@ cudnnHandle_t cudnn_handle()
     }
     return cudnn_handle_t[i];
 }
+
+void cudnn_handle_reset()
+{
+    for(int i = 0;i < MAX_CUDNN;i ++) 
+    {
+        cudnn_init[i] = 0;
+        cudnn_handle_t[i] = 0;
+    }
+}
+
 #endif
 
 #define MAX_BLAS (16)
 static int blas_init[MAX_BLAS] = {0};
 static cublasHandle_t blas_handle_t[MAX_BLAS];
+void blas_handle_reset()
+{
+    for(int i = 0;i < MAX_BLAS;i ++) 
+    {
+        blas_init[i] = 0;
+        blas_handle_t[i] = 0;
+    }
+}
+
 cublasHandle_t blas_handle()
 {
     int i = cuda_get_device();
@@ -149,6 +168,7 @@ cublasHandle_t blas_handle()
     return blas_handle_t[i];
 }
 
+
 #ifdef _ENABLE_CUDA_MEM_DEBUG
 void cuda_dump_mem_stat()
 {
@@ -156,22 +176,7 @@ void cuda_dump_mem_stat()
     cudaMemGetInfo(&free, &total);
     printf("CUDA Memory Status: Free/Total = [%lu]/[%lu]\n", free, total);
 }
-void cudnn_handle_reset()
-{
-    for(int i = 0;i < MAX_CUDNN;i ++) 
-    {
-        cudnn_init[i] = 0;
-        cudnn_handle_t[i] = 0;
-    }
-}
-void blas_handle_reset()
-{
-    for(int i = 0;i < MAX_BLAS;i ++) 
-    {
-        blas_init[i] = 0;
-        blas_handle_t[i] = 0;
-    }
-}
+
 #endif
 
 
