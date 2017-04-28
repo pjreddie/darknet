@@ -187,7 +187,7 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 ## How to train (to detect your custom objects):
 
-1. Create file `yolo-obj.cfg` with the same content as in `yolo-voc.cfg` (or copy `yolo-voc.cfg` to `yolo-obj.cfg)` and:
+1. Create file `yolo-obj.cfg` with the same content as in `yolo-voc.2.0.cfg` (or copy `yolo-voc.2.0.cfg` to `yolo-obj.cfg)` and:
 
   * change line batch to [`batch=64`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.cfg#L3)
   * change line subdivisions to [`subdivisions=8`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.cfg#L4)
@@ -267,7 +267,7 @@ Usually sufficient 2000 iterations for each class(object). But for a more precis
   * **9002** - iteration number (number of batch)
   * **0.060730 avg** - average loss (error) - **the lower, the better**
 
-  When you see that average loss **0.060730 avg** enough low at many iterations and no longer decreases then you should stop training.
+  When you see that average loss **0.xxxxxx avg** no longer decreases at many iterations then you should stop training.
 
 2. Once training is stopped, you should take some of last `.weights`-files from `darknet\build\darknet\x64\backup` and choose the best of them:
 
@@ -288,7 +288,7 @@ And comapre last output lines for each weights (7000, 8000, 9000):
 > 7586 7612 7689 RPs/Img: 68.23 **IOU: 77.86%** Recall:99.00%
 
 * **IOU** - the bigger, the better (says about accuracy) - **better to use**
-* **Recall** - the bigger, the better (says about accuracy)
+* **Recall** - the bigger, the better (says about accuracy) - actually Yolo calculates true positives, so it shouldn't be used
 
 For example, **bigger IUO** gives weights `yolo-obj_8000.weights` - then **use this weights for detection**.
 
