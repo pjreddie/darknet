@@ -406,7 +406,7 @@ void get_region_boxes(layer l, int w, int h, int netw, int neth, float thresh, f
                     probs[index][j] = (prob > thresh) ? prob : 0;
                     if(prob > max) max = prob;
                     // TODO REMOVE
-                    // if (j != 15 && j != 16) probs[index][j] = 0; 
+                    // if (j == 56 ) probs[index][j] = 0; 
                     /*
                        if (j != 0) probs[index][j] = 0; 
                        int blacklist[] = {121, 497, 482, 504, 122, 518,481, 418, 542, 491, 914, 478, 120, 510,500};

@@ -216,6 +216,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             if (alphabet) {
                 image label = get_label(alphabet, names[class], (im.h*.03)/10);
                 draw_label(im, top + width, left, label, rgb);
+                free_image(label);
             }
         }
     }
@@ -394,6 +395,11 @@ void normalize_image2(image p)
     free(max);
 }
 
+void copy_image_into(image src, image dest)
+{
+    memcpy(dest.data, src.data, src.h*src.w*src.c*sizeof(float));
+}
+
 image copy_image(image p)
 {
     image copy = p;
@@ -413,19 +419,16 @@ void rgbgr_image(image im)
 }
 
 #ifdef OPENCV
-void show_image_cv(image p, const char *name)
+void show_image_cv(image p, const char *name, IplImage *disp)
 {
     int x,y,k;
-    image copy = copy_image(p);
-    constrain_image(copy);
-    if(p.c == 3) rgbgr_image(copy);
+    if(p.c == 3) rgbgr_image(p);
     //normalize_image(copy);
 
     char buff[256];
     //sprintf(buff, "%s (%d)", name, windows);
     sprintf(buff, "%s", name);
 
-    IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
     int step = disp->widthStep;
     cvNamedWindow(buff, CV_WINDOW_NORMAL); 
     //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
@@ -433,11 +436,10 @@ void show_image_cv(image p, const char *name)
     for(y = 0; y < p.h; ++y){
         for(x = 0; x < p.w; ++x){
             for(k= 0; k < p.c; ++k){
-                disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy,x,y,k)*255);
+                disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(p,x,y,k)*255);
             }
         }
     }
-    free_image(copy);
     if(0){
         int w = 448;
         int h = w*p.h/p.w;
@@ -451,14 +453,18 @@ void show_image_cv(image p, const char *name)
         cvReleaseImage(&buffer);
     }
     cvShowImage(buff, disp);
-    cvReleaseImage(&disp);
 }
 #endif
 
 void show_image(image p, const char *name)
 {
 #ifdef OPENCV
-    show_image_cv(p, name);
+    IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
+    image copy = copy_image(p);
+    constrain_image(copy);
+    show_image_cv(copy, name, disp);
+    free_image(copy);
+    cvReleaseImage(&disp);
 #else
     fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
     save_image(p, name);
@@ -467,23 +473,31 @@ void show_image(image p, const char *name)
 
 #ifdef OPENCV
 
-image ipl_to_image(IplImage* src)
+void ipl_into_image(IplImage* src, image im)
 {
     unsigned char *data = (unsigned char *)src->imageData;
     int h = src->height;
     int w = src->width;
     int c = src->nChannels;
     int step = src->widthStep;
-    image out = make_image(w, h, c);
-    int i, j, k, count=0;;
+    int i, j, k;
 
-    for(k= 0; k < c; ++k){
-        for(i = 0; i < h; ++i){
+    for(i = 0; i < h; ++i){
+        for(k= 0; k < c; ++k){
             for(j = 0; j < w; ++j){
-                out.data[count++] = data[i*step + j*c + k]/255.;
+                im.data[k*w*h + i*w + j] = data[i*step + j*c + k]/255.;
             }
         }
     }
+}
+
+image ipl_to_image(IplImage* src)
+{
+    int h = src->height;
+    int w = src->width;
+    int c = src->nChannels;
+    image out = make_image(w, h, c);
+    ipl_into_image(src, out);
     return out;
 }
 
@@ -513,6 +527,14 @@ image load_image_cv(char *filename, int channels)
     return out;
 }
 
+void flush_stream_buffer(CvCapture *cap, int n)
+{
+    int i;
+    for(i = 0; i < n; ++i) {
+        cvQueryFrame(cap);
+    }
+}
+
 image get_image_from_stream(CvCapture *cap)
 {
     IplImage* src = cvQueryFrame(cap);
@@ -520,6 +542,15 @@ image get_image_from_stream(CvCapture *cap)
     image im = ipl_to_image(src);
     rgbgr_image(im);
     return im;
+}
+
+int fill_image_from_stream(CvCapture *cap, image im)
+{
+    IplImage* src = cvQueryFrame(cap);
+    if (!src) return 0;
+    ipl_into_image(src, im);
+    rgbgr_image(im);
+    return 1;
 }
 
 void save_image_jpg(image p, const char *name)
@@ -792,6 +823,22 @@ void composite_3d(char *f1, char *f2, char *out, int delta)
 #else
     save_image(c, out);
 #endif
+}
+
+void letterbox_image_into(image im, int w, int h, image boxed)
+{
+    int new_w = im.w;
+    int new_h = im.h;
+    if (((float)w/im.w) < ((float)h/im.h)) {
+        new_w = w;
+        new_h = (im.h * w)/im.w;
+    } else {
+        new_h = h;
+        new_w = (im.w * h)/im.h;
+    }
+    image resized = resize_image(im, new_w, new_h);
+    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2); 
+    free_image(resized);
 }
 
 image letterbox_image(image im, int w, int h)

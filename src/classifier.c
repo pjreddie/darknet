@@ -698,7 +698,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         float *X = r.data;
         time=clock();
         float *predictions = network_predict(net, X);
-        if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 0, 1);
+        if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 1, 1);
         top_k(predictions, net.outputs, top, indexes);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         for(i = 0; i < top; ++i){

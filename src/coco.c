@@ -376,9 +376,10 @@ void run_coco(int argc, char **argv)
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5]: 0;
+    int avg = find_int_arg(argc, argv, "-avg", 1);
     if(0==strcmp(argv[2], "test")) test_coco(cfg, weights, filename, thresh);
     else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, coco_classes, 80, frame_skip, prefix, .5, 0,0,0,0);
+    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, coco_classes, 80, frame_skip, prefix, avg, .5, 0,0,0,0);
 }
