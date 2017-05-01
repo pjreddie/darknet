@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <locale.h>
 #include <string>
 #include <opencv2/opencv.hpp>
 #include "network.h"

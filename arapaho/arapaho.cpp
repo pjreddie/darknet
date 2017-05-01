@@ -22,6 +22,7 @@ ArapahoV2::ArapahoV2()
     maxClasses = 0;
     threshold = 0;
     bSetup = false;
+    setlocale(LC_NUMERIC,"C");
 }
     
 ArapahoV2::~ArapahoV2()
