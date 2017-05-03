@@ -548,7 +548,7 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
             printf("%f\n", genaloss);
 
             scal_ongpu(imlayer.outputs*imlayer.batch, 1, imerror, 1);
-            scal_ongpu(imlayer.outputs*imlayer.batch, .1, gnet.layers[gnet.n-1].delta_gpu, 1);
+            scal_ongpu(imlayer.outputs*imlayer.batch, .00, gnet.layers[gnet.n-1].delta_gpu, 1);
 
             printf("realness %f\n", cuda_mag_array(imerror, imlayer.outputs*imlayer.batch));
             printf("features %f\n", cuda_mag_array(gnet.layers[gnet.n-1].delta_gpu, imlayer.outputs*imlayer.batch));
