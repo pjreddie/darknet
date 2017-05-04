@@ -188,7 +188,7 @@ def compute_centroids(label_path,n_anchors,loss_convergence,grid_size,iterations
         print(centroid.w * grid_size, centroid.h * grid_size)
 
 
-label_path = "/raid/pengchong_data/Data/ILSVRC2017/ILSVRC/Lists/train.txt"
+label_path = "/raid/pengchong_data/Data/Lists/paul_train.txt"
 n_anchors = 5
 loss_convergence = 1e-6
 grid_size = 13
