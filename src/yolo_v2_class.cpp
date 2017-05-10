@@ -35,12 +35,16 @@ struct detector_gpu_t{
 YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id)
 {
 	int old_gpu_index;
+#ifdef GPU
 	cudaGetDevice(&old_gpu_index);
+#endif
 
 	detector_gpu_ptr = std::make_shared<detector_gpu_t>();
 	detector_gpu_t &detector_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 
+#ifdef GPU
 	cudaSetDevice(gpu_id);
+#endif
 	network &net = detector_gpu.net;
 	net.gpu_index = gpu_id;
 	//gpu_index = i;
@@ -66,7 +70,9 @@ YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_file
 	detector_gpu.probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
 	for (j = 0; j < l.w*l.h*l.n; ++j) detector_gpu.probs[j] = (float *)calloc(l.classes, sizeof(float));
 
+#ifdef GPU
 	cudaSetDevice(old_gpu_index);
+#endif
 }
 
 
@@ -84,12 +90,16 @@ YOLODLL_API Detector::~Detector()
 	free(detector_gpu.probs);
 
 	int old_gpu_index;
+#ifdef GPU
 	cudaGetDevice(&old_gpu_index);
 	cudaSetDevice(detector_gpu.net.gpu_index);
+#endif
 
 	free_network(detector_gpu.net);
 
+#ifdef GPU
 	cudaSetDevice(old_gpu_index);
+#endif
 }
 
 
@@ -150,8 +160,10 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh)
 	detector_gpu_t &detector_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 	network &net = detector_gpu.net;
 	int old_gpu_index;
+#ifdef GPU
 	cudaGetDevice(&old_gpu_index);
 	cudaSetDevice(net.gpu_index);
+#endif
 	//std::cout << "net.gpu_index = " << net.gpu_index << std::endl;
 
 	//float nms = .4;
@@ -198,7 +210,9 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh)
 	if(sized.data)
 		free(sized.data);
 
+#ifdef GPU
 	cudaSetDevice(old_gpu_index);
+#endif
 
 	return bbox_vec;
 }
