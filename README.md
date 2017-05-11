@@ -210,9 +210,9 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
   ```
   classes= 2
-  train  = train.txt
-  valid  = test.txt
-  names = obj.names
+  train  = data/train.txt
+  valid  = data/test.txt
+  names = data/obj.names
   backup = backup/
   ```
 
