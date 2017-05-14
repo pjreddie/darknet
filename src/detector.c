@@ -603,6 +603,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     srand(2222222);
     clock_t time;
     char buff[256];
+    char *boxes_outfile;
     char *input = buff;
     int j;
     float nms=.4;
@@ -638,9 +639,12 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
         if(outfile){
             save_image(im, outfile);
+	    boxes_outfile = strcat(outfile, ".csv");
         }
         else{
+	    boxes_outfile = "predictions.csv";
             save_image(im, "predictions");
+            show_image(im, "predictions");
 #ifdef OPENCV
             cvNamedWindow("predictions", CV_WINDOW_NORMAL); 
             if(fullscreen){
@@ -651,6 +655,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             cvDestroyAllWindows();
 #endif
         }
+        save_detections(filename, boxes_outfile, l.w*l.h*l.n, im.w, im.h, thresh, boxes, probs, names, l.classes);
+        printf("Wrote result to: %s.\n", boxes_outfile);
 
         free_image(im);
         free_image(sized);
