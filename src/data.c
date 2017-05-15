@@ -322,7 +322,8 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         h =  boxes[i].h;
         id = boxes[i].id;
 
-        if ((w < .001 || h < .001)) continue;
+        if ((w < .001 || h < .001)) 
+			x=-1;
 
         truth[i*5+0] = x;
         truth[i*5+1] = y;
