@@ -186,6 +186,8 @@ void forward_region_layer(const layer l, network net)
             for(t = 0; t < 30; ++t){
                 box truth = float_to_box(net.truth + t*5 + b*l.truths, 1);
                 if(!truth.x) break;
+				if (truth.x == -1)
+					continue;
                 int class = net.truth[t*5 + b*l.truths + 4];
                 float maxp = 0;
                 int maxi = 0;
@@ -222,6 +224,8 @@ void forward_region_layer(const layer l, network net)
                     for(t = 0; t < 30; ++t){
                         box truth = float_to_box(net.truth + t*5 + b*l.truths, 1);
                         if(!truth.x) break;
+						if (truth.x == -1)
+							continue;
                         float iou = box_iou(pred, truth);
                         if (iou > best_iou) {
                             best_iou = iou;
@@ -249,6 +253,8 @@ void forward_region_layer(const layer l, network net)
             box truth = float_to_box(net.truth + t*5 + b*l.truths, 1);
 
             if(!truth.x) break;
+			if (truth.x == -1)
+				continue;
             float best_iou = 0;
             int best_n = 0;
             i = (truth.x * l.w);
