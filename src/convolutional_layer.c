@@ -365,6 +365,10 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     l->outputs = l->out_h * l->out_w * l->out_c;
     l->inputs = l->w * l->h * l->c;
 
+    if(l->xnor){
+        l->binary_input = realloc(l->binary_input, l->inputs*l->batch*sizeof(float));
+    }
+
     l->output = realloc(l->output, l->batch*l->outputs*sizeof(float));
     l->delta  = realloc(l->delta,  l->batch*l->outputs*sizeof(float));
     if(l->batch_normalize){
@@ -375,9 +379,11 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 #ifdef GPU
     cuda_free(l->delta_gpu);
     cuda_free(l->output_gpu);
+    cuda_free(l->binary_input_gpu);
 
     l->delta_gpu =  cuda_make_array(l->delta,  l->batch*l->outputs);
     l->output_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+    l->binary_input_gpu = cuda_make_array(l->binary_input, l->inputs*l->batch);
 
     if(l->batch_normalize){
         cuda_free(l->x_gpu);

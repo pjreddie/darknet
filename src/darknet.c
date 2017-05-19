@@ -29,6 +29,7 @@ extern void run_go(int argc, char **argv);
 extern void run_art(int argc, char **argv);
 extern void run_super(int argc, char **argv);
 extern void run_lsd(int argc, char **argv);
+extern void test_multiple_detector(char *datacfg, char *cfgfile, char *weightfile, char * filenames, float thresh, float hier_thresh);
 
 void average(int argc, char *argv[])
 {
@@ -423,9 +424,9 @@ int main(int argc, char **argv)
     } else if (0 == strcmp(argv[1], "detect")){
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
         char *filename = (argc > 4) ? argv[4]: 0;
-        char *outfile = find_char_arg(argc, argv, "-out", 0);
-        int fullscreen = find_arg(argc, argv, "-fullscreen");
-        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, .5, outfile, fullscreen);
+        //char *outfile = find_char_arg(argc, argv, "-out", 0);
+        //int fullscreen = find_arg(argc, argv, "-fullscreen");
+        test_multiple_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, .5);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
     } else if (0 == strcmp(argv[1], "go")){
