@@ -14,7 +14,7 @@
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/videoio/videoio_c.h"
-#define CHINESE
+//#define CHINESE
 #endif
 
 
@@ -190,7 +190,7 @@ image **load_alphabet()
 #ifdef CHINESE
         for(i = 0; i < 80; ++i){
             char buff[256];
-            sprintf(buff, "data/labels/byd_%d_%d.png", i, j);
+            sprintf(buff, "data/labels/cn_%d_%d.png", i, j);
             alphabets[j][i] = load_image_color(buff, 0, 0);
         }
 #else
