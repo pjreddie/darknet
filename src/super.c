@@ -3,11 +3,7 @@
 #include "utils.h"
 #include "parser.h"
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#endif
-
-void train_super(char *cfgfile, char *weightfile)
+void train_super(char *cfgfile, char *weightfile, int clear)
 {
     char *train_images = "/data/imagenet/imagenet1k.train.list";
     char *backup_directory = "/home/pjreddie/backup/";
@@ -19,6 +15,7 @@ void train_super(char *cfgfile, char *weightfile)
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    if(clear) *net.seen = 0;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = net.batch*net.subdivisions;
     int i = *net.seen/imgs;
@@ -123,7 +120,8 @@ void run_super(int argc, char **argv)
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5] : 0;
-    if(0==strcmp(argv[2], "train")) train_super(cfg, weights);
+    int clear = find_arg(argc, argv, "-clear");
+    if(0==strcmp(argv[2], "train")) train_super(cfg, weights, clear);
     else if(0==strcmp(argv[2], "test")) test_super(cfg, weights, filename);
     /*
     else if(0==strcmp(argv[2], "valid")) validate_super(cfg, weights);

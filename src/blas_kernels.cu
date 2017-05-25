@@ -145,7 +145,7 @@ __global__ void adam_kernel(int N, float *x, float *m, float *v, float B1, float
     int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (index >= N) return;
     
-    x[index] = x[index] - (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps));
+    x[index] = x[index] + (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps));
     //if(index == 0) printf("%f %f %f %f\n", m[index], v[index], (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps)));
 }
 
@@ -161,7 +161,7 @@ __global__ void normalize_kernel(int N, float *x, float *mean, float *variance, 
     if (index >= N) return;
     int f = (index/spatial)%filters;
     
-    x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .000001f);
+    x[index] = (x[index] - mean[f])/(sqrt(variance[f] + .00001f));
 }
 
 __global__ void normalize_delta_kernel(int N, float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta)
@@ -170,7 +170,7 @@ __global__ void normalize_delta_kernel(int N, float *x, float *mean, float *vari
     if (index >= N) return;
     int f = (index/spatial)%filters;
     
-    delta[index] = delta[index] * 1./(sqrt(variance[f]) + .000001f) + variance_delta[f] * 2. * (x[index] - mean[f]) / (spatial * batch) + mean_delta[f]/(spatial*batch);
+    delta[index] = delta[index] * 1./(sqrt(variance[f] + .00001f)) + variance_delta[f] * 2. * (x[index] - mean[f]) / (spatial * batch) + mean_delta[f]/(spatial*batch);
 }
 
 extern "C" void normalize_delta_gpu(float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta)
@@ -192,7 +192,7 @@ __global__ void  variance_delta_kernel(float *x, float *delta, float *mean, floa
             variance_delta[i] += delta[index]*(x[index] - mean[i]);
         }
     }
-    variance_delta[i] *= -.5 * pow(variance[i] + .000001f, (float)(-3./2.));
+    variance_delta[i] *= -.5 * pow(variance[i] + .00001f, (float)(-3./2.));
 }
 
 __global__ void accumulate_kernel(float *x, int n, int groups, float *sum)
@@ -224,12 +224,14 @@ __global__ void fast_mean_delta_kernel(float *delta, float *variance, int batch,
         }
     }
 
+    __syncthreads();
+
     if(id == 0){
         mean_delta[filter] = 0;
         for(i = 0; i < threads; ++i){
             mean_delta[filter] += local[i];
         }
-        mean_delta[filter] *= (-1./sqrt(variance[filter] + .000001f));
+        mean_delta[filter] *= (-1./sqrt(variance[filter] + .00001f));
     }
 }
 
@@ -252,12 +254,14 @@ __global__ void  fast_variance_delta_kernel(float *x, float *delta, float *mean,
         }
     }
 
+    __syncthreads();
+
     if(id == 0){
         variance_delta[filter] = 0;
         for(i = 0; i < threads; ++i){
             variance_delta[filter] += local[i];
         }
-        variance_delta[filter] *= -.5 * pow(variance[filter] + .000001f, (float)(-3./2.));
+        variance_delta[filter] *= -.5 * pow(variance[filter] + .00001f, (float)(-3./2.));
     }
 }
 
@@ -274,7 +278,7 @@ __global__ void mean_delta_kernel(float *delta, float *variance, int batch, int 
             mean_delta[i] += delta[index];
         }
     }
-    mean_delta[i] *= (-1./sqrt(variance[i] + .000001f));
+    mean_delta[i] *= (-1./sqrt(variance[i] + .00001f));
 }
 
 extern "C" void mean_delta_gpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta)
@@ -391,6 +395,12 @@ __global__ void supp_kernel(int N, float ALPHA, float *X, int INCX)
     }
 }
 
+__global__ void add_kernel(int N, float ALPHA, float *X, int INCX)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < N) X[i*INCX] += ALPHA;
+}
+
 __global__ void scal_kernel(int N, float ALPHA, float *X, int INCX)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -447,6 +457,8 @@ __global__ void  fast_mean_kernel(float *x, int batch, int filters, int spatial,
         }
     }
 
+    __syncthreads();
+
     if(id == 0){
         mean[filter] = 0;
         for(i = 0; i < threads; ++i){
@@ -474,6 +486,8 @@ __global__ void  fast_variance_kernel(float *x, float *mean, int batch, int filt
             local[id] += (i+id < spatial) ? pow((x[index] - mean[filter]), 2) : 0;
         }
     }
+
+    __syncthreads();
 
     if(id == 0){
         variance[filter] = 0;
@@ -593,6 +607,12 @@ extern "C" void constrain_ongpu(int N, float ALPHA, float * X, int INCX)
 }
 
 
+extern "C" void add_ongpu(int N, float ALPHA, float * X, int INCX)
+{
+    add_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+    check_error(cudaPeekAtLastError());
+}
+
 extern "C" void scal_ongpu(int N, float ALPHA, float * X, int INCX)
 {
     scal_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
@@ -658,7 +678,7 @@ __global__ void smooth_l1_kernel(int n, float *pred, float *truth, float *delta,
         }
         else {
             error[i] = 2*abs_val - 1;
-            delta[i] = (diff < 0) ? -1 : 1;
+            delta[i] = (diff > 0) ? 1 : -1;
         }
     }
 }
@@ -684,6 +704,23 @@ extern "C" void l2_gpu(int n, float *pred, float *truth, float *delta, float *er
     l2_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
     check_error(cudaPeekAtLastError());
 }
+
+__global__ void l1_kernel(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < n){
+        float diff = truth[i] - pred[i];
+        error[i] = abs(diff);
+        delta[i] = (diff > 0) ? 1 : -1;
+    }
+}
+
+extern "C" void l1_gpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    l1_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+    check_error(cudaPeekAtLastError());
+}
+
 
 
 
@@ -732,36 +769,36 @@ extern "C" void mult_add_into_gpu(int num, float *a, float *b, float *c)
 }
 
 
-__device__ void softmax_device(int n, float *input, float temp, float *output)
+__device__ void softmax_device(float *input, int n, float temp, int stride, float *output)
 {
     int i;
     float sum = 0;
     float largest = -INFINITY;
     for(i = 0; i < n; ++i){
-        int val = input[i];
+        int val = input[i*stride];
         largest = (val>largest) ? val : largest;
     }
     for(i = 0; i < n; ++i){
-        float e = exp(input[i]/temp - largest/temp);
+        float e = exp(input[i*stride]/temp - largest/temp);
         sum += e;
-        output[i] = e;
+        output[i*stride] = e;
     }
     for(i = 0; i < n; ++i){
-        output[i] /= sum;
+        output[i*stride] /= sum;
     }
 }
 
-__global__ void softmax_kernel(int n, int offset, int batch, float *input, float temp, float *output)
+__global__ void softmax_kernel(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output)
 {
-    int b = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-    if(b >= batch) return;
-    softmax_device(n, input + b*offset, temp, output + b*offset);
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= batch*groups) return;
+    int b = id / groups;
+    int g = id % groups;
+    softmax_device(input + b*batch_offset + g*group_offset, n, temp, stride, output + b*batch_offset + g*group_offset);
 }
 
-extern "C" void softmax_gpu(float *input, int n, int offset, int groups, float temp, float *output)
+extern "C" void softmax_gpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output)
 {
-    int inputs = n;
-    int batch = groups;
-    softmax_kernel<<<cuda_gridsize(batch), BLOCK>>>(inputs, offset, batch, input, temp, output);
+    softmax_kernel<<<cuda_gridsize(batch*groups), BLOCK>>>(input, n, batch, batch_offset, groups, group_offset, stride, temp, output);
     check_error(cudaPeekAtLastError());
 }

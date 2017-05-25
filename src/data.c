@@ -102,7 +102,7 @@ matrix load_image_paths(char **paths, int n, int w, int h)
     return X;
 }
 
-matrix load_image_augment_paths(char **paths, int n, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+matrix load_image_augment_paths(char **paths, int n, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
 {
     int i;
     matrix X;
@@ -112,7 +112,12 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
 
     for(i = 0; i < n; ++i){
         image im = load_image_color(paths[i], 0, 0);
-        image crop = random_augment_image(im, angle, aspect, min, max, size);
+        image crop;
+        if(center){
+            crop = center_crop_image(im, size, size);
+        } else {
+            crop = random_augment_image(im, angle, aspect, min, max, size);
+        }
         int flip = rand()%2;
         if (flip) flip_image(crop);
         random_distort_image(crop, hue, saturation, exposure);
@@ -317,7 +322,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         h =  boxes[i].h;
         id = boxes[i].id;
 
-        if ((w < .005 || h < .005)) continue;
+        if ((w < .001 || h < .001)) continue;
 
         truth[i*5+0] = x;
         truth[i*5+1] = y;
@@ -393,7 +398,7 @@ void fill_truth(char *path, char **labels, int k, float *truth)
             ++count;
         }
     }
-    if(count != 1) printf("Too many or too few labels: %d, %s\n", count, path);
+    if(count != 1 && (k != 1 || count != 0)) printf("Too many or too few labels: %d, %s\n", count, path);
 }
 
 void fill_hierarchy(float *truth, int k, tree *hierarchy)
@@ -426,6 +431,24 @@ void fill_hierarchy(float *truth, int k, tree *hierarchy)
         }
         count += hierarchy->group_size[j];
     }
+}
+
+matrix load_regression_labels_paths(char **paths, int n)
+{
+    matrix y = make_matrix(n, 1);
+    int i;
+    for(i = 0; i < n; ++i){
+        char labelpath[4096];
+        find_replace(paths[i], "images", "targets", labelpath);
+        find_replace(labelpath, "JPEGImages", "targets", labelpath);
+        find_replace(labelpath, ".jpg", ".txt", labelpath);
+        find_replace(labelpath, ".png", ".txt", labelpath);
+        
+        FILE *file = fopen(labelpath, "r");
+        fscanf(file, "%f", &(y.vals[i][0]));
+        fclose(file);
+    }
+    return y;
 }
 
 matrix load_labels_paths(char **paths, int n, char **labels, int k, tree *hierarchy)
@@ -673,44 +696,43 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
+        image sized = make_image(w, h, orig.c);
+        fill_image(sized, .5);
+        
+        float dw = jitter * orig.w;
+        float dh = jitter * orig.h;
 
-        int oh = orig.h;
-        int ow = orig.w;
+        float new_ar = (orig.w + rand_uniform(-dw, dw)) / (orig.h + rand_uniform(-dh, dh));
+        float scale = rand_uniform(.25, 2);
 
-        int dw = (ow*jitter);
-        int dh = (oh*jitter);
+        float nw, nh;
+        
+        if(new_ar < 1){
+            nh = scale * h;
+            nw = nh * new_ar;
+        } else {
+            nw = scale * w;
+            nh = nw / new_ar;
+        }
 
-        int pleft  = rand_uniform(-dw, dw);
-        int pright = rand_uniform(-dw, dw);
-        int ptop   = rand_uniform(-dh, dh);
-        int pbot   = rand_uniform(-dh, dh);
+        float dx = rand_uniform(0, w - nw);
+        float dy = rand_uniform(0, h - nh);
 
-        int swidth =  ow - pleft - pright;
-        int sheight = oh - ptop - pbot;
+        place_image(orig, nw, nh, dx, dy, sized);
 
-        float sx = (float)swidth  / ow;
-        float sy = (float)sheight / oh;
-
-        int flip = rand()%2;
-        image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
-
-        float dx = ((float)pleft/ow)/sx;
-        float dy = ((float)ptop /oh)/sy;
-
-        image sized = resize_image(cropped, w, h);
-        if(flip) flip_image(sized);
         random_distort_image(sized, hue, saturation, exposure);
+        int flip = rand()%2;
+        if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
 
-        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy);
+
+        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h);
 
         free_image(orig);
-        free_image(cropped);
     }
     free(random_paths);
     return d;
 }
-
 
 void *load_thread(void *ptr)
 {
@@ -722,8 +744,10 @@ void *load_thread(void *ptr)
 
     if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
+    } else if (a.type == REGRESSION_DATA){
+        *a.d = load_data_regression(a.paths, a.n, a.m, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == CLASSIFICATION_DATA){
-        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.center);
     } else if (a.type == SUPER_DATA){
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
@@ -739,6 +763,9 @@ void *load_thread(void *ptr)
     } else if (a.type == IMAGE_DATA){
         *(a.im) = load_image_color(a.path, 0, 0);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);
+    } else if (a.type == LETTERBOX_DATA){
+        *(a.im) = load_image_color(a.path, 0, 0);
+        *(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     }
@@ -863,12 +890,23 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     return d;
 }
 
-data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+data load_data_regression(char **paths, int n, int m, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
     d.shallow = 0;
-    d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure);
+    d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure, 0);
+    d.y = load_regression_labels_paths(paths, n);
+    if(m) free(paths);
+    return d;
+}
+
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
+{
+    if(m) paths = get_random_paths(paths, n, m);
+    data d = {0};
+    d.shallow = 0;
+    d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure, center);
     d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);
     return d;
@@ -881,7 +919,7 @@ data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size
     d.w = size;
     d.h = size;
     d.shallow = 0;
-    d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure);
+    d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure, 0);
     d.y = load_tags_paths(paths, n, k);
     if(m) free(paths);
     return d;
@@ -962,7 +1000,6 @@ data load_cifar10_data(char *filename)
             X.vals[i][j] = (double)bytes[j+1];
         }
     }
-    //translate_data_rows(d, -128);
     scale_data_rows(d, 1./255);
     //normalize_data_rows(d);
     fclose(fp);
@@ -985,7 +1022,7 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)
     for(j = 0; j < n; ++j){
         int index = offset + j;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
-        memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
+        if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
     }
 }
 
@@ -1029,7 +1066,6 @@ data load_all_cifar10()
         fclose(fp);
     }
     //normalize_data_rows(d);
-    //translate_data_rows(d, -128);
     scale_data_rows(d, 1./255);
     smooth_data(d);
     return d;
@@ -1111,6 +1147,19 @@ void translate_data_rows(data d, float s)
     for(i = 0; i < d.X.rows; ++i){
         translate_array(d.X.vals[i], d.X.cols, s);
     }
+}
+
+data copy_data(data d)
+{
+    data c = {0};
+    c.w = d.w;
+    c.h = d.h;
+    c.shallow = 0;
+    c.num_boxes = d.num_boxes;
+    c.boxes = d.boxes;
+    c.X = copy_matrix(d.X);
+    c.y = copy_matrix(d.y);
+    return c;
 }
 
 void normalize_data_rows(data d)

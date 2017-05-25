@@ -179,8 +179,18 @@ void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
         }
         else {
             error[i] = 2*abs_val - 1;
-            delta[i] = (diff < 0) ? -1 : 1;
+            delta[i] = (diff < 0) ? 1 : -1;
         }
+    }
+}
+
+void l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        float diff = truth[i] - pred[i];
+        error[i] = fabs(diff);
+        delta[i] = diff > 0 ? 1 : -1;
     }
 }
 
@@ -202,21 +212,32 @@ float dot_cpu(int N, float *X, int INCX, float *Y, int INCY)
     return dot;
 }
 
-void softmax(float *input, int n, float temp, float *output)
+void softmax(float *input, int n, float temp, int stride, float *output)
 {
     int i;
     float sum = 0;
     float largest = -FLT_MAX;
     for(i = 0; i < n; ++i){
-        if(input[i] > largest) largest = input[i];
+        if(input[i*stride] > largest) largest = input[i*stride];
     }
     for(i = 0; i < n; ++i){
-        float e = exp(input[i]/temp - largest/temp);
+        float e = exp(input[i*stride]/temp - largest/temp);
         sum += e;
-        output[i] = e;
+        output[i*stride] = e;
     }
     for(i = 0; i < n; ++i){
-        output[i] /= sum;
+        output[i*stride] /= sum;
+    }
+}
+
+
+void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output)
+{
+    int g, b;
+    for(b = 0; b < batch; ++b){
+        for(g = 0; g < groups; ++g){
+            softmax(input + b*batch_offset + g*group_offset, n, temp, stride, output + b*batch_offset + g*group_offset);
+        }
     }
 }
 
