@@ -5,20 +5,20 @@ For more information see the [Darknet project website](http://pjreddie.com/darkn
 
 ## Results - 4K video
 
-YOLO COCO
+### YOLO COCO
 
 [![4K YOLO COCO Object Detection #1](http://img.youtube.com/vi/yQwfDxBMtXg/0.jpg)](https://youtu.be/yQwfDxBMtXg?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
 
-YOLO VOC
+### YOLO VOC
 
 [![4K YOLO COCO Object Detection #1](http://img.youtube.com/vi/yCOwvJw_7EI/0.jpg)](https://youtu.be/yCOwvJw_7EI?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
 
 
-Tiny YOLO VOC
+### Tiny YOLO VOC
 
 ...
 
-YOLO 9000
+### YOLO 9000
 
 ...
 
