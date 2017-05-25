@@ -27,7 +27,13 @@ YOLO 9000
 Try it yourself:
 1. Build darknet
 2. Download weights
-3. Run webcam demo!
+3. Run webcam demos:
+```
+./webcam-coco.sh
+./webcam-tiny-yolo.sh
+./webcam-voc.sh
+./webcam-yolo9000.sh
+```
 
 ## Build darknet
 
@@ -47,6 +53,18 @@ ARCH=       -gencode arch=compute_52,code=[sm_52,compute_52]
 ```
 
 Run `make` and you are ready!
+
+## Download weights
+
+All weights are available at [Darknet project website](http://pjreddie.com/darknet).
+
+```
+cd weights
+wget https://pjreddie.com/media/files/yolo-voc.weights
+wget -O yolo-coco.weights https://pjreddie.com/media/files/yolo.weights
+wget https://pjreddie.com/media/files/tiny-yolo-voc.weights
+wget https://pjreddie.com/media/files/yolo9000.weights
+```
 
 ## Architectures
 
