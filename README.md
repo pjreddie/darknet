@@ -22,6 +22,32 @@ YOLO 9000
 
 ...
 
+## Webcam Demo!
+
+Try it yourself:
+1. Build darknet
+2. Download weights
+3. Run webcam demo!
+
+## Build darknet
+
+Edit `Makefile` to enable GPU, CUDNN and OpenCV:
+
+```
+GPU=1
+CUDNN=1
+OPENCV=1
+DEBUG=0
+```
+
+Choose your CUDA architecture, example for GTX980M: (you can check it here [CUDA Compute Capability](https://developer.nvidia.com/cuda-gpus))
+
+```
+ARCH=       -gencode arch=compute_52,code=[sm_52,compute_52]
+```
+
+Run `make` and you are ready!
+
 ## Architectures
 
 ### YOLO COCO
