@@ -116,7 +116,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
         if(center){
             crop = center_crop_image(im, size, size);
         } else {
-            crop = random_augment_image(im, angle, aspect, min, max, size);
+            crop = random_augment_image(im, angle, aspect, min, max, size, size);
         }
         int flip = rand()%2;
         if (flip) flip_image(crop);
@@ -511,6 +511,119 @@ void free_data(data d)
     }
 }
 
+void load_rle(image im, int *rle, int n)
+{
+    int count = 0;
+    int curr = 0;
+    int i,j;
+    for(i = 0; i < n; ++i){
+        for(j = 0; j < rle[i]; ++j){
+            im.data[count++] = curr;
+        }
+        curr = 1 - curr;
+    }
+    for(; count < im.h*im.w*im.c; ++count){
+        im.data[count] = curr;
+    }
+}
+
+void or_image(image src, image dest, int c)
+{
+    int i;
+    for(i = 0; i < src.w*src.h; ++i){
+        if(src.data[i]) dest.data[dest.w*dest.h*c + i] = 1;
+    }
+}
+
+void fill_bg_mask(image m)
+{
+    int i,k;
+    int index = m.w*m.h*(m.c-1);
+    for(i = 0; i < m.w*m.h; ++i){
+        m.data[index + i] = 1;
+    }
+    for(k = 0; k < m.c-1; ++k){
+        for(i = 0; i < m.w*m.h; ++i){
+            if(m.data[index + i] && m.data[k*m.w*m.h + i]) m.data[index + i] = 0; 
+        }
+    }
+}
+
+image get_segmentation_image(char *path, int w, int h, int classes)
+{
+    char labelpath[4096];
+    find_replace(path, "images", "mask", labelpath);
+    find_replace(labelpath, "JPEGImages", "mask", labelpath);
+    find_replace(labelpath, ".jpg", ".txt", labelpath);
+    find_replace(labelpath, ".JPG", ".txt", labelpath);
+    find_replace(labelpath, ".JPEG", ".txt", labelpath);
+    image mask = make_image(w, h, classes+1);
+    FILE *file = fopen(labelpath, "r");
+    if(!file) file_error(labelpath);
+    char buff[32788];
+    int id;
+    image part = make_image(w, h, 1);
+    while(fscanf(file, "%d %s", &id, buff) == 2){
+        int n = 0;
+        int *rle = read_intlist(buff, &n, 0);
+        load_rle(part, rle, n);
+        or_image(part, mask, id);
+        free(rle);
+    }
+    fill_bg_mask(mask);
+    fclose(file);
+    free_image(part);
+    return mask;
+}
+
+data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
+{
+    char **random_paths = get_random_paths(paths, n, m);
+    int i;
+    data d = {0};
+    d.shallow = 0;
+
+    d.X.rows = n;
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.cols = h*w*3;
+
+
+    d.y.rows = n;
+    d.y.cols = h*w*(classes+1);
+    d.y.vals = calloc(d.X.rows, sizeof(float*));
+
+    for(i = 0; i < n; ++i){
+        image orig = load_image_color(random_paths[i], 0, 0);
+        augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
+        image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+
+        int flip = rand()%2;
+        if(flip) flip_image(sized);
+        random_distort_image(sized, hue, saturation, exposure);
+        d.X.vals[i] = sized.data;
+
+        image mask = get_segmentation_image(random_paths[i], orig.w, orig.h, classes);
+        //image mask = make_image(orig.w, orig.h, classes+1);
+        image sized_m = rotate_crop_image(mask, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+
+        if(flip) flip_image(sized_m);
+        d.y.vals[i] = sized_m.data;
+
+        free_image(orig);
+        free_image(mask);
+
+        /*
+           image rgb = mask_to_rgb(sized_m, classes);
+           show_image(rgb, "part");
+           show_image(sized, "orig");
+           cvWaitKey(0);
+           free_image(rgb);
+         */
+    }
+    free(random_paths);
+    return d;
+}
+
 data load_data_region(int n, char **paths, int m, int w, int h, int size, int classes, float jitter, float hue, float saturation, float exposure)
 {
     char **random_paths = get_random_paths(paths, n, m);
@@ -698,7 +811,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         image orig = load_image_color(random_paths[i], 0, 0);
         image sized = make_image(w, h, orig.c);
         fill_image(sized, .5);
-        
+
         float dw = jitter * orig.w;
         float dh = jitter * orig.h;
 
@@ -706,7 +819,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         float scale = rand_uniform(.25, 2);
 
         float nw, nh;
-        
+
         if(new_ar < 1){
             nh = scale * h;
             nw = nh * new_ar;
@@ -752,6 +865,8 @@ void *load_thread(void *ptr)
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
         *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.out_w, a.out_h);
+    } else if (a.type == SEGMENTATION_DATA){
+        *a.d = load_data_seg(a.n, a.paths, a.m, a.w, a.h, a.classes, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){
@@ -809,6 +924,13 @@ void *load_threads(void *ptr)
     free(buffers);
     free(threads);
     return 0;
+}
+
+void load_data_blocking(load_args args)
+{
+    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    *ptr = args;
+    load_thread(ptr);
 }
 
 pthread_t load_data(load_args args)

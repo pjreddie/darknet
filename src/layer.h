@@ -73,6 +73,7 @@ struct layer{
     int stride;
     int reverse;
     int flatten;
+    int spatial;
     int pad;
     int sqrt;
     int flip;

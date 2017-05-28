@@ -25,6 +25,25 @@ float get_color(int c, int x, int max)
     return r;
 }
 
+image mask_to_rgb(image mask)
+{
+    int n = mask.c;
+    image im = make_image(mask.w, mask.h, 3);
+    int i, j;
+    for(j = 0; j < n; ++j){
+        int offset = j*123457 % n;
+        float red = get_color(2,offset,n);
+        float green = get_color(1,offset,n);
+        float blue = get_color(0,offset,n);
+        for(i = 0; i < im.w*im.h; ++i){
+            im.data[i + 0*im.w*im.h] = mask.data[j*im.h*im.w + i]*red;
+            im.data[i + 1*im.w*im.h] = mask.data[j*im.h*im.w + i]*green;
+            im.data[i + 2*im.w*im.h] = mask.data[j*im.h*im.w + i]*blue;
+        }
+    }
+    return im;
+}
+
 void composite_image(image source, image dest, int dx, int dy)
 {
     int x,y,k;
@@ -902,8 +921,9 @@ image random_crop_image(image im, int w, int h)
     return crop;
 }
 
-image random_augment_image(image im, float angle, float aspect, int low, int high, int size)
+augment_args random_augment_args(image im, float angle, float aspect, int low, int high, int w, int h)
 {
+    augment_args a = {0};
     aspect = rand_scale(aspect);
     int r = rand_int(low, high);
     int min = (im.h < im.w*aspect) ? im.h : im.w*aspect;
@@ -911,15 +931,27 @@ image random_augment_image(image im, float angle, float aspect, int low, int hig
 
     float rad = rand_uniform(-angle, angle) * TWO_PI / 360.;
 
-    float dx = (im.w*scale/aspect - size) / 2.;
-    float dy = (im.h*scale - size) / 2.;
+    float dx = (im.w*scale/aspect - w) / 2.;
+    float dy = (im.h*scale - w) / 2.;
     if(dx < 0) dx = 0;
     if(dy < 0) dy = 0;
     dx = rand_uniform(-dx, dx);
     dy = rand_uniform(-dy, dy);
 
-    image crop = rotate_crop_image(im, rad, scale, size, size, dx, dy, aspect);
+    a.rad = rad;
+    a.scale = scale;
+    a.w = w;
+    a.h = h;
+    a.dx = dx;
+    a.dy = dy;
+    a.aspect = aspect;
+    return a;
+}
 
+image random_augment_image(image im, float angle, float aspect, int low, int high, int w, int h)
+{
+    augment_args a = random_augment_args(im, angle, aspect, low, high, w, h);
+    image crop = rotate_crop_image(im, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
     return crop;
 }
 
@@ -1300,7 +1332,7 @@ void test_resize(char *filename)
     show_image(c4, "C4");
 #ifdef OPENCV
     while(1){
-        image aug = random_augment_image(im, 0, .75, 320, 448, 320);
+        image aug = random_augment_image(im, 0, .75, 320, 448, 320, 320);
         show_image(aug, "aug");
         free_image(aug);
 

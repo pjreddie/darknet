@@ -700,7 +700,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         float *predictions = network_predict(net, X);
         if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 1, 1);
         top_k(predictions, net.outputs, top, indexes);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         for(i = 0; i < top; ++i){
             int index = indexes[i];
             //if(net.hierarchy) printf("%d, %s: %f, parent: %s \n",index, names[index], predictions[index], (net.hierarchy->parent[index] >= 0) ? names[net.hierarchy->parent[index]] : "Root");

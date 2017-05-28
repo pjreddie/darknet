@@ -20,6 +20,16 @@
 #endif
 
 typedef struct {
+    int w;
+    int h;
+    float scale;
+    float rad;
+    float dx;
+    float dy;
+    float aspect;
+} augment_args;
+
+typedef struct {
     int h;
     int w;
     int c;
@@ -37,6 +47,7 @@ void show_image_cv(image p, const char *name, IplImage *disp);
 #endif
 #endif
 
+image mask_to_rgb(image mask);
 float get_color(int c, int x, int max);
 void flip_image(image a);
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
@@ -48,9 +59,11 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 image image_distance(image a, image b);
 void scale_image(image m, float s);
 image crop_image(image im, int dx, int dy, int w, int h);
+image rotate_crop_image(image im, float rad, float s, int w, int h, float dx, float dy, float aspect);
 image center_crop_image(image im, int w, int h);
 image random_crop_image(image im, int w, int h);
-image random_augment_image(image im, float angle, float aspect, int low, int high, int size);
+image random_augment_image(image im, float angle, float aspect, int low, int high, int w, int h);
+augment_args random_augment_args(image im, float angle, float aspect, int low, int high, int w, int h);
 void random_distort_image(image im, float hue, float saturation, float exposure);
 image letterbox_image(image im, int w, int h);
 void letterbox_image_into(image im, int w, int h, image boxed);
