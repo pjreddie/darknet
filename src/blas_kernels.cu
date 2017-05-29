@@ -788,6 +788,37 @@ __device__ void softmax_device(float *input, int n, float temp, int stride, floa
     }
 }
 
+
+__global__ void softmax_tree_kernel(float *input, int spatial, int batch, int stride, float temp, float *output, int groups, int *group_size, int *group_offset)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= spatial*batch*groups) return;
+    int s = id % spatial;
+    id = id / spatial;
+    int g = id % groups;
+    int b = id / groups;
+    int goff = group_offset[g]*spatial;
+    int boff = b*stride;
+    softmax_device(input + goff + boff + s, group_size[g], temp, spatial, output + goff + boff + s);
+}
+
+extern "C" void softmax_tree(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier)
+{
+    //int *tree_groups_size = cuda_make_int_array(hier.group_size, hier.groups);
+    //int *tree_groups_offset = cuda_make_int_array(hier.group_offset, hier.groups);
+    static int *tree_groups_size = 0;
+    static int *tree_groups_offset = 0;
+    if(!tree_groups_size){
+        tree_groups_size = cuda_make_int_array(hier.group_size, hier.groups);
+        tree_groups_offset = cuda_make_int_array(hier.group_offset, hier.groups);
+    }
+    int num = spatial*batch*hier.groups;
+    softmax_tree_kernel<<<cuda_gridsize(num), BLOCK>>>(input, spatial, batch, stride, temp, output, hier.groups, tree_groups_size, tree_groups_offset);
+    check_error(cudaPeekAtLastError());
+    //cuda_free((float *)tree_groups_size);
+    //cuda_free((float *)tree_groups_offset);
+}
+
 __global__ void softmax_kernel(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output)
 {
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;

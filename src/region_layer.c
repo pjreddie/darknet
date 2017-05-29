@@ -141,7 +141,6 @@ int entry_index(layer l, int batch, int location, int entry)
     return batch*l.outputs + n*l.w*l.h*(l.coords+l.classes+1) + entry*l.w*l.h + loc;
 }
 
-void softmax_tree(float *input, int batch, int inputs, float temp, tree *hierarchy, float *output);
 void forward_region_layer(const layer l, network net)
 {
     int i,j,b,t,n;
@@ -445,6 +444,9 @@ void forward_region_layer_gpu(const layer l, network net)
         }
     }
     if (l.softmax_tree){
+        int index = entry_index(l, 0, 0, 5);
+        softmax_tree(net.input_gpu + index, l.w*l.h, l.batch*l.n, l.inputs/l.n, 1, l.output_gpu + index, *l.softmax_tree);
+        /*
         int i;
         int count = 5;
         for (i = 0; i < l.softmax_tree->groups; ++i) {
@@ -453,6 +455,7 @@ void forward_region_layer_gpu(const layer l, network net)
             softmax_gpu(net.input_gpu + index, group_size, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu + index);
             count += group_size;
         }
+        */
     } else if (l.softmax) {
         int index = entry_index(l, 0, 0, l.coords + !l.background);
         //printf("%d\n", index);
