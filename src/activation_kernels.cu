@@ -3,8 +3,8 @@
 #include "cublas_v2.h"
 
 extern "C" {
-#include "activations.h"
-#include "cuda.h"
+#include "darknet/activations.h"
+#include "darknet/cuda.h"
 }
 
 

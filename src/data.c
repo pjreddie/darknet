@@ -1,7 +1,7 @@
-#include "data.h"
-#include "utils.h"
-#include "image.h"
-#include "cuda.h"
+#include "darknet/data.h"
+#include "darknet/utils.h"
+#include "darknet/image.h"
+#include "darknet/cuda.h"
 
 #include <stdio.h>
 #include <stdlib.h>

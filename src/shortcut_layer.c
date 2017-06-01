@@ -1,6 +1,7 @@
-#include "shortcut_layer.h"
-#include "cuda.h"
-#include "blas.h"
+#include "darknet/shortcut_layer.h"
+#include "darknet/cuda.h"
+#include "darknet/blas.h"
+
 #include <stdio.h>
 #include <assert.h>
 

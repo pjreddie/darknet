@@ -1,8 +1,8 @@
-#include "network.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "blas.h"
+#include "darknet/network.h"
+#include "darknet/cost_layer.h"
+#include "darknet/utils.h"
+#include "darknet/parser.h"
+#include "darknet/blas.h"
 
 #ifdef OPENCV
 image get_image_from_stream(CvCapture *cap);

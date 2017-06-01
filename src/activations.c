@@ -1,4 +1,4 @@
-#include "activations.h"
+#include "darknet/activations.h"
 
 #include <math.h>
 #include <stdio.h>

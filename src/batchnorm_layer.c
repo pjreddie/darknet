@@ -1,6 +1,6 @@
-#include "convolutional_layer.h"
-#include "batchnorm_layer.h"
-#include "blas.h"
+#include "darknet/convolutional_layer.h"
+#include "darknet/batchnorm_layer.h"
+#include "darknet/blas.h"
 #include <stdio.h>
 
 layer make_batchnorm_layer(int batch, int w, int h, int c)
@@ -135,10 +135,6 @@ void resize_batchnorm_layer(layer *layer, int w, int h)
 void forward_batchnorm_layer(layer l, network net)
 {
     if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, net.input, 1, l.output, 1);
-    if(l.type == CONNECTED){
-        l.out_c = l.outputs;
-        l.out_h = l.out_w = 1;
-    }
     copy_cpu(l.outputs*l.batch, l.output, 1, l.x, 1);
     if(net.train){
         mean_cpu(l.output, l.batch, l.out_c, l.out_h*l.out_w, l.mean);
@@ -193,10 +189,6 @@ void push_batchnorm_layer(layer l)
 void forward_batchnorm_layer_gpu(layer l, network net)
 {
     if(l.type == BATCHNORM) copy_ongpu(l.outputs*l.batch, net.input_gpu, 1, l.output_gpu, 1);
-    if(l.type == CONNECTED){
-        l.out_c = l.outputs;
-        l.out_h = l.out_w = 1;
-    }
     copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
     if (net.train) {
 #ifdef CUDNN

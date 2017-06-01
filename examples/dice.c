@@ -1,6 +1,6 @@
-#include "network.h"
-#include "utils.h"
-#include "parser.h"
+#include "darknet/network.h"
+#include "darknet/utils.h"
+#include "darknet/parser.h"
 
 char *dice_labels[] = {"face1","face2","face3","face4","face5","face6"};
 

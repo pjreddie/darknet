@@ -1,11 +1,11 @@
-#include "network.h"
-#include "utils.h"
-#include "parser.h"
-#include "option_list.h"
-#include "blas.h"
-#include "assert.h"
-#include "cuda.h"
+#include "darknet/network.h"
+#include "darknet/utils.h"
+#include "darknet/parser.h"
+#include "darknet/option_list.h"
+#include "darknet/blas.h"
+#include "darknet/cuda.h"
 #include <sys/time.h>
+#include <assert.h>
 
 void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {

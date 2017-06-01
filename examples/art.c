@@ -1,9 +1,9 @@
-#include "network.h"
-#include "utils.h"
-#include "parser.h"
-#include "option_list.h"
-#include "blas.h"
-#include "classifier.h"
+#include "darknet/network.h"
+#include "darknet/utils.h"
+#include "darknet/parser.h"
+#include "darknet/option_list.h"
+#include "darknet/blas.h"
+#include "darknet/classifier.h"
 #include <sys/time.h>
 
 void demo_art(char *cfgfile, char *weightfile, int cam_index)

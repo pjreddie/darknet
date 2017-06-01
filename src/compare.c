@@ -1,11 +1,11 @@
 #include <stdio.h>
 
-#include "network.h"
-#include "detection_layer.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "box.h"
+#include "darknet/network.h"
+#include "darknet/detection_layer.h"
+#include "darknet/cost_layer.h"
+#include "darknet/utils.h"
+#include "darknet/parser.h"
+#include "darknet/box.h"
 
 void train_compare(char *cfgfile, char *weightfile)
 {

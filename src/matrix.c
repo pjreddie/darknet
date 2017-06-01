@@ -1,6 +1,6 @@
-#include "matrix.h"
-#include "utils.h"
-#include "blas.h"
+#include "darknet/matrix.h"
+#include "darknet/utils.h"
+#include "darknet/blas.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

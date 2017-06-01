@@ -7,7 +7,7 @@
 #include <float.h>
 #include <limits.h>
 
-#include "utils.h"
+#include "darknet/utils.h"
 
 int *read_intlist(char *gpu_list, int *ngpus, int d)
 {

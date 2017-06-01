@@ -3,14 +3,14 @@
 #include "cublas_v2.h"
 
 extern "C" {
-#include "convolutional_layer.h"
-#include "batchnorm_layer.h"
-#include "gemm.h"
-#include "blas.h"
-#include "im2col.h"
-#include "col2im.h"
-#include "utils.h"
-#include "cuda.h"
+#include "darknet/convolutional_layer.h"
+#include "darknet/batchnorm_layer.h"
+#include "darknet/gemm.h"
+#include "darknet/blas.h"
+#include "darknet/im2col.h"
+#include "darknet/col2im.h"
+#include "darknet/utils.h"
+#include "darknet/cuda.h"
 }
 
 __global__ void binarize_kernel(float *x, int n, float *binary)

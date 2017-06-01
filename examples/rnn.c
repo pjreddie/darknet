@@ -1,8 +1,8 @@
-#include "network.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "blas.h"
-#include "parser.h"
+#include "darknet/network.h"
+#include "darknet/cost_layer.h"
+#include "darknet/utils.h"
+#include "darknet/blas.h"
+#include "darknet/parser.h"
 
 typedef struct {
     float *x;
@@ -152,7 +152,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
     }
 
     int inputs = net.inputs;
-    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g, Inputs: %d\n", net.learning_rate, net.momentum, net.decay, inputs);
     int batch = net.batch;
     int steps = net.time_steps;
     if(clear) *net.seen = 0;

@@ -1,5 +1,6 @@
-#include "blas.h"
-#include "math.h"
+#include "darknet/blas.h"
+
+#include <math.h>
 #include <assert.h>
 #include <float.h>
 #include <stdio.h>

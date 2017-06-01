@@ -1,5 +1,5 @@
-#include "maxpool_layer.h"
-#include "cuda.h"
+#include "darknet/maxpool_layer.h"
+#include "darknet/cuda.h"
 #include <stdio.h>
 
 image get_maxpool_image(maxpool_layer l)

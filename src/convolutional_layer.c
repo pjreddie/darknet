@@ -1,10 +1,10 @@
-#include "convolutional_layer.h"
-#include "utils.h"
-#include "batchnorm_layer.h"
-#include "im2col.h"
-#include "col2im.h"
-#include "blas.h"
-#include "gemm.h"
+#include "darknet/convolutional_layer.h"
+#include "darknet/utils.h"
+#include "darknet/batchnorm_layer.h"
+#include "darknet/im2col.h"
+#include "darknet/col2im.h"
+#include "darknet/blas.h"
+#include "darknet/gemm.h"
 #include <stdio.h>
 #include <time.h>
 
