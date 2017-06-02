@@ -1,6 +1,6 @@
-#include "darknet/gemm.h"
-#include "darknet/utils.h"
-#include "darknet/cuda.h"
+#include "gemm.h"
+#include "utils.h"
+#include "cuda.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>

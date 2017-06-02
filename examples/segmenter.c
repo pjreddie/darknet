@@ -1,9 +1,4 @@
-#include "darknet/network.h"
-#include "darknet/utils.h"
-#include "darknet/parser.h"
-#include "darknet/option_list.h"
-#include "darknet/blas.h"
-#include "darknet/cuda.h"
+#include "darknet.h"
 #include <sys/time.h>
 #include <assert.h>
 
@@ -153,7 +148,9 @@ void predict_segmenter(char *datafile, char *cfgfile, char *weightfile, char *fi
         image rgb = mask_to_rgb(m);
         show_image(sized, "orig");
         show_image(rgb, "pred");
+#ifdef OPENCV
         cvWaitKey(0);
+#endif
         printf("Predicted: %f\n", predictions[0]);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         free_image(im);

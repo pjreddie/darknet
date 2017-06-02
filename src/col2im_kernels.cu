@@ -3,8 +3,8 @@
 #include "cublas_v2.h"
 
 extern "C" {
-#include "darknet/col2im.h"
-#include "darknet/cuda.h"
+#include "col2im.h"
+#include "cuda.h"
 }
 
 // src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu

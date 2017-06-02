@@ -1,10 +1,4 @@
-#include "darknet/network.h"
-#include "darknet/detection_layer.h"
-#include "darknet/cost_layer.h"
-#include "darknet/utils.h"
-#include "darknet/parser.h"
-#include "darknet/box.h"
-#include "darknet/demo.h"
+#include "darknet.h"
 
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 

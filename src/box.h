@@ -1,9 +1,6 @@
 #ifndef BOX_H
 #define BOX_H
-
-typedef struct{
-    float x, y, w, h;
-} box;
+#include "darknet.h"
 
 typedef struct{
     float dx, dy, dw, dh;

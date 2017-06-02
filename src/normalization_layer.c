@@ -1,5 +1,5 @@
-#include "darknet/normalization_layer.h"
-#include "darknet/blas.h"
+#include "normalization_layer.h"
+#include "blas.h"
 
 #include <stdio.h>
 

@@ -1,9 +1,9 @@
-#include "darknet/crnn_layer.h"
-#include "darknet/convolutional_layer.h"
-#include "darknet/utils.h"
-#include "darknet/cuda.h"
-#include "darknet/blas.h"
-#include "darknet/gemm.h"
+#include "crnn_layer.h"
+#include "convolutional_layer.h"
+#include "utils.h"
+#include "cuda.h"
+#include "blas.h"
+#include "gemm.h"
 
 #include <math.h>
 #include <stdio.h>

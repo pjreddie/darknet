@@ -1,4 +1,4 @@
-#include "darknet/blas.h"
+#include "blas.h"
 
 #include <math.h>
 #include <assert.h>

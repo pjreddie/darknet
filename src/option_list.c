@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "darknet/option_list.h"
-#include "darknet/utils.h"
+#include "option_list.h"
+#include "utils.h"
 
 list *read_data_cfg(char *filename)
 {

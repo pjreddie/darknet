@@ -1,13 +1,8 @@
+#include "darknet.h"
+
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#include "darknet/parser.h"
-#include "darknet/utils.h"
-#include "darknet/cuda.h"
-#include "darknet/blas.h"
-#include "darknet/connected_layer.h"
-#include "darknet/convolutional_layer.h"
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen);

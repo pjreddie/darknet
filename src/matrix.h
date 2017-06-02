@@ -1,9 +1,6 @@
 #ifndef MATRIX_H
 #define MATRIX_H
-typedef struct matrix{
-    int rows, cols;
-    float **vals;
-} matrix;
+#include "darknet.h"
 
 matrix make_matrix(int rows, int cols);
 matrix copy_matrix(matrix m);

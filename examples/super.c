@@ -1,7 +1,4 @@
-#include "darknet/network.h"
-#include "darknet/cost_layer.h"
-#include "darknet/utils.h"
-#include "darknet/parser.h"
+#include "darknet.h"
 
 void train_super(char *cfgfile, char *weightfile, int clear)
 {

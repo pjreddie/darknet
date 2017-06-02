@@ -3,10 +3,10 @@
 #include "cublas_v2.h"
 
 extern "C" {
-#include "darknet/crop_layer.h"
-#include "darknet/utils.h"
-#include "darknet/cuda.h"
-#include "darknet/image.h"
+#include "crop_layer.h"
+#include "utils.h"
+#include "cuda.h"
+#include "image.h"
 }
 
 __device__ float get_pixel_kernel(float *image, int w, int h, int x, int y, int c)

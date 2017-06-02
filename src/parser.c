@@ -3,33 +3,33 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "darknet/activation_layer.h"
-#include "darknet/activations.h"
-#include "darknet/avgpool_layer.h"
-#include "darknet/batchnorm_layer.h"
-#include "darknet/blas.h"
-#include "darknet/connected_layer.h"
-#include "darknet/deconvolutional_layer.h"
-#include "darknet/convolutional_layer.h"
-#include "darknet/cost_layer.h"
-#include "darknet/crnn_layer.h"
-#include "darknet/crop_layer.h"
-#include "darknet/detection_layer.h"
-#include "darknet/dropout_layer.h"
-#include "darknet/gru_layer.h"
-#include "darknet/list.h"
-#include "darknet/local_layer.h"
-#include "darknet/maxpool_layer.h"
-#include "darknet/normalization_layer.h"
-#include "darknet/option_list.h"
-#include "darknet/parser.h"
-#include "darknet/region_layer.h"
-#include "darknet/reorg_layer.h"
-#include "darknet/rnn_layer.h"
-#include "darknet/route_layer.h"
-#include "darknet/shortcut_layer.h"
-#include "darknet/softmax_layer.h"
-#include "darknet/utils.h"
+#include "activation_layer.h"
+#include "activations.h"
+#include "avgpool_layer.h"
+#include "batchnorm_layer.h"
+#include "blas.h"
+#include "connected_layer.h"
+#include "deconvolutional_layer.h"
+#include "convolutional_layer.h"
+#include "cost_layer.h"
+#include "crnn_layer.h"
+#include "crop_layer.h"
+#include "detection_layer.h"
+#include "dropout_layer.h"
+#include "gru_layer.h"
+#include "list.h"
+#include "local_layer.h"
+#include "maxpool_layer.h"
+#include "normalization_layer.h"
+#include "option_list.h"
+#include "parser.h"
+#include "region_layer.h"
+#include "reorg_layer.h"
+#include "rnn_layer.h"
+#include "route_layer.h"
+#include "shortcut_layer.h"
+#include "softmax_layer.h"
+#include "utils.h"
 
 typedef struct{
     char *type;
@@ -760,7 +760,7 @@ list *read_cfg(char *filename)
     if(file == 0) file_error(filename);
     char *line;
     int nu = 0;
-    list *sections = make_list();
+    list *options = make_list();
     section *current = 0;
     while((line=fgetl(file)) != 0){
         ++ nu;
@@ -768,7 +768,7 @@ list *read_cfg(char *filename)
         switch(line[0]){
             case '[':
                 current = malloc(sizeof(section));
-                list_insert(sections, current);
+                list_insert(options, current);
                 current->options = make_list();
                 current->type = line;
                 break;
@@ -786,7 +786,7 @@ list *read_cfg(char *filename)
         }
     }
     fclose(file);
-    return sections;
+    return options;
 }
 
 void save_convolutional_weights_binary(layer l, FILE *fp)

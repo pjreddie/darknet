@@ -1,8 +1,4 @@
-#include "darknet/network.h"
-#include "darknet/utils.h"
-#include "darknet/parser.h"
-#include "darknet/option_list.h"
-#include "darknet/blas.h"
+#include "darknet.h"
 
 void train_cifar(char *cfgfile, char *weightfile)
 {

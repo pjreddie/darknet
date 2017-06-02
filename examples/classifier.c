@@ -1,10 +1,5 @@
-#include "darknet/network.h"
-#include "darknet/utils.h"
-#include "darknet/parser.h"
-#include "darknet/option_list.h"
-#include "darknet/blas.h"
-#include "darknet/classifier.h"
-#include "darknet/cuda.h"
+#include "darknet.h"
+
 #include <sys/time.h>
 #include <assert.h>
 
@@ -37,11 +32,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 #ifdef GPU
         cuda_set_device(gpus[i]);
 #endif
-        nets[i] = parse_network_cfg(cfgfile);
-        if(weightfile){
-            load_weights(&nets[i], weightfile);
-        }
-        if(clear) *nets[i].seen = 0;
+        nets[i] = load_network(cfgfile, weightfile, clear);
         nets[i].learning_rate *= ngpus;
     }
     srand(time(0));

@@ -1,8 +1,4 @@
-#include "darknet/network.h"
-#include "darknet/cost_layer.h"
-#include "darknet/utils.h"
-#include "darknet/parser.h"
-#include "darknet/blas.h"
+#include "darknet.h"
 
 /*
 void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg, char *aweight, int clear)

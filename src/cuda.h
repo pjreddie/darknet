@@ -1,19 +1,9 @@
 #ifndef CUDA_H
 #define CUDA_H
 
-extern int gpu_index;
+#include "darknet.h"
 
 #ifdef GPU
-
-#define BLOCK 512
-
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
-
-#ifdef CUDNN
-#include "cudnn.h"
-#endif
 
 void check_error(cudaError_t status);
 cublasHandle_t blas_handle();

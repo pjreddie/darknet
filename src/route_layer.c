@@ -1,6 +1,6 @@
-#include "darknet/route_layer.h"
-#include "darknet/cuda.h"
-#include "darknet/blas.h"
+#include "route_layer.h"
+#include "cuda.h"
+#include "blas.h"
 
 #include <stdio.h>
 

@@ -1,6 +1,6 @@
-#include "darknet/softmax_layer.h"
-#include "darknet/blas.h"
-#include "darknet/cuda.h"
+#include "softmax_layer.h"
+#include "blas.h"
+#include "cuda.h"
 
 #include <float.h>
 #include <math.h>

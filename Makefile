@@ -1,6 +1,6 @@
-GPU=1
-CUDNN=1
-OPENCV=1
+GPU=0
+CUDNN=0
+OPENCV=0
 DEBUG=0
 
 ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
@@ -10,7 +10,7 @@ ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
       -gencode arch=compute_52,code=[sm_52,compute_52]
 
 # This is what I use, uncomment if you know your arch and want to specify
-ARCH=  -gencode arch=compute_52,code=compute_52
+# ARCH=  -gencode arch=compute_52,code=compute_52
 
 VPATH=./src/:./examples
 LIB=libdarknet.a
@@ -23,7 +23,7 @@ AR=ar
 ARFLAGS=-rv
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
-COMMON= -Iinclude/
+COMMON= -Iinclude/ -Isrc/
 CFLAGS=-Wall -Wfatal-errors 
 
 ifeq ($(DEBUG), 1) 
@@ -60,7 +60,7 @@ endif
 
 EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
-DEPS = $(wildcard include/darknet/*.h) Makefile
+DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
 all: obj backup results $(LIB) $(EXEC)
 

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "darknet/list.h"
+#include "list.h"
 
 list *make_list()
 {

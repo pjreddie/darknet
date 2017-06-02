@@ -1,12 +1,12 @@
-#include "darknet/network.h"
-#include "darknet/detection_layer.h"
-#include "darknet/region_layer.h"
-#include "darknet/cost_layer.h"
-#include "darknet/utils.h"
-#include "darknet/parser.h"
-#include "darknet/box.h"
-#include "darknet/image.h"
-#include "darknet/demo.h"
+#include "network.h"
+#include "detection_layer.h"
+#include "region_layer.h"
+#include "cost_layer.h"
+#include "utils.h"
+#include "parser.h"
+#include "box.h"
+#include "image.h"
+#include "demo.h"
 #include <sys/time.h>
 
 #define DEMO 1
@@ -31,7 +31,7 @@ static float demo_hier = .5;
 static int running = 0;
 
 static int demo_delay = 0;
-static int demo_frame = 5;
+static int demo_frame = 3;
 static int demo_detections = 0;
 static float **predictions;
 static int demo_index = 0;

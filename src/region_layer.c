@@ -1,9 +1,9 @@
-#include "darknet/region_layer.h"
-#include "darknet/activations.h"
-#include "darknet/blas.h"
-#include "darknet/box.h"
-#include "darknet/cuda.h"
-#include "darknet/utils.h"
+#include "region_layer.h"
+#include "activations.h"
+#include "blas.h"
+#include "box.h"
+#include "cuda.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -448,15 +448,65 @@ void forward_region_layer_gpu(const layer l, network net)
         int index = entry_index(l, 0, 0, 5);
         softmax_tree(net.input_gpu + index, l.w*l.h, l.batch*l.n, l.inputs/l.n, 1, l.output_gpu + index, *l.softmax_tree);
         /*
+        // TIMING CODE
+        int zz;
+        int number = 1000;
+        int count = 0;
         int i;
-        int count = 5;
         for (i = 0; i < l.softmax_tree->groups; ++i) {
             int group_size = l.softmax_tree->group_size[i];
-            int index = entry_index(l, 0, 0, count);
-            softmax_gpu(net.input_gpu + index, group_size, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu + index);
             count += group_size;
         }
+        printf("%d %d\n", l.softmax_tree->groups, count);
+        {
+            double then = what_time_is_it_now();
+            for(zz = 0; zz < number; ++zz){
+                int index = entry_index(l, 0, 0, 5);
+                softmax_tree(net.input_gpu + index, l.w*l.h, l.batch*l.n, l.inputs/l.n, 1, l.output_gpu + index, *l.softmax_tree);
+            }
+            cudaDeviceSynchronize();
+            printf("Good GPU Timing: %f\n", what_time_is_it_now() - then);
+        } 
+        {
+            double then = what_time_is_it_now();
+            for(zz = 0; zz < number; ++zz){
+                int i;
+                int count = 5;
+                for (i = 0; i < l.softmax_tree->groups; ++i) {
+                    int group_size = l.softmax_tree->group_size[i];
+                    int index = entry_index(l, 0, 0, count);
+                    softmax_gpu(net.input_gpu + index, group_size, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu + index);
+                    count += group_size;
+                }
+            }
+            cudaDeviceSynchronize();
+            printf("Bad GPU Timing: %f\n", what_time_is_it_now() - then);
+        }
+        {
+            double then = what_time_is_it_now();
+            for(zz = 0; zz < number; ++zz){
+                int i;
+                int count = 5;
+                for (i = 0; i < l.softmax_tree->groups; ++i) {
+                    int group_size = l.softmax_tree->group_size[i];
+                    softmax_cpu(net.input + count, group_size, l.batch, l.inputs, l.n*l.w*l.h, 1, l.n*l.w*l.h, l.temperature, l.output + count);
+                    count += group_size;
+                }
+            }
+            cudaDeviceSynchronize();
+            printf("CPU Timing: %f\n", what_time_is_it_now() - then);
+        }
         */
+        /*
+           int i;
+           int count = 5;
+           for (i = 0; i < l.softmax_tree->groups; ++i) {
+           int group_size = l.softmax_tree->group_size[i];
+           int index = entry_index(l, 0, 0, count);
+           softmax_gpu(net.input_gpu + index, group_size, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu + index);
+           count += group_size;
+           }
+         */
     } else if (l.softmax) {
         int index = entry_index(l, 0, 0, l.coords + !l.background);
         //printf("%d\n", index);

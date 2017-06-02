@@ -1,9 +1,5 @@
-#include "darknet/network.h"
-#include "darknet/detection_layer.h"
-#include "darknet/cost_layer.h"
-#include "darknet/utils.h"
-#include "darknet/parser.h"
-#include "darknet/box.h"
+#include "darknet.h"
+#include <sys/time.h>
 
 void train_swag(char *cfgfile, char *weightfile)
 {
