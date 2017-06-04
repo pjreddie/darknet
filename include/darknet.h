@@ -1,6 +1,7 @@
 #ifndef DARKNET_API
 #define DARKNET_API
 #include <stdlib.h>
+#include <pthread.h>
 
 extern int gpu_index;
 
