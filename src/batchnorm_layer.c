@@ -84,6 +84,12 @@ void backward_scale_cpu(float *x_norm, float *delta, int batch, int n, int size,
     }
 }
 
+
+/* This function is missing the latter part of the formula.
+ * paper link: https://arxiv.org/abs/1502.03167
+ * <<Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift>>
+ * mean_delta rely on variance_delta
+*/ 
 void mean_delta_cpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta)
 {
 
@@ -99,6 +105,11 @@ void mean_delta_cpu(float *delta, float *variance, int batch, int filters, int s
         mean_delta[i] *= (-1./sqrt(variance[i] + .00001f));
     }
 }
+
+
+
+
+
 void  variance_delta_cpu(float *x, float *delta, float *mean, float *variance, int batch, int filters, int spatial, float *variance_delta)
 {
 
