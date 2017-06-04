@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/bottlenome/darknet.svg?branch=master)](https://travis-ci.org/bottlenome/darknet)
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
 #Darknet#

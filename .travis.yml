@@ -1,0 +1,8 @@
+language: c
+compiler:
+  - gcc
+  - clang
+install: make get-deps
+script:
+  - make
+  - wget http://pjreddie.com/media/files/yolo.weights && ./darknet yolo test cfg/yolo.cfg yolo.weights data/dog.jpg
