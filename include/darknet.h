@@ -63,7 +63,7 @@ typedef enum {
     ACTIVE,
     RNN,
     GRU,
-	LSTM,
+    LSTM,
     CRNN,
     BATCHNORM,
     NETWORK,
@@ -253,20 +253,20 @@ struct layer{
     struct layer *input_h_layer;
     struct layer *state_h_layer;
 	
-	struct layer *wz;
-	struct layer *uz;
-	struct layer *wr;
-	struct layer *ur;
-	struct layer *wh;
-	struct layer *uh;
-	struct layer *uo;
-	struct layer *wo;
-	struct layer *uf;
-	struct layer *wf;
-	struct layer *ui;
-	struct layer *wi;
-	struct layer *ug;
-	struct layer *wg;
+    struct layer *wz;
+    struct layer *uz;
+    struct layer *wr;
+    struct layer *ur;
+    struct layer *wh;
+    struct layer *uh;
+    struct layer *uo;
+    struct layer *wo;
+    struct layer *uf;
+    struct layer *wf;
+    struct layer *ui;
+    struct layer *wi;
+    struct layer *ug;
+    struct layer *wg;
 
     tree *softmax_tree;
 
@@ -279,20 +279,20 @@ struct layer{
     float *r_gpu;
     float *h_gpu;
 
-	float *temp_gpu;
-	float *temp2_gpu;
-	float *temp3_gpu;
+    float *temp_gpu;
+    float *temp2_gpu;
+    float *temp3_gpu;
 
-	float *dh_gpu;
-	float *hh_gpu;
-	float *prev_cell_gpu;
-	float *cell_gpu;
-	float *f_gpu;
-	float *i_gpu;
-	float *g_gpu;
-	float *o_gpu;
-	float *c_gpu;
-	float *dc_gpu; 
+    float *dh_gpu;
+    float *hh_gpu;
+    float *prev_cell_gpu;
+    float *cell_gpu;
+    float *f_gpu;
+    float *i_gpu;
+    float *g_gpu;
+    float *o_gpu;
+    float *c_gpu;
+    float *dc_gpu; 
 
     float *m_gpu;
     float *v_gpu;
@@ -546,6 +546,7 @@ list *read_cfg(char *filename);
 #include "dropout_layer.h"
 #include "gemm.h"
 #include "gru_layer.h"
+#include "lstm_layer.h"
 #include "im2col.h"
 #include "image.h"
 #include "layer.h"

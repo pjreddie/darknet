@@ -185,7 +185,6 @@ void forward_gru_layer_gpu(layer l, network state)
 		activate_array_ongpu(l.hh_gpu, l.outputs*l.batch, TANH);			 
 
 		weighted_sum_gpu(l.h_gpu, l.hh_gpu, l.z_gpu, l.outputs*l.batch, l.output_gpu);
-		//ht = z .* ht-1 + (1-z) .* hh
 		copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.h_gpu, 1);
 
 		state.input += l.inputs*l.batch;
