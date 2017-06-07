@@ -186,7 +186,7 @@ struct layer{
     float * forgot_state;
     float * forgot_delta;
     float * state_delta;
-	
+
     float * concat;
     float * concat_delta;
 
