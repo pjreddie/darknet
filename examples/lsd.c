@@ -451,7 +451,7 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
     printf("%s\n", base);
     network gnet = load_network(cfg, weight, clear);
     network anet = load_network(acfg, aweight, clear);
-    float orig_rate = anet.learning_rate;
+    //float orig_rate = anet.learning_rate;
 
     int start = 0;
     int i, j, k;
@@ -494,7 +494,7 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
     int y_size = gnet.truths*gnet.batch;
     float *imerror = cuda_make_array(0, y_size);
 
-    int ay_size = anet.truths*anet.batch;
+    //int ay_size = anet.truths*anet.batch;
 
     float aloss_avg = -1;
 
@@ -664,14 +664,14 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     clock_t time;
 
     int x_size = net.inputs*net.batch;
-    int y_size = x_size;
+    //int y_size = x_size;
     net.delta = 0;
     net.train = 1;
     float *pixs = calloc(x_size, sizeof(float));
     float *graypixs = calloc(x_size, sizeof(float));
-    float *y = calloc(y_size, sizeof(float));
+    //float *y = calloc(y_size, sizeof(float));
 
-    int ay_size = anet.outputs*anet.batch;
+    //int ay_size = anet.outputs*anet.batch;
     anet.delta = 0;
     anet.train = 1;
 

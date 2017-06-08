@@ -33,7 +33,6 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         cuda_set_device(gpus[i]);
 #endif
         nets[i] = load_network(cfgfile, weightfile, clear);
-        nets[i].learning_rate *= ngpus;
     }
     srand(time(0));
     network net = nets[0];

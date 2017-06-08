@@ -36,9 +36,9 @@ image mask_to_rgb(image mask)
         float green = get_color(1,offset,n);
         float blue = get_color(0,offset,n);
         for(i = 0; i < im.w*im.h; ++i){
-            im.data[i + 0*im.w*im.h] = mask.data[j*im.h*im.w + i]*red;
-            im.data[i + 1*im.w*im.h] = mask.data[j*im.h*im.w + i]*green;
-            im.data[i + 2*im.w*im.h] = mask.data[j*im.h*im.w + i]*blue;
+            im.data[i + 0*im.w*im.h] += mask.data[j*im.h*im.w + i]*red;
+            im.data[i + 1*im.w*im.h] += mask.data[j*im.h*im.w + i]*green;
+            im.data[i + 2*im.w*im.h] += mask.data[j*im.h*im.w + i]*blue;
         }
     }
     return im;

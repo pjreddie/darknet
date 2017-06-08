@@ -1,5 +1,7 @@
 #include "darknet.h"
 
+#include <math.h>
+
 // ./darknet nightmare cfg/extractor.recon.cfg ~/trained/yolo-coco.conv frame6.png -reconstruct -iters 500 -i 3 -lambda .1 -rate .01 -smooth 2
 
 float abs_mean(float *x, int n)
@@ -128,11 +130,11 @@ void smooth(image recon, image update, float lambda, int num)
 void reconstruct_picture(network net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size, int iters)
 {
     int iter = 0;
-    layer l = get_network_output_layer(net);
     for (iter = 0; iter < iters; ++iter) {
         image delta = make_image(recon.w, recon.h, recon.c);
 
 #ifdef GPU
+        layer l = get_network_output_layer(net);
         cuda_push_array(net.input_gpu, recon.data, recon.w*recon.h*recon.c);
         //cuda_push_array(net.truth_gpu, features, net.truths);
         net.delta_gpu = cuda_make_array(delta.data, delta.w*delta.h*delta.c);

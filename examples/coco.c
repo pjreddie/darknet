@@ -313,7 +313,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer l = net.layers[net.n-1];
+    layer l = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
     float nms = .4;

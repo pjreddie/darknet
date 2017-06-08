@@ -1,5 +1,7 @@
 #include "darknet.h"
 
+#include <math.h>
+
 typedef struct {
     float *x;
     float *y;

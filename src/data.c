@@ -535,16 +535,17 @@ void or_image(image src, image dest, int c)
     }
 }
 
-void fill_bg_mask(image m)
+void exclusive_image(image src)
 {
-    int i,k;
-    int index = m.w*m.h*(m.c-1);
-    for(i = 0; i < m.w*m.h; ++i){
-        m.data[index + i] = 1;
-    }
-    for(k = 0; k < m.c-1; ++k){
-        for(i = 0; i < m.w*m.h; ++i){
-            if(m.data[index + i] && m.data[k*m.w*m.h + i]) m.data[index + i] = 0; 
+    int k, j, i;
+    int s = src.w*src.h;
+    for(k = 0; k < src.c-1; ++k){
+        for(i = 0; i < s; ++i){
+            if (src.data[k*s + i]){
+                for(j = k+1; j < src.c; ++j){
+                    src.data[j*s + i] = 0;
+                }
+            }
         }
     }
 }
@@ -558,6 +559,10 @@ image get_segmentation_image(char *path, int w, int h, int classes)
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
     image mask = make_image(w, h, classes+1);
+    int i;
+    for(i = 0; i < w*h; ++i){
+        mask.data[w*h*classes + i] = 1;
+    }
     FILE *file = fopen(labelpath, "r");
     if(!file) file_error(labelpath);
     char buff[32788];
@@ -568,9 +573,12 @@ image get_segmentation_image(char *path, int w, int h, int classes)
         int *rle = read_intlist(buff, &n, 0);
         load_rle(part, rle, n);
         or_image(part, mask, id);
+        for(i = 0; i < w*h; ++i){
+            if(part.data[i]) mask.data[w*h*classes + i] = 0;
+        }
         free(rle);
     }
-    fill_bg_mask(mask);
+    //exclusive_image(mask);
     fclose(file);
     free_image(part);
     return mask;

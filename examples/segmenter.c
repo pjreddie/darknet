@@ -24,7 +24,6 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
             load_weights(&nets[i], weightfile);
         }
         if(clear) *nets[i].seen = 0;
-        nets[i].learning_rate *= ngpus;
     }
     srand(time(0));
     network net = nets[0];
@@ -76,6 +75,15 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
+        image tr = float_to_image(net.w, net.h, 81, train.y.vals[0]);
+        image im = float_to_image(net.w, net.h, net.c, train.X.vals[0]);
+        image mask = mask_to_rgb(tr);
+        show_image(im, "input");
+        show_image(mask, "truth");
+#ifdef OPENCV
+        cvWaitKey(100);
+#endif
+        free_image(mask);
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();

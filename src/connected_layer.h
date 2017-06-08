@@ -12,8 +12,6 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
 void forward_connected_layer(connected_layer layer, network net);
 void backward_connected_layer(connected_layer layer, network net);
 void update_connected_layer(connected_layer layer, int batch, float learning_rate, float momentum, float decay);
-void denormalize_connected_layer(layer l);
-void statistics_connected_layer(layer l);
 
 #ifdef GPU
 void forward_connected_layer_gpu(connected_layer layer, network net);

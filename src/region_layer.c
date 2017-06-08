@@ -445,6 +445,15 @@ void forward_region_layer_gpu(const layer l, network net)
         }
     }
     if (l.softmax_tree){
+        int mmin = 9000;
+        int mmax = 0;
+        int i;
+        for(i = 0; i < l.softmax_tree->groups; ++i){
+            int group_size = l.softmax_tree->group_size[i];
+            if (group_size < mmin) mmin = group_size;
+            if (group_size > mmax) mmax = group_size;
+        }
+        printf("%d %d %d \n", l.softmax_tree->groups, mmin, mmax);
         int index = entry_index(l, 0, 0, 5);
         softmax_tree(net.input_gpu + index, l.w*l.h, l.batch*l.n, l.inputs/l.n, 1, l.output_gpu + index, *l.softmax_tree);
         /*

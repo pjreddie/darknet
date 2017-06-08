@@ -10,21 +10,21 @@ ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
       -gencode arch=compute_52,code=[sm_52,compute_52]
 
 # This is what I use, uncomment if you know your arch and want to specify
-# ARCH=  -gencode arch=compute_52,code=compute_52
+ARCH= -gencode arch=compute_52,code=compute_52
 
 VPATH=./src/:./examples
-LIB=libdarknet.a
+LIB=libdarknet.so
 EXEC=darknet
 OBJDIR=./obj/
 
 CC=gcc
-NVCC=nvcc 
+NVCC=nvcc --compiler-options '-fPIC'
 AR=ar
 ARFLAGS=-rv
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
 COMMON= -Iinclude/ -Isrc/
-CFLAGS=-Wall -Wfatal-errors 
+CFLAGS=-Wall -Wfatal-errors -fPIC
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
@@ -69,7 +69,7 @@ $(EXEC): $(EXECOBJ) $(LIB)
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LIB)
 
 $(LIB): $(OBJS)
-	$(AR) $(ARFLAGS) $@ $^ 
+	$(CC) $(CFLAGS) -shared $^ -o $@ $(LDFLAGS)
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@

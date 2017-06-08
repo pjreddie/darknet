@@ -58,6 +58,13 @@ network load_network(char *cfg, char *weights, int clear)
     return net;
 }
 
+network *load_network_p(char *cfg, char *weights, int clear)
+{
+    network *net = calloc(1, sizeof(network));
+    *net = load_network(cfg, weights, clear);
+    return net;
+}
+
 int get_current_batch(network net)
 {
     int batch_num = (*net.seen)/(net.batch*net.subdivisions);
@@ -438,6 +445,23 @@ float *network_predict(network net, float *input)
     forward_network(net);
     return net.output;
 }
+
+float *network_predict_p(network *net, float *input)
+{
+    return network_predict(*net, input);
+}
+
+float *network_predict_image(network *net, image im)
+{
+    image imr = letterbox_image(im, net->w, net->h);
+    set_batch_network(net, 1);
+    float *p = network_predict(*net, imr.data);
+    free_image(imr);
+    return p;
+}
+
+int network_width(network *net){return net->w;}
+int network_height(network *net){return net->h;}
 
 matrix network_predict_data_multi(network net, data test, int n)
 {

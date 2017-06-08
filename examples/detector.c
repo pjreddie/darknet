@@ -22,12 +22,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #ifdef GPU
         cuda_set_device(gpus[i]);
 #endif
-        nets[i] = parse_network_cfg(cfgfile);
-        if(weightfile){
-            load_weights(&nets[i], weightfile);
-        }
-        if(clear) *nets[i].seen = 0;
-        nets[i].learning_rate *= ngpus;
+        nets[i] = load_network(cfgfile, weightfile, clear);
     }
     srand(time(0));
     network net = nets[0];
