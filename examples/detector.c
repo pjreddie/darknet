@@ -2,7 +2,14 @@
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
-void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
+void train_detector(char *datacfg,
+                    char *cfgfile,
+                    char *weightfile,
+#ifdef GPU
+                    int *gpus,
+                    int ngpus,
+#endif
+                    int clear)
 {
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.list");
@@ -12,16 +19,15 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network *nets = calloc(ngpus, sizeof(network));
 
     srand(time(0));
-    int seed = rand();
     int i;
+#ifdef GPU
+    network *nets = calloc(ngpus, sizeof(network));
+    int seed = rand();
     for(i = 0; i < ngpus; ++i){
         srand(seed);
-#ifdef GPU
         cuda_set_device(gpus[i]);
-#endif
         nets[i] = parse_network_cfg(cfgfile);
         if(weightfile){
             load_weights(&nets[i], weightfile);
@@ -31,8 +37,19 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     }
     srand(time(0));
     network net = nets[0];
+#else
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    if(clear) net.seen = 0;
+#endif
 
-    int imgs = net.batch * net.subdivisions * ngpus;
+    int imgs = net.batch * net.subdivisions
+#ifdef GPU
+                * ngpus
+#endif
+                ;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     data train, buffer;
 
@@ -82,10 +99,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             free_data(train);
             load_thread = load_data(args);
 
+#ifdef GPU
             for(i = 0; i < ngpus; ++i){
                 resize_network(nets + i, dim, dim);
             }
             net = nets[0];
+#else
+            resize_network(&net, dim, dim);
+#endif
         }
         time=clock();
         pthread_join(load_thread, 0);
@@ -664,8 +685,9 @@ void run_detector(int argc, char **argv)
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
     }
-    char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     char *outfile = find_char_arg(argc, argv, "-out", 0);
+#ifdef GPU
+    char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
     int gpu = 0;
     int ngpus = 0;
@@ -687,7 +709,7 @@ void run_detector(int argc, char **argv)
         gpus = &gpu;
         ngpus = 1;
     }
-
+#endif
     int clear = find_arg(argc, argv, "-clear");
     int fullscreen = find_arg(argc, argv, "-fullscreen");
     int width = find_int_arg(argc, argv, "-w", 0);
@@ -699,8 +721,13 @@ void run_detector(int argc, char **argv)
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
-    else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
-    else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
+    else if(0==strcmp(argv[2], "train")) {
+        train_detector(datacfg, cfg, weights,
+#ifdef GPU
+                       gpus, ngpus,
+#endif
+                       clear);
+    }else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) {

@@ -31,7 +31,9 @@ void average(int argc, char *argv[])
 {
     char *cfgfile = argv[2];
     char *outfile = argv[3];
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     network sum = parse_network_cfg(cfgfile);
 
@@ -102,7 +104,9 @@ void speed(char *cfgfile, int tics)
 
 void operations(char *cfgfile)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     int i;
     long ops = 0;
@@ -120,7 +124,9 @@ void operations(char *cfgfile)
 
 void oneoff(char *cfgfile, char *weightfile, char *outfile)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     int oldn = net.layers[net.n - 2].n;
     int c = net.layers[net.n - 2].c;
@@ -147,7 +153,9 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
 
 void oneoff2(char *cfgfile, char *weightfile, char *outfile, int l)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights_upto(&net, weightfile, 0, net.n);
@@ -159,7 +167,9 @@ void oneoff2(char *cfgfile, char *weightfile, char *outfile, int l)
 
 void partial(char *cfgfile, char *weightfile, char *outfile, int max)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights_upto(&net, weightfile, 0, max);
@@ -170,7 +180,9 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
 
 void rescale_net(char *cfgfile, char *weightfile, char *outfile)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -188,7 +200,9 @@ void rescale_net(char *cfgfile, char *weightfile, char *outfile)
 
 void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -206,7 +220,9 @@ void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
 
 void reset_normalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     if (weightfile) {
         load_weights(&net, weightfile);
@@ -247,7 +263,9 @@ layer normalize_layer(layer l, int n)
 
 void normalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -276,7 +294,9 @@ void normalize_net(char *cfgfile, char *weightfile, char *outfile)
 
 void statistics_net(char *cfgfile, char *weightfile)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     if (weightfile) {
         load_weights(&net, weightfile);
@@ -309,7 +329,9 @@ void statistics_net(char *cfgfile, char *weightfile)
 
 void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
+#ifdef GPU
     gpu_index = -1;
+#endif
     network net = parse_network_cfg(cfgfile);
     if (weightfile) {
         load_weights(&net, weightfile);
@@ -391,14 +413,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "usage: %s <function>\n", argv[0]);
         return 0;
     }
+#ifdef GPU
     gpu_index = find_int_arg(argc, argv, "-i", 0);
     if(find_arg(argc, argv, "-nogpu")) {
         gpu_index = -1;
     }
-
-#ifndef GPU
-    gpu_index = -1;
-#else
     if(gpu_index >= 0){
         cuda_set_device(gpu_index);
     }

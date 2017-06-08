@@ -1,9 +1,14 @@
 #ifndef DARKNET_API
 #define DARKNET_API
 #include <stdlib.h>
-#include <pthread.h>
 
+#ifdef THREAD
+    #include <pthread.h>
+#endif
+
+#ifdef GPU
 extern int gpu_index;
+#endif
 
 #ifdef GPU
     #define BLOCK 512
@@ -89,9 +94,11 @@ struct layer{
     void (*forward)   (struct layer, struct network);
     void (*backward)  (struct layer, struct network);
     void (*update)    (struct layer, int, float, float, float);
+#ifdef GPU
     void (*forward_gpu)   (struct layer, struct network);
     void (*backward_gpu)  (struct layer, struct network);
     void (*update_gpu)    (struct layer, int, float, float, float);
+#endif
     int batch_normalize;
     int shortcut;
     int batch;
@@ -256,7 +263,7 @@ struct layer{
 
     size_t workspace_size;
 
-    #ifdef GPU
+#ifdef GPU
     int *indexes_gpu;
 
     float *z_gpu;
@@ -310,7 +317,7 @@ struct layer{
     float * rand_gpu;
     float * squared_gpu;
     float * norms_gpu;
-    #ifdef CUDNN
+#ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
     cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
     cudnnTensorDescriptor_t normTensorDesc;
@@ -320,8 +327,8 @@ struct layer{
     cudnnConvolutionFwdAlgo_t fw_algo;
     cudnnConvolutionBwdDataAlgo_t bd_algo;
     cudnnConvolutionBwdFilterAlgo_t bf_algo;
-    #endif
-    #endif
+#endif // #ifdef CUDNN
+#endif // #ifdef GPU
 };
 
 void free_layer(layer);
@@ -373,7 +380,9 @@ typedef struct network{
     float saturation;
     float hue;
 
+#ifdef GPIU
     int gpu_index;
+#endif
     tree *hierarchy;
 
     float *input;
@@ -384,12 +393,12 @@ typedef struct network{
     int index;
     float *cost;
 
-    #ifdef GPU
+#ifdef GPU
     float *input_gpu;
     float *truth_gpu;
     float *delta_gpu;
     float *output_gpu;
-    #endif
+#endif
 
 } network;
 

@@ -25,7 +25,7 @@ layer make_normalization_layer(int batch, int w, int h, int c, int size, float a
 
     layer.forward = forward_normalization_layer;
     layer.backward = backward_normalization_layer;
-    #ifdef GPU
+#ifdef GPU
     layer.forward_gpu = forward_normalization_layer_gpu;
     layer.backward_gpu = backward_normalization_layer_gpu;
 
@@ -33,7 +33,7 @@ layer make_normalization_layer(int batch, int w, int h, int c, int size, float a
     layer.delta_gpu =   cuda_make_array(layer.delta, h * w * c * batch);
     layer.squared_gpu = cuda_make_array(layer.squared, h * w * c * batch);
     layer.norms_gpu =   cuda_make_array(layer.norms, h * w * c * batch);
-    #endif
+#endif
     return layer;
 }
 
