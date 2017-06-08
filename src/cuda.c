@@ -1,3 +1,5 @@
+#ifdef GPU
+
 int gpu_index = 0;
 
 #ifdef GPU
@@ -170,5 +172,7 @@ float cuda_mag_array(float *x_gpu, size_t n)
     free(temp);
     return m;
 }
+
+#endif
 
 #endif

@@ -2,23 +2,29 @@
 #include <sys/time.h>
 #include <assert.h>
 
-void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
+void train_regressor(char *datacfg,
+                     char *cfgfile,
+                     char *weightfile,
+#ifdef GPU
+                     int *gpus,
+                     int ngpus,
+#endif
+                     int clear)
 {
     int i;
 
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
+
+#ifdef GPU
     printf("%d\n", ngpus);
     network *nets = calloc(ngpus, sizeof(network));
-
     srand(time(0));
     int seed = rand();
     for(i = 0; i < ngpus; ++i){
         srand(seed);
-#ifdef GPU
         cuda_set_device(gpus[i]);
-#endif
         nets[i] = parse_network_cfg(cfgfile);
         if(weightfile){
             load_weights(&nets[i], weightfile);
@@ -28,8 +34,19 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     }
     srand(time(0));
     network net = nets[0];
+#else
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    if(clear) net.seen = 0;
+#endif
 
-    int imgs = net.batch * net.subdivisions * ngpus;
+    int imgs = net.batch * net.subdivisions
+#ifdef GPU
+               * ngpus
+#endif
+               ;
 
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     list *options = read_data_cfg(datacfg);
@@ -212,7 +229,7 @@ void run_regressor(int argc, char **argv)
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
     }
-
+#ifdef GPU
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
     int gpu = 0;
@@ -235,6 +252,7 @@ void run_regressor(int argc, char **argv)
         gpus = &gpu;
         ngpus = 1;
     }
+#endif
 
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int clear = find_arg(argc, argv, "-clear");
@@ -243,7 +261,13 @@ void run_regressor(int argc, char **argv)
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) predict_regressor(data, cfg, weights);
-    else if(0==strcmp(argv[2], "train")) train_regressor(data, cfg, weights, gpus, ngpus, clear);
+    else if(0==strcmp(argv[2], "train")) {
+        train_regressor(data, cfg, weights,
+#ifdef GPU
+                        gpus, ngpus,
+#endif
+                        clear);
+    }
     else if(0==strcmp(argv[2], "demo")) demo_regressor(data, cfg, weights, cam_index, filename);
 }
 

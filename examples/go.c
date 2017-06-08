@@ -117,26 +117,34 @@ data random_go_moves(moves m, int n)
 }
 
 
-void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ngpus, int clear)
+void train_go(char *cfgfile,
+              char *weightfile,
+              char *filename,
+#ifdef GPU
+              int *gpus,
+              int ngpus,
+#endif
+              int clear)
 {
     int i;
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
+    srand(time(0));
+#ifdef GPU
     printf("%d\n", ngpus);
     network *nets = calloc(ngpus, sizeof(network));
-
-    srand(time(0));
     int seed = rand();
     for(i = 0; i < ngpus; ++i){
         srand(seed);
-#ifdef GPU
         cuda_set_device(gpus[i]);
-#endif
         nets[i] = load_network(cfgfile, weightfile, clear);
         nets[i].learning_rate *= ngpus;
     }
     network net = nets[0];
+#else
+    network net = load_network(cfgfile, weightfile, clear);
+#endif
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
     char *backup_directory = "/home/pjreddie/backup/";
@@ -151,7 +159,12 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         clock_t time=clock();
 
-        data train = random_go_moves(m, net.batch*net.subdivisions*ngpus);
+        data train = random_go_moves(m,
+                                     net.batch * net.subdivisions
+#ifdef GPU
+                                     * ngpus
+#endif
+                                     );
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
 
@@ -173,18 +186,18 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
         if(*net.seen/N > epoch){
             epoch = *net.seen/N;
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory,base, epoch);
+            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, epoch);
             save_weights(net, buff);
 
         }
         if(get_current_batch(net)%1000 == 0){
             char buff[256];
-            sprintf(buff, "%s/%s.backup",backup_directory,base);
+            sprintf(buff, "%s/%s.backup", backup_directory, base);
             save_weights(net, buff);
         }
         if(get_current_batch(net)%10000 == 0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.backup",backup_directory,base,get_current_batch(net));
+            sprintf(buff, "%s/%s_%d.backup", backup_directory, base, get_current_batch(net));
             save_weights(net, buff);
         }
     }
@@ -208,7 +221,6 @@ void propagate_liberty(float *board, int *lib, int *visited, int row, int col, i
     propagate_liberty(board, lib, visited, row, col+1, side);
     propagate_liberty(board, lib, visited, row, col-1, side);
 }
-
 
 int *calculate_liberties(float *board)
 {
@@ -871,7 +883,7 @@ void run_go(int argc, char **argv)
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
     }
-
+#ifdef GPU
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
     int gpu = 0;
@@ -894,6 +906,7 @@ void run_go(int argc, char **argv)
         gpus = &gpu;
         ngpus = 1;
     }
+#endif
     int clear = find_arg(argc, argv, "-clear");
 
     char *cfg = argv[3];
@@ -901,7 +914,15 @@ void run_go(int argc, char **argv)
     char *c2 = (argc > 5) ? argv[5] : 0;
     char *w2 = (argc > 6) ? argv[6] : 0;
     int multi = find_arg(argc, argv, "-multi");
-    if(0==strcmp(argv[2], "train")) train_go(cfg, weights, c2, gpus, ngpus, clear);
+    if(0==strcmp(argv[2], "train")) {
+        train_go(
+            cfg, weights, c2,
+#ifdef GPU
+            gpus, ngpus,
+#endif
+            clear
+        );
+    }
     else if(0==strcmp(argv[2], "valid")) valid_go(cfg, weights, multi, c2);
     else if(0==strcmp(argv[2], "self")) self_go(cfg, weights, c2, w2, multi);
     else if(0==strcmp(argv[2], "test")) test_go(cfg, weights, multi);

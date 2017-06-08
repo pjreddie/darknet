@@ -15,30 +15,42 @@ float *get_regression_values(char **labels, int n)
     return v;
 }
 
-void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
+void train_classifier(char *datacfg,
+                      char *cfgfile,
+                      char *weightfile,
+#ifdef GPU
+                      int *gpus,
+                      int ngpus,
+#endif
+                      int clear)
 {
     int i;
 
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
+    srand(time(0));
+#ifdef GPU
     printf("%d\n", ngpus);
     network *nets = calloc(ngpus, sizeof(network));
-
-    srand(time(0));
     int seed = rand();
     for(i = 0; i < ngpus; ++i){
         srand(seed);
-#ifdef GPU
         cuda_set_device(gpus[i]);
-#endif
         nets[i] = load_network(cfgfile, weightfile, clear);
         nets[i].learning_rate *= ngpus;
     }
     srand(time(0));
     network net = nets[0];
+#else
+    network net = load_network(cfgfile, weightfile, clear);
+#endif
 
-    int imgs = net.batch * net.subdivisions * ngpus;
+    int imgs = net.batch * net.subdivisions
+#ifdef GPU
+                * ngpus
+#endif
+                ;
 
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     list *options = read_data_cfg(datacfg);
@@ -1104,10 +1116,11 @@ void run_classifier(int argc, char **argv)
         return;
     }
 
+#ifdef GPU
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int ngpus;
     int *gpus = read_intlist(gpu_list, &ngpus, gpu_index);
-
+#endif
 
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int top = find_int_arg(argc, argv, "-t", 0);
@@ -1120,8 +1133,13 @@ void run_classifier(int argc, char **argv)
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
-    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear);
-    else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
+    else if(0==strcmp(argv[2], "train")) {
+        train_classifier(data, cfg, weights,
+#ifdef GPU
+                         gpus, ngpus,
+#endif
+                         clear);
+    }else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "gun")) gun_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "threat")) threat_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "test")) test_classifier(data, cfg, weights, layer);
