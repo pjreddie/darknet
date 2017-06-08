@@ -29,6 +29,7 @@
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "softmax_layer.h"
+#include "lstm_layer.h"
 #include "utils.h"
 
 typedef struct{
@@ -56,6 +57,7 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[network]")==0) return NETWORK;
     if (strcmp(type, "[crnn]")==0) return CRNN;
     if (strcmp(type, "[gru]")==0) return GRU;
+    if (strcmp(type, "[lstm]") == 0) return LSTM;
     if (strcmp(type, "[rnn]")==0) return RNN;
     if (strcmp(type, "[conn]")==0
             || strcmp(type, "[connected]")==0) return CONNECTED;
@@ -237,6 +239,16 @@ layer parse_gru(list *options, size_params params)
     layer l = make_gru_layer(params.batch, params.inputs, output, params.time_steps, batch_normalize);
 
     return l;
+}
+
+layer parse_lstm(list *options, size_params params)
+{
+	int output = option_find_int(options, "output", 1);
+	int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+
+	layer l = make_lstm_layer(params.batch, params.inputs, output, params.time_steps, batch_normalize);
+
+	return l;
 }
 
 connected_layer parse_connected(list *options, size_params params)
@@ -666,6 +678,8 @@ network parse_network_cfg(char *filename)
             l = parse_rnn(options, params);
         }else if(lt == GRU){
             l = parse_gru(options, params);
+	}else if (lt == LSTM) {
+            l = parse_lstm(options, params);
         }else if(lt == CRNN){
             l = parse_crnn(options, params);
         }else if(lt == CONNECTED){
@@ -906,14 +920,23 @@ void save_weights_upto(network net, char *filename, int cutoff)
             save_connected_weights(*(l.input_layer), fp);
             save_connected_weights(*(l.self_layer), fp);
             save_connected_weights(*(l.output_layer), fp);
-        } if(l.type == GRU){
-            save_connected_weights(*(l.input_z_layer), fp);
-            save_connected_weights(*(l.input_r_layer), fp);
-            save_connected_weights(*(l.input_h_layer), fp);
-            save_connected_weights(*(l.state_z_layer), fp);
-            save_connected_weights(*(l.state_r_layer), fp);
-            save_connected_weights(*(l.state_h_layer), fp);
-        } if(l.type == CRNN){
+        } if (l.type == LSTM) {
+	    save_connected_weights(*(l.wi), fp);
+	    save_connected_weights(*(l.wf), fp);
+	    save_connected_weights(*(l.wo), fp);
+	    save_connected_weights(*(l.wg), fp);
+	    save_connected_weights(*(l.ui), fp);
+	    save_connected_weights(*(l.uf), fp);
+	    save_connected_weights(*(l.uo), fp);
+	    save_connected_weights(*(l.ug), fp);
+	} if (l.type == GRU) {
+	    save_connected_weights(*(l.wz), fp);
+	    save_connected_weights(*(l.wr), fp);
+	    save_connected_weights(*(l.wh), fp);
+	    save_connected_weights(*(l.uz), fp);
+    	    save_connected_weights(*(l.ur), fp);
+	    save_connected_weights(*(l.uh), fp);
+	}  if(l.type == CRNN){
             save_convolutional_weights(*(l.input_layer), fp);
             save_convolutional_weights(*(l.self_layer), fp);
             save_convolutional_weights(*(l.output_layer), fp);
@@ -1105,14 +1128,24 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
             load_connected_weights(*(l.self_layer), fp, transpose);
             load_connected_weights(*(l.output_layer), fp, transpose);
         }
-        if(l.type == GRU){
-            load_connected_weights(*(l.input_z_layer), fp, transpose);
-            load_connected_weights(*(l.input_r_layer), fp, transpose);
-            load_connected_weights(*(l.input_h_layer), fp, transpose);
-            load_connected_weights(*(l.state_z_layer), fp, transpose);
-            load_connected_weights(*(l.state_r_layer), fp, transpose);
-            load_connected_weights(*(l.state_h_layer), fp, transpose);
-        }
+	if (l.type == LSTM) {
+	    load_connected_weights(*(l.wi), fp, transpose);
+	    load_connected_weights(*(l.wf), fp, transpose);
+	    load_connected_weights(*(l.wo), fp, transpose);
+	    load_connected_weights(*(l.wg), fp, transpose);
+	    load_connected_weights(*(l.ui), fp, transpose);
+	    load_connected_weights(*(l.uf), fp, transpose);
+	    load_connected_weights(*(l.uo), fp, transpose);
+	    load_connected_weights(*(l.ug), fp, transpose);
+	}
+	if (l.type == GRU) {
+	    load_connected_weights(*(l.wz), fp, transpose);
+	    load_connected_weights(*(l.wr), fp, transpose);
+	    load_connected_weights(*(l.wh), fp, transpose);
+	    load_connected_weights(*(l.uz), fp, transpose);
+	    load_connected_weights(*(l.ur), fp, transpose);
+	    load_connected_weights(*(l.uh), fp, transpose);
+	}
         if(l.type == LOCAL){
             int locations = l.out_w*l.out_h;
             int size = l.size*l.size*l.c*l.n*locations;
