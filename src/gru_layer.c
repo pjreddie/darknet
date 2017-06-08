@@ -156,33 +156,33 @@ void forward_gru_layer_gpu(layer l, network state)
 
     for (i = 0; i < l.steps; ++i) {
         s.input = l.h_gpu;
-        forward_connected_layer_gpu(uz, s);									 
-        forward_connected_layer_gpu(ur, s);									 
+        forward_connected_layer_gpu(uz, s);									
+        forward_connected_layer_gpu(ur, s);									
 
         s.input = state.input;
-        forward_connected_layer_gpu(wz, s);									 
-        forward_connected_layer_gpu(wr, s);									 
-        forward_connected_layer_gpu(wh, s);									 
+        forward_connected_layer_gpu(wz, s);									
+        forward_connected_layer_gpu(wr, s);									
+        forward_connected_layer_gpu(wh, s);									
 
-        copy_ongpu(l.outputs*l.batch, wz.output_gpu, 1, l.z_gpu, 1);		 
-        axpy_ongpu(l.outputs*l.batch, 1, uz.output_gpu, 1, l.z_gpu, 1);		 
+        copy_ongpu(l.outputs*l.batch, wz.output_gpu, 1, l.z_gpu, 1);		
+        axpy_ongpu(l.outputs*l.batch, 1, uz.output_gpu, 1, l.z_gpu, 1);		
 
-        copy_ongpu(l.outputs*l.batch, wr.output_gpu, 1, l.r_gpu, 1);		 
-        axpy_ongpu(l.outputs*l.batch, 1, ur.output_gpu, 1, l.r_gpu, 1);		 
+        copy_ongpu(l.outputs*l.batch, wr.output_gpu, 1, l.r_gpu, 1);		
+        axpy_ongpu(l.outputs*l.batch, 1, ur.output_gpu, 1, l.r_gpu, 1);		
 
-        activate_array_ongpu(l.z_gpu, l.outputs*l.batch, LOGISTIC);			 
-        activate_array_ongpu(l.r_gpu, l.outputs*l.batch, LOGISTIC);			 
+        activate_array_ongpu(l.z_gpu, l.outputs*l.batch, LOGISTIC);			
+        activate_array_ongpu(l.r_gpu, l.outputs*l.batch, LOGISTIC);			
 
-        copy_ongpu(l.outputs*l.batch, l.h_gpu, 1, l.hh_gpu, 1);				 
-        mul_ongpu(l.outputs*l.batch, l.r_gpu, 1, l.hh_gpu, 1);				 
+        copy_ongpu(l.outputs*l.batch, l.h_gpu, 1, l.hh_gpu, 1);				
+        mul_ongpu(l.outputs*l.batch, l.r_gpu, 1, l.hh_gpu, 1);				
 
         s.input = l.hh_gpu;
-        forward_connected_layer_gpu(uh, s);									 
+        forward_connected_layer_gpu(uh, s);									
 
-        copy_ongpu(l.outputs*l.batch, wh.output_gpu, 1, l.hh_gpu, 1);		 
-        axpy_ongpu(l.outputs*l.batch, 1, uh.output_gpu, 1, l.hh_gpu, 1);	 
+        copy_ongpu(l.outputs*l.batch, wh.output_gpu, 1, l.hh_gpu, 1);		
+        axpy_ongpu(l.outputs*l.batch, 1, uh.output_gpu, 1, l.hh_gpu, 1);	
 
-        activate_array_ongpu(l.hh_gpu, l.outputs*l.batch, TANH);			 
+        activate_array_ongpu(l.hh_gpu, l.outputs*l.batch, TANH);			
 
         weighted_sum_gpu(l.h_gpu, l.hh_gpu, l.z_gpu, l.outputs*l.batch, l.output_gpu);
         copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.h_gpu, 1);
@@ -231,44 +231,44 @@ void backward_gru_layer_gpu(layer l, network state)
         if (i>0) copy_ongpu(l.outputs*l.batch, l.output_gpu - l.outputs*l.batch, 1, l.prev_state_gpu, 1);
         l.dh_gpu = (i == 0) ? 0 : l.delta_gpu - l.outputs*l.batch;
 
-        copy_ongpu(l.outputs*l.batch, wz.output_gpu, 1, l.z_gpu, 1);		 
-        axpy_ongpu(l.outputs*l.batch, 1, uz.output_gpu, 1, l.z_gpu, 1);		 
+        copy_ongpu(l.outputs*l.batch, wz.output_gpu, 1, l.z_gpu, 1);		
+        axpy_ongpu(l.outputs*l.batch, 1, uz.output_gpu, 1, l.z_gpu, 1);		
 
-        copy_ongpu(l.outputs*l.batch, wr.output_gpu, 1, l.r_gpu, 1);		 
-        axpy_ongpu(l.outputs*l.batch, 1, ur.output_gpu, 1, l.r_gpu, 1);		 
+        copy_ongpu(l.outputs*l.batch, wr.output_gpu, 1, l.r_gpu, 1);		
+        axpy_ongpu(l.outputs*l.batch, 1, ur.output_gpu, 1, l.r_gpu, 1);		
 
-        activate_array_ongpu(l.z_gpu, l.outputs*l.batch, LOGISTIC);			 
-        activate_array_ongpu(l.r_gpu, l.outputs*l.batch, LOGISTIC);			 
+        activate_array_ongpu(l.z_gpu, l.outputs*l.batch, LOGISTIC);			
+        activate_array_ongpu(l.r_gpu, l.outputs*l.batch, LOGISTIC);			
 
-        copy_ongpu(l.outputs*l.batch, wh.output_gpu, 1, l.hh_gpu, 1);		 
-        axpy_ongpu(l.outputs*l.batch, 1, uh.output_gpu, 1, l.hh_gpu, 1);	 
+        copy_ongpu(l.outputs*l.batch, wh.output_gpu, 1, l.hh_gpu, 1);		
+        axpy_ongpu(l.outputs*l.batch, 1, uh.output_gpu, 1, l.hh_gpu, 1);	
 
-        activate_array_ongpu(l.hh_gpu, l.outputs*l.batch, TANH);			 
+        activate_array_ongpu(l.hh_gpu, l.outputs*l.batch, TANH);			
 
-        copy_ongpu(l.outputs*l.batch, l.delta_gpu, 1, l.temp3_gpu, 1);		 
+        copy_ongpu(l.outputs*l.batch, l.delta_gpu, 1, l.temp3_gpu, 1);		
 
-        fill_ongpu(l.outputs*l.batch, 1, l.temp_gpu, 1);					 
-        axpy_ongpu(l.outputs*l.batch, -1, l.z_gpu, 1, l.temp_gpu, 1);		 
-        mul_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp_gpu, 1);		 
-        gradient_array_ongpu(l.hh_gpu, l.outputs*l.batch, TANH, l.temp_gpu); 
+        fill_ongpu(l.outputs*l.batch, 1, l.temp_gpu, 1);					
+        axpy_ongpu(l.outputs*l.batch, -1, l.z_gpu, 1, l.temp_gpu, 1);		
+        mul_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp_gpu, 1);		
+        gradient_array_ongpu(l.hh_gpu, l.outputs*l.batch, TANH, l.temp_gpu);
 
         copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, wh.delta_gpu, 1);
         s.input = state.input;
         s.delta = state.delta;
         backward_connected_layer_gpu(wh, s);
 
-        copy_ongpu(l.outputs*l.batch, l.prev_state_gpu, 1, l.temp2_gpu, 1);	 
-        mul_ongpu(l.outputs*l.batch, l.r_gpu, 1, l.temp2_gpu, 1);			 
+        copy_ongpu(l.outputs*l.batch, l.prev_state_gpu, 1, l.temp2_gpu, 1);	
+        mul_ongpu(l.outputs*l.batch, l.r_gpu, 1, l.temp2_gpu, 1);			
 
         copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, uh.delta_gpu, 1);
-        fill_ongpu(l.outputs*l.batch, 0, l.temp_gpu, 1);					 
+        fill_ongpu(l.outputs*l.batch, 0, l.temp_gpu, 1);					
         s.input = l.temp2_gpu;
         s.delta = l.temp_gpu;
-        backward_connected_layer_gpu(uh, s);								 
+        backward_connected_layer_gpu(uh, s);								
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, l.temp2_gpu, 1);		 
-        mul_ongpu(l.outputs*l.batch, l.prev_state_gpu, 1, l.temp2_gpu, 1);	 
-        gradient_array_ongpu(l.r_gpu, l.outputs*l.batch, LOGISTIC, l.temp2_gpu); 
+        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, l.temp2_gpu, 1);		
+        mul_ongpu(l.outputs*l.batch, l.prev_state_gpu, 1, l.temp2_gpu, 1);	
+        gradient_array_ongpu(l.r_gpu, l.outputs*l.batch, LOGISTIC, l.temp2_gpu);
 
         copy_ongpu(l.outputs*l.batch, l.temp2_gpu, 1, wr.delta_gpu, 1);
         s.input = state.input;
@@ -278,21 +278,21 @@ void backward_gru_layer_gpu(layer l, network state)
         copy_ongpu(l.outputs*l.batch, l.temp2_gpu, 1, ur.delta_gpu, 1);
         s.input = l.prev_state_gpu;
         s.delta = l.dh_gpu;
-        backward_connected_layer_gpu(ur, s);									 
+        backward_connected_layer_gpu(ur, s);									
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, l.temp2_gpu, 1);			 
-        mul_ongpu(l.outputs*l.batch, l.r_gpu, 1, l.temp2_gpu, 1);				 
-        if (l.dh_gpu) axpy_ongpu(l.outputs*l.batch, 1, l.temp2_gpu, 1, l.dh_gpu, 1); 
+        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, l.temp2_gpu, 1);			
+        mul_ongpu(l.outputs*l.batch, l.r_gpu, 1, l.temp2_gpu, 1);				
+        if (l.dh_gpu) axpy_ongpu(l.outputs*l.batch, 1, l.temp2_gpu, 1, l.dh_gpu, 1);
 
-        copy_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp2_gpu, 1); 
-        mul_ongpu(l.outputs*l.batch, l.z_gpu, 1, l.temp2_gpu, 1);		 
-        if (l.dh_gpu) axpy_ongpu(l.outputs*l.batch, 1, l.temp2_gpu, 1, l.dh_gpu, 1);	 
+        copy_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp2_gpu, 1);
+        mul_ongpu(l.outputs*l.batch, l.z_gpu, 1, l.temp2_gpu, 1);		
+        if (l.dh_gpu) axpy_ongpu(l.outputs*l.batch, 1, l.temp2_gpu, 1, l.dh_gpu, 1);	
 
-        copy_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp2_gpu, 1);			 
-        mul_ongpu(l.outputs*l.batch, l.prev_state_gpu, 1, l.temp3_gpu, 1);		 
-        mul_ongpu(l.outputs*l.batch, l.hh_gpu, 1, l.temp2_gpu, 1);				 
-        axpy_ongpu(l.outputs*l.batch, -1, l.temp2_gpu, 1, l.temp3_gpu, 1);		 
-        gradient_array_ongpu(l.z_gpu, l.outputs*l.batch, LOGISTIC, l.temp3_gpu); 
+        copy_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp2_gpu, 1);			
+        mul_ongpu(l.outputs*l.batch, l.prev_state_gpu, 1, l.temp3_gpu, 1);		
+        mul_ongpu(l.outputs*l.batch, l.hh_gpu, 1, l.temp2_gpu, 1);				
+        axpy_ongpu(l.outputs*l.batch, -1, l.temp2_gpu, 1, l.temp3_gpu, 1);		
+        gradient_array_ongpu(l.z_gpu, l.outputs*l.batch, LOGISTIC, l.temp3_gpu);
 
         copy_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, wz.delta_gpu, 1);
         s.input = state.input;
@@ -302,7 +302,7 @@ void backward_gru_layer_gpu(layer l, network state)
         copy_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, uz.delta_gpu, 1);
         s.input = l.prev_state_gpu;
         s.delta = l.dh_gpu;
-        backward_connected_layer_gpu(uz, s);									 
+        backward_connected_layer_gpu(uz, s);									
 
         state.input -= l.inputs*l.batch;
         if (state.delta) state.delta -= l.inputs*l.batch;
