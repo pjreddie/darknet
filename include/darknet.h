@@ -154,6 +154,7 @@ struct layer{
     int noadjust;
     int reorg;
     int log;
+    int tanh;
 
     int adam;
     float B1;
@@ -237,9 +238,26 @@ struct layer{
     float * scale_m;
     float * scale_v;
 
-    float * z_cpu;
-    float * r_cpu;
-    float * h_cpu;
+
+    float *z_cpu;
+    float *r_cpu;
+    float *h_cpu;
+    float * prev_state_cpu;
+
+    float *temp_cpu;
+    float *temp2_cpu;
+    float *temp3_cpu;
+
+    float *dh_cpu;
+    float *hh_cpu;
+    float *prev_cell_cpu;
+    float *cell_cpu;
+    float *f_cpu;
+    float *i_cpu;
+    float *g_cpu;
+    float *o_cpu;
+    float *c_cpu;
+    float *dc_cpu; 
 
     float * binary_input;
 

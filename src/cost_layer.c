@@ -120,7 +120,7 @@ int float_abs_compare (const void * a, const void * b)
 
 void forward_cost_layer_gpu(cost_layer l, network net)
 {
-    if (!net.truth) return;
+    if (!net.truth_gpu) return;
     if(l.smooth){
         scal_ongpu(l.batch*l.inputs, (1-l.smooth), net.truth_gpu, 1);
         add_ongpu(l.batch*l.inputs, l.smooth * 1./l.inputs, net.truth_gpu, 1);
