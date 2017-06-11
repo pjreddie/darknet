@@ -13,14 +13,15 @@ ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
 # ARCH= -gencode arch=compute_52,code=compute_52
 
 VPATH=./src/:./examples
-LIB=libdarknet.so
+SLIB=libdarknet.so
+ALIB=libdarknet.a
 EXEC=darknet
 OBJDIR=./obj/
 
 CC=gcc
 NVCC=nvcc --compiler-options '-fPIC'
 AR=ar
-ARFLAGS=-rv
+ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
 COMMON= -Iinclude/ -Isrc/
@@ -62,13 +63,16 @@ EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
-all: obj backup results $(LIB) $(EXEC)
+all: obj backup results $(SLIB) $(ALIB) $(EXEC)
 
 
-$(EXEC): $(EXECOBJ) $(LIB)
-	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LIB)
+$(EXEC): $(EXECOBJ) $(ALIB)
+	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(ALIB)
 
-$(LIB): $(OBJS)
+$(ALIB): $(OBJS)
+	$(AR) $(ARFLAGS) $@ $^
+
+$(SLIB): $(OBJS)
 	$(CC) $(CFLAGS) -shared $^ -o $@ $(LDFLAGS)
 
 $(OBJDIR)%.o: %.c $(DEPS)
@@ -87,5 +91,5 @@ results:
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJS) $(LIB) $(EXEC) $(EXECOBJ)
+	rm -rf $(OBJS) $(SLIB) $(ALIB) $(EXEC) $(EXECOBJ)
 

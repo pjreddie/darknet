@@ -53,21 +53,24 @@ void backward_scale_gpu(float *x_norm, float *delta, int batch, int n, int size,
     check_error(cudaPeekAtLastError());
 }
 
-__global__ void add_bias_kernel(float *output, float *biases, int n, int size)
+__global__ void add_bias_kernel(float *output, float *biases, int batch, int n, int size)
 {
-    int offset = blockIdx.x * blockDim.x + threadIdx.x;
-    int filter = blockIdx.y;
-    int batch = blockIdx.z;
+    int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (index >= n*size*batch) return;
+    int i = index % size;
+    index /= size;
+    int j = index % n;
+    index /= n;
+    int k = index;
 
-    if(offset < size) output[(batch*n+filter)*size + offset] += biases[filter];
+    output[(k*n+j)*size + i] += biases[j];
 }
 
 void add_bias_gpu(float *output, float *biases, int batch, int n, int size)
 {
-    dim3 dimGrid((size-1)/BLOCK + 1, n, batch);
-    dim3 dimBlock(BLOCK, 1, 1);
+    int num = n*size*batch;
 
-    add_bias_kernel<<<dimGrid, dimBlock>>>(output, biases, n, size);
+    add_bias_kernel<<<cuda_gridsize(num), BLOCK>>>(output, biases, batch, n, size);
     check_error(cudaPeekAtLastError());
 }
 
