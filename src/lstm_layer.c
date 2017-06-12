@@ -26,7 +26,7 @@ static void increment_layer(layer *l, int steps)
 #endif
 }
 
-layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_normalize)
+layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_normalize, int adam)
 {
     fprintf(stderr, "LSTM Layer: %d inputs, %d outputs\n", inputs, outputs);
     batch = batch / steps;
@@ -38,42 +38,42 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
 
     l.uf = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.uf) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize);
+    *(l.uf) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.uf->batch = batch;
 
     l.wf = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.wf) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize);
+    *(l.wf) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wf->batch = batch;
 
     l.ui = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.ui) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize);
+    *(l.ui) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.ui->batch = batch;
 
     l.wi = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.wi) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize);
+    *(l.wi) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wi->batch = batch;
 
     l.ug = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.ug) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize);
+    *(l.ug) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.ug->batch = batch;
 
     l.wg = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.wg) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize);
+    *(l.wg) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wg->batch = batch;
 
     l.uo = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.uo) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize);
+    *(l.uo) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.uo->batch = batch;
 
     l.wo = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.wo) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize);
+    *(l.wo) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wo->batch = batch;
 
     l.batch_normalize = batch_normalize;
@@ -141,16 +141,16 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
     return l;
 }
 
-void update_lstm_layer(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_lstm_layer(layer l, update_args a)
 {
-    update_connected_layer(*(l.wf), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.wi), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.wg), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.wo), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.uf), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.ui), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.ug), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.uo), batch, learning_rate, momentum, decay);
+    update_connected_layer(*(l.wf), a);
+    update_connected_layer(*(l.wi), a);
+    update_connected_layer(*(l.wg), a);
+    update_connected_layer(*(l.wo), a);
+    update_connected_layer(*(l.uf), a);
+    update_connected_layer(*(l.ui), a);
+    update_connected_layer(*(l.ug), a);
+    update_connected_layer(*(l.uo), a);
 }
 
 void forward_lstm_layer(layer l, network state)
@@ -383,16 +383,16 @@ void backward_lstm_layer(layer l, network state)
 }
 
 #ifdef GPU
-void update_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_lstm_layer_gpu(layer l, update_args a)
 {
-    update_connected_layer_gpu(*(l.wf), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wi), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wg), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wo), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.uf), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.ui), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.ug), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.uo), batch, learning_rate, momentum, decay);
+    update_connected_layer_gpu(*(l.wf), a);
+    update_connected_layer_gpu(*(l.wi), a);
+    update_connected_layer_gpu(*(l.wg), a);
+    update_connected_layer_gpu(*(l.wo), a);
+    update_connected_layer_gpu(*(l.uf), a);
+    update_connected_layer_gpu(*(l.ui), a);
+    update_connected_layer_gpu(*(l.ug), a);
+    update_connected_layer_gpu(*(l.uo), a);
 }
 
 void forward_lstm_layer_gpu(layer l, network state)

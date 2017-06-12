@@ -164,8 +164,13 @@ void backward_local_layer(local_layer l, network net)
     }
 }
 
-void update_local_layer(local_layer l, int batch, float learning_rate, float momentum, float decay)
+void update_local_layer(local_layer l, update_args a)
 {
+    float learning_rate = a.learning_rate*l.learning_rate_scale;
+    float momentum = a.momentum;
+    float decay = a.decay;
+    int batch = a.batch;
+
     int locations = l.out_w*l.out_h;
     int size = l.size*l.size*l.c*l.n*locations;
     axpy_cpu(l.outputs, learning_rate/batch, l.bias_updates, 1, l.biases, 1);
@@ -253,8 +258,13 @@ void backward_local_layer_gpu(local_layer l, network net)
     }
 }
 
-void update_local_layer_gpu(local_layer l, int batch, float learning_rate, float momentum, float decay)
+void update_local_layer_gpu(local_layer l, update_args a)
 {
+    float learning_rate = a.learning_rate*l.learning_rate_scale;
+    float momentum = a.momentum;
+    float decay = a.decay;
+    int batch = a.batch;
+
     int locations = l.out_w*l.out_h;
     int size = l.size*l.size*l.c*l.n*locations;
     axpy_ongpu(l.outputs, learning_rate/batch, l.bias_updates_gpu, 1, l.biases_gpu, 1);

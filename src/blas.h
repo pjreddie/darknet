@@ -80,6 +80,7 @@ void mult_add_into_gpu(int num, float *a, float *b, float *c);
 void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
 
 void softmax_gpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
+void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t);
 void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t);
 
 void flatten_ongpu(float *x, int spatial, int layers, int batch, int forward, float *out);

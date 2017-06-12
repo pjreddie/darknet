@@ -65,9 +65,9 @@ network *load_network_p(char *cfg, char *weights, int clear)
     return net;
 }
 
-int get_current_batch(network net)
+size_t get_current_batch(network net)
 {
-    int batch_num = (*net.seen)/(net.batch*net.subdivisions);
+    size_t batch_num = (*net.seen)/(net.batch*net.subdivisions);
     return batch_num;
 }
 
@@ -84,7 +84,7 @@ void reset_momentum(network net)
 
 float get_current_rate(network net)
 {
-    int batch_num = get_current_batch(net);
+    size_t batch_num = get_current_batch(net);
     int i;
     float rate;
     if (batch_num < net.burn_in) return net.learning_rate * pow((float)batch_num / net.burn_in, net.power);
@@ -174,6 +174,7 @@ network make_network(int n)
     net.n = n;
     net.layers = calloc(net.n, sizeof(layer));
     net.seen = calloc(1, sizeof(int));
+    net.t    = calloc(1, sizeof(int));
     net.cost = calloc(1, sizeof(float));
     return net;
 }
@@ -199,12 +200,22 @@ void forward_network(network net)
 void update_network(network net)
 {
     int i;
-    int update_batch = net.batch*net.subdivisions;
-    float rate = get_current_rate(net);
+    update_args a = {0};
+    a.batch = net.batch*net.subdivisions;
+    a.learning_rate = get_current_rate(net);
+    a.momentum = net.momentum;
+    a.decay = net.decay;
+    a.adam = net.adam;
+    a.B1 = net.B1;
+    a.B2 = net.B2;
+    a.eps = net.eps;
+    ++*net.t;
+    a.t = *net.t;
+
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.update){
-            l.update(l, update_batch, rate*l.learning_rate_scale, net.momentum, net.decay);
+            l.update(l, a);
         }
     }
 }

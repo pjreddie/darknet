@@ -182,7 +182,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
-        int chars = get_current_batch(net)*batch;
+        size_t chars = get_current_batch(net)*batch;
         fprintf(stderr, "%d: %f, %f avg, %f rate, %lf seconds, %f epochs\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), (float) chars/size);
 
         for(j = 0; j < streams; ++j){
@@ -194,12 +194,12 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
             }
         }
 
-        if(i%1000==0){
+        if(i%10000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
-        if(i%10==0){
+        if(i%100==0){
             char buff[256];
             sprintf(buff, "%s/%s.backup", backup_directory, base);
             save_weights(net, buff);
@@ -409,7 +409,7 @@ void valid_char_rnn(char *cfgfile, char *weightfile, char *seed)
         input[c] = 0;
         sum += log(out[next])/log2;
         c = next;
-        printf("%d Perplexity: %4.4f    Word Perplexity: %4.4f\n", count, pow(2, -sum/count), pow(2, -sum/words));
+        printf("%d BPC: %4.4f   Perplexity: %4.4f    Word Perplexity: %4.4f\n", count, -sum/count, pow(2, -sum/count), pow(2, -sum/words));
     }
 }
 

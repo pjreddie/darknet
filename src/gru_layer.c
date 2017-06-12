@@ -26,7 +26,7 @@ static void increment_layer(layer *l, int steps)
 #endif
 }
 
-layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_normalize)
+layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_normalize, int adam)
 {
     fprintf(stderr, "GRU Layer: %d inputs, %d outputs\n", inputs, outputs);
     batch = batch / steps;
@@ -38,34 +38,34 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
 
     l.uz = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.uz) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize);
+    *(l.uz) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.uz->batch = batch;
 
     l.wz = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.wz) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize);
+    *(l.wz) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wz->batch = batch;
 
     l.ur = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.ur) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize);
+    *(l.ur) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.ur->batch = batch;
 
     l.wr = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.wr) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize);
+    *(l.wr) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wr->batch = batch;
 
 
 
     l.uh = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.uh) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize);
+    *(l.uh) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.uh->batch = batch;
 
     l.wh = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.wh) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize);
+    *(l.wh) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wh->batch = batch;
 
     l.batch_normalize = batch_normalize;
@@ -115,11 +115,14 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
     return l;
 }
 
-void update_gru_layer(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_gru_layer(layer l, update_args a)
 {
-    update_connected_layer(*(l.input_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.self_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.output_layer), batch, learning_rate, momentum, decay);
+    update_connected_layer(*(l.ur), a);
+    update_connected_layer(*(l.uz), a);
+    update_connected_layer(*(l.uh), a);
+    update_connected_layer(*(l.wr), a);
+    update_connected_layer(*(l.wz), a);
+    update_connected_layer(*(l.wh), a);
 }
 
 void forward_gru_layer(layer l, network net)
@@ -212,14 +215,14 @@ void push_gru_layer(layer l)
 {
 }
 
-void update_gru_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_gru_layer_gpu(layer l, update_args a)
 {
-    update_connected_layer_gpu(*(l.ur), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.uz), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.uh), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wr), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wz), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wh), batch, learning_rate, momentum, decay);
+    update_connected_layer_gpu(*(l.ur), a);
+    update_connected_layer_gpu(*(l.uz), a);
+    update_connected_layer_gpu(*(l.uh), a);
+    update_connected_layer_gpu(*(l.wr), a);
+    update_connected_layer_gpu(*(l.wz), a);
+    update_connected_layer_gpu(*(l.wh), a);
 }
 
 void forward_gru_layer_gpu(layer l, network net)

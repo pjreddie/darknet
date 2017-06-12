@@ -81,13 +81,22 @@ void update_network_gpu(network net)
 {
     cuda_set_device(net.gpu_index);
     int i;
-    int update_batch = net.batch*net.subdivisions;
-    float rate = get_current_rate(net);
+    update_args a = {0};
+    a.batch = net.batch*net.subdivisions;
+    a.learning_rate = get_current_rate(net);
+    a.momentum = net.momentum;
+    a.decay = net.decay;
+    a.adam = net.adam;
+    a.B1 = net.B1;
+    a.B2 = net.B2;
+    a.eps = net.eps;
+    ++*net.t;
+    a.t = (*net.t);
+
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
-        l.t = get_current_batch(net);
         if(l.update_gpu){
-            l.update_gpu(l, update_batch, rate*l.learning_rate_scale, net.momentum, net.decay);
+            l.update_gpu(l, a);
         }
     }
 }

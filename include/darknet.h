@@ -87,6 +87,18 @@ typedef enum{
     SSE, MASKED, L1, SMOOTH
 } COST_TYPE;
 
+typedef struct{
+    int batch;
+    float learning_rate;
+    float momentum;
+    float decay;
+    int adam;
+    float B1;
+    float B2;
+    float eps;
+    int t;
+} update_args;
+
 struct network;
 typedef struct network network;
 
@@ -99,10 +111,10 @@ struct layer{
     COST_TYPE cost_type;
     void (*forward)   (struct layer, struct network);
     void (*backward)  (struct layer, struct network);
-    void (*update)    (struct layer, int, float, float, float);
+    void (*update)    (struct layer, update_args);
     void (*forward_gpu)   (struct layer, struct network);
     void (*backward_gpu)  (struct layer, struct network);
-    void (*update_gpu)    (struct layer, int, float, float, float);
+    void (*update_gpu)    (struct layer, update_args);
     int batch_normalize;
     int shortcut;
     int batch;
@@ -155,12 +167,6 @@ struct layer{
     int reorg;
     int log;
     int tanh;
-
-    int adam;
-    float B1;
-    float B2;
-    float eps;
-    int t;
 
     float alpha;
     float beta;
@@ -395,16 +401,17 @@ typedef enum {
 typedef struct network{
     int n;
     int batch;
-    int *seen;
+    size_t *seen;
+    int *t;
     float epoch;
     int subdivisions;
-    float momentum;
-    float decay;
     layer *layers;
     float *output;
     learning_rate_policy policy;
 
     float learning_rate;
+    float momentum;
+    float decay;
     float gamma;
     float scale;
     float power;
@@ -648,7 +655,7 @@ void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, flo
 float get_current_rate(network net);
 void composite_3d(char *f1, char *f2, char *out, int delta);
 data load_data_old(char **paths, int n, int m, char **labels, int k, int w, int h);
-int get_current_batch(network net);
+size_t get_current_batch(network net);
 void constrain_image(image im);
 image get_network_image_layer(network net, int i);
 layer get_network_output_layer(network net);

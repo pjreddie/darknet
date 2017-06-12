@@ -234,7 +234,6 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
     }
     if(adam){
-        l.adam = 1;
         l.m = calloc(c*n*size*size, sizeof(float));
         l.v = calloc(c*n*size*size, sizeof(float));
         l.bias_m = calloc(n, sizeof(float));
@@ -507,8 +506,13 @@ void backward_convolutional_layer(convolutional_layer l, network net)
     }
 }
 
-void update_convolutional_layer(convolutional_layer l, int batch, float learning_rate, float momentum, float decay)
+void update_convolutional_layer(convolutional_layer l, update_args a)
 {
+    float learning_rate = a.learning_rate*l.learning_rate_scale;
+    float momentum = a.momentum;
+    float decay = a.decay;
+    int batch = a.batch;
+
     int size = l.size*l.size*l.c*l.n;
     axpy_cpu(l.n, learning_rate/batch, l.bias_updates, 1, l.biases, 1);
     scal_cpu(l.n, momentum, l.bias_updates, 1);

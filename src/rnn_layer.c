@@ -26,7 +26,7 @@ static void increment_layer(layer *l, int steps)
 #endif
 }
 
-layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, ACTIVATION activation, int batch_normalize, int log)
+layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, ACTIVATION activation, int batch_normalize, int log, int adam)
 {
     fprintf(stderr, "RNN Layer: %d inputs, %d outputs\n", inputs, outputs);
     batch = batch / steps;
@@ -41,17 +41,17 @@ layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, 
 
     l.input_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.input_layer) = make_connected_layer(batch*steps, inputs, hidden, activation, batch_normalize);
+    *(l.input_layer) = make_connected_layer(batch*steps, inputs, hidden, activation, batch_normalize, adam);
     l.input_layer->batch = batch;
 
     l.self_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.self_layer) = make_connected_layer(batch*steps, hidden, hidden, (log==2)?LOGGY:(log==1?LOGISTIC:activation), batch_normalize);
+    *(l.self_layer) = make_connected_layer(batch*steps, hidden, hidden, (log==2)?LOGGY:(log==1?LOGISTIC:activation), batch_normalize, adam);
     l.self_layer->batch = batch;
 
     l.output_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.output_layer) = make_connected_layer(batch*steps, hidden, outputs, activation, batch_normalize);
+    *(l.output_layer) = make_connected_layer(batch*steps, hidden, outputs, activation, batch_normalize, adam);
     l.output_layer->batch = batch;
 
     l.outputs = outputs;
@@ -73,11 +73,11 @@ layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, 
     return l;
 }
 
-void update_rnn_layer(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_rnn_layer(layer l, update_args a)
 {
-    update_connected_layer(*(l.input_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.self_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer(*(l.output_layer), batch, learning_rate, momentum, decay);
+    update_connected_layer(*(l.input_layer),  a);
+    update_connected_layer(*(l.self_layer),   a);
+    update_connected_layer(*(l.output_layer), a);
 }
 
 void forward_rnn_layer(layer l, network net)
@@ -187,11 +187,11 @@ void push_rnn_layer(layer l)
     push_connected_layer(*(l.output_layer));
 }
 
-void update_rnn_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_rnn_layer_gpu(layer l, update_args a)
 {
-    update_connected_layer_gpu(*(l.input_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.self_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.output_layer), batch, learning_rate, momentum, decay);
+    update_connected_layer_gpu(*(l.input_layer),  a);
+    update_connected_layer_gpu(*(l.self_layer),   a);
+    update_connected_layer_gpu(*(l.output_layer), a);
 }
 
 void forward_rnn_layer_gpu(layer l, network net)

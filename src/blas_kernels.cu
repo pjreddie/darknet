@@ -74,6 +74,19 @@ void add_bias_gpu(float *output, float *biases, int batch, int n, int size)
     check_error(cudaPeekAtLastError());
 }
 
+__global__ void backward_bias_conn_kernel(float *bias_updates, float *delta, int batch, int n)
+{
+    int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (index >= n) return;
+    int b;
+    float sum = 0;
+    for(b = 0; b < batch; ++b){
+        int i = b*n + index;
+        sum += delta[i];
+    }
+    bias_updates[index] += sum;
+}
+
 __global__ void backward_bias_kernel(float *bias_updates, float *delta, int batch, int n, int size)
 {
     __shared__ float part[BLOCK];
@@ -92,6 +105,16 @@ __global__ void backward_bias_kernel(float *bias_updates, float *delta, int batc
     if (p == 0) {
         for(i = 0; i < BLOCK; ++i) bias_updates[filter] += part[i];
     }
+}
+
+void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
+{
+    if(size == 1){
+        backward_bias_conn_kernel<<<cuda_gridsize(n), BLOCK>>>(bias_updates, delta, batch, n);
+    }else{
+        backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size);
+    }
+    check_error(cudaPeekAtLastError());
 }
 
 /*
@@ -136,12 +159,6 @@ void dot_error_gpu(layer l)
 }
 */
 
-void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
-{
-    backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size);
-    check_error(cudaPeekAtLastError());
-}
-
 
 __global__ void adam_kernel(int N, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t)
 {
@@ -149,13 +166,26 @@ __global__ void adam_kernel(int N, float *x, float *m, float *v, float B1, float
     if (index >= N) return;
     
     x[index] = x[index] + (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps));
-    //if(index == 0) printf("%f %f %f %f\n", m[index], v[index], (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps)));
 }
 
 extern "C" void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t)
 {
     adam_kernel<<<cuda_gridsize(n), BLOCK>>>(n, x, m, v, B1, B2, rate, eps, t);
     check_error(cudaPeekAtLastError());
+}
+
+extern "C" void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t)
+{
+    scal_ongpu(n, B1, m, 1);
+    scal_ongpu(n, B2, v, 1);
+    axpy_ongpu(n, -decay*batch, w, 1, d, 1);
+
+    axpy_ongpu(n, (1-B1), d, 1, m, 1);
+    mul_ongpu(n, d, 1, d, 1);
+    axpy_ongpu(n, (1-B2), d, 1, v, 1);
+
+    adam_gpu(n, w, m, v, B1, B2, rate/batch, eps, t);
+    fill_ongpu(n, 0, d, 1);
 }
 
 __global__ void normalize_kernel(int N, float *x, float *mean, float *variance, int batch, int filters, int spatial)

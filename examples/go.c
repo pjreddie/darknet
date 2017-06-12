@@ -169,7 +169,7 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
 
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.95 + loss*.05;
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         if(*net.seen/N > epoch){
             epoch = *net.seen/N;
             char buff[256];
@@ -184,7 +184,7 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
         }
         if(get_current_batch(net)%10000 == 0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.backup",backup_directory,base,get_current_batch(net));
+            sprintf(buff, "%s/%s_%ld.backup",backup_directory,base,get_current_batch(net));
             save_weights(net, buff);
         }
     }
