@@ -114,7 +114,10 @@ void reset_rnn_state(network net, int b)
         #ifdef GPU
         layer l = net.layers[i];
         if(l.state_gpu){
-            fill_ongpu(l.outputs, 0, l.state_gpu + l.outputs*b, 1);
+            fill_gpu(l.outputs, 0, l.state_gpu + l.outputs*b, 1);
+        }
+        if(l.h_gpu){
+            fill_gpu(l.outputs, 0, l.h_gpu + l.outputs*b, 1);
         }
         #endif
     }

@@ -136,18 +136,18 @@ void forward_reorg_layer_gpu(layer l, network net)
     int i;
     if(l.flatten){
         if(l.reverse){
-            flatten_ongpu(net.input_gpu, l.w*l.h, l.c, l.batch, 0, l.output_gpu);
+            flatten_gpu(net.input_gpu, l.w*l.h, l.c, l.batch, 0, l.output_gpu);
         }else{
-            flatten_ongpu(net.input_gpu, l.w*l.h, l.c, l.batch, 1, l.output_gpu);
+            flatten_gpu(net.input_gpu, l.w*l.h, l.c, l.batch, 1, l.output_gpu);
         }
     } else if (l.extra) {
         for(i = 0; i < l.batch; ++i){
-            copy_ongpu(l.inputs, net.input_gpu + i*l.inputs, 1, l.output_gpu + i*l.outputs, 1);
+            copy_gpu(l.inputs, net.input_gpu + i*l.inputs, 1, l.output_gpu + i*l.outputs, 1);
         }
     } else if (l.reverse) {
-        reorg_ongpu(net.input_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_gpu);
+        reorg_gpu(net.input_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_gpu);
     }else {
-        reorg_ongpu(net.input_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, l.output_gpu);
+        reorg_gpu(net.input_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, l.output_gpu);
     }
 }
 
@@ -155,19 +155,19 @@ void backward_reorg_layer_gpu(layer l, network net)
 {
     if(l.flatten){
         if(l.reverse){
-            flatten_ongpu(l.delta_gpu, l.w*l.h, l.c, l.batch, 1, net.delta_gpu);
+            flatten_gpu(l.delta_gpu, l.w*l.h, l.c, l.batch, 1, net.delta_gpu);
         }else{
-            flatten_ongpu(l.delta_gpu, l.w*l.h, l.c, l.batch, 0, net.delta_gpu);
+            flatten_gpu(l.delta_gpu, l.w*l.h, l.c, l.batch, 0, net.delta_gpu);
         }
     } else if (l.extra) {
         int i;
         for(i = 0; i < l.batch; ++i){
-            copy_ongpu(l.inputs, l.delta_gpu + i*l.outputs, 1, net.delta_gpu + i*l.inputs, 1);
+            copy_gpu(l.inputs, l.delta_gpu + i*l.outputs, 1, net.delta_gpu + i*l.inputs, 1);
         }
     } else if(l.reverse){
-        reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, net.delta_gpu);
+        reorg_gpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, net.delta_gpu);
     } else {
-        reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, net.delta_gpu);
+        reorg_gpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, net.delta_gpu);
     }
 }
 #endif

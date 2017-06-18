@@ -558,6 +558,33 @@ image get_segmentation_image(char *path, int w, int h, int classes)
     find_replace(labelpath, ".jpg", ".txt", labelpath);
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
+    image mask = make_image(w, h, classes);
+    FILE *file = fopen(labelpath, "r");
+    if(!file) file_error(labelpath);
+    char buff[32788];
+    int id;
+    image part = make_image(w, h, 1);
+    while(fscanf(file, "%d %s", &id, buff) == 2){
+        int n = 0;
+        int *rle = read_intlist(buff, &n, 0);
+        load_rle(part, rle, n);
+        or_image(part, mask, id);
+        free(rle);
+    }
+    //exclusive_image(mask);
+    fclose(file);
+    free_image(part);
+    return mask;
+}
+
+image get_segmentation_image2(char *path, int w, int h, int classes)
+{
+    char labelpath[4096];
+    find_replace(path, "images", "mask", labelpath);
+    find_replace(labelpath, "JPEGImages", "mask", labelpath);
+    find_replace(labelpath, ".jpg", ".txt", labelpath);
+    find_replace(labelpath, ".JPG", ".txt", labelpath);
+    find_replace(labelpath, ".JPEG", ".txt", labelpath);
     image mask = make_image(w, h, classes+1);
     int i;
     for(i = 0; i < w*h; ++i){
@@ -584,7 +611,7 @@ image get_segmentation_image(char *path, int w, int h, int classes)
     return mask;
 }
 
-data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
+data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int min, int max, float angle, float aspect, float hue, float saturation, float exposure, int div)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -597,12 +624,14 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
 
 
     d.y.rows = n;
-    d.y.cols = h*w*(classes+1);
+    d.y.cols = h*w*classes/div/div;
     d.y.vals = calloc(d.X.rows, sizeof(float*));
 
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
+        a.dx = 0;
+        a.dy = 0;
         image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
 
         int flip = rand()%2;
@@ -612,7 +641,7 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
 
         image mask = get_segmentation_image(random_paths[i], orig.w, orig.h, classes);
         //image mask = make_image(orig.w, orig.h, classes+1);
-        image sized_m = rotate_crop_image(mask, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+        image sized_m = rotate_crop_image(mask, a.rad, a.scale/div, a.w/div, a.h/div, a.dx, a.dy, a.aspect);
 
         if(flip) flip_image(sized_m);
         d.y.vals[i] = sized_m.data;
@@ -874,7 +903,7 @@ void *load_thread(void *ptr)
     } else if (a.type == WRITING_DATA){
         *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.out_w, a.out_h);
     } else if (a.type == SEGMENTATION_DATA){
-        *a.d = load_data_seg(a.n, a.paths, a.m, a.w, a.h, a.classes, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+        *a.d = load_data_seg(a.n, a.paths, a.m, a.w, a.h, a.classes, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.scale);
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){

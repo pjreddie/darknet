@@ -213,13 +213,11 @@ layer parse_crnn(list *options, size_params params)
 layer parse_rnn(list *options, size_params params)
 {
     int output = option_find_int(options, "output",1);
-    int hidden = option_find_int(options, "hidden",1);
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
-    int logistic = option_find_int_quiet(options, "logistic", 0);
 
-    layer l = make_rnn_layer(params.batch, params.inputs, hidden, output, params.time_steps, activation, batch_normalize, logistic, params.net.adam);
+    layer l = make_rnn_layer(params.batch, params.inputs, output, params.time_steps, activation, batch_normalize, params.net.adam);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
@@ -353,6 +351,7 @@ cost_layer parse_cost(list *options, size_params params)
     float scale = option_find_float_quiet(options, "scale",1);
     cost_layer layer = make_cost_layer(params.batch, params.inputs, type, scale);
     layer.ratio =  option_find_float_quiet(options, "ratio",0);
+    layer.noobject_scale =  option_find_float_quiet(options, "noobj", 1);
     layer.thresh =  option_find_float_quiet(options, "thresh",0);
     return layer;
 }
@@ -921,12 +920,18 @@ void save_weights_upto(network net, char *filename, int cutoff)
             save_connected_weights(*(l.uo), fp);
             save_connected_weights(*(l.ug), fp);
         } if (l.type == GRU) {
-            save_connected_weights(*(l.wz), fp);
-            save_connected_weights(*(l.wr), fp);
-            save_connected_weights(*(l.wh), fp);
-            save_connected_weights(*(l.uz), fp);
-            save_connected_weights(*(l.ur), fp);
-            save_connected_weights(*(l.uh), fp);
+            if(1){
+                save_connected_weights(*(l.wz), fp);
+                save_connected_weights(*(l.wr), fp);
+                save_connected_weights(*(l.wh), fp);
+                save_connected_weights(*(l.uz), fp);
+                save_connected_weights(*(l.ur), fp);
+                save_connected_weights(*(l.uh), fp);
+            }else{
+                save_connected_weights(*(l.reset_layer), fp);
+                save_connected_weights(*(l.update_layer), fp);
+                save_connected_weights(*(l.state_layer), fp);
+            }
         }  if(l.type == CRNN){
             save_convolutional_weights(*(l.input_layer), fp);
             save_convolutional_weights(*(l.self_layer), fp);
@@ -1132,12 +1137,18 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
             load_connected_weights(*(l.ug), fp, transpose);
         }
         if (l.type == GRU) {
-            load_connected_weights(*(l.wz), fp, transpose);
-            load_connected_weights(*(l.wr), fp, transpose);
-            load_connected_weights(*(l.wh), fp, transpose);
-            load_connected_weights(*(l.uz), fp, transpose);
-            load_connected_weights(*(l.ur), fp, transpose);
-            load_connected_weights(*(l.uh), fp, transpose);
+            if(1){
+                load_connected_weights(*(l.wz), fp, transpose);
+                load_connected_weights(*(l.wr), fp, transpose);
+                load_connected_weights(*(l.wh), fp, transpose);
+                load_connected_weights(*(l.uz), fp, transpose);
+                load_connected_weights(*(l.ur), fp, transpose);
+                load_connected_weights(*(l.uh), fp, transpose);
+            }else{
+                load_connected_weights(*(l.reset_layer), fp, transpose);
+                load_connected_weights(*(l.update_layer), fp, transpose);
+                load_connected_weights(*(l.state_layer), fp, transpose);
+            }
         }
         if(l.type == LOCAL){
             int locations = l.out_w*l.out_h;

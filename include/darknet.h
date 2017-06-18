@@ -84,7 +84,7 @@ typedef enum {
 } LAYER_TYPE;
 
 typedef enum{
-    SSE, MASKED, L1, SMOOTH
+    SSE, MASKED, L1, SEG, SMOOTH
 } COST_TYPE;
 
 typedef struct{
@@ -203,6 +203,8 @@ struct layer{
     float * forgot_state;
     float * forgot_delta;
     float * state_delta;
+    float * combine_cpu;
+    float * combine_delta_cpu;
 
     float * concat;
     float * concat_delta;
@@ -271,6 +273,10 @@ struct layer{
     struct layer *self_layer;
     struct layer *output_layer;
 
+    struct layer *reset_layer;
+    struct layer *update_layer;
+    struct layer *state_layer;
+
     struct layer *input_gate_layer;
     struct layer *state_gate_layer;
     struct layer *input_save_layer;
@@ -334,6 +340,9 @@ struct layer{
     float *scale_m_gpu;
     float *bias_v_gpu;
     float *scale_v_gpu;
+
+    float * combine_gpu;
+    float * combine_delta_gpu;
 
     float * prev_state_gpu;
     float * forgot_state_gpu;
@@ -575,10 +584,10 @@ void normalize_cpu(float *x, float *mean, float *variance, int batch, int filter
 
 int best_3d_shift_r(image a, image b, int min, int max);
 #ifdef GPU
-void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
-void fill_ongpu(int N, float ALPHA, float * X, int INCX);
-void scal_ongpu(int N, float ALPHA, float * X, int INCX);
-void copy_ongpu(int N, float * X, int INCX, float * Y, int INCY);
+void axpy_gpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
+void fill_gpu(int N, float ALPHA, float * X, int INCX);
+void scal_gpu(int N, float ALPHA, float * X, int INCX);
+void copy_gpu(int N, float * X, int INCX, float * Y, int INCY);
 
 void cuda_set_device(int n);
 void cuda_free(float *x_gpu);

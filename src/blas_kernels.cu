@@ -176,16 +176,16 @@ extern "C" void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2
 
 extern "C" void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t)
 {
-    scal_ongpu(n, B1, m, 1);
-    scal_ongpu(n, B2, v, 1);
-    axpy_ongpu(n, -decay*batch, w, 1, d, 1);
+    scal_gpu(n, B1, m, 1);
+    scal_gpu(n, B2, v, 1);
+    axpy_gpu(n, -decay*batch, w, 1, d, 1);
 
-    axpy_ongpu(n, (1-B1), d, 1, m, 1);
-    mul_ongpu(n, d, 1, d, 1);
-    axpy_ongpu(n, (1-B2), d, 1, v, 1);
+    axpy_gpu(n, (1-B1), d, 1, m, 1);
+    mul_gpu(n, d, 1, d, 1);
+    axpy_gpu(n, (1-B2), d, 1, v, 1);
 
-    adam_gpu(n, w, m, v, B1, B2, rate/batch, eps, t);
-    fill_ongpu(n, 0, d, 1);
+    adam_gpu(n, w, m, v, B1, B2, rate, eps, t);
+    fill_gpu(n, 0, d, 1);
 }
 
 __global__ void normalize_kernel(int N, float *x, float *mean, float *variance, int batch, int filters, int spatial)
@@ -556,35 +556,35 @@ extern "C" void variance_gpu(float *x, float *mean, int batch, int filters, int 
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY)
+extern "C" void axpy_gpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY)
 {
-    axpy_ongpu_offset(N, ALPHA, X, 0, INCX, Y, 0, INCY);
+    axpy_gpu_offset(N, ALPHA, X, 0, INCX, Y, 0, INCY);
 }
 
-extern "C" void pow_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY)
+extern "C" void pow_gpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY)
 {
     pow_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX, Y, INCY);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY)
+extern "C" void axpy_gpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY)
 {
     axpy_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, OFFX, INCX, Y, OFFY, INCY);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void copy_ongpu(int N, float * X, int INCX, float * Y, int INCY)
+extern "C" void copy_gpu(int N, float * X, int INCX, float * Y, int INCY)
 {
-    copy_ongpu_offset(N, X, 0, INCX, Y, 0, INCY);
+    copy_gpu_offset(N, X, 0, INCX, Y, 0, INCY);
 }
 
-extern "C" void mul_ongpu(int N, float * X, int INCX, float * Y, int INCY)
+extern "C" void mul_gpu(int N, float * X, int INCX, float * Y, int INCY)
 {
     mul_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, INCX, Y, INCY);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void copy_ongpu_offset(int N, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY)
+extern "C" void copy_gpu_offset(int N, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY)
 {
     copy_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, OFFX, INCX, Y, OFFY, INCY);
     check_error(cudaPeekAtLastError());
@@ -607,58 +607,70 @@ __global__ void flatten_kernel(int N, float *x, int spatial, int layers, int bat
     else out[i1] = x[i2];
 }
 
-extern "C" void flatten_ongpu(float *x, int spatial, int layers, int batch, int forward, float *out)
+extern "C" void flatten_gpu(float *x, int spatial, int layers, int batch, int forward, float *out)
 {
     int size = spatial*batch*layers;
     flatten_kernel<<<cuda_gridsize(size), BLOCK>>>(size, x, spatial, layers, batch, forward, out);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
+extern "C" void reorg_gpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
 {
     int size = w*h*c*batch;
     reorg_kernel<<<cuda_gridsize(size), BLOCK>>>(size, x, w, h, c, batch, stride, forward, out);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void mask_ongpu(int N, float * X, float mask_num, float * mask)
+__global__ void scale_mask_kernel(int n,  float *x, float mask_num, float *mask, float scale)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < n && mask[i] == mask_num) x[i] *= scale;
+}
+
+extern "C" void scale_mask_gpu(int N, float * X, float mask_num, float * mask, float scale)
+{
+    scale_mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask_num, mask, scale);
+    check_error(cudaPeekAtLastError());
+}
+
+extern "C" void mask_gpu(int N, float * X, float mask_num, float * mask)
 {
     mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask_num, mask);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void const_ongpu(int N, float ALPHA, float * X, int INCX)
+extern "C" void const_gpu(int N, float ALPHA, float * X, int INCX)
 {
     const_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void constrain_ongpu(int N, float ALPHA, float * X, int INCX)
+extern "C" void constrain_gpu(int N, float ALPHA, float * X, int INCX)
 {
     constrain_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
     check_error(cudaPeekAtLastError());
 }
 
 
-extern "C" void add_ongpu(int N, float ALPHA, float * X, int INCX)
+extern "C" void add_gpu(int N, float ALPHA, float * X, int INCX)
 {
     add_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void scal_ongpu(int N, float ALPHA, float * X, int INCX)
+extern "C" void scal_gpu(int N, float ALPHA, float * X, int INCX)
 {
     scal_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void supp_ongpu(int N, float ALPHA, float * X, int INCX)
+extern "C" void supp_gpu(int N, float ALPHA, float * X, int INCX)
 {
     supp_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void fill_ongpu(int N, float ALPHA, float * X, int INCX)
+extern "C" void fill_gpu(int N, float ALPHA, float * X, int INCX)
 {
     fill_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
     check_error(cudaPeekAtLastError());
@@ -686,6 +698,9 @@ extern "C" void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int 
     int minw = (w1 < w2) ? w1 : w2;
     int minh = (h1 < h2) ? h1 : h2;
     int minc = (c1 < c2) ? c1 : c2;
+    assert(w1 == w2);
+    assert(h1 == h2);
+    assert(c1 == c2);
 
     int stride = w1/w2;
     int sample = w2/w1;
@@ -765,6 +780,46 @@ __global__ void weighted_sum_kernel(int n, float *a, float *b, float *s, float *
     }
 }
 
+__global__ void deinter_kernel(int NX, float *X, int NY, float *Y, int B, float *OUT)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < (NX+NY)*B){
+        int b = i / (NX+NY);
+        int j = i % (NX+NY);
+        if (j < NX){
+            if(X) X[b*NX + j] += OUT[i];
+        } else {
+            if(Y) Y[b*NY + j - NX] += OUT[i];
+        }
+    }
+}
+
+extern "C" void deinter_gpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
+{
+    deinter_kernel<<<cuda_gridsize((NX+NY)*B), BLOCK>>>(NX, X, NY, Y, B, OUT);
+    check_error(cudaPeekAtLastError());
+}
+
+__global__ void inter_kernel(int NX, float *X, int NY, float *Y, int B, float *OUT)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < (NX+NY)*B){
+        int b = i / (NX+NY);
+        int j = i % (NX+NY);
+        if (j < NX){
+            OUT[i] = X[b*NX + j];
+        } else {
+            OUT[i] = Y[b*NY + j - NX];
+        }
+    }
+}
+
+extern "C" void inter_gpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
+{
+    inter_kernel<<<cuda_gridsize((NX+NY)*B), BLOCK>>>(NX, X, NY, Y, B, OUT);
+    check_error(cudaPeekAtLastError());
+}
+
 extern "C" void weighted_sum_gpu(float *a, float *b, float *s, int num, float *c)
 {
     weighted_sum_kernel<<<cuda_gridsize(num), BLOCK>>>(num, a, b, s, c);
@@ -776,8 +831,8 @@ __global__ void weighted_delta_kernel(int n, float *a, float *b, float *s, float
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(i < n){
         if(da) da[i] += dc[i] * s[i];
-        db[i] += dc[i] * (1-s[i]);
-        ds[i] += dc[i] * a[i] + dc[i] * -b[i];
+        if(db) db[i] += dc[i] * (1-s[i]);
+        ds[i] += dc[i] * (a[i] - b[i]);
     }
 }
 

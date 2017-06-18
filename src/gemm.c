@@ -165,7 +165,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 
 #include <math.h>
 
-void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA, 
+void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         float *A_gpu, int lda, 
         float *B_gpu, int ldb,
         float BETA,
@@ -175,24 +175,6 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
     cudaError_t status = cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N), 
             (TA ? CUBLAS_OP_T : CUBLAS_OP_N), N, M, K, &ALPHA, B_gpu, ldb, A_gpu, lda, &BETA, C_gpu, ldc);
     check_error(status);
-}
-
-void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
-        float *B, int ldb,
-        float BETA,
-        float *C, int ldc)
-{
-    float *A_gpu = cuda_make_array(A, (TA ? lda*K:lda*M));
-    float *B_gpu = cuda_make_array(B, (TB ? ldb*N : ldb*K));
-    float *C_gpu = cuda_make_array(C, ldc*M);
-
-    gemm_ongpu(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
-
-    cuda_pull_array(C_gpu, C, ldc*M);
-    cuda_free(A_gpu);
-    cuda_free(B_gpu);
-    cuda_free(C_gpu);
 }
 
 #include <stdio.h>
@@ -224,7 +206,7 @@ void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
     free(c);
 }
 
-void time_ongpu(int TA, int TB, int m, int k, int n)
+void time_gpu(int TA, int TB, int m, int k, int n)
 {
     int iter = 10;
     float *a = random_matrix(m,k);
@@ -242,7 +224,7 @@ void time_ongpu(int TA, int TB, int m, int k, int n)
     int i;
     clock_t start = clock(), end;
     for(i = 0; i<iter; ++i){
-        gemm_ongpu(TA,TB,m,n,k,1,a_cl,lda,b_cl,ldb,1,c_cl,n);
+        gemm_gpu(TA,TB,m,n,k,1,a_cl,lda,b_cl,ldb,1,c_cl,n);
         cudaThreadSynchronize();
     }
     double flop = ((double)m)*n*(2.*k + 2.)*iter;
@@ -313,24 +295,24 @@ int test_gpu_blas()
 
        test_gpu_accuracy(0,0,10,10,10); 
 
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,192,729,1600); 
-       time_ongpu(0,0,384,196,1728); 
-       time_ongpu(0,0,256,196,3456); 
-       time_ongpu(0,0,256,196,2304); 
-       time_ongpu(0,0,128,4096,12544); 
-       time_ongpu(0,0,128,4096,4096); 
+       time_gpu(0,0,64,2916,363); 
+       time_gpu(0,0,64,2916,363); 
+       time_gpu(0,0,64,2916,363); 
+       time_gpu(0,0,192,729,1600); 
+       time_gpu(0,0,384,196,1728); 
+       time_gpu(0,0,256,196,3456); 
+       time_gpu(0,0,256,196,2304); 
+       time_gpu(0,0,128,4096,12544); 
+       time_gpu(0,0,128,4096,4096); 
      */
-    time_ongpu(0,0,64,75,12544); 
-    time_ongpu(0,0,64,75,12544); 
-    time_ongpu(0,0,64,75,12544); 
-    time_ongpu(0,0,64,576,12544); 
-    time_ongpu(0,0,256,2304,784); 
-    time_ongpu(1,1,2304,256,784); 
-    time_ongpu(0,0,512,4608,196); 
-    time_ongpu(1,1,4608,512,196); 
+    time_gpu(0,0,64,75,12544); 
+    time_gpu(0,0,64,75,12544); 
+    time_gpu(0,0,64,75,12544); 
+    time_gpu(0,0,64,576,12544); 
+    time_gpu(0,0,256,2304,784); 
+    time_gpu(1,1,2304,256,784); 
+    time_gpu(0,0,512,4608,196); 
+    time_gpu(1,1,4608,512,196); 
 
     return 0;
 }

@@ -64,7 +64,7 @@ void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg
 
     int ax_size = anet.inputs*anet.batch;
     int ay_size = anet.truths*anet.batch;
-    fill_ongpu(ay_size, .9, anet.truth_gpu, 1);
+    fill_gpu(ay_size, .9, anet.truth_gpu, 1);
     anet.delta_gpu = cuda_make_array(0, ax_size);
     anet.train = 1;
 
@@ -102,36 +102,36 @@ void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg
 
             forward_network_gpu(fnet, fstate);
             float *feats = fnet.layers[fnet.n - 2].output_gpu;
-            copy_ongpu(y_size, feats, 1, fstate.truth, 1);
+            copy_gpu(y_size, feats, 1, fstate.truth, 1);
 
             forward_network_gpu(gnet, gstate);
             float *gen = gnet.layers[gnet.n-1].output_gpu;
-            copy_ongpu(x_size, gen, 1, fstate.input, 1);
+            copy_gpu(x_size, gen, 1, fstate.input, 1);
 
-            fill_ongpu(x_size, 0, fstate.delta, 1);
+            fill_gpu(x_size, 0, fstate.delta, 1);
             forward_network_gpu(fnet, fstate);
             backward_network_gpu(fnet, fstate);
             //HERE
 
             astate.input = gen;
-            fill_ongpu(ax_size, 0, astate.delta, 1);
+            fill_gpu(ax_size, 0, astate.delta, 1);
             forward_network_gpu(anet, astate);
             backward_network_gpu(anet, astate);
 
             float *delta = imlayer.delta_gpu;
-            fill_ongpu(x_size, 0, delta, 1);
-            scal_ongpu(x_size, 100, astate.delta, 1);
-            scal_ongpu(x_size, .001, fstate.delta, 1);
-            axpy_ongpu(x_size, 1, fstate.delta, 1, delta, 1);
-            axpy_ongpu(x_size, 1, astate.delta, 1, delta, 1);
+            fill_gpu(x_size, 0, delta, 1);
+            scal_gpu(x_size, 100, astate.delta, 1);
+            scal_gpu(x_size, .001, fstate.delta, 1);
+            axpy_gpu(x_size, 1, fstate.delta, 1, delta, 1);
+            axpy_gpu(x_size, 1, astate.delta, 1, delta, 1);
 
-            //fill_ongpu(x_size, 0, delta, 1);
+            //fill_gpu(x_size, 0, delta, 1);
             //cuda_push_array(delta, X, x_size);
-            //axpy_ongpu(x_size, -1, imlayer.output_gpu, 1, delta, 1);
+            //axpy_gpu(x_size, -1, imlayer.output_gpu, 1, delta, 1);
             //printf("pix error: %f\n", cuda_mag_array(delta, x_size));
             printf("fea error: %f\n", cuda_mag_array(fstate.delta, x_size));
             printf("adv error: %f\n", cuda_mag_array(astate.delta, x_size));
-            //axpy_ongpu(x_size, 1, astate.delta, 1, delta, 1);
+            //axpy_gpu(x_size, 1, astate.delta, 1, delta, 1);
 
             backward_network_gpu(gnet, gstate);
 
@@ -273,7 +273,7 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
 
     float *imerror = cuda_make_array(0, imlayer.outputs);
     float *ones_gpu = cuda_make_array(0, ay_size);
-    fill_ongpu(ay_size, .9, ones_gpu, 1);
+    fill_gpu(ay_size, .9, ones_gpu, 1);
 
     float aloss_avg = -1;
     float gloss_avg = -1;
@@ -318,23 +318,23 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
             *net.seen += net.batch;
             forward_network_gpu(net, gstate);
 
-            fill_ongpu(imlayer.outputs, 0, imerror, 1);
+            fill_gpu(imlayer.outputs, 0, imerror, 1);
             astate.input = imlayer.output_gpu;
             astate.delta = imerror;
             astate.truth = ones_gpu;
             forward_network_gpu(anet, astate);
             backward_network_gpu(anet, astate);
 
-            scal_ongpu(imlayer.outputs, .1, net.layers[net.n-1].delta_gpu, 1);
+            scal_gpu(imlayer.outputs, .1, net.layers[net.n-1].delta_gpu, 1);
 
             backward_network_gpu(net, gstate);
 
-            scal_ongpu(imlayer.outputs, 1000, imerror, 1);
+            scal_gpu(imlayer.outputs, 1000, imerror, 1);
 
             printf("realness %f\n", cuda_mag_array(imerror, imlayer.outputs));
             printf("features %f\n", cuda_mag_array(net.layers[net.n-1].delta_gpu, imlayer.outputs));
 
-            axpy_ongpu(imlayer.outputs, 1, imerror, 1, imlayer.delta_gpu, 1);
+            axpy_gpu(imlayer.outputs, 1, imerror, 1, imlayer.delta_gpu, 1);
 
             gloss += get_network_cost(net) /(net.subdivisions*net.batch);
 
@@ -533,9 +533,9 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
             *gnet.seen += gnet.batch;
             forward_network_gpu(gnet);
 
-            fill_ongpu(imlayer.outputs*imlayer.batch, 0, imerror, 1);
-            fill_ongpu(anet.truths*anet.batch, .95, anet.truth_gpu, 1);
-            copy_ongpu(anet.inputs*anet.batch, imlayer.output_gpu, 1, anet.input_gpu, 1);
+            fill_gpu(imlayer.outputs*imlayer.batch, 0, imerror, 1);
+            fill_gpu(anet.truths*anet.batch, .95, anet.truth_gpu, 1);
+            copy_gpu(anet.inputs*anet.batch, imlayer.output_gpu, 1, anet.input_gpu, 1);
             anet.delta_gpu = imerror;
             forward_network_gpu(anet);
             backward_network_gpu(anet);
@@ -543,13 +543,13 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
             float genaloss = *anet.cost / anet.batch;
             printf("%f\n", genaloss);
 
-            scal_ongpu(imlayer.outputs*imlayer.batch, 1, imerror, 1);
-            scal_ongpu(imlayer.outputs*imlayer.batch, .00, gnet.layers[gnet.n-1].delta_gpu, 1);
+            scal_gpu(imlayer.outputs*imlayer.batch, 1, imerror, 1);
+            scal_gpu(imlayer.outputs*imlayer.batch, .00, gnet.layers[gnet.n-1].delta_gpu, 1);
 
             printf("realness %f\n", cuda_mag_array(imerror, imlayer.outputs*imlayer.batch));
             printf("features %f\n", cuda_mag_array(gnet.layers[gnet.n-1].delta_gpu, imlayer.outputs*imlayer.batch));
 
-            axpy_ongpu(imlayer.outputs*imlayer.batch, 1, imerror, 1, gnet.layers[gnet.n-1].delta_gpu, 1);
+            axpy_gpu(imlayer.outputs*imlayer.batch, 1, imerror, 1, gnet.layers[gnet.n-1].delta_gpu, 1);
 
             backward_network_gpu(gnet);
 
@@ -716,21 +716,21 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
             *net.seen += net.batch;
             forward_network_gpu(net);
 
-            fill_ongpu(imlayer.outputs*imlayer.batch, 0, imerror, 1);
-            copy_ongpu(anet.inputs*anet.batch, imlayer.output_gpu, 1, anet.input_gpu, 1);
-            fill_ongpu(anet.inputs*anet.batch, .95, anet.truth_gpu, 1);
+            fill_gpu(imlayer.outputs*imlayer.batch, 0, imerror, 1);
+            copy_gpu(anet.inputs*anet.batch, imlayer.output_gpu, 1, anet.input_gpu, 1);
+            fill_gpu(anet.inputs*anet.batch, .95, anet.truth_gpu, 1);
             anet.delta_gpu = imerror;
             forward_network_gpu(anet);
             backward_network_gpu(anet);
 
-            scal_ongpu(imlayer.outputs*imlayer.batch, 1./100., net.layers[net.n-1].delta_gpu, 1);
+            scal_gpu(imlayer.outputs*imlayer.batch, 1./100., net.layers[net.n-1].delta_gpu, 1);
 
-            scal_ongpu(imlayer.outputs*imlayer.batch, 1, imerror, 1);
+            scal_gpu(imlayer.outputs*imlayer.batch, 1, imerror, 1);
 
             printf("realness %f\n", cuda_mag_array(imerror, imlayer.outputs*imlayer.batch));
             printf("features %f\n", cuda_mag_array(net.layers[net.n-1].delta_gpu, imlayer.outputs*imlayer.batch));
 
-            axpy_ongpu(imlayer.outputs*imlayer.batch, 1, imerror, 1, net.layers[net.n-1].delta_gpu, 1);
+            axpy_gpu(imlayer.outputs*imlayer.batch, 1, imerror, 1, net.layers[net.n-1].delta_gpu, 1);
 
             backward_network_gpu(net);
 
@@ -876,7 +876,7 @@ void train_lsd2(char *cfgfile, char *weightfile, char *acfgfile, char *aweightfi
 
     float *imerror = cuda_make_array(0, imlayer.outputs);
     float *ones_gpu = cuda_make_array(0, ay_size);
-    fill_ongpu(ay_size, 1, ones_gpu, 1);
+    fill_gpu(ay_size, 1, ones_gpu, 1);
 
     float aloss_avg = -1;
     float gloss_avg = -1;
@@ -902,15 +902,15 @@ void train_lsd2(char *cfgfile, char *weightfile, char *acfgfile, char *aweightfi
             *net.seen += net.batch;
             forward_network_gpu(net, gstate);
 
-            fill_ongpu(imlayer.outputs, 0, imerror, 1);
+            fill_gpu(imlayer.outputs, 0, imerror, 1);
             astate.input = imlayer.output_gpu;
             astate.delta = imerror;
             astate.truth = ones_gpu;
             forward_network_gpu(anet, astate);
             backward_network_gpu(anet, astate);
 
-            scal_ongpu(imlayer.outputs, 1, imerror, 1);
-            axpy_ongpu(imlayer.outputs, 1, imerror, 1, imlayer.delta_gpu, 1);
+            scal_gpu(imlayer.outputs, 1, imerror, 1);
+            axpy_gpu(imlayer.outputs, 1, imerror, 1, imlayer.delta_gpu, 1);
 
             backward_network_gpu(net, gstate);
 

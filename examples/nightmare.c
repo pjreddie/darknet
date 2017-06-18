@@ -50,7 +50,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
     cuda_push_array(net->input_gpu, im.data, net->inputs);
 
     forward_network_gpu(*net);
-    copy_ongpu(last.outputs, last.output_gpu, 1, last.delta_gpu, 1);
+    copy_gpu(last.outputs, last.output_gpu, 1, last.delta_gpu, 1);
 
     cuda_pull_array(last.delta_gpu, last.delta, last.outputs);
     calculate_loss(last.delta, last.delta, last.outputs, thresh);
@@ -141,7 +141,7 @@ void reconstruct_picture(network net, float *features, image recon, image update
 
         forward_network_gpu(net);
         cuda_push_array(l.delta_gpu, features, l.outputs);
-        axpy_ongpu(l.outputs, -1, l.output_gpu, 1, l.delta_gpu, 1);
+        axpy_gpu(l.outputs, -1, l.output_gpu, 1, l.delta_gpu, 1);
         backward_network_gpu(net);
 
         cuda_pull_array(net.delta_gpu, delta.data, delta.w*delta.h*delta.c);

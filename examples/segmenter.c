@@ -27,6 +27,11 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     }
     srand(time(0));
     network net = nets[0];
+    image pred = get_network_image(net);
+
+    int div = net.w/pred.w;
+    assert(pred.w * div == net.w);
+    assert(pred.h * div == net.h);
 
     int imgs = net.batch * net.subdivisions * ngpus;
 
@@ -46,6 +51,7 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     args.w = net.w;
     args.h = net.h;
     args.threads = 32;
+    args.scale = div;
 
     args.min = net.min_crop;
     args.max = net.max_crop;
@@ -75,15 +81,6 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
-        image tr = float_to_image(net.w, net.h, 81, train.y.vals[0]);
-        image im = float_to_image(net.w, net.h, net.c, train.X.vals[0]);
-        image mask = mask_to_rgb(tr);
-        show_image(im, "input");
-        show_image(mask, "truth");
-#ifdef OPENCV
-        cvWaitKey(100);
-#endif
-        free_image(mask);
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
@@ -98,6 +95,20 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 #else
         loss = train_network(net, train);
 #endif
+        if(1){
+            image tr = float_to_image(net.w/div, net.h/div, 80, train.y.vals[net.batch]);
+            image im = float_to_image(net.w, net.h, net.c, train.X.vals[net.batch]);
+            image mask = mask_to_rgb(tr);
+            image prmask = mask_to_rgb(pred);
+            show_image(im, "input");
+            show_image(prmask, "pred");
+            show_image(mask, "truth");
+#ifdef OPENCV
+            cvWaitKey(100);
+#endif
+            free_image(mask);
+            free_image(prmask);
+        }
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);

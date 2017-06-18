@@ -42,7 +42,7 @@ void forward_network_gpu(network net)
         net.index = i;
         layer l = net.layers[i];
         if(l.delta_gpu){
-            fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
+            fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
         l.forward_gpu(l, net);
         net.input_gpu = l.output_gpu;
@@ -107,9 +107,9 @@ void harmless_update_network_gpu(network net)
     int i;
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
-        if(l.weight_updates_gpu) fill_ongpu(l.nweights, 0, l.weight_updates_gpu, 1);
-        if(l.bias_updates_gpu) fill_ongpu(l.nbiases, 0, l.bias_updates_gpu, 1);
-        if(l.scale_updates_gpu) fill_ongpu(l.nbiases, 0, l.scale_updates_gpu, 1);
+        if(l.weight_updates_gpu) fill_gpu(l.nweights, 0, l.weight_updates_gpu, 1);
+        if(l.bias_updates_gpu) fill_gpu(l.nbiases, 0, l.bias_updates_gpu, 1);
+        if(l.scale_updates_gpu) fill_gpu(l.nbiases, 0, l.scale_updates_gpu, 1);
     }
 }
 
@@ -383,6 +383,7 @@ float train_networks(network *nets, int n, data d, int interval)
 
     float sum = 0;
     for(i = 0; i < n; ++i){
+        nets[i].learning_rate *= n;
         data p = get_data_part(d, i, n);
         threads[i] = train_network_in_thread(nets[i], p, errors + i);
     }
