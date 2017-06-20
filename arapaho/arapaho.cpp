@@ -260,9 +260,14 @@ bool ArapahoV2::Detect(
         return false;
     }
     
+    //Convert to rgb
+    cv::Mat inputRgb;
+    cvtColor(inputMat, inputRgb, CV_BGR2RGB);
+    
     // Convert the bytes to float
     cv::Mat floatMat;
-    inputMat.convertTo(floatMat, CV_32FC3, 1/255.0);
+
+    inputRgb.convertTo(floatMat, CV_32FC3, 1/255.0);
 
     if (floatMat.rows != net.h || floatMat.cols != net.w)
     {
