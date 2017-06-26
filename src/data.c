@@ -630,6 +630,54 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
+        image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+
+        int flip = rand()%2;
+        if(flip) flip_image(sized);
+        random_distort_image(sized, hue, saturation, exposure);
+        d.X.vals[i] = sized.data;
+
+        image mask = get_segmentation_image(random_paths[i], orig.w, orig.h, classes);
+        //image mask = make_image(orig.w, orig.h, classes+1);
+        image sized_m = rotate_crop_image(mask, a.rad, a.scale/div, a.w/div, a.h/div, a.dx/div, a.dy/div, a.aspect);
+
+        if(flip) flip_image(sized_m);
+        d.y.vals[i] = sized_m.data;
+
+        free_image(orig);
+        free_image(mask);
+
+        /*
+           image rgb = mask_to_rgb(sized_m, classes);
+           show_image(rgb, "part");
+           show_image(sized, "orig");
+           cvWaitKey(0);
+           free_image(rgb);
+         */
+    }
+    free(random_paths);
+    return d;
+}
+
+data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int min, int max, float angle, float aspect, float hue, float saturation, float exposure, int div)
+{
+    char **random_paths = get_random_paths(paths, n, m);
+    int i;
+    data d = {0};
+    d.shallow = 0;
+
+    d.X.rows = n;
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.cols = h*w*3;
+
+
+    d.y.rows = n;
+    d.y.cols = h*w*classes/div/div;
+    d.y.vals = calloc(d.X.rows, sizeof(float*));
+
+    for(i = 0; i < n; ++i){
+        image orig = load_image_color(random_paths[i], 0, 0);
+        augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
         a.dx = 0;
         a.dy = 0;
         image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);

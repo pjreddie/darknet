@@ -43,6 +43,7 @@ char **read_tokens(char *filename, size_t *read)
             size = size*2;
             d = realloc(d, size*sizeof(char *));
         }
+        if(0==strcmp(line, "<NEWLINE>")) line = "\n";
         d[count-1] = line;
     }
     fclose(fp);
@@ -190,7 +191,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
 
         for(j = 0; j < streams; ++j){
             //printf("%d\n", j);
-            if(rand()%10 == 0){
+            if(rand()%64 == 0){
                 //fprintf(stderr, "Reset\n");
                 offsets[j] = rand_size_t()%size;
                 reset_rnn_state(net, j);

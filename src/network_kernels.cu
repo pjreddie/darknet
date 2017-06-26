@@ -383,7 +383,6 @@ float train_networks(network *nets, int n, data d, int interval)
 
     float sum = 0;
     for(i = 0; i < n; ++i){
-        nets[i].learning_rate *= n;
         data p = get_data_part(d, i, n);
         threads[i] = train_network_in_thread(nets[i], p, errors + i);
     }

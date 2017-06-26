@@ -337,7 +337,7 @@ void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
     int i;
     for (i = 0; i < net.n; ++i) {
         layer l = net.layers[i];
-        if (l.type == CONVOLUTIONAL && l.batch_normalize) {
+        if ((l.type == DECONVOLUTIONAL || l.type == CONVOLUTIONAL) && l.batch_normalize) {
             denormalize_convolutional_layer(l);
             net.layers[i].batch_normalize=0;
         }

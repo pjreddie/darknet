@@ -199,7 +199,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
         float prob = probs[i][class];
         if(prob > thresh){
 
-            int width = im.h * .012;
+            int width = im.h * .006;
 
             if(0){
                 width = pow(prob, 1./2.)*10+1;

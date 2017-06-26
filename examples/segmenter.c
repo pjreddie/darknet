@@ -2,7 +2,7 @@
 #include <sys/time.h>
 #include <assert.h>
 
-void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
+void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int display)
 {
     int i;
 
@@ -95,9 +95,9 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 #else
         loss = train_network(net, train);
 #endif
-        if(1){
-            image tr = float_to_image(net.w/div, net.h/div, 80, train.y.vals[net.batch]);
-            image im = float_to_image(net.w, net.h, net.c, train.X.vals[net.batch]);
+        if(display){
+            image tr = float_to_image(net.w/div, net.h/div, 80, train.y.vals[net.batch*(net.subdivisions-1)]);
+            image im = float_to_image(net.w, net.h, net.c, train.X.vals[net.batch*(net.subdivisions-1)]);
             image mask = mask_to_rgb(tr);
             image prmask = mask_to_rgb(pred);
             show_image(im, "input");
@@ -163,10 +163,10 @@ void predict_segmenter(char *datafile, char *cfgfile, char *weightfile, char *fi
         float *X = sized.data;
         time=clock();
         float *predictions = network_predict(net, X);
-        image m = float_to_image(sized.w, sized.h, 81, predictions);
-        image rgb = mask_to_rgb(m);
+        image pred = get_network_image(net);
+        image prmask = mask_to_rgb(pred);
         show_image(sized, "orig");
-        show_image(rgb, "pred");
+        show_image(prmask, "pred");
 #ifdef OPENCV
         cvWaitKey(0);
 #endif
@@ -174,7 +174,7 @@ void predict_segmenter(char *datafile, char *cfgfile, char *weightfile, char *fi
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         free_image(im);
         free_image(sized);
-        free_image(rgb);
+        free_image(prmask);
         if (filename) break;
     }
 }
@@ -183,7 +183,7 @@ void predict_segmenter(char *datafile, char *cfgfile, char *weightfile, char *fi
 void demo_segmenter(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename)
 {
 #ifdef OPENCV
-    printf("Regressor Demo\n");
+    printf("Classifier Demo\n");
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -200,8 +200,8 @@ void demo_segmenter(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow("Regressor", CV_WINDOW_NORMAL); 
-    cvResizeWindow("Regressor", 512, 512);
+    cvNamedWindow("Segmenter", CV_WINDOW_NORMAL); 
+    cvResizeWindow("Segmenter", 512, 512);
     float fps = 0;
 
     while(1){
@@ -210,7 +210,6 @@ void demo_segmenter(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
 
         image in = get_image_from_stream(cap);
         image in_s = letterbox_image(in, net.w, net.h);
-        show_image(in, "Regressor");
 
         float *predictions = network_predict(net, in_s.data);
 
@@ -218,10 +217,13 @@ void demo_segmenter(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
         printf("\033[1;1H");
         printf("\nFPS:%.0f\n",fps);
 
-        printf("People: %f\n", predictions[0]);
-
+        image pred = get_network_image(net);
+        image prmask = mask_to_rgb(pred);
+        show_image(prmask, "Segmenter");
+        
         free_image(in_s);
         free_image(in);
+        free_image(prmask);
 
         cvWaitKey(10);
 
@@ -266,12 +268,13 @@ void run_segmenter(int argc, char **argv)
 
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int clear = find_arg(argc, argv, "-clear");
+    int display = find_arg(argc, argv, "-display");
     char *data = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) predict_segmenter(data, cfg, weights, filename);
-    else if(0==strcmp(argv[2], "train")) train_segmenter(data, cfg, weights, gpus, ngpus, clear);
+    else if(0==strcmp(argv[2], "train")) train_segmenter(data, cfg, weights, gpus, ngpus, clear, display);
     else if(0==strcmp(argv[2], "demo")) demo_segmenter(data, cfg, weights, cam_index, filename);
 }
 

@@ -112,20 +112,20 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
         l.output_gpu = cuda_make_array(l.output, l.batch*l.out_h*l.out_w*n);
 
         if(batch_normalize){
-            l.mean_gpu = cuda_make_array(l.mean, n);
-            l.variance_gpu = cuda_make_array(l.variance, n);
+            l.mean_gpu = cuda_make_array(0, n);
+            l.variance_gpu = cuda_make_array(0, n);
 
-            l.rolling_mean_gpu = cuda_make_array(l.mean, n);
-            l.rolling_variance_gpu = cuda_make_array(l.variance, n);
+            l.rolling_mean_gpu = cuda_make_array(0, n);
+            l.rolling_variance_gpu = cuda_make_array(0, n);
 
-            l.mean_delta_gpu = cuda_make_array(l.mean, n);
-            l.variance_delta_gpu = cuda_make_array(l.variance, n);
+            l.mean_delta_gpu = cuda_make_array(0, n);
+            l.variance_delta_gpu = cuda_make_array(0, n);
 
-            l.scales_gpu = cuda_make_array(l.scales, n);
-            l.scale_updates_gpu = cuda_make_array(l.scale_updates, n);
+            l.scales_gpu = cuda_make_array(0, n);
+            l.scale_updates_gpu = cuda_make_array(0, n);
 
-            l.x_gpu = cuda_make_array(l.output, l.batch*l.out_h*l.out_w*n);
-            l.x_norm_gpu = cuda_make_array(l.output, l.batch*l.out_h*l.out_w*n);
+            l.x_gpu = cuda_make_array(0, l.batch*l.out_h*l.out_w*n);
+            l.x_norm_gpu = cuda_make_array(0, l.batch*l.out_h*l.out_w*n);
         }
     }
     #ifdef CUDNN
@@ -142,6 +142,21 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
     fprintf(stderr, "deconv%5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c);
 
     return l;
+}
+
+void denormalize_deconvolutional_layer(layer l)
+{
+    int i, j;
+    for(i = 0; i < l.n; ++i){
+        float scale = l.scales[i]/sqrt(l.rolling_variance[i] + .00001);
+        for(j = 0; j < l.c*l.size*l.size; ++j){
+            l.weights[i*l.c*l.size*l.size + j] *= scale;
+        }
+        l.biases[i] -= l.rolling_mean[i] * scale;
+        l.scales[i] = 1;
+        l.rolling_mean[i] = 0;
+        l.rolling_variance[i] = 1;
+    }
 }
 
 void resize_deconvolutional_layer(layer *l, int h, int w)
