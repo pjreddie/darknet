@@ -38,15 +38,26 @@ static float demo_thresh = 0;
 static float *predictions[FRAMES];
 static int demo_index = 0;
 static image images[FRAMES];
+static IplImage* ipl_images[FRAMES];
 static float *avg;
+
+void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
+image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img);
+IplImage* in_img;
+IplImage* det_img;
+IplImage* show_img;
 
 void *fetch_in_thread(void *ptr)
 {
-    in = get_image_from_stream(cap);
+    //in = get_image_from_stream(cap);
+	in = get_image_from_stream_resize(cap, net.w, net.h, &in_img);
     if(!in.data){
         error("Stream closed.");
     }
-    in_s = resize_image(in, net.w, net.h);
+    //in_s = resize_image(in, net.w, net.h);
+	in_s = make_image(in.w, in.h, in.c);
+	memcpy(in_s.data, in.data, in.h*in.w*in.c*sizeof(float));
+	
     return 0;
 }
 
@@ -78,11 +89,14 @@ void *detect_in_thread(void *ptr)
 
     images[demo_index] = det;
     det = images[(demo_index + FRAMES/2 + 1)%FRAMES];
+	ipl_images[demo_index] = det_img;
+	det_img = ipl_images[(demo_index + FRAMES / 2 + 1) % FRAMES];
     demo_index = (demo_index + 1)%FRAMES;
+	    
+	//draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+	draw_detections_cv(det_img, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
 
-    draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
-
-    return 0;
+	return 0;
 }
 
 double get_wall_time()
@@ -136,12 +150,14 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     pthread_t detect_thread;
 
     fetch_in_thread(0);
+	det_img = in_img;
     det = in;
     det_s = in_s;
 
     fetch_in_thread(0);
     detect_in_thread(0);
     disp = det;
+	det_img = in_img;
     det = in;
     det_s = in_s;
 
@@ -149,6 +165,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         fetch_in_thread(0);
         detect_in_thread(0);
         disp = det;
+		det_img = in_img;
         det = in;
         det_s = in_s;
     }
@@ -168,8 +185,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
             if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 
-            if(!prefix){
-                show_image(disp, "Demo");
+            if(!prefix){                
+				//show_image(disp, "Demo");
+				show_image_cv_ipl(show_img, "Demo");
                 int c = cvWaitKey(1);
                 if (c == 10){
                     if(frame_skip == 0) frame_skip = 60;
@@ -189,11 +207,14 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             if(delay == 0){
                 free_image(disp);
                 disp  = det;
+				show_img = det_img;
             }
+			det_img = in_img;
             det   = in;
             det_s = in_s;
         }else {
             fetch_in_thread(0);
+			det_img = in_img;
             det   = in;
             det_s = in_s;
             detect_in_thread(0);

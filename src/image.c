@@ -226,6 +226,78 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
     }
 }
 
+#ifdef OPENCV
+void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
+{
+	int i;
+
+	for (i = 0; i < num; ++i) {
+		int class = max_index(probs[i], classes);
+		float prob = probs[i][class];
+		if (prob > thresh) {
+
+			int width = show_img->height * .012;
+
+			if (0) {
+				width = pow(prob, 1. / 2.) * 10 + 1;
+				alphabet = 0;
+			}
+
+			printf("%s: %.0f%%\n", names[class], prob * 100);
+			int offset = class * 123457 % classes;
+			float red = get_color(2, offset, classes);
+			float green = get_color(1, offset, classes);
+			float blue = get_color(0, offset, classes);
+			float rgb[3];
+
+			//width = prob*20+2;
+
+			rgb[0] = red;
+			rgb[1] = green;
+			rgb[2] = blue;
+			box b = boxes[i];
+
+			int left = (b.x - b.w / 2.)*show_img->width;
+			int right = (b.x + b.w / 2.)*show_img->width;
+			int top = (b.y - b.h / 2.)*show_img->height;
+			int bot = (b.y + b.h / 2.)*show_img->height;
+
+			if (left < 0) left = 0;
+			if (right > show_img->width - 1) right = show_img->width - 1;
+			if (top < 0) top = 0;
+			if (bot > show_img->height - 1) bot = show_img->height - 1;
+
+			float const font_size = show_img->height / 1000.F;
+			CvPoint pt1, pt2, pt_text, pt_text_bg1, pt_text_bg2;
+			pt1.x = left;
+			pt1.y = top;
+			pt2.x = right;
+			pt2.y = bot;
+			pt_text.x = left;
+			pt_text.y = top - 12;
+			pt_text_bg1.x = left;
+			pt_text_bg1.y = top - (10+25*font_size);
+			pt_text_bg2.x = right;
+			pt_text_bg2.y = top;
+			CvScalar color;
+			color.val[0] = red * 256;
+			color.val[1] = green * 256;
+			color.val[2] = blue * 256;
+
+			cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
+
+			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
+			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);	// filled
+			CvScalar black_color;
+			black_color.val[0] = 0;
+			CvFont font;
+			cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX, font_size, font_size, 0, font_size*3, 8);
+			cvPutText(show_img, names[class], pt_text, &font, black_color);
+		}
+	}
+}
+#endif
+
 void transpose_image(image im)
 {
     assert(im.w == im.h);
@@ -438,28 +510,44 @@ void show_image_cv(image p, const char *name)
     }
     cvShowImage(buff, disp);
 
+    cvReleaseImage(&disp);
+}
+
+
+void show_image_cv_ipl(IplImage *disp, const char *name)
+{
+	if (disp == NULL) return;
+	char buff[256];
+	//sprintf(buff, "%s (%d)", name, windows);
+	sprintf(buff, "%s", name);
+	cvNamedWindow(buff, CV_WINDOW_NORMAL);
+	//cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
+	++windows;
+	cvShowImage(buff, disp);
+
+
 	{
 		CvSize size;
 		{
 			size.width = disp->width, size.height = disp->height;
 		}
-
+		
 		static CvVideoWriter* output_video = NULL;    // cv::VideoWriter output_video;
 		if (output_video == NULL)
 		{
-			printf("\n SRC output_video = %p \n", output_video);
+			//printf("\n SRC output_video = %p \n", output_video);
 			const char* output_name = "test_dnn_out.avi";
 			//output_video = cvCreateVideoWriter(output_name, CV_FOURCC('H', '2', '6', '4'), 25, size, 1);
 			output_video = cvCreateVideoWriter(output_name, CV_FOURCC('D', 'I', 'V', 'X'), 25, size, 1);
 			//output_video = cvCreateVideoWriter(output_name, CV_FOURCC('M', 'J', 'P', 'G'), 25, size, 1);
-			printf("\n cvCreateVideoWriter, DST output_video = %p  \n", output_video);
+			//printf("\n cvCreateVideoWriter, DST output_video = %p  \n", output_video);
 		}
 
-		cvWriteFrame(output_video, disp);
+		//cvWriteFrame(output_video, disp);	// comment this line to improve FPS !!!
 		printf("\n cvWriteFrame \n");
 	}
 
-    cvReleaseImage(&disp);
+	cvReleaseImage(&disp);
 }
 #endif
 
@@ -528,6 +616,20 @@ image get_image_from_stream(CvCapture *cap)
     image im = ipl_to_image(src);
     rgbgr_image(im);
     return im;
+}
+
+image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img)
+{
+	IplImage* src = cvQueryFrame(cap);
+	if (!src) return make_empty_image(0, 0, 0);
+	IplImage* new_img = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, 3);
+	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, 3);
+	cvResize(src, *in_img, CV_INTER_LINEAR);
+	cvResize(src, new_img, CV_INTER_LINEAR);
+	src = new_img;
+	image im = ipl_to_image(src);
+	rgbgr_image(im);
+	return im;
 }
 
 void save_image_jpg(image p, const char *name)
