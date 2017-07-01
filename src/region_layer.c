@@ -526,12 +526,6 @@ void forward_region_layer_gpu(const layer l, network net)
         return;
     }
 
-    float *truth_cpu = 0;
-    if(net.truth_gpu){
-        int num_truth = l.batch*l.truths;
-        truth_cpu = calloc(num_truth, sizeof(float));
-        cuda_pull_array(net.truth_gpu, truth_cpu, num_truth);
-    }
     cuda_pull_array(l.output_gpu, net.input, l.batch*l.inputs);
     forward_region_layer(l, net);
     //cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
