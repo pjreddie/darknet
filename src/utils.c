@@ -654,3 +654,12 @@ float **one_hot_encode(float *a, int n, int k)
     return t;
 }
 
+unsigned long long get_ms_epoch() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  unsigned long long millisecondsSinceEpoch =
+      (unsigned long long)(tv.tv_sec) * 1000 +
+          (unsigned long long)(tv.tv_usec) / 1000;
+  return millisecondsSinceEpoch;
+  //        printf("%llu\n", millisecondsSinceEpoch);
+}

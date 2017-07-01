@@ -589,7 +589,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
     set_batch_network(&net, 1);
     srand(2222222);
-    clock_t time;
     char buff[256];
     char *input = buff;
     int j;
@@ -617,9 +616,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
 
         float *X = sized.data;
-        time=clock();
+        unsigned long long t1 = get_ms_epoch();
         network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        unsigned long long t2 = get_ms_epoch();
+        printf("%s: Predicted in %f seconds.\n", input, (float)(t2-t1)/1000.0F);
         get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, 0, 0, hier_thresh, 1);
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);

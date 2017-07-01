@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include "threads.h"
 
 void gemm_bin(int M, int N, int K, float ALPHA, 
         char  *A, int lda, 
@@ -71,6 +72,8 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
     gemm_cpu( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
 }
 
+
+#if 0
 void gemm_nn(int M, int N, int K, float ALPHA, 
         float *A, int lda, 
         float *B, int ldb,
@@ -87,6 +90,62 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     }
 }
 
+#else
+void inner_gemm_nn(int i_start, int i_end, int N, int K, float ALPHA, 
+        float *A, int lda, 
+        float *B, int ldb,
+        float *C, int ldc)
+{
+    register int i,j,k;
+    for(i = i_start; i < i_end; ++i){
+        for(k = 0; k < K; ++k){
+            register float A_PART = ALPHA*A[i*lda+k];
+            for(j = 0; j < N; ++j){
+                C[i*ldc+j] += A_PART*B[k*ldb+j];
+            }
+        }
+    }
+}
+
+typedef struct {
+  int M; 
+  int N; 
+  int K; 
+  float ALPHA; 
+  float *A; 
+  int lda; 
+  float *B; 
+  int ldb; 
+  float *C; 
+  int ldc;
+}PARAM_GEMM_t ;
+
+void gemm_nn_thread (int loop_start, int loop_end, void*data) {
+  PARAM_GEMM_t *param = (PARAM_GEMM_t*)data;
+  inner_gemm_nn(loop_start, loop_end, param->N, param->K, param->ALPHA,
+                param->A, param->lda,
+                param->B, param->ldb,
+                param->C, param->ldc);
+}
+
+void gemm_nn(int M, int N, int K, float ALPHA, 
+        float *A, int lda, 
+        float *B, int ldb,
+        float *C, int ldc) {
+  PARAM_GEMM_t param = {0};
+  param.N = N;
+  param.K = K;
+  param.ALPHA = ALPHA;
+  param.A= A;
+  param.B= B;
+  param.C= C;
+  param.lda= lda;
+  param.ldb= ldb;
+  param.ldc= ldc;
+  threads_split(M, gemm_nn_thread, &param);
+}
+
+#endif
 void gemm_nt(int M, int N, int K, float ALPHA, 
         float *A, int lda, 
         float *B, int ldb,
