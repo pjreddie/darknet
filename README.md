@@ -21,6 +21,8 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet, an ope
 
 * Note: darknet-cpp requires a C++11 compiler for arapaho builds.
 
+* Note - LSTM changes in mainline, are in the branch "merge_lstm_gru_jun17". Master always is stable.
+
 **Usage**
 
 Using the Makefile in the root directory of the darknet source repository,
