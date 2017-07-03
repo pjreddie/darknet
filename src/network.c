@@ -590,15 +590,16 @@ float network_accuracy_multi(network net, data d, int n)
 
 void free_network(network net)
 {
-    int i;
-    for(i = 0; i < net.n; ++i){
-        free_layer(net.layers[i]);
-    }
-    free(net.layers);
+	int i;
+	for (i = 0; i < net.n; ++i) {
+		free_layer(net.layers[i]);
+	}
+	free(net.layers);
+	free(net.workspace);
 #ifdef GPU
-    if(*net.input_gpu) cuda_free(*net.input_gpu);
-    if(*net.truth_gpu) cuda_free(*net.truth_gpu);
-    if(net.input_gpu) free(net.input_gpu);
-    if(net.truth_gpu) free(net.truth_gpu);
+	if (*net.input_gpu) cuda_free(*net.input_gpu);
+	if (*net.truth_gpu) cuda_free(*net.truth_gpu);
+	if (net.input_gpu) free(net.input_gpu);
+	if (net.truth_gpu) free(net.truth_gpu);
 #endif
 }

@@ -543,7 +543,7 @@ void show_image_cv_ipl(IplImage *disp, const char *name)
 			//printf("\n cvCreateVideoWriter, DST output_video = %p  \n", output_video);
 		}
 
-		cvWriteFrame(output_video, disp);	// comment this line to improve FPS !!!
+		//cvWriteFrame(output_video, disp);	// comment this line to improve FPS !!!
 		printf("\n cvWriteFrame \n");
 	}
 
@@ -626,8 +626,8 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_i
 	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, 3);
 	cvResize(src, *in_img, CV_INTER_LINEAR);
 	cvResize(src, new_img, CV_INTER_LINEAR);
-	src = new_img;
-	image im = ipl_to_image(src);
+	image im = ipl_to_image(new_img);
+	cvReleaseImage(&new_img);
 	rgbgr_image(im);
 	return im;
 }
