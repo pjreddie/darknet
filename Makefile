@@ -3,8 +3,13 @@ CUDNN=0
 OPENCV=0
 DEBUG=0
 
-ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
-      -gencode arch=compute_30,code=sm_30 \
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+APPLE=1
+endif
+
+
+ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52]
@@ -23,9 +28,12 @@ NVCC=nvcc --compiler-options '-fPIC'
 AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
-LDFLAGS= -lm -pthread 
+LDFLAGS= -lm 
+ifneq ($(APPLE), 1) 
+LDFLAGS+= -pthread 
+endif
 COMMON= -Iinclude/ -Isrc/
-CFLAGS=-Wall -Wfatal-errors -fPIC
+CFLAGS=-Werror=implicit-function-declaration -Wall -Wfatal-errors -fPIC
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
@@ -43,7 +51,11 @@ endif
 ifeq ($(GPU), 1) 
 COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
+ifeq ($(APPLE), 1)
+LDFLAGS+= -L/usr/local/cuda/lib -lcudart -lcublas -lcurand
+else 
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
+endif
 endif
 
 ifeq ($(CUDNN), 1) 
