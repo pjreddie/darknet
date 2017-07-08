@@ -6,6 +6,7 @@
 #ifdef GPU
 
 void check_error(cudaError_t status);
+void check_status(cublasStatus_t status);
 cublasHandle_t blas_handle();
 int *cuda_make_int_array(int *x, size_t n);
 void cuda_random(float *x_gpu, size_t n);
