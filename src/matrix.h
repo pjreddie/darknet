@@ -2,6 +2,10 @@
 #define MATRIX_H
 #include "darknet.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 matrix copy_matrix(matrix m);
 void print_matrix(matrix m);
 
@@ -9,5 +13,9 @@ matrix hold_out_matrix(matrix *m, int n);
 matrix resize_matrix(matrix m, int size);
 
 float *pop_column(matrix *m, int c);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

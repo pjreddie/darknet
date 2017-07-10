@@ -2,6 +2,10 @@
 #define BLAS_H
 #include "darknet.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void flatten(float *x, int size, int layers, int batch, int forward);
 void pm(int M, int N, float *A);
 float *random_matrix(int rows, int cols);
@@ -94,5 +98,9 @@ void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rat
 void flatten_gpu(float *x, int spatial, int layers, int batch, int forward, float *out);
 void softmax_tree(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 #endif

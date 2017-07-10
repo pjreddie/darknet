@@ -7,6 +7,10 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef GPU
 void forward_deconvolutional_layer_gpu(layer l, network net);
 void backward_deconvolutional_layer_gpu(layer l, network net);
@@ -20,6 +24,10 @@ void resize_deconvolutional_layer(layer *l, int h, int w);
 void forward_deconvolutional_layer(const layer l, network net);
 void update_deconvolutional_layer(layer l, update_args a);
 void backward_deconvolutional_layer(layer l, network net);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

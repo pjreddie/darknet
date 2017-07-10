@@ -78,7 +78,7 @@ void option_insert(list *l, char *key, char *val)
 
 void option_unused(list *l)
 {
-    node *n = l->front;
+    dn_node *n = l->front;
     while(n){
         kvp *p = (kvp *)n->val;
         if(!p->used){
@@ -90,7 +90,7 @@ void option_unused(list *l)
 
 char *option_find(list *l, char *key)
 {
-    node *n = l->front;
+    dn_node *n = l->front;
     while(n){
         kvp *p = (kvp *)n->val;
         if(strcmp(p->key, key) == 0){
