@@ -1,16 +1,6 @@
-#include "network.h"
-#include "utils.h"
-#include "parser.h"
-#include "option_list.h"
-#include "blas.h"
-#include "classifier.h"
+#include "darknet.h"
+
 #include <sys/time.h>
-
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-image get_image_from_stream(CvCapture *cap);
-#endif
-
 
 void demo_art(char *cfgfile, char *weightfile, int cam_index)
 {

@@ -45,7 +45,7 @@ __global__ void im2col_gpu_kernel(const int n, const float* data_im,
     }
 }
 
-void im2col_ongpu(float *im,
+void im2col_gpu(float *im,
          int channels, int height, int width,
          int ksize, int stride, int pad, float *data_col){
     // We are going to launch channels * height_col * width_col kernels, each

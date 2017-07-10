@@ -1,27 +1,10 @@
-#include <stdio.h>
+#include "darknet.h"
 
-#include "network.h"
-#include "detection_layer.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "box.h"
-#include "demo.h"
+char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#endif
-
-char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
-
-int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
-
-void train_coco(char *cfgfile, char *weightfile)
+void train_yolo(char *cfgfile, char *weightfile)
 {
-    //char *train_images = "/home/pjreddie/data/voc/test/train.txt";
-    //char *train_images = "/home/pjreddie/data/coco/train.txt";
-    char *train_images = "data/coco.trainval.txt";
-    //char *train_images = "data/bags.train.list";
+    char *train_images = "/data/voc/train.txt";
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
@@ -76,14 +59,6 @@ void train_coco(char *cfgfile, char *weightfile)
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 
-        /*
-           image im = float_to_image(net.w, net.h, 3, train.X.vals[113]);
-           image copy = copy_image(im);
-           draw_coco(copy, train.y.vals[113], 7, "truth");
-           cvWaitKey(0);
-           free_image(copy);
-         */
-
         time=clock();
         float loss = train_network(net, train);
         if (avg_loss < 0) avg_loss = loss;
@@ -95,11 +70,6 @@ void train_coco(char *cfgfile, char *weightfile)
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
-        if(i%100==0){
-            char buff[256];
-            sprintf(buff, "%s/%s.backup", backup_directory, base);
-            save_weights(net, buff);
-        }
         free_data(train);
     }
     char buff[256];
@@ -107,10 +77,10 @@ void train_coco(char *cfgfile, char *weightfile)
     save_weights(net, buff);
 }
 
-void print_cocos(FILE *fp, int image_id, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
+void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int total, int classes, int w, int h)
 {
     int i, j;
-    for(i = 0; i < num_boxes; ++i){
+    for(i = 0; i < total; ++i){
         float xmin = boxes[i].x - boxes[i].w/2.;
         float xmax = boxes[i].x + boxes[i].w/2.;
         float ymin = boxes[i].y - boxes[i].h/2.;
@@ -121,24 +91,14 @@ void print_cocos(FILE *fp, int image_id, box *boxes, float **probs, int num_boxe
         if (xmax > w) xmax = w;
         if (ymax > h) ymax = h;
 
-        float bx = xmin;
-        float by = ymin;
-        float bw = xmax - xmin;
-        float bh = ymax - ymin;
-
         for(j = 0; j < classes; ++j){
-            if (probs[i][j]) fprintf(fp, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, probs[i][j]);
+            if (probs[i][j]) fprintf(fps[j], "%s %f %f %f %f %f\n", id, probs[i][j],
+                    xmin, ymin, xmax, ymax);
         }
     }
 }
 
-int get_coco_image_id(char *filename)
-{
-    char *p = strrchr(filename, '_');
-    return atoi(p+1);
-}
-
-void validate_coco(char *cfgfile, char *weightfile)
+void validate_yolo(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -148,31 +108,31 @@ void validate_coco(char *cfgfile, char *weightfile)
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
-    char *base = "results/";
-    list *plist = get_paths("data/coco_val_5k.list");
-    //list *plist = get_paths("/home/pjreddie/data/people-art/test.txt");
-    //list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
+    char *base = "results/comp4_det_test_";
+    //list *plist = get_paths("data/voc.2007.test");
+    list *plist = get_paths("/home/pjreddie/data/voc/2007_test.txt");
+    //list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
     int classes = l.classes;
-    int side = l.side;
 
     int j;
-    char buff[1024];
-    snprintf(buff, 1024, "%s/coco_results.json", base);
-    FILE *fp = fopen(buff, "w");
-    fprintf(fp, "[\n");
-
-    box *boxes = calloc(side*side*l.n, sizeof(box));
-    float **probs = calloc(side*side*l.n, sizeof(float *));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    FILE **fps = calloc(classes, sizeof(FILE *));
+    for(j = 0; j < classes; ++j){
+        char buff[1024];
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
+        fps[j] = fopen(buff, "w");
+    }
+    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
+    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
+    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
 
     int m = plist->size;
     int i=0;
     int t;
 
-    float thresh = .01;
+    float thresh = .001;
     int nms = 1;
     float iou_thresh = .5;
 
@@ -210,26 +170,23 @@ void validate_coco(char *cfgfile, char *weightfile)
         }
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];
-            int image_id = get_coco_image_id(path);
+            char *id = basecfg(path);
             float *X = val_resized[t].data;
             network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
             get_detection_boxes(l, w, h, thresh, probs, boxes, 0);
-            if (nms) do_nms_sort(boxes, probs, side*side*l.n, classes, iou_thresh);
-            print_cocos(fp, image_id, boxes, probs, side*side*l.n, classes, w, h);
+            if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, classes, iou_thresh);
+            print_yolo_detections(fps, id, boxes, probs, l.side*l.side*l.n, classes, w, h);
+            free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
         }
     }
-    fseek(fp, -2, SEEK_CUR); 
-    fprintf(fp, "\n]\n");
-    fclose(fp);
-
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
-void validate_coco_recall(char *cfgfile, char *weightfile)
+void validate_yolo_recall(char *cfgfile, char *weightfile)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -240,7 +197,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
+    list *plist = get_paths("data/voc.2007.test");
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -251,7 +208,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     FILE **fps = calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-        snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
+        snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
     box *boxes = calloc(side*side*l.n, sizeof(box));
@@ -262,9 +219,8 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     int i=0;
 
     float thresh = .001;
-    int nms = 0;
     float iou_thresh = .5;
-    float nms_thresh = .5;
+    float nms = 0;
 
     int total = 0;
     int correct = 0;
@@ -277,8 +233,8 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
         image sized = resize_image(orig, net.w, net.h);
         char *id = basecfg(path);
         network_predict(net, sized.data);
-        get_detection_boxes(l, 1, 1, thresh, probs, boxes, 1);
-        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
+        get_detection_boxes(l, orig.w, orig.h, thresh, probs, boxes, 1);
+        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms);
 
         char labelpath[4096];
         find_replace(path, "images", "labels", labelpath);
@@ -316,21 +272,21 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     }
 }
 
-void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
+void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
 {
     image **alphabet = load_alphabet();
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer l = net.layers[net.n-1];
+    layer l = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
-    float nms = .4;
     clock_t time;
     char buff[256];
     char *input = buff;
     int j;
+    float nms=.4;
     box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
     float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
     for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
@@ -352,9 +308,11 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, coco_classes, alphabet, 80);
-        save_image(im, "prediction");
+        //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
+        save_image(im, "predictions");
         show_image(im, "predictions");
+
         free_image(im);
         free_image(sized);
 #ifdef OPENCV
@@ -365,24 +323,24 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     }
 }
 
-void run_coco(int argc, char **argv)
+void run_yolo(int argc, char **argv)
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .2);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
-
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
     }
 
+    int avg = find_int_arg(argc, argv, "-avg", 1);
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5]: 0;
-    if(0==strcmp(argv[2], "test")) test_coco(cfg, weights, filename, thresh);
-    else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
-    else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
-    else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, coco_classes, 80, frame_skip, prefix, .5);
+    if(0==strcmp(argv[2], "test")) test_yolo(cfg, weights, filename, thresh);
+    else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
+    else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
+    else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
+    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, voc_names, 20, frame_skip, prefix, avg, .5, 0,0,0,0);
 }

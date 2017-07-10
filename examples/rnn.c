@@ -1,12 +1,6 @@
-#include "network.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "blas.h"
-#include "parser.h"
+#include "darknet.h"
 
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#endif
+#include <math.h>
 
 typedef struct {
     float *x;
@@ -49,6 +43,7 @@ char **read_tokens(char *filename, size_t *read)
             size = size*2;
             d = realloc(d, size*sizeof(char *));
         }
+        if(0==strcmp(line, "<NEWLINE>")) line = "\n";
         d[count-1] = line;
     }
     fclose(fp);
@@ -120,7 +115,10 @@ void reset_rnn_state(network net, int b)
         #ifdef GPU
         layer l = net.layers[i];
         if(l.state_gpu){
-            fill_ongpu(l.outputs, 0, l.state_gpu + l.outputs*b, 1);
+            fill_gpu(l.outputs, 0, l.state_gpu + l.outputs*b, 1);
+        }
+        if(l.h_gpu){
+            fill_gpu(l.outputs, 0, l.h_gpu + l.outputs*b, 1);
         }
         #endif
     }
@@ -155,8 +153,8 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
         load_weights(&net, weightfile);
     }
 
-    int inputs = get_network_input_size(net);
-    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    int inputs = net.inputs;
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g, Inputs: %d %d %d\n", net.learning_rate, net.momentum, net.decay, inputs, net.batch, net.time_steps);
     int batch = net.batch;
     int steps = net.time_steps;
     if(clear) *net.seen = 0;
@@ -180,30 +178,32 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
             p = get_rnn_data(text, offsets, inputs, size, streams, steps);
         }
 
-        float loss = train_network_datum(net, p.x, p.y) / (batch);
+        copy_cpu(net.inputs*net.batch, p.x, 1, net.input, 1);
+        copy_cpu(net.truths*net.batch, p.y, 1, net.truth, 1);
+        float loss = train_network_datum(net) / (batch);
         free(p.x);
         free(p.y);
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
-        int chars = get_current_batch(net)*batch;
+        size_t chars = get_current_batch(net)*batch;
         fprintf(stderr, "%d: %f, %f avg, %f rate, %lf seconds, %f epochs\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), (float) chars/size);
 
         for(j = 0; j < streams; ++j){
             //printf("%d\n", j);
-            if(rand()%10 == 0){
+            if(rand()%64 == 0){
                 //fprintf(stderr, "Reset\n");
                 offsets[j] = rand_size_t()%size;
                 reset_rnn_state(net, j);
             }
         }
 
-        if(i%1000==0){
+        if(i%10000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
-        if(i%10==0){
+        if(i%100==0){
             char buff[256];
             sprintf(buff, "%s/%s.backup", backup_directory, base);
             save_weights(net, buff);
@@ -238,7 +238,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int inputs = get_network_input_size(net);
+    int inputs = net.inputs;
 
     int i, j;
     for(i = 0; i < net.n; ++i) net.layers[i].temperature = temp;
@@ -295,7 +295,7 @@ void test_tactic_rnn(char *cfgfile, char *weightfile, int num, float temp, int r
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int inputs = get_network_input_size(net);
+    int inputs = net.inputs;
 
     int i, j;
     for(i = 0; i < net.n; ++i) net.layers[i].temperature = temp;
@@ -333,7 +333,7 @@ void valid_tactic_rnn(char *cfgfile, char *weightfile, char *seed)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int inputs = get_network_input_size(net);
+    int inputs = net.inputs;
 
     int count = 0;
     int words = 1;
@@ -385,7 +385,7 @@ void valid_char_rnn(char *cfgfile, char *weightfile, char *seed)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int inputs = get_network_input_size(net);
+    int inputs = net.inputs;
 
     int count = 0;
     int words = 1;
@@ -413,7 +413,7 @@ void valid_char_rnn(char *cfgfile, char *weightfile, char *seed)
         input[c] = 0;
         sum += log(out[next])/log2;
         c = next;
-        printf("%d Perplexity: %4.4f    Word Perplexity: %4.4f\n", count, pow(2, -sum/count), pow(2, -sum/words));
+        printf("%d BPC: %4.4f   Perplexity: %4.4f    Word Perplexity: %4.4f\n", count, -sum/count, pow(2, -sum/count), pow(2, -sum/words));
     }
 }
 
@@ -426,7 +426,7 @@ void vec_char_rnn(char *cfgfile, char *weightfile, char *seed)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    int inputs = get_network_input_size(net);
+    int inputs = net.inputs;
 
     int c;
     int seed_len = strlen(seed);
