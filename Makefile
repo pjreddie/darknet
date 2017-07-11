@@ -1,6 +1,7 @@
 GPU=0
 CUDNN=0
 OPENCV=0
+OPENMP=0
 DEBUG=0
 
 ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
@@ -19,13 +20,17 @@ EXEC=darknet
 OBJDIR=./obj/
 
 CC=gcc
-NVCC=nvcc --compiler-options '-fPIC'
+NVCC=nvcc 
 AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
 COMMON= -Iinclude/ -Isrc/
-CFLAGS=-Wall -Wfatal-errors -fPIC
+CFLAGS=-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC
+
+ifeq ($(OPENMP), 1) 
+COMMON+= -fopenmp
+endif
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g

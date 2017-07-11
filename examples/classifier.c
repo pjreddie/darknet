@@ -58,7 +58,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
-    args.threads = 32;
+    args.threads = 64;
     args.hierarchy = net.hierarchy;
 
     args.min = net.min_crop;
@@ -670,7 +670,6 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     int *indexes = calloc(top, sizeof(int));
     char buff[256];
     char *input = buff;
-    int size = net.w;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -682,8 +681,8 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        image r = resize_min(im, size);
-        resize_network(&net, r.w, r.h);
+        image r = letterbox_image(im, net.w, net.h);
+        //resize_network(&net, r.w, r.h);
         //printf("%d %d\n", r.w, r.h);
 
         float *X = r.data;

@@ -295,6 +295,112 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
+void load_rle(image im, int *rle, int n)
+{
+    int count = 0;
+    int curr = 0;
+    int i,j;
+    for(i = 0; i < n; ++i){
+        for(j = 0; j < rle[i]; ++j){
+            im.data[count++] = curr;
+        }
+        curr = 1 - curr;
+    }
+    for(; count < im.h*im.w*im.c; ++count){
+        im.data[count] = curr;
+    }
+}
+
+void or_image(image src, image dest, int c)
+{
+    int i;
+    for(i = 0; i < src.w*src.h; ++i){
+        if(src.data[i]) dest.data[dest.w*dest.h*c + i] = 1;
+    }
+}
+
+void exclusive_image(image src)
+{
+    int k, j, i;
+    int s = src.w*src.h;
+    for(k = 0; k < src.c-1; ++k){
+        for(i = 0; i < s; ++i){
+            if (src.data[k*s + i]){
+                for(j = k+1; j < src.c; ++j){
+                    src.data[j*s + i] = 0;
+                }
+            }
+        }
+    }
+}
+
+box bound_image(image im)
+{
+    int x,y;
+    int minx = im.w;
+    int miny = im.h;
+    int maxx = 0;
+    int maxy = 0;
+    for(y = 0; y < im.h; ++y){
+        for(x = 0; x < im.w; ++x){
+            if(im.data[y*im.w + x]){
+                minx = (x < minx) ? x : minx;
+                miny = (y < miny) ? y : miny;
+                maxx = (x > maxx) ? x : maxx;
+                maxy = (y > maxy) ? y : maxy;
+            }
+        }
+    }
+    box b = {minx, miny, maxx-minx + 1, maxy-miny + 1};
+    //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+    return b;
+}
+
+void fill_truth_iseg(char *path, int num_boxes, float *truth, int classes, int w, int h, augment_args aug, int flip, int mw, int mh)
+{
+    char labelpath[4096];
+    find_replace(path, "images", "mask", labelpath);
+    find_replace(labelpath, "JPEGImages", "mask", labelpath);
+    find_replace(labelpath, ".jpg", ".txt", labelpath);
+    find_replace(labelpath, ".JPG", ".txt", labelpath);
+    find_replace(labelpath, ".JPEG", ".txt", labelpath);
+    FILE *file = fopen(labelpath, "r");
+    if(!file) file_error(labelpath);
+    char buff[32788];
+    int id;
+    int i = 0;
+    image part = make_image(w, h, 1);
+    while((fscanf(file, "%d %s", &id, buff) == 2) && i < num_boxes){
+        int n = 0;
+        int *rle = read_intlist(buff, &n, 0);
+        load_rle(part, rle, n);
+        image sized = rotate_crop_image(part, aug.rad, aug.scale, aug.w, aug.h, aug.dx, aug.dy, aug.aspect);
+        if(flip) flip_image(sized);
+        box b = bound_image(sized);
+        if(b.w > 0){
+            image crop = crop_image(sized, b.x, b.y, b.w, b.h);
+            image mask = resize_image(crop, mw, mh);
+            truth[i*(4 + mw*mh + 1) + 0] = (b.x + b.w/2.)/sized.w;
+            truth[i*(4 + mw*mh + 1) + 1] = (b.y + b.h/2.)/sized.h;
+            truth[i*(4 + mw*mh + 1) + 2] = b.w/sized.w;
+            truth[i*(4 + mw*mh + 1) + 3] = b.h/sized.h;
+            int j;
+            for(j = 0; j < mw*mh; ++j){
+                truth[i*(4 + mw*mh + 1) + 4 + j] = mask.data[j];
+            }
+            truth[i*(4 + mw*mh + 1) + 4 + mw*mh] = id;
+            free_image(crop);
+            free_image(mask);
+            ++i;
+        }
+        free_image(sized);
+        free(rle);
+    }
+    fclose(file);
+    free_image(part);
+}
+
+
 void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
 {
     char labelpath[4096];
@@ -443,7 +549,7 @@ matrix load_regression_labels_paths(char **paths, int n)
         find_replace(labelpath, "JPEGImages", "targets", labelpath);
         find_replace(labelpath, ".jpg", ".txt", labelpath);
         find_replace(labelpath, ".png", ".txt", labelpath);
-        
+
         FILE *file = fopen(labelpath, "r");
         fscanf(file, "%f", &(y.vals[i][0]));
         fclose(file);
@@ -508,45 +614,6 @@ void free_data(data d)
     }else{
         free(d.X.vals);
         free(d.y.vals);
-    }
-}
-
-void load_rle(image im, int *rle, int n)
-{
-    int count = 0;
-    int curr = 0;
-    int i,j;
-    for(i = 0; i < n; ++i){
-        for(j = 0; j < rle[i]; ++j){
-            im.data[count++] = curr;
-        }
-        curr = 1 - curr;
-    }
-    for(; count < im.h*im.w*im.c; ++count){
-        im.data[count] = curr;
-    }
-}
-
-void or_image(image src, image dest, int c)
-{
-    int i;
-    for(i = 0; i < src.w*src.h; ++i){
-        if(src.data[i]) dest.data[dest.w*dest.h*c + i] = 1;
-    }
-}
-
-void exclusive_image(image src)
-{
-    int k, j, i;
-    int s = src.w*src.h;
-    for(k = 0; k < src.c-1; ++k){
-        for(i = 0; i < s; ++i){
-            if (src.data[k*s + i]){
-                for(j = k+1; j < src.c; ++j){
-                    src.data[j*s + i] = 0;
-                }
-            }
-        }
     }
 }
 
@@ -659,7 +726,7 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
     return d;
 }
 
-data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int min, int max, float angle, float aspect, float hue, float saturation, float exposure, int div)
+data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int boxes, int coords, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -670,32 +737,22 @@ data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int m
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
-
-    d.y.rows = n;
-    d.y.cols = h*w*classes/div/div;
-    d.y.vals = calloc(d.X.rows, sizeof(float*));
+    d.y = make_matrix(n, (coords+1)*boxes);
 
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
-        a.dx = 0;
-        a.dy = 0;
         image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
 
         int flip = rand()%2;
         if(flip) flip_image(sized);
         random_distort_image(sized, hue, saturation, exposure);
         d.X.vals[i] = sized.data;
+        //show_image(sized, "image");
 
-        image mask = get_segmentation_image(random_paths[i], orig.w, orig.h, classes);
-        //image mask = make_image(orig.w, orig.h, classes+1);
-        image sized_m = rotate_crop_image(mask, a.rad, a.scale/div, a.w/div, a.h/div, a.dx, a.dy, a.aspect);
-
-        if(flip) flip_image(sized_m);
-        d.y.vals[i] = sized_m.data;
+        fill_truth_iseg(random_paths[i], boxes, d.y.vals[i], classes, orig.w, orig.h, a, flip, 14, 14);
 
         free_image(orig);
-        free_image(mask);
 
         /*
            image rgb = mask_to_rgb(sized_m, classes);
@@ -950,6 +1007,8 @@ void *load_thread(void *ptr)
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
         *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.out_w, a.out_h);
+    } else if (a.type == INSTANCE_DATA){
+        *a.d = load_data_iseg(a.n, a.paths, a.m, a.w, a.h, a.classes, a.num_boxes, a.coords, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == SEGMENTATION_DATA){
         *a.d = load_data_seg(a.n, a.paths, a.m, a.w, a.h, a.classes, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.scale);
     } else if (a.type == REGION_DATA){
