@@ -22,7 +22,9 @@ static box *boxes;
 static network net;
 static image buff [3];
 static image buff_letter[3];
-static int buff_index = 0;
+static int buff_fetch_index = 0;
+static int buff_detect_index = 0;
+static int buff_show_index = 0;
 static CvCapture * cap;
 static IplImage  * ipl;
 static float fps = 0;
@@ -92,7 +94,7 @@ void *detect_in_thread(void *ptr)
     float nms = .4;
 
     layer l = net.layers[net.n-1];
-    float *X = buff_letter[(buff_index+2)%3].data;
+    float *X = buff_letter[buff_detect_index].data; // was +2
     float *prediction = network_predict(net, X);
 
     memcpy(predictions[demo_index], prediction, l.outputs*sizeof(float));
@@ -115,7 +117,7 @@ void *detect_in_thread(void *ptr)
     printf("\nFPS:%.1f\n",fps);
     printf("Frame: %d\n",overall_frame);
     printf("Objects:\n\n");
-    image display = buff[(buff_index+2) % 3];
+    image display = buff[buff_show_index]; // was +2
     draw_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
     if(fout)
         save_detections(display, overall_frame,demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
@@ -127,15 +129,15 @@ void *detect_in_thread(void *ptr)
 
 void *fetch_in_thread(void *ptr)
 {
-    int status = fill_image_from_stream(cap, buff[buff_index]);
-    letterbox_image_into(buff[buff_index], net.w, net.h, buff_letter[buff_index]);
+    int status = fill_image_from_stream(cap, buff[buff_fetch_index]);
+    letterbox_image_into(buff[buff_fetch_index], net.w, net.h, buff_letter[buff_fetch_index]);
     if(status == 0) demo_done = 1;
     return 0;
 }
 
 void *display_in_thread(void *ptr)
 {
-    show_image_cv(buff[(buff_index + 1)%3], "Demo", ipl);
+    show_image_cv(buff[buff_show_index], "Demo", ipl); // was +1
     int c = cvWaitKey(1);
     if (c != -1) c = c%256;
     if (c == 10){
@@ -304,15 +306,22 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         fflush(fout);
     }
 
+    int buff_index = 0;
     while(!demo_done){
         buff_index = (buff_index + 1) %3;
         if(allframes)
         {
+            buff_fetch_index = buff_index;
+            buff_detect_index = buff_index;
+            buff_show_index = buff_index;
             fetch_in_thread(0);
             detect_in_thread(0);
         }
         else
-        {
+        {            
+            buff_fetch_index = buff_index;
+            buff_show_index = (buff_index+1)%3;
+            buff_detect_index = (buff_index+2)%3;
             if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
             if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");            
         }
@@ -333,7 +342,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             // prefix ! for skipping save and visualization
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
-            save_image(buff[(buff_index + 1)%3], name);
+            save_image(buff[buff_show_index], name); // was +1
         }            
         if(!allframes)
         {
@@ -342,7 +351,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
         // output file chance
         if(voutput)
-            dowrite(buff[(buff_index + 1)%3],voutput);
+            dowrite(buff[buff_show_index],voutput);  // was +1
         ++count;
     }
     
