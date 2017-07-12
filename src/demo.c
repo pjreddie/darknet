@@ -113,6 +113,7 @@ void *detect_in_thread(void *ptr)
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
+    printf("Frame: %d\n",overall_frame);
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
     draw_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
@@ -183,7 +184,7 @@ void dowrite(image im, const char * voutput)
 {
     if(!writer)
     {
-        const char * rf = strchr(voutput,'!');
+        const char * rf = strchr(voutput,':');
         int fourcc = 0;
         CvSize xsize;
         if(rf)
@@ -217,7 +218,7 @@ void dowrite(image im, const char * voutput)
     }
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen,const char * output, const char * voutput)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen,const char * output, const char * voutput, int allframes)
 {
     demo_delay = delay;
     demo_frame = avg_frames;
@@ -292,9 +293,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     demo_time = get_wall_time();
 
-    // I have separated output writing, but actually we need a flag to say: 
-    // - all frames (e.g. for video)
-    // - no show and nor prefix (currently using -prefix !)
     if(output)
     {
         fout = fopen(output,"w");
@@ -304,59 +302,50 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
         fprintf(fout,"frame\tclass\tprob\tleft\ttop\tright\tbottom\n");
         fflush(fout);
+    }
 
-        while(!demo_done){
-            buff_index = (buff_index + 1) %3;
+    while(!demo_done){
+        buff_index = (buff_index + 1) %3;
+        if(allframes)
+        {
             fetch_in_thread(0);
             detect_in_thread(0);
-            if(!prefix){
-                if(count % (demo_delay+1) == 0){
-                    fps = 1./(get_wall_time() - demo_time);
-                    demo_time = get_wall_time();
-                    float *swap = last_avg;
-                    last_avg  = last_avg2;
-                    last_avg2 = swap;
-                    memcpy(last_avg, avg, l.outputs*sizeof(float));
-                }
-                display_in_thread(0);            
-            }else if(prefix[0] != '!') { // prefix ! for skipping save and viz
-                char name[256];
-                sprintf(name, "%s_%08d", prefix, count);
-                save_image(buff[(buff_index + 1)%3], name);
-            }            
-            if(voutput)
-                dowrite(buff[(buff_index + 1)%3],voutput);
-            ++count;
         }
-    }
-    else
-    {
-        while(!demo_done){
-            buff_index = (buff_index + 1) %3;
+        else
+        {
             if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-            if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
-            if(!prefix){
-                if(count % (demo_delay+1) == 0){
-                    fps = 1./(get_wall_time() - demo_time);
-                    demo_time = get_wall_time();
-                    float *swap = last_avg;
-                    last_avg  = last_avg2;
-                    last_avg2 = swap;
-                    memcpy(last_avg, avg, l.outputs*sizeof(float));
-                }
-                display_in_thread(0);
-            }else if(prefix[0] != '!') {
-                char name[256];
-                sprintf(name, "%s_%08d", prefix, count);
-                save_image(buff[(buff_index + 1)%3], name);
-            }
+            if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");            
+        }
+
+        // always timing stats
+        if(count % (demo_delay+1) == 0){
+            fps = 1./(get_wall_time() - demo_time);
+            demo_time = get_wall_time();
+            float *swap = last_avg;
+            last_avg  = last_avg2;
+            last_avg2 = swap;
+            memcpy(last_avg, avg, l.outputs*sizeof(float));
+        }
+
+        if(!prefix){
+            display_in_thread(0);            
+        }else if(prefix[0] != '!') { 
+            // prefix ! for skipping save and visualization
+            char name[256];
+            sprintf(name, "%s_%08d", prefix, count);
+            save_image(buff[(buff_index + 1)%3], name);
+        }            
+        if(!allframes)
+        {
             pthread_join(fetch_thread, 0);
             pthread_join(detect_thread, 0);
-            if(voutput)
-                dowrite(buff[(buff_index + 1)%3],voutput);
-            ++count;
-        }        
+        }
+        // output file chance
+        if(voutput)
+            dowrite(buff[(buff_index + 1)%3],voutput);
+        ++count;
     }
+    
     if(fout)
     {
         fclose(fout);
