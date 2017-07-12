@@ -1,6 +1,7 @@
 GPU=1
 CUDNN=0
-OPENCV=1
+OPENCV=0
+OPENMP=0
 DEBUG=0
 
 ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
@@ -9,8 +10,6 @@ ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52]
 
-ARCH= -gencode arch=compute_30,code=sm_30 \
-      -gencode arch=compute_35,code=sm_35
 # This is what I use, uncomment if you know your arch and want to specify
 # ARCH= -gencode arch=compute_52,code=compute_52
 
@@ -21,13 +20,17 @@ EXEC=darknet
 OBJDIR=./obj/
 
 CC=gcc
-NVCC=nvcc --compiler-options '-fPIC'
+NVCC=nvcc 
 AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
 COMMON= -Iinclude/ -Isrc/
-CFLAGS=-Wall -Wfatal-errors -fPIC
+CFLAGS=-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC
+
+ifeq ($(OPENMP), 1) 
+COMMON+= -fopenmp
+endif
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g

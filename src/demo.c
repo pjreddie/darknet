@@ -103,10 +103,8 @@ void *detect_in_thread(void *ptr)
     if(demo_delay == 0) l.output = avg;
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
-        printf("!DE\n");
     } else if (l.type == REGION){
-        get_region_boxes(l, buff[0].w, buff[0].h, net.w, net.h, demo_thresh, probs, boxes, 0, 0, demo_hier, 1);
-        printf("!RE\n");
+        get_region_boxes(l, buff[0].w, buff[0].h, net.w, net.h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
     } else {
         error("Last layer must produce detections\n");
     }
@@ -117,11 +115,13 @@ void *detect_in_thread(void *ptr)
     printf("\nFPS:%.1f\n",fps);
     printf("Frame: %d\n",overall_frame);
     printf("Objects:\n\n");
-    image display = buff[buff_show_index]; // was +2
-    draw_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+
+    image display = buff[buff_detect_index]; // was +2
+    draw_detections(display, demo_detections, demo_thresh, boxes, probs, 0, demo_names, demo_alphabet, demo_classes);
     if(fout)
         save_detections(display, overall_frame,demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
     overall_frame++;
+
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
     return 0;
@@ -220,7 +220,7 @@ void dowrite(image im, const char * voutput)
     }
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen,const char * output, const char * voutput, int allframes)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen, const char * output, const char * voutput, int allframes)
 {
     demo_delay = delay;
     demo_frame = avg_frames;
@@ -318,9 +318,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             detect_in_thread(0);
         }
         else
-        {            
-            buff_fetch_index = buff_index;
-            buff_show_index = (buff_index+1)%3;
+        {   
+            buff_fetch_index  = buff_index;
+            buff_show_index   = (buff_index+1)%3;
             buff_detect_index = (buff_index+2)%3;
             if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
             if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");            
