@@ -127,6 +127,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
     //if(l.dot > 0) dot_error_gpu(l);
     if(l.binary || l.xnor) swap_binary(&l);
+	//cudaDeviceSynchronize();	// for correct profiling of performance
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)

@@ -223,6 +223,7 @@ __global__ void fast_mean_delta_kernel(float *delta, float *variance, int batch,
             local[id] += (i+id < spatial) ? delta[index] : 0;
         }
     }
+	__syncthreads();
 
     if(id == 0){
         mean_delta[filter] = 0;
@@ -251,6 +252,7 @@ __global__ void  fast_variance_delta_kernel(float *x, float *delta, float *mean,
             local[id] += (i+id < spatial) ? delta[index]*(x[index] - mean[filter]) : 0;
         }
     }
+	__syncthreads();
 
     if(id == 0){
         variance_delta[filter] = 0;
@@ -446,6 +448,7 @@ __global__ void  fast_mean_kernel(float *x, int batch, int filters, int spatial,
             local[id] += (i+id < spatial) ? x[index] : 0;
         }
     }
+	__syncthreads();
 
     if(id == 0){
         mean[filter] = 0;
@@ -474,6 +477,7 @@ __global__ void  fast_variance_kernel(float *x, float *mean, int batch, int filt
             local[id] += (i+id < spatial) ? pow((x[index] - mean[filter]), 2) : 0;
         }
     }
+	__syncthreads();
 
     if(id == 0){
         variance[filter] = 0;
