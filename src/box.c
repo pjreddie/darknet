@@ -273,6 +273,11 @@ void do_nms_obj(box *boxes, float **probs, int total, int classes, float thresh)
     free(s);
 }
 
+void c_do_nms_obj(box *boxes, float **probs, int total, int classes, float thresh){
+    do_nms_obj(boxes,probs,total,classes,thresh);
+}
+
+
 
 void do_nms_sort(box *boxes, float **probs, int total, int classes, float thresh)
 {
@@ -303,6 +308,11 @@ void do_nms_sort(box *boxes, float **probs, int total, int classes, float thresh
     }
     free(s);
 }
+
+void c_do_nms_sort(box *boxes, float **probs, int total, int classes, float thresh){
+    return do_nms_sort(boxes,probs,total,classes,thresh);
+}
+
 
 void do_nms(box *boxes, float **probs, int total, int classes, float thresh)
 {

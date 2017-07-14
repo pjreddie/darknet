@@ -667,6 +667,10 @@ image make_image(int w, int h, int c)
     return out;
 }
 
+image c_make_image(int w, int h, int c){
+    return make_image(w,h,c);
+}
+
 image make_random_image(int w, int h, int c)
 {
     image out = make_empty_image(w,h,c);
@@ -919,6 +923,10 @@ image resize_min(image im, int min)
     if(w == im.w && h == im.h) return im;
     image resized = resize_image(im, w, h);
     return resized;
+}
+
+image c_resize_image(image im, int w, int h) {
+    return resize_image(im, w, h);
 }
 
 image random_crop_image(image im, int w, int h)
@@ -1568,4 +1576,9 @@ void free_image(image m)
     if(m.data){
         free(m.data);
     }
+}
+
+
+void c_free_image(image m){
+    free_image(m);
 }

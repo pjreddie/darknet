@@ -450,6 +450,12 @@ void get_region_boxes(layer l, int w, int h, int netw, int neth, float thresh, f
     correct_region_boxes(boxes, l.w*l.h*l.n, w, h, netw, neth, relative);
 }
 
+void c_get_region_boxes(layer l, int w, int h, int netw, int neth, float thresh, float **probs, box *boxes, float **masks, int only_objectness, int *map, float tree_thresh, int relative){
+    get_region_boxes(l, w, h, netw, neth, thresh, probs, boxes, masks, only_objectness, map,  tree_thresh,  relative);
+}
+
+
+
 #ifdef GPU
 
 void forward_region_layer_gpu(const layer l, network net)

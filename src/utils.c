@@ -202,6 +202,10 @@ float sec(clock_t clocks)
     return (float)clocks/CLOCKS_PER_SEC;
 }
 
+float c_sec(clock_t clocks){
+    return sec(clocks);
+}
+
 void top_k(float *a, int n, int k, int *index)
 {
     int i,j;
@@ -568,6 +572,11 @@ int max_index(float *a, int n)
     }
     return max_i;
 }
+
+int c_max_index(float *a, int n){
+    return max_index(a,n);
+}
+
 
 int rand_int(int min, int max)
 {
