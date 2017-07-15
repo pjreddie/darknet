@@ -18,11 +18,13 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/../ ${CMAKE_CURRENT_LIST_DIR}/../i
 cuda_add_library (darknetAPILib ${darknetAPI_SOURCES} ${gpu_SRCS} SHARED)
 install(TARGETS darknetAPILib LIBRARY DESTINATION ${LIB_DESTINATION} ARCHIVE DESTINATION ${LIB_DESTINATION} RUNTIME DESTINATION ${LIB_DESTINATION})
 
-file(GLOB filesA *.h)
-file(GLOB filesB DarknetAPI/*.h)
+file(GLOB filesB *.h)
+file(GLOB filesC ../include/*.h)
 
-install(FILES  ${filesA} DESTINATION  ${HEADER_DESTINATION})
+
 install(FILES  ${filesB} DESTINATION  ${HEADER_DESTINATION}/DarknetAPI)
+install(FILES  ${filesC} DESTINATION  ${HEADER_DESTINATION})
+
 
 
 
