@@ -68,6 +68,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
     copy_cpu(last.outputs, last.output, 1, last.delta, 1);
     calculate_loss(last.output, last.delta, last.outputs, thresh);
     backward_network(*net);
+    net->input = NULL;
 #endif
 
     if(flip) flip_image(delta);
