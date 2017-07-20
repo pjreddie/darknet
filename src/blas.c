@@ -293,10 +293,10 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
 void backward_softmax(float *output, float *delta_output, int n, float temp, int stride, float *delta_input)
 {
     int i;
-    float dot = dot_cpu(n, output, 1, delta_output, 1);
+    float dot = dot_cpu(n, output, stride, delta_output, stride);
     float temp_inv = 1.0 / temp;
     for(i = 0; i < n; ++i){
-        delta_input[i] += temp_inv * output[i] * (delta_output[i] - dot);
+        delta_input[i*stride] += temp_inv * output[i*stride] * (delta_output[i*stride] - dot);
     }
 }
 
