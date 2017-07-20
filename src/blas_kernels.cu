@@ -921,3 +921,32 @@ extern "C" void softmax_gpu(float *input, int n, int batch, int batch_offset, in
     softmax_kernel<<<cuda_gridsize(batch*groups), BLOCK>>>(input, n, batch, batch_offset, groups, group_offset, stride, temp, output);
     check_error(cudaPeekAtLastError());
 }
+
+__device__ void backward_softmax_device(float *output, float *delta_output, int n, float temp, int stride, float *delta_input)
+{
+    int i;
+    float dot = 0;
+    for(i = 0; i < n; ++i){
+        dot += output[i*stride] * delta_output[i*stride];
+    }
+    float temp_inv = 1.0 / temp;
+    for(i = 0; i < n; ++i){
+        delta_input[i*stride] += temp_inv * output[i*stride] * (delta_output[i*stride] - dot);
+    }
+}
+
+__global__ void backward_softmax_kernel(float *output, float *delta_output, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *delta_input)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= batch*groups) return;
+    int b = id / groups;
+    int g = id % groups;
+    int offset = b*batch_offset + g*group_offset;
+    backward_softmax_device(output + offset, delta_output + offset, n, temp, stride, delta_input + offset);
+}
+
+extern "C" void backward_softmax_gpu(float *output, float *delta_output, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *delta_input)
+{
+    backward_softmax_kernel<<<cuda_gridsize(batch*groups), BLOCK>>>(output, delta_output, n, batch, batch_offset, groups, group_offset, stride, temp, delta_input);
+    check_error(cudaPeekAtLastError());
+}

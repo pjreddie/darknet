@@ -42,6 +42,9 @@ void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, floa
 void softmax(float *input, int n, float temp, int stride, float *output);
 void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
 
+void backward_softmax(float *output, float *delta_output, int n, float temp, int stride, float *delta_input);
+void backward_softmax_cpu(float *output, float *delta_output, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *delta_input);
+
 #ifdef GPU
 #include "cuda.h"
 #include "tree.h"
@@ -88,6 +91,7 @@ void deinter_gpu(int NX, float *X, int NY, float *Y, int B, float *OUT);
 void reorg_gpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
 
 void softmax_gpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
+void backward_softmax_gpu(float *output, float *delta_output, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *delta_input);
 void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t);
 void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t);
 
