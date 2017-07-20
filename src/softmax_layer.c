@@ -44,7 +44,11 @@ void forward_softmax_layer(const softmax_layer l, network net)
             count += group_size;
         }
     } else {
-        softmax_cpu(net.input, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output);
+        if(l.spatial){
+            softmax_cpu(net.input, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, l.temperature, l.output);
+        }else{
+            softmax_cpu(net.input, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output);
+        }
     }
 }
 
@@ -59,7 +63,11 @@ void backward_softmax_layer(const softmax_layer l, network net)
             count += group_size;
         }
     } else {
-        backward_softmax_cpu(l.output, l.delta, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, net.delta);
+        if(l.spatial){
+            backward_softmax_cpu(l.output, l.delta, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, l.temperature, net.delta);
+        } else {
+            backward_softmax_cpu(l.output, l.delta, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, net.delta);
+        }
     }
 }
 
@@ -82,7 +90,7 @@ void forward_softmax_layer_gpu(const softmax_layer l, network net)
         }
     } else {
         if(l.spatial){
-            softmax_gpu(net.input_gpu, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu);
+            softmax_gpu(net.input_gpu, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, l.temperature, l.output_gpu);
         }else{
             softmax_gpu(net.input_gpu, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output_gpu);
         }
@@ -101,7 +109,7 @@ void backward_softmax_layer_gpu(const softmax_layer l, network net)
         }
     } else {
         if(l.spatial){
-            backward_softmax_gpu(l.output_gpu, l.delta_gpu, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, 1, net.delta_gpu);
+            backward_softmax_gpu(l.output_gpu, l.delta_gpu, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, l.temperature, net.delta_gpu);
         } else {
             backward_softmax_gpu(l.output_gpu, l.delta_gpu, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, net.delta_gpu);
         }
