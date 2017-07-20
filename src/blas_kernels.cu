@@ -860,16 +860,17 @@ __device__ void softmax_device(float *input, int n, float temp, int stride, floa
     float sum = 0;
     float largest = -INFINITY;
     for(i = 0; i < n; ++i){
-        int val = input[i*stride];
-        largest = (val>largest) ? val : largest;
+        largest = (input[i*stride] > largest) ? input[i*stride] : largest;
     }
+    float temp_inv = 1.0 / temp;
     for(i = 0; i < n; ++i){
-        float e = exp(input[i*stride]/temp - largest/temp);
+        float e = exp((input[i*stride] - largest) * temp_inv);
         sum += e;
         output[i*stride] = e;
     }
+    float sum_inv = 1.0 / sum;
     for(i = 0; i < n; ++i){
-        output[i*stride] /= sum;
+        output[i*stride] *= sum_inv;
     }
 }
 
