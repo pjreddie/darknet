@@ -33,5 +33,20 @@ install(FILES  ${filesB} DESTINATION  ${HEADER_DESTINATION}/DarknetAPI)
 
 
 
+cuda_add_executable(darknet darknet.c)
+
+target_link_libraries(darknet
+        darknetAPILib
+        darknetExamplesLib
+        darknetLib
+        pthread
+        m
+        ${Darknet_LINKER_LIBS}
+        ${CUDA_LIBRARIES}
+        ${OpenCV_LIBRARIES}
+        cudart
+        cublas
+        curand
+        )
 
 
