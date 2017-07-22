@@ -763,6 +763,10 @@ network parse_network_cfg(char *filename)
     return net;
 }
 
+network c_parse_network_cfg(char *filename){
+    return parse_network_cfg(filename);
+}
+
 list *read_cfg(char *filename)
 {
     FILE *file = fopen(filename, "r");
@@ -1181,5 +1185,10 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
 void load_weights(network *net, char *filename)
 {
     load_weights_upto(net, filename, 0, net->n);
+}
+
+
+void c_load_weights(network *net, char *filename){
+    load_weights(net,filename);
 }
 

@@ -321,6 +321,11 @@ void set_batch_network(network *net, int b)
     }
 }
 
+
+void c_set_batch_network(network *net, int b){
+    set_batch_network(net,b);
+}
+
 int resize_network(network *net, int w, int h)
 {
 #ifdef GPU
@@ -462,6 +467,10 @@ float *network_predict(network net, float *input)
     net.delta = 0;
     forward_network(net);
     return net.output;
+}
+
+float *c_network_predict(network net, float *input){
+    return network_predict(net, input);
 }
 
 float *network_predict_p(network *net, float *input)
@@ -619,6 +628,11 @@ void free_network(network net)
     if(net.input_gpu) cuda_free(net.input_gpu);
     if(net.truth_gpu) cuda_free(net.truth_gpu);
 #endif
+}
+
+
+void c_free_network(network net){
+    free_network(net);
 }
 
 // Some day...
