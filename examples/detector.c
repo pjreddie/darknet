@@ -493,17 +493,21 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
-void validate_detector_recall(char *cfgfile, char *weightfile)
+void validate_detector_recall(char *cfgfile, char *weightfile, char *test_list)
 {
+    printf("parsing net");
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
+        printf("loading weights...");
         load_weights(&net, weightfile);
     }
+    printf("set batch network");
     set_batch_network(&net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
-    list *plist = get_paths("data/voc.2007.test");
+  //  list *plist = get_paths("dirc_short.txt");
+    list *plist = get_paths(test_list);
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -540,6 +544,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
         find_replace(labelpath, "JPEGImages", "labels", labelpath);
         find_replace(labelpath, ".jpg", ".txt", labelpath);
         find_replace(labelpath, ".JPEG", ".txt", labelpath);
+        find_replace(labelpath, ".jpeg", ".txt", labelpath);
 
         int num_labels = 0;
         box_label *truth = read_boxes(labelpath, &num_labels);
@@ -584,26 +589,26 @@ void write_detections(image im, int num, float thresh, box *boxes, float **probs
                 if(prob){
                         box b = boxes[i];
            
-			float x_min = b.x - b.w/2.;
-			float y_min = b.y - b.h/2.;
-			float x_max = b.x + b.w/2.;
-			float y_max = b.y + b.h/2.;
+//			float x_min = b.x - b.w/2.;
+//			float y_min = b.y - b.h/2.;
+//			float x_max = b.x + b.w/2.;
+//			float y_max = b.y + b.h/2.;
  
-//                        int left  = (b.x-b.w/2.)*im.w;
-//                        int right = (b.x+b.w/2.)*im.w;
-//                        int top   = (b.y-b.h/2.)*im.h;
-//                        int bot   = (b.y+b.h/2.)*im.h;
+                        int left  = (b.x-b.w/2.)*im.w;
+                        int right = (b.x+b.w/2.)*im.w;
+                        int top   = (b.y+b.h/2.)*im.h;
+                        int bot   = (b.y-b.h/2.)*im.h;
             
-			if (x_min < 0) x_min = 0;
-			if (y_min < 0) y_min = 0;
-			if (y_max > b.w) x_max = b.w;
-			if (y_max > b.h) y_max = b.h;
-//                        if(left < 0) left = 0;
-//                        if(right > im.w-1) right = im.w-1;
-//                        if(top < 0) top = 0;
-//                        if(bot > im.h-1) bot = im.h-1;
-                       // fprintf(f_img, "%s %f %d %d %d %d\n", names[class], prob, left, right, top, bot);
-                        fprintf(f_img, "%d %f %f %f %f %f\n", class, x_min, y_min, x_max, y_max, prob);
+//			if (x_min < 0) x_min = 0;
+//			if (y_min < 0) y_min = 0;
+//			if (y_max > b.w) x_max = b.w;
+//			if (y_max > b.h) y_max = b.h;
+                        if(left < 0) left = 0;
+                        if(right > im.w-1) right = im.w-1;
+                        if(bot < 0) bot = 0;
+                        if(top > im.h-1) top = im.h-1;
+                        fprintf(f_img, "%s %d %d %d %d %f\n", names[class], left, bot, right, top, prob);
+                       // fprintf(f_img, "%d %f %f %f %f %f\n", class, x_min, y_min, x_max, y_max, prob);
                     }
             }
         fclose(f_img);
@@ -699,9 +704,9 @@ void test_detector_file(char *datacfg, char *cfgfile, char *weightfile, char *fi
             //concatenate and give to save_image
             strcat(saveName, imgName);
                         printf("saving as: %s \n", saveName);
-            save_image(im, saveName);
+            //save_image(im, saveName);
                         //write detections to txt file
-                        strcat(saveName, "_dets.txt");
+                        strcat(saveName, ".txt");
                         write_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes, saveName);
         }
         else{
@@ -821,6 +826,7 @@ void run_detector(int argc, char **argv)
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     char *outfile = find_char_arg(argc, argv, "-out", 0);
     char *outdir = find_char_arg(argc, argv, "-outdir", 0);
+    char *test_list = find_char_arg(argc, argv, "-testfile", 0);
     int *gpus = 0;
     int gpu = 0;
     int ngpus = 0;
@@ -858,7 +864,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
-    else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
+    else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights, test_list);
     else if(0==strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
