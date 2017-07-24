@@ -51,20 +51,20 @@ public:
 	{
 		if(mat.data == NULL)
 			throw std::runtime_error("file not found");
-		std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); delete img; });
-		*image_ptr = mat_to_image(mat);
+		auto image_ptr = mat_to_image(mat);
 		return detect(*image_ptr, thresh);
 	}
 
-private:
-	static image_t mat_to_image(cv::Mat img)
+	static std::shared_ptr<image_t> mat_to_image(cv::Mat img)
 	{
+		std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); delete img; });
 		std::shared_ptr<IplImage> ipl_small = std::make_shared<IplImage>(img);
-		image_t im_small = ipl_to_image(ipl_small.get());
-		rgbgr_image(im_small);
-		return im_small;
+		*image_ptr = ipl_to_image(ipl_small.get());
+		rgbgr_image(*image_ptr);
+		return image_ptr;
 	}
 
+private:
 	static image_t ipl_to_image(IplImage* src)
 	{
 		unsigned char *data = (unsigned char *)src->imageData;
