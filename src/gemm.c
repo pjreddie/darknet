@@ -151,14 +151,19 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
             C[i*ldc + j] *= BETA;
         }
     }
-    if(!TA && !TB)
-        gemm_nn(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
-    else if(TA && !TB)
-        gemm_tn(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
-    else if(!TA && TB)
-        gemm_nt(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
-    else
-        gemm_tt(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+
+	int t;
+	#pragma omp parallel for
+	for (t = 0; t < M; ++t) {
+		if (!TA && !TB)
+			gemm_nn(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t*ldc, ldc);
+		else if (TA && !TB)
+			gemm_tn(1, N, K, ALPHA, A + t, lda, B, ldb, C + t*ldc, ldc);
+		else if (!TA && TB)
+			gemm_nt(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t*ldc, ldc);
+		else
+			gemm_tt(1, N, K, ALPHA, A + t, lda, B, ldb, C + t*ldc, ldc);
+	}
 }
 
 #ifdef GPU
