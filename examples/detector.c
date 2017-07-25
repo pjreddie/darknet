@@ -704,7 +704,7 @@ void test_detector_file(char *datacfg, char *cfgfile, char *weightfile, char *fi
             //concatenate and give to save_image
             strcat(saveName, imgName);
                         printf("saving as: %s \n", saveName);
-            //save_image(im, saveName);
+            save_image(im, saveName);
                         //write detections to txt file
                         strcat(saveName, ".txt");
                         write_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes, saveName);
