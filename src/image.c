@@ -543,7 +543,7 @@ void show_image_cv_ipl(IplImage *disp, const char *name)
 			//printf("\n cvCreateVideoWriter, DST output_video = %p  \n", output_video);
 		}
 
-		//cvWriteFrame(output_video, disp);	// comment this line to improve FPS !!!
+		cvWriteFrame(output_video, disp);	// comment this line to improve FPS !!!
 		printf("\n cvWriteFrame \n");
 	}
 
