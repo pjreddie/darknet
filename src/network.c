@@ -82,6 +82,27 @@ void reset_momentum(network net)
     #endif
 }
 
+void reset_network_state(network net, int b)
+{
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        #ifdef GPU
+        layer l = net.layers[i];
+        if(l.state_gpu){
+            fill_gpu(l.outputs, 0, l.state_gpu + l.outputs*b, 1);
+        }
+        if(l.h_gpu){
+            fill_gpu(l.outputs, 0, l.h_gpu + l.outputs*b, 1);
+        }
+        #endif
+    }
+}
+
+void reset_rnn(network *net)
+{
+    reset_network_state(*net, 0);
+}
+
 float get_current_rate(network net)
 {
     size_t batch_num = get_current_batch(net);
@@ -301,6 +322,15 @@ float train_network(network net, data d)
     }
     return (float)sum/(n*batch);
 }
+
+void set_temp_network(network net, float t)
+{
+    int i;
+    for(i = 0; i < net.n; ++i){
+        net.layers[i].temperature = t;
+    }
+}
+
 
 void set_batch_network(network *net, int b)
 {

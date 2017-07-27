@@ -203,7 +203,7 @@ void forward_region_layer(const layer l, network net)
                         int class_index = entry_index(l, b, n, l.coords + 1);
                         int obj_index = entry_index(l, b, n, l.coords);
                         float scale =  l.output[obj_index];
-                        //l.delta[obj_index] = l.noobject_scale * (0 - l.output[obj_index]);
+                        l.delta[obj_index] = l.noobject_scale * (0 - l.output[obj_index]);
                         float p = scale*get_hierarchy_probability(l.output + class_index, l.softmax_tree, class, l.w*l.h);
                         if(p > maxp){
                             maxp = p;
@@ -213,8 +213,8 @@ void forward_region_layer(const layer l, network net)
                     int class_index = entry_index(l, b, maxi, l.coords + 1);
                     int obj_index = entry_index(l, b, maxi, l.coords);
                     delta_region_class(l.output, l.delta, class_index, class, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat);
-                    //if(l.output[obj_index] < .3) l.delta[obj_index] = l.object_scale * (.3 - l.output[obj_index]);
-                    //else  l.delta[obj_index] = 0;
+                    if(l.output[obj_index] < .3) l.delta[obj_index] = l.object_scale * (.3 - l.output[obj_index]);
+                    else  l.delta[obj_index] = 0;
                     l.delta[obj_index] = 0;
                     ++class_count;
                     onlyclass = 1;
