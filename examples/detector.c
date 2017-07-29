@@ -627,7 +627,7 @@ void test_detector_file(char *datacfg, char *cfgfile, char *weightfile, char *fi
     }
     set_batch_network(&net, 1);
     srand(2222222);
-    clock_t time;
+    double time;
     char buff[256];
     char *input = buff;
     int j;
