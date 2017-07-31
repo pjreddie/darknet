@@ -1,6 +1,8 @@
 from ctypes import *
 import math
 import random
+import numpy as np
+import base64 
 
 def sample(probs):
     s = sum(probs)
@@ -79,6 +81,11 @@ load_image = lib.load_image_color
 load_image.argtypes = [c_char_p, c_int, c_int]
 load_image.restype = IMAGE
 
+
+load_image_data = lib.load_image_data
+load_image_data.argtypes = [c_char_p, c_int, c_int, c_int]
+load_image_data.restype = IMAGE
+
 predict_image = lib.predict
 lib.predict.restype = POINTER(DETECTION)
 
@@ -122,17 +129,29 @@ def loadNetwork(cfg, weights, names,thresh=0.25):
 def loadImage(image):
     return load_image(image, 0, 0);
 
+def loadImageBase64(img_data):
+    fh = open("/tmp/dnetin.jpg", "wb")
+    fh.write(img_data.decode('base64'))
+    fh.close()
+    return load_image("/tmp/dnetin.jpg", 0, 0);
+
 def drawDetections(image,dec):
     draw_detections(image,dec)
 
 def saveImage(image,out):
     save_image(image,out)
 
+def getImageBase64(image):
+    save_image(image,"/tmp/dnetout")
+    with open("/tmp/dnetout.jpg", "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read())
+    return encoded_string
+    
 if __name__ == "__main__":
-    net = loadNetwork("/var/trains/generico/net.cfg", "/var/trains/generico/net.weights", "/var/trains/generico/net.names",0.25)
-    im = load_image("dog.jpg", 0, 0)
-    r = classify(net,im)
+    net = loadNetwork("yolo.cfg", "yolo.weights", "coco.names")
+    imp = Image.open("t.png")
+    #im = loadImage("dog.jpg")
+    im2 = load_image_data(imp.bits,imp.size[0],imp.size[1],3);
+    r = classify(net,im2)
     print getDict(r)
-    drawDetections(im,r)
-    saveImage(im,"out")
 

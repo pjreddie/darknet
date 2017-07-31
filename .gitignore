@@ -1,3 +1,5 @@
+*.a
+*.so
 *.o
 *.dSYM
 *.csv

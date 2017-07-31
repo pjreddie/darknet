@@ -2,7 +2,7 @@ from ctypes import *
 import math
 import random
 import numpy as np
-import Image
+import base64 
 
 def sample(probs):
     s = sum(probs)
@@ -129,12 +129,24 @@ def loadNetwork(cfg, weights, names,thresh=0.25):
 def loadImage(image):
     return load_image(image, 0, 0);
 
+def loadImageBase64(img_data):
+    fh = open("/tmp/dnetin.jpg", "wb")
+    fh.write(img_data.decode('base64'))
+    fh.close()
+    return load_image("/tmp/dnetin.jpg", 0, 0);
+
 def drawDetections(image,dec):
     draw_detections(image,dec)
 
 def saveImage(image,out):
     save_image(image,out)
 
+def getImageBase64(image):
+    save_image(image,"/tmp/dnetout")
+    with open("/tmp/dnetout.jpg", "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read())
+    return encoded_string
+    
 if __name__ == "__main__":
     net = loadNetwork("yolo.cfg", "yolo.weights", "coco.names")
     imp = Image.open("t.png")
