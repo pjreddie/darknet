@@ -18,6 +18,7 @@ detection* get_detections(int num, float thresh, box *boxes, float **probs, char
             box b = boxes[i];
             dcts[aux].b = b;
             dcts[aux].classname = names[class];
+            //printf("%s \n",dcts[aux].classname);
             dcts[aux].classindex = class;
             dcts[aux].prob = prob;
         	aux++;
