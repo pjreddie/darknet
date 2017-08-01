@@ -191,11 +191,11 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections_im(image im,detection* dec)
+void draw_detections_im(image im,detection* dec,int count)
 {
 	image **alphabet = load_alphabet();
 	int i;
-	    for(i = 0; i < 49; ++i){
+	    for(i = 0; i < count; ++i){
 	        int class = dec[i].classindex;
 	        float prob = dec[i].prob;
 	        int classes = 20;

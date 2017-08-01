@@ -6,29 +6,27 @@
 #include <stdio.h>
 #include <math.h>
 
-detection* get_detections(int num, float thresh, box *boxes, float **probs, char **names, int classes)
+int get_detections(int num, float thresh, box *boxes, float **probs, char **names, int classes,detection* dcts)
 {
-	detection* dcts = (detection*)calloc(50, sizeof(detection));
+	int count = 0;
 	int i;
-    int aux = 0;
     for(i = 0; i < num; ++i){
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
         if(prob > thresh){
             box b = boxes[i];
-            dcts[aux].b = b;
-            dcts[aux].classname = names[class];
+            dcts[count].b = b;
+            dcts[count].classname = names[class];
             //printf("%s \n",dcts[aux].classname);
-            dcts[aux].classindex = class;
-            dcts[aux].prob = prob;
-        	aux++;
+            dcts[count].classindex = class;
+            dcts[count].prob = prob;
+        	count++;
      }
 
     }
     free(boxes);
     free_ptrs((void **)probs, num);
-    return dcts;
-
+    return count;
 }
 
 void free_detections(detection* dec){

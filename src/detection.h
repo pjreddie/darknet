@@ -6,4 +6,4 @@ typedef struct{
 } detection;
 
 
-detection* get_detections(int num, float thresh, box *boxes, float **probs, char **names, int classes);
+int get_detections(int num, float thresh, box *boxes, float **probs, char **names, int classes, detection * dcts);

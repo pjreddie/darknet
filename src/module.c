@@ -9,7 +9,7 @@
 #include "blas.h"
 #include "detection.h"
 
-detection* predict(network * net,image im,float thresh,char* nameslist){
+int predict(network * net,image im,float thresh,char* nameslist, detection* dcts){
       int j;
 	  char ** names = get_labels(nameslist);
       image sized = letterbox_image(im, net->w, net->h);
@@ -35,9 +35,7 @@ detection* predict(network * net,image im,float thresh,char* nameslist){
       get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
       if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 
-      return get_detections(l.w * l.h * l.n, thresh, boxes, probs, names,l.classes);
-
-
+      return  get_detections(l.w * l.h * l.n, thresh, boxes, probs, names,l.classes,dcts);
 }
 
 
