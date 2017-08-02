@@ -13,6 +13,10 @@
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/core/version.hpp"
+#ifndef CV_VERSION_EPOCH
+#include "opencv2/videoio/videoio_c.h"
+#endif
 #endif
 
 
@@ -291,7 +295,7 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 			CvScalar black_color;
 			black_color.val[0] = 0;
 			CvFont font;
-			cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX, font_size, font_size, 0, font_size*3, 8);
+			cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, font_size, font_size, 0, font_size * 3, 8);	
 			cvPutText(show_img, names[class], pt_text, &font, black_color);
 		}
 	}
@@ -535,12 +539,10 @@ void show_image_cv_ipl(IplImage *disp, const char *name)
 		static CvVideoWriter* output_video = NULL;    // cv::VideoWriter output_video;
 		if (output_video == NULL)
 		{
-			//printf("\n SRC output_video = %p \n", output_video);
 			const char* output_name = "test_dnn_out.avi";
 			//output_video = cvCreateVideoWriter(output_name, CV_FOURCC('H', '2', '6', '4'), 25, size, 1);
 			output_video = cvCreateVideoWriter(output_name, CV_FOURCC('D', 'I', 'V', 'X'), 25, size, 1);
 			//output_video = cvCreateVideoWriter(output_name, CV_FOURCC('M', 'J', 'P', 'G'), 25, size, 1);
-			//printf("\n cvCreateVideoWriter, DST output_video = %p  \n", output_video);
 		}
 
 		cvWriteFrame(output_video, disp);	// comment this line to improve FPS !!!

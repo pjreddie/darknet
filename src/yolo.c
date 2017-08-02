@@ -7,14 +7,12 @@
 #include "demo.h"
 
 #ifdef OPENCV
-#pragma comment(lib, "opencv_core249.lib")  
-#pragma comment(lib, "opencv_imgproc249.lib")  
-#pragma comment(lib, "opencv_highgui249.lib")  
-//#pragma comment(lib, "opencv_gpu249.lib")  
-//#pragma comment(lib, "opencv_photo249.lib")  
-//#pragma comment(lib, "opencv_video249.lib")  
-
 #include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/core/version.hpp"
+#ifndef CV_VERSION_EPOCH
+#include "opencv2/videoio/videoio_c.h"
+#endif
 #endif
 
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};

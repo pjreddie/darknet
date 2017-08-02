@@ -6,8 +6,11 @@
 #include "unistd.h"
 #include <float.h>
 #include <limits.h>
-
+#ifdef WIN32
 #include "utils.h"
+#else
+#include <utils.h>
+#endif
 
 #pragma warning(disable: 4996)
 

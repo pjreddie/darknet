@@ -6,6 +6,10 @@
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
+#include "opencv2/core/version.hpp"
+#ifndef CV_VERSION_EPOCH
+#include "opencv2/videoio/videoio_c.h"
+#endif
 image get_image_from_stream(CvCapture *cap);
 image ipl_to_image(IplImage* src);
 

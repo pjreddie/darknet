@@ -9,12 +9,19 @@
 
 #include "yolo_v2_class.hpp"	// imported functions from DLL
 
-
 #ifdef OPENCV
 #include <opencv2/opencv.hpp>			// C++
-#pragma comment(lib, "opencv_core249.lib")
-#pragma comment(lib, "opencv_imgproc249.lib")
-#pragma comment(lib, "opencv_highgui249.lib")
+#include "opencv2/core/version.hpp"
+#ifndef CV_VERSION_EPOCH
+#include "opencv2/videoio/videoio.hpp"
+#pragma comment(lib, "opencv_world320.lib")  
+#else
+#pragma comment(lib, "opencv_core2413.lib")  
+#pragma comment(lib, "opencv_imgproc2413.lib")  
+#pragma comment(lib, "opencv_highgui2413.lib") 
+#endif
+
+
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, unsigned int wait_msec = 0) {
 	for (auto &i : result_vec) {
 		cv::Scalar color(60, 160, 260);
