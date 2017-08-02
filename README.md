@@ -108,7 +108,7 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 5. If you want to build with CUDNN to speed up then:
       
-    * download and install **cuDNN 5.1 for CUDA 8.0**: https://developer.nvidia.com/cudnn
+    * download and install **cuDNN 6.0 for CUDA 8.0**: https://developer.nvidia.com/cudnn
       
     * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
       
@@ -332,6 +332,7 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
     * after launching your console application and entering the image file name - you will see info for each object: 
     `<obj_id> <left_x> <top_y> <width> <height> <probability>`
     * to use simple OpenCV-GUI you should uncomment line `//#define OPENCV` in `yolo_console_dll.cpp`-file: [link](https://github.com/AlexeyAB/darknet/blob/a6cbaeecde40f91ddc3ea09aa26a03ab5bbf8ba8/src/yolo_console_dll.cpp#L5)
+    * you can see source code of simple example for detection on the video file: [link](https://github.com/AlexeyAB/darknet/blob/ab1c5f9e57b4175f29a6ef39e7e68987d3e98704/src/yolo_console_dll.cpp#L75)
    
 `yolo_cpp_dll.dll`-API: [link](https://github.com/AlexeyAB/darknet/blob/master/src/yolo_v2_class.hpp#L31)
 ```
