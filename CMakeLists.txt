@@ -1,4 +1,4 @@
-project( darknet )
+project( Darknet )
 
 cmake_minimum_required(VERSION 3.0)
 
@@ -11,5 +11,5 @@ if( WIN32 )
 endif()
 
 # configure the package description file.
-configure_file( darknetConfig.cmake.in
-  ${CMAKE_BINARY_DIR}/darknetConfig.cmake @ONLY )
+configure_file( DarknetConfig.cmake.in
+  ${CMAKE_BINARY_DIR}/DarknetConfig.cmake @ONLY )
