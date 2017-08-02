@@ -73,14 +73,21 @@ int main()
 #ifdef OPENCV
 			std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
 			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov") {	// video file
-				cv::Mat frame;
+				cv::Mat frame, prev_frame;
+				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
-				for(cv::VideoCapture cap(filename); cap >> frame, cap.isOpened();) {
-					std::vector<bbox_t> result_vec = detector.detect(frame, 0.2);
-					result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
+				for (cv::VideoCapture cap(filename); cap >> frame, cap.isOpened();) {
+					auto image_ptr = detector.mat_to_image(frame);
+					std::thread td([&]() { thread_result_vec = detector.detect(*image_ptr, 0.2); });
 
-					draw_boxes(frame, result_vec, obj_names, 3);
-					show_result(result_vec, obj_names);
+					if (!prev_frame.empty()) {
+						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
+						draw_boxes(prev_frame, result_vec, obj_names, 3);
+						show_result(result_vec, obj_names);
+					}
+					td.join();
+					prev_frame = frame;
+					result_vec = thread_result_vec;
 				}
 			}
 			else {	// image file
