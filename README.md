@@ -28,10 +28,9 @@ More details: http://pjreddie.com/darknet/yolo/
 ##### Requires: 
 * **MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
 * **CUDA 8.0 for Windows x64**: https://developer.nvidia.com/cuda-downloads
-* **OpenCV 2.4.9**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.9/opencv-2.4.9.exe/download
-  - To compile without OpenCV - remove define OPENCV from: Visual Studio->Project->Properties->C/C++->Preprocessor
-  - To compile with different OpenCV version - change in file yolo.c each string look like **#pragma comment(lib, "opencv_core249.lib")** from 249 to required version.
-  - With OpenCV will show image or video detection in window and store result to: test_dnn_out.avi
+* **OpenCV 3.0**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.2.0/opencv-3.2.0-vc14.exe/download
+* **or OpenCV 2.4.13**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.13/opencv-2.4.13.2-vc14.exe/download
+  - OpenCV allows to show image or video detection in the window and store result to file: test_dnn_out.avi
 
 ##### Pre-trained models for different cfg-files can be downloaded from (smaller -> faster & lower quality):
 * `yolo.cfg` (256 MB COCO-model) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo.weights
@@ -93,26 +92,19 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 ### How to compile:
 
-1. If you have MSVS 2015, CUDA 8.0 and OpenCV 2.4.9 (with paths: `C:\opencv_2.4.9\opencv\build\include` & `C:\opencv_2.4.9\opencv\build\x64\vc12\lib` or `vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
+1. If you have MSVS 2015, CUDA 8.0 and OpenCV 3.0 (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
 
-  1.1. Find files `opencv_core249.dll`, `opencv_highgui249.dll` and `opencv_ffmpeg249_64.dll` in `C:\opencv_2.4.9\opencv\build\x64\vc12\bin` or `vc14\bin` and put it near with `darknet.exe`
+  1.1. Find files `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` in `C:\opencv_3.0\opencv\build\x64\vc14\bin` and put it near with `darknet.exe`
 
 2. If you have other version of CUDA (not 8.0) then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 8.0" and change it to your CUDA-version, then do step 1
 
-3. If you have other version of OpenCV 2.4.x (not 2.4.9) then you should change pathes after `\darknet.sln` is opened
+3. If you have OpenCV 2.4.13 instead of 3.0 then you should change pathes after `\darknet.sln` is opened
 
-  3.1 (right click on project) -> properties  -> C/C++ -> General -> Additional Include Directories
+  3.1 (right click on project) -> properties  -> C/C++ -> General -> Additional Include Directories:  `C:\opencv_2.4.13\opencv\build\include`
   
-  3.2 (right click on project) -> properties  -> Linker -> General -> Additional Library Directories
+  3.2 (right click on project) -> properties  -> Linker -> General -> Additional Library Directories: `C:\opencv_2.4.13\opencv\build\x64\vc12\lib`
   
-  3.3 Open file: `\src\yolo.c` and change 3 lines to your OpenCV-version - `249` (for 2.4.9), `2413` (for 2.4.13), ... : 
-
-    * `#pragma comment(lib, "opencv_core249.lib")`
-    * `#pragma comment(lib, "opencv_imgproc249.lib")`
-    * `#pragma comment(lib, "opencv_highgui249.lib")` 
-
-
-4. If you have other version of OpenCV 3.x (not 2.4.x) then you should change many places in code by yourself.
+4. If you have other version of OpenCV 2.4.x (not 3.x) then you also should change lines like `#pragma comment(lib, "opencv_core2413.lib")` in the file `\src\detector.c`
 
 5. If you want to build with CUDNN to speed up then:
       
@@ -124,37 +116,34 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 ### How to compile (custom):
 
-Also, you can to create your own `darknet.sln` & `darknet.vcxproj`, this example for CUDA 8.0 and OpenCV 2.4.9
+Also, you can to create your own `darknet.sln` & `darknet.vcxproj`, this example for CUDA 8.0 and OpenCV 3.0
 
 Then add to your created project:
 - (right click on project) -> properties  -> C/C++ -> General -> Additional Include Directories, put here: 
 
-`C:\opencv_2.4.9\opencv\build\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(cudnn)\include`
+`C:\opencv_3.0\opencv\build\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(cudnn)\include`
 - (right click on project) -> Build dependecies -> Build Customizations -> set check on CUDA 8.0 or what version you have - for example as here: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/01/VS2013-R-5.jpg
 - add to project all .c & .cu files from `\src`
 - (right click on project) -> properties  -> Linker -> General -> Additional Library Directories, put here: 
 
-`C:\opencv_2.4.9\opencv\build\x64\vc12\lib;$(CUDA_PATH)lib\$(PlatformName);$(cudnn)\lib\x64;%(AdditionalLibraryDirectories)`
+`C:\opencv_3.0\opencv\build\x64\vc14\lib;$(CUDA_PATH)lib\$(PlatformName);$(cudnn)\lib\x64;%(AdditionalLibraryDirectories)`
 -  (right click on project) -> properties  -> Linker -> Input -> Additional dependecies, put here: 
 
 `..\..\3rdparty\lib\x64\pthreadVC2.lib;cublas.lib;curand.lib;cudart.lib;cudnn.lib;%(AdditionalDependencies)`
 - (right click on project) -> properties -> C/C++ -> Preprocessor -> Preprocessor Definitions
 
-`OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;GPU;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
+`OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
 
-- open file: `\src\yolo.c` and change 3 lines to your OpenCV-version - `249` (for 2.4.9), `2413` (for 2.4.13), ... : 
-
-    * `#pragma comment(lib, "opencv_core249.lib")`
-    * `#pragma comment(lib, "opencv_imgproc249.lib")`
-    * `#pragma comment(lib, "opencv_highgui249.lib")` 
+- open file: `\src\detector.c` and check lines `#pragma` and `#inclue` for OpenCV.
 
 - compile to .exe (X64 & Release) and put .dll-s near with .exe:
 
-`pthreadVC2.dll, pthreadGC2.dll` from \3rdparty\dll\x64
+    * `pthreadVC2.dll, pthreadGC2.dll` from \3rdparty\dll\x64
 
-`cusolver64_80.dll, curand64_80.dll, cudart64_80.dll, cublas64_80.dll` - 80 for CUDA 8.0 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin
+    * `cusolver64_80.dll, curand64_80.dll, cudart64_80.dll, cublas64_80.dll` - 80 for CUDA 8.0 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin
 
-`opencv_core249.dll`, `opencv_highgui249.dll` and `opencv_ffmpeg249_64.dll` in `C:\opencv_2.4.9\opencv\build\x64\vc12\bin` or `vc14\bin`
+    * For OpenCV 3.0: `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` from `C:\opencv_3.0\opencv\build\x64\vc14\bin` 
+    * For OpenCV 2.4.13: `opencv_core249.dll`, `opencv_highgui249.dll` and `opencv_ffmpeg249_64.dll` from  `C:\opencv_2.4.9\opencv\build\x64\vc12\bin` or `vc14\bin`
 
 ## How to train (Pascal VOC Data):
 
