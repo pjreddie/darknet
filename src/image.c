@@ -4,6 +4,7 @@
 #include "cuda.h"
 #include <stdio.h>
 #include <math.h>
+#include "detection.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -183,11 +184,61 @@ image **load_alphabet()
         alphabets[j] = calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
             char buff[256];
-            sprintf(buff, "data/labels/%d_%d.png", i, j);
+            sprintf(buff, "/etc/darknet/data/labels/%d_%d.png", i, j);
             alphabets[j][i] = load_image_color(buff, 0, 0);
         }
     }
     return alphabets;
+}
+
+void draw_detections_im(image im,detection* dec,int count)
+{
+	image **alphabet = load_alphabet();
+	int i;
+	    for(i = 0; i < count; ++i){
+	        int class = dec[i].classindex;
+	        float prob = dec[i].prob;
+	        int classes = 20;
+	        if (prob > 0){
+	            int width = im.h * .012;
+
+	            if(0){
+	                width = pow(prob, 1./2.)*10+1;
+	                alphabet = 0;
+	            }
+	            int offset = class*123457 % classes;
+	            float red = get_color(2,offset,classes);
+	            float green = get_color(1,offset,classes);
+	            float blue = get_color(0,offset,classes);
+	            float rgb[3];
+
+	            //width = prob*20+2;
+
+	            rgb[0] = red;
+	            rgb[1] = green;
+	            rgb[2] = blue;
+	            box b = dec[i].b;
+
+	            int left  = (b.x-b.w/2.)*im.w;
+	            int right = (b.x+b.w/2.)*im.w;
+	            int top   = (b.y-b.h/2.)*im.h;
+	            int bot   = (b.y+b.h/2.)*im.h;
+
+	            if(left < 0) left = 0;
+	            if(right > im.w-1) right = im.w-1;
+	            if(top < 0) top = 0;
+	            if(bot > im.h-1) bot = im.h-1;
+
+	            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+	            if (alphabet) {
+	                image label = get_label(alphabet, dec[i].classname, (im.h*.03)/10);
+	                draw_label(im, top + width, left, label, rgb);
+	                free_image(label);
+	            }
+
+	        }
+	    }
+
 }
 
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
@@ -1369,6 +1420,7 @@ image load_image_stb(char *filename, int channels)
 {
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
+    //printf(data,"%s");
     if (!data) {
         fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
         exit(0);
@@ -1389,13 +1441,48 @@ image load_image_stb(char *filename, int channels)
     return im;
 }
 
+image load_image_binary(char *data, int channels)
+{
+    int w, h, c;
+    //printf(data,"%s");
+    if (!data) {
+        //fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
+        exit(0);
+    }
+    if(channels) c = channels;
+    int i,j,k;
+    image im = make_image(w, h, c);
+    for(k = 0; k < c; ++k){
+        for(j = 0; j < h; ++j){
+            for(i = 0; i < w; ++i){
+                int dst_index = i + w*j + w*h*k;
+                int src_index = k + c*i + c*w*j;
+                im.data[dst_index] = (float)data[src_index]/255.;
+            }
+        }
+    }
+    return im;
+}
+
 image load_image(char *filename, int w, int h, int c)
 {
-#ifdef OPENCV
-    image out = load_image_cv(filename, c);
-#else
+
     image out = load_image_stb(filename, c);
-#endif
+
+
+    if((h && w) && (h != out.h || w != out.w)){
+        image resized = resize_image(out, w, h);
+        free_image(out);
+        out = resized;
+    }
+    return out;
+}
+
+image load_image_data(char *binary, int w, int h, int c)
+{
+
+    image out = load_image_binary(binary, c);
+
 
     if((h && w) && (h != out.h || w != out.w)){
         image resized = resize_image(out, w, h);
