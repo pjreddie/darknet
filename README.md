@@ -102,7 +102,7 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
   3.1 (right click on project) -> properties  -> C/C++ -> General -> Additional Include Directories:  `C:\opencv_2.4.13\opencv\build\include`
   
-  3.2 (right click on project) -> properties  -> Linker -> General -> Additional Library Directories: `C:\opencv_2.4.13\opencv\build\x64\vc12\lib`
+  3.2 (right click on project) -> properties  -> Linker -> General -> Additional Library Directories: `C:\opencv_2.4.13\opencv\build\x64\vc14\lib`
   
 4. If you have other version of OpenCV 2.4.x (not 3.x) then you also should change lines like `#pragma comment(lib, "opencv_core2413.lib")` in the file `\src\detector.c`
 
@@ -143,7 +143,7 @@ Then add to your created project:
     * `cusolver64_80.dll, curand64_80.dll, cudart64_80.dll, cublas64_80.dll` - 80 for CUDA 8.0 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin
 
     * For OpenCV 3.0: `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` from `C:\opencv_3.0\opencv\build\x64\vc14\bin` 
-    * For OpenCV 2.4.13: `opencv_core249.dll`, `opencv_highgui249.dll` and `opencv_ffmpeg249_64.dll` from  `C:\opencv_2.4.9\opencv\build\x64\vc12\bin` or `vc14\bin`
+    * For OpenCV 2.4.13: `opencv_core249.dll`, `opencv_highgui249.dll` and `opencv_ffmpeg249_64.dll` from  `C:\opencv_2.4.9\opencv\build\x64\vc14\bin`
 
 ## How to train (Pascal VOC Data):
 
