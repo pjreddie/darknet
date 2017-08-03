@@ -1305,9 +1305,15 @@ image load_image_stb(char *filename, int channels)
 image load_image(char *filename, int w, int h, int c)
 {
 #ifdef OPENCV
-    image out = load_image_cv(filename, c);
+
+#ifndef CV_VERSION_EPOCH
+	image out = load_image_stb(filename, c);	// OpenCV 3.x
 #else
-    image out = load_image_stb(filename, c);
+	image out = load_image_cv(filename, c);		// OpenCV 2.4.x
+#endif
+
+#else
+    image out = load_image_stb(filename, c);	// without OpenCV
 #endif
 
     if((h && w) && (h != out.h || w != out.w)){
