@@ -494,6 +494,38 @@ float *network_predict(network net, float *input)
     return net.output;
 }
 
+int num_boxes(network *net)
+{
+    layer l = net->layers[net->n-1];
+    return l.w*l.h*l.n;
+}
+
+box *make_boxes(network *net)
+{
+    layer l = net->layers[net->n-1];
+    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+    return boxes;
+}
+
+float **make_probs(network *net)
+{
+    int j;
+    layer l = net->layers[net->n-1];
+    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
+    return probs;
+}
+
+void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, box *boxes, float **probs)
+{
+    network_predict_image(net, im);
+    layer l = net->layers[net->n-1];
+    if(l.type == REGION){
+        get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, 0, 0, 0, hier_thresh, 0);
+        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    }
+}
+
 float *network_predict_p(network *net, float *input)
 {
     return network_predict(*net, input);
