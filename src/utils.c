@@ -3,14 +3,14 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
-#include "unistd.h"
 #include <float.h>
 #include <limits.h>
 #ifdef WIN32
-#include "utils.h"
+#include "unistd.h"
 #else
-#include <utils.h>
+#include <unistd.h>
 #endif
+#include "utils.h"
 
 #pragma warning(disable: 4996)
 

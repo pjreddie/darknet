@@ -2,6 +2,7 @@ GPU=0
 CUDNN=0
 OPENCV=0
 DEBUG=0
+OPENMP=0
 
 ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
       -gencode arch=compute_30,code=sm_30 \
@@ -34,6 +35,11 @@ COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
 LDFLAGS+= `pkg-config --libs opencv` 
 COMMON+= `pkg-config --cflags opencv` 
+endif
+
+ifeq ($(OPENMP), 1)
+CFLAGS+= -fopenmp
+LDFLAGS+= -lgomp
 endif
 
 ifeq ($(GPU), 1) 
