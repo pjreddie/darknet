@@ -228,7 +228,6 @@ void draw_detections_im(image im,detection* dec,int count)
 	            if(right > im.w-1) right = im.w-1;
 	            if(top < 0) top = 0;
 	            if(bot > im.h-1) bot = im.h-1;
-
 	            draw_box_width(im, left, top, right, bot, width, red, green, blue);
 	            if (alphabet) {
 	                image label = get_label(alphabet, dec[i].classname, (im.h*.03)/10);
@@ -1422,8 +1421,7 @@ image load_image_stb(char *filename, int channels)
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     //printf(data,"%s");
     if (!data) {
-        fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
-        exit(0);
+        return;
     }
     if(channels) c = channels;
     int i,j,k;
