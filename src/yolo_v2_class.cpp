@@ -29,6 +29,7 @@ struct detector_gpu_t{
 	image images[FRAMES];
 	float *avg;
 	float *predictions[FRAMES];
+	int demo_index;
 };
 
 
@@ -112,11 +113,11 @@ YOLODLL_API int Detector::get_net_height() {
 }
 
 
-YOLODLL_API std::vector<bbox_t> Detector::detect(std::string image_filename, float thresh)
+YOLODLL_API std::vector<bbox_t> Detector::detect(std::string image_filename, float thresh, bool use_mean)
 {
 	std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { if (img->data) free(img->data); delete img; });
 	*image_ptr = load_image(image_filename);
-	return detect(*image_ptr, thresh);
+	return detect(*image_ptr, thresh, use_mean);
 }
 
 static image load_image_stb(char *filename, int channels)
@@ -163,7 +164,7 @@ YOLODLL_API void Detector::free_image(image_t m)
 	}
 }
 
-YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh)
+YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use_mean)
 {
 
 	detector_gpu_t &detector_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
@@ -196,7 +197,14 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh)
 
 	float *X = sized.data;
 
-	network_predict(net, X);
+	float *prediction = network_predict(net, X);
+
+	if (use_mean) {
+		memcpy(detector_gpu.predictions[detector_gpu.demo_index], prediction, l.outputs * sizeof(float));
+		mean_arrays(detector_gpu.predictions, FRAMES, l.outputs, detector_gpu.avg);
+		l.output = detector_gpu.avg;
+		detector_gpu.demo_index = (detector_gpu.demo_index + 1) % FRAMES;
+	}
 
 	get_region_boxes(l, 1, 1, thresh, detector_gpu.probs, detector_gpu.boxes, 0, 0);
 	if (nms) do_nms_sort(detector_gpu.boxes, detector_gpu.probs, l.w*l.h*l.n, l.classes, nms);
@@ -269,8 +277,11 @@ YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_
 
 			bool track_id_absent = !std::any_of(cur_bbox_vec.begin(), cur_bbox_vec.end(), [&](bbox_t const& b) { return b.track_id == i.track_id; });
 
-			if (cur_index >= 0 && track_id_absent)
+			if (cur_index >= 0 && track_id_absent) {
 				cur_bbox_vec[cur_index].track_id = i.track_id;
+				cur_bbox_vec[cur_index].w = (cur_bbox_vec[cur_index].w + i.w) / 2;
+				cur_bbox_vec[cur_index].h = (cur_bbox_vec[cur_index].h + i.h) / 2;
+			}
 		}
 	}
 

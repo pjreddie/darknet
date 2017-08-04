@@ -73,15 +73,15 @@ int main()
 #ifdef OPENCV
 			std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
 			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov") {	// video file
-				cv::Mat frame, prev_frame;
+				cv::Mat frame, prev_frame, det_frame;
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
 				std::thread td([]() {});
 				for (cv::VideoCapture cap(filename); cap >> frame, cap.isOpened();) {
 					td.join();
 					result_vec = thread_result_vec;
-					cv::Mat det_frame = frame;
-					td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.2); });
+					det_frame = frame;
+					td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.2, true); });
 
 					if (!prev_frame.empty()) {
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
@@ -90,6 +90,16 @@ int main()
 					}
 					prev_frame = frame;
 				}
+			}
+			else if (file_ext == "txt") {	// list of image files
+				std::ifstream file(filename);
+				if (!file.is_open()) std::cout << "File not found! \n";
+				else 
+					for (std::string line; file >> line;) {
+						std::cout << line << std::endl;
+						show_result(detector.detect(cv::imread(line)), obj_names);
+					}
+				
 			}
 			else {	// image file
 				cv::Mat mat_img = cv::imread(filename);
