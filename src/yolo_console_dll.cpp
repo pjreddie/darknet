@@ -97,7 +97,11 @@ int main()
 				else 
 					for (std::string line; file >> line;) {
 						std::cout << line << std::endl;
-						show_result(detector.detect(cv::imread(line)), obj_names);
+						cv::Mat mat_img = cv::imread(line);
+						std::vector<bbox_t> result_vec = detector.detect(mat_img);
+						show_result(result_vec, obj_names);
+						//draw_boxes(mat_img, result_vec, obj_names);
+						//cv::imwrite("res_" + line, mat_img);
 					}
 				
 			}
