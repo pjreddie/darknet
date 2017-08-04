@@ -183,7 +183,15 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh)
 	im.h = img.h;
 	im.w = img.w;
 
-	image sized = resize_image(im, net.w, net.h);
+	image sized;
+	
+	if (net.w == im.w && net.h == im.h) {
+		sized = make_image(im.w, im.h, im.c);
+		memcpy(sized.data, im.data, im.w*im.h*im.c * sizeof(float));
+	}
+	else
+		sized = resize_image(im, net.w, net.h);
+
 	layer l = net.layers[net.n - 1];
 
 	float *X = sized.data;
