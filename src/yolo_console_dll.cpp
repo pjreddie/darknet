@@ -76,18 +76,19 @@ int main()
 				cv::Mat frame, prev_frame;
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
+				std::thread td([]() {});
 				for (cv::VideoCapture cap(filename); cap >> frame, cap.isOpened();) {
-					auto image_ptr = detector.mat_to_image(frame);
-					std::thread td([&]() { thread_result_vec = detector.detect(*image_ptr, 0.2); });
+					td.join();
+					result_vec = thread_result_vec;
+					cv::Mat det_frame = frame;
+					td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.2); });
 
 					if (!prev_frame.empty()) {
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
 						draw_boxes(prev_frame, result_vec, obj_names, 3);
 						show_result(result_vec, obj_names);
 					}
-					td.join();
 					prev_frame = frame;
-					result_vec = thread_result_vec;
 				}
 			}
 			else {	// image file

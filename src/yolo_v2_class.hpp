@@ -51,6 +51,8 @@ public:
 	YOLODLL_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2);
 	static YOLODLL_API image_t load_image(std::string image_filename);
 	static YOLODLL_API void free_image(image_t m);
+	YOLODLL_API int get_net_width();
+	YOLODLL_API int get_net_height();
 
 	YOLODLL_API std::vector<bbox_t> tracking(std::vector<bbox_t> cur_bbox_vec, int const frames_story = 4);
 
@@ -59,8 +61,13 @@ public:
 	{
 		if(mat.data == NULL)
 			throw std::runtime_error("file not found");
-		auto image_ptr = mat_to_image(mat);
-		return detect(*image_ptr, thresh);
+		cv::Mat det_mat;
+		cv::resize(mat, det_mat, cv::Size(get_net_width(), get_net_height()));
+		auto image_ptr = mat_to_image(det_mat);
+		auto detection_boxes = detect(*image_ptr, thresh);
+		float wk = (float)mat.cols / det_mat.cols, hk = (float)mat.rows / det_mat.rows;
+		for (auto &i : detection_boxes) i.x*=wk, i.w*= wk, i.y*=hk, i.h*=hk;
+		return detection_boxes;
 	}
 
 	static std::shared_ptr<image_t> mat_to_image(cv::Mat img)
