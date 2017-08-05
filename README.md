@@ -1,13 +1,14 @@
-# Yolo-Windows v2
+# Yolo-v2 Windows and Linux version
 
 1. [How to use](#how-to-use)
-2. [How to compile](#how-to-compile)
-3. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
-4. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
-5. [When should I stop training](#when-should-i-stop-training)
-6. [How to improve object detection](#how-to-improve-object-detection)
-7. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-8. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
+2. [How to compile on Linux](#how-to-compile-on-linux)
+3. [How to compile on Windows](#how-to-compile-on-windows)
+4. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
+5. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
+6. [When should I stop training](#when-should-i-stop-training)
+7. [How to improve object detection](#how-to-improve-object-detection)
+8. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+9. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
@@ -17,18 +18,24 @@
 
 
 # "You Only Look Once: Unified, Real-Time Object Detection (version 2)"
-A yolo windows version (for object detection)
-
-Contributtors: https://github.com/pjreddie/darknet/graphs/contributors
+A Yolo cross-platform Windows and Linux version (for object detection). Contributtors: https://github.com/pjreddie/darknet/graphs/contributors
 
 This repository is forked from Linux-version: https://github.com/pjreddie/darknet
 
 More details: http://pjreddie.com/darknet/yolo/
 
+This repository supports:
+
+* both Windows and Linux
+* both OpenCV 3.x and OpenCV 2.4.13
+* both cuDNN 5 and cuDNN 6
+* CUDA >= 7.5
+* also create SO-library on Linux and DLL-library on Windows
+
 ##### Requires: 
-* **MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
-* **CUDA 8.0 for Windows x64**: https://developer.nvidia.com/cuda-downloads
-* **OpenCV 3.0**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.2.0/opencv-3.2.0-vc14.exe/download
+* **Linux GCC>=4.9 or Windows MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
+* **CUDA 8.0**: https://developer.nvidia.com/cuda-downloads
+* **OpenCV 3.x**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.2.0/opencv-3.2.0-vc14.exe/download
 * **or OpenCV 2.4.13**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.13/opencv-2.4.13.2-vc14.exe/download
   - OpenCV allows to show image or video detection in the window and store result to file: test_dnn_out.avi
 
@@ -89,8 +96,19 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 * 256 MB COCO-model: `darknet.exe detector demo data/coco.data yolo.cfg yolo.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
 * 256 MB VOC-model: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
 
+### How to compile on Linux:
 
-### How to compile:
+Just do `make` in the darknet directory.
+Before make, you can set such options in the `Makefile`: [link](https://github.com/AlexeyAB/darknet/blob/9c1b9a2cf6363546c152251be578a21f3c3caec6/Makefile#L1)
+* `GPU=1` to build with CUDA to accelerate by using GPU
+* `CUDNN=1` to build with cuDNN v5/v6 to accelerate training by using GPU
+* `OPENCV=1` to build with OpenCV 3.x/2.4.x - allows to detect on video files and video streams from network cameras or web-cams
+* `DEBUG=1` to bould debug version of Yolo
+* `OPENMP=1` to build with OpenMP suuport to accelerate by using multi-core CPU
+* `LIBSO=1` to build an library `darknet.so` and binary runable file `uselib` that uses this library. How to use this SO-library from your own code - you can look at C++ example: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
+
+
+### How to compile on Windows:
 
 1. If you have MSVS 2015, CUDA 8.0 and OpenCV 3.0 (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
 
@@ -334,18 +352,20 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
     * to use simple OpenCV-GUI you should uncomment line `//#define OPENCV` in `yolo_console_dll.cpp`-file: [link](https://github.com/AlexeyAB/darknet/blob/a6cbaeecde40f91ddc3ea09aa26a03ab5bbf8ba8/src/yolo_console_dll.cpp#L5)
     * you can see source code of simple example for detection on the video file: [link](https://github.com/AlexeyAB/darknet/blob/ab1c5f9e57b4175f29a6ef39e7e68987d3e98704/src/yolo_console_dll.cpp#L75)
    
-`yolo_cpp_dll.dll`-API: [link](https://github.com/AlexeyAB/darknet/blob/master/src/yolo_v2_class.hpp#L31)
+`yolo_cpp_dll.dll`-API: [link](https://github.com/AlexeyAB/darknet/blob/master/src/yolo_v2_class.hpp#L42)
 ```
 class Detector {
 public:
 	Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
 	~Detector();
 
-	std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2);
-	std::vector<bbox_t> detect(image_t img, float thresh = 0.2);
+	std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2, bool use_mean = false);
+	std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
+	static image_t load_image(std::string image_filename);
+	static void free_image(image_t m);
 
 #ifdef OPENCV
-	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2);
+	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false);
 #endif
 };
 ```
