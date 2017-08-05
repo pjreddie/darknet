@@ -108,6 +108,7 @@ int main()
 			else {	// image file
 				cv::Mat mat_img = cv::imread(filename);
 				std::vector<bbox_t> result_vec = detector.detect(mat_img);
+				result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
 				draw_boxes(mat_img, result_vec, obj_names);
 				show_result(result_vec, obj_names);
 			}
