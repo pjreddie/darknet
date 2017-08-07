@@ -500,6 +500,7 @@ void show_image(image p, const char *name)
 
 #ifdef OPENCV
 
+
 void ipl_into_image(IplImage* src, image im)
 {
     unsigned char *data = (unsigned char *)src->imageData;
@@ -602,7 +603,9 @@ void save_image_jpg(image p, const char *name)
     cvReleaseImage(&disp);
     free_image(copy);
 }
+
 #endif
+
 
 void save_image_png(image im, const char *name)
 {
@@ -1569,3 +1572,27 @@ void free_image(image m)
         free(m.data);
     }
 }
+
+#ifdef OPENCV
+void save_video(image p, CvVideoWriter *mVideoWriter)
+{
+    image copy = copy_image(p);
+    // uncomment this, to avoid BGR/RGB-confusion, with the rgbgr_image-call all my reds turn into blues
+    // if(p.c == 3) rgbgr_image(copy);
+    int x,y,k;
+
+    IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
+    int step = disp->widthStep;
+    for(y = 0; y < p.h; ++y){
+        for(x = 0; x < p.w; ++x){
+            for(k= 0; k < p.c; ++k){
+                disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy,x,y,k)*255);
+            }
+        }
+    }
+    IplImage *dest = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
+    cvWriteFrame(mVideoWriter,disp);
+    cvReleaseImage(&disp);
+    free_image(copy);
+}
+#endif
