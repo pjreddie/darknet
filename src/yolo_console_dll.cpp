@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <thread>
+#include <atomic>
 
 #define OPENCV
 
@@ -77,16 +78,19 @@ int main()
 		try {
 #ifdef OPENCV
 			std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
-			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov") {	// video file
+			std::string const protocol = filename.substr(0, 4);
+			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov" || protocol == "rtsp") {	// video file
 				cv::Mat frame, prev_frame, det_frame;
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
 				std::thread td([]() {});
-				for (cv::VideoCapture cap(filename); cap >> frame, cap.isOpened();) {
+				std::atomic<int> ready_flag = false;
+				cv::VideoCapture cap(filename);
+				for (; cap >> frame, cap.isOpened();) {
 					td.join();
 					result_vec = thread_result_vec;
 					det_frame = frame;
-					td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.2, true); });
+					td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.2, true); ready_flag = true; });
 
 					if (!prev_frame.empty()) {
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
@@ -94,6 +98,8 @@ int main()
 						show_result(result_vec, obj_names);
 					}
 					prev_frame = frame;
+					//if(protocol == "rtsp") while (!ready_flag) cap.grab();	// use if cam-fps 2x or more than dnn-fps
+					ready_flag = false;
 				}
 			}
 			else if (file_ext == "txt") {	// list of image files
