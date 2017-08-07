@@ -64,7 +64,7 @@ public:
 		cv::Mat det_mat;
 		cv::resize(mat, det_mat, cv::Size(get_net_width(), get_net_height()));
 		auto image_ptr = mat_to_image(det_mat);
-		auto detection_boxes = detect(*image_ptr, thresh);
+		auto detection_boxes = detect(*image_ptr, thresh, use_mean);
 		float wk = (float)mat.cols / det_mat.cols, hk = (float)mat.rows / det_mat.rows;
 		for (auto &i : detection_boxes) i.x*=wk, i.w*= wk, i.y*=hk, i.h*=hk;
 		return detection_boxes;

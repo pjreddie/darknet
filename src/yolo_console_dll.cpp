@@ -25,11 +25,16 @@
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, unsigned int wait_msec = 0) {
 	for (auto &i : result_vec) {
 		cv::Scalar color(60, 160, 260);
-		cv::rectangle(mat_img, cv::Rect(i.x, i.y, i.w, i.h), color, 3);
-		if(obj_names.size() > i.obj_id)
-			putText(mat_img, obj_names[i.obj_id], cv::Point2f(i.x, i.y - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 1, color);
-		if(i.track_id > 0)
-			putText(mat_img, std::to_string(i.track_id), cv::Point2f(i.x+5, i.y + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 1, color);
+		cv::rectangle(mat_img, cv::Rect(i.x, i.y, i.w, i.h), color, 5);
+		if (obj_names.size() > i.obj_id) {
+			std::string obj_name = obj_names[i.obj_id];
+			if (i.track_id > 0) obj_name += " - " + std::to_string(i.track_id);
+			cv::Size const text_size = getTextSize(obj_name, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, 2, 0);
+			size_t const max_width = (text_size.width > i.w + 2) ? text_size.width : (i.w + 2);
+			if(i.x > 3 && (i.x + max_width) < mat_img.cols && i.y > 30 && i.y < mat_img.rows)
+				cv::rectangle(mat_img, cv::Point2f(i.x - 3, i.y - 30), cv::Point2f(i.x + max_width, i.y), color, CV_FILLED, 8, 0);
+			putText(mat_img, obj_name, cv::Point2f(i.x, i.y - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(0, 0, 0), 2);
+		}
 	}
 	cv::imshow("window name", mat_img);
 	cv::waitKey(wait_msec);
