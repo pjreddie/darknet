@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
-extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen);
+extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char **filenames, float thresh, float hier_thresh, char *outfile, int fullscreen);
 extern void run_voxel(int argc, char **argv);
 extern void run_yolo(int argc, char **argv);
 extern void run_detector(int argc, char **argv);
@@ -35,13 +35,13 @@ void average(int argc, char *argv[])
     network net = parse_network_cfg(cfgfile);
     network sum = parse_network_cfg(cfgfile);
 
-    char *weightfile = argv[4];   
+    char *weightfile = argv[4];
     load_weights(&sum, weightfile);
 
     int i, j;
     int n = argc - 5;
     for(i = 0; i < n; ++i){
-        weightfile = argv[i+5];   
+        weightfile = argv[i+5];
         load_weights(&net, weightfile);
         for(j = 0; j < net.n; ++j){
             layer l = net.layers[j];
@@ -438,10 +438,28 @@ int main(int argc, char **argv)
         run_detector(argc, argv);
     } else if (0 == strcmp(argv[1], "detect")){
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
-        char *filename = (argc > 4) ? argv[4]: 0;
         char *outfile = find_char_arg(argc, argv, "-out", 0);
         int fullscreen = find_arg(argc, argv, "-fullscreen");
-        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, .5, outfile, fullscreen);
+        //we build a filenames list
+        char **filenames;
+        if (argv[4]!=NULL){
+          filenames = calloc(argc-3,sizeof(char *));
+          for (int i=4;i<argc+1;i++){
+            if ((i==argc) || (argv[i]==NULL)){
+              //we add a NULL as the end can be found
+              filenames[i-4]=NULL;
+              i=argc;
+            }
+            else{
+              filenames[i-4]=calloc(strlen(argv[i])+1,sizeof(char));
+              strncpy(filenames[i-4],argv[i],strlen(argv[i])+1);
+            }
+          }
+        }
+        else {
+          filenames = 0;
+        }
+        test_detector("cfg/coco.data", argv[2], argv[3], filenames, thresh, .5, outfile, fullscreen);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
     } else if (0 == strcmp(argv[1], "go")){
@@ -513,4 +531,3 @@ int main(int argc, char **argv)
     }
     return 0;
 }
-
