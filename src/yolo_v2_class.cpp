@@ -257,7 +257,6 @@ YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_
 		if (i.size() > 0) prev_track_id_present = true;
 
 	if (!prev_track_id_present) {
-		//track_id = 1;
 		for (size_t i = 0; i < cur_bbox_vec.size(); ++i)
 			cur_bbox_vec[i].track_id = det_gpu.track_id[cur_bbox_vec[i].obj_id]++;
 		prev_bbox_vec_deque.push_front(cur_bbox_vec);
@@ -273,7 +272,9 @@ YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_
 			for (size_t m = 0; m < cur_bbox_vec.size(); ++m) {
 				bbox_t const& k = cur_bbox_vec[m];
 				if (i.obj_id == k.obj_id) {
-					unsigned int cur_dist = sqrt(((float)i.x - k.x)*((float)i.x - k.x) + ((float)i.y - k.y)*((float)i.y - k.y));
+					float center_x_diff = (float)(i.x + i.w/2) - (float)(k.x + k.w/2);
+					float center_y_diff = (float)(i.y + i.h/2) - (float)(k.y + k.h/2);
+					unsigned int cur_dist = sqrt(center_x_diff*center_x_diff + center_y_diff*center_y_diff);
 					if (cur_dist < 100 && (k.track_id == 0 || dist_vec[m] > cur_dist)) {
 						dist_vec[m] = cur_dist;
 						cur_index = m;
@@ -281,9 +282,10 @@ YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_
 				}
 			}
 
-			bool track_id_absent = !std::any_of(cur_bbox_vec.begin(), cur_bbox_vec.end(), [&](bbox_t const& b) { return b.track_id == i.track_id; });
+			bool track_id_absent = !std::any_of(cur_bbox_vec.begin(), cur_bbox_vec.end(), 
+				[&i](bbox_t const& b) { return b.track_id == i.track_id && b.obj_id == i.obj_id; });
 
-			if (cur_index >= 0 && track_id_absent) {
+			if (cur_index >= 0 && track_id_absent){
 				cur_bbox_vec[cur_index].track_id = i.track_id;
 				cur_bbox_vec[cur_index].w = (cur_bbox_vec[cur_index].w + i.w) / 2;
 				cur_bbox_vec[cur_index].h = (cur_bbox_vec[cur_index].h + i.h) / 2;

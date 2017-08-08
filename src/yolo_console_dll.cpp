@@ -63,17 +63,19 @@ std::vector<std::string> objects_names_from_file(std::string const filename) {
 }
 
 
-int main() 
+int main(int argc, char *argv[])
 {
+	std::string filename;
+	if (argc > 1) filename = argv[1];
+
 	Detector detector("yolo-voc.cfg", "yolo-voc.weights");
 
 	auto obj_names = objects_names_from_file("data/voc.names");
 
 	while (true) 
-	{
-		std::string filename;
+	{		
 		std::cout << "input image or video filename: ";
-		std::cin >> filename;
+		if(filename.size() == 0) std::cin >> filename;
 		if (filename.size() == 0) break;
 		
 		try {
@@ -94,7 +96,7 @@ int main()
 					td.join();
 					result_vec = thread_result_vec;
 					det_frame = frame;
-					td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.2, true); ready_flag = true; });
+					td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.24, true); ready_flag = true; });
 
 					if (!prev_frame.empty()) {
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
@@ -138,6 +140,7 @@ int main()
 		}
 		catch (std::exception &e) { std::cerr << "exception: " << e.what() << "\n"; getchar(); }
 		catch (...) { std::cerr << "unknown exception \n"; getchar(); }
+		filename.clear();
 	}
 
 	return 0;
