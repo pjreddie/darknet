@@ -751,5 +751,5 @@ void normalize_array(float *a, int n);
 int *read_intlist(char *s, int *n, int d);
 size_t rand_size_t();
 float rand_normal();
-void export_annotation(image im, int num, float thresh, box *boxes, float **probs, char **names, int classes);
+void export_annotation(image im, int num, float thresh, box *boxes, float **probs, char **names, int classes,char *cfgfile);
 #endif

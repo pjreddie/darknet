@@ -637,7 +637,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char **filena
     if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
     //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
     draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
-    export_annotation(im, l.w*l.h*l.n, thresh, boxes, probs, names, l.classes);
+    export_annotation(im, l.w*l.h*l.n, thresh, boxes, probs, names, l.classes,cfgfile);
     if(outfile){
       save_image(im, outfile);
     }

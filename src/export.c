@@ -5,7 +5,7 @@
 
 
 //function which displays annotation into a JSON format and export it into a JSON file
-void export_annotation(image im, int num, float thresh, box *boxes, float **probs, char **names, int classes)
+void export_annotation(image im, int num, float thresh, box *boxes, float **probs, char **names, int classes, char *cfgfile)
 {
 	//array which will contain bounding box into a JSON format
 	char ** bounding_boxes=calloc(num,sizeof(char *));
@@ -33,7 +33,7 @@ void export_annotation(image im, int num, float thresh, box *boxes, float **prob
 
 			bounding_boxes[index]=calloc(10000,sizeof(char));
 			//we build the JSON annotation of the bounding box and add it into the bounding_boxes array
-			sprintf(bounding_boxes[index],"{\"corner\":{\"x\":%d,\"y\":%d},\"width\":%d,\"height\":%d,\"class\":\"%s\"}",left,top,width,height,names[class]);
+			sprintf(bounding_boxes[index],"{\"corner\":{\"x\":%d,\"y\":%d},\"width\":%d,\"height\":%d,\"class\":\"%s\",\"probability\":%f}",left,top,width,height,names[class],prob);
 			index++;
 		}
 
@@ -52,16 +52,37 @@ void export_annotation(image im, int num, float thresh, box *boxes, float **prob
 		}
 		sprintf(bd_boxes,"%s]",bd_boxes);
 	}
+	//we build the annotator id
+	char * annotator_id=calloc(100,sizeof(char));
+	if(0==strcmp(cfgfile,"cfg/yolo.cfg")){
+		printf("%s\n",cfgfile );
+		strncpy(annotator_id,"mdl_YOLOv1_coco",15);
+	}
+	else if(0==strcmp(cfgfile,"cfg/yolo.2.0.cfg")){
+		strncpy(annotator_id,"mdl_YOLOv2_coco",15);
+	}
+	else if(0==strcmp(cfgfile,"cfg/yolo-voc.cfg")){
+		strncpy(annotator_id,"mdl_YOLOv1_voc",14);
+	}
+	else if(0==strcmp(cfgfile,"cfg/yolo-voc.2.0.cfg")){
+		strncpy(annotator_id,"mdl_YOLOv2_voc",14);
+	}
+	else if(0==strcmp(cfgfile,"cfg/yolo9000.cfg")){
+		strncpy(annotator_id,"mdl_YOLO9000",12);
+	}
+	else {
+		strncpy(annotator_id,"mdl_YOLO",8);
+	}
 	//we create a JSON annotation for the image countaining the bounding boxes annotations, the image id and the annotator id
 	char *annotation = calloc(10000,sizeof(char));
-	sprintf(annotation,"{\"photo_id\":\"%s\",\"annotator_id\":\"mdl_YOLOv2\",\"bounding_boxes\":%s}",im.id,bd_boxes);
+	sprintf(annotation,"{\"photo_id\":\"%s\",\"annotator_id\":\"%s\",\"bounding_boxes\":%s}",im.id,annotator_id,bd_boxes);
 	//we print this annotation
 	printf("Annotation :\n%s\n",annotation);
 
 	//we export the annotation into a JSON file in the folder annotations/
 	//we create the file name of out JSON file. It will be annotation_<image_id>.json
 	char *json_filename = calloc(10000,sizeof(char));
-	sprintf(json_filename,"annotations/annotation_%s_mdl_YOLOv2.json",im.id);
+	sprintf(json_filename,"annotations/annotation_%s_%s.json",im.id,annotator_id);
 	FILE* json_file = fopen(json_filename,"w+");
 	//we write the annotation into the JSON file
 	fputs(annotation, json_file);
