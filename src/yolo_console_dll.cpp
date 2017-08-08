@@ -87,7 +87,8 @@ int main()
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
 				std::thread td([]() {});
-				std::atomic<int> ready_flag = false;
+				std::atomic<int> ready_flag;
+				ready_flag = false;
 				cv::VideoCapture cap(filename);
 				for (; cap >> frame, cap.isOpened();) {
 					td.join();
