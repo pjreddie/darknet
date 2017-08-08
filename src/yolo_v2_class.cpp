@@ -30,6 +30,7 @@ struct detector_gpu_t{
 	float *avg;
 	float *predictions[FRAMES];
 	int demo_index;
+	unsigned int *track_id;
 };
 
 
@@ -71,6 +72,9 @@ YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_file
 	detector_gpu.probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
 	for (j = 0; j < l.w*l.h*l.n; ++j) detector_gpu.probs[j] = (float *)calloc(l.classes, sizeof(float));
 
+	detector_gpu.track_id = (unsigned int *)calloc(l.classes, sizeof(unsigned int));
+	for (j = 0; j < l.classes; ++j) detector_gpu.track_id[j] = 1;
+
 #ifdef GPU
 	cudaSetDevice(old_gpu_index);
 #endif
@@ -81,6 +85,8 @@ YOLODLL_API Detector::~Detector()
 {
 	detector_gpu_t &detector_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 	layer l = detector_gpu.net.layers[detector_gpu.net.n - 1];
+
+	free(detector_gpu.track_id);
 
 	free(detector_gpu.avg);
 	for (int j = 0; j < FRAMES; ++j) free(detector_gpu.predictions[j]);
@@ -244,16 +250,16 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 
 YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_vec, int const frames_story)
 {
+	detector_gpu_t &det_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
+
 	bool prev_track_id_present = false;
 	for (auto &i : prev_bbox_vec_deque)
 		if (i.size() > 0) prev_track_id_present = true;
 
-	static unsigned int track_id = 1;
-
 	if (!prev_track_id_present) {
 		//track_id = 1;
 		for (size_t i = 0; i < cur_bbox_vec.size(); ++i)
-			cur_bbox_vec[i].track_id = track_id++;
+			cur_bbox_vec[i].track_id = det_gpu.track_id[cur_bbox_vec[i].obj_id]++;
 		prev_bbox_vec_deque.push_front(cur_bbox_vec);
 		if (prev_bbox_vec_deque.size() > frames_story) prev_bbox_vec_deque.pop_back();
 		return cur_bbox_vec;
@@ -287,7 +293,7 @@ YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_
 
 	for (size_t i = 0; i < cur_bbox_vec.size(); ++i)
 		if (cur_bbox_vec[i].track_id == 0)
-			cur_bbox_vec[i].track_id = track_id++;
+			cur_bbox_vec[i].track_id = det_gpu.track_id[cur_bbox_vec[i].obj_id]++;
 
 	prev_bbox_vec_deque.push_front(cur_bbox_vec);
 	if (prev_bbox_vec_deque.size() > frames_story) prev_bbox_vec_deque.pop_back();

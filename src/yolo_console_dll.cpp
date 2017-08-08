@@ -31,9 +31,10 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
 			std::string obj_name = obj_names[i.obj_id];
 			if (i.track_id > 0) obj_name += " - " + std::to_string(i.track_id);
 			cv::Size const text_size = getTextSize(obj_name, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, 2, 0);
-			size_t const max_width = (text_size.width > i.w + 2) ? text_size.width : (i.w + 2);
-			if(i.x > 3 && (i.x + max_width) < mat_img.cols && i.y > 30 && i.y < mat_img.rows)
-				cv::rectangle(mat_img, cv::Point2f(i.x - 3, i.y - 30), cv::Point2f(i.x + max_width, i.y), color, CV_FILLED, 8, 0);
+			int const max_width = (text_size.width > i.w + 2) ? text_size.width : (i.w + 2);
+			cv::rectangle(mat_img, cv::Point2f(std::max((int)i.x - 3, 0), std::max((int)i.y - 30, 0)), 
+				cv::Point2f(std::min((int)i.x + max_width, mat_img.cols-1), std::min((int)i.y, mat_img.rows-1)), 
+				color, CV_FILLED, 8, 0);
 			putText(mat_img, obj_name, cv::Point2f(i.x, i.y - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(0, 0, 0), 2);
 		}
 	}
@@ -79,7 +80,9 @@ int main()
 #ifdef OPENCV
 			std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
 			std::string const protocol = filename.substr(0, 4);
-			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov" || protocol == "rtsp") {	// video file
+			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov" || 	// video file
+				protocol == "rtsp" || protocol == "http")	// video network stream
+			{
 				cv::Mat frame, prev_frame, det_frame;
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
@@ -98,7 +101,7 @@ int main()
 						show_result(result_vec, obj_names);
 					}
 					prev_frame = frame;
-					//if(protocol == "rtsp") while (!ready_flag) cap.grab();	// use if cam-fps 2x or more than dnn-fps
+					//if (protocol == "rtsp" || protocol == "http") do { cap.grab(); } while (!ready_flag);	// use if cam-fps 2x or more than dnn-fps
 					ready_flag = false;
 				}
 			}
