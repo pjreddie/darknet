@@ -55,7 +55,6 @@ void export_annotation(image im, int num, float thresh, box *boxes, float **prob
 	//we build the annotator id
 	char * annotator_id=calloc(100,sizeof(char));
 	if(0==strcmp(cfgfile,"cfg/yolo.cfg")){
-		printf("%s\n",cfgfile );
 		strncpy(annotator_id,"mdl_YOLOv1_coco",15);
 	}
 	else if(0==strcmp(cfgfile,"cfg/yolo.2.0.cfg")){
