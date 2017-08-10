@@ -67,6 +67,6 @@ void add_pixel(image m, int x, int y, int c, float val);
 float bilinear_interpolate(image im, float x, float y, int c);
 
 image get_image_layer(image m, int l);
+void get_image_id(char * filename, char * id);
 
 #endif
-

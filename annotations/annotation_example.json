@@ -1,0 +1,28 @@
+{
+  "photo_id":"dog.jpg",
+  "annotator_id":"mdl_YOLOv1_coco",
+  "bounding_boxes":
+    [
+      {
+        "corner":{"x":132,"y":232},
+        "width":189,
+        "height":289,
+        "class":"dog",
+        "probability":0.823985
+      },
+      {
+        "corner":{"x":467,"y":84},
+        "width":213,
+        "height":83,
+        "class":"truck",
+        "probability":0.635909
+      },
+      {
+        "corner":{"x":95,"y":124},
+        "width":493,
+        "height":323,
+        "class":"bicycle",
+        "probability":0.853098
+      }
+    ]
+}

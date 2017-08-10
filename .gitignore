@@ -5,6 +5,7 @@
 *.png
 *.jpg
 *.pyc
+weights/
 old/
 mnist/
 data/
