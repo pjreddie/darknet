@@ -29,6 +29,7 @@
 #include "shortcut_layer.h"
 #include "softmax_layer.h"
 #include "utils.h"
+#include <stdint.h>
 
 typedef struct{
     char *type;
@@ -1023,7 +1024,14 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fread(&major, sizeof(int), 1, fp);
     fread(&minor, sizeof(int), 1, fp);
     fread(&revision, sizeof(int), 1, fp);
-    fread(net->seen, sizeof(int), 1, fp);
+	if ((major * 10 + minor) >= 2) {
+		fread(net->seen, sizeof(uint64_t), 1, fp);
+	}
+	else {
+		int iseen = 0;
+		fread(&iseen, sizeof(int), 1, fp);
+		*net->seen = iseen;
+	}
     int transpose = (major > 1000) || (minor > 1000);
 
     int i;

@@ -81,31 +81,30 @@ int main(int argc, char *argv[])
 		try {
 #ifdef OPENCV
 			std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
-			std::string const protocol = filename.substr(0, 4);
+			std::string const protocol = filename.substr(0, 7);
 			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov" || 	// video file
-				protocol == "rtsp" || protocol == "http")	// video network stream
+				protocol == "rtsp://" || protocol == "http://" || protocol == "https:/")	// video network stream
 			{
 				cv::Mat frame, prev_frame, det_frame;
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
 				std::thread td([]() {});
 				std::atomic<int> ready_flag;
-				ready_flag = false;
-				cv::VideoCapture cap(filename);
-				for (; cap >> frame, cap.isOpened();) {
-					td.join();
-					result_vec = thread_result_vec;
-					det_frame = frame;
-					td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.24, true); ready_flag = true; });
-
-					if (!prev_frame.empty()) {
+				ready_flag = true;
+				for (cv::VideoCapture cap(filename); cap >> frame, cap.isOpened();) {
+					if (ready_flag || (protocol != "rtsp://" && protocol != "http://" && protocol != "https:/")) {
+						td.join();
+						ready_flag = false;
+						result_vec = thread_result_vec;
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
+						det_frame = frame;						
+						td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.24, true); ready_flag = true; });
+					}
+					if (!prev_frame.empty()) {						
 						draw_boxes(prev_frame, result_vec, obj_names, 3);
 						show_result(result_vec, obj_names);
 					}
 					prev_frame = frame;
-					//if (protocol == "rtsp" || protocol == "http") do { cap.grab(); } while (!ready_flag);	// use if cam-fps 2x or more than dnn-fps
-					ready_flag = false;
 				}
 			}
 			else if (file_ext == "txt") {	// list of image files
