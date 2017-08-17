@@ -1153,7 +1153,7 @@ void distort_image(image im, float hue, float sat, float val)
 
 void random_distort_image(image im, float hue, float saturation, float exposure)
 {
-    float dhue = rand_uniform(-hue, hue);
+    float dhue = rand_uniform_strong(-hue, hue);
     float dsat = rand_scale(saturation);
     float dexp = rand_scale(exposure);
     distort_image(im, dhue, dsat, dexp);

@@ -607,12 +607,13 @@ float rand_uniform(float min, float max)
         max = swap;
     }
     return ((float)rand()/RAND_MAX * (max - min)) + min;
+	//return (random_float() * (max - min)) + min;
 }
 
 float rand_scale(float s)
 {
-    float scale = rand_uniform(1, s);
-    if(rand()%2) return scale;
+    float scale = rand_uniform_strong(1, s);
+    if(random_gen()%2) return scale;
     return 1./scale;
 }
 
@@ -628,3 +629,32 @@ float **one_hot_encode(float *a, int n, int k)
     return t;
 }
 
+unsigned int random_gen()
+{
+	unsigned int rnd = 0;
+#ifdef WIN32
+	rand_s(&rnd);
+#else
+	rnd = rand();
+#endif
+	return rnd;
+}
+
+float random_float()
+{
+#ifdef WIN32
+	return ((float)random_gen() / (float)UINT_MAX);
+#else
+	return ((float)random_gen() / (float)RAND_MAX);
+#endif
+}
+
+float rand_uniform_strong(float min, float max)
+{
+	if (max < min) {
+		float swap = min;
+		min = max;
+		max = swap;
+	}
+	return (random_float() * (max - min)) + min;
+}
