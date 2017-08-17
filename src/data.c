@@ -727,7 +727,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
 void *load_thread(void *ptr)
 {
-	//srand(time(0));
+	srand(time(0));
     //printf("Loading data: %d\n", random_gen());
     load_args a = *(struct load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
@@ -771,7 +771,7 @@ pthread_t load_data_in_thread(load_args args)
 
 void *load_threads(void *ptr)
 {
-	//srand(time(0));
+	srand(time(0));
     int i;
     load_args args = *(load_args *)ptr;
     if (args.threads == 0) args.threads = 1;
