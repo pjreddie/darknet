@@ -518,7 +518,7 @@ void show_image_cv(image p, const char *name)
 }
 
 
-void show_image_cv_ipl(IplImage *disp, const char *name)
+void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filename)
 {
 	if (disp == NULL) return;
 	char buff[256];
@@ -529,7 +529,7 @@ void show_image_cv_ipl(IplImage *disp, const char *name)
 	++windows;
 	cvShowImage(buff, disp);
 
-
+	if(out_filename)
 	{
 		CvSize size;
 		{
@@ -539,10 +539,10 @@ void show_image_cv_ipl(IplImage *disp, const char *name)
 		static CvVideoWriter* output_video = NULL;    // cv::VideoWriter output_video;
 		if (output_video == NULL)
 		{
-			const char* output_name = "test_dnn_out.avi";
-			//output_video = cvCreateVideoWriter(output_name, CV_FOURCC('H', '2', '6', '4'), 25, size, 1);
-			output_video = cvCreateVideoWriter(output_name, CV_FOURCC('D', 'I', 'V', 'X'), 25, size, 1);
-			//output_video = cvCreateVideoWriter(output_name, CV_FOURCC('M', 'J', 'P', 'G'), 25, size, 1);
+			//const char* output_name = "test_dnn_out.avi";
+			//output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('H', '2', '6', '4'), 25, size, 1);
+			output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('D', 'I', 'V', 'X'), 25, size, 1);
+			//output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'J', 'P', 'G'), 25, size, 1);
 		}
 
 		cvWriteFrame(output_video, disp);	// comment this line to improve FPS !!!
