@@ -61,13 +61,17 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 ##### Example of usage in cmd-files from `build\darknet\x64\`:
 
 * `darknet_voc.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and waiting for entering the name of the image file
-* `darknet_demo_voc.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4, and store result to: res.avi
-* `darknet_net_cam_voc.cmd` - initialization with 194 MB VOC-model, play video from network video-camera mjpeg-stream (also from you phone) and store result to: res.avi
-* `darknet_web_cam_voc.cmd` - initialization with 194 MB VOC-model, play video from Web-Camera number #0 and store result to: res.avi
+* `darknet_demo_voc.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4
+* `darknet_demo_store.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4, and store result to: res.avi
+* `darknet_net_cam_voc.cmd` - initialization with 194 MB VOC-model, play video from network video-camera mjpeg-stream (also from you phone)
+* `darknet_web_cam_voc.cmd` - initialization with 194 MB VOC-model, play video from Web-Camera number #0
 * `darknet_coco_9000.cmd` - initialization with 186 MB Yolo9000 COCO-model, and show detection on the image: dog.jpg
-* `darknet_coco_9000_demo.cmd` - initialization with 186 MB Yolo9000 COCO-model, and show detection on the video (if it is present): street4k.mp4
+* `darknet_coco_9000_demo.cmd` - initialization with 186 MB Yolo9000 COCO-model, and show detection on the video (if it is present): street4k.mp4, and store result to: res.avi
 
 ##### How to use on the command line:
+
+On Linux use `./darknet` instead of `darknet.exe`, like this: `./darknet detector test data/coco.data yolo.cfg yolo.weights`
+
 * 194 MB COCO-model - image: `darknet.exe detector test data/coco.data yolo.cfg yolo.weights -i 0 -thresh 0.2`
 * Alternative method 194 MB COCO-model - image: `darknet.exe detect yolo.cfg yolo.weights -i 0 -thresh 0.2`
 * 194 MB VOC-model - image: `darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights -i 0`
