@@ -1,6 +1,6 @@
 GPU=1
-CUDNN=0
-OPENCV=0
+CUDNN=1
+OPENCV=1
 OPENMP=0
 DEBUG=0
 
@@ -11,7 +11,7 @@ ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
       -gencode arch=compute_52,code=[sm_52,compute_52]
 
 # This is what I use, uncomment if you know your arch and want to specify
-# ARCH= -gencode arch=compute_52,code=compute_52
+ARCH= -gencode arch=compute_30,code=compute_30 -gencode arch=compute_35,code=compute_35
 
 VPATH=./src/:./examples
 SLIB=libdarknet.so
@@ -29,7 +29,7 @@ COMMON= -Iinclude/ -Isrc/
 CFLAGS=-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
 ifeq ($(OPENMP), 1) 
-COMMON+= -fopenmp
+CFLAGS+= -fopenmp
 endif
 
 ifeq ($(DEBUG), 1) 
@@ -68,7 +68,8 @@ EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
-all: obj backup results $(SLIB) $(ALIB) $(EXEC)
+#all: obj backup results $(SLIB) $(ALIB) $(EXEC)
+all: obj  results $(SLIB) $(ALIB) $(EXEC)
 
 
 $(EXEC): $(EXECOBJ) $(ALIB)

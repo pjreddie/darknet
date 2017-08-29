@@ -146,7 +146,7 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
     int c = net.layers[net.n - 2].c;
     scal_cpu(oldn*c, .1, net.layers[net.n - 2].weights, 1);
     scal_cpu(oldn, 0, net.layers[net.n - 2].biases, 1);
-    net.layers[net.n - 2].n = 9418;
+    net.layers[net.n - 2].n = 11921;
     net.layers[net.n - 2].biases += 5;
     net.layers[net.n - 2].weights += 5*c;
     if(weightfile){

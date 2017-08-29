@@ -20,6 +20,10 @@ static int demo_classes;
 static float **probs;
 static box *boxes;
 static network net;
+static network net2;
+static float **probs2;
+static box *boxes2;
+static float **predictions2;
 static image buff [3];
 static image buff_letter[3];
 static int buff_fetch_index = 0;
@@ -31,7 +35,6 @@ static float fps = 0;
 static float demo_thresh = 0;
 static float demo_hier = .5;
 static int running = 0;
-
 static int demo_delay = 0;
 static int demo_frame = 3;
 static int demo_detections = 0;
@@ -99,8 +102,7 @@ void *detect_in_thread(void *ptr)
 
     memcpy(predictions[demo_index], prediction, l.outputs*sizeof(float));
     mean_arrays(predictions, demo_frame, l.outputs, avg);
-    l.output = last_avg2;
-    if(demo_delay == 0) l.output = avg;
+    l.output = avg;
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
@@ -140,12 +142,7 @@ void *display_in_thread(void *ptr)
     show_image_cv(buff[buff_show_index], "Demo", ipl); // was +1
     int c = cvWaitKey(1);
     if (c != -1) c = c%256;
-    if (c == 10){
-        if(demo_delay == 0) demo_delay = 60;
-        else if(demo_delay == 5) demo_delay = 0;
-        else if(demo_delay == 60) demo_delay = 5;
-        else demo_delay = 0;
-    } else if (c == 27) {
+    if (c == 27) {
         demo_done = 1;
         return 0;
     } else if (c == 82) {
@@ -220,6 +217,7 @@ void dowrite(image im, const char * voutput)
     }
 }
 
+
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen, const char * output, const char * voutput, int allframes)
 {
     demo_delay = delay;
@@ -259,7 +257,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
     }
 
-    if(!cap) error("Couldn't connect to webcam.\n");
+    if(!cap) error("Couldn't connect to webcam or input file\n");
 
     layer l = net.layers[net.n-1];
     demo_detections = l.n*l.w*l.h;
@@ -295,6 +293,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     demo_time = get_wall_time();
 
+    // output file with the bounding boxes
     if(output)
     {
         fout = fopen(output,"w");
@@ -308,7 +307,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     int buff_index = 0;
     while(!demo_done){
-        buff_index = (buff_index + 1) %3;
+        // splitting of fetch/detect/show for supporting ALL frames processing
+        // below is default thread processing        buff_index = (buff_index + 1) %3;
         if(allframes)
         {
             buff_fetch_index = buff_index;
@@ -336,6 +336,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             memcpy(last_avg, avg, l.outputs*sizeof(float));
         }
 
+        // prevent display for fast processing
         if(!prefix){
             display_in_thread(0);            
         }else if(prefix[0] != '!') { 
@@ -351,7 +352,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
         // output file chance
         if(voutput)
+        {
             dowrite(buff[buff_show_index],voutput);  // was +1
+        }
         ++count;
     }
     
@@ -362,10 +365,103 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
     if(writer)
     {
-        cvReleaseVideoWriter(writer);
+        cvReleaseVideoWriter(&writer);
         writer = 0;
     }
 
+}
+void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
+{
+    demo_frame = avg_frames;
+    predictions = calloc(demo_frame, sizeof(float*));
+    image **alphabet = load_alphabet();
+    demo_names = names;
+    demo_alphabet = alphabet;
+    demo_classes = classes;
+    demo_thresh = thresh;
+    demo_hier = hier;
+    printf("Demo\n");
+    net = load_network(cfg1, weight1, 0);
+    set_batch_network(&net, 1);
+    pthread_t detect_thread;
+    pthread_t fetch_thread;
+
+    srand(2222222);
+
+    if(filename){
+        printf("video file: %s\n", filename);
+        cap = cvCaptureFromFile(filename);
+    }else{
+        cap = cvCaptureFromCAM(cam_index);
+
+        if(w){
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+        }
+        if(h){
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+        }
+        if(frames){
+            cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, frames);
+        }
+    }
+
+    if(!cap) error("Couldn't connect to webcam.\n");
+
+    layer l = net.layers[net.n-1];
+    demo_detections = l.n*l.w*l.h;
+    int j;
+
+    avg = (float *) calloc(l.outputs, sizeof(float));
+    for(j = 0; j < demo_frame; ++j) predictions[j] = (float *) calloc(l.outputs, sizeof(float));
+
+    boxes = (box *)calloc(l.w*l.h*l.n, sizeof(box));
+    probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes+1, sizeof(float));
+
+    buff[0] = get_image_from_stream(cap);
+    buff[1] = copy_image(buff[0]);
+    buff[2] = copy_image(buff[0]);
+    buff_letter[0] = letterbox_image(buff[0], net.w, net.h);
+    buff_letter[1] = letterbox_image(buff[0], net.w, net.h);
+    buff_letter[2] = letterbox_image(buff[0], net.w, net.h);
+    ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
+
+    int count = 0;
+    if(!prefix){
+        cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
+        if(fullscreen){
+            cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+        } else {
+            cvMoveWindow("Demo", 0, 0);
+            cvResizeWindow("Demo", 1352, 1013);
+        }
+    }
+
+    demo_time = get_wall_time();
+
+    int buff_index = 0;
+    while(!demo_done){
+        // splitting of fetch/detect/show for supporting ALL frames processing
+        // below is default thread processing
+        buff_index = (buff_index + 1) %3;
+        buff_fetch_index  = buff_index;
+        buff_detect_index = (buff_index+2)%3;
+        buff_show_index   = (buff_index+1)%3;
+        if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
+        if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");            
+        if(!prefix){
+            fps = 1./(get_wall_time() - demo_time);
+            demo_time = get_wall_time();
+            display_in_thread(0);
+        }else{
+            char name[256];
+            sprintf(name, "%s_%08d", prefix, count);
+            save_image(buff[(buff_show_index + 1)%3], name);
+        }
+        pthread_join(fetch_thread, 0);
+        pthread_join(detect_thread, 0);
+        ++count;
+    }
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg, float hier, int w, int h, int frames, int fullscreen)

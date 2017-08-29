@@ -53,7 +53,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
-    clock_t time;
+    double time;
 
     load_args args = {0};
     args.w = net.w;
@@ -85,14 +85,14 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
     int epoch = (*net.seen)/N;
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
-        time=clock();
+        time = what_time_is_it_now();
 
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
 
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
-        time=clock();
+        printf("Loaded: %lf seconds\n", what_time_is_it_now()-time);
+        time = what_time_is_it_now();
 
         float loss = 0;
 #ifdef GPU
@@ -106,7 +106,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 #endif
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, *net.seen);
         free_data(train);
         if(*net.seen/N > epoch){
             epoch = *net.seen/N;
