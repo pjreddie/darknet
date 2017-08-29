@@ -464,7 +464,7 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
     }
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg, float hier, int w, int h, int frames, int fullscreen)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen, const char * output, const char * voutput, int allframes)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
