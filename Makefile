@@ -1,5 +1,5 @@
-GPU=0
-CUDNN=0
+GPU=1
+CUDNN=1
 OPENCV=1
 OPENMP=0
 DEBUG=0
@@ -20,7 +20,7 @@ EXEC=darknet
 OBJDIR=./obj/
 
 CC=gcc
-NVCC=/usr/local/cuda-8.0/bin/nvcc
+NVCC=nvcc
 AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
