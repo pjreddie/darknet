@@ -3,6 +3,11 @@ Darknet is an open source neural network framework written in C and CUDA. It is 
 
 For more information see the [Darknet project website](http://pjreddie.com/darknet).
 
+## CUDNN 5,6 support
+
+This code is prepared for CUDNN 5. If you want to use CUDNN 6 - change `cudnnSetConvolution2dDescriptor` to `cudnnSetConvolution2dDescriptor_v4`
+
+
 ## Results - 4K video
 
 ### Dataset #1
