@@ -3,24 +3,95 @@ Darknet is an open source neural network framework written in C and CUDA. It is 
 
 For more information see the [Darknet project website](http://pjreddie.com/darknet).
 
+## CUDNN 5,6 support
+
+This code is prepared for CUDNN 5. If you want to use CUDNN 6 - change `cudnnSetConvolution2dDescriptor` to `cudnnSetConvolution2dDescriptor_v4`
+
+
 ## Results - 4K video
 
-YOLO COCO
+### Dataset #1
+
+Input 4K video: [Download input video](https://goo.gl/kr1bnC)
+
+Camera: Samsung S7
+
+[![8K 4x YOLO (Tiny YOLO, VOC, COCO, YOLO9000) Object Detection #1](http://img.youtube.com/vi/OX3W38rONps/0.jpg)](https://youtu.be/OX3W38rONps?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+**YOLO COCO**
 
 [![4K YOLO COCO Object Detection #1](http://img.youtube.com/vi/yQwfDxBMtXg/0.jpg)](https://youtu.be/yQwfDxBMtXg?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
 
-YOLO VOC
+**YOLO VOC**
 
 [![4K YOLO COCO Object Detection #1](http://img.youtube.com/vi/yCOwvJw_7EI/0.jpg)](https://youtu.be/yCOwvJw_7EI?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
 
 
-Tiny YOLO VOC
+**Tiny YOLO VOC**
 
-...
+[![4K Tiny YOLO Object Detection #1](http://img.youtube.com/vi/km0kUz6lxig/0.jpg)](https://youtu.be/km0kUz6lxig?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
 
-YOLO 9000
+**YOLO 9000**
 
-...
+[![4K YOLO9000 Object Detection #1](http://img.youtube.com/vi/BBLitvn5b8E/0.jpg)](https://youtu.be/BBLitvn5b8E?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+-----------------------------------------------
+
+### Dataset #2
+
+Input 4K video: [Download input video](https://goo.gl/aUY47y)
+
+Camera: Samsung S7
+
+**YOLO COCO**
+
+[![4K YOLO COCO Object Detection #2](http://img.youtube.com/vi/EhcpGpFHCrw/0.jpg)](https://youtu.be/EhcpGpFHCrw?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+
+**YOLO VOC**
+
+[![4K YOLO COCO Object Detection #2](http://img.youtube.com/vi/tgX2wB7rUiA/0.jpg)](https://youtu.be/tgX2wB7rUiA?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+
+**Tiny YOLO VOC**
+
+[![4K Tiny YOLO Object Detection #2](http://img.youtube.com/vi/sS_1SCC5UEs/0.jpg)](https://youtu.be/sS_1SCC5UEs?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+**YOLO 9000**
+
+[![4K YOLO9000 Object Detection #2](http://img.youtube.com/vi/M8W9z8PIdb0/0.jpg)](https://youtu.be/M8W9z8PIdb0?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+-----------------------------------------------
+
+### Dataset #3
+
+Input 4K video: [Download input video](https://goo.gl/8ZwfwP)
+
+Camera: Samsung S7
+
+[![8K 4x YOLO (Tiny YOLO, VOC, COCO, YOLO9000) #3  
+](http://img.youtube.com/vi/iKJBgNNTxnM/0.jpg)](https://youtu.be/iKJBgNNTxnM?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+
+**YOLO COCO**
+
+[![4K YOLO COCO Object Detection #3](http://img.youtube.com/vi/mlH3x6Tq10U/0.jpg)](https://youtu.be/mlH3x6Tq10U?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+
+**YOLO VOC**
+
+[![4K YOLO COCO Object Detection #3](http://img.youtube.com/vi/QjVv7ln1ZJo/0.jpg)](https://youtu.be/QjVv7ln1ZJo?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+
+**Tiny YOLO VOC**
+
+[![4K Tiny YOLO Object Detection #3](http://img.youtube.com/vi/1_REeHeirjY/0.jpg)](https://youtu.be/1_REeHeirjY?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+**YOLO 9000**
+
+[![4K YOLO9000 Object Detection #3](http://img.youtube.com/vi/VmMGa5CVXSw/0.jpg)](https://youtu.be/VmMGa5CVXSw?list=PLki8NgAAjqCb1NoCqpeZJHDzoy6y1Rx_H)
+
+-----------------------------------------------
 
 ## Webcam Demo!
 
