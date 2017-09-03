@@ -222,7 +222,11 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, names[class], (im.h*.03)/10);
+
+                char tmp[222];
+                sprintf(tmp,"%s %.0f%%",names[class],prob*100);
+                image label = get_label(alphabet, tmp, (im.h*.03)/10);
+                // image label = get_label(alphabet, names[class], (im.h*.03)/10);
                 draw_label(im, top + width, left, label, rgb);
                 free_image(label);
             }

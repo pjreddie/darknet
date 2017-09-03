@@ -24,3 +24,10 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+
+# MP4s and jpgs
+*.mp4
+*.jpg
+
+# weights
+*.weights
