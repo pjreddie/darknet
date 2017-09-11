@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 						ready_flag = false;
 						result_vec = thread_result_vec;
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
-						det_frame = frame;						
+						det_frame = frame.clone();						
 						td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.24, true); ready_flag = true; });
 					}
 					if (!prev_frame.empty()) {	
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 						if (output_video.isOpened())
 							output_video << prev_frame;
 					}
-					prev_frame = frame;					
+					prev_frame = frame.clone();					
 				}
 			}
 			else if (file_ext == "txt") {	// list of image files
