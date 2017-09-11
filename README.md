@@ -1,5 +1,9 @@
 # NVIDIA AI City Challenge. Team 21.
 
+### DEMOS
+https://youtu.be/DeCFxPQlOVk 
+https://youtu.be/mtu9_w8B984 
+
 ### Synopsis
 
 Track 1 utilized the Darknet framework with Yolo object detection. We achived 2nd place in mean average precision for the AI city challenge using this network and training parameters. 
