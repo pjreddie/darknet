@@ -1,8 +1,8 @@
 # NVIDIA AI City Challenge. Team 21.
 
 ### DEMOS
-https://youtu.be/DeCFxPQlOVk 
-https://youtu.be/mtu9_w8B984 
+* https://youtu.be/DeCFxPQlOVk 
+* https://youtu.be/mtu9_w8B984 
 
 ### Synopsis
 
