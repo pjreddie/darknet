@@ -23,7 +23,9 @@
 #endif
 
 
-void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, unsigned int wait_msec = 0) {
+void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, 
+	unsigned int wait_msec = 0, int current_fps = -1)
+{
 	for (auto &i : result_vec) {
 		cv::Scalar color(60, 160, 260);
 		cv::rectangle(mat_img, cv::Rect(i.x, i.y, i.w, i.h), color, 5);
@@ -38,6 +40,8 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
 			putText(mat_img, obj_name, cv::Point2f(i.x, i.y - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(0, 0, 0), 2);
 		}
 	}
+	if(current_fps >= 0)
+		putText(mat_img, "FPS: " + std::to_string(current_fps), cv::Point2f(10, 20), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(50, 255, 0), 2);
 	cv::imshow("window name", mat_img);
 	cv::waitKey(wait_msec);
 }
@@ -71,6 +75,8 @@ int main(int argc, char *argv[])
 	Detector detector("yolo-voc.cfg", "yolo-voc.weights");
 
 	auto obj_names = objects_names_from_file("data/voc.names");
+	std::string out_videofile = "result.avi";
+	bool const save_output_videofile = false;
 
 	while (true) 
 	{		
@@ -91,20 +97,34 @@ int main(int argc, char *argv[])
 				std::thread td([]() {});
 				std::atomic<int> ready_flag;
 				ready_flag = true;
+				std::chrono::steady_clock::time_point steady_start, steady_end;
+				int fps_counter = 0, current_fps = 0;
+				cv::VideoWriter output_video;
 				for (cv::VideoCapture cap(filename); cap >> frame, cap.isOpened();) {
+					if(!output_video.isOpened() && save_output_videofile)
+						output_video.open(out_videofile, CV_FOURCC('D','I','V','X'), cap.get(CV_CAP_PROP_FPS), frame.size(), true);
 					if (ready_flag || (protocol != "rtsp://" && protocol != "http://" && protocol != "https:/")) {
 						td.join();
+						++fps_counter;
 						ready_flag = false;
 						result_vec = thread_result_vec;
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
 						det_frame = frame;						
 						td = std::thread([&]() { thread_result_vec = detector.detect(det_frame, 0.24, true); ready_flag = true; });
 					}
-					if (!prev_frame.empty()) {						
-						draw_boxes(prev_frame, result_vec, obj_names, 3);
+					if (!prev_frame.empty()) {	
+						steady_end = std::chrono::steady_clock::now();
+						if (std::chrono::duration<double>(steady_end - steady_start).count() >= 1) {
+							current_fps = fps_counter;
+							steady_start = steady_end;
+							fps_counter = 0;
+						}
+						draw_boxes(prev_frame, result_vec, obj_names, 3, current_fps);
 						show_result(result_vec, obj_names);
+						if (output_video.isOpened())
+							output_video << prev_frame;
 					}
-					prev_frame = frame;
+					prev_frame = frame;					
 				}
 			}
 			else if (file_ext == "txt") {	// list of image files
