@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
 				protocol == "rtsp://" || protocol == "http://" || protocol == "https:/")	// video network stream
 			{
 				cv::Mat cap_frame, cur_frame, det_frame, write_frame;
+				std::shared_ptr<image_t> det_image;
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
 				std::atomic<bool> consumed, videowrite_ready;
@@ -116,9 +117,10 @@ int main(int argc, char *argv[])
 				std::chrono::steady_clock::time_point steady_start, steady_end;
 				cv::VideoCapture cap(filename); cap >> cur_frame;
 				int const video_fps = cap.get(CV_CAP_PROP_FPS);
+				cv::Size const frame_size = cur_frame.size();
 				cv::VideoWriter output_video;
 				if (save_output_videofile)
-					output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(35, video_fps), cur_frame.size(), true);
+					output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(35, video_fps), frame_size, true);
 
 				while (!cur_frame.empty()) {
 					if (t_cap.joinable()) {
@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
 					if(consumed)
 					{
 						std::unique_lock<std::mutex> lock(mtx);
-						cur_frame.copyTo(det_frame);
+						det_image = detector.mat_to_image_resize(cur_frame);
 						result_vec = thread_result_vec;
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
 						consumed = false;
@@ -140,14 +142,14 @@ int main(int argc, char *argv[])
 					// launch thread once
 					if (!t_detect.joinable()) {
 						t_detect = std::thread([&]() {
-							cv::Mat current_mat = det_frame.clone();
+							auto current_image = det_image;
 							consumed = true;
-							while (!current_mat.empty()) {
-								auto result = detector.detect(current_mat, 0.24, true);
+							while (current_image.use_count() > 0) {
+								auto result = detector.detect_resized(*current_image, frame_size, 0.24, true);
 								++fps_det_counter;
 								std::unique_lock<std::mutex> lock(mtx);
 								thread_result_vec = result;
-								current_mat = det_frame.clone();
+								current_image = det_image;
 								consumed = true;
 								cv.notify_all();
 							}

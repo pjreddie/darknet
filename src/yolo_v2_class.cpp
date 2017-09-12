@@ -109,11 +109,11 @@ YOLODLL_API Detector::~Detector()
 #endif
 }
 
-YOLODLL_API int Detector::get_net_width() {
+YOLODLL_API int Detector::get_net_width() const {
 	detector_gpu_t &detector_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 	return detector_gpu.net.w;
 }
-YOLODLL_API int Detector::get_net_height() {
+YOLODLL_API int Detector::get_net_height() const {
 	detector_gpu_t &detector_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 	return detector_gpu.net.h;
 }

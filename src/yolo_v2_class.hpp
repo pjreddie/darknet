@@ -51,8 +51,8 @@ public:
 	YOLODLL_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
 	static YOLODLL_API image_t load_image(std::string image_filename);
 	static YOLODLL_API void free_image(image_t m);
-	YOLODLL_API int get_net_width();
-	YOLODLL_API int get_net_height();
+	YOLODLL_API int get_net_width() const;
+	YOLODLL_API int get_net_height() const;
 
 	YOLODLL_API std::vector<bbox_t> tracking(std::vector<bbox_t> cur_bbox_vec, int const frames_story = 6);
 
@@ -60,14 +60,27 @@ public:
 	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false)
 	{
 		if(mat.data == NULL)
-			throw std::runtime_error("file not found");
+			throw std::runtime_error("Image is empty");
+		auto image_ptr = mat_to_image_resize(mat);
+		return detect_resized(*image_ptr, mat.size(), thresh, use_mean);
+	}
+
+	std::vector<bbox_t> detect_resized(image_t img, cv::Size init_size, float thresh = 0.2, bool use_mean = false)
+	{
+		if (img.data == NULL)
+			throw std::runtime_error("Image is empty");
+		auto detection_boxes = detect(img, thresh, use_mean);
+		float wk = (float)init_size.width / img.w, hk = (float)init_size.height / img.h;
+		for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
+		return detection_boxes;
+	}
+
+	std::shared_ptr<image_t> mat_to_image_resize(cv::Mat mat) const
+	{
+		if (mat.data == NULL) return std::shared_ptr<image_t>(NULL);
 		cv::Mat det_mat;
 		cv::resize(mat, det_mat, cv::Size(get_net_width(), get_net_height()));
-		auto image_ptr = mat_to_image(det_mat);
-		auto detection_boxes = detect(*image_ptr, thresh, use_mean);
-		float wk = (float)mat.cols / det_mat.cols, hk = (float)mat.rows / det_mat.rows;
-		for (auto &i : detection_boxes) i.x*=wk, i.w*= wk, i.y*=hk, i.h*=hk;
-		return detection_boxes;
+		return mat_to_image(det_mat);
 	}
 
 	static std::shared_ptr<image_t> mat_to_image(cv::Mat img)
