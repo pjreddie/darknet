@@ -28,8 +28,13 @@
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, 
 	unsigned int wait_msec = 0, int current_det_fps = -1, int current_cap_fps = -1)
 {
+	int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
+
 	for (auto &i : result_vec) {
-		cv::Scalar color(60, 160, 260);
+		int const offset = i.obj_id * 123457 % 6;
+		int const color_scale = 150 + (i.obj_id * 123457) % 100;
+		cv::Scalar color(colors[offset][0], colors[offset][1], colors[offset][2]);
+		color *= color_scale;
 		cv::rectangle(mat_img, cv::Rect(i.x, i.y, i.w, i.h), color, 5);
 		if (obj_names.size() > i.obj_id) {
 			std::string obj_name = obj_names[i.obj_id];
@@ -110,9 +115,10 @@ int main(int argc, char *argv[])
 				std::condition_variable cv;
 				std::chrono::steady_clock::time_point steady_start, steady_end;
 				cv::VideoCapture cap(filename); cap >> cur_frame;
+				int const video_fps = cap.get(CV_CAP_PROP_FPS);
 				cv::VideoWriter output_video;
 				if (save_output_videofile)
-					output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), cap.get(CV_CAP_PROP_FPS), cur_frame.size(), true);
+					output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(35, video_fps), cur_frame.size(), true);
 
 				while (!cur_frame.empty()) {
 					if (t_cap.joinable()) {
