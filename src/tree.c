@@ -72,7 +72,12 @@ int hierarchy_top_prediction(float *predictions, tree *hier, float thresh, int s
             group = hier->child[max_i];
             if(hier->child[max_i] < 0) return max_i;
         } else {
-            return hier->parent[hier->group_offset[group]];
+            int result = hier->parent[hier->group_offset[group]];
+            if(result != -1) {
+                return result;
+            } else {
+                break;
+            }
         }
     }
     return 0;

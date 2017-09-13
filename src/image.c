@@ -190,7 +190,7 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, int names_count, image **alphabet, int classes)
 {
     int i;
 
@@ -206,7 +206,11 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             }
 
             //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
-            printf("%s: %.0f%%\n", names[class], prob*100);
+            if(class < names_count) {
+                printf("%s: %.0f%%\n", names[class], prob*100);
+            } else {
+                printf("class-%d: %.0f%%\n", class, prob*100);
+            }
             int offset = class*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
@@ -232,7 +236,14 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, names[class], (im.h*.03)/10);
+                image label;
+                if(class < names_count) {
+                    label =  get_label(alphabet, names[class], (im.h*.03)/10);
+                } else {
+                    char tempname[40];
+                    sprintf(tempname, "class-%d", class);
+                    label =  get_label(alphabet, tempname, (im.h*.03)/10);
+                }
                 draw_label(im, top + width, left, label, rgb);
                 free_image(label);
             }

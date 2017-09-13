@@ -39,7 +39,7 @@ void train_captcha(char *cfgfile, char *weightfile)
     int i = *net.seen/imgs;
     int solved = 1;
     list *plist;
-    char **labels = get_labels("/data/captcha/reimgs.labels.list");
+    char **labels = get_labels("/data/captcha/reimgs.labels.list", NULL);
     if (solved){
         plist = get_paths("/data/captcha/reimgs.solved.list");
     }else{
@@ -102,7 +102,7 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
     set_batch_network(&net, 1);
     srand(2222222);
     int i = 0;
-    char **names = get_labels("/data/captcha/reimgs.labels.list");
+    char **names = get_labels("/data/captcha/reimgs.labels.list", NULL);
     char buff[256];
     char *input = buff;
     int indexes[26];
@@ -135,7 +135,7 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
 
 void valid_captcha(char *cfgfile, char *weightfile, char *filename)
 {
-    char **labels = get_labels("/data/captcha/reimgs.labels.list");
+    char **labels = get_labels("/data/captcha/reimgs.labels.list", NULL);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);

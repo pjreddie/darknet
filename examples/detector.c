@@ -234,7 +234,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     char *valid_images = option_find_str(options, "valid", "data/train.list");
     char *name_list = option_find_str(options, "names", "data/names.list");
     char *prefix = option_find_str(options, "results", "results");
-    char **names = get_labels(name_list);
+    char **names = get_labels(name_list, NULL);
     char *mapf = option_find_str(options, "map", 0);
     int *map = 0;
     if (mapf) map = read_map(mapf);
@@ -370,7 +370,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     char *valid_images = option_find_str(options, "valid", "data/train.list");
     char *name_list = option_find_str(options, "names", "data/names.list");
     char *prefix = option_find_str(options, "results", "results");
-    char **names = get_labels(name_list);
+    char **names = get_labels(name_list, NULL);
     char *mapf = option_find_str(options, "map", 0);
     int *map = 0;
     if (mapf) map = read_map(mapf);
@@ -575,8 +575,9 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
-    char **names = get_labels(name_list);
-
+    int names_count = 0;
+    char **names = get_labels(name_list, &names_count);
+    
     image **alphabet = load_alphabet();
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -623,7 +624,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
+        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, names_count, alphabet, l.classes);
         if(outfile){
             save_image(im, outfile);
         }
@@ -703,7 +704,7 @@ void run_detector(int argc, char **argv)
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
-        char **names = get_labels(name_list);
+        char **names = get_labels(name_list, NULL);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
     }
 }

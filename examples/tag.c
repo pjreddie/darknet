@@ -93,7 +93,7 @@ void test_tag(char *cfgfile, char *weightfile, char *filename)
     set_batch_network(&net, 1);
     srand(2222222);
     int i = 0;
-    char **names = get_labels("data/tags.txt");
+    char **names = get_labels("data/tags.txt", NULL);
     clock_t time;
     int indexes[10];
     char buff[256];

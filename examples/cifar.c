@@ -16,7 +16,7 @@ void train_cifar(char *cfgfile, char *weightfile)
     int classes = 10;
     int N = 50000;
 
-    char **labels = get_labels("data/cifar/labels.txt");
+    char **labels = get_labels("data/cifar/labels.txt", NULL);
     int epoch = (*net.seen)/N;
     data train = load_all_cifar10();
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
@@ -64,7 +64,7 @@ void train_cifar_distill(char *cfgfile, char *weightfile)
     int classes = 10;
     int N = 50000;
 
-    char **labels = get_labels("data/cifar/labels.txt");
+    char **labels = get_labels("data/cifar/labels.txt", NULL);
     int epoch = (*net.seen)/N;
 
     data train = load_all_cifar10();

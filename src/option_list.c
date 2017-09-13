@@ -42,7 +42,7 @@ metadata get_metadata(char *file)
     if(!name_list) {
         fprintf(stderr, "No names or labels found\n");
     } else {
-        m.names = get_labels(name_list);
+        m.names = get_labels(name_list, NULL);
     }
     m.classes = option_find_int(options, "classes", 2);
     free_list(options);
