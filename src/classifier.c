@@ -706,8 +706,9 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        image r = resize_min(im, size);
-        resize_network(&net, r.w, r.h);
+		image r = letterbox_image(im, net.w, net.h);
+        //image r = resize_min(im, size);
+        //resize_network(&net, r.w, r.h);
         printf("%d %d\n", r.w, r.h);
 
         float *X = r.data;
