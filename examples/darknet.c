@@ -89,12 +89,12 @@ void speed(char *cfgfile, int tics)
     network net = parse_network_cfg(cfgfile);
     set_batch_network(&net, 1);
     int i;
-    time_t start = time(0);
+    double time=what_time_is_it_now();
     image im = make_image(net.w, net.h, net.c*net.batch);
     for(i = 0; i < tics; ++i){
         network_predict(net, im.data);
     }
-    double t = difftime(time(0), start);
+    double t = what_time_is_it_now() - time;
     printf("\n%d evals, %f Seconds\n", tics, t);
     printf("Speed: %f sec/eval\n", t/tics);
     printf("Speed: %f Hz\n", tics/t);
