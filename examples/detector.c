@@ -2,6 +2,14 @@
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
+
+float RandomFloat(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
+
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
     list *options = read_data_cfg(datacfg);
@@ -56,17 +64,34 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
     pthread_t load_thread = load_data(args);
     clock_t time;
-    int count = 0;
+    int count = 0; 
+    int net_width = net.w;
+    int net_height = net.h;
+    
+    int pool_receptive_size = 1;
+    for(i=0; i<net.n; i++) {
+        if(net.layers[i].type == string_to_layer_type("[max]")
+            || net.layers[i].type == string_to_layer_type("[avg]")) {
+	    pool_receptive_size *= net.layers[i].stride;
+        }
+    }
+    printf("pooling layer receptive size %d\n", pool_receptive_size);
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net.max_batches){
         if(l.random && count++%10 == 0){
-            printf("Resizing\n");
-            int dim = (rand() % 10 + 10) * 32;
-            if (get_current_batch(net)+200 > net.max_batches) dim = 608;
+
+	    float random = RandomFloat(0.6, 1.6);
+	    printf("Resizing with factor %f \n", random);
+            int dim_w = ((int)net_width*random);
+	    dim_w = dim_w - dim_w%pool_receptive_size;
+	    int dim_h = ((int)net_height*random);
+            dim_h = dim_h - dim_h%pool_receptive_size;
+
+            //if (get_current_batch(net)+200 > net.max_batches) dim = 608;
             //int dim = (rand() % 4 + 16) * 32;
-            printf("%d\n", dim);
-            args.w = dim;
-            args.h = dim;
+            printf("width %d height %d\n", dim_w, dim_h);
+            args.w = dim_w;
+            args.h = dim_h;
 
             pthread_join(load_thread, 0);
             train = buffer;
@@ -74,7 +99,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             load_thread = load_data(args);
 
             for(i = 0; i < ngpus; ++i){
-                resize_network(nets + i, dim, dim);
+                resize_network(nets + i, dim_w, dim_h);
             }
             net = nets[0];
         }
