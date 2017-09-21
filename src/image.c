@@ -501,17 +501,24 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 
 void show_image(image p, const char *name)
 {
-#ifdef OPENCV
+/*
+* Never show the image but save the png visualization instead
+* -- Henry Zhou
+*/
+/*
+#ifdef 0 //OPENCV
     IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
     image copy = copy_image(p);
     constrain_image(copy);
     show_image_cv(copy, name, disp);
     free_image(copy);
     cvReleaseImage(&disp);
-#else
+#else*/
     fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
     save_image(p, name);
+/*
 #endif
+*/
 }
 
 #ifdef OPENCV
