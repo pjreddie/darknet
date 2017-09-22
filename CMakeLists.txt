@@ -84,10 +84,10 @@ if( USE_OPENCV )
 
   include_directories( SYSTEM ${OpenCV_INCLUDE_DIRS} )
   add_definitions( -DOPENCV )
+  add_definitions( -DCV_MAJOR_VERSION=${OpenCV_VERSION_MAJOR} )
   list( APPEND DARKNET_LINKED_LIBS opencv_core opencv_highgui opencv_imgproc )
 
   if( OpenCV_VERSION_MAJOR GREATER 2 )
-    add_definitions( -DCV_MAJOR_VERSION=3 )
     list( APPEND DARKNET_LINKED_LIBS opencv_videoio opencv_imgcodecs )
   endif()
 endif()
