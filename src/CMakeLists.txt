@@ -182,13 +182,28 @@ if( USE_GPU )
 endif()
 
 if( USE_CUDNN )
+  
+  if(NOT USE_GPU)
+    message(FATAL_ERROR "Enable GPU support when wanting to use CUDNN")
+  endif()
+  
   find_library( CUDNN_LIBRARIES
-    NAMES cudnn libcudnn.so libcudnn.so.5
-    PATHS ${CUDA_TOOLKIT_ROOT_DIR}/targets/aarch64-linux
-          ${CUDA_TOOLKIT_ROOT_DIR}
-    PATH_SUFFIXES lib lib64
+    NAMES cudnn libcudnn
+    HINTS ${CUDA_TOOLKIT_ROOT_DIR}
+          ${CUDNN_ROOT_DIR}
+    PATH_SUFFIXES lib lib64 lib/x64 lib/x86 targets/aarch64-linux
   )
-
+  
+  if(NOT CUDNN_LIBRARIES)
+    # Set this if cuda and cudnn are in seperate locations
+    set( CUDNN_ROOT_DIR "" CACHE PATH "CUDNN root folder" )
+    message(FATAL_ERROR "Unable to find cudnn libraries, please ensure CUDA_TOOLKIT_ROOT_DIR has cudnn or the CUDNN_ROOT_DIR variable is properly set or set CUDNN_LIBRARIES")
+  endif()
+  
+  if(CUDNN_ROOT_DIR)
+    include_directories( SYSTEM ${CUDNN_ROOT_DIR}/include )
+  endif()
+  
   list( APPEND DARKNET_LINKED_LIBS ${CUDNN_LIBRARIES} )
   add_definitions( -DCUDNN )
 endif()
@@ -198,7 +213,7 @@ if( USE_OPENCV )
 
   include_directories( SYSTEM ${OpenCV_INCLUDE_DIRS} )
   add_definitions( -DOPENCV )
-  list( APPEND DARKNET_LINKED_LIBS opencv_core opencv_highgui )
+  list( APPEND DARKNET_LINKED_LIBS opencv_core opencv_highgui opencv_videoio opencv_imgcodecs)
 endif()
 
 if( WIN32 )
@@ -264,3 +279,7 @@ if( INSTALL_HEADER_FILES )
     DESTINATION "include/darknet"
     )
 endif()
+
+install( FILES ${CMAKE_BINARY_DIR}/DarknetConfig.cmake
+    DESTINATION "CMake"
+  )
