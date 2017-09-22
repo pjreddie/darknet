@@ -1,5 +1,5 @@
 ##
-# Build file for Darknet
+# Build file for Darknet core library
 ##
 set( gpu_source
   activation_kernels.cu
