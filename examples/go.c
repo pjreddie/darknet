@@ -4,8 +4,7 @@
 
 int inverted = 1;
 int noi = 1;
-
-static const int nind = 2;
+#define nind 2
 
 typedef struct {
     char **data;
@@ -830,7 +829,11 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
             else ++p2;
             ++total;
             fprintf(stderr, "Total: %d, Player 1: %f, Player 2: %f\n", total, (float)p1/total, (float)p2/total);
+#ifdef WIN32
+            Sleep(1);
+#else
             sleep(1);
+#endif
             /*
             int i = (score > 0)? 0 : 1;
             int j;
