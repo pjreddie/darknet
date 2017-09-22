@@ -1,5 +1,6 @@
 #include "matrix.h"
 #include "utils.h"
+#include "blas.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +72,20 @@ void matrix_add_matrix(matrix from, matrix to)
             to.vals[i][j] += from.vals[i][j];
         }
     }
+}
+
+matrix copy_matrix(matrix m)
+{
+    matrix c = {0};
+    c.rows = m.rows;
+    c.cols = m.cols;
+    c.vals = calloc(c.rows, sizeof(float *));
+    int i;
+    for(i = 0; i < c.rows; ++i){
+        c.vals[i] = calloc(c.cols, sizeof(float));
+        copy_cpu(c.cols, m.vals[i], 1, c.vals[i], 1);
+    }
+    return c;
 }
 
 matrix make_matrix(int rows, int cols)

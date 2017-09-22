@@ -152,13 +152,13 @@ __global__ void gradient_array_kernel(float *x, int n, ACTIVATION a, float *delt
     if(i < n) delta[i] *= gradient_kernel(x[i], a);
 }
 
-extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a) 
+extern "C" void activate_array_gpu(float *x, int n, ACTIVATION a) 
 {
     activate_array_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, a);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta) 
+extern "C" void gradient_array_gpu(float *x, int n, ACTIVATION a, float *delta) 
 {
     gradient_array_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, a, delta);
     check_error(cudaPeekAtLastError());

@@ -43,7 +43,7 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     #ifdef GPU
     l.forward_gpu = forward_maxpool_layer_gpu;
     l.backward_gpu = backward_maxpool_layer_gpu;
-    l.indexes_gpu = cuda_make_int_array(output_size);
+    l.indexes_gpu = cuda_make_int_array(0, output_size);
     l.output_gpu  = cuda_make_array(l.output, output_size);
     l.delta_gpu   = cuda_make_array(l.delta, output_size);
     #endif
@@ -70,13 +70,13 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     cuda_free((float *)l->indexes_gpu);
     cuda_free(l->output_gpu);
     cuda_free(l->delta_gpu);
-    l->indexes_gpu = cuda_make_int_array(output_size);
+    l->indexes_gpu = cuda_make_int_array(0, output_size);
     l->output_gpu  = cuda_make_array(l->output, output_size);
     l->delta_gpu   = cuda_make_array(l->delta,  output_size);
     #endif
 }
 
-void forward_maxpool_layer(const maxpool_layer l, network_state state)
+void forward_maxpool_layer(const maxpool_layer l, network net)
 {
     int b,i,j,k,m,n;
     int w_offset = -l.pad;
@@ -100,7 +100,7 @@ void forward_maxpool_layer(const maxpool_layer l, network_state state)
                             int index = cur_w + l.w*(cur_h + l.h*(k + b*l.c));
                             int valid = (cur_h >= 0 && cur_h < l.h &&
                                          cur_w >= 0 && cur_w < l.w);
-                            float val = (valid != 0) ? state.input[index] : -FLT_MAX;
+                            float val = (valid != 0) ? net.input[index] : -FLT_MAX;
                             max_i = (val > max) ? index : max_i;
                             max   = (val > max) ? val   : max;
                         }
@@ -113,7 +113,7 @@ void forward_maxpool_layer(const maxpool_layer l, network_state state)
     }
 }
 
-void backward_maxpool_layer(const maxpool_layer l, network_state state)
+void backward_maxpool_layer(const maxpool_layer l, network net)
 {
     int i;
     int h = l.out_h;
@@ -121,7 +121,7 @@ void backward_maxpool_layer(const maxpool_layer l, network_state state)
     int c = l.c;
     for(i = 0; i < h*w*c*l.batch; ++i){
         int index = l.indexes[i];
-        state.delta[index] += l.delta[i];
+        net.delta[index] += l.delta[i];
     }
 }
 

@@ -1,16 +1,6 @@
+#include "darknet.h"
+
 #include <stdio.h>
-
-#include "network.h"
-#include "detection_layer.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "box.h"
-#include "demo.h"
-
-#ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#endif
 
 char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
 
@@ -323,7 +313,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    detection_layer l = net.layers[net.n-1];
+    layer l = net.layers[net.n-1];
     set_batch_network(&net, 1);
     srand(2222222);
     float nms = .4;
@@ -352,7 +342,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, coco_classes, alphabet, 80);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, 0, coco_classes, alphabet, 80);
         save_image(im, "prediction");
         show_image(im, "predictions");
         free_image(im);
@@ -380,9 +370,10 @@ void run_coco(int argc, char **argv)
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5]: 0;
+    int avg = find_int_arg(argc, argv, "-avg", 1);
     if(0==strcmp(argv[2], "test")) test_coco(cfg, weights, filename, thresh);
     else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, coco_classes, 80, frame_skip, prefix, .5);
+    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, coco_classes, 80, frame_skip, prefix, avg, .5, 0,0,0,0);
 }

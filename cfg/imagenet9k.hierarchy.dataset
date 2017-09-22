@@ -1,0 +1,9 @@
+classes=9418
+train  = data/9k.train.list
+valid  = /data/imagenet/imagenet1k.valid.list
+leaves = data/imagenet1k.labels
+backup = /home/pjreddie/backup/
+labels = data/9k.labels
+names  = data/9k.names
+top=5
+
