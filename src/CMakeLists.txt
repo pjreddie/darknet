@@ -213,7 +213,11 @@ if( USE_OPENCV )
 
   include_directories( SYSTEM ${OpenCV_INCLUDE_DIRS} )
   add_definitions( -DOPENCV )
-  list( APPEND DARKNET_LINKED_LIBS opencv_core opencv_highgui opencv_videoio opencv_imgcodecs)
+  list( APPEND DARKNET_LINKED_LIBS opencv_core opencv_highgui )
+
+  if( OpenCV_VERSION_MAJOR GREATER 2 )
+    list( APPEND DARKNET_LINKED_LIBS opencv_videoio opencv_imgcodecs )
+  endif()
 endif()
 
 if( WIN32 )
