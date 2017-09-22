@@ -39,16 +39,23 @@ char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
 }
 */
 
+int mt_seed = 0;
+
 char **get_random_paths(char **paths, int n, int m)
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
     pthread_mutex_lock(&mutex);
-    for(i = 0; i < n; ++i){
-        int index = rand()%m;
+	if (mt_seed == 0) mt_seed = time(0);
+	srand(mt_seed);
+	//printf("n = %d \n", n);
+    for(i = 0; i < n; ++i){		
+        int index = rand()%m;		
         random_paths[i] = paths[index];
         //if(i == 0) printf("%s\n", paths[index]);
+		//printf("grp: %s\n", paths[index]);
     }
+	mt_seed = rand();
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
@@ -714,6 +721,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
 void *load_thread(void *ptr)
 {
+	srand(time(0));
     //printf("Loading data: %d\n", rand());
     load_args a = *(struct load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
@@ -757,6 +765,7 @@ pthread_t load_data_in_thread(load_args args)
 
 void *load_threads(void *ptr)
 {
+	srand(time(0));
     int i;
     load_args args = *(load_args *)ptr;
     if (args.threads == 0) args.threads = 1;

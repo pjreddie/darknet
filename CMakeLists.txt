@@ -1,16 +1,15 @@
-#
-#
-#
-
-project( darknet )
+project( Darknet )
 
 cmake_minimum_required(VERSION 3.0)
 
 add_subdirectory( src )
 
-# configure the package description file.
-configure_file( darknetConfig.cmake.in
-  ${CMAKE_BINARY_DIR}/darknetConfig.cmake @ONLY )
+OPTION( INSTALL_HEADER_FILES "Install header files needed for development" TRUE )
 
-install( FILES ${CMAKE_BINARY_DIR}/darknetConfig.cmake
-	 DESTINATION .)
+if( WIN32 )
+  add_subdirectory( 3rdparty )
+endif()
+
+# configure the package description file.
+configure_file( DarknetConfig.cmake.in
+  ${CMAKE_BINARY_DIR}/DarknetConfig.cmake @ONLY )
