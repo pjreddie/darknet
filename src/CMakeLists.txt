@@ -169,6 +169,10 @@ if( USE_GPU )
     -gencode arch=compute_52,code=[sm_52,compute_52]
     -Xcompiler )
 
+  if( USE_CUDNN )
+    set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -DCUDNN )
+  endif()
+
   if( NOT WIN32 )
     set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -fPIC )
   endif()
