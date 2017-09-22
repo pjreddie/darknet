@@ -26,6 +26,9 @@ extern int gpu_index;
 #endif
 
 #ifndef __cplusplus
+    #if CV_MAJOR_VERSION == 3
+    #include "opencv2/core/fast_math.hpp"
+    #endif
     #ifdef OPENCV
     #include "opencv2/highgui/highgui_c.h"
     #include "opencv2/imgproc/imgproc_c.h"
