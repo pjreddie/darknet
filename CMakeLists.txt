@@ -66,8 +66,9 @@ if( USE_CUDNN )
   if(NOT CUDNN_LIBRARIES)
     # Set this if cuda and cudnn are in seperate locations
     set( CUDNN_ROOT_DIR "" CACHE PATH "CUDNN root folder" )
-    message(FATAL_ERROR "Unable to find cudnn libraries, please ensure CUDA_TOOLKIT_ROOT_DIR \
-      has cudnn or the CUDNN_ROOT_DIR variable is properly set or set CUDNN_LIBRARIES" )
+    message(FATAL_ERROR "Unable to find cudnn libraries, please ensure \
+      CUDA_TOOLKIT_ROOT_DIR has cudnn or the CUDNN_ROOT_DIR variable is \
+      properly set or set CUDNN_LIBRARIES" )
   endif()
   
   if(CUDNN_ROOT_DIR)
