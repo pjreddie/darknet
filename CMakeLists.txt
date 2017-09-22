@@ -87,6 +87,7 @@ if( USE_OPENCV )
   list( APPEND DARKNET_LINKED_LIBS opencv_core opencv_highgui opencv_imgproc )
 
   if( OpenCV_VERSION_MAJOR GREATER 2 )
+    add_definitions( -DCV_MAJOR_VERSION=3 )
     list( APPEND DARKNET_LINKED_LIBS opencv_videoio opencv_imgcodecs )
   endif()
 endif()
