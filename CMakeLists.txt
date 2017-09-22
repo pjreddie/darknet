@@ -33,6 +33,10 @@ if( USE_GPU )
   include_directories( ${CUDA_TOOLKIT_ROOT_DIR}/include )
   add_definitions( -DGPU )
 
+  if( USE_CUDNN )
+    set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -DCUDNN )
+  endif()
+
   set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
     -gencode arch=compute_20,code=[sm_20,sm_21]
     -gencode arch=compute_30,code=sm_30
@@ -40,10 +44,6 @@ if( USE_GPU )
     -gencode arch=compute_50,code=[sm_50,compute_50]
     -gencode arch=compute_52,code=[sm_52,compute_52]
     -Xcompiler )
-
-  if( USE_CUDNN )
-    set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -DCUDNN )
-  endif()
 
   if( NOT WIN32 )
     set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -fPIC )
