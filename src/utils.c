@@ -82,9 +82,11 @@ int clock_gettime(int X, struct timespec *tv)
     tv->tv_nsec = t.QuadPart % 1000000000;
     return 0;
 }
-#elseif __MACH__
+#elif MAC
 #include <mach/clock.h>
 #include <mach/mach.h>
+
+#define CLOCK_REALTIME 0
 
 int clock_gettime(int X, struct timespec *tv)
 {
@@ -93,8 +95,8 @@ int clock_gettime(int X, struct timespec *tv)
     host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
     clock_get_time(cclock, &mts);
     mach_port_deallocate(mach_task_self(), cclock);
-    tv.tv_sec = mts.tv_sec;
-    tv.tv_nsec = mts.tv_nsec;
+    tv->tv_sec = mts.tv_sec;
+    tv->tv_nsec = mts.tv_nsec;
     return 0;
 }
 #else
