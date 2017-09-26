@@ -649,7 +649,7 @@ int rand_int()
 #ifdef MSVC
     unsigned int rand_int = 0;
     rand_s( &rand_int );
-    return rand_int()
+    return rand_int;
 #else
     return rand();
 #endif
