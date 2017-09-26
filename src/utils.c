@@ -644,14 +644,25 @@ int max_index(float *a, int n)
     return max_i;
 }
 
-int rand_int(int min, int max)
+int rand_int()
+{
+#ifdef MSVC
+    unsigned int rand_int = 0;
+    rand_s( &rand_int );
+    return rand_int()
+#else
+    return rand();
+#endif
+}
+
+int rand_int_in_range(int min, int max)
 {
     if (max < min){
         int s = min;
         min = max;
         max = s;
     }
-    int r = (rand()%(max - min + 1)) + min;
+    int r = (rand_int()%(max - min + 1)) + min;
     return r;
 }
 

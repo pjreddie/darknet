@@ -923,8 +923,8 @@ image resize_min(image im, int min)
 
 image random_crop_image(image im, int w, int h)
 {
-    int dx = rand_int(0, im.w - w);
-    int dy = rand_int(0, im.h - h);
+    int dx = rand_int_in_range(0, im.w - w);
+    int dy = rand_int_in_range(0, im.h - h);
     image crop = crop_image(im, dx, dy, w, h);
     return crop;
 }
@@ -933,7 +933,7 @@ augment_args random_augment_args(image im, float angle, float aspect, int low, i
 {
     augment_args a = {0};
     aspect = rand_scale(aspect);
-    int r = rand_int(low, high);
+    int r = rand_int_in_range(low, high);
     int min = (im.h < im.w*aspect) ? im.h : im.w*aspect;
     float scale = (float)r / min;
 
