@@ -2,8 +2,62 @@
 # Undefine GPU, CUDNN if darknet was built without these defined. These 2 flags have to match darknet flags.
 # https://github.com/prabindh/darknet
 
-arapaho: clean
-	g++ test.cpp arapaho.cpp -DGPU -DCUDNN -D_DEBUG -I../src/ -I/usr/local/cuda/include/ -L./ -ldarknet-cpp-shared -L/usr/local/lib -lopencv_cudabgsegm -lopencv_cudaobjdetect -lopencv_cudastereo -lopencv_shape -lopencv_stitching -lopencv_cudafeatures2d -lopencv_superres -lopencv_cudacodec -lopencv_videostab -lopencv_cudaoptflow -lopencv_cudalegacy -lopencv_calib3d -lopencv_features2d -lopencv_objdetect -lopencv_highgui -lopencv_videoio -lopencv_photo -lopencv_imgcodecs -lopencv_cudawarping -lopencv_cudaimgproc -lopencv_cudafilters -lopencv_video -lopencv_ml -lopencv_imgproc -lopencv_flann -lopencv_cudaarithm -lopencv_viz -lopencv_core -lopencv_cudev -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -std=c++11 -o arapaho.out
-	
+GPU=1
+CUDNN=1
+DEBUG=0
+
+CC_CPP=g++
+CFLAGS_CPP=-Wno-write-strings -std=c++11
+
+OPTS=-Ofast
+LDFLAGS= -L./ -ldarknet-cpp-shared
+LDFLAGS+= -Wl,-rpath,'$$ORIGIN'
+LDFLAGS+= `pkg-config --libs opencv`
+COMMON= -I../src/
+COMMON+= `pkg-config --cflags opencv`
+CFLAGS=-Wall -Wfatal-errors
+
+ifeq ($(DEBUG), 1)
+OPTS=-O0 -g
+COMMON+= -D_DEBUG
+CFLAGS+= -D_DEBUG
+endif
+
+CFLAGS+=$(OPTS)
+
+ifeq ($(GPU), 1)
+COMMON+= -DGPU -I/usr/local/cuda/include/
+CFLAGS+= -DGPU
+LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
+endif
+
+ifeq ($(CUDNN), 1)
+COMMON+= -DCUDNN
+CFLAGS+= -DCUDNN
+LDFLAGS+= -lcudnn
+endif
+
+EXEC_CPP=arapaho
+OBJDIR_CPP=./obj-cpp/
+OBJ=test.o arapaho.o
+OBJS= $(addprefix $(OBJDIR), $(OBJ))
+DEPS= $(wildcard *.hpp) Makefile
+
+OBJS_CPP = $(addprefix $(OBJDIR_CPP), $(OBJ))
+
+all: obj-cpp $(EXEC_CPP)
+
+$(EXEC_CPP): obj-cpp clean $(OBJS_CPP)
+	$(CC_CPP) $(COMMON) $(CFLAGS) $(OBJS_CPP) -o $@ $(LDFLAGS)
+
+$(OBJDIR_CPP)%.o: %.cpp $(DEPS)
+	$(CC_CPP) $(COMMON) $(CFLAGS_CPP) $(CFLAGS) -c $< -o $@
+
+
+obj-cpp:
+	mkdir -p $(OBJDIR_CPP)
+
+.PHONY: clean
+
 clean:
-	rm -rf ./arapaho.out	
+	rm -rf $(OBJS_CPP) $(EXEC_CPP)
