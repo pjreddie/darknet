@@ -9,7 +9,7 @@
 #include <time.h>
 
 #if defined(WIN32) && defined(CUDNN)
-#pragma comment(lib, "cudnn.lib")  
+#pragma comment(lib, "cudnn.lib")
 #endif
 
 #ifdef AI2

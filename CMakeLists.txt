@@ -51,18 +51,18 @@ if( USE_GPU )
 endif()
 
 if( USE_CUDNN )
-  
+
   if(NOT USE_GPU)
     message(FATAL_ERROR "Enable GPU support when wanting to use CUDNN")
   endif()
-  
+
   find_library( CUDNN_LIBRARIES
     NAMES cudnn libcudnn
     HINTS ${CUDA_TOOLKIT_ROOT_DIR}
           ${CUDNN_ROOT_DIR}
     PATH_SUFFIXES lib lib64 lib/x64 lib/x86 targets/aarch64-linux
   )
-  
+
   if(NOT CUDNN_LIBRARIES)
     # Set this if cuda and cudnn are in seperate locations
     set( CUDNN_ROOT_DIR "" CACHE PATH "CUDNN root folder" )
@@ -70,11 +70,11 @@ if( USE_CUDNN )
       CUDA_TOOLKIT_ROOT_DIR has cudnn or the CUDNN_ROOT_DIR variable is \
       properly set or set CUDNN_LIBRARIES" )
   endif()
-  
+
   if(CUDNN_ROOT_DIR)
     include_directories( SYSTEM ${CUDNN_ROOT_DIR}/include )
   endif()
-  
+
   list( APPEND DARKNET_LINKED_LIBS ${CUDNN_LIBRARIES} )
   add_definitions( -DCUDNN )
 endif()

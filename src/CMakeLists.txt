@@ -37,7 +37,6 @@ set( source
   detection_layer.c
   dropout_layer.c
   gemm.c
-  getopt.c
   gru_layer.c
   im2col.c
   image.c
@@ -82,8 +81,6 @@ set( headers
   detection_layer.h
   dropout_layer.h
   gemm.h
-  getopt.h
-  gettimeofday.h
   gru_layer.h
   im2col.h
   image.h

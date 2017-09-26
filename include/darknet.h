@@ -9,8 +9,8 @@
 extern int gpu_index;
 
 #if defined(_MSC_VER) && _MSC_VER < 1900
-	#define inline __inline
-	#define snprintf(buf,len, format,...) _snprintf_s(buf, len,len, format, __VA_ARGS__)
+    #define inline __inline
+    #define snprintf(buf,len, format,...) _snprintf_s(buf, len,len, format, __VA_ARGS__)
 #endif
 
 #ifdef GPU
