@@ -1,5 +1,9 @@
 #include "darknet.h"
+#ifdef WIN32
+#include <winsock.h>
+#else
 #include <sys/time.h>
+#endif
 
 void train_swag(char *cfgfile, char *weightfile)
 {

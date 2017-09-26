@@ -3,7 +3,6 @@
 #ifdef WIN32
 #include <time.h>
 #include <winsock.h>
-#include "gettimeofday.h"
 #else
 #include <sys/time.h>
 #endif

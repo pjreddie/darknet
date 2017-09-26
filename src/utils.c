@@ -12,6 +12,75 @@
 #ifdef WIN32
 #include "unistd.h"
 #pragma warning(disable: 4996)
+
+// via https://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows
+// Suggest upgrading to C++11 to use the chrono API
+#include <winsock.h>
+#define CLOCK_REALTIME 0
+LARGE_INTEGER getFILETIMEoffset()
+{
+  SYSTEMTIME s;
+  FILETIME f;
+  LARGE_INTEGER t;
+
+  s.wYear = 1970;
+  s.wMonth = 1;
+  s.wDay = 1;
+  s.wHour = 0;
+  s.wMinute = 0;
+  s.wSecond = 0;
+  s.wMilliseconds = 0;
+  SystemTimeToFileTime(&s, &f);
+  t.QuadPart = f.dwHighDateTime;
+  t.QuadPart <<= 32;
+  t.QuadPart |= f.dwLowDateTime;
+  return (t);
+}
+
+int clock_gettime(int X, struct timespec *tv)
+{
+  LARGE_INTEGER           t;
+  FILETIME                f;
+  double                  nanoseconds;
+  static LARGE_INTEGER    offset;
+  static double           frequencyToNanoseconds;
+  static int              initialized = 0;
+  static BOOL             usePerformanceCounter = 0;
+
+  if (!initialized)
+  {
+    LARGE_INTEGER performanceFrequency;
+    initialized = 1;
+    usePerformanceCounter = QueryPerformanceFrequency(&performanceFrequency);
+    if (usePerformanceCounter)
+    {
+      QueryPerformanceCounter(&offset);
+      frequencyToNanoseconds = (double)performanceFrequency.QuadPart / 1000000000.;
+    }
+    else
+    {
+      offset = getFILETIMEoffset();
+      frequencyToNanoseconds = 10.;
+    }
+  }
+  if (usePerformanceCounter)
+    QueryPerformanceCounter(&t);
+  else
+  {
+    GetSystemTimeAsFileTime(&f);
+    t.QuadPart = f.dwHighDateTime;
+    t.QuadPart <<= 32;
+    t.QuadPart |= f.dwLowDateTime;
+  }
+
+  t.QuadPart -= offset.QuadPart;
+  nanoseconds = (double)t.QuadPart / frequencyToNanoseconds;
+  t.QuadPart = nanoseconds;
+  tv->tv_sec = t.QuadPart / 1000000000;
+  tv->tv_nsec = t.QuadPart % 1000000000;
+  return (0);
+}
+
 #else
 #include <unistd.h>
 #endif
