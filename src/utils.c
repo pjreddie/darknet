@@ -147,7 +147,7 @@ void shuffle(void *arr, size_t n, size_t size)
     void *swp = calloc(1, size);
     for(i = 0; i < n-1; ++i){
         size_t j = i + rand()/(RAND_MAX / (n-i)+1);
-        memcpy(swp,			(char*)arr+(j*size), size);
+        memcpy(swp,                 (char*)arr+(j*size), size);
         memcpy((char*)arr+(j*size), (char*)arr+(i*size), size);
         memcpy((char*)arr+(i*size), swp,          size);
     }
