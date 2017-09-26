@@ -4,7 +4,7 @@
 #include "option_list.h"
 #include "blas.h"
 #include "data.h"
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
 #include <unistd.h>
 #endif
 
@@ -841,7 +841,7 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
             else ++p2;
             ++total;
             fprintf(stderr, "Total: %d, Player 1: %f, Player 2: %f\n", total, (float)p1/total, (float)p2/total);
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
             sleep(1);
 #else
             Sleep(1000);

@@ -7,7 +7,7 @@
 #include "box.h"
 #include "image.h"
 #include "demo.h"
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
 #include <sys/time.h>
 #endif
 

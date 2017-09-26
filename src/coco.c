@@ -167,7 +167,7 @@ void validate_coco(char *cfgfile, char *weightfile)
 
     int j;
     char buff[1024];
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
     snprintf(buff, 1024, "%s/coco_results.json", base);
 #else
 	_snprintf(buff, 1024, "%s/coco_results.json", base);
@@ -273,7 +273,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     FILE **fps = (FILE**)calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
 #else
 		_snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);

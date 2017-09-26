@@ -4,7 +4,7 @@
 #include "option_list.h"
 #include "blas.h"
 #include "classifier.h"
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
 #include <sys/time.h>
 #endif
 
