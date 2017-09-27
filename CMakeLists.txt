@@ -64,20 +64,20 @@ if( USE_CUDNN )
   find_library( CUDNN_LIBRARIES
     NAMES cudnn libcudnn
     HINTS ${CUDA_TOOLKIT_ROOT_DIR}
-          ${CUDNN_ROOT_DIR}
+          ${CUDNN_TOOLKIT_ROOT_DIR}
     PATH_SUFFIXES lib lib64 lib/x64 lib/x86 targets/aarch64-linux
   )
 
   if(NOT CUDNN_LIBRARIES)
     # Set this if cuda and cudnn are in seperate locations
-    set( CUDNN_ROOT_DIR "" CACHE PATH "CUDNN root folder" )
+    set( CUDNN_TOOLKIT_ROOT_DIR "" CACHE PATH "CUDNN root folder" )
     message(FATAL_ERROR "Unable to find cudnn libraries, please ensure \
-      CUDA_TOOLKIT_ROOT_DIR has cudnn or the CUDNN_ROOT_DIR variable is \
+      CUDA_TOOLKIT_ROOT_DIR has cudnn or the CUDNN_TOOLKIT_ROOT_DIR variable is \
       properly set or set CUDNN_LIBRARIES" )
   endif()
 
-  if(CUDNN_ROOT_DIR)
-    include_directories( SYSTEM ${CUDNN_ROOT_DIR}/include )
+  if(CUDNN_TOOLKIT_ROOT_DIR)
+    include_directories( SYSTEM ${CUDNN_TOOLKIT_ROOT_DIR}/include )
   endif()
 
   list( APPEND DARKNET_LINKED_LIBS ${CUDNN_LIBRARIES} )
