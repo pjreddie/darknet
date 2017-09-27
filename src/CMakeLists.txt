@@ -154,7 +154,7 @@ install( TARGETS darknet_lib
   )
 
 if( INSTALL_HEADER_FILES )
-  install( FILES ${headers}
+  install( FILES ${CMAKE_SOURCE_DIR}/include/darknet.h
     DESTINATION "include/darknet"
     )
 endif()
