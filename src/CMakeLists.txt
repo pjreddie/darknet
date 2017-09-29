@@ -153,8 +153,10 @@ install( TARGETS darknet_lib
   COMPONENT    runtime
   )
 
-if( INSTALL_HEADER_FILES )
-  install( FILES ${CMAKE_SOURCE_DIR}/include/darknet.h
-    DESTINATION "include/darknet"
-    )
+
+OPTION( INSTALL_SOURCE_HEADERS "Install header files from the src directory" FALSE )
+  if( INSTALL_SOURCE_HEADERS )
+    install( FILES ${headers}
+      DESTINATION "include/darknet"
+      )
 endif()

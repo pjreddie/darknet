@@ -112,8 +112,6 @@ add_subdirectory( include )
 add_subdirectory( src )
 add_subdirectory( examples )
 
-OPTION( INSTALL_HEADER_FILES "Install header files needed for development" TRUE )
-
 if( WIN32 )
   add_subdirectory( 3rdparty )
 endif()
