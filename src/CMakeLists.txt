@@ -150,13 +150,13 @@ install( TARGETS darknet_lib
   ARCHIVE DESTINATION     lib
   LIBRARY DESTINATION     lib
   RUNTIME DESTINATION     bin
-  COMPONENT    runtime
+  COMPONENT               runtime
   )
 
 
 OPTION( INSTALL_SOURCE_HEADERS "Install header files from the src directory" FALSE )
-  if( INSTALL_SOURCE_HEADERS )
-    install( FILES ${headers}
-      DESTINATION "include/darknet"
-      )
+if( INSTALL_SOURCE_HEADERS )
+  install( FILES ${headers}
+    DESTINATION "include/darknet"
+  )
 endif()

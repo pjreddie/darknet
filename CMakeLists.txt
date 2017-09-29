@@ -121,5 +121,4 @@ configure_file( DarknetConfig.cmake.in
   ${CMAKE_BINARY_DIR}/DarknetConfig.cmake @ONLY )
 
 install( FILES ${CMAKE_BINARY_DIR}/DarknetConfig.cmake
-    DESTINATION "CMake"
-  )
+    DESTINATION "CMake" )
