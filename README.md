@@ -113,7 +113,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 * `OPENCV=1` to build with OpenCV 3.x/2.4.x - allows to detect on video files and video streams from network cameras or web-cams
 * `DEBUG=1` to bould debug version of Yolo
 * `OPENMP=1` to build with OpenMP support to accelerate Yolo by using multi-core CPU
-* `LIBSO=1` to build a library `darknet.so` and binary runable file `uselib` that uses this library. How to use this SO-library from your own code - you can look at C++ example: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
+* `LIBSO=1` to build a library `darknet.so` and binary runable file `uselib` that uses this library. Or you can try to run so `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib test.mp4` How to use this SO-library from your own code - you can look at C++ example: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
 
 
 ### How to compile on Windows:
