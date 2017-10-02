@@ -58,7 +58,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
-    args.threads = 64;
+    args.threads = 32;
     args.hierarchy = net.hierarchy;
 
     args.min = net.min_crop;
@@ -123,6 +123,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     char buff[256];
     sprintf(buff, "%s/%s.weights", backup_directory, base);
     save_weights(net, buff);
+    pthread_join(load_thread, 0);
 
     free_network(net);
     free_ptrs((void**)labels, classes);

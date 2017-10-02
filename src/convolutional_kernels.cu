@@ -33,7 +33,7 @@ __global__ void binarize_input_kernel(float *input, int n, int size, float *bina
     int i = 0;
     float mean = 0;
     for(i = 0; i < n; ++i){
-        mean += abs(input[i*size + s]);
+        mean += fabsf(input[i*size + s]);
     }
     mean = mean / n;
     for(i = 0; i < n; ++i){
@@ -55,7 +55,7 @@ __global__ void binarize_weights_kernel(float *weights, int n, int size, float *
     int i = 0;
     float mean = 0;
     for(i = 0; i < size; ++i){
-        mean += abs(weights[f*size + i]);
+        mean += fabsf(weights[f*size + i]);
     }
     mean = mean / size;
     for(i = 0; i < size; ++i){
@@ -139,8 +139,8 @@ __global__ void smooth_kernel(float *x, int n, int w, int h, int c, int size, fl
     id /= c;
     int b = id;
 
-    int w_offset = -(size/2.);
-    int h_offset = -(size/2.);
+    int w_offset = -(size/2.f);
+    int h_offset = -(size/2.f);
 
     int out_index = j + w*(i + h*(k + c*b));
     int l, m;

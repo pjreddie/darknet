@@ -211,7 +211,7 @@ void demo_segmenter(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
         image in = get_image_from_stream(cap);
         image in_s = letterbox_image(in, net.w, net.h);
 
-        float *predictions = network_predict(net, in_s.data);
+        network_predict(net, in_s.data);
 
         printf("\033[2J");
         printf("\033[1;1H");

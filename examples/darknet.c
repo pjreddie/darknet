@@ -83,27 +83,8 @@ void average(int argc, char *argv[])
     save_weights(sum, outfile);
 }
 
-void speed(char *cfgfile, int tics)
+long numops(network net)
 {
-    if (tics == 0) tics = 1000;
-    network net = parse_network_cfg(cfgfile);
-    set_batch_network(&net, 1);
-    int i;
-    double time=what_time_is_it_now();
-    image im = make_image(net.w, net.h, net.c*net.batch);
-    for(i = 0; i < tics; ++i){
-        network_predict(net, im.data);
-    }
-    double t = what_time_is_it_now() - time;
-    printf("\n%d evals, %f Seconds\n", tics, t);
-    printf("Speed: %f sec/eval\n", t/tics);
-    printf("Speed: %f Hz\n", tics/t);
-}
-
-void operations(char *cfgfile)
-{
-    gpu_index = -1;
-    network net = parse_network_cfg(cfgfile);
     int i;
     long ops = 0;
     for(i = 0; i < net.n; ++i){
@@ -134,6 +115,34 @@ void operations(char *cfgfile)
             ops += 2l * l.wo->inputs * l.wo->outputs;
         }
     }
+    return ops;
+}
+
+void speed(char *cfgfile, int tics)
+{
+    if (tics == 0) tics = 1000;
+    network net = parse_network_cfg(cfgfile);
+    set_batch_network(&net, 1);
+    int i;
+    double time=what_time_is_it_now();
+    image im = make_image(net.w, net.h, net.c*net.batch);
+    for(i = 0; i < tics; ++i){
+        network_predict(net, im.data);
+    }
+    double t = what_time_is_it_now() - time;
+    long ops = numops(net);
+    printf("\n%d evals, %f Seconds\n", tics, t);
+    printf("Floating Point Operations: %.2f Bn\n", (float)ops/1000000000.);
+    printf("FLOPS: %.2f Bn\n", (float)ops/1000000000.*tics/t);
+    printf("Speed: %f sec/eval\n", t/tics);
+    printf("Speed: %f Hz\n", tics/t);
+}
+
+void operations(char *cfgfile)
+{
+    gpu_index = -1;
+    network net = parse_network_cfg(cfgfile);
+    long ops = numops(net);
     printf("Floating Point Operations: %ld\n", ops);
     printf("Floating Point Operations: %.2f Bn\n", (float)ops/1000000000.);
 }
