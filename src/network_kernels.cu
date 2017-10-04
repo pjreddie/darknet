@@ -162,7 +162,7 @@ void merge_weights(layer l, layer base)
 {
     if (l.type == CONVOLUTIONAL) {
         axpy_cpu(l.n, 1, l.bias_updates, 1, base.biases, 1);
-        axpy_cpu(l.n*l.size*l.size*l.c, 1, l.weight_updates, 1, base.weights, 1);
+        axpy_cpu(l.nweights, 1, l.weight_updates, 1, base.weights, 1);
         if (l.scales) {
             axpy_cpu(l.n, 1, l.scale_updates, 1, base.scales, 1);
         }
@@ -176,7 +176,7 @@ void scale_weights(layer l, float s)
 {
     if (l.type == CONVOLUTIONAL) {
         scal_cpu(l.n, s, l.biases, 1);
-        scal_cpu(l.n*l.size*l.size*l.c, s, l.weights, 1);
+        scal_cpu(l.nweights, s, l.weights, 1);
         if (l.scales) {
             scal_cpu(l.n, s, l.scales, 1);
         }
@@ -191,7 +191,7 @@ void pull_weights(layer l)
 {
     if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){
         cuda_pull_array(l.biases_gpu, l.bias_updates, l.n);
-        cuda_pull_array(l.weights_gpu, l.weight_updates, l.n*l.size*l.size*l.c);
+        cuda_pull_array(l.weights_gpu, l.weight_updates, l.nweights);
         if(l.scales) cuda_pull_array(l.scales_gpu, l.scale_updates, l.n);
     } else if(l.type == CONNECTED){
         cuda_pull_array(l.biases_gpu, l.bias_updates, l.outputs);
@@ -203,7 +203,7 @@ void push_weights(layer l)
 {
     if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){
         cuda_push_array(l.biases_gpu, l.biases, l.n);
-        cuda_push_array(l.weights_gpu, l.weights, l.n*l.size*l.size*l.c);
+        cuda_push_array(l.weights_gpu, l.weights, l.nweights);
         if(l.scales) cuda_push_array(l.scales_gpu, l.scales, l.n);
     } else if(l.type == CONNECTED){
         cuda_push_array(l.biases_gpu, l.biases, l.outputs);
@@ -215,7 +215,7 @@ void distribute_weights(layer l, layer base)
 {
     if (l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL) {
         cuda_push_array(l.biases_gpu, base.biases, l.n);
-        cuda_push_array(l.weights_gpu, base.weights, l.n*l.size*l.size*l.c);
+        cuda_push_array(l.weights_gpu, base.weights, l.nweights);
         if (base.scales) cuda_push_array(l.scales_gpu, base.scales, l.n);
     } else if (l.type == CONNECTED) {
         cuda_push_array(l.biases_gpu, base.biases, l.outputs);
@@ -230,7 +230,7 @@ void pull_updates(layer l)
 {
     if(l.type == CONVOLUTIONAL){
         cuda_pull_array(l.bias_updates_gpu, l.bias_updates, l.n);
-        cuda_pull_array(l.weight_updates_gpu, l.weight_updates, l.n*l.size*l.size*l.c);
+        cuda_pull_array(l.weight_updates_gpu, l.weight_updates, l.nweights);
         if(l.scale_updates) cuda_pull_array(l.scale_updates_gpu, l.scale_updates, l.n);
     } else if(l.type == CONNECTED){
         cuda_pull_array(l.bias_updates_gpu, l.bias_updates, l.outputs);
@@ -242,7 +242,7 @@ void push_updates(layer l)
 {
     if(l.type == CONVOLUTIONAL){
         cuda_push_array(l.bias_updates_gpu, l.bias_updates, l.n);
-        cuda_push_array(l.weight_updates_gpu, l.weight_updates, l.n*l.size*l.size*l.c);
+        cuda_push_array(l.weight_updates_gpu, l.weight_updates, l.nweights);
         if(l.scale_updates) cuda_push_array(l.scale_updates_gpu, l.scale_updates, l.n);
     } else if(l.type == CONNECTED){
         cuda_push_array(l.bias_updates_gpu, l.bias_updates, l.outputs);
@@ -263,7 +263,7 @@ void merge_updates(layer l, layer base)
 {
     if (l.type == CONVOLUTIONAL) {
         axpy_cpu(l.n, 1, l.bias_updates, 1, base.bias_updates, 1);
-        axpy_cpu(l.n*l.size*l.size*l.c, 1, l.weight_updates, 1, base.weight_updates, 1);
+        axpy_cpu(l.nweights, 1, l.weight_updates, 1, base.weight_updates, 1);
         if (l.scale_updates) {
             axpy_cpu(l.n, 1, l.scale_updates, 1, base.scale_updates, 1);
         }
@@ -277,7 +277,7 @@ void distribute_updates(layer l, layer base)
 {
     if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){
         cuda_push_array(l.bias_updates_gpu, base.bias_updates, l.n);
-        cuda_push_array(l.weight_updates_gpu, base.weight_updates, l.n*l.size*l.size*l.c);
+        cuda_push_array(l.weight_updates_gpu, base.weight_updates, l.nweights);
         if(base.scale_updates) cuda_push_array(l.scale_updates_gpu, base.scale_updates, l.n);
     } else if(l.type == CONNECTED){
         cuda_push_array(l.bias_updates_gpu, base.bias_updates, l.outputs);
