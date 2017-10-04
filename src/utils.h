@@ -5,7 +5,14 @@
 #include "darknet.h"
 #include "list.h"
 
-#define TWO_PI 6.2831853071795864769252866
+#define TIME(a) \
+    do { \
+    double start = what_time_is_it_now(); \
+    a; \
+    printf("%s took: %f seconds\n", #a, what_time_is_it_now() - start); \
+    } while (0)
+
+#define TWO_PI 6.2831853071795864769252866f
 
 double what_time_is_it_now();
 void shuffle(void *arr, size_t n, size_t size);

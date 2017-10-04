@@ -113,9 +113,9 @@ __global__ void levels_image_kernel(float *image, float *rand, int batch, int w,
     float r3 = rand[8*id + 3];
 
     saturation = r0*(saturation - 1) + 1;
-    saturation = (r1 > .5) ? 1./saturation : saturation;
+    saturation = (r1 > .5f) ? 1.f/saturation : saturation;
     exposure = r2*(exposure - 1) + 1;
-    exposure = (r3 > .5) ? 1./exposure : exposure;
+    exposure = (r3 > .5f) ? 1.f/exposure : exposure;
 
     size_t offset = id * h * w * 3;
     image += offset;
@@ -131,9 +131,9 @@ __global__ void levels_image_kernel(float *image, float *rand, int batch, int w,
     } else {
         shift = 0;
     }
-    image[x + w*(y + h*0)] = rgb.x*scale + translate + (rshift - .5)*shift;
-    image[x + w*(y + h*1)] = rgb.y*scale + translate + (gshift - .5)*shift;
-    image[x + w*(y + h*2)] = rgb.z*scale + translate + (bshift - .5)*shift;
+    image[x + w*(y + h*0)] = rgb.x*scale + translate + (rshift - .5f)*shift;
+    image[x + w*(y + h*1)] = rgb.y*scale + translate + (gshift - .5f)*shift;
+    image[x + w*(y + h*2)] = rgb.z*scale + translate + (bshift - .5f)*shift;
 }
 
 __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, int c, int h, int w, int crop_height, int crop_width, int train, int flip, float angle, float *output)
@@ -141,8 +141,8 @@ __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, i
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(id >= size) return;
 
-    float cx = w/2.;
-    float cy = h/2.;
+    float cx = w/2.f;
+    float cy = h/2.f;
 
     int count = id;
     int j = id % crop_width;
@@ -160,11 +160,11 @@ __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, i
 
     float dw = (w - crop_width)*r4;
     float dh = (h - crop_height)*r5;
-    flip = (flip && (r6 > .5));
+    flip = (flip && (r6 > .5f));
     angle = 2*angle*r7 - angle;
     if(!train){
-        dw = (w - crop_width)/2.;
-        dh = (h - crop_height)/2.;
+        dw = (w - crop_width)/2.f;
+        dh = (h - crop_height)/2.f;
         flip = 0;
         angle = 0;
     }
@@ -174,8 +174,8 @@ __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, i
     float x = (flip) ? w - dw - j - 1 : j + dw;    
     float y = i + dh;
 
-    float rx = cos(angle)*(x-cx) - sin(angle)*(y-cy) + cx;
-    float ry = sin(angle)*(x-cx) + cos(angle)*(y-cy) + cy;
+    float rx = cosf(angle)*(x-cx) - sinf(angle)*(y-cy) + cx;
+    float ry = sinf(angle)*(x-cx) + cosf(angle)*(y-cy) + cy;
 
     output[count] = bilinear_interpolate_kernel(input, w, h, rx, ry, k);
 }
@@ -184,7 +184,7 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network net)
 {
     cuda_random(layer.rand_gpu, layer.batch*8);
 
-    float radians = layer.angle*3.14159265/180.;
+    float radians = layer.angle*3.14159265f/180.f;
 
     float scale = 2;
     float translate = -1;

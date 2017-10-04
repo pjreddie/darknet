@@ -52,6 +52,7 @@ char **read_tokens(char *filename, size_t *read)
     return d;
 }
 
+
 float_pair get_rnn_token_data(int *tokens, size_t *offsets, int characters, size_t len, int batch, int steps)
 {
     float *x = calloc(batch * steps * characters, sizeof(float));
@@ -68,6 +69,35 @@ float_pair get_rnn_token_data(int *tokens, size_t *offsets, int characters, size
             offsets[i] = (offsets[i] + 1) % len;
 
             if(curr >= characters || curr < 0 || next >= characters || next < 0){
+                error("Bad char");
+            }
+        }
+    }
+    float_pair p;
+    p.x = x;
+    p.y = y;
+    return p;
+}
+
+float_pair get_seq2seq_data(char **source, char **dest, int n, int characters, size_t len, int batch, int steps)
+{
+    int i,j;
+    float *x = calloc(batch * steps * characters, sizeof(float));
+    float *y = calloc(batch * steps * characters, sizeof(float));
+    for(i = 0; i < batch; ++i){
+        int index = rand()%n;
+        for(j = 0; j < steps; ++j){
+            unsigned char curr = source[index][j];
+            unsigned char next = dest[index][j];
+
+            x[(j*batch + i)*characters + curr] = 1;
+            y[(j*batch + i)*characters + next] = 1;
+
+            if(curr > 255 || curr <= 0 || next > 255 || next <= 0){
+                /*text[(index+j+2)%len] = 0;
+                printf("%ld %d %d %d %d\n", index, j, len, (int)text[index+j], (int)text[index+j+1]);
+                printf("%s", text+index);
+                */
                 error("Bad char");
             }
         }
