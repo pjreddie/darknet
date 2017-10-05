@@ -565,10 +565,14 @@ void ipl_into_image(IplImage* src, image im)
 
 image ipl_to_image(IplImage* src)
 {
+    fprintf(stderr,"ipl_to_image %p\n",src);
     int h = src->height;
     int w = src->width;
     int c = src->nChannels;
+    fprintf(stderr,"ipl_to_image %d %d %d\n",w,h,c);
+    fprintf(stderr,"ipl_to_image make_image\n");
     image out = make_image(w, h, c);
+    fprintf(stderr,"ipl_to_image ipl_into_image\n");
     ipl_into_image(src, out);
     return out;
 }
@@ -584,6 +588,7 @@ image load_image_cv(char *filename, int channels)
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
 
+    fprintf(stderr, "load_image_cv Loading OpenCV \"%s\"\n", filename);
     if( (src = cvLoadImage(filename, flag)) == 0 )
     {
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
@@ -593,8 +598,11 @@ image load_image_cv(char *filename, int channels)
         return make_image(10,10,3);
         //exit(0);
     }
+    fprintf(stderr, "load_image_cv Converting IPL to Image \"%s\" %p\n", filename,src);
     image out = ipl_to_image(src);
+    fprintf(stderr, "load_image_cv Release \"%s\"\n", filename);
     cvReleaseImage(&src);
+    fprintf(stderr, "load_image_cv rgbgr_image \"%s\"\n", filename);
     rgbgr_image(out);
     return out;
 }
@@ -1422,7 +1430,9 @@ image load_image_stb(char *filename, int channels)
 image load_image(char *filename, int w, int h, int c)
 {
 #ifdef OPENCV
+    fprintf(stderr,"load_image loading image using OpenCV %s\n",filename);
     image out = load_image_cv(filename, c);
+    fprintf(stderr,"loading image using %d %d\n",out.w,out.h);
 #else
     image out = load_image_stb(filename, c);
 #endif
