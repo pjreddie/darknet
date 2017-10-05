@@ -689,7 +689,7 @@ void do_nms(box *boxes, float **probs, int total, int classes, float thresh);
 data load_all_cifar10();
 box_label *read_boxes(char *filename, int *n);
 box float_to_box(float *f, int stride);
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes);
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, int names_count, image **alphabet, int classes);
 
 matrix network_predict_data(network net, data test);
 image **load_alphabet();
@@ -707,7 +707,7 @@ box *make_boxes(network *net);
 void reset_network_state(network net, int b);
 void reset_network_state(network net, int b);
 
-char **get_labels(char *filename);
+char **get_labels(char *filename, int *labels_count);
 void do_nms_sort(box *boxes, float **probs, int total, int classes, float thresh);
 void do_nms_obj(box *boxes, float **probs, int total, int classes, float thresh);
 

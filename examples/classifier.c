@@ -48,7 +48,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     char *train_list = option_find_str(options, "train", "data/train.list");
     int classes = option_find_int(options, "classes", 2);
 
-    char **labels = get_labels(label_list);
+    char **labels = get_labels(label_list, NULL);
     list *plist = get_paths(train_list);
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
@@ -259,7 +259,7 @@ void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
     int classes = option_find_int(options, "classes", 2);
     int topk = option_find_int(options, "top", 1);
 
-    char **labels = get_labels(label_list);
+    char **labels = get_labels(label_list, NULL);
     list *plist = get_paths(valid_list);
 
     char **paths = (char **)list_to_array(plist);
@@ -327,7 +327,7 @@ void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
     int classes = option_find_int(options, "classes", 2);
     int topk = option_find_int(options, "top", 1);
 
-    char **labels = get_labels(label_list);
+    char **labels = get_labels(label_list, NULL);
     list *plist = get_paths(valid_list);
 
     char **paths = (char **)list_to_array(plist);
@@ -399,7 +399,7 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
     int classes = option_find_int(options, "classes", 2);
     int topk = option_find_int(options, "top", 1);
 
-    char **labels = get_labels(label_list);
+    char **labels = get_labels(label_list, NULL);
     list *plist = get_paths(valid_list);
 
     char **paths = (char **)list_to_array(plist);
@@ -462,7 +462,7 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
     int classes = option_find_int(options, "classes", 2);
     int topk = option_find_int(options, "top", 1);
 
-    char **labels = get_labels(label_list);
+    char **labels = get_labels(label_list, NULL);
     list *plist = get_paths(valid_list);
 
     char **paths = (char **)list_to_array(plist);
@@ -522,7 +522,7 @@ void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
     int classes = option_find_int(options, "classes", 2);
     int topk = option_find_int(options, "top", 1);
 
-    char **labels = get_labels(label_list);
+    char **labels = get_labels(label_list, NULL);
     list *plist = get_paths(valid_list);
     int scales[] = {224, 288, 320, 352, 384};
     int nscales = sizeof(scales)/sizeof(scales[0]);
@@ -585,7 +585,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
     int top = option_find_int(options, "top", 1);
 
     int i = 0;
-    char **names = get_labels(name_list);
+    char **names = get_labels(name_list, NULL);
     clock_t time;
     int *indexes = calloc(top, sizeof(int));
     char buff[256];
@@ -666,7 +666,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     if(top == 0) top = option_find_int(options, "top", 1);
 
     int i = 0;
-    char **names = get_labels(name_list);
+    char **names = get_labels(name_list,NULL);
     clock_t time;
     int *indexes = calloc(top, sizeof(int));
     char buff[256];
@@ -721,7 +721,7 @@ void label_classifier(char *datacfg, char *filename, char *weightfile)
     char *test_list = option_find_str(options, "test", "data/train.list");
     int classes = option_find_int(options, "classes", 2);
 
-    char **labels = get_labels(label_list);
+    char **labels = get_labels(label_list, NULL);
     list *plist = get_paths(test_list);
 
     char **paths = (char **)list_to_array(plist);
@@ -843,7 +843,7 @@ void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_i
     int top = option_find_int(options, "top", 1);
 
     char *name_list = option_find_str(options, "names", 0);
-    char **names = get_labels(name_list);
+    char **names = get_labels(name_list, NULL);
 
     int *indexes = calloc(top, sizeof(int));
 
@@ -975,7 +975,7 @@ void gun_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
     int top = option_find_int(options, "top", 1);
 
     char *name_list = option_find_str(options, "names", 0);
-    char **names = get_labels(name_list);
+    char **names = get_labels(name_list, NULL);
 
     int *indexes = calloc(top, sizeof(int));
 
@@ -1052,7 +1052,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     int top = option_find_int(options, "top", 1);
 
     char *name_list = option_find_str(options, "names", 0);
-    char **names = get_labels(name_list);
+    char **names = get_labels(name_list,NULL);
 
     int *indexes = calloc(top, sizeof(int));
 
