@@ -90,7 +90,7 @@ long numops(network net)
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.type == CONVOLUTIONAL){
-            ops += 2l * l.n * l.size*l.size*l.c * l.out_h*l.out_w;
+            ops += 2l * l.n * l.size*l.size*l.c/l.groups * l.out_h*l.out_w;
         } else if(l.type == CONNECTED){
             ops += 2l * l.inputs * l.outputs;
         } else if (l.type == RNN){
