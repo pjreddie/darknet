@@ -4,7 +4,8 @@
 
 int inverted = 1;
 int noi = 1;
-static const int nind = 2;
+
+#define nind 2
 
 typedef struct {
     char **data;
@@ -654,7 +655,11 @@ void engine_go(char *filename, char *weightfile, int multi)
                 int count = print_game(board, f);
                 fprintf(f, "%s final_status_list dead\n", ids);
                 fclose(f);
+#ifdef WIN32
+                FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
+#else
                 FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
+#endif
                 for(i = 0; i < count; ++i){
                     free(fgetl(p));
                     free(fgetl(p));
@@ -763,8 +768,12 @@ float score_game(float *board)
     FILE *f = fopen("game.txt", "w");
     int count = print_game(board, f);
     fprintf(f, "final_score\n");
-    fclose(f);
+    fclose(f);  
+#ifdef WIN32
+    FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
+#else
     FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
+#endif
     for(i = 0; i < count; ++i){
         free(fgetl(p));
         free(fgetl(p));
@@ -779,7 +788,11 @@ float score_game(float *board)
         if (n == 2) break;
     }
     if(player == 'W') score = -score;
+#ifdef WIN32
+    _pclose(p);
+#else
     pclose(p);
+#endif
     return score;
 }
 
@@ -817,7 +830,11 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
             else ++p2;
             ++total;
             fprintf(stderr, "Total: %d, Player 1: %f, Player 2: %f\n", total, (float)p1/total, (float)p2/total);
+#ifdef WIN32
+            Sleep(1);
+#else
             sleep(1);
+#endif
             /*
             int i = (score > 0)? 0 : 1;
             int j;

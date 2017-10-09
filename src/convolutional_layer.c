@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#if defined(WIN32) && defined(CUDNN)
+#pragma comment(lib, "cudnn.lib")
+#endif
+
 #ifdef AI2
 #include "xnor_layer.h"
 #endif

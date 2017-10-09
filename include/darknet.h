@@ -8,6 +8,11 @@
 #define SECRET_NUM -1234
 extern int gpu_index;
 
+#if defined(_MSC_VER) && _MSC_VER < 1900
+    #define inline __inline
+    #define snprintf(buf,len, format,...) _snprintf_s(buf, len,len, format, __VA_ARGS__)
+#endif
+
 #ifdef GPU
     #define BLOCK 512
 
@@ -21,6 +26,9 @@ extern int gpu_index;
 #endif
 
 #ifndef __cplusplus
+    #if CV_MAJOR_VERSION == 3
+    #include "opencv2/core/fast_math.hpp"
+    #endif
     #ifdef OPENCV
     #include "opencv2/highgui/highgui_c.h"
     #include "opencv2/imgproc/imgproc_c.h"

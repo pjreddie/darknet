@@ -1,0 +1,10 @@
+#
+# Package config file for darkent
+#
+# From build tree
+set( Darknet_INCLUDE_DIR "@CMAKE_SOURCE_DIR@/include")
+set( Darknet_LIBRARY_DIR "@CMAKE_BINARY_DIR@/lib" )
+set( Darknet_LIBRARIES "darknet_lib" )
+set( Darknet_USING_OPENCV  @USE_OPENCV@ )
+set( Darknet_USING_GPU     @USE_GPU@ )
+set( Darknet_USING_CUDNN   @USE_CUDNN@ )
