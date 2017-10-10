@@ -7,6 +7,20 @@ typedef struct {
     float *y;
 } float_pair;
 
+unsigned char **load_files(char *filename, int *n)
+{
+    list *paths = get_paths(filename);
+    *n = paths->size;
+    unsigned char **contents = calloc(*n, sizeof(char *));
+    int i;
+    node *x = paths->front;
+    for(i = 0; i < *n; ++i){
+        contents[i] = read_file((char *)x->val);
+        x = x->next;
+    }
+    return contents;
+}
+
 int *read_tokenized_data(char *filename, size_t *read)
 {
     size_t size = 512;
@@ -86,6 +100,8 @@ float_pair get_seq2seq_data(char **source, char **dest, int n, int characters, s
     float *y = calloc(batch * steps * characters, sizeof(float));
     for(i = 0; i < batch; ++i){
         int index = rand()%n;
+        int slen = strlen(source[index]);
+        int dlen = strlen(dest[index]);
         for(j = 0; j < steps; ++j){
             unsigned char curr = source[index][j];
             unsigned char next = dest[index][j];
@@ -147,15 +163,8 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
     if(tokenized){
         tokens = read_tokenized_data(filename, &size);
     } else {
-        FILE *fp = fopen(filename, "rb");
-
-        fseek(fp, 0, SEEK_END); 
-        size = ftell(fp);
-        fseek(fp, 0, SEEK_SET); 
-
-        text = calloc(size+1, sizeof(char));
-        fread(text, 1, size, fp);
-        fclose(fp);
+        text = read_file(filename);
+        size = strlen((const char*)text);
     }
 
     char *backup_directory = "/home/pjreddie/backup/";

@@ -127,6 +127,10 @@ void delta_region_class(float *output, float *delta, int index, int class, int c
         }
         *avg_cat += pred;
     } else {
+        if (delta[index]){
+            delta[index + stride*class] = scale * (1 - output[index + stride*class]);
+            return;
+        }
         for(n = 0; n < classes; ++n){
             delta[index + stride*n] = scale * (((n == class)?1 : 0) - output[index + stride*n]);
             if(n == class) *avg_cat += output[index + stride*n];
@@ -163,6 +167,8 @@ void forward_region_layer(const layer l, network net)
             activate_array(l.output + index, 2*l.w*l.h, LOGISTIC);
             index = entry_index(l, b, n*l.w*l.h, l.coords);
             if(!l.background) activate_array(l.output + index,   l.w*l.h, LOGISTIC);
+            index = entry_index(l, b, n*l.w*l.h, l.coords + 1);
+            if(!l.softmax && !l.softmax_tree) activate_array(l.output + index, l.classes*l.w*l.h, LOGISTIC);
         }
     }
     if (l.softmax_tree){
@@ -466,6 +472,8 @@ void forward_region_layer_gpu(const layer l, network net)
             }
             index = entry_index(l, b, n*l.w*l.h, l.coords);
             if(!l.background) activate_array_gpu(l.output_gpu + index,   l.w*l.h, LOGISTIC);
+            index = entry_index(l, b, n*l.w*l.h, l.coords + 1);
+            if(!l.softmax && !l.softmax_tree) activate_array_gpu(l.output_gpu + index, l.classes*l.w*l.h, LOGISTIC);
         }
     }
     if (l.softmax_tree){

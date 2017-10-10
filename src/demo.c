@@ -38,15 +38,6 @@ static int demo_done = 0;
 static float *avg;
 double demo_time;
 
-double get_wall_time()
-{
-    struct timeval time;
-    if (gettimeofday(&time,NULL)){
-        return 0;
-    }
-    return (double)time.tv_sec + (double)time.tv_usec * .000001;
-}
-
 void *detect_in_thread(void *ptr)
 {
     running = 1;
@@ -194,15 +185,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
     }
 
-    demo_time = get_wall_time();
+    demo_time = what_time_is_it_now();
 
     while(!demo_done){
         buff_index = (buff_index + 1) %3;
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
         if(!prefix){
-            fps = 1./(get_wall_time() - demo_time);
-            demo_time = get_wall_time();
+            fps = 1./(what_time_is_it_now() - demo_time);
+            demo_time = what_time_is_it_now();
             display_in_thread(0);
         }else{
             char name[256];
@@ -282,15 +273,15 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
         }
     }
 
-    demo_time = get_wall_time();
+    demo_time = what_time_is_it_now();
 
     while(!demo_done){
         buff_index = (buff_index + 1) %3;
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
         if(!prefix){
-            fps = 1./(get_wall_time() - demo_time);
-            demo_time = get_wall_time();
+            fps = 1./(what_time_is_it_now() - demo_time);
+            demo_time = what_time_is_it_now();
             display_in_thread(0);
         }else{
             char name[256];
