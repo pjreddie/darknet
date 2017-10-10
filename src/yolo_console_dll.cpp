@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 			std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
 			std::string const protocol = filename.substr(0, 7);
 			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov" || 	// video file
-				protocol == "rtsp://" || protocol == "http://" || protocol == "https:/")	// video network stream
+				protocol == "rtmp://" || protocol == "rtsp://" || protocol == "http://" || protocol == "https:/")	// video network stream
 			{
 				cv::Mat cap_frame, cur_frame, det_frame, write_frame;
 				std::shared_ptr<image_t> det_image;
