@@ -114,32 +114,85 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
     free_ptrs(cast(probs, POINTER(c_void_p)), num)
     return res
 
+from tqdm import tqdm
+import pdb
+import sys
+sys.path.insert(0, "/ais/gobi2/makarand/Software/opencv-3.2.0_install/lib/python2.7/site-packages")
+
+import cv2
+import visdom
+
+from PIL import Image
+
+import numpy as np
+import scipy.misc
+viz = visdom.Visdom()
+
 def darknet_python():
 
 
     FRAME_DIR = '/ais/gobi5/movie4d/movie4d_dataset/frames'
-    DETECT_DIR = '/ais/gobi5/movie4d/movie4d_dataset/yolo9000'
+    VIDEO_DIR = '/ais/gobi5/movie4d/video_clips'
+    DETECT_DIR = '/ais/gobi5/movie4d/movie4d_dataset/coco_frame'
+    
+    # local testing
+    # VIDEO_DIR = '/Users/Jarvis/Desktop/test_vid' 
+    # DETECT_DIR = '/Users/Jarvis/Desktop/test_detect' 
 
-    net = load_net('./cfg/yolo9000.cfg', './yolo9000.weights', 0)
-    meta = load_meta('./cfg/combine9k.data')
+    net = load_net('./cfg/yolo.cfg', './yolo.weights', 0)
+    meta = load_meta('./cfg/coco.data')
 
-    # for root, dirs, files in os.walk(FRAME_DIR):
-    for root, dirs, files in reversed(list(os.walk(FRAME_DIR))):
-        for image_file in files:
-            if image_file.endswith('.png'):
+    viz_win = None
+
+    # for root, dirs, files in reversed(list(os.walk(VIDEO_DIR))):
+    for root, dirs, files in os.walk(VIDEO_DIR):
+        for video_file in tqdm(files):
+            if video_file.endswith('.mp4'):
 
                 imdb_key = root.split('/')[-1]
-
-                file_name = image_file.split('.')[0]
-                orig_file_path = os.path.join(root, image_file)
-                pred_name = 'pred_' + file_name + '.p'
-                pred_file_path = os.path.join(DETECT_DIR, imdb_key, pred_name)
-
-                r = detect(net, meta, orig_file_path)
-                pprint(r)
-                pickle.dump(r, open(pred_file_path, 'wb'))
+                clip_num = video_file.split('.')[0]
                 
-                print imdb_key, file_name, 'processed...'
+                detection_dir = os.path.join(DETECT_DIR, imdb_key)
+                if not os.path.exists(detection_dir): os.makedirs(detection_dir)
+                clip_dir = os.path.join(detection_dir, clip_num)
+                if not os.path.exists(clip_dir): os.makedirs(clip_dir)
+
+                fn = os.path.join(root, video_file)
+                cam = cv2.VideoCapture(fn)
+
+                try: cam.isOpened()
+                except: 
+                    print 'Error loading file...'
+                    continue
+
+                frame_num = 0
+
+                while 1:
+                    ret, img = cam.read()
+                    if not ret: break # done reading the video
+
+                    # visualization in visdom
+                    # actual_img = np.swapaxes(np.swapaxes(img, 0, 2), 1, 2)
+                    # actual_img = actual_img[[2, 1, 0],:,:]
+                    # viz_win = viz.image(actual_img, win=viz_win)
+
+                    if frame_num % 2 == 0: # use darknet to run detector on the frame
+
+                        # darknet interface only supports read from image file
+                        temp_fn = 'one_frame.png'
+                        myimg = cv2.imread(temp_fn)
+                        cv2.imwrite(temp_fn, img)
+
+                        # darknet runs
+                        r = detect(net, meta, temp_fn)
+                        
+                        # save the prediction
+                        detection_fn = '%s.p' % str(frame_num) 
+                        detection_path = os.path.join(clip_dir, detection_fn)
+                        pickle.dump(r, open(detection_path, 'wb'))
+
+                    frame_num += 1
+    
 
     print 'All done...'
     return None
@@ -155,50 +208,11 @@ if __name__ == "__main__":
     darknet_python()
     print 'End of task...'
 
-    net = load_net('./cfg/yolo9000.cfg', './yolo9000.weights', 0)
-    meta = load_meta('./cfg/combine9k.data')
+    net = load_net('./cfg/yolo.cfg', './yolo.weights', 0)
+    meta = load_meta('./cfg/coco.data')
     r = detect(net, meta, "./data/dog.jpg")
     pprint(r)
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
