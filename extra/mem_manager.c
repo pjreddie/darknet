@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// Wrapper functions to help with memory profiling.
 void *dn_malloc(size_t size) {
   void *ptr = malloc(size);
   if (!ptr) {

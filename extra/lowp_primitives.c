@@ -86,7 +86,6 @@ void ConvertToLowp(const float *f32_data, int no_elements, float max,
     }
   } else if (bytes_per_element == 2) {
     float scale = ((1 << 16) - 1) / (max - min);
-    //printf("Scale : %f\n", scale);
     for (int i = 0; i < no_elements; i++) {
       *u16++ = ROUND((f32_data[i] - min) * scale);
     }
@@ -109,7 +108,6 @@ void ConvertToF32(const void *lowp_data, int no_elements, float max, float min,
     }
   } else if (bytes_per_element == 2) {
     float scale = (max - min) / ((1 << 16) - 1);
-    //printf("Inv Scale : %f\n", scale);
     for (int i = 0; i < no_elements; i++) {
       *f32_data++ = (u16[i] * scale + min);
     }

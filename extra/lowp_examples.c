@@ -83,6 +83,6 @@ void LowpDetector(int argc, char **argv) {
   char *cfg = argv[3];
   char *model = argv[4];
   char *image_path = argv[5];
-  float thresh = find_float_arg(argc, argv, "-thresh", .24);
+  float thresh = find_float_arg(argc, argv, "-thresh", .5);
   RunLowpDetector(datacfg, cfg, model, image_path, NULL, thresh);
 }
