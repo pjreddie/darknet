@@ -10,6 +10,10 @@
 #include "darknet.h"
 #include "lowp_darknet.h"
 #include "utils.h"
+#include "convolutional_layer.h"
+#include "connected_layer.h"
+#include "batchnorm_layer.h"
+#include "local_layer.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -107,7 +111,8 @@ void SaveWeightsAsLowpModelUpto(network net, char *filename, int cutoff,
   fwrite(&revision, sizeof(int), 1, fp);
   fwrite(net.seen, sizeof(size_t), 1, fp);
   fwrite(&bytes_per_element, sizeof(int), 1, fp);
-
+  printf("Major : %d\tMinor : %d\t Rev : %d\tBytes per element : %d\n",
+         major, minor, revision, bytes_per_element);
   int i;
   for(i = 0; i < net.n && i < cutoff; ++i){
     layer l = net.layers[i];
@@ -228,7 +233,7 @@ void LoadLowpWeightsAsFloatUpto(network *net, char *filename, int start,
     cuda_set_device(net->gpu_index);
   }
 #endif
-  fprintf(stderr, "Loading low precision model from %s...", filename);
+  fprintf(stderr, "Loading low precision model from %s...\n", filename);
   fflush(stdout);
   FILE *fp = fopen(filename, "rb");
   if(!fp) file_error(filename);
@@ -248,7 +253,10 @@ void LoadLowpWeightsAsFloatUpto(network *net, char *filename, int start,
     fread(&iseen, sizeof(int), 1, fp);
     *net->seen = iseen;
   }
-  fwrite(&bpe, sizeof(int), 1, fp);
+  fread(&bpe, sizeof(int), 1, fp);
+  printf("Major : %d\tMinor : %d\t Rev : %d\tBytes per element : %d\n",
+         major, minor, revision, bpe);
+  assert(bpe > 0 && bpe <= 4);
   int transpose = (major > 1000) || (minor > 1000);
 
   int i;
@@ -333,6 +341,7 @@ void CreateLowpModel(int argc, char **argv) {
     sprintf(lowp_model, "%s_%dbit.weights", base, bytes_per_ele*8);
   }
 
+  assert(bytes_per_ele > 0 && bytes_per_ele <= 4);
   // Init network so that all weight buffers are allocated.
   network net = parse_network_cfg(cfg);
 

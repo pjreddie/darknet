@@ -1,8 +1,8 @@
-GPU=0
+GPU=1
 CUDNN=0
 OPENCV=0
 OPENMP=0
-DEBUG=0
+DEBUG=1
 LOWP=1
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
@@ -12,7 +12,7 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
 #      -gencode arch=compute_20,code=[sm_20,sm_21] \ This one is deprecated?
 
 # This is what I use, uncomment if you know your arch and want to specify
-# ARCH= -gencode arch=compute_52,code=compute_52
+ARCH= -gencode arch=compute_35,code=compute_35
 
 VPATH=./src/:./examples:./extra
 SLIB=libdarknet.so
@@ -66,7 +66,7 @@ LDFLAGS+= -lstdc++
 OBJ+=convolutional_kernels.o deconvolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_kernels.o blas_kernels.o crop_layer_kernels.o dropout_layer_kernels.o maxpool_layer_kernels.o network_kernels.o avgpool_layer_kernels.o
 endif
 ifeq ($(LOWP), 1)
-OBJ+= mem_manager.o lowp_primitives.o lowp_model.o
+OBJ+= mem_manager.o lowp_primitives.o lowp_model.o lowp_examples.o extra_utils.o
 endif
 
 EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
