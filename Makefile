@@ -2,7 +2,7 @@ GPU=1
 CUDNN=0
 OPENCV=0
 OPENMP=0
-DEBUG=1
+DEBUG=0
 LOWP=1
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
