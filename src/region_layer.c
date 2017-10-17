@@ -109,7 +109,7 @@ void delta_region_mask(float *truth, float *x, int n, int index, float *delta, i
 }
 
 
-void delta_region_class(float *output, float *delta, int index, int class, int classes, tree *hier, float scale, int stride, float *avg_cat)
+void delta_region_class(float *output, float *delta, int index, int class, int classes, tree *hier, float scale, int stride, float *avg_cat, int tag)
 {
     int i, n;
     if(hier){
@@ -127,7 +127,7 @@ void delta_region_class(float *output, float *delta, int index, int class, int c
         }
         *avg_cat += pred;
     } else {
-        if (delta[index]){
+        if (delta[index] && tag){
             delta[index + stride*class] = scale * (1 - output[index + stride*class]);
             return;
         }
@@ -218,7 +218,7 @@ void forward_region_layer(const layer l, network net)
                     }
                     int class_index = entry_index(l, b, maxi, l.coords + 1);
                     int obj_index = entry_index(l, b, maxi, l.coords);
-                    delta_region_class(l.output, l.delta, class_index, class, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat);
+                    delta_region_class(l.output, l.delta, class_index, class, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat, !l.softmax);
                     if(l.output[obj_index] < .3) l.delta[obj_index] = l.object_scale * (.3 - l.output[obj_index]);
                     else  l.delta[obj_index] = 0;
                     l.delta[obj_index] = 0;
@@ -316,7 +316,7 @@ void forward_region_layer(const layer l, network net)
             int class = net.truth[t*(l.coords + 1) + b*l.truths + l.coords];
             if (l.map) class = l.map[class];
             int class_index = entry_index(l, b, best_n*l.w*l.h + j*l.w + i, l.coords + 1);
-            delta_region_class(l.output, l.delta, class_index, class, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat);
+            delta_region_class(l.output, l.delta, class_index, class, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat, !l.softmax);
             ++count;
             ++class_count;
         }

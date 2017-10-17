@@ -38,7 +38,7 @@ lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
 lib.network_height.restype = c_int
 
-predict = lib.network_predict_p
+predict = lib.network_predict
 predict.argtypes = [c_void_p, POINTER(c_float)]
 predict.restype = POINTER(c_float)
 
@@ -57,13 +57,13 @@ make_probs = lib.make_probs
 make_probs.argtypes = [c_void_p]
 make_probs.restype = POINTER(POINTER(c_float))
 
-detect = lib.network_predict_p
+detect = lib.network_predict
 detect.argtypes = [c_void_p, IMAGE, c_float, c_float, c_float, POINTER(BOX), POINTER(POINTER(c_float))]
 
 reset_rnn = lib.reset_rnn
 reset_rnn.argtypes = [c_void_p]
 
-load_net = lib.load_network_p
+load_net = lib.load_network
 load_net.argtypes = [c_char_p, c_char_p, c_int]
 load_net.restype = c_void_p
 

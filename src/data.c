@@ -1172,11 +1172,32 @@ data load_data_regression(char **paths, int n, int m, int min, int max, int size
     return d;
 }
 
+data resize_data(data orig, int w, int h)
+{
+    data d = {0};
+    d.shallow = 0;
+    d.w = w;
+    d.h = h;
+    int i;
+    d.X.rows = orig.X.rows;
+    d.X.cols = w*h*3;
+    d.X.vals = calloc(d.X.rows, sizeof(float));
+
+    d.y = copy_matrix(orig.y);
+    for(i = 0; i < orig.X.rows; ++i){
+        image im = float_to_image(orig.w, orig.h, 3, orig.X.vals[i]);
+        d.X.vals[i] = resize_image(im, w, h).data;
+    }
+    return d;
+}
+
 data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
     d.shallow = 0;
+    d.w=size;
+    d.h=size;
     d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure, center);
     d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);

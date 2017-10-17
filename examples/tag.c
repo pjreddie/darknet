@@ -7,12 +7,8 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     char *base = basecfg(cfgfile);
     char *backup_directory = "/home/pjreddie/backup/";
     printf("%s\n", base);
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    if(clear) *net.seen = 0;
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network *net = load_network(cfgfile, weightfile, clear);
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = 1024;
     list *plist = get_paths("/home/pjreddie/tag/train.list");
     char **paths = (char **)list_to_array(plist);
@@ -24,30 +20,30 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     data buffer;
 
     load_args args = {0};
-    args.w = net.w;
-    args.h = net.h;
+    args.w = net->w;
+    args.h = net->h;
 
-    args.min = net.w;
-    args.max = net.max_crop;
-    args.size = net.w;
+    args.min = net->w;
+    args.max = net->max_crop;
+    args.size = net->w;
 
     args.paths = paths;
-    args.classes = net.outputs;
+    args.classes = net->outputs;
     args.n = imgs;
     args.m = N;
     args.d = &buffer;
     args.type = TAG_DATA;
 
-    args.angle = net.angle;
-    args.exposure = net.exposure;
-    args.saturation = net.saturation;
-    args.hue = net.hue;
+    args.angle = net->angle;
+    args.exposure = net->exposure;
+    args.saturation = net->saturation;
+    args.hue = net->hue;
 
-    fprintf(stderr, "%d classes\n", net.outputs);
+    fprintf(stderr, "%d classes\n", net->outputs);
 
     load_thread = load_data_in_thread(args);
-    int epoch = (*net.seen)/N;
-    while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
+    int epoch = (*net->seen)/N;
+    while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
         time=clock();
         pthread_join(load_thread, 0);
         train = buffer;
@@ -58,10 +54,10 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
         float loss = train_network(net, train);
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net->seen);
         free_data(train);
-        if(*net.seen/N > epoch){
-            epoch = *net.seen/N;
+        if(*net->seen/N > epoch){
+            epoch = *net->seen/N;
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
@@ -86,11 +82,8 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
 
 void test_tag(char *cfgfile, char *weightfile, char *filename)
 {
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 1);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
     srand(2222222);
     int i = 0;
     char **names = get_labels("data/tags.txt");
@@ -98,7 +91,7 @@ void test_tag(char *cfgfile, char *weightfile, char *filename)
     int indexes[10];
     char buff[256];
     char *input = buff;
-    int size = net.w;
+    int size = net->w;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -111,7 +104,7 @@ void test_tag(char *cfgfile, char *weightfile, char *filename)
         }
         image im = load_image_color(input, 0, 0);
         image r = resize_min(im, size);
-        resize_network(&net, r.w, r.h);
+        resize_network(net, r.w, r.h);
         printf("%d %d\n", r.w, r.h);
 
         float *X = r.data;
