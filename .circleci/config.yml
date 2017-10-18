@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run: 
           name: Update OpenCV
-          command: 'sudo apt-get install libopencv-dev'
+          command: 'apt-get install libopencv-dev'
       - run: make LIBSO=1 -j 8
       - run: |
           ulimit -c unlimited
