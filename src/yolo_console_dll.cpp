@@ -8,7 +8,9 @@
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 
+#ifdef WIN32
 #define OPENCV
+#endif
 
 #include "yolo_v2_class.hpp"	// imported functions from DLL
 
