@@ -8,7 +8,6 @@ jobs:
       - checkout
       - run: make
       - run: |
-    # tell the operating system to remove the file size limit on core dump files 
           ulimit -c unlimited
           ./dump
       - run:
