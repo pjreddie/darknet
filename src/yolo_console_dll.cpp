@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 			auto img = detector.load_image(filename);
 			std::vector<bbox_t> result_vec = detector.detect(img);
 			detector.free_image(img);
-			show_result(result_vec, obj_names);
+			show_console_result(result_vec, obj_names);
 #endif			
 		}
 		catch (std::exception &e) { std::cerr << "exception: " << e.what() << "\n"; getchar(); }
