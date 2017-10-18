@@ -6,7 +6,7 @@ jobs:
     working_directory: ~/work
     steps:
       - checkout
-      - run: make LIBSO=1 OPENCV=1
+      - run: make LIBSO=1
       - run: |
           ulimit -c unlimited
           ./darknet
