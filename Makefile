@@ -47,7 +47,7 @@ endif
 
 ifeq ($(GPU), 1) 
 COMMON+= -DGPU -I/usr/local/cuda/include/
-CFLAGS+= -DGPU
+CFLAGS+= -DGPU -D_FORCE_INLINES
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 
