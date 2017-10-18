@@ -1,0 +1,20 @@
+version: 2.0
+jobs:
+  build:
+    docker:
+      - image: gcc:latest
+    working_directory: ~/work
+    steps:
+      - checkout
+      - run: make
+      - run: |
+    # tell the operating system to remove the file size limit on core dump files 
+          ulimit -c unlimited
+          ./dump
+      - run:
+          command: |
+            mkdir -p /tmp/core_dumps
+            cp core.* /tmp/core_dumps
+          when: on_fail
+      - store_artifacts:
+          path: /tmp/core_dumps
