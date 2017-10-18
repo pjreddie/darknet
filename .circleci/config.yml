@@ -9,7 +9,7 @@ jobs:
       - run: make
       - run: |
           ulimit -c unlimited
-          ./dump
+          ./darknet
       - run:
           command: |
             mkdir -p /tmp/core_dumps
