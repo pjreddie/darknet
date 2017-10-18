@@ -35,6 +35,7 @@ __device__ float relie_activate_kernel(float x){return (x>0) ? x : .01f*x;}
 __device__ float ramp_activate_kernel(float x){return x*(x>0)+.1f*x;}
 __device__ float leaky_activate_kernel(float x){return (x>0) ? x : .1f*x;}
 __device__ float tanh_activate_kernel(float x){return (2.f/(1 + expf(-2*x)) - 1);}
+__device__ float swish_activate_kernel( float x ){return x * powf( (1 + exp( -x )), -1);}
 __device__ float plse_activate_kernel(float x)
 {
     if(x < -4) return .01f * (x + 4);
@@ -73,6 +74,12 @@ __device__ float stair_gradient_kernel(float x)
     if (floorf(x) == x) return 0;
     return 1;
 }
+__device__ float swish_gradient_kernel( float x )
+{
+    float sigma_x = powf( (1 + exp( -x )), -1);
+    float f_x = x * sigma_x;
+    return f_x + (sigma_x * (1 - f_x));
+}
 
 __device__ float activate_kernel(float x, ACTIVATION a)
 {
@@ -103,6 +110,8 @@ __device__ float activate_kernel(float x, ACTIVATION a)
             return hardtan_activate_kernel(x);
         case LHTAN:
             return lhtan_activate_kernel(x);
+        case SWISH:
+            return swish_activate_kernel(x);
     }
     return 0;
 }
@@ -136,6 +145,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
             return hardtan_gradient_kernel(x);
         case LHTAN:
             return lhtan_gradient_kernel(x);
+        case SWISH:
+            return swish_gradient_kernel(x);
     }
     return 0;
 }

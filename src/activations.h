@@ -37,6 +37,7 @@ static inline float relie_activate(float x){return (x>0) ? x : .01*x;}
 static inline float ramp_activate(float x){return x*(x>0)+.1*x;}
 static inline float leaky_activate(float x){return (x>0) ? x : .1*x;}
 static inline float tanh_activate(float x){return (exp(2*x)-1)/(exp(2*x)+1);}
+static inline float swish_activate( float x ){return x * pow( (1 + exp( -x )), -1);}
 static inline float plse_activate(float x)
 {
     if(x < -4) return .01 * (x + 4);
@@ -72,6 +73,12 @@ static inline float stair_gradient(float x)
 {
     if (floor(x) == x) return 0;
     return 1;
+}
+static inline float swish_gradient( float x )
+{
+    float sigma_x = pow( (1 + exp( -x )), -1);
+    float f_x = x * sigma_x;
+    return f_x + (sigma_x * (1 - f_x));
 }
 static inline float relu_gradient(float x){return (x>0);}
 static inline float elu_gradient(float x){return (x >= 0) + (x < 0)*(x + 1);}
