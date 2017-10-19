@@ -1,5 +1,7 @@
 # Yolo-v2 Windows and Linux version
 
+[![CircleCI](https://circleci.com/gh/AlexeyAB/darknet.svg?style=svg)](https://circleci.com/gh/AlexeyAB/darknet)
+
 1. [How to use](#how-to-use)
 2. [How to compile on Linux](#how-to-compile-on-linux)
 3. [How to compile on Windows](#how-to-compile-on-windows)
