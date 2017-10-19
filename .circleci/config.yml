@@ -2,21 +2,8 @@ version: 2.0
 jobs:
   build:
     docker:
-      - image: gcc:latest
+      - image: nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
     working_directory: ~/work
     steps:
       - checkout
-#      - run: 
-#          name: Update OpenCV
-#          command: 'apt-get install libopencv-dev'
-      - run: make LIBSO=1 -j 8
-      - run: |
-          ulimit -c unlimited
-          ./darknet
-      - run:
-          command: |
-            mkdir -p /tmp/core_dumps
-            cp core.* /tmp/core_dumps
-          when: on_fail
-      - store_artifacts:
-          path: /tmp/core_dumps
+      - run: make LIBSO=1 GPU=1 CUDNN=1 -j 8
