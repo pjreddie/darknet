@@ -276,9 +276,40 @@ layer parse_region(list *options, size_params params)
     int coords = option_find_int(options, "coords", 4);
     int classes = option_find_int(options, "classes", 20);
     int num = option_find_int(options, "num", 1);
+    // try anchors_norm first
+    int relative = 1;
+    char *a = option_find_str(options, "anchors_norm", 0);
+    if(NULL == a){
+        a = option_find_str(options, "anchors", 0);
+        relative = 0;
+    }
+    if(a){
+        int len = strlen(a);
+        int n = 1;
+        int i;
+        for(i = 0; i < len; ++i){
+            if (a[i] == ',') ++n;
+        }
+        // num of anchors
+        num = n/2;
+    }
 
     layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords);
     assert(l.outputs == params.inputs);
+    // get absolute value of anchor boxes
+    if(a){
+        int i;
+        for(i = 0; i < num; ++i){
+            float bias = atof(a);
+            if(relative) l.biases[i * 2] = bias * params.w;
+            else l.biases[i * 2] = bias;
+            a = strchr(a, ',')+1;
+            bias = atof(a);
+            if(relative) l.biases[i * 2 + 1] = bias * params.h;
+            else l.biases[i * 2 + 1] = bias;
+            a = strchr(a, ',')+1;
+        }
+    }
 
     l.log = option_find_int_quiet(options, "log", 0);
     l.sqrt = option_find_int_quiet(options, "sqrt", 0);
@@ -306,20 +337,6 @@ layer parse_region(list *options, size_params params)
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
 
-    char *a = option_find_str(options, "anchors", 0);
-    if(a){
-        int len = strlen(a);
-        int n = 1;
-        int i;
-        for(i = 0; i < len; ++i){
-            if (a[i] == ',') ++n;
-        }
-        for(i = 0; i < n; ++i){
-            float bias = atof(a);
-            l.biases[i] = bias;
-            a = strchr(a, ',')+1;
-        }
-    }
     return l;
 }
 detection_layer parse_detection(list *options, size_params params)
