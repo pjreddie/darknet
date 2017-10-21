@@ -4,6 +4,50 @@ This extension to the Darknet framework aims at providing low precision inferenc
 
 
 
+# Usage
+
+## Using low precision extension
+
+To use this low precision extension with Darknet, first build the extension library by executing below command
+
+```
+make clean all
+```
+
+This will create `libdarknet_lowp.so` and `libdarknet_lowp.a` libraries which you need to include when compiling Darknet. Once you are done building extension library, proceed to build Darknet with low precision support enabled using below steps
+
+```
+NOTE: You need to execute these from Darknet root directory.
+1. Open Makefile and make sure LOWP=1. Also, if you plan to compile Darknet with GPU, set GPU=1 in this Makefile also.
+2. make all
+3. export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./extra
+
+```
+
+
+
+## Converting a sample model
+
+Below are steps to download tiny-yolo model and convert to either 8b or 16b. Execute them from Darknet root directory.
+
+```
+mkdir -p models
+wget https://pjreddie.com/media/files/tiny-yolo-voc.weights -P models
+./darknet convert cfg/tiny-yolo-voc.cfg models/tiny-yolo-voc.weights -bytes 2
+```
+
+This will create 16b model with name tiny-yolo-voc_16bit.weights whose size is half that of the original model.
+
+## Perform detection using low precision model
+
+Once you have converted tiny-yolo model to 16b model using above steps, you can test it on images using following command.
+
+```
+./darknet lpdetect test cfg/voc.data cfg/tiny-yolo-voc.cfg ./tiny-yolo-voc_16bit.weights data/person.jpg
+```
+
+You can perform same steps to evaluate 8bit model by changing -bytes from 2 to 1 while converting.
+
 # Evaluation
 
 I have evaluated the effect of model quantization on detector performance. The evaluation is using **Tiny-YOLO** on PASCAL VOC 2007 test set. The original floating point model is from [here](https://pjreddie.com/media/files/tiny-yolo-voc.weights).

@@ -519,10 +519,12 @@ int main(int argc, char **argv)
         mkimg(argv[2], argv[3], atoi(argv[4]), atoi(argv[5]), atoi(argv[6]), argv[7]);
     } else if (0 == strcmp(argv[1], "imtest")){
         test_resize(argv[2]);
+#ifdef LOWP_EN
     } else if (0 == strcmp(argv[1], "convert")) {
       CreateLowpModel(argc, argv);
     } else if (0 == strcmp(argv[1], "lpdetect")) {
       LowpDetector(argc, argv);
+#endif
     } else {
         fprintf(stderr, "Not an option: %s\n", argv[1]);
     }

@@ -1,4 +1,5 @@
-DEBUG=0
+DEBUG=1
+GPU=1
 
 VPATH=./src
 SLIB=libdarknet_lowp.so
@@ -14,6 +15,11 @@ COMMON= -I../include/ -I../src/ -I./src -I./include
 CFLAGS=-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC
 CFLAGS+= -Werror=implicit-function-declaration
  
+
+ifeq ($(GPU), 1)
+COMMON+= -DGPU -I/usr/local/cuda/include/
+CFLAGS+= -DGPU
+endif
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
