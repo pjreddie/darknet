@@ -329,7 +329,7 @@ void CreateLowpModel(int argc, char **argv) {
     return;
   }
   int bytes_per_ele = find_int_arg(argc, argv, "-bytes", 1);
-  char *outfile = find_char_arg(argc, argv, "-out", NULL);
+  char *outfile = find_char_arg(argc, argv, "-out", 0);
   char *cfg = argv[2];
   char *model = argv[3];
 
