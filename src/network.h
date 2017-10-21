@@ -2,6 +2,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include <stdint.h>
 #include "layer.h"
 
 #ifdef __cplusplus
@@ -20,7 +21,7 @@ typedef struct network{
     float *workspace;
     int n;
     int batch;
-    int *seen;
+	uint64_t *seen;
     float epoch;
     int subdivisions;
     float momentum;
