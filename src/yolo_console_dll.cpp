@@ -8,7 +8,7 @@
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 
-#ifdef WIN32
+#ifdef _WIN32
 #define OPENCV
 #endif
 
