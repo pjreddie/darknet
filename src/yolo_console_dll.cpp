@@ -19,7 +19,7 @@
 #include "opencv2/core/version.hpp"
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio.hpp"
-#pragma comment(lib, "opencv_world320.lib")  
+#pragma comment(lib, "opencv_world330.lib")  
 #else
 #pragma comment(lib, "opencv_core2413.lib")  
 #pragma comment(lib, "opencv_imgproc2413.lib")  
