@@ -49,14 +49,14 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
     net->delta_gpu = cuda_make_array(delta.data, im.w*im.h*im.c);
     cuda_push_array(net->input_gpu, im.data, net->inputs);
 
-    forward_network_gpu(*net);
+    forward_network_gpu(net);
     copy_gpu(last.outputs, last.output_gpu, 1, last.delta_gpu, 1);
 
     cuda_pull_array(last.delta_gpu, last.delta, last.outputs);
     calculate_loss(last.delta, last.delta, last.outputs, thresh);
     cuda_push_array(last.delta_gpu, last.delta, last.outputs);
 
-    backward_network_gpu(*net);
+    backward_network_gpu(net);
 
     cuda_pull_array(net->delta_gpu, delta.data, im.w*im.h*im.c);
     cuda_free(net->delta_gpu);
@@ -64,10 +64,10 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 #else
     net->input = im.data;
     net->delta = delta.data;
-    forward_network(*net);
+    forward_network(net);
     copy_cpu(last.outputs, last.output, 1, last.delta, 1);
     calculate_loss(last.output, last.delta, last.outputs, thresh);
-    backward_network(*net);
+    backward_network(net);
 #endif
 
     if(flip) flip_image(delta);
@@ -127,7 +127,7 @@ void smooth(image recon, image update, float lambda, int num)
     }
 }
 
-void reconstruct_picture(network net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size, int iters)
+void reconstruct_picture(network *net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size, int iters)
 {
     int iter = 0;
     for (iter = 0; iter < iters; ++iter) {
@@ -135,22 +135,22 @@ void reconstruct_picture(network net, float *features, image recon, image update
 
 #ifdef GPU
         layer l = get_network_output_layer(net);
-        cuda_push_array(net.input_gpu, recon.data, recon.w*recon.h*recon.c);
-        //cuda_push_array(net.truth_gpu, features, net.truths);
-        net.delta_gpu = cuda_make_array(delta.data, delta.w*delta.h*delta.c);
+        cuda_push_array(net->input_gpu, recon.data, recon.w*recon.h*recon.c);
+        //cuda_push_array(net->truth_gpu, features, net->truths);
+        net->delta_gpu = cuda_make_array(delta.data, delta.w*delta.h*delta.c);
 
         forward_network_gpu(net);
         cuda_push_array(l.delta_gpu, features, l.outputs);
         axpy_gpu(l.outputs, -1, l.output_gpu, 1, l.delta_gpu, 1);
         backward_network_gpu(net);
 
-        cuda_pull_array(net.delta_gpu, delta.data, delta.w*delta.h*delta.c);
+        cuda_pull_array(net->delta_gpu, delta.data, delta.w*delta.h*delta.c);
 
-        cuda_free(net.delta_gpu);
+        cuda_free(net->delta_gpu);
 #else
-        net.input = recon.data;
-        net.delta = delta.data;
-        net.truth = features;
+        net->input = recon.data;
+        net->delta = delta.data;
+        net->truth = features;
 
         forward_network(net);
         backward_network(net);
@@ -206,7 +206,7 @@ void run_lsd(int argc, char **argv)
     float *features = 0;
     image update;
     if (reconstruct){
-        im = letterbox_image(im, net.w, net.h);
+        im = letterbox_image(im, net->w, net->h);
 
         int zz = 0;
         network_predict(net, im.data);
@@ -308,12 +308,12 @@ void run_nightmare(int argc, char **argv)
     int reconstruct = find_arg(argc, argv, "-reconstruct");
     int smooth_size = find_int_arg(argc, argv, "-smooth", 1);
 
-    network net = parse_network_cfg(cfg);
-    load_weights(&net, weights);
+    network *net = parse_network_cfg(cfg);
+    load_weights(net, weights);
     char *cfgbase = basecfg(cfg);
     char *imbase = basecfg(input);
 
-    set_batch_network(&net, 1);
+    set_batch_network(net, 1);
     image im = load_image_color(input, 0, 0);
     if(0){
         float scale = 1;
@@ -325,19 +325,19 @@ void run_nightmare(int argc, char **argv)
         free_image(im);
         im = resized;
     }
-    //im = letterbox_image(im, net.w, net.h);
+    //im = letterbox_image(im, net->w, net->h);
 
     float *features = 0;
     image update;
     if (reconstruct){
-        net.n = max_layer;
-        im = letterbox_image(im, net.w, net.h);
+        net->n = max_layer;
+        im = letterbox_image(im, net->w, net->h);
         //resize_network(&net, im.w, im.h);
 
         network_predict(net, im.data);
-        if(net.layers[net.n-1].type == REGION){
+        if(net->layers[net->n-1].type == REGION){
             printf("region!\n");
-            zero_objectness(net.layers[net.n-1]);
+            zero_objectness(net->layers[net->n-1]);
         }
         image out_im = copy_image(get_network_image(net));
         /*
@@ -379,7 +379,7 @@ void run_nightmare(int argc, char **argv)
             }else{
                 int layer = max_layer + rand()%range - range/2;
                 int octave = rand()%octaves;
-                optimize_picture(&net, im, layer, 1/pow(1.33333333, octave), rate, thresh, norm);
+                optimize_picture(net, im, layer, 1/pow(1.33333333, octave), rate, thresh, norm);
             }
         }
         fprintf(stderr, "done\n");

@@ -137,14 +137,18 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
 
 box_label *read_boxes(char *filename, int *n)
 {
-    box_label *boxes = calloc(1, sizeof(box_label));
     FILE *file = fopen(filename, "r");
     if(!file) file_error(filename);
     float x, y, h, w;
     int id;
     int count = 0;
+    int size = 64;
+    box_label *boxes = calloc(size, sizeof(box_label));
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
-        boxes = realloc(boxes, (count+1)*sizeof(box_label));
+        if(count == size) {
+            size = size * 2;
+            boxes = realloc(boxes, size*sizeof(box_label));
+        }
         boxes[count].id = id;
         boxes[count].x = x;
         boxes[count].y = y;
@@ -976,6 +980,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         place_image(orig, nw, nh, dx, dy, sized);
 
         random_distort_image(sized, hue, saturation, exposure);
+
         int flip = rand()%2;
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
@@ -1167,11 +1172,32 @@ data load_data_regression(char **paths, int n, int m, int min, int max, int size
     return d;
 }
 
+data resize_data(data orig, int w, int h)
+{
+    data d = {0};
+    d.shallow = 0;
+    d.w = w;
+    d.h = h;
+    int i;
+    d.X.rows = orig.X.rows;
+    d.X.cols = w*h*3;
+    d.X.vals = calloc(d.X.rows, sizeof(float));
+
+    d.y = copy_matrix(orig.y);
+    for(i = 0; i < orig.X.rows; ++i){
+        image im = float_to_image(orig.w, orig.h, 3, orig.X.vals[i]);
+        d.X.vals[i] = resize_image(im, w, h).data;
+    }
+    return d;
+}
+
 data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
     d.shallow = 0;
+    d.w=size;
+    d.h=size;
     d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure, center);
     d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);

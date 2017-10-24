@@ -10,6 +10,19 @@
 
 #include "utils.h"
 
+
+/*
+// old timing. is it better? who knows!!
+double get_wall_time()
+{
+    struct timeval time;
+    if (gettimeofday(&time,NULL)){
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
+*/
+
 double what_time_is_it_now()
 {
     struct timespec now;
@@ -223,6 +236,21 @@ void error(const char *s)
     perror(s);
     assert(0);
     exit(-1);
+}
+
+unsigned char *read_file(char *filename)
+{
+    FILE *fp = fopen(filename, "rb");
+    size_t size;
+
+    fseek(fp, 0, SEEK_END); 
+    size = ftell(fp);
+    fseek(fp, 0, SEEK_SET); 
+
+    unsigned char *text = calloc(size+1, sizeof(char));
+    fread(text, 1, size, fp);
+    fclose(fp);
+    return text;
 }
 
 void malloc_error()
