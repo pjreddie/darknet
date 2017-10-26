@@ -11,15 +11,20 @@
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/core/core_c.h"
 #include "opencv2/core/version.hpp"
+
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio_c.h"
-#pragma comment(lib, "opencv_world320.lib")  
+#define OPENCV_VERSION CVAUX_STR(CV_VERSION_MAJOR)""CVAUX_STR(CV_VERSION_MINOR)""CVAUX_STR(CV_VERSION_REVISION)
+#pragma comment(lib, "opencv_world" OPENCV_VERSION ".lib")
 #else
-#pragma comment(lib, "opencv_core2413.lib")  
-#pragma comment(lib, "opencv_imgproc2413.lib")  
-#pragma comment(lib, "opencv_highgui2413.lib") 
+#define OPENCV_VERSION CVAUX_STR(CV_VERSION_EPOCH)""CVAUX_STR(CV_VERSION_MAJOR)""CVAUX_STR(CV_VERSION_MINOR)
+#pragma comment(lib, "opencv_core" OPENCV_VERSION ".lib")
+#pragma comment(lib, "opencv_imgproc" OPENCV_VERSION ".lib")
+#pragma comment(lib, "opencv_highgui" OPENCV_VERSION ".lib")
 #endif
+
 #endif
+
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)

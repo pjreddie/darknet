@@ -16,6 +16,7 @@
 #include "opencv2/core/version.hpp"
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio_c.h"
+#include "opencv2/imgcodecs/imgcodecs_c.h"
 #endif
 #endif
 
@@ -190,6 +191,14 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
         float prob = probs[i][class];
         if(prob > thresh){
 
+			//// for comparison with OpenCV version of DNN Darknet Yolo v2
+			//printf("\n %f, %f, %f, %f, ", boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
+			// int k;
+			//for (k = 0; k < classes; ++k) {
+			//	printf("%f, ", probs[i][k]);
+			//}
+			//printf("\n");
+
             int width = im.h * .012;
 
             if(0){
@@ -289,7 +298,7 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 			color.val[2] = blue * 256;
 
 			cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
-
+			//printf("left=%d, right=%d, top=%d, bottom=%d, obj_id=%d, obj=%s \n", left, right, top, bot, class, names[class]);
 			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
 			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);	// filled
 			CvScalar black_color;
@@ -1356,8 +1365,8 @@ image load_image(char *filename, int w, int h, int c)
 #ifdef OPENCV
 
 #ifndef CV_VERSION_EPOCH
-	image out = load_image_stb(filename, c);	// OpenCV 3.x
-	//image out = load_image_cv(filename, c);
+	//image out = load_image_stb(filename, c);	// OpenCV 3.x
+	image out = load_image_cv(filename, c);
 #else
 	image out = load_image_cv(filename, c);		// OpenCV 2.4.x
 #endif
