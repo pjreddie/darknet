@@ -21,7 +21,7 @@ typedef struct network{
     float *workspace;
     int n;
     int batch;
-	uint64_t *seen;
+	int *seen;
     float epoch;
     int subdivisions;
     float momentum;
