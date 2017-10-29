@@ -54,7 +54,7 @@ YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_file
 	char *cfgfile = const_cast<char *>(cfg_filename.data());
 	char *weightfile = const_cast<char *>(weight_filename.data());
 
-	net = parse_network_cfg(cfgfile);
+	net = parse_network_cfg_custom(cfgfile, 1);
 	if (weightfile) {
 		load_weights(&net, weightfile);
 	}

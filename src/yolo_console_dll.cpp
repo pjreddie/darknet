@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 	std::string filename;
 	if (argc > 1) filename = argv[1];
 
-	Detector detector("yolo-voc.cfg", "yolo-voc.weights");
+	Detector detector("cfg/yolo-voc.cfg", "yolo-voc.weights");
 
 	auto obj_names = objects_names_from_file("data/voc.names");
 	std::string out_videofile = "result.avi";
