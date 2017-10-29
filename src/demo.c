@@ -125,7 +125,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     demo_classes = classes;
     demo_thresh = thresh;
     printf("Demo\n");
-    net = parse_network_cfg(cfgfile);
+    net = parse_network_cfg_custom(cfgfile, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }

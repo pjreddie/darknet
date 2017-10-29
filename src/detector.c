@@ -461,7 +461,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels(name_list);
 
     image **alphabet = load_alphabet();
-    network net = parse_network_cfg(cfgfile);
+    network net = parse_network_cfg_custom(cfgfile, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -475,6 +475,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     while(1){
         if(filename){
             strncpy(input, filename, 256);
+			if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
         } else {
             printf("Enter Image Path: ");
             fflush(stdout);
@@ -561,6 +562,7 @@ void run_detector(int argc, char **argv)
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
+		if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename);
     }
 }

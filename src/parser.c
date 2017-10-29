@@ -584,6 +584,11 @@ int is_network(section *s)
 
 network parse_network_cfg(char *filename)
 {
+	return parse_network_cfg_custom(filename, 0);
+}
+
+network parse_network_cfg_custom(char *filename, int batch)
+{
     list *sections = read_cfg(filename);
     node *n = sections->front;
     if(!n) error("Config file has no sections");
@@ -600,6 +605,7 @@ network parse_network_cfg(char *filename)
     params.w = net.w;
     params.c = net.c;
     params.inputs = net.inputs;
+	if (batch > 0) net.batch = batch;
     params.batch = net.batch;
     params.time_steps = net.time_steps;
     params.net = net;
@@ -698,6 +704,8 @@ network parse_network_cfg(char *filename)
     }
     return net;
 }
+
+
 
 list *read_cfg(char *filename)
 {
