@@ -89,6 +89,9 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 * 194 MB VOC-model - WebCamera #0: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights -c 0`
 * 186 MB Yolo9000 - image: `darknet.exe detector test cfg/combine9k.data yolo9000.cfg yolo9000.weights`
 * 186 MB Yolo9000 - video: `darknet.exe detector demo cfg/combine9k.data yolo9000.cfg yolo9000.weights test.mp4`
+* To process a list of images `image_list.txt` and save results of detection to `result.txt` use:                             
+    `darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights < image_list.txt > result.txt`
+    You can comment this line so that each image does not require pressing the button ESC: https://github.com/AlexeyAB/darknet/blob/6ccb41808caf753feea58ca9df79d6367dedc434/src/detector.c#L509
 
 ##### For using network video-camera mjpeg-stream with any Android smartphone:
 
