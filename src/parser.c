@@ -1033,11 +1033,13 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fread(&minor, sizeof(int), 1, fp);
     fread(&revision, sizeof(int), 1, fp);
 	if ((major * 10 + minor) >= 2) {
+		printf("\n seen 64 \n");
 		uint64_t iseen = 0;
 		fread(&iseen, sizeof(uint64_t), 1, fp);
 		*net->seen = iseen;
 	}
 	else {
+		printf("\n seen 32 \n");
 		fread(net->seen, sizeof(int), 1, fp);
 	}
     int transpose = (major > 1000) || (minor > 1000);
