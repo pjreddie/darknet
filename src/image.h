@@ -19,6 +19,10 @@
 #endif
 #endif
 
+
+extern float fps_display_ext;
+
+
 typedef struct {
     int h;
     int w;
@@ -117,4 +121,3 @@ image get_image_layer(image m, int l);
 void free_image(image m);
 void test_resize(char *filename);
 #endif
-

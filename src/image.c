@@ -183,6 +183,14 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 {
     int i;
 
+    char tmp[222];
+    sprintf(tmp,"fps %.1f",fps_display_ext);
+    image label = get_label(alphabet, tmp, (im.h*.02)/10);
+    float rgb[3]={1.0,0,0};
+    draw_box_width(im, 0, 0, 0, 0, 0, 1.0, 0, 0);
+    draw_label(im, 0, 0, label, rgb);
+    free_image(label);
+
     for(i = 0; i < num; ++i){
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
@@ -194,7 +202,6 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
                 width = pow(prob, 1./2.)*10+1;
                 alphabet = 0;
             }
-
             //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
             printf("%s: %.0f%%\n", names[class], prob*100);
             int offset = class*123457 % classes;

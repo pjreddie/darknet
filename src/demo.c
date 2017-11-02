@@ -19,6 +19,11 @@
 image get_image_from_stream(CvCapture *cap);
 */
 
+
+/*extern*/ float fps_display_ext;
+
+
+
 static char **demo_names;
 static image **demo_alphabet;
 static int demo_classes;
@@ -221,6 +226,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         if(!prefix){
             if(count % (demo_delay+1) == 0){
                 fps = 1./(get_wall_time() - demo_time);
+                fps_display_ext = fps;
                 demo_time = get_wall_time();
                 float *swap = last_avg;
                 last_avg  = last_avg2;
@@ -229,6 +235,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             }
             display_in_thread(0);
         }else{
+            fps = 1./(get_wall_time() - demo_time);
+            fps_display_ext = fps;
+            demo_time = get_wall_time();
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
             save_image(buff[(buff_index + 1)%3], name);
