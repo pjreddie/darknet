@@ -137,9 +137,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
   
     4.2 (right click on project) -> properties  -> Linker -> General -> Additional Library Directories: `C:\opencv_2.4.13\opencv\build\x64\vc14\lib`
   
-5. If you have other version of OpenCV 2.4.x (not 3.x) then you also should change lines like `#pragma comment(lib, "opencv_core2413.lib")` in the file `\src\detector.c`
-
-6. If you want to build with CUDNN to speed up then:
+5. If you want to build with CUDNN to speed up then:
       
     * download and install **cuDNN 6.0 for CUDA 8.0**: https://developer.nvidia.com/cudnn
       
