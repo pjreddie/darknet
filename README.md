@@ -173,8 +173,8 @@ Then add to your created project:
 
     * `cusolver64_80.dll, curand64_80.dll, cudart64_80.dll, cublas64_80.dll` - 80 for CUDA 8.0 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin
 
-    * For OpenCV 3.0: `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` from `C:\opencv_3.0\opencv\build\x64\vc14\bin` 
-    * For OpenCV 2.4.13: `opencv_core249.dll`, `opencv_highgui249.dll` and `opencv_ffmpeg249_64.dll` from  `C:\opencv_2.4.9\opencv\build\x64\vc14\bin`
+    * For OpenCV 3.X: `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` from `C:\opencv_3.0\opencv\build\x64\vc14\bin` 
+    * For OpenCV 2.4.13: `opencv_core2413.dll`, `opencv_highgui2413.dll` and `opencv_ffmpeg2413_64.dll` from  `C:\opencv_2.4.13\opencv\build\x64\vc14\bin`
 
 ## How to train (Pascal VOC Data):
 
@@ -216,9 +216,11 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
   * change line batch to [`batch=64`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.2.0.cfg#L2)
   * change line subdivisions to [`subdivisions=8`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.2.0.cfg#L3)
   * change line `classes=20` to your number of objects
-  * change line #237 from [`filters=125`](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.2.0.cfg#L224) to `filters=(classes + 5)*5` (generally this depends on the `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
+  * change line #237 from [`filters=125`](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.2.0.cfg#L224) to: filters=(classes + 5)*5  
+  
+  (Generally `filters` depends on the `classes`, `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
 
-  For example, for 2 objects, your file `yolo-obj.cfg` should differ from `yolo-voc.2.0.cfg` in such lines:
+  So for example, for 2 objects, your file `yolo-obj.cfg` should differ from `yolo-voc.2.0.cfg` in such lines:
 
   ```
   [convolutional]
