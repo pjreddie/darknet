@@ -7,19 +7,22 @@ import sys, os
 sys.path.append(os.path.join(os.getcwd(),'python/'))
 
 import darknet as dn
+import pdb
 
-net = dn.load_net("cfg/tiny-yolo.cfg", "tiny-yolo.weights", 0)
-meta = dn.load_meta("cfg/coco.data")
-r = dn.detect(net, meta, "data/dog.jpg")
-print r
+net = dn.load_net("cfg/yolo-tag.cfg", "yolo-tag_final.weights", 0)
+meta = dn.load_meta("cfg/openimages.data")
+pdb.set_trace()
+rr = dn.detect(net, meta, 'data/dog.jpg')
+print rr
+pdb.set_trace()
 
 # And then down here you could detect a lot more images like:
-r = dn.detect(net, meta, "data/eagle.jpg")
-print r
-r = dn.detect(net, meta, "data/giraffe.jpg")
-print r
-r = dn.detect(net, meta, "data/horses.jpg")
-print r
-r = dn.detect(net, meta, "data/person.jpg")
-print r
+rr = dn.detect(net, meta, "data/eagle.jpg")
+print rr
+rr = dn.detect(net, meta, "data/giraffe.jpg")
+print rr
+rr = dn.detect(net, meta, "data/horses.jpg")
+print rr
+rr = dn.detect(net, meta, "data/person.jpg")
+print rr
 
