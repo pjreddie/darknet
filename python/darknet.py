@@ -44,6 +44,9 @@ predict = lib.network_predict
 predict.argtypes = [c_void_p, POINTER(c_float)]
 predict.restype = POINTER(c_float)
 
+set_gpu = lib.cuda_set_device
+set_gpu.argtypes = [c_int]
+
 make_image = lib.make_image
 make_image.argtypes = [c_int, c_int, c_int]
 make_image.restype = IMAGE
