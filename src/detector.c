@@ -552,7 +552,8 @@ void run_detector(int argc, char **argv)
     char *datacfg = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
-	if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
+	if(weights)
+		if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
@@ -563,7 +564,8 @@ void run_detector(int argc, char **argv)
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-		if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
+		if(filename)
+			if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename);
     }
 }
