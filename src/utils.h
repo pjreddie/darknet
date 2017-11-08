@@ -44,7 +44,6 @@ int constrain_int(int a, int min, int max);
 float rand_uniform(float min, float max);
 float rand_scale(float s);
 int rand_int(int min, int max);
-float sum_array(float *a, int n);
 void mean_arrays(float **a, int n, int els, float *avg);
 float dist_array(float *a, float *b, int n, int sub);
 float **one_hot_encode(float *a, int n, int k);

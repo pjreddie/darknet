@@ -447,7 +447,7 @@ void validate_classifier_multi(char *datacfg, char *cfg, char *weights)
         float *pred = calloc(classes, sizeof(float));
         image im = load_image_color(paths[i], 0, 0);
         for(j = 0; j < nscales; ++j){
-            image r = resize_min(im, scales[j]);
+            image r = resize_max(im, scales[j]);
             resize_network(net, r.w, r.h);
             float *p = network_predict(net, r.data);
             if(net->hierarchy) hierarchy_predictions(p, net->outputs, net->hierarchy, 1 , 1);
