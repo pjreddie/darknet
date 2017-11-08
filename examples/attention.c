@@ -299,7 +299,7 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
             float *pred = network_predict(net, tile.data);
             axpy_cpu(classes, 1., pred, 1, avgs, 1);
             show_image(tile, "tile");
-            cvWaitKey(10);
+            //cvWaitKey(10);
         }
         if(net->hierarchy) hierarchy_predictions(pred, net->outputs, net->hierarchy, 1, 1);
 
