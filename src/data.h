@@ -1,7 +1,7 @@
 #ifndef DATA_H
 #define DATA_H
 
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 #include <pthread.h>
 #endif
 
@@ -78,7 +78,7 @@ extern "C" {
 
 void free_data(data d);
 
-#if defined __linux__ || defined PTHREAD_WINDOWS
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 pthread_t load_data(load_args args);
 
 pthread_t load_data_in_thread(load_args args);

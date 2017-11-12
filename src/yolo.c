@@ -138,7 +138,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     FILE **fps = (FILE**)calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
 #else
 		_snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
@@ -240,7 +240,7 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     FILE **fps = (FILE**)calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
 #else        
         _snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);

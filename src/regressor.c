@@ -5,7 +5,9 @@
 #include "blas.h"
 #include "assert.h"
 #include "cuda.h"
+#if defined __linux__ || defined __APPLE__
 #include <sys/time.h>
+#endif
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"

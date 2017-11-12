@@ -284,7 +284,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     int imagenet = 0;
     if(0==strcmp(type, "coco")){
         if(!outfile) outfile = "coco_results";
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
 #else
         _snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
@@ -294,7 +294,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
         coco = 1;
     } else if(0==strcmp(type, "imagenet")){
         if(!outfile) outfile = "imagenet-detection";
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
 #else
         _snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
@@ -306,7 +306,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
         if(!outfile) outfile = "comp4_det_test_";
         fps = (FILE**)calloc(classes, sizeof(FILE *));
         for(j = 0; j < classes; ++j){
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
 #else
             _snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
@@ -432,7 +432,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int imagenet = 0;
     if(0==strcmp(type, "coco")){
         if(!outfile) outfile = "coco_results";
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
 #else
 		_snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
@@ -442,7 +442,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         coco = 1;
     } else if(0==strcmp(type, "imagenet")){
         if(!outfile) outfile = "imagenet-detection";
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
 #else
 		_snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
@@ -455,7 +455,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         if(!outfile) outfile = "comp4_det_test_";
         fps = (FILE**)calloc(classes, sizeof(FILE *));
         for(j = 0; j < classes; ++j){
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
 #else
 			_snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
