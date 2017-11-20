@@ -122,6 +122,7 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
                 res.append((meta.names[i], probs[j][i], (boxes[j].x, boxes[j].y, boxes[j].w, boxes[j].h)))
     res = sorted(res, key=lambda x: -x[1])
     free_image(im)
+    free_ptrs(cast(boxes, POINTER(c_void_p)), 0)
     free_ptrs(cast(probs, POINTER(c_void_p)), num)
     return res
     
