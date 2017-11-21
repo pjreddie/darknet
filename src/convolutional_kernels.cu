@@ -236,7 +236,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
             float *b = net.workspace;
             float *c = l.weight_updates_gpu + j*l.nweights/l.groups;
 
-            float *im = net.input+(i*l.groups + j)*l.c/l.groups*l.h*l.w;
+            float *im = net.input_gpu+(i*l.groups + j)*l.c/l.groups*l.h*l.w;
 
             im2col_gpu(im, l.c/l.groups, l.h, l.w,
                     l.size, l.stride, l.pad, b);

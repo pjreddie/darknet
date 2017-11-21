@@ -13,7 +13,9 @@ def sample(probs):
     return len(probs)-1
 
 def c_array(ctype, values):
-    return (ctype * len(values))(*values)
+    arr = (ctype*len(values))()
+    arr[:] = values
+    return arr
 
 class BOX(Structure):
     _fields_ = [("x", c_float),

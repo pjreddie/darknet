@@ -62,7 +62,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
     cuda_free(net->delta_gpu);
     net->delta_gpu = 0;
 #else
-    net->input = im.data;
+    copy_cpu(net->inputs, im.data, 1, net->input, 1);
     net->delta = delta.data;
     forward_network(net);
     copy_cpu(last.outputs, last.output, 1, last.delta, 1);
