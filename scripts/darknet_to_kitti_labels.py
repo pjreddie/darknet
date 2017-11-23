@@ -118,11 +118,22 @@ def create_subset(size, input_images, input_label_dir, output_label_dir, output_
 
     images = images[:size] # take first N
 
-    for im in images:
-        assoc_label = os.path.splitext(im)[0] + '.txt'
+    ensureDir(output_label_dir)
+    ensureDir(output_image_dir)
+
+    for img in images:
+        assoc_label = os.path.splitext(img)[0] + '.txt'
+        jpg_ext = os.path.splitext(img)[0] + '.jpg'
+
         label_list.append(assoc_label)
 
-    i=0
+        in_img_path = input_images + '/' + img
+        out_img_path = output_image_dir + '/' + jpg_ext
+
+        os.link(in_img_path, out_img_path)
+
+
+        i=0
     for label in label_list:
         assoc_label_path = input_label_dir + '/' + label
         out_label_path = out_label_dir + '/' + label
