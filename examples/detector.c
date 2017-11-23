@@ -566,6 +566,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
+    char *detector_log = option_find_str(options,"detector_log", "detector_log.txt");
     char **names = get_labels(name_list);
 
     image **alphabet = load_alphabet();
@@ -575,9 +576,15 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     double time;
     char buff[256];
     char *input = buff;
+    char buff2[256];
+    char *output2 = buff2;
     int j;
     float nms=.3;
+    int iter = 0;
     while(1){
+        ++iter;
+        FILE* f;
+        f = fopen(detector_log,"a");
         if(filename){
             strncpy(input, filename, 256);
         } else {
@@ -586,6 +593,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             input = fgets(input, 256, stdin);
             if(!input) return;
             strtok(input, "\n");
+            sprintf(output2,"%s%05d.jpg", outfile, iter);
         }
         image im = load_image_color(input,0,0);
         image sized = letterbox_image(im, net->w, net->h);
@@ -612,19 +620,42 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
-        if(outfile){
+        int y,z;
+        printf("%d\t%d\t%d\t%d\n", l.w*l.h*l.n, l.w, l.h, l.n);
+        for(z = 0; z < l.w*l.h*l.n; ++z){
+            int class = -1;
+            float max_value = 0.0;
+            for(y = 0; y < l.classes; ++y){
+                if (probs[z][y] > thresh){
+                    if (max_value < probs[z][y]) {
+                        class = y;
+                        max_value = probs[z][y];
+                    }
+                }
+            }
+            if(class >= 0){
+                box b = boxes[z];
+                fprintf(f,"%s\t%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\n", weightfile, input, class, b.x, b.y, b.w, b.h);
+            }
+        }
+        fclose(f);
+        if(output2){
+            save_image(im, output2);
+        }
+        else if(outfile){
             save_image(im, outfile);
         }
         else{
             save_image(im, "predictions");
 #ifdef OPENCV
-            cvNamedWindow("predictions", CV_WINDOW_NORMAL); 
             if(fullscreen){
+                cvNamedWindow("predictions", CV_WINDOW_NORMAL); 
                 cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+            
+                show_image(im, "predictions");
+                cvWaitKey(0);
+                cvDestroyAllWindows();
             }
-            show_image(im, "predictions");
-            cvWaitKey(0);
-            cvDestroyAllWindows();
 #endif
         }
 

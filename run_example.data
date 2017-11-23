@@ -1,0 +1,5 @@
+classes= 5  
+train  = path_to_train_directory/train.txt  
+names = 23Nov_10classes.names
+backup = backup/  
+detector_log = my_example_name_for_detector_log.txt
