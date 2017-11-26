@@ -177,7 +177,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
     if(l.smooth){
         smooth_layer(l, 5, l.smooth);
     }
-    constrain_gpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
+    //constrain_gpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
     gradient_array_gpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
 
 

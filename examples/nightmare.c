@@ -47,7 +47,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
 #ifdef GPU
     net->delta_gpu = cuda_make_array(delta.data, im.w*im.h*im.c);
-    cuda_push_array(net->input_gpu, im.data, net->inputs);
+    copy_cpu(net->inputs, im.data, 1, net->input, 1);
 
     forward_network_gpu(net);
     copy_gpu(last.outputs, last.output_gpu, 1, last.delta_gpu, 1);
@@ -62,6 +62,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
     cuda_free(net->delta_gpu);
     net->delta_gpu = 0;
 #else
+    printf("\nnet: %d %d %d im: %d %d %d\n", net->w, net->h, net->inputs, im.w, im.h, im.c);
     copy_cpu(net->inputs, im.data, 1, net->input, 1);
     net->delta = delta.data;
     forward_network(net);
@@ -308,8 +309,7 @@ void run_nightmare(int argc, char **argv)
     int reconstruct = find_arg(argc, argv, "-reconstruct");
     int smooth_size = find_int_arg(argc, argv, "-smooth", 1);
 
-    network *net = parse_network_cfg(cfg);
-    load_weights(net, weights);
+    network *net = load_network(cfg, weights, 0);
     char *cfgbase = basecfg(cfg);
     char *imbase = basecfg(input);
 
