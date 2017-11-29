@@ -280,7 +280,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
 
     box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
     float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -413,7 +413,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
     box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
     float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -503,7 +503,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     int j, k;
     box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
     float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -597,11 +597,11 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
         float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
+        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float));
         float **masks = 0;
         if (l.coords > 4){
             masks = calloc(l.w*l.h*l.n, sizeof(float*));
-            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = calloc(l.coords-4, sizeof(float *));
+            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = calloc(l.coords-4, sizeof(float));
         }
 
         float *X = sized.data;
