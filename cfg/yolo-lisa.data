@@ -1,0 +1,6 @@
+classes = 47
+train  = 2007_train.txt
+valid  = 2007_val.txt
+names = data/yolo-lisa.names
+backup = backup
+gpus  = 0

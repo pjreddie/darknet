@@ -25,3 +25,10 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+VOCdevkit/
+darknet19_448.conv.23
+darknet19_448.weights
+2007_train.txt
+2007_val.txt
+libdarknet.a
+libdarknet.so
