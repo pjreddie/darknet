@@ -246,7 +246,7 @@ struct layer{
 
     float * m;
     float * v;
-    
+
     float * bias_m;
     float * bias_v;
     float * scale_m;
@@ -271,7 +271,7 @@ struct layer{
     float *g_cpu;
     float *o_cpu;
     float *c_cpu;
-    float *dc_cpu; 
+    float *dc_cpu;
 
     float * binary_input;
 
@@ -298,7 +298,7 @@ struct layer{
 
     struct layer *input_h_layer;
     struct layer *state_h_layer;
-	
+
     struct layer *wz;
     struct layer *uz;
     struct layer *wr;
@@ -338,7 +338,7 @@ struct layer{
     float *g_gpu;
     float *o_gpu;
     float *c_gpu;
-    float *dc_gpu; 
+    float *dc_gpu;
 
     float *m_gpu;
     float *v_gpu;
@@ -714,6 +714,7 @@ float *network_predict_image(network *net, image im);
 void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, box *boxes, float **probs);
 int num_boxes(network *net);
 box *make_boxes(network *net);
+float **make_probs(network *net);
 
 void reset_network_state(network *net, int b);
 
