@@ -10,7 +10,8 @@
 6. [When should I stop training](#when-should-i-stop-training)
 7. [How to improve object detection](#how-to-improve-object-detection)
 8. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-9. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
+9. [Using Yolo9000](#using_yolo9000)
+10. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
@@ -353,6 +354,27 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 Here you can find repository with GUI-software for marking bounded boxes of objects and generating annotation files for Yolo v2: https://github.com/AlexeyAB/Yolo_mark
 
 With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`.txt`, `bird`1-4`.txt` for 2 classes of objects (air, bird) and `train_obj.cmd` with example how to train this image-set with Yolo v2
+
+## Using Yolo9000
+
+ Simultaneous detection and classification of 9000 objects:
+
+* `9k.tree` - **WordTree** of 9418 categories  - `<label> <parent_it>`, if `parent_id == -1` then this label hasn't parent: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/9k.tree
+
+* `coco9k.map` - map 80 categories from MSCOCO to WordTree `9k.tree`: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/coco9k.map
+
+* `combine9k.data` - data file, there are paths to: 9k.labels, 9k.names, inet9k.map, (change path to your `combine9k.train.list`): https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/combine9k.data
+
+* `9k.labels` - 9418 labels of objects: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/9k.labels
+
+* `9k.names` -
+9418 names of objects: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/9k.names
+
+* `inet9k.map` - map 200 categories from ImageNet to WordTree `9k.tree`: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/inet9k.map
+
+* `yolo9000.cfg` - cfg-file of the Yolo9000, also there are paths to the `9k.tree` and `coco9k.map`  https://github.com/AlexeyAB/darknet/blob/617cf313ccb1fe005db3f7d88dec04a04bd97cc2/cfg/yolo9000.cfg#L217-L218
+
+* `yolo9000.weights` - (186 MB Yolo9000-model) requires 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo9000.weights
 
 ## How to use Yolo as DLL
 
