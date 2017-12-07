@@ -10,7 +10,7 @@
 6. [When should I stop training](#when-should-i-stop-training)
 7. [How to improve object detection](#how-to-improve-object-detection)
 8. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-9. [Using Yolo9000](#using_yolo9000)
+9. [Using Yolo9000](#using-yolo9000)
 10. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg) https://arxiv.org/abs/1612.08242 |
