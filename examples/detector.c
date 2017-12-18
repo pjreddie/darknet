@@ -562,6 +562,98 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     }
 }
 
+void validate_detector_prec_recall(char *datacfg, char *cfgfile, char *weightfile)
+{
+    list *options = read_data_cfg(datacfg);
+    char *valid_images = option_find_str(options, "valid", "data/voc.2007.test");
+
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
+    srand(time(0));
+
+    list *plist = get_paths(valid_images);
+    char **paths = (char **)list_to_array(plist);
+
+    layer l = net->layers[net->n-1];
+    int classes = l.classes;
+
+    int i, j, k;
+    int m = plist->size;
+    box **all_boxes = calloc(m, sizeof(box *));
+    float ***probs = calloc(m, sizeof(float *));
+    box_label **truth = calloc(m, sizeof(box_label *));
+    int *all_num_labels = calloc(m, sizeof(int));
+    
+    for (i = 0; i < m; ++i) {
+        all_boxes[i] = calloc(l.w*l.h*l.n, sizeof(box));
+        probs[i] = calloc(l.w*l.h*l.n, sizeof(float *));
+        
+        char *path = paths[i];
+        char labelpath[4096];
+        find_replace(path, "images", "labels", labelpath);
+        find_replace(labelpath, "JPEGImages", "labels", labelpath);
+        find_replace(labelpath, ".png", ".txt", labelpath);
+        find_replace(labelpath, ".jpg", ".txt", labelpath);
+        find_replace(labelpath, ".JPEG", ".txt", labelpath);
+
+        int num_labels = 0;
+        truth[i] = read_boxes(labelpath, &num_labels);
+        all_num_labels[i] = num_labels;
+
+        for (j = 0; j < l.w*l.h*l.n; ++j) {
+            probs[i][j] = calloc(classes, sizeof(float *));
+        }
+    }
+
+    float iou_thresh = .5;
+    float nms = .4;
+    float thresh;
+
+    for(i = 0; i < m; ++i) {
+        char *path = paths[i];
+        image orig = load_image_color(path, 0, 0);
+        image sized = resize_image(orig, net->w, net->h);
+        char *id = basecfg(path);
+        network_predict(net, sized.data);
+        get_region_boxes(l, sized.w, sized.h, net->w, net->h, 0, probs[i], all_boxes[i], 0, 0, 0, .5, 1);
+        if (nms) do_nms_obj(all_boxes[i], probs[i], l.w*l.h*l.n, classes, nms);
+        
+        free(id);
+        free_image(orig);
+        free_image(sized);
+    }
+
+    for(thresh = 0; thresh < 1; thresh = thresh + 0.01) {	
+        int total = 0;
+        int TP = 0;
+        int detections = 0;
+        for(i = 0; i < m; ++i) {
+            int num_labels = all_num_labels[i];
+            total += num_labels;
+            for(k = 0; k < l.w*l.h*l.n; ++k) {
+                int class = max_index(probs[i][k], classes);
+                float prob = probs[i][k][class];
+                if(prob > thresh) {
+                    ++detections;
+                    float best_iou = 0;
+                    for (j = 0; j < num_labels; ++j) {
+                        box t = {truth[i][j].x, truth[i][j].y, truth[i][j].w, truth[i][j].h};
+                        float iou = box_iou(all_boxes[i][k], t);
+                        if(iou > best_iou && truth[i][j].id == class) {
+                            best_iou = iou;
+                        }
+                    }
+                    if (best_iou > iou_thresh) {
+                        ++TP;
+                    }
+                }
+             }
+        }
+        fprintf(stderr, "Thresh:%.4f\tRecall:%.2f%%\tPrecision:%.2f%%\n", thresh, 100.*TP/(total+1e-10), 100.*TP/(detections+1e-10));
+    }
+}
+
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
@@ -687,6 +779,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
+    else if(0==strcmp(argv[2], "pr")) validate_detector_prec_recall(datacfg, cfg, weights);
     else if(0==strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
