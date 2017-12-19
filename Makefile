@@ -2,6 +2,7 @@ GPU=0
 CUDNN=0
 OPENCV=0
 OPENMP=0
+NATIVECPU=0
 DEBUG=0
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
@@ -30,6 +31,10 @@ CFLAGS=-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
 ifeq ($(OPENMP), 1) 
 CFLAGS+= -fopenmp
+endif
+
+ifeq ($(NATIVECPU), 1)
+CFLAGS+= -march=native
 endif
 
 ifeq ($(DEBUG), 1) 
