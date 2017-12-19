@@ -166,8 +166,6 @@ Then add to your created project:
 
 `OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
 
-- open file: `\src\detector.c` and check lines `#pragma` and `#inclue` for OpenCV.
-
 - compile to .exe (X64 & Release) and put .dll-s near with .exe:
 
     * `pthreadVC2.dll, pthreadGC2.dll` from \3rdparty\dll\x64
