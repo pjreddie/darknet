@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 import pickle
+from lxml import etree
 import os
 from os import listdir, getcwd
 from os.path import join
@@ -25,8 +26,8 @@ def convert(size, box):
 def convert_annotation(year, image_id):
     in_file = open('VOCdevkit/VOC%s/Annotations/%s.xml'%(year, image_id))
     out_file = open('VOCdevkit/VOC%s/labels/%s.txt'%(year, image_id), 'w')
-    tree=ET.parse(in_file)
-    root = tree.getroot()
+    parser = etree.XMLParser(recover=True)
+    root = ET.fromstring(in_file,parser=parser)
     size = root.find('size')
     w = int(size.find('width').text)
     h = int(size.find('height').text)
