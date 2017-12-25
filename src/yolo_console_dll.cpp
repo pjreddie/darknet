@@ -2,6 +2,7 @@
 #include <iomanip> 
 #include <string>
 #include <vector>
+#include <queue>
 #include <fstream>
 #include <thread>
 #include <atomic>
@@ -10,8 +11,10 @@
 
 #ifdef _WIN32
 #define OPENCV
+#include "windows.h"
 #endif
 
+#define TRACK_OPTFLOW
 #include "yolo_v2_class.hpp"	// imported functions from DLL
 
 #ifdef OPENCV
@@ -21,6 +24,11 @@
 #include "opencv2/videoio/videoio.hpp"
 #define OPENCV_VERSION CVAUX_STR(CV_VERSION_MAJOR)""CVAUX_STR(CV_VERSION_MINOR)""CVAUX_STR(CV_VERSION_REVISION)
 #pragma comment(lib, "opencv_world" OPENCV_VERSION ".lib")
+#pragma comment(lib, "opencv_cudaoptflow" OPENCV_VERSION ".lib")
+#pragma comment(lib, "opencv_cudaimgproc" OPENCV_VERSION ".lib")
+#pragma comment(lib, "opencv_core" OPENCV_VERSION ".lib")
+#pragma comment(lib, "opencv_imgproc" OPENCV_VERSION ".lib")
+#pragma comment(lib, "opencv_highgui" OPENCV_VERSION ".lib")
 #else
 #define OPENCV_VERSION CVAUX_STR(CV_VERSION_EPOCH)""CVAUX_STR(CV_VERSION_MAJOR)""CVAUX_STR(CV_VERSION_MINOR)
 #pragma comment(lib, "opencv_core" OPENCV_VERSION ".lib")
@@ -85,11 +93,15 @@ int main(int argc, char *argv[])
 	std::string filename;
 	if (argc > 1) filename = argv[1];
 
-	Detector detector("cfg/yolo-voc.cfg", "yolo-voc.weights");
+	//Detector detector("cfg/yolo-voc.cfg", "yolo-voc.weights");
+	Detector detector("tiny-yolo-voc_air.cfg", "backup/tiny-yolo-voc_air_5000.weights");
 
 	auto obj_names = objects_names_from_file("data/voc.names");
 	std::string out_videofile = "result.avi";
 	bool const save_output_videofile = false;
+#ifdef TRACK_OPTFLOW
+	Tracker_optflow tracker_flow;
+#endif
 
 	while (true) 
 	{		
@@ -105,6 +117,8 @@ int main(int argc, char *argv[])
 				protocol == "rtmp://" || protocol == "rtsp://" || protocol == "http://" || protocol == "https:/")	// video network stream
 			{
 				cv::Mat cap_frame, cur_frame, det_frame, write_frame;
+				std::queue<cv::Mat> track_optflow_queue;
+				int passed_flow_frames = 0;
 				std::shared_ptr<image_t> det_image;
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
@@ -126,7 +140,9 @@ int main(int argc, char *argv[])
 				if (save_output_videofile)
 					output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(35, video_fps), frame_size, true);
 
-				while (!cur_frame.empty()) {
+				while (!cur_frame.empty()) 
+				{
+					// always sync
 					if (t_cap.joinable()) {
 						t_cap.join();
 						++fps_cap_counter;
@@ -134,22 +150,79 @@ int main(int argc, char *argv[])
 					}
 					t_cap = std::thread([&]() { cap >> cap_frame; });
 
-					// swap result and input-frame
+					// swap result bouned-boxes and input-frame
 					if(consumed)
 					{
-						std::unique_lock<std::mutex> lock(mtx);
-						det_image = detector.mat_to_image_resize(cur_frame);
-						result_vec = thread_result_vec;
-						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
-						consumed = false;
+						{
+							std::unique_lock<std::mutex> lock(mtx);
+							det_image = detector.mat_to_image_resize(cur_frame);
+							result_vec = thread_result_vec;
+							result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
+
+							consumed = false;
+						}
+
+#ifdef TRACK_OPTFLOW
+						int y = 0, x = 0;
+						cv::Mat show_flow = cur_frame.clone();
+						auto lambda = [&x, &y](cv::Mat draw_frame, cv::Mat src_frame, std::vector<bbox_t> result_vec) {
+							//if (x > 10) return;
+							if (result_vec.size() == 0) return;
+							bbox_t i = result_vec[0];
+							//cv::Rect r(i.x, i.y, i.w, i.h);
+							cv::Rect r(i.x + (i.w-31)/2, i.y + (i.h - 31)/2, 31, 31);
+							cv::Rect img_rect(cv::Point2i(0, 0), src_frame.size());
+							cv::Rect rect_roi = r & img_rect;
+							if (rect_roi.width < 1 || rect_roi.height < 1) return;
+							cv::Mat roi = src_frame(rect_roi);
+							cv::Mat dst;
+							cv::resize(roi, dst, cv::Size(100, 100));
+							if (x > 10) x = 0, ++y;
+							cv::Rect dst_rect_roi(cv::Point2i(x*100, y*100), dst.size());
+							cv::Mat dst_roi = draw_frame(dst_rect_roi);
+							dst.copyTo(dst_roi);
+
+							++x;
+						};
+
+
+						// track optical flow
+						if (track_optflow_queue.size() > 0) {
+							std::queue<cv::Mat> new_track_optflow_queue;
+							std::cout << "\n !!!! all = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
+							//draw_boxes(track_optflow_queue.front().clone(), result_vec, obj_names, 3, current_det_fps, current_cap_fps);
+							//cv::waitKey(10);
+							tracker_flow.update_tracking_flow(track_optflow_queue.front());
+							lambda(show_flow, track_optflow_queue.front(), result_vec);
+							track_optflow_queue.pop();
+							while(track_optflow_queue.size() > 0) {
+								//draw_boxes(track_optflow_queue.front().clone(), result_vec, obj_names, 3, current_det_fps, current_cap_fps);
+								//cv::waitKey(10);
+								result_vec = tracker_flow.tracking_flow(track_optflow_queue.front(), result_vec);
+								if (track_optflow_queue.size() <= passed_flow_frames && new_track_optflow_queue.size() == 0)
+									new_track_optflow_queue = track_optflow_queue;
+								lambda(show_flow, track_optflow_queue.front(), result_vec);
+								track_optflow_queue.pop();
+							}					
+							track_optflow_queue = new_track_optflow_queue;
+							new_track_optflow_queue.swap(std::queue<cv::Mat>());
+							passed_flow_frames = 0;
+							std::cout << "\n !!!! now = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
+
+							cv::imshow("flow", show_flow);
+							cv::waitKey(3);
+						}
+#endif
+
 					}
-					// launch thread once
+					// launch thread once - Detection
 					if (!t_detect.joinable()) {
 						t_detect = std::thread([&]() {
 							auto current_image = det_image;
 							consumed = true;
 							while (current_image.use_count() > 0) {
-								auto result = detector.detect_resized(*current_image, frame_size, 0.24, true);
+								auto result = detector.detect_resized(*current_image, frame_size, 0.24, false);	// true
+								Sleep(500);
 								++fps_det_counter;
 								std::unique_lock<std::mutex> lock(mtx);
 								thread_result_vec = result;
@@ -169,6 +242,13 @@ int main(int argc, char *argv[])
 							fps_det_counter = 0;
 							fps_cap_counter = 0;
 						}
+
+#ifdef TRACK_OPTFLOW
+						++passed_flow_frames;
+						track_optflow_queue.push(cur_frame.clone());
+						result_vec = tracker_flow.tracking_flow(cur_frame, result_vec);	// track optical flow
+#endif
+
 						draw_boxes(cur_frame, result_vec, obj_names, 3, current_det_fps, current_cap_fps);
 						//show_console_result(result_vec, obj_names);
 
@@ -183,10 +263,10 @@ int main(int argc, char *argv[])
 					}
 
 					// wait detection result for video-file only (not for net-cam)
-					if (protocol != "rtsp://" && protocol != "http://" && protocol != "https:/") {
-						std::unique_lock<std::mutex> lock(mtx);
-						while (!consumed) cv.wait(lock);
-					}
+					//if (protocol != "rtsp://" && protocol != "http://" && protocol != "https:/") {
+					//	std::unique_lock<std::mutex> lock(mtx);
+					//	while (!consumed) cv.wait(lock);
+					//}
 				}
 				if (t_cap.joinable()) t_cap.join();
 				if (t_detect.joinable()) t_detect.join();
