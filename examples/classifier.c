@@ -403,6 +403,7 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
             if(indexes[j] == class) avg_topk += 1;
         }
 
+        printf("%s, %d, %f, %f, \n", paths[i], class, pred[0], pred[1]);
         printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
 }
@@ -704,6 +705,44 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_
     }
 }
 
+void file_output_classifier(char *datacfg, char *filename, char *weightfile, char *listfile)
+{
+    int i,j;
+    network *net = load_network(filename, weightfile, 0);
+    set_batch_network(net, 1);
+    srand(time(0));
+
+    list *options = read_data_cfg(datacfg);
+
+    //char *label_list = option_find_str(options, "names", "data/labels.list");
+    int classes = option_find_int(options, "classes", 2);
+
+    list *plist = get_paths(listfile);
+
+    char **paths = (char **)list_to_array(plist);
+    int m = plist->size;
+    free_list(plist);
+
+    for(i = 0; i < m; ++i){
+        image im = load_image_color(paths[i], 0, 0);
+        image resized = resize_min(im, net->w);
+        image crop = crop_image(resized, (resized.w - net->w)/2, (resized.h - net->h)/2, net->w, net->h);
+
+        float *pred = network_predict(net, crop.data);
+        if(net->hierarchy) hierarchy_predictions(pred, net->outputs, net->hierarchy, 0, 1);
+
+        if(resized.data != im.data) free_image(resized);
+        free_image(im);
+        free_image(crop);
+
+        printf("%s", paths[i]);
+        for(j = 0; j < classes; ++j){
+            printf("\t%g", pred[j]);
+        }
+        printf("\n");
+    }
+}
+
 
 void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename)
 {
@@ -922,15 +961,26 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     srand(2222222);
     CvCapture * cap;
 
+    int w = 1280;
+    int h = 720;
+
     if(filename){
         cap = cvCaptureFromFile(filename);
     }else{
         cap = cvCaptureFromCAM(cam_index);
     }
 
+    if(w){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+    }
+    if(h){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+    }
+
     int top = option_find_int(options, "top", 1);
 
-    char *name_list = option_find_str(options, "names", 0);
+    char *label_list = option_find_str(options, "labels", 0);
+    char *name_list = option_find_str(options, "names", label_list);
     char **names = get_labels(name_list);
 
     int *indexes = calloc(top, sizeof(int));
@@ -998,6 +1048,7 @@ void run_classifier(int argc, char **argv)
     char *layer_s = (argc > 7) ? argv[7]: 0;
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
+    else if(0==strcmp(argv[2], "fout")) file_output_classifier(data, cfg, weights, filename);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
     else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);

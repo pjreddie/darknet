@@ -85,6 +85,8 @@ typedef enum {
     XNOR,
     REGION,
     REORG,
+    UPSAMPLE,
+    LOGXENT,
     BLANK
 } LAYER_TYPE;
 
@@ -166,12 +168,13 @@ struct layer{
     int background;
     int rescore;
     int objectness;
-    int does_cost;
     int joint;
     int noadjust;
     int reorg;
     int log;
     int tanh;
+    int *mask;
+    int total;
 
     float alpha;
     float beta;
@@ -228,6 +231,7 @@ struct layer{
 
     float * delta;
     float * output;
+    float * loss;
     float * squared;
     float * norms;
 
@@ -389,6 +393,7 @@ struct layer{
     float * scale_change_gpu;
 
     float * output_gpu;
+    float * loss_gpu;
     float * delta_gpu;
     float * rand_gpu;
     float * squared_gpu;
@@ -501,6 +506,15 @@ typedef struct{
     float x, y, w, h;
 } box;
 
+typedef struct detection{
+    box bbox;
+    int classes;
+    float *prob;
+    float *mask;
+    float objectness;
+    int sort_class;
+} detection;
+
 typedef struct matrix{
     int rows, cols;
     float **vals;
@@ -593,6 +607,7 @@ void update_network(network *net);
 void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void copy_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void scal_cpu(int N, float ALPHA, float *X, int INCX);
+void fill_cpu(int N, float ALPHA, float * X, int INCX);
 void normalize_cpu(float *x, float *mean, float *variance, int batch, int filters, int spatial);
 void softmax(float *input, int n, float temp, int stride, float *output);
 
@@ -644,7 +659,7 @@ void rgbgr_weights(layer l);
 image *get_weights(layer l);
 
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
-void get_detection_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
+void get_detection_detections(layer l, int w, int h, float thresh, detection *dets);
 
 char *option_find_str(list *l, char *key, char *def);
 int option_find_int(list *l, char *key, int def);
@@ -656,7 +671,7 @@ void save_weights_upto(network *net, char *filename, int cutoff);
 void load_weights_upto(network *net, char *filename, int start, int cutoff);
 
 void zero_objectness(layer l);
-void get_region_boxes(layer l, int w, int h, int netw, int neth, float thresh, float **probs, box *boxes, float **masks, int only_objectness, int *map, float tree_thresh, int relative);
+void get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets);
 void free_network(network *net);
 void set_batch_network(network *net, int b);
 void set_temp_network(network *net, float t);
@@ -697,11 +712,10 @@ double what_time_is_it_now();
 image rotate_image(image m, float rad);
 void visualize_network(network *net);
 float box_iou(box a, box b);
-void do_nms(box *boxes, float **probs, int total, int classes, float thresh);
 data load_all_cifar10();
 box_label *read_boxes(char *filename, int *n);
 box float_to_box(float *f, int stride);
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes);
+void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes);
 
 matrix network_predict_data(network *net, data test);
 image **load_alphabet();
@@ -711,15 +725,18 @@ float *network_predict(network *net, float *input);
 int network_width(network *net);
 int network_height(network *net);
 float *network_predict_image(network *net, image im);
-void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, box *boxes, float **probs);
+void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, detection *dets);
 int num_boxes(network *net);
-box *make_boxes(network *net);
+detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative);
+void fill_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets);
+detection *make_network_boxes(network *net);
+void free_detections(detection *dets, int n);
 
 void reset_network_state(network *net, int b);
 
 char **get_labels(char *filename);
-void do_nms_sort(box *boxes, float **probs, int total, int classes, float thresh);
-void do_nms_obj(box *boxes, float **probs, int total, int classes, float thresh);
+void do_nms_obj(detection *dets, int total, int classes, float thresh);
+void do_nms_sort(detection *dets, int total, int classes, float thresh);
 
 matrix make_matrix(int rows, int cols);
 
@@ -758,6 +775,7 @@ void free_list(list *l);
 float mse_array(float *a, int n);
 float variance_array(float *a, int n);
 float mag_array(float *a, int n);
+void scale_array(float *a, int n, float s);
 float mean_array(float *a, int n);
 float sum_array(float *a, int n);
 void normalize_array(float *a, int n);

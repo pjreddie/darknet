@@ -19,7 +19,6 @@ void constrain_gpu(int N, float ALPHA, float * X, int INCX);
 void pow_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void mul_cpu(int N, float *X, int INCX, float *Y, int INCY);
 
-void fill_cpu(int N, float ALPHA, float * X, int INCX);
 float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
 int test_gpu_blas();
 void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out);
@@ -36,6 +35,8 @@ void normalize_delta_cpu(float *x, float *mean, float *variance, float *mean_del
 void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error);
 void l2_cpu(int n, float *pred, float *truth, float *delta, float *error);
 void l1_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void logistic_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
 void weighted_sum_cpu(float *a, float *b, float *s, int num, float *c);
 void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, float *ds, int n, float *dc);
 
@@ -52,7 +53,7 @@ void copy_gpu(int N, float * X, int INCX, float * Y, int INCY);
 void copy_gpu_offset(int N, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
 void add_gpu(int N, float ALPHA, float * X, int INCX);
 void supp_gpu(int N, float ALPHA, float * X, int INCX);
-void mask_gpu(int N, float * X, float mask_num, float * mask);
+void mask_gpu(int N, float * X, float mask_num, float * mask, float val);
 void scale_mask_gpu(int N, float * X, float mask_num, float * mask, float scale);
 void const_gpu(int N, float ALPHA, float *X, int INCX);
 void pow_gpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
@@ -76,6 +77,8 @@ void scale_bias_gpu(float *output, float *biases, int batch, int n, int size);
 void add_bias_gpu(float *output, float *biases, int batch, int n, int size);
 void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size);
 
+void logistic_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error);
+void softmax_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error);
 void smooth_l1_gpu(int n, float *pred, float *truth, float *delta, float *error);
 void l2_gpu(int n, float *pred, float *truth, float *delta, float *error);
 void l1_gpu(int n, float *pred, float *truth, float *delta, float *error);
@@ -93,6 +96,7 @@ void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rat
 
 void flatten_gpu(float *x, int spatial, int layers, int batch, int forward, float *out);
 void softmax_tree(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
+void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float *out);
 
 #endif
 #endif

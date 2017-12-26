@@ -446,12 +446,6 @@ __global__ void fill_kernel(int N, float ALPHA, float *X, int INCX)
     if(i < N) X[i*INCX] = ALPHA;
 }
 
-__global__ void mask_kernel(int n,  float *x, float mask_num, float *mask)
-{
-    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-    if(i < n && mask[i] == mask_num) x[i] = mask_num;
-}
-
 __global__ void copy_kernel(int N,  float *X, int OFFX, int INCX, float *Y, int OFFY, int INCY)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -621,6 +615,18 @@ extern "C" void reorg_gpu(float *x, int w, int h, int c, int batch, int stride, 
     check_error(cudaPeekAtLastError());
 }
 
+__global__ void mask_kernel(int n,  float *x, float mask_num, float *mask, float val)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < n && mask[i] == mask_num) x[i] = val;
+}
+
+extern "C" void mask_gpu(int N, float * X, float mask_num, float * mask, float val)
+{
+    mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask_num, mask, val);
+    check_error(cudaPeekAtLastError());
+}
+
 __global__ void scale_mask_kernel(int n,  float *x, float mask_num, float *mask, float scale)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -630,12 +636,6 @@ __global__ void scale_mask_kernel(int n,  float *x, float mask_num, float *mask,
 extern "C" void scale_mask_gpu(int N, float * X, float mask_num, float * mask, float scale)
 {
     scale_mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask_num, mask, scale);
-    check_error(cudaPeekAtLastError());
-}
-
-extern "C" void mask_gpu(int N, float * X, float mask_num, float * mask)
-{
-    mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask_num, mask);
     check_error(cudaPeekAtLastError());
 }
 
@@ -731,6 +731,40 @@ __global__ void smooth_l1_kernel(int n, float *pred, float *truth, float *delta,
 extern "C" void smooth_l1_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
     smooth_l1_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+    check_error(cudaPeekAtLastError());
+}
+
+__global__ void softmax_x_ent_kernel(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < n){
+        float t = truth[i];
+        float p = pred[i];
+        error[i] = (t) ? -log(p) : 0;
+        delta[i] = t-p;
+    }
+}
+
+extern "C" void softmax_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    softmax_x_ent_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+    check_error(cudaPeekAtLastError());
+}
+
+__global__ void logistic_x_ent_kernel(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < n){
+        float t = truth[i];
+        float p = pred[i];
+        error[i] = -t*log(p) - (1-t)*log(1-p);
+        delta[i] = t-p;
+    }
+}
+
+extern "C" void logistic_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    logistic_x_ent_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
     check_error(cudaPeekAtLastError());
 }
 
@@ -918,5 +952,36 @@ __global__ void softmax_kernel(float *input, int n, int batch, int batch_offset,
 extern "C" void softmax_gpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output)
 {
     softmax_kernel<<<cuda_gridsize(batch*groups), BLOCK>>>(input, n, batch, batch_offset, groups, group_offset, stride, temp, output);
+    check_error(cudaPeekAtLastError());
+}
+
+
+__global__ void upsample_kernel(size_t N, float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
+{
+    size_t i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i >= N) return;
+    int out_index = i;
+    int out_w = i%(w*stride);
+    i = i/(w*stride);
+    int out_h = i%(h*stride);
+    i = i/(h*stride);
+    int out_c = i%c;
+    i = i/c;
+    int b = i%batch;
+
+    int in_w = out_w / stride;
+    int in_h = out_h / stride;
+    int in_c = out_c;
+
+    int in_index = b*w*h*c + in_c*w*h + in_h*w + in_w;
+
+
+    if(forward) out[out_index] = x[in_index];
+    else atomicAdd(x+in_index, out[out_index]);
+}
+extern "C" void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float *out)
+{
+    size_t size = w*h*c*batch*stride*stride;
+    upsample_kernel<<<cuda_gridsize(size), BLOCK>>>(size, in, w, h, c, batch, stride, forward, out);
     check_error(cudaPeekAtLastError());
 }

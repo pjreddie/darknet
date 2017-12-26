@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "activation_layer.h"
+#include "logistic_layer.h"
 #include "activations.h"
 #include "avgpool_layer.h"
 #include "batchnorm_layer.h"
@@ -27,6 +28,7 @@
 #include "reorg_layer.h"
 #include "rnn_layer.h"
 #include "route_layer.h"
+#include "upsample_layer.h"
 #include "shortcut_layer.h"
 #include "softmax_layer.h"
 #include "lstm_layer.h"
@@ -53,6 +55,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[deconv]")==0
             || strcmp(type, "[deconvolutional]")==0) return DECONVOLUTIONAL;
     if (strcmp(type, "[activation]")==0) return ACTIVE;
+    if (strcmp(type, "[logistic]")==0) return LOGXENT;
     if (strcmp(type, "[net]")==0
             || strcmp(type, "[network]")==0) return NETWORK;
     if (strcmp(type, "[crnn]")==0) return CRNN;
@@ -73,6 +76,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[soft]")==0
             || strcmp(type, "[softmax]")==0) return SOFTMAX;
     if (strcmp(type, "[route]")==0) return ROUTE;
+    if (strcmp(type, "[upsample]")==0) return UPSAMPLE;
     return BLANK;
 }
 
@@ -275,9 +279,27 @@ layer parse_region(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 4);
     int classes = option_find_int(options, "classes", 20);
-    int num = option_find_int(options, "num", 1);
+    int total = option_find_int(options, "num", 1);
+    int num = total;
 
-    layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords);
+    char *a = option_find_str(options, "mask", 0);
+    int *mask = 0;
+    if(a){
+        int len = strlen(a);
+        int n = 1;
+        int i;
+        for(i = 0; i < len; ++i){
+            if (a[i] == ',') ++n;
+        }
+        mask = calloc(n, sizeof(int));
+        for(i = 0; i < n; ++i){
+            int val = atoi(a);
+            mask[i] = val;
+            a = strchr(a, ',')+1;
+        }
+        num = n;
+    }
+    layer l = make_region_layer(params.batch, params.w, params.h, num, total, mask, classes, coords);
     assert(l.outputs == params.inputs);
 
     l.log = option_find_int_quiet(options, "log", 0);
@@ -297,7 +319,7 @@ layer parse_region(list *options, size_params params)
     l.coord_scale = option_find_float(options, "coord_scale", 1);
     l.object_scale = option_find_float(options, "object_scale", 1);
     l.noobject_scale = option_find_float(options, "noobject_scale", 1);
-    l.mask_scale = option_find_float(options, "mask_scale", 1);
+    l.mask_scale = option_find_float_quiet(options, "mask_scale", 1);
     l.class_scale = option_find_float(options, "class_scale", 1);
     l.bias_match = option_find_int_quiet(options, "bias_match",0);
 
@@ -306,7 +328,7 @@ layer parse_region(list *options, size_params params)
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
 
-    char *a = option_find_str(options, "anchors", 0);
+    a = option_find_str(options, "anchors", 0);
     if(a){
         int len = strlen(a);
         int n = 1;
@@ -474,6 +496,15 @@ layer parse_shortcut(list *options, size_params params, network *net)
 }
 
 
+layer parse_logistic(list *options, size_params params)
+{
+    layer l = make_logistic_layer(params.batch, params.inputs);
+    l.w = l.out_h = params.h;
+    l.w = l.out_w = params.w;
+    l.c = l.out_c = params.c;
+    return l;
+}
+
 layer parse_activation(list *options, size_params params)
 {
     char *activation_s = option_find_str(options, "activation", "linear");
@@ -488,6 +519,14 @@ layer parse_activation(list *options, size_params params)
     l.w = params.w;
     l.c = params.c;
 
+    return l;
+}
+
+layer parse_upsample(list *options, size_params params, network *net)
+{
+
+    int stride = option_find_int(options, "stride",2);
+    layer l = make_upsample_layer(params.batch, params.w, params.h, params.c, stride);
     return l;
 }
 
@@ -673,6 +712,8 @@ network *parse_network_cfg(char *filename)
             l = parse_local(options, params);
         }else if(lt == ACTIVE){
             l = parse_activation(options, params);
+        }else if(lt == LOGXENT){
+            l = parse_logistic(options, params);
         }else if(lt == RNN){
             l = parse_rnn(options, params);
         }else if(lt == GRU){
@@ -706,6 +747,8 @@ network *parse_network_cfg(char *filename)
             l = parse_avgpool(options, params);
         }else if(lt == ROUTE){
             l = parse_route(options, params, net);
+        }else if(lt == UPSAMPLE){
+            l = parse_upsample(options, params, net);
         }else if(lt == SHORTCUT){
             l = parse_shortcut(options, params, net);
         }else if(lt == DROPOUT){

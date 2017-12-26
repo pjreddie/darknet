@@ -37,7 +37,6 @@ list *parse_csv_line(char *line);
 char *copy_string(char *s);
 int count_fields(char *line);
 float *parse_fields(char *line, int n);
-void scale_array(float *a, int n, float s);
 void translate_array(float *a, int n, float s);
 float constrain(float min, float max, float a);
 int constrain_int(int a, int min, int max);
@@ -49,6 +48,7 @@ float dist_array(float *a, float *b, int n, int sub);
 float **one_hot_encode(float *a, int n, int k);
 float sec(clock_t clocks);
 void print_statistics(float *a, int n);
+int int_index(int *a, int val, int n);
 
 #endif
 
