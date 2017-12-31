@@ -154,7 +154,7 @@ __global__ void gradient_array_kernel(float *x, int n, ACTIVATION a, float *delt
 
 extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a) 
 {
-    activate_array_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, a);
+    activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
     check_error(cudaPeekAtLastError());
 }
 

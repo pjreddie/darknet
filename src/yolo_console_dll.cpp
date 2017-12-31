@@ -169,8 +169,8 @@ int main(int argc, char *argv[])
 							//if (x > 10) return;
 							if (result_vec.size() == 0) return;
 							bbox_t i = result_vec[0];
-							//cv::Rect r(i.x, i.y, i.w, i.h);
-							cv::Rect r(i.x + (i.w-31)/2, i.y + (i.h - 31)/2, 31, 31);
+							cv::Rect r(i.x, i.y, i.w, i.h);
+							//cv::Rect r(i.x + (i.w-31)/2, i.y + (i.h - 31)/2, 31, 31);
 							cv::Rect img_rect(cv::Point2i(0, 0), src_frame.size());
 							cv::Rect rect_roi = r & img_rect;
 							if (rect_roi.width < 1 || rect_roi.height < 1) return;
@@ -188,16 +188,25 @@ int main(int argc, char *argv[])
 
 						// track optical flow
 						if (track_optflow_queue.size() > 0) {
+							//show_flow = track_optflow_queue.front().clone();
+							//draw_boxes(show_flow, result_vec, obj_names, 3, current_det_fps, current_cap_fps);
+
 							std::queue<cv::Mat> new_track_optflow_queue;
-							std::cout << "\n !!!! all = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
-							//draw_boxes(track_optflow_queue.front().clone(), result_vec, obj_names, 3, current_det_fps, current_cap_fps);
-							//cv::waitKey(10);
+							//std::cout << "\n !!!! all = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
+							if (result_vec.size() > 0) {
+								draw_boxes(track_optflow_queue.front().clone(), result_vec, obj_names, 3, current_det_fps, current_cap_fps);
+								std::cout << "\n frame_size = " << track_optflow_queue.size() << std::endl;
+								cv::waitKey(1000);
+							}
 							tracker_flow.update_tracking_flow(track_optflow_queue.front());
 							lambda(show_flow, track_optflow_queue.front(), result_vec);
 							track_optflow_queue.pop();
 							while(track_optflow_queue.size() > 0) {
-								//draw_boxes(track_optflow_queue.front().clone(), result_vec, obj_names, 3, current_det_fps, current_cap_fps);
-								//cv::waitKey(10);
+								if (result_vec.size() > 0) {
+									draw_boxes(track_optflow_queue.front().clone(), result_vec, obj_names, 3, current_det_fps, current_cap_fps);
+									std::cout << "\n frame_size = " << track_optflow_queue.size() << std::endl;
+									cv::waitKey(1000);
+								}
 								result_vec = tracker_flow.tracking_flow(track_optflow_queue.front(), result_vec);
 								if (track_optflow_queue.size() <= passed_flow_frames && new_track_optflow_queue.size() == 0)
 									new_track_optflow_queue = track_optflow_queue;
@@ -207,10 +216,13 @@ int main(int argc, char *argv[])
 							track_optflow_queue = new_track_optflow_queue;
 							new_track_optflow_queue.swap(std::queue<cv::Mat>());
 							passed_flow_frames = 0;
-							std::cout << "\n !!!! now = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
+							//std::cout << "\n !!!! now = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
 
 							cv::imshow("flow", show_flow);
 							cv::waitKey(3);
+							//if (result_vec.size() > 0) {
+							//	cv::waitKey(1000);
+							//}
 						}
 #endif
 
@@ -222,7 +234,8 @@ int main(int argc, char *argv[])
 							consumed = true;
 							while (current_image.use_count() > 0) {
 								auto result = detector.detect_resized(*current_image, frame_size, 0.24, false);	// true
-								Sleep(500);
+								//Sleep(200);
+								Sleep(50);
 								++fps_det_counter;
 								std::unique_lock<std::mutex> lock(mtx);
 								thread_result_vec = result;
