@@ -12,7 +12,7 @@
 #include <opencv2/cudaoptflow.hpp>
 #include <opencv2/cudaimgproc.hpp>
 #include <opencv2/cudaarithm.hpp>
-#include "opencv2/core/cuda.hpp"
+#include <opencv2/core/cuda.hpp>
 #endif	// OPENCV
 
 #ifdef YOLODLL_EXPORTS
@@ -156,7 +156,23 @@ private:
 
 class Tracker_optflow {
 public:
+	int gpu_id;
 
+	Tracker_optflow(int _gpu_id = 0) : gpu_id(_gpu_id)
+	{
+		int const old_gpu_id = cv::cuda::getDevice();
+		static const int gpu_count = cv::cuda::getCudaEnabledDeviceCount();
+		if (gpu_count > gpu_id)
+			cv::cuda::setDevice(gpu_id);
+
+		sync_PyrLKOpticalFlow_gpu = cv::cuda::SparsePyrLKOpticalFlow::create();
+		//sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(31, 31)); //sync_PyrLKOpticalFlow_gpu.winSize = cv::Size(31, 31);
+		//sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(15, 15)); //sync_PyrLKOpticalFlow_gpu.winSize = cv::Size(15, 15);
+
+		sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(21, 21));
+		sync_PyrLKOpticalFlow_gpu->setMaxLevel(50);	//sync_PyrLKOpticalFlow_gpu.maxLevel = 8;	// +-32 points	// def: 3
+		sync_PyrLKOpticalFlow_gpu->setNumIters(6000);	//sync_PyrLKOpticalFlow_gpu.iters = 8000;	// def: 30
+	}
 
 	// just to avoid extra allocations
 	cv::cuda::GpuMat src_mat_gpu;
@@ -168,7 +184,7 @@ public:
 	cv::cuda::GpuMat src_grey_gpu;	// used in both functions
 	cv::Ptr<cv::cuda::SparsePyrLKOpticalFlow> sync_PyrLKOpticalFlow_gpu;
 
-	void update_tracking_flow(cv::Mat src_mat, int gpu_id = 0)
+	void update_tracking_flow(cv::Mat src_mat)
 	{
 		int const old_gpu_id = cv::cuda::getDevice();
 		static const int gpu_count = cv::cuda::getCudaEnabledDeviceCount();
@@ -176,20 +192,6 @@ public:
 			cv::cuda::setDevice(gpu_id);
 
 		cv::cuda::Stream stream;
-
-		if (sync_PyrLKOpticalFlow_gpu.empty()) {
-			sync_PyrLKOpticalFlow_gpu = cv::cuda::SparsePyrLKOpticalFlow::create();
-
-			//sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(31, 31)); //sync_PyrLKOpticalFlow_gpu.winSize = cv::Size(31, 31);
-			//sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(15, 15)); //sync_PyrLKOpticalFlow_gpu.winSize = cv::Size(15, 15);
-			sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(21, 21));
-			sync_PyrLKOpticalFlow_gpu->setMaxLevel(3);	//sync_PyrLKOpticalFlow_gpu.maxLevel = 8;	// +-32 points	// def: 3
-			sync_PyrLKOpticalFlow_gpu->setNumIters(6000);	//sync_PyrLKOpticalFlow_gpu.iters = 8000;	// def: 30
-			//??? //sync_PyrLKOpticalFlow_gpu.getMinEigenVals = true;
-			//std::cout << "sync_PyrLKOpticalFlow_gpu.maxLevel: " << sync_PyrLKOpticalFlow_gpu.maxLevel << std::endl;
-			//std::cout << "sync_PyrLKOpticalFlow_gpu.iters: " << sync_PyrLKOpticalFlow_gpu.iters << std::endl;
-			//std::cout << "sync_PyrLKOpticalFlow_gpu.winSize: " << sync_PyrLKOpticalFlow_gpu.winSize << std::endl;
-		}
 
 		if (src_mat.channels() == 3) {
 			if (src_mat_gpu.cols == 0) {
@@ -199,13 +201,12 @@ public:
 
 			src_mat_gpu.upload(src_mat, stream);
 			cv::cuda::cvtColor(src_mat_gpu, src_grey_gpu, CV_BGR2GRAY, 0, stream);
-			//std::cout << " \n\n OK !!! \n\n";
 		}
 		cv::cuda::setDevice(old_gpu_id);
 	}
 
 
-	std::vector<bbox_t> tracking_flow(cv::Mat dst_mat, std::vector<bbox_t> cur_bbox_vec, int gpu_id = 0)
+	std::vector<bbox_t> tracking_flow(cv::Mat dst_mat, std::vector<bbox_t> cur_bbox_vec)
 	{
 		if (sync_PyrLKOpticalFlow_gpu.empty()) {
 			std::cout << "sync_PyrLKOpticalFlow_gpu isn't initialized \n";
@@ -265,9 +266,8 @@ public:
 
 		dst_grey_gpu.copyTo(tmp_grey_gpu, stream);
 
-		//sync_PyrLKOpticalFlow_gpu.sparse(src_grey_gpu, dst_grey_gpu, prev_pts_flow_gpu, cur_pts_flow_gpu, status_gpu, &err_gpu);	// OpenCV 2.4.x
+		////sync_PyrLKOpticalFlow_gpu.sparse(src_grey_gpu, dst_grey_gpu, prev_pts_flow_gpu, cur_pts_flow_gpu, status_gpu, &err_gpu);	// OpenCV 2.4.x
 		sync_PyrLKOpticalFlow_gpu->calc(src_grey_gpu, dst_grey_gpu, prev_pts_flow_gpu, cur_pts_flow_gpu, status_gpu, err_gpu, stream);	// OpenCV 3.x
-																																		//std::cout << "\n 1-e \n";
 
 		cur_pts_flow_gpu.download(cur_pts_flow_cpu, stream);
 
