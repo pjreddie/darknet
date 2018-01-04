@@ -218,6 +218,7 @@ void backward_network(network net, network_state state)
             state.delta = prev.delta;
         }
         layer l = net.layers[i];
+        if (l.stopbackward) break;
         l.backward(l, state);
     }
 }

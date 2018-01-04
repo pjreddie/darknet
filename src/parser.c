@@ -672,6 +672,8 @@ network parse_network_cfg_custom(char *filename, int batch)
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
+        l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
+        l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         option_unused(options);

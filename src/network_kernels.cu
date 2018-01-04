@@ -64,6 +64,7 @@ void backward_network_gpu(network net, network_state state)
     for(i = net.n-1; i >= 0; --i){
         state.index = i;
         layer l = net.layers[i];
+        if (l.stopbackward) break;
         if(i == 0){
             state.input = original_input;
             state.delta = original_delta;
