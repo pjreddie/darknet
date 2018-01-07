@@ -89,12 +89,15 @@ public:
 		return mat_to_image(det_mat);
 	}
 
-	static std::shared_ptr<image_t> mat_to_image(cv::Mat img)
+	static std::shared_ptr<image_t> mat_to_image(cv::Mat img_src)
 	{
+		cv::Mat img;
+		cv::cvtColor(img_src, img, cv::COLOR_RGB2BGR);
+		//std::cout << "\n img_rgb: " << img_rgb.size() << ", " << img_rgb.type() << ", " << img_rgb.channels() << std::endl;
+		//std::cout << "\n img: " << img.size() << ", " << img.type() << ", " << img.channels() << std::endl;
 		std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); delete img; });
 		std::shared_ptr<IplImage> ipl_small = std::make_shared<IplImage>(img);
 		*image_ptr = ipl_to_image(ipl_small.get());
-		rgbgr_image(*image_ptr);
 		return image_ptr;
 	}
 
@@ -108,15 +111,23 @@ private:
 		int c = src->nChannels;
 		int step = src->widthStep;
 		image_t out = make_image_custom(w, h, c);
-		int i, j, k, count = 0;;
+		int count = 0;
 
-		for (k = 0; k < c; ++k) {
-			for (i = 0; i < h; ++i) {
-				for (j = 0; j < w; ++j) {
-					out.data[count++] = data[i*step + j*c + k] / 255.;
+		//std::vector<unsigned char> tmp(w*h*c);
+
+		for (int k = 0; k < c; ++k) {
+			for (int i = 0; i < h; ++i) {
+				int i_step = i*step;
+				for (int j = 0; j < w; ++j) {
+					out.data[count++] = data[i_step + j*c + k] / 255.;
+					//tmp[count++] = data[i_step + j*c + k];
 				}
 			}
 		}
+		//cv::Mat wrapped_8bit(cv::Size(w, h), CV_8UC3, tmp.data());
+		//cv::Mat wrapped_32float(cv::Size(w, h), CV_32FC3, out.data);
+		//wrapped_8bit.convertTo(wrapped_32float, CV_32FC3, 1 / 255.);
+
 		return out;
 	}
 
@@ -137,16 +148,6 @@ private:
 		return out;
 	}
 
-	static void rgbgr_image(image_t im)
-	{
-		int i;
-		for (i = 0; i < im.w*im.h; ++i) {
-			float swap = im.data[i];
-			im.data[i] = im.data[i + im.w*im.h * 2];
-			im.data[i + im.w*im.h * 2] = swap;
-		}
-	}
-
 #endif	// OPENCV
 
 };
@@ -156,22 +157,23 @@ private:
 
 class Tracker_optflow {
 public:
-	int gpu_id;
+	const int gpu_count;
+	const int gpu_id;
 
-	Tracker_optflow(int _gpu_id = 0) : gpu_id(_gpu_id)
+
+	Tracker_optflow(int _gpu_id = 0) : gpu_count(cv::cuda::getCudaEnabledDeviceCount()), gpu_id(std::min(_gpu_id, gpu_count-1))
 	{
 		int const old_gpu_id = cv::cuda::getDevice();
-		static const int gpu_count = cv::cuda::getCudaEnabledDeviceCount();
-		if (gpu_count > gpu_id)
-			cv::cuda::setDevice(gpu_id);
+		cv::cuda::setDevice(gpu_id);
+
+		stream = cv::cuda::Stream();
 
 		sync_PyrLKOpticalFlow_gpu = cv::cuda::SparsePyrLKOpticalFlow::create();
-		//sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(31, 31)); //sync_PyrLKOpticalFlow_gpu.winSize = cv::Size(31, 31);
-		//sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(15, 15)); //sync_PyrLKOpticalFlow_gpu.winSize = cv::Size(15, 15);
+		sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(21, 21));	// 15, 21, 31
+		sync_PyrLKOpticalFlow_gpu->setMaxLevel(5);		// +- 50 ptx
+		sync_PyrLKOpticalFlow_gpu->setNumIters(2000);	// def: 30
 
-		sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(21, 21));
-		sync_PyrLKOpticalFlow_gpu->setMaxLevel(50);	//sync_PyrLKOpticalFlow_gpu.maxLevel = 8;	// +-32 points	// def: 3
-		sync_PyrLKOpticalFlow_gpu->setNumIters(6000);	//sync_PyrLKOpticalFlow_gpu.iters = 8000;	// def: 30
+		cv::cuda::setDevice(old_gpu_id);
 	}
 
 	// just to avoid extra allocations
@@ -183,15 +185,14 @@ public:
 
 	cv::cuda::GpuMat src_grey_gpu;	// used in both functions
 	cv::Ptr<cv::cuda::SparsePyrLKOpticalFlow> sync_PyrLKOpticalFlow_gpu;
+	cv::cuda::Stream stream;
 
 	void update_tracking_flow(cv::Mat src_mat)
 	{
 		int const old_gpu_id = cv::cuda::getDevice();
-		static const int gpu_count = cv::cuda::getCudaEnabledDeviceCount();
-		if (gpu_count > gpu_id)
-			cv::cuda::setDevice(gpu_id);
+		cv::cuda::setDevice(gpu_id);
 
-		cv::cuda::Stream stream;
+		//cv::cuda::Stream stream;
 
 		if (src_mat.channels() == 3) {
 			if (src_mat_gpu.cols == 0) {
@@ -214,11 +215,9 @@ public:
 		}
 
 		int const old_gpu_id = cv::cuda::getDevice();
-		static const int gpu_count = cv::cuda::getCudaEnabledDeviceCount();
-		if (gpu_count > gpu_id)
-			cv::cuda::setDevice(gpu_id);
+		cv::cuda::setDevice(gpu_id);
 
-		cv::cuda::Stream stream;
+		//cv::cuda::Stream stream;
 
 		if (dst_mat_gpu.cols == 0) {
 			dst_mat_gpu = cv::cuda::GpuMat(dst_mat.size(), dst_mat.type());

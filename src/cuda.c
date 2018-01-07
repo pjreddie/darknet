@@ -96,6 +96,7 @@ cublasHandle_t blas_handle()
     int i = cuda_get_device();
     if(!init[i]) {
         cublasCreate(&handle[i]);
+		cublasStatus_t status = cublasSetStream(handle[i], get_cuda_stream());
         init[i] = 1;
     }
     return handle[i];
