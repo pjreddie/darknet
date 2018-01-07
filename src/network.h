@@ -64,6 +64,7 @@ typedef struct network{
     #ifdef GPU
     float **input_gpu;
     float **truth_gpu;
+	int wait_stream;
     #endif
 } network;
 

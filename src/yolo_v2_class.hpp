@@ -50,6 +50,7 @@ class Detector {
 	const int cur_gpu_id;
 public:
 	float nms = .4;
+	bool wait_stream;
 
 	YOLODLL_API Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
 	YOLODLL_API ~Detector();
@@ -172,7 +173,7 @@ public:
 		sync_PyrLKOpticalFlow_gpu = cv::cuda::SparsePyrLKOpticalFlow::create();
 		sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(21, 21));	// 15, 21, 31
 		sync_PyrLKOpticalFlow_gpu->setMaxLevel(3);		// +- 5 ptx
-		sync_PyrLKOpticalFlow_gpu->setNumIters(1000);	// def: 30
+		sync_PyrLKOpticalFlow_gpu->setNumIters(2000);	// def: 30
 
 		cv::cuda::setDevice(old_gpu_id);
 	}

@@ -36,6 +36,7 @@ struct detector_gpu_t{
 
 YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id) : cur_gpu_id(gpu_id)
 {
+	wait_stream = 0;
 	int old_gpu_index;
 #ifdef GPU
 	cudaGetDevice(&old_gpu_index);
@@ -172,7 +173,6 @@ YOLODLL_API void Detector::free_image(image_t m)
 
 YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use_mean)
 {
-
 	detector_gpu_t &detector_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 	network &net = detector_gpu.net;
 	int old_gpu_index;
@@ -184,6 +184,7 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 	//std::cout << "net.gpu_index = " << net.gpu_index << std::endl;
 
 	//float nms = .4;
+	net.wait_stream = wait_stream;	// 1 - wait CUDA-stream, 0 - not to wait
 
 	image im;
 	im.c = img.c;

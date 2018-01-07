@@ -11,10 +11,10 @@
 
 #ifdef _WIN32
 #define OPENCV
-#include "windows.h"
+//#include "windows.h"
 #endif
 
-#define TRACK_OPTFLOW
+//#define TRACK_OPTFLOW
 
 #include "yolo_v2_class.hpp"	// imported functions from DLL
 
@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
 	bool const save_output_videofile = false;
 #ifdef TRACK_OPTFLOW
 	Tracker_optflow tracker_flow;
+	detector.wait_stream = true;
 #endif
 
 	while (true) 
@@ -185,17 +186,15 @@ int main(int argc, char *argv[])
 							auto current_image = det_image;
 							consumed = true;
 							while (current_image.use_count() > 0) {
-								//std::vector<bbox_t> result;
 								auto result = detector.detect_resized(*current_image, frame_size, 0.24, false);	// true
-								//Sleep(200);
-								//Sleep(50);
 								++fps_det_counter;
 								std::unique_lock<std::mutex> lock(mtx);
 								thread_result_vec = result;
 								current_image = det_image;
 								consumed = true;
 								cv_detected.notify_all();
-								while (consumed) cv_pre_tracked.wait(lock);
+								if(detector.wait_stream)
+									while (consumed) cv_pre_tracked.wait(lock);
 							}
 						});
 					}
@@ -216,7 +215,7 @@ int main(int argc, char *argv[])
 						result_vec = tracker_flow.tracking_flow(cur_frame, result_vec);	// track optical flow
 #endif
 
-						draw_boxes(cur_frame, result_vec, obj_names, 3, current_det_fps, current_cap_fps);
+						draw_boxes(cur_frame, result_vec, obj_names, 3, current_det_fps, current_cap_fps);	// 3 or 16ms
 						//show_console_result(result_vec, obj_names);
 
 						if (output_video.isOpened() && videowrite_ready) {

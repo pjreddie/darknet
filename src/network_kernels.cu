@@ -51,7 +51,8 @@ void forward_network_gpu(network net, network_state state)
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
         l.forward_gpu(l, state);
-		cudaStreamSynchronize(get_cuda_stream());
+		if(net.wait_stream)
+			cudaStreamSynchronize(get_cuda_stream());
         state.input = l.output_gpu;
     }
 }
