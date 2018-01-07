@@ -47,6 +47,7 @@ struct image_t {
 class Detector {
 	std::shared_ptr<void> detector_gpu_ptr;
 	std::deque<std::vector<bbox_t>> prev_bbox_vec_deque;
+	const int cur_gpu_id;
 public:
 	float nms = .4;
 
@@ -170,8 +171,8 @@ public:
 
 		sync_PyrLKOpticalFlow_gpu = cv::cuda::SparsePyrLKOpticalFlow::create();
 		sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(21, 21));	// 15, 21, 31
-		sync_PyrLKOpticalFlow_gpu->setMaxLevel(5);		// +- 50 ptx
-		sync_PyrLKOpticalFlow_gpu->setNumIters(2000);	// def: 30
+		sync_PyrLKOpticalFlow_gpu->setMaxLevel(3);		// +- 5 ptx
+		sync_PyrLKOpticalFlow_gpu->setNumIters(1000);	// def: 30
 
 		cv::cuda::setDevice(old_gpu_id);
 	}
@@ -190,9 +191,8 @@ public:
 	void update_tracking_flow(cv::Mat src_mat)
 	{
 		int const old_gpu_id = cv::cuda::getDevice();
-		cv::cuda::setDevice(gpu_id);
-
-		//cv::cuda::Stream stream;
+		if (old_gpu_id != gpu_id)
+			cv::cuda::setDevice(gpu_id);
 
 		if (src_mat.channels() == 3) {
 			if (src_mat_gpu.cols == 0) {
@@ -203,7 +203,8 @@ public:
 			src_mat_gpu.upload(src_mat, stream);
 			cv::cuda::cvtColor(src_mat_gpu, src_grey_gpu, CV_BGR2GRAY, 0, stream);
 		}
-		cv::cuda::setDevice(old_gpu_id);
+		if (old_gpu_id != gpu_id)
+			cv::cuda::setDevice(old_gpu_id);
 	}
 
 
@@ -215,9 +216,8 @@ public:
 		}
 
 		int const old_gpu_id = cv::cuda::getDevice();
-		cv::cuda::setDevice(gpu_id);
-
-		//cv::cuda::Stream stream;
+		if(old_gpu_id != gpu_id)
+			cv::cuda::setDevice(gpu_id);
 
 		if (dst_mat_gpu.cols == 0) {
 			dst_mat_gpu = cv::cuda::GpuMat(dst_mat.size(), dst_mat.type());
@@ -225,8 +225,8 @@ public:
 			tmp_grey_gpu = cv::cuda::GpuMat(dst_mat.size(), CV_8UC1);
 		}
 
-
 		dst_mat_gpu.upload(dst_mat, stream);
+
 
 		cv::cuda::cvtColor(dst_mat_gpu, dst_grey_gpu, CV_BGR2GRAY, 0, stream);
 
@@ -236,6 +236,8 @@ public:
 			cv::cuda::setDevice(old_gpu_id);
 			return cur_bbox_vec;
 		}
+
+		//return cur_bbox_vec;
 
 		cv::Mat prev_pts, prev_pts_flow_cpu, cur_pts_flow_cpu;
 
@@ -298,7 +300,8 @@ public:
 					}
 		}
 
-		cv::cuda::setDevice(old_gpu_id);
+		if (old_gpu_id != gpu_id)
+			cv::cuda::setDevice(old_gpu_id);
 
 		return result_bbox_vec;
 	}

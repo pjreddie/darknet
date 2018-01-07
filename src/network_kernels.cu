@@ -51,6 +51,7 @@ void forward_network_gpu(network net, network_state state)
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
         l.forward_gpu(l, state);
+		cudaStreamSynchronize(get_cuda_stream());
         state.input = l.output_gpu;
     }
 }
@@ -392,7 +393,8 @@ float *get_network_output_gpu(network net)
 
 float *network_predict_gpu(network net, float *input)
 {
-    cuda_set_device(net.gpu_index);
+	if (net.gpu_index != cuda_get_device())
+		cuda_set_device(net.gpu_index);
     int size = get_network_input_size(net) * net.batch;
     network_state state;
     state.index = 0;

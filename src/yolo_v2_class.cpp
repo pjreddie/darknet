@@ -34,7 +34,7 @@ struct detector_gpu_t{
 };
 
 
-YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id)
+YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id) : cur_gpu_id(gpu_id)
 {
 	int old_gpu_index;
 #ifdef GPU
@@ -178,7 +178,8 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 	int old_gpu_index;
 #ifdef GPU
 	cudaGetDevice(&old_gpu_index);
-	cudaSetDevice(net.gpu_index);
+	if(cur_gpu_id != old_gpu_index)
+		cudaSetDevice(net.gpu_index);
 #endif
 	//std::cout << "net.gpu_index = " << net.gpu_index << std::endl;
 
@@ -242,7 +243,8 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 		free(sized.data);
 
 #ifdef GPU
-	cudaSetDevice(old_gpu_index);
+	if (cur_gpu_id != old_gpu_index)
+		cudaSetDevice(old_gpu_index);
 #endif
 
 	return bbox_vec;

@@ -158,7 +158,6 @@ int main(int argc, char *argv[])
 						det_image = detector.mat_to_image_resize(cur_frame);
 						result_vec = thread_result_vec;
 						result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
-
 #ifdef TRACK_OPTFLOW
 						// track optical flow
 						if (track_optflow_queue.size() > 0) {
@@ -189,7 +188,7 @@ int main(int argc, char *argv[])
 								//std::vector<bbox_t> result;
 								auto result = detector.detect_resized(*current_image, frame_size, 0.24, false);	// true
 								//Sleep(200);
-								Sleep(50);
+								//Sleep(50);
 								++fps_det_counter;
 								std::unique_lock<std::mutex> lock(mtx);
 								thread_result_vec = result;
