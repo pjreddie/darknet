@@ -11,7 +11,6 @@
 
 #ifdef _WIN32
 #define OPENCV
-//#include "windows.h"
 #endif
 
 //#define TRACK_OPTFLOW
@@ -91,15 +90,24 @@ std::vector<std::string> objects_names_from_file(std::string const filename) {
 
 int main(int argc, char *argv[])
 {
+	std::string  names_file = "data/voc.names";
+	std::string  cfg_file = "cfg/yolo-voc.cfg";
+	std::string  weights_file = "yolo-voc.weights";
 	std::string filename;
-	if (argc > 1) filename = argv[1];
 
-	//Detector detector("cfg/yolo-voc.cfg", "yolo-voc.weights");
-	Detector detector("tiny-yolo-voc_air.cfg", "backup/tiny-yolo-voc_air_5000.weights");
+	if (argc > 4) {	//voc.names yolo-voc.cfg yolo-voc.weights test.mp4		
+		names_file = argv[1];
+		cfg_file = argv[2];
+		weights_file = argv[3];
+		filename = argv[4];
+	}
+	else if (argc > 1) filename = argv[1];
 
-	auto obj_names = objects_names_from_file("data/voc.names");
+	Detector detector(cfg_file, weights_file);
+
+	auto obj_names = objects_names_from_file(names_file);
 	std::string out_videofile = "result.avi";
-	bool const save_output_videofile = false;
+	bool const save_output_videofile = true;
 #ifdef TRACK_OPTFLOW
 	Tracker_optflow tracker_flow;
 	detector.wait_stream = true;

@@ -95,8 +95,6 @@ public:
 	{
 		cv::Mat img;
 		cv::cvtColor(img_src, img, cv::COLOR_RGB2BGR);
-		//std::cout << "\n img_rgb: " << img_rgb.size() << ", " << img_rgb.type() << ", " << img_rgb.channels() << std::endl;
-		//std::cout << "\n img: " << img.size() << ", " << img.type() << ", " << img.channels() << std::endl;
 		std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); delete img; });
 		std::shared_ptr<IplImage> ipl_small = std::make_shared<IplImage>(img);
 		*image_ptr = ipl_to_image(ipl_small.get());
@@ -115,20 +113,14 @@ private:
 		image_t out = make_image_custom(w, h, c);
 		int count = 0;
 
-		//std::vector<unsigned char> tmp(w*h*c);
-
 		for (int k = 0; k < c; ++k) {
 			for (int i = 0; i < h; ++i) {
 				int i_step = i*step;
 				for (int j = 0; j < w; ++j) {
 					out.data[count++] = data[i_step + j*c + k] / 255.;
-					//tmp[count++] = data[i_step + j*c + k];
 				}
 			}
 		}
-		//cv::Mat wrapped_8bit(cv::Size(w, h), CV_8UC3, tmp.data());
-		//cv::Mat wrapped_32float(cv::Size(w, h), CV_32FC3, out.data);
-		//wrapped_8bit.convertTo(wrapped_32float, CV_32FC3, 1 / 255.);
 
 		return out;
 	}
@@ -172,7 +164,7 @@ public:
 
 		sync_PyrLKOpticalFlow_gpu = cv::cuda::SparsePyrLKOpticalFlow::create();
 		sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(21, 21));	// 15, 21, 31
-		sync_PyrLKOpticalFlow_gpu->setMaxLevel(3);		// +- 5 ptx
+		sync_PyrLKOpticalFlow_gpu->setMaxLevel(3);		// +- 3 pt
 		sync_PyrLKOpticalFlow_gpu->setNumIters(2000);	// def: 30
 
 		cv::cuda::setDevice(old_gpu_id);
@@ -237,8 +229,6 @@ public:
 			cv::cuda::setDevice(old_gpu_id);
 			return cur_bbox_vec;
 		}
-
-		//return cur_bbox_vec;
 
 		cv::Mat prev_pts, prev_pts_flow_cpu, cur_pts_flow_cpu;
 
