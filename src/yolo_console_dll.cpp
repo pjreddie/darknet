@@ -182,7 +182,6 @@ int main(int argc, char *argv[])
 									new_track_optflow_queue = track_optflow_queue;
 							}
 							track_optflow_queue = new_track_optflow_queue;
-							new_track_optflow_queue.swap(std::queue<cv::Mat>());
 							passed_flow_frames = 0;
 						}
 #endif
