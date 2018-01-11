@@ -8,11 +8,6 @@
 #include <opencv2/opencv.hpp>			// C++
 #include "opencv2/highgui/highgui_c.h"	// C
 #include "opencv2/imgproc/imgproc_c.h"	// C
-
-#include <opencv2/cudaoptflow.hpp>
-#include <opencv2/cudaimgproc.hpp>
-#include <opencv2/cudaarithm.hpp>
-#include <opencv2/core/cuda.hpp>
 #endif	// OPENCV
 
 #ifdef YOLODLL_EXPORTS
@@ -148,6 +143,11 @@ private:
 
 
 #if defined(TRACK_OPTFLOW) && defined(OPENCV)
+
+#include <opencv2/cudaoptflow.hpp>
+#include <opencv2/cudaimgproc.hpp>
+#include <opencv2/cudaarithm.hpp>
+#include <opencv2/core/cuda.hpp>
 
 class Tracker_optflow {
 public:

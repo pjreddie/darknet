@@ -13,6 +13,7 @@
 #define OPENCV
 #endif
 
+// To use tracking - uncomment the following line. Tracking is supported only by OpenCV 3.x
 //#define TRACK_OPTFLOW
 
 #include "yolo_v2_class.hpp"	// imported functions from DLL
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
 
 	auto obj_names = objects_names_from_file(names_file);
 	std::string out_videofile = "result.avi";
-	bool const save_output_videofile = true;
+	bool const save_output_videofile = false;
 #ifdef TRACK_OPTFLOW
 	Tracker_optflow tracker_flow;
 	detector.wait_stream = true;
