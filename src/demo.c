@@ -10,7 +10,6 @@
 #include <sys/time.h>
 
 #define DEMO 1
-
 #ifdef OPENCV
 
 static char **demo_names;
