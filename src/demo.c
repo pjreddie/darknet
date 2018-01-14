@@ -113,9 +113,25 @@ void *detect_loop(void *ptr)
         detect_in_thread(0);
     }
 }
-
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
+void demo(type_param* param)
+//void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
+    char *cfgfile = param->cfg;
+    char *weightfile = param->weigths;
+    float thresh = param->thresh;
+    int cam_index = param->cam_index;
+    const char *filename = param->filename;
+    char **names = param->names;
+    int classes = param->classes;
+    int delay = param->frame_skip;
+    char *prefix = param->prefix;
+    int avg_frames = param->avg;
+    float hier = param->hier_thresh;
+    int w = param->width;
+    int h = param->height;
+    int frames = param->fps;
+    int fullscreen = param->fullscreen;
+
     demo_frame = avg_frames;
     predictions = calloc(demo_frame, sizeof(float*));
     image **alphabet = load_alphabet();
@@ -181,12 +197,14 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
     }
 
+    fork();
     demo_time = what_time_is_it_now();
 
     while(!demo_done){
         buff_index = (buff_index + 1) %3;
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+
         if(!prefix){
             fps = 1./(what_time_is_it_now() - demo_time);
             demo_time = what_time_is_it_now();
@@ -198,6 +216,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
         pthread_join(fetch_thread, 0);
         pthread_join(detect_thread, 0);
+
         ++count;
     }
 }
