@@ -52,7 +52,7 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
-        get_region_boxes(l, buff[0].w, buff[0].h, net->w, net->h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
+        get_region_boxes(l,buff[0].w, buff[0].h, net->w, net->h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
     } else {
         error("Last layer must produce detections\n");
     }
@@ -72,7 +72,7 @@ void *detect_in_thread(void *ptr)
 
 void *fetch_in_thread(void *ptr)
 {
-    int status = fill_image_from_stream(cap, buff[buff_index]);
+    int status = fill_image_from_stream_compress(cap, buff[buff_index], 1);
     letterbox_image_into(buff[buff_index], net->w, net->h, buff_letter[buff_index]);
     if(status == 0) demo_done = 1;
     return 0;
@@ -150,7 +150,7 @@ void demo(type_param* param)
 
     if(filename){
         printf("video file: %s\n", filename);
-        cap = cvCaptureFromFile(filename);
+        cap = cvCreateFileCapture(filename);
     }else{
         cap = cvCaptureFromCAM(cam_index);
 
@@ -178,9 +178,9 @@ void demo(type_param* param)
     probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
     for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes+1, sizeof(float));
 
-    buff[0] = get_image_from_stream(cap);
-    buff[1] = copy_image(buff[0]);
-    buff[2] = copy_image(buff[0]);
+    buff[0] = get_image_from_stream_compress(cap,1);
+    buff[1] = get_image_from_stream_compress(cap,1);
+    buff[2] = get_image_from_stream_compress(cap,1);
     buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
     buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
     buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
@@ -193,11 +193,10 @@ void demo(type_param* param)
             cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
         } else {
             cvMoveWindow("Demo", 0, 0);
-            cvResizeWindow("Demo", 1352, 1013);
+            cvResizeWindow("Demo", ipl->width, ipl->height);
         }
     }
 
-    fork();
     demo_time = what_time_is_it_now();
 
     while(!demo_done){
@@ -269,12 +268,9 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
     probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
     for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes+1, sizeof(float));
 
-    buff[0] = get_image_from_stream(cap);
-    buff[1] = copy_image(buff[0]);
-    buff[2] = copy_image(buff[0]);
+    buff[0] = get_image_from_stream_compress(cap, 1);
     buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
-    buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
-    buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
+
     ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
 
     int count = 0;
@@ -284,7 +280,7 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
             cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
         } else {
             cvMoveWindow("Demo", 0, 0);
-            cvResizeWindow("Demo", 1352, 1013);
+            cvResizeWindow("Demo", buff[0].w, buff[0].h);
         }
     }
 

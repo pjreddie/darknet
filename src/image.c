@@ -9,6 +9,7 @@
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#include "layer.h"
 
 int windows = 0;
 
@@ -629,11 +630,37 @@ image get_image_from_stream(CvCapture *cap)
     return im;
 }
 
+image get_image_from_stream_compress(CvCapture *cap, int ratio)
+{
+    IplImage* src = cvQueryFrame(cap);
+    if (!src) return make_empty_image(0,0,0);
+
+    IplImage *dst = cvCreateImage(cvSize(src->width*ratio, src->height*ratio),src->depth,src->nChannels);
+    cvResize(src, dst, CV_INTER_LINEAR);
+
+    image im = ipl_to_image(dst);
+    rgbgr_image(im);
+    return im;
+}
+
 int fill_image_from_stream(CvCapture *cap, image im)
 {
     IplImage* src = cvQueryFrame(cap);
     if (!src) return 0;
     ipl_into_image(src, im);
+    rgbgr_image(im);
+    return 1;
+}
+
+int fill_image_from_stream_compress(CvCapture *cap, image im, int ratio)
+{
+    IplImage* src = cvQueryFrame(cap);
+    if (!src) return 0;
+
+    IplImage *dst = cvCreateImage(cvSize(src->width * ratio, src->height * ratio),src->depth,src->nChannels);
+    cvResize(src, dst, CV_INTER_LINEAR);
+
+    ipl_into_image(dst, im);
     rgbgr_image(im);
     return 1;
 }
