@@ -230,7 +230,7 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
     int id;
     int i;
 
-    for (i = 0; i < count && i < 30; ++i) {
+    for (i = 0; i < count && i < 90; ++i) {
         x =  boxes[i].x;
         y =  boxes[i].y;
         w =  boxes[i].w;
@@ -424,6 +424,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     float x,y,w,h;
     int id;
     int i;
+    int sub = 0;
 
     for (i = 0; i < count; ++i) {
         x =  boxes[i].x;
@@ -432,13 +433,16 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         h =  boxes[i].h;
         id = boxes[i].id;
 
-        if ((w < .001 || h < .001)) continue;
+        if ((w < .001 || h < .001)) {
+            ++sub;
+            continue;
+        }
 
-        truth[i*5+0] = x;
-        truth[i*5+1] = y;
-        truth[i*5+2] = w;
-        truth[i*5+3] = h;
-        truth[i*5+4] = id;
+        truth[(i-sub)*5+0] = x;
+        truth[(i-sub)*5+1] = y;
+        truth[(i-sub)*5+2] = w;
+        truth[(i-sub)*5+3] = h;
+        truth[(i-sub)*5+4] = id;
     }
     free(boxes);
 }
@@ -907,7 +911,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
-    int k = (4+classes)*30;
+    int k = (4+classes)*90;
     d.y = make_matrix(1, k);
 
     int dw = w*jitter;

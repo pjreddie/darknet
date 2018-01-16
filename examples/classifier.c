@@ -578,6 +578,8 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         }
         image im = load_image_color(input, 0, 0);
         image r = letterbox_image(im, net->w, net->h);
+        //image r = resize_min(im, 320);
+        //printf("%d %d\n", r.w, r.h);
         //resize_network(net, r.w, r.h);
         //printf("%d %d\n", r.w, r.h);
 

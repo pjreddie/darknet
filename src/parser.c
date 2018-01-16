@@ -5,6 +5,7 @@
 
 #include "activation_layer.h"
 #include "logistic_layer.h"
+#include "l2norm_layer.h"
 #include "activations.h"
 #include "avgpool_layer.h"
 #include "batchnorm_layer.h"
@@ -56,6 +57,7 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[deconvolutional]")==0) return DECONVOLUTIONAL;
     if (strcmp(type, "[activation]")==0) return ACTIVE;
     if (strcmp(type, "[logistic]")==0) return LOGXENT;
+    if (strcmp(type, "[l2norm]")==0) return L2NORM;
     if (strcmp(type, "[net]")==0
             || strcmp(type, "[network]")==0) return NETWORK;
     if (strcmp(type, "[crnn]")==0) return CRNN;
@@ -307,7 +309,7 @@ layer parse_region(list *options, size_params params)
 
     l.softmax = option_find_int(options, "softmax", 0);
     l.background = option_find_int_quiet(options, "background", 0);
-    l.max_boxes = option_find_int_quiet(options, "max",30);
+    l.max_boxes = option_find_int_quiet(options, "max",90);
     l.jitter = option_find_float(options, "jitter", .2);
     l.rescore = option_find_int_quiet(options, "rescore",0);
 
@@ -356,7 +358,7 @@ detection_layer parse_detection(list *options, size_params params)
     layer.softmax = option_find_int(options, "softmax", 0);
     layer.sqrt = option_find_int(options, "sqrt", 0);
 
-    layer.max_boxes = option_find_int_quiet(options, "max",30);
+    layer.max_boxes = option_find_int_quiet(options, "max",90);
     layer.coord_scale = option_find_float(options, "coord_scale", 1);
     layer.forced = option_find_int(options, "forced", 0);
     layer.object_scale = option_find_float(options, "object_scale", 1);
@@ -496,10 +498,20 @@ layer parse_shortcut(list *options, size_params params, network *net)
 }
 
 
+layer parse_l2norm(list *options, size_params params)
+{
+    layer l = make_l2norm_layer(params.batch, params.inputs);
+    l.h = l.out_h = params.h;
+    l.w = l.out_w = params.w;
+    l.c = l.out_c = params.c;
+    return l;
+}
+
+
 layer parse_logistic(list *options, size_params params)
 {
     layer l = make_logistic_layer(params.batch, params.inputs);
-    l.w = l.out_h = params.h;
+    l.h = l.out_h = params.h;
     l.w = l.out_w = params.w;
     l.c = l.out_c = params.c;
     return l;
@@ -512,12 +524,9 @@ layer parse_activation(list *options, size_params params)
 
     layer l = make_activation_layer(params.batch, params.inputs, activation);
 
-    l.out_h = params.h;
-    l.out_w = params.w;
-    l.out_c = params.c;
-    l.h = params.h;
-    l.w = params.w;
-    l.c = params.c;
+    l.h = l.out_h = params.h;
+    l.w = l.out_w = params.w;
+    l.c = l.out_c = params.c;
 
     return l;
 }
@@ -614,6 +623,7 @@ void parse_net_options(list *options, network *net)
     net->max_ratio = option_find_float_quiet(options, "max_ratio", (float) net->max_crop / net->w);
     net->min_ratio = option_find_float_quiet(options, "min_ratio", (float) net->min_crop / net->w);
     net->center = option_find_int_quiet(options, "center",0);
+    net->clip = option_find_float_quiet(options, "clip", 0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);
@@ -714,6 +724,8 @@ network *parse_network_cfg(char *filename)
             l = parse_activation(options, params);
         }else if(lt == LOGXENT){
             l = parse_logistic(options, params);
+        }else if(lt == L2NORM){
+            l = parse_l2norm(options, params);
         }else if(lt == RNN){
             l = parse_rnn(options, params);
         }else if(lt == GRU){
@@ -762,6 +774,7 @@ network *parse_network_cfg(char *filename)
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
+        l.clip = net->clip;
         l.truth = option_find_int_quiet(options, "truth", 0);
         l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);

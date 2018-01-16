@@ -14,6 +14,7 @@ COST_TYPE get_cost_type(char *s)
     if (strcmp(s, "masked")==0) return MASKED;
     if (strcmp(s, "smooth")==0) return SMOOTH;
     if (strcmp(s, "L1")==0) return L1;
+    if (strcmp(s, "wgan")==0) return WGAN;
     fprintf(stderr, "Couldn't find cost type %s, going with SSE\n", s);
     return SSE;
 }
@@ -31,6 +32,8 @@ char *get_cost_string(COST_TYPE a)
             return "smooth";
         case L1:
             return "L1";
+        case WGAN:
+            return "wgan";
     }
     return "sse";
 }
@@ -133,6 +136,8 @@ void forward_cost_layer_gpu(cost_layer l, network net)
         smooth_l1_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
     } else if (l.cost_type == L1){
         l1_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
+    } else if (l.cost_type == WGAN){
+        wgan_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
     } else {
         l2_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
     }

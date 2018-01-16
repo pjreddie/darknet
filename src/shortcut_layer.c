@@ -8,7 +8,7 @@
 
 layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2)
 {
-    fprintf(stderr,"Shortcut Layer: %d\n", index);
+    fprintf(stderr, "res  %3d                %4d x%4d x%4d   ->  %4d x%4d x%4d\n",index, w2,h2,c2, w,h,c);
     layer l = {0};
     l.type = SHORTCUT;
     l.batch = batch;
@@ -37,6 +37,27 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
     #endif
     return l;
 }
+
+void resize_shortcut_layer(layer *l, int w, int h)
+{
+    assert(l->w == l->out_w);
+    assert(l->h == l->out_h);
+    l->w = l->out_w = w;
+    l->h = l->out_h = h;
+    l->outputs = w*h*l->out_c;
+    l->inputs = l->outputs;
+    l->delta =  realloc(l->delta, l->outputs*l->batch*sizeof(float));
+    l->output = realloc(l->output, l->outputs*l->batch*sizeof(float));
+
+#ifdef GPU
+    cuda_free(l->output_gpu);
+    cuda_free(l->delta_gpu);
+    l->output_gpu  = cuda_make_array(l->output, l->outputs*l->batch);
+    l->delta_gpu   = cuda_make_array(l->delta,  l->outputs*l->batch);
+#endif
+    
+}
+
 
 void forward_shortcut_layer(const layer l, network net)
 {

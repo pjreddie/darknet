@@ -87,11 +87,12 @@ typedef enum {
     REORG,
     UPSAMPLE,
     LOGXENT,
+    L2NORM,
     BLANK
 } LAYER_TYPE;
 
 typedef enum{
-    SSE, MASKED, L1, SEG, SMOOTH
+    SSE, MASKED, L1, SEG, SMOOTH,WGAN
 } COST_TYPE;
 
 typedef struct{
@@ -162,6 +163,7 @@ struct layer{
     float shift;
     float ratio;
     float learning_rate_scale;
+    float clip;
     int softmax;
     int classes;
     int coords;
@@ -475,6 +477,7 @@ typedef struct network{
     int train;
     int index;
     float *cost;
+    float clip;
 
 #ifdef GPU
     float *input_gpu;
@@ -604,6 +607,7 @@ void backward_network(network *net);
 void update_network(network *net);
 
 
+float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void copy_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void scal_cpu(int N, float ALPHA, float *X, int INCX);

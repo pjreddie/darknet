@@ -164,8 +164,11 @@ __global__ void adam_kernel(int N, float *x, float *m, float *v, float B1, float
 {
     int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (index >= N) return;
+
+    float mhat = m[index] / (1.f - powf(B1, t));
+    float vhat = v[index] / (1.f - powf(B2, t));
     
-    x[index] = x[index] + (rate * sqrtf(1.f-powf(B2, t)) / (1.f-powf(B1, t)) * m[index] / (sqrtf(v[index]) + eps));
+    x[index] = x[index] + rate * mhat / (sqrtf(vhat) + eps);
 }
 
 extern "C" void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t)
@@ -466,6 +469,35 @@ extern "C" void normalize_gpu(float *x, float *mean, float *variance, int batch,
     check_error(cudaPeekAtLastError());
 }
 
+__global__ void l2norm_kernel(int N, float *x, float *dx, int batch, int filters, int spatial)
+{
+    int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (index >= N) return;
+    int b = index / spatial;
+    int i = index % spatial;
+    int f;
+    float sum = 0;
+    for(f = 0; f < filters; ++f){
+        int index = b*filters*spatial + f*spatial + i;
+        sum += powf(x[index], 2);
+    }
+    sum = sqrtf(sum);
+    if(sum == 0) sum = 1;
+    //printf("%f\n", sum);
+    for(f = 0; f < filters; ++f){
+        int index = b*filters*spatial + f*spatial + i;
+        x[index] /= sum;
+        dx[index] = (1 - x[index]) / sum;
+    }
+}
+
+extern "C" void l2normalize_gpu(float *x, float *dx, int batch, int filters, int spatial)
+{
+    size_t N = batch*spatial;
+    l2norm_kernel<<<cuda_gridsize(N), BLOCK>>>(N, x, dx, batch, filters, spatial);
+    check_error(cudaPeekAtLastError());
+}
+
 __global__ void  fast_mean_kernel(float *x, int batch, int filters, int spatial, float *mean)
 {
     const int threads = BLOCK;
@@ -757,7 +789,7 @@ __global__ void logistic_x_ent_kernel(int n, float *pred, float *truth, float *d
     if(i < n){
         float t = truth[i];
         float p = pred[i];
-        error[i] = -t*log(p) - (1-t)*log(1-p);
+        error[i] = -t*log(p+.0000001) - (1-t)*log(1-p+.0000001);
         delta[i] = t-p;
     }
 }
@@ -797,6 +829,21 @@ __global__ void l1_kernel(int n, float *pred, float *truth, float *delta, float 
 extern "C" void l1_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
     l1_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+    check_error(cudaPeekAtLastError());
+}
+
+__global__ void wgan_kernel(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(i < n){
+        error[i] = truth[i] ? -pred[i] : pred[i];
+        delta[i] = (truth[i] > 0) ? 1 : -1;
+    }
+}
+
+extern "C" void wgan_gpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    wgan_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
     check_error(cudaPeekAtLastError());
 }
 
@@ -926,13 +973,13 @@ extern "C" void softmax_tree(float *input, int spatial, int batch, int stride, f
     int *tree_groups_size = cuda_make_int_array(hier.group_size, hier.groups);
     int *tree_groups_offset = cuda_make_int_array(hier.group_offset, hier.groups);
     /*
-    static int *tree_groups_size = 0;
-    static int *tree_groups_offset = 0;
-    if(!tree_groups_size){
-        tree_groups_size = cuda_make_int_array(hier.group_size, hier.groups);
-        tree_groups_offset = cuda_make_int_array(hier.group_offset, hier.groups);
-    }
-    */
+       static int *tree_groups_size = 0;
+       static int *tree_groups_offset = 0;
+       if(!tree_groups_size){
+       tree_groups_size = cuda_make_int_array(hier.group_size, hier.groups);
+       tree_groups_offset = cuda_make_int_array(hier.group_offset, hier.groups);
+       }
+     */
     int num = spatial*batch*hier.groups;
     softmax_tree_kernel<<<cuda_gridsize(num), BLOCK>>>(input, spatial, batch, stride, temp, output, hier.groups, tree_groups_size, tree_groups_offset);
     check_error(cudaPeekAtLastError());
@@ -976,7 +1023,7 @@ __global__ void upsample_kernel(size_t N, float *x, int w, int h, int c, int bat
     int in_index = b*w*h*c + in_c*w*h + in_h*w + in_w;
 
 
-    if(forward) out[out_index] = x[in_index];
+    if(forward) out[out_index] += x[in_index];
     else atomicAdd(x+in_index, out[out_index]);
 }
 extern "C" void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float *out)
