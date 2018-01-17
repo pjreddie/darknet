@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 							auto current_image = det_image;
 							consumed = true;
 							while (current_image.use_count() > 0) {
-								auto result = detector.detect_resized(*current_image, frame_size, 0.24, false);	// true
+								auto result = detector.detect_resized(*current_image, frame_size, 0.20, false);	// true
 								++fps_det_counter;
 								std::unique_lock<std::mutex> lock(mtx);
 								thread_result_vec = result;
@@ -236,11 +236,13 @@ int main(int argc, char *argv[])
 						}
 					}
 
+#ifndef TRACK_OPTFLOW
 					// wait detection result for video-file only (not for net-cam)
-					//if (protocol != "rtsp://" && protocol != "http://" && protocol != "https:/") {
-					//	std::unique_lock<std::mutex> lock(mtx);
-					//	while (!consumed) cv_detected.wait(lock);
-					//}
+					if (protocol != "rtsp://" && protocol != "http://" && protocol != "https:/") {
+						std::unique_lock<std::mutex> lock(mtx);
+						while (!consumed) cv_detected.wait(lock);
+					}
+#endif
 				}
 				if (t_cap.joinable()) t_cap.join();
 				if (t_detect.joinable()) t_detect.join();

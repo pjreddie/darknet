@@ -70,6 +70,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
+	int init_w = net.w;
+	int init_h = net.h;
+
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
@@ -95,8 +98,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     while(get_current_batch(net) < net.max_batches){
 		if(l.random && count++%10 == 0){
             printf("Resizing\n");
-            int dim = (rand() % 10 + 10) * 32;
-            if (get_current_batch(net)+100 > net.max_batches) dim = 544;
+			int dim = (rand() % 12 + (init_w/32 - 5)) * 32;	// +-160
+            //int dim = (rand() % 10 + 10) * 32;
+            //if (get_current_batch(net)+100 > net.max_batches) dim = 544;
             //int dim = (rand() % 4 + 16) * 32;
             printf("%d\n", dim);
             args.w = dim;
@@ -152,7 +156,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         i = get_current_batch(net);
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
-		if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
+		//if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
+		if (i % 100 == 0) {
 #ifdef GPU
 			if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif

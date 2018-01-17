@@ -114,6 +114,7 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     state.truth = *net.truth_gpu;
     state.train = 1;
     forward_network_gpu(net, state);
+	cudaStreamSynchronize(get_cuda_stream());
     backward_network_gpu(net, state);
 }
 
