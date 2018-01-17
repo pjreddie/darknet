@@ -180,11 +180,12 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 	cudaGetDevice(&old_gpu_index);
 	if(cur_gpu_id != old_gpu_index)
 		cudaSetDevice(net.gpu_index);
+
+	net.wait_stream = wait_stream;	// 1 - wait CUDA-stream, 0 - not to wait
 #endif
 	//std::cout << "net.gpu_index = " << net.gpu_index << std::endl;
 
 	//float nms = .4;
-	net.wait_stream = wait_stream;	// 1 - wait CUDA-stream, 0 - not to wait
 
 	image im;
 	im.c = img.c;
