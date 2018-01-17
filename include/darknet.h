@@ -5,6 +5,8 @@
 #include <string.h>
 #include <pthread.h>
 #include "unistd.h"
+#include "log4c.h"
+#include <hiredis.h>
 
 #define SECRET_NUM -1234
 extern int gpu_index;
@@ -721,7 +723,8 @@ void do_nms(box *boxes, float **probs, int total, int classes, float thresh);
 data load_all_cifar10();
 box_label *read_boxes(char *filename, int *n);
 box float_to_box(float *f, int stride);
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes);
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names,
+                     image **alphabet, int classes, log4c_category_t *logger, char *output);
 
 matrix network_predict_data(network *net, data test);
 image **load_alphabet();

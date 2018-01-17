@@ -236,10 +236,12 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names,
+                     image **alphabet, int classes, log4c_category_t *logger, char *output)
 {
     int i,j;
 
+    log4c_category_log(logger,LOG4C_PRIORITY_DEBUG,"Frame\n");
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
         int class = -1;
@@ -253,6 +255,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
                     strcat(labelstr, names[j]);
                 }
                 printf("%s: %.0f%%\n", names[j], probs[i][j]*100);
+                log4c_category_log(logger,LOG4C_PRIORITY_DEBUG,"%s: %.0f%%:", names[j], probs[i][j]*100);
+                break; //???? Added by YK
             }
         }
         if(class >= 0){
@@ -284,6 +288,10 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             int top   = (b.y-b.h/2.)*im.h;
             int bot   = (b.y+b.h/2.)*im.h;
 
+            sprintf(output+strlen(output),"{object:%s, id:%d, prob:%.0f%%, pos:{left:%d,right:%d,top:%d,bottom:%d}},", names[j], i, probs[i][j]*100, left, right, top, bot);
+
+            log4c_category_log(logger,LOG4C_PRIORITY_DEBUG,"%d %d %d %d %d\n", i ,left,top,right,bot);
+
             if(left < 0) left = 0;
             if(right > im.w-1) right = im.w-1;
             if(top < 0) top = 0;
@@ -306,6 +314,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             }
         }
     }
+
+
 }
 
 void transpose_image(image im)

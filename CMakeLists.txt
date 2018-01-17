@@ -4,8 +4,7 @@ project(darknet)
 set(CMAKE_CXX_STANDARD 11)
 
 # so that we will find .h
-include_directories("./include")
-include_directories("./src")
+include_directories("./include" "./src" "/usr/local/log4c/include" "/usr/local/include/hiredis")
 
 add_definitions(-DOPENCV -DGPU -DDEBUG)
 set(COMMON_FLAGS "-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC -Ofast")
@@ -113,6 +112,7 @@ endif()
 
 set(PThreadLib -pthread)
 set(MATHLIB -lm)
+set(REDISLIB /usr/local/lib/libhiredis.so)
+set(LOG4CLIB /usr/local/log4c/lib/liblog4c.so)
 target_link_libraries(darklib cudalib ${PThreadLib} ${MATHLIB})
-target_link_libraries(darknet darklib)
-
+target_link_libraries(darknet darklib ${LOG4CLIB} ${REDISLIB})

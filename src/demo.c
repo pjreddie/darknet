@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include "network.h"
 #include "detection_layer.h"
 #include "region_layer.h"
@@ -37,6 +38,13 @@ static int demo_done = 0;
 static float *avg;
 double demo_time;
 
+static log4c_category_t* logger = NULL;
+
+redisContext *c;
+redisReply *reply;
+
+char output_buf[1024];
+
 void *detect_in_thread(void *ptr)
 {
     running = 1;
@@ -63,10 +71,18 @@ void *detect_in_thread(void *ptr)
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
-    draw_detections(display, demo_detections, demo_thresh, boxes, probs, 0, demo_names, demo_alphabet, demo_classes);
+    sprintf(output_buf,"{objects:[");
+    draw_detections(display, demo_detections, demo_thresh, boxes, probs, 0, demo_names, demo_alphabet, demo_classes,
+                    logger, output_buf);
+    sprintf(output_buf+strlen(output_buf),"]}");
+    printf(output_buf);
+    reply = redisCommand(c,"LPUSH objectlist %s", output_buf);
+    freeReplyObject(reply);
+    memset(output_buf,0x0,sizeof(output_buf));
 
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
+
     return 0;
 }
 
@@ -148,6 +164,28 @@ void demo(type_param* param)
 
     srand(2222222);
 
+    memset(output_buf, 0x0, sizeof(output_buf));
+    if (log4c_init()) {
+        printf("log4c_init() failed");
+        return;
+    }
+    logger = log4c_category_get("darknet");
+
+    const char *hostname = "101.200.39.177";
+    int port = 6379;
+
+    struct timeval timeout = { 1, 500000 }; // 1.5 seconds
+    c = redisConnectWithTimeout(hostname, port, timeout);
+    if (c == NULL || c->err) {
+        if (c) {
+            printf("Connection error: %s\n", c->errstr);
+            redisFree(c);
+        } else {
+            printf("Connection error: can't allocate redis context\n");
+        }
+        exit(1);
+    }
+
     if(filename){
         printf("video file: %s\n", filename);
         cap = cvCreateFileCapture(filename);
@@ -169,6 +207,7 @@ void demo(type_param* param)
 
     layer l = net->layers[net->n-1];
     demo_detections = l.n*l.w*l.h;
+    log4c_category_log(logger, LOG4C_PRIORITY_DEBUG, "l.n:%d, l.w:%d, l.h:%d", l.n,l.w,l.h);
     int j;
 
     avg = (float *) calloc(l.outputs, sizeof(float));
@@ -218,6 +257,16 @@ void demo(type_param* param)
 
         ++count;
     }
+
+    if ( log4c_fini()){
+        printf("log4c_fini() failed");
+    }
+
+    freeReplyObject(reply);
+
+    /* Disconnects and frees the context */
+    redisFree(c);
+
 }
 
 void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
