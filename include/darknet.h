@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include "unistd.h"
+#include "log4c.h"
+#include <hiredis.h>
 
 #define SECRET_NUM -1234
 extern int gpu_index;
@@ -31,6 +34,24 @@ extern int gpu_index;
     #endif
     #endif
 #endif
+
+typedef struct struct_param{
+    char *cfg;
+    char *weigths;
+    float thresh;
+    int cam_index;
+    char *filename;
+    char **names;
+    int classes;
+    int frame_skip;
+    char *prefix;
+    int avg;
+    float hier_thresh;
+    int width;
+    int height;
+    int fps;
+    int fullscreen;
+}type_param;
 
 typedef struct{
     int classes;
@@ -643,7 +664,8 @@ void rescale_weights(layer l, float scale, float trans);
 void rgbgr_weights(layer l);
 image *get_weights(layer l);
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
+//void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
+void demo(type_param *);
 void get_detection_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness);
 
 char *option_find_str(list *l, char *key, char *def);
@@ -701,7 +723,8 @@ void do_nms(box *boxes, float **probs, int total, int classes, float thresh);
 data load_all_cifar10();
 box_label *read_boxes(char *filename, int *n);
 box float_to_box(float *f, int stride);
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes);
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names,
+                     image **alphabet, int classes, log4c_category_t *logger, char *output);
 
 matrix network_predict_data(network *net, data test);
 image **load_alphabet();
@@ -726,6 +749,7 @@ matrix make_matrix(int rows, int cols);
 #ifndef __cplusplus
 #ifdef OPENCV
 image get_image_from_stream(CvCapture *cap);
+image get_image_from_stream_compress(CvCapture *cap, int ratio);
 #endif
 #endif
 void free_image(image m);

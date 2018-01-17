@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include "network.h"
 #include "detection_layer.h"
 #include "region_layer.h"
@@ -10,7 +11,6 @@
 #include <sys/time.h>
 
 #define DEMO 1
-
 #ifdef OPENCV
 
 static char **demo_names;
@@ -38,6 +38,13 @@ static int demo_done = 0;
 static float *avg;
 double demo_time;
 
+static log4c_category_t* logger = NULL;
+
+redisContext *c;
+redisReply *reply;
+
+char output_buf[1024];
+
 void *detect_in_thread(void *ptr)
 {
     running = 1;
@@ -53,7 +60,7 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
-        get_region_boxes(l, buff[0].w, buff[0].h, net->w, net->h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
+        get_region_boxes(l,buff[0].w, buff[0].h, net->w, net->h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
     } else {
         error("Last layer must produce detections\n");
     }
@@ -64,16 +71,24 @@ void *detect_in_thread(void *ptr)
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
-    draw_detections(display, demo_detections, demo_thresh, boxes, probs, 0, demo_names, demo_alphabet, demo_classes);
+    sprintf(output_buf,"{objects:[");
+    draw_detections(display, demo_detections, demo_thresh, boxes, probs, 0, demo_names, demo_alphabet, demo_classes,
+                    logger, output_buf);
+    sprintf(output_buf+strlen(output_buf),"]}");
+    printf(output_buf);
+    reply = redisCommand(c,"LPUSH objectlist %s", output_buf);
+    freeReplyObject(reply);
+    memset(output_buf,0x0,sizeof(output_buf));
 
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
+
     return 0;
 }
 
 void *fetch_in_thread(void *ptr)
 {
-    int status = fill_image_from_stream(cap, buff[buff_index]);
+    int status = fill_image_from_stream_compress(cap, buff[buff_index], 1);
     letterbox_image_into(buff[buff_index], net->w, net->h, buff_letter[buff_index]);
     if(status == 0) demo_done = 1;
     return 0;
@@ -114,9 +129,25 @@ void *detect_loop(void *ptr)
         detect_in_thread(0);
     }
 }
-
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
+void demo(type_param* param)
+//void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
+    char *cfgfile = param->cfg;
+    char *weightfile = param->weigths;
+    float thresh = param->thresh;
+    int cam_index = param->cam_index;
+    const char *filename = param->filename;
+    char **names = param->names;
+    int classes = param->classes;
+    int delay = param->frame_skip;
+    char *prefix = param->prefix;
+    int avg_frames = param->avg;
+    float hier = param->hier_thresh;
+    int w = param->width;
+    int h = param->height;
+    int frames = param->fps;
+    int fullscreen = param->fullscreen;
+
     demo_frame = avg_frames;
     predictions = calloc(demo_frame, sizeof(float*));
     image **alphabet = load_alphabet();
@@ -133,9 +164,31 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     srand(2222222);
 
+    memset(output_buf, 0x0, sizeof(output_buf));
+    if (log4c_init()) {
+        printf("log4c_init() failed");
+        return;
+    }
+    logger = log4c_category_get("darknet");
+
+    const char *hostname = "101.200.39.177";
+    int port = 6379;
+
+    struct timeval timeout = { 1, 500000 }; // 1.5 seconds
+    c = redisConnectWithTimeout(hostname, port, timeout);
+    if (c == NULL || c->err) {
+        if (c) {
+            printf("Connection error: %s\n", c->errstr);
+            redisFree(c);
+        } else {
+            printf("Connection error: can't allocate redis context\n");
+        }
+        exit(1);
+    }
+
     if(filename){
         printf("video file: %s\n", filename);
-        cap = cvCaptureFromFile(filename);
+        cap = cvCreateFileCapture(filename);
     }else{
         cap = cvCaptureFromCAM(cam_index);
 
@@ -154,6 +207,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     layer l = net->layers[net->n-1];
     demo_detections = l.n*l.w*l.h;
+    log4c_category_log(logger, LOG4C_PRIORITY_DEBUG, "l.n:%d, l.w:%d, l.h:%d", l.n,l.w,l.h);
     int j;
 
     avg = (float *) calloc(l.outputs, sizeof(float));
@@ -163,9 +217,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
     for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes+1, sizeof(float));
 
-    buff[0] = get_image_from_stream(cap);
-    buff[1] = copy_image(buff[0]);
-    buff[2] = copy_image(buff[0]);
+    buff[0] = get_image_from_stream_compress(cap,1);
+    buff[1] = get_image_from_stream_compress(cap,1);
+    buff[2] = get_image_from_stream_compress(cap,1);
     buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
     buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
     buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
@@ -178,7 +232,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
         } else {
             cvMoveWindow("Demo", 0, 0);
-            cvResizeWindow("Demo", 1352, 1013);
+            cvResizeWindow("Demo", ipl->width, ipl->height);
         }
     }
 
@@ -188,6 +242,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         buff_index = (buff_index + 1) %3;
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+
         if(!prefix){
             fps = 1./(what_time_is_it_now() - demo_time);
             demo_time = what_time_is_it_now();
@@ -199,8 +254,19 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
         pthread_join(fetch_thread, 0);
         pthread_join(detect_thread, 0);
+
         ++count;
     }
+
+    if ( log4c_fini()){
+        printf("log4c_fini() failed");
+    }
+
+    freeReplyObject(reply);
+
+    /* Disconnects and frees the context */
+    redisFree(c);
+
 }
 
 void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
@@ -251,12 +317,9 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
     probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
     for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes+1, sizeof(float));
 
-    buff[0] = get_image_from_stream(cap);
-    buff[1] = copy_image(buff[0]);
-    buff[2] = copy_image(buff[0]);
+    buff[0] = get_image_from_stream_compress(cap, 1);
     buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
-    buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
-    buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
+
     ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
 
     int count = 0;
@@ -266,7 +329,7 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
             cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
         } else {
             cvMoveWindow("Demo", 0, 0);
-            cvResizeWindow("Demo", 1352, 1013);
+            cvResizeWindow("Demo", buff[0].w, buff[0].h);
         }
     }
 

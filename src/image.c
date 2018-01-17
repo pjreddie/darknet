@@ -9,6 +9,7 @@
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#include "layer.h"
 
 int windows = 0;
 
@@ -228,17 +229,19 @@ image **load_alphabet()
         alphabets[j] = calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
             char buff[256];
-            sprintf(buff, "data/labels/%d_%d.png", i, j);
+            sprintf(buff, "/home/kai/darknet/data/labels/%d_%d.png", i, j);
             alphabets[j][i] = load_image_color(buff, 0, 0);
         }
     }
     return alphabets;
 }
 
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names,
+                     image **alphabet, int classes, log4c_category_t *logger, char *output)
 {
     int i,j;
 
+    log4c_category_log(logger,LOG4C_PRIORITY_DEBUG,"Frame\n");
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
         int class = -1;
@@ -252,6 +255,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
                     strcat(labelstr, names[j]);
                 }
                 printf("%s: %.0f%%\n", names[j], probs[i][j]*100);
+                log4c_category_log(logger,LOG4C_PRIORITY_DEBUG,"%s: %.0f%%:", names[j], probs[i][j]*100);
+                break; //???? Added by YK
             }
         }
         if(class >= 0){
@@ -283,6 +288,10 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             int top   = (b.y-b.h/2.)*im.h;
             int bot   = (b.y+b.h/2.)*im.h;
 
+            sprintf(output+strlen(output),"{object:%s, id:%d, prob:%.0f%%, pos:{left:%d,right:%d,top:%d,bottom:%d}},", names[j], i, probs[i][j]*100, left, right, top, bot);
+
+            log4c_category_log(logger,LOG4C_PRIORITY_DEBUG,"%d %d %d %d %d\n", i ,left,top,right,bot);
+
             if(left < 0) left = 0;
             if(right > im.w-1) right = im.w-1;
             if(top < 0) top = 0;
@@ -305,6 +314,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             }
         }
     }
+
+
 }
 
 void transpose_image(image im)
@@ -629,11 +640,37 @@ image get_image_from_stream(CvCapture *cap)
     return im;
 }
 
+image get_image_from_stream_compress(CvCapture *cap, int ratio)
+{
+    IplImage* src = cvQueryFrame(cap);
+    if (!src) return make_empty_image(0,0,0);
+
+    IplImage *dst = cvCreateImage(cvSize(src->width*ratio, src->height*ratio),src->depth,src->nChannels);
+    cvResize(src, dst, CV_INTER_LINEAR);
+
+    image im = ipl_to_image(dst);
+    rgbgr_image(im);
+    return im;
+}
+
 int fill_image_from_stream(CvCapture *cap, image im)
 {
     IplImage* src = cvQueryFrame(cap);
     if (!src) return 0;
     ipl_into_image(src, im);
+    rgbgr_image(im);
+    return 1;
+}
+
+int fill_image_from_stream_compress(CvCapture *cap, image im, int ratio)
+{
+    IplImage* src = cvQueryFrame(cap);
+    if (!src) return 0;
+
+    IplImage *dst = cvCreateImage(cvSize(src->width * ratio, src->height * ratio),src->depth,src->nChannels);
+    cvResize(src, dst, CV_INTER_LINEAR);
+
+    ipl_into_image(dst, im);
     rgbgr_image(im);
     return 1;
 }

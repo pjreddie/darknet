@@ -296,7 +296,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, 0, voc_names, alphabet, 20);
+        draw_detections(im, l.side * l.side * l.n, thresh, boxes, probs, 0, voc_names, alphabet, 20, NULL, NULL);
         save_image(im, "predictions");
         show_image(im, "predictions");
 
@@ -329,5 +329,24 @@ void run_yolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, voc_names, 20, frame_skip, prefix, avg, .5, 0,0,0,0);
+    else if(0==strcmp(argv[2], "demo")){
+        type_param param;
+        param.cfg = cfg;
+        param.weigths = weights;
+        param.thresh = thresh;
+        param.cam_index = cam_index;
+        param.filename = filename;
+        param.names = voc_names;
+        param.classes = 80;
+        param.frame_skip = frame_skip;
+        param.prefix = prefix;
+        param.avg = avg;
+        param.hier_thresh = .5;
+        param.width=0;
+        param.height=0;
+        param.fps=0;
+        param.fullscreen = 0;
+        demo(&param);
+    }
+//        demo(cfg, weights, thresh, cam_index, filename, voc_names, 20, frame_skip, prefix, avg, .5, 0,0,0,0);
 }
