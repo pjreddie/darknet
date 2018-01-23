@@ -624,6 +624,177 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
 }
 
+void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
+{
+    image **alphabet = load_alphabet();
+    char *base = basecfg(cfgfile);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    list *options = read_data_cfg(datacfg);
+
+    srand(2222222);
+    CvCapture * cap;
+
+    int w = 1280;
+    int h = 720;
+
+    if(filename){
+        cap = cvCaptureFromFile(filename);
+    }else{
+        cap = cvCaptureFromCAM(cam_index);
+    }
+
+    if(w){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+    }
+    if(h){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+    }
+
+    int top = option_find_int(options, "top", 1);
+
+    char *label_list = option_find_str(options, "labels", 0);
+    char *name_list = option_find_str(options, "names", label_list);
+    char **names = get_labels(name_list);
+
+    int *indexes = calloc(top, sizeof(int));
+
+    if(!cap) error("Couldn't connect to webcam.\n");
+    cvNamedWindow(base, CV_WINDOW_NORMAL); 
+    cvResizeWindow(base, 512, 512);
+    float fps = 0;
+    int i;
+    int count = 0;
+    float nms = .45;
+
+    while(1){
+        image in = get_image_from_stream(cap);
+        //image in_s = resize_image(in, net->w, net->h);
+        image in_s = letterbox_image(in, net->w, net->h);
+        layer l = net->layers[net->n-1];
+
+        int nboxes = num_boxes(net);
+
+        float *X = in_s.data;
+        network_predict(net, X);
+        detection *dets = get_network_boxes(net, in.w, in.h, thresh, 0, 0, 0);
+        //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+
+        for(i = 0; i < nboxes; ++i){
+            if(dets[i].prob[class] > thresh){
+                box b = dets[i].bbox;
+                int left  = b.x-b.w/2.;
+                int top   = b.y-b.h/2.;
+                censor_image(in, left, top, b.w, b.h);
+            }
+        }
+        show_image(in, base);
+        cvWaitKey(10);
+        free_detections(dets, num_boxes(net));
+
+
+        free_image(in_s);
+        free_image(in);
+
+
+        float curr = 0;
+        fps = .9*fps + .1*curr;
+        for(i = 0; i < skip; ++i){
+            image in = get_image_from_stream(cap);
+            free_image(in);
+        }
+    }
+}
+
+void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
+{
+    image **alphabet = load_alphabet();
+    char *base = basecfg(cfgfile);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    list *options = read_data_cfg(datacfg);
+
+    srand(2222222);
+    CvCapture * cap;
+
+    int w = 1280;
+    int h = 720;
+
+    if(filename){
+        cap = cvCaptureFromFile(filename);
+    }else{
+        cap = cvCaptureFromCAM(cam_index);
+    }
+
+    if(w){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+    }
+    if(h){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+    }
+
+    int top = option_find_int(options, "top", 1);
+
+    char *label_list = option_find_str(options, "labels", 0);
+    char *name_list = option_find_str(options, "names", label_list);
+    char **names = get_labels(name_list);
+
+    int *indexes = calloc(top, sizeof(int));
+
+    if(!cap) error("Couldn't connect to webcam.\n");
+    cvNamedWindow(base, CV_WINDOW_NORMAL); 
+    cvResizeWindow(base, 512, 512);
+    float fps = 0;
+    int i;
+    int count = 0;
+    float nms = .45;
+
+    while(1){
+        image in = get_image_from_stream(cap);
+        //image in_s = resize_image(in, net->w, net->h);
+        image in_s = letterbox_image(in, net->w, net->h);
+        layer l = net->layers[net->n-1];
+
+        int nboxes = num_boxes(net);
+        show_image(in, base);
+
+        float *X = in_s.data;
+        network_predict(net, X);
+        detection *dets = get_network_boxes(net, in.w, in.h, thresh, 0, 0, 1);
+        //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+
+        for(i = 0; i < nboxes; ++i){
+            if(dets[i].prob[class] > thresh){
+                box b = dets[i].bbox;
+                int size = b.w*in.w > b.h*in.h ? b.w*in.w : b.h*in.h;
+                int dx  = b.x*in.w-size/2.;
+                int dy  = b.y*in.h-size/2.;
+                image bim = crop_image(in, dx, dy, size, size);
+                char buff[2048];
+                sprintf(buff, "results/extract/%07d", count);
+                ++count;
+                save_image(bim, buff);
+                free_image(bim);
+            }
+        }
+        free_detections(dets, num_boxes(net));
+
+
+        free_image(in_s);
+        free_image(in);
+
+
+        float curr = 0;
+        fps = .9*fps + .1*curr;
+        for(i = 0; i < skip; ++i){
+            image in = get_image_from_stream(cap);
+            free_image(in);
+        }
+    }
+}
+
 void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, detection *dets)
 {
     network_predict_image(net, im);
@@ -674,12 +845,15 @@ void run_detector(int argc, char **argv)
     int width = find_int_arg(argc, argv, "-w", 0);
     int height = find_int_arg(argc, argv, "-h", 0);
     int fps = find_int_arg(argc, argv, "-fps", 0);
+    int class = find_int_arg(argc, argv, "-class", 0);
 
     char *datacfg = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
+    else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
+    else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);

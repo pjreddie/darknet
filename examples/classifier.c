@@ -44,11 +44,15 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     list *options = read_data_cfg(datacfg);
 
     char *backup_directory = option_find_str(options, "backup", "/backup/");
+    int tag = option_find_int_quiet(options, "tag", 0);
     char *label_list = option_find_str(options, "labels", "data/labels.list");
     char *train_list = option_find_str(options, "train", "data/train.list");
     int classes = option_find_int(options, "classes", 2);
 
-    char **labels = get_labels(label_list);
+    char **labels;
+    if(!tag){
+        labels = get_labels(label_list);
+    }
     list *plist = get_paths(train_list);
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
@@ -76,7 +80,11 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     args.n = imgs;
     args.m = N;
     args.labels = labels;
-    args.type = CLASSIFICATION_DATA;
+    if (tag){
+        args.type = TAG_DATA;
+    } else {
+        args.type = CLASSIFICATION_DATA;
+    }
 
     data train;
     data buffer;
@@ -385,15 +393,13 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
             }
         }
         image im = load_image_color(paths[i], 0, 0);
-        image resized = resize_min(im, net->w);
-        image crop = crop_image(resized, (resized.w - net->w)/2, (resized.h - net->h)/2, net->w, net->h);
+        image crop = center_crop_image(im, net->w, net->h);
         //show_image(im, "orig");
         //show_image(crop, "cropped");
         //cvWaitKey(0);
         float *pred = network_predict(net, crop.data);
         if(net->hierarchy) hierarchy_predictions(pred, net->outputs, net->hierarchy, 1, 1);
 
-        if(resized.data != im.data) free_image(resized);
         free_image(im);
         free_image(crop);
         top_k(pred, classes, topk, indexes);
@@ -955,6 +961,8 @@ void gun_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
 void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename)
 {
 #ifdef OPENCV
+    char *base = basecfg(cfgfile);
+    image **alphabet = load_alphabet();
     printf("Classifier Demo\n");
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
@@ -988,8 +996,8 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     int *indexes = calloc(top, sizeof(int));
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow("Classifier", CV_WINDOW_NORMAL); 
-    cvResizeWindow("Classifier", 512, 512);
+    cvNamedWindow(base, CV_WINDOW_NORMAL); 
+    cvResizeWindow(base, 512, 512);
     float fps = 0;
     int i;
 
@@ -998,8 +1006,8 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         gettimeofday(&tval_before, NULL);
 
         image in = get_image_from_stream(cap);
-        image in_s = resize_image(in, net->w, net->h);
-        show_image(in, "Classifier");
+        //image in_s = resize_image(in, net->w, net->h);
+        image in_s = letterbox_image(in, net->w, net->h);
 
         float *predictions = network_predict(net, in_s.data);
         if(net->hierarchy) hierarchy_predictions(predictions, net->outputs, net->hierarchy, 1, 1);
@@ -1009,11 +1017,24 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         printf("\033[1;1H");
         printf("\nFPS:%.0f\n",fps);
 
+        int lh = in.h*.03;
+        int toph = 3*lh;
+
+        float rgb[3] = {1,1,1};
         for(i = 0; i < top; ++i){
+            printf("%d\n", toph);
             int index = indexes[i];
             printf("%.1f%%: %s\n", predictions[index]*100, names[index]);
+
+            char buff[1024];
+            sprintf(buff, "%3.1f%%: %s\n", predictions[index]*100, names[index]);
+            image label = get_label(alphabet, buff, lh);
+            draw_label(in, toph, lh, label, rgb);
+            toph += 2*lh;
+            free_image(label);
         }
 
+        show_image(in, base);
         free_image(in_s);
         free_image(in);
 
