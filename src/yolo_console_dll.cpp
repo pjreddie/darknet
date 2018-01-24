@@ -38,16 +38,94 @@
 #endif
 
 
+cv::Scalar obj_id_to_color(int obj_id) {
+	int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
+	int const offset = obj_id * 123457 % 6;
+	int const color_scale = 150 + (obj_id * 123457) % 100;
+	cv::Scalar color(colors[offset][0], colors[offset][1], colors[offset][2]);
+	color *= color_scale;
+	return color;
+}
+
+void draw_preview_boxes(cv::Mat src_mat, cv::Mat draw_mat, std::vector<bbox_t> result_vec)
+{
+	size_t const preview_box_size = 100;	// size of preview box in ptx
+	size_t const count_preview_boxes = draw_mat.cols / preview_box_size;
+	unsigned int const frames_history = 30;	// how long to keep the history saved
+	struct preview_box_track_t {
+		unsigned int track_id, obj_id, last_showed_frames_ago;
+		cv::Mat mat_obj;
+		preview_box_track_t() : track_id(0), obj_id(0), last_showed_frames_ago(frames_history) {}
+	};
+	static std::vector<preview_box_track_t> preview_box_track_id(count_preview_boxes);
+	// increment frames history
+	for (auto &i : preview_box_track_id)
+		i.last_showed_frames_ago = std::min(frames_history, i.last_showed_frames_ago + 1);
+
+	// occupy empty boxes
+	for (auto &k : result_vec) {
+		bool found = false;
+		for (auto &i : preview_box_track_id) {
+			if (i.track_id == k.track_id) {
+				i.last_showed_frames_ago = 0;
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			for (auto &i : preview_box_track_id) {
+				if (i.last_showed_frames_ago == frames_history) {
+					i.track_id = k.track_id;
+					i.obj_id = k.obj_id;
+					i.last_showed_frames_ago = 0;
+					break;
+				}
+			}
+		}
+	}
+
+	// draw preview box (from old or current frame)
+	for (size_t i = 0; i < preview_box_track_id.size(); ++i) {
+
+		// get object image
+		cv::Mat dst = preview_box_track_id[i].mat_obj;
+		for (auto &k : result_vec) {
+			if (preview_box_track_id[i].track_id == k.track_id) {
+				bbox_t b = k;
+				cv::Rect r(b.x, b.y, b.w, b.h);
+				cv::Rect img_rect(cv::Point2i(0, 0), src_mat.size());
+				cv::Rect rect_roi = r & img_rect;
+				if (rect_roi.width > 1 || rect_roi.height > 1) {
+					cv::Mat roi = src_mat(rect_roi);
+					cv::resize(roi, dst, cv::Size(preview_box_size, preview_box_size));
+					preview_box_track_id[i].mat_obj = dst;
+				}
+				break;
+			}
+		}
+
+		// draw object image
+		if (preview_box_track_id[i].last_showed_frames_ago < frames_history &&
+			dst.size() == cv::Size(preview_box_size, preview_box_size))
+		{
+			cv::Rect dst_rect_roi(cv::Point2i(i * preview_box_size, draw_mat.rows - preview_box_size), dst.size());
+			cv::Mat dst_roi = draw_mat(dst_rect_roi);
+			dst.copyTo(dst_roi);
+
+			cv::Scalar color = obj_id_to_color(preview_box_track_id[i].obj_id);
+			cv::rectangle(draw_mat, dst_rect_roi, color, 5);
+		}
+	}
+}
+
+
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, 
 	unsigned int wait_msec = 0, int current_det_fps = -1, int current_cap_fps = -1)
 {
 	int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
 
 	for (auto &i : result_vec) {
-		int const offset = i.obj_id * 123457 % 6;
-		int const color_scale = 150 + (i.obj_id * 123457) % 100;
-		cv::Scalar color(colors[offset][0], colors[offset][1], colors[offset][2]);
-		color *= color_scale;
+		cv::Scalar color = obj_id_to_color(i.obj_id);
 		cv::rectangle(mat_img, cv::Rect(i.x, i.y, i.w, i.h), color, 5);
 		if (obj_names.size() > i.obj_id) {
 			std::string obj_name = obj_names[i.obj_id];
@@ -64,6 +142,7 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
 		std::string fps_str = "FPS detection: " + std::to_string(current_det_fps) + "   FPS capture: " + std::to_string(current_cap_fps);
 		putText(mat_img, fps_str, cv::Point2f(10, 20), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(50, 255, 0), 2);
 	}
+
 	cv::imshow("window name", mat_img);
 	cv::waitKey(wait_msec);
 }
@@ -171,6 +250,8 @@ int main(int argc, char *argv[])
 #ifdef TRACK_OPTFLOW
 						// track optical flow
 						if (track_optflow_queue.size() > 0) {
+							//draw_preview_boxes(track_optflow_queue.front(), cur_frame, result_vec);
+
 							std::queue<cv::Mat> new_track_optflow_queue;
 							//std::cout << "\n !!!! all = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
 							tracker_flow.update_tracking_flow(track_optflow_queue.front());
@@ -222,7 +303,7 @@ int main(int argc, char *argv[])
 						track_optflow_queue.push(cur_frame.clone());
 						result_vec = tracker_flow.tracking_flow(cur_frame, result_vec);	// track optical flow
 #endif
-
+						//draw_preview_boxes(cur_frame, cur_frame, result_vec);
 						draw_boxes(cur_frame, result_vec, obj_names, 3, current_det_fps, current_cap_fps);	// 3 or 16ms
 						//show_console_result(result_vec, obj_names);
 
