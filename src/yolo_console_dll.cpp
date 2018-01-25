@@ -56,7 +56,7 @@ class preview_boxes_t {
 		preview_box_track_t() : track_id(0), obj_id(0), last_showed_frames_ago(frames_history) {}
 	};
 	std::vector<preview_box_track_t> preview_box_track_id;
-	size_t const preview_box_size, const bottom_offset;
+	size_t const preview_box_size, bottom_offset;
 	bool const one_off_detections;
 public:
 	preview_boxes_t(size_t _preview_box_size = 100, size_t _bottom_offset = 100, bool _one_off_detections = false) :
