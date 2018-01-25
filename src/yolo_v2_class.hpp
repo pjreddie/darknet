@@ -29,6 +29,7 @@ struct bbox_t {
 	float prob;					// confidence - probability that the object was found correctly
 	unsigned int obj_id;		// class of object - from range [0, classes-1]
 	unsigned int track_id;		// tracking id for video (0 - untracked, 1 - inf - tracked object)
+	unsigned int frames_counter;// counter of frames on which the object was detected
 };
 
 struct image_t {
@@ -57,7 +58,7 @@ public:
 	YOLODLL_API int get_net_width() const;
 	YOLODLL_API int get_net_height() const;
 
-	YOLODLL_API std::vector<bbox_t> tracking(std::vector<bbox_t> cur_bbox_vec, int const frames_story = 6);
+	YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, int const frames_story = 6, int const max_dist = 150);
 
 #ifdef OPENCV
 	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false)
@@ -163,7 +164,7 @@ public:
 		stream = cv::cuda::Stream();
 
 		sync_PyrLKOpticalFlow_gpu = cv::cuda::SparsePyrLKOpticalFlow::create();
-		sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(21, 21));	// 15, 21, 31
+		sync_PyrLKOpticalFlow_gpu->setWinSize(cv::Size(9, 9));	// 15, 21, 31
 		sync_PyrLKOpticalFlow_gpu->setMaxLevel(3);		// +- 3 pt
 		sync_PyrLKOpticalFlow_gpu->setNumIters(2000);	// def: 30
 
@@ -201,7 +202,7 @@ public:
 	}
 
 
-	std::vector<bbox_t> tracking_flow(cv::Mat dst_mat, std::vector<bbox_t> cur_bbox_vec)
+	std::vector<bbox_t> tracking_flow(cv::Mat dst_mat, std::vector<bbox_t> cur_bbox_vec, bool check_error = false)
 	{
 		if (sync_PyrLKOpticalFlow_gpu.empty()) {
 			std::cout << "sync_PyrLKOpticalFlow_gpu isn't initialized \n";
@@ -283,7 +284,7 @@ public:
 
 			if (err_cpu.cols > i &&  status_cpu.cols > i)
 				if (abs(moved_x) < 100 && abs(moved_y) < 100)
-					//if (err_cpu.at<float>(0, i) < 60 && status_cpu.at<unsigned char>(0, i) != 0)
+					if (!check_error || (err_cpu.at<float>(0, i) < 60 && status_cpu.at<unsigned char>(0, i) != 0))
 					{
 						cur_bbox_vec[i].x += moved_x + 0.5;
 						cur_bbox_vec[i].y += moved_y + 0.5;

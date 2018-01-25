@@ -252,7 +252,7 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 	return bbox_vec;
 }
 
-YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_vec, int const frames_story)
+YOLODLL_API std::vector<bbox_t> Detector::tracking_id(std::vector<bbox_t> cur_bbox_vec, int const frames_story, int const max_dist)
 {
 	detector_gpu_t &det_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 
@@ -279,7 +279,7 @@ YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_
 					float center_x_diff = (float)(i.x + i.w/2) - (float)(k.x + k.w/2);
 					float center_y_diff = (float)(i.y + i.h/2) - (float)(k.y + k.h/2);
 					unsigned int cur_dist = sqrt(center_x_diff*center_x_diff + center_y_diff*center_y_diff);
-					if (cur_dist < 100 && (k.track_id == 0 || dist_vec[m] > cur_dist)) {
+					if (cur_dist < max_dist && (k.track_id == 0 || dist_vec[m] > cur_dist)) {
 						dist_vec[m] = cur_dist;
 						cur_index = m;
 					}
