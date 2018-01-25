@@ -213,7 +213,6 @@ int main(int argc, char *argv[])
 	Tracker_optflow tracker_flow;
 	detector.wait_stream = true;
 #endif
-	preview_boxes_t large_preview(100, 150, false), small_preview(50, 50, true);
 
 	while (true) 
 	{		
@@ -223,6 +222,8 @@ int main(int argc, char *argv[])
 		
 		try {
 #ifdef OPENCV
+			preview_boxes_t large_preview(100, 150, false), small_preview(50, 50, true);
+
 			std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
 			std::string const protocol = filename.substr(0, 7);
 			if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov" || 	// video file
