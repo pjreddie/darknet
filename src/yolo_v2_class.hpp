@@ -58,7 +58,8 @@ public:
 	YOLODLL_API int get_net_width() const;
 	YOLODLL_API int get_net_height() const;
 
-	YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, int const frames_story = 6, int const max_dist = 150);
+	YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true, 
+												int const frames_story = 6, int const max_dist = 150);
 
 #ifdef OPENCV
 	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false)

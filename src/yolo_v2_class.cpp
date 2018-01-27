@@ -252,7 +252,8 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 	return bbox_vec;
 }
 
-YOLODLL_API std::vector<bbox_t> Detector::tracking_id(std::vector<bbox_t> cur_bbox_vec, int const frames_story, int const max_dist)
+YOLODLL_API std::vector<bbox_t> Detector::tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history, 
+	int const frames_story, int const max_dist)
 {
 	detector_gpu_t &det_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 
@@ -301,8 +302,10 @@ YOLODLL_API std::vector<bbox_t> Detector::tracking_id(std::vector<bbox_t> cur_bb
 		if (cur_bbox_vec[i].track_id == 0)
 			cur_bbox_vec[i].track_id = det_gpu.track_id[cur_bbox_vec[i].obj_id]++;
 
-	prev_bbox_vec_deque.push_front(cur_bbox_vec);
-	if (prev_bbox_vec_deque.size() > frames_story) prev_bbox_vec_deque.pop_back();
+	if (change_history) {
+		prev_bbox_vec_deque.push_front(cur_bbox_vec);
+		if (prev_bbox_vec_deque.size() > frames_story) prev_bbox_vec_deque.pop_back();
+	}
 
 	return cur_bbox_vec;
 }
