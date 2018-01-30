@@ -64,7 +64,6 @@ public:
 		preview_box_size(_preview_box_size), bottom_offset(_bottom_offset), one_off_detections(_one_off_detections)
 	{}
 
-	//void draw_preview_boxes(cv::Mat src_mat, cv::Mat draw_mat, std::vector<bbox_t> result_vec, bool draw_boxes = true)
 	void set(cv::Mat src_mat, std::vector<bbox_t> result_vec)
 	{
 		size_t const count_preview_boxes = src_mat.cols / preview_box_size;
@@ -142,6 +141,10 @@ public:
 				cv::Scalar color = obj_id_to_color(preview_box_track_id[i].obj_id);
 				int thickness = (preview_box_track_id[i].current_detection) ? 5 : 1;
 				cv::rectangle(draw_mat, dst_rect_roi, color, thickness);
+
+				unsigned int const track_id = preview_box_track_id[i].track_id;
+				std::string track_id_str = (track_id > 0)? std::to_string(track_id):"";
+				putText(draw_mat, track_id_str, dst_rect_roi.tl() - cv::Point2i(0, 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0, cv::Scalar(0, 0, 0), 2);
 			}
 		}
 	}
@@ -149,7 +152,7 @@ public:
 
 
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, 
-	unsigned int wait_msec = 0, std::string win_name = "window name", int current_det_fps = -1, int current_cap_fps = -1)
+	int current_det_fps = -1, int current_cap_fps = -1)
 {
 	int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
 
@@ -171,9 +174,6 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
 		std::string fps_str = "FPS detection: " + std::to_string(current_det_fps) + "   FPS capture: " + std::to_string(current_cap_fps);
 		putText(mat_img, fps_str, cv::Point2f(10, 20), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(50, 255, 0), 2);
 	}
-
-	cv::imshow(win_name, mat_img);
-	cv::waitKey(wait_msec);
 }
 #endif	// OPENCV
 
@@ -276,7 +276,8 @@ int main(int argc, char *argv[])
 					{
 						std::unique_lock<std::mutex> lock(mtx);
 						det_image = detector.mat_to_image_resize(cur_frame);
-						auto old_result_vec = result_vec;
+						//auto old_result_vec = result_vec;
+						auto old_result_vec = detector.tracking_id(result_vec);
 						result_vec = thread_result_vec;
 #ifdef TRACK_OPTFLOW
 						// track optical flow
@@ -285,18 +286,18 @@ int main(int argc, char *argv[])
 							small_preview.set(track_optflow_queue.front(), tmp_result_vec);
 
 							//std::cout << "\n !!!! all = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
-							tracker_flow.update_tracking_flow(track_optflow_queue.front());
+							tracker_flow.update_tracking_flow(track_optflow_queue.front(), result_vec);
 
 							while (track_optflow_queue.size() > 1) {
 								track_optflow_queue.pop();
-								result_vec = tracker_flow.tracking_flow(track_optflow_queue.front(), result_vec, true);
+								result_vec = tracker_flow.tracking_flow(track_optflow_queue.front());
 							}
 							track_optflow_queue.pop();
 							passed_flow_frames = 0;
 						}
 #endif
 						result_vec = detector.tracking_id(result_vec);	// comment it - if track_id is not required
-
+												
 						// add old tracked objects
 						for (auto &i : old_result_vec) {
 							auto it = std::find_if(result_vec.begin(), result_vec.end(),
@@ -306,10 +307,13 @@ int main(int argc, char *argv[])
 								if (i.frames_counter-- > 1)
 									result_vec.push_back(i);
 							}
-							else
+							else {
 								it->frames_counter = std::min((unsigned)3, i.frames_counter + 1);
+							}
 						}
-
+#ifdef TRACK_OPTFLOW
+						tracker_flow.update_cur_bbox_vec(result_vec);
+#endif
 						consumed = false;
 						cv_pre_tracked.notify_all();
 					}
@@ -347,13 +351,16 @@ int main(int argc, char *argv[])
 #ifdef TRACK_OPTFLOW
 						++passed_flow_frames;
 						track_optflow_queue.push(cur_frame.clone());
-						result_vec = tracker_flow.tracking_flow(cur_frame, result_vec, true);	// track optical flow
+						result_vec = tracker_flow.tracking_flow(cur_frame);	// track optical flow
 						small_preview.draw(cur_frame);
 #endif						
+
+						draw_boxes(cur_frame, result_vec, obj_names, current_det_fps, current_cap_fps);
+						//show_console_result(result_vec, obj_names);
 						large_preview.draw(cur_frame);
 
-						draw_boxes(cur_frame, result_vec, obj_names, 3, "window name", current_det_fps, current_cap_fps);	// 3 or 16ms
-						//show_console_result(result_vec, obj_names);
+						cv::imshow("window name", cur_frame);
+						cv::waitKey(3);	// 3 or 16ms
 
 						if (output_video.isOpened() && videowrite_ready) {
 							if (t_videowrite.joinable()) t_videowrite.join();
@@ -397,6 +404,8 @@ int main(int argc, char *argv[])
 				std::vector<bbox_t> result_vec = detector.detect(mat_img);
 				result_vec = detector.tracking_id(result_vec);	// comment it - if track_id is not required
 				draw_boxes(mat_img, result_vec, obj_names);
+				cv::imshow("window name", mat_img);
+				cv::waitKey(3);	// 3 or 16ms
 				show_console_result(result_vec, obj_names);
 			}
 #else
