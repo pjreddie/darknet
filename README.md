@@ -131,7 +131,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 
 2. If you have other version of **CUDA (not 8.0)** then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 8.0" and change it to your CUDA-version, then do step 1
 
-3. If you **don't have GPU**, but have **MSVS 2015 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet_no_gpu.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
+3. If you **don't have GPU**, but have **MSVS 2015 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet_no_gpu.sln`, set **x64** and **Release**, and do the: Build -> Build darknet_no_gpu
 
 4. If you have **OpenCV 2.4.13** instead of 3.0 then you should change pathes after `\darknet.sln` is opened
 
@@ -195,7 +195,7 @@ Then add to your created project:
 
 6. Set `batch=64` and `subdivisions=8` in the file `yolo-voc.2.0.cfg`: [link](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.2.0.cfg#L2)
 
-7. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.2.0.cfg darknet19_448.conv.23`
+7. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.2.0.cfg darknet19_448.conv.23` (**Note:** If you are using CPU, try `darknet_no_gpu.exe` instead of `darknet.exe`.)
 
 If required change pathes in the file `build\darknet\x64\data\voc.data`
 
