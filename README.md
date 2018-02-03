@@ -272,7 +272,7 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 8. Start training by using the command line: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet19_448.conv.23`
 
-    (file `yolo-obj_xxx.weights` will be saved to the `build\darknet\x64\backup\` for each 100 iterations until 1000 iterations has been reached, and after for each 1000 iterations)
+    (file `yolo-obj_xxx.weights` will be saved to the `build\darknet\x64\backup\` for each 100 iterations)
 
 9. After training is complete - get result `yolo-obj_final.weights` from path `build\darknet\x64\backup\`
 
