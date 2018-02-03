@@ -84,7 +84,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.num_boxes = l.max_boxes;
     args.d = &buffer;
     args.type = DETECTION_DATA;
-    args.threads = 8;
+	args.threads = 4;// 8;
 
     args.angle = net.angle;
     args.exposure = net.exposure;

@@ -233,8 +233,9 @@ public:
 
 			update_cur_bbox_vec(_cur_bbox_vec);
 
+			//src_grey_gpu.upload(src_mat, stream);	// use BGR
 			src_mat_gpu.upload(src_mat, stream);
-			cv::cuda::cvtColor(src_mat_gpu, src_grey_gpu, CV_BGR2GRAY, 0, stream);
+			cv::cuda::cvtColor(src_mat_gpu, src_grey_gpu, CV_BGR2GRAY, 1, stream);
 		}
 		if (old_gpu_id != gpu_id)
 			cv::cuda::setDevice(old_gpu_id);
@@ -257,9 +258,9 @@ public:
 			dst_grey_gpu = cv::cuda::GpuMat(dst_mat.size(), CV_8UC1);
 		}
 
+		//dst_grey_gpu.upload(dst_mat, stream);	// use BGR
 		dst_mat_gpu.upload(dst_mat, stream);
-
-		cv::cuda::cvtColor(dst_mat_gpu, dst_grey_gpu, CV_BGR2GRAY, 0, stream);
+		cv::cuda::cvtColor(dst_mat_gpu, dst_grey_gpu, CV_BGR2GRAY, 1, stream);
 
 		if (src_grey_gpu.rows != dst_grey_gpu.rows || src_grey_gpu.cols != dst_grey_gpu.cols) {
 			stream.waitForCompletion();
