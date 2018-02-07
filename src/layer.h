@@ -63,6 +63,7 @@ struct layer{
     int out_h, out_w, out_c;
     int n;
     int max_boxes;
+	int small_object;
     int groups;
     int size;
     int side;
