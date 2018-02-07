@@ -11,8 +11,16 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_52,code=[sm_52,compute_52] \
       -gencode arch=compute_61,code=[sm_61,compute_61]
 
+
+# For Jetson Tx1 uncomment:
+# ARCH= -gencode arch=compute_51,code=[sm_51,compute_51]
+
+# For Jetson Tx2 uncomment:
+# ARCH= -gencode arch=compute_62,code=[sm_62,compute_62]
+
 # This is what I use, uncomment if you know your arch and want to specify
 # ARCH=  -gencode arch=compute_52,code=compute_52
+
 
 VPATH=./src/
 EXEC=darknet
