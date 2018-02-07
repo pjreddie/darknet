@@ -59,7 +59,7 @@ public:
 	YOLODLL_API int get_net_height() const;
 
 	YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true, 
-												int const frames_story = 6, int const max_dist = 150);
+												int const frames_story = 10, int const max_dist = 150);
 
 #ifdef OPENCV
 	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false)
@@ -158,7 +158,7 @@ public:
 	const int flow_error;
 
 
-	Tracker_optflow(int _gpu_id = 0, int win_size = 9, int max_level = 3, int iterations = 2000, int _flow_error = -1) :
+	Tracker_optflow(int _gpu_id = 0, int win_size = 7, int max_level = 1, int iterations = 8000, int _flow_error = -1) :
 		gpu_count(cv::cuda::getCudaEnabledDeviceCount()), gpu_id(std::min(_gpu_id, gpu_count-1)),
 		flow_error((_flow_error > 0)? _flow_error:(win_size*4))
 	{
@@ -296,7 +296,7 @@ public:
 				float moved_y = cur_key_pt.y - prev_key_pt.y;
 
 				if (abs(moved_x) < 100 && abs(moved_y) < 100 && good_bbox_vec_flags[i])
-					if (!check_error || (err_cpu.at<float>(0, i) < flow_error && status_cpu.at<unsigned char>(0, i) != 0))
+					if (err_cpu.at<float>(0, i) < flow_error && status_cpu.at<unsigned char>(0, i) != 0)
 					{
 						cur_bbox_vec[i].x += moved_x + 0.5;
 						cur_bbox_vec[i].y += moved_y + 0.5;
@@ -304,6 +304,8 @@ public:
 					}
 					else good_bbox_vec_flags[i] = false;
 				else good_bbox_vec_flags[i] = false;
+
+				//if(!check_error && !good_bbox_vec_flags[i]) result_bbox_vec.push_back(cur_bbox_vec[i]);
 			}
 		}
 

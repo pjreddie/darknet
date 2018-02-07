@@ -53,7 +53,8 @@ class preview_boxes_t {
 	struct preview_box_track_t {
 		unsigned int track_id, obj_id, last_showed_frames_ago;
 		bool current_detection;
-		cv::Mat mat_obj;
+		bbox_t bbox;
+		cv::Mat mat_obj, mat_resized_obj;
 		preview_box_track_t() : track_id(0), obj_id(0), last_showed_frames_ago(frames_history), current_detection(false){}
 	};
 	std::vector<preview_box_track_t> preview_box_track_id;
@@ -76,20 +77,22 @@ public:
 		// occupy empty boxes
 		for (auto &k : result_vec) {
 			bool found = false;
+			// find the same (track_id)
 			for (auto &i : preview_box_track_id) {
 				if (i.track_id == k.track_id) {
-					if (!one_off_detections)
-						i.last_showed_frames_ago = 0;
+					if (!one_off_detections) i.last_showed_frames_ago = 0; // for tracked objects
 					found = true;
 					break;
 				}
 			}
 			if (!found) {
+				// find empty box
 				for (auto &i : preview_box_track_id) {
 					if (i.last_showed_frames_ago == frames_history) {
-						if (!one_off_detections && k.frames_counter == 0) break;
+						if (!one_off_detections && k.frames_counter == 0) break; // don't show if obj isn't tracked yet
 						i.track_id = k.track_id;
 						i.obj_id = k.obj_id;
+						i.bbox = k;
 						i.last_showed_frames_ago = 0;
 						break;
 					}
@@ -101,12 +104,14 @@ public:
 		for (size_t i = 0; i < preview_box_track_id.size(); ++i)
 		{
 			// get object image
-			cv::Mat dst = preview_box_track_id[i].mat_obj;
+			cv::Mat dst = preview_box_track_id[i].mat_resized_obj;
 			preview_box_track_id[i].current_detection = false;
 
 			for (auto &k : result_vec) {
 				if (preview_box_track_id[i].track_id == k.track_id) {
-					if (one_off_detections && preview_box_track_id[i].last_showed_frames_ago > 0) break;
+					if (one_off_detections && preview_box_track_id[i].last_showed_frames_ago > 0) {
+						preview_box_track_id[i].last_showed_frames_ago = frames_history; break;
+					}
 					bbox_t b = k;
 					cv::Rect r(b.x, b.y, b.w, b.h);
 					cv::Rect img_rect(cv::Point2i(0, 0), src_mat.size());
@@ -114,8 +119,10 @@ public:
 					if (rect_roi.width > 1 || rect_roi.height > 1) {
 						cv::Mat roi = src_mat(rect_roi);
 						cv::resize(roi, dst, cv::Size(preview_box_size, preview_box_size));
-						preview_box_track_id[i].mat_obj = dst.clone();
+						preview_box_track_id[i].mat_obj = roi.clone();
+						preview_box_track_id[i].mat_resized_obj = dst.clone();
 						preview_box_track_id[i].current_detection = true;
+						preview_box_track_id[i].bbox = k;
 					}
 					break;
 				}
@@ -124,27 +131,50 @@ public:
 	}
 
 
-	void draw(cv::Mat draw_mat)
+	void draw(cv::Mat draw_mat, bool show_small_boxes = false)
 	{
 		// draw preview box (from old or current frame)
 		for (size_t i = 0; i < preview_box_track_id.size(); ++i)
 		{
+			auto &prev_box = preview_box_track_id[i];
+
 			// draw object image
-			cv::Mat dst = preview_box_track_id[i].mat_obj;
-			if (preview_box_track_id[i].last_showed_frames_ago < frames_history &&
+			cv::Mat dst = prev_box.mat_resized_obj;
+			if (prev_box.last_showed_frames_ago < frames_history &&
 				dst.size() == cv::Size(preview_box_size, preview_box_size))
 			{
 				cv::Rect dst_rect_roi(cv::Point2i(i * preview_box_size, draw_mat.rows - bottom_offset), dst.size());
 				cv::Mat dst_roi = draw_mat(dst_rect_roi);
 				dst.copyTo(dst_roi);
 
-				cv::Scalar color = obj_id_to_color(preview_box_track_id[i].obj_id);
-				int thickness = (preview_box_track_id[i].current_detection) ? 5 : 1;
+				cv::Scalar color = obj_id_to_color(prev_box.obj_id);
+				int thickness = (prev_box.current_detection) ? 5 : 1;
 				cv::rectangle(draw_mat, dst_rect_roi, color, thickness);
 
-				unsigned int const track_id = preview_box_track_id[i].track_id;
+				unsigned int const track_id = prev_box.track_id;
 				std::string track_id_str = (track_id > 0)? std::to_string(track_id):"";
 				putText(draw_mat, track_id_str, dst_rect_roi.tl() - cv::Point2i(0, 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0, cv::Scalar(0, 0, 0), 2);
+
+				std::string size_str = std::to_string(prev_box.bbox.w) + "x" + std::to_string(prev_box.bbox.h);
+				putText(draw_mat, size_str, dst_rect_roi.tl() + cv::Point2i(0, 12), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(0, 0, 0), 1);
+
+				if (!one_off_detections && prev_box.current_detection) {
+					cv::line(draw_mat, dst_rect_roi.tl() + cv::Point2i(preview_box_size, 0), 
+						cv::Point2i(prev_box.bbox.x, prev_box.bbox.y + prev_box.bbox.h),
+						color);
+				}
+				
+				if (one_off_detections && show_small_boxes) {
+					cv::Rect src_rect_roi(cv::Point2i(prev_box.bbox.x, prev_box.bbox.y),
+					cv::Size(prev_box.bbox.w, prev_box.bbox.h));
+					unsigned int const color_history = (255 * prev_box.last_showed_frames_ago) / frames_history;
+					color = cv::Scalar(255 - 3* color_history, 255 - 2 * color_history,	255 - 1 * color_history);
+					if (prev_box.mat_obj.size() == src_rect_roi.size()) {
+						prev_box.mat_obj.copyTo(draw_mat(src_rect_roi));
+					}
+					cv::rectangle(draw_mat, src_rect_roi, color, thickness);
+					putText(draw_mat, track_id_str, src_rect_roi.tl() - cv::Point2i(0, 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(0, 0, 0), 1);
+				}
 			}
 		}
 	}
@@ -212,6 +242,8 @@ int main(int argc, char *argv[])
 	}
 	else if (argc > 1) filename = argv[1];
 
+	float const thresh = (argc > 5) ? std::stof(argv[5]) : 0.20;
+
 	Detector detector(cfg_file, weights_file);
 
 	auto obj_names = objects_names_from_file(names_file);
@@ -231,6 +263,7 @@ int main(int argc, char *argv[])
 		try {
 #ifdef OPENCV
 			preview_boxes_t large_preview(100, 150, false), small_preview(50, 50, true);
+			bool show_small_boxes = false;
 
 			std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
 			std::string const protocol = filename.substr(0, 7);
@@ -278,26 +311,29 @@ int main(int argc, char *argv[])
 						det_image = detector.mat_to_image_resize(cur_frame);
 						//auto old_result_vec = result_vec;
 						auto old_result_vec = detector.tracking_id(result_vec);
-						result_vec = thread_result_vec;
+						auto detected_result_vec = thread_result_vec;
+						result_vec = detected_result_vec;
 #ifdef TRACK_OPTFLOW
 						// track optical flow
 						if (track_optflow_queue.size() > 0) {
-							auto tmp_result_vec = detector.tracking_id(result_vec, false);
-							small_preview.set(track_optflow_queue.front(), tmp_result_vec);
-
 							//std::cout << "\n !!!! all = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
+							cv::Mat first_frame = track_optflow_queue.front();
 							tracker_flow.update_tracking_flow(track_optflow_queue.front(), result_vec);
 
 							while (track_optflow_queue.size() > 1) {
 								track_optflow_queue.pop();
-								result_vec = tracker_flow.tracking_flow(track_optflow_queue.front());
+								result_vec = tracker_flow.tracking_flow(track_optflow_queue.front(), false);
 							}
 							track_optflow_queue.pop();
 							passed_flow_frames = 0;
+
+							result_vec = detector.tracking_id(result_vec);
+							auto tmp_result_vec = detector.tracking_id(detected_result_vec);
+							small_preview.set(first_frame, tmp_result_vec);
 						}
 #endif
-						result_vec = detector.tracking_id(result_vec);	// comment it - if track_id is not required
-												
+						result_vec = detector.tracking_id(result_vec);	// comment it - if track_id is not required					
+
 						// add old tracked objects
 						for (auto &i : old_result_vec) {
 							auto it = std::find_if(result_vec.begin(), result_vec.end(),
@@ -313,6 +349,7 @@ int main(int argc, char *argv[])
 						}
 #ifdef TRACK_OPTFLOW
 						tracker_flow.update_cur_bbox_vec(result_vec);
+						result_vec = tracker_flow.tracking_flow(cur_frame, false);	// track optical flow
 #endif
 						consumed = false;
 						cv_pre_tracked.notify_all();
@@ -323,7 +360,7 @@ int main(int argc, char *argv[])
 							auto current_image = det_image;
 							consumed = true;
 							while (current_image.use_count() > 0) {
-								auto result = detector.detect_resized(*current_image, frame_size, 0.20, false);	// true
+								auto result = detector.detect_resized(*current_image, frame_size, thresh, false);	// true
 								++fps_det_counter;
 								std::unique_lock<std::mutex> lock(mtx);
 								thread_result_vec = result;
@@ -336,6 +373,7 @@ int main(int argc, char *argv[])
 							}
 						});
 					}
+					//while (!consumed);	// sync detection
 
 					if (!cur_frame.empty()) {
 						steady_end = std::chrono::steady_clock::now();
@@ -352,7 +390,7 @@ int main(int argc, char *argv[])
 						++passed_flow_frames;
 						track_optflow_queue.push(cur_frame.clone());
 						result_vec = tracker_flow.tracking_flow(cur_frame);	// track optical flow
-						small_preview.draw(cur_frame);
+						small_preview.draw(cur_frame, show_small_boxes);
 #endif						
 
 						draw_boxes(cur_frame, result_vec, obj_names, current_det_fps, current_cap_fps);
@@ -360,7 +398,8 @@ int main(int argc, char *argv[])
 						large_preview.draw(cur_frame);
 
 						cv::imshow("window name", cur_frame);
-						cv::waitKey(3);	// 3 or 16ms
+						int key = cv::waitKey(3);	// 3 or 16ms
+						if (key == 'f') show_small_boxes = !show_small_boxes;
 
 						if (output_video.isOpened() && videowrite_ready) {
 							if (t_videowrite.joinable()) t_videowrite.join();
