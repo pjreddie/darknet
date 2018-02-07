@@ -341,6 +341,8 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   
   * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides
 
+  * for training on small objects, add the parameter `small_object=1` in the last layer [region] in your cfg-file
+
 2. After training - for detection:
 
   * Increase network-resolution by set in your `.cfg`-file (`height=608` and `width=608`) or (`height=832` and `width=832`) or (any value multiple of 32) - this increases the precision and makes it possible to detect small objects: [link](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.2.0.cfg#L4)
