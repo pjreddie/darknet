@@ -144,8 +144,8 @@ private:
 };
 
 
-#ifdef OPENCV
-#ifdef TRACK_OPTFLOW
+
+#if defined(TRACK_OPTFLOW) && defined(OPENCV)
 
 #include <opencv2/cudaoptflow.hpp>
 #include <opencv2/cudaimgproc.hpp>
@@ -324,8 +324,10 @@ public:
 
 class Tracker_optflow {};
 
-#endif	// TRACK_OPTFLOW
+#endif	// defined(TRACK_OPTFLOW) && defined(OPENCV)
 
+
+#ifdef OPENCV
 
 cv::Scalar obj_id_to_color(int obj_id) {
 	int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
@@ -469,4 +471,3 @@ public:
 	}
 };
 #endif	// OPENCV
-
