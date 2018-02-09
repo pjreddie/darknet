@@ -11,7 +11,7 @@
 
 #define DOABS 1
 
-region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
+region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords, int max_boxes)
 {
     region_layer l = {0};
     l.type = REGION;
@@ -27,7 +27,8 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     l.bias_updates = calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + coords + 1);
     l.inputs = l.outputs;
-    l.truths = 30*(5);
+	l.max_boxes = max_boxes;
+    l.truths = max_boxes*(5);
     l.delta = calloc(batch*l.outputs, sizeof(float));
     l.output = calloc(batch*l.outputs, sizeof(float));
     int i;
@@ -187,7 +188,7 @@ void forward_region_layer(const region_layer l, network_state state)
     for (b = 0; b < l.batch; ++b) {
         if(l.softmax_tree){
             int onlyclass = 0;
-            for(t = 0; t < 30; ++t){
+            for(t = 0; t < l.max_boxes; ++t){
                 box truth = float_to_box(state.truth + t*5 + b*l.truths);
                 if(!truth.x) break;
                 int class = state.truth[t*5 + b*l.truths + 4];
@@ -219,7 +220,7 @@ void forward_region_layer(const region_layer l, network_state state)
                     box pred = get_region_box(l.output, l.biases, n, index, i, j, l.w, l.h);
                     float best_iou = 0;
                     int best_class = -1;
-                    for(t = 0; t < 30; ++t){
+                    for(t = 0; t < l.max_boxes; ++t){
                         box truth = float_to_box(state.truth + t*5 + b*l.truths);
                         if(!truth.x) break;
                         float iou = box_iou(pred, truth);
@@ -256,7 +257,7 @@ void forward_region_layer(const region_layer l, network_state state)
                 }
             }
         }
-        for(t = 0; t < 30; ++t){
+        for(t = 0; t < l.max_boxes; ++t){
             box truth = float_to_box(state.truth + t*5 + b*l.truths);
 
             if(!truth.x) break;
