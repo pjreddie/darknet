@@ -193,8 +193,7 @@ public:
 	void update_cur_bbox_vec(std::vector<bbox_t> _cur_bbox_vec)
 	{
 		cur_bbox_vec = _cur_bbox_vec;
-		good_bbox_vec_flags.resize(cur_bbox_vec.size());
-		for (auto &i : good_bbox_vec_flags) i = true;
+		good_bbox_vec_flags = std::vector<bool>(cur_bbox_vec.size(), true);
 		cv::Mat prev_pts, cur_pts_flow_cpu;
 
 		for (auto &i : cur_bbox_vec) {
