@@ -304,9 +304,10 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
     int count = 0;
+	int i;
     box_label *boxes = read_boxes(labelpath, &count);
 	if (small_object == 1) {
-		for (int i = 0; i < count; ++i) {
+		for (i = 0; i < count; ++i) {
 			if (boxes[i].w < 0.01) boxes[i].w = 0.01;
 			if (boxes[i].h < 0.01) boxes[i].h = 0.01;
 		}
@@ -316,7 +317,6 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     if(count > num_boxes) count = num_boxes;
     float x,y,w,h;
     int id;
-    int i;
 
     for (i = 0; i < count; ++i) {
         x =  boxes[i].x;
