@@ -297,7 +297,8 @@ public:
 				float moved_y = cur_key_pt.y - prev_key_pt.y;
 
 				if (abs(moved_x) < 100 && abs(moved_y) < 100 && good_bbox_vec_flags[i])
-					if (err_cpu.at<float>(0, i) < flow_error && status_cpu.at<unsigned char>(0, i) != 0)
+					if (err_cpu.at<float>(0, i) < flow_error && status_cpu.at<unsigned char>(0, i) != 0 &&
+						((float)cur_bbox_vec[i].x + moved_x) > 0 && ((float)cur_bbox_vec[i].y + moved_y) > 0)
 					{
 						cur_bbox_vec[i].x += moved_x + 0.5;
 						cur_bbox_vec[i].y += moved_y + 0.5;
