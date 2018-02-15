@@ -333,6 +333,8 @@ void forward_region_layer_pointer_nolayer(network* net, float *input)
 {	
     int b,n;
 	layer l = net->layers[net->n-1];
+	memcpy(net->input, input, l.outputs*l.batch*sizeof(float));
+	memcpy(l.output, net->input, l.outputs*l.batch*sizeof(float));
 	#ifndef GPU
     for (b = 0; b < l.batch; ++b){
         for(n = 0; n < l.n; ++n){
