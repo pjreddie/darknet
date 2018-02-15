@@ -594,7 +594,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
         //resize_network(net, sized.w, sized.h);
         layer l = net->layers[net->n-1];
-
         box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
         float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
         for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
@@ -635,6 +634,48 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (filename) break;
     }
 }
+
+extern void draw_detection_python(network *net, char *filename, float thresh, float hier_thresh, char *name_list, char *outfile)
+{
+	int j;
+	char buff[256];
+    char *input = buff;
+	char **names = get_labels(name_list);
+	image **alphabet = load_alphabet();
+	if(filename){
+		strncpy(input, filename, 256);
+	}
+	image im = load_image_color(input,0,0);
+	image sized = letterbox_image(im, net->w, net->h);
+	float nms=.3;
+	layer l = net->layers[net->n-1];
+	box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+	float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+	for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
+	float **masks = 0;
+	if (l.coords > 4){
+		masks = calloc(l.w*l.h*l.n, sizeof(float*));
+		for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = calloc(l.coords-4, sizeof(float *));
+	}
+	get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
+	printf("get_region_boxes done \n");
+	if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+	printf("do_nms_sort done \n");
+	draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
+	printf("draw_detections done \n");
+	if(outfile){
+		save_image(im, outfile);
+	}
+	else{
+		save_image(im, "predictions");
+	}
+	printf("freeing memory \n");
+	free_image(im);
+	free_image(sized);
+	free(boxes);
+	free_ptrs((void **)probs, l.w*l.h*l.n);
+}
+
 
 void run_detector(int argc, char **argv)
 {

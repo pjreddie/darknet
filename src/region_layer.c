@@ -26,13 +26,16 @@ layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
     l.classes = classes;
     l.coords = coords;
     l.cost = calloc(1, sizeof(float));
+
     l.biases = calloc(n*2, sizeof(float));
     l.bias_updates = calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + coords + 1);
+
     l.inputs = l.outputs;
     l.truths = 30*(l.coords + 1);
     l.delta = calloc(batch*l.outputs, sizeof(float));
     l.output = calloc(batch*l.outputs, sizeof(float));
+
     int i;
     for(i = 0; i < n*2; ++i){
         l.biases[i] = .5;
@@ -325,6 +328,41 @@ void forward_region_layer(const layer l, network net)
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
     printf("Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, Avg Recall: %f,  count: %d\n", avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count);
 }
+
+void forward_region_layer_pointer_nolayer(network* net, float *input)
+{	
+    int b,n;
+	layer l = net->layers[net->n-1];
+	#ifndef GPU
+    for (b = 0; b < l.batch; ++b){
+        for(n = 0; n < l.n; ++n){
+            int index = entry_index(l, b, n*l.w*l.h, 0);
+            activate_array(l.output + index, 2*l.w*l.h, LOGISTIC);
+            index = entry_index(l, b, n*l.w*l.h, l.coords);
+            if(!l.background) activate_array(l.output + index,   l.w*l.h, LOGISTIC);
+            index = entry_index(l, b, n*l.w*l.h, l.coords + 1);
+            if(!l.softmax && !l.softmax_tree) activate_array(l.output + index, l.classes*l.w*l.h, LOGISTIC);
+        }
+    }
+    if (l.softmax_tree){
+        int i;
+        int count = l.coords + 1;
+        for (i = 0; i < l.softmax_tree->groups; ++i) {
+            int group_size = l.softmax_tree->group_size[i];
+            softmax_cpu(net->input + count, group_size, l.batch, l.inputs, l.n*l.w*l.h, 1, l.n*l.w*l.h, l.temperature, l.output + count);
+            count += group_size;
+        }
+    } else if (l.softmax){
+        int index = entry_index(l, 0, 0, l.coords + !l.background);
+        softmax_cpu(net->input + index, l.classes + l.background, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output + index);
+    }
+#endif
+
+    memset(l.delta, 0, l.outputs * l.batch * sizeof(float));
+    if(!net->train) return;
+}
+
+
 
 void backward_region_layer(const layer l, network net)
 {
