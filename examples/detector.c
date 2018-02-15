@@ -635,13 +635,13 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
 }
 
-extern void draw_detection_python(network *net, char *filename, float thresh, float hier_thresh, char *name_list, char *outfile)
+extern void draw_detection_python(network *net, char *filename, float thresh, float hier_thresh, char *name_list,char* path_darknet, char *outfile)
 {
 	int j;
 	char buff[256];
     char *input = buff;
 	char **names = get_labels(name_list);
-	image **alphabet = load_alphabet();
+	image **alphabet = load_alphabet_path(path_darknet);
 	if(filename){
 		strncpy(input, filename, 256);
 	}
