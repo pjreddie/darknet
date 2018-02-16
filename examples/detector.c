@@ -658,18 +658,14 @@ extern void draw_detection_python(network *net, char *filename, float thresh, fl
 		for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = calloc(l.coords-4, sizeof(float *));
 	}
 	get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
-	printf("get_region_boxes done \n");
 	if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-	printf("do_nms_sort done \n");
 	draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
-	printf("draw_detections done \n");
 	if(outfile){
 		save_image(im, outfile);
 	}
 	else{
 		save_image(im, "predictions");
 	}
-	printf("freeing memory \n");
 	free_image(im);
 	free_image(sized);
 	free(boxes);
