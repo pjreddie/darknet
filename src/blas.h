@@ -35,7 +35,7 @@ void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
 void l2_cpu(int n, float *pred, float *truth, float *delta, float *error);
 void weighted_sum_cpu(float *a, float *b, float *s, int num, float *c);
 
-void softmax(float *input, int n, float temp, float *output);
+void softmax(float *input, int n, float temp, float *output, int stride);
 
 #ifdef GPU
 #include "cuda.h"

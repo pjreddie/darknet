@@ -170,7 +170,7 @@ void forward_region_layer(const region_layer l, network_state state)
         for (b = 0; b < l.batch; ++b){
             for(i = 0; i < l.h*l.w*l.n; ++i){
                 int index = size*i + b*l.outputs;
-                softmax(l.output + index + 5, l.classes, 1, l.output + index + 5);
+                softmax(l.output + index + 5, l.classes, 1, l.output + index + 5, 1);
             }
         }
     }

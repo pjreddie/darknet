@@ -1,6 +1,7 @@
 classes= 20
 train  = data/voc/train.txt
 valid  = data/voc/2007_test.txt
+#difficult = data/voc/difficult_2007_test.txt
 names = data/voc.names
 backup = backup/
 
