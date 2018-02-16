@@ -635,7 +635,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
 }
 
-extern void draw_detection_python(network *net, char *filename, float thresh, float hier_thresh, char *name_list,char* path_darknet, char *outfile)
+extern void draw_detection_python(network *net, char *filename, float thresh, float hier_thresh, char *name_list,char* path_darknet, char *outfile, char* out_probs)
 {
 	int j;
 	char buff[256];
@@ -659,7 +659,7 @@ extern void draw_detection_python(network *net, char *filename, float thresh, fl
 	}
 	get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
 	if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-	draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
+	draw_detections_file(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes, out_probs);
 	if(outfile){
 		save_image(im, outfile);
 	}
