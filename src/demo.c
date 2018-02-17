@@ -49,6 +49,7 @@ static IplImage* ipl_images[FRAMES];
 static float *avg;
 
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
+void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filename, int http_stream_port);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img);
 IplImage* in_img;
 IplImage* det_img;
@@ -115,7 +116,8 @@ double get_wall_time()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, 
+	int frame_skip, char *prefix, char *out_filename, int http_stream_port)
 {
     //skip = frame_skip;
     image **alphabet = load_alphabet();
@@ -194,7 +196,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
             if(!prefix){                
 				//show_image(disp, "Demo");
-				show_image_cv_ipl(show_img, "Demo", out_filename);
+				show_image_cv_ipl(show_img, "Demo", out_filename, http_stream_port);
                 int c = cvWaitKey(1);
                 if (c == 10){
                     if(frame_skip == 0) frame_skip = 60;
@@ -244,7 +246,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename)
+void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename, int http_stream_port)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

@@ -859,6 +859,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
 void run_detector(int argc, char **argv)
 {
+	int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
 	char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .24);
@@ -911,6 +912,6 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
 		if(filename)
 			if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
-        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename);
+        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename, http_stream_port);
     }
 }

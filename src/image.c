@@ -14,12 +14,13 @@
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/core/version.hpp"
+#include "http_stream.h"
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio_c.h"
 #include "opencv2/imgcodecs/imgcodecs_c.h"
+#include "http_stream.h"
 #endif
 #endif
-
 
 int windows = 0;
 
@@ -527,7 +528,7 @@ void show_image_cv(image p, const char *name)
 }
 
 
-void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filename)
+void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filename, int http_stream_port)
 {
 	if (disp == NULL) return;
 	char buff[256];
@@ -537,6 +538,18 @@ void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filenam
 	//cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
 	++windows;
 	cvShowImage(buff, disp);
+
+
+	// http mjpeg stream: http://localhost:8090
+	// use URL with the port number stated in your command line instead of 8090
+	if (http_stream_port > 0) {
+		//int port = 8090;
+		int port = http_stream_port;
+		int timeout = 200;
+		int jpeg_quality = 30;	// 1 - 100
+		send_mjpeg(disp, port, timeout, jpeg_quality);
+	}
+
 
 	if(out_filename)
 	{
