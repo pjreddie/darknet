@@ -8,10 +8,11 @@
 4. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
 5. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
 6. [When should I stop training](#when-should-i-stop-training)
-7. [How to improve object detection](#how-to-improve-object-detection)
-8. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-9. [Using Yolo9000](#using-yolo9000)
-10. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
+7. [How to calculate mAP on PascalVOC 2007](#how-to-calculate-map-on-pascalvoc-2007)
+8. [How to improve object detection](#how-to-improve-object-detection)
+9. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+10. [Using Yolo9000](#using-yolo9000)
+11. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
@@ -309,23 +310,38 @@ To get weights from Early Stopping Point:
 
   2.2 If training is stopped after 9000 iterations, to validate some of previous weights use this commands:
 
-* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
-* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_8000.weights`
-* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_9000.weights`
+(If you use another GitHub repository, then use `darknet.exe detector recall`... instead of `darknet.exe detector map`...)
+
+* `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
+* `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_8000.weights`
+* `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_9000.weights`
 
 And comapre last output lines for each weights (7000, 8000, 9000):
 
-> 7586 7612 7689 RPs/Img: 68.23 **IOU: 77.86%** Recall:99.00%
-
-* **IOU** - the bigger, the better (says about accuracy) - **better to use**
-* **Recall** - the bigger, the better (says about accuracy) - actually Yolo calculates true positives, so it shouldn't be used
+Choose weights-file **with the highest IoU** (intersect of union) and mAP (mean average precision)
 
 For example, **bigger IOU** gives weights `yolo-obj_8000.weights` - then **use this weights for detection**.
 
+* **IoU** (intersect of union) - average instersect of union of objects and detections for a certain threshold = 0.24
+
+* **mAP** (mean average precision) - mean value of `average precisions` for each class, where `average precision` is average value of 11 points on PR-curve for each possible threshold (each probability of detection) for the same class (Precision-Recall in terms of PascalVOC, where Precision=TP/(TP+FP) and Recall=TP/(TP+FN) ), page-11: http://homepages.inf.ed.ac.uk/ckiw/postscript/ijcv_voc09.pdf
 
 ![precision_recall_iou](https://hsto.org/files/ca8/866/d76/ca8866d76fb840228940dbf442a7f06a.jpg)
 
-How to calculate **mAP** [voc_eval.py](https://github.com/AlexeyAB/darknet/blob/master/scripts/voc_eval.py) or [datascience.stackexchange link](https://datascience.stackexchange.com/questions/16797/what-does-the-notation-map-5-95-mean)
+### How to calculate mAP on PascalVOC 2007:
+
+1. To calculate mAP (mean average precision) on PascalVOC-2007-test:
+* Download PascalVOC dataset, install Python 3.x and get file `2007_test.txt` as described here: https://github.com/AlexeyAB/darknet#how-to-train-pascal-voc-data
+* Then download file https://raw.githubusercontent.com/AlexeyAB/darknet/master/scripts/voc_label_difficult.py to the dir `build\darknet\x64\data\voc` then run `voc_label_difficult.py` to get the file `difficult_2007_test.txt`
+* Remove symbol `#` from this line to un-comment it: https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/data/voc.data#L4
+* Then there are 2 ways to get mAP:
+    1. Using Darknet + Python: run the file `build/darknet/x64/calc_mAP_voc_py.cmd` - you will get mAP for `yolo-voc.cfg` model, mAP = 75.9%
+    2. Using this fork of Darknet: run the file `build/darknet/x64/calc_mAP.cmd` - you will get mAP for `yolo-voc.cfg` model, mAP = 75.8%
+    
+ (The article specifies the value of mAP = 76.8% for YOLOv2 416×416, page-4 table-3: https://arxiv.org/pdf/1612.08242v1.pdf. We get values lower - perhaps due to the fact that the model was trained on a slightly different source code than the code on which the detection is was done)
+
+* if you want to get mAP for `tiny-yolo-voc.cfg` model, then un-comment line for tiny-yolo-voc.cfg and comment line for yolo-voc.cfg in the .cmd-file
+* if you have Python 2.x instead of Python 3.x, and if you use Darknet+Python-way to get mAP, then in your cmd-file use `reval_voc.py` and `voc_eval.py` instead of `reval_voc_py3.py` and `voc_eval_py3.py` from this directory: https://github.com/AlexeyAB/darknet/tree/master/scripts
 
 ### Custom object detection:
 
