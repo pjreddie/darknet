@@ -322,9 +322,13 @@ Choose weights-file **with the highest IoU** (intersect of union) and mAP (mean 
 
 For example, **bigger IOU** gives weights `yolo-obj_8000.weights` - then **use this weights for detection**.
 
+Example of custom object detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_8000.weights`
+
 * **IoU** (intersect of union) - average instersect of union of objects and detections for a certain threshold = 0.24
 
 * **mAP** (mean average precision) - mean value of `average precisions` for each class, where `average precision` is average value of 11 points on PR-curve for each possible threshold (each probability of detection) for the same class (Precision-Recall in terms of PascalVOC, where Precision=TP/(TP+FP) and Recall=TP/(TP+FN) ), page-11: http://homepages.inf.ed.ac.uk/ckiw/postscript/ijcv_voc09.pdf
+
+In terms of Wiki, indicators Precision and Recall have a slightly different meaning than in the PascalVOC competition, but **IoU always has the same meaning**.
 
 ![precision_recall_iou](https://hsto.org/files/ca8/866/d76/ca8866d76fb840228940dbf442a7f06a.jpg)
 
@@ -358,6 +362,8 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides
 
   * for training on small objects, add the parameter `small_object=1` in the last layer [region] in your cfg-file
+
+  * for training with a large number of objects in each image, add the parameter `max=200` or higher value in the last layer [region] in your cfg-file
 
 2. After training - for detection:
 
