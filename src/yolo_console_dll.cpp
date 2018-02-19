@@ -11,6 +11,7 @@
 
 #ifdef _WIN32
 #define OPENCV
+#define GPU
 #endif
 
 // To use tracking - uncomment the following line. Tracking is supported only by OpenCV 3.x

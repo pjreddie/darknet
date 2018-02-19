@@ -323,7 +323,8 @@ public:
 
 #elif defined(TRACK_OPTFLOW) && defined(OPENCV)
 
-#include <opencv2/optflow.hpp>
+//#include <opencv2/optflow.hpp>
+#include <opencv2/video/tracking.hpp>
 
 class Tracker_optflow {
 public:
@@ -340,8 +341,7 @@ public:
 	}
 
 	// just to avoid extra allocations
-	cv::Mat src_mat;
-	cv::Mat dst_mat, dst_grey;
+	cv::Mat dst_grey;
 	cv::Mat prev_pts_flow, cur_pts_flow;
 	cv::Mat status, err;
 
@@ -373,15 +373,10 @@ public:
 	void update_tracking_flow(cv::Mat new_src_mat, std::vector<bbox_t> _cur_bbox_vec)
 	{
 		if (new_src_mat.channels() == 3) {
-			if (src_mat.cols == 0) {
-				src_mat = cv::Mat(new_src_mat.size(), new_src_mat.type());
-				src_grey = cv::Mat(new_src_mat.size(), CV_8UC1);
-			}
 
 			update_cur_bbox_vec(_cur_bbox_vec);
 
-            src_mat = new_src_mat;
-			cv::cvtColor(src_mat, src_grey, CV_BGR2GRAY, 1);
+			cv::cvtColor(new_src_mat, src_grey, CV_BGR2GRAY, 1);
 		}
 	}
 
@@ -393,16 +388,14 @@ public:
 			return cur_bbox_vec;
 		}
 
-		if (dst_mat.cols == 0) {
-			dst_mat = cv::Mat(new_dst_mat.size(), new_dst_mat.type());
-			dst_grey = cv::Mat(new_dst_mat.size(), CV_8UC1);
-		}
-
-        dst_mat = new_dst_mat;
-		cv::cvtColor(dst_mat, dst_grey, CV_BGR2GRAY, 1);
+		cv::cvtColor(new_dst_mat, dst_grey, CV_BGR2GRAY, 1);
 
 		if (src_grey.rows != dst_grey.rows || src_grey.cols != dst_grey.cols) {
 			src_grey = dst_grey.clone();
+			return cur_bbox_vec;
+		}
+
+		if (prev_pts_flow.cols < 1) {
 			return cur_bbox_vec;
 		}
 
@@ -413,7 +406,7 @@ public:
 
 		std::vector<bbox_t> result_bbox_vec;
 
-		if (err.cols == cur_bbox_vec.size() && status.cols == cur_bbox_vec.size())
+		if (err.rows == cur_bbox_vec.size() && status.rows == cur_bbox_vec.size())
 		{
 			for (size_t i = 0; i < cur_bbox_vec.size(); ++i)
 			{
@@ -438,7 +431,7 @@ public:
 			}
 		}
 
-		prev_pts_flow = cur_pts_flow;
+		prev_pts_flow = cur_pts_flow.clone();
 
 		return result_bbox_vec;
 	}
