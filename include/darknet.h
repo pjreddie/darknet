@@ -705,6 +705,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 void draw_detections_file(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes, char* filename);
 matrix network_predict_data(network *net, data test);
 image **load_alphabet();
+void free_alphabet(image** alphabet);
 image get_network_image(network *net);
 float *network_predict(network *net, float *input);
 

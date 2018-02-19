@@ -670,6 +670,8 @@ extern void draw_detection_python(network *net, char *filename, float thresh, fl
 	free_image(sized);
 	free(boxes);
 	free_ptrs((void **)probs, l.w*l.h*l.n);
+	free_alphabet(alphabet);
+	free(names);
 }
 
 

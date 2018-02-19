@@ -252,6 +252,20 @@ image **load_alphabet_path(char * path)
     return alphabets;
 }
 
+void free_alphabet(image** alphabet)
+{
+    int i, j;
+    for(j = 0; j < 8; ++j){
+		for(i = 32; i < 127; ++i){
+		free_image(alphabet[j][i]);
+		
+		}
+        free(alphabet[j]);
+    }
+	free(alphabet);
+}
+
+
 
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
 {
