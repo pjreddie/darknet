@@ -33,7 +33,6 @@ struct detector_gpu_t{
 	unsigned int *track_id;
 };
 
-
 YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id) : cur_gpu_id(gpu_id)
 {
 	wait_stream = 0;
