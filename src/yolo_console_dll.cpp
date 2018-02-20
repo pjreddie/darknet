@@ -15,7 +15,7 @@
 #endif
 
 // To use tracking - uncomment the following line. Tracking is supported only by OpenCV 3.x
-#define TRACK_OPTFLOW
+//#define TRACK_OPTFLOW
 
 #include "yolo_v2_class.hpp"	// imported functions from DLL
 
