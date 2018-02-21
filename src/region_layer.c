@@ -53,6 +53,8 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
 
 void resize_region_layer(layer *l, int w, int h)
 {
+	int old_w = l->w;
+	int old_h = l->h;
     l->w = w;
     l->h = h;
 
@@ -63,11 +65,13 @@ void resize_region_layer(layer *l, int w, int h)
     l->delta = realloc(l->delta, l->batch*l->outputs*sizeof(float));
 
 #ifdef GPU
-    cuda_free(l->delta_gpu);
-    cuda_free(l->output_gpu);
+	if (old_w < w || old_h < h) {
+		cuda_free(l->delta_gpu);
+		cuda_free(l->output_gpu);
 
-    l->delta_gpu =     cuda_make_array(l->delta, l->batch*l->outputs);
-    l->output_gpu =    cuda_make_array(l->output, l->batch*l->outputs);
+		l->delta_gpu = cuda_make_array(l->delta, l->batch*l->outputs);
+		l->output_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+	}
 #endif
 }
 

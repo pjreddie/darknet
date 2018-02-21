@@ -378,6 +378,7 @@ int resize_network(network *net, int w, int h)
     }
 #ifdef GPU
     if(gpu_index >= 0){
+		printf(" try to allocate workspace, ");
         net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
 		printf(" CUDA allocate done! \n");
     }else {
