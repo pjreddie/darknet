@@ -316,7 +316,17 @@ void set_batch_network(network *net, int b)
         net->layers[i].batch = b;
 #ifdef CUDNN
         if(net->layers[i].type == CONVOLUTIONAL){
-            cudnn_convolutional_setup(net->layers + i);
+			layer *l = net->layers + i;
+            cudnn_convolutional_setup(l, cudnn_fastest);
+			// check for excessive memory consumption 
+			size_t free_byte;
+			size_t total_byte;
+			check_error(cudaMemGetInfo(&free_byte, &total_byte));
+			if (l->workspace_size > free_byte || l->workspace_size >= total_byte / 2) {
+				printf(" used slow CUDNN algo without Workspace! \n");
+				cudnn_convolutional_setup(l, cudnn_smallest);
+				l->workspace_size = get_workspace_size(*l);
+			}
         }
 #endif
     }
@@ -378,7 +388,7 @@ int resize_network(network *net, int w, int h)
     }
 #ifdef GPU
     if(gpu_index >= 0){
-		printf(" try to allocate workspace, ");
+		printf(" try to allocate workspace = %zu * sizeof(float), ", (workspace_size - 1) / sizeof(float) + 1);
         net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
 		printf(" CUDA allocate done! \n");
     }else {
