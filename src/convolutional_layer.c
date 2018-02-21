@@ -359,6 +359,8 @@ void test_convolutional_layer()
 
 void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 {
+	int old_w = l->w;
+	int old_h = l->h;
     l->w = w;
     l->h = h;
     int out_w = convolutional_out_width(*l);
@@ -378,19 +380,21 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     }
 
 #ifdef GPU
-    cuda_free(l->delta_gpu);
-    cuda_free(l->output_gpu);
+	if (old_w < w || old_h < h) {
+		cuda_free(l->delta_gpu);
+		cuda_free(l->output_gpu);
 
-    l->delta_gpu =  cuda_make_array(l->delta,  l->batch*l->outputs);
-    l->output_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+		l->delta_gpu = cuda_make_array(l->delta, l->batch*l->outputs);
+		l->output_gpu = cuda_make_array(l->output, l->batch*l->outputs);
 
-    if(l->batch_normalize){
-        cuda_free(l->x_gpu);
-        cuda_free(l->x_norm_gpu);
+		if (l->batch_normalize) {
+			cuda_free(l->x_gpu);
+			cuda_free(l->x_norm_gpu);
 
-        l->x_gpu = cuda_make_array(l->output, l->batch*l->outputs);
-        l->x_norm_gpu = cuda_make_array(l->output, l->batch*l->outputs);
-    }
+			l->x_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+			l->x_norm_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+		}
+	}
 #ifdef CUDNN
     cudnn_convolutional_setup(l);
 #endif

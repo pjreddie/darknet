@@ -328,6 +328,12 @@ int resize_network(network *net, int w, int h)
     cuda_set_device(net->gpu_index);
     if(gpu_index >= 0){
         cuda_free(net->workspace);
+		if (net->input_gpu) {
+			cuda_free(*net->input_gpu);
+			*net->input_gpu = 0;
+			cuda_free(*net->truth_gpu);
+			*net->truth_gpu = 0;
+		}
     }
 #endif
     int i;
@@ -340,6 +346,7 @@ int resize_network(network *net, int w, int h)
     //fflush(stderr);
     for (i = 0; i < net->n; ++i){
         layer l = net->layers[i];
+		printf(" %d: layer = %d,", i, l.type);
         if(l.type == CONVOLUTIONAL){
             resize_convolutional_layer(&l, w, h);
         }else if(l.type == CROP){
@@ -371,13 +378,8 @@ int resize_network(network *net, int w, int h)
     }
 #ifdef GPU
     if(gpu_index >= 0){
-        if(net->input_gpu) {
-            cuda_free(*net->input_gpu);
-            *net->input_gpu = 0;
-            cuda_free(*net->truth_gpu);
-            *net->truth_gpu = 0;
-        }
         net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
+		printf(" CUDA allocate done! \n");
     }else {
         free(net->workspace);
         net->workspace = calloc(1, workspace_size);
