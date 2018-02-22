@@ -77,7 +77,8 @@ void binarize_weights_gpu(float *weights, int n, int size, float *binary)
 __global__ void cuda_f32_to_f16(float* input_f32, size_t size, half *output_f16)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx < size) output_f16[idx] = __float2half_rn(input_f32[idx]);
+	if (idx < size) output_f16[idx] = __float2half(input_f32[idx]);
+	//if (idx < size) *((unsigned int *)output_f16 + idx) = __float2half(input_f32[idx]);
 }
 
 void cuda_convert_f32_to_f16(float* input_f32, size_t size, half *output_f16) {
@@ -88,6 +89,7 @@ __global__ void cuda_f16_to_f32(half* input_f16, size_t size, float *output_f32)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx < size) output_f32[idx] = __half2float(input_f16[idx]);
+	//if (idx < size) output_f32[idx] = __half2float(*((unsigned int *)input_f16 + idx));
 }
 
 void cuda_convert_f16_to_f32(half* input_f16, size_t size, float *output_f32) {
