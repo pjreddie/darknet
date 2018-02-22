@@ -139,22 +139,38 @@ size_t get_workspace_size(layer l){
 #ifdef CUDNN
 void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 {
-    cudnnSetTensor4dDescriptor(l->dsrcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w); 
-    cudnnSetTensor4dDescriptor(l->ddstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w); 
-    cudnnSetFilter4dDescriptor(l->dweightDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size); 
 
-    cudnnSetTensor4dDescriptor(l->srcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w); 
-    cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w); 
-    cudnnSetFilter4dDescriptor(l->weightDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size); 
+#ifdef CUDNN_HALF
+	// TRUE_HALF_CONFIG is only supported on architectures with true fp16 support (compute capability 5.3 and 6.0):
+	// Tegra X1, Jetson TX1, DRIVE CX, DRIVE PX, Quadro GP100, Tesla P100
+	const cudnnDataType_t data_type = CUDNN_DATA_HALF;
+#else
+	cudnnDataType_t data_type = CUDNN_DATA_FLOAT;
+#endif
+	// Tensor Core uses CUDNN_TENSOR_OP_MATH instead of CUDNN_DEFAULT_MATH
+	cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH);
+
+	// INT8_CONFIG, INT8_EXT_CONFIG, INT8x4_CONFIG and INT8x4_EXT_CONFIG are only supported 
+	// on architectures with DP4A support (compute capability 6.1 and later).
+	//cudnnDataType_t data_type = CUDNN_DATA_INT8;
+
+    cudnnSetTensor4dDescriptor(l->dsrcTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->c, l->h, l->w);
+    cudnnSetTensor4dDescriptor(l->ddstTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->out_c, l->out_h, l->out_w);
+    cudnnSetFilter4dDescriptor(l->dweightDesc, data_type, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size);
+
+    cudnnSetTensor4dDescriptor(l->srcTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->c, l->h, l->w);
+    cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->out_c, l->out_h, l->out_w);
+    cudnnSetFilter4dDescriptor(l->weightDesc, data_type, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size);
 #if(CUDNN_MAJOR >= 6)
-	cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT);	// cudnn 6.0
+	cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION, data_type);	// cudnn >= 6.0
 #else
 	cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION);	// cudnn 5.1
 #endif
 	int forward_algo = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
 	int backward_algo = CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST;
 	int backward_filter = CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST;
-	if (cudnn_preference == cudnn_smallest) {
+	if (cudnn_preference == cudnn_smallest) 
+	{
 		forward_algo = CUDNN_CONVOLUTION_FWD_NO_WORKSPACE;
 		backward_algo = CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE;
 		backward_filter = CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE;
@@ -275,6 +291,9 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         }
 
         l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
+#ifdef CUDNN_HALF
+		l.weights_gpu16 = cuda_make_array(l.weights, c*n*size*size/2);
+#endif
         l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
 
         l.biases_gpu = cuda_make_array(l.biases, n);
