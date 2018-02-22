@@ -148,7 +148,9 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 	cudnnDataType_t data_type = CUDNN_DATA_FLOAT;
 #endif
 	// Tensor Core uses CUDNN_TENSOR_OP_MATH instead of CUDNN_DEFAULT_MATH
+#if(CUDNN_MAJOR >= 7)
 	cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH);
+#endif
 
 	// INT8_CONFIG, INT8_EXT_CONFIG, INT8x4_CONFIG and INT8x4_EXT_CONFIG are only supported 
 	// on architectures with DP4A support (compute capability 6.1 and later).

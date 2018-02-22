@@ -56,7 +56,7 @@ class MJPGWriter
 	int timeout; // master sock timeout, shutdown after timeout millis.
 	int quality; // jpeg compression [1..100]
 
-	int _write(int sock, char *s, int len)
+	int _write(int sock, char const*const s, int len)
 	{
 		if (len < 1) { len = strlen(s); }
 		return ::send(sock, s, len, 0);
@@ -128,7 +128,7 @@ public:
 		params.push_back(IMWRITE_JPEG_QUALITY);
 		params.push_back(quality);
 		cv::imencode(".jpg", frame, outbuf, params);
-		unsigned int outlen = outbuf.size();
+		size_t outlen = outbuf.size();
 
 #ifdef _WIN32 
 		for (unsigned i = 0; i<rread.fd_count; i++)
@@ -169,7 +169,7 @@ public:
 			else // existing client, just stream pix
 			{
 				char head[400];
-				sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %lu\r\n\r\n", outlen);
+				sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
 				_write(s, head, 0);
 				int n = _write(s, (char*)(&outbuf[0]), outlen);
 				//cerr << "known client " << s << " " << n << endl;
