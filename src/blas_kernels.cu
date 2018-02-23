@@ -165,7 +165,7 @@ __global__ void adam_kernel(int N, float *x, float *m, float *v, float B1, float
     int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (index >= N) return;
     
-    x[index] = x[index] + (rate * sqrt(1.-pow(B2, t)) / (1.-pow(B1, t)) * m[index] / (sqrt(v[index]) + eps));
+    x[index] = x[index] + (rate * sqrtf(1.f-powf(B2, t)) / (1.f-powf(B1, t)) * m[index] / (sqrtf(v[index]) + eps));
 }
 
 extern "C" void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t)
@@ -194,7 +194,7 @@ __global__ void normalize_kernel(int N, float *x, float *mean, float *variance, 
     if (index >= N) return;
     int f = (index/spatial)%filters;
     
-    x[index] = (x[index] - mean[f])/(sqrt(variance[f] + .00001f));
+    x[index] = (x[index] - mean[f])/(sqrtf(variance[f] + .00001f));
 }
 
 __global__ void normalize_delta_kernel(int N, float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta)
@@ -203,7 +203,7 @@ __global__ void normalize_delta_kernel(int N, float *x, float *mean, float *vari
     if (index >= N) return;
     int f = (index/spatial)%filters;
     
-    delta[index] = delta[index] * 1./(sqrt(variance[f] + .00001f)) + variance_delta[f] * 2. * (x[index] - mean[f]) / (spatial * batch) + mean_delta[f]/(spatial*batch);
+    delta[index] = delta[index] * 1.f/(sqrtf(variance[f] + .00001f)) + variance_delta[f] * 2.f * (x[index] - mean[f]) / (spatial * batch) + mean_delta[f]/(spatial*batch);
 }
 
 extern "C" void normalize_delta_gpu(float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta)
@@ -225,7 +225,7 @@ __global__ void  variance_delta_kernel(float *x, float *delta, float *mean, floa
             variance_delta[i] += delta[index]*(x[index] - mean[i]);
         }
     }
-    variance_delta[i] *= -.5 * pow(variance[i] + .00001f, (float)(-3./2.));
+    variance_delta[i] *= -.5f * powf(variance[i] + .00001f, (float)(-3.f/2.f));
 }
 
 __global__ void accumulate_kernel(float *x, int n, int groups, float *sum)
@@ -264,7 +264,7 @@ __global__ void fast_mean_delta_kernel(float *delta, float *variance, int batch,
         for(i = 0; i < threads; ++i){
             mean_delta[filter] += local[i];
         }
-        mean_delta[filter] *= (-1./sqrt(variance[filter] + .00001f));
+        mean_delta[filter] *= (-1.f/sqrtf(variance[filter] + .00001f));
     }
 }
 
@@ -294,7 +294,7 @@ __global__ void  fast_variance_delta_kernel(float *x, float *delta, float *mean,
         for(i = 0; i < threads; ++i){
             variance_delta[filter] += local[i];
         }
-        variance_delta[filter] *= -.5 * pow(variance[filter] + .00001f, (float)(-3./2.));
+        variance_delta[filter] *= -.5f * powf(variance[filter] + .00001f, (float)(-3.f/2.f));
     }
 }
 
@@ -311,7 +311,7 @@ __global__ void mean_delta_kernel(float *delta, float *variance, int batch, int 
             mean_delta[i] += delta[index];
         }
     }
-    mean_delta[i] *= (-1./sqrt(variance[i] + .00001f));
+    mean_delta[i] *= (-1.f/sqrtf(variance[i] + .00001f));
 }
 
 extern "C" void mean_delta_gpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta)
@@ -334,7 +334,7 @@ extern "C" void fast_variance_delta_gpu(float *x, float *delta, float *mean, flo
 
 __global__ void  mean_kernel(float *x, int batch, int filters, int spatial, float *mean)
 {
-    float scale = 1./(batch * spatial);
+    float scale = 1.f/(batch * spatial);
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (i >= filters) return;
     int j,k;
@@ -350,7 +350,7 @@ __global__ void  mean_kernel(float *x, int batch, int filters, int spatial, floa
 
 __global__ void variance_kernel(float *x, float *mean, int batch, int filters, int spatial, float *variance)
 {
-    float scale = 1./(batch * spatial - 1);
+    float scale = 1.f/(batch * spatial - 1);
     int j,k;
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (i >= filters) return;
@@ -358,7 +358,7 @@ __global__ void variance_kernel(float *x, float *mean, int batch, int filters, i
     for(j = 0; j < batch; ++j){
         for(k = 0; k < spatial; ++k){
             int index = j*filters*spatial + i*spatial + k;
-            variance[i] += pow((x[index] - mean[i]), 2);
+            variance[i] += powf((x[index] - mean[i]), 2);
         }
     }
     variance[i] *= scale;
@@ -516,7 +516,7 @@ __global__ void  fast_variance_kernel(float *x, float *mean, int batch, int filt
         for(i = 0; i < spatial; i += threads){
             int index = j*spatial*filters + filter*spatial + i + id;
 
-            local[id] += (i+id < spatial) ? pow((x[index] - mean[filter]), 2) : 0;
+            local[id] += (i+id < spatial) ? powf((x[index] - mean[filter]), 2) : 0;
         }
     }
 
@@ -716,7 +716,7 @@ __global__ void smooth_l1_kernel(int n, float *pred, float *truth, float *delta,
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(i < n){
         float diff = truth[i] - pred[i];
-        float abs_val = abs(diff);
+        float abs_val = fabsf(diff);
         if(abs_val < 1) {
             error[i] = diff * diff;
             delta[i] = diff;
@@ -864,7 +864,7 @@ __device__ void softmax_device(float *input, int n, float temp, int stride, floa
         largest = (val>largest) ? val : largest;
     }
     for(i = 0; i < n; ++i){
-        float e = exp(input[i*stride]/temp - largest/temp);
+        float e = expf(input[i*stride]/temp - largest/temp);
         sum += e;
         output[i*stride] = e;
     }

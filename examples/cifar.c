@@ -6,28 +6,25 @@ void train_cifar(char *cfgfile, char *weightfile)
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network *net = load_network(cfgfile, weightfile, 0);
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
 
     char *backup_directory = "/home/pjreddie/backup/";
     int classes = 10;
     int N = 50000;
 
     char **labels = get_labels("data/cifar/labels.txt");
-    int epoch = (*net.seen)/N;
+    int epoch = (*net->seen)/N;
     data train = load_all_cifar10();
-    while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
+    while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
         clock_t time=clock();
 
         float loss = train_network_sgd(net, train, 1);
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.95 + loss*.05;
-        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
-        if(*net.seen/N > epoch){
-            epoch = *net.seen/N;
+        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net->seen);
+        if(*net->seen/N > epoch){
+            epoch = *net->seen/N;
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
@@ -54,18 +51,15 @@ void train_cifar_distill(char *cfgfile, char *weightfile)
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network *net = load_network(cfgfile, weightfile, 0);
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
 
     char *backup_directory = "/home/pjreddie/backup/";
     int classes = 10;
     int N = 50000;
 
     char **labels = get_labels("data/cifar/labels.txt");
-    int epoch = (*net.seen)/N;
+    int epoch = (*net->seen)/N;
 
     data train = load_all_cifar10();
     matrix soft = csv_to_matrix("results/ensemble.csv");
@@ -75,15 +69,15 @@ void train_cifar_distill(char *cfgfile, char *weightfile)
     scale_matrix(train.y, 1. - weight);
     matrix_add_matrix(soft, train.y);
 
-    while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
+    while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
         clock_t time=clock();
 
         float loss = train_network_sgd(net, train, 1);
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.95 + loss*.05;
-        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
-        if(*net.seen/N > epoch){
-            epoch = *net.seen/N;
+        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net->seen);
+        if(*net->seen/N > epoch){
+            epoch = *net->seen/N;
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
@@ -106,11 +100,8 @@ void train_cifar_distill(char *cfgfile, char *weightfile)
 
 void test_cifar_multi(char *filename, char *weightfile)
 {
-    network net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 1);
+    network *net = load_network(filename, weightfile, 0);
+    set_batch_network(net, 1);
     srand(time(0));
 
     float avg_acc = 0;
@@ -138,10 +129,7 @@ void test_cifar_multi(char *filename, char *weightfile)
 
 void test_cifar(char *filename, char *weightfile)
 {
-    network net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
+    network *net = load_network(filename, weightfile, 0);
     srand(time(0));
 
     clock_t time;
@@ -182,10 +170,7 @@ char *labels[] = {"airplane","automobile","bird","cat","deer","dog","frog","hors
 
 void test_cifar_csv(char *filename, char *weightfile)
 {
-    network net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
+    network *net = load_network(filename, weightfile, 0);
     srand(time(0));
 
     data test = load_cifar10_data("data/cifar/cifar-10-batches-bin/test_batch.bin");
@@ -207,12 +192,9 @@ void test_cifar_csv(char *filename, char *weightfile)
     free_data(test);
 }
 
-void test_cifar_csvtrain(char *filename, char *weightfile)
+void test_cifar_csvtrain(char *cfg, char *weights)
 {
-    network net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
+    network *net = load_network(cfg, weights, 0);
     srand(time(0));
 
     data test = load_all_cifar10();

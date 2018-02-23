@@ -137,14 +137,18 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
 
 box_label *read_boxes(char *filename, int *n)
 {
-    box_label *boxes = calloc(1, sizeof(box_label));
     FILE *file = fopen(filename, "r");
     if(!file) file_error(filename);
     float x, y, h, w;
     int id;
     int count = 0;
+    int size = 64;
+    box_label *boxes = calloc(size, sizeof(box_label));
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
-        boxes = realloc(boxes, (count+1)*sizeof(box_label));
+        if(count == size) {
+            size = size * 2;
+            boxes = realloc(boxes, size*sizeof(box_label));
+        }
         boxes[count].id = id;
         boxes[count].x = x;
         boxes[count].y = y;
@@ -976,6 +980,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         place_image(orig, nw, nh, dx, dy, sized);
 
         random_distort_image(sized, hue, saturation, exposure);
+
         int flip = rand()%2;
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
@@ -1167,11 +1172,83 @@ data load_data_regression(char **paths, int n, int m, int min, int max, int size
     return d;
 }
 
+data select_data(data *orig, int *inds)
+{
+    data d = {0};
+    d.shallow = 1;
+    d.w = orig[0].w;
+    d.h = orig[0].h;
+
+    d.X.rows = orig[0].X.rows;
+    d.y.rows = orig[0].X.rows;
+
+    d.X.cols = orig[0].X.cols;
+    d.y.cols = orig[0].y.cols;
+
+    d.X.vals = calloc(orig[0].X.rows, sizeof(float *));
+    d.y.vals = calloc(orig[0].y.rows, sizeof(float *));
+    int i;
+    for(i = 0; i < d.X.rows; ++i){
+        d.X.vals[i] = orig[inds[i]].X.vals[i];
+        d.y.vals[i] = orig[inds[i]].y.vals[i];
+    }
+    return d;
+}
+
+data *tile_data(data orig, int divs, int size)
+{
+    data *ds = calloc(divs*divs, sizeof(data));
+    int i, j;
+    #pragma omp parallel for
+    for(i = 0; i < divs*divs; ++i){
+        data d;
+        d.shallow = 0;
+        d.w = orig.w/divs * size;
+        d.h = orig.h/divs * size;
+        d.X.rows = orig.X.rows;
+        d.X.cols = d.w*d.h*3;
+        d.X.vals = calloc(d.X.rows, sizeof(float*));
+
+        d.y = copy_matrix(orig.y);
+        #pragma omp parallel for
+        for(j = 0; j < orig.X.rows; ++j){
+            int x = (i%divs) * orig.w / divs - (d.w - orig.w/divs)/2;
+            int y = (i/divs) * orig.h / divs - (d.h - orig.h/divs)/2;
+            image im = float_to_image(orig.w, orig.h, 3, orig.X.vals[j]);
+            d.X.vals[j] = crop_image(im, x, y, d.w, d.h).data;
+        }
+        ds[i] = d;
+    }
+    return ds;
+}
+
+data resize_data(data orig, int w, int h)
+{
+    data d = {0};
+    d.shallow = 0;
+    d.w = w;
+    d.h = h;
+    int i;
+    d.X.rows = orig.X.rows;
+    d.X.cols = w*h*3;
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
+
+    d.y = copy_matrix(orig.y);
+    #pragma omp parallel for
+    for(i = 0; i < orig.X.rows; ++i){
+        image im = float_to_image(orig.w, orig.h, 3, orig.X.vals[i]);
+        d.X.vals[i] = resize_image(im, w, h).data;
+    }
+    return d;
+}
+
 data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
     d.shallow = 0;
+    d.w=size;
+    d.h=size;
     d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure, center);
     d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);
@@ -1213,6 +1290,8 @@ data concat_data(data d1, data d2)
     d.shallow = 1;
     d.X = concat_matrix(d1.X, d2.X);
     d.y = concat_matrix(d1.y, d2.y);
+    d.w = d1.w;
+    d.h = d1.h;
     return d;
 }
 
