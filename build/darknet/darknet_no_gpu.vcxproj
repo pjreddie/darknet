@@ -198,6 +198,7 @@
     <ClCompile Include="..\..\src\gettimeofday.c" />
     <ClCompile Include="..\..\src\go.c" />
     <ClCompile Include="..\..\src\gru_layer.c" />
+    <ClCompile Include="..\..\src\http_stream.cpp" />
     <ClCompile Include="..\..\src\im2col.c" />
     <ClCompile Include="..\..\src\image.c" />
     <ClCompile Include="..\..\src\layer.c" />
@@ -251,6 +252,7 @@
     <ClInclude Include="..\..\src\getopt.h" />
     <ClInclude Include="..\..\src\gettimeofday.h" />
     <ClInclude Include="..\..\src\gru_layer.h" />
+    <ClInclude Include="..\..\src\http_stream.h" />
     <ClInclude Include="..\..\src\im2col.h" />
     <ClInclude Include="..\..\src\image.h" />
     <ClInclude Include="..\..\src\layer.h" />

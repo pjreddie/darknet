@@ -9,17 +9,22 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52] \
-      -gencode arch=compute_61,code=[sm_61,compute_61]
+	  -gencode arch=compute_61,code=[sm_61,compute_61]
 
+# Tesla V100
+# ARCH= -gencode arch=compute_70,code=[sm_70,compute_70]
+
+# GTX 1080, GTX 1070, GTX 1060, GTX 1050, GTX 1030, Titan Xp, Tesla P40, Tesla P4
+# ARCH= -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61
+
+# GP100/Tesla P100 – DGX-1
+# ARCH= -gencode arch=compute_60,code=sm_60
 
 # For Jetson Tx1 uncomment:
 # ARCH= -gencode arch=compute_51,code=[sm_51,compute_51]
 
-# For Jetson Tx2 uncomment:
+# For Jetson Tx2 or Drive-PX2 uncomment:
 # ARCH= -gencode arch=compute_62,code=[sm_62,compute_62]
-
-# This is what I use, uncomment if you know your arch and want to specify
-# ARCH=  -gencode arch=compute_52,code=compute_52
 
 
 VPATH=./src/

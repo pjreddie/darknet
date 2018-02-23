@@ -141,19 +141,27 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 {
 
 #ifdef CUDNN_HALF
-	// TRUE_HALF_CONFIG is only supported on architectures with true fp16 support (compute capability 5.3 and 6.0):
-	// Tegra X1, Jetson TX1, DRIVE CX, DRIVE PX, Quadro GP100, Tesla P100
+	// TRUE_HALF_CONFIG is only supported on architectures with true fp16 support (compute capability 5.3 and 6.0): Tegra X1, Jetson TX1, DRIVE CX, DRIVE PX, Quadro GP100, Tesla P100
+	// PSEUDO_HALF_CONFIG is required for Tensor Cores - our case!
 	const cudnnDataType_t data_type = CUDNN_DATA_HALF;
 #else
 	cudnnDataType_t data_type = CUDNN_DATA_FLOAT;
 #endif
-	// Tensor Core uses CUDNN_TENSOR_OP_MATH instead of CUDNN_DEFAULT_MATH
+
 #if(CUDNN_MAJOR >= 7)
+	// Tensor Core uses CUDNN_TENSOR_OP_MATH instead of CUDNN_DEFAULT_MATH
+	// For *_ALGO_WINOGRAD_NONFUSED can be used CUDNN_DATA_FLOAT
+	// otherwise Input, Filter and Output descriptors (xDesc, yDesc, wDesc, dxDesc, dyDesc and dwDesc as applicable) have dataType = CUDNN_DATA_HALF
+	// Three techniques for training using Mixed-precision: https://devblogs.nvidia.com/mixed-precision-training-deep-neural-networks/
+	// 1. Accumulation into FP32
+	// 2. Loss Scaling - required only for: activation gradients. We do not use.
+	// 3. FP32 Master Copy of Weights
+	// More: http://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#tensor_ops
 	cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH);
 #endif
 
 	// INT8_CONFIG, INT8_EXT_CONFIG, INT8x4_CONFIG and INT8x4_EXT_CONFIG are only supported 
-	// on architectures with DP4A support (compute capability 6.1 and later).
+	//   on architectures with DP4A support (compute capability 6.1 and later).
 	//cudnnDataType_t data_type = CUDNN_DATA_INT8;
 
     cudnnSetTensor4dDescriptor(l->dsrcTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->c, l->h, l->w);
@@ -164,7 +172,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
     cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->out_c, l->out_h, l->out_w);
     cudnnSetFilter4dDescriptor(l->weightDesc, data_type, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size);
 #if(CUDNN_MAJOR >= 6)
-	cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION, data_type);	// cudnn >= 6.0
+	cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT);	// cudnn >= 6.0
 #else
 	cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION);	// cudnn 5.1
 #endif

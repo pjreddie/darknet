@@ -32,13 +32,13 @@ This repository supports:
 
 * both Windows and Linux
 * both OpenCV 3.x and OpenCV 2.4.13
-* both cuDNN 5 and cuDNN 6
+* both cuDNN v5-v7
 * CUDA >= 7.5
 * also create SO-library on Linux and DLL-library on Windows
 
 ##### Requires: 
 * **Linux GCC>=4.9 or Windows MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
-* **CUDA 8.0**: https://developer.nvidia.com/cuda-downloads
+* **CUDA 9.1**: https://developer.nvidia.com/cuda-downloads
 * **OpenCV 3.x**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.2.0/opencv-3.2.0-vc14.exe/download
 * **or OpenCV 2.4.13**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.13/opencv-2.4.13.2-vc14.exe/download
   - OpenCV allows to show image or video detection in the window and store result to file that specified in command line `-out_filename res.avi`
@@ -117,7 +117,7 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 Just do `make` in the darknet directory.
 Before make, you can set such options in the `Makefile`: [link](https://github.com/AlexeyAB/darknet/blob/9c1b9a2cf6363546c152251be578a21f3c3caec6/Makefile#L1)
 * `GPU=1` to build with CUDA to accelerate by using GPU (CUDA should be in `/usr/local/cuda`)
-* `CUDNN=1` to build with cuDNN v5/v6 to accelerate training by using GPU (cuDNN should be in `/usr/local/cudnn`)
+* `CUDNN=1` to build with cuDNN v5-v7 to accelerate training by using GPU (cuDNN should be in `/usr/local/cudnn`)
 * `OPENCV=1` to build with OpenCV 3.x/2.4.x - allows to detect on video files and video streams from network cameras or web-cams
 * `DEBUG=1` to bould debug version of Yolo
 * `OPENMP=1` to build with OpenMP support to accelerate Yolo by using multi-core CPU
@@ -142,7 +142,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
   
 5. If you want to build with CUDNN to speed up then:
       
-    * download and install **cuDNN 6.0 for CUDA 8.0**: https://developer.nvidia.com/cudnn
+    * download and install **cuDNN 7.0 for CUDA 9.1**: https://developer.nvidia.com/cudnn
       
     * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
       

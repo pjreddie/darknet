@@ -78,7 +78,7 @@ __global__ void cuda_f32_to_f16(float* input_f32, size_t size, half *output_f16)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx < size) output_f16[idx] = __float2half(input_f32[idx]);
-	//if (idx < size) *((unsigned int *)output_f16 + idx) = __float2half(input_f32[idx]);
+	//if (idx < size) *((unsigned short *)output_f16 + idx) = __float2half(input_f32[idx]);
 }
 
 void cuda_convert_f32_to_f16(float* input_f32, size_t size, half *output_f16) {
@@ -89,7 +89,7 @@ __global__ void cuda_f16_to_f32(half* input_f16, size_t size, float *output_f32)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx < size) output_f32[idx] = __half2float(input_f16[idx]);
-	//if (idx < size) output_f32[idx] = __half2float(*((unsigned int *)input_f16 + idx));
+	//if (idx < size) output_f32[idx] = __half2float(*((unsigned short *)input_f16 + idx));
 }
 
 void cuda_convert_f16_to_f32(half* input_f16, size_t size, float *output_f32) {
@@ -247,6 +247,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
     if(state.delta){
         if(l.binary || l.xnor) swap_binary(&l);
+		// http://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#cudnnConvolutionBackwardData
         cudnnConvolutionBackwardData(cudnn_handle(),
                 &one,
                 l.weightDesc,
