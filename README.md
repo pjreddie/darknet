@@ -281,6 +281,17 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
  * Also you can get result earlier than all 45000 iterations.
  
+### How to train tiny-yolo (to detect your custom objects):
+
+Do all the same steps as for the full yolo model as described above. With the exception of:
+* Download default weights file for tiny-yolo-voc: http://pjreddie.com/media/files/tiny-yolo-voc.weights
+* Get pre-trained weights tiny-yolo-voc.conv.13 using command: `darknet.exe partial cfg/tiny-yolo-voc.cfg tiny-yolo-voc.weights tiny-yolo-voc.conv.13 13`
+* Make your custom model `tiny-yolo-obj.cfg` based on `tiny-yolo-voc.cfg` instead of `yolo-voc.2.0.cfg`
+* Start training: `darknet.exe detector train data/obj.data tiny-yolo-obj.cfg tiny-yolo-voc.conv.13`
+
+For training Yolo based on other models ([DenseNet201-Yolo](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/densenet201_yolo.cfg) or [ResNet50-Yolo](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/resnet50_yolo.cfg)), you can download and get pre-trained weights as showed in this file: https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/partial.cmd
+If you made you custom model that isn't based on other models, then you can train it without pre-trained weights, then will be used random initial weights.
+ 
 ## When should I stop training:
 
 Usually sufficient 2000 iterations for each class(object). But for a more precise definition when you should stop training, use the following manual:
@@ -364,6 +375,8 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   * for training on small objects, add the parameter `small_object=1` in the last layer [region] in your cfg-file
 
   * for training with a large number of objects in each image, add the parameter `max=200` or higher value in the last layer [region] in your cfg-file
+  
+  * to speedup training (with decreasing detection accuracy) do Fine-Tuning instead of Transfer-Learning, set param `stopbackward=1` in one of the penultimate convolutional layers, for example here: https://github.com/AlexeyAB/darknet/blob/cad4d1618fee74471d335314cb77070fee951a42/cfg/yolo-voc.2.0.cfg#L202
 
 2. After training - for detection:
 
