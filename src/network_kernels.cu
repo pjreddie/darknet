@@ -117,7 +117,7 @@ void forward_backward_network_gpu(network net, float *x, float *y)
 	int i;
 	for (i = 0; i < net.n; ++i) {
 		layer l = net.layers[i];
-		cuda_convert_f32_to_f16(l.weights_gpu, l.c*l.n*l.size*l.size, (half *)l.weights_gpu16);
+		cuda_convert_f32_to_f16(l.weights_gpu, l.c*l.n*l.size*l.size, l.weights_gpu16);
 	}
 #endif
     forward_network_gpu(net, state);

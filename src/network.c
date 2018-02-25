@@ -316,6 +316,8 @@ void set_batch_network(network *net, int b)
         net->layers[i].batch = b;
 #ifdef CUDNN
         if(net->layers[i].type == CONVOLUTIONAL){
+			cudnn_convolutional_setup(net->layers + i, cudnn_fastest);
+			/*
 			layer *l = net->layers + i;
             cudnn_convolutional_setup(l, cudnn_fastest);
 			// check for excessive memory consumption 
@@ -327,6 +329,7 @@ void set_batch_network(network *net, int b)
 				cudnn_convolutional_setup(l, cudnn_smallest);
 				l->workspace_size = get_workspace_size(*l);
 			}
+			*/
         }
 #endif
     }

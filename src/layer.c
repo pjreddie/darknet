@@ -83,6 +83,8 @@ void free_layer(layer l)
 	if (l.x_norm_gpu)              cuda_free(l.x_norm_gpu);
 	if (l.weights_gpu)             cuda_free(l.weights_gpu);
 	if (l.weight_updates_gpu)      cuda_free(l.weight_updates_gpu);
+	if (l.weights_gpu16)           cuda_free(l.weights_gpu16);
+	if (l.weight_updates_gpu16)    cuda_free(l.weight_updates_gpu16);
 	if (l.biases_gpu)              cuda_free(l.biases_gpu);
 	if (l.bias_updates_gpu)        cuda_free(l.bias_updates_gpu);
 	if (l.scales_gpu)              cuda_free(l.scales_gpu);

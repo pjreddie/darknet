@@ -21,6 +21,7 @@ void add_bias_gpu(float *output, float *biases, int batch, int n, int size);
 void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size);
 #ifdef CUDNN
 void cudnn_convolutional_setup(layer *l, int cudnn_preference);
+void cuda_convert_f32_to_f16(float* input_f32, size_t size, float *output_f16);
 #endif
 #endif
 

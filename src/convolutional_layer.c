@@ -141,7 +141,8 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 {
 
 #ifdef CUDNN_HALF
-	// TRUE_HALF_CONFIG is only supported on architectures with true fp16 support (compute capability 5.3 and 6.0): Tegra X1, Jetson TX1, DRIVE CX, DRIVE PX, Quadro GP100, Tesla P100
+	// TRUE_HALF_CONFIG is only supported on architectures with true fp16 support (compute capability 5.3 and 6.0): 
+	//   Tegra X1, Jetson TX1, DRIVE CX, DRIVE PX, Quadro GP100, Tesla P100
 	// PSEUDO_HALF_CONFIG is required for Tensor Cores - our case!
 	const cudnnDataType_t data_type = CUDNN_DATA_HALF;
 #else
@@ -164,10 +165,12 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 	//   on architectures with DP4A support (compute capability 6.1 and later).
 	//cudnnDataType_t data_type = CUDNN_DATA_INT8;
 
+	// backward delta
     cudnnSetTensor4dDescriptor(l->dsrcTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->c, l->h, l->w);
     cudnnSetTensor4dDescriptor(l->ddstTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->out_c, l->out_h, l->out_w);
     cudnnSetFilter4dDescriptor(l->dweightDesc, data_type, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size);
 
+	// forward
     cudnnSetTensor4dDescriptor(l->srcTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->c, l->h, l->w);
     cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->out_c, l->out_h, l->out_w);
     cudnnSetFilter4dDescriptor(l->weightDesc, data_type, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size);
@@ -302,7 +305,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
         l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
 #ifdef CUDNN_HALF
-		l.weights_gpu16 = cuda_make_array(l.weights, c*n*size*size/2);
+		l.weights_gpu16 = cuda_make_array(l.weights, c*n*size*size / 2);
+		l.weight_updates_gpu16 = cuda_make_array(l.weight_updates, c*n*size*size / 2);
 #endif
         l.weight_updates_gpu = cuda_make_array(l.weight_updates, c*n*size*size);
 

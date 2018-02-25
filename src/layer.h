@@ -243,6 +243,7 @@ struct layer{
     float * weight_updates_gpu;
 
 	float * weights_gpu16;
+	float * weight_updates_gpu16;
 
     float * biases_gpu;
     float * bias_updates_gpu;
