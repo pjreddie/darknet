@@ -49,18 +49,22 @@ static IplImage* ipl_images[FRAMES];
 static float *avg;
 
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
-void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filename, int http_stream_port);
+void show_image_cv_ipl(IplImage *disp, const char *name, CvVideoWriter *output_video_writer, int http_stream_port);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img);
 IplImage* in_img;
 IplImage* det_img;
 IplImage* show_img;
+
+static int flag_exit;
 
 void *fetch_in_thread(void *ptr)
 {
     //in = get_image_from_stream(cap);
 	in = get_image_from_stream_resize(cap, net.w, net.h, &in_img);
     if(!in.data){
-        error("Stream closed.");
+        //error("Stream closed.");
+		flag_exit = 1;
+		return;
     }
     //in_s = resize_image(in, net.w, net.h);
 	in_s = make_image(in.w, in.h, in.c);
@@ -186,6 +190,23 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         cvResizeWindow("Demo", 1352, 1013);
     }
 
+	CvVideoWriter* output_video_writer = NULL;    // cv::VideoWriter output_video;
+	if (out_filename)
+	{
+		CvSize size;
+		size.width = det_img->width, size.height = det_img->height;
+
+		//const char* output_name = "test_dnn_out.avi";
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('H', '2', '6', '4'), 25, size, 1);
+		output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('D', 'I', 'V', 'X'), 25, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'J', 'P', 'G'), 25, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', 'V'), 25, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', '2'), 25, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('X', 'V', 'I', 'D'), 25, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('W', 'M', 'V', '2'), 25, size, 1);
+	}
+	flag_exit = 0;
+
     double before = get_wall_time();
 
     while(1){
@@ -196,7 +217,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
             if(!prefix){                
 				//show_image(disp, "Demo");
-				show_image_cv_ipl(show_img, "Demo", out_filename, http_stream_port);
+				show_image_cv_ipl(show_img, "Demo", output_video_writer, http_stream_port);
                 int c = cvWaitKey(1);
                 if (c == 10){
                     if(frame_skip == 0) frame_skip = 60;
@@ -212,6 +233,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
             pthread_join(fetch_thread, 0);
             pthread_join(detect_thread, 0);
+
+			if (flag_exit == 1) break;
 
             if(delay == 0){
                 free_image(disp);
@@ -244,6 +267,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             before = after;
         }
     }
+	printf("input video stream closed. \n");
+	if (output_video_writer) {
+		cvReleaseVideoWriter(&output_video_writer);
+		printf("output_video_writer closed. \n");
+	}
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename, int http_stream_port)
