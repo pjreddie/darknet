@@ -372,7 +372,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   
   * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides
 
-  * desirable that your training dataset include images with objects (without bounded boxes) that you do not want to detect - negative samples
+  * desirable that your training dataset include images with objects (without labels) that you do not want to detect - negative samples
 
   * for training on small objects, add the parameter `small_object=1` in the last layer [region] in your cfg-file
 
