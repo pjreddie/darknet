@@ -49,7 +49,7 @@ static IplImage* ipl_images[FRAMES];
 static float *avg;
 
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
-void show_image_cv_ipl(IplImage *disp, const char *name, CvVideoWriter *output_video_writer, int http_stream_port);
+void show_image_cv_ipl(IplImage *disp, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img);
 IplImage* in_img;
 IplImage* det_img;
@@ -121,7 +121,7 @@ double get_wall_time()
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, 
-	int frame_skip, char *prefix, char *out_filename, int http_stream_port)
+	int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show)
 {
     //skip = frame_skip;
     image **alphabet = load_alphabet();
@@ -184,7 +184,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 
     int count = 0;
-    if(!prefix){
+    if(!prefix && !dont_show){
         cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
         cvMoveWindow("Demo", 0, 0);
         cvResizeWindow("Demo", 1352, 1013);
@@ -215,21 +215,38 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
             if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 
-            if(!prefix){                
-				//show_image(disp, "Demo");
-				show_image_cv_ipl(show_img, "Demo", output_video_writer, http_stream_port);
-                int c = cvWaitKey(1);
-                if (c == 10){
-                    if(frame_skip == 0) frame_skip = 60;
-                    else if(frame_skip == 4) frame_skip = 0;
-                    else if(frame_skip == 60) frame_skip = 4;   
-                    else frame_skip = 0;
-                }
+            if(!prefix){
+				if (!dont_show) {
+					show_image_cv_ipl(show_img, "Demo");
+					int c = cvWaitKey(1);
+					if (c == 10) {
+						if (frame_skip == 0) frame_skip = 60;
+						else if (frame_skip == 4) frame_skip = 0;
+						else if (frame_skip == 60) frame_skip = 4;
+						else frame_skip = 0;
+					}
+				}
             }else{
                 char buff[256];
                 sprintf(buff, "%s_%08d", prefix, count);
                 save_image(disp, buff);
             }
+
+			// if you run it with param -http_port 8090  then open URL in your web-browser: http://localhost:8090
+			if (http_stream_port > 0) {
+				//int port = 8090;
+				int port = http_stream_port;
+				int timeout = 200;
+				int jpeg_quality = 30;	// 1 - 100
+				send_mjpeg(show_img, port, timeout, jpeg_quality);
+			}
+
+			// save video file
+			if (output_video_writer) {
+				cvWriteFrame(output_video_writer, show_img);
+				printf("\n cvWriteFrame \n");
+			}
+			cvReleaseImage(&show_img);
 
             pthread_join(fetch_thread, 0);
             pthread_join(detect_thread, 0);
@@ -254,8 +271,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
                 free_image(disp);
                 disp = det;
             }
-            show_image(disp, "Demo");
-            cvWaitKey(1);
+			if (!dont_show) {
+				show_image(disp, "Demo");
+				cvWaitKey(1);
+			}
         }
         --delay;
         if(delay < 0){

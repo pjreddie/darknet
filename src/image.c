@@ -528,7 +528,7 @@ void show_image_cv(image p, const char *name)
 }
 
 
-void show_image_cv_ipl(IplImage *disp, const char *name, CvVideoWriter *output_video_writer, int http_stream_port)
+void show_image_cv_ipl(IplImage *disp, const char *name)
 {
 	if (disp == NULL) return;
 	char buff[256];
@@ -538,24 +538,7 @@ void show_image_cv_ipl(IplImage *disp, const char *name, CvVideoWriter *output_v
 	//cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
 	++windows;
 	cvShowImage(buff, disp);
-
-
-	// http mjpeg stream: http://localhost:8090
-	// use URL with the port number stated in your command line instead of 8090
-	if (http_stream_port > 0) {
-		//int port = 8090;
-		int port = http_stream_port;
-		int timeout = 200;
-		int jpeg_quality = 30;	// 1 - 100
-		send_mjpeg(disp, port, timeout, jpeg_quality);
-	}
-
-	if(output_video_writer) {
-		cvWriteFrame(output_video_writer, disp);	// comment this line to improve FPS !!!
-		printf("\n cvWriteFrame \n");
-	}
-
-	cvReleaseImage(&disp);
+	//cvReleaseImage(&disp);
 }
 #endif
 

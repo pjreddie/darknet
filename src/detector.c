@@ -798,7 +798,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile)
 	fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
-void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh)
+void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int dont_show)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -843,15 +843,19 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
         save_image(im, "predictions");
-        show_image(im, "predictions");
+		if (!dont_show) {
+			show_image(im, "predictions");
+		}
 
         free_image(im);
         free_image(sized);
         free(boxes);
         free_ptrs((void **)probs, l.w*l.h*l.n);
 #ifdef OPENCV
-        cvWaitKey(0);
-        cvDestroyAllWindows();
+		if (!dont_show) {
+			cvWaitKey(0);
+			cvDestroyAllWindows();
+		}
 #endif
         if (filename) break;
     }
@@ -859,6 +863,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
 void run_detector(int argc, char **argv)
 {
+	int dont_show = find_arg(argc, argv, "-dont_show");
 	int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
 	char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
@@ -900,7 +905,7 @@ void run_detector(int argc, char **argv)
 	if(weights)
 		if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh);
+    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, dont_show);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
@@ -912,6 +917,6 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
 		if(filename)
 			if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
-        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename, http_stream_port);
+        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename, http_stream_port, dont_show);
     }
 }
