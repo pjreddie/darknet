@@ -245,8 +245,8 @@ void print_imagenet_detections(FILE *fp, int id, box *boxes, float **probs, int 
         if (ymax > h) ymax = h;
 
         for(j = 0; j < classes; ++j){
-            int class = j;
-            if (probs[i][class]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, probs[i][class],
+            int class_id = j;
+            if (probs[i][class_id]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, probs[i][class_id],
                     xmin, ymin, xmax, ymax);
         }
     }
@@ -777,7 +777,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile)
 			avg_precision += cur_precision;
 		}
 		avg_precision = avg_precision / 11;
-		printf("class = %d, name = %s, \t ap = %2.2f %% \n", i, names[i], avg_precision*100);
+		printf("class_id = %d, name = %s, \t ap = %2.2f %% \n", i, names[i], avg_precision*100);
 		mean_average_precision += avg_precision;
 	}
 	

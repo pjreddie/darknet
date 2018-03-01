@@ -188,8 +188,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
     int i;
 
     for(i = 0; i < num; ++i){
-        int class = max_index(probs[i], classes);
-        float prob = probs[i][class];
+        int class_id = max_index(probs[i], classes);
+        float prob = probs[i][class_id];
         if(prob > thresh){
 
 			//// for comparison with OpenCV version of DNN Darknet Yolo v2
@@ -207,8 +207,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
                 alphabet = 0;
             }
 
-            printf("%s: %.0f%%\n", names[class], prob*100);
-            int offset = class*123457 % classes;
+            printf("%s: %.0f%%\n", names[class_id], prob*100);
+            int offset = class_id*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
             float blue = get_color(0,offset,classes);
@@ -233,7 +233,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, names[class], (im.h*.03)/10);
+                image label = get_label(alphabet, names[class_id], (im.h*.03)/10);
                 draw_label(im, top + width, left, label, rgb);
             }
         }
@@ -246,8 +246,8 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 	int i;
 
 	for (i = 0; i < num; ++i) {
-		int class = max_index(probs[i], classes);
-		float prob = probs[i][class];
+		int class_id = max_index(probs[i], classes);
+		float prob = probs[i][class_id];
 		if (prob > thresh) {
 
 			int width = show_img->height * .012;
@@ -257,8 +257,8 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 				alphabet = 0;
 			}
 
-			printf("%s: %.0f%%\n", names[class], prob * 100);
-			int offset = class * 123457 % classes;
+			printf("%s: %.0f%%\n", names[class_id], prob * 100);
+			int offset = class_id * 123457 % classes;
 			float red = get_color(2, offset, classes);
 			float green = get_color(1, offset, classes);
 			float blue = get_color(0, offset, classes);
@@ -299,14 +299,14 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 			color.val[2] = blue * 256;
 
 			cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
-			//printf("left=%d, right=%d, top=%d, bottom=%d, obj_id=%d, obj=%s \n", left, right, top, bot, class, names[class]);
+			//printf("left=%d, right=%d, top=%d, bottom=%d, obj_id=%d, obj=%s \n", left, right, top, bot, class_id, names[class_id]);
 			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
 			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);	// filled
 			CvScalar black_color;
 			black_color.val[0] = 0;
 			CvFont font;
 			cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, font_size, font_size, 0, font_size * 3, 8);	
-			cvPutText(show_img, names[class], pt_text, &font, black_color);
+			cvPutText(show_img, names[class_id], pt_text, &font, black_color);
 		}
 	}
 }
