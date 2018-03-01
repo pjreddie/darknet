@@ -917,6 +917,7 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
 		if(filename)
 			if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
-        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename, http_stream_port, dont_show);
+        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename, 
+			http_stream_port, dont_show);
     }
 }
