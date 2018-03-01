@@ -31,7 +31,7 @@ More details: http://pjreddie.com/darknet/yolo/
 This repository supports:
 
 * both Windows and Linux
-* both OpenCV 3.x and OpenCV 2.4.13
+* both OpenCV 2.x.x and OpenCV <= 3.4.0 (3.4.1 and higher isn't supported)
 * both cuDNN v5-v7
 * CUDA >= 7.5
 * also create SO-library on Linux and DLL-library on Windows
@@ -39,7 +39,7 @@ This repository supports:
 ##### Requires: 
 * **Linux GCC>=4.9 or Windows MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
 * **CUDA 9.1**: https://developer.nvidia.com/cuda-downloads
-* **OpenCV 3.x**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.2.0/opencv-3.2.0-vc14.exe/download
+* **OpenCV 3.4.0**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.4.0/opencv-3.4.0-vc14_vc15.exe/download
 * **or OpenCV 2.4.13**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.13/opencv-2.4.13.2-vc14.exe/download
   - OpenCV allows to show image or video detection in the window and store result to file that specified in command line `-out_filename res.avi`
 * **GPU with CC >= 2.0** if you use CUDA, or **GPU CC >= 3.0** if you use cuDNN + CUDA: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
