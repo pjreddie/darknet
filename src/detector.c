@@ -495,7 +495,7 @@ int detections_comparator(const void *pa, const void *pb)
 	return 0;
 }
 
-void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile)
+void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou)
 {
 	int j;
 	list *options = read_data_cfg(datacfg);
@@ -552,7 +552,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile)
 	args.h = net.h;
 	args.type = IMAGE_DATA;
 
-	const float thresh_calc_avg_iou = 0.24;
+	//const float thresh_calc_avg_iou = 0.24;
 	float avg_iou = 0;
 	int tp_for_thresh = 0;
 	int fp_for_thresh = 0;
@@ -781,6 +781,12 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile)
 		mean_average_precision += avg_precision;
 	}
 	
+	const float cur_precision = (float)tp_for_thresh / ((float)tp_for_thresh + (float)fp_for_thresh);
+	const float cur_recall = (float)tp_for_thresh / ((float)tp_for_thresh + (float)(unique_truth_count - tp_for_thresh));
+	const float f1_score = 2.F * cur_precision * cur_recall / (cur_precision + cur_recall);
+	printf(" for thresh = %1.2f, precision = %1.2f, recall = %1.2f, F1-score = %1.2f \n",
+		thresh_calc_avg_iou, cur_precision, cur_recall, f1_score);
+
 	printf(" for thresh = %0.2f, TP = %d, FP = %d, FN = %d, average IoU = %2.2f %% \n", 
 		thresh_calc_avg_iou, tp_for_thresh, fp_for_thresh, unique_truth_count - tp_for_thresh, avg_iou * 100);
 
@@ -909,7 +915,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
-	else if(0==strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights);
+	else if(0==strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh);
     else if(0==strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
