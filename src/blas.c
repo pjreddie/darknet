@@ -6,22 +6,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
+void reorg_cpu(float *x, int out_w, int out_h, int out_c, int batch, int stride, int forward, float *out)
 {
     int b,i,j,k;
-    int out_c = c/(stride*stride);
+    int in_c = out_c/(stride*stride);
+
+	//printf("\n out_c = %d, out_w = %d, out_h = %d, stride = %d, forward = %d \n", out_c, out_w, out_h, stride, forward);
+	//printf("  in_c = %d,  in_w = %d,  in_h = %d \n", in_c, out_w*stride, out_h*stride);
 
     for(b = 0; b < batch; ++b){
-        for(k = 0; k < c; ++k){
-            for(j = 0; j < h; ++j){
-                for(i = 0; i < w; ++i){
-                    int in_index  = i + w*(j + h*(k + c*b));
-                    int c2 = k % out_c;
-                    int offset = k / out_c;
+        for(k = 0; k < out_c; ++k){
+            for(j = 0; j < out_h; ++j){
+                for(i = 0; i < out_w; ++i){
+                    int in_index  = i + out_w*(j + out_h*(k + out_c*b));
+                    int c2 = k % in_c;
+                    int offset = k / in_c;
                     int w2 = i*stride + offset % stride;
                     int h2 = j*stride + offset / stride;
-                    int out_index = w2 + w*stride*(h2 + h*stride*(c2 + out_c*b));
-                    if(forward) out[out_index] = x[in_index];
+                    int out_index = w2 + out_w*stride*(h2 + out_h*stride*(c2 + in_c*b));
+                    if(forward) out[out_index] = x[in_index];	// used by default for forward (i.e. forward = 0)
                     else out[in_index] = x[out_index];
                 }
             }

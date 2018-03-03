@@ -24,6 +24,7 @@
 #include "parser.h"
 #include "region_layer.h"
 #include "reorg_layer.h"
+#include "reorg_old_layer.h"
 #include "rnn_layer.h"
 #include "route_layer.h"
 #include "shortcut_layer.h"
@@ -60,6 +61,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[max]")==0
             || strcmp(type, "[maxpool]")==0) return MAXPOOL;
     if (strcmp(type, "[reorg]")==0) return REORG;
+	if (strcmp(type, "[reorg_old]") == 0) return REORG_OLD;
     if (strcmp(type, "[avg]")==0
             || strcmp(type, "[avgpool]")==0) return AVGPOOL;
     if (strcmp(type, "[dropout]")==0) return DROPOUT;
@@ -356,6 +358,23 @@ layer parse_reorg(list *options, size_params params)
 
     layer layer = make_reorg_layer(batch,w,h,c,stride,reverse);
     return layer;
+}
+
+layer parse_reorg_old(list *options, size_params params)
+{
+	printf("\n reorg_old \n");
+	int stride = option_find_int(options, "stride", 1);
+	int reverse = option_find_int_quiet(options, "reverse", 0);
+
+	int batch, h, w, c;
+	h = params.h;
+	w = params.w;
+	c = params.c;
+	batch = params.batch;
+	if (!(h && w && c)) error("Layer before reorg layer must output image.");
+
+	layer layer = make_reorg_old_layer(batch, w, h, c, stride, reverse);
+	return layer;
 }
 
 maxpool_layer parse_maxpool(list *options, size_params params)
@@ -657,7 +676,9 @@ network parse_network_cfg_custom(char *filename, int batch)
         }else if(lt == MAXPOOL){
             l = parse_maxpool(options, params);
         }else if(lt == REORG){
-            l = parse_reorg(options, params);
+            l = parse_reorg(options, params);		}
+		else if (lt == REORG_OLD) {
+			l = parse_reorg_old(options, params);
         }else if(lt == AVGPOOL){
             l = parse_avgpool(options, params);
         }else if(lt == ROUTE){
