@@ -310,7 +310,74 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 		}
 	}
 }
-#endif
+
+IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size)
+{
+	int img_offset = 50;
+	int draw_size = img_size - img_offset;
+	IplImage* img = cvCreateImage(cvSize(img_size, img_size), 8, 3);
+	cvSet(img, CV_RGB(255, 255, 255), 0);
+	CvPoint pt1, pt2, pt_text;
+	pt1.x = img_offset; pt2.x = img_size, pt_text.x = 10;
+	CvFont font;
+	cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 1, CV_AA);
+	char char_buff[100];
+	int i;
+	for (i = 1; i <= number_of_lines; ++i) {
+		pt1.y = pt2.y = (float)i * draw_size / number_of_lines;
+		cvLine(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
+		if (i % 10 == 0) {
+			sprintf(char_buff, "%2.1f", max_img_loss*(number_of_lines - i) / number_of_lines);
+			pt_text.y = pt1.y + 5;
+			cvPutText(img, char_buff, pt_text, &font, CV_RGB(0, 0, 0));
+			cvLine(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
+		}
+	}
+	pt1.y = draw_size; pt2.y = 0, pt_text.y = draw_size + 15;
+	for (i = 0; i <= number_of_lines; ++i) {
+		pt1.x = pt2.x = img_offset + (float)i * draw_size / number_of_lines;
+		cvLine(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
+		if (i % 10 == 0) {
+			sprintf(char_buff, "%d", max_batches * i / number_of_lines);
+			pt_text.x = pt1.x - 20;
+			cvPutText(img, char_buff, pt_text, &font, CV_RGB(0, 0, 0));
+			cvLine(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
+		}
+	}
+	cvPutText(img, "Iteration number", cvPoint(draw_size / 2, img_size - 10), &font, CV_RGB(0, 0, 0));
+	cvPutText(img, "Press 's' to save: chart.jpg", cvPoint(5, img_size - 10), &font, CV_RGB(0, 0, 0));
+	cvNamedWindow("average loss", CV_WINDOW_NORMAL);
+	cvMoveWindow("average loss", 0, 0);
+	cvResizeWindow("average loss", img_size, img_size);
+	cvShowImage("average loss", img);
+	cvWaitKey(20);
+	return img;
+}
+
+void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches)
+{
+	int img_offset = 50;
+	int draw_size = img_size - img_offset;
+	CvFont font;
+	cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 1, CV_AA);
+	char char_buff[100];
+	CvPoint pt1, pt2;
+	pt1.x = img_offset + draw_size * (float)current_batch / max_batches;
+	pt1.y = draw_size * (1 - avg_loss / max_img_loss);
+	if (pt1.y < 0) pt1.y = 1;
+	cvCircle(img, pt1, 1, CV_RGB(0, 0, 255), CV_FILLED, 8, 0);
+
+	sprintf(char_buff, "current avg loss = %2.4f", avg_loss);
+	pt1.x = img_size / 2, pt1.y = 30;
+	pt2.x = pt1.x + 250, pt2.y = pt1.y + 20;
+	cvRectangle(img, pt1, pt2, CV_RGB(255, 255, 255), CV_FILLED, 8, 0);
+	pt1.y += 15;
+	cvPutText(img, char_buff, pt1, &font, CV_RGB(0, 0, 0));
+	cvShowImage("average loss", img);
+	int k = cvWaitKey(20);
+	if (k == 's') cvSaveImage("chart.jpg", img, 0);
+}
+#endif	// OPENCV
 
 void transpose_image(image im)
 {
