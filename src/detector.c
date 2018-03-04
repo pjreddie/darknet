@@ -972,7 +972,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int final_width, int final
 	cvReleaseMat(&labels);
 }
 #else
-void calc_anchors(char *datacfg, int num_of_clusters, int final_width, int final_height) {
+void calc_anchors(char *datacfg, int num_of_clusters, int final_width, int final_height, int show) {
 	printf(" k-means++ can't be used without OpenCV, because there is used cvKMeans2 implementation \n");
 }
 #endif // OPENCV
