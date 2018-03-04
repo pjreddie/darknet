@@ -110,11 +110,9 @@ void backward_reorg_layer_gpu(layer l, network_state state)
 {
 	if (l.reverse) {
 		reorg_ongpu(l.delta_gpu, l.out_w, l.out_h, l.out_c, l.batch, l.stride, 0, state.delta);
-		//reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
 	}
 	else {
 		reorg_ongpu(l.delta_gpu, l.out_w, l.out_h, l.out_c, l.batch, l.stride, 1, state.delta);
-		//reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
 	}
 }
 #endif

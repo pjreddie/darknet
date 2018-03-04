@@ -10,7 +10,9 @@
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/core/core_c.h"
+//#include "opencv2/core/core.hpp"
 #include "opencv2/core/version.hpp"
+#include "opencv2/imgproc/imgproc_c.h"
 
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio_c.h"
@@ -804,6 +806,95 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 	fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
+#ifdef OPENCV
+void calc_anchors(char *datacfg, int num_of_clusters, int final_width, int final_height)
+{
+	printf("\n num_of_clusters = %d, final_width = %d, final_height = %d \n", num_of_clusters, final_width, final_height);
+
+	//float pointsdata[] = { 1,1, 2,2, 6,6, 5,5, 10,10 };
+	float *rel_width_height_array = calloc(1000, sizeof(float));
+
+	list *options = read_data_cfg(datacfg);
+	char *train_images = option_find_str(options, "train", "data/train.list");
+	list *plist = get_paths(train_images);
+	int number_of_images = plist->size;
+	char **paths = (char **)list_to_array(plist);
+
+	int number_of_boxes = 0;
+	printf(" read labels from %d images \n", number_of_images);
+
+	int i, j;
+	for (i = 0; i < number_of_images; ++i) {
+		char *path = paths[i];
+		char labelpath[4096];
+		find_replace(path, "images", "labels", labelpath);
+		find_replace(labelpath, "JPEGImages", "labels", labelpath);
+		find_replace(labelpath, ".jpg", ".txt", labelpath);
+		find_replace(labelpath, ".JPEG", ".txt", labelpath);
+		find_replace(labelpath, ".png", ".txt", labelpath);
+		int num_labels = 0;
+		box_label *truth = read_boxes(labelpath, &num_labels);
+		//printf(" new path: %s \n", labelpath);
+		for (j = 0; j < num_labels; ++j)
+		{
+			number_of_boxes++;
+			rel_width_height_array = realloc(rel_width_height_array, 2 * number_of_boxes * sizeof(float));
+			rel_width_height_array[number_of_boxes * 2 - 2] = truth[j].w * final_width;
+			rel_width_height_array[number_of_boxes * 2 - 1] = truth[j].h * final_height;
+			printf("\r loaded \t image: %d \t box: %d", i+1, number_of_boxes);
+		}
+	}
+	printf("\n all loaded. \n");
+
+	//int number_of_boxes = 10;
+	CvMat* points = cvCreateMat(number_of_boxes, 2, CV_32FC1);
+	CvMat* centers = cvCreateMat(num_of_clusters, 2, CV_32FC1);
+	CvMat* labels = cvCreateMat(number_of_boxes, 1, CV_32SC1);
+
+	for (i = 0; i < number_of_boxes; ++i) {
+		points->data.fl[i * 2] = rel_width_height_array[i * 2];
+		points->data.fl[i * 2 + 1] = rel_width_height_array[i * 2 + 1];
+		//cvSet1D(points, i * 2, cvScalar(rel_width_height_array[i * 2], 0, 0, 0));
+		//cvSet1D(points, i * 2 + 1, cvScalar(rel_width_height_array[i * 2 + 1], 0, 0, 0));
+	}
+
+
+	const int attemps = 1000;
+	double compactness;
+
+	enum {
+		KMEANS_RANDOM_CENTERS = 0,
+		KMEANS_USE_INITIAL_LABELS = 1,
+		KMEANS_PP_CENTERS = 2
+	};
+	
+	printf("\n calculating k-means++ ...");
+	// Should be used: distance(box, centroid) = 1 - IoU(box, centroid)
+	cvKMeans2(points, num_of_clusters, labels, 
+		cvTermCriteria(CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 1000, 0), attemps, 
+		0, KMEANS_RANDOM_CENTERS, 
+		centers, &compactness);
+
+	printf("\n");
+	printf("anchors = ");
+	for (i = 0; i < num_of_clusters; ++i) {
+		printf("%2.2f,%2.2f, ", centers->data.fl[i * 2], centers->data.fl[i * 2 + 1]);
+	}
+
+	//for (i = 0; i < number_of_boxes; ++i)
+	//	printf("%2.2f,%2.2f, ", points->data.fl[i * 2], points->data.fl[i * 2 + 1]);
+
+	free(rel_width_height_array);
+	cvReleaseMat(&points);
+	cvReleaseMat(&centers);
+	cvReleaseMat(&labels);
+}
+#else
+void calc_anchors(char *datacfg, int num_of_clusters, int final_width, int final_height) {
+	printf(" k-means++ can't be used without OpenCV, because there is used cvKMeans2 implementation \n");
+}
+#endif // OPENCV
+
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int dont_show)
 {
     list *options = read_data_cfg(datacfg);
@@ -876,6 +967,9 @@ void run_detector(int argc, char **argv)
     float thresh = find_float_arg(argc, argv, "-thresh", .24);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
+	int num_of_clusters = find_int_arg(argc, argv, "-num_of_clusters", 5);
+	int final_width = find_int_arg(argc, argv, "-final_width", 13);
+	int final_heigh = find_int_arg(argc, argv, "-final_heigh", 13);
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
@@ -916,6 +1010,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
 	else if(0==strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh);
+	else if(0==strcmp(argv[2], "calc_anchors"))  calc_anchors(datacfg, num_of_clusters, final_width, final_heigh);
     else if(0==strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
