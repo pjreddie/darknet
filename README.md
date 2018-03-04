@@ -196,7 +196,7 @@ Then add to your created project:
 
 6. Set `batch=64` and `subdivisions=8` in the file `yolo-voc.2.0.cfg`: [link](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.2.0.cfg#L2)
 
-7. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.2.0.cfg darknet19_448.conv.23` (**Note:** If you are using CPU, try `darknet_no_gpu.exe` instead of `darknet.exe`.)
+7. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.2.0.cfg darknet19_448.conv.23` (**Note:** To disable Loss-Window use flag `-dont_show`. If you are using CPU, try `darknet_no_gpu.exe` instead of `darknet.exe`.)
 
 If required change pathes in the file `build\darknet\x64\data\voc.data`
 
@@ -274,6 +274,7 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 8. Start training by using the command line: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet19_448.conv.23`
 
     (file `yolo-obj_xxx.weights` will be saved to the `build\darknet\x64\backup\` for each 100 iterations)
+    (To disable Loss-Window use `darknet.exe detector train data/obj.data yolo-obj.cfg darknet19_448.conv.23 -dont_show`, if you train on computer without monitor like a cloud Amazaon EC2)
 
 9. After training is complete - get result `yolo-obj_final.weights` from path `build\darknet\x64\backup\`
 
