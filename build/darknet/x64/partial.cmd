@@ -21,7 +21,7 @@ darknet.exe partial cfg/densenet201.cfg densenet201.weights densenet201.300 300
 darknet.exe partial cfg/resnet50.cfg resnet50.weights resnet50.65 65
 
 
-darknet.exe partial cfg/resnet152.cfg resnet152.weights resnet152.200 200
+darknet.exe partial cfg/resnet152.cfg resnet152.weights resnet152.201 201
 
 
 pause
