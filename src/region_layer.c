@@ -110,7 +110,7 @@ float delta_region_box(box truth, float *x, float *biases, int n, int index, int
     return iou;
 }
 
-void delta_region_class(float *output, float *delta, int index, int class_id, int classes, tree *hier, float scale, float *avg_cat)
+void delta_region_class(float *output, float *delta, int index, int class_id, int classes, tree *hier, float scale, float *avg_cat, int focal_loss)
 {
     int i, n;
     if(hier){
@@ -127,11 +127,31 @@ void delta_region_class(float *output, float *delta, int index, int class_id, in
             class_id = hier->parent[class_id];
         }
         *avg_cat += pred;
-    } else {
-        for(n = 0; n < classes; ++n){
-            delta[index + n] = scale * (((n == class_id)?1 : 0) - output[index + n]);
-            if(n == class_id) *avg_cat += output[index + n];
-        }
+    } else {		
+		// Focal loss
+		if (focal_loss) {
+			// Focal Loss for Dense Object Detection: http://blog.csdn.net/linmingan/article/details/77885832
+			//printf("Used Focal-loss \n");
+			float alpha = 0.5;	// 0.25
+			float gamma = 2.0;
+			int ti = index + class_id;
+			float grad = -gamma * (1 - output[ti])*logf(fmaxf(output[ti], 0.0000001))*output[ti] + (1 - output[ti])*(1 - output[ti]);
+
+			for (n = 0; n < classes; ++n) {
+				delta[index + n] = scale * (((n == class_id) ? 1 : 0) - output[index + n]);
+
+				delta[index + n] *= alpha*grad;
+
+				if (n == class_id) *avg_cat += output[index + n];
+			}
+		}
+		else {
+			// default
+			for (n = 0; n < classes; ++n) {
+				delta[index + n] = scale * (((n == class_id) ? 1 : 0) - output[index + n]);
+				if (n == class_id) *avg_cat += output[index + n];
+			}
+		}
     }
 }
 
@@ -209,7 +229,7 @@ void forward_region_layer(const region_layer l, network_state state)
                         }
                     }
                     int index = size*maxi + b*l.outputs + 5;
-                    delta_region_class(l.output, l.delta, index, class_id, l.classes, l.softmax_tree, l.class_scale, &avg_cat);
+                    delta_region_class(l.output, l.delta, index, class_id, l.classes, l.softmax_tree, l.class_scale, &avg_cat, l.focal_loss);
                     ++class_count;
                     onlyclass_id = 1;
                     break;
@@ -240,7 +260,7 @@ void forward_region_layer(const region_layer l, network_state state)
                         if (best_iou > l.thresh) {
                             l.delta[index + 4] = 0;
                             if(l.classfix > 0){
-                                delta_region_class(l.output, l.delta, index + 5, best_class_id, l.classes, l.softmax_tree, l.class_scale*(l.classfix == 2 ? l.output[index + 4] : 1), &avg_cat);
+                                delta_region_class(l.output, l.delta, index + 5, best_class_id, l.classes, l.softmax_tree, l.class_scale*(l.classfix == 2 ? l.output[index + 4] : 1), &avg_cat, l.focal_loss);
                                 ++class_count;
                             }
                         }
@@ -312,7 +332,7 @@ void forward_region_layer(const region_layer l, network_state state)
 
             int class_id = state.truth[t*5 + b*l.truths + 4];
             if (l.map) class_id = l.map[class_id];
-            delta_region_class(l.output, l.delta, best_index + 5, class_id, l.classes, l.softmax_tree, l.class_scale, &avg_cat);
+            delta_region_class(l.output, l.delta, best_index + 5, class_id, l.classes, l.softmax_tree, l.class_scale, &avg_cat, l.focal_loss);
             ++count;
             ++class_count;
         }

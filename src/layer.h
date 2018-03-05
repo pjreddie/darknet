@@ -85,6 +85,7 @@ struct layer{
     float exposure;
     float shift;
     float ratio;
+	int focal_loss;
     int softmax;
     int classes;
     int coords;
