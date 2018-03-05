@@ -318,11 +318,12 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
 	IplImage* img = cvCreateImage(cvSize(img_size, img_size), 8, 3);
 	cvSet(img, CV_RGB(255, 255, 255), 0);
 	CvPoint pt1, pt2, pt_text;
-	pt1.x = img_offset; pt2.x = img_size, pt_text.x = 10;
 	CvFont font;
 	cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 1, CV_AA);
 	char char_buff[100];
 	int i;
+	// vertical lines
+	pt1.x = img_offset; pt2.x = img_size, pt_text.x = 10;
 	for (i = 1; i <= number_of_lines; ++i) {
 		pt1.y = pt2.y = (float)i * draw_size / number_of_lines;
 		cvLine(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
@@ -333,6 +334,7 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
 			cvLine(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
 		}
 	}
+	// horizontal lines
 	pt1.y = draw_size; pt2.y = 0, pt_text.y = draw_size + 15;
 	for (i = 0; i <= number_of_lines; ++i) {
 		pt1.x = pt2.x = img_offset + (float)i * draw_size / number_of_lines;

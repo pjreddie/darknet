@@ -233,7 +233,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             }
 
 			// if you run it with param -http_port 8090  then open URL in your web-browser: http://localhost:8090
-			if (http_stream_port > 0) {
+			if (http_stream_port > 0 && show_img) {
 				//int port = 8090;
 				int port = http_stream_port;
 				int timeout = 200;
@@ -242,10 +242,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 			}
 
 			// save video file
-			if (output_video_writer) {
+			if (output_video_writer && show_img) {
 				cvWriteFrame(output_video_writer, show_img);
 				printf("\n cvWriteFrame \n");
 			}
+
 			cvReleaseImage(&show_img);
 
             pthread_join(fetch_thread, 0);
