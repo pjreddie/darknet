@@ -326,7 +326,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         id = boxes[i].id;
 
 		// not detect small objects
-		if ((w < 0.01 || h < 0.01)) continue;
+		if ((w < 0.001 || h < 0.001)) { printf("small w = %f, h = %f \n", w, h); continue; }
 
         truth[i*5+0] = x;
         truth[i*5+1] = y;

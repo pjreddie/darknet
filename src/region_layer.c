@@ -131,11 +131,11 @@ void delta_region_class(float *output, float *delta, int index, int class_id, in
 		// Focal loss
 		if (focal_loss) {
 			// Focal Loss for Dense Object Detection: http://blog.csdn.net/linmingan/article/details/77885832
-			//printf("Used Focal-loss \n");
-			float alpha = 0.5;	// 0.25
-			float gamma = 2.0;
+			float alpha = 0.5;	// 0.25 or 0.5
+			//float gamma = 2;	// hardcoded in many places of the grad-formula	
+
 			int ti = index + class_id;
-			float grad = -gamma * (1 - output[ti])*logf(fmaxf(output[ti], 0.0000001))*output[ti] + (1 - output[ti])*(1 - output[ti]);
+			float grad = -2 * (1 - output[ti])*logf(fmaxf(output[ti], 0.0000001))*output[ti] + (1 - output[ti])*(1 - output[ti]);
 
 			for (n = 0; n < classes; ++n) {
 				delta[index + n] = scale * (((n == class_id) ? 1 : 0) - output[index + n]);

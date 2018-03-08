@@ -918,7 +918,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int final_width, int final
 		float box_h = points->data.fl[i * 2 + 1];
 		//int cluster_idx = labels->data.i[i];		
 		int cluster_idx = 0;
-		float min_dist = 1000000;
+		float min_dist = FLT_MAX;
 		for (j = 0; j < num_of_clusters; ++j) {
 			float anchor_w = centers->data.fl[j * 2];
 			float anchor_h = centers->data.fl[j * 2 + 1];
