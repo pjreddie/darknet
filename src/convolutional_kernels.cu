@@ -135,26 +135,24 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 	// More: http://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#tensor_ops
 
 	const size_t input16_size = l.batch*l.c*l.w*l.h;
-	static size_t max_input16_size = input16_size;
-	static half* input16 = cuda_make_f16_from_f32_array(NULL, max_input16_size);
-
 	const size_t output16_size = l.batch*l.out_c*l.out_h*l.out_w;
-	static size_t max_output16_size = output16_size;
-	static half* output16 = cuda_make_f16_from_f32_array(NULL, max_output16_size);
 
-	if (max_input16_size < input16_size) {
-		max_input16_size = input16_size;
-		cuda_free((float *)input16);
-		input16 = cuda_make_f16_from_f32_array(state.input, max_input16_size);
+	if (*state.net.max_input16_size < input16_size) {
+		//printf("\n input16_size: cur = %zu \t max = %zu \n", input16_size, *state.net.max_input16_size);
+		*state.net.max_input16_size = input16_size;
+		if (*state.net.input16_gpu) cuda_free(*state.net.input16_gpu);
+		*state.net.input16_gpu = (float *)cuda_make_f16_from_f32_array(NULL, *state.net.max_input16_size);
 	}
+	float *input16 = *state.net.input16_gpu;
 
-	if (max_output16_size < output16_size) {
-		max_output16_size = output16_size;
-		cuda_free((float *)output16);
-		output16 = cuda_make_f16_from_f32_array(NULL, max_output16_size);
+	if (*state.net.max_output16_size < output16_size) {
+		*state.net.max_output16_size = output16_size;
+		if (*state.net.output16_gpu) cuda_free(*state.net.output16_gpu);
+		*state.net.output16_gpu = (float *)cuda_make_f16_from_f32_array(NULL, *state.net.max_output16_size);
 	}
+	float *output16 = *state.net.output16_gpu;
 
-	cuda_convert_f32_to_f16(state.input, input16_size, (float *)input16);
+	cuda_convert_f32_to_f16(state.input, input16_size, input16);
 
 	//fill_ongpu(output16_size / 2, 0, (float *)output16, 1);
 	cudnnConvolutionForward(cudnn_handle(),
@@ -171,7 +169,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 		l.dstTensorDesc,
 		output16);
 	
-	cuda_convert_f16_to_f32((float *)output16, output16_size, l.output_gpu);
+	cuda_convert_f16_to_f32(output16, output16_size, l.output_gpu);
 
 #else
 
@@ -238,27 +236,24 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 #ifdef CUDNN_HALF
 		
 	const size_t input16_size = l.batch*l.c*l.w*l.h;
-	static size_t max_input16_size = input16_size;
-	static half* input16 = cuda_make_f16_from_f32_array(NULL, max_input16_size);
-
 	const size_t delta16_size = l.batch*l.n*l.out_w*l.out_h;
-	static size_t max_delta16_size = delta16_size;
-	static half* delta16 = cuda_make_f16_from_f32_array(NULL, max_delta16_size);
-
-	if (max_input16_size < input16_size) {
-		max_input16_size = input16_size;
-		cuda_free((float *)input16);
-		input16 = cuda_make_f16_from_f32_array(state.input, max_input16_size);
+	
+	if (*state.net.max_input16_size < input16_size) {		
+		*state.net.max_input16_size = input16_size;
+		if(*state.net.input16_gpu) cuda_free(*state.net.input16_gpu);
+		*state.net.input16_gpu = (float *)cuda_make_f16_from_f32_array(NULL, *state.net.max_input16_size);
 	}
+	float *input16 = *state.net.input16_gpu;
 
-	if (max_delta16_size < delta16_size) {
-		max_delta16_size = delta16_size;
-		cuda_free((float *)delta16);
-		delta16 = cuda_make_f16_from_f32_array(NULL, max_delta16_size);
+	if (*state.net.max_output16_size < delta16_size) {
+		*state.net.max_output16_size = delta16_size;
+		if(*state.net.output16_gpu) cuda_free(*state.net.output16_gpu);
+		*state.net.output16_gpu = (float *)cuda_make_f16_from_f32_array(NULL, *state.net.max_output16_size);
 	}
+	float *delta16 = *state.net.output16_gpu;
 
-	cuda_convert_f32_to_f16(state.input, input16_size, (float *)input16);
-	cuda_convert_f32_to_f16(l.delta_gpu, delta16_size, (float *)delta16);
+	cuda_convert_f32_to_f16(state.input, input16_size, input16);
+	cuda_convert_f32_to_f16(l.delta_gpu, delta16_size, delta16);
 	
 	// convert input: state.input (x), l.delta_gpu (y) from fp32 to fp16
 	// get output: l.weight_updates_gpu (dw) and convert it to fp32 (ONLY if it is fp16)
@@ -305,7 +300,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 			l.dsrcTensorDesc,
 			input16);	// state.delta);
 
-		cuda_convert_f16_to_f32((float *)input16, input16_size, state.delta);		
+		cuda_convert_f16_to_f32(input16, input16_size, state.delta);
 
 		if (l.binary || l.xnor) swap_binary(&l);
 		if (l.xnor) gradient_array_ongpu(original_input, l.batch*l.c*l.h*l.w, HARDTAN, state.delta);
