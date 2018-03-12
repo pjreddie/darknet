@@ -37,6 +37,7 @@ struct _INIT_W32DATA
 #define SOCKET_ERROR   -1
 #endif /* _WIN32 */
 
+#include <cstdio>
 #include <vector>
 #include <iostream>
 using std::cerr;
