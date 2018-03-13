@@ -389,6 +389,7 @@ int resize_network(network *net, int w, int h)
             error("Cannot resize this type of layer");
         }
         if(l.workspace_size > workspace_size) workspace_size = l.workspace_size;
+        if(l.workspace_size > 2000000000) assert(0);
         inputs = l.outputs;
         net->layers[i] = l;
         w = l.out_w;

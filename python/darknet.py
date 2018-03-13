@@ -17,7 +17,6 @@ def c_array(ctype, values):
     arr[:] = values
     return arr
 
-
 class BOX(Structure):
     _fields_ = [("x", c_float),
                 ("y", c_float),
