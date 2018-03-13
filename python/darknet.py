@@ -13,7 +13,10 @@ def sample(probs):
     return len(probs)-1
 
 def c_array(ctype, values):
-    return (ctype * len(values))(*values)
+    arr = (ctype * len(values))()
+    arr[:] = values
+    return arr
+
 
 class BOX(Structure):
     _fields_ = [("x", c_float),
@@ -31,7 +34,7 @@ class METADATA(Structure):
     _fields_ = [("classes", c_int),
                 ("names", POINTER(c_char_p))]
 
-    
+
 
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
 lib = CDLL("libdarknet.so", RTLD_GLOBAL)
@@ -101,6 +104,18 @@ predict_image.restype = POINTER(c_float)
 network_detect = lib.network_detect
 network_detect.argtypes = [c_void_p, IMAGE, c_float, c_float, c_float, POINTER(BOX), POINTER(POINTER(c_float))]
 
+import numpy
+def array_to_image(arr):
+    arr = arr.copy()
+    arr = arr.transpose(2,0,1)
+    c = arr.shape[0]
+    h = arr.shape[1]
+    w = arr.shape[2]
+    arr = (arr.astype(numpy.float32)/255.0).flatten()
+    data = c_array(c_float, arr)
+    im = IMAGE(w,h,c,data)
+    return im
+
 def classify(net, meta, im):
     out = predict_image(net, im)
     res = []
@@ -110,7 +125,10 @@ def classify(net, meta, im):
     return res
 
 def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
-    im = load_image(image, 0, 0)
+    if type(image) == numpy.ndarray:
+        im = array_to_image(image)
+    else:
+        im = load_image(image, 0, 0)
     boxes = make_boxes(net)
     probs = make_probs(net)
     num =   num_boxes(net)
@@ -121,10 +139,12 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
             if probs[j][i] > 0:
                 res.append((meta.names[i], probs[j][i], (boxes[j].x, boxes[j].y, boxes[j].w, boxes[j].h)))
     res = sorted(res, key=lambda x: -x[1])
-    free_image(im)
+
+    if type(image) != numpy.ndarray:
+        free_image(im)
     free_ptrs(cast(probs, POINTER(c_void_p)), num)
     return res
-    
+
 if __name__ == "__main__":
     #net = load_net("cfg/densenet201.cfg", "/home/pjreddie/trained/densenet201.weights", 0)
     #im = load_image("data/wolf.jpg", 0, 0)
@@ -135,5 +155,5 @@ if __name__ == "__main__":
     meta = load_meta("cfg/coco.data")
     r = detect(net, meta, "data/dog.jpg")
     print(r)
-    
+
 
