@@ -47,6 +47,8 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     int tag = option_find_int_quiet(options, "tag", 0);
     char *label_list = option_find_str(options, "labels", "data/labels.list");
     char *train_list = option_find_str(options, "train", "data/train.list");
+    char *tree = option_find_str(options, "tree", 0);
+    if (tree) net->hierarchy = read_tree(tree);
     int classes = option_find_int(options, "classes", 2);
 
     char **labels;

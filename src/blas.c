@@ -65,7 +65,7 @@ void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, floa
     }
 }
 
-void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
+void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float s1, float s2, float *out)
 {
     int stride = w1/w2;
     int sample = w2/w1;
@@ -84,7 +84,7 @@ void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2,
                 for(i = 0; i < minw; ++i){
                     int out_index = i*sample + w2*(j*sample + h2*(k + c2*b));
                     int add_index = i*stride + w1*(j*stride + h1*(k + c1*b));
-                    out[out_index] += add[add_index];
+                    out[out_index] = s1*out[out_index] + s2*add[add_index];
                 }
             }
         }
@@ -331,7 +331,7 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
     }
 }
 
-void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float *out)
+void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
     int i, j, k, b;
     for(b = 0; b < batch; ++b){
@@ -340,8 +340,8 @@ void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int for
                 for(i = 0; i < w*stride; ++i){
                     int in_index = b*w*h*c + k*w*h + (j/stride)*w + i/stride;
                     int out_index = b*w*h*c + k*w*h + j*w + i;
-                    if(forward) out[out_index] = in[in_index];
-                    else in[in_index] += out[out_index];
+                    if(forward) out[out_index] = scale*in[in_index];
+                    else in[in_index] += scale*out[out_index];
                 }
             }
         }

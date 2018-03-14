@@ -313,7 +313,8 @@ layer parse_region(list *options, size_params params)
     l.jitter = option_find_float(options, "jitter", .2);
     l.rescore = option_find_int_quiet(options, "rescore",0);
 
-    l.thresh = option_find_float(options, "thresh", .5);
+    l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
+    l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.classfix = option_find_int_quiet(options, "classfix", 0);
     l.absolute = option_find_int_quiet(options, "absolute", 0);
     l.random = option_find_int_quiet(options, "random", 0);
@@ -324,6 +325,7 @@ layer parse_region(list *options, size_params params)
     l.mask_scale = option_find_float_quiet(options, "mask_scale", 1);
     l.class_scale = option_find_float(options, "class_scale", 1);
     l.bias_match = option_find_int_quiet(options, "bias_match",0);
+    l.focus = option_find_float_quiet(options, "focus", 0);
 
     char *tree_file = option_find_str(options, "tree", 0);
     if (tree_file) l.softmax_tree = read_tree(tree_file);
@@ -494,6 +496,8 @@ layer parse_shortcut(list *options, size_params params, network *net)
     char *activation_s = option_find_str(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
     s.activation = activation;
+    s.alpha = option_find_float_quiet(options, "alpha", 1);
+    s.beta = option_find_float_quiet(options, "beta", 1);
     return s;
 }
 
@@ -536,6 +540,7 @@ layer parse_upsample(list *options, size_params params, network *net)
 
     int stride = option_find_int(options, "stride",2);
     layer l = make_upsample_layer(params.batch, params.w, params.h, params.c, stride);
+    l.scale = option_find_float_quiet(options, "scale", 1);
     return l;
 }
 
@@ -778,6 +783,7 @@ network *parse_network_cfg(char *filename)
         l.truth = option_find_int_quiet(options, "truth", 0);
         l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
+        l.dontsave = option_find_int_quiet(options, "dontsave", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
@@ -961,6 +967,7 @@ void save_weights_upto(network *net, char *filename, int cutoff)
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){
         layer l = net->layers[i];
+        if (l.dontsave) continue;
         if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){
             save_convolutional_weights(l, fp);
         } if(l.type == CONNECTED){

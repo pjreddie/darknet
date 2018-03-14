@@ -40,7 +40,6 @@ float *parse_fields(char *line, int n);
 void translate_array(float *a, int n, float s);
 float constrain(float min, float max, float a);
 int constrain_int(int a, int min, int max);
-float rand_uniform(float min, float max);
 float rand_scale(float s);
 int rand_int(int min, int max);
 void mean_arrays(float **a, int n, int els, float *avg);

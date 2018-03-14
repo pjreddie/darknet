@@ -556,9 +556,18 @@ matrix load_regression_labels_paths(char **paths, int n, int k)
         char labelpath[4096];
         find_replace(paths[i], "images", "labels", labelpath);
         find_replace(labelpath, "JPEGImages", "labels", labelpath);
-        find_replace(labelpath, ".jpg", ".txt", labelpath);
+        find_replace(labelpath, ".BMP", ".txt", labelpath);
+        find_replace(labelpath, ".JPEG", ".txt", labelpath);
         find_replace(labelpath, ".JPG", ".txt", labelpath);
+        find_replace(labelpath, ".JPeG", ".txt", labelpath);
+        find_replace(labelpath, ".Jpeg", ".txt", labelpath);
+        find_replace(labelpath, ".PNG", ".txt", labelpath);
+        find_replace(labelpath, ".TIF", ".txt", labelpath);
+        find_replace(labelpath, ".bmp", ".txt", labelpath);
+        find_replace(labelpath, ".jpeg", ".txt", labelpath);
+        find_replace(labelpath, ".jpg", ".txt", labelpath);
         find_replace(labelpath, ".png", ".txt", labelpath);
+        find_replace(labelpath, ".tif", ".txt", labelpath);
 
         FILE *file = fopen(labelpath, "r");
         for(j = 0; j < k; ++j){

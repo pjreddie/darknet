@@ -51,6 +51,7 @@ typedef struct{
     int *group_size;
     int *group_offset;
 } tree;
+tree *read_tree(char *filename);
 
 typedef enum{
     LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN
@@ -189,13 +190,17 @@ struct layer{
     float class_scale;
     int bias_match;
     int random;
+    float ignore_thresh;
+    float truth_thresh;
     float thresh;
+    float focus;
     int classfix;
     int absolute;
 
     int onlyforward;
     int stopbackward;
     int dontload;
+    int dontsave;
     int dontloadscales;
 
     float temperature;
@@ -790,5 +795,6 @@ void normalize_array(float *a, int n);
 int *read_intlist(char *s, int *n, int d);
 size_t rand_size_t();
 float rand_normal();
+float rand_uniform(float min, float max);
 
 #endif
