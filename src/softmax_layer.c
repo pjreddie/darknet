@@ -81,7 +81,7 @@ void forward_softmax_layer_gpu(const softmax_layer l, network net)
 
 void backward_softmax_layer_gpu(const softmax_layer layer, network net)
 {
-    axpy_ongpu(layer.batch*layer.inputs, 1, layer.delta_gpu, 1, net.delta_gpu, 1);
+    axpy_gpu(layer.batch*layer.inputs, 1, layer.delta_gpu, 1, net.delta_gpu, 1);
 }
 
 #endif

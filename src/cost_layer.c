@@ -9,6 +9,7 @@
 
 COST_TYPE get_cost_type(char *s)
 {
+    if (strcmp(s, "seg")==0) return SEG;
     if (strcmp(s, "sse")==0) return SSE;
     if (strcmp(s, "masked")==0) return MASKED;
     if (strcmp(s, "smooth")==0) return SMOOTH;
@@ -20,6 +21,8 @@ COST_TYPE get_cost_type(char *s)
 char *get_cost_string(COST_TYPE a)
 {
     switch(a){
+        case SEG:
+            return "seg";
         case SSE:
             return "sse";
         case MASKED:
@@ -120,13 +123,13 @@ int float_abs_compare (const void * a, const void * b)
 
 void forward_cost_layer_gpu(cost_layer l, network net)
 {
-    if (!net.truth) return;
+    if (!net.truth_gpu) return;
     if(l.smooth){
-        scal_ongpu(l.batch*l.inputs, (1-l.smooth), net.truth_gpu, 1);
-        add_ongpu(l.batch*l.inputs, l.smooth * 1./l.inputs, net.truth_gpu, 1);
+        scal_gpu(l.batch*l.inputs, (1-l.smooth), net.truth_gpu, 1);
+        add_gpu(l.batch*l.inputs, l.smooth * 1./l.inputs, net.truth_gpu, 1);
     }
     if (l.cost_type == MASKED) {
-        mask_ongpu(l.batch*l.inputs, net.input_gpu, SECRET_NUM, net.truth_gpu);
+        mask_gpu(l.batch*l.inputs, net.input_gpu, SECRET_NUM, net.truth_gpu);
     }
 
     if(l.cost_type == SMOOTH){
@@ -137,6 +140,11 @@ void forward_cost_layer_gpu(cost_layer l, network net)
         l2_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
     }
 
+    if (l.cost_type == SEG && l.noobject_scale != 1) {
+        scale_mask_gpu(l.batch*l.inputs, l.delta_gpu, 0, net.truth_gpu, l.noobject_scale);
+        scale_mask_gpu(l.batch*l.inputs, l.output_gpu, 0, net.truth_gpu, l.noobject_scale);
+    }
+
     if(l.ratio){
         cuda_pull_array(l.delta_gpu, l.delta, l.batch*l.inputs);
         qsort(l.delta, l.batch*l.inputs, sizeof(float), float_abs_compare);
@@ -144,11 +152,11 @@ void forward_cost_layer_gpu(cost_layer l, network net)
         float thresh = l.delta[n];
         thresh = 0;
         printf("%f\n", thresh);
-        supp_ongpu(l.batch*l.inputs, thresh, l.delta_gpu, 1);
+        supp_gpu(l.batch*l.inputs, thresh, l.delta_gpu, 1);
     }
 
     if(l.thresh){
-        supp_ongpu(l.batch*l.inputs, l.thresh*1./l.inputs, l.delta_gpu, 1);
+        supp_gpu(l.batch*l.inputs, l.thresh*1./l.inputs, l.delta_gpu, 1);
     }
 
     cuda_pull_array(l.output_gpu, l.output, l.batch*l.inputs);
@@ -157,7 +165,7 @@ void forward_cost_layer_gpu(cost_layer l, network net)
 
 void backward_cost_layer_gpu(const cost_layer l, network net)
 {
-    axpy_ongpu(l.batch*l.inputs, l.scale, l.delta_gpu, 1, net.delta_gpu, 1);
+    axpy_gpu(l.batch*l.inputs, l.scale, l.delta_gpu, 1, net.delta_gpu, 1);
 }
 #endif
 

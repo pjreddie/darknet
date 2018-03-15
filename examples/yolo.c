@@ -10,17 +10,14 @@ void train_yolo(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = net.batch*net.subdivisions;
-    int i = *net.seen/imgs;
+    network *net = load_network(cfgfile, weightfile, 0);
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
+    int imgs = net->batch*net->subdivisions;
+    int i = *net->seen/imgs;
     data train, buffer;
 
 
-    layer l = net.layers[net.n - 1];
+    layer l = net->layers[net->n - 1];
 
     int side = l.side;
     int classes = l.classes;
@@ -31,8 +28,8 @@ void train_yolo(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
-    args.w = net.w;
-    args.h = net.h;
+    args.w = net->w;
+    args.h = net->h;
     args.paths = paths;
     args.n = imgs;
     args.m = plist->size;
@@ -42,15 +39,15 @@ void train_yolo(char *cfgfile, char *weightfile)
     args.d = &buffer;
     args.type = REGION_DATA;
 
-    args.angle = net.angle;
-    args.exposure = net.exposure;
-    args.saturation = net.saturation;
-    args.hue = net.hue;
+    args.angle = net->angle;
+    args.exposure = net->exposure;
+    args.saturation = net->saturation;
+    args.hue = net->hue;
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
     //while(i*imgs < N*120){
-    while(get_current_batch(net) < net.max_batches){
+    while(get_current_batch(net) < net->max_batches){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
@@ -98,14 +95,11 @@ void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int 
     }
 }
 
-void validate_yolo(char *cfgfile, char *weightfile)
+void validate_yolo(char *cfg, char *weights)
 {
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 1);
-    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network *net = load_network(cfg, weights, 0);
+    set_batch_network(net, 1);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
@@ -114,7 +108,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
     //list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net.layers[net.n-1];
+    layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     int j;
@@ -144,8 +138,8 @@ void validate_yolo(char *cfgfile, char *weightfile)
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
 
     load_args args = {0};
-    args.w = net.w;
-    args.h = net.h;
+    args.w = net->w;
+    args.h = net->h;
     args.type = IMAGE_DATA;
 
     for(t = 0; t < nthreads; ++t){
@@ -186,21 +180,18 @@ void validate_yolo(char *cfgfile, char *weightfile)
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
-void validate_yolo_recall(char *cfgfile, char *weightfile)
+void validate_yolo_recall(char *cfg, char *weights)
 {
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 1);
-    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network *net = load_network(cfg, weights, 0);
+    set_batch_network(net, 1);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
     list *plist = get_paths("data/voc.2007.test");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net.layers[net.n-1];
+    layer l = net->layers[net->n-1];
     int classes = l.classes;
     int side = l.side;
 
@@ -230,7 +221,7 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     for(i = 0; i < m; ++i){
         char *path = paths[i];
         image orig = load_image_color(path, 0, 0);
-        image sized = resize_image(orig, net.w, net.h);
+        image sized = resize_image(orig, net->w, net->h);
         char *id = basecfg(path);
         network_predict(net, sized.data);
         get_detection_boxes(l, orig.w, orig.h, thresh, probs, boxes, 1);
@@ -275,12 +266,9 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
 void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
 {
     image **alphabet = load_alphabet();
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    layer l = net.layers[net.n-1];
-    set_batch_network(&net, 1);
+    network *net = load_network(cfgfile, weightfile, 0);
+    layer l = net->layers[net->n-1];
+    set_batch_network(net, 1);
     srand(2222222);
     clock_t time;
     char buff[256];
@@ -301,15 +289,14 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
             strtok(input, "\n");
         }
         image im = load_image_color(input,0,0);
-        image sized = resize_image(im, net.w, net.h);
+        image sized = resize_image(im, net->w, net->h);
         float *X = sized.data;
         time=clock();
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
+        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, 0, voc_names, alphabet, 20);
         save_image(im, "predictions");
         show_image(im, "predictions");
 

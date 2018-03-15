@@ -55,6 +55,16 @@ void weighted_sum_cpu(float *a, float *b, float *s, int n, float *c)
     }
 }
 
+void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, float *ds, int n, float *dc)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        if(da) da[i] += dc[i] * s[i];
+        if(db) db[i] += dc[i] * (1-s[i]);
+        ds[i] += dc[i] * (a[i] - b[i]);
+    }
+}
+
 void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
 {
     int stride = w1/w2;
@@ -162,10 +172,46 @@ void fill_cpu(int N, float ALPHA, float *X, int INCX)
     for(i = 0; i < N; ++i) X[i*INCX] = ALPHA;
 }
 
+void deinter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
+{
+    int i, j;
+    int index = 0;
+    for(j = 0; j < B; ++j) {
+        for(i = 0; i < NX; ++i){
+            if(X) X[j*NX + i] += OUT[index];
+            ++index;
+        }
+        for(i = 0; i < NY; ++i){
+            if(Y) Y[j*NY + i] += OUT[index];
+            ++index;
+        }
+    }
+}
+
+void inter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
+{
+    int i, j;
+    int index = 0;
+    for(j = 0; j < B; ++j) {
+        for(i = 0; i < NX; ++i){
+            OUT[index++] = X[j*NX + i];
+        }
+        for(i = 0; i < NY; ++i){
+            OUT[index++] = Y[j*NY + i];
+        }
+    }
+}
+
 void copy_cpu(int N, float *X, int INCX, float *Y, int INCY)
 {
     int i;
     for(i = 0; i < N; ++i) Y[i*INCY] = X[i*INCX];
+}
+
+void mult_add_into_cpu(int N, float *X, float *Y, float *Z)
+{
+    int i;
+    for(i = 0; i < N; ++i) Z[i] += X[i]*Y[i];
 }
 
 void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error)

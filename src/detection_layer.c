@@ -256,7 +256,7 @@ void get_detection_boxes(layer l, int w, int h, float thresh, float **probs, box
 void forward_detection_layer_gpu(const detection_layer l, network net)
 {
     if(!net.train){
-        copy_ongpu(l.batch*l.inputs, net.input_gpu, 1, l.output_gpu, 1);
+        copy_gpu(l.batch*l.inputs, net.input_gpu, 1, l.output_gpu, 1);
         return;
     }
 
@@ -270,8 +270,8 @@ void forward_detection_layer_gpu(const detection_layer l, network net)
 
 void backward_detection_layer_gpu(detection_layer l, network net)
 {
-    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, net.delta_gpu, 1);
-    //copy_ongpu(l.batch*l.inputs, l.delta_gpu, 1, net.delta_gpu, 1);
+    axpy_gpu(l.batch*l.inputs, 1, l.delta_gpu, 1, net.delta_gpu, 1);
+    //copy_gpu(l.batch*l.inputs, l.delta_gpu, 1, net.delta_gpu, 1);
 }
 #endif
 

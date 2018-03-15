@@ -5,11 +5,8 @@
 void demo_art(char *cfgfile, char *weightfile, int cam_index)
 {
 #ifdef OPENCV
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 1);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
 
     srand(2222222);
     CvCapture * cap;
@@ -26,7 +23,7 @@ void demo_art(char *cfgfile, char *weightfile, int cam_index)
 
     while(1){
         image in = get_image_from_stream(cap);
-        image in_s = resize_image(in, net.w, net.h);
+        image in_s = resize_image(in, net->w, net->h);
         show_image(in, window);
 
         float *p = network_predict(net, in_s.data);

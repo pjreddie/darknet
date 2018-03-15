@@ -63,11 +63,11 @@ void train_writing(char *cfgfile, char *weightfile)
 
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         free_data(train);
         if(get_current_batch(net)%100 == 0){
             char buff[256];
-            sprintf(buff, "%s/%s_batch_%d.weights", backup_directory, base, get_current_batch(net));
+            sprintf(buff, "%s/%s_batch_%ld.weights", backup_directory, base, get_current_batch(net));
             save_weights(net, buff);
         }
         if(*net.seen/N > epoch){

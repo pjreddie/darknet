@@ -55,15 +55,15 @@ void backward_shortcut_layer(const layer l, network net)
 #ifdef GPU
 void forward_shortcut_layer_gpu(const layer l, network net)
 {
-    copy_ongpu(l.outputs*l.batch, net.input_gpu, 1, l.output_gpu, 1);
+    copy_gpu(l.outputs*l.batch, net.input_gpu, 1, l.output_gpu, 1);
     shortcut_gpu(l.batch, l.w, l.h, l.c, net.layers[l.index].output_gpu, l.out_w, l.out_h, l.out_c, l.output_gpu);
-    activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
+    activate_array_gpu(l.output_gpu, l.outputs*l.batch, l.activation);
 }
 
 void backward_shortcut_layer_gpu(const layer l, network net)
 {
-    gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
-    axpy_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1, net.delta_gpu, 1);
+    gradient_array_gpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
+    axpy_gpu(l.outputs*l.batch, 1, l.delta_gpu, 1, net.delta_gpu, 1);
     shortcut_gpu(l.batch, l.out_w, l.out_h, l.out_c, l.delta_gpu, l.w, l.h, l.c, net.layers[l.index].delta_gpu);
 }
 #endif
