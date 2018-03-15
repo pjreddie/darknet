@@ -146,7 +146,7 @@ void validate_coco(char *cfg, char *weights)
     FILE *fp = fopen(buff, "w");
     fprintf(fp, "[\n");
 
-    detection *dets = make_network_boxes(net);
+    detection *dets = make_network_boxes(net, 0);
 
     int m = plist->size;
     int i=0;
@@ -231,7 +231,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
         snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
         fps[j] = fopen(buff, "w");
     }
-    detection *dets = make_network_boxes(net);
+    detection *dets = make_network_boxes(net, 0);
 
     int m = plist->size;
     int i=0;
@@ -302,7 +302,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     clock_t time;
     char buff[256];
     char *input = buff;
-    detection *dets = make_network_boxes(net);
+    detection *dets = make_network_boxes(net, 0);
     while(1){
         if(filename){
             strncpy(input, filename, 256);

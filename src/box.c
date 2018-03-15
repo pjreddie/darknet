@@ -21,6 +21,17 @@ int nms_comparator(const void *pa, const void *pb)
 void do_nms_obj(detection *dets, int total, int classes, float thresh)
 {
     int i, j, k;
+    k = total-1;
+    for(i = 0; i <= k; ++i){
+        if(dets[i].objectness == 0){
+            detection swap = dets[i];
+            dets[i] = dets[k];
+            dets[k] = swap;
+            --k;
+            --i;
+        }
+    }
+    total = k+1;
 
     for(i = 0; i < total; ++i){
         dets[i].sort_class = -1;

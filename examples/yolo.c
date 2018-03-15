@@ -133,7 +133,7 @@ void validate_yolo(char *cfg, char *weights)
     image *buf = calloc(nthreads, sizeof(image));
     image *buf_resized = calloc(nthreads, sizeof(image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
-    detection *dets = make_network_boxes(net);
+    detection *dets = make_network_boxes(net, 0);
 
     load_args args = {0};
     args.w = net->w;
@@ -200,7 +200,7 @@ void validate_yolo_recall(char *cfg, char *weights)
         snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
-    detection *dets = make_network_boxes(net);
+    detection *dets = make_network_boxes(net, 0);
 
     int m = plist->size;
     int i=0;
@@ -271,7 +271,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     char buff[256];
     char *input = buff;
     float nms=.4;
-    detection *dets = make_network_boxes(net);
+    detection *dets = make_network_boxes(net, 0);
     while(1){
         if(filename){
             strncpy(input, filename, 256);

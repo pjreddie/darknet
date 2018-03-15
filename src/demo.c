@@ -30,17 +30,12 @@ static int running = 0;
 
 static int demo_frame = 3;
 static int demo_index = 0;
-static int demo_detections = 0;
 //static float **predictions;
-static detection **dets;
-static detection *avg;
 //static float *avg;
 static int demo_done = 0;
 double demo_time;
 
-detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative);
-detection *make_network_boxes(network *net);
-void fill_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets);
+detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num);
 
 void *detect_in_thread(void *ptr)
 {
@@ -55,12 +50,15 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else */
+    detection *dets;
+    int nboxes = 0;
     if (l.type == REGION){
-        fill_network_boxes(net, buff[0].w, buff[0].h, demo_thresh, demo_hier, 0, 1, dets[demo_index]);
+        dets = get_network_boxes(net, buff[0].w, buff[0].h, demo_thresh, demo_hier, 0, 1, &nboxes);
     } else {
         error("Last layer must produce detections\n");
     }
 
+/*
     int i,j;
     box zero = {0};
     int classes = l.classes;
@@ -79,15 +77,17 @@ void *detect_in_thread(void *ptr)
         //copy_cpu(classes, dets[0][i].prob, 1, avg[i].prob, 1);
         //avg[i].objectness = dets[0][i].objectness;
     }
+    */
 
-    if (nms > 0) do_nms_obj(avg, demo_detections, l.classes, nms);
+    if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
 
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
-    draw_detections(display, avg, demo_detections, demo_thresh, demo_names, demo_alphabet, demo_classes);
+    draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
+    free_detections(dets, nboxes);
 
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
@@ -174,11 +174,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     if(!cap) error("Couldn't connect to webcam.\n");
 
-    demo_detections = num_boxes(net);
-    avg = make_network_boxes(net);
-    dets = calloc(demo_frame, sizeof(detection*));
     int i;
-    for(i = 0; i < demo_frame; ++i) dets[i] = make_network_boxes(net);
 
     buff[0] = get_image_from_stream(cap);
     buff[1] = copy_image(buff[0]);
