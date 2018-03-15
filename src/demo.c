@@ -17,8 +17,6 @@ static char **demo_names;
 static image **demo_alphabet;
 static int demo_classes;
 
-static float **probs;
-static box *boxes;
 static network *net;
 static image buff [3];
 static image buff_letter[3];
@@ -31,12 +29,18 @@ static float demo_hier = .5;
 static int running = 0;
 
 static int demo_frame = 3;
-static int demo_detections = 0;
-static float **predictions;
 static int demo_index = 0;
+static int demo_detections = 0;
+//static float **predictions;
+static detection **dets;
+static detection *avg;
+//static float *avg;
 static int demo_done = 0;
-static float *avg;
 double demo_time;
+
+detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative);
+detection *make_network_boxes(network *net);
+void fill_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets);
 
 void *detect_in_thread(void *ptr)
 {
@@ -45,26 +49,45 @@ void *detect_in_thread(void *ptr)
 
     layer l = net->layers[net->n-1];
     float *X = buff_letter[(buff_index+2)%3].data;
-    float *prediction = network_predict(net, X);
+    network_predict(net, X);
 
-    memcpy(predictions[demo_index], prediction, l.outputs*sizeof(float));
-    mean_arrays(predictions, demo_frame, l.outputs, avg);
-    l.output = avg;
+    /*
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
-    } else if (l.type == REGION){
-        get_region_boxes(l, buff[0].w, buff[0].h, net->w, net->h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
+    } else */
+    if (l.type == REGION){
+        fill_network_boxes(net, buff[0].w, buff[0].h, demo_thresh, demo_hier, 0, 1, dets[demo_index]);
     } else {
         error("Last layer must produce detections\n");
     }
-    if (nms > 0) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+
+    int i,j;
+    box zero = {0};
+    int classes = l.classes;
+    for(i = 0; i < demo_detections; ++i){
+        avg[i].objectness = 0;
+        avg[i].bbox = zero;
+        memset(avg[i].prob, 0, classes*sizeof(float));
+        for(j = 0; j < demo_frame; ++j){
+            axpy_cpu(classes, 1./demo_frame, dets[j][i].prob, 1, avg[i].prob, 1);
+            avg[i].objectness += dets[j][i].objectness * 1./demo_frame;
+            avg[i].bbox.x += dets[j][i].bbox.x * 1./demo_frame;
+            avg[i].bbox.y += dets[j][i].bbox.y * 1./demo_frame;
+            avg[i].bbox.w += dets[j][i].bbox.w * 1./demo_frame;
+            avg[i].bbox.h += dets[j][i].bbox.h * 1./demo_frame;
+        }
+        //copy_cpu(classes, dets[0][i].prob, 1, avg[i].prob, 1);
+        //avg[i].objectness = dets[0][i].objectness;
+    }
+
+    if (nms > 0) do_nms_obj(avg, demo_detections, l.classes, nms);
 
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
-    draw_detections(display, demo_detections, demo_thresh, boxes, probs, 0, demo_names, demo_alphabet, demo_classes);
+    draw_detections(display, avg, demo_detections, demo_thresh, demo_names, demo_alphabet, demo_classes);
 
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
@@ -117,8 +140,7 @@ void *detect_loop(void *ptr)
 
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
-    demo_frame = avg_frames;
-    predictions = calloc(demo_frame, sizeof(float*));
+    //demo_frame = avg_frames;
     image **alphabet = load_alphabet();
     demo_names = names;
     demo_alphabet = alphabet;
@@ -152,16 +174,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     if(!cap) error("Couldn't connect to webcam.\n");
 
-    layer l = net->layers[net->n-1];
-    demo_detections = l.n*l.w*l.h;
-    int j;
-
-    avg = (float *) calloc(l.outputs, sizeof(float));
-    for(j = 0; j < demo_frame; ++j) predictions[j] = (float *) calloc(l.outputs, sizeof(float));
-
-    boxes = (box *)calloc(l.w*l.h*l.n, sizeof(box));
-    probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes+1, sizeof(float));
+    demo_detections = num_boxes(net);
+    avg = make_network_boxes(net);
+    dets = calloc(demo_frame, sizeof(detection*));
+    int i;
+    for(i = 0; i < demo_frame; ++i) dets[i] = make_network_boxes(net);
 
     buff[0] = get_image_from_stream(cap);
     buff[1] = copy_image(buff[0]);
@@ -203,6 +220,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 }
 
+/*
 void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
     demo_frame = avg_frames;
@@ -290,6 +308,7 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
         ++count;
     }
 }
+*/
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg, float hier, int w, int h, int frames, int fullscreen)
 {
