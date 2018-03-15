@@ -412,44 +412,69 @@ void correct_region_boxes(detection *dets, int n, int w, int h, int netw, int ne
     }
 }
 
-void get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets)
+int region_num_detections(layer l, float thresh)
 {
-    int i,j,n,z;
-    float *predictions = l.output;
-    if (l.batch == 2) {
-        float *flip = l.output + l.outputs;
-        for (j = 0; j < l.h; ++j) {
-            for (i = 0; i < l.w/2; ++i) {
-                for (n = 0; n < l.n; ++n) {
-                    for(z = 0; z < l.classes + l.coords + 1; ++z){
-                        int i1 = z*l.w*l.h*l.n + n*l.w*l.h + j*l.w + i;
-                        int i2 = z*l.w*l.h*l.n + n*l.w*l.h + j*l.w + (l.w - i - 1);
-                        float swap = flip[i1];
-                        flip[i1] = flip[i2];
-                        flip[i2] = swap;
-                        if(z == 0){
-                            flip[i1] = -flip[i1];
-                            flip[i2] = -flip[i2];
-                        }
-                    }
-                }
-            }
-        }
-        for(i = 0; i < l.outputs; ++i){
-            l.output[i] = (l.output[i] + flip[i])/2.;
-        }
-    }
+    int i, n;
+    int count = 0;
     for (i = 0; i < l.w*l.h; ++i){
         int row = i / l.w;
         int col = i % l.w;
         for(n = 0; n < l.n; ++n){
             int index = n*l.w*l.h + i;
+            int obj_index  = entry_index(l, 0, n*l.w*l.h + i, l.coords);
+            if(l.output[obj_index] > thresh){
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+void avg_flipped_region(layer l)
+{
+    int i,j,n,z;
+    float *flip = l.output + l.outputs;
+    for (j = 0; j < l.h; ++j) {
+        for (i = 0; i < l.w/2; ++i) {
+            for (n = 0; n < l.n; ++n) {
+                for(z = 0; z < l.classes + l.coords + 1; ++z){
+                    int i1 = z*l.w*l.h*l.n + n*l.w*l.h + j*l.w + i;
+                    int i2 = z*l.w*l.h*l.n + n*l.w*l.h + j*l.w + (l.w - i - 1);
+                    float swap = flip[i1];
+                    flip[i1] = flip[i2];
+                    flip[i2] = swap;
+                    if(z == 0){
+                        flip[i1] = -flip[i1];
+                        flip[i2] = -flip[i2];
+                    }
+                }
+            }
+        }
+    }
+    for(i = 0; i < l.outputs; ++i){
+        l.output[i] = (l.output[i] + flip[i])/2.;
+    }
+}
+
+int get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets)
+{
+    int i,j,n,z;
+    float *predictions = l.output;
+    if (l.batch == 2) avg_flipped_region(l);
+    int count = 0;
+    for (i = 0; i < l.w*l.h; ++i){
+        int row = i / l.w;
+        int col = i % l.w;
+        for(n = 0; n < l.n; ++n){
+            int obj_index  = entry_index(l, 0, n*l.w*l.h + i, l.coords);
+            if(predictions[obj_index] <= thresh) continue;
+            int index = count;
+            ++count;
+            int box_index  = entry_index(l, 0, n*l.w*l.h + i, 0);
+            int mask_index = entry_index(l, 0, n*l.w*l.h + i, 4);
             for (j = 0; j < l.classes; ++j) {
                 dets[index].prob[j] = 0;
             }
-            int obj_index  = entry_index(l, 0, n*l.w*l.h + i, l.coords);
-            int box_index  = entry_index(l, 0, n*l.w*l.h + i, 0);
-            int mask_index = entry_index(l, 0, n*l.w*l.h + i, 4);
             float scale = l.background ? 1 : predictions[obj_index];
             dets[index].bbox = get_region_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
             dets[index].objectness = scale > thresh ? scale : 0;
@@ -485,7 +510,8 @@ void get_region_detections(layer l, int w, int h, int netw, int neth, float thre
             }
         }
     }
-    correct_region_boxes(dets, l.w*l.h*l.n, w, h, netw, neth, relative);
+    correct_region_boxes(dets, count, w, h, netw, neth, relative);
+    return count;
 }
 
 #ifdef GPU

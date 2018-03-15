@@ -9,6 +9,7 @@ layer make_region_layer(int batch, int h, int w, int n, int total, int *mask, in
 void forward_region_layer(const layer l, network net);
 void backward_region_layer(const layer l, network net);
 void resize_region_layer(layer *l, int w, int h);
+int region_num_detections(layer l, float thresh);
 
 #ifdef GPU
 void forward_region_layer_gpu(const layer l, network net);

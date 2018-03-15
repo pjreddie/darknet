@@ -502,24 +502,28 @@ float *network_predict(network *net, float *input)
     return out;
 }
 
-int num_boxes(network *net)
+int num_detections(network *net, float thresh)
 {
     int i;
     int s = 0;
     for(i = 0; i < net->n; ++i){
         layer l = net->layers[i];
-        if(l.type == REGION || l.type == DETECTION){
+        if(l.type == REGION){
+            s += region_num_detections(l, thresh);
+        }
+        if(l.type == DETECTION){
             s += l.w*l.h*l.n;
         }
     }
     return s;
 }
 
-detection *make_network_boxes(network *net)
+detection *make_network_boxes(network *net, float thresh, int *num)
 {
     layer l = net->layers[net->n - 1];
     int i;
-    int nboxes = num_boxes(net);
+    int nboxes = num_detections(net, thresh);
+    if(num) *num = nboxes;
     detection *dets = calloc(nboxes, sizeof(detection));
     for(i = 0; i < nboxes; ++i){
         dets[i].prob = calloc(l.classes, sizeof(float));
@@ -529,14 +533,15 @@ detection *make_network_boxes(network *net)
     }
     return dets;
 }
+
 void fill_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets)
 {
     int j;
     for(j = 0; j < net->n; ++j){
         layer l = net->layers[j];
         if(l.type == REGION){
-            get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets);
-            dets += l.w*l.h*l.n;
+            int count = get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets);
+            dets += count;
         }
         if(l.type == DETECTION){
             get_detection_detections(l, w, h, thresh, dets);
@@ -545,9 +550,9 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
     }
 }
 
-detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative)
+detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num)
 {
-    detection *dets = make_network_boxes(net);
+    detection *dets = make_network_boxes(net, thresh, num);
     fill_network_boxes(net, w, h, thresh, hier, map, relative, dets);
     return dets;
 }
