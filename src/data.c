@@ -269,7 +269,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         h =  boxes[i].h;
         id = boxes[i].id;
 
-        if (w < .01 || h < .01) continue;
+        if (w < .001 || h < .001) continue;
 
         int col = (int)(x*num_boxes);
         int row = (int)(y*num_boxes);
@@ -326,7 +326,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         id = boxes[i].id;
 
 		// not detect small objects
-		if ((w < 0.001 || h < 0.001)) { printf("small w = %f, h = %f \n", w, h); continue; }
+		if ((w < 0.001 || h < 0.001)) continue;
 
         truth[i*5+0] = x;
         truth[i*5+1] = y;

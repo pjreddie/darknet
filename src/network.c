@@ -375,6 +375,8 @@ int resize_network(network *net, int w, int h)
             resize_region_layer(&l, w, h);
         }else if(l.type == ROUTE){
             resize_route_layer(&l, net);
+		}else if (l.type == SHORTCUT) {
+			resize_shortcut_layer(&l, w, h);
         }else if(l.type == REORG){
             resize_reorg_layer(&l, w, h);
         }else if(l.type == AVGPOOL){
