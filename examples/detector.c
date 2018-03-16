@@ -624,6 +624,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
 void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
 {
+#ifdef OPENCV
     image **alphabet = load_alphabet();
     char *base = basecfg(cfgfile);
     network *net = load_network(cfgfile, weightfile, 0);
@@ -702,10 +703,12 @@ void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
             free_image(in);
         }
     }
+    #endif
 }
 
 void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
 {
+#ifdef OPENCV
     image **alphabet = load_alphabet();
     char *base = basecfg(cfgfile);
     network *net = load_network(cfgfile, weightfile, 0);
@@ -790,6 +793,7 @@ void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_in
             free_image(in);
         }
     }
+    #endif
 }
 
 /*
