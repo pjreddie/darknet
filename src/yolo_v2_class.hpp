@@ -1,15 +1,4 @@
 #pragma once
-#include <memory>
-#include <vector>
-#include <deque>
-#include <algorithm>
-
-#ifdef OPENCV
-#include <opencv2/opencv.hpp>			// C++
-#include "opencv2/highgui/highgui_c.h"	// C
-#include "opencv2/imgproc/imgproc_c.h"	// C
-#endif	// OPENCV
-
 #ifdef YOLODLL_EXPORTS
 #if defined(_MSC_VER)
 #define YOLODLL_API __declspec(dllexport) 
@@ -39,6 +28,17 @@ struct image_t {
 	float *data;				// pointer to the image data
 };
 
+#ifdef __cplusplus
+#include <memory>
+#include <vector>
+#include <deque>
+#include <algorithm>
+
+#ifdef OPENCV
+#include <opencv2/opencv.hpp>			// C++
+#include "opencv2/highgui/highgui_c.h"	// C
+#include "opencv2/imgproc/imgproc_c.h"	// C
+#endif	// OPENCV
 
 class Detector {
 	std::shared_ptr<void> detector_gpu_ptr;
@@ -61,23 +61,23 @@ public:
 	YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true, 
 												int const frames_story = 10, int const max_dist = 150);
 
+	std::vector<bbox_t> detect_resized(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false)
+	{
+		if (img.data == NULL)
+			throw std::runtime_error("Image is empty");
+		auto detection_boxes = detect(img, thresh, use_mean);
+		float wk = (float)init_w / img.w, hk = (float)init_h / img.h;
+		for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
+		return detection_boxes;
+	}
+
 #ifdef OPENCV
 	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false)
 	{
 		if(mat.data == NULL)
 			throw std::runtime_error("Image is empty");
 		auto image_ptr = mat_to_image_resize(mat);
-		return detect_resized(*image_ptr, mat.size(), thresh, use_mean);
-	}
-
-	std::vector<bbox_t> detect_resized(image_t img, cv::Size init_size, float thresh = 0.2, bool use_mean = false)
-	{
-		if (img.data == NULL)
-			throw std::runtime_error("Image is empty");
-		auto detection_boxes = detect(img, thresh, use_mean);
-		float wk = (float)init_size.width / img.w, hk = (float)init_size.height / img.h;
-		for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
-		return detection_boxes;
+		return detect_resized(*image_ptr, mat.cols, mat.rows, thresh, use_mean);
 	}
 
 	std::shared_ptr<image_t> mat_to_image_resize(cv::Mat mat) const
@@ -588,3 +588,54 @@ public:
 	}
 };
 #endif	// OPENCV
+
+//extern "C" {
+#endif	// __cplusplus
+
+/*
+	// C - wrappers
+	YOLODLL_API void create_detector(char const* cfg_filename, char const* weight_filename, int gpu_id);
+	YOLODLL_API void delete_detector();
+	YOLODLL_API bbox_t* detect_custom(image_t img, float thresh, bool use_mean, int *result_size);
+	YOLODLL_API bbox_t* detect_resized(image_t img, int init_w, int init_h, float thresh, bool use_mean, int *result_size);
+	YOLODLL_API bbox_t* detect(image_t img, int *result_size);
+	YOLODLL_API image_t load_img(char *image_filename);
+	YOLODLL_API void free_img(image_t m);
+
+#ifdef __cplusplus
+}	// extern "C"
+
+static std::shared_ptr<void> c_detector_ptr;
+static std::vector<bbox_t> c_result_vec;
+
+void create_detector(char const* cfg_filename, char const* weight_filename, int gpu_id) {
+	c_detector_ptr = std::make_shared<YOLODLL_API Detector>(cfg_filename, weight_filename, gpu_id);
+}
+
+void delete_detector() { c_detector_ptr.reset(); }
+
+bbox_t* detect_custom(image_t img, float thresh, bool use_mean, int *result_size) {
+	c_result_vec = static_cast<Detector*>(c_detector_ptr.get())->detect(img, thresh, use_mean);
+	*result_size = c_result_vec.size();
+	return c_result_vec.data();
+}
+
+bbox_t* detect_resized(image_t img, int init_w, int init_h, float thresh, bool use_mean, int *result_size) {
+	c_result_vec = static_cast<Detector*>(c_detector_ptr.get())->detect_resized(img, init_w, init_h, thresh, use_mean);
+	*result_size = c_result_vec.size();
+	return c_result_vec.data();
+}
+
+bbox_t* detect(image_t img, int *result_size) {
+	return detect_custom(img, 0.24, true, result_size);
+}
+
+image_t load_img(char *image_filename) {
+	return static_cast<Detector*>(c_detector_ptr.get())->load_image(image_filename);
+}
+void free_img(image_t m) {
+	static_cast<Detector*>(c_detector_ptr.get())->free_image(m);
+}
+
+#endif	// __cplusplus
+*/

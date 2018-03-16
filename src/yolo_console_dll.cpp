@@ -361,7 +361,8 @@ int main(int argc, char *argv[])
 							auto current_image = det_image;
 							consumed = true;
 							while (current_image.use_count() > 0) {
-								auto result = detector.detect_resized(*current_image, frame_size, thresh, false);	// true
+								auto result = detector.detect_resized(*current_image, frame_size.width, frame_size.height, 
+									thresh, false);	// true
 								++fps_det_counter;
 								std::unique_lock<std::mutex> lock(mtx);
 								thread_result_vec = result;
