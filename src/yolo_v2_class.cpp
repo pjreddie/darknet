@@ -22,12 +22,14 @@ extern "C" {
 
 #define FRAMES 3
 
+#ifdef GPU
 void check_cuda(cudaError_t status) {
 	if (status != cudaSuccess) {
 		const char *s = cudaGetErrorString(status);
 		printf("CUDA Error Prev: %s\n", s);
 	}
 }
+#endif
 
 struct detector_gpu_t {
 	float **probs;
