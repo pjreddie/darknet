@@ -38,23 +38,18 @@ import darknet as dn
 # Darknet
 net = dn.load_net("cfg/tiny-yolo.cfg", "tiny-yolo.weights", 0)
 meta = dn.load_meta("cfg/coco.data")
-import time
-tStart = time.time()
-for i in range(10):
-    r = dn.detect(net, meta, "data/dog.jpg")
-print(time.time() - tStart)
+r = dn.detect(net, meta, "data/dog.jpg")
+print(r)
 
 # scipy
 arr= imread('data/dog.jpg')
-tStart = time.time()
-for i in range(10):
-    r = dn.detect(net, meta, arr)
-print(time.time() - tStart)
+im = array_to_image(arr)
+r = detect2(net, meta, im)
+print(r)
 
 # OpenCV
 arr = cv2.imread('data/dog.jpg')
 im = array_to_image(arr)
 dn.rgbgr_image(im)
 r = detect2(net, meta, im)
-print r
-
+print(r)

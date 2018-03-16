@@ -13,15 +13,14 @@ dn.set_gpu(0)
 net = dn.load_net("cfg/yolo-thor.cfg", "/home/pjreddie/backup/yolo-thor_final.weights", 0)
 meta = dn.load_meta("cfg/thor.data")
 r = dn.detect(net, meta, "data/bedroom.jpg")
-print r
+print(r)
 
 # And then down here you could detect a lot more images like:
-rr = dn.detect(net, meta, "data/eagle.jpg")
-print rr
-rr = dn.detect(net, meta, "data/giraffe.jpg")
-print rr
-rr = dn.detect(net, meta, "data/horses.jpg")
-print rr
-rr = dn.detect(net, meta, "data/person.jpg")
-print rr
-
+r = dn.detect(net, meta, "data/eagle.jpg")
+print(r)
+r = dn.detect(net, meta, "data/giraffe.jpg")
+print(r)
+r = dn.detect(net, meta, "data/horses.jpg")
+print(r)
+r = dn.detect(net, meta, "data/person.jpg")
+print(r)
