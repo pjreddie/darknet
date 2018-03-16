@@ -43,9 +43,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     float avg_loss = -1;
     network *nets = calloc(ngpus, sizeof(network));
 
-	int iter_save;
-	iter_save = 100;
-
     srand(time(0));
     int seed = rand();
     int i;
@@ -79,6 +76,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
 	int init_w = net.w;
 	int init_h = net.h;
+	int iter_save;
+	iter_save = get_current_batch(net);
 
     load_args args = {0};
     args.w = net.w;
@@ -180,8 +179,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
 		//if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
 		//if (i % 100 == 0) {
-		if(i >= iter_save) {
-			iter_save += 100;
+		if(i >= (iter_save + 100)) {
+			iter_save = i;
 #ifdef GPU
 			if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
