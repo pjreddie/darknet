@@ -37,7 +37,7 @@ __global__ void binarize_input_kernel(float *input, int n, int size, float *bina
     int i = 0;
     float mean = 0;
     for(i = 0; i < n; ++i){
-        mean += abs(input[i*size + s]);
+        mean += fabs(input[i*size + s]);
     }
     mean = mean / n;
     for(i = 0; i < n; ++i){
@@ -59,7 +59,7 @@ __global__ void binarize_weights_kernel(float *weights, int n, int size, float *
     int i = 0;
     float mean = 0;
     for(i = 0; i < size; ++i){
-        mean += abs(weights[f*size + i]);
+        mean += fabs(weights[f*size + i]);
     }
     mean = mean / size;
     for(i = 0; i < size; ++i){
@@ -205,8 +205,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
     if (l.batch_normalize) {
         forward_batchnorm_layer_gpu(l, state);
-    }
-    add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
+	}
+	else {
+		add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
+	}
 
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
     //if(l.dot > 0) dot_error_gpu(l);

@@ -352,6 +352,7 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
 	}
 	cvPutText(img, "Iteration number", cvPoint(draw_size / 2, img_size - 10), &font, CV_RGB(0, 0, 0));
 	cvPutText(img, "Press 's' to save: chart.jpg", cvPoint(5, img_size - 10), &font, CV_RGB(0, 0, 0));
+	printf(" If error occurs - run training with flag: -dont_show \n");
 	cvNamedWindow("average loss", CV_WINDOW_NORMAL);
 	cvMoveWindow("average loss", 0, 0);
 	cvResizeWindow("average loss", img_size, img_size);

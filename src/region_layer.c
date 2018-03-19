@@ -434,7 +434,7 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
-	cudaStreamSynchronize(get_cuda_stream());
+	//cudaStreamSynchronize(get_cuda_stream());
     network_state cpu_state = state;
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
@@ -444,7 +444,7 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
     free(cpu_state.input);
     if(!state.train) return;
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
-	cudaStreamSynchronize(get_cuda_stream());
+	//cudaStreamSynchronize(get_cuda_stream());
     if(cpu_state.truth) free(cpu_state.truth);
 }
 

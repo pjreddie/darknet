@@ -97,6 +97,12 @@ connected_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVAT
 
         l.x_gpu = cuda_make_array(l.output, l.batch*outputs);
         l.x_norm_gpu = cuda_make_array(l.output, l.batch*outputs);
+#ifdef CUDNN
+		cudnnCreateTensorDescriptor(&l.normTensorDesc);
+		cudnnCreateTensorDescriptor(&l.dstTensorDesc);
+		cudnnSetTensor4dDescriptor(l.dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l.batch, l.out_c, l.out_h, l.out_w);
+		cudnnSetTensor4dDescriptor(l.normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l.out_c, 1, 1);
+#endif
     }
 #endif
     l.activation = activation;
@@ -280,12 +286,13 @@ void forward_connected_layer_gpu(connected_layer l, network_state state)
     float * b = l.weights_gpu;
     float * c = l.output_gpu;
     gemm_ongpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
-    if(l.batch_normalize){
-        forward_batchnorm_layer_gpu(l, state);
-    }
-    for(i = 0; i < l.batch; ++i){
-        axpy_ongpu(l.outputs, 1, l.biases_gpu, 1, l.output_gpu + i*l.outputs, 1);
-    }
+	if (l.batch_normalize) {
+		forward_batchnorm_layer_gpu(l, state);
+	}
+	else {
+		add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.outputs, 1);
+	}
+    //for(i = 0; i < l.batch; ++i) axpy_ongpu(l.outputs, 1, l.biases_gpu, 1, l.output_gpu + i*l.outputs, 1);
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
 }
 

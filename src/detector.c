@@ -91,7 +91,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 	args.small_object = l.small_object;
     args.d = &buffer;
     args.type = DETECTION_DATA;
-	args.threads = 8;	// 64
+	args.threads = 64;	// 8
 
     args.angle = net.angle;
     args.exposure = net.exposure;
@@ -1031,6 +1031,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         }
         image im = load_image_color(input,0,0);
         image sized = resize_image(im, net.w, net.h);
+		//image sized = letterbox_image(im, net.w, net.h);
         layer l = net.layers[net.n-1];
 
         box *boxes = calloc(l.w*l.h*l.n, sizeof(box));

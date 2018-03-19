@@ -42,6 +42,18 @@ typedef enum{
     SSE, MASKED, SMOOTH
 } COST_TYPE;
 
+typedef struct {
+	int batch;
+	float learning_rate;
+	float momentum;
+	float decay;
+	int adam;
+	float B1;
+	float B2;
+	float eps;
+	int t;
+} update_args;
+
 struct layer{
     LAYER_TYPE type;
     ACTIVATION activation;
@@ -261,6 +273,7 @@ struct layer{
     #ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
     cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
+	cudnnTensorDescriptor_t normTensorDesc;
     cudnnFilterDescriptor_t weightDesc;
     cudnnFilterDescriptor_t dweightDesc;
     cudnnConvolutionDescriptor_t convDesc;
