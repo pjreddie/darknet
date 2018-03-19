@@ -54,11 +54,12 @@ YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_file
 	detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 
 #ifdef GPU
-	check_cuda( cudaSetDevice(gpu_id) );
-	printf(" Used GPU %d \n", gpu_id);
+	//check_cuda( cudaSetDevice(cur_gpu_id) );
+	cuda_set_device(cur_gpu_id);
+	printf(" Used GPU %d \n", cur_gpu_id);
 #endif
 	network &net = detector_gpu.net;
-	net.gpu_index = gpu_id;
+	net.gpu_index = cur_gpu_id;
 	//gpu_index = i;
 	
 	char *cfgfile = const_cast<char *>(cfg_filename.data());
@@ -69,7 +70,7 @@ YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_file
 		load_weights(&net, weightfile);
 	}
 	set_batch_network(&net, 1);
-	net.gpu_index = gpu_id;
+	net.gpu_index = cur_gpu_id;
 
 	layer l = net.layers[net.n - 1];
 	int j;
@@ -109,7 +110,8 @@ YOLODLL_API Detector::~Detector()
 	int old_gpu_index;
 #ifdef GPU
 	cudaGetDevice(&old_gpu_index);
-	cudaSetDevice(detector_gpu.net.gpu_index);
+	//cudaSetDevice(detector_gpu.net.gpu_index);
+	cuda_set_device(detector_gpu.net.gpu_index);
 #endif
 
 	free_network(detector_gpu.net);
