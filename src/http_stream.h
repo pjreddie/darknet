@@ -7,6 +7,8 @@ extern "C" {
 #endif
 
 void send_mjpeg(IplImage* ipl, int port, int timeout, int quality);
+CvCapture* get_capture_webcam(int index);
+IplImage* get_webcam_frame(CvCapture *cap);
 
 #ifdef __cplusplus
 }

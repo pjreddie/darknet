@@ -39,6 +39,7 @@ static image det  ;
 static image det_s;
 static image disp = {0};
 static CvCapture * cap;
+static int use_webcam = 0;
 static float fps = 0;
 static float demo_thresh = 0;
 
@@ -50,7 +51,7 @@ static float *avg;
 
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
 void show_image_cv_ipl(IplImage *disp, const char *name);
-image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img);
+image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img, int use_webcam);
 IplImage* in_img;
 IplImage* det_img;
 IplImage* show_img;
@@ -60,7 +61,7 @@ static int flag_exit;
 void *fetch_in_thread(void *ptr)
 {
     //in = get_image_from_stream(cap);
-	in = get_image_from_stream_resize(cap, net.w, net.h, &in_img);
+	in = get_image_from_stream_resize(cap, net.w, net.h, &in_img, use_webcam);
     if(!in.data){
         //error("Stream closed.");
 		flag_exit = 1;
@@ -144,7 +145,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         cap = cvCaptureFromFile(filename);
     }else{
 		printf("Webcam index: %d\n", cam_index);
+#ifdef CV_VERSION_EPOCH	// OpenCV 2.x
         cap = cvCaptureFromCAM(cam_index);
+#else					// OpenCV 3.x
+		use_webcam = 1;
+		cap = get_capture_webcam(cam_index);
+#endif
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");

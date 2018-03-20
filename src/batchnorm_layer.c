@@ -176,47 +176,6 @@ void push_batchnorm_layer(layer l)
     cuda_push_array(l.rolling_mean_gpu, l.rolling_mean, l.c);
     cuda_push_array(l.rolling_variance_gpu, l.rolling_variance, l.c);
 }
-/*
-void forward_batchnorm_layer_gpu(layer l, network_state state)
-{
-    if(l.type == BATCHNORM) copy_ongpu(l.outputs*l.batch, state.input, 1, l.output_gpu, 1);
-    if(l.type == CONNECTED){
-        l.out_c = l.outputs;
-        l.out_h = l.out_w = 1;
-    }
-    if (state.train) {
-        fast_mean_gpu(l.output_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.mean_gpu);
-        fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.variance_gpu);
-
-        scal_ongpu(l.out_c, .99, l.rolling_mean_gpu, 1);
-        axpy_ongpu(l.out_c, .01, l.mean_gpu, 1, l.rolling_mean_gpu, 1);
-        scal_ongpu(l.out_c, .99, l.rolling_variance_gpu, 1);
-        axpy_ongpu(l.out_c, .01, l.variance_gpu, 1, l.rolling_variance_gpu, 1);
-
-        copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
-        normalize_gpu(l.output_gpu, l.mean_gpu, l.variance_gpu, l.batch, l.out_c, l.out_h*l.out_w);
-        copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_norm_gpu, 1);
-    } else {
-        normalize_gpu(l.output_gpu, l.rolling_mean_gpu, l.rolling_variance_gpu, l.batch, l.out_c, l.out_h*l.out_w);
-    }
-
-    scale_bias_gpu(l.output_gpu, l.scales_gpu, l.batch, l.out_c, l.out_h*l.out_w);
-}
-
-void backward_batchnorm_layer_gpu(const layer l, network_state state)
-{
-    backward_scale_gpu(l.x_norm_gpu, l.delta_gpu, l.batch, l.out_c, l.out_w*l.out_h, l.scale_updates_gpu);
-
-    scale_bias_gpu(l.delta_gpu, l.scales_gpu, l.batch, l.out_c, l.out_h*l.out_w);
-
-    fast_mean_delta_gpu(l.delta_gpu, l.variance_gpu, l.batch, l.out_c, l.out_w*l.out_h, l.mean_delta_gpu);
-    fast_variance_delta_gpu(l.x_gpu, l.delta_gpu, l.mean_gpu, l.variance_gpu, l.batch, l.out_c, l.out_w*l.out_h, l.variance_delta_gpu);
-    normalize_delta_gpu(l.x_gpu, l.mean_gpu, l.variance_gpu, l.mean_delta_gpu, l.variance_delta_gpu, l.batch, l.out_c, l.out_w*l.out_h, l.delta_gpu);
-    if(l.type == BATCHNORM) copy_ongpu(l.outputs*l.batch, l.delta_gpu, 1, state.delta, 1);
-}
-#endif
-*/
-
 
 void forward_batchnorm_layer_gpu(layer l, network_state state)
 {

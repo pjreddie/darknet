@@ -14,12 +14,12 @@
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/core/version.hpp"
-#include "http_stream.h"
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio_c.h"
 #include "opencv2/imgcodecs/imgcodecs_c.h"
 #include "http_stream.h"
 #endif
+#include "http_stream.h"
 #endif
 
 int windows = 0;
@@ -683,9 +683,12 @@ image get_image_from_stream(CvCapture *cap)
     return im;
 }
 
-image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img)
+image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img, int use_webcam)
 {
-	IplImage* src = cvQueryFrame(cap);
+	IplImage* src;
+	if (use_webcam) src = get_webcam_frame(cap);
+	else src = cvQueryFrame(cap);
+
 	if (!src) return make_empty_image(0, 0, 0);
 	IplImage* new_img = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, 3);
 	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, 3);

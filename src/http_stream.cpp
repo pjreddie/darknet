@@ -195,4 +195,20 @@ void send_mjpeg(IplImage* ipl, int port, int timeout, int quality) {
 	std::cout << " MJPEG-stream sent. \n";
 }
 
+
+CvCapture* get_capture_webcam(int index) {
+	CvCapture* cap = (CvCapture*)new cv::VideoCapture(index);
+	return cap;
+}
+
+IplImage* get_webcam_frame(CvCapture *cap) {
+	cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
+	cv::Mat frame;
+	cpp_cap >> frame;
+	IplImage* src = cvCreateImage(cvSize(frame.cols, frame.rows), 8, frame.channels());
+	*src = frame;
+	return src;
+}
+
+
 #endif	// OPENCV
