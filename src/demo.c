@@ -64,6 +64,7 @@ void *fetch_in_thread(void *ptr)
 	in = get_image_from_stream_resize(cap, net.w, net.h, &in_img, use_webcam);
     if(!in.data){
         //error("Stream closed.");
+		printf("Stream closed.\n");
 		flag_exit = 1;
 		return;
     }
@@ -166,6 +167,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
     for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes, sizeof(float *));
 
+	flag_exit = 0;
+
     pthread_t fetch_thread;
     pthread_t detect_thread;
 
@@ -198,7 +201,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 
 	CvVideoWriter* output_video_writer = NULL;    // cv::VideoWriter output_video;
-	if (out_filename)
+	if (out_filename && !flag_exit)
 	{
 		CvSize size;
 		size.width = det_img->width, size.height = det_img->height;
@@ -212,7 +215,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('X', 'V', 'I', 'D'), 25, size, 1);
 		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('W', 'M', 'V', '2'), 25, size, 1);
 	}
-	flag_exit = 0;
 
     double before = get_wall_time();
 
