@@ -92,8 +92,8 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 * 186 MB Yolo9000 - image: `darknet.exe detector test cfg/combine9k.data yolo9000.cfg yolo9000.weights`
 * 186 MB Yolo9000 - video: `darknet.exe detector demo cfg/combine9k.data yolo9000.cfg yolo9000.weights test.mp4`
 * Remeber to put data/9k.tree and data/coco9k.map under the same folder of your app if you use the cpp api to build an app
-* To process a list of images `image_list.txt` and save results of detection to `result.txt` use:                             
-    `darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights < image_list.txt > result.txt`
+* To process a list of images `data/train.txt` and save results of detection to `result.txt` use:                             
+    `darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights -dont_show < data/train.txt > result.txt`
     You can comment this line so that each image does not require pressing the button ESC: https://github.com/AlexeyAB/darknet/blob/6ccb41808caf753feea58ca9df79d6367dedc434/src/detector.c#L509
 
 ##### For using network video-camera mjpeg-stream with any Android smartphone:
@@ -370,12 +370,12 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
 1. Before training:
   * set flag `random=1` in your `.cfg`-file - it will increase precision by training Yolo for different resolutions: [link]https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.2.0.cfg#L244)
-  
+
+  * increase network resolution in your `.cfg`-file (`height=608`, `width=608` or any value multiple of 32) - it will increase precision
+
   * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides
 
   * desirable that your training dataset include images with objects (without labels) that you do not want to detect - negative samples
-
-  * for training on small objects, add the parameter `small_object=1` in the last layer [region] in your cfg-file
 
   * for training with a large number of objects in each image, add the parameter `max=200` or higher value in the last layer [region] in your cfg-file
   
