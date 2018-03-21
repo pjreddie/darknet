@@ -34,6 +34,7 @@ ArapahoV2::~ArapahoV2()
         free_layer(net.layers[i]);
     }
     free(net.layers);
+    net.layers = NULL;
     if (net.workspace_size)
     {
     #ifdef GPU
@@ -46,6 +47,7 @@ ArapahoV2::~ArapahoV2()
     #else
         free(net.workspace);
     #endif
+    net.workspace = NULL;
     }  
 
     //TODO free net.input_gpu, net.truth_gpu
