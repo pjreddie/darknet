@@ -300,8 +300,8 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     load_args args = {0};
     args.w = net->w;
     args.h = net->h;
-    //args.type = IMAGE_DATA;
-    args.type = LETTERBOX_DATA;
+    args.type = IMAGE_DATA;
+    //args.type = LETTERBOX_DATA;
 
     for(t = 0; t < nthreads; ++t){
         args.path = paths[i+t];
@@ -431,8 +431,8 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     load_args args = {0};
     args.w = net->w;
     args.h = net->h;
-    //args.type = IMAGE_DATA;
-    args.type = LETTERBOX_DATA;
+    args.type = IMAGE_DATA;
+    //args.type = LETTERBOX_DATA;
 
     for(t = 0; t < nthreads; ++t){
         args.path = paths[i+t];
