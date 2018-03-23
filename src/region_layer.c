@@ -158,6 +158,8 @@ int entry_index(layer l, int batch, int location, int entry)
 void forward_region_layer(const layer l, network net)
 {
     int i,j,b,t,n;
+    int train_with_priors = *(net.seen) < 12800;
+
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
 
 #ifndef GPU
@@ -251,13 +253,14 @@ void forward_region_layer(const layer l, network net)
                         l.delta[obj_index] = 0;
                     }
 
-                    if(*(net.seen) < 12800){
+                    if(train_with_priors){
                         box truth = {0};
                         truth.x = (i + .5)/l.w;
                         truth.y = (j + .5)/l.h;
                         truth.w = l.biases[2*n]/l.w;
                         truth.h = l.biases[2*n+1]/l.h;
                         delta_region_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, l.delta, .01, l.w*l.h);
+                        // printf("%f %f %f %f\n", truth.x-pred.x, truth.y-pred.y, truth.w-pred.w, truth.h-pred.h);
                     }
                 }
             }
@@ -323,7 +326,11 @@ void forward_region_layer(const layer l, network net)
     }
     //printf("\n");
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
-    printf("Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, Avg Recall: %f,  count: %d\n", avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count);
+    printf(
+        "Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, Avg Recall: %f, count: %d, with_priors: %d\n",
+        avg_iou/count, avg_cat/class_count, avg_obj/count,
+        avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count, train_with_priors
+    );
 }
 
 void backward_region_layer(const layer l, network net)
