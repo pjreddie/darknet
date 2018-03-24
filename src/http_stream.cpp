@@ -47,6 +47,7 @@ using std::endl;
 using namespace cv;
 
 #include "http_stream.h"
+#include "image.h"
 
 
 class MJPGWriter
@@ -185,8 +186,7 @@ public:
 		return true;
 	}
 };
-
-
+// ----------------------------------------
 
 void send_mjpeg(IplImage* ipl, int port, int timeout, int quality) {
 	static MJPGWriter wri(port, timeout, quality);
@@ -194,7 +194,7 @@ void send_mjpeg(IplImage* ipl, int port, int timeout, int quality) {
 	wri.write(mat);
 	std::cout << " MJPEG-stream sent. \n";
 }
-
+// ----------------------------------------
 
 CvCapture* get_capture_webcam(int index) {
 	CvCapture* cap = NULL;
@@ -208,6 +208,7 @@ CvCapture* get_capture_webcam(int index) {
 	}
 	return cap;
 }
+// ----------------------------------------
 
 IplImage* get_webcam_frame(CvCapture *cap) {
 	IplImage* src = NULL;
@@ -224,6 +225,61 @@ IplImage* get_webcam_frame(CvCapture *cap) {
 		std::cout << " Web-camera stoped! \n";
 	}
 	return src;
+}
+// ----------------------------------------
+extern "C" {
+	image ipl_to_image(IplImage* src);	// image.c
+}
+
+image image_data_augmentation(IplImage* ipl, int w, int h,
+	int pleft, int ptop, int swidth, int sheight, int flip,
+	float jitter, float dhue, float dsat, float dexp)
+{
+	cv::Mat img = cv::cvarrToMat(ipl);
+
+	// crop
+	cv::Rect src_rect(pleft, ptop, swidth, sheight);
+	cv::Rect img_rect(cv::Point2i(0, 0), img.size());
+	cv::Rect new_src_rect = src_rect & img_rect;
+
+	cv::Rect dst_rect(cv::Point2i(std::max(0, -pleft), std::max(0, -ptop)), new_src_rect.size());
+
+	cv::Mat cropped(cv::Size(src_rect.width, src_rect.height), img.type());
+	cropped.setTo(cv::Scalar::all(0));
+
+	img(new_src_rect).copyTo(cropped(dst_rect));
+
+	// resize
+	cv::Mat sized;
+	cv::resize(cropped, sized, cv::Size(w, h), 0, 0, INTER_LINEAR);
+
+	// flip
+	if (flip) {
+		cv::flip(sized, cropped, 1);	// 0 - x-axis, 1 - y-axis, -1 - both axes (x & y)
+		sized = cropped.clone();
+	}
+
+	// HSV augmentation
+	// CV_BGR2HSV, CV_RGB2HSV, CV_HSV2BGR, CV_HSV2RGB
+	cv::Mat hsv_src;
+	cvtColor(sized, hsv_src, CV_BGR2HSV);	// also BGR -> RGB
+	
+	std::vector<cv::Mat> hsv;
+	cv::split(hsv_src, hsv);
+
+	hsv[1] *= dsat;
+	hsv[2] *= dexp;
+	hsv[0] += 179 * dhue;
+
+	cv::merge(hsv, hsv_src);
+
+	cvtColor(hsv_src, sized, CV_HSV2RGB);	// now RGB instead of BGR
+
+	// Mat -> IplImage -> image
+	IplImage src = sized;
+	image out = ipl_to_image(&src);
+
+	return out;
 }
 
 

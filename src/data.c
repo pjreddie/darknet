@@ -668,6 +668,17 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     return d;
 }
 
+#ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/core/version.hpp"
+#ifndef CV_VERSION_EPOCH
+#include "opencv2/videoio/videoio_c.h"
+#include "opencv2/imgcodecs/imgcodecs_c.h"
+#endif
+
+#include "http_stream.h"
+
 data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter, float hue, float saturation, float exposure, int small_object)
 {
     char **random_paths = get_random_paths(paths, n, m);
@@ -681,10 +692,22 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+		const char *filename = random_paths[i];
 
-        int oh = orig.h;
-        int ow = orig.w;
+		int flag = 1;
+		IplImage *src;
+		if ((src = cvLoadImage(filename, flag)) == 0)
+		{
+			fprintf(stderr, "Cannot load image \"%s\"\n", filename);
+			char buff[256];
+			sprintf(buff, "echo %s >> bad.list", filename);
+			system(buff);
+			continue;
+			//exit(0);
+		}
+
+		int oh = src->height;
+		int ow = src->width;
 
         int dw = (ow*jitter);
         int dh = (oh*jitter);
@@ -701,25 +724,80 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         float sy = (float)sheight / oh;
 
         int flip = random_gen()%2;
-        image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
         float dx = ((float)pleft/ow)/sx;
         float dy = ((float)ptop /oh)/sy;
 
-        image sized = resize_image(cropped, w, h);
-        if(flip) flip_image(sized);
-        random_distort_image(sized, hue, saturation, exposure);
-        d.X.vals[i] = sized.data;
+		float dhue = rand_uniform_strong(-hue, hue);
+		float dsat = rand_scale(saturation);
+		float dexp = rand_scale(exposure);
 
-        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy, small_object);
+		image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, jitter, dhue, dsat, dexp);
+		d.X.vals[i] = ai.data;
+		
+		//show_image(ai, "aug");
+		//cvWaitKey(0);
 
-        free_image(orig);
-        free_image(cropped);
+        fill_truth_detection(filename, boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy, small_object);
+
+		cvReleaseImage(&src);
     }
     free(random_paths);
     return d;
 }
+#else	// OPENCV
+data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter, float hue, float saturation, float exposure, int small_object)
+{
+	char **random_paths = get_random_paths(paths, n, m);
+	int i;
+	data d = { 0 };
+	d.shallow = 0;
 
+	d.X.rows = n;
+	d.X.vals = calloc(d.X.rows, sizeof(float*));
+	d.X.cols = h*w * 3;
+
+	d.y = make_matrix(n, 5 * boxes);
+	for (i = 0; i < n; ++i) {
+		image orig = load_image_color(random_paths[i], 0, 0);
+
+		int oh = orig.h;
+		int ow = orig.w;
+
+		int dw = (ow*jitter);
+		int dh = (oh*jitter);
+
+		int pleft = rand_uniform_strong(-dw, dw);
+		int pright = rand_uniform_strong(-dw, dw);
+		int ptop = rand_uniform_strong(-dh, dh);
+		int pbot = rand_uniform_strong(-dh, dh);
+
+		int swidth = ow - pleft - pright;
+		int sheight = oh - ptop - pbot;
+
+		float sx = (float)swidth / ow;
+		float sy = (float)sheight / oh;
+
+		int flip = random_gen() % 2;
+		image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
+
+		float dx = ((float)pleft / ow) / sx;
+		float dy = ((float)ptop / oh) / sy;
+
+		image sized = resize_image(cropped, w, h);
+		if (flip) flip_image(sized);
+		random_distort_image(sized, hue, saturation, exposure);
+		d.X.vals[i] = sized.data;
+
+		fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, dx, dy, 1. / sx, 1. / sy, small_object);
+
+		free_image(orig);
+		free_image(cropped);
+	}
+	free(random_paths);
+	return d;
+}
+#endif	// OPENCV
 
 void *load_thread(void *ptr)
 {
