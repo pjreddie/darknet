@@ -5,11 +5,10 @@
 #include "layer.h"
 #include "network.h"
 
-layer make_region_layer(int batch, int h, int w, int n, int total, int *mask, int classes, int coords);
+layer make_region_layer(int batch, int w, int h, int n, int classes, int coords);
 void forward_region_layer(const layer l, network net);
 void backward_region_layer(const layer l, network net);
 void resize_region_layer(layer *l, int w, int h);
-int region_num_detections(layer l, float thresh);
 
 #ifdef GPU
 void forward_region_layer_gpu(const layer l, network net);

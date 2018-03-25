@@ -51,7 +51,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     if (tree) net->hierarchy = read_tree(tree);
     int classes = option_find_int(options, "classes", 2);
 
-    char **labels;
+    char **labels = 0;
     if(!tag){
         labels = get_labels(label_list);
     }
@@ -161,7 +161,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     pthread_join(load_thread, 0);
 
     free_network(net);
-    free_ptrs((void**)labels, classes);
+    if(labels) free_ptrs((void**)labels, classes);
     free_ptrs((void**)paths, plist->size);
     free_list(plist);
     free(base);

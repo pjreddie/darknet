@@ -26,6 +26,7 @@
 #include "option_list.h"
 #include "parser.h"
 #include "region_layer.h"
+#include "yolo_layer.h"
 #include "reorg_layer.h"
 #include "rnn_layer.h"
 #include "route_layer.h"
@@ -50,6 +51,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[cost]")==0) return COST;
     if (strcmp(type, "[detection]")==0) return DETECTION;
     if (strcmp(type, "[region]")==0) return REGION;
+    if (strcmp(type, "[yolo]")==0) return YOLO;
     if (strcmp(type, "[local]")==0) return LOCAL;
     if (strcmp(type, "[conv]")==0
             || strcmp(type, "[convolutional]")==0) return CONVOLUTIONAL;
@@ -277,14 +279,8 @@ softmax_layer parse_softmax(list *options, size_params params)
     return layer;
 }
 
-layer parse_region(list *options, size_params params)
+int *parse_yolo_mask(char *a, int *num)
 {
-    int coords = option_find_int(options, "coords", 4);
-    int classes = option_find_int(options, "classes", 20);
-    int total = option_find_int(options, "num", 1);
-    int num = total;
-
-    char *a = option_find_str(options, "mask", 0);
     int *mask = 0;
     if(a){
         int len = strlen(a);
@@ -299,36 +295,29 @@ layer parse_region(list *options, size_params params)
             mask[i] = val;
             a = strchr(a, ',')+1;
         }
-        num = n;
+        *num = n;
     }
-    layer l = make_region_layer(params.batch, params.w, params.h, num, total, mask, classes, coords);
+    return mask;
+}
+
+layer parse_yolo(list *options, size_params params)
+{
+    int classes = option_find_int(options, "classes", 20);
+    int total = option_find_int(options, "num", 1);
+    int num = total;
+
+    char *a = option_find_str(options, "mask", 0);
+    int *mask = parse_yolo_mask(a, &num);
+    layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
     assert(l.outputs == params.inputs);
 
-    l.log = option_find_int_quiet(options, "log", 0);
-    l.sqrt = option_find_int_quiet(options, "sqrt", 0);
-
-    l.softmax = option_find_int(options, "softmax", 0);
-    l.background = option_find_int_quiet(options, "background", 0);
     l.max_boxes = option_find_int_quiet(options, "max",90);
     l.jitter = option_find_float(options, "jitter", .2);
-    l.rescore = option_find_int_quiet(options, "rescore",0);
 
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
-    l.classfix = option_find_int_quiet(options, "classfix", 0);
-    l.absolute = option_find_int_quiet(options, "absolute", 0);
     l.random = option_find_int_quiet(options, "random", 0);
 
-    l.coord_scale = option_find_float(options, "coord_scale", 1);
-    l.object_scale = option_find_float(options, "object_scale", 1);
-    l.noobject_scale = option_find_float(options, "noobject_scale", 1);
-    l.mask_scale = option_find_float_quiet(options, "mask_scale", 1);
-    l.class_scale = option_find_float(options, "class_scale", 1);
-    l.bias_match = option_find_int_quiet(options, "bias_match",0);
-    l.focus = option_find_float_quiet(options, "focus", 0);
-
-    char *tree_file = option_find_str(options, "tree", 0);
-    if (tree_file) l.softmax_tree = read_tree(tree_file);
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
 
@@ -348,6 +337,59 @@ layer parse_region(list *options, size_params params)
     }
     return l;
 }
+
+layer parse_region(list *options, size_params params)
+{
+    int coords = option_find_int(options, "coords", 4);
+    int classes = option_find_int(options, "classes", 20);
+    int num = option_find_int(options, "num", 1);
+
+    layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords);
+    assert(l.outputs == params.inputs);
+
+    l.log = option_find_int_quiet(options, "log", 0);
+    l.sqrt = option_find_int_quiet(options, "sqrt", 0);
+
+    l.softmax = option_find_int(options, "softmax", 0);
+    l.background = option_find_int_quiet(options, "background", 0);
+    l.max_boxes = option_find_int_quiet(options, "max",30);
+    l.jitter = option_find_float(options, "jitter", .2);
+    l.rescore = option_find_int_quiet(options, "rescore",0);
+
+    l.thresh = option_find_float(options, "thresh", .5);
+    l.classfix = option_find_int_quiet(options, "classfix", 0);
+    l.absolute = option_find_int_quiet(options, "absolute", 0);
+    l.random = option_find_int_quiet(options, "random", 0);
+
+    l.coord_scale = option_find_float(options, "coord_scale", 1);
+    l.object_scale = option_find_float(options, "object_scale", 1);
+    l.noobject_scale = option_find_float(options, "noobject_scale", 1);
+    l.mask_scale = option_find_float(options, "mask_scale", 1);
+    l.class_scale = option_find_float(options, "class_scale", 1);
+    l.bias_match = option_find_int_quiet(options, "bias_match",0);
+
+    char *tree_file = option_find_str(options, "tree", 0);
+    if (tree_file) l.softmax_tree = read_tree(tree_file);
+    char *map_file = option_find_str(options, "map", 0);
+    if (map_file) l.map = read_map(map_file);
+
+    char *a = option_find_str(options, "anchors", 0);
+    if(a){
+        int len = strlen(a);
+        int n = 1;
+        int i;
+        for(i = 0; i < len; ++i){
+            if (a[i] == ',') ++n;
+        }
+        for(i = 0; i < n; ++i){
+            float bias = atof(a);
+            l.biases[i] = bias;
+            a = strchr(a, ',')+1;
+        }
+    }
+    return l;
+}
+
 detection_layer parse_detection(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 1);
@@ -747,6 +789,8 @@ network *parse_network_cfg(char *filename)
             l = parse_cost(options, params);
         }else if(lt == REGION){
             l = parse_region(options, params);
+        }else if(lt == YOLO){
+            l = parse_yolo(options, params);
         }else if(lt == DETECTION){
             l = parse_detection(options, params);
         }else if(lt == SOFTMAX){

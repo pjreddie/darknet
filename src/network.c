@@ -17,6 +17,7 @@
 #include "activation_layer.h"
 #include "detection_layer.h"
 #include "region_layer.h"
+#include "yolo_layer.h"
 #include "normalization_layer.h"
 #include "batchnorm_layer.h"
 #include "maxpool_layer.h"
@@ -151,6 +152,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "detection";
         case REGION:
             return "region";
+        case YOLO:
+            return "yolo";
         case DROPOUT:
             return "dropout";
         case CROP:
@@ -376,6 +379,8 @@ int resize_network(network *net, int w, int h)
             resize_maxpool_layer(&l, w, h);
         }else if(l.type == REGION){
             resize_region_layer(&l, w, h);
+        }else if(l.type == YOLO){
+            resize_yolo_layer(&l, w, h);
         }else if(l.type == ROUTE){
             resize_route_layer(&l, net);
         }else if(l.type == SHORTCUT){
@@ -508,10 +513,10 @@ int num_detections(network *net, float thresh)
     int s = 0;
     for(i = 0; i < net->n; ++i){
         layer l = net->layers[i];
-        if(l.type == REGION){
-            s += region_num_detections(l, thresh);
+        if(l.type == YOLO){
+            s += yolo_num_detections(l, thresh);
         }
-        if(l.type == DETECTION){
+        if(l.type == DETECTION || l.type == REGION){
             s += l.w*l.h*l.n;
         }
     }
@@ -539,9 +544,13 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
     int j;
     for(j = 0; j < net->n; ++j){
         layer l = net->layers[j];
-        if(l.type == REGION){
-            int count = get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets);
+        if(l.type == YOLO){
+            int count = get_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets);
             dets += count;
+        }
+        if(l.type == REGION){
+            get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets);
+            dets += l.w*l.h*l.n;
         }
         if(l.type == DETECTION){
             get_detection_detections(l, w, h, thresh, dets);

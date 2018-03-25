@@ -156,7 +156,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
 static int get_coco_image_id(char *filename)
 {
-    char *p = strrchr(filename, '_');
+    char *p = strrchr(filename, '/');
+    char *c = strrchr(filename, '_');
+    if(c) p = c;
     return atoi(p+1);
 }
 
@@ -467,6 +469,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             } else {
                 print_detector_detections(fps, id, dets, nboxes, classes, w, h);
             }
+            free_detections(dets, nboxes);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
@@ -622,14 +625,13 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
 }
 
+/*
 void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
 {
 #ifdef OPENCV
-    image **alphabet = load_alphabet();
     char *base = basecfg(cfgfile);
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
-    list *options = read_data_cfg(datacfg);
 
     srand(2222222);
     CvCapture * cap;
@@ -650,20 +652,11 @@ void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
     }
 
-    int top = option_find_int(options, "top", 1);
-
-    char *label_list = option_find_str(options, "labels", 0);
-    char *name_list = option_find_str(options, "names", label_list);
-    char **names = get_labels(name_list);
-
-    int *indexes = calloc(top, sizeof(int));
-
     if(!cap) error("Couldn't connect to webcam.\n");
     cvNamedWindow(base, CV_WINDOW_NORMAL); 
     cvResizeWindow(base, 512, 512);
     float fps = 0;
     int i;
-    int count = 0;
     float nms = .45;
 
     while(1){
@@ -709,11 +702,9 @@ void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
 void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
 {
 #ifdef OPENCV
-    image **alphabet = load_alphabet();
     char *base = basecfg(cfgfile);
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
-    list *options = read_data_cfg(datacfg);
 
     srand(2222222);
     CvCapture * cap;
@@ -733,14 +724,6 @@ void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_in
     if(h){
         cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
     }
-
-    int top = option_find_int(options, "top", 1);
-
-    char *label_list = option_find_str(options, "labels", 0);
-    char *name_list = option_find_str(options, "names", label_list);
-    char **names = get_labels(name_list);
-
-    int *indexes = calloc(top, sizeof(int));
 
     if(!cap) error("Couldn't connect to webcam.\n");
     cvNamedWindow(base, CV_WINDOW_NORMAL); 
@@ -795,6 +778,7 @@ void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_in
     }
     #endif
 }
+*/
 
 /*
 void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, detection *dets)
@@ -848,15 +832,13 @@ void run_detector(int argc, char **argv)
     int width = find_int_arg(argc, argv, "-w", 0);
     int height = find_int_arg(argc, argv, "-h", 0);
     int fps = find_int_arg(argc, argv, "-fps", 0);
-    int class = find_int_arg(argc, argv, "-class", 0);
+    //int class = find_int_arg(argc, argv, "-class", 0);
 
     char *datacfg = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
-    else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
-    else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
@@ -868,4 +850,6 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
     }
+    //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
+    //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
 }

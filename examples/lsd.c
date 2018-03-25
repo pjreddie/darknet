@@ -1,3 +1,4 @@
+#include <math.h>
 #include "darknet.h"
 
 /*
@@ -478,7 +479,7 @@ void test_dcgan(char *cfgfile, char *weightfile)
     clock_t time;
     char buff[256];
     char *input = buff;
-    int i, imlayer = 0;
+    int imlayer = 0;
 
     imlayer = net->n-1;
 
@@ -615,7 +616,7 @@ void train_prog(char *cfg, char *weight, char *acfg, char *aweight, int clear, i
             forward_network(anet);
             backward_network(anet);
 
-            float genaloss = *anet->cost / anet->batch;
+            //float genaloss = *anet->cost / anet->batch;
 
             scal_gpu(imlayer.outputs*imlayer.batch, 1, imerror, 1);
             scal_gpu(imlayer.outputs*imlayer.batch, 0, gnet->layers[gnet->n-1].delta_gpu, 1);
@@ -785,7 +786,7 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
             forward_network(anet);
             backward_network(anet);
 
-            float genaloss = *anet->cost / anet->batch;
+            //float genaloss = *anet->cost / anet->batch;
             //printf("%f\n", genaloss);
 
             scal_gpu(imlayer.outputs*imlayer.batch, 1, imerror, 1);

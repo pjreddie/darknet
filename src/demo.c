@@ -50,7 +50,7 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else */
-    detection *dets;
+    detection *dets = 0;
     int nboxes = 0;
     if (l.type == REGION){
         dets = get_network_boxes(net, buff[0].w, buff[0].h, demo_thresh, demo_hier, 0, 1, &nboxes);
@@ -173,8 +173,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");
-
-    int i;
 
     buff[0] = get_image_from_stream(cap);
     buff[1] = copy_image(buff[0]);

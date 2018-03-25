@@ -85,6 +85,7 @@ typedef enum {
     NETWORK,
     XNOR,
     REGION,
+    YOLO,
     REORG,
     UPSAMPLE,
     LOGXENT,
@@ -674,6 +675,7 @@ void get_detection_detections(layer l, int w, int h, float thresh, detection *de
 
 char *option_find_str(list *l, char *key, char *def);
 int option_find_int(list *l, char *key, int def);
+int option_find_int_quiet(list *l, char *key, int def);
 
 network *parse_network_cfg(char *filename);
 void save_weights(network *net, char *filename);
@@ -682,7 +684,8 @@ void save_weights_upto(network *net, char *filename, int cutoff);
 void load_weights_upto(network *net, char *filename, int start, int cutoff);
 
 void zero_objectness(layer l);
-int get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets);
+void get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets);
+int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets);
 void free_network(network *net);
 void set_batch_network(network *net, int b);
 void set_temp_network(network *net, float t);
