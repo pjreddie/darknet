@@ -794,7 +794,7 @@ void network_detect(network *net, image im, float thresh, float hier_thresh, flo
 void run_detector(int argc, char **argv)
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
-    float thresh = find_float_arg(argc, argv, "-thresh", .24);
+    float thresh = find_float_arg(argc, argv, "-thresh", .5);
     float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
