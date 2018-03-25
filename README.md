@@ -126,9 +126,9 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 
 ### How to compile on Windows:
 
-1. If you have **MSVS 2015, CUDA 9.1 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
+1. If you have **MSVS 2015, CUDA 9.1 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet. **NOTE:** If installing OpenCV, use OpenCV 3.4.0 or earlier. This is a bug in OpenCV 3.4.1 in the C API (see #500).
 
-    1.1. Find files `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` in `C:\opencv_3.0\opencv\build\x64\vc14\bin` and put it near with `darknet.exe`
+    1.1. Find files `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` (or `opencv_world340.dll` and `opencv_ffmpeg340_64.dll`) in `C:\opencv_3.0\opencv\build\x64\vc14\bin` and put it near with `darknet.exe`
 
 2. If you have other version of **CUDA (not 9.1)** then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 9.1" and change it to your CUDA-version, then do step 1
 
@@ -143,6 +143,8 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 5. If you want to build with CUDNN to speed up then:
       
     * download and install **cuDNN 7.0 for CUDA 9.1**: https://developer.nvidia.com/cudnn
+    
+    * copy the `bin` and `include` folders to `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1`
       
     * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
       
