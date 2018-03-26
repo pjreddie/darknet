@@ -89,6 +89,7 @@ void shuffle(void *arr, size_t n, size_t size)
         memcpy(arr+(j*size), arr+(i*size), size);
         memcpy(arr+(i*size), swp,          size);
     }
+    free(swp);
 }
 
 int *random_index_order(int min, int max)
