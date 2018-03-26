@@ -4,6 +4,8 @@ import argparse
 import numpy as np
 
 import xml.etree.ElementTree as ET
+from utils import convert_label
+
 
 argparser = argparse.ArgumentParser()
 
@@ -14,17 +16,26 @@ argparser.add_argument(
 argparser.add_argument(
     '--anchors',
     default=10,
+    type=int,
     help='number of anchors to use')
 
 argparser.add_argument(
     '--grid_w',
     default=30,
+    type=int,
     help='output grid width')
 
 argparser.add_argument(
     '--grid_h',
     default=17,
+    type=int,
     help='output grid height')
+
+argparser.add_argument(
+    '--for_class',
+    default=None,
+    help='calculate centroids only for specified class'
+)
 
 
 def IOU(ann, centroids):
@@ -74,9 +85,8 @@ def print_anchors(centroids):
     print(res_str)
 
 
-def run_kmeans(ann_dims, anchor_num):
+def run_kmeans(ann_dims, anchor_num, delta=3.0):
     ann_num = ann_dims.shape[0]
-    prev_assignments = np.ones(ann_num)*(-1)
     old_distances = np.zeros((ann_num, anchor_num))
 
     indices = [random.randrange(ann_dims.shape[0]) for _ in range(anchor_num)]
@@ -92,14 +102,15 @@ def run_kmeans(ann_dims, anchor_num):
             d = 1.0 - IOU(ann_dims[i], centroids)
             distances.append(d)
         distances = np.array(distances)
+        sum_abs_distances = np.sum(np.abs(old_distances - distances))
 
         # distances.shape = (ann_num, anchor_num)
-        print("iteration {}: dists = {}".format(iteration, np.sum(np.abs(old_distances-distances))))
+        print("iteration {}: dists = {}".format(iteration, sum_abs_distances))
 
         # assign samples to centroids
         assignments = np.argmin(distances, axis=1)
 
-        if (assignments == prev_assignments).all():
+        if sum_abs_distances <= delta:
             return centroids
 
         # calculate new centroids
@@ -109,7 +120,6 @@ def run_kmeans(ann_dims, anchor_num):
         for j in range(anchor_num):
             centroids[j] = centroid_sums[j]/(np.sum(assignments == j) + 1e-6)
 
-        prev_assignments = assignments.copy()
         old_distances = distances.copy()
 
 
@@ -137,17 +147,20 @@ def parse_annotation(ann_dir, img_dir, labels=()):
 
                     for attr in list(elem):
                         if 'name' in attr.tag:
-                            obj['name'] = attr.text
+                            obj['name'] = convert_label(attr.text)
+
+                            if not obj['name']:
+                                continue
+
+                            if labels and obj['name'] not in labels:
+                                continue
 
                             if obj['name'] in seen_labels:
                                 seen_labels[obj['name']] += 1
                             else:
                                 seen_labels[obj['name']] = 1
 
-                            if len(labels) > 0 and obj['name'] not in labels:
-                                break
-                            else:
-                                img['object'] += [obj]
+                            img['object'] += [obj]
 
                         if 'bndbox' in attr.tag:
                             for dim in list(attr):
@@ -162,7 +175,7 @@ def parse_annotation(ann_dir, img_dir, labels=()):
 
             if len(img['object']) > 0:
                 all_imgs += [img]
-        except Exception:
+        except Exception as exc:
             print('Cannot parse file: {}'.format(annotation_file))
                         
     return all_imgs, seen_labels
@@ -173,7 +186,12 @@ def main(args):
     img_dir = os.path.join(args.dataset, 'images')
     num_anchors = args.anchors
 
-    train_imgs, train_labels = parse_annotation(ann_dir, img_dir, labels=[])
+    labels = []
+    if args.for_class:
+        labels.append(args.for_class)
+
+    train_imgs, train_labels = parse_annotation(ann_dir, img_dir, labels=labels)
+    print('Train labels: {}'.format(train_labels))
 
     # run k_mean to find the anchors
     annotation_dims = []
