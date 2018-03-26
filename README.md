@@ -144,7 +144,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
       
     * download and install **cuDNN 7.0 for CUDA 9.1**: https://developer.nvidia.com/cudnn
     
-    * copy the `bin` and `include` folders to `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1`
+    * Check that there are `bin` and `include` folders in the `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1` if aren't, then copy them to this folder from the path where is CUDA installed
       
     * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
       
