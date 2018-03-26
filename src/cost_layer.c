@@ -14,6 +14,7 @@ COST_TYPE get_cost_type(char *s)
     if (strcmp(s, "masked")==0) return MASKED;
     if (strcmp(s, "smooth")==0) return SMOOTH;
     if (strcmp(s, "L1")==0) return L1;
+    if (strcmp(s, "wgan")==0) return WGAN;
     fprintf(stderr, "Couldn't find cost type %s, going with SSE\n", s);
     return SSE;
 }
@@ -31,6 +32,8 @@ char *get_cost_string(COST_TYPE a)
             return "smooth";
         case L1:
             return "L1";
+        case WGAN:
+            return "wgan";
     }
     return "sse";
 }
@@ -123,19 +126,18 @@ int float_abs_compare (const void * a, const void * b)
 
 void forward_cost_layer_gpu(cost_layer l, network net)
 {
-    if (!net.truth_gpu) return;
+    if (!net.truth) return;
     if(l.smooth){
         scal_gpu(l.batch*l.inputs, (1-l.smooth), net.truth_gpu, 1);
         add_gpu(l.batch*l.inputs, l.smooth * 1./l.inputs, net.truth_gpu, 1);
-    }
-    if (l.cost_type == MASKED) {
-        mask_gpu(l.batch*l.inputs, net.input_gpu, SECRET_NUM, net.truth_gpu);
     }
 
     if(l.cost_type == SMOOTH){
         smooth_l1_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
     } else if (l.cost_type == L1){
         l1_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
+    } else if (l.cost_type == WGAN){
+        wgan_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
     } else {
         l2_gpu(l.batch*l.inputs, net.input_gpu, net.truth_gpu, l.delta_gpu, l.output_gpu);
     }
@@ -143,6 +145,9 @@ void forward_cost_layer_gpu(cost_layer l, network net)
     if (l.cost_type == SEG && l.noobject_scale != 1) {
         scale_mask_gpu(l.batch*l.inputs, l.delta_gpu, 0, net.truth_gpu, l.noobject_scale);
         scale_mask_gpu(l.batch*l.inputs, l.output_gpu, 0, net.truth_gpu, l.noobject_scale);
+    }
+    if (l.cost_type == MASKED) {
+        mask_gpu(l.batch*l.inputs, net.delta_gpu, SECRET_NUM, net.truth_gpu, 0);
     }
 
     if(l.ratio){

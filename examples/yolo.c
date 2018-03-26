@@ -74,14 +74,14 @@ void train_yolo(char *cfgfile, char *weightfile)
     save_weights(net, buff);
 }
 
-void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int total, int classes, int w, int h)
+void print_yolo_detections(FILE **fps, char *id, int total, int classes, int w, int h, detection *dets)
 {
     int i, j;
     for(i = 0; i < total; ++i){
-        float xmin = boxes[i].x - boxes[i].w/2.;
-        float xmax = boxes[i].x + boxes[i].w/2.;
-        float ymin = boxes[i].y - boxes[i].h/2.;
-        float ymax = boxes[i].y + boxes[i].h/2.;
+        float xmin = dets[i].bbox.x - dets[i].bbox.w/2.;
+        float xmax = dets[i].bbox.x + dets[i].bbox.w/2.;
+        float ymin = dets[i].bbox.y - dets[i].bbox.h/2.;
+        float ymax = dets[i].bbox.y + dets[i].bbox.h/2.;
 
         if (xmin < 0) xmin = 0;
         if (ymin < 0) ymin = 0;
@@ -89,7 +89,7 @@ void print_yolo_detections(FILE **fps, char *id, box *boxes, float **probs, int 
         if (ymax > h) ymax = h;
 
         for(j = 0; j < classes; ++j){
-            if (probs[i][j]) fprintf(fps[j], "%s %f %f %f %f %f\n", id, probs[i][j],
+            if (dets[i].prob[j]) fprintf(fps[j], "%s %f %f %f %f %f\n", id, dets[i].prob[j],
                     xmin, ymin, xmax, ymax);
         }
     }
@@ -118,9 +118,6 @@ void validate_yolo(char *cfg, char *weights)
         snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
-    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
-    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
-    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
 
     int m = plist->size;
     int i=0;
@@ -169,9 +166,11 @@ void validate_yolo(char *cfg, char *weights)
             network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            get_detection_boxes(l, w, h, thresh, probs, boxes, 0);
-            if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, classes, iou_thresh);
-            print_yolo_detections(fps, id, boxes, probs, l.side*l.side*l.n, classes, w, h);
+            int nboxes = 0;
+            detection *dets = get_network_boxes(net, w, h, thresh, 0, 0, 0, &nboxes);
+            if (nms) do_nms_sort(dets, l.side*l.side*l.n, classes, iou_thresh);
+            print_yolo_detections(fps, id, l.side*l.side*l.n, classes, w, h, dets);
+            free_detections(dets, nboxes);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
@@ -202,9 +201,6 @@ void validate_yolo_recall(char *cfg, char *weights)
         snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
-    box *boxes = calloc(side*side*l.n, sizeof(box));
-    float **probs = calloc(side*side*l.n, sizeof(float *));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
 
     int m = plist->size;
     int i=0;
@@ -224,8 +220,10 @@ void validate_yolo_recall(char *cfg, char *weights)
         image sized = resize_image(orig, net->w, net->h);
         char *id = basecfg(path);
         network_predict(net, sized.data);
-        get_detection_boxes(l, orig.w, orig.h, thresh, probs, boxes, 1);
-        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms);
+
+        int nboxes = 0;
+        detection *dets = get_network_boxes(net, orig.w, orig.h, thresh, 0, 0, 1, &nboxes);
+        if (nms) do_nms_obj(dets, side*side*l.n, 1, nms);
 
         char labelpath[4096];
         find_replace(path, "images", "labels", labelpath);
@@ -236,7 +234,7 @@ void validate_yolo_recall(char *cfg, char *weights)
         int num_labels = 0;
         box_label *truth = read_boxes(labelpath, &num_labels);
         for(k = 0; k < side*side*l.n; ++k){
-            if(probs[k][0] > thresh){
+            if(dets[k].objectness > thresh){
                 ++proposals;
             }
         }
@@ -245,8 +243,8 @@ void validate_yolo_recall(char *cfg, char *weights)
             box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
             float best_iou = 0;
             for(k = 0; k < side*side*l.n; ++k){
-                float iou = box_iou(boxes[k], t);
-                if(probs[k][0] > thresh && iou > best_iou){
+                float iou = box_iou(dets[k].bbox, t);
+                if(dets[k].objectness > thresh && iou > best_iou){
                     best_iou = iou;
                 }
             }
@@ -257,6 +255,7 @@ void validate_yolo_recall(char *cfg, char *weights)
         }
 
         fprintf(stderr, "%5d %5d %5d\tRPs/Img: %.2f\tIOU: %.2f%%\tRecall:%.2f%%\n", i, correct, total, (float)proposals/(i+1), avg_iou*100/total, 100.*correct/total);
+        free_detections(dets, nboxes);
         free(id);
         free_image(orig);
         free_image(sized);
@@ -273,11 +272,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     clock_t time;
     char buff[256];
     char *input = buff;
-    int j;
     float nms=.4;
-    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
-    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
-    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -294,12 +289,15 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         time=clock();
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
-        if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-        draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, 0, voc_names, alphabet, 20);
+
+        int nboxes = 0;
+        detection *dets = get_network_boxes(net, 1, 1, thresh, 0, 0, 0, &nboxes);
+        if (nms) do_nms_sort(dets, l.side*l.side*l.n, l.classes, nms);
+
+        draw_detections(im, dets, l.side*l.side*l.n, thresh, voc_names, alphabet, 20);
         save_image(im, "predictions");
         show_image(im, "predictions");
-
+        free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
 #ifdef OPENCV
