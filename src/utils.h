@@ -66,6 +66,7 @@ void print_statistics(float *a, int n);
 unsigned int random_gen();
 float random_float();
 float rand_uniform_strong(float min, float max);
+int int_index(int *a, int val, int n);
 
 #endif
 

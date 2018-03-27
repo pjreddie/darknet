@@ -33,7 +33,9 @@ typedef enum {
     NETWORK,
     XNOR,
     REGION,
+	YOLO,
     REORG,
+	UPSAMPLE,
 	REORG_OLD,
     BLANK
 } LAYER_TYPE;
@@ -109,6 +111,9 @@ struct layer{
     int noadjust;
     int reorg;
     int log;
+	int tanh;
+	int *mask;
+	int total;
 
     int adam;
     float B1;
@@ -133,7 +138,10 @@ struct layer{
     float class_scale;
     int bias_match;
     int random;
+	float ignore_thresh;
+	float truth_thresh;
     float thresh;
+	float focus;
     int classfix;
     int absolute;
 

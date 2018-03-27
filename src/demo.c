@@ -50,6 +50,7 @@ static IplImage* ipl_images[FRAMES];
 static float *avg;
 
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
+void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes);
 void show_image_cv_ipl(IplImage *disp, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img, int use_webcam);
 IplImage* in_img;
@@ -77,7 +78,7 @@ void *fetch_in_thread(void *ptr)
 
 void *detect_in_thread(void *ptr)
 {
-    float nms = .4;
+    float nms = .45;	// 0.4F
 
     layer l = net.layers[net.n-1];
     float *X = det_s.data;
@@ -88,6 +89,7 @@ void *detect_in_thread(void *ptr)
     l.output = avg;
 
     free_image(det_s);
+	/*
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
@@ -96,6 +98,12 @@ void *detect_in_thread(void *ptr)
         error("Last layer must produce detections\n");
     }
     if (nms > 0) do_nms(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+	*/
+	int letter = 0;
+	int nboxes = 0;
+	detection *dets = get_network_boxes(&net, det.w, det.h, demo_thresh, demo_thresh, 0, 1, &nboxes, letter);
+	if (nms) do_nms_obj_v3(dets, nboxes, l.classes, nms);
+
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
@@ -108,7 +116,9 @@ void *detect_in_thread(void *ptr)
     demo_index = (demo_index + 1)%FRAMES;
 	    
 	//draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
-	draw_detections_cv(det_img, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+	draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
+	//draw_detections_cv(det_img, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+	free(dets);
 
 	return 0;
 }
@@ -122,7 +132,7 @@ double get_wall_time()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, 
+void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
 	int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show)
 {
     //skip = frame_skip;
@@ -303,7 +313,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 	}
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show)
+void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

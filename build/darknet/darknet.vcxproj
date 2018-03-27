@@ -227,10 +227,12 @@
     <ClCompile Include="..\..\src\swag.c" />
     <ClCompile Include="..\..\src\tag.c" />
     <ClCompile Include="..\..\src\tree.c" />
+    <ClCompile Include="..\..\src\upsample_layer.c" />
     <ClCompile Include="..\..\src\utils.c" />
     <ClCompile Include="..\..\src\voxel.c" />
     <ClCompile Include="..\..\src\writing.c" />
     <ClCompile Include="..\..\src\yolo.c" />
+    <ClCompile Include="..\..\src\yolo_layer.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\activations.h" />
@@ -279,7 +281,9 @@
     <ClInclude Include="..\..\src\stb_image_write.h" />
     <ClInclude Include="..\..\src\tree.h" />
     <ClInclude Include="..\..\src\unistd.h" />
+    <ClInclude Include="..\..\src\upsample_layer.h" />
     <ClInclude Include="..\..\src\utils.h" />
+    <ClInclude Include="..\..\src\yolo_layer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

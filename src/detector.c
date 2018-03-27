@@ -1000,7 +1000,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int final_width, int final
 }
 #endif // OPENCV
 
-void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int dont_show)
+void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, int dont_show)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -1017,7 +1017,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char buff[256];
     char *input = buff;
     int j;
-    float nms=.4;
+    float nms=.45;	// 0.4F
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -1030,21 +1030,27 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             strtok(input, "\n");
         }
         image im = load_image_color(input,0,0);
-        image sized = resize_image(im, net.w, net.h);
-		//image sized = letterbox_image(im, net.w, net.h);
+		int letter = 0;
+        //image sized = resize_image(im, net.w, net.h);
+		image sized = letterbox_image(im, net.w, net.h); letter = 1;
         layer l = net.layers[net.n-1];
 
-        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+        //box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+        //float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+        //for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
 
         float *X = sized.data;
         time=clock();
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
-        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
+        //get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
+		// if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+		//draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
+		int nboxes = 0;
+		detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letter);
+		if (nms) do_nms_sort_v3(dets, nboxes, l.classes, nms);
+		draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes);
+		free_detections(dets, nboxes);
         save_image(im, "predictions");
 		if (!dont_show) {
 			show_image(im, "predictions");
@@ -1052,8 +1058,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         free_image(im);
         free_image(sized);
-        free(boxes);
-        free_ptrs((void **)probs, l.w*l.h*l.n);
+        //free(boxes);
+        //free_ptrs((void **)probs, l.w*l.h*l.n);
 #ifdef OPENCV
 		if (!dont_show) {
 			cvWaitKey(0);
@@ -1071,7 +1077,8 @@ void run_detector(int argc, char **argv)
 	int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
 	char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
-    float thresh = find_float_arg(argc, argv, "-thresh", .24);
+    float thresh = find_float_arg(argc, argv, "-thresh", .25);	// 0.24
+	float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
 	int num_of_clusters = find_int_arg(argc, argv, "-num_of_clusters", 5);
@@ -1112,7 +1119,7 @@ void run_detector(int argc, char **argv)
 	if(weights)
 		if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, dont_show);
+    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
@@ -1125,7 +1132,7 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
 		if(filename)
 			if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
-        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename, 
+        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
 			http_stream_port, dont_show);
     }
 }
