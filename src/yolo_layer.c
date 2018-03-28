@@ -129,6 +129,16 @@ static int entry_index(layer l, int batch, int location, int entry)
     return batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc;
 }
 
+static box float_to_box_stride(float *f, int stride)
+{
+	box b = { 0 };
+	b.x = f[0];
+	b.y = f[1 * stride];
+	b.w = f[2 * stride];
+	b.h = f[3 * stride];
+	return b;
+}
+
 void forward_yolo_layer(const layer l, network_state state)
 {
     int i,j,b,t,n;
@@ -165,7 +175,7 @@ void forward_yolo_layer(const layer l, network_state state)
                     float best_iou = 0;
                     int best_t = 0;
                     for(t = 0; t < l.max_boxes; ++t){
-                        box truth = float_to_box(state.truth + t*(4 + 1) + b*l.truths, 1);
+                        box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
                         if(!truth.x) break;
                         float iou = box_iou(pred, truth);
                         if (iou > best_iou) {
@@ -186,14 +196,14 @@ void forward_yolo_layer(const layer l, network_state state)
                         if (l.map) class = l.map[class];
                         int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
                         delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
-                        box truth = float_to_box(state.truth + best_t*(4 + 1) + b*l.truths, 1);
+                        box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
                         delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
                 }
             }
         }
         for(t = 0; t < l.max_boxes; ++t){
-            box truth = float_to_box(state.truth + t*(4 + 1) + b*l.truths, 1);
+            box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
 
             if(!truth.x) break;
             float best_iou = 0;
