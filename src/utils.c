@@ -627,6 +627,15 @@ int max_index(float *a, int n)
     return max_i;
 }
 
+int int_index(int *a, int val, int n)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        if(a[i] == val) return i;
+    }
+    return -1;
+}
+
 int rand_int(int min, int max)
 {
     if (max < min){

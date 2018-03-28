@@ -314,6 +314,9 @@ void update_convolutional_layer_gpu(layer l, update_args a)
             scal_gpu(l.n, momentum, l.scale_updates_gpu, 1);
         }
     }
+    if(l.clip){
+        constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
+    }
 }
 
 

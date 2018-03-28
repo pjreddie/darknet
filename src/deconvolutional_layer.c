@@ -15,6 +15,22 @@ static size_t get_workspace_size(layer l){
     return (size_t)l.h*l.w*l.size*l.size*l.n*sizeof(float);
 }
 
+void bilinear_init(layer l)
+{
+    int i,j,f;
+    float center = (l.size-1) / 2.;
+    for(f = 0; f < l.n; ++f){
+        for(j = 0; j < l.size; ++j){
+            for(i = 0; i < l.size; ++i){
+                float val = (1 - fabs(i - center)) * (1 - fabs(j - center));
+                int c = f%l.c;
+                int ind = f*l.size*l.size*l.c + c*l.size*l.size + j*l.size + i;
+                l.weights[ind] = val;
+            }
+        }
+    }
+}
+
 
 layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int adam)
 {
@@ -38,8 +54,11 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
 
     l.biases = calloc(n, sizeof(float));
     l.bias_updates = calloc(n, sizeof(float));
+    //float scale = n/(size*size*c);
+    //printf("scale: %f\n", scale);
     float scale = .02;
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_normal();
+    //bilinear_init(l);
     for(i = 0; i < n; ++i){
         l.biases[i] = 0;
     }
@@ -50,6 +69,8 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
     l.out_c = n;
     l.outputs = l.out_w * l.out_h * l.out_c;
     l.inputs = l.w * l.h * l.c;
+
+    scal_cpu(l.nweights, (float)l.out_w*l.out_h/(l.w*l.h), l.weights, 1);
 
     l.output = calloc(l.batch*l.outputs, sizeof(float));
     l.delta  = calloc(l.batch*l.outputs, sizeof(float));
@@ -121,7 +142,7 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
             l.mean_delta_gpu = cuda_make_array(0, n);
             l.variance_delta_gpu = cuda_make_array(0, n);
 
-            l.scales_gpu = cuda_make_array(0, n);
+            l.scales_gpu = cuda_make_array(l.scales, n);
             l.scale_updates_gpu = cuda_make_array(0, n);
 
             l.x_gpu = cuda_make_array(0, l.batch*l.out_h*l.out_w*n);
