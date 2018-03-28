@@ -58,7 +58,7 @@ def unique_config_sections(config_file):
 def padding_type_from_pad_number(size, pad):
     if pad == 0:
         padding = 'valid'
-    elif pad == size % 2:
+    elif size % pad == 1 or pad == 1:
         padding = 'same'
     else:
         raise ValueError("Only 'valid' and 'same' padding are supported!")
