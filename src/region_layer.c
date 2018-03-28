@@ -493,7 +493,7 @@ void correct_region_boxes(detection *dets, int n, int w, int h, int netw, int ne
 	}
 }
 
-/*
+
 void get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets)
 {
 	int i, j, n, z;
@@ -570,4 +570,3 @@ void get_region_detections(layer l, int w, int h, int netw, int neth, float thre
 	}
 	correct_region_boxes(dets, l.w*l.h*l.n, w, h, netw, neth, relative);
 }
-*/

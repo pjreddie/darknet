@@ -135,6 +135,7 @@ struct layer{
     float coord_scale;
     float object_scale;
     float noobject_scale;
+	float mask_scale;
     float class_scale;
     int bias_match;
     int random;
