@@ -2,7 +2,7 @@
 rem darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights 009460.jpg
 
 
-darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights -i 0 -thresh 0.2 dogr.jpg
+darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights -i 0 -thresh 0.24 dog.jpg
 
 
 pause
