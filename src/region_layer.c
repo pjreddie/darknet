@@ -544,7 +544,7 @@ void get_region_detections(layer l, int w, int h, int netw, int neth, float thre
 			int class_index = entry_index(l, 0, n*l.w*l.h + i, l.coords + !l.background);
 			if (l.softmax_tree) {
 
-				hierarchy_predictions(predictions + class_index, l.classes, l.softmax_tree, 0, l.w*l.h);
+				hierarchy_predictions(predictions + class_index, l.classes, l.softmax_tree, 0);// , l.w*l.h);
 				if (map) {
 					for (j = 0; j < 200; ++j) {
 						int class_index = entry_index(l, 0, n*l.w*l.h + i, l.coords + 1 + map[j]);
