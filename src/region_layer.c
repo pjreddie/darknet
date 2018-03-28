@@ -533,7 +533,7 @@ void get_region_detections(layer l, int w, int h, int netw, int neth, float thre
 			int box_index = entry_index(l, 0, n*l.w*l.h + i, 0);
 			int mask_index = entry_index(l, 0, n*l.w*l.h + i, 4);
 			float scale = l.background ? 1 : predictions[obj_index];
-			dets[index].bbox = get_region_box(predictions, l.biases, n, box_index, col, row, l.w, l.h, l.w*l.h);
+			dets[index].bbox = get_region_box(predictions, l.biases, n, box_index, col, row, l.w, l.h);// , l.w*l.h);
 			dets[index].objectness = scale > thresh ? scale : 0;
 			if (dets[index].mask) {
 				for (j = 0; j < l.coords - 4; ++j) {
