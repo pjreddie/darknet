@@ -374,10 +374,14 @@ int resize_network(network *net, int w, int h)
             resize_maxpool_layer(&l, w, h);
         }else if(l.type == REGION){
             resize_region_layer(&l, w, h);
+		}else if (l.type == YOLO) {
+			resize_yolo_layer(&l, w, h);
         }else if(l.type == ROUTE){
             resize_route_layer(&l, net);
 		}else if (l.type == SHORTCUT) {
 			resize_shortcut_layer(&l, w, h);
+		}else if (l.type == UPSAMPLE) {
+			resize_upsample_layer(&l, w, h);
         }else if(l.type == REORG){
             resize_reorg_layer(&l, w, h);
         }else if(l.type == AVGPOOL){
@@ -539,12 +543,14 @@ void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, f
 	float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
 	int i, j;
 	for (j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
-	get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, map);
+	get_region_boxes(l, w, h, thresh, probs, boxes, 0, map);
 	for (j = 0; j < l.w*l.h*l.n; ++j) {
 		dets[j].classes = l.classes;
 		dets[j].bbox = boxes[j];
 		dets[j].objectness = 1;
-		for (i = 0; i < l.classes; ++i) dets[j].prob[i] = probs[j][i];
+		for (i = 0; i < l.classes; ++i) {
+			dets[j].prob[i] = probs[j][i];
+		}
 	}
 
 	free(boxes);

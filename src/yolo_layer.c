@@ -378,9 +378,26 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
         return;
     }
 
-    cuda_pull_array(l.output_gpu, state.input, l.batch*l.inputs);
-    forward_yolo_layer(l, state);
+    //cuda_pull_array(l.output_gpu, state.input, l.batch*l.inputs);
+	float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
+	cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
+	float *truth_cpu = 0;
+	if (state.truth) {
+		int num_truth = l.batch*l.truths;
+		truth_cpu = calloc(num_truth, sizeof(float));
+		cuda_pull_array(state.truth, truth_cpu, num_truth);
+	}
+	network_state cpu_state = state;
+	cpu_state.net = state.net;
+	cpu_state.index = state.index;
+	cpu_state.train = state.train;
+	cpu_state.truth = truth_cpu;
+	cpu_state.input = in_cpu;
+	forward_yolo_layer(l, cpu_state);
+    //forward_yolo_layer(l, state);
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
+	free(in_cpu);
+	if (cpu_state.truth) free(cpu_state.truth);
 }
 
 void backward_yolo_layer_gpu(const layer l, network_state state)

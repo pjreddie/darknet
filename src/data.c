@@ -827,6 +827,9 @@ void *load_thread(void *ptr)
     } else if (a.type == IMAGE_DATA){
         *(a.im) = load_image_color(a.path, 0, 0);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);
+	}else if (a.type == LETTERBOX_DATA) {
+		*(a.im) = load_image_color(a.path, 0, 0);
+		*(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     }
