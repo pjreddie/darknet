@@ -1,4 +1,5 @@
-# Yolo-v2 Windows and Linux version
+# Yolo-v3 and Yolo-v2 for Windows and Linux
+### (neural network for object detection)
 
 [![CircleCI](https://circleci.com/gh/AlexeyAB/darknet.svg?style=svg)](https://circleci.com/gh/AlexeyAB/darknet)
 
@@ -21,7 +22,7 @@
 |---|---|
 
 
-# "You Only Look Once: Unified, Real-Time Object Detection (version 2)"
+# "You Only Look Once: Unified, Real-Time Object Detection (versions 2 & 3)"
 A Yolo cross-platform Windows and Linux version (for object detection). Contributtors: https://github.com/pjreddie/darknet/graphs/contributors
 
 This repository is forked from Linux-version: https://github.com/pjreddie/darknet
@@ -45,10 +46,11 @@ This repository supports:
 * **GPU with CC >= 2.0** if you use CUDA, or **GPU CC >= 3.0** if you use cuDNN + CUDA: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
 
 ##### Pre-trained models for different cfg-files can be downloaded from (smaller -> faster & lower quality):
-* `yolo.cfg` (194 MB COCO-model) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo.weights
-* `yolo-voc.cfg` (194 MB VOC-model) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo-voc.weights
-* `tiny-yolo.cfg` (60 MB COCO-model) - require 1 GB GPU-RAM: http://pjreddie.com/media/files/tiny-yolo.weights
-* `tiny-yolo-voc.cfg` (60 MB VOC-model) - require 1 GB GPU-RAM: http://pjreddie.com/media/files/tiny-yolo-voc.weights
+* `yolov3.cfg` (236 MB COCO-model **v3**) - require 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov3.weights
+* `yolov2.cfg` (194 MB COCO-model v2) - require 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov2.weights
+* `yolo-voc.cfg` (194 MB VOC-model v2) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo-voc.weights
+* `yolov2-tiny.cfg` (43 MB COCO-model v2) - require 1 GB GPU-RAM: https://pjreddie.com/media/files/yolov2-tiny.weights
+* `yolov2-tiny-voc.cfg` (60 MB VOC-model v2) - require 1 GB GPU-RAM: http://pjreddie.com/media/files/yolov2-tiny-voc.weights
 * `yolo9000.cfg` (186 MB Yolo9000-model) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo9000.weights
 
 Put it near compiled: darknet.exe
@@ -65,6 +67,8 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 ##### Example of usage in cmd-files from `build\darknet\x64\`:
 
+* `darknet_yolo_v3.cmd` - initialization with 236 MB **Yolo v3** COCO-model yolov3.weights & yolov3.cfg and show detection on the image: dog.jpg
+
 * `darknet_voc.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and waiting for entering the name of the image file
 * `darknet_demo_voc.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4
 * `darknet_demo_store.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4, and store result to: res.avi
@@ -75,7 +79,7 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 ##### How to use on the command line:
 
-On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector test ./cfg/coco.data ./cfg/yolo.cfg ./yolo.weights`
+On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector test ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights`
 
 * 194 MB COCO-model - image: `darknet.exe detector test data/coco.data yolo.cfg yolo.weights -i 0 -thresh 0.2`
 * Alternative method 194 MB COCO-model - image: `darknet.exe detect yolo.cfg yolo.weights -i 0 -thresh 0.2`
@@ -126,7 +130,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 
 ### How to compile on Windows:
 
-1. If you have **MSVS 2015, CUDA 9.1 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet. **NOTE:** If installing OpenCV, use OpenCV 3.4.0 or earlier. This is a bug in OpenCV 3.4.1 in the C API (see [#500](https://github.com/AlexeyAB/darknet/issues/500)).
+1. If you have **MSVS 2015, CUDA 9.1 and OpenCV 3.x** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet. **NOTE:** If installing OpenCV, use OpenCV 3.4.0 or earlier. This is a bug in OpenCV 3.4.1 in the C API (see [#500](https://github.com/AlexeyAB/darknet/issues/500)).
 
     1.1. Find files `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` (or `opencv_world340.dll` and `opencv_ffmpeg340_64.dll`) in `C:\opencv_3.0\opencv\build\x64\vc14\bin` and put it near with `darknet.exe`
 
@@ -392,9 +396,9 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
 ## How to mark bounded boxes of objects and create annotation files:
 
-Here you can find repository with GUI-software for marking bounded boxes of objects and generating annotation files for Yolo v2: https://github.com/AlexeyAB/Yolo_mark
+Here you can find repository with GUI-software for marking bounded boxes of objects and generating annotation files for Yolo v2 & v3: https://github.com/AlexeyAB/Yolo_mark
 
-With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`.txt`, `bird`1-4`.txt` for 2 classes of objects (air, bird) and `train_obj.cmd` with example how to train this image-set with Yolo v2
+With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`.txt`, `bird`1-4`.txt` for 2 classes of objects (air, bird) and `train_obj.cmd` with example how to train this image-set with Yolo v2 & v3
 
 ## Using Yolo9000
 
