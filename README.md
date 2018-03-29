@@ -188,7 +188,7 @@ Then add to your created project:
 
 ## How to train (Pascal VOC Data):
 
-1. Download pre-trained weights for the convolutional layers (76 MB): http://pjreddie.com/media/files/darknet53.conv.74 and put to the directory `build\darknet\x64`
+1. Download pre-trained weights for the convolutional layers (154 MB): http://pjreddie.com/media/files/darknet53.conv.74 and put to the directory `build\darknet\x64`
 
 2. Download The Pascal VOC Data and unpack it to directory `build\darknet\x64\data\voc` will be created dir `build\darknet\x64\data\voc\VOCdevkit\`:
     * http://pjreddie.com/media/files/VOCtrainval_11-May-2012.tar
@@ -239,7 +239,9 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
       * https://github.com/AlexeyAB/darknet/blob/0039fd26786ab5f71d5af725fc18b3f521e7acfd/cfg/yolov3.cfg#L776
 
   So if `classes=1` then should be `filters=18`. If `classes=2` then write `filters=31`.
+  
   **(Do not write in the cfg-file: filters=(classes + 5)x3)**
+  
   (Generally `filters` depends on the `classes`, `coords` and number of `mask`s, i.e. filters=`(classes + coords + 1)*<number of mask>`, where `mask` is indices of anchors. If `mask` is absence, then filters=`(classes + coords + 1)*num`)
 
   So for example, for 2 objects, your file `yolo-obj.cfg` should differ from `yolov3.cfg` in such lines in each of **3** [yolo]-layers:
