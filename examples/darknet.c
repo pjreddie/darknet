@@ -441,7 +441,7 @@ int main(int argc, char **argv)
         test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, .5, outfile, fullscreen);
      } else if (0 == strcmp(argv[1], "verify")){
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
-        verify_detector("cfg/coco.data", argv[2], argv[3], thresh, .5);
+        verify_detector(argv[2], argv[3], argv[4], thresh, .5);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
     } else if (0 == strcmp(argv[1], "go")){
