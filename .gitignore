@@ -16,6 +16,12 @@ convnet/
 decaf/
 submission/
 cfg/
+backup*/
+weights/
+bad.list
+darknet53.conv.74
+*.a
+*.so
 darknet
 .fuse*
 
