@@ -32,8 +32,6 @@ void check_cuda(cudaError_t status) {
 #endif
 
 struct detector_gpu_t {
-	float **probs;
-	box *boxes;
 	network net;
 	image images[FRAMES];
 	float *avg;
@@ -79,10 +77,6 @@ YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_file
 	for (j = 0; j < FRAMES; ++j) detector_gpu.predictions[j] = (float *)calloc(l.outputs, sizeof(float));
 	for (j = 0; j < FRAMES; ++j) detector_gpu.images[j] = make_image(1, 1, 3);
 
-	detector_gpu.boxes = (box *)calloc(l.w*l.h*l.n, sizeof(box));
-	detector_gpu.probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
-	for (j = 0; j < l.w*l.h*l.n; ++j) detector_gpu.probs[j] = (float *)calloc(l.classes, sizeof(float));
-
 	detector_gpu.track_id = (unsigned int *)calloc(l.classes, sizeof(unsigned int));
 	for (j = 0; j < l.classes; ++j) detector_gpu.track_id[j] = 1;
 
@@ -103,14 +97,9 @@ YOLODLL_API Detector::~Detector()
 	for (int j = 0; j < FRAMES; ++j) free(detector_gpu.predictions[j]);
 	for (int j = 0; j < FRAMES; ++j) if(detector_gpu.images[j].data) free(detector_gpu.images[j].data);
 
-	for (int j = 0; j < l.w*l.h*l.n; ++j) free(detector_gpu.probs[j]);
-	free(detector_gpu.boxes);
-	free(detector_gpu.probs);
-
 	int old_gpu_index;
 #ifdef GPU
 	cudaGetDevice(&old_gpu_index);
-	//cudaSetDevice(detector_gpu.net.gpu_index);
 	cuda_set_device(detector_gpu.net.gpu_index);
 #endif
 
@@ -225,17 +214,21 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 		l.output = detector_gpu.avg;
 		detector_gpu.demo_index = (detector_gpu.demo_index + 1) % FRAMES;
 	}
+	//get_region_boxes(l, 1, 1, thresh, detector_gpu.probs, detector_gpu.boxes, 0, 0);
+	//if (nms) do_nms_sort(detector_gpu.boxes, detector_gpu.probs, l.w*l.h*l.n, l.classes, nms);
 
-	get_region_boxes(l, 1, 1, thresh, detector_gpu.probs, detector_gpu.boxes, 0, 0);
-	if (nms) do_nms_sort(detector_gpu.boxes, detector_gpu.probs, l.w*l.h*l.n, l.classes, nms);
-	//draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
+	int nboxes = 0;
+	int letterbox = 0;
+	float hier_thresh = 0.5;
+	detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
+	if (nms) do_nms_sort_v3(dets, nboxes, l.classes, nms);
 
 	std::vector<bbox_t> bbox_vec;
 
-	for (size_t i = 0; i < (l.w*l.h*l.n); ++i) {
-		box b = detector_gpu.boxes[i];
-		int const obj_id = max_index(detector_gpu.probs[i], l.classes);
-		float const prob = detector_gpu.probs[i][obj_id];
+	for (size_t i = 0; i < nboxes; ++i) {
+		box b = dets[i].bbox;
+		int const obj_id = max_index(dets[i].prob, l.classes);
+		float const prob = dets[i].prob[obj_id];
 		
 		if (prob > thresh) 
 		{
@@ -252,6 +245,7 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 		}
 	}
 
+	free_detections(dets, nboxes);
 	if(sized.data)
 		free(sized.data);
 
