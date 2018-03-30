@@ -88,7 +88,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.classes = classes;
     args.jitter = jitter;
     args.num_boxes = l.max_boxes;
-	args.small_object = l.small_object;
+	args.small_object = net.small_object;
     args.d = &buffer;
     args.type = DETECTION_DATA;
 	args.threads = 64;	// 8

@@ -308,8 +308,8 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     box_label *boxes = read_boxes(labelpath, &count);
 	if (small_object == 1) {
 		for (i = 0; i < count; ++i) {
-			if (boxes[i].w < 0.01) boxes[i].w = 0.01;
-			if (boxes[i].h < 0.01) boxes[i].h = 0.01;
+			if (boxes[i].w < 0.001F) boxes[i].w = 0.001F;
+			if (boxes[i].h < 0.001F) boxes[i].h = 0.001F;
 		}
 	}
     randomize_boxes(boxes, count);
@@ -326,7 +326,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         id = boxes[i].id;
 
 		// not detect small objects
-		if ((w < 0.001 || h < 0.001)) continue;
+		if ((w < 0.001F || h < 0.001F)) continue;
 
         truth[i*5+0] = x;
         truth[i*5+1] = y;
