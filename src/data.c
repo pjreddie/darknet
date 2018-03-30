@@ -292,7 +292,8 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
-void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy, int small_object)
+void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy, 
+	int small_object, int net_w, int net_h)
 {
     char labelpath[4096];
     find_replace(path, "images", "labels", labelpath);
@@ -307,9 +308,12 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
 	int i;
     box_label *boxes = read_boxes(labelpath, &count);
 	if (small_object == 1) {
+		float lowest_w = 1.F / net_w;
+		float lowest_h = 1.F / net_h;
+		printf(" lowest_w = %f, lowest_h = %f \n", lowest_w, lowest_h);
 		for (i = 0; i < count; ++i) {
-			if (boxes[i].w < 0.001F) boxes[i].w = 0.001F;
-			if (boxes[i].h < 0.001F) boxes[i].h = 0.001F;
+			if (boxes[i].w < lowest_w) boxes[i].w = lowest_w;
+			if (boxes[i].h < lowest_h) boxes[i].h = lowest_h;
 		}
 	}
     randomize_boxes(boxes, count);
@@ -738,7 +742,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 		//show_image(ai, "aug");
 		//cvWaitKey(0);
 
-        fill_truth_detection(filename, boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy, small_object);
+        fill_truth_detection(filename, boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy, small_object, w, h);
 
 		cvReleaseImage(&src);
     }
@@ -789,7 +793,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 		random_distort_image(sized, hue, saturation, exposure);
 		d.X.vals[i] = sized.data;
 
-		fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, dx, dy, 1. / sx, 1. / sy, small_object);
+		fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, dx, dy, 1. / sx, 1. / sy, small_object, w, h);
 
 		free_image(orig);
 		free_image(cropped);
