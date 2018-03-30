@@ -268,10 +268,11 @@ layer parse_yolo(list *options, size_params params)
 
 	char *a = option_find_str(options, "mask", 0);
 	int *mask = parse_yolo_mask(a, &num);
-	layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
+	int max_boxes = option_find_int_quiet(options, "max", 30);
+	layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
 	assert(l.outputs == params.inputs);
 
-	l.max_boxes = option_find_int_quiet(options, "max", 90);
+	//l.max_boxes = option_find_int_quiet(options, "max", 90);
 	l.jitter = option_find_float(options, "jitter", .2);
 
 	l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
