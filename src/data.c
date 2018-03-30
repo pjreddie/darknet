@@ -310,7 +310,6 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
 	if (small_object == 1) {
 		float lowest_w = 1.F / net_w;
 		float lowest_h = 1.F / net_h;
-		printf(" lowest_w = %f, lowest_h = %f \n", lowest_w, lowest_h);
 		for (i = 0; i < count; ++i) {
 			if (boxes[i].w < lowest_w) boxes[i].w = lowest_w;
 			if (boxes[i].h < lowest_h) boxes[i].h = lowest_h;
