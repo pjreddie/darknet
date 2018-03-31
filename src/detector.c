@@ -820,6 +820,20 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 }
 
 #ifdef OPENCV
+typedef struct {
+	float w, h;
+} anchors_t;
+
+int anchors_comparator(const void *pa, const void *pb)
+{
+	anchors_t a = *(anchors_t *)pa;
+	anchors_t b = *(anchors_t *)pb;
+	float diff = b.w - a.w;
+	if (diff < 0) return 1;
+	else if (diff > 0) return -1;
+	return 0;
+}
+
 void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int show)
 {
 	printf("\n num_of_clusters = %d, width = %d, height = %d \n", num_of_clusters, width, height);
@@ -886,7 +900,10 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 		cvTermCriteria(CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10000, 0), attemps, 
 		0, KMEANS_PP_CENTERS,
 		centers, &compactness);
-	
+
+	// sort anchors
+	qsort(centers->data.fl, num_of_clusters, 2*sizeof(float), anchors_comparator);
+
 	//orig 2.0 anchors = 1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52
 	//float orig_anch[] = { 1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52 };
 	// worse than ours (even for 19x19 final size - for input size 608x608)
@@ -943,9 +960,12 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 	printf("anchors = ");
 	for (i = 0; i < num_of_clusters; ++i) {
 		sprintf(buff, "%2.4f,%2.4f", centers->data.fl[i * 2], centers->data.fl[i * 2 + 1]);
-		printf("%s, ", buff);
+		printf("%s", buff);
 		fwrite(buff, sizeof(char), strlen(buff), fw);
-		if (i + 1 < num_of_clusters) fwrite(", ", sizeof(char), 2, fw);;
+		if (i + 1 < num_of_clusters) {
+			fwrite(", ", sizeof(char), 2, fw);
+			printf(", ");
+		}
 	}
 	printf("\n");
 	fclose(fw);

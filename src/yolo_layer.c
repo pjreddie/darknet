@@ -39,7 +39,6 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.outputs = h*w*n*(classes + 4 + 1);
     l.inputs = l.outputs;
 	l.max_boxes = max_boxes;
-	printf(" l.max_boxes = %d \n", l.max_boxes);
     l.truths = l.max_boxes*(4 + 1);	// 90*(4 + 1);
     l.delta = calloc(batch*l.outputs, sizeof(float));
     l.output = calloc(batch*l.outputs, sizeof(float));
