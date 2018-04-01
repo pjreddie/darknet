@@ -239,7 +239,7 @@ Training Yolo v3
       * https://github.com/AlexeyAB/darknet/blob/0039fd26786ab5f71d5af725fc18b3f521e7acfd/cfg/yolov3.cfg#L689
       * https://github.com/AlexeyAB/darknet/blob/0039fd26786ab5f71d5af725fc18b3f521e7acfd/cfg/yolov3.cfg#L776
 
-  So if `classes=1` then should be `filters=18`. If `classes=2` then write `filters=31`.
+  So if `classes=1` then should be `filters=18`. If `classes=2` then write `filters=21`.
   
   **(Do not write in the cfg-file: filters=(classes + 5)x3)**
   
