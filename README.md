@@ -224,6 +224,7 @@ More information about training by the link: http://pjreddie.com/darknet/yolo/#t
 https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 ## How to train (to detect your custom objects):
+Training Yolo v3
 
 1. Create file `yolo-obj.cfg` with the same content as in `yolov3.cfg` (or copy `yolov3.cfg` to `yolo-obj.cfg)` and:
 
@@ -268,15 +269,17 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 4. Put image-files (.jpg) of your objects in the directory `build\darknet\x64\data\obj\`
 
-5. Create `.txt`-file for each `.jpg`-image-file - in the same directory and with the same name, but with `.txt`-extension, and put to file: object number and object coordinates on this image, for each object in new line: `<object-class> <x> <y> <width> <height>`
+5. You should label each object on images from your dataset. Use this visual GUI-software for marking bounded boxes of objects and generating annotation files for Yolo v2 & v3: https://github.com/AlexeyAB/Yolo_mark
+
+It will create `.txt`-file for each `.jpg`-image-file - in the same directory and with the same name, but with `.txt`-extension, and put to file: object number and object coordinates on this image, for each object in new line: `<object-class> <x> <y> <width> <height>`
 
   Where: 
   * `<object-class>` - integer number of object from `0` to `(classes-1)`
-  * `<x> <y> <width> <height>` - float values relative to width and height of image, it can be equal from 0.0 to 1.0 
+  * `<x> <y> <width> <height>` - float values relative to width and height of image, it can be equal from (0.0 to 1.0]
   * for example: `<x> = <absolute_x> / <image_width>` or `<height> = <absolute_height> / <image_height>`
   * atention: `<x> <y>` - are center of rectangle (are not top-left corner)
 
-  For example for `img1.jpg` you should create `img1.txt` containing:
+  For example for `img1.jpg` you will be created `img1.txt` containing:
 
   ```
   1 0.716797 0.395833 0.216406 0.147222
