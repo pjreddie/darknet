@@ -400,7 +400,16 @@ void visualize(char *cfgfile, char *weightfile)
 #endif
 }
 
-int main(int argc, char **argv)
+int main(int argc, char **argv) {
+    image orig = load_image(argv[1], 0, 0, 0);
+    save_image(orig, argv[2]);
+    void* buf;
+    int size = encode_image_jpg(orig, &buf);
+    printf("%d\n", size);
+    printf("%p\n", buf);
+}
+
+int main_(int argc, char **argv)
 {
     //test_resize("data/bad.jpg");
     //test_box();

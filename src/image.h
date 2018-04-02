@@ -53,6 +53,10 @@ void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);
 void show_image_collapsed(image p, char *name);
 
+void save_image_png(image im, const char *name);
+void save_image_jpg(image p, const char *name);
+int encode_image_jpg(image im, void** buf);
+
 void print_image(image m);
 
 image make_empty_image(int w, int h, int c);
