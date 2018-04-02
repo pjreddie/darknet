@@ -668,7 +668,9 @@ int fill_image_from_stream(CvCapture *cap, image im)
     rgbgr_image(im);
     return 1;
 }
+#endif
 
+#ifdef OPENCV
 void save_image_jpg(image p, const char *name)
 {
     image copy = copy_image(p);
@@ -691,7 +693,55 @@ void save_image_jpg(image p, const char *name)
     cvReleaseImage(&disp);
     free_image(copy);
 }
+#else
+void save_image_jpg(image im, const char *name)
+{
+    char buff[256];
+    //sprintf(buff, "%s (%d)", name, windows);
+    sprintf(buff, "%s.jpg", name);
+    unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
+    int i,k;
+    for(k = 0; k < im.c; ++k){
+        for(i = 0; i < im.w*im.h; ++i){
+            data[i*im.c+k] = (unsigned char) (255*im.data[i + k*im.w*im.h]);
+        }
+    }
+    int success = stbi_write_jpg(buff, im.w, im.h, im.c, data, 0);
+    free(data);
+    if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
+}
 #endif
+
+typedef struct Context {
+    void* buf;
+    int size;
+} Context;
+
+void stb_write_fn(void *context, void *data, int size)
+{
+    Context* p_context = (Context *) context;
+    memcpy(p_context->buf + p_context->size, data, size);
+    p_context->size += size;
+}
+
+int encode_image_jpg(image im, void* const buf)
+{
+    Context context;
+    context.buf = buf;
+    context.size = 0;
+    unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
+    int i,k;
+    for(k = 0; k < im.c; ++k){
+        for(i = 0; i < im.w*im.h; ++i){
+            data[i*im.c+k] = (unsigned char) (255*im.data[i + k*im.w*im.h]);
+        }
+    }
+    int success = stbi_write_jpg_to_func(stb_write_fn, (void*) &context, im.w,
+                                         im.h, im.c, data, 0);
+    free(data);
+    if(!success) fprintf(stderr, "Failed to encode image\n");
+    return context.size;
+}
 
 void save_image_png(image im, const char *name)
 {
