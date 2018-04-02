@@ -645,7 +645,7 @@ void harmless_update_network_gpu(network *net);
 #endif
 image get_label(image **characters, char *string, int size);
 void draw_label(image a, int r, int c, image label, const float *rgb);
-int encode_image_jpg(image p, void** buf);
+int encode_image_jpg(image p, void* const buf);
 void save_image_jpg(image p, const char *name);
 void save_image_png(image p, const char *name);
 void get_next_batch(data d, int n, int offset, float *X, float *y);

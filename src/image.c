@@ -724,10 +724,10 @@ void stb_write_fn(void *context, void *data, int size)
     p_context->size += size;
 }
 
-int encode_image_jpg(image im, void** buf)
+int encode_image_jpg(image im, void* const buf)
 {
     Context context;
-    context.buf = calloc(im.w * im.h * im.c, sizeof(char));
+    context.buf = buf;
     context.size = 0;
     unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
     int i,k;
@@ -736,11 +736,10 @@ int encode_image_jpg(image im, void** buf)
             data[i*im.c+k] = (unsigned char) (255*im.data[i + k*im.w*im.h]);
         }
     }
-    int success = stbi_write_jpg_to_func(stb_write_fn,
-                                         (void*) &context, im.w, im.h, im.c, data, 0);
+    int success = stbi_write_jpg_to_func(stb_write_fn, (void*) &context, im.w,
+                                         im.h, im.c, data, 0);
     free(data);
     if(!success) fprintf(stderr, "Failed to encode image\n");
-    *buf = context.buf;
     return context.size;
 }
 
