@@ -407,9 +407,9 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -heigh 416`
    then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file
 
-  * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides
+  * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides, on different backgrounds
 
-  * desirable that your training dataset include images with objects (without labels) that you do not want to detect - negative samples
+  * desirable that your training dataset include images with non-labeled objects that you do not want to detect - negative samples without bounded box
 
   * for training with a large number of objects in each image, add the parameter `max=200` or higher value in the last layer [region] in your cfg-file
   
