@@ -1146,4 +1146,5 @@ void run_detector(int argc, char **argv)
         demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
 			http_stream_port, dont_show);
     }
+	else printf(" There isn't such command: %s", argv[2]);
 }
