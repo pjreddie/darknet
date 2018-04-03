@@ -419,6 +419,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 		load_weights(&net, weightfile);
 	}
 	set_batch_network(&net, 1);
+	fuse_conv_batchnorm(net);
 	srand(time(0));
 
 	//list *plist = get_paths("data/coco_val_5k.list");
@@ -526,6 +527,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 		load_weights(&net, weightfile);
 	}
 	set_batch_network(&net, 1);
+	fuse_conv_batchnorm(net);
 	srand(time(0));
 
 	list *plist = get_paths(valid_images);
@@ -1022,6 +1024,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         load_weights(&net, weightfile);
     }
     set_batch_network(&net, 1);
+	fuse_conv_batchnorm(net);
     srand(2222222);
     clock_t time;
     char buff[256];

@@ -138,6 +138,7 @@ void free_detections(detection *dets, int n);
 
 int get_network_nuisance(network net);
 int get_network_background(network net);
+void fuse_conv_batchnorm(network net);
 
 #ifdef __cplusplus
 }
