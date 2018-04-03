@@ -775,7 +775,11 @@ void fuse_conv_batchnorm(network net)
 				}
 
 				l->batch_normalize = 0;
-				push_convolutional_layer(*l);
+#ifdef GPU
+				if (gpu_index >= 0) {
+					push_convolutional_layer(*l);
+				}
+#endif
 			}
 		}
 		else {
