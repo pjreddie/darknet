@@ -13,7 +13,7 @@ from keras.applications.mobilenet import DepthwiseConv2D
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 argparser = argparse.ArgumentParser(
     description='Train and validate YOLO_v2 model on any dataset')
@@ -141,8 +141,11 @@ def parse_predictions(model_output):
                 th, tw = vals[2], vals[3]
                 to, logits = vals[4], vals[5:]
 
-                by = (sigmoid(ty) + col + 1) / grid_h
-                bx = (sigmoid(tx) + row + 1) / grid_w
+                # by = (sigmoid(ty) + col + 1) / grid_h
+                # bx = (sigmoid(tx) + row + 1) / grid_w
+
+                by = (sigmoid(ty) + col) / grid_h
+                bx = (sigmoid(tx) + row) / grid_w
 
                 bw = math.exp(tw) * anchor[1] / grid_w
                 bh = math.exp(th) * anchor[0] / grid_h
