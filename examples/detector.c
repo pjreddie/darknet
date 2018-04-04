@@ -627,6 +627,12 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
 void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, char *txt_filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
+    // Read txt file
+    if( access( txt_filename, F_OK ) == -1 ) {
+        printf("\nERROR: %s does not exist!\n", txt_filename);
+        return;
+    }
+
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
@@ -640,7 +646,6 @@ void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, c
     char *input = buff;
     float nms=.45;
 
-    // Read txt file
     FILE *file = fopen ( txt_filename, "r" );
     char filename[1000];
 
@@ -684,7 +689,7 @@ void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, c
             char *result = malloc(strlen(filename)+strlen("_predictions")+1);
             strcpy(result, filename);
             strcat(result, "_predictions");
-            printf("%s", result);
+            // printf("%s", result);
             save_image(im, result);
 #ifdef OPENCV
             cvNamedWindow("predictions", CV_WINDOW_NORMAL);
