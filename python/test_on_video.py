@@ -98,7 +98,7 @@ def bbox_iou(box1, box2):
 
     union = box1.w * box1.h + box2.w * box2.h - intersect
 
-    return float(intersect) / union
+    return float(intersect) / (union + 1e-5)
 
 
 def bbox_iou_absolute(box1, box2):
@@ -117,7 +117,7 @@ def bbox_iou_absolute(box1, box2):
 
     union = w_1 * h_1 + w_2 * h_2 - intersect
 
-    return float(intersect) / union
+    return float(intersect) / (union + 1e-5)
 
 
 def interval_overlap(interval_a, interval_b):

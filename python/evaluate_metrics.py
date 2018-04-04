@@ -101,7 +101,6 @@ def main(model_path, dataset_path):
                 if bbox_iou_absolute(true_box, pred_box) >= 0.3 and true_label == pred_label:
                     true_boxes_used.append(true_box)
                     pred_boxes_used.append(pred_box)
-                    break
 
         true_boxes_used = np.array(true_boxes_used)
         pred_boxes_used = np.array(pred_boxes_used)
@@ -112,8 +111,9 @@ def main(model_path, dataset_path):
         if len(pred_boxes_used) > 0:
             pred_boxes_used = np.unique(pred_boxes_used, axis=0)
 
-        y_true_left = get_minus_sets(true_boxes, true_boxes_used)
-        y_pred_left = get_minus_sets(pred_boxes, pred_boxes_used)
+        # Take only coordinates
+        y_true_left = get_minus_sets([bbox_coords for bbox_coords, bbox_class in true_boxes], true_boxes_used)
+        y_pred_left = get_minus_sets([bbox_coords for bbox_coords, bbox_class in pred_boxes], pred_boxes_used)
 
         FN += len(y_true_left)
         FP += len(y_pred_left)
