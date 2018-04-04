@@ -21,13 +21,11 @@ argparser.add_argument(
 
 argparser.add_argument(
     '--grid_w',
-    default=30,
     type=int,
     help='output grid width')
 
 argparser.add_argument(
     '--grid_h',
-    default=17,
     type=int,
     help='output grid height')
 
@@ -126,7 +124,7 @@ def run_kmeans(ann_dims, anchor_num, delta=3.0):
 def parse_annotation(ann_dir, img_dir, labels=()):
     all_imgs = []
     seen_labels = {}
-    
+
     for ann in sorted(os.listdir(ann_dir)):
         annotation_file = os.path.join(ann_dir, ann)
 
@@ -137,7 +135,7 @@ def parse_annotation(ann_dir, img_dir, labels=()):
 
             for elem in tree.iter():
                 if 'filename' in elem.tag:
-                    img['filename'] = img_dir + elem.text
+                    img['filename'] = os.path.join(img_dir, elem.text)
                 if 'width' in elem.tag:
                     img['width'] = int(elem.text)
                 if 'height' in elem.tag:
@@ -147,7 +145,7 @@ def parse_annotation(ann_dir, img_dir, labels=()):
 
                     for attr in list(elem):
                         if 'name' in attr.tag:
-                            obj['name'] = convert_label(attr.text)
+                            obj['name'], obj['label'] = convert_label(attr.text)
 
                             if not obj['name']:
                                 continue
@@ -176,8 +174,8 @@ def parse_annotation(ann_dir, img_dir, labels=()):
             if len(img['object']) > 0:
                 all_imgs += [img]
         except Exception as exc:
-            print('Cannot parse file: {}'.format(annotation_file))
-                        
+            print('Cannot parse file: {}. Reason: {}'.format(annotation_file, exc))
+
     return all_imgs, seen_labels
 
 

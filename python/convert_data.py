@@ -16,12 +16,11 @@ def convert_annotation(in_file_path, out_file_path):
     h = int(size.find('height').text)
 
     for obj in root.iter('object'):
-        cls = convert_label(obj.find('name').text)
+        cls, cls_id = convert_label(obj.find('name').text)
 
         if not cls:
             continue
 
-        cls_id = CLASSES.index(cls)
         xmlbox = obj.find('bndbox')
 
         b = (

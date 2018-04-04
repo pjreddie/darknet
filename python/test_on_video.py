@@ -31,17 +31,25 @@ argparser.add_argument(
 
 img_w, img_h = 512, 960
 grid_w, grid_h = 16, 30
+# img_w, img_h = 512, 512
+# grid_w, grid_h = 16, 16
 num_anchors = 10
 num_classes = 3
-detect_threshold = 0.3
+detect_threshold = 0.1
 nms_threshold = 0.1
 
 classes = ['complementary_signs', 'white_signs', 'cars']
+colors = [(255, 0, 0), (0, 0, 255), (0, 255, 0)]
 
 biases = np.array([
     [0.298, 0.256], [0.602, 0.566], [0.932, 0.772], [1.225, 1.190], [1.858, 1.681],
     [1.895, 0.854], [2.713, 2.490], [3.381, 1.460], [4.488, 3.066], [7.450, 5.975]
 ])
+
+# biases = np.array([
+#     [0.159, 0.241], [0.322, 0.525], [0.473, 0.752], [0.726, 0.964], [0.923, 1.565],
+#     [1.449, 2.197], [1.468, 1.101], [2.378, 2.671], [3.443, 4.177], [4.266, 7.141]
+# ])
 
 
 class BBox(object):
@@ -89,6 +97,25 @@ def bbox_iou(box1, box2):
     intersect = intersect_w * intersect_h
 
     union = box1.w * box1.h + box2.w * box2.h - intersect
+
+    return float(intersect) / union
+
+
+def bbox_iou_absolute(box1, box2):
+    xmin_1, ymin_1, xmax_1, ymax_1 = box1
+    w_1 = xmax_1 - xmin_1
+    h_1 = ymax_1 - ymin_1
+
+    xmin_2, ymin_2, xmax_2, ymax_2 = box2
+    w_2 = xmax_2 - xmin_2
+    h_2 = ymax_2 - ymin_2
+
+    intersect_w = interval_overlap([xmin_1, xmax_1], [xmin_2, xmax_2])
+    intersect_h = interval_overlap([ymin_1, ymax_1], [ymin_2, ymax_2])
+
+    intersect = intersect_w * intersect_h
+
+    union = w_1 * h_1 + w_2 * h_2 - intersect
 
     return float(intersect) / union
 
@@ -159,6 +186,15 @@ def parse_predictions(model_output):
     return bboxes
 
 
+def absolute_bbox_cords(box, height=img_h, width=img_w):
+    y, x, w, h = box.absolute_values(height, width)
+
+    xmin, ymin = x, y
+    xmax, ymax = x + w, y + h
+
+    return xmin, ymin, xmax, ymax
+
+
 def nms_bboxes(boxes):
     for c in range(num_classes):
         sorted_indices = list(reversed(np.argsort([box.classes[c] for box in boxes])))
@@ -182,20 +218,23 @@ def nms_bboxes(boxes):
     return boxes
 
 
-def draw_boxes(image, boxes, labels):
+def draw_boxes(image, boxes, labels, height, width):
     for box in boxes:
-        y, x, w, h = box.absolute_values(img_h, img_w)
+        xmin, ymin, xmax, ymax = absolute_bbox_cords(box, height, width)
 
-        xmin, ymin = x, y
-        xmax, ymax = x + w, y + h
+        box_label = box.get_label()
+        class_name = labels[box_label]
+        class_color = colors[box_label]
 
-        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 255, 0), 3)
+        box_text = '%s %.2f' % (class_name, box.get_score())
+
+        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), class_color, 2)
         cv2.putText(image,
-                    labels[box.get_label()] + ' ' + str(box.get_score()),
+                    box_text,
                     (xmin, ymin - 13),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     1e-3 * image.shape[0],
-                    (0, 255, 0), 2)
+                    class_color, 2)
 
 
 def main(model_path, input_path):
@@ -207,12 +246,14 @@ def main(model_path, input_path):
         video_writer = skvideo.io.FFmpegWriter(video_out)
 
         for frame in tqdm(video_reader.nextFrame()):
-            frame, model_output = predict_model(model, frame)
+            frame_h, frame_w, _ = frame.shape
+
+            _, model_output = predict_model(model, frame)
 
             parsed_bboxes = parse_predictions(model_output)
             detected_bboxes = nms_bboxes(parsed_bboxes)
 
-            draw_boxes(frame, detected_bboxes, classes)
+            draw_boxes(frame, detected_bboxes, classes, frame_w, frame_h)
 
             video_writer.writeFrame(np.uint8(frame))
 
