@@ -36,10 +36,13 @@ extern "C" {
 #include "blas.h"
 }
 
+#ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#endif
+
 float * get_network_output_gpu_layer(network net, int i);
 float * get_network_delta_gpu_layer(network net, int i);
 float * get_network_output_gpu(network net);
-#include "opencv2/highgui/highgui_c.h"
 
 void forward_network_gpu(network net, network_state state)
 {
