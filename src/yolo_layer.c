@@ -109,18 +109,40 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
 }
 
 
-void delta_yolo_class(float *output, float *delta, int index, int class, int classes, int stride, float *avg_cat)
+void delta_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat, int focal_loss)
 {
     int n;
     if (delta[index]){
-        delta[index + stride*class] = 1 - output[index + stride*class];
-        if(avg_cat) *avg_cat += output[index + stride*class];
+        delta[index + stride*class_id] = 1 - output[index + stride*class_id];
+        if(avg_cat) *avg_cat += output[index + stride*class_id];
         return;
     }
-    for(n = 0; n < classes; ++n){
-        delta[index + stride*n] = ((n == class)?1 : 0) - output[index + stride*n];
-        if(n == class && avg_cat) *avg_cat += output[index + stride*n];
-    }
+	// Focal loss
+	if (focal_loss) {
+		// Focal Loss
+		float alpha = 0.5;	// 0.25 or 0.5
+							//float gamma = 2;	// hardcoded in many places of the grad-formula	
+
+		int ti = index + stride*class_id;
+		float pt = output[ti] + 0.000000000000001F;
+		//float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);	// http://blog.csdn.net/linmingan/article/details/77885832	
+		float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);		// https://github.com/unsky/focal-loss
+
+		for (n = 0; n < classes; ++n) {
+			delta[index + stride*n] = (((n == class_id) ? 1 : 0) - output[index + stride*n]);
+
+			delta[index + stride*n] *= alpha*grad;
+
+			if (n == class_id) *avg_cat += output[index + stride*n];
+		}
+	}
+	else {
+		// default
+		for (n = 0; n < classes; ++n) {
+			delta[index + stride*n] = ((n == class_id) ? 1 : 0) - output[index + stride*n];
+			if (n == class_id && avg_cat) *avg_cat += output[index + stride*n];
+		}
+	}
 }
 
 static int entry_index(layer l, int batch, int location, int entry)
@@ -196,7 +218,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         int class = state.truth[best_t*(4 + 1) + b*l.truths + 4];
                         if (l.map) class = l.map[class];
                         int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
-                        delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
+                        delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0, l.focal_loss);
                         box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
                         delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
@@ -236,7 +258,7 @@ void forward_yolo_layer(const layer l, network_state state)
                 int class = state.truth[t*(4 + 1) + b*l.truths + 4];
                 if (l.map) class = l.map[class];
                 int class_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4 + 1);
-                delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, &avg_cat);
+                delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, &avg_cat, l.focal_loss);
 
                 ++count;
                 ++class_count;

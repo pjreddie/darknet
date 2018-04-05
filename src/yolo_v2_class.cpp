@@ -69,6 +69,7 @@ YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_file
 	}
 	set_batch_network(&net, 1);
 	net.gpu_index = cur_gpu_id;
+	fuse_conv_batchnorm(net);
 
 	layer l = net.layers[net.n - 1];
 	int j;

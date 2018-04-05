@@ -274,6 +274,7 @@ layer parse_yolo(list *options, size_params params)
 
 	//l.max_boxes = option_find_int_quiet(options, "max", 90);
 	l.jitter = option_find_float(options, "jitter", .2);
+	l.focal_loss = option_find_int_quiet(options, "focal_loss", 0);
 
 	l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
 	l.truth_thresh = option_find_float(options, "truth_thresh", 1);

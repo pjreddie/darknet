@@ -757,7 +757,7 @@ void fuse_conv_batchnorm(network net)
 		layer *l = &net.layers[j];
 
 		if (l->type == CONVOLUTIONAL) {
-			printf(" Fuse Convolutional layer \t\t l->size = %d  \n", l->size);
+			//printf(" Merges Convolutional-%d and batch_norm \n", j);
 
 			if (l->batch_normalize) {
 				int f;
@@ -783,7 +783,7 @@ void fuse_conv_batchnorm(network net)
 			}
 		}
 		else {
-			printf(" Skip layer: %d \n", l->type);
+			//printf(" Fusion skip layer type: %d \n", l->type);
 		}
 	}
 }
