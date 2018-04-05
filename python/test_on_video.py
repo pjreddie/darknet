@@ -156,7 +156,7 @@ def predict_model(model, frame):
     return image, output_grid
 
 
-def parse_predictions(model_output):
+def parse_predictions(model_output, shift=False):
     bboxes = []
     for row in range(grid_w):
         for col in range(grid_h):
@@ -168,11 +168,12 @@ def parse_predictions(model_output):
                 th, tw = vals[2], vals[3]
                 to, logits = vals[4], vals[5:]
 
-                # by = (sigmoid(ty) + col + 1) / grid_h
-                # bx = (sigmoid(tx) + row + 1) / grid_w
-
-                by = (sigmoid(ty) + col) / grid_h
-                bx = (sigmoid(tx) + row) / grid_w
+                if shift:
+                    by = (sigmoid(ty) + col + 1) / grid_h
+                    bx = (sigmoid(tx) + row + 1) / grid_w
+                else:
+                    by = (sigmoid(ty) + col) / grid_h
+                    bx = (sigmoid(tx) + row) / grid_w
 
                 bw = math.exp(tw) * anchor[1] / grid_w
                 bh = math.exp(th) * anchor[0] / grid_h
