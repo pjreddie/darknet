@@ -780,8 +780,8 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)
     for(c = 0; c < im.c; ++c){
         for(y = 0; y < h; ++y){
             for(x = 0; x < w; ++x){
-                int rx = ((float)x / w) * im.w;
-                int ry = ((float)y / h) * im.h;
+                float rx = ((float)x / w) * im.w;
+                float ry = ((float)y / h) * im.h;
                 float val = bilinear_interpolate(im, rx, ry, c);
                 set_pixel(canvas, x + dx, y + dy, c, val);
             }
