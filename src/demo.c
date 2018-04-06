@@ -24,6 +24,7 @@
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio_c.h"
 #endif
+#include "http_stream.h"
 image get_image_from_stream(CvCapture *cap);
 
 static char **demo_names;
