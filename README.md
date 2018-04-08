@@ -167,7 +167,7 @@ Then add to your created project:
 
 `C:\opencv_3.0\opencv\build\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(cudnn)\include`
 - (right click on project) -> Build dependecies -> Build Customizations -> set check on CUDA 9.1 or what version you have - for example as here: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/01/VS2013-R-5.jpg
-- add to project all .c & .cu files from `\src`
+- add to project all `.c`, `.cpp` & `.cu` files from `\src`
 - (right click on project) -> properties  -> Linker -> General -> Additional Library Directories, put here: 
 
 `C:\opencv_3.0\opencv\build\x64\vc14\lib;$(CUDA_PATH)lib\$(PlatformName);$(cudnn)\lib\x64;%(AdditionalLibraryDirectories)`
@@ -215,6 +215,8 @@ Then add to your created project:
 If required change pathes in the file `build\darknet\x64\data\voc.data`
 
 More information about training by the link: http://pjreddie.com/darknet/yolo/#train-voc
+
+ **Note:** If during training you see `nan` values in some lines then training goes well, but if `nan` are in all lines then training goes wrong.
 
 ## How to train with multi-GPU:
 
