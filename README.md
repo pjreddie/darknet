@@ -167,7 +167,7 @@ Then add to your created project:
 
 `C:\opencv_3.0\opencv\build\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(cudnn)\include`
 - (right click on project) -> Build dependecies -> Build Customizations -> set check on CUDA 9.1 or what version you have - for example as here: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/01/VS2013-R-5.jpg
-- add to project all `.c`, `.cpp` & `.cu` files from `\src`
+- add to project all `.c` & `.cu` files and file `http_stream.cpp` from `\src`
 - (right click on project) -> properties  -> Linker -> General -> Additional Library Directories, put here: 
 
 `C:\opencv_3.0\opencv\build\x64\vc14\lib;$(CUDA_PATH)lib\$(PlatformName);$(cudnn)\lib\x64;%(AdditionalLibraryDirectories)`
