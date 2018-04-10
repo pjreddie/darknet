@@ -17,6 +17,10 @@
 // To use tracking - uncomment the following line. Tracking is supported only by OpenCV 3.x
 //#define TRACK_OPTFLOW
 
+//#include "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_runtime.h"
+//#pragma comment(lib, "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/lib/x64/cudart.lib")
+//static std::shared_ptr<image_t> device_ptr(NULL, [](void *img) { cudaDeviceReset(); });
+
 #include "yolo_v2_class.hpp"	// imported functions from DLL
 
 #ifdef OPENCV
@@ -273,6 +277,7 @@ int main(int argc, char *argv[])
 				std::vector<bbox_t> result_vec, thread_result_vec;
 				detector.nms = 0.02;	// comment it - if track_id is not required
 				std::atomic<bool> consumed, videowrite_ready;
+				bool exit_flag = false;
 				consumed = true;
 				videowrite_ready = true;
 				std::atomic<int> fps_det_counter, fps_cap_counter;
@@ -360,7 +365,7 @@ int main(int argc, char *argv[])
 						t_detect = std::thread([&]() {
 							auto current_image = det_image;
 							consumed = true;
-							while (current_image.use_count() > 0) {
+							while (current_image.use_count() > 0 && !exit_flag) {
 								auto result = detector.detect_resized(*current_image, frame_size.width, frame_size.height, 
 									thresh, false);	// true
 								++fps_det_counter;
@@ -369,7 +374,7 @@ int main(int argc, char *argv[])
 								consumed = true;
 								cv_detected.notify_all();
 								if (detector.wait_stream) {
-									while (consumed) cv_pre_tracked.wait(lock);
+									while (consumed && !exit_flag) cv_pre_tracked.wait(lock);
 								}
 								current_image = det_image;
 							}
@@ -409,6 +414,7 @@ int main(int argc, char *argv[])
 						if (key == 'f') show_small_boxes = !show_small_boxes;
 						if (key == 'p') while (true) if(cv::waitKey(100) == 'p') break;
 						if (key == 'e') extrapolate_flag = !extrapolate_flag;
+						if (key == 27) { exit_flag = true; break; }
 
 						if (output_video.isOpened() && videowrite_ready) {
 							if (t_videowrite.joinable()) t_videowrite.join();
@@ -428,10 +434,12 @@ int main(int argc, char *argv[])
 					}
 #endif
 				}
+				exit_flag = true;
 				if (t_cap.joinable()) t_cap.join();
 				if (t_detect.joinable()) t_detect.join();
 				if (t_videowrite.joinable()) t_videowrite.join();
 				std::cout << "Video ended \n";
+				break;
 			}
 			else if (file_ext == "txt") {	// list of image files
 				std::ifstream file(filename);
