@@ -30,7 +30,7 @@ argparser.add_argument(
     help='output grid height')
 
 argparser.add_argument(
-    '--for_class',
+    '--for_classes',
     default=None,
     help='calculate centroids only for specified class'
 )
@@ -184,9 +184,12 @@ def main(args):
     img_dir = os.path.join(args.dataset, 'images')
     num_anchors = args.anchors
 
-    labels = []
-    if args.for_class:
-        labels.append(args.for_class)
+    labels = set()
+    if args.for_classes:
+        classes_str = args.for_classes
+        labels = set(map(str.strip, classes_str.split(',')))
+
+        print('Generating bboxes for classes: %s' % labels)
 
     train_imgs, train_labels = parse_annotation(ann_dir, img_dir, labels=labels)
     print('Train labels: {}'.format(train_labels))

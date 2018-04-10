@@ -23,13 +23,24 @@ def convert_annotation(in_file_path, out_file_path):
 
         xmlbox = obj.find('bndbox')
 
-        b = (
-            float(xmlbox.find('xmin').text), float(xmlbox.find('xmax').text),
-            float(xmlbox.find('ymin').text), float(xmlbox.find('ymax').text)
-        )
+        xmin, xmax = float(xmlbox.find('xmin').text), float(xmlbox.find('xmax').text)
+        ymin, ymax = float(xmlbox.find('ymin').text), float(xmlbox.find('ymax').text)
 
-        bb = convert_bbox((w, h), b)
-        out_file.write(str(cls_id) + " " + " ".join([str(a) for a in bb]) + '\n')
+        bbox = xmin, xmax, ymin, ymax
+
+        try:
+            assert all(val >= 0 for val in bbox), "All values must be >= 0"
+            assert xmax > xmin, "Xmax must be >= Xmin"
+            assert ymax > ymin, "Ymax must be >= Ymin"
+
+            bb = convert_bbox((w, h), bbox)
+            out_file.write(str(cls_id) + " " + " ".join([str(a) for a in bb]) + '\n')
+        except AssertionError as exc:
+            print(
+                "Data consistency error: %s (%.2f, %.2f, %.2f, %.2f) in file: %s" % (
+                    exc, xmin, xmax, ymin, ymax, in_file_path
+                )
+            )
 
     out_file.close()
     in_file.close()

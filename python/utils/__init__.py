@@ -1,5 +1,5 @@
 CLASSES = ('complementary_signs', 'white_signs', 'cars')
-SETS = ('train', 'val')
+SETS = ('train', 'val', 'test')
 
 OUTPUT_TEMPLATE = '''
 classes = {}
