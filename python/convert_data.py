@@ -15,6 +15,7 @@ def convert_annotation(in_file_path, out_file_path):
     w = int(size.find('width').text)
     h = int(size.find('height').text)
 
+    bboxes_converted = 0
     for obj in root.iter('object'):
         cls, cls_id = convert_label(obj.find('name').text)
 
@@ -35,6 +36,8 @@ def convert_annotation(in_file_path, out_file_path):
 
             bb = convert_bbox((w, h), bbox)
             out_file.write(str(cls_id) + " " + " ".join([str(a) for a in bb]) + '\n')
+
+            bboxes_converted += 1
         except AssertionError as exc:
             print(
                 "Data consistency error: %s (%.2f, %.2f, %.2f, %.2f) in file: %s" % (
@@ -42,10 +45,12 @@ def convert_annotation(in_file_path, out_file_path):
                 )
             )
 
-            raise exc
-
     out_file.close()
     in_file.close()
+
+    if bboxes_converted == 0:
+        os.remove(out_file_path)
+        raise ValueError('No bboxes converted!')
 
 
 if __name__ == '__main__':
