@@ -45,7 +45,9 @@ def convert_annotation(in_file_path, out_file_path):
                 )
             )
 
+    out_file.flush()
     out_file.close()
+
     in_file.close()
 
     if bboxes_converted == 0:
@@ -88,7 +90,11 @@ if __name__ == '__main__':
 
                     convert_annotation(annotation_path, label_path)
                     list_file.write(image_path + '\n')
-                except Exception as exc:
+
+                    if not os.path.exists(label_path):
+                        raise EnvironmentError('Label file %s was not created!' % label_path)
+
+                except (AssertionError, ValueError) as exc:
                     print('Cannot process {}: {}'.format(image_file, exc))
 
         outputs[set_type] = list_file_path
