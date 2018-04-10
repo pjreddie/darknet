@@ -627,9 +627,15 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
 void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, char *txt_filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
-    // Read txt file
+    // Check the txt file
     if( access( txt_filename, F_OK ) == -1 ) {
         printf("\nERROR: %s does not exist!\n", txt_filename);
+        return;
+    }
+
+    // Check the weightfile
+    if( access( weightfile, F_OK ) == -1 ) {
+        printf("\nERROR: %s does not exist!\n", weightfile);
         return;
     }
 
