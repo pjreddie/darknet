@@ -42,6 +42,8 @@ def convert_annotation(in_file_path, out_file_path):
                 )
             )
 
+            raise exc
+
     out_file.close()
     in_file.close()
 
