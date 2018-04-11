@@ -51,8 +51,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.jitter = jitter;
     args.num_boxes = l.max_boxes;
     args.d = &buffer;
-    args.type = DETECTION_DATA;
-    //args.type = INSTANCE_DATA;
+    args.type = DETECTION_DATA_SIMPLE;
     args.threads = 64;
 
     pthread_t load_thread = load_data(args);
@@ -93,24 +92,28 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
            printf("loaded: %f %f %f %f\n", b.x, b.y, b.w, b.h);
            }
          */
+
         /*
-           int zz;
-           for(zz = 0; zz < train.X.cols; ++zz){
+        int zz;
+        for(zz = 0; zz < train.X.cols; ++zz){
            image im = float_to_image(net->w, net->h, 3, train.X.vals[zz]);
+
            int k;
            for(k = 0; k < l.max_boxes; ++k){
-           box b = float_to_box(train.y.vals[zz] + k*5, 1);
-           printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
-           draw_bbox(im, b, 1, 1,0,0);
+                box b = float_to_box(train.y.vals[zz] + k*5, 1);
+                printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+                draw_bbox(im, b, 1, 1,0,0);
            }
-           show_image(im, "truth11");
-           cvWaitKey(0);
-           save_image(im, "truth11");
-           }
-         */
+
+           char buff[256];
+           sprintf(buff, "img_examples/sized_bbox_%d", zz);
+           save_image(im, buff);
+
+           free_image(im);
+        }
+        */
 
         printf("Loaded: %lf seconds\n", what_time_is_it_now()-time);
-
         time=what_time_is_it_now();
         float loss = 0;
 #ifdef GPU
@@ -300,8 +303,8 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     load_args args = {0};
     args.w = net->w;
     args.h = net->h;
-    //args.type = IMAGE_DATA;
-    args.type = LETTERBOX_DATA;
+    args.type = IMAGE_DATA;
+    //args.type = LETTERBOX_DATA;
 
     for(t = 0; t < nthreads; ++t){
         args.path = paths[i+t];
@@ -429,8 +432,8 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     load_args args = {0};
     args.w = net->w;
     args.h = net->h;
-    //args.type = IMAGE_DATA;
-    args.type = LETTERBOX_DATA;
+    args.type = IMAGE_DATA;
+    //args.type = LETTERBOX_DATA;
 
     for(t = 0; t < nthreads; ++t){
         args.path = paths[i+t];
@@ -583,8 +586,11 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input,0,0);
-        image sized = letterbox_image(im, net->w, net->h);
+        image im = load_image_color(input, 0, 0);
+        image sized = resize_image(im, net->w, net->h);
+
+        //image im = load_image_color(input,0,0);
+        //image sized = letterbox_image(im, net->w, net->h);
         //image sized = resize_image(im, net->w, net->h);
         //image sized2 = resize_max(im, net->w);
         //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
