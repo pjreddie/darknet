@@ -1061,6 +1061,8 @@ data load_data_detection_simple(int n, char **paths, int m, int w, int h, int bo
         fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, shift_w, shift_h, scale_w, scale_h);
 
         /*
+        printf("%d (%d) ==> %s \n", i, with_augmentation, random_paths[i]);
+
         char buff[256];
         sprintf(buff, "img_examples/orig_%d", i);
         save_image(orig, buff);
