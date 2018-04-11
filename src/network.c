@@ -555,6 +555,9 @@ void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, f
 
 	free(boxes);
 	free_ptrs((void **)probs, l.w*l.h*l.n);
+
+	//correct_region_boxes(dets, l.w*l.h*l.n, w, h, net_w, net_h, relative);
+	correct_yolo_boxes(dets, l.w*l.h*l.n, w, h, net_w, net_h, relative, letter);
 }
 
 void fill_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets, int letter)
