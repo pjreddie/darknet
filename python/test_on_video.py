@@ -28,6 +28,12 @@ argparser.add_argument(
     '--input',
     help='path to an image or an video (mp4 format)')
 
+argparser.add_argument(
+    '-s', '--show',
+    action='store_true',
+    help='show video in real time'
+)
+
 
 img_w, img_h = 544, 960
 grid_w, grid_h = 17, 30
@@ -263,7 +269,15 @@ def main(model_path, input_path):
 
             draw_boxes(frame, detected_bboxes, classes, frame_w, frame_h)
 
-            video_writer.writeFrame(np.uint8(frame))
+            processed_frame = np.uint8(frame)
+            video_writer.writeFrame(processed_frame)
+
+            if args.show:
+                processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_RGB2BGR)
+                cv2.imshow('frame', processed_frame)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
         video_reader.close()
         video_writer.close()
