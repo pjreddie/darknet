@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import argparse
 import os
+import skimage.io
 import sys
 
 ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../'))
@@ -46,7 +47,16 @@ def init_network(cfg_file=bytes(os.path.join(ROOT_DIR, "cfg/yolov3.cfg"), encodi
 
 def detect_using_yolo(net, meta, image_file):
 
-    # Check if image
+    if not os.path.exists(image_file):
+        raise ValueError("ERROR: image_file does not exist! Given:", image_file)
+
+    # Check if image_file is string or bytes
+    if type(image_file) == 'str':
+        image_file = bytes(image_file, encoding='utf-8')
+
+    r = dn.detect(net, meta, image_file)
+
+    return r
 
 
 if __name__ == '__main__':
@@ -57,25 +67,27 @@ if __name__ == '__main__':
     parser.add_argument('--cfg_file', type=str, default=os.path.join(ROOT_DIR, 'cfg/yolov3.cfg'), help="Full path to the desired config file")
     parser.add_argument('--data_cfg', type=str, default=os.path.join(ROOT_DIR, 'cfg/coco.data'), help="Full path to the desired data file (for object labels)")
     parser.add_argument('--use_gpu', '-g', action='store_true', help="Use GPU or not")
-    parser.add_argument('--input', '-i', type=str, default=None, help="Input image to detect objects in, or text file containing paths to images")
+    parser.add_argument('--image', '-i', type=str, default=None, help="Input image to detect objects in, or text file containing paths to images")
     args  = parser.parse_args()
 
     print(args)
 
-    if 
+    if image == None:
+        image = b"data/dog.jpg"
 
     weights_file = bytes(os.path.realpath(args.weights_file), encoding='utf-8')
     cfg_file = bytes(os.path.realpath(args.cfg_file), encoding='utf-8')
     data_cfg = bytes(os.path.realpath(args.data_cfg), encoding='utf-8')
 
-    # Load network
     try:
+        # Load network
         net, meta = init_network(cfg_file=cfg_file, weights_file=weights_file, data_cfg=data_cfg, use_gpu=args.use_gpu)
+       
+        # Try detecting
+        r = dn.detect(net, meta, image)
+        print(r)
+    
     except ValueError as e:
         print(e)
         sys.exit()
-    
-    # Try detecting
-    r = dn.detect(net, meta, b"data/dog.jpg")
-    print(r)
     
