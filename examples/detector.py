@@ -72,8 +72,8 @@ if __name__ == '__main__':
 
     print(args)
 
-    if image == None:
-        image = b"data/dog.jpg"
+    if args.image == None:
+        args.image = b"data/dog.jpg"
 
     weights_file = bytes(os.path.realpath(args.weights_file), encoding='utf-8')
     cfg_file = bytes(os.path.realpath(args.cfg_file), encoding='utf-8')
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         net, meta = init_network(cfg_file=cfg_file, weights_file=weights_file, data_cfg=data_cfg, use_gpu=args.use_gpu)
        
         # Try detecting
-        r = dn.detect(net, meta, image)
+        r = dn.detect(net, meta, args.image)
         print(r)
     
     except ValueError as e:
