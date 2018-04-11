@@ -13,13 +13,11 @@ sys.path.append(NET_DIR)
 import darknet as dn
 import pdb
 
-# Don't use GPU?
-dn.set_gpu(0)
-
 
 def init_network(cfg_file=bytes(os.path.join(ROOT_DIR, "cfg/yolov3.cfg"), encoding='utf-8'),
                  weights_file=b"yolov3.weights",
-                 data_cfg=bytes(os.path.join(ROOT_DIR, "cfg/coco.data"), encoding='utf-8')):
+                 data_cfg=bytes(os.path.join(ROOT_DIR, "cfg/coco.data"), encoding='utf-8'),
+                 use_gpu=False):
 
     # Check if files exist
     if not os.path.exists(cfg_file):
@@ -31,6 +29,12 @@ def init_network(cfg_file=bytes(os.path.join(ROOT_DIR, "cfg/yolov3.cfg"), encodi
     if not os.path.exists(data_cfg):
         raise ValueError("ERROR: data_cfg does not exist! Given:", data_cfg)
 
+    # Don't use GPU?
+    if use_gpu:
+        dn.set_gpu(1)
+    else:
+        dn.set_gpu(0)
+
     # Load the network
     net = dn.load_net(cfg_file, weights_file, 0)
 
@@ -40,25 +44,33 @@ def init_network(cfg_file=bytes(os.path.join(ROOT_DIR, "cfg/yolov3.cfg"), encodi
     return net, meta
 
 
+def detect_using_yolo(net, meta, image_file):
+
+    # Check if image
+
+
 if __name__ == '__main__':
     
     # Parse arguments
     parser = argparse.ArgumentParser(description='YOLO using python')
     parser.add_argument('--weights_file', '-w', type=str, required=True, help='Full path to the weights file, yolov3.weights (or other yolo weights)')
-    parser.add_argument('--cfg_file', type=str, default=os.path.join(ROOT_DIR, "cfg/yolov3.cfg"), help="Full path to the desired config file")
-    parser.add_argument('--data_cfg', type=str, default=os.path.join(ROOT_DIR, "cfg/coco.data"), help="Full path to the desired data file (for object labels)")
+    parser.add_argument('--cfg_file', type=str, default=os.path.join(ROOT_DIR, 'cfg/yolov3.cfg'), help="Full path to the desired config file")
+    parser.add_argument('--data_cfg', type=str, default=os.path.join(ROOT_DIR, 'cfg/coco.data'), help="Full path to the desired data file (for object labels)")
+    parser.add_argument('--use_gpu', '-g', action='store_true', help="Use GPU or not")
+    parser.add_argument('--input', '-i', type=str, default=None, help="Input image to detect objects in, or text file containing paths to images")
     args  = parser.parse_args()
 
     print(args)
 
+    if 
+
     weights_file = bytes(os.path.realpath(args.weights_file), encoding='utf-8')
-    print(os.path.realpath(args.cfg_file), args.cfg_file)
     cfg_file = bytes(os.path.realpath(args.cfg_file), encoding='utf-8')
     data_cfg = bytes(os.path.realpath(args.data_cfg), encoding='utf-8')
 
     # Load network
     try:
-        net, meta = init_network(cfg_file=cfg_file, weights_file=weights_file, data_cfg=data_cfg)
+        net, meta = init_network(cfg_file=cfg_file, weights_file=weights_file, data_cfg=data_cfg, use_gpu=args.use_gpu)
     except ValueError as e:
         print(e)
         sys.exit()
@@ -67,13 +79,3 @@ if __name__ == '__main__':
     r = dn.detect(net, meta, b"data/dog.jpg")
     print(r)
     
-    # And then down here you could detect a lot more images like:
-    r = dn.detect(net, meta, b"data/eagle.jpg")
-    print(r)
-    r = dn.detect(net, meta, b"data/giraffe.jpg")
-    print(r)
-    r = dn.detect(net, meta, b"data/horses.jpg")
-    print(r)
-    r = dn.detect(net, meta, b"data/person.jpg")
-    print(r)
-
