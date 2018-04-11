@@ -1019,24 +1019,59 @@ data load_data_detection_simple(int n, char **paths, int m, int w, int h, int bo
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
-    d.y = make_matrix(n, 5 * boxes);
-    for(i = 0; i < n; ++i){
+    d.y = make_matrix(n, 5*boxes);
+    for(i = 0; i < n; ++i) {
         image orig = load_image_color(random_paths[i], 0, 0);
+        image sized;
 
-        image sized = resize_image(orig, w, h);
-        random_distort_image(sized, hue, saturation, exposure);
+        int with_augmentation = rand() % 2;
 
-        int flip = rand() % 2;
-        if (flip) {
-            flip_image(sized);
+        int flip = 0;
+        float shift_w = 0, shift_h = 0;
+        float scale_w = 1, scale_h = 1;
+
+        if (with_augmentation) {
+            sized = make_image(w, h, orig.c);
+            float scale = rand_uniform(1.0, 1.25);
+
+            float nw = scale * w;
+            float nh = scale * h;
+
+            float dx = rand_uniform(0, w - nw);
+            float dy = rand_uniform(0, h - nh);
+
+            place_image(orig, nw, nh, dx, dy, sized);
+
+            random_distort_image(sized, hue, saturation, exposure);
+
+            flip = rand() % 2;
+            if(flip) {
+                flip_image(sized);
+            }
+
+            shift_w = -dx/w;
+            shift_h = -dy/h;
+            scale_w = nw/w;
+            scale_h = nh/h;
+        } else {
+            sized = resize_image(orig, w, h);
         }
 
         d.X.vals[i] = sized.data;
+        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, shift_w, shift_h, scale_w, scale_h);
 
-        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, 0., 0., 1., 1.);
+        /*
+        char buff[256];
+        sprintf(buff, "img_examples/orig_%d", i);
+        save_image(orig, buff);
+
+        sprintf(buff, "img_examples/sized_%d", i);
+        save_image(sized, buff);
+        */
 
         free_image(orig);
     }
+
     free(random_paths);
     return d;
 }
