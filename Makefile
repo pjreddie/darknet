@@ -47,9 +47,9 @@ COMMON=
 CFLAGS=-Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas
 
 ifeq ($(DEBUG), 1) 
-OPTS=-O0 -g
+OPTS= -O0 -g
 else
-OPTS=-ffp-contract=fast -mavx
+CFLAGS+= -ffp-contract=fast -mavx
 endif
 
 CFLAGS+=$(OPTS)

@@ -111,7 +111,7 @@ void asm_cpuid(uint32_t* abcd, uint32_t eax)
 }
 #endif
 
-inline int simd_detect_x86(unsigned int idFeature)
+int simd_detect_x86(unsigned int idFeature)
 {
 	uint32_t regs[4];	// EAX, EBX, ECX, EDX;
 #ifdef _WIN32
@@ -127,7 +127,7 @@ inline int simd_detect_x86(unsigned int idFeature)
 	return 1;
 }
 
-inline int is_fma_avx() {
+int is_fma_avx() {
 	static int result = -1;
 	if (result == -1) {
 		result = simd_detect_x86(AVXFlag);
