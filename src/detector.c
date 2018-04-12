@@ -606,6 +606,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 			int letterbox = (args.type == LETTERBOX_DATA);
 			float hier_thresh = 0;
 			detection *dets = get_network_boxes(&net, 1, 1, thresh, hier_thresh, 0, 0, &nboxes, letterbox);
+			//detection *dets = get_network_boxes(&net, val[t].w, val[t].h, thresh, hier_thresh, 0, 1, &nboxes, letterbox); // for letterbox=1
 			if (nms) do_nms_sort_v3(dets, nboxes, l.classes, nms);
 
 			char labelpath[4096];
