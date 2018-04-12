@@ -255,6 +255,12 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 			if (top < 0) top = 0;
 			if (bot > im.h - 1) bot = im.h - 1;
 
+			//int b_x_center = (left + right) / 2;
+			//int b_y_center = (top + bot) / 2;
+			//int b_width = right - left;
+			//int b_height = bot - top;
+			//sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
+
 			draw_box_width(im, left, top, right, bot, width, red, green, blue);
 			if (alphabet) {
 				image label = get_label_v3(alphabet, labelstr, (im.h*.03));
@@ -393,6 +399,12 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			if (top < 0) top = 0;
 			if (bot > show_img->height - 1) bot = show_img->height - 1;
 
+			//int b_x_center = (left + right) / 2;
+			//int b_y_center = (top + bot) / 2;
+			//int b_width = right - left;
+			//int b_height = bot - top;
+			//sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
+
 			float const font_size = show_img->height / 1000.F;
 			CvPoint pt1, pt2, pt_text, pt_text_bg1, pt_text_bg2;
 			pt1.x = left;
@@ -418,7 +430,7 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			black_color.val[0] = 0;
 			CvFont font;
 			cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, font_size, font_size, 0, font_size * 3, 8);
-			cvPutText(show_img, names[class_id], pt_text, &font, black_color);
+			cvPutText(show_img, labelstr, pt_text, &font, black_color);
 		}
 	}
 }
