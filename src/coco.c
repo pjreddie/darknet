@@ -216,7 +216,7 @@ void validate_coco(char *cfgfile, char *weightfile)
             int w = val[t].w;
             int h = val[t].h;
             get_detection_boxes(l, w, h, thresh, probs, boxes, 0);
-            if (nms) do_nms_sort(boxes, probs, side*side*l.n, classes, iou_thresh);
+            if (nms) do_nms_sort_v2(boxes, probs, side*side*l.n, classes, iou_thresh);
             print_cocos(fp, image_id, boxes, probs, side*side*l.n, classes, w, h);
             free_image(val[t]);
             free_image(val_resized[t]);
@@ -351,7 +351,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
-        if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
+        if (nms) do_nms_sort_v2(boxes, probs, l.side*l.side*l.n, l.classes, nms);
         draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, coco_classes, alphabet, 80);
         save_image(im, "prediction");
         show_image(im, "predictions");

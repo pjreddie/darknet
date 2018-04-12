@@ -191,7 +191,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
             int w = val[t].w;
             int h = val[t].h;
             get_detection_boxes(l, w, h, thresh, probs, boxes, 0);
-            if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, classes, iou_thresh);
+            if (nms) do_nms_sort_v2(boxes, probs, l.side*l.side*l.n, classes, iou_thresh);
             print_yolo_detections(fps, id, boxes, probs, l.side*l.side*l.n, classes, w, h);
             free(id);
             free_image(val[t]);
@@ -322,7 +322,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
-        if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
+        if (nms) do_nms_sort_v2(boxes, probs, l.side*l.side*l.n, l.classes, nms);
         //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
         draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
         save_image(im, "predictions");

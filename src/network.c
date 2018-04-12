@@ -28,6 +28,19 @@
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "yolo_layer.h"
+#include "parser.h"
+
+network *load_network(char *cfg, char *weights, int clear)
+{
+	printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
+	network *net = calloc(1, sizeof(network));
+	*net = parse_network_cfg(cfg);
+	if (weights && weights[0] != 0) {
+		load_weights(net, weights);
+	}
+	if (clear) (*net->seen) = 0;
+	return net;
+}
 
 int get_current_batch(network net)
 {
@@ -44,6 +57,27 @@ void reset_momentum(network net)
     #ifdef GPU
         //if(net.gpu_index >= 0) update_network_gpu(net);
     #endif
+}
+
+void reset_network_state(network *net, int b)
+{
+	int i;
+	for (i = 0; i < net->n; ++i) {
+#ifdef GPU
+		layer l = net->layers[i];
+		if (l.state_gpu) {
+			fill_ongpu(l.outputs, 0, l.state_gpu + l.outputs*b, 1);
+		}
+		if (l.h_gpu) {
+			fill_ongpu(l.outputs, 0, l.h_gpu + l.outputs*b, 1);
+		}
+#endif
+	}
+}
+
+void reset_rnn(network *net)
+{
+	reset_network_state(net, 0);
 }
 
 float get_current_rate(network net)

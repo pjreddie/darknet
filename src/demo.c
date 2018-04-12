@@ -103,7 +103,7 @@ void *detect_in_thread(void *ptr)
 	int letter = 0;
 	int nboxes = 0;
 	detection *dets = get_network_boxes(&net, det.w, det.h, demo_thresh, demo_thresh, 0, 1, &nboxes, letter);
-	if (nms) do_nms_obj_v3(dets, nboxes, l.classes, nms);
+	if (nms) do_nms_obj(dets, nboxes, l.classes, nms);
 
     printf("\033[2J");
     printf("\033[1;1H");

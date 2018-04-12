@@ -385,7 +385,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 			int nboxes = 0;
 			int letterbox = (args.type == LETTERBOX_DATA);
 			detection *dets = get_network_boxes(&net, w, h, thresh, .5, map, 0, &nboxes, letterbox);
-			if (nms) do_nms_sort_v3(dets, nboxes, classes, nms);
+			if (nms) do_nms_sort(dets, nboxes, classes, nms);
 			if (coco) {
 				print_cocos(fp, path, dets, nboxes, classes, w, h);
 			}
@@ -453,7 +453,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 		int nboxes = 0;
 		int letterbox = 0;
 		detection *dets = get_network_boxes(&net, sized.w, sized.h, thresh, .5, 0, 1, &nboxes, letterbox);
-		if (nms) do_nms_obj_v3(dets, nboxes, 1, nms);
+		if (nms) do_nms_obj(dets, nboxes, 1, nms);
 
 		char labelpath[4096];
 		find_replace(path, "images", "labels", labelpath);
@@ -607,7 +607,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 			float hier_thresh = 0;
 			detection *dets = get_network_boxes(&net, 1, 1, thresh, hier_thresh, 0, 0, &nboxes, letterbox);
 			//detection *dets = get_network_boxes(&net, val[t].w, val[t].h, thresh, hier_thresh, 0, 1, &nboxes, letterbox); // for letterbox=1
-			if (nms) do_nms_sort_v3(dets, nboxes, l.classes, nms);
+			if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 
 			char labelpath[4096];
 			find_replace(path, "images", "labels", labelpath);
@@ -1056,13 +1056,14 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         float *X = sized.data;
         time=clock();
         network_predict(net, X);
+		//network_predict_image(&net, im);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         //get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
-		// if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+		// if (nms) do_nms_sort_v2(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 		//draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
 		int nboxes = 0;
 		detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
-		if (nms) do_nms_sort_v3(dets, nboxes, l.classes, nms);
+		if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 		draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes);
 		free_detections(dets, nboxes);
         save_image(im, "predictions");

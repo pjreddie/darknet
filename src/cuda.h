@@ -5,6 +5,20 @@
 	#define inline __inline
 #endif
 
+#ifdef YOLODLL_EXPORTS
+#if defined(_MSC_VER)
+#define YOLODLL_API __declspec(dllexport) 
+#else
+#define YOLODLL_API __attribute__((visibility("default")))
+#endif
+#else
+#if defined(_MSC_VER)
+#define YOLODLL_API
+#else
+#define YOLODLL_API
+#endif
+#endif
+
 extern int gpu_index;
 
 #ifdef GPU
@@ -28,7 +42,7 @@ extern "C" {
 	int *cuda_make_int_array(size_t n);
 	void cuda_push_array(float *x_gpu, float *x, size_t n);
 	void cuda_pull_array(float *x_gpu, float *x, size_t n);
-	void cuda_set_device(int n);
+	YOLODLL_API void cuda_set_device(int n);
 	int cuda_get_device();
 	void cuda_free(float *x_gpu);
 	void cuda_random(float *x_gpu, size_t n);
