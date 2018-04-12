@@ -458,11 +458,11 @@ int main(int argc, char *argv[])
 			else {	// image file
 				cv::Mat mat_img = cv::imread(filename);
 				std::vector<bbox_t> result_vec = detector.detect(mat_img);
-				result_vec = detector.tracking_id(result_vec);	// comment it - if track_id is not required
+				//result_vec = detector.tracking_id(result_vec);	// comment it - if track_id is not required
 				draw_boxes(mat_img, result_vec, obj_names);
 				cv::imshow("window name", mat_img);
-				cv::waitKey(3);	// 3 or 16ms
 				show_console_result(result_vec, obj_names);
+				cv::waitKey(0);
 			}
 #else
 			//std::vector<bbox_t> result_vec = detector.detect(filename);
