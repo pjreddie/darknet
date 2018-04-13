@@ -38,8 +38,8 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
 
 void resize_shortcut_layer(layer *l, int w, int h)
 {
-	assert(l->w == l->out_w);
-	assert(l->h == l->out_h);
+	//assert(l->w == l->out_w);
+	//assert(l->h == l->out_h);
 	l->w = l->out_w = w;
 	l->h = l->out_h = h;
 	l->outputs = w*h*l->out_c;
