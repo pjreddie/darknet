@@ -151,7 +151,7 @@ if __name__ == "__main__":
     #r = classify(net, meta, im)
     #print r[:10]
     net = load_net("cfg/yolov3.cfg", "yolov3.weights", 0)
-    meta = load_meta("data/coco.data")
+    meta = load_meta("cfg/coco.data")
     r = detect(net, meta, "data/dog.jpg", 0.25)
     print r
     

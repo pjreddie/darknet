@@ -483,7 +483,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 				++correct;
 			}
 		}
-
+		fprintf(stderr, " %s - %s - ", paths[i], labelpath);
 		fprintf(stderr, "%5d %5d %5d\tRPs/Img: %.2f\tIOU: %.2f%%\tRecall:%.2f%%\n", i, correct, total, (float)proposals / (i + 1), avg_iou * 100 / total, 100.*correct / total);
 		free(id);
 		free_image(orig);
