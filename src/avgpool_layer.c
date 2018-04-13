@@ -2,6 +2,14 @@
 #include "cuda.h"
 #include <stdio.h>
 
+image get_avgpool_image(avgpool_layer l)
+{
+    int h = l.out_h;
+    int w = l.out_w;
+    int c = l.c;
+    return float_to_image(w, h, c, l.output);
+}
+
 avgpool_layer make_avgpool_layer(int batch, int w, int h, int c)
 {
     fprintf(stderr, "avg                     %4d x%4d x%4d   ->  %4d\n",  w, h, c, c);
