@@ -236,6 +236,42 @@ image **load_alphabet()
     return alphabets;
 }
 
+void save_bounding_boxes(image im, detection *dets, int num, float thresh, char *filename, char *txt_filename)
+{
+    int d;
+    int nb_person = 0;
+
+    for (d = 0; d < num; ++d){
+        if (dets[d].prob[0] > thresh){
+            nb_person++;
+
+            // Get box
+            box b = dets[d].bbox;
+
+            int left  = (b.x-b.w/2.)*im.w;
+            int right = (b.x+b.w/2.)*im.w;
+            int top   = (b.y-b.h/2.)*im.h;
+            int bot   = (b.y+b.h/2.)*im.h;
+
+            if(left < 0) left = 0;
+            if(right > im.w-1) right = im.w-1;
+            if(top < 0) top = 0;
+            if(bot > im.h-1) bot = im.h-1;
+
+            // Set txt line
+            char *txt = malloc(strlen(filename)+1+3+1+4*6+1);
+            sprintf(txt, "%s %d %d %d %d %d", filename, nb_person, left, right, top, bot);
+            printf("%s\n", txt);
+
+            // Write line to file
+            FILE *txt_file;
+            txt_file = fopen(txt_filename, "a");
+            fprintf(txt_file, "%s\n", txt);
+            fclose(txt_file);
+        }
+    }
+}
+
 #ifdef OPENCV
 void crop_people(image im, detection *dets, int num, float thresh, char *filename)
 {
@@ -275,10 +311,10 @@ void crop_people(image im, detection *dets, int num, float thresh, char *filenam
             printf("%d %d %d %d\n", left, right, top, bot);
             printf("%d %d\n", im.w, im.h);
             printf("%d %d\n", width, height);
-            printf("BRAVO !\n");
 
+            // DOESNT WORK YET
             // Crop image without openCV
-            unsigned char *original_data = calloc(im.w*im.h*im.c, sizeof(char));
+/*            unsigned char *original_data = calloc(im.w*im.h*im.c, sizeof(char));
             unsigned char *data = calloc(width*height*im.c, sizeof(char));
             int i,k;
             for(k = 0; k < im.c; ++k){
@@ -299,7 +335,7 @@ void crop_people(image im, detection *dets, int num, float thresh, char *filenam
             free(original_data);
             if(!success) fprintf(stderr, "Failed to write image %s\n", name);
             if(!original_success) fprintf(stderr, "Failed to write image %s\n", original_name);
-
+*/
 
             // Crop image with openCV
 /*            IplImage *disp = cvCreateImage(cvSize(50, 100), IPL_DEPTH_8U, 3);
@@ -820,7 +856,6 @@ void save_image(image im, const char *name)
 #ifdef OPENCV
     save_image_jpg(im, name);
 #else
-    printf("%s\n", name);
     save_image_png(im, name);
 #endif
 }

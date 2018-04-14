@@ -633,6 +633,10 @@ void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, c
         return;
     }
 
+    // Set output filename
+    char *out_filename = malloc(strlen(txt_filename)+strlen("_boxes.txt")+1);
+    sprintf(out_filename, "%s_boxes.txt", txt_filename);
+
     // Check the weightfile
     if( access( weightfile, F_OK ) == -1 ) {
         printf("\nERROR: %s does not exist!\n", weightfile);
@@ -676,19 +680,23 @@ void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, c
         float *X = sized.data;
         time=what_time_is_it_now();
 
-        // printf("Predicting ...");
+        printf("Predicting ...");
         network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+        printf("%s: Predicted in %f seconds!\n", input, what_time_is_it_now()-time);
 
         int nboxes = 0; 
         detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
         if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 
         // Draw bbox
-        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+        //draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
 
         // Crop and save images containing a person
-        crop_people(im, dets, nboxes, thresh, filename);
+        // DOESNT WORK YET
+        //crop_people(im, dets, nboxes, thresh, filename);
+
+        // Save bounding boxes to txt file
+        save_bounding_boxes(im, dets, nboxes, thresh, filename, out_filename);
 
         free_detections(dets, nboxes);
         free_image(im);
