@@ -177,6 +177,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 
 	// batch norm
 	cudnnSetTensor4dDescriptor(l->normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l->out_c, 1, 1);
+	cudnnSetTensor4dDescriptor(l->normDstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w);
 #if(CUDNN_MAJOR >= 6)
 	cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT);	// cudnn >= 6.0
 #else
@@ -190,6 +191,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 		forward_algo = CUDNN_CONVOLUTION_FWD_NO_WORKSPACE;
 		backward_algo = CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE;
 		backward_filter = CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE;
+		printf(" CUDNN-slow ");
 	}
 
 	cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
@@ -216,6 +218,38 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 			backward_filter,
             0,
             &l->bf_algo);
+
+	if (data_type == CUDNN_DATA_HALF) 
+	{
+		// HALF-16 if(data_type == CUDNN_DATA_HALF)
+		l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
+		l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
+		l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
+
+		// FLOAT-32 if(data_type == CUDNN_DATA_FLOAT)
+		//l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED;
+		//l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED;
+		//l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED;
+
+		int fw = 0, bd = 0, bf = 0;
+		if (l->fw_algo == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM) fw = 1;
+			//printf("Tensor Cores - Forward enabled: l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM \n");
+		if (l->fw_algo == CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED) fw = 2;
+			//printf("Tensor Cores - Forward enabled: l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED \n");
+
+		if (l->bd_algo == CUDNN_CONVOLUTION_BWD_DATA_ALGO_1) bd = 1;
+			//printf("Tensor Cores - Backward-data enabled: l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1  \n");
+		if (l->bd_algo == CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED) bd = 2;
+			//printf("Tensor Cores - Backward-data enabled: l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED \n");
+
+		if (l->bf_algo == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1) bf = 1;
+			//printf("Tensor Cores - Backward-filter enabled: l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1   \n");
+		if (l->bf_algo == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED) bf = 2;
+			//printf("Tensor Cores - Backward-filter enabled: l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED \n");
+
+		if (fw == 2 && bd == 2 && bf == 2) printf("TF ");
+		else if (fw >= 1 && bd >= 1 && bf >= 1) printf("TH ");
+	}
 }
 #endif
 #endif
@@ -343,7 +377,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
             l.x_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
             l.x_norm_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
         }
-#ifdef CUDNN
+#ifdef CUDNN		
+		cudnnCreateTensorDescriptor(&l.normDstTensorDesc);
 		cudnnCreateTensorDescriptor(&l.normTensorDesc);
         cudnnCreateTensorDescriptor(&l.srcTensorDesc);
         cudnnCreateTensorDescriptor(&l.dstTensorDesc);

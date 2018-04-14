@@ -91,7 +91,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 	args.small_object = net.small_object;
     args.d = &buffer;
     args.type = DETECTION_DATA;
-	args.threads = 64;	// 8
+	args.threads = 16;	// 64
 
     args.angle = net.angle;
     args.exposure = net.exposure;
@@ -99,6 +99,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.hue = net.hue;
 
 #ifdef OPENCV
+	args.threads = 7;
 	IplImage* img = NULL;
 	float max_img_loss = 5;
 	int number_of_lines = 100;
@@ -108,7 +109,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #endif	//OPENCV
 
     pthread_t load_thread = load_data(args);
-    clock_t time;
+    double time;
     int count = 0;
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net.max_batches){
@@ -131,7 +132,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             }
             net = nets[0];
         }
-        time=clock();
+        time=what_time_is_it_now();
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
@@ -153,9 +154,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
            save_image(im, "truth11");
          */
 
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
+        printf("Loaded: %lf seconds\n", (what_time_is_it_now()-time));
 
-        time=clock();
+        time=what_time_is_it_now();
         float loss = 0;
 #ifdef GPU
         if(ngpus == 1){
@@ -170,7 +171,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         avg_loss = avg_loss*.9 + loss*.1;
 
         i = get_current_batch(net);
-        printf("\n %d: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
+        printf("\n %d: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), (what_time_is_it_now()-time), i*imgs);
 
 #ifdef OPENCV
 		if(!dont_show)
@@ -291,11 +292,11 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 	int *map = 0;
 	if (mapf) map = read_map(mapf);
 
-	network net = parse_network_cfg_custom(cfgfile, 1);
+	network net = parse_network_cfg_custom(cfgfile, 1);	// set batch=1
 	if (weightfile) {
 		load_weights(&net, weightfile);
 	}
-	set_batch_network(&net, 1);
+	//set_batch_network(&net, 1);
 	fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 	srand(time(0));
 
@@ -414,11 +415,11 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
 void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 {
-	network net = parse_network_cfg_custom(cfgfile, 1);
+	network net = parse_network_cfg_custom(cfgfile, 1);	// set batch=1
 	if (weightfile) {
 		load_weights(&net, weightfile);
 	}
-	set_batch_network(&net, 1);
+	//set_batch_network(&net, 1);
 	fuse_conv_batchnorm(net);
 	srand(time(0));
 
@@ -522,11 +523,11 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 	int *map = 0;
 	if (mapf) map = read_map(mapf);
 
-	network net = parse_network_cfg_custom(cfgfile, 1);
+	network net = parse_network_cfg_custom(cfgfile, 1);	// set batch=1
 	if (weightfile) {
 		load_weights(&net, weightfile);
 	}
-	set_batch_network(&net, 1);
+	//set_batch_network(&net, 1);
 	fuse_conv_batchnorm(net);
 	srand(time(0));
 
@@ -1020,14 +1021,14 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels(name_list);
 
     image **alphabet = load_alphabet();
-    network net = parse_network_cfg_custom(cfgfile, 1);
+    network net = parse_network_cfg_custom(cfgfile, 1); // set batch=1
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    set_batch_network(&net, 1);
+    //set_batch_network(&net, 1);
 	fuse_conv_batchnorm(net);
     srand(2222222);
-    clock_t time;
+    double time;
     char buff[256];
     char *input = buff;
     int j;
@@ -1054,10 +1055,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
 
         float *X = sized.data;
-        time=clock();
+        time= what_time_is_it_now();
         network_predict(net, X);
 		//network_predict_image(&net, im);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        printf("%s: Predicted in %f seconds.\n", input, (what_time_is_it_now()-time));
         //get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
 		// if (nms) do_nms_sort_v2(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 		//draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);

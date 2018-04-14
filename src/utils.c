@@ -7,12 +7,23 @@
 #include <limits.h>
 #ifdef WIN32
 #include "unistd.h"
+#include "gettimeofday.h"
 #else
 #include <unistd.h>
+#include <sys/time.h>
 #endif
 #include "utils.h"
 
 #pragma warning(disable: 4996)
+
+double what_time_is_it_now()
+{
+	struct timeval time;
+	if (gettimeofday(&time, NULL)) {
+		return 0;
+	}
+	return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
 
 int *read_map(char *filename)
 {
