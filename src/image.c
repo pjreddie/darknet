@@ -236,6 +236,111 @@ image **load_alphabet()
     return alphabets;
 }
 
+#ifdef OPENCV
+void crop_people(image im, detection *dets, int num, float thresh, char *filename)
+{
+    int d;
+    int nb_person = 0;
+    char str_nb_person[3];
+
+    for (d = 0; d < num; ++d){
+        if (dets[d].prob[0] > thresh){
+
+            // Set name for the image
+            nb_person++;
+            sprintf(str_nb_person, "%d", nb_person);
+            char *name = malloc(strlen(filename)+strlen("_person_")+strlen(str_nb_person)+4+1);
+            sprintf(name, "%s_person_%s.png", filename, str_nb_person);
+            printf("%s\n", name);
+            char *original_name = malloc(strlen(filename)+strlen("_original")+4+1);
+            sprintf(original_name, "%s_original.png", filename);
+
+            // Get box
+            box b = dets[d].bbox;
+
+            int left  = (b.x-b.w/2.)*im.w;
+            int right = (b.x+b.w/2.)*im.w;
+            int top   = (b.y-b.h/2.)*im.h;
+            int bot   = (b.y+b.h/2.)*im.h;
+
+            if(left < 0) left = 0;
+            if(right > im.w-1) right = im.w-1;
+            if(top < 0) top = 0;
+            if(bot > im.h-1) bot = im.h-1;
+
+            int width = right-left;
+            int height = bot-top;
+
+            printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+            printf("%d %d %d %d\n", left, right, top, bot);
+            printf("%d %d\n", im.w, im.h);
+            printf("%d %d\n", width, height);
+            printf("BRAVO !\n");
+
+            // Crop image without openCV
+            unsigned char *original_data = calloc(im.w*im.h*im.c, sizeof(char));
+            unsigned char *data = calloc(width*height*im.c, sizeof(char));
+            int i,k;
+            for(k = 0; k < im.c; ++k){
+                for(i = 0; i < im.w*im.h; ++i){
+                    printf("i:%d, k:%d\n", i, k);
+                    original_data[i*im.c+k] = (unsigned char) (255*im.data[i + k*im.w*im.h]);
+                }
+            }
+            for(k = 0; k < im.c; ++k){
+                for(i = 0; i < width*height; ++i){
+                    printf("i':%d, k':%d\n", i, k);
+                    data[i*im.c+k] = original_data[i*im.c+k];
+                }
+            }
+            int success = stbi_write_png(name, width, height, im.c, data, im.w*im.c);
+            int original_success = stbi_write_png(original_name, im.w, im.h, im.c, original_data, im.w*im.c);
+            free(data);
+            free(original_data);
+            if(!success) fprintf(stderr, "Failed to write image %s\n", name);
+            if(!original_success) fprintf(stderr, "Failed to write image %s\n", original_name);
+
+
+            // Crop image with openCV
+/*            IplImage *disp = cvCreateImage(cvSize(50, 100), IPL_DEPTH_8U, 3);
+            printf("IPL OK");
+            image copy = copy_image(im);
+            constrain_image(copy);
+            if(copy.c == 3) rgbgr_image(copy);
+
+            int i,j,k;
+            int step = disp->widthStep;
+            for(j = top; j < bot; ++j){
+                for(i = left; i < right; ++i){
+                    for(k= 0; k < copy.c; ++k){
+                        int y = j-top;
+                        int x = i-left;
+                        disp->imageData[y*step + x*copy.c + k] = (unsigned char)(get_pixel(copy,i,j,k)*255);
+                    }
+                }
+            }
+
+            printf("DISP OK");
+
+            image cropped;
+            ipl_into_image(disp, cropped);
+
+            printf("IPL INTO IMG OK");
+
+            show_image(cropped, "show");
+
+            // Save image
+            char buff[256];
+            sprintf(buff, "show");
+
+            cvReleaseImage(&disp);
+            free_image(copy);
+*/        }
+    }
+}
+#endif
+
+
 void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
     int i,j;
@@ -715,6 +820,7 @@ void save_image(image im, const char *name)
 #ifdef OPENCV
     save_image_jpg(im, name);
 #else
+    printf("%s\n", name);
     save_image_png(im, name);
 #endif
 }

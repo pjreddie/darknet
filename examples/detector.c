@@ -687,26 +687,8 @@ void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, c
         // Draw bbox
         draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
 
-        // Save image with bbox
-        if(outfile){
-            save_image(im, outfile);
-        }
-        else{
-            char *result = malloc(strlen(filename)+strlen("_predictions")+1);
-            strcpy(result, filename);
-            strcat(result, "_predictions");
-            // printf("%s", result);
-            save_image(im, result);
-#ifdef OPENCV
-            cvNamedWindow("predictions", CV_WINDOW_NORMAL);
-            if(fullscreen){
-                cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-            }
-            show_image(im, "predictions");
-            cvWaitKey(0);
-            cvDestroyAllWindows();
-#endif
-        }
+        // Crop and save images containing a person
+        crop_people(im, dets, nboxes, thresh, filename);
 
         free_detections(dets, nboxes);
         free_image(im);
