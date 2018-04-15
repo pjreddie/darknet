@@ -239,13 +239,13 @@ image **load_alphabet()
 void save_bounding_boxes(image im, detection *dets, int num, float thresh, char *filename, char *txt_filename)
 {
     int d;
-    int nb_person = 0;
+    int person_nb = 0;
 
     for (d = 0; d < num; ++d){
         if (dets[d].prob[0] > thresh){
-            nb_person++;
+            person_nb++;
 
-            // Get box
+            // Get box coordinates
             box b = dets[d].bbox;
 
             int left  = (b.x-b.w/2.)*im.w;
@@ -260,7 +260,7 @@ void save_bounding_boxes(image im, detection *dets, int num, float thresh, char 
 
             // Set txt line
             char *txt = malloc(strlen(filename)+1+3+1+4*6+1);
-            sprintf(txt, "%s %d %d %d %d %d", filename, nb_person, left, right, top, bot);
+            sprintf(txt, "%s %d %d %d %d %d", filename, person_nb, left, right, top, bot);
             printf("%s\n", txt);
 
             // Write line to file

@@ -643,11 +643,11 @@ void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, c
         return;
     }
 
-    list *options = read_data_cfg(datacfg);
-    char *name_list = option_find_str(options, "names", "data/names.list");
-    char **names = get_labels(name_list);
+    //list *options = read_data_cfg(datacfg);
+    //char *name_list = option_find_str(options, "names", "data/names.list");
+    //char **names = get_labels(name_list);
 
-    image **alphabet = load_alphabet();
+    //image **alphabet = load_alphabet();
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
@@ -680,7 +680,7 @@ void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, c
         float *X = sized.data;
         time=what_time_is_it_now();
 
-        printf("Predicting ...");
+        printf("Predicting ...\n");
         network_predict(net, X);
         printf("%s: Predicted in %f seconds!\n", input, what_time_is_it_now()-time);
 
