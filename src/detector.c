@@ -167,7 +167,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #else
         loss = train_network(net, train);
 #endif
-        if (avg_loss < 0) avg_loss = loss;
+        if (avg_loss < 0 || avg_loss != avg_loss) avg_loss = loss;	// if(-inf or nan)
         avg_loss = avg_loss*.9 + loss*.1;
 
         i = get_current_batch(net);

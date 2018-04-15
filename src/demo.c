@@ -144,11 +144,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     demo_classes = classes;
     demo_thresh = thresh;
     printf("Demo\n");
-    net = parse_network_cfg_custom(cfgfile, 1);
+    net = parse_network_cfg_custom(cfgfile, 1);	// set batch=1
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    set_batch_network(&net, 1);
+    //set_batch_network(&net, 1);
 	fuse_conv_batchnorm(net);
     srand(2222222);
 
