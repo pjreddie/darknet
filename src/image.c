@@ -572,7 +572,7 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
 	cvPutText(img, char_buff, pt1, &font, CV_RGB(0, 0, 0));
 	cvShowImage("average loss", img);
 	int k = cvWaitKey(20);
-	if (k == 's') cvSaveImage("chart.jpg", img, 0);
+	if (k == 's' || current_batch == (max_batches-1)) cvSaveImage("chart.jpg", img, 0);
 }
 #endif	// OPENCV
 

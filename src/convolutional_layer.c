@@ -248,7 +248,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 			//printf("Tensor Cores - Backward-filter enabled: l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED \n");
 
 		if (fw == 2 && bd == 2 && bf == 2) printf("TF ");
-		else if (fw >= 1 && bd >= 1 && bf >= 1) printf("TH ");
+		else if (fw == 1 && bd == 1 && bf == 1) printf("TH ");
 	}
 }
 #endif
