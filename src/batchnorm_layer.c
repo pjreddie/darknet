@@ -190,18 +190,18 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
 			&one,
 			&zero,
 			l.normDstTensorDesc,
-			l.x_gpu,
+			l.x_gpu,				// input
 			l.normDstTensorDesc,
-			l.output_gpu,
+			l.output_gpu,			// output
 			l.normTensorDesc,
 			l.scales_gpu,
 			l.biases_gpu,
 			.01,
-			l.rolling_mean_gpu,
-			l.rolling_variance_gpu,
+			l.rolling_mean_gpu,		// output (should be FP32)
+			l.rolling_variance_gpu,	// output (should be FP32)
 			.00001,
-			l.mean_gpu,
-			l.variance_gpu);
+			l.mean_gpu,			// output (should be FP32)
+			l.variance_gpu);	// output (should be FP32)
 #else
 		fast_mean_gpu(l.output_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.mean_gpu);
 		fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.variance_gpu);
@@ -243,18 +243,18 @@ void backward_batchnorm_layer_gpu(layer l, network_state state)
 		&one,
 		&one,
 		l.normDstTensorDesc,
-		l.x_gpu,
+		l.x_gpu,				// input
 		l.normDstTensorDesc,
-		l.delta_gpu,
+		l.delta_gpu,			// input
 		l.normDstTensorDesc,
-		l.x_norm_gpu,
+		l.x_norm_gpu,			// output
 		l.normTensorDesc,
-		l.scales_gpu,
-		l.scale_updates_gpu,
-		l.bias_updates_gpu,
+		l.scales_gpu,			// output (should be FP32)
+		l.scale_updates_gpu,	// output (should be FP32)
+		l.bias_updates_gpu,		// output (should be FP32)
 		.00001,
-		l.mean_gpu,
-		l.variance_gpu);
+		l.mean_gpu,				// input (should be FP32)
+		l.variance_gpu);		// input (should be FP32)
 	copy_ongpu(l.outputs*l.batch, l.x_norm_gpu, 1, l.delta_gpu, 1);
 #else
 	backward_bias_gpu(l.bias_updates_gpu, l.delta_gpu, l.batch, l.out_c, l.out_w*l.out_h);
