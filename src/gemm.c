@@ -92,6 +92,7 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
 #include <ammintrin.h>
 #include <immintrin.h>
 #include <smmintrin.h>
+#include <cpuid.h>
 
 void asm_cpuid(uint32_t* abcd, uint32_t eax)
 {
@@ -109,6 +110,7 @@ void asm_cpuid(uint32_t* abcd, uint32_t eax)
 	abcd[2] = ecx;
 	abcd[3] = edx;
 }
+
 #endif
 
 int simd_detect_x86(unsigned int idFeature)
@@ -118,8 +120,8 @@ int simd_detect_x86(unsigned int idFeature)
 	__cpuid(regs, 0);
 	if (regs[0] > 1U) __cpuid(regs, 1);
 #else
-	asm_cpuid(regs, 0);
-	if (regs[0] > 1U) asm_cpuid(regs, 0);
+	__get_cpuid(0, &regs[0], &regs[1], &regs[2], &regs[3]);
+	if(regs[0] > 1U) __get_cpuid(1, &regs[0], &regs[1], &regs[2], &regs[3]);
 #endif
 
 	if ((regs[2] & idFeature) != idFeature)
