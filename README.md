@@ -227,7 +227,9 @@ More information about training by the link: http://pjreddie.com/darknet/yolo/#t
 https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 ## How to train (to detect your custom objects):
-Training Yolo v3
+(to train old Yolo v2 `yolov2-voc.cfg`, `yolov2-tiny-voc.cfg`, `yolo-voc.cfg`, `yolo-voc.2.0.cfg`, ... [click by the link](https://github.com/AlexeyAB/darknet/tree/47c7af1cea5bbdedf1184963355e6418cb8b1b4f#how-to-train-pascal-voc-data))
+
+Training Yolo v3:
 
 1. Create file `yolo-obj.cfg` with the same content as in `yolov3.cfg` (or copy `yolov3.cfg` to `yolo-obj.cfg)` and:
 
