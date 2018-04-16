@@ -86,6 +86,7 @@ else
 CFLAGS+= -DCUDNN -I/usr/local/cudnn/include
 LDFLAGS+= -L/usr/local/cudnn/lib64 -lcudnn
 endif
+endif
 
 ifeq ($(CUDNN_HALF), 1)
 COMMON+= -DCUDNN_HALF
