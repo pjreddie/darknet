@@ -9,8 +9,8 @@
 #include "box.h"
 
 typedef struct {
-    int h;
-    int w;
+	int w;
+	int h;
     int c;
     float *data;
 } image;

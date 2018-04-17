@@ -1056,8 +1056,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         float *X = sized.data;
         time= what_time_is_it_now();
-        network_predict(net, X);
-		//network_predict_image(&net, im);
+        //network_predict(net, X);
+		network_predict_image(&net, im); letterbox = 1;
         printf("%s: Predicted in %f seconds.\n", input, (what_time_is_it_now()-time));
         //get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
 		// if (nms) do_nms_sort_v2(boxes, probs, l.w*l.h*l.n, l.classes, nms);

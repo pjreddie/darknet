@@ -31,11 +31,11 @@ extern int gpu_index;
 
 #ifdef CUDNN
 #include "cudnn.h"
-#endif
+#endif // CUDNN
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 	void check_error(cudaError_t status);
 	cublasHandle_t blas_handle();
 	float *cuda_make_array(float *x, size_t n);
@@ -51,12 +51,14 @@ extern "C" {
 	cudaStream_t get_cuda_stream();
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();
 enum {cudnn_fastest, cudnn_smallest};
 #endif
 
-#endif
-#endif
+#else // GPU
+YOLODLL_API void cuda_set_device(int n);
+#endif // GPU
+#endif // CUDA_H
