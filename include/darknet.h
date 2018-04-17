@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define SECRET_NUM -1234
 extern int gpu_index;
@@ -36,7 +37,6 @@ typedef struct{
     int classes;
     char **names;
 } metadata;
-
 metadata get_metadata(char *file);
 
 typedef struct{
@@ -90,7 +90,8 @@ typedef enum {
     UPSAMPLE,
     LOGXENT,
     L2NORM,
-    BLANK
+    BLANK,
+    DEPTHWISE_CONVOLUTIONAL
 } LAYER_TYPE;
 
 typedef enum{
