@@ -226,9 +226,9 @@ std::vector<std::string> objects_names_from_file(std::string const filename) {
 
 int main(int argc, char *argv[])
 {
-	std::string  names_file = "data/voc.names";
-	std::string  cfg_file = "cfg/yolo-voc.cfg";
-	std::string  weights_file = "yolo-voc.weights";
+	std::string  names_file = "data/coco.names";
+	std::string  cfg_file = "cfg/yolov3.cfg";
+	std::string  weights_file = "yolov3.weights";
 	std::string filename;
 
 	if (argc > 4) {	//voc.names yolo-voc.cfg yolo-voc.weights test.mp4		
@@ -457,7 +457,13 @@ int main(int argc, char *argv[])
 			}
 			else {	// image file
 				cv::Mat mat_img = cv::imread(filename);
+				
+				auto start = std::chrono::steady_clock::now();
 				std::vector<bbox_t> result_vec = detector.detect(mat_img);
+				auto end = std::chrono::steady_clock::now();
+				std::chrono::duration<double> spent = end - start;
+				std::cout << " Time: " << spent.count() << " sec \n";
+
 				//result_vec = detector.tracking_id(result_vec);	// comment it - if track_id is not required
 				draw_boxes(mat_img, result_vec, obj_names);
 				cv::imshow("window name", mat_img);
