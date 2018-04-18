@@ -136,8 +136,9 @@ void delta_region_class(float *output, float *delta, int index, int class_id, in
 
 			int ti = index + class_id;
 			float pt = output[ti] + 0.000000000000001F;
-			//float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);	// http://blog.csdn.net/linmingan/article/details/77885832	
-			float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);		// https://github.com/unsky/focal-loss
+			// http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiItKDEteCkqKDIqeCpsb2coeCkreC0xKSIsImNvbG9yIjoiIzAwMDAwMCJ9LHsidHlwZSI6MTAwMH1d
+			float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);	// http://blog.csdn.net/linmingan/article/details/77885832	
+			//float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);	// https://github.com/unsky/focal-loss
 
 			for (n = 0; n < classes; ++n) {
 				delta[index + n] = scale * (((n == class_id) ? 1 : 0) - output[index + n]);
