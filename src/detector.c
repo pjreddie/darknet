@@ -1107,7 +1107,7 @@ void run_detector(int argc, char **argv)
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
 	int num_of_clusters = find_int_arg(argc, argv, "-num_of_clusters", 5);
 	int width = find_int_arg(argc, argv, "-width", 13);
-	int heigh = find_int_arg(argc, argv, "-heigh", 13);
+	int height = find_int_arg(argc, argv, "-height", 13);
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
@@ -1148,7 +1148,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
 	else if(0==strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh);
-	else if(0==strcmp(argv[2], "calc_anchors")) calc_anchors(datacfg, num_of_clusters, width, heigh, show);
+	else if(0==strcmp(argv[2], "calc_anchors")) calc_anchors(datacfg, num_of_clusters, width, height, show);
     else if(0==strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);

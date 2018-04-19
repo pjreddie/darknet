@@ -413,7 +413,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   * increase network resolution in your `.cfg`-file (`height=608`, `width=608` or any value multiple of 32) - it will increase precision
 
   * recalculate anchors for your dataset for `width` and `height` from cfg-file:
-  `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -heigh 416`
+  `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
    then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file
 
   * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides, on different backgrounds

@@ -294,7 +294,6 @@ int nms_comparator_v3(const void *pa, const void *pb)
 
 void do_nms_obj(detection *dets, int total, int classes, float thresh)
 {
-	printf(" total = %d, classes = %d, thresh = %f \n", total, classes, thresh);
 	int i, j, k;
 	k = total - 1;
 	for (i = 0; i <= k; ++i) {
