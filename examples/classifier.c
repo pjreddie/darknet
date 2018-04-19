@@ -93,7 +93,6 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     pthread_t load_thread;
     args.d = &buffer;
     load_thread = load_data(args);
-
     int count = 0;
     int epoch = (*net->seen)/N;
     while(get_current_batch(net) < net->max_batches || net->max_batches == 0){

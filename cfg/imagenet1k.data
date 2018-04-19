@@ -1,7 +1,7 @@
 classes=1000
-train  = /data/imagenet/imagenet1k.train.list
-valid  = /data/imagenet/imagenet1k.valid.list
-backup = /home/pjreddie/backup/
+train  = data/imagenet1k.train.list
+valid  = data/imagenet1k.valid.list
+backup = backup_imagenet
 labels = data/imagenet.labels.list
 names  = data/imagenet.shortnames.list
 top=5
