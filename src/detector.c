@@ -460,6 +460,9 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 		find_replace(path, "images", "labels", labelpath);
 		find_replace(labelpath, "JPEGImages", "labels", labelpath);
 		find_replace(labelpath, ".jpg", ".txt", labelpath);
+		find_replace(labelpath, ".png", ".txt", labelpath);
+		find_replace(labelpath, ".bmp", ".txt", labelpath);
+		find_replace(labelpath, ".JPG", ".txt", labelpath);
 		find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
 		int num_labels = 0;
@@ -484,7 +487,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 				++correct;
 			}
 		}
-		fprintf(stderr, " %s - %s - ", paths[i], labelpath);
+		//fprintf(stderr, " %s - %s - ", paths[i], labelpath);
 		fprintf(stderr, "%5d %5d %5d\tRPs/Img: %.2f\tIOU: %.2f%%\tRecall:%.2f%%\n", i, correct, total, (float)proposals / (i + 1), avg_iou * 100 / total, 100.*correct / total);
 		free(id);
 		free_image(orig);
@@ -614,8 +617,10 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 			find_replace(path, "images", "labels", labelpath);
 			find_replace(labelpath, "JPEGImages", "labels", labelpath);
 			find_replace(labelpath, ".jpg", ".txt", labelpath);
-			find_replace(labelpath, ".JPEG", ".txt", labelpath);
 			find_replace(labelpath, ".png", ".txt", labelpath);
+			find_replace(labelpath, ".bmp", ".txt", labelpath);
+			find_replace(labelpath, ".JPG", ".txt", labelpath);
+			find_replace(labelpath, ".JPEG", ".txt", labelpath);
 			int num_labels = 0;
 			box_label *truth = read_boxes(labelpath, &num_labels);
 			int i, j;
@@ -861,8 +866,10 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 		find_replace(path, "images", "labels", labelpath);
 		find_replace(labelpath, "JPEGImages", "labels", labelpath);
 		find_replace(labelpath, ".jpg", ".txt", labelpath);
-		find_replace(labelpath, ".JPEG", ".txt", labelpath);
 		find_replace(labelpath, ".png", ".txt", labelpath);
+		find_replace(labelpath, ".bmp", ".txt", labelpath);
+		find_replace(labelpath, ".JPG", ".txt", labelpath);
+		find_replace(labelpath, ".JPEG", ".txt", labelpath);
 		int num_labels = 0;
 		box_label *truth = read_boxes(labelpath, &num_labels);
 		//printf(" new path: %s \n", labelpath);
