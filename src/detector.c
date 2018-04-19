@@ -846,6 +846,11 @@ int anchors_comparator(const void *pa, const void *pb)
 void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int show)
 {
 	printf("\n num_of_clusters = %d, width = %d, height = %d \n", num_of_clusters, width, height);
+	if (width < 0 || height < 0) {
+		printf("Usage: darknet detector calc_anchors data/voc.data -num_of_clusters 9 -width 416 -height 416 \n");
+		printf("Error: set width and height \n");
+		return;
+	}
 
 	//float pointsdata[] = { 1,1, 2,2, 6,6, 5,5, 10,10 };
 	float *rel_width_height_array = calloc(1000, sizeof(float));
@@ -1106,8 +1111,8 @@ void run_detector(int argc, char **argv)
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
 	int num_of_clusters = find_int_arg(argc, argv, "-num_of_clusters", 5);
-	int width = find_int_arg(argc, argv, "-width", 13);
-	int height = find_int_arg(argc, argv, "-height", 13);
+	int width = find_int_arg(argc, argv, "-width", -1);
+	int height = find_int_arg(argc, argv, "-height", -1);
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
