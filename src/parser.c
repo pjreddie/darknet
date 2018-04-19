@@ -622,6 +622,7 @@ void parse_net_options(list *options, network *net)
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
     net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
+	net->flip = option_find_int_quiet(options, "flip", 1);
 
 	net->small_object = option_find_int_quiet(options, "small_object", 0);
     net->angle = option_find_float_quiet(options, "angle", 0);
