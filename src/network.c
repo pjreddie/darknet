@@ -800,14 +800,14 @@ void fuse_conv_batchnorm(network net)
 				int f;
 				for (f = 0; f < l->n; ++f)
 				{
-					l->biases[f] = l->biases[f] - l->scales[f] * l->rolling_mean[f] / (sqrtf(l->rolling_variance[f]) + .000001f);
+					l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
 
 					const size_t filter_size = l->size*l->size*l->c;
 					int i;
 					for (i = 0; i < filter_size; ++i) {
 						int w_index = f*filter_size + i;
 
-						l->weights[w_index] = l->weights[w_index] * l->scales[f] / (sqrtf(l->rolling_variance[f]) + .000001f);
+						l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
 					}
 				}
 

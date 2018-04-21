@@ -291,7 +291,7 @@ layer parse_yolo(list *options, size_params params)
 		for (i = 0; i < len; ++i) {
 			if (a[i] == ',') ++n;
 		}
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n && i < total*2; ++i) {
 			float bias = atof(a);
 			l.biases[i] = bias;
 			a = strchr(a, ',') + 1;
@@ -344,7 +344,7 @@ layer parse_region(list *options, size_params params)
         for(i = 0; i < len; ++i){
             if (a[i] == ',') ++n;
         }
-        for(i = 0; i < n; ++i){
+        for(i = 0; i < n && i < num*2; ++i){
             float bias = atof(a);
             l.biases[i] = bias;
             a = strchr(a, ',')+1;
