@@ -57,7 +57,7 @@ ifeq ($(DEBUG), 1)
 OPTS= -O0 -g
 else
 ifeq ($(AVX), 1) 
-CFLAGS+= -ffp-contract=fast -mavx
+CFLAGS+= -ffp-contract=fast -mavx -msse4.1 -msse4a
 endif
 endif
 
