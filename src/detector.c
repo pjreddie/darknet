@@ -645,6 +645,8 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 				truth_dif = read_boxes(labelpath_dif, &num_labels_dif);
 			}
 
+			const int checkpoint_detections_count = detections_count;
+
 			for (i = 0; i < nboxes; ++i) {
 
 				int class_id;
@@ -695,7 +697,13 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 
 						// calc avg IoU, true-positives, false-positives for required Threshold
 						if (prob > thresh_calc_avg_iou) {
-							if (truth_index > -1) {
+							int z, found = 0;
+							for (z = checkpoint_detections_count; z < detections_count-1; ++z)
+								if (detections[z].unique_truth_index == truth_index) {
+									found = 1; break;
+								}
+
+							if(truth_index > -1 && found == 0) {
 								avg_iou += max_iou;
 								++tp_for_thresh;
 							}
@@ -715,7 +723,8 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 		}
 	}
 
-	avg_iou = avg_iou / (tp_for_thresh + fp_for_thresh);
+	if((tp_for_thresh + fp_for_thresh) > 0)
+		avg_iou = avg_iou / (tp_for_thresh + fp_for_thresh);
 
 	
 	// SORT(detections)
@@ -1060,8 +1069,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         }
         image im = load_image_color(input,0,0);
 		int letterbox = 0;
-        image sized = resize_image(im, net.w, net.h);
-		//image sized = letterbox_image(im, net.w, net.h); letterbox = 1;
+        //image sized = resize_image(im, net.w, net.h);
+		image sized = letterbox_image(im, net.w, net.h); letterbox = 1;
         layer l = net.layers[net.n-1];
 
         //box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
@@ -1070,8 +1079,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         float *X = sized.data;
         time= what_time_is_it_now();
-        //network_predict(net, X);
-		network_predict_image(&net, im); letterbox = 1;
+        network_predict(net, X);
+		//network_predict_image(&net, im); letterbox = 1;
         printf("%s: Predicted in %f seconds.\n", input, (what_time_is_it_now()-time));
         //get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
 		// if (nms) do_nms_sort_v2(boxes, probs, l.w*l.h*l.n, l.classes, nms);
