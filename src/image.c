@@ -377,9 +377,7 @@ void draw_detections_TS(image im, detection *dets, int num, float thresh, char *
                 if(right > im.w-1) right = im.w-1;
                 if(top < 0) top = 0;
                 if(bot > im.h-1) bot = im.h-1;
-// Start modification Raphael
-	            //printf("box left=%d right=%d top=%d bot=%d\n\n",left,right,top,bot);
-// End modification Raphael
+
                 draw_box_width(im, left, top, right, bot, width, red, green, blue);
                 if (alphabet) {
                     image label = get_label(alphabet, labelstr, (im.h*.03));

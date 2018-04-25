@@ -517,7 +517,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 // Start modification raphael
     int ts = 0;    
     while(!demo_done){// && !ts){
-           ts=input_TS(fd);
+        ts=input_TS(fd);
 // End modification Raphael
 
         buff_index = (buff_index + 1) %3;
