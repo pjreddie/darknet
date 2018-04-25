@@ -355,11 +355,11 @@ void draw_detections_TS(image im, detection *dets, int num, float thresh, char *
                 rgb[1] = green;
                 rgb[2] = blue;
                 box b = dets[i].bbox;
-    // Start modification Raphael
-                printf("box center: x=%f y=%f, X=%f Y=%f\n", b.x, b.y,b.x*im.w,b.y*im.h);
-	            tdistance=sqrt(pow(coord[0]-b.x,2.)+pow(coord[1]-b.y,2.));
+// Start modification Raphael
+                //printf("box center: x=%f y=%f, X=%f Y=%f\n", b.x, b.y,b.x*im.w,b.y*im.h);
+	            tdistance = sqrt(pow(coord[0]-b.x,2.)+pow(coord[1]-b.y,2.));
 
-	            if(distance>tdistance){
+	            if(distance > tdistance){
 		            i_x=(b.x-b.w/2.)*im.w;
 	                i_y=(b.y-b.h/2.)*im.h;
                     i_w=b.w;
@@ -379,7 +379,7 @@ void draw_detections_TS(image im, detection *dets, int num, float thresh, char *
                 if(top < 0) top = 0;
                 if(bot > im.h-1) bot = im.h-1;
 // Start modification Raphael
-	            printf("box left=%d right=%d top=%d bot=%d\n\n",left,right,top,bot);
+	            //printf("box left=%d right=%d top=%d bot=%d\n\n",left,right,top,bot);
 // End modification Raphael
                 draw_box_width(im, left, top, right, bot, width, red, green, blue);
                 if (alphabet) {

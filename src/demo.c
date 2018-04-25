@@ -515,29 +515,29 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
     demo_time = what_time_is_it_now();
 
 // Start modification raphael
-    int ts=0;    
+    int ts = 0;    
     while(!demo_done){// && !ts){
            ts=input_TS(fd);
 // End modification Raphael
 
-         buff_index = (buff_index + 1) %3;
-         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
+        buff_index = (buff_index + 1) %3;
+        if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
 
 // Start modification raphael
-         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+        if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 // End modification raphael
 
-         if(!prefix){
+        if(!prefix){
             fps = 1./(what_time_is_it_now() - demo_time);
             demo_time = what_time_is_it_now();
             display_in_thread(0);	
-         }else{
+        }else{
             sprintf(name, "%s_%08d", prefix, count);
             save_image(buff[(buff_index + 1)%3], name); 
-	 }
-         pthread_join(fetch_thread, 0);
-         pthread_join(detect_thread, 0);
-         ++count;
+	}
+        pthread_join(fetch_thread, 0);
+        pthread_join(detect_thread, 0);
+        ++count;
     }
     
 // Start modification Raphael
