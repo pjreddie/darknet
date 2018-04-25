@@ -384,7 +384,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 #ifdef TS
 // General loop detect TS and detect Target
 // (New function define by Raphael)
-void demo_mod(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
+void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
     //demo_frame = avg_frames;
 
@@ -524,7 +524,7 @@ void demo_mod(char *cfgfile, char *weightfile, float thresh, int cam_index, cons
          if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
 
 // Start modification raphael
-         if(pthread_create(&detect_thread, 0, detect_in_thread_mod, 0)) error("Thread creation failed");
+         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 // End modification raphael
 
          if(!prefix){
