@@ -343,7 +343,6 @@ void draw_detections_TS(image im, detection *dets, int num, float thresh, char *
             }
             if(class >= 0){
                 int width = im.h * .006;
-		        printf("/nImage h=%d and w=%d and width=%d\n",im.h,im.w, width);
 
                 int offset = class*123457 % classes;
                 float red = get_color(2,offset,classes);
@@ -362,8 +361,8 @@ void draw_detections_TS(image im, detection *dets, int num, float thresh, char *
 	            if(distance > tdistance){
 		            i_x=(b.x-b.w/2.)*im.w;
 	                i_y=(b.y-b.h/2.)*im.h;
-                    i_w=b.w;
-                    i_h=b.h;
+                    i_w=b.w*im.w;
+                    i_h=b.h*im.h;
 		            distance=tdistance;
 		            strcpy(labelref,labelstr);
 	            }
@@ -399,8 +398,8 @@ void draw_detections_TS(image im, detection *dets, int num, float thresh, char *
             }
         } 
 // Start modification Raphael
-        printf("\nSelected point: %f %f \n",coord[0]*im.w, coord[1]*im.h); // touch coordinate
-        printf("\nTracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); 
+        printf("image.c 401 - Selected point: %f %f \n",coord[0]*im.w, coord[1]*im.h); // touch coordinate
+        printf("image.c 402 - Tracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); 
 // End modification Raphael
     }
 }
