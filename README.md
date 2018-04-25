@@ -21,7 +21,12 @@ Run the pretrained weights
 ```
 ./darknet detector demo cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
 ```
-
+Run with a touchscreen
+---------------------
+Assuming that your touchscreen is event6, else modify it:
+```
+./darknet detector demo_track cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
+```
 
 
 Train Imagenet
