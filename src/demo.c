@@ -149,7 +149,7 @@ void *detect_in_thread(void *ptr)
      */
 
     if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
-
+    //clear the screen to show fixed;
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
@@ -534,7 +534,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
         }else{
             sprintf(name, "%s_%08d", prefix, count);
             save_image(buff[(buff_index + 1)%3], name); 
-	}
+	    }
         pthread_join(fetch_thread, 0);
         pthread_join(detect_thread, 0);
         ++count;

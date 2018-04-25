@@ -23,7 +23,7 @@ Run the pretrained weights
 ```
 Run with a touchscreen
 ---------------------
-Assuming that your touchscreen is event6, else modify it (must be run under sudo):
+Assuming that your touchscreen is connected to /dev/input/event6, else modify it (must be run under sudo):
 ```
 sudo ./darknet detector demo_track cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
 ```
