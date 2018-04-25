@@ -27,6 +27,10 @@ Assuming that your touchscreen is event6, else modify it (must be run under sudo
 ```
 sudo ./darknet detector demo_track cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
 ```
+or
+```
+sudo ./darknet detector demo_track cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
+```
 
 Train Imagenet
 -----------------
