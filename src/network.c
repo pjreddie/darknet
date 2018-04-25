@@ -293,6 +293,7 @@ float train_network_datum(network *net)
     forward_network(net);
     backward_network(net);
     float error = *net->cost;
+    //printf("train_network_datum errors:%f\n", error);
     if(((*net->seen)/net->batch)%net->subdivisions == 0) update_network(net);
     return error;
 }
