@@ -516,7 +516,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 
 // Start modification raphael
     int ts=0;    
-    while(!demo_done && !ts){
+    while(!demo_done){// && !ts){
            ts=input_TS(fd);
 // End modification Raphael
 
@@ -543,8 +543,8 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 // Start modification Raphael
     close(fd);
     save_image_png(buff[0], "image_detection_0"); 
-    save_image_png(buff[1], "image_detection_1"); 
-    save_image_png(buff[2], "image_detection_2"); 
+//   save_image_png(buff[1], "image_detection_1"); 
+//   save_image_png(buff[2], "image_detection_2"); 
 // End modification Raphael
 }
 #endif

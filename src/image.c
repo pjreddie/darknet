@@ -320,96 +320,87 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
 void draw_detections_TS(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, double*coord)
 {
     if(coord[0]<0 && coord[1]<0){
-	draw_detections( im,  dets,  num, thresh, names, alphabet, classes);
-
-    }else{
-
-    int i,j,i_x,i_y;
-    float distance=1000000000.0,tdistance=0.0;
-    char labelref[4096] = {0};
+	    draw_detections( im,  dets,  num, thresh, names, alphabet, classes);
+    } else {
+        int i,j,i_x,i_y,i_w,i_h;
+        float distance=1000000000.0,tdistance=0.0;
+        char labelref[4096] = {0};
        
-    for(i = 0; i < num; ++i){
-        char labelstr[4096] = {0};
-        int class = -1;
-        for(j = 0; j < classes; ++j){
-            if (dets[i].prob[j] > thresh){
-                if (class < 0) {
-                    strcat(labelstr, names[j]);
-                    class = j;
-                } else {
-                    strcat(labelstr, ", ");
-                    strcat(labelstr, names[j]);
+        for(i = 0; i < num; ++i){
+           char labelstr[4096] = {0};
+            int class = -1;
+            for(j = 0; j < classes; ++j){
+                if (dets[i].prob[j] > thresh){
+                    if (class < 0) {
+                        strcat(labelstr, names[j]);
+                        class = j;
+                    } else {
+                        strcat(labelstr, ", ");
+                        strcat(labelstr, names[j]);
+                    }
+                    printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
                 }
-                printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
             }
-        }
-        if(class >= 0){
-            int width = im.h * .006;
-		printf("/nImage h=%d and w=%d and width=%d\n",im.h,im.w, width);
-            /*
-               if(0){
-               width = pow(prob, 1./2.)*10+1;
-               alphabet = 0;
-               }
-             */
+            if(class >= 0){
+                int width = im.h * .006;
+		        printf("/nImage h=%d and w=%d and width=%d\n",im.h,im.w, width);
 
-            //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
-            int offset = class*123457 % classes;
-            float red = get_color(2,offset,classes);
-            float green = get_color(1,offset,classes);
-            float blue = get_color(0,offset,classes);
-            float rgb[3];
+                int offset = class*123457 % classes;
+                float red = get_color(2,offset,classes);
+                float green = get_color(1,offset,classes);
+                float blue = get_color(0,offset,classes);
+                float rgb[3];
 
-            //width = prob*20+2;
+                rgb[0] = red;
+                rgb[1] = green;
+                rgb[2] = blue;
+                box b = dets[i].bbox;
+    // Start modification Raphael
+                printf("box center: x=%f y=%f, X=%f Y=%f\n", b.x, b.y,b.x*im.w,b.y*im.h);
+	            tdistance=sqrt(pow(coord[0]-b.x,2.)+pow(coord[1]-b.y,2.));
 
-            rgb[0] = red;
-            rgb[1] = green;
-            rgb[2] = blue;
-            box b = dets[i].bbox;
-// Start modification Raphael
-        printf("box center: x=%f y=%f, X=%f Y=%f\n", b.x, b.y,b.x*im.w,b.y*im.h);
-	    tdistance=sqrt(pow(coord[0]-b.x,2.)+pow(coord[1]-b.y,2.));
-
-	    if(distance>tdistance){
-		    i_x=b.x*im.w;
-	        i_y=b.y*im.w;
-		    distance=tdistance;
-		    strcpy(labelref,labelstr);
-	    }
+	            if(distance>tdistance){
+		            i_x=(b.x-b.w/2.)*im.w;
+	                i_y=(b.y-b.h/2.)*im.h;
+                    i_w=b.w;
+                    i_h=b.h;
+		            distance=tdistance;
+		            strcpy(labelref,labelstr);
+	            }
 // End modification Raphael
 
-            int left  = (b.x-b.w/2.)*im.w;
-            int right = (b.x+b.w/2.)*im.w;
-            int top   = (b.y-b.h/2.)*im.h;
-            int bot   = (b.y+b.h/2.)*im.h;
+                int left  = (b.x-b.w/2.)*im.w;
+                int right = (b.x+b.w/2.)*im.w;
+                int top   = (b.y-b.h/2.)*im.h;
+                int bot   = (b.y+b.h/2.)*im.h;
 
-            if(left < 0) left = 0;
-            if(right > im.w-1) right = im.w-1;
-            if(top < 0) top = 0;
-            if(bot > im.h-1) bot = im.h-1;
+                if(left < 0) left = 0;
+                if(right > im.w-1) right = im.w-1;
+                if(top < 0) top = 0;
+                if(bot > im.h-1) bot = im.h-1;
 // Start modification Raphael
-	    printf("box left=%d right=%d top=%d bot=%d\n\n",left,right,top,bot);
+	            printf("box left=%d right=%d top=%d bot=%d\n\n",left,right,top,bot);
 // End modification Raphael
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            if (alphabet) {
-                image label = get_label(alphabet, labelstr, (im.h*.03));
-                draw_label(im, top + width, left, label, rgb);
-                free_image(label);
+                draw_box_width(im, left, top, right, bot, width, red, green, blue);
+                if (alphabet) {
+                    image label = get_label(alphabet, labelstr, (im.h*.03));
+                    draw_label(im, top + width, left, label, rgb);
+                    free_image(label);
+                }
+                if (dets[i].mask){
+                    image mask = float_to_image(14, 14, 1, dets[i].mask);
+                    image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                    image tmask = threshold_image(resized_mask, .5);
+                    embed_image(tmask, im, left, top);
+                    free_image(mask); 
+                    free_image(resized_mask);
+                    free_image(tmask);
+                }
             }
-            if (dets[i].mask){
-                image mask = float_to_image(14, 14, 1, dets[i].mask);
-                image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
-                image tmask = threshold_image(resized_mask, .5);
-                embed_image(tmask, im, left, top);
-                free_image(mask); 
-                free_image(resized_mask);
-                free_image(tmask);
-            }
-        }
-    } 
+        } 
 // Start modification Raphael
-    printf("\nSelected %f %f \n",coord[0]*im.w,coord[1]*im.h);
-    printf("\ntarget %s %d %d \n",labelref,i_x,i_y);		
+        printf("\nSelected point: %f %f \n",coord[0]*im.w, coord[1]*im.h); // touch coordinate
+        printf("\nTracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); 
 // End modification Raphael
     }
 }
