@@ -1,9 +1,9 @@
-GPU=1
-CUDNN=1
+GPU=0
+CUDNN=0
 OPENCV=1
-OPENMP=1
+OPENMP=0
 DEBUG=0
-TS=1
+TS=0
 #touchscreen setting
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
