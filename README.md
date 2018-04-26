@@ -49,6 +49,18 @@ Remember to create backup_** before training
 ./darknet detector train cfg/voc.data cfg/yolov3-voc.cfg darknet53.conv.74 -gpus 0
 ```
 
+Run on Mac
+------------------
+```
+brew install opencv@2
+echo 'export PATH="/usr/local/opt/opencv@2/bin:$PATH"' >> ~/.bash_profile
+```
+each time to open a new terminal, you should run these to make:
+```
+export LDFLAGS=-L/usr/local/opt/opencv@2/lib
+export CPPFLAGS=-I/usr/local/opt/opencv@2/include
+export PKG_CONFIG_PATH=/usr/local/opt/opencv@2/lib/pkgconfig
+```
 
 Net compression
 -----------------
