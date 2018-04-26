@@ -160,7 +160,7 @@ void *detect_in_thread(void *ptr)
     if(RCOORD[0]>=0. && RCOORD[1]>=0.){
         double trcoord[2]={RCOORD[0],RCOORD[1]};
         draw_detections_TS(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, trcoord);
-	RCOORD[0]=trcoord[0];
+	    RCOORD[0]=trcoord[0];
         RCOORD[1]=trcoord[1];
     }else{
 #endif
@@ -484,12 +484,12 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 
 // Open Device TS
     int fd;
-     if(filename){
-      printf("\nTouch screen read from %s\n", filename);
-      fd = open(filename, O_RDONLY|O_NONBLOCK);
+    if(filename) {
+        printf("\nTouch screen read from %s\n", filename);
+        fd = open(filename, O_RDONLY|O_NONBLOCK);
     }else{
-      printf("\nTouch screen read from %s\n", EVENT_DEVICE);
-      fd = open(EVENT_DEVICE, O_RDONLY|O_NONBLOCK);
+        printf("\nTouch screen read from %s\n", EVENT_DEVICE);
+        fd = open(EVENT_DEVICE, O_RDONLY|O_NONBLOCK);
     }
 
     if (fd == -1) {
@@ -512,8 +512,8 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 
 // Start modification raphael
     int ts = 0;    
-    while(!demo_done){// && !ts){
-        ts=input_TS(fd);
+    while(!demo_done && !ts){
+        ts = input_TS(fd);
 // End modification Raphael
 
         buff_index = (buff_index + 1) %3;
@@ -535,7 +535,6 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
         pthread_join(detect_thread, 0);
         ++count;
     }
-    
 // Start modification Raphael
     close(fd);
     save_image_png(buff[0], "image_detection_0"); 

@@ -402,7 +402,7 @@ void draw_detections_TS(image im, detection *dets, int num, float thresh, char *
         if (f == NULL) {
             printf("ERROR opening capture.txt to save the box that needed to follow.\n");
         }
-        fprintf(f, "image.c 402 - Tracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); //format: label,x,y,w,h
+        fprintf(f, "%s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); //format: label,x,y,w,h
         fclose(f);
 // End modification Raphael
     }

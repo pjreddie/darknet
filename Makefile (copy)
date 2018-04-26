@@ -27,7 +27,7 @@ AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
-COMMON= -Iinclude/ -Isrc/ 
+COMMON= -Iinclude/ -Isrc/
 CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
 ifeq ($(OPENMP), 1) 
@@ -66,42 +66,32 @@ LDFLAGS+= -lstdc++
 OBJ+=convolutional_kernels.o deconvolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_kernels.o blas_kernels.o crop_layer_kernels.o dropout_layer_kernels.o maxpool_layer_kernels.o avgpool_layer_kernels.o
 endif
 
-#add by rockking 26/04/2018 start
-COMMONCPP=-std=c++0x 
 ifeq ($(TS), 1)
 COMMON+= -DTS 
 CFLAGS+= -DTS
 VPATH+=:./tracker
-COMMON+=-Itracker/
-LDFLAGS+= -lstdc++ `pkg-config --libs opencv` 
-OBJ+=fhog.o kcftracker.o runtracker.o
-#EXECOBJA+=
 endif
-#add by rockking 26/04/2018 end
 
 EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
-DEPS = $(wildcard src/*.h) Makefile include/darknet.h $(wildcard tracker/*.h) 
+DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
 #all: obj backup results $(SLIB) $(ALIB) $(EXEC)
 all: obj  results $(SLIB) $(ALIB) $(EXEC)
 
-#create exe from execobj and alib
+
 $(EXEC): $(EXECOBJ) $(ALIB)
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(ALIB)
-#create archive lib(.a)--statically linked lib.
+
 $(ALIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
-#create a shared object(.so)--runtime linked lib.
+
 $(SLIB): $(OBJS)
 	$(CC) $(CFLAGS) -shared $^ -o $@ $(LDFLAGS)
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
-#add by rockking 26/04/2018 start
-$(OBJDIR)%.o: %.cpp $(DEPS)
-	$(CC) $(COMMON) $(COMMONCPP) $(CFLAGS) -c $< -o $@
-#add by rockking 26/04/2018 end
+
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 

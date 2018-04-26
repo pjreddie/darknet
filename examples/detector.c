@@ -942,7 +942,10 @@ void run_detector(int argc, char **argv)
 // add this line to read input event TS (TS = touch screen)
 //      char *event_TS = find_char_arg(argc, argv, "-event", "/dev/input/event6");
 // filename is used to stock event path
+
         demo_TS(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, 1);
+        
+        runtracker();
     }
 #endif
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
