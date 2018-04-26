@@ -3,7 +3,7 @@ CUDNN=0
 OPENCV=1
 OPENMP=0
 DEBUG=0
-TS=0
+TS=1
 #touchscreen setting
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
