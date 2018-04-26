@@ -387,8 +387,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
     //demo_frame = avg_frames;
-
-
     image **alphabet = load_alphabet();
     demo_names = names;
     demo_alphabet = alphabet;
@@ -419,22 +417,20 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 //        cap = cvCaptureFromFile(filename);
 //    }else{
 // End modification Raphael
-        cap = cvCaptureFromCAM(cam_index);
+    cap = cvCaptureFromCAM(cam_index);
 
-        if(w){
-
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+    if(w){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
 		printf("width %d\n",w);
-
-        }
-        if(h){
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+    }
+    if(h){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
 		printf("height %d\n",h);
-        }
-        if(frames){
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, frames);
+    }
+    if(frames){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, frames);
 		printf("Nb Frames %d\n",frames);
-        }
+    }
 // Start modification Raphel
 //    }
 // End modification Raphael
@@ -455,7 +451,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
     buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
     buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
 
-   ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
+    ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
 
 
     int count = 0;

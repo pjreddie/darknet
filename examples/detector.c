@@ -655,8 +655,6 @@ void test_detectorlist(char *datacfg, char *cfgfile, char *weightfile, char *fil
                 cvNamedWindow("predictions", CV_WINDOW_NORMAL); 
     #endif
     while(1){
-
-        printf("tag2\n");
         if(access( filenamenow, F_OK ) != -1){ //checek the end of file
             strncpy(input, filenamenow, 256);
 
@@ -686,13 +684,13 @@ void test_detectorlist(char *datacfg, char *cfgfile, char *weightfile, char *fil
             else{
                 save_image(im, "predictions");
     #ifdef OPENCV
-                cvNamedWindow("predictions", CV_WINDOW_NORMAL); 
-                if(fullscreen){
-                    cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-                }
-                show_image(im, "predictions");
-                cvWaitKey(1);
-                //cvDestroyAllWindows();
+            cvNamedWindow("predictions", CV_WINDOW_NORMAL); 
+            if(fullscreen){
+                cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+            }
+            show_image(im, "predictions");
+            cvWaitKey(1);
+            //cvDestroyAllWindows();
     #endif
             }
 
