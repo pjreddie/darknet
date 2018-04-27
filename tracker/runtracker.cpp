@@ -24,8 +24,9 @@ extern "C" int runtracker();
 //int main(int argc, char **argv)
 int runtracker()
 {
+#ifdef MAESTRO
     test_maestro();
-
+#endif
     string trackerType = "KCF";
 	// Create KCFTracker object 
     bool HOG = true;

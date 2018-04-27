@@ -21,16 +21,6 @@ Run the pretrained weights
 ```
 ./darknet detector demo cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
 ```
-Run with a touchscreen
----------------------
-Assuming that your touchscreen is connected to /dev/input/event6, else modify it (must be run under sudo):
-```
-sudo ./darknet detector demo_track cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
-```
-or
-```
-sudo ./darknet detector demo_track cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
-```
 
 Train Imagenet
 -----------------
@@ -72,3 +62,25 @@ GPU=0 CUDNN=0 OPENMP=0: 21.315930 seconds.
 GPU=0 CUDNN=0 OPENMP=1: 4.199370 seconds.
 
 yolov3.cfg: width=208 height=208: 2.430844 seconds.
+
+Run with a touchscreen and tracker:
+---------------------
+In Makefile set:
+```
+TS=1
+```
+Assuming that your touchscreen is connected to /dev/input/event6, else modify it (must be run under sudo):
+```
+sudo ./darknet detector demo_track cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
+```
+or
+```
+sudo ./darknet detector demo_track cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
+```
+
+Run with maestro motor
+--------------------
+In Makefile set:
+```
+MAESTRO=1
+```
