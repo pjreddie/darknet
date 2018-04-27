@@ -1,6 +1,7 @@
 
 #include "kcftracker.h"
 
+//#include "image.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -29,6 +30,97 @@ int runtracker()
 	bool LAB = false; //LAB color space features
 	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);//--------------------------trakcer
 
+// Read from the camera ===================================================
+    //string path = "/media/elab/sdd/mycodes/darknet";//"/home/nvidia/amy/Sam";//
+    string path = "/home/nvidia/amy/darknet";
+	// Read the groundtruth bbox
+	ifstream groundtruth(path + "/capture.txt");
+    std::string f;
+	int x,y,w,h;
+	std::string s;
+	getline(groundtruth, s, ',');	
+	f = s;
+	getline(groundtruth, s, ',');
+	x = atoi(s.c_str());
+	getline(groundtruth, s, ',');	
+	y = atoi(s.c_str());
+	getline(groundtruth, s, ',');
+	w = atoi(s.c_str());
+	getline(groundtruth, s);	
+	h = atoi(s.c_str());
+	cout << "Target to track:" << f <<" " << x <<" " << y <<" " << w <<" " << h <<" " << endl;
+	Rect2d bbox(x,y,w,h);
+
+	// Open camera
+    VideoCapture cap(0); // open the default camera
+    //cap.set(CV_CAP_PROP_BUFFERSIZE, 0);
+    if(!cap.isOpened())// check if we succeeded
+    {
+        cout <<  "Could not open camera \n" << std::endl ;
+        return -1;        
+    }
+    cv::Mat frame;
+    cap >> frame; 
+
+    if(! frame.data )
+    {
+        cout <<  "Could not capture the image \n" << std::endl ;
+        return -1;
+    }
+    // Display frame.        
+    cvNamedWindow("Tracking", CV_WINDOW_NORMAL); 
+    cvSetWindowProperty("Tracking", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+	// Init the tracker---------------------------tracker
+    tracker.init(bbox, frame);
+
+    while(frame.data) {
+        // Start timer
+        double timer = (double)getTickCount();
+         
+        // Update the tracking result--------------------------tracker
+        bbox = tracker.update(frame);
+         
+        // Calculate Frames per second (FPS)
+        float fps = getTickFrequency() / ((double)getTickCount() - timer);
+        
+        bool ok = 1;
+        if (ok)
+        {
+            // Tracking success : Draw the tracked object
+            rectangle(frame, bbox, Scalar( 255, 0, 0 ), 2, 1 );
+        }
+        else
+        {
+            // Tracking failure detected.
+            putText(frame, "Tracking failure detected", Point(100,80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0,0,255),2);
+        }
+         
+        // Display tracker type on frame
+        putText(frame, trackerType + " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
+         
+        // Display FPS on frame
+        putText(frame, "FPS : " + SSTR(int(fps)), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
+
+        //cvShowImage("Tracking", frame);
+        imshow("Tracking", frame);
+        int c = cvWaitKey(1);
+        if (c != -1) c = c%256;
+        if (c == 27) {
+            cvDestroyWindow("Tracking");
+            return 0;
+        } 
+        waitKey(1);
+		// Read frame
+        //cap >> frame; 
+        cap.grab();
+        cap.retrieve(frame);
+
+    }
+    cvDestroyWindow("Tracking");
+    cap.release();
+    return 0;
+
+    /*
 // Read from the images ====================================================
     //string path = "/media/elab/sdd/data/TLP/Bike";//"/home/nvidia/amy/Sam";////"/media/elab/sdd/data/TB-100/Basketball";//
     string path = "/home/nvidia/amy/Sam";
@@ -135,7 +227,7 @@ int runtracker()
 		bboxGroundtruth.height = h;
     }
     return 0;
-// Read from the camera ===================================================
+    */
 
 
 

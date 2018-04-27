@@ -380,6 +380,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         ++count;
     }
     cvDestroyWindow("Demo");
+    cvReleaseCapture(&cap);
 }
 
 #ifdef TS
@@ -542,6 +543,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 //   save_image_png(buff[1], "image_detection_1"); 
 //   save_image_png(buff[2], "image_detection_2"); 
     cvDestroyWindow("Demo");
+    cvReleaseCapture(&cap);
 // End modification Raphael
 }
 #endif
