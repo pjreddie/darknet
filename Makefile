@@ -2,8 +2,10 @@ GPU=1
 CUDNN=1
 OPENCV=1
 OPENMP=1
-DEBUG=0
+DEBUG=1
 TS=1
+MAESTRO=1
+
 #touchscreen setting
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
@@ -35,7 +37,9 @@ CFLAGS+= -fopenmp
 endif
 
 ifeq ($(DEBUG), 1) 
-OPTS=-O0 -g
+COMMON+= -DDEBUG
+CFLAGS+= -DDEBUG
+#OPTS=-O0 -g
 endif
 
 CFLAGS+=$(OPTS)
@@ -75,7 +79,14 @@ VPATH+=:./tracker
 COMMON+=-Itracker/
 LDFLAGS+= -lstdc++ `pkg-config --libs opencv` 
 OBJ+=fhog.o kcftracker.o runtracker.o
-#EXECOBJA+=
+endif
+
+ifeq ($(MAESTRO), 1)
+COMMON+= -DMAESTRO 
+CFLAGS+= -DMAESTRO
+VPATH+=:./maestro 
+COMMON+=-Imaestro/ 
+OBJ+=maestro.o
 endif
 #add by rockking 26/04/2018 end
 

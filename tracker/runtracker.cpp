@@ -11,6 +11,8 @@
 #include <fstream>
 #include <string>
 
+#include "maestro.h"
+
 using namespace cv;
 using namespace std;
 
@@ -22,6 +24,8 @@ extern "C" int runtracker();
 //int main(int argc, char **argv)
 int runtracker()
 {
+    test_maestro();
+
     string trackerType = "KCF";
 	// Create KCFTracker object 
     bool HOG = true;
@@ -31,8 +35,11 @@ int runtracker()
 	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);//--------------------------trakcer
 
 // Read from the camera ===================================================
-    //string path = "/media/elab/sdd/mycodes/darknet";//"/home/nvidia/amy/Sam";//
+#ifdef DEBUG
+    string path = "/media/elab/sdd/mycodes/darknet";//"/home/nvidia/amy/Sam";//
+#else
     string path = "/home/nvidia/amy/darknet";
+#endif
 	// Read the groundtruth bbox
 	ifstream groundtruth(path + "/capture.txt");
     std::string f;
@@ -69,7 +76,10 @@ int runtracker()
     }
     // Display frame.        
     cvNamedWindow("Tracking", CV_WINDOW_NORMAL); 
+#ifndef DEBUG
     cvSetWindowProperty("Tracking", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+#endif
+ //   
 	// Init the tracker---------------------------tracker
     tracker.init(bbox, frame);
 
@@ -96,8 +106,9 @@ int runtracker()
         }
          
         // Display tracker type on frame
-        putText(frame, trackerType + " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
-         
+        //putText(frame, trackerType + " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
+        putText(frame, " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
+          
         // Display FPS on frame
         putText(frame, "FPS : " + SSTR(int(fps)), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
 
