@@ -379,6 +379,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         pthread_join(detect_thread, 0);
         ++count;
     }
+    cvDestroyWindow("Demo");
 }
 
 #ifdef TS
@@ -540,6 +541,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
     save_image_png(buff[0], "image_detection_0"); 
 //   save_image_png(buff[1], "image_detection_1"); 
 //   save_image_png(buff[2], "image_detection_2"); 
+    cvDestroyWindow("Demo");
 // End modification Raphael
 }
 #endif

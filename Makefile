@@ -1,7 +1,7 @@
-GPU=0
-CUDNN=0
+GPU=1
+CUDNN=1
 OPENCV=1
-OPENMP=0
+OPENMP=1
 DEBUG=0
 TS=1
 #touchscreen setting

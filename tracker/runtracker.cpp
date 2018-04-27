@@ -30,7 +30,7 @@ int runtracker()
 	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);//--------------------------trakcer
 
 // Read from the images ====================================================
-    string path = "/home/nvidia/amy/Sam";//"/media/elab/sdd/data/TLP/Bike";//"/media/elab/sdd/data/TB-100/Basketball";//
+    string path = "/home/nvidia/amy/Sam";//"/media/elab/sdd/data/TLP/Bike";////"/media/elab/sdd/data/TB-100/Basketball";//
 	// Read the groundtruth bbox
 	ifstream groundtruth(path + "/groundtruth_rect.txt");
 	int f,x,y,w,h,isLost;
