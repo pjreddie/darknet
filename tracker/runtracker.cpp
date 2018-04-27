@@ -30,7 +30,8 @@ int runtracker()
 	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);//--------------------------trakcer
 
 // Read from the images ====================================================
-    string path = "/home/nvidia/amy/Sam";//"/media/elab/sdd/data/TLP/Bike";////"/media/elab/sdd/data/TB-100/Basketball";//
+    //string path = "/media/elab/sdd/data/TLP/Bike";//"/home/nvidia/amy/Sam";////"/media/elab/sdd/data/TB-100/Basketball";//
+    string path = "/home/nvidia/amy/Sam";
 	// Read the groundtruth bbox
 	ifstream groundtruth(path + "/groundtruth_rect.txt");
 	int f,x,y,w,h,isLost;
@@ -96,8 +97,17 @@ int runtracker()
         // Display FPS on frame
         putText(frame, "FPS : " + SSTR(int(fps)), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
 
-        // Display frame.
+        // Display frame.        
+        cvNamedWindow("Tracking", CV_WINDOW_NORMAL); 
+        cvSetWindowProperty("Tracking", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+        //cvShowImage("Tracking", frame);
         imshow("Tracking", frame);
+        int c = cvWaitKey(1);
+        if (c != -1) c = c%256;
+        if (c == 27) {
+            cvDestroyWindow("Tracking");
+            return 0;
+        } 
         waitKey(1);
 		// Read next image
 		f++;
