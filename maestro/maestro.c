@@ -2,11 +2,29 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
-
 #include <termios.h>
+
+int maestroIni()
+{
+  const char * device = "/dev/ttyACM0";  // Linux
+  
+  int fd = open(device, O_RDWR | O_NOCTTY);
+  if (fd == -1)
+  {
+    perror(device);
+    return -1;
+  }
  
-// Gets the position of a Maestro channel.
-// See the "Serial Servo Commands" section of the user's guide.
+  struct termios options;
+  tcgetattr(fd, &options);
+  options.c_iflag &= ~(INLCR | IGNCR | ICRNL | IXON | IXOFF);
+  options.c_oflag &= ~(ONLCR | OCRNL);
+  options.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+  tcsetattr(fd, TCSANOW, &options);
+
+  return fd;
+}
+
 int maestroGetPosition(int fd, unsigned char channel)
 {
   unsigned char command[] = {0x90, channel};
@@ -26,8 +44,6 @@ int maestroGetPosition(int fd, unsigned char channel)
   return response[0] + 256*response[1];
 }
  
-// Sets the target of a Maestro channel.
-// See the "Serial Servo Commands" section of the user's guide.
 // The units of 'target' are quarter-microseconds.
 int maestroSetTarget(int fd, unsigned char channel, unsigned short target)
 {
@@ -39,33 +55,43 @@ int maestroSetTarget(int fd, unsigned char channel, unsigned short target)
   }
   return 0;
 }
- 
+
+// Speed of 0 is unrestricted.
+// A speed of 1 will take 1 minute, and a speed of 60 would take 1 second.
+int maestroSetSpeed(int fd, unsigned char channel, unsigned short speed)
+{
+  unsigned char command[] = {0x07, channel, speed & 0x7F, speed >> 7 & 0x7F};
+  if (write(fd, command, sizeof(command)) == -1)
+  {
+    perror("error writing");
+    return -1;
+  }
+  return 0;
+}
+// Valid values are from 0 to 255. 0=unrestricted, 1 is slowest start.
+// A value of 1 will take the servo about 3s to move between 1ms to 2ms range.
+int maestroSetAccel(int fd, unsigned char channel, unsigned short accel)
+{
+  unsigned char command[] = {0x09, channel, accel & 0x7F, accel >> 7 & 0x7F};
+  if (write(fd, command, sizeof(command)) == -1)
+  {
+    perror("error writing");
+    return -1;
+  }
+  return 0;
+}
+
+//int main()
 int test_maestro()
 {
-  const char * device = "/dev/ttyACM0";  // Linux
-  //const char * device = "/dev/cu.usbmodem00034567";  // Mac OS X
-  int fd = open(device, O_RDWR | O_NOCTTY);
-  if (fd == -1)
-  {
-    perror(device);
-    return 1;
-  }
- 
-  struct termios options;
-  tcgetattr(fd, &options);
-  options.c_iflag &= ~(INLCR | IGNCR | ICRNL | IXON | IXOFF);
-  options.c_oflag &= ~(ONLCR | OCRNL);
-  options.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-  tcsetattr(fd, TCSANOW, &options);
-
- 
+  int fd = maestroIni();
+  //get the position of maestro
   int position = maestroGetPosition(fd, 0);
   printf("Current position is %d.\n", position);
  
+  //send control command
   int ud = 6000;
-  printf("Setting target to %d (%d us).\n", ud, ud/4);
   maestroSetTarget(fd, 0, ud); //control up down
-
 
   int lr = 6000; 
   maestroSetTarget(fd, 1, lr); //control left right

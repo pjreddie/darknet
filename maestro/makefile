@@ -1,8 +1,8 @@
 
 CC=gcc
 CFLAGS=-Wall -I.  
-DEPS = *.h *.hpp
-OBJ = test.o
+DEPS = *.h
+OBJ = maestro.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -13,4 +13,4 @@ maestro: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -rf *.o
+	rm -rf *.o maestro
