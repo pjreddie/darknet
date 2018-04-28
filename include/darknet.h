@@ -679,7 +679,7 @@ int input_TS (int fileId);
 void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen);
 void save_TS_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, double *coord);
 #endif
-void save_autotrack_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes));
+void save_autotrack_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes);
 
 
 void get_detection_detections(layer l, int w, int h, float thresh, detection *dets);

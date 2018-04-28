@@ -173,9 +173,7 @@ void *detect_in_thread(void *ptr)
 #endif
     } else {
       save_autotrack_target(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
-      demo_done = 1;
     }
-
 
     free_detections(dets, nboxes);
 
@@ -230,41 +228,42 @@ void *detect_loop(void *ptr)
     }
 }
 
-void save_autotrack_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes))
+void save_autotrack_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
-        int i,j,i_x,i_y,i_w,i_h;
-
-        char labelref[4096] = {0};
+    int i,j,i_x,i_y,i_w,i_h;
+    bool flag = false;
+    char labelref[4096] = {0};
        
-        for(i = 0; i < num; ++i){
-            char labelstr[4096] = {0};
-            int class = -1;
-            for(j = 0; j < classes; ++j){
-                if (dets[i].prob[j] > thresh){
-                    if (class < 0) {
-                        strcat(labelstr, names[j]);
-                        class = j;
-                    } else {
-                        strcat(labelstr, ", ");
-                        strcat(labelstr, names[j]);
-                    }
-                    //printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+    for(i = 0; i < num; ++i){
+        char labelstr[4096] = {0};
+        int class = -1;
+        for(j = 0; j < classes; ++j){
+            if (dets[i].prob[j] > thresh){
+                if (class < 0) {
+                    strcat(labelstr, names[j]);
+                    class = j;
+                } else {
+                    strcat(labelstr, ", ");
+                    strcat(labelstr, names[j]);
                 }
+                //printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
             }
-            if(class >= 0){
-
-                box b = dets[i].bbox;
-
-                //get the box with the shortest distance;
-                if(strcmp(labelstr,"people")){
-                  i_x = (b.x-b.w/2.)*im.w;
-                  i_y = (b.y-b.h/2.)*im.h;
-                  i_w = b.w*im.w;
-                  i_h = b.h*im.h;
-                  strcpy(labelref, labelstr);
-                }
+        }
+        if(class >= 0){
+            box b = dets[i].bbox;
+            //printf("labelstr:%s\n", labelstr);
+            
+            if(!strcmp(labelstr,"person")){
+                i_x = (b.x-b.w/2.)*im.w;
+                i_y = (b.y-b.h/2.)*im.h;
+                i_w = b.w*im.w;
+                i_h = b.h*im.h;
+                strcpy(labelref, labelstr);
+                flag = true;
             }
-        } 
+        }
+    } 
+    if(flag == true) {
         printf("image.c - Tracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); 
         FILE *f = fopen("capture.txt","w");
         if (f == NULL) {
@@ -272,12 +271,13 @@ void save_autotrack_target(image im, detection *dets, int num, float thresh, cha
         }
         fprintf(f, "%s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); //format: label,x,y,w,h
         fclose(f);
+        demo_done = 1;
     }
 }
 
 #ifdef TS
 
-void save_TS_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, double *coord))
+void save_TS_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, double *coord)
 {
         int i,j,i_x,i_y,i_w,i_h;
         float distance = 1000000000.0, tdistance = 0.0;
@@ -322,7 +322,7 @@ void save_TS_target(image im, detection *dets, int num, float thresh, char **nam
         }
         fprintf(f, "%s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); //format: label,x,y,w,h
         fclose(f);
-    }
+    
 }
 // read coordiantes X,Y from TS
 // into RCOORD
