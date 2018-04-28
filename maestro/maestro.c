@@ -90,7 +90,7 @@ int test_maestro()
   printf("Current position is %d.\n", position);
  
   //send control command
-  int speed = 30
+  int speed = 30;
   maestroSetSpeed(fd, 0, speed);
   //maestroSetAccel(fd, 0, 30);
 
