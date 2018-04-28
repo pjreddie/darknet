@@ -69,7 +69,12 @@ int runtracker()
         return -1;        
     }
     cv::Mat frame;
-    cap >> frame; 
+    //cap >> frame; 
+
+	ostringstream osfile;
+	osfile << path << "/tracking.png";
+	//cout << osfile.str() << endl;
+    frame = cv::imread(osfile.str().c_str(), CV_LOAD_IMAGE_UNCHANGED);
 
     if(! frame.data )
     {

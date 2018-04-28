@@ -158,7 +158,7 @@ void *detect_in_thread(void *ptr)
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
-
+    
     draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
 
 
@@ -174,6 +174,10 @@ void *detect_in_thread(void *ptr)
     } else {
       save_autotrack_target(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
     }
+
+    save_image_png(display, "tracking"); 
+//   save_image_png(buff[1], "image_detection_1"); 
+//   save_image_png(buff[2], "image_detection_2"); 
 
     free_detections(dets, nboxes);
 
@@ -265,7 +269,7 @@ void save_autotrack_target(image im, detection *dets, int num, float thresh, cha
     } 
     if(flag == true) {
         printf("image.c - Tracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); 
-        FILE *f = fopen("capture.txt","w");
+        FILE *f = fopen("tracking.txt","w");
         if (f == NULL) {
             printf("ERROR opening capture.txt to save the box that needed to follow.\n");
         }
@@ -316,7 +320,7 @@ void save_TS_target(image im, detection *dets, int num, float thresh, char **nam
         } 
         printf("image.c - Selected point: %f %f \n",coord[0]*im.w, coord[1]*im.h); // touch coordinate
         printf("image.c - Tracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); 
-        FILE *f = fopen("capture.txt","w");
+        FILE *f = fopen("tracking.txt","w");
         if (f == NULL) {
             printf("ERROR opening capture.txt to save the box that needed to follow.\n");
         }
@@ -329,32 +333,29 @@ void save_TS_target(image im, detection *dets, int num, float thresh, char **nam
 // (New function define by Raphael)
 int change_coord(){
 //double ratio=min((xTSmax-xTS0)/xcam,(yTSmax-yTS0)/ycam)
-  double ratio = (Y_MAX-Y_MIN)/CAM_H;
-  double ts_w  = (X_MAX-X_MIN);
-  double ts_h  = (Y_MAX-Y_MIN);
-  double new_w = (CAM_W)*ratio;
-  double new_h = (CAM_H)*ratio;
+    double ratio = (Y_MAX-Y_MIN)/CAM_H;
+    double ts_w  = (X_MAX-X_MIN);
+    double ts_h  = (Y_MAX-Y_MIN);
+    double new_w = (CAM_W)*ratio;
+    double new_h = (CAM_H)*ratio;
 
  // printf("ratio %f new w %f new h %f \n",ratio,new_w,new_h);
-  double left  = X_MIN+(ts_w-new_w)/2.0;
-  double right = X_MAX-(ts_w-new_w)/2.0;
-  double top   = Y_MIN+(ts_h-new_h)/2.0;
-  double bot   = Y_MAX-(ts_h-new_h)/2.0;
-  printf("\nTS corners: left %f right %f top %f bot %f \n",left,right,top,bot);
+    double left  = X_MIN+(ts_w-new_w)/2.0;
+    double right = X_MAX-(ts_w-new_w)/2.0;
+    double top   = Y_MIN+(ts_h-new_h)/2.0;
+    double bot   = Y_MAX-(ts_h-new_h)/2.0;
+    printf("\nTS corners: left %f right %f top %f bot %f \n",left,right,top,bot);
 
-  if(left<RCOORD[0] && RCOORD[0]<right && top<RCOORD[1] && RCOORD[0]<bot){
-
-    RCOORD[0]=(RCOORD[0]-left)/ts_w;
-    RCOORD[1]=(RCOORD[1]-top )/ts_h;
-	  //printf("test %f %f",RCOORD[0]*CAM_W,RCOORD[1]*CAM_H);
-    //error("test");
-	  return 1;
-  }else{
-	  printf("\nPixel selected is not in the BBOX. Try again\n");
-    RCOORD[0]=-1.;
-    RCOORD[1]=-1.;
-	  return 0;
-  }
+    if(left<RCOORD[0] && RCOORD[0]<right && top<RCOORD[1] && RCOORD[0]<bot){
+        RCOORD[0]=(RCOORD[0]-left)/ts_w;
+        RCOORD[1]=(RCOORD[1]-top )/ts_h;
+	    return 1;
+    }else{
+	    printf("\nPixel selected is not in the BBOX. Try again\n");
+        RCOORD[0]=-1.;
+        RCOORD[1]=-1.;
+	    return 0;
+    }
 }
 // Detect if the TS is touch
 // IS the pixel selected in the frame?
@@ -635,9 +636,6 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
     }
 // Start modification Raphael
     close(fd);
-    save_image_png(buff[0], "image_detection_0"); 
-//   save_image_png(buff[1], "image_detection_1"); 
-//   save_image_png(buff[2], "image_detection_2"); 
     cvDestroyWindow("Demo");
     cvReleaseCapture(&cap);
 // End modification Raphael
