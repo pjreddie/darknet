@@ -10,12 +10,13 @@
 #include <sys/time.h>
 
 #ifdef TS 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <linux/input.h>
-#define EVENT_DEVICE    "/dev/input/event5"
+#define EVENT_DEVICE    "/dev/input/event4"
 #define EVENT_TYPE      EV_ABS
 #define EVENT_CODE_X    ABS_X
 #define EVENT_CODE_Y    ABS_Y
@@ -25,14 +26,16 @@
 // Touch screen option
 static double X_MIN= 0.;
 static double Y_MIN= 0.;
-static double X_MAX=1024.;
+static double X_MAX= 1024.;
 static double Y_MAX= 600.;
 // Camera option
 static double CAM_W= 640.;
 static double CAM_H= 480.;
-static double RCOORD[2]={-1.,-1.};
+static double RCOORD[2]= {-1.,-1.};
+
 #endif
 
+static int autotrack_flag = 0; //0: not track; 1: track people; 2: not defined...
 
 #define DEMO 1
 
@@ -156,18 +159,23 @@ void *detect_in_thread(void *ptr)
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
 
-#ifdef TS 
-    if(RCOORD[0]>=0. && RCOORD[1]>=0.){
-        double trcoord[2]={RCOORD[0],RCOORD[1]};
-        draw_detections_TS(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, trcoord);
-	    RCOORD[0]=trcoord[0];
-        RCOORD[1]=trcoord[1];
-    }else{
-#endif
     draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
-#ifdef TS
-    }
+
+
+    if(autotrack_flag == 0) {
+#ifdef TS 
+      if(RCOORD[0]>=0. && RCOORD[1]>=0.){
+        double trcoord[2]={RCOORD[0],RCOORD[1]};
+        save_TS_target(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, trcoord);
+        RCOORD[0]=trcoord[0];
+        RCOORD[1]=trcoord[1];
+      }
 #endif
+    } else {
+      save_autotrack_target(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
+      demo_done = 1;
+    }
+
 
     free_detections(dets, nboxes);
 
@@ -192,6 +200,8 @@ void *display_in_thread(void *ptr)
     if (c == 27) {
         demo_done = 1;
         return 0;
+    } else if (c == 116){
+        autotrack_flag = 1;
     } else if (c == 82) {
         demo_thresh += .02;
     } else if (c == 84) {
@@ -220,8 +230,101 @@ void *detect_loop(void *ptr)
     }
 }
 
+void save_autotrack_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes))
+{
+        int i,j,i_x,i_y,i_w,i_h;
+
+        char labelref[4096] = {0};
+       
+        for(i = 0; i < num; ++i){
+            char labelstr[4096] = {0};
+            int class = -1;
+            for(j = 0; j < classes; ++j){
+                if (dets[i].prob[j] > thresh){
+                    if (class < 0) {
+                        strcat(labelstr, names[j]);
+                        class = j;
+                    } else {
+                        strcat(labelstr, ", ");
+                        strcat(labelstr, names[j]);
+                    }
+                    //printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                }
+            }
+            if(class >= 0){
+
+                box b = dets[i].bbox;
+
+                //get the box with the shortest distance;
+                if(strcmp(labelstr,"people")){
+                  i_x = (b.x-b.w/2.)*im.w;
+                  i_y = (b.y-b.h/2.)*im.h;
+                  i_w = b.w*im.w;
+                  i_h = b.h*im.h;
+                  strcpy(labelref, labelstr);
+                }
+            }
+        } 
+        printf("image.c - Tracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); 
+        FILE *f = fopen("capture.txt","w");
+        if (f == NULL) {
+            printf("ERROR opening capture.txt to save the box that needed to follow.\n");
+        }
+        fprintf(f, "%s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); //format: label,x,y,w,h
+        fclose(f);
+    }
+}
+
 #ifdef TS
-//  read coordiantes X,Y from TS
+
+void save_TS_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, double *coord))
+{
+        int i,j,i_x,i_y,i_w,i_h;
+        float distance = 1000000000.0, tdistance = 0.0;
+        char labelref[4096] = {0};
+       
+        for(i = 0; i < num; ++i){
+            char labelstr[4096] = {0};
+            int class = -1;
+            for(j = 0; j < classes; ++j){
+                if (dets[i].prob[j] > thresh){
+                    if (class < 0) {
+                        strcat(labelstr, names[j]);
+                        class = j;
+                    } else {
+                        strcat(labelstr, ", ");
+                        strcat(labelstr, names[j]);
+                    }
+                    //printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                }
+            }
+            if(class >= 0){
+
+                box b = dets[i].bbox;
+
+                tdistance = sqrt(pow(coord[0]-b.x,2.) + pow(coord[1]-b.y,2.));
+                //get the box with the shortest distance;
+                if(distance > tdistance){
+                  i_x = (b.x-b.w/2.)*im.w;
+                  i_y = (b.y-b.h/2.)*im.h;
+                  i_w = b.w*im.w;
+                  i_h = b.h*im.h;
+                  distance = tdistance;
+                  strcpy(labelref, labelstr);
+                }
+            }
+        } 
+        printf("image.c - Selected point: %f %f \n",coord[0]*im.w, coord[1]*im.h); // touch coordinate
+        printf("image.c - Tracking target: %s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); 
+        FILE *f = fopen("capture.txt","w");
+        if (f == NULL) {
+            printf("ERROR opening capture.txt to save the box that needed to follow.\n");
+        }
+        fprintf(f, "%s,%d,%d,%d,%d\n",labelref,i_x,i_y,i_w,i_h); //format: label,x,y,w,h
+        fclose(f);
+    }
+}
+// read coordiantes X,Y from TS
 // into RCOORD
 // (New function define by Raphael)
 int change_coord(){
@@ -242,15 +345,15 @@ int change_coord(){
   if(left<RCOORD[0] && RCOORD[0]<right && top<RCOORD[1] && RCOORD[0]<bot){
 
     RCOORD[0]=(RCOORD[0]-left)/ts_w;
-	RCOORD[1]=(RCOORD[1]-top )/ts_h;
-	//printf("test %f %f",RCOORD[0]*CAM_W,RCOORD[1]*CAM_H);
+    RCOORD[1]=(RCOORD[1]-top )/ts_h;
+	  //printf("test %f %f",RCOORD[0]*CAM_W,RCOORD[1]*CAM_H);
     //error("test");
-	return 1;
+	  return 1;
   }else{
-	printf("\nPixel selected is not in the BBOX. Try again\n");
+	  printf("\nPixel selected is not in the BBOX. Try again\n");
     RCOORD[0]=-1.;
-	RCOORD[1]=-1.;
-	return 0;
+    RCOORD[1]=-1.;
+	  return 0;
   }
 }
 // Detect if the TS is touch
@@ -295,6 +398,7 @@ int input_TS(int fileId)
   }
   return 0; 
 }
+
 #endif
 
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
@@ -445,7 +549,6 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
     printf("cam width  %f\n",CAM_W);
 // End modification raphael 
 
-
     buff[0] = get_image_from_stream(cap);
     buff[1] = copy_image(buff[0]);
     buff[2] = copy_image(buff[0]);
@@ -464,7 +567,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 // Even trough I added fulscreen as input od demo_mod 
 // I still comment this part of the code
 //     if(fullscreen){
-            cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+        cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 
 //       } else {
 //            cvMoveWindow("Demo", 0, 0);
@@ -476,10 +579,8 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
 // End modification Raphael
     }
     
-  
 // Start modification raphael
 // Check if root
-   
     if ((getuid ()) != 0) {
         error("You are not root! This may not work...\n");
     }
@@ -517,14 +618,9 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
     while(!demo_done && !ts){
         ts = input_TS(fd);
 // End modification Raphael
-
         buff_index = (buff_index + 1) %3;
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-
-// Start modification raphael
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
-// End modification raphael
-
         if(!prefix){
             fps = 1./(what_time_is_it_now() - demo_time);
             demo_time = what_time_is_it_now();
@@ -532,7 +628,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
         }else{
             sprintf(name, "%s_%08d", prefix, count);
             save_image(buff[(buff_index + 1)%3], name); 
-	    }
+	      }
         pthread_join(fetch_thread, 0);
         pthread_join(detect_thread, 0);
         ++count;
