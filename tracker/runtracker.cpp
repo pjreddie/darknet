@@ -1,7 +1,6 @@
 
 #include "kcftracker.h"
 
-//#include "image.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -11,7 +10,9 @@
 #include <fstream>
 #include <string>
 
+#ifdef MAESTRO
 #include "maestro.h"
+#endif
 
 using namespace cv;
 using namespace std;

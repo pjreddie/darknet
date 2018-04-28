@@ -15,4 +15,4 @@ tracker: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -rf *.o
+	rm -rf *.o tracker

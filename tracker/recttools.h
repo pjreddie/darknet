@@ -1,7 +1,6 @@
 
 #pragma once
 
-//#include <cv.h>
 #include <math.h>
 
 #ifndef _OPENCV_RECTTOOLS_HPP_
