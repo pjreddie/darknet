@@ -4,7 +4,7 @@ OPENCV=1
 OPENMP=1
 DEBUG=1
 TS=1
-MAESTRO=0
+MAESTRO=1
 
 #touchscreen setting
 

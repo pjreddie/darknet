@@ -9,6 +9,7 @@
 #include "demo.h"
 #include <sys/time.h>
 
+
 #ifdef TS 
 
 #include <stdio.h>
@@ -36,7 +37,7 @@ static double RCOORD[2]= {-1.,-1.};
 #endif
 
 static int autotrack_flag = 0; //0: not track; 1: track people; 2: not defined...
-
+//static const char* track_taget = "bottle";
 #define DEMO 1
 
 #ifdef OPENCV
@@ -255,9 +256,9 @@ void save_autotrack_target(image im, detection *dets, int num, float thresh, cha
         }
         if(class >= 0){
             box b = dets[i].bbox;
-            //printf("labelstr:%s\n", labelstr);
+            printf("labelstr:%s\n", labelstr);
             
-            if(!strcmp(labelstr,"person")){
+            if(!strcmp(labelstr,"bottle")){
                 i_x = (b.x-b.w/2.)*im.w;
                 i_y = (b.y-b.h/2.)*im.h;
                 i_w = b.w*im.w;

@@ -1,16 +1,25 @@
 
+
+DEBUG=1
+
 CC=gcc
-CFLAGS=-Wall -I. 
 LDFLAGS= `pkg-config --libs opencv` 
+CFLAGS=-Wall -I. 
 CXXFLAGS= `pkg-config --cflags opencv` -lstdc++ -lm -std=c++0x
 DEPS = *.h *.hpp
 OBJ = fhog.o kcftracker.o runtracker.o
+
+ifeq ($(DEBUG), 1) 
+CFLAGS+= -DDEBUG
+CXXFLAGS+= -DDEBUG
+#OPTS=-O0 -g
+endif
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 tracker: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(CXXFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(CXXFLAGS) 
 
 .PHONY: clean
 

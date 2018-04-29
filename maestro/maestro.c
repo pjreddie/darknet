@@ -94,11 +94,28 @@ int test_maestro()
   maestroSetSpeed(fd, 0, speed);
   //maestroSetAccel(fd, 0, 30);
 
+  //[3968, 8000]
+  int flag = 1;
   int ud = 6000;
-  maestroSetTarget(fd, 0, ud); //control up down
+  int lr = 6000;
+  while(1){
+    maestroSetTarget(fd, 0, ud); //control up down
+    maestroSetTarget(fd, 1, lr); //control left right
+    if(ud >= 9000){
+      flag = 0;
+    } else if(ud <= 3000) {
+      flag = 1;
+    }
+    if(flag == 1){
+      ud++;
+    }else{
+      ud--;
+    }
+    position = maestroGetPosition(fd, 0);
+    printf("Current position is %d.\n", position);
 
-  int lr = 6000; 
-  maestroSetTarget(fd, 1, lr); //control left right
+  }
+  
 
   close(fd);
   return 0;

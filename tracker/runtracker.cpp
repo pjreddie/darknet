@@ -12,6 +12,8 @@
 
 #ifdef MAESTRO
 #include "maestro.h"
+static int ud = 6000;
+static int lr = 6000;
 #endif
 
 using namespace cv;
@@ -25,9 +27,6 @@ extern "C" int runtracker();
 //int main(int argc, char **argv)
 int runtracker()
 {
-#ifdef MAESTRO
-    test_maestro();
-#endif
     string trackerType = "KCF";
 	// Create KCFTracker object 
     bool HOG = true;
@@ -36,14 +35,19 @@ int runtracker()
 	bool LAB = false; //LAB color space features
 	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);//--------------------------trakcer
 
+#ifdef MAESTRO
+  int fd = maestroIni();
+#endif
+
 // Read from the camera ===================================================
 #ifdef DEBUG
     string path = "/media/elab/sdd/mycodes/darknet";//"/home/nvidia/amy/Sam";//
 #else
     string path = "/home/nvidia/amy/darknet";
 #endif
+    cout << path << endl;
 	// Read the groundtruth bbox
-	ifstream groundtruth(path + "/capture.txt");
+	ifstream groundtruth(path + "/tracking.txt");
     std::string f;
 	int x,y,w,h;
 	std::string s;
@@ -68,8 +72,9 @@ int runtracker()
         cout <<  "Could not open camera \n" << std::endl ;
         return -1;        
     }
+
     cv::Mat frame;
-    //cap >> frame; 
+    //cap >> frame;
 
 	ostringstream osfile;
 	osfile << path << "/tracking.png";
@@ -81,12 +86,14 @@ int runtracker()
         cout <<  "Could not capture the image \n" << std::endl ;
         return -1;
     }
-    // Display frame.        
+
+    // Display frame.
     cvNamedWindow("Tracking", CV_WINDOW_NORMAL); 
+    //cvResizeWindow("Tracking", 1352, 1013);
 #ifndef DEBUG
     cvSetWindowProperty("Tracking", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 #endif
- //   
+
 	// Init the tracker---------------------------tracker
     tracker.init(bbox, frame);
 
@@ -119,8 +126,10 @@ int runtracker()
         // Display FPS on frame
         putText(frame, "FPS : " + SSTR(int(fps)), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
 
-        //cvShowImage("Tracking", frame);
+        // Show image
+        //cv::resize(frame, display, cv::Size(0, 0), 8, 8);
         imshow("Tracking", frame);
+
         int c = cvWaitKey(1);
         if (c != -1) c = c%256;
         if (c == 27) {
@@ -132,6 +141,28 @@ int runtracker()
         //cap >> frame; 
         cap.grab();
         cap.retrieve(frame);
+
+
+#ifdef MAESTRO
+        //test_maestro();
+        //cout << frame.rows << ", " << frame.cols << ",x- " 
+        //<< bbox.x << ",w- " << bbox.width << ",y- " << bbox.y
+        //<< ",h- " << bbox.height << endl;
+        cout << frame.cols/2 - (bbox.x + bbox.width/2) << ", "
+        << frame.rows/2 - (bbox.y + bbox.height/2) << endl;
+
+        int templr = (frame.cols/2 - (bbox.x + bbox.width/2));
+        int tempud = (frame.rows/2 - (bbox.y + bbox.height/2));
+
+        lr += templr;
+        ud += tempud;
+        cout << lr << ", " << ud << endl;
+
+        maestroSetTarget(fd, 1, lr); //control left right
+        maestroSetTarget(fd, 0, ud); //control up down
+        lr = 6000;
+        ud = 6000;
+#endif
 
     }
     cvDestroyWindow("Tracking");
