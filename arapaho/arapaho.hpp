@@ -83,11 +83,12 @@
 
         bool GetBoxes(box* outBoxes, std::string* outLabels, int boxCount);
     private:
-        box     *boxes;
+        detection *dets;
+        int     nboxes;
         char    **classNames;
         float   **probs;
         bool    bSetup;
-        network net;
+        network* net;
         layer   l;
         float   nms;
         int     maxClasses;
