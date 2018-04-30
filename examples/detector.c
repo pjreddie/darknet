@@ -933,7 +933,9 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
         
-        runtracker();
+        trackercompare();
+        //opencvtrackers();
+        //runtracker();
     }
 #ifdef TS 
     else if(0==strcmp(argv[2], "demo_track")) {
@@ -947,7 +949,9 @@ void run_detector(int argc, char **argv)
 
         demo_TS(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, 1);
         
-        runtracker();
+        //opencvtrackers();
+        //runtracker();
+        trackercompare();
     }
 #endif
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);

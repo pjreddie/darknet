@@ -4,10 +4,10 @@ DEBUG=1
 
 CC=gcc
 LDFLAGS= `pkg-config --libs opencv` 
-CFLAGS=-Wall -I. -IKCF/ 
-CXXFLAGS= `pkg-config --cflags opencv` -lstdc++ -lm -std=c++0x -IKCF/
-DEPS = *.h *.hpp $(wildcard KCF/*.h) 
-OBJ = KCF/fhog.o KCF/kcftracker.o trackercompare.o
+CFLAGS=-Wall -I. 
+CXXFLAGS= `pkg-config --cflags opencv` -lstdc++ -lm -std=c++0x
+DEPS = *.h *.hpp
+OBJ = fhog.o kcftracker.o runtracker.o
 
 ifeq ($(DEBUG), 1) 
 CFLAGS+= -DDEBUG
@@ -18,10 +18,10 @@ endif
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-trackercompare: $(OBJ)
+tracker: $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS) $(CXXFLAGS) 
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o trackercompare
+	rm -rf *.o tracker

@@ -75,10 +75,10 @@ COMMONCPP=-std=c++0x
 ifeq ($(TS), 1)
 COMMON+= -DTS 
 CFLAGS+= -DTS
-VPATH+=:./tracker
-COMMON+=-Itracker/
+VPATH+=:./tracker:./tracker/KCF:./tracker/opencvtrackers
+COMMON+=-Itracker/ -Itracker/KCF/ -Itracker/opencvtrackers/
 LDFLAGS+= -lstdc++ `pkg-config --libs opencv` 
-OBJ+=fhog.o kcftracker.o runtracker.o
+OBJ+=fhog.o kcftracker.o runtracker.o opencvtrackers.o trackercompare.o
 endif
 
 ifeq ($(MAESTRO), 1)

@@ -23,17 +23,36 @@ using namespace std;
 #define SSTR( x ) static_cast< std::ostringstream & >( \
 ( std::ostringstream() << std::dec << x ) ).str()
 
-extern "C" int runtracker();
+extern "C" int trackercompare();
 //int main(int argc, char **argv)
-int runtracker()
+int trackercompare()
 {
-    string trackerType = "KCF";
 	// Create KCFTracker object 
     bool HOG = true;
 	bool FIXEDWINDOW = false;
 	bool MULTISCALE = true;
 	bool LAB = false; //LAB color space features
 	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);//--------------------------trakcer
+
+// opencv tracker;
+    string trackerTypes[6] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN"};
+    string trackerType = trackerTypes[2];
+ 
+    Ptr<cv::Tracker> opencvtracker;
+
+    if (trackerType == "BOOSTING")
+        opencvtracker = cv::TrackerBoosting::create();
+    if (trackerType == "MIL")
+        opencvtracker = cv::TrackerMIL::create();
+    if (trackerType == "KCF")
+        opencvtracker = cv::TrackerKCF::create();
+    if (trackerType == "TLD")
+        opencvtracker = cv::TrackerTLD::create();
+    if (trackerType == "MEDIANFLOW")
+        opencvtracker = cv::TrackerMedianFlow::create();
+    if (trackerType == "GOTURN")
+        opencvtracker = cv::TrackerGOTURN::create();
+
 
 #ifdef MAESTRO
   int fd = maestroIni();
@@ -45,7 +64,7 @@ int runtracker()
 #else
     string path = "/home/nvidia/amy/darknet";
 #endif
-    cout << path << endl;
+    //cout << path << endl;
 	// Read the groundtruth bbox
 	ifstream groundtruth(path + "/tracking.txt");
     std::string f;
@@ -63,6 +82,7 @@ int runtracker()
 	h = atoi(s.c_str());
 	cout << "Target to track:" << f <<" " << x <<" " << y <<" " << w <<" " << h <<" " << endl;
 	Rect2d bbox(x,y,w,h);
+    Rect2d opencvbbox(x,y,w,h);
 
 	// Open camera
     VideoCapture cap(0); // open the default camera
@@ -72,10 +92,7 @@ int runtracker()
         cout <<  "Could not open camera \n" << std::endl ;
         return -1;        
     }
-
     cv::Mat frame;
-    //cap >> frame;
-
 	ostringstream osfile;
 	osfile << path << "/tracking.png";
 	//cout << osfile.str() << endl;
@@ -86,7 +103,6 @@ int runtracker()
         cout <<  "Could not capture the image \n" << std::endl ;
         return -1;
     }
-
     // Display frame.
     cvNamedWindow("Tracking", CV_WINDOW_NORMAL); 
     //cvResizeWindow("Tracking", 1352, 1013);
@@ -96,6 +112,7 @@ int runtracker()
 
 	// Init the tracker---------------------------tracker
     tracker.init(bbox, frame);
+    opencvtracker->init(frame, opencvbbox);
 
     while(frame.data) {
         // Start timer
@@ -111,18 +128,28 @@ int runtracker()
         if (ok)
         {
             // Tracking success : Draw the tracked object
-            rectangle(frame, bbox, Scalar( 255, 0, 0 ), 2, 1 );
+            rectangle(frame, bbox, Scalar( 225, 0, 0 ), 2, 1 );
         }
         else
         {
             // Tracking failure detected.
-            putText(frame, "Tracking failure detected", Point(100,80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0,0,255),2);
+            putText(frame, "Tracking failure detected", Point(100,80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(225,0,0),2);
         }
-         
+
+        ok = opencvtracker->update(frame, opencvbbox);
+        if (ok)
+        {
+            // Tracking success : Draw the tracked object
+            rectangle(frame, opencvbbox, Scalar( 255, 225, 0 ), 2, 1 );
+        }
+        else
+        {
+            // Tracking failure detected.
+            putText(frame, "Tracking failure detected", Point(100,80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(225,225,0),2);
+        }
         // Display tracker type on frame
-        //putText(frame, trackerType + " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
-        putText(frame, " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
-          
+        putText(frame, trackerType + " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
+
         // Display FPS on frame
         putText(frame, "FPS : " + SSTR(int(fps)), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
 
