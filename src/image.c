@@ -37,6 +37,35 @@ float get_color(int c, int x, int max)
     return r;
 }
 
+static float get_pixel(image m, int x, int y, int c)
+{
+	assert(x < m.w && y < m.h && c < m.c);
+	return m.data[c*m.h*m.w + y*m.w + x];
+}
+static float get_pixel_extend(image m, int x, int y, int c)
+{
+	if (x < 0 || x >= m.w || y < 0 || y >= m.h) return 0;
+	/*
+	if(x < 0) x = 0;
+	if(x >= m.w) x = m.w-1;
+	if(y < 0) y = 0;
+	if(y >= m.h) y = m.h-1;
+	*/
+	if (c < 0 || c >= m.c) return 0;
+	return get_pixel(m, x, y, c);
+}
+static void set_pixel(image m, int x, int y, int c, float val)
+{
+	if (x < 0 || y < 0 || c < 0 || x >= m.w || y >= m.h || c >= m.c) return;
+	assert(x < m.w && y < m.h && c < m.c);
+	m.data[c*m.h*m.w + y*m.w + x] = val;
+}
+static void add_pixel(image m, int x, int y, int c, float val)
+{
+	assert(x < m.w && y < m.h && c < m.c);
+	m.data[c*m.h*m.w + y*m.w + x] += val;
+}
+
 void composite_image(image source, image dest, int dx, int dy)
 {
     int x,y,k;
@@ -1639,32 +1668,6 @@ image get_image_layer(image m, int l)
         out.data[i] = m.data[i+l*m.h*m.w];
     }
     return out;
-}
-
-float get_pixel(image m, int x, int y, int c)
-{
-    assert(x < m.w && y < m.h && c < m.c);
-    return m.data[c*m.h*m.w + y*m.w + x];
-}
-float get_pixel_extend(image m, int x, int y, int c)
-{
-    if(x < 0) x = 0;
-    if(x >= m.w) x = m.w-1;
-    if(y < 0) y = 0;
-    if(y >= m.h) y = m.h-1;
-    if(c < 0 || c >= m.c) return 0;
-    return get_pixel(m, x, y, c);
-}
-void set_pixel(image m, int x, int y, int c, float val)
-{
-    if (x < 0 || y < 0 || c < 0 || x >= m.w || y >= m.h || c >= m.c) return;
-    assert(x < m.w && y < m.h && c < m.c);
-    m.data[c*m.h*m.w + y*m.w + x] = val;
-}
-void add_pixel(image m, int x, int y, int c, float val)
-{
-    assert(x < m.w && y < m.h && c < m.c);
-    m.data[c*m.h*m.w + y*m.w + x] += val;
 }
 
 void print_image(image m)
