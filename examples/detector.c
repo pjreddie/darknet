@@ -1,4 +1,6 @@
 #include "darknet.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
@@ -443,7 +445,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     }
     double start = what_time_is_it_now();
     for(i = nthreads; i < m+nthreads; i += nthreads){
-        fprintf(stderr, "%d\n", i);
+        fprintf(stdout, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             pthread_join(thr[t], 0);
             val[t] = buf[t];
@@ -458,6 +460,10 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];
             char *id = basecfg(path);
+            char *par_folder = with_folder(path);
+            // fprintf(stderr, "path: %s\n", path);
+            // fprintf(stderr, "id: %s\n", id); 
+            // fprintf(stderr, "par_folder: %s\n", par_folder);
             float *X = val_resized[t].data;
             network_predict(net, X);
             int w = val[t].w;
@@ -469,7 +475,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             } else if (imagenet){
                 print_imagenet_detections(fp, i+t-nthreads+1, boxes, probs, l.w*l.h*l.n, classes, w, h);
             } else {
-                print_detector_detections(fps, id, boxes, probs, l.w*l.h*l.n, classes, w, h);
+                print_detector_detections(fps, par_folder, boxes, probs, l.w*l.h*l.n, classes, w, h);
             }
             free(id);
             free_image(val[t]);
@@ -581,6 +587,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char *input = buff;
     int j;
     float nms=.3;
+    /*
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -591,7 +598,19 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input,0,0);
+    */
+    FILE *f;
+    char c;
+    f = fopen("/home/ejchou/darknet/frame_dirs.txt", "r");
+    char buf[1000];
+
+    while (fgets(buf,1000, f)!=NULL){
+        printf("%s",buf);
+	size_t len = strlen(buf);
+  	if (len > 0 && buf[len-1] == '\n') {
+    		buf[--len] = '\0';
+  	}
+        image im = load_image_color(buf,0,0);
         image sized = letterbox_image(im, net->w, net->h);
         //image sized = resize_image(im, net->w, net->h);
         //image sized2 = resize_max(im, net->w);
@@ -638,6 +657,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         free_ptrs((void **)probs, l.w*l.h*l.n);
         if (filename) break;
     }
+    fclose(f);    
 }
 
 void run_detector(int argc, char **argv)
