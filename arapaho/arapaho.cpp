@@ -26,10 +26,6 @@ ArapahoV2::ArapahoV2()
     
 ArapahoV2::~ArapahoV2()
 {
-    //TODO free net.input_gpu, net.truth_gpu
-    if(boxes) 
-        free(boxes);
-
     if(probs)
         free_ptrs((void **)probs, l.w*l.h*l.n);
     if(classNames)
