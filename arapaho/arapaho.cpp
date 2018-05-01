@@ -26,13 +26,7 @@ ArapahoV2::ArapahoV2()
     
 ArapahoV2::~ArapahoV2()
 {
-
-    
-
-
     //TODO free net.input_gpu, net.truth_gpu
-
-
     if(boxes) 
         free(boxes);
 
