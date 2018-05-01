@@ -27,27 +27,8 @@ ArapahoV2::ArapahoV2()
 ArapahoV2::~ArapahoV2()
 {
 
-    // free VRAM & Ram 
-    int i;
-    for(i = 0; i < net.n; ++i){
-        free_layer(net.layers[i]);
-    }
-    free(net.layers);
-    net.layers = NULL;
-    if (net.workspace_size)
-    {
-    #ifdef GPU
-        if (net.gpu_index >= 0){
-            cuda_free(net.workspace);
-        }
-        else {
-            free(net.workspace);
-        }
-    #else
-        free(net.workspace);
-    #endif
-    net.workspace = NULL;
-    }  
+    
+
 
     //TODO free net.input_gpu, net.truth_gpu
 
@@ -65,6 +46,10 @@ ArapahoV2::~ArapahoV2()
     probs = 0;
     classNames = 0;
     bSetup = false;
+    
+    // free VRAM & Ram 
+    if(net)
+        free_network(net);
 }
     
 bool ArapahoV2::Setup(
