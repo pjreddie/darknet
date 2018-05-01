@@ -4,6 +4,7 @@
 *.out
 *.png
 *.jpg
+*.pyc
 old/
 mnist/
 data/

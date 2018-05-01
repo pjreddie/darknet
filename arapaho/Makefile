@@ -13,7 +13,7 @@ OPTS=-Ofast
 LDFLAGS= -L./ -ldarknet-cpp-shared
 LDFLAGS+= -Wl,-rpath,'$$ORIGIN'
 LDFLAGS+= `pkg-config --libs opencv`
-COMMON= -I../src/
+COMMON= -I../src/ -I../include
 COMMON+= `pkg-config --cflags opencv`
 CFLAGS=-Wall -Wfatal-errors
 

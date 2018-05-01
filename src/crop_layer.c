@@ -10,8 +10,8 @@ image get_crop_image(crop_layer l)
     return float_to_image(w,h,c,l.output);
 }
 
-void backward_crop_layer(const crop_layer l, network_state state){}
-void backward_crop_layer_gpu(const crop_layer l, network_state state){}
+void backward_crop_layer(const crop_layer l, network net){}
+void backward_crop_layer_gpu(const crop_layer l, network net){}
 
 crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip, float angle, float saturation, float exposure)
 {
@@ -64,7 +64,7 @@ void resize_crop_layer(layer *l, int w, int h)
 }
 
 
-void forward_crop_layer(const crop_layer l, network_state state)
+void forward_crop_layer(const crop_layer l, network net)
 {
     int i,j,c,b,row,col;
     int index;
@@ -78,7 +78,7 @@ void forward_crop_layer(const crop_layer l, network_state state)
         scale = 1;
         trans = 0;
     }
-    if(!state.train){
+    if(!net.train){
         flip = 0;
         dh = (l.h - l.out_h)/2;
         dw = (l.w - l.out_w)/2;
@@ -94,7 +94,7 @@ void forward_crop_layer(const crop_layer l, network_state state)
                     }
                     row = i + dh;
                     index = col+l.w*(row+l.h*(c + l.c*b)); 
-                    l.output[count++] = state.input[index]*scale + trans;
+                    l.output[count++] = net.input[index]*scale + trans;
                 }
             }
         }

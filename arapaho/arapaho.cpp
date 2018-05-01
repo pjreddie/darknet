@@ -13,11 +13,10 @@
 
 ArapahoV2::ArapahoV2()
 {
-    boxes = 0;
     probs = 0;
     classNames = 0;
     l = {};
-    net = {};
+    net = 0;
     nms = 0;
     maxClasses = 0;
     threshold = 0;
@@ -55,13 +54,14 @@ ArapahoV2::~ArapahoV2()
 
     if(boxes) 
         free(boxes);
+
     if(probs)
         free_ptrs((void **)probs, l.w*l.h*l.n);
     if(classNames)
     {
         //todo
     }
-    boxes = 0;
+
     probs = 0;
     classNames = 0;
     bSetup = false;
@@ -79,7 +79,7 @@ bool ArapahoV2::Setup(
     {
         DPRINTF("No data configuration file specified!\n");
         return false;
-    }    
+    }
     
     list *options = read_data_cfg(p.datacfg);
     char nameField[] = "names";
@@ -120,12 +120,12 @@ bool ArapahoV2::Setup(
     maxClasses = p.maxClasses;
     
     net = parse_network_cfg(p.cfgfile);
-    DPRINTF("Setup: net.n = %d\n", net.n);   
-    DPRINTF("net.layers[0].batch = %d\n", net.layers[0].batch);
+    DPRINTF("Setup: net->n = %d\n", net->n);   
+    DPRINTF("net->layers[0].batch = %d\n", net->layers[0].batch);
     
-    load_weights(&net, p.weightfile);
-    set_batch_network(&net, 1);     
-    l = net.layers[net.n-1];
+    load_weights(net, p.weightfile);
+    set_batch_network(net, 1);     
+    l = net->layers[net->n-1];
     DPRINTF("Setup: layers = %d, %d, %d\n", l.w, l.h, l.n);
 
     // Class limiter
@@ -134,17 +134,16 @@ bool ArapahoV2::Setup(
         EPRINTF("Warning: Read classes from cfg (%d) > maxClasses (%d)\n", l.classes, maxClasses);
     }    
     
-    expectedHeight = net.h;
-    expectedWidth = net.w;
-    DPRINTF("Image expected w,h = [%d][%d]!\n", net.w, net.h);            
+    expectedHeight = net->h;
+    expectedWidth = net->w;
+    DPRINTF("Image expected w,h = [%d][%d]!\n", net->w, net->h);            
     
-    boxes = (box*)calloc(l.w*l.h*l.n, sizeof(box));
     probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
     
     // Error exits
-    if(!boxes || !probs)
+    if(!probs)
     {
-        EPRINTF("Error allocating boxes/probs, %p/%p !\n", boxes, probs);
+        EPRINTF("Error allocating boxes/probs, %p !\n", probs);
         goto clean_exit;
     }
 
@@ -163,11 +162,10 @@ bool ArapahoV2::Setup(
     return ret;
     
 clean_exit:        
-    if(boxes) 
-        free(boxes);
+    free_detections(dets, nboxes);
     if(probs)
         free_ptrs((void **)probs, l.w*l.h*l.n);
-    boxes = NULL;
+
     probs = NULL;
     return ret;
 }
@@ -198,8 +196,8 @@ bool ArapahoV2::Detect(
     if (!imageBuff.bgr)
     {
         EPRINTF("Error in imageBuff! [bgr = %d, w = %d, h = %d]\n",
-            !imageBuff.bgr, imageBuff.w != net.w,
-            imageBuff.h != net.h);
+            !imageBuff.bgr, imageBuff.w != net->w,
+            imageBuff.h != net->h);
         return false;
     }
 
@@ -210,8 +208,8 @@ bool ArapahoV2::Detect(
         inputImage.h != imageBuff.h)
     {
         EPRINTF("Error in inputImage! [bgr = %d, w = %d, h = %d]\n",
-            !inputImage.data, inputImage.w != net.w,
-            inputImage.h != net.h);
+            !inputImage.data, inputImage.w != net->w,
+            inputImage.h != net->h);
         free_image(inputImage);
         return false;
     }
@@ -230,19 +228,19 @@ bool ArapahoV2::Detect(
     inputImage.w = imageBuff.w;
     inputImage.c = imageBuff.channels;
 
-    if (inputImage.h != net.h || inputImage.w != net.w)
+    if (inputImage.h != net->h || inputImage.w != net->w)
     {
         DPRINTF("Detect: Resizing image to match network \n");
         // Free the original buffer, and assign a new resized buffer
-        image inputImageTemp = resize_image(inputImage, net.w, net.h);
+        image inputImageTemp = resize_image(inputImage, net->w, net->h);
         free_image(inputImage);
         inputImage = inputImageTemp;
-        if (!inputImage.data || inputImage.w != net.w ||
-            inputImage.h != net.h)
+        if (!inputImage.data || inputImage.w != net->w ||
+            inputImage.h != net->h)
         {
             EPRINTF("Error in resized img! [data = %d, w = %d, h = %d]\n",
-                !inputImage.data, inputImage.w != net.w,
-                inputImage.h != net.h);
+                !inputImage.data, inputImage.w != net->w,
+                inputImage.h != net->h);
             return false;
         }
     }
@@ -279,8 +277,8 @@ bool ArapahoV2::Detect(
     if(inputMat.empty())
     {
         EPRINTF("Error in inputImage! [bgr = %d, w = %d, h = %d]\n",
-                    !inputMat.data, inputMat.cols != net.w,
-                    inputMat.rows != net.h);
+                    !inputMat.data, inputMat.cols != net->w,
+                    inputMat.rows != net->h);
         return false;
     }
     
@@ -291,10 +289,10 @@ bool ArapahoV2::Detect(
     cv::Mat floatMat;
     inputRgb.convertTo(floatMat, CV_32FC3, 1/255.0);
 
-    if (floatMat.rows != net.h || floatMat.cols != net.w)
+    if (floatMat.rows != net->h || floatMat.cols != net->w)
     {
         DPRINTF("Detect: Resizing image to match network \n");
-        resize(floatMat, floatMat, cv::Size(net.w, net.h));
+        resize(floatMat, floatMat, cv::Size(net->w, net->h));
     }
     // Get the image to suit darknet
     std::vector<cv::Mat> floatMatChannels(3);
@@ -313,24 +311,25 @@ bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
 {
     
     int count = 0;
-    int i;
+    int i, j;
     
-    if(!boxes || !probs || !outLabels || !outBoxes)
+    if(!dets || !outLabels || !outBoxes)
     {
-        EPRINTF("Error NULL boxes/probs, %p, %p !\n", boxes, probs);
+        EPRINTF("Error NULL boxes/probs, %p !\n", probs);
         return false;
     }
-    for(i = 0; i < (l.w*l.h*l.n); ++i)
+
+    for(i = 0;i < (l.side*l.side*l.n);i ++)
     {
-        int classIndex = max_index(probs[i], l.classes);
-        float prob = probs[i][classIndex];
-        if(prob > threshold && count < boxCount)
-        {
-            outLabels[count] = std::string(classNames[classIndex]);
-            outBoxes[count]  = boxes[i];
-            count ++;
+        for(j = 0; j < l.classes; ++j){
+            if (dets[i].prob[j] > threshold  && count < boxCount)
+            {
+                outLabels[count] = std::string(classNames[j]);
+                outBoxes[count]  = dets[i].bbox;
+                count ++;
+            }
         }
-    }
+    }    
     
     return true;
 }
@@ -340,25 +339,24 @@ bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
 //////////////////////////////////////////////////////////////////
 void ArapahoV2::__Detect(float* inData, float thresh, float hier_thresh, int & objectCount)
 {
-    int i;
+    int i, j;
     // Predict
     network_predict(net, inData);
-    get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0, hier_thresh);
-
-    DPRINTF("l.softmax_tree = %p, nms = %f\n", l.softmax_tree, nms);
-    if (l.softmax_tree && nms)
+    
+    nboxes = 0;
+    dets = get_network_boxes(net, l.w, l.h, hier_thresh, 0, 0, 0, &nboxes);
+    if(nms)
     {
-        do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        do_nms_sort(dets, l.side*l.side*l.n, l.classes, 0.5);
     }
-    else if (nms)
-        do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-
-    // Update object counts
-    for (i = 0; i < (l.w*l.h*l.n); ++i){
-        int class1 = max_index(probs[i], l.classes);
-        float prob = probs[i][class1];
-        if (prob > thresh){
-            objectCount++;
+    // Update object counts  
+    for(i = 0;i < (l.side*l.side*l.n);i ++)
+    {
+        for(j = 0; j < l.classes; ++j){
+            if (dets[i].prob[j] > thresh)
+            {
+                objectCount++;
+            }
         }
     }
 }
