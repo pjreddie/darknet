@@ -1,4 +1,3 @@
-//used for Lab colorspace features
 const int nClusters = 15;
 float data[nClusters][3] = {
 {161.317504, 127.223401, 128.609333},

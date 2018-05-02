@@ -933,7 +933,7 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
         
-        trackercompare();
+        trackerscompare();
         //opencvtrackers();
         //runtracker();
     }
@@ -951,7 +951,7 @@ void run_detector(int argc, char **argv)
         
         //opencvtrackers();
         //runtracker();
-        trackercompare();
+        trackerscompare();
     }
 #endif
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);

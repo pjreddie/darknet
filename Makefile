@@ -75,10 +75,10 @@ COMMONCPP=-std=c++0x
 ifeq ($(TS), 1)
 COMMON+= -DTS 
 CFLAGS+= -DTS
-VPATH+=:./tracker:./tracker/KCF:./tracker/opencvtrackers
-COMMON+=-Itracker/ -Itracker/KCF/ -Itracker/opencvtrackers/
+VPATH+=:./tracker:./tracker/kcf:./tracker/opencvtrackers
+COMMON+=-Itracker/ -Itracker/kcf/ -Itracker/opencvtrackers/
 LDFLAGS+= -lstdc++ `pkg-config --libs opencv` 
-OBJ+=fhog.o kcftracker.o runtracker.o opencvtrackers.o trackercompare.o
+OBJ+=fhog.o kcftracker.o opencvtrackers.o trackerscompare.o
 endif
 
 ifeq ($(MAESTRO), 1)
@@ -92,7 +92,7 @@ endif
 
 EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
-DEPS = $(wildcard src/*.h) Makefile include/darknet.h $(wildcard tracker/*.h) 
+DEPS = $(wildcard src/*.h) Makefile include/darknet.h $(wildcard tracker/*/*.h) 
 
 #all: obj backup results $(SLIB) $(ALIB) $(EXEC)
 all: obj  results $(SLIB) $(ALIB) $(EXEC)
