@@ -193,32 +193,32 @@ void fill_cpu(int N, float ALPHA, float *X, int INCX)
     for(i = 0; i < N; ++i) X[i*INCX] = ALPHA;
 }
 
-void deinter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
+void deinter_cpu(int NX, float *X, int NY, float *Y, int B, float *out)
 {
     int i, j;
     int index = 0;
     for(j = 0; j < B; ++j) {
         for(i = 0; i < NX; ++i){
-            if(X) X[j*NX + i] += OUT[index];
+            if(X) X[j*NX + i] += out[index];
             ++index;
         }
         for(i = 0; i < NY; ++i){
-            if(Y) Y[j*NY + i] += OUT[index];
+            if(Y) Y[j*NY + i] += out[index];
             ++index;
         }
     }
 }
 
-void inter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
+void inter_cpu(int NX, float *X, int NY, float *Y, int B, float *out)
 {
     int i, j;
     int index = 0;
     for(j = 0; j < B; ++j) {
         for(i = 0; i < NX; ++i){
-            OUT[index++] = X[j*NX + i];
+            out[index++] = X[j*NX + i];
         }
         for(i = 0; i < NY; ++i){
-            OUT[index++] = Y[j*NY + i];
+            out[index++] = Y[j*NY + i];
         }
     }
 }

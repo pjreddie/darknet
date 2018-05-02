@@ -267,10 +267,17 @@ bool ArapahoV2::Detect(
         DPRINTF("Detect: Resizing image to match network \n");
         resize(floatMat, floatMat, cv::Size(net->w, net->h));
     }
+
+    if (floatMat.channels() != 3)
+    {
+        EPRINTF("Detect: channels = %d \n", floatMat.channels());
+        return false;
+    }
     // Get the image to suit darknet
-    std::vector<cv::Mat> floatMatChannels(3);
-    split(floatMat, floatMatChannels);
-    vconcat(floatMatChannels, floatMat);
+    cv::Mat floatMatChannels[3];
+    cv::split(floatMat, floatMatChannels);
+    vconcat(floatMatChannels[0], floatMatChannels[1], floatMat);
+    vconcat(floatMat, floatMatChannels[2], floatMat);
 
     __Detect((float*)floatMat.data, thresh, hier_thresh, objectCount);
 
@@ -292,7 +299,7 @@ bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
         return false;
     }
 
-    for(i = 0;i < (l.side*l.side*l.n);i ++)
+    for(i = 0;i < (nboxes);i ++)
     {
         for(j = 0; j < l.classes; ++j){
             if (dets[i].prob[j] > threshold  && count < boxCount)
@@ -317,13 +324,13 @@ void ArapahoV2::__Detect(float* inData, float thresh, float hier_thresh, int & o
     network_predict(net, inData);
     
     nboxes = 0;
-    dets = get_network_boxes(net, l.w, l.h, hier_thresh, 0, 0, 0, &nboxes);
+    dets = get_network_boxes(net, 1, 1, hier_thresh, 0, 0, 0, &nboxes);
     if(nms)
     {
-        do_nms_sort(dets, l.side*l.side*l.n, l.classes, 0.5);
+        do_nms_sort(dets, nboxes, l.classes, 0.5);
     }
     // Update object counts  
-    for(i = 0;i < (l.side*l.side*l.n);i ++)
+    for(i = 0;i < (nboxes);i ++)
     {
         for(j = 0; j < l.classes; ++j){
             if (dets[i].prob[j] > thresh)

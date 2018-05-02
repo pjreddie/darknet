@@ -9,7 +9,11 @@
 #include <float.h>
 #include <limits.h>
 #include <time.h>
+#if defined __linux__ || defined __APPLE__
 #include <sys/time.h>
+#else
+#include <time.h>
+#endif
 
 #include "utils.h"
 
@@ -26,14 +30,47 @@ double get_wall_time()
 }
 */
 
+#if defined _WIN32
+//
+// from work.bin answer@ https://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows
+//
+#define BILLION                             (1E9)
+static BOOL g_first_time = 1;
+static LARGE_INTEGER g_counts_per_sec;
+
+int clock_gettime(int dummy, struct timespec *ct)
+{
+    LARGE_INTEGER count;
+
+    if (g_first_time)
+    {
+        g_first_time = 0;
+
+        if (0 == QueryPerformanceFrequency(&g_counts_per_sec))
+        {
+            g_counts_per_sec.QuadPart = 0;
+        }
+    }
+
+    if ((NULL == ct) || (g_counts_per_sec.QuadPart <= 0) ||
+        (0 == QueryPerformanceCounter(&count)))
+    {
+        return -1;
+    }
+
+    ct->tv_sec = count.QuadPart / g_counts_per_sec.QuadPart;
+    ct->tv_nsec = ((count.QuadPart % g_counts_per_sec.QuadPart) * BILLION) / g_counts_per_sec.QuadPart;
+
+    return 0;
+}
+#endif
 double what_time_is_it_now()
 {
-    struct timeval time;
-    if (gettimeofday(&time,NULL)){
-        return 0;
-    }
-    return (double)time.tv_sec + (double)time.tv_usec * .000001;
+    struct timespec now;
+    clock_gettime(0, &now);
+    return now.tv_sec + now.tv_nsec*1e-9;
 }
+
 
 int *read_intlist(char *gpu_list, int *ngpus, int d)
 {
