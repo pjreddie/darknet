@@ -92,7 +92,7 @@
         layer   l;
         float   nms;
         int     maxClasses;
-        int     threshold;
+        float     threshold;
 
         void __Detect(float* inData, float thresh, float hier_thresh, int & objectCount);
     };

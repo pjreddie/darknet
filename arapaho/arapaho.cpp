@@ -239,7 +239,7 @@ bool ArapahoV2::Detect(
             float hier_thresh,
             int & objectCount)
 {
-    int i, count=0;
+    int count=0;
         
     objectCount = 0;
     threshold = thresh;
