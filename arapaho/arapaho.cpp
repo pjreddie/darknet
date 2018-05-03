@@ -26,8 +26,6 @@ ArapahoV2::ArapahoV2()
     
 ArapahoV2::~ArapahoV2()
 {
-    // TODO - Massive cleanup here
-    
     if(probs)
         free_ptrs((void **)probs, l.w*l.h*l.n);
     if(classNames)
@@ -38,6 +36,11 @@ ArapahoV2::~ArapahoV2()
     probs = 0;
     classNames = 0;
     bSetup = false;
+    
+    // free VRAM & Ram 
+    if(net)
+        free_network(net);
+    net = NULL;
 }
     
 bool ArapahoV2::Setup(
