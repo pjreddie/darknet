@@ -251,6 +251,8 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 		}
 		if (class_id >= 0) {
 			int width = im.h * .006;
+			if (width < 1)
+				width = 1;
 
 			/*
 			if(0){
