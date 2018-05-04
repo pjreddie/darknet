@@ -103,8 +103,8 @@ if os.name == "nt":
                     raise ValueError("ForceCPU")
             except NameError:
                 pass
-            # print(os.environ.keys())
-            print("FORCE_CPU flag undefined, proceeding with GPU")
+            #print(os.environ.keys())
+            #print("FORCE_CPU flag undefined, proceeding with GPU")
         if not os.path.exists(winGPUdll):
             raise ValueError("NoDLL")
         lib = CDLL(winGPUdll, RTLD_GLOBAL)
@@ -253,7 +253,7 @@ netMain = None
 metaMain = None
 altNames = None
 
-def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./data/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
+def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./data/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
     """
     Convenience function to handle the detection and returns of objects.
 
