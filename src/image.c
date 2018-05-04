@@ -917,6 +917,7 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_i
 	cvResize(src, new_img, CV_INTER_LINEAR);
 	image im = ipl_to_image(new_img);
 	cvReleaseImage(&new_img);
+	if (use_webcam) cvReleaseImageHeader(&src);
 	rgbgr_image(im);
 	return im;
 }
