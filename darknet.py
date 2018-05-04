@@ -97,26 +97,26 @@ if os.name == "nt":
                 if int(os.environ['CUDA_VISIBLE_DEVICES']) < 0:
                     raise ValueError("ForceCPU")
             try:
-                # Check a global
                 global DARKNET_FORCE_CPU
                 if DARKNET_FORCE_CPU:
                     raise ValueError("ForceCPU")
             except NameError:
                 pass
-            #print(os.environ.keys())
-            #print("FORCE_CPU flag undefined, proceeding with GPU")
+            # print(os.environ.keys())
+            # print("FORCE_CPU flag undefined, proceeding with GPU")
         if not os.path.exists(winGPUdll):
             raise ValueError("NoDLL")
         lib = CDLL(winGPUdll, RTLD_GLOBAL)
     except (KeyError, ValueError):
-        print("Notice: GPU-free mode")
         hasGPU = False
         if os.path.exists(winNoGPUdll):
             lib = CDLL(winNoGPUdll, RTLD_GLOBAL)
+            print("Notice: CPU-only mode")
         else:
             # Try the other way, in case no_gpu was
             # compile but not renamed
             lib = CDLL(winGPUdll, RTLD_GLOBAL)
+            print("Environment variables indicated a CPU run, but we didn't find `"+winNoGPUdll+"`. Trying a GPU run anyway.")
 else:
     lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
