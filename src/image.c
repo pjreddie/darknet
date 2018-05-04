@@ -13,6 +13,7 @@
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/core/types_c.h"
 #include "opencv2/core/version.hpp"
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio_c.h"
@@ -904,20 +905,31 @@ image get_image_from_stream(CvCapture *cap)
     return im;
 }
 
-image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img, int use_webcam)
+image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img, int cpp_video_capture)
 {
 	IplImage* src;
-	if (use_webcam) src = get_webcam_frame(cap);
+	if (cpp_video_capture) {
+		static int once = 1;
+		if (once) {
+			once = 0;
+			do {
+				src = get_webcam_frame(cap);
+				if (!src) return make_empty_image(0, 0, 0);
+			} while (src->width < 1 || src->height < 1 || src->nChannels < 1);
+		} else
+			src = get_webcam_frame(cap);
+	}
 	else src = cvQueryFrame(cap);
 
 	if (!src) return make_empty_image(0, 0, 0);
+	if (src->width < 1 || src->height < 1 || src->nChannels < 1) return make_empty_image(0, 0, 0);
 	IplImage* new_img = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, 3);
 	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, 3);
 	cvResize(src, *in_img, CV_INTER_LINEAR);
 	cvResize(src, new_img, CV_INTER_LINEAR);
 	image im = ipl_to_image(new_img);
 	cvReleaseImage(&new_img);
-	if (use_webcam) cvReleaseImageHeader(&src);
+	if (cpp_video_capture) cvReleaseImage(&src);
 	rgbgr_image(im);
 	return im;
 }

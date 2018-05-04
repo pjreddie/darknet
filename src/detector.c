@@ -1,3 +1,8 @@
+#ifdef _DEBUG
+#include <stdlib.h> 
+#include <crtdbg.h>  
+#endif
+
 #include "network.h"
 #include "region_layer.h"
 #include "cost_layer.h"
@@ -1107,6 +1112,22 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 #endif
         if (filename) break;
     }
+
+	// free memory
+	free_ptrs(names, net.layers[net.n - 1].classes);
+	free_list(options);
+
+	int i;
+	const int nsize = 8;
+	for (j = 0; j < nsize; ++j) {
+		for (i = 32; i < 127; ++i) {
+			free_image(alphabet[j][i]);
+		}
+		free(alphabet[j]);
+	}
+	free(alphabet);
+
+	free_network(net);
 }
 
 void run_detector(int argc, char **argv)
