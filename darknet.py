@@ -1,6 +1,36 @@
+#!python3
+"""
+Python 3 wrapper for identifying objects in images
+
+Requires DLL compilation
+
+Both the GPU and no-GPU version should be compiled; the no-GPU version should be renamed "yolo_cpp_dll_nogpu.dll".
+
+On a GPU system, you can force CPU evaluation by any of:
+
+- Set global variable DARKNET_FORCE_CPU to True
+- Set environment variable CUDA_VISIBLE_DEVICES to -1
+- Set environment variable "FORCE_CPU" to "true"
+
+
+To use, either run performDetect() after import, or modify the end of this file.
+
+See the docstring of performDetect() for parameters.
+
+Directly viewing or returning bounding-boxed images requires scikit-image to be installed (`pip install scikit-image`)
+
+
+Original *nix 2.7: https://github.com/pjreddie/darknet/blob/0f110834f4e18b30d5f101bf8f1724c34b7b83db/python/darknet.py
+Windows Python 2.7 version: https://github.com/AlexeyAB/darknet/blob/fc496d52bf22a0bb257300d3c79be9cd80e722cb/build/darknet/x64/darknet.py
+
+@author: Philip Kahn
+@date: 20180503
+"""
+#pylint: disable=R, W0401, W0614, W0703
 from ctypes import *
 import math
 import random
+import os
 
 def sample(probs):
     s = sum(probs)
@@ -42,11 +72,53 @@ class METADATA(Structure):
     _fields_ = [("classes", c_int),
                 ("names", POINTER(c_char_p))]
 
-    
+
 
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
-lib = CDLL("darknet.so", RTLD_GLOBAL)
-#lib = CDLL("yolo_cpp_dll.dll", RTLD_GLOBAL)
+#lib = CDLL("darknet.so", RTLD_GLOBAL)
+hasGPU = True
+if os.name == "nt":
+    winGPUdll = "yolo_cpp_dll.dll"
+    winNoGPUdll = "yolo_cpp_dll_nogpu.dll"
+    envKeys = list()
+    for k, v in os.environ.items():
+        envKeys.append(k)
+    try:
+        tmp = os.environ["CUDA_HOME"]
+        try:
+            tmp = os.environ["FORCE_CPU"].lower()
+            if tmp in ["1", "true", "yes", "on"]:
+                raise ValueError("ForceCPU")
+            else:
+                print("Flag value '"+tmp+"' not forcing CPU mode")
+        except KeyError:
+            # We never set the flag
+            if 'CUDA_VISIBLE_DEVICES' in envKeys:
+                if int(os.environ['CUDA_VISIBLE_DEVICES']) < 0:
+                    raise ValueError("ForceCPU")
+            try:
+                global DARKNET_FORCE_CPU
+                if DARKNET_FORCE_CPU:
+                    raise ValueError("ForceCPU")
+            except NameError:
+                pass
+            # print(os.environ.keys())
+            # print("FORCE_CPU flag undefined, proceeding with GPU")
+        if not os.path.exists(winGPUdll):
+            raise ValueError("NoDLL")
+        lib = CDLL(winGPUdll, RTLD_GLOBAL)
+    except (KeyError, ValueError):
+        hasGPU = False
+        if os.path.exists(winNoGPUdll):
+            lib = CDLL(winNoGPUdll, RTLD_GLOBAL)
+            print("Notice: CPU-only mode")
+        else:
+            # Try the other way, in case no_gpu was
+            # compile but not renamed
+            lib = CDLL(winGPUdll, RTLD_GLOBAL)
+            print("Environment variables indicated a CPU run, but we didn't find `"+winNoGPUdll+"`. Trying a GPU run anyway.")
+else:
+    lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -56,8 +128,9 @@ predict = lib.network_predict
 predict.argtypes = [c_void_p, POINTER(c_float)]
 predict.restype = POINTER(c_float)
 
-set_gpu = lib.cuda_set_device
-set_gpu.argtypes = [c_int]
+if hasGPU:
+    set_gpu = lib.cuda_set_device
+    set_gpu.argtypes = [c_int]
 
 make_image = lib.make_image
 make_image.argtypes = [c_int, c_int, c_int]
@@ -119,40 +192,208 @@ def classify(net, meta, im):
     out = predict_image(net, im)
     res = []
     for i in range(meta.classes):
-        res.append((meta.names[i], out[i]))
+        if altNames is None:
+            nameTag = meta.names[i]
+        else:
+            nameTag = altNames[i]
+        res.append((nameTag, out[i]))
     res = sorted(res, key=lambda x: -x[1])
     return res
 
-def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
+def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
+    """
+    Performs the meat of the detection
+    """
+    #pylint: disable= C0321
     im = load_image(image, 0, 0)
+    if debug: print("Loaded image")
     num = c_int(0)
+    if debug: print("Assigned num")
     pnum = pointer(num)
+    if debug: print("Assigned pnum")
     predict_image(net, im)
+    if debug: print("did prediction")
     dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, 1)
+    if debug: print("Got dets")
     num = pnum[0]
-    #if (nms): do_nms_obj(dets, num, meta.classes, nms);
-    if (nms): do_nms_sort(dets, num, meta.classes, nms);
-    
+    if debug: print("got zeroth index of pnum")
+    if nms:
+        do_nms_sort(dets, num, meta.classes, nms)
+    if debug: print("did sort")
     res = []
+    if debug: print("about to range")
     for j in range(num):
+        if debug: print("Ranging on "+str(j)+" of "+str(num))
+        if debug: print("Classes: "+str(meta), meta.classes, meta.names)
         for i in range(meta.classes):
+            if debug: print("Class-ranging on "+str(i)+" of "+str(meta.classes)+"= "+str(dets[j].prob[i]))
             if dets[j].prob[i] > 0:
                 b = dets[j].bbox
-                res.append((meta.names[i], dets[j].prob[i], (b.x, b.y, b.w, b.h)))
+                if altNames is None:
+                    nameTag = meta.names[i]
+                else:
+                    nameTag = altNames[i]
+                if debug:
+                    print("Got bbox", b)
+                    print(nameTag)
+                    print(dets[j].prob[i])
+                    print((b.x, b.y, b.w, b.h))
+                res.append((nameTag, dets[j].prob[i], (b.x, b.y, b.w, b.h)))
+    if debug: print("did range")
     res = sorted(res, key=lambda x: -x[1])
+    if debug: print("did sort")
     free_image(im)
+    if debug: print("freed image")
     free_detections(dets, num)
+    if debug: print("freed detections")
     return res
-    
-if __name__ == "__main__":
-    #net = load_net("cfg/densenet201.cfg", "/home/pjreddie/trained/densenet201.weights", 0)
-    #im = load_image("data/wolf.jpg", 0, 0)
-    #meta = load_meta("cfg/imagenet1k.data")
-    #r = classify(net, meta, im)
-    #print r[:10]
-    net = load_net("cfg/yolov3.cfg", "yolov3.weights", 0)
-    meta = load_meta("cfg/coco.data")
-    r = detect(net, meta, "data/dog.jpg", 0.25)
-    print r
-    
 
+
+netMain = None
+metaMain = None
+altNames = None
+
+def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./data/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
+    """
+    Convenience function to handle the detection and returns of objects.
+
+    Displaying bounding boxes requires libraries scikit-image and numpy
+
+    Parameters
+    ----------------
+    imagePath: str
+        Path to the image to evaluate. Raises ValueError if not found
+
+    thresh: float (default= 0.25)
+        The detection threshold
+
+    configPath: str
+        Path to the configuration file. Raises ValueError if not found
+
+    weightPath: str
+        Path to the weights file. Raises ValueError if not found
+
+    metaPath: str
+        Path to the data file. Raises ValueError if not found
+
+    showImage: bool (default= True)
+        Compute (and show) bounding boxes. Changes return.
+
+    makeImageOnly: bool (default= False)
+        If showImage is True, this won't actually *show* the image, but will create the array and return it.
+
+    initOnly: bool (default= False)
+        Only initialize globals. Don't actually run a prediction.
+
+    Returns
+    ----------------------
+
+
+    When showImage is False, list of tuples like
+        ('obj_label', confidence, (bounding_box_x_px, bounding_box_y_px, bounding_box_width_px, bounding_box_height_px))
+        The X and Y coordinates are from the center of the bounding box. Subtract half the width or height to get the lower corner.
+
+    Otherwise, a dict with
+        {
+            "detections": as above
+            "image": a numpy array representing an image, compatible with scikit-image
+            "caption": an image caption
+        }
+    """
+    # Import the global variables. This lets us instance Darknet once, then just call performDetect() again without instancing again
+    global metaMain, netMain, altNames #pylint: disable=W0603
+    assert 0 < thresh < 1, "Threshold should be a float between zero and one (non-inclusive)"
+    if not os.path.exists(configPath):
+        raise ValueError("Invalid config path `"+os.path.abspath(configPath)+"`")
+    if not os.path.exists(weightPath):
+        raise ValueError("Invalid weight path `"+os.path.abspath(weightPath)+"`")
+    if not os.path.exists(metaPath):
+        raise ValueError("Invalid data file path `"+os.path.abspath(metaPath)+"`")
+    if netMain is None:
+        netMain = load_net(configPath.encode("ascii"), weightPath.encode("ascii"), 0)
+    if metaMain is None:
+        metaMain = load_meta(metaPath.encode("ascii"))
+    if altNames is None:
+        # In Python 3, the metafile default access craps out on Windows (but not Linux)
+        # Read the names file and create a list to feed to detect
+        try:
+            with open(metaPath) as metaFH:
+                metaContents = metaFH.read()
+                import re
+                match = re.search("names *= *(.*)$", metaContents, re.IGNORECASE | re.MULTILINE)
+                if match:
+                    result = match.group(1)
+                else:
+                    result = None
+                try:
+                    if os.path.exists(result):
+                        with open(result) as namesFH:
+                            namesList = namesFH.read().strip().split("\n")
+                            altNames = [x.strip() for x in namesList]
+                except TypeError:
+                    pass
+        except Exception:
+            pass
+    if initOnly:
+        print("Initialized detector")
+        return None
+    if not os.path.exists(imagePath):
+        raise ValueError("Invalid image path `"+os.path.abspath(imagePath)+"`")
+    # Do the detection
+    detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
+    if showImage:
+        try:
+            from skimage import io, draw
+            import numpy as np
+            image = io.imread(imagePath)
+            print("*** "+str(len(detections))+" Results, color coded by confidence ***")
+            imcaption = []
+            for detection in detections:
+                label = detection[0]
+                confidence = detection[1]
+                pstring = label+": "+str(np.rint(100 * confidence))+"%"
+                imcaption.append(pstring)
+                print(pstring)
+                bounds = detection[2]
+                shape = image.shape
+                # x = shape[1]
+                # xExtent = int(x * bounds[2] / 100)
+                # y = shape[0]
+                # yExtent = int(y * bounds[3] / 100)
+                yExtent = int(bounds[3])
+                xEntent = int(bounds[2])
+                # Coordinates are around the center
+                xCoord = int(bounds[0] - bounds[2]/2)
+                yCoord = int(bounds[1] - bounds[3]/2)
+                boundingBox = [
+                    [xCoord, yCoord],
+                    [xCoord, yCoord + yExtent],
+                    [xCoord + xEntent, yCoord + yExtent],
+                    [xCoord + xEntent, yCoord]
+                ]
+                # Wiggle it around to make a 3px border
+                rr, cc = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] for x in boundingBox], shape= shape)
+                rr2, cc2 = draw.polygon_perimeter([x[1] + 1 for x in boundingBox], [x[0] for x in boundingBox], shape= shape)
+                rr3, cc3 = draw.polygon_perimeter([x[1] - 1 for x in boundingBox], [x[0] for x in boundingBox], shape= shape)
+                rr4, cc4 = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] + 1 for x in boundingBox], shape= shape)
+                rr5, cc5 = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] - 1 for x in boundingBox], shape= shape)
+                boxColor = (int(255 * (1 - (confidence ** 2))), int(255 * (confidence ** 2)), 0)
+                draw.set_color(image, (rr, cc), boxColor, alpha= 0.8)
+                draw.set_color(image, (rr2, cc2), boxColor, alpha= 0.8)
+                draw.set_color(image, (rr3, cc3), boxColor, alpha= 0.8)
+                draw.set_color(image, (rr4, cc4), boxColor, alpha= 0.8)
+                draw.set_color(image, (rr5, cc5), boxColor, alpha= 0.8)
+            if not makeImageOnly:
+                io.imshow(image)
+                io.show()
+            detections = {
+                "detections": detections,
+                "image": image,
+                "caption": "\n<br/>".join(imcaption)
+            }
+        except Exception as e:
+            print("Unable to show image: "+str(e))
+    return detections
+
+if __name__ == "__main__":
+    print(performDetect())
