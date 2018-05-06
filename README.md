@@ -49,12 +49,13 @@ This repository supports:
 * **GPU with CC >= 3.0**: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
 
 ##### Pre-trained models for different cfg-files can be downloaded from (smaller -> faster & lower quality):
-* `yolov3.cfg` (236 MB COCO **Yolo v3**) - require 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov3.weights
-* `yolov2.cfg` (194 MB COCO Yolo v2) - require 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov2.weights
-* `yolo-voc.cfg` (194 MB VOC Yolo v2) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo-voc.weights
-* `yolov2-tiny.cfg` (43 MB COCO Yolo v2) - require 1 GB GPU-RAM: https://pjreddie.com/media/files/yolov2-tiny.weights
-* `yolov2-tiny-voc.cfg` (60 MB VOC Yolo v2) - require 1 GB GPU-RAM: http://pjreddie.com/media/files/yolov2-tiny-voc.weights
-* `yolo9000.cfg` (186 MB Yolo9000-model) - require 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo9000.weights
+* `yolov3.cfg` (236 MB COCO **Yolo v3**) - requires 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov3.weights
+* `yolov3-tiny.cfg` (34 MB COCO **Yolo v3 tiny**) - requires 1 GB GPU-RAM:  https://pjreddie.com/media/files/yolov3-tiny.weights
+* `yolov2.cfg` (194 MB COCO Yolo v2) - requires 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov2.weights
+* `yolo-voc.cfg` (194 MB VOC Yolo v2) - requires 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo-voc.weights
+* `yolov2-tiny.cfg` (43 MB COCO Yolo v2) - requires 1 GB GPU-RAM: https://pjreddie.com/media/files/yolov2-tiny.weights
+* `yolov2-tiny-voc.cfg` (60 MB VOC Yolo v2) - requires 1 GB GPU-RAM: http://pjreddie.com/media/files/yolov2-tiny-voc.weights
+* `yolo9000.cfg` (186 MB Yolo9000-model) - requires 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo9000.weights
 
 Put it near compiled: darknet.exe
 
