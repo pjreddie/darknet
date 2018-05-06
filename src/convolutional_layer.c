@@ -463,9 +463,13 @@ void forward_convolutional_layer(convolutional_layer l, network net)
             float *a = l.weights + j*l.nweights/l.groups;
             float *b = net.workspace;
             float *c = l.output + (i*l.groups + j)*n*m;
+            float *im =  net.input + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
 
-            im2col_cpu(net.input + (i*l.groups + j)*l.c/l.groups*l.h*l.w,
-                l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
+            if (l.size == 1) {
+                b = im;
+            } else {
+                im2col_cpu(im, l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
+            }
             gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
         }
     }
@@ -501,21 +505,31 @@ void backward_convolutional_layer(convolutional_layer l, network net)
             float *b = net.workspace;
             float *c = l.weight_updates + j*l.nweights/l.groups;
 
-            float *im = net.input+(i*l.groups + j)*l.c/l.groups*l.h*l.w;
+            float *im  = net.input + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
+            float *imd = net.delta + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
 
-            im2col_cpu(im, l.c/l.groups, l.h, l.w, 
-                    l.size, l.stride, l.pad, b);
+            if(l.size == 1){
+                b = im;
+            } else {
+                im2col_cpu(im, l.c/l.groups, l.h, l.w, 
+                        l.size, l.stride, l.pad, b);
+            }
+
             gemm(0,1,m,n,k,1,a,k,b,k,1,c,n);
 
-            if(net.delta){
+            if (net.delta) {
                 a = l.weights + j*l.nweights/l.groups;
                 b = l.delta + (i*l.groups + j)*m*k;
                 c = net.workspace;
+                if (l.size == 1) {
+                    c = imd;
+                }
 
                 gemm(1,0,n,k,m,1,a,n,b,k,0,c,k);
 
-                col2im_cpu(net.workspace, l.c/l.groups, l.h, l.w, l.size, l.stride, 
-                    l.pad, net.delta + (i*l.groups + j)*l.c/l.groups*l.h*l.w);
+                if (l.size != 1) {
+                    col2im_cpu(net.workspace, l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, imd);
+                }
             }
         }
     }
