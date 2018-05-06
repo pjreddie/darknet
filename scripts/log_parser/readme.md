@@ -11,7 +11,7 @@
 
 `python log_parser.py --source-dir ./ --save-dir ./ --log-file test.log --show true`
 
-
+![plot](https://github.com/Adesun/darknet/blob/log_parser/scripts/log_parser/plot.jpg)
 
 
 
