@@ -1629,7 +1629,7 @@ image load_image_stb(char *filename, int channels)
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     if (!data) {
         fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
-        exit(0);
+        exit(1);
     }
     if(channels) c = channels;
     int i,j,k;
