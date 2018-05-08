@@ -1041,7 +1041,8 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 }
 #endif // OPENCV
 
-void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, int dont_show)
+void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
+				   float hier_thresh, int dont_show, int ext_output)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -1093,7 +1094,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 		int nboxes = 0;
 		detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
 		if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
-		draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes);
+		draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, ext_output);
 		free_detections(dets, nboxes);
         save_image(im, "predictions");
 		if (!dont_show) {
@@ -1145,6 +1146,9 @@ void run_detector(int argc, char **argv)
 	int num_of_clusters = find_int_arg(argc, argv, "-num_of_clusters", 5);
 	int width = find_int_arg(argc, argv, "-width", -1);
 	int height = find_int_arg(argc, argv, "-height", -1);
+	// extended output in test mode (output of rect bound coords)
+	// and for recall mode (extended output table-like format with results for best_class fit)
+	int ext_output = find_arg(argc, argv, "-ext_output");
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
@@ -1181,7 +1185,7 @@ void run_detector(int argc, char **argv)
 		if(strlen(weights) > 0)
 			if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show);
+    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
