@@ -8,8 +8,8 @@ mkdir images
 cd images
 
 # Download Images
-wget -c https://pjreddie.com/media/files/train2014.zip
-wget -c https://pjreddie.com/media/files/val2014.zip
+wget -c https://pjreddie.com/media/files/train2014.zip --no-check-certificate
+wget -c https://pjreddie.com/media/files/val2014.zip --no-check-certificate
 
 # Unzip
 unzip -q train2014.zip
@@ -18,10 +18,10 @@ unzip -q val2014.zip
 cd ..
 
 # Download COCO Metadata
-wget -c https://pjreddie.com/media/files/instances_train-val2014.zip
-wget -c https://pjreddie.com/media/files/coco/5k.part
-wget -c https://pjreddie.com/media/files/coco/trainvalno5k.part
-wget -c https://pjreddie.com/media/files/coco/labels.tgz
+wget -c https://pjreddie.com/media/files/instances_train-val2014.zip --no-check-certificate
+wget -c https://pjreddie.com/media/files/coco/5k.part --no-check-certificate
+wget -c https://pjreddie.com/media/files/coco/trainvalno5k.part --no-check-certificate
+wget -c https://pjreddie.com/media/files/coco/labels.tgz --no-check-certificate
 tar xzf labels.tgz
 unzip -q instances_train-val2014.zip
 
