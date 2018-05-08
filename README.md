@@ -85,8 +85,8 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 
 On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector test ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights`
 
-* **Yolo v3** 236 MB COCO - image: `darknet.exe detector test data/coco.data cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
-* Alternative method Yolo v3 COCO-model - image: `darknet.exe detect cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
+* **Yolo v3** COCO - image: `darknet.exe detector test data/coco.data cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
+* Alternative method Yolo v3 COCO - image: `darknet.exe detect cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
 * Output coordinates of objects: `darknet.exe detector test data/coco.data yolov3.cfg yolov3.weights -thresh 0.25 dog.jpg -ext_output`
 * 194 MB VOC-model - image: `darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights -i 0`
 * 194 MB VOC-model - video: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights test.mp4 -i 0`
