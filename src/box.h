@@ -30,10 +30,14 @@ typedef struct detection {
 	float *mask;
 	float objectness;
 	int sort_class;
+} detection;
+
+typedef struct detection_with_class {
+	detection det;
 	// The most probable class id: the best class index in this->prob.
 	// Is filled temporary when processing results, otherwise not initialized
 	int best_class;
-} detection;
+} detection_with_class;
 
 box float_to_box(float *f);
 float box_iou(box a, box b);
@@ -45,5 +49,9 @@ YOLODLL_API void do_nms_sort(detection *dets, int total, int classes, float thre
 YOLODLL_API void do_nms_obj(detection *dets, int total, int classes, float thresh);
 box decode_box(box b, box anchor);
 box encode_box(box b, box anchor);
+
+// Creates array of detections with prob > thresh and fills best_class for them
+// Return number of selected detections in *selected_detections_num
+detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num);
 
 #endif
