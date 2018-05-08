@@ -237,10 +237,12 @@ detection_with_class* get_actual_detections(detection *dets, int dets_num, float
 {
 	int selected_num = 0;
 	detection_with_class* result_arr = calloc(dets_num, sizeof(detection_with_class));
-	for (int i = 0; i < dets_num; ++i) {
+	int i;
+	for (i = 0; i < dets_num; ++i) {
 		int best_class = -1;
 		float best_class_prob = thresh;
-		for (int j = 0; j < dets[i].classes; ++j) {
+		int j;
+		for (j = 0; j < dets[i].classes; ++j) {
 			if (dets[i].prob[j] > best_class_prob ) {
 				best_class = j;
 				best_class_prob = dets[i].prob[j];
@@ -280,7 +282,8 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 
 	// text output
 	qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_lefts);
-	for (int i = 0; i < selected_detections_num; ++i) {
+	int i;
+	for (i = 0; i < selected_detections_num; ++i) {
 		const int best_class = selected_detections[i].best_class;
 		printf("%s: %.0f%%", names[best_class],	selected_detections[i].det.prob[best_class] * 100);
 		if (ext_output)
@@ -290,7 +293,8 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 				selected_detections[i].det.bbox.w*im.w, selected_detections[i].det.bbox.h*im.h);
 		else
 			printf("\n");
-		for (int j = 0; j < classes; ++j) {
+		int j;
+		for (j = 0; j < classes; ++j) {
 			if (selected_detections[i].det.prob[j] > thresh && j != best_class) {
 				printf("%s: %.0f%%\n", names[j], selected_detections[i].det.prob[j] * 100);
 			}
@@ -299,7 +303,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 
 	// image output
 	qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_probs);
-	for (int i = 0; i < selected_detections_num; ++i) {
+	for (i = 0; i < selected_detections_num; ++i) {
 			int width = im.h * .006;
 			if (width < 1)
 				width = 1;
@@ -346,7 +350,8 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 			if (alphabet) {
 				char labelstr[4096] = { 0 };
 				strcat(labelstr, names[selected_detections[i].best_class]);
-				for (int j = 0; j < classes; ++j) {
+				int j;
+				for (j = 0; j < classes; ++j) {
 					if (selected_detections[i].det.prob[j] > thresh && j != selected_detections[i].best_class) {
 						strcat(labelstr, ", ");
 						strcat(labelstr, names[j]);
