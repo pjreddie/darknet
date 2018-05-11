@@ -672,14 +672,15 @@ void rgbgr_weights(layer l);
 image *get_weights(layer l);
 
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
+void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
 
 #ifdef TS 
-int change_coord();
-int input_TS (int fileId);
+//int change_coord();
+//int input_TS (int fileId);
 void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen);
-void save_TS_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, double *coord);
+//void save_TS_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, double *coord);
 #endif
-void save_autotrack_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes);
+//void save_autotrack_target(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes);
 
 
 void get_detection_detections(layer l, int w, int h, float thresh, detection *dets);

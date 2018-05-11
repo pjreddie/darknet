@@ -9,9 +9,11 @@ CXXFLAGS= -Wall `pkg-config --cflags opencv` -lstdc++ -lm -std=c++0x -I/media/el
 
 DEPS = *.h *.hpp $(wildcard kcf/*.h) $(wildcard goturn/*/*.h) $(wildcard /media/elab/sdd/caffe/build/install/include/*/*.hpp)
 
-OBJ = kcf/fhog.o kcf/kcftracker.o goturn/network/regressor_base.o goturn/network/regressor.o \
+OBJ = kcf/fhog.o kcf/kcftracker.o \
+    goturn/network/regressor_base.o goturn/network/regressor.o \
 	goturn/helper/bounding_box.o goturn/helper/helper.o goturn/helper/image_proc.o \
-	goturn/helper/high_res_timer.o goturn/tracker/tracker.o trackerscompare.o
+	goturn/helper/high_res_timer.o goturn/tracker/tracker.o \
+	trackerscompare.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< 

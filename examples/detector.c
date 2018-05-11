@@ -932,28 +932,26 @@ void run_detector(int argc, char **argv)
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
-        
-        trackerscompare();
-        //opencvtrackers();
-        //runtracker();
     }
 #ifdef TS 
-    else if(0==strcmp(argv[2], "demo_track")) {
+    else if(0==strcmp(argv[2], "demo_ts")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-// add this line to read input event TS (TS = touch screen)
-//      char *event_TS = find_char_arg(argc, argv, "-event", "/dev/input/event6");
-// filename is used to stock event path
-
         demo_TS(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, 1);
-        
-        //opencvtrackers();
-        //runtracker();
         trackerscompare();
     }
 #endif
+    else if(0==strcmp(argv[2], "tracking")) {
+        list *options = read_data_cfg(datacfg);
+        int classes = option_find_int(options, "classes", 20);
+        char *name_list = option_find_str(options, "names", "data/names.list");
+        char **names = get_labels(name_list);
+
+        tracking(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
+        //trackerscompare();
+    }
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
 }

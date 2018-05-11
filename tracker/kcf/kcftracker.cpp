@@ -110,7 +110,7 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
 
     if (hog) {    // HOG
         // VOT
-        interp_factor = 0.012;//0.075;
+        interp_factor = 0.012;//
         sigma = 0.6; 
         // TPAMI
         //interp_factor = 0.02;
