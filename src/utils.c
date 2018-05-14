@@ -208,19 +208,19 @@ void error(const char *s)
 {
     perror(s);
     assert(0);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 void malloc_error()
 {
     fprintf(stderr, "Malloc error\n");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 void file_error(char *s)
 {
     fprintf(stderr, "Couldn't open file: %s\n", s);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 list *split_str(char *s, char delim)
