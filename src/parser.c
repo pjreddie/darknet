@@ -712,6 +712,7 @@ network parse_network_cfg_custom(char *filename, int batch)
     params.time_steps = net.time_steps;
     params.net = net;
 
+	float bflops = 0;
     size_t workspace_size = 0;
     n = n->next;
     int count = 0;
@@ -719,7 +720,7 @@ network parse_network_cfg_custom(char *filename, int batch)
     fprintf(stderr, "layer     filters    size              input                output\n");
     while(n){
         params.index = count;
-        fprintf(stderr, "%5d ", count);
+        fprintf(stderr, "%4d ", count);
         s = (section *)n->val;
         options = s->options;
         layer l = {0};
@@ -796,10 +797,12 @@ network parse_network_cfg_custom(char *filename, int batch)
             params.c = l.out_c;
             params.inputs = l.outputs;
         }
+		if (l.bflops > 0) bflops += l.bflops;
     }   
     free_list(sections);
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
+	printf("Total BFLOPS %5.3f \n", bflops);
     if(workspace_size){
         //printf("%ld\n", workspace_size);
 #ifdef GPU
