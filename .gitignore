@@ -19,6 +19,14 @@ cfg/
 #darknet
 .fuse*
 *.user*
+*.opendb
+*.VC.db
+.qmake.stash
+.vs/
+[Dd]ebug/
+[Rr]elease/
+[Xx]64/
+[Xx]86/
 
 # OS Generated #
 .DS_Store*

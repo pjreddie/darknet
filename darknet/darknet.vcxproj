@@ -1,0 +1,387 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5BB8AB83-2693-3849-9607-2A3A9D920F31}</ProjectGuid>
+    <RootNamespace>darknet</RootNamespace>
+    <Keyword>Qt4VSv1.0</Keyword>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <PlatformToolset>v140</PlatformToolset>
+    <OutputDirectory>release\</OutputDirectory>
+    <ATLMinimizesCRunTimeLibraryUsage>false</ATLMinimizesCRunTimeLibraryUsage>
+    <CharacterSet>NotSet</CharacterSet>
+    <ConfigurationType>Application</ConfigurationType>
+    <IntermediateDirectory>release\</IntermediateDirectory>
+    <PrimaryOutput>darknet</PrimaryOutput>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <PlatformToolset>v140</PlatformToolset>
+    <OutputDirectory>debug\</OutputDirectory>
+    <ATLMinimizesCRunTimeLibraryUsage>false</ATLMinimizesCRunTimeLibraryUsage>
+    <CharacterSet>NotSet</CharacterSet>
+    <ConfigurationType>Application</ConfigurationType>
+    <IntermediateDirectory>debug\</IntermediateDirectory>
+    <PrimaryOutput>darknetd</PrimaryOutput>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <PropertyGroup Condition="'$(QtMsBuild)'=='' or !Exists('$(QtMsBuild)\qt.targets')">
+    <QtMsBuild>$(MSBuildProjectDirectory)\QtMsBuild</QtMsBuild>
+  </PropertyGroup>
+  <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
+    <Message Importance="High" Text="QtMsBuild: could not locate qt.targets, qt.props; project may not build correctly." />
+  </Target>
+  <ImportGroup Condition="Exists('$(QtMsBuild)\qt.props')">
+    <Import Project="$(QtMsBuild)\qt.props" />
+  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">darknet</TargetName>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</IgnoreImportLibrary>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">darknetd</TargetName>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IgnoreImportLibrary>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\include;..\src;..\windows;..\..\darknet_ThirdParty\Pthreads\include;..\..\darknet_ThirdParty\CUDA\include;..\..\darknet_ThirdParty\OpenCV\include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
+      <AssemblerListingLocation>release\</AssemblerListingLocation>
+      <BrowseInformation>false</BrowseInformation>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <DisableSpecificWarnings>4577;4467;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <Optimization>MaxSpeed</Optimization>
+      <PreprocessorDefinitions>_CONSOLE;UNICODE;_UNICODE;WIN32;WIN64;GPU;CUDNN;OPENCV;OPENMP;HAVE_STRUCT_TIMESPEC;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <WarningLevel>Level3</WarningLevel>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>..\..\darknet_ThirdParty\Pthreads\lib\pthreadVC2.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\cuda.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\cudart.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\cublas.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\curand.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\cudnn.lib;..\..\darknet_ThirdParty\OpenCV\lib\opencv_core2413.lib;..\..\darknet_ThirdParty\OpenCV\lib\opencv_highgui2413.lib;..\..\darknet_ThirdParty\OpenCV\lib\opencv_imgproc2413.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(QTDIR)\lib;..\..\darknet_ThirdParty\Pthreads\bin;..\..\darknet_ThirdParty\Pthreads\lib;..\..\darknet_ThirdParty\CUDA\bin;..\..\darknet_ThirdParty\CUDA\nvvm\bin;..\..\darknet_ThirdParty\CUDA\lib\x64;..\..\darknet_ThirdParty\OpenCV\bin;..\..\darknet_ThirdParty\OpenCV\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreImportLibrary>true</IgnoreImportLibrary>
+      <LinkIncremental>false</LinkIncremental>
+      <OutputFile>$(OutDir)\darknet.exe</OutputFile>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <SubSystem>Console</SubSystem>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <Version>0.1</Version>
+    </Link>
+    <Midl>
+      <DefaultCharType>Unsigned</DefaultCharType>
+      <EnableErrorChecks>None</EnableErrorChecks>
+      <WarningLevel>0</WarningLevel>
+    </Midl>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_CONSOLE;UNICODE;_UNICODE;WIN32;WIN64;GPU;CUDNN;OPENCV;OPENMP;HAVE_STRUCT_TIMESPEC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\include;..\src;..\windows;..\..\darknet_ThirdParty\Pthreads\include;..\..\darknet_ThirdParty\CUDA\include;..\..\darknet_ThirdParty\OpenCV\include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
+      <AssemblerListingLocation>debug\</AssemblerListingLocation>
+      <BrowseInformation>false</BrowseInformation>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4577;4467;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_CONSOLE;UNICODE;_UNICODE;WIN32;WIN64;GPU;CUDNN;OPENCV;OPENMP;HAVE_STRUCT_TIMESPEC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <WarningLevel>Level3</WarningLevel>
+      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>..\..\darknet_ThirdParty\Pthreads\lib\pthreadVC2.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\cuda.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\cudart.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\cublas.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\curand.lib;..\..\darknet_ThirdParty\CUDA\lib\x64\cudnn.lib;..\..\darknet_ThirdParty\OpenCV\lib\opencv_core2413d.lib;..\..\darknet_ThirdParty\OpenCV\lib\opencv_highgui2413d.lib;..\..\darknet_ThirdParty\OpenCV\lib\opencv_imgproc2413d.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(QTDIR)\lib;..\..\darknet_ThirdParty\Pthreads\bin;..\..\darknet_ThirdParty\Pthreads\lib;..\..\darknet_ThirdParty\CUDA\bin;..\..\darknet_ThirdParty\CUDA\nvvm\bin;..\..\darknet_ThirdParty\CUDA\lib\x64;..\..\darknet_ThirdParty\OpenCV\bin;..\..\darknet_ThirdParty\OpenCV\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreImportLibrary>true</IgnoreImportLibrary>
+      <OutputFile>$(OutDir)\darknetd.exe</OutputFile>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <SubSystem>Console</SubSystem>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <Version>0.1</Version>
+    </Link>
+    <Midl>
+      <DefaultCharType>Unsigned</DefaultCharType>
+      <EnableErrorChecks>None</EnableErrorChecks>
+      <WarningLevel>0</WarningLevel>
+    </Midl>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_CONSOLE;UNICODE;_UNICODE;WIN32;WIN64;GPU;CUDNN;OPENCV;OPENMP;HAVE_STRUCT_TIMESPEC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\activation_layer.c" />
+    <ClCompile Include="..\src\activations.c" />
+    <ClCompile Include="..\examples\art.c" />
+    <ClCompile Include="..\examples\attention.c" />
+    <ClCompile Include="..\src\avgpool_layer.c" />
+    <ClCompile Include="..\src\batchnorm_layer.c" />
+    <ClCompile Include="..\src\blas.c" />
+    <ClCompile Include="..\src\box.c" />
+    <ClCompile Include="..\examples\captcha.c" />
+    <ClCompile Include="..\examples\cifar.c" />
+    <ClCompile Include="..\examples\classifier.c" />
+    <ClCompile Include="..\examples\coco.c" />
+    <ClCompile Include="..\src\col2im.c" />
+    <ClCompile Include="..\src\compare.c" />
+    <ClCompile Include="..\src\connected_layer.c" />
+    <ClCompile Include="..\src\convolutional_layer.c" />
+    <ClCompile Include="..\src\cost_layer.c" />
+    <ClCompile Include="..\src\crnn_layer.c" />
+    <ClCompile Include="..\src\crop_layer.c" />
+    <ClCompile Include="..\src\cuda.c" />
+    <ClCompile Include="..\examples\darknet.c" />
+    <ClCompile Include="..\src\data.c" />
+    <ClCompile Include="..\src\deconvolutional_layer.c" />
+    <ClCompile Include="..\src\demo.c" />
+    <ClCompile Include="..\src\detection_layer.c" />
+    <ClCompile Include="..\examples\detector.c" />
+    <ClCompile Include="..\examples\dice.c" />
+    <ClCompile Include="..\src\dropout_layer.c" />
+    <ClCompile Include="..\src\gemm.c" />
+    <ClCompile Include="..\windows\gettimeofday.c" />
+    <ClCompile Include="..\examples\go.c" />
+    <ClCompile Include="..\src\gru_layer.c" />
+    <ClCompile Include="..\src\im2col.c" />
+    <ClCompile Include="..\src\image.c" />
+    <ClCompile Include="..\src\l2norm_layer.c" />
+    <ClCompile Include="..\src\layer.c" />
+    <ClCompile Include="..\src\list.c" />
+    <ClCompile Include="..\src\local_layer.c" />
+    <ClCompile Include="..\src\logistic_layer.c" />
+    <ClCompile Include="..\examples\lsd.c" />
+    <ClCompile Include="..\src\lstm_layer.c" />
+    <ClCompile Include="..\src\matrix.c" />
+    <ClCompile Include="..\src\maxpool_layer.c" />
+    <ClCompile Include="..\src\network.c" />
+    <ClCompile Include="..\examples\nightmare.c" />
+    <ClCompile Include="..\src\normalization_layer.c" />
+    <ClCompile Include="..\src\option_list.c" />
+    <ClCompile Include="..\src\parser.c" />
+    <ClCompile Include="..\src\region_layer.c" />
+    <ClCompile Include="..\examples\regressor.c" />
+    <ClCompile Include="..\src\reorg_layer.c" />
+    <ClCompile Include="..\examples\rnn.c" />
+    <ClCompile Include="..\src\rnn_layer.c" />
+    <ClCompile Include="..\examples\rnn_vid.c" />
+    <ClCompile Include="..\src\route_layer.c" />
+    <ClCompile Include="..\examples\segmenter.c" />
+    <ClCompile Include="..\src\shortcut_layer.c" />
+    <ClCompile Include="..\src\softmax_layer.c" />
+    <ClCompile Include="..\examples\super.c" />
+    <ClCompile Include="..\examples\swag.c" />
+    <ClCompile Include="..\examples\tag.c" />
+    <ClCompile Include="..\src\tree.c" />
+    <ClCompile Include="..\src\upsample_layer.c" />
+    <ClCompile Include="..\src\utils.c" />
+    <ClCompile Include="..\examples\voxel.c" />
+    <ClCompile Include="..\examples\writing.c" />
+    <ClCompile Include="..\examples\yolo.c" />
+    <ClCompile Include="..\src\yolo_layer.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\activation_layer.h" />
+    <ClInclude Include="..\src\activations.h" />
+    <ClInclude Include="..\src\avgpool_layer.h" />
+    <ClInclude Include="..\src\batchnorm_layer.h" />
+    <ClInclude Include="..\src\blas.h" />
+    <ClInclude Include="..\src\box.h" />
+    <ClInclude Include="..\src\classifier.h" />
+    <ClInclude Include="..\src\col2im.h" />
+    <ClInclude Include="..\src\connected_layer.h" />
+    <ClInclude Include="..\src\convolutional_layer.h" />
+    <ClInclude Include="..\src\cost_layer.h" />
+    <ClInclude Include="..\src\crnn_layer.h" />
+    <ClInclude Include="..\src\crop_layer.h" />
+    <ClInclude Include="..\src\cuda.h" />
+    <ClInclude Include="..\src\data.h" />
+    <ClInclude Include="..\src\deconvolutional_layer.h" />
+    <ClInclude Include="..\src\demo.h" />
+    <ClInclude Include="..\src\detection_layer.h" />
+    <ClInclude Include="..\src\dropout_layer.h" />
+    <ClInclude Include="..\src\gemm.h" />
+    <ClInclude Include="..\windows\gettimeofday.h" />
+    <ClInclude Include="..\src\gru_layer.h" />
+    <ClInclude Include="..\src\im2col.h" />
+    <ClInclude Include="..\src\image.h" />
+    <ClInclude Include="..\src\l2norm_layer.h" />
+    <ClInclude Include="..\src\layer.h" />
+    <ClInclude Include="..\src\list.h" />
+    <ClInclude Include="..\src\local_layer.h" />
+    <ClInclude Include="..\src\logistic_layer.h" />
+    <ClInclude Include="..\src\lstm_layer.h" />
+    <ClInclude Include="..\src\matrix.h" />
+    <ClInclude Include="..\src\maxpool_layer.h" />
+    <ClInclude Include="..\src\network.h" />
+    <ClInclude Include="..\src\normalization_layer.h" />
+    <ClInclude Include="..\src\option_list.h" />
+    <ClInclude Include="..\src\parser.h" />
+    <ClInclude Include="..\src\region_layer.h" />
+    <ClInclude Include="..\src\reorg_layer.h" />
+    <ClInclude Include="..\src\rnn_layer.h" />
+    <ClInclude Include="..\src\route_layer.h" />
+    <ClInclude Include="..\src\shortcut_layer.h" />
+    <ClInclude Include="..\src\softmax_layer.h" />
+    <ClInclude Include="..\src\stb_image.h" />
+    <ClInclude Include="..\src\stb_image_write.h" />
+    <ClInclude Include="..\src\tree.h" />
+    <ClInclude Include="..\src\upsample_layer.h" />
+    <ClInclude Include="..\src\utils.h" />
+    <ClInclude Include="..\src\yolo_layer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\src\activation_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\activation_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\activation_kernels_cuda.obj ..\src\activation_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\activation_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\activation_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\activation_kernels_cuda.obj ..\src\activation_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\activation_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\avgpool_layer_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\avgpool_layer_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\avgpool_layer_kernels_cuda.obj ..\src\avgpool_layer_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\avgpool_layer_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\avgpool_layer_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\avgpool_layer_kernels_cuda.obj ..\src\avgpool_layer_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\avgpool_layer_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\blas_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\blas_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\blas_kernels_cuda.obj ..\src\blas_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\blas_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\blas_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\blas_kernels_cuda.obj ..\src\blas_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\blas_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\col2im_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\col2im_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\col2im_kernels_cuda.obj ..\src\col2im_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\col2im_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\col2im_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\col2im_kernels_cuda.obj ..\src\col2im_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\col2im_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\convolutional_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\convolutional_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\convolutional_kernels_cuda.obj ..\src\convolutional_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\convolutional_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\convolutional_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\convolutional_kernels_cuda.obj ..\src\convolutional_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\convolutional_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\crop_layer_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\crop_layer_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\crop_layer_kernels_cuda.obj ..\src\crop_layer_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\crop_layer_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\crop_layer_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\crop_layer_kernels_cuda.obj ..\src\crop_layer_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\crop_layer_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\deconvolutional_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\deconvolutional_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\deconvolutional_kernels_cuda.obj ..\src\deconvolutional_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\deconvolutional_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\deconvolutional_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\deconvolutional_kernels_cuda.obj ..\src\deconvolutional_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\deconvolutional_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\dropout_layer_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\dropout_layer_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\dropout_layer_kernels_cuda.obj ..\src\dropout_layer_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\dropout_layer_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\dropout_layer_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\dropout_layer_kernels_cuda.obj ..\src\dropout_layer_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\dropout_layer_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\im2col_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\im2col_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\im2col_kernels_cuda.obj ..\src\im2col_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\im2col_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\im2col_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\im2col_kernels_cuda.obj ..\src\im2col_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\im2col_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\src\maxpool_layer_kernels.cu">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\src\maxpool_layer_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413 -lopencv_highgui2413 -lopencv_imgproc2413 -lWs2_32 -Xcompiler /MD -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\maxpool_layer_kernels_cuda.obj ..\src\maxpool_layer_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\release\maxpool_layer_kernels_cuda.obj;%(Outputs)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\src\maxpool_layer_kernels.cu;%(AdditionalInputs)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=[sm_50,compute_50] -gencode arch=compute_52,code=[sm_52,compute_52] -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DGPU -DCUDNN -DOPENCV -DOPENMP -DHAVE_STRUCT_TIMESPEC -I"./../include" -I"./../src" -I"./../windows" -I"../../darknet_ThirdParty/Pthreads/include" -I"../../darknet_ThirdParty/CUDA/include" -I"../../darknet_ThirdParty/OpenCV/include" -L../../darknet_ThirdParty/Pthreads/bin -L../../darknet_ThirdParty/Pthreads/lib -lpthreadVC2 -L../../darknet_ThirdParty/CUDA/bin -L../../darknet_ThirdParty/CUDA/nvvm/bin -L../../darknet_ThirdParty/CUDA/lib/x64 -lcuda -lcudart -lcublas -lcurand -lcudnn -L../../darknet_ThirdParty/OpenCV/bin -L../../darknet_ThirdParty/OpenCV/lib -lopencv_core2413d -lopencv_highgui2413d -lopencv_imgproc2413d -lWs2_32 -D_DEBUG -Xcompiler /MDd -c -o E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\maxpool_layer_kernels_cuda.obj ..\src\maxpool_layer_kernels.cu</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nvcc</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\temp\darknet\build\darknet-0.1.0-msvc-x64\darknet\debug\maxpool_layer_kernels_cuda.obj;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
+    <Import Project="$(QtMsBuild)\qt.targets" />
+  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" Qt5Version_x0020_x64="Qt-5.10.1-msvc2015-x64" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>
