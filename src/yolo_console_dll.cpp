@@ -28,7 +28,7 @@
 #include "opencv2/core/version.hpp"
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio.hpp"
-#define OPENCV_VERSION CVAUX_STR(CV_VERSION_MAJOR)""CVAUX_STR(CV_VERSION_MINOR)""CVAUX_STR(CV_VERSION_REVISION)
+#define OPENCV_VERSION CVAUX_STR(CV_VERSION_MAJOR)"" CVAUX_STR(CV_VERSION_MINOR)"" CVAUX_STR(CV_VERSION_REVISION)
 #pragma comment(lib, "opencv_world" OPENCV_VERSION ".lib")
 #ifdef TRACK_OPTFLOW
 #pragma comment(lib, "opencv_cudaoptflow" OPENCV_VERSION ".lib")
