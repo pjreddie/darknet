@@ -425,7 +425,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 		fprintf(fp, "\n]\n");
 		fclose(fp);
 	}
-	fprintf(stderr, "Total Detection Time: %f Seconds\n", time(0) - start);
+	fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)time(0) - start);
 }
 
 void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
