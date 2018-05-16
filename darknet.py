@@ -188,6 +188,18 @@ predict_image = lib.network_predict_image
 predict_image.argtypes = [c_void_p, IMAGE]
 predict_image.restype = POINTER(c_float)
 
+def array_to_image(arr):
+    import numpy as np
+    # need to return old values to avoid python freeing memory
+    arr = arr.transpose(2,0,1)
+    c = arr.shape[0]
+    h = arr.shape[1]
+    w = arr.shape[2]
+    arr = np.ascontiguousarray(arr.flat, dtype=np.float32) / 255.0
+    data = arr.ctypes.data_as(POINTER(c_float))
+    im = IMAGE(w,h,c,data)
+    return im, arr
+
 def classify(net, meta, im):
     out = predict_image(net, im)
     res = []
@@ -206,6 +218,9 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     """
     #pylint: disable= C0321
     im = load_image(image, 0, 0)
+    #import scipy.misc
+    #sci_image = scipy.misc.imread(image)
+    #im, arr = array_to_image(sci_image)		# you should comment line below: free_image(im)
     if debug: print("Loaded image")
     num = c_int(0)
     if debug: print("Assigned num")
