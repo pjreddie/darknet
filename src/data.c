@@ -137,7 +137,10 @@ box_label *read_boxes(char *filename, int *n)
 {
     box_label *boxes = calloc(1, sizeof(box_label));
     FILE *file = fopen(filename, "r");
-    if(!file) file_error(filename);
+	if (!file) {
+		printf("Can't open label file. \n");
+		file_error(filename);
+	}
     float x, y, h, w;
     int id;
     int count = 0;

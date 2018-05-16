@@ -160,6 +160,10 @@ load_net = lib.load_network
 load_net.argtypes = [c_char_p, c_char_p, c_int]
 load_net.restype = c_void_p
 
+load_net_custom = lib.load_network_custom
+load_net_custom.argtypes = [c_char_p, c_char_p, c_int, c_int]
+load_net_custom.restype = c_void_p
+
 do_nms_obj = lib.do_nms_obj
 do_nms_obj.argtypes = [POINTER(DETECTION), c_int, c_int, c_float]
 
@@ -325,7 +329,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     if not os.path.exists(metaPath):
         raise ValueError("Invalid data file path `"+os.path.abspath(metaPath)+"`")
     if netMain is None:
-        netMain = load_net(configPath.encode("ascii"), weightPath.encode("ascii"), 0)
+        netMain = load_net_custom(configPath.encode("ascii"), weightPath.encode("ascii"), 0, 1)  # batch size = 1
     if metaMain is None:
         metaMain = load_meta(metaPath.encode("ascii"))
     if altNames is None:
