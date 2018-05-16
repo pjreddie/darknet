@@ -16,8 +16,9 @@ convnet/
 decaf/
 submission/
 cfg/
-darknet
+#darknet
 .fuse*
+*.user*
 
 # OS Generated #
 .DS_Store*

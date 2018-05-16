@@ -98,7 +98,7 @@ void forward_cost_layer(cost_layer l, network net)
     l.cost[0] = sum_array(l.output, l.batch*l.inputs);
 }
 
-void backward_cost_layer(const cost_layer l, network net)
+void backward_cost_layer(cost_layer l, network net)
 {
     axpy_cpu(l.batch*l.inputs, l.scale, l.delta, 1, net.delta, 1);
 }
