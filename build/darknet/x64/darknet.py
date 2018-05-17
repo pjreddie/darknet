@@ -222,9 +222,11 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     """
     #pylint: disable= C0321
     im = load_image(image, 0, 0)
+    #import cv2
+    #custom_image = cv2.imread(image) # use: detect(,,imagePath,)
     #import scipy.misc
-    #sci_image = scipy.misc.imread(image)
-    #im, arr = array_to_image(sci_image)		# you should comment line below: free_image(im)
+    #custom_image = scipy.misc.imread(image)
+    #im, arr = array_to_image(custom_image)		# you should comment line below: free_image(im)
     if debug: print("Loaded image")
     num = c_int(0)
     if debug: print("Assigned num")
