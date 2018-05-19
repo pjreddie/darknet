@@ -1109,12 +1109,42 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 		detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
 		if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 		draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, ext_output);
-		free_detections(dets, nboxes);
         save_image(im, "predictions");
 		if (!dont_show) {
 			show_image(im, "predictions");
 		}
+/*
+		// pseudo labeling concept - fast.ai
+		{
+			char labelpath[4096];
+			find_replace(input, ".jpg", ".txt", labelpath);
+			find_replace(labelpath, ".png", ".txt", labelpath);
+			find_replace(labelpath, ".bmp", ".txt", labelpath);
+			find_replace(labelpath, ".JPG", ".txt", labelpath);
+			find_replace(labelpath, ".JPEG", ".txt", labelpath);
+			find_replace(labelpath, ".ppm", ".txt", labelpath);
 
+			FILE* fw = fopen(labelpath, "wb");
+			int i;
+			for (i = 0; i < nboxes; ++i) {
+				char buff[1024];
+				int class_id = -1;
+				float prob = 0;
+				for (j = 0; j < l.classes; ++j) {
+					if (dets[i].prob[j] > thresh && dets[i].prob[j] > prob) {
+						prob = dets[i].prob[j];
+						class_id = j;
+					}
+				}
+				if (class_id >= 0) {
+					sprintf(buff, "%d %2.4f %2.4f %2.4f %2.4f\n", class_id, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h);
+					fwrite(buff, sizeof(char), strlen(buff), fw);
+				}
+			}
+			fclose(fw);
+		}
+*/
+		free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
         //free(boxes);

@@ -465,6 +465,10 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         l->x_norm  = realloc(l->x_norm, l->batch*l->outputs*sizeof(float));
     }
 
+	if (l->xnor) {
+		//l->binary_input = realloc(l->inputs*l->batch, sizeof(float));
+	}
+
 #ifdef GPU
 	if (old_w < w || old_h < h) {
 		cuda_free(l->delta_gpu);
@@ -479,6 +483,11 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 
 			l->x_gpu = cuda_make_array(l->output, l->batch*l->outputs);
 			l->x_norm_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+		}
+
+		if (l->xnor) {
+			cuda_free(l->binary_input_gpu);
+			l->binary_input_gpu = cuda_make_array(0, l->inputs*l->batch);
 		}
 	}
 #ifdef CUDNN
