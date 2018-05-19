@@ -441,6 +441,8 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 {
 	int i, j;
 	if (!show_img) return;
+	static int frame_id = 0;
+	frame_id++;
 
 	for (i = 0; i < num; ++i) {
 		char labelstr[4096] = { 0 };
@@ -515,6 +517,16 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			color.val[0] = red * 256;
 			color.val[1] = green * 256;
 			color.val[2] = blue * 256;
+
+			// you should create directory: result_img
+			//static int img_id = 0;
+			//img_id++;
+			//char image_name[1024];
+			//sprintf(image_name, "result_img/img_%d_%d_%d.jpg", frame_id, img_id, class_id);
+			//CvRect rect = cvRect(pt1.x, pt1.y, pt2.x - pt1.x, pt2.y - pt1.y);
+			//cvSetImageROI(show_img, rect);
+			//cvSaveImage(image_name, show_img, 0);
+			//cvResetImageROI(show_img);
 
 			cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
 			//printf("left=%d, right=%d, top=%d, bottom=%d, obj_id=%d, obj=%s \n", left, right, top, bot, class_id, names[class_id]);

@@ -36,6 +36,17 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
+void replace_image_to_label(char *input_path, char *output_path) {
+	find_replace(input_path, "images", "labels", output_path);
+	find_replace(output_path, "JPEGImages", "labels", output_path);
+	find_replace(output_path, ".jpg", ".txt", output_path);
+	find_replace(output_path, ".png", ".txt", output_path);
+	find_replace(output_path, ".bmp", ".txt", output_path);
+	find_replace(output_path, ".JPG", ".txt", output_path);
+	find_replace(output_path, ".JPEG", ".txt", output_path);
+	find_replace(output_path, ".ppm", ".txt", output_path);
+}
+
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show)
 {
     list *options = read_data_cfg(datacfg);
@@ -474,14 +485,15 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 		if (nms) do_nms_obj(dets, nboxes, 1, nms);
 
 		char labelpath[4096];
-		find_replace(path, "images", "labels", labelpath);
-		find_replace(labelpath, "JPEGImages", "labels", labelpath);
-		find_replace(labelpath, ".jpg", ".txt", labelpath);
-		find_replace(labelpath, ".png", ".txt", labelpath);
-		find_replace(labelpath, ".bmp", ".txt", labelpath);
-		find_replace(labelpath, ".JPG", ".txt", labelpath);
-		find_replace(labelpath, ".JPEG", ".txt", labelpath);
-		find_replace(labelpath, ".ppm", ".txt", labelpath);
+		replace_image_to_label(path, labelpath);
+		//find_replace(path, "images", "labels", labelpath);
+		//find_replace(labelpath, "JPEGImages", "labels", labelpath);
+		//find_replace(labelpath, ".jpg", ".txt", labelpath);
+		//find_replace(labelpath, ".png", ".txt", labelpath);
+		//find_replace(labelpath, ".bmp", ".txt", labelpath);
+		//find_replace(labelpath, ".JPG", ".txt", labelpath);
+		//find_replace(labelpath, ".JPEG", ".txt", labelpath);
+		//find_replace(labelpath, ".ppm", ".txt", labelpath);
 
 		int num_labels = 0;
 		box_label *truth = read_boxes(labelpath, &num_labels);
@@ -632,14 +644,15 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 			if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 
 			char labelpath[4096];
-			find_replace(path, "images", "labels", labelpath);
-			find_replace(labelpath, "JPEGImages", "labels", labelpath);
-			find_replace(labelpath, ".jpg", ".txt", labelpath);
-			find_replace(labelpath, ".png", ".txt", labelpath);
-			find_replace(labelpath, ".bmp", ".txt", labelpath);
-			find_replace(labelpath, ".JPG", ".txt", labelpath);
-			find_replace(labelpath, ".JPEG", ".txt", labelpath);
-			find_replace(labelpath, ".ppm", ".txt", labelpath);
+			replace_image_to_label(path, labelpath);
+			//find_replace(path, "images", "labels", labelpath);
+			//find_replace(labelpath, "JPEGImages", "labels", labelpath);
+			//find_replace(labelpath, ".jpg", ".txt", labelpath);
+			//find_replace(labelpath, ".png", ".txt", labelpath);
+			//find_replace(labelpath, ".bmp", ".txt", labelpath);
+			//find_replace(labelpath, ".JPG", ".txt", labelpath);
+			//find_replace(labelpath, ".JPEG", ".txt", labelpath);
+			//find_replace(labelpath, ".ppm", ".txt", labelpath);
 			int num_labels = 0;
 			box_label *truth = read_boxes(labelpath, &num_labels);
 			int i, j;
@@ -896,14 +909,15 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 	for (i = 0; i < number_of_images; ++i) {
 		char *path = paths[i];
 		char labelpath[4096];
-		find_replace(path, "images", "labels", labelpath);
-		find_replace(labelpath, "JPEGImages", "labels", labelpath);
-		find_replace(labelpath, ".jpg", ".txt", labelpath);
-		find_replace(labelpath, ".png", ".txt", labelpath);
-		find_replace(labelpath, ".bmp", ".txt", labelpath);
-		find_replace(labelpath, ".JPG", ".txt", labelpath);
-		find_replace(labelpath, ".JPEG", ".txt", labelpath);
-		find_replace(labelpath, ".ppm", ".txt", labelpath);
+		replace_image_to_label(path, labelpath);
+		//find_replace(path, "images", "labels", labelpath);
+		//find_replace(labelpath, "JPEGImages", "labels", labelpath);
+		//find_replace(labelpath, ".jpg", ".txt", labelpath);
+		//find_replace(labelpath, ".png", ".txt", labelpath);
+		//find_replace(labelpath, ".bmp", ".txt", labelpath);
+		//find_replace(labelpath, ".JPG", ".txt", labelpath);
+		//find_replace(labelpath, ".JPEG", ".txt", labelpath);
+		//find_replace(labelpath, ".ppm", ".txt", labelpath);
 		int num_labels = 0;
 		box_label *truth = read_boxes(labelpath, &num_labels);
 		//printf(" new path: %s \n", labelpath);
@@ -1056,7 +1070,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 #endif // OPENCV
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
-				   float hier_thresh, int dont_show, int ext_output)
+				   float hier_thresh, int dont_show, int ext_output, int save_labels)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -1113,16 +1127,18 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 		if (!dont_show) {
 			show_image(im, "predictions");
 		}
-/*
+
 		// pseudo labeling concept - fast.ai
+		if(save_labels)
 		{
 			char labelpath[4096];
-			find_replace(input, ".jpg", ".txt", labelpath);
-			find_replace(labelpath, ".png", ".txt", labelpath);
-			find_replace(labelpath, ".bmp", ".txt", labelpath);
-			find_replace(labelpath, ".JPG", ".txt", labelpath);
-			find_replace(labelpath, ".JPEG", ".txt", labelpath);
-			find_replace(labelpath, ".ppm", ".txt", labelpath);
+			replace_image_to_label(input, labelpath);
+			//find_replace(input, ".jpg", ".txt", labelpath);
+			//find_replace(labelpath, ".png", ".txt", labelpath);
+			//find_replace(labelpath, ".bmp", ".txt", labelpath);
+			//find_replace(labelpath, ".JPG", ".txt", labelpath);
+			//find_replace(labelpath, ".JPEG", ".txt", labelpath);
+			//find_replace(labelpath, ".ppm", ".txt", labelpath);
 
 			FILE* fw = fopen(labelpath, "wb");
 			int i;
@@ -1143,7 +1159,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 			}
 			fclose(fw);
 		}
-*/
+
 		free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
@@ -1193,6 +1209,7 @@ void run_detector(int argc, char **argv)
 	// extended output in test mode (output of rect bound coords)
 	// and for recall mode (extended output table-like format with results for best_class fit)
 	int ext_output = find_arg(argc, argv, "-ext_output");
+	int save_labels = find_arg(argc, argv, "-save_labels");
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
@@ -1229,7 +1246,7 @@ void run_detector(int argc, char **argv)
 		if(strlen(weights) > 0)
 			if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output);
+    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
