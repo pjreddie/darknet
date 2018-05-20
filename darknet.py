@@ -84,7 +84,6 @@ if os.name == "nt":
     for k, v in os.environ.items():
         envKeys.append(k)
     try:
-        tmp = os.environ["CUDA_HOME"]
         try:
             tmp = os.environ["FORCE_CPU"].lower()
             if tmp in ["1", "true", "yes", "on"]:
