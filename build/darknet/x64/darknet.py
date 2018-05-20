@@ -78,13 +78,14 @@ class METADATA(Structure):
 #lib = CDLL("darknet.so", RTLD_GLOBAL)
 hasGPU = True
 if os.name == "nt":
-    winGPUdll = "yolo_cpp_dll.dll"
-    winNoGPUdll = "yolo_cpp_dll_nogpu.dll"
+    cwd = os.path.dirname(__file__)
+    os.environ['PATH'] = cwd + ';' + os.environ['PATH']
+    winGPUdll = os.path.join(cwd, "yolo_cpp_dll.dll")
+    winNoGPUdll = os.path.join(cwd, "yolo_cpp_dll_nogpu.dll")
     envKeys = list()
     for k, v in os.environ.items():
         envKeys.append(k)
     try:
-        tmp = os.environ["CUDA_HOME"]
         try:
             tmp = os.environ["FORCE_CPU"].lower()
             if tmp in ["1", "true", "yes", "on"]:
