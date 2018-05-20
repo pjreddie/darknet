@@ -36,17 +36,6 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
-void replace_image_to_label(char *input_path, char *output_path) {
-	find_replace(input_path, "images", "labels", output_path);
-	find_replace(output_path, "JPEGImages", "labels", output_path);
-	find_replace(output_path, ".jpg", ".txt", output_path);
-	find_replace(output_path, ".png", ".txt", output_path);
-	find_replace(output_path, ".bmp", ".txt", output_path);
-	find_replace(output_path, ".JPG", ".txt", output_path);
-	find_replace(output_path, ".JPEG", ".txt", output_path);
-	find_replace(output_path, ".ppm", ".txt", output_path);
-}
-
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show)
 {
     list *options = read_data_cfg(datacfg);
@@ -486,14 +475,6 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 
 		char labelpath[4096];
 		replace_image_to_label(path, labelpath);
-		//find_replace(path, "images", "labels", labelpath);
-		//find_replace(labelpath, "JPEGImages", "labels", labelpath);
-		//find_replace(labelpath, ".jpg", ".txt", labelpath);
-		//find_replace(labelpath, ".png", ".txt", labelpath);
-		//find_replace(labelpath, ".bmp", ".txt", labelpath);
-		//find_replace(labelpath, ".JPG", ".txt", labelpath);
-		//find_replace(labelpath, ".JPEG", ".txt", labelpath);
-		//find_replace(labelpath, ".ppm", ".txt", labelpath);
 
 		int num_labels = 0;
 		box_label *truth = read_boxes(labelpath, &num_labels);
@@ -645,14 +626,6 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 
 			char labelpath[4096];
 			replace_image_to_label(path, labelpath);
-			//find_replace(path, "images", "labels", labelpath);
-			//find_replace(labelpath, "JPEGImages", "labels", labelpath);
-			//find_replace(labelpath, ".jpg", ".txt", labelpath);
-			//find_replace(labelpath, ".png", ".txt", labelpath);
-			//find_replace(labelpath, ".bmp", ".txt", labelpath);
-			//find_replace(labelpath, ".JPG", ".txt", labelpath);
-			//find_replace(labelpath, ".JPEG", ".txt", labelpath);
-			//find_replace(labelpath, ".ppm", ".txt", labelpath);
 			int num_labels = 0;
 			box_label *truth = read_boxes(labelpath, &num_labels);
 			int i, j;
@@ -668,11 +641,8 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 				char *path_dif = paths_dif[image_index];
 
 				char labelpath_dif[4096];
-				find_replace(path_dif, "images", "labels", labelpath_dif);
-				find_replace(labelpath_dif, "JPEGImages", "labels", labelpath_dif);
-				find_replace(labelpath_dif, ".jpg", ".txt", labelpath_dif);
-				find_replace(labelpath_dif, ".JPEG", ".txt", labelpath_dif);
-				find_replace(labelpath_dif, ".png", ".txt", labelpath_dif);				
+				replace_image_to_label(path_dif, labelpath_dif);
+			
 				truth_dif = read_boxes(labelpath_dif, &num_labels_dif);
 			}
 
@@ -910,14 +880,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 		char *path = paths[i];
 		char labelpath[4096];
 		replace_image_to_label(path, labelpath);
-		//find_replace(path, "images", "labels", labelpath);
-		//find_replace(labelpath, "JPEGImages", "labels", labelpath);
-		//find_replace(labelpath, ".jpg", ".txt", labelpath);
-		//find_replace(labelpath, ".png", ".txt", labelpath);
-		//find_replace(labelpath, ".bmp", ".txt", labelpath);
-		//find_replace(labelpath, ".JPG", ".txt", labelpath);
-		//find_replace(labelpath, ".JPEG", ".txt", labelpath);
-		//find_replace(labelpath, ".ppm", ".txt", labelpath);
+
 		int num_labels = 0;
 		box_label *truth = read_boxes(labelpath, &num_labels);
 		//printf(" new path: %s \n", labelpath);
@@ -1133,12 +1096,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 		{
 			char labelpath[4096];
 			replace_image_to_label(input, labelpath);
-			//find_replace(input, ".jpg", ".txt", labelpath);
-			//find_replace(labelpath, ".png", ".txt", labelpath);
-			//find_replace(labelpath, ".bmp", ".txt", labelpath);
-			//find_replace(labelpath, ".JPG", ".txt", labelpath);
-			//find_replace(labelpath, ".JPEG", ".txt", labelpath);
-			//find_replace(labelpath, ".ppm", ".txt", labelpath);
 
 			FILE* fw = fopen(labelpath, "wb");
 			int i;

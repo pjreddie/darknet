@@ -281,11 +281,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
         if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
 
         char labelpath[4096];
-        find_replace(path, "images", "labels", labelpath);
-        find_replace(labelpath, "JPEGImages", "labels", labelpath);
-        find_replace(labelpath, ".jpg", ".txt", labelpath);
-        find_replace(labelpath, ".JPEG", ".txt", labelpath);
-		find_replace(labelpath, ".ppm", ".txt", labelpath);
+		replace_image_to_label(path, labelpath);
 
         int num_labels = 0;
         box_label *truth = read_boxes(labelpath, &num_labels);

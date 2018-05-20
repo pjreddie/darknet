@@ -183,6 +183,21 @@ void find_replace(char *str, char *orig, char *rep, char *output)
     sprintf(output, "%s%s%s", buffer, rep, p+strlen(orig));
 }
 
+void replace_image_to_label(char *input_path, char *output_path) {
+	find_replace(input_path, "images", "labels", output_path);
+	find_replace(output_path, "JPEGImages", "labels", output_path);
+	find_replace(output_path, ".jpg", ".txt", output_path);
+	find_replace(output_path, ".JPG", ".txt", output_path);
+	find_replace(output_path, ".jpeg", ".txt", output_path);
+	find_replace(output_path, ".JPEG", ".txt", output_path);
+	find_replace(output_path, ".png", ".txt", output_path);
+	find_replace(output_path, ".PNG", ".txt", output_path);
+	find_replace(output_path, ".bmp", ".txt", output_path);
+	find_replace(output_path, ".BMP", ".txt", output_path);
+	find_replace(output_path, ".ppm", ".txt", output_path);
+	find_replace(output_path, ".PPM", ".txt", output_path);
+}
+
 float sec(clock_t clocks)
 {
     return (float)clocks/CLOCKS_PER_SEC;
