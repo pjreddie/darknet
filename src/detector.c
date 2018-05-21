@@ -129,9 +129,15 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 			//int dim = (rand() % 12 + (init_w/32 - 5)) * 32;	// +-160
             //int dim = (rand() % 4 + 16) * 32;
 			//if (get_current_batch(net)+100 > net.max_batches) dim = 544;
-			int random_val = rand() % 12;
-			int dim_w = (random_val + (init_w / 32 - 5)) * 32;	// +-160
-			int dim_h = (random_val + (init_h / 32 - 5)) * 32;	// +-160
+			
+			//int random_val = rand() % 12;
+			//int dim_w = (random_val + (init_w / 32 - 5)) * 32;	// +-160
+			//int dim_h = (random_val + (init_h / 32 - 5)) * 32;	// +-160
+
+			float random_val = rand_scale(1.4);	// *x or /x
+			int dim_w = roundl(random_val*init_w / 32) * 32;
+			int dim_h = roundl(random_val*init_h / 32) * 32;
+
 			if (dim_w < 32) dim_w = 32;
 			if (dim_h < 32) dim_h = 32;
 
@@ -1218,7 +1224,7 @@ void run_detector(int argc, char **argv)
 			if(strlen(filename) > 0)
 				if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
-			http_stream_port, dont_show);
+			http_stream_port, dont_show, ext_output);
     }
 	else printf(" There isn't such command: %s", argv[2]);
 }

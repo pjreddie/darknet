@@ -287,7 +287,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 		const int best_class = selected_detections[i].best_class;
 		printf("%s: %.0f%%", names[best_class],	selected_detections[i].det.prob[best_class] * 100);
 		if (ext_output)
-			printf("\t(left: %.0f \ttop: %.0f \tw: %0.f \th: %0.f)\n",
+			printf("\t(left: %4.0f   top: %4.0f   w: %4.0f   h: %4.0f)\n",
 				(selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w,
 				(selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h,
 				selected_detections[i].det.bbox.w*im.w, selected_detections[i].det.bbox.h*im.h);
@@ -437,7 +437,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
 #ifdef OPENCV
 
-void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
+void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
 	int i, j;
 	if (!show_img) return;
@@ -457,18 +457,16 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 					strcat(labelstr, ", ");
 					strcat(labelstr, names[j]);
 				}
-				printf("%s: %.0f%%\n", names[j], dets[i].prob[j] * 100);
+				printf("%s: %.0f%% ", names[j], dets[i].prob[j] * 100);
 			}
 		}
 		if (class_id >= 0) {
 			int width = show_img->height * .006;
 
-			/*
-			if(0){
-			width = pow(prob, 1./2.)*10+1;
-			alphabet = 0;
-			}
-			*/
+			//if(0){
+			//width = pow(prob, 1./2.)*10+1;
+			//alphabet = 0;
+			//}
 
 			//printf("%d %s: %.0f%%\n", i, names[class_id], prob*100);
 			int offset = class_id * 123457 % classes;
@@ -519,17 +517,28 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			color.val[2] = blue * 256;
 
 			// you should create directory: result_img
+			//static int copied_frame_id = -1;
+			//static IplImage* copy_img = NULL;
+			//if (copied_frame_id != frame_id) {
+			//	copied_frame_id = frame_id;
+			//	if(copy_img == NULL) copy_img = cvCreateImage(cvSize(show_img->width, show_img->height), show_img->depth, show_img->nChannels);
+			//	cvCopy(show_img, copy_img, 0);
+			//}
 			//static int img_id = 0;
 			//img_id++;
 			//char image_name[1024];
 			//sprintf(image_name, "result_img/img_%d_%d_%d.jpg", frame_id, img_id, class_id);
 			//CvRect rect = cvRect(pt1.x, pt1.y, pt2.x - pt1.x, pt2.y - pt1.y);
-			//cvSetImageROI(show_img, rect);
-			//cvSaveImage(image_name, show_img, 0);
-			//cvResetImageROI(show_img);
+			//cvSetImageROI(copy_img, rect);
+			//cvSaveImage(image_name, copy_img, 0);
+			//cvResetImageROI(copy_img);
 
 			cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
-			//printf("left=%d, right=%d, top=%d, bottom=%d, obj_id=%d, obj=%s \n", left, right, top, bot, class_id, names[class_id]);
+			if (ext_output)
+				printf("  (left: %4.0f   top: %4.0f   w: %4.0f   h: %4.0f)\n", 
+					(float)left, (float)right, b.w*show_img->width, b.h*show_img->height);
+			else
+				printf("\n");
 			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
 			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);	// filled
 			CvScalar black_color;
