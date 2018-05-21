@@ -243,7 +243,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 				}
             }else{
                 char buff[256];
-                sprintf(buff, "%s_%08d", prefix, count);
+                sprintf(buff, "%s_%08d.jpg", prefix, count);
+				cvSaveImage(buff, show_img, 0);
                 //save_image(disp, buff);
             }
 
