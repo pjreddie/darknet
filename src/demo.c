@@ -98,7 +98,9 @@ void *detect_in_thread(void *ptr)
 	int letter = 0;
 	int nboxes = 0;
 	detection *dets = get_network_boxes(&net, det_s.w, det_s.h, demo_thresh, demo_thresh, 0, 1, &nboxes, letter);
-	if (nms) do_nms_obj(dets, nboxes, l.classes, nms);
+	//if (nms) do_nms_obj(dets, nboxes, l.classes, nms);	// bad results
+	if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+	
 
     printf("\033[2J");
     printf("\033[1;1H");
@@ -165,7 +167,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 //#endif
     }
 
-    if(!cap) error("Couldn't connect to webcam.\n");
+	if (!cap) {
+#ifdef WIN32
+		printf("Check that you have copied file opencv_ffmpeg340_64.dll to the same directory where is darknet.exe \n");
+#endif
+		error("Couldn't connect to webcam.\n");
+	}
 
     layer l = net.layers[net.n-1];
     int j;
