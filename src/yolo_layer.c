@@ -112,7 +112,7 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
 void delta_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat, int focal_loss)
 {
     int n;
-    if (delta[index]){
+    if (delta[index + stride*class_id]){
         delta[index + stride*class_id] = 1 - output[index + stride*class_id];
         if(avg_cat) *avg_cat += output[index + stride*class_id];
         return;

@@ -270,7 +270,12 @@ layer parse_yolo(list *options, size_params params)
 	int *mask = parse_yolo_mask(a, &num);
 	int max_boxes = option_find_int_quiet(options, "max", 30);
 	layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
-	assert(l.outputs == params.inputs);
+	if (l.outputs != params.inputs) {
+		printf("Error: l.outputs == params.inputs \n");
+		printf("filters= in the [convolutional]-layer doesn't correspond to classes= or mask= in [yolo]-layer \n");
+		exit(EXIT_FAILURE);
+	}
+	//assert(l.outputs == params.inputs);
 
 	//l.max_boxes = option_find_int_quiet(options, "max", 90);
 	l.jitter = option_find_float(options, "jitter", .2);
@@ -308,7 +313,12 @@ layer parse_region(list *options, size_params params)
 	int max_boxes = option_find_int_quiet(options, "max", 30);
 
     layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords, max_boxes);
-    assert(l.outputs == params.inputs);
+	if (l.outputs != params.inputs) {
+		printf("Error: l.outputs == params.inputs \n");
+		printf("filters= in the [convolutional]-layer doesn't correspond to classes= or num= in [region]-layer \n");
+		exit(EXIT_FAILURE);
+	}
+    //assert(l.outputs == params.inputs);
 
     l.log = option_find_int_quiet(options, "log", 0);
     l.sqrt = option_find_int_quiet(options, "sqrt", 0);
