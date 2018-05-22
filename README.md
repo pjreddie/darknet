@@ -87,6 +87,8 @@ MAESTRO=1
 
 Run tracker
 -----------------
+Copy trackers' source file from : [[Trackers_cpp](https://github.com/rockkingjy/Trackers_cpp)].
+
 Change Makefile to the path of the trackers:
 ```
 ifeq ($(TS), 1)
