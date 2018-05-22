@@ -542,6 +542,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 	char *mapf = option_find_str(options, "map", 0);
 	int *map = 0;
 	if (mapf) map = read_map(mapf);
+	FILE* reinforcement_fd = NULL;
 
 	network net = parse_network_cfg_custom(cfgfile, 1);	// set batch=1
 	if (weightfile) {
@@ -720,8 +721,17 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 					}
 				}
 			}
-			
+				
 			unique_truth_count += num_labels;
+
+			//static int previous_errors = 0;
+			//int total_errors = fp_for_thresh + (unique_truth_count - tp_for_thresh);
+			//int errors_in_this_image = total_errors - previous_errors;
+			//previous_errors = total_errors;
+			//if(reinforcement_fd == NULL) reinforcement_fd = fopen("reinforcement.txt", "wb");
+			//char buff[1000];
+			//sprintf(buff, "%s\n", path);
+			//if(errors_in_this_image > 0) fwrite(buff, sizeof(char), strlen(buff), reinforcement_fd);
 
 			free_detections(dets, nboxes);
 			free(id);
@@ -843,6 +853,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 	free(truth_classes_count);
 
 	fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
+	if (reinforcement_fd != NULL) fclose(reinforcement_fd);
 }
 
 #ifdef OPENCV
