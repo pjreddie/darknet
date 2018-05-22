@@ -4,7 +4,7 @@ OPENCV=1
 OPENMP=1
 DEBUG=1
 TS=1
-MAESTRO=1
+MAESTRO=0
 
 #touchscreen setting
 
@@ -75,10 +75,12 @@ COMMONCPP=-std=c++0x
 ifeq ($(TS), 1)
 COMMON+= -DTS 
 CFLAGS+= -DTS
-VPATH+=:./tracker:./tracker/kcf:./tracker/opencvtrackers
-COMMON+=-Itracker/ -Itracker/kcf/ -Itracker/opencvtrackers/
+#VPATH+=:./tracker:./tracker/kcf:./tracker/opencvtrackers
+#COMMON+=-Itracker/ -Itracker/kcf/ -Itracker/opencvtrackers/
+VPATH+=/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf:./tracker
+COMMON+=-I/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf/ -Itracker/
 LDFLAGS+= -lstdc++ `pkg-config --libs opencv` 
-OBJ+=fhog.o kcftracker.o opencvtrackers.o trackerscompare.o
+OBJ+=fhog.o kcftracker.o trackersdarknet.o
 endif
 
 ifeq ($(MAESTRO), 1)

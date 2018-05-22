@@ -71,11 +71,11 @@ TS=1
 ```
 Assuming that your touchscreen is connected to /dev/input/event6, else modify it (must be run under sudo):
 ```
-sudo ./darknet detector demo_track cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
+sudo ./darknet detector tracking cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
 ```
 or
 ```
-sudo ./darknet detector demo_track cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
+sudo ./darknet detector tracking cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
 ```
 
 Run with maestro motor
@@ -84,3 +84,22 @@ In Makefile set:
 ```
 MAESTRO=1
 ```
+
+Run tracker
+-----------------
+Change Makefile to the path of the trackers:
+```
+ifeq ($(TS), 1)
+COMMON+= -DTS 
+CFLAGS+= -DTS
+VPATH+=/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf:./tracker
+COMMON+=-I/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf/ -Itracker/
+LDFLAGS+= -lstdc++ `pkg-config --libs opencv` 
+OBJ+=fhog.o kcftracker.o trackersdarknet.o
+endif
+```
+and run:
+```
+./darknet detector tracking cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
+```
+It will first run the yolo detection. Then when a bottle comes into the vision field, then it will automatically do the tracking.

@@ -940,7 +940,7 @@ void run_detector(int argc, char **argv)
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
         demo_TS(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, 1);
-        trackerscompare();
+        trackersdarknet();
     }
 #endif
     else if(0==strcmp(argv[2], "tracking")) {
@@ -950,7 +950,6 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
 
         tracking(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
-        //trackerscompare();
     }
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);

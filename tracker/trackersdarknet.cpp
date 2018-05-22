@@ -1,5 +1,5 @@
 
-#include "kcf/kcftracker.hpp"
+#include "/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf/kcftracker.hpp"
 //#include "goturn/network/regressor.h"
 //#include "goturn/tracker/tracker.h"
 
@@ -37,14 +37,15 @@ void write_txt(int detect_flag, int lost_flag, int imagewriting_flag)
     fclose(f);
 }
 
-extern "C" bool trackerscompare();
+extern "C" bool trackersdarknet();
 //int main(int argc, char **argv)
-bool trackerscompare()
-{
+bool trackersdarknet()
+{   
     int detect_flag = 0;
     int lost_flag = 0;
     int lost_count = 0;
     int imagewriting_flag = 0;
+    int show_flag = 1;
 
 #ifdef DEBUG
     string path = "/media/elab/sdd/mycodes/darknet"; //"/home/nvidia/amy/Sam";//
@@ -60,8 +61,6 @@ bool trackerscompare()
     cv::Mat frame;
     ostringstream osfile;
     osfile << path << "/yolo.png";
-    // opencv bbox
-    Rect2d opencvbbox(x, y, w, h);
 
 #ifdef MAESTRO
     int fd = maestroIni();
@@ -79,19 +78,20 @@ bool trackerscompare()
 
     // Display frame.
     cvNamedWindow("Tracking", CV_WINDOW_NORMAL);
-    //cvResizeWindow("Tracking", 1352, 1013);
+    cvMoveWindow("Tracking", 0, 0);
+    cvResizeWindow("Tracking", 1352, 1013);
 #ifndef DEBUG
     cvSetWindowProperty("Tracking", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 #endif
 
-    /*
-// Create KCFTracker: 
-    bool HOG = true;
-	bool FIXEDWINDOW = false;
-	bool MULTISCALE = true;
-	bool LAB = false; //LAB color space features
-	KCFTracker kcftracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);
-*/
+    // Create KCFTracker:
+    bool HOG = true, FIXEDWINDOW = true, MULTISCALE = true, LAB = true, DSST = false; //LAB color space features
+    KCFTracker kcftracker(HOG, FIXEDWINDOW, MULTISCALE, LAB, DSST);
+
+    // Create DSSTTracker:
+    DSST = true;
+    KCFTracker dssttracker(HOG, FIXEDWINDOW, MULTISCALE, LAB, DSST);
+
     // Create Opencv tracker:
     string trackerTypes[6] = {"BOOSTING", "MIL", "KCF", "TLD", "MEDIANFLOW", "GOTURN"};
     string trackerType = trackerTypes[2];
@@ -118,40 +118,6 @@ bool trackerscompare()
     Regressor regressor(model_file,pretrain_file,gpu_id, false);
     goturn::Tracker goturntracker(false);
 */
-    /*
-// Read from the images ====================================================
-    string path = "/media/elab/sdd/data/TLP/Sam";
-	// Read the groundtruth bbox
-	ifstream groundtruth(path + "/groundtruth_rect.txt");
-	int f,x,y,w,h,isLost;
-	std::string s;
-	getline(groundtruth, s, ',');	
-	f = atoi(s.c_str());
-	getline(groundtruth, s, ',');
-	x = atoi(s.c_str());
-	getline(groundtruth, s, ',');	
-	y = atoi(s.c_str());
-	getline(groundtruth, s, ',');
-	w = atoi(s.c_str());
-	getline(groundtruth, s, ',');	
-	h = atoi(s.c_str());
-	getline(groundtruth, s);
-	isLost = atoi(s.c_str());
-	cout << f <<" " << x <<" " << y <<" " << w <<" " << h <<" " << isLost << endl;
-    Rect2d bboxGroundtruth(x,y,w,h);
-	
-	// Read images in a folder
-	ostringstream osfile;
-	osfile << path << "/img/" << setw(5) << setfill('0') << f <<".jpg";
-	cout << osfile.str() << endl;
-    cv::Mat frame = cv::imread(osfile.str().c_str(), CV_LOAD_IMAGE_UNCHANGED);
-    if(! frame.data )
-    {
-        cout <<  "Could not open or find the image" << std::endl ;
-        return -1;
-    }
-*/
-
     // Read the groundtruth bbox
     getline(groundtruth, s, ',');
     f = s;
@@ -177,21 +143,15 @@ bool trackerscompare()
         return -1;
     }
     // Init the trackers==================================================
-    /*
-    Rect2d kcfbbox(x,y,w,h);
+    Rect2d kcfbbox(x, y, w, h);
     kcftracker.init(frame, kcfbbox);
-*/
-    opencvbbox.height = h;
-    opencvbbox.width = w;
-    opencvbbox.x = x;
-    opencvbbox.y = y;
-    //opencvtracker->init(frame, opencvbbox);
-    if (!opencvtracker->init(frame, opencvbbox))
-    {
-        cout << "Could not init the tracker \n"
-             << std::endl;
-        return -1;
-    }
+
+    Rect2d dsstbbox(x, y, w, h);
+    dssttracker.init(frame, dsstbbox);
+
+    Rect2d opencvbbox(x, y, w, h);
+    opencvtracker->init(frame, opencvbbox);
+
     /*
     cv::Rect goturnbbox(x,y,w,h);
     BoundingBox bbox_gt;
@@ -233,11 +193,21 @@ bool trackerscompare()
                      << std::endl;
                 return -1;
             }
+            show_flag = 0;
             // Init the trackers==================================================
-            /*
-    Rect2d kcfbbox(x,y,w,h);
-    kcftracker.init(frame, kcfbbox);
-*/
+
+            kcfbbox.height = h;
+            kcfbbox.width = w;
+            kcfbbox.x = x;
+            kcfbbox.y = y;
+            kcftracker.init(frame, kcfbbox);
+
+            dsstbbox.height = h;
+            dsstbbox.width = w;
+            dsstbbox.x = x;
+            dsstbbox.y = y;
+            dssttracker.init(frame, dsstbbox);
+
             opencvbbox.height = h;
             opencvbbox.width = w;
             opencvbbox.x = x;
@@ -266,19 +236,14 @@ bool trackerscompare()
 
         // Start timer
         double timer = (double)getTickCount();
-        /*         
+
         // Update the KCF tracking result-----------------------------
         bool okkcf = kcftracker.update(frame, kcfbbox);
-        // draw kcf bbox
-        if (okkcf) {
-            rectangle(frame, kcfbbox, Scalar( 225, 0, 0 ), 2, 1); //blue
-        } else {
-            putText(frame, "Kcf tracking failure detected", Point(100,80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(255,0,0),2);
-        }
-*/
+
+        bool okdsst = dssttracker.update(frame, dsstbbox);
         // Update the Opencv tracking result----------------------------
         bool okopencv = opencvtracker->update(frame, opencvbbox);
-        if (!okopencv)
+        if (!okopencv) //(!okdsst) //(!okkcf) // 
         {
             lost_count++;
         }
@@ -289,11 +254,30 @@ bool trackerscompare()
             lost_flag = 1;
             imagewriting_flag = 1;
             write_txt(detect_flag, lost_flag, imagewriting_flag);
+
             imwrite("tracker.png", frame);
             imagewriting_flag = 0;
             write_txt(detect_flag, lost_flag, imagewriting_flag);
         }
 
+        // draw kcf bbox
+        if (okkcf)
+        {
+            rectangle(frame, kcfbbox, Scalar(225, 0, 0), 2, 1); //blue
+        }
+        else
+        {
+        //    putText(frame, "Kcf tracking failure detected", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(255, 0, 0), 2);
+        }
+        if (okdsst)
+        {
+            rectangle(frame, dsstbbox, Scalar(0, 0, 255), 2, 1); //blue
+        }
+        else
+        {
+        //    putText(frame, "DSST tracking failure detected", Point(100, 80), FONT_HERSHEY_SIMPLEX,
+        //           0.75, Scalar(0, 0, 255), 2);
+        }
         // draw opencv bbox
         if (okopencv)
         {
@@ -301,7 +285,7 @@ bool trackerscompare()
         }
         else
         {
-            putText(frame, "Opencv tracking failure detected", Point(100, 110), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 225, 0), 2);
+        //    putText(frame, "Tracking failure detected", Point(100, 110), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 225, 0), 2);
         }
         /*
         // Update the GOTURN tracking result--------------------------
@@ -315,11 +299,21 @@ bool trackerscompare()
         // Display FPS on frame
         putText(frame, "FPS in total: " + SSTR(long(fps)), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 0), 2);
         // Display tracker type on frame
-        putText(frame, "Blue is KCF; Red is GOTURN; Green is opencv " + trackerType + ";", Point(100, 20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 0), 2);
+        //putText(frame, "Blue is KCF; Red is GOTURN; Green is opencv " + trackerType + ";", Point(100, 20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 0), 2);
 
         // Display frame.
         //cvNamedWindow("Tracking", CV_WINDOW_NORMAL);
-        imshow("Tracking", frame);
+        if (show_flag == 1)
+        {
+            cv::Mat display;
+            Size size(1352, 1013);
+            resize(frame, display, size);
+            imshow("Tracking", display);
+        }
+        else
+        {
+            show_flag = 1;
+        }
 
         int c = cvWaitKey(1);
         if (c != -1)
@@ -333,32 +327,7 @@ bool trackerscompare()
 
         cap.grab();
         cap.retrieve(frame);
-/*        
-		// Read next image
-		f++;
-		osfile.str("");
-		osfile << path << "/img/" << setw(5) << setfill('0') << f <<".jpg";
-		cout << osfile.str() << endl;
-    	frame = cv::imread(osfile.str().c_str(), CV_LOAD_IMAGE_UNCHANGED);
-		// Read next bbox
-		getline(groundtruth, s, ',');	
-		f = atoi(s.c_str());
-		getline(groundtruth, s, ',');
-		x = atoi(s.c_str());
-		getline(groundtruth, s, ',');	
-		y = atoi(s.c_str());
-		getline(groundtruth, s, ',');
-		w = atoi(s.c_str());
-		getline(groundtruth, s, ',');	
-		h = atoi(s.c_str());
-		getline(groundtruth, s);
-		isLost = atoi(s.c_str());
-		cout << f <<" " << x <<" " << y <<" " << w <<" " << h <<" " << isLost << endl;
-		bboxGroundtruth.x = x;
-		bboxGroundtruth.y = y;
-		bboxGroundtruth.width = w;
-		bboxGroundtruth.height = h;
-*/
+
 #ifdef MAESTRO
         //test_maestro();
         //cout << frame.rows << ", " << frame.cols << ",x- "

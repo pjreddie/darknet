@@ -189,15 +189,15 @@ void *track_in_thread(void *ptr)
             printf("ERROR opening tracker.txt.\n");
         }
         while (fgets(buf, 10, f) != NULL)
-         //       printf("%s", buf);
-        detect_flag = buf[0] - '0';
+            //       printf("%s", buf);
+            detect_flag = buf[0] - '0';
         lost_flag = buf[2] - '0';
         imagewriting_flag = buf[4] - '0';
         fclose(f);
         //printf("flag:%d,%d,%d\n",detect_flag, lost_flag, imagewriting_flag);
         if (detect_flag == 0 && lost_flag == 1 && imagewriting_flag == 0)
         {
-            printf("flag1\n");
+            //printf("flag1\n");
             cap = cvCaptureFromFile("tracker.png");
             if (!cap)
                 error("Couldn't read tracker.png.\n");
@@ -324,22 +324,28 @@ void save_autotrack_target(image im, detection *dets, int num, float thresh, cha
                 strcpy(labelref, labelstr);
                 flag = true;
                 detect_flag = 1;
+                demo_done = 1;
                 break;
             }
         }
     }
-    //if (flag == true)
+    if (flag != true)
     {
-        printf("demo.c - Tracking target: %s,%d,%d,%d,%d,%d\n", labelref, i_x, i_y, i_w, i_h, detect_flag);
-        FILE *f = fopen("yolo.txt", "w");
-        if (f == NULL)
-        {
-            printf("ERROR opening yolo.txt.\n");
-        }
-        fprintf(f, "%s,%d,%d,%d,%d,%d\n", labelref, i_x, i_y, i_w, i_h, detect_flag); //format: label,x,y,w,h
-        fclose(f);
+        strcat(labelref, "N");
+        i_x = 0;
+        i_y = 0;
+        i_w = 0;
+        i_h = 0;
+        detect_flag = 0;
     }
-    //    detect_flag = 0;
+    printf("demo.c - Tracking target: %s,%d,%d,%d,%d,%d\n", labelref, i_x, i_y, i_w, i_h, detect_flag);
+    FILE *f = fopen("yolo.txt", "w");
+    if (f == NULL)
+    {
+        printf("ERROR opening yolo.txt.\n");
+    }
+    fprintf(f, "%s,%d,%d,%d,%d,%d\n", labelref, i_x, i_y, i_w, i_h, detect_flag); //format: label,x,y,w,h
+    fclose(f);
 }
 
 #ifdef TS
@@ -583,13 +589,25 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
 void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
+    if (remove("tracker.txt") != 0)
+        perror("Error deleting tracker.txt");
+
+    if (remove("yolo.txt") != 0)
+        perror("Error deleting yolo.txt");
+
+    if (remove("tracker.png") != 0)
+        perror("Error deleting tracker.png");
+
+    if (remove("yolo.png") != 0)
+        perror("Error deleting yolo.png");
+
     image **alphabet = load_alphabet();
     demo_names = names;
     demo_alphabet = alphabet;
     demo_classes = classes;
     demo_thresh = thresh;
     demo_hier = hier;
-    
+
     net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     pthread_t detect_thread;
@@ -661,7 +679,9 @@ void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, cons
     if (pthread_create(&track_thread, 0, track_in_thread, 0))
         error("Thread creation failed");
 
-    trackerscompare();
+    trackersdarknet();
+
+    printf("End of tracking.\n");
 }
 
 #ifdef TS

@@ -30,14 +30,14 @@ int maestroGetPosition(int fd, unsigned char channel)
   unsigned char command[] = {0x90, channel};
   if(write(fd, command, sizeof(command)) == -1)
   {
-    perror("error writing");
+    perror("maestro error writing");
     return -1;
   }
  
   unsigned char response[2];
   if(read(fd,response,2) != 2)
   {
-    perror("error reading");
+    perror("maestro error reading");
     return -1;
   }
  
@@ -50,7 +50,7 @@ int maestroSetTarget(int fd, unsigned char channel, unsigned short target)
   unsigned char command[] = {0x84, channel, target & 0x7F, target >> 7 & 0x7F};
   if (write(fd, command, sizeof(command)) == -1)
   {
-    perror("error writing");
+    perror("maestro error writing");
     return -1;
   }
   return 0;
@@ -63,7 +63,7 @@ int maestroSetSpeed(int fd, unsigned char channel, unsigned short speed)
   unsigned char command[] = {0x07, channel, speed & 0x7F, speed >> 7 & 0x7F};
   if (write(fd, command, sizeof(command)) == -1)
   {
-    perror("error writing");
+    perror("maestro error writing");
     return -1;
   }
   return 0;
@@ -75,19 +75,19 @@ int maestroSetAccel(int fd, unsigned char channel, unsigned short accel)
   unsigned char command[] = {0x09, channel, accel & 0x7F, accel >> 7 & 0x7F};
   if (write(fd, command, sizeof(command)) == -1)
   {
-    perror("error writing");
+    perror("maestro error writing");
     return -1;
   }
   return 0;
 }
 
-//int main()
-int test_maestro()
+int main()
+//int test_maestro()
 {
   int fd = maestroIni();
   //get the position of maestro
   int position = maestroGetPosition(fd, 0);
-  printf("Current position is %d.\n", position);
+  printf("Maestro current position is %d.\n", position);
  
   //send control command
   int speed = 30;
@@ -112,7 +112,7 @@ int test_maestro()
       ud--;
     }
     position = maestroGetPosition(fd, 0);
-    printf("Current position is %d.\n", position);
+    printf("Maestro current position is %d.\n", position);
 
   }
   
