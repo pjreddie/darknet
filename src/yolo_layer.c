@@ -201,7 +201,10 @@ void forward_yolo_layer(const layer l, network_state state)
                     for(t = 0; t < l.max_boxes; ++t){
                         box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
 						int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
-						if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
+						if (class_id >= l.classes) {
+							printf("Warning: in txt-labels class_id=%d >= classes=%d in cfg-file\n", class_id, l.classes);
+							continue; // if label contains class_id more than number of classes in the cfg-file
+						}
                         if(!truth.x) break;
                         float iou = box_iou(pred, truth);
                         if (iou > best_iou) {
