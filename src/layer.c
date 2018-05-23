@@ -11,6 +11,7 @@ void free_layer(layer l)
 #endif
 		return;
 	}
+	if (l.mask)               free(l.mask);
 	if (l.cweights)           free(l.cweights);
 	if (l.indexes)            free(l.indexes);
 	if (l.input_layers)       free(l.input_layers);

@@ -312,6 +312,33 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 		cvReleaseVideoWriter(&output_video_writer);
 		printf("output_video_writer closed. \n");
 	}
+
+	// free memory
+	cvReleaseImage(&show_img);
+	cvReleaseImage(&in_img);
+	free_image(in_s);
+
+	free(avg);
+	for (j = 0; j < FRAMES; ++j) free(predictions[j]);
+	for (j = 0; j < FRAMES; ++j) free_image(images[j]);
+
+	for (j = 0; j < l.w*l.h*l.n; ++j) free(probs[j]);
+	free(boxes);
+	free(probs);
+
+	free_ptrs(names, net.layers[net.n - 1].classes);
+
+	int i;
+	const int nsize = 8;
+	for (j = 0; j < nsize; ++j) {
+		for (i = 32; i < 127; ++i) {
+			free_image(alphabet[j][i]);
+		}
+		free(alphabet[j]);
+	}
+	free(alphabet);
+
+	free_network(net);
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,

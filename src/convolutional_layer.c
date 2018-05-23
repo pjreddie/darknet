@@ -502,7 +502,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 	size_t total_byte;
 	check_error(cudaMemGetInfo(&free_byte, &total_byte));
 	if (l->workspace_size > free_byte || l->workspace_size >= total_byte / 2) {
-		printf(" used slow CUDNN algo without Workspace! Need memory: %d, available: %d\n", l->workspace_size, (free_byte < total_byte/2) ? free_byte : total_byte/2);
+		printf(" used slow CUDNN algo without Workspace! Need memory: %zu, available: %zu\n", l->workspace_size, (free_byte < total_byte/2) ? free_byte : total_byte/2);
 		cudnn_convolutional_setup(l, cudnn_smallest);
 		l->workspace_size = get_workspace_size(*l);
 	}
