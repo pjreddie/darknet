@@ -218,7 +218,7 @@ If required change pathes in the file `build\darknet\x64\data\voc.data`
 
 More information about training by the link: http://pjreddie.com/darknet/yolo/#train-voc
 
- **Note:** If during training you see `nan` values in some lines then training goes well, but if `nan` are in all lines then training goes wrong.
+ **Note:** If during training you see `nan` values for `avg` (loss) field - then training goes wrong, but if `nan` is in some other lines - then training goes well.
 
 ## How to train with multi-GPU:
 
@@ -317,7 +317,7 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
 
  * Also you can get result earlier than all 45000 iterations.
  
- **Note:** If during training you see `nan` values in some lines then training goes well, but if `nan` are in all lines then training goes wrong.
+ **Note:** If during training you see `nan` values for `avg` (loss) field - then training goes wrong, but if `nan` is in some other lines - then training goes well.
  
 ### How to train tiny-yolo (to detect your custom objects):
 
