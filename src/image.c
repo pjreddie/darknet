@@ -988,6 +988,28 @@ image get_image_from_stream(CvCapture *cap)
     return im;
 }
 
+image get_image_from_stream_cpp(CvCapture *cap)
+{
+	//IplImage* src = cvQueryFrame(cap);
+	IplImage* src;
+	static int once = 1;
+	if (once) {
+		once = 0;
+		do {
+			src = get_webcam_frame(cap);
+			if (!src) return make_empty_image(0, 0, 0);
+		} while (src->width < 1 || src->height < 1 || src->nChannels < 1);
+		printf("Video stream: %d x %d \n", src->width, src->height);
+	}
+	else
+		src = get_webcam_frame(cap);
+
+	if (!src) return make_empty_image(0, 0, 0);
+	image im = ipl_to_image(src);
+	rgbgr_image(im);
+	return im;
+}
+
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img, int cpp_video_capture)
 {
 	IplImage* src;
