@@ -208,7 +208,7 @@ CvCapture* get_capture_video_stream(char *path) {
 		cap = (CvCapture*)new cv::VideoCapture(path);
 	}
 	catch (...) {
-		std::cout << " Error: Web-camera " << path << " can't be opened! \n";
+		std::cout << " Error: video-stream " << path << " can't be opened! \n";
 	}
 	return cap;
 }

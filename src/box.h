@@ -1,11 +1,6 @@
 #ifndef BOX_H
 #define BOX_H
 
-#ifdef _DEBUG
-#include <stdlib.h> 
-#include <crtdbg.h>  
-#endif
-
 #ifdef YOLODLL_EXPORTS
 #if defined(_MSC_VER)
 #define YOLODLL_API __declspec(dllexport) 

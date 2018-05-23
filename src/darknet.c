@@ -1,8 +1,3 @@
-#ifdef _DEBUG
-#include <stdlib.h> 
-#include <crtdbg.h>  
-#endif
-
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
