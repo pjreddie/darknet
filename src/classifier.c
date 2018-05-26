@@ -598,7 +598,7 @@ void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
 
 void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int layer_num)
 {
-    network net = parse_network_cfg(cfgfile);
+    network net = parse_network_cfg_custom(cfgfile, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -679,7 +679,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
 
 void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top)
 {
-    network net = parse_network_cfg(cfgfile);
+    network net = parse_network_cfg_custom(cfgfile, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -868,7 +868,7 @@ void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_i
 	}
 	else {
 		//cap = cvCaptureFromCAM(cam_index);
-		cap = get_capture_webcam(filename);
+		cap = get_capture_webcam(cam_index);
 	}
 
     int top = option_find_int(options, "top", 1);
@@ -1004,7 +1004,7 @@ void gun_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
 	}
 	else {
 		//cap = cvCaptureFromCAM(cam_index);
-		cap = get_capture_webcam(filename);
+		cap = get_capture_webcam(cam_index);
 	}
 
     int top = option_find_int(options, "top", 1);
@@ -1069,7 +1069,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
 {
 #ifdef OPENCV
     printf("Classifier Demo\n");
-    network net = parse_network_cfg(cfgfile);
+    network net = parse_network_cfg_custom(cfgfile, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -1084,7 +1084,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
 		cap = get_capture_video_stream(filename);
     }else{
         //cap = cvCaptureFromCAM(cam_index);
-		cap = get_capture_webcam(filename);
+		cap = get_capture_webcam(cam_index);
     }
 
     int top = option_find_int(options, "top", 1);
