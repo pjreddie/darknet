@@ -287,7 +287,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 		const int best_class = selected_detections[i].best_class;
 		printf("%s: %.0f%%", names[best_class],	selected_detections[i].det.prob[best_class] * 100);
 		if (ext_output)
-			printf("\t(left: %4.0f   top: %4.0f   w: %4.0f   h: %4.0f)\n",
+			printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
 				(selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w,
 				(selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h,
 				selected_detections[i].det.bbox.w*im.w, selected_detections[i].det.bbox.h*im.h);
@@ -535,7 +535,7 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 
 			cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
 			if (ext_output)
-				printf("  (left: %4.0f   top: %4.0f   w: %4.0f   h: %4.0f)\n", 
+				printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n", 
 					(float)left, (float)right, b.w*show_img->width, b.h*show_img->height);
 			else
 				printf("\n");

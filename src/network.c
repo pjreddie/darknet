@@ -28,6 +28,7 @@
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "yolo_layer.h"
+#include "upsample_layer.h"
 #include "parser.h"
 
 network *load_network_custom(char *cfg, char *weights, int clear, int batch)
