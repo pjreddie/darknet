@@ -536,7 +536,7 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
 			if (ext_output)
 				printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n", 
-					(float)left, (float)right, b.w*show_img->width, b.h*show_img->height);
+					(float)left, (float)top, b.w*show_img->width, b.h*show_img->height);
 			else
 				printf("\n");
 			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
