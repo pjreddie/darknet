@@ -287,15 +287,15 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
-void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy, 
+void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
 	int small_object, int net_w, int net_h)
 {
-    char labelpath[4096];
+	char labelpath[4096];
 	replace_image_to_label(path, labelpath);
 
-    int count = 0;
+	int count = 0;
 	int i;
-    box_label *boxes = read_boxes(labelpath, &count);
+	box_label *boxes = read_boxes(labelpath, &count);
 	float lowest_w = 1.F / net_w;
 	float lowest_h = 1.F / net_h;
 	if (small_object == 1) {
@@ -304,23 +304,35 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
 			if (boxes[i].h < lowest_h) boxes[i].h = lowest_h;
 		}
 	}
-    randomize_boxes(boxes, count);
-    correct_boxes(boxes, count, dx, dy, sx, sy, flip);
-    if(count > num_boxes) count = num_boxes;
-    float x,y,w,h;
-    int id;
+	randomize_boxes(boxes, count);
+	correct_boxes(boxes, count, dx, dy, sx, sy, flip);
+	if (count > num_boxes) count = num_boxes;
+	float x, y, w, h;
+	int id;
 
-    for (i = 0; i < count; ++i) {
-        x =  boxes[i].x;
-        y =  boxes[i].y;
-        w =  boxes[i].w;
-        h =  boxes[i].h;
-        id = boxes[i].id;
+	for (i = 0; i < count; ++i) {
+		x = boxes[i].x;
+		y = boxes[i].y;
+		w = boxes[i].w;
+		h = boxes[i].h;
+		id = boxes[i].id;
 
 		// not detect small objects
 		//if ((w < 0.001F || h < 0.001F)) continue;
 		// if truth (box for object) is smaller than 1x1 pix
 		if ((w < lowest_w || h < lowest_h)) continue;
+		if (x == 999999 || y == 999999) {
+			printf("\n Wrong annotation: x = 0, y = 0 \n");
+			continue;
+		}
+		if (x < 0 || x > 1 || y < 0 || y > 1) {
+			printf("\n Wrong annotation: x = %f, y = %f \n", x, y);
+			continue;
+		}
+		if (w > 1) printf("\n Wrong annotation: w = %f \n", w), w = 1;
+		if (h > 1) printf("\n Wrong annotation: h = %f \n", h), h = 1;
+		if (x == 0) x += lowest_w;
+		if (y == 0) y += lowest_h;
 
         truth[i*5+0] = x;
         truth[i*5+1] = y;
