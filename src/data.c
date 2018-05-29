@@ -45,11 +45,13 @@ char **get_random_paths(char **paths, int n, int m)
     int i;
     pthread_mutex_lock(&mutex);
 	//printf("n = %d \n", n);
-    for(i = 0; i < n; ++i){		
-        int index = random_gen() % m;
-        random_paths[i] = paths[index];
-        //if(i == 0) printf("%s\n", paths[index]);
-		//printf("grp: %s\n", paths[index]);
+    for(i = 0; i < n; ++i){
+		do {
+			int index = random_gen() % m;
+			random_paths[i] = paths[index];
+			//if(i == 0) printf("%s\n", paths[index]);
+			//printf("grp: %s\n", paths[index]);
+		} while (strlen(random_paths[i]) == 0);
     }
     pthread_mutex_unlock(&mutex);
     return random_paths;
