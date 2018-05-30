@@ -957,7 +957,7 @@ image load_image_cv(char *filename, int channels)
 {
     IplImage* src = 0;
     int flag = -1;
-    if (channels == 0) flag = -1;
+    if (channels == 0) flag = 1;
     else if (channels == 1) flag = 0;
     else if (channels == 3) flag = 1;
     else {
@@ -975,7 +975,8 @@ image load_image_cv(char *filename, int channels)
     }
     image out = ipl_to_image(src);
     cvReleaseImage(&src);
-    rgbgr_image(out);
+	if (out.c > 1)
+		rgbgr_image(out);
     return out;
 }
 
@@ -1010,8 +1011,9 @@ image get_image_from_stream_cpp(CvCapture *cap)
 	return im;
 }
 
-image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img, int cpp_video_capture)
+image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture)
 {
+	c = c ? c : 3;
 	IplImage* src;
 	if (cpp_video_capture) {
 		static int once = 1;
@@ -1029,14 +1031,15 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_i
 
 	if (!src) return make_empty_image(0, 0, 0);
 	if (src->width < 1 || src->height < 1 || src->nChannels < 1) return make_empty_image(0, 0, 0);
-	IplImage* new_img = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, 3);
-	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, 3);
+	IplImage* new_img = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, c);
+	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, c);
 	cvResize(src, *in_img, CV_INTER_LINEAR);
 	cvResize(src, new_img, CV_INTER_LINEAR);
 	image im = ipl_to_image(new_img);
 	cvReleaseImage(&new_img);
 	if (cpp_video_capture) cvReleaseImage(&src);
-	rgbgr_image(im);
+	if (c>1)
+		rgbgr_image(im);
 	return im;
 }
 
@@ -1589,16 +1592,23 @@ void exposure_image(image im, float sat)
 
 void distort_image(image im, float hue, float sat, float val)
 {
-    rgb_to_hsv(im);
-    scale_image_channel(im, 1, sat);
-    scale_image_channel(im, 2, val);
-    int i;
-    for(i = 0; i < im.w*im.h; ++i){
-        im.data[i] = im.data[i] + hue;
-        if (im.data[i] > 1) im.data[i] -= 1;
-        if (im.data[i] < 0) im.data[i] += 1;
-    }
-    hsv_to_rgb(im);
+	if (im.c >= 3)
+	{
+		rgb_to_hsv(im);
+		scale_image_channel(im, 1, sat);
+		scale_image_channel(im, 2, val);
+		int i;
+		for(i = 0; i < im.w*im.h; ++i){
+			im.data[i] = im.data[i] + hue;
+			if (im.data[i] > 1) im.data[i] -= 1;
+			if (im.data[i] < 0) im.data[i] += 1;
+		}
+		hsv_to_rgb(im);
+	}
+	else
+	{
+		scale_image_channel(im, 0, val);
+	}
     constrain_image(im);
 }
 
