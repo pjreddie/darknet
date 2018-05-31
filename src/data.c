@@ -687,8 +687,9 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
 
 #include "http_stream.h"
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, int use_flip, float jitter, float hue, float saturation, float exposure, int small_object)
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, float jitter, float hue, float saturation, float exposure, int small_object)
 {
+    c = c ? c : 3;
     char **random_paths = get_random_paths(paths, n, m);
     int i;
     data d = {0};
@@ -696,13 +697,13 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.X.rows = n;
     d.X.vals = calloc(d.X.rows, sizeof(float*));
-    d.X.cols = h*w*3;
+    d.X.cols = h*w*c;
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
 		const char *filename = random_paths[i];
 
-		int flag = 1;
+		int flag = (c >= 3);
 		IplImage *src;
 		if ((src = cvLoadImage(filename, flag)) == 0)
 		{
@@ -754,8 +755,9 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
     return d;
 }
 #else	// OPENCV
-data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, int use_flip, float jitter, float hue, float saturation, float exposure, int small_object)
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, float jitter, float hue, float saturation, float exposure, int small_object)
 {
+    c = c ? c : 3;
 	char **random_paths = get_random_paths(paths, n, m);
 	int i;
 	data d = { 0 };
@@ -763,11 +765,11 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
 	d.X.rows = n;
 	d.X.vals = calloc(d.X.rows, sizeof(float*));
-	d.X.cols = h*w * 3;
+	d.X.cols = h*w*c;
 
 	d.y = make_matrix(n, 5 * boxes);
 	for (i = 0; i < n; ++i) {
-		image orig = load_image_color(random_paths[i], 0, 0);
+		image orig = load_image(random_paths[i], 0, 0, c);
 
 		int oh = orig.h;
 		int ow = orig.w;
@@ -827,16 +829,16 @@ void *load_thread(void *ptr)
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){
-        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.flip, a.jitter, a.hue, a.saturation, a.exposure, a.small_object);
+        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.jitter, a.hue, a.saturation, a.exposure, a.small_object);
     } else if (a.type == SWAG_DATA){
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
     } else if (a.type == COMPARE_DATA){
         *a.d = load_data_compare(a.n, a.paths, a.m, a.classes, a.w, a.h);
     } else if (a.type == IMAGE_DATA){
-        *(a.im) = load_image_color(a.path, 0, 0);
+        *(a.im) = load_image(a.path, 0, 0, a.c);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);
 	}else if (a.type == LETTERBOX_DATA) {
-		*(a.im) = load_image_color(a.path, 0, 0);
+		*(a.im) = load_image(a.path, 0, 0, a.c);
 		*(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.flip, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
