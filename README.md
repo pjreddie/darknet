@@ -210,11 +210,11 @@ Then add to your created project:
 
 7. Start training by using `train_voc.cmd` or by using the command line: 
 
-    `darknet.exe detector train data/voc.data cfg/yolov3-voc.cfg darknet53.conv.74` 
+    `darknet.exe detector train cfg/voc.data cfg/yolov3-voc.cfg darknet53.conv.74` 
 
 (**Note:** To disable Loss-Window use flag `-dont_show`. If you are using CPU, try `darknet_no_gpu.exe` instead of `darknet.exe`.)
 
-If required change pathes in the file `build\darknet\x64\data\voc.data`
+If required change pathes in the file `build\darknet\cfg\voc.data`
 
 More information about training by the link: http://pjreddie.com/darknet/yolo/#train-voc
 
