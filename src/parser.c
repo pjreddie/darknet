@@ -268,7 +268,7 @@ layer parse_yolo(list *options, size_params params)
 
 	char *a = option_find_str(options, "mask", 0);
 	int *mask = parse_yolo_mask(a, &num);
-	int max_boxes = option_find_int_quiet(options, "max", 30);
+	int max_boxes = option_find_int_quiet(options, "max", 90);
 	layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
 	if (l.outputs != params.inputs) {
 		printf("Error: l.outputs == params.inputs \n");
@@ -310,7 +310,7 @@ layer parse_region(list *options, size_params params)
     int coords = option_find_int(options, "coords", 4);
     int classes = option_find_int(options, "classes", 20);
     int num = option_find_int(options, "num", 1);
-	int max_boxes = option_find_int_quiet(options, "max", 30);
+	int max_boxes = option_find_int_quiet(options, "max", 90);
 
     layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords, max_boxes);
 	if (l.outputs != params.inputs) {
