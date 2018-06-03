@@ -51,7 +51,7 @@ static float *avg;
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
 void show_image_cv_ipl(IplImage *disp, const char *name);
-image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture);
+image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 IplImage* in_img;
 IplImage* det_img;
 IplImage* show_img;
@@ -61,7 +61,8 @@ static int flag_exit;
 void *fetch_in_thread(void *ptr)
 {
     //in = get_image_from_stream(cap);
-	in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, cpp_video_capture);
+	int dont_close_stream = 0;	// set 1 if your IP-camera periodically turns off and turns on video-stream
+	in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
     if(!in_s.data){
         //error("Stream closed.");
 		printf("Stream closed.\n");

@@ -1011,7 +1011,7 @@ image get_image_from_stream_cpp(CvCapture *cap)
 	return im;
 }
 
-image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture)
+image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close)
 {
 	c = c ? c : 3;
 	IplImage* src;
@@ -1029,8 +1029,15 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage
 	}
 	else src = cvQueryFrame(cap);
 
-	if (!src) return make_empty_image(0, 0, 0);
-	if (src->width < 1 || src->height < 1 || src->nChannels < 1) return make_empty_image(0, 0, 0);
+	if (!src) { 
+		if (dont_close) src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, c);
+		else return make_empty_image(0, 0, 0); 
+	}
+	if (src->width < 1 || src->height < 1 || src->nChannels < 1) {
+		if (cpp_video_capture) cvReleaseImage(&src);
+		if (dont_close) src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, c);
+		else return make_empty_image(0, 0, 0);
+	}
 	IplImage* new_img = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, c);
 	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, c);
 	cvResize(src, *in_img, CV_INTER_LINEAR);
