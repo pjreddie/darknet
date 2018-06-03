@@ -131,7 +131,7 @@ int main()
             if(p) delete p;
             p = 0;
             waitKey();
-            return -1;
+            return 0;
         }    
         if( image.empty() ) 
         {
@@ -139,7 +139,7 @@ int main()
             if(p) delete p;
             p = 0;
             waitKey();
-            return -1;
+            return 0;
         }
         else
         {
