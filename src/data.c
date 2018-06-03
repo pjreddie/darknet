@@ -322,17 +322,43 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
 		// not detect small objects
 		//if ((w < 0.001F || h < 0.001F)) continue;
 		// if truth (box for object) is smaller than 1x1 pix
-		if ((w < lowest_w || h < lowest_h)) continue;
+		char buff[256];
+		if (id >= classes) {
+			printf("\n Wrong annotation: class_id = %d. But class_id should be [from 0 to %d] \n", id, classes);
+			sprintf(buff, "echo %s \"Wrong annotation: class_id = %d. But class_id should be [from 0 to %d]\" >> bad_label.list", labelpath, id, classes);
+			system(buff);
+			getchar();
+			continue;
+		}
+		if ((w < lowest_w || h < lowest_h)) {
+			//sprintf(buff, "echo %s \"Very small object: w < lowest_w OR h < lowest_h\" >> bad_label.list", labelpath);
+			//system(buff);
+			continue;
+		}
 		if (x == 999999 || y == 999999) {
 			printf("\n Wrong annotation: x = 0, y = 0 \n");
+			sprintf(buff, "echo %s \"Wrong annotation: x = 0 or y = 0\" >> bad_label.list", labelpath);
+			system(buff);
 			continue;
 		}
 		if (x < 0 || x > 1 || y < 0 || y > 1) {
 			printf("\n Wrong annotation: x = %f, y = %f \n", x, y);
+			sprintf(buff, "echo %s \"Wrong annotation: x = %f, y = %f\" >> bad_label.list", labelpath, x, y);
+			system(buff);
 			continue;
 		}
-		if (w > 1) printf("\n Wrong annotation: w = %f \n", w), w = 1;
-		if (h > 1) printf("\n Wrong annotation: h = %f \n", h), h = 1;
+		if (w > 1) {
+			printf("\n Wrong annotation: w = %f \n", w);
+			sprintf(buff, "echo %s \"Wrong annotation: w = %f\" >> bad_label.list", labelpath, w);
+			system(buff);
+			w = 1;
+		}
+		if (h > 1) {
+			printf("\n Wrong annotation: h = %f \n", h);
+			sprintf(buff, "echo %s \"Wrong annotation: h = %f\" >> bad_label.list", labelpath, h);
+			system(buff);
+			h = 1;
+		}
 		if (x == 0) x += lowest_w;
 		if (y == 0) y += lowest_h;
 
