@@ -1098,8 +1098,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         }
         image im = load_image(input,0,0,net.c);
 		int letterbox = 0;
-        //image sized = resize_image(im, net.w, net.h);
-		image sized = letterbox_image(im, net.w, net.h); letterbox = 1;
+        image sized = resize_image(im, net.w, net.h);
+		//image sized = letterbox_image(im, net.w, net.h); letterbox = 1;
         layer l = net.layers[net.n-1];
 
         //box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
