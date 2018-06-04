@@ -119,6 +119,10 @@ YOLODLL_API int Detector::get_net_height() const {
 	detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
 	return detector_gpu.net.h;
 }
+YOLODLL_API int Detector::get_net_color_depth() const {
+	detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
+	return detector_gpu.net.c;
+}
 
 
 YOLODLL_API std::vector<bbox_t> Detector::detect(std::string image_filename, float thresh, bool use_mean)

@@ -57,6 +57,7 @@ public:
 	static YOLODLL_API void free_image(image_t m);
 	YOLODLL_API int get_net_width() const;
 	YOLODLL_API int get_net_height() const;
+	YOLODLL_API int get_net_color_depth() const;
 
 	YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true, 
 												int const frames_story = 10, int const max_dist = 150);
