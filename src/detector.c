@@ -87,7 +87,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
-    args.paths = paths;
+	args.c = net.c;
+	args.paths = paths;
     args.n = imgs;
     args.m = plist->size;
     args.classes = classes;
@@ -105,7 +106,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.hue = net.hue;
 
 #ifdef OPENCV
-	args.threads = 3;
+	args.threads = 3 * ngpus;
 	IplImage* img = NULL;
 	float max_img_loss = 5;
 	int number_of_lines = 100;
@@ -388,6 +389,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 	load_args args = { 0 };
 	args.w = net.w;
 	args.h = net.h;
+	args.c = net.c;
 	args.type = IMAGE_DATA;
 	//args.type = LETTERBOX_DATA;
 
@@ -482,7 +484,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 
 	for (i = 0; i < m; ++i) {
 		char *path = paths[i];
-		image orig = load_image_color(path, 0, 0);
+		image orig = load_image(path, 0, 0, net.c);
 		image sized = resize_image(orig, net.w, net.h);
 		char *id = basecfg(path);
 		network_predict(net, sized.data);
@@ -595,6 +597,7 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 	load_args args = { 0 };
 	args.w = net.w;
 	args.h = net.h;
+	args.c = net.c;
 	args.type = IMAGE_DATA;
 	//args.type = LETTERBOX_DATA;
 
@@ -1093,10 +1096,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input,0,0);
+        image im = load_image(input,0,0,net.c);
 		int letterbox = 0;
-        //image sized = resize_image(im, net.w, net.h);
-		image sized = letterbox_image(im, net.w, net.h); letterbox = 1;
+        image sized = resize_image(im, net.w, net.h);
+		//image sized = letterbox_image(im, net.w, net.h); letterbox = 1;
         layer l = net.layers[net.n-1];
 
         //box *boxes = calloc(l.w*l.h*l.n, sizeof(box));

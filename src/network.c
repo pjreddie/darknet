@@ -582,7 +582,7 @@ void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, f
 	box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
 	float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
 	int i, j;
-	for (j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+	for (j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float));
 	get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, map);
 	for (j = 0; j < l.w*l.h*l.n; ++j) {
 		dets[j].classes = l.classes;
