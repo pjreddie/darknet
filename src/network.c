@@ -640,7 +640,8 @@ void free_detections(detection *dets, int n)
 
 float *network_predict_image(network *net, image im)
 {
-	image imr = letterbox_image(im, net->w, net->h);
+	//image imr = letterbox_image(im, net->w, net->h);
+	image imr = resize_image(im, net->w, net->h);
 	set_batch_network(net, 1);
 	float *p = network_predict(*net, imr.data);
 	free_image(imr);
