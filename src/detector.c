@@ -1069,7 +1069,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
-    char **names = get_labels(name_list);
+	int names_size = 0;
+	char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
 
     image **alphabet = load_alphabet();
     network net = parse_network_cfg_custom(cfgfile, 1); // set batch=1
@@ -1078,6 +1079,11 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
     //set_batch_network(&net, 1);
 	fuse_conv_batchnorm(net);
+	if (net.layers[net.n - 1].classes != names_size) {
+		printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n", 
+			name_list, names_size, net.layers[net.n - 1].classes, datacfg);
+		if(net.layers[net.n - 1].classes > names_size) getchar();
+	}
     srand(2222222);
     double time;
     char buff[256];

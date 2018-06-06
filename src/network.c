@@ -602,12 +602,18 @@ void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, f
 
 void fill_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets, int letter)
 {
+	int prev_classes = -1;
 	int j;
 	for (j = 0; j < net->n; ++j) {
 		layer l = net->layers[j];
 		if (l.type == YOLO) {
 			int count = get_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets, letter);
 			dets += count;
+			if (prev_classes < 0) prev_classes = l.classes;
+			else if (prev_classes != l.classes) {
+				printf(" Error: Different [yolo] layers have different number of classes = %d and %d - check your cfg-file! \n",
+					prev_classes, l.classes);
+			}
 		}
 		if (l.type == REGION) {
 			custom_get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets, letter);
