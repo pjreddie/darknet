@@ -159,6 +159,8 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
     
 5. If you have GPU with Tensor Cores (nVidia Titan V / Tesla V100 / DGX-2 and later) speedup Detection 3x, Training 2x:
     `\darknet.sln` -> (right click on project) -> properties -> C/C++ -> Preprocessor -> Preprocessor Definitions, and add here: `CUDNN_HALF;`
+    
+    **Note:** CUDA must be installed only after that MSVS2015 had been installed.
 
 ### How to compile (custom):
 
