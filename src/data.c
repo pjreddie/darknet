@@ -51,6 +51,7 @@ char **get_random_paths(char **paths, int n, int m)
 			random_paths[i] = paths[index];
 			//if(i == 0) printf("%s\n", paths[index]);
 			//printf("grp: %s\n", paths[index]);
+			if (strlen(random_paths[i]) <= 4) printf(" Very small path to the image: %s \n", random_paths[i]);
 		} while (strlen(random_paths[i]) == 0);
     }
     pthread_mutex_unlock(&mutex);
