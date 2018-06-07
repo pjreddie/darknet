@@ -182,7 +182,7 @@ Then add to your created project:
 
 `OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
 
-- compile to .exe (X64 & Release) and put .dll-s near with .exe:
+- compile to .exe (X64 & Release) and put .dll-s near with .exe: https://hsto.org/webt/uh/fk/-e/uhfk-eb0q-hwd9hsxhrikbokd6u.jpeg
 
     * `pthreadVC2.dll, pthreadGC2.dll` from \3rdparty\dll\x64
 
