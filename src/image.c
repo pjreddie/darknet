@@ -1034,7 +1034,14 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage
 		else return make_empty_image(0, 0, 0); 
 	}
 	if (src->width < 1 || src->height < 1 || src->nChannels < 1) {
-		if (cpp_video_capture) cvReleaseImage(&src);
+		if (cpp_video_capture) {
+			cvReleaseImage(&src);
+			int z = 0;
+			for (z = 0; z < 10; ++z) {
+				get_webcam_frame(cap);
+				cvReleaseImage(&src);
+			}
+		}
 		if (dont_close) src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, c);
 		else return make_empty_image(0, 0, 0);
 	}

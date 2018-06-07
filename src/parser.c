@@ -817,7 +817,7 @@ network parse_network_cfg_custom(char *filename, int batch)
         //printf("%ld\n", workspace_size);
 #ifdef GPU
         if(gpu_index >= 0){
-            net.workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
+            net.workspace = cuda_make_array(0, workspace_size/sizeof(float) + 1);
         }else {
             net.workspace = calloc(1, workspace_size);
         }
