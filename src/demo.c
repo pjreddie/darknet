@@ -87,16 +87,7 @@ void *detect_in_thread(void *ptr)
     l.output = avg;
 
     free_image(det_s);
-	/*
-    if(l.type == DETECTION){
-        get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
-    } else if (l.type == REGION){
-        get_region_boxes(l, 1, 1, demo_thresh, probs, boxes, 0, 0);
-    } else {
-        error("Last layer must produce detections\n");
-    }
-    if (nms > 0) do_nms(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-	*/
+
 	int letter = 0;
 	int nboxes = 0;
 	detection *dets = get_network_boxes(&net, det_s.w, det_s.h, demo_thresh, demo_thresh, 0, 1, &nboxes, letter);
@@ -109,15 +100,11 @@ void *detect_in_thread(void *ptr)
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
 
-    //images[demo_index] = det;
-    //det = images[(demo_index + FRAMES/2 + 1)%FRAMES];
 	ipl_images[demo_index] = det_img;
 	det_img = ipl_images[(demo_index + FRAMES / 2 + 1) % FRAMES];
     demo_index = (demo_index + 1)%FRAMES;
 	    
-	//draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
 	draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
-	//draw_detections_cv(det_img, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
 	free_detections(dets, nboxes);
 
 	return 0;

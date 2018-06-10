@@ -976,6 +976,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 	//for (i = 0; i < number_of_boxes; ++i)
 	//	printf("%2.2f,%2.2f, ", points->data.fl[i * 2], points->data.fl[i * 2 + 1]);
 
+	printf("\n");
 	float avg_iou = 0;
 	for (i = 0; i < number_of_boxes; ++i) {
 		float box_w = points->data.fl[i * 2];
@@ -999,7 +1000,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 		float box_intersect = min_w*min_h;
 		float box_union = box_w*box_h + anchor_w*anchor_h - box_intersect;
 		float iou = box_intersect / box_union;
-		if (iou > 1 || iou < 0) {
+		if (iou > 1 || iou < 0 || box_w > width || box_h > height) {
 			printf(" i = %d, box_w = %d, box_h = %d, anchor_w = %d, anchor_h = %d, iou = %f \n",
 				i, box_w, box_h, anchor_w, anchor_h, iou);
 		}

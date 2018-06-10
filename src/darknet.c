@@ -354,6 +354,12 @@ int main(int argc, char **argv)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
+	int i;
+	for (i = 0; i < argc; ++i) {
+		if (!argv[i]) continue;
+		strip(argv[i]);
+	}
+
     //test_resize("data/bad.jpg");
     //test_box();
     //test_convolutional_layer();
