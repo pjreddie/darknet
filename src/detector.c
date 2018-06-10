@@ -916,8 +916,18 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 		int num_labels = 0;
 		box_label *truth = read_boxes(labelpath, &num_labels);
 		//printf(" new path: %s \n", labelpath);
+		char buff[1024];
 		for (j = 0; j < num_labels; ++j)
 		{
+			if (truth[j].x > 1 || truth[j].x <= 0 || truth[j].y > 1 || truth[j].y <= 0 ||
+				truth[j].w > 1 || truth[j].w <= 0 || truth[j].h > 1 || truth[j].h <= 0) 
+			{				
+				printf("\n\nWrong label: %s - j = %d, x = %f, y = %f, width = %f, height = %f \n",
+					labelpath, j, truth[j].x, truth[j].y, truth[j].w, truth[j].h);
+				sprintf(buff, "echo \"Wrong label: %s - j = %d, x = %f, y = %f, width = %f, height = %f\" >> bad_label.list", 
+					labelpath, j, truth[j].x, truth[j].y, truth[j].w, truth[j].h);
+				system(buff);				
+			}
 			number_of_boxes++;
 			rel_width_height_array = realloc(rel_width_height_array, 2 * number_of_boxes * sizeof(float));
 			rel_width_height_array[number_of_boxes * 2 - 2] = truth[j].w * width;
@@ -1000,8 +1010,8 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 		float box_intersect = min_w*min_h;
 		float box_union = box_w*box_h + anchor_w*anchor_h - box_intersect;
 		float iou = box_intersect / box_union;
-		if (iou > 1 || iou < 0 || box_w > width || box_h > height) {
-			printf(" i = %d, box_w = %d, box_h = %d, anchor_w = %d, anchor_h = %d, iou = %f \n",
+		if (iou > 1 || iou < 0) { // || box_w > width || box_h > height) {
+			printf(" Wrong label: i = %d, box_w = %d, box_h = %d, anchor_w = %d, anchor_h = %d, iou = %f \n",
 				i, box_w, box_h, anchor_w, anchor_h, iou);
 		}
 		else avg_iou += iou;

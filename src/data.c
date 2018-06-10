@@ -342,7 +342,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
 			system(buff);
 			continue;
 		}
-		if (x < 0 || x > 1 || y < 0 || y > 1) {
+		if (x <= 0 || x > 1 || y <= 0 || y > 1) {
 			printf("\n Wrong annotation: x = %f, y = %f \n", x, y);
 			sprintf(buff, "echo %s \"Wrong annotation: x = %f, y = %f\" >> bad_label.list", labelpath, x, y);
 			system(buff);
