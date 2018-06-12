@@ -200,6 +200,7 @@ struct layer{
 
     int onlyforward;
     int stopbackward;
+    int trainable;
     int dontload;
     int dontsave;
     int dontloadscales;
