@@ -65,6 +65,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 		printf("\n Error: You set incorrect value batch=1 for Training! You should set batch=64 subdivision=64 \n");
 		getchar();
 	}
+	else if ((net.batch * net.subdivisions) < 64) {
+			printf("\n Warning: You set batch= lower than 64! It is recommended to set batch=64 subdivision=64 \n");
+	}
 
     int imgs = net.batch * net.subdivisions * ngpus;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
