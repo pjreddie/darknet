@@ -320,6 +320,8 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
  
  **Note:** If during training you see `nan` values for `avg` (loss) field - then training goes wrong, but if `nan` is in some other lines - then training goes well.
  
+ **Note:** If you changed width= or height= in your cfg-file, then new width and height must be divisible by 32.
+ 
 ### How to train tiny-yolo (to detect your custom objects):
 
 Do all the same steps as for the full yolo model as described above. With the exception of:
