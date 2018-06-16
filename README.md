@@ -4,7 +4,17 @@
 
 Darknet-cpp project is a bug-fixed and C++ compilable version of darknet (including Yolov3 and v2), an open source neural network framework written in C and CUDA. Darknet-cpp builds on Linux, Windows and also tested on Mac by users.
 
-**Features**
+**Prebuilt binaries for evaluation now available**
+
+* Prebuilt binaries are provided for evaluation purposes.
+  * Tegra TK1 (CPU, CUDA, CUDA + CUDNN) - Yolov2 only
+  * Windows x64 (CUDA + CUDNN) - Yolov3
+  * Linux x64 (CUDA + CUDNN) - Yolov3
+  
+* Download the binaries from yolo-bins 
+  * https://github.com/prabindh/yolo-bins
+
+**Features of darknet-cpp**
 
 * Uses same source code-base as original darknet (ie same .c files are used). Modification is done only for runtime bug-fixes, compile time fixes for c++, and the build system itself. For list of bugs fixed, refer to this thread - https://groups.google.com/forum/#!topic/darknet/4Hb159aZBbA, and https://github.com/prabindh/darknet/issues
 
@@ -19,7 +29,7 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet (includ
 
 * darknet-cpp supports OpenCV3. Tested on Ubuntu 16.04 and windows, with CUDA 8.x
 
-* Note: darknet-cpp requires a C++11 compiler for arapaho builds.
+* Note: darknet-cpp requires a C++11 compiler for darknet-cpp, and arapaho builds.
 
 **Usage**
 
@@ -187,7 +197,7 @@ This creates a training list file (train.txt) that will be needed in next step o
 
   `make darknet-cpp-shared`
 
-  On Windows port, the .dll is built by default.
+  On Windows, the .dll is built by default. The windows build requires the .sln files from (https://github.com/prabindh/darknet-cpp-windows)
 
   Refer the file https://github.com/prabindh/darknet/blob/master/arapaho/arapaho_readme.txt for more details on running Arapaho.
 
@@ -207,7 +217,7 @@ Information required for filing an issue:
 
 # Darknet-cpp for Windows
 
-Currently tested with VS2013, CUDA8.0 on Win10. 
+Currently tested with VS2015, CUDA8.0 on Win10 upto RS5. 
 
 The solution file requires the below repository.
 
