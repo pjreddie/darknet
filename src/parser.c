@@ -827,6 +827,11 @@ network *parse_network_cfg(char *filename)
         l.truth = option_find_int_quiet(options, "truth", 0);
         l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
+	l.trainable = option_find_int_quiet(options, "trainable", 0);
+	if (l.trainable)
+	{
+		fprintf(stderr, "	train this layer!\n");
+	}
         l.dontsave = option_find_int_quiet(options, "dontsave", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);

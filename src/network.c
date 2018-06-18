@@ -234,7 +234,7 @@ void update_network(network *netp)
 
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
-        if(l.update){
+        if(l.update && l.trainable){
             l.update(l, a);
         }
     }
@@ -829,7 +829,7 @@ void update_network_gpu(network *netp)
 
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
-        if(l.update_gpu){
+        if(l.update_gpu && l.trainable){
             l.update_gpu(l, a);
         }
     }
