@@ -52,6 +52,7 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
 void show_image_cv_ipl(IplImage *disp, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
+int get_stream_fps(CvCapture *cap, int cpp_video_capture);
 IplImage* in_img;
 IplImage* det_img;
 IplImage* show_img;
@@ -208,15 +209,17 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 	{
 		CvSize size;
 		size.width = det_img->width, size.height = det_img->height;
+		int src_fps = 25;
+		src_fps = get_stream_fps(cap, cpp_video_capture);
 
 		//const char* output_name = "test_dnn_out.avi";
-		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('H', '2', '6', '4'), 25, size, 1);
-		output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('D', 'I', 'V', 'X'), 25, size, 1);
-		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'J', 'P', 'G'), 25, size, 1);
-		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', 'V'), 25, size, 1);
-		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', '2'), 25, size, 1);
-		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('X', 'V', 'I', 'D'), 25, size, 1);
-		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('W', 'M', 'V', '2'), 25, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('H', '2', '6', '4'), src_fps, size, 1);
+		output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('D', 'I', 'V', 'X'), src_fps, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'J', 'P', 'G'), src_fps, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', 'V'), src_fps, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', '2'), src_fps, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('X', 'V', 'I', 'D'), src_fps, size, 1);
+		//output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('W', 'M', 'V', '2'), src_fps, size, 1);
 	}
 
     double before = get_wall_time();
@@ -236,6 +239,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 						else if (frame_skip == 4) frame_skip = 0;
 						else if (frame_skip == 60) frame_skip = 4;
 						else frame_skip = 0;
+					}
+					else if (c == 27 || c == 1048603) // ESC - exit (OpenCV 2.x / 3.x)
+					{
+						flag_exit = 1;
 					}
 				}
             }else{

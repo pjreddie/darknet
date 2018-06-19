@@ -248,6 +248,22 @@ IplImage* get_webcam_frame(CvCapture *cap) {
 	}
 	return src;
 }
+
+int get_stream_fps_cpp(CvCapture *cap) {
+	int fps = 25;
+	try {
+		cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
+#ifndef CV_VERSION_EPOCH	// OpenCV 3.x
+		fps = cpp_cap.get(CAP_PROP_FPS);
+#else						// OpenCV 2.x
+		fps = cpp_cap.get(CV_CAP_PROP_FPS);
+#endif		
+	}
+	catch (...) {
+		std::cout << " Can't get FPS of source videofile. For output video FPS = 25 by default. \n";
+	}
+	return fps;
+}
 // ----------------------------------------
 extern "C" {
 	image ipl_to_image(IplImage* src);	// image.c

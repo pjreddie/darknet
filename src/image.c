@@ -1068,6 +1068,18 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage
 	return im;
 }
 
+int get_stream_fps(CvCapture *cap, int cpp_video_capture)
+{
+	int fps = 25;
+	if (cpp_video_capture) {
+		fps = get_stream_fps_cpp(cap);
+	}
+	else {
+		fps = cvGetCaptureProperty(cap, CV_CAP_PROP_FPS);
+	}
+	return fps;
+}
+
 void save_image_jpg(image p, const char *name)
 {
     image copy = copy_image(p);
