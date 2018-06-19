@@ -224,7 +224,8 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     #pylint: disable= C0321
     im = load_image(image, 0, 0)
     #import cv2
-    #custom_image = cv2.imread(image) # use: detect(,,imagePath,)
+    #custom_image_bgr = cv2.imread(image) # use: detect(,,imagePath,)
+    #custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
     #import scipy.misc
     #custom_image = scipy.misc.imread(image)
     #im, arr = array_to_image(custom_image)		# you should comment line below: free_image(im)
@@ -362,6 +363,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     if not os.path.exists(imagePath):
         raise ValueError("Invalid image path `"+os.path.abspath(imagePath)+"`")
     # Do the detection
+    #detections = detect(netMain, metaMain, imagePath, thresh)	# if is used cv2.imread(image)
     detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
     if showImage:
         try:
