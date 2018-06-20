@@ -45,6 +45,7 @@ void error(const char *s);
 void malloc_error();
 void file_error(char *s);
 void strip(char *s);
+void strip_args(char *s);
 void strip_char(char *s, char bad);
 void top_k(float *a, int n, int k, int *index);
 list *split_str(char *s, char delim);

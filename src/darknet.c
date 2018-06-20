@@ -357,7 +357,7 @@ int main(int argc, char **argv)
 	int i;
 	for (i = 0; i < argc; ++i) {
 		if (!argv[i]) continue;
-		strip(argv[i]);
+		strip_args(argv[i]);
 	}
 
     //test_resize("data/bad.jpg");
