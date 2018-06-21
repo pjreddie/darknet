@@ -226,6 +226,7 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     #import cv2
     #custom_image_bgr = cv2.imread(image) # use: detect(,,imagePath,)
     #custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
+    #custom_image = cv2.resize(custom_image,(lib.network_width(net), lib.network_height(net)), interpolation = cv2.INTER_LINEAR)
     #import scipy.misc
     #custom_image = scipy.misc.imread(image)
     #im, arr = array_to_image(custom_image)		# you should comment line below: free_image(im)
@@ -236,6 +237,7 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     if debug: print("Assigned pnum")
     predict_image(net, im)
     if debug: print("did prediction")
+    #dets = get_network_boxes(net, custom_image_bgr.shape[1], custom_image_bgr.shape[0], thresh, hier_thresh, None, 0, pnum, 0) # OpenCV
     dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, 0)
     if debug: print("Got dets")
     num = pnum[0]
