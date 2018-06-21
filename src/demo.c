@@ -52,18 +52,23 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
 void show_image_cv_ipl(IplImage *disp, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
+image get_image_from_stream_letterbox(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 int get_stream_fps(CvCapture *cap, int cpp_video_capture);
 IplImage* in_img;
 IplImage* det_img;
 IplImage* show_img;
 
 static int flag_exit;
+static int letter_box = 0;
 
 void *fetch_in_thread(void *ptr)
 {
     //in = get_image_from_stream(cap);
 	int dont_close_stream = 0;	// set 1 if your IP-camera periodically turns off and turns on video-stream
-	in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
+	if(letter_box) 
+		in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
+	else
+		in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
     if(!in_s.data){
         //error("Stream closed.");
 		printf("Stream closed.\n");
@@ -89,9 +94,12 @@ void *detect_in_thread(void *ptr)
 
     free_image(det_s);
 
-	int letter = 0;
 	int nboxes = 0;
-	detection *dets = get_network_boxes(&net, det_s.w, det_s.h, demo_thresh, demo_thresh, 0, 1, &nboxes, letter);
+	detection *dets = NULL;
+	if (letter_box)
+		dets = get_network_boxes(&net, in_img->width, in_img->height, demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
+	else
+		dets = get_network_boxes(&net, det_s.w, det_s.h, demo_thresh, demo_thresh, 0, 1, &nboxes, 0); // resized
 	//if (nms) do_nms_obj(dets, nboxes, l.classes, nms);	// bad results
 	if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 	

@@ -1068,6 +1068,37 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage
 	return im;
 }
 
+image get_image_from_stream_letterbox(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close)
+{
+	c = c ? c : 3;
+	IplImage* src;
+	if (cpp_video_capture) {
+		static int once = 1;
+		if (once) {
+			once = 0;
+			do {
+				src = get_webcam_frame(cap);
+				if (!src) return make_empty_image(0, 0, 0);
+			} while (src->width < 1 || src->height < 1 || src->nChannels < 1);
+			printf("Video stream: %d x %d \n", src->width, src->height);
+		}
+		else
+			src = get_webcam_frame(cap);
+	}
+	else src = cvQueryFrame(cap);
+
+	if (cpp_video_capture)
+		if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);
+	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, c);
+	cvResize(src, *in_img, CV_INTER_LINEAR);
+	image tmp = ipl_to_image(src);
+	image im = letterbox_image(tmp, w, h);
+	free_image(tmp);
+	if (cpp_video_capture) cvReleaseImage(&src);
+	if (c>1) rgbgr_image(im);
+	return im;
+}
+
 int get_stream_fps(CvCapture *cap, int cpp_video_capture)
 {
 	int fps = 25;
