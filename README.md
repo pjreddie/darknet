@@ -322,6 +322,8 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
  
  **Note:** If you changed width= or height= in your cfg-file, then new width and height must be divisible by 32.
  
+ **Note:** After training use such command for detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_8000.weights`
+ 
 ### How to train tiny-yolo (to detect your custom objects):
 
 Do all the same steps as for the full yolo model as described above. With the exception of:
