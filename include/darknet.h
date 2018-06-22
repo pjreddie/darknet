@@ -34,7 +34,9 @@ extern int gpu_index;
     #include <opencv2/opencv.hpp>    
 #endif
 
-
+#if defined(__APPLE__)
+#define _snprintf snprintf
+#endif
 
 #ifdef __cplusplus 
 extern "C" {

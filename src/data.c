@@ -355,7 +355,7 @@ box bound_image(image im)
             }
         }
     }
-    box b = {minx, miny, maxx-minx + 1.0f, maxy-miny + 1.0f};
+    box b = {static_cast<float>(minx), static_cast<float>(miny), maxx-minx + 1.0f, maxy-miny + 1.0f};
     //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
     return b;
 }

@@ -67,7 +67,11 @@ int clock_gettime(int dummy, struct timespec *ct)
 double what_time_is_it_now()
 {
     struct timespec now;
+#if defined(CLOCK_MONOTONIC)
+    clock_gettime(CLOCK_MONOTONIC, &now);
+#else
     clock_gettime(0, &now);
+#endif
     return now.tv_sec + now.tv_nsec*1e-9;
 }
 
