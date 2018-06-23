@@ -35,7 +35,10 @@ extern int gpu_index;
 #endif
 
 #if defined(__APPLE__)
-#define _snprintf snprintf
+    #include <AvailabilityMacros.h>
+    #ifdef MAC_OS_X_VERSION_10_12
+        #define _snprintf snprintf
+    #endif
 #endif
 
 #ifdef __cplusplus 
