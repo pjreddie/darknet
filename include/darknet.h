@@ -34,7 +34,12 @@ extern int gpu_index;
     #include <opencv2/opencv.hpp>    
 #endif
 
-
+#if defined(__APPLE__)
+    #include <AvailabilityMacros.h>
+    #ifdef MAC_OS_X_VERSION_10_12
+        #define _snprintf snprintf
+    #endif
+#endif
 
 #ifdef __cplusplus 
 extern "C" {
