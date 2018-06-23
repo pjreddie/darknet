@@ -28,6 +28,11 @@ struct image_t {
 	float *data;				// pointer to the image data
 };
 
+#define C_SHARP_MAX_OBJECTS 1000
+struct bbox_t_container {
+    bbox_t candidates[C_SHARP_MAX_OBJECTS];
+};
+
 #ifdef __cplusplus
 #include <memory>
 #include <vector>
@@ -39,6 +44,12 @@ struct image_t {
 #include "opencv2/highgui/highgui_c.h"	// C
 #include "opencv2/imgproc/imgproc_c.h"	// C
 #endif	// OPENCV
+
+extern "C" __declspec(dllexport) int max_objects();
+extern "C" __declspec(dllexport) int init(const char *configurationFilename, const char *weightsFilename, int gpu);
+extern "C" __declspec(dllexport) int detect_image(const char *filename, bbox_t_container &container);
+extern "C" __declspec(dllexport) int detect_image2(const uint8_t* data, const size_t data_length, bbox_t_container &container);
+extern "C" __declspec(dllexport) int dispose();
 
 class Detector {
 	std::shared_ptr<void> detector_gpu_ptr;
