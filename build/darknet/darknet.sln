@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2018
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "darknet", "darknet.vcxproj", "{4CF5694F-12A5-4012-8D94-9A0915E9FEB5}"
 EndProject
@@ -13,8 +13,8 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4CF5694F-12A5-4012-8D94-9A0915E9FEB5}.Debug|Win32.ActiveCfg = Debug|x64
-		{4CF5694F-12A5-4012-8D94-9A0915E9FEB5}.Debug|Win32.Build.0 = Debug|x64
+		{4CF5694F-12A5-4012-8D94-9A0915E9FEB5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4CF5694F-12A5-4012-8D94-9A0915E9FEB5}.Debug|Win32.Build.0 = Debug|Win32
 		{4CF5694F-12A5-4012-8D94-9A0915E9FEB5}.Debug|x64.ActiveCfg = Debug|x64
 		{4CF5694F-12A5-4012-8D94-9A0915E9FEB5}.Debug|x64.Build.0 = Debug|x64
 		{4CF5694F-12A5-4012-8D94-9A0915E9FEB5}.Release|Win32.ActiveCfg = Release|Win32
@@ -24,8 +24,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {C904B7F0-81ED-4CBE-82EC-94566A77D9AF}
 	EndGlobalSection
 EndGlobal
