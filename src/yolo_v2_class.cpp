@@ -47,7 +47,7 @@ int detect_image(const char *filename, bbox_t_container &container) {
     return detection.size();
 }
 
-int detect_image2(const uint8_t* data, const size_t data_length, bbox_t_container &container) {
+int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container) {
 #ifdef OPENCV
     std::vector<char> vdata(data, data + data_length);
     cv::Mat image = imdecode(cv::Mat(vdata), 1);

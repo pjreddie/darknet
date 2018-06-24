@@ -48,7 +48,7 @@ struct bbox_t_container {
 extern "C" __declspec(dllexport) int max_objects();
 extern "C" __declspec(dllexport) int init(const char *configurationFilename, const char *weightsFilename, int gpu);
 extern "C" __declspec(dllexport) int detect_image(const char *filename, bbox_t_container &container);
-extern "C" __declspec(dllexport) int detect_image2(const uint8_t* data, const size_t data_length, bbox_t_container &container);
+extern "C" __declspec(dllexport) int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container);
 extern "C" __declspec(dllexport) int dispose();
 
 class Detector {
