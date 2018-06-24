@@ -10,6 +10,7 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet (includ
   * Tegra TK1 (CPU, CUDA, CUDA + CUDNN) - Yolov2 only
   * Windows x64 (CUDA + CUDNN) - Yolov3
   * Linux x64 (CUDA + CUDNN) - Yolov3
+  * Darwin Mac x64 (CUDA + CUDNN) - Yolov3
   
 * Download the binaries from yolo-bins 
   * https://github.com/prabindh/yolo-bins
