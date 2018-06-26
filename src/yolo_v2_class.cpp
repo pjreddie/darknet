@@ -24,24 +24,18 @@ extern "C" {
 
 int max_objects() { return C_SHARP_MAX_OBJECTS; }
 
-static Detector* detector;
-//static std::unique_ptr<Detector> detector;
+//static Detector* detector = NULL;
+static std::unique_ptr<Detector> detector;
 
-int init(const char *configurationFilename, const char *weightsFilename, int gpu) {
-    std::string configurationFilenameString;
-    configurationFilenameString = configurationFilename;
-    std::string weightsFilenameString;
-    weightsFilenameString = weightsFilename;
-
-    detector = new Detector(configurationFilenameString, weightsFilenameString, gpu);
+int init(const char *configurationFilename, const char *weightsFilename, int gpu) 
+{
+    detector.reset(new Detector(configurationFilename, weightsFilename, gpu));
     return 1;
 }
 
-int detect_image(const char *filename, bbox_t_container &container) {
-    std::string filenameString;
-    filenameString = filename;
-
-    std::vector<bbox_t> detection = detector->detect(filenameString);
+int detect_image(const char *filename, bbox_t_container &container) 
+{
+    std::vector<bbox_t> detection = detector->detect(filename);
     for (size_t i = 0; i < detection.size() && i < C_SHARP_MAX_OBJECTS; ++i)
         container.candidates[i] = detection[i];
     return detection.size();
@@ -62,8 +56,9 @@ int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &
 }
 
 int dispose() {
-    detector->~Detector();
-    //detector.reset();
+	//if (detector != NULL) delete detector;
+	//detector = NULL;
+    detector.reset();
     return 1;
 }
 
