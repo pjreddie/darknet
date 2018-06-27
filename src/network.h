@@ -146,6 +146,8 @@ YOLODLL_API void train_detector(char *datacfg, char *cfgfile, char *weightfile, 
 YOLODLL_API int network_width(network *net);
 YOLODLL_API int network_height(network *net);
 
+YOLODLL_API void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh, int norm);
+
 int get_network_nuisance(network net);
 int get_network_background(network net);
 YOLODLL_API void fuse_conv_batchnorm(network net);
