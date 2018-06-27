@@ -1096,7 +1096,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 	fuse_conv_batchnorm(net);
 	if (net.layers[net.n - 1].classes != names_size) {
 		printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n", 
-			name_list, names_size, net.layers[net.n - 1].classes, datacfg);
+			name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
 		if(net.layers[net.n - 1].classes > names_size) getchar();
 	}
     srand(2222222);
