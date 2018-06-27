@@ -22,8 +22,6 @@ extern "C" {
 
 #define FRAMES 3
 
-int max_objects() { return C_SHARP_MAX_OBJECTS; }
-
 static Detector* detector;
 //static std::unique_ptr<Detector> detector;
 

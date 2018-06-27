@@ -45,7 +45,6 @@ struct bbox_t_container {
 #include "opencv2/imgproc/imgproc_c.h"	// C
 #endif	// OPENCV
 
-extern "C" YOLODLL_API int max_objects();
 extern "C" YOLODLL_API int init(const char *configurationFilename, const char *weightsFilename, int gpu);
 extern "C" YOLODLL_API int detect_image(const char *filename, bbox_t_container &container);
 extern "C" YOLODLL_API int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container);
