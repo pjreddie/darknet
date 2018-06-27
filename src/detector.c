@@ -61,12 +61,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     srand(time(0));
     network net = nets[0];
 
-	if ((net.batch * net.subdivisions) == 1) {
+	const int actual_batch_size = net.batch * net.subdivisions;
+	if (actual_batch_size == 1) {
 		printf("\n Error: You set incorrect value batch=1 for Training! You should set batch=64 subdivision=64 \n");
 		getchar();
 	}
-	else if ((net.batch * net.subdivisions) < 64) {
-			printf("\n Warning: You set batch= lower than 64! It is recommended to set batch=64 subdivision=64 \n");
+	else if (actual_batch_size < 64) {
+			printf("\n Warning: You set batch=%d lower than 64! It is recommended to set batch=64 subdivision=64 \n", actual_batch_size);
 	}
 
     int imgs = net.batch * net.subdivisions * ngpus;
@@ -1095,7 +1096,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 	fuse_conv_batchnorm(net);
 	if (net.layers[net.n - 1].classes != names_size) {
 		printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n", 
-			name_list, names_size, net.layers[net.n - 1].classes, datacfg);
+			name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
 		if(net.layers[net.n - 1].classes > names_size) getchar();
 	}
     srand(2222222);
