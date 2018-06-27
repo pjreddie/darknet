@@ -6,6 +6,7 @@ namespace Darknet
     public class YoloWrapper : IDisposable
     {
         private const string YoloLibraryName = "yolo_cpp_dll.dll";
+        private const int MaxObjects = 1000;
 
         [DllImport(YoloLibraryName, EntryPoint = "init")]
         public static extern int InitializeYolo(string configurationFilename, string weightsFilename, int gpu);
@@ -29,10 +30,10 @@ namespace Darknet
             public UInt32 frames_counter;
         };
 
-        [StructLayout(LayoutKind.Sequential, Size = 10)]
+        [StructLayout(LayoutKind.Sequential)]
         public struct BboxContainer
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = MaxObjects)]
             public bbox_t[] candidates;
         }
 
