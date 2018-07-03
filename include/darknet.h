@@ -20,8 +20,8 @@ extern int gpu_index;
     #endif
 #endif
 
+#ifdef OPENCV
 #ifndef __cplusplus
-    #ifdef OPENCV
     #include "opencv2/highgui/highgui_c.h"
     #include "opencv2/imgproc/imgproc_c.h"
     #include "opencv2/core/version.hpp"
@@ -29,11 +29,9 @@ extern int gpu_index;
     #include "opencv2/videoio/videoio_c.h"
     #include "opencv2/imgcodecs/imgcodecs_c.h"
     #endif
-    #endif
 #else
-    #ifdef OPENCV
     #include <opencv2/opencv.hpp>
-    #endif
+#endif
 #endif
 
 #if defined(__APPLE__)
