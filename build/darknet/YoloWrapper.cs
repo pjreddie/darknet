@@ -9,16 +9,16 @@ namespace Darknet
         private const int MaxObjects = 1000;
 
         [DllImport(YoloLibraryName, EntryPoint = "init")]
-        public static extern int InitializeYolo(string configurationFilename, string weightsFilename, int gpu);
+        private static extern int InitializeYolo(string configurationFilename, string weightsFilename, int gpu);
 
         [DllImport(YoloLibraryName, EntryPoint = "detect_image")]
-        public static extern int DetectImage(string filename, ref BboxContainer container);
+        private static extern int DetectImage(string filename, ref BboxContainer container);
 
         [DllImport(YoloLibraryName, EntryPoint = "detect_mat")]
-        public static extern int DetectImage(IntPtr pArray, int nSize, ref BboxContainer container);
+        private static extern int DetectImage(IntPtr pArray, int nSize, ref BboxContainer container);
 
         [DllImport(YoloLibraryName, EntryPoint = "dispose")]
-        public static extern int DisposeYolo();
+        private static extern int DisposeYolo();
 
         [StructLayout(LayoutKind.Sequential)]
         public struct bbox_t
@@ -66,7 +66,11 @@ namespace Darknet
             {
                 // Copy the array to unmanaged memory.
                 Marshal.Copy(imageData, 0, pnt, imageData.Length);
-                DetectImage(pnt, imageData.Length, ref container);
+                var count = DetectImage(pnt, imageData.Length, ref container);
+                if (count == -1)
+                {
+                    throw new NotSupportedException($"{YoloLibraryName} has no OpenCV support");
+                }
             }
             catch (Exception exception)
             {
