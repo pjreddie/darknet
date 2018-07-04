@@ -41,7 +41,7 @@ extern "C" {
 	float *cuda_make_array(float *x, size_t n);
 	int *cuda_make_int_array(size_t n);
 	void cuda_push_array(float *x_gpu, float *x, size_t n);
-	void cuda_pull_array(float *x_gpu, float *x, size_t n);
+    YOLODLL_API void cuda_pull_array(float *x_gpu, float *x, size_t n);
 	YOLODLL_API void cuda_set_device(int n);
 	int cuda_get_device();
 	void cuda_free(float *x_gpu);
