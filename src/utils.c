@@ -229,6 +229,21 @@ void find_replace(char *str, char *orig, char *rep, char *output)
     sprintf(output, "%s%s%s", buffer, rep, p+strlen(orig));
 }
 
+void set_file_ending(char *file_name, char *new_file_ending, char *output)
+{
+    int last_index = -1;
+    int len = strlen(file_name);
+    for (int i = 0; i < len; ++i) {
+        if (file_name[i] == '.') {
+            last_index = i;
+        }
+    }
+    if (last_index < 0) {
+        last_index = len;
+    }
+    sprintf(output, "%.*s%s", last_index, output, new_file_ending);
+}
+
 float sec(clock_t clocks)
 {
     return (float)clocks/CLOCKS_PER_SEC;
