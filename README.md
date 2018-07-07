@@ -282,7 +282,7 @@ Training Yolo v3:
 It will create `.txt`-file for each `.jpg`-image-file - in the same directory and with the same name, but with `.txt`-extension, and put to file: object number and object coordinates on this image, for each object in new line: `<object-class> <x> <y> <width> <height>`
 
   Where: 
-  * `<object-class>` - integer number of object from `0` to `(classes-1)`
+  * `<object-class>` - integer object number from `0` to `(classes-1)`
   * `<x> <y> <width> <height>` - float values relative to width and height of image, it can be equal from (0.0 to 1.0]
   * for example: `<x> = <absolute_x> / <image_width>` or `<height> = <absolute_height> / <image_height>`
   * atention: `<x> <y>` - are center of rectangle (are not top-left corner)
