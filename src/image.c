@@ -631,7 +631,6 @@ image load_image_cv(char *filename, int channels)
     if( (src = cvLoadImage(filename, flag)) == 0 )
     {
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
-        char buff[1024];
         char truncated_buffer[1024];
         
         // Check the length of the buffer
@@ -645,7 +644,7 @@ image load_image_cv(char *filename, int channels)
         // Write directly to the file rather than using the system call to write
         FILE* bad_list = fopen("bad.list", "a");
         fwrite(truncated_buffer, sizeof(char), strlen(truncated_buffer), bad_list);
-        fwrite("\n", 1, 1, truncated_buffer);
+        fwrite("\n", 1, 1, bad_list);
 
         return make_image(10,10,3);
     }
