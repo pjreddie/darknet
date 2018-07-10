@@ -60,6 +60,28 @@ int dispose() {
     return 1;
 }
 
+int get_device_count() {
+#ifdef GPU
+    int count = 0;
+    cudaGetDeviceCount(&count);
+    return count;
+#else
+    return -1;
+#endif	// GPU
+}
+
+int get_device_name(int gpu, char* deviceName) {
+#ifdef GPU
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, gpu);
+    std::string result = prop.name;
+    std::copy(result.begin(), result.end(), deviceName);
+    return 1;
+#else
+    return -1;
+#endif	// GPU
+}
+
 #ifdef GPU
 void check_cuda(cudaError_t status) {
     if (status != cudaSuccess) {

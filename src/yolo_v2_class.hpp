@@ -49,6 +49,8 @@ extern "C" YOLODLL_API int init(const char *configurationFilename, const char *w
 extern "C" YOLODLL_API int detect_image(const char *filename, bbox_t_container &container);
 extern "C" YOLODLL_API int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container);
 extern "C" YOLODLL_API int dispose();
+extern "C" YOLODLL_API int get_device_count();
+extern "C" YOLODLL_API int get_device_name(int gpu, char* deviceName);
 
 class Detector {
     std::shared_ptr<void> detector_gpu_ptr;
