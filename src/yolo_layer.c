@@ -38,8 +38,8 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.bias_updates = calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + 4 + 1);
     l.inputs = l.outputs;
-	l.max_boxes = max_boxes;
-    l.truths = l.max_boxes*(4 + 1);	// 90*(4 + 1);
+    l.max_boxes = max_boxes;
+    l.truths = l.max_boxes*(4 + 1);    // 90*(4 + 1);
     l.delta = calloc(batch*l.outputs, sizeof(float));
     l.output = calloc(batch*l.outputs, sizeof(float));
     for(i = 0; i < total*2; ++i){
@@ -117,33 +117,33 @@ void delta_yolo_class(float *output, float *delta, int index, int class_id, int 
         if(avg_cat) *avg_cat += output[index + stride*class_id];
         return;
     }
-	// Focal loss
-	if (focal_loss) {
-		// Focal Loss
-		float alpha = 0.5;	// 0.25 or 0.5
-		//float gamma = 2;	// hardcoded in many places of the grad-formula	
+    // Focal loss
+    if (focal_loss) {
+        // Focal Loss
+        float alpha = 0.5;    // 0.25 or 0.5
+        //float gamma = 2;    // hardcoded in many places of the grad-formula    
 
-		int ti = index + stride*class_id;
-		float pt = output[ti] + 0.000000000000001F;
-		// http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiItKDEteCkqKDIqeCpsb2coeCkreC0xKSIsImNvbG9yIjoiIzAwMDAwMCJ9LHsidHlwZSI6MTAwMH1d
-		float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);	// http://blog.csdn.net/linmingan/article/details/77885832	
-		//float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);	// https://github.com/unsky/focal-loss
+        int ti = index + stride*class_id;
+        float pt = output[ti] + 0.000000000000001F;
+        // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiItKDEteCkqKDIqeCpsb2coeCkreC0xKSIsImNvbG9yIjoiIzAwMDAwMCJ9LHsidHlwZSI6MTAwMH1d
+        float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);    // http://blog.csdn.net/linmingan/article/details/77885832    
+        //float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);    // https://github.com/unsky/focal-loss
 
-		for (n = 0; n < classes; ++n) {
-			delta[index + stride*n] = (((n == class_id) ? 1 : 0) - output[index + stride*n]);
+        for (n = 0; n < classes; ++n) {
+            delta[index + stride*n] = (((n == class_id) ? 1 : 0) - output[index + stride*n]);
 
-			delta[index + stride*n] *= alpha*grad;
+            delta[index + stride*n] *= alpha*grad;
 
-			if (n == class_id) *avg_cat += output[index + stride*n];
-		}
-	}
-	else {
-		// default
-		for (n = 0; n < classes; ++n) {
-			delta[index + stride*n] = ((n == class_id) ? 1 : 0) - output[index + stride*n];
-			if (n == class_id && avg_cat) *avg_cat += output[index + stride*n];
-		}
-	}
+            if (n == class_id) *avg_cat += output[index + stride*n];
+        }
+    }
+    else {
+        // default
+        for (n = 0; n < classes; ++n) {
+            delta[index + stride*n] = ((n == class_id) ? 1 : 0) - output[index + stride*n];
+            if (n == class_id && avg_cat) *avg_cat += output[index + stride*n];
+        }
+    }
 }
 
 static int entry_index(layer l, int batch, int location, int entry)
@@ -155,12 +155,12 @@ static int entry_index(layer l, int batch, int location, int entry)
 
 static box float_to_box_stride(float *f, int stride)
 {
-	box b = { 0 };
-	b.x = f[0];
-	b.y = f[1 * stride];
-	b.w = f[2 * stride];
-	b.h = f[3 * stride];
-	return b;
+    box b = { 0 };
+    b.x = f[0];
+    b.y = f[1 * stride];
+    b.w = f[2 * stride];
+    b.h = f[3 * stride];
+    return b;
 }
 
 void forward_yolo_layer(const layer l, network_state state)
@@ -200,12 +200,12 @@ void forward_yolo_layer(const layer l, network_state state)
                     int best_t = 0;
                     for(t = 0; t < l.max_boxes; ++t){
                         box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
-						int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
-						if (class_id >= l.classes) {
-							printf(" Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes - 1);
-							getchar();
-							continue; // if label contains class_id more than number of classes in the cfg-file
-						}
+                        int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+                        if (class_id >= l.classes) {
+                            printf(" Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes - 1);
+                            getchar();
+                            continue; // if label contains class_id more than number of classes in the cfg-file
+                        }
                         if(!truth.x) break;
                         float iou = box_iou(pred, truth);
                         if (iou > best_iou) {
@@ -234,8 +234,8 @@ void forward_yolo_layer(const layer l, network_state state)
         }
         for(t = 0; t < l.max_boxes; ++t){
             box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
-			int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
-			if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
+            int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+            if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
 
             if(!truth.x) break;
             float best_iou = 0;
@@ -291,20 +291,20 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
     int i;
     int new_w=0;
     int new_h=0;
-	if (letter) {
-		if (((float)netw / w) < ((float)neth / h)) {
-			new_w = netw;
-			new_h = (h * netw) / w;
-		}
-		else {
-			new_h = neth;
-			new_w = (w * neth) / h;
-		}
-	}
-	else {
-		new_w = netw;
-		new_h = neth;
-	}
+    if (letter) {
+        if (((float)netw / w) < ((float)neth / h)) {
+            new_w = netw;
+            new_h = (h * netw) / w;
+        }
+        else {
+            new_h = neth;
+            new_w = (w * neth) / h;
+        }
+    }
+    else {
+        new_w = netw;
+        new_h = neth;
+    }
     for (i = 0; i < n; ++i){
         box b = dets[i].bbox;
         b.x =  (b.x - (netw - new_w)/2./netw) / ((float)new_w/netw); 
@@ -411,25 +411,25 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
     }
 
     //cuda_pull_array(l.output_gpu, state.input, l.batch*l.inputs);
-	float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
-	cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
-	float *truth_cpu = 0;
-	if (state.truth) {
-		int num_truth = l.batch*l.truths;
-		truth_cpu = calloc(num_truth, sizeof(float));
-		cuda_pull_array(state.truth, truth_cpu, num_truth);
-	}
-	network_state cpu_state = state;
-	cpu_state.net = state.net;
-	cpu_state.index = state.index;
-	cpu_state.train = state.train;
-	cpu_state.truth = truth_cpu;
-	cpu_state.input = in_cpu;
-	forward_yolo_layer(l, cpu_state);
+    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
+    cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
+    float *truth_cpu = 0;
+    if (state.truth) {
+        int num_truth = l.batch*l.truths;
+        truth_cpu = calloc(num_truth, sizeof(float));
+        cuda_pull_array(state.truth, truth_cpu, num_truth);
+    }
+    network_state cpu_state = state;
+    cpu_state.net = state.net;
+    cpu_state.index = state.index;
+    cpu_state.train = state.train;
+    cpu_state.truth = truth_cpu;
+    cpu_state.input = in_cpu;
+    forward_yolo_layer(l, cpu_state);
     //forward_yolo_layer(l, state);
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
-	free(in_cpu);
-	if (cpu_state.truth) free(cpu_state.truth);
+    free(in_cpu);
+    if (cpu_state.truth) free(cpu_state.truth);
 }
 
 void backward_yolo_layer_gpu(const layer l, network_state state)

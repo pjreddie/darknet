@@ -18,11 +18,11 @@
 
 double what_time_is_it_now()
 {
-	struct timeval time;
-	if (gettimeofday(&time, NULL)) {
-		return 0;
-	}
-	return (double)time.tv_sec + (double)time.tv_usec * .000001;
+    struct timeval time;
+    if (gettimeofday(&time, NULL)) {
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
 int *read_map(char *filename)
@@ -57,7 +57,7 @@ void shuffle(void *arr, size_t n, size_t size)
     void *swp = calloc(1, size);
     for(i = 0; i < n-1; ++i){
         size_t j = i + rand()/(RAND_MAX / (n-i)+1);
-        memcpy(swp,			(char*)arr+(j*size), size);
+        memcpy(swp,            (char*)arr+(j*size), size);
         memcpy((char*)arr+(j*size), (char*)arr+(i*size), size);
         memcpy((char*)arr+(i*size), swp,          size);
     }
@@ -137,7 +137,7 @@ char *basecfg(char *cfgfile)
     {
         c = next+1;
     }
-	if(!next) while ((next = strchr(c, '\\'))) { c = next + 1; }
+    if(!next) while ((next = strchr(c, '\\'))) { c = next + 1; }
     c = copy_string(c);
     next = strchr(c, '.');
     if (next) *next = 0;
@@ -169,63 +169,63 @@ void pm(int M, int N, float *A)
 
 void find_replace(char *str, char *orig, char *rep, char *output)
 {
-	char *buffer = calloc(8192, sizeof(char));
+    char *buffer = calloc(8192, sizeof(char));
     char *p;
 
     sprintf(buffer, "%s", str);
     if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
         sprintf(output, "%s", str);
-		free(buffer);
+        free(buffer);
         return;
     }
 
     *p = '\0';
 
     sprintf(output, "%s%s%s", buffer, rep, p+strlen(orig));
-	free(buffer);
+    free(buffer);
 }
 
 void find_replace_extension(char *str, char *orig, char *rep, char *output)
 {
-	char *buffer = calloc(8192, sizeof(char));
+    char *buffer = calloc(8192, sizeof(char));
 
-	sprintf(buffer, "%s", str);
-	char *p = strstr(buffer, orig);
-	int offset = (p - buffer);
-	int chars_from_end = strlen(buffer) - offset;
-	if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
-		sprintf(output, "%s", str);
-		free(buffer);
-		return;
-	}
+    sprintf(buffer, "%s", str);
+    char *p = strstr(buffer, orig);
+    int offset = (p - buffer);
+    int chars_from_end = strlen(buffer) - offset;
+    if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
+        sprintf(output, "%s", str);
+        free(buffer);
+        return;
+    }
 
-	*p = '\0';
+    *p = '\0';
 
-	sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
-	free(buffer);
+    sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
+    free(buffer);
 }
 
 void replace_image_to_label(char *input_path, char *output_path) {
-	//find_replace(input_path, "/images/", "/labels/", output_path);	// COCO
-	find_replace(input_path, "/images/train2014/", "/labels/train2014/", output_path);	// COCO
-	find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);		// COCO
-	find_replace(output_path, "/JPEGImages/", "/labels/", output_path);	// PascalVOC
-	//find_replace(output_path, "/VOC2007/JPEGImages/", "/VOC2007/labels/", output_path);		// PascalVOC
-	//find_replace(output_path, "/VOC2012/JPEGImages/", "/VOC2012/labels/", output_path);		// PascalVOC
+    //find_replace(input_path, "/images/", "/labels/", output_path);    // COCO
+    find_replace(input_path, "/images/train2014/", "/labels/train2014/", output_path);    // COCO
+    find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);        // COCO
+    find_replace(output_path, "/JPEGImages/", "/labels/", output_path);    // PascalVOC
+    //find_replace(output_path, "/VOC2007/JPEGImages/", "/VOC2007/labels/", output_path);        // PascalVOC
+    //find_replace(output_path, "/VOC2012/JPEGImages/", "/VOC2012/labels/", output_path);        // PascalVOC
 
-	//find_replace(output_path, "/raw/", "/labels/", output_path);
+    //find_replace(output_path, "/raw/", "/labels/", output_path);
 
-	// replace only ext of files
-	find_replace_extension(output_path, ".jpg", ".txt", output_path);
-	find_replace_extension(output_path, ".JPG", ".txt", output_path); // error
-	find_replace_extension(output_path, ".jpeg", ".txt", output_path);
-	find_replace_extension(output_path, ".JPEG", ".txt", output_path);
-	find_replace_extension(output_path, ".png", ".txt", output_path);
-	find_replace_extension(output_path, ".PNG", ".txt", output_path);
-	find_replace_extension(output_path, ".bmp", ".txt", output_path);
-	find_replace_extension(output_path, ".BMP", ".txt", output_path);
-	find_replace_extension(output_path, ".ppm", ".txt", output_path);
-	find_replace_extension(output_path, ".PPM", ".txt", output_path);
+    // replace only ext of files
+    find_replace_extension(output_path, ".jpg", ".txt", output_path);
+    find_replace_extension(output_path, ".JPG", ".txt", output_path); // error
+    find_replace_extension(output_path, ".jpeg", ".txt", output_path);
+    find_replace_extension(output_path, ".JPEG", ".txt", output_path);
+    find_replace_extension(output_path, ".png", ".txt", output_path);
+    find_replace_extension(output_path, ".PNG", ".txt", output_path);
+    find_replace_extension(output_path, ".bmp", ".txt", output_path);
+    find_replace_extension(output_path, ".BMP", ".txt", output_path);
+    find_replace_extension(output_path, ".ppm", ".txt", output_path);
+    find_replace_extension(output_path, ".PPM", ".txt", output_path);
 }
 
 float sec(clock_t clocks)
@@ -299,15 +299,15 @@ void strip(char *s)
 
 void strip_args(char *s)
 {
-	size_t i;
-	size_t len = strlen(s);
-	size_t offset = 0;
-	for (i = 0; i < len; ++i) {
-		char c = s[i];
-		if (c == '\t' || c == '\n' || c == '\r' || c == 0x0d || c == 0x0a) ++offset;
-		else s[i - offset] = c;
-	}
-	s[len - offset] = '\0';
+    size_t i;
+    size_t len = strlen(s);
+    size_t offset = 0;
+    for (i = 0; i < len; ++i) {
+        char c = s[i];
+        if (c == '\t' || c == '\n' || c == '\r' || c == 0x0d || c == 0x0a) ++offset;
+        else s[i - offset] = c;
+    }
+    s[len - offset] = '\0';
 }
 
 void strip_char(char *s, char bad)
@@ -356,11 +356,11 @@ char *fgetl(FILE *fp)
         fgets(&line[curr], readsize, fp);
         curr = strlen(line);
     }
-	if(curr >= 2)
-		if(line[curr-2] == 0x0d) line[curr-2] = 0x00;
+    if(curr >= 2)
+        if(line[curr-2] == 0x0d) line[curr-2] = 0x00;
 
-	if(curr >= 1)
-		if(line[curr-1] == 0x0a) line[curr-1] = 0x00;
+    if(curr >= 1)
+        if(line[curr-1] == 0x0a) line[curr-1] = 0x00;
 
     return line;
 }
@@ -620,11 +620,11 @@ int max_index(float *a, int n)
 
 int int_index(int *a, int val, int n)
 {
-	int i;
-	for (i = 0; i < n; ++i) {
-		if (a[i] == val) return i;
-	}
-	return -1;
+    int i;
+    for (i = 0; i < n; ++i) {
+        if (a[i] == val) return i;
+    }
+    return -1;
 }
 
 int rand_int(int min, int max)
@@ -691,7 +691,7 @@ float rand_uniform(float min, float max)
         max = swap;
     }
     return ((float)rand()/RAND_MAX * (max - min)) + min;
-	//return (random_float() * (max - min)) + min;
+    //return (random_float() * (max - min)) + min;
 }
 
 float rand_scale(float s)
@@ -715,30 +715,30 @@ float **one_hot_encode(float *a, int n, int k)
 
 unsigned int random_gen()
 {
-	unsigned int rnd = 0;
+    unsigned int rnd = 0;
 #ifdef WIN32
-	rand_s(&rnd);
+    rand_s(&rnd);
 #else
-	rnd = rand();
+    rnd = rand();
 #endif
-	return rnd;
+    return rnd;
 }
 
 float random_float()
 {
 #ifdef WIN32
-	return ((float)random_gen() / (float)UINT_MAX);
+    return ((float)random_gen() / (float)UINT_MAX);
 #else
-	return ((float)random_gen() / (float)RAND_MAX);
+    return ((float)random_gen() / (float)RAND_MAX);
 #endif
 }
 
 float rand_uniform_strong(float min, float max)
 {
-	if (max < min) {
-		float swap = min;
-		min = max;
-		max = swap;
-	}
-	return (random_float() * (max - min)) + min;
+    if (max < min) {
+        float swap = min;
+        min = max;
+        max = swap;
+    }
+    return (random_float() * (max - min)) + min;
 }

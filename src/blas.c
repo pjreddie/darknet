@@ -11,8 +11,8 @@ void reorg_cpu(float *x, int out_w, int out_h, int out_c, int batch, int stride,
     int b,i,j,k;
     int in_c = out_c/(stride*stride);
 
-	//printf("\n out_c = %d, out_w = %d, out_h = %d, stride = %d, forward = %d \n", out_c, out_w, out_h, stride, forward);
-	//printf("  in_c = %d,  in_w = %d,  in_h = %d \n", in_c, out_w*stride, out_h*stride);
+    //printf("\n out_c = %d, out_w = %d, out_h = %d, stride = %d, forward = %d \n", out_c, out_w, out_h, stride, forward);
+    //printf("  in_c = %d,  in_w = %d,  in_h = %d \n", in_c, out_w*stride, out_h*stride);
 
     for(b = 0; b < batch; ++b){
         for(k = 0; k < out_c; ++k){
@@ -24,7 +24,7 @@ void reorg_cpu(float *x, int out_w, int out_h, int out_c, int batch, int stride,
                     int w2 = i*stride + offset % stride;
                     int h2 = j*stride + offset / stride;
                     int out_index = w2 + out_w*stride*(h2 + out_h*stride*(c2 + in_c*b));
-                    if(forward) out[out_index] = x[in_index];	// used by default for forward (i.e. forward = 0)
+                    if(forward) out[out_index] = x[in_index];    // used by default for forward (i.e. forward = 0)
                     else out[in_index] = x[out_index];
                 }
             }
@@ -293,17 +293,17 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
 
 void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
-	int i, j, k, b;
-	for (b = 0; b < batch; ++b) {
-		for (k = 0; k < c; ++k) {
-			for (j = 0; j < h*stride; ++j) {
-				for (i = 0; i < w*stride; ++i) {
-					int in_index = b*w*h*c + k*w*h + (j / stride)*w + i / stride;
-					int out_index = b*w*h*c*stride*stride + k*w*h*stride*stride + j*w*stride + i;
-					if (forward) out[out_index] = scale*in[in_index];
-					else in[in_index] += scale*out[out_index];
-				}
-			}
-		}
-	}
+    int i, j, k, b;
+    for (b = 0; b < batch; ++b) {
+        for (k = 0; k < c; ++k) {
+            for (j = 0; j < h*stride; ++j) {
+                for (i = 0; i < w*stride; ++i) {
+                    int in_index = b*w*h*c + k*w*h + (j / stride)*w + i / stride;
+                    int out_index = b*w*h*c*stride*stride + k*w*h*stride*stride + j*w*stride + i;
+                    if (forward) out[out_index] = scale*in[in_index];
+                    else in[in_index] += scale*out[out_index];
+                }
+            }
+        }
+    }
 }

@@ -44,15 +44,15 @@ char **get_random_paths(char **paths, int n, int m)
     char **random_paths = calloc(n, sizeof(char*));
     int i;
     pthread_mutex_lock(&mutex);
-	//printf("n = %d \n", n);
+    //printf("n = %d \n", n);
     for(i = 0; i < n; ++i){
-		do {
-			int index = random_gen() % m;
-			random_paths[i] = paths[index];
-			//if(i == 0) printf("%s\n", paths[index]);
-			//printf("grp: %s\n", paths[index]);
-			if (strlen(random_paths[i]) <= 4) printf(" Very small path to the image: %s \n", random_paths[i]);
-		} while (strlen(random_paths[i]) == 0);
+        do {
+            int index = random_gen() % m;
+            random_paths[i] = paths[index];
+            //if(i == 0) printf("%s\n", paths[index]);
+            //printf("grp: %s\n", paths[index]);
+            if (strlen(random_paths[i]) <= 4) printf(" Very small path to the image: %s \n", random_paths[i]);
+        } while (strlen(random_paths[i]) == 0);
     }
     pthread_mutex_unlock(&mutex);
     return random_paths;
@@ -140,18 +140,18 @@ box_label *read_boxes(char *filename, int *n)
 {
     box_label *boxes = calloc(1, sizeof(box_label));
     FILE *file = fopen(filename, "r");
-	if (!file) {
-		printf("Can't open label file. (This can be normal only if you use MSCOCO) \n");
-		//file_error(filename);
-		FILE* fw = fopen("bad.list", "a");
-		fwrite(filename, sizeof(char), strlen(filename), fw);
-		char *new_line = "\n";
-		fwrite(new_line, sizeof(char), strlen(new_line), fw);
-		fclose(fw);
+    if (!file) {
+        printf("Can't open label file. (This can be normal only if you use MSCOCO) \n");
+        //file_error(filename);
+        FILE* fw = fopen("bad.list", "a");
+        fwrite(filename, sizeof(char), strlen(filename), fw);
+        char *new_line = "\n";
+        fwrite(new_line, sizeof(char), strlen(new_line), fw);
+        fclose(fw);
 
-		*n = 0;
-		return boxes;
-	}
+        *n = 0;
+        return boxes;
+    }
     float x, y, h, w;
     int id;
     int count = 0;
@@ -224,7 +224,7 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
 {
     char labelpath[4096];
-	replace_image_to_label(path, labelpath);
+    replace_image_to_label(path, labelpath);
 
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
@@ -258,9 +258,9 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
 void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int flip, float dx, float dy, float sx, float sy)
 {
     char labelpath[4096];
-	replace_image_to_label(path, labelpath);
+    replace_image_to_label(path, labelpath);
 
-	int count = 0;
+    int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
@@ -299,77 +299,77 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
 }
 
 void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
-	int small_object, int net_w, int net_h)
+    int small_object, int net_w, int net_h)
 {
-	char labelpath[4096];
-	replace_image_to_label(path, labelpath);
+    char labelpath[4096];
+    replace_image_to_label(path, labelpath);
 
-	int count = 0;
-	int i;
-	box_label *boxes = read_boxes(labelpath, &count);
-	float lowest_w = 1.F / net_w;
-	float lowest_h = 1.F / net_h;
-	if (small_object == 1) {
-		for (i = 0; i < count; ++i) {
-			if (boxes[i].w < lowest_w) boxes[i].w = lowest_w;
-			if (boxes[i].h < lowest_h) boxes[i].h = lowest_h;
-		}
-	}
-	randomize_boxes(boxes, count);
-	correct_boxes(boxes, count, dx, dy, sx, sy, flip);
-	if (count > num_boxes) count = num_boxes;
-	float x, y, w, h;
-	int id;
+    int count = 0;
+    int i;
+    box_label *boxes = read_boxes(labelpath, &count);
+    float lowest_w = 1.F / net_w;
+    float lowest_h = 1.F / net_h;
+    if (small_object == 1) {
+        for (i = 0; i < count; ++i) {
+            if (boxes[i].w < lowest_w) boxes[i].w = lowest_w;
+            if (boxes[i].h < lowest_h) boxes[i].h = lowest_h;
+        }
+    }
+    randomize_boxes(boxes, count);
+    correct_boxes(boxes, count, dx, dy, sx, sy, flip);
+    if (count > num_boxes) count = num_boxes;
+    float x, y, w, h;
+    int id;
 
-	for (i = 0; i < count; ++i) {
-		x = boxes[i].x;
-		y = boxes[i].y;
-		w = boxes[i].w;
-		h = boxes[i].h;
-		id = boxes[i].id;
+    for (i = 0; i < count; ++i) {
+        x = boxes[i].x;
+        y = boxes[i].y;
+        w = boxes[i].w;
+        h = boxes[i].h;
+        id = boxes[i].id;
 
-		// not detect small objects
-		//if ((w < 0.001F || h < 0.001F)) continue;
-		// if truth (box for object) is smaller than 1x1 pix
-		char buff[256];
-		if (id >= classes) {
-			printf("\n Wrong annotation: class_id = %d. But class_id should be [from 0 to %d] \n", id, classes);
-			sprintf(buff, "echo %s \"Wrong annotation: class_id = %d. But class_id should be [from 0 to %d]\" >> bad_label.list", labelpath, id, classes);
-			system(buff);
-			getchar();
-			continue;
-		}
-		if ((w < lowest_w || h < lowest_h)) {
-			//sprintf(buff, "echo %s \"Very small object: w < lowest_w OR h < lowest_h\" >> bad_label.list", labelpath);
-			//system(buff);
-			continue;
-		}
-		if (x == 999999 || y == 999999) {
-			printf("\n Wrong annotation: x = 0, y = 0 \n");
-			sprintf(buff, "echo %s \"Wrong annotation: x = 0 or y = 0\" >> bad_label.list", labelpath);
-			system(buff);
-			continue;
-		}
-		if (x <= 0 || x > 1 || y <= 0 || y > 1) {
-			printf("\n Wrong annotation: x = %f, y = %f \n", x, y);
-			sprintf(buff, "echo %s \"Wrong annotation: x = %f, y = %f\" >> bad_label.list", labelpath, x, y);
-			system(buff);
-			continue;
-		}
-		if (w > 1) {
-			printf("\n Wrong annotation: w = %f \n", w);
-			sprintf(buff, "echo %s \"Wrong annotation: w = %f\" >> bad_label.list", labelpath, w);
-			system(buff);
-			w = 1;
-		}
-		if (h > 1) {
-			printf("\n Wrong annotation: h = %f \n", h);
-			sprintf(buff, "echo %s \"Wrong annotation: h = %f\" >> bad_label.list", labelpath, h);
-			system(buff);
-			h = 1;
-		}
-		if (x == 0) x += lowest_w;
-		if (y == 0) y += lowest_h;
+        // not detect small objects
+        //if ((w < 0.001F || h < 0.001F)) continue;
+        // if truth (box for object) is smaller than 1x1 pix
+        char buff[256];
+        if (id >= classes) {
+            printf("\n Wrong annotation: class_id = %d. But class_id should be [from 0 to %d] \n", id, classes);
+            sprintf(buff, "echo %s \"Wrong annotation: class_id = %d. But class_id should be [from 0 to %d]\" >> bad_label.list", labelpath, id, classes);
+            system(buff);
+            getchar();
+            continue;
+        }
+        if ((w < lowest_w || h < lowest_h)) {
+            //sprintf(buff, "echo %s \"Very small object: w < lowest_w OR h < lowest_h\" >> bad_label.list", labelpath);
+            //system(buff);
+            continue;
+        }
+        if (x == 999999 || y == 999999) {
+            printf("\n Wrong annotation: x = 0, y = 0 \n");
+            sprintf(buff, "echo %s \"Wrong annotation: x = 0 or y = 0\" >> bad_label.list", labelpath);
+            system(buff);
+            continue;
+        }
+        if (x <= 0 || x > 1 || y <= 0 || y > 1) {
+            printf("\n Wrong annotation: x = %f, y = %f \n", x, y);
+            sprintf(buff, "echo %s \"Wrong annotation: x = %f, y = %f\" >> bad_label.list", labelpath, x, y);
+            system(buff);
+            continue;
+        }
+        if (w > 1) {
+            printf("\n Wrong annotation: w = %f \n", w);
+            sprintf(buff, "echo %s \"Wrong annotation: w = %f\" >> bad_label.list", labelpath, w);
+            system(buff);
+            w = 1;
+        }
+        if (h > 1) {
+            printf("\n Wrong annotation: h = %f \n", h);
+            sprintf(buff, "echo %s \"Wrong annotation: h = %f\" >> bad_label.list", labelpath, h);
+            system(buff);
+            h = 1;
+        }
+        if (x == 0) x += lowest_w;
+        if (y == 0) y += lowest_h;
 
         truth[i*5+0] = x;
         truth[i*5+1] = y;
@@ -524,7 +524,7 @@ matrix load_tags_paths(char **paths, int n, int k)
 char **get_labels_custom(char *filename, int *size)
 {
     list *plist = get_paths(filename);
-	if(size) *size = plist->size;
+    if(size) *size = plist->size;
     char **labels = (char **)list_to_array(plist);
     free_list(plist);
     return labels;
@@ -532,7 +532,7 @@ char **get_labels_custom(char *filename, int *size)
 
 char **get_labels(char *filename)
 {
-	return get_labels_custom(filename, NULL);
+    return get_labels_custom(filename, NULL);
 }
 
 void free_data(data d)
@@ -742,22 +742,22 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
-		const char *filename = random_paths[i];
+        const char *filename = random_paths[i];
 
-		int flag = (c >= 3);
-		IplImage *src;
-		if ((src = cvLoadImage(filename, flag)) == 0)
-		{
-			fprintf(stderr, "Cannot load image \"%s\"\n", filename);
-			char buff[256];
-			sprintf(buff, "echo %s >> bad.list", filename);
-			system(buff);
-			continue;
-			//exit(0);
-		}
+        int flag = (c >= 3);
+        IplImage *src;
+        if ((src = cvLoadImage(filename, flag)) == 0)
+        {
+            fprintf(stderr, "Cannot load image \"%s\"\n", filename);
+            char buff[256];
+            sprintf(buff, "echo %s >> bad.list", filename);
+            system(buff);
+            continue;
+            //exit(0);
+        }
 
-		int oh = src->height;
-		int ow = src->width;
+        int oh = src->height;
+        int ow = src->width;
 
         int dw = (ow*jitter);
         int dh = (oh*jitter);
@@ -778,81 +778,81 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
         float dx = ((float)pleft/ow)/sx;
         float dy = ((float)ptop /oh)/sy;
 
-		float dhue = rand_uniform_strong(-hue, hue);
-		float dsat = rand_scale(saturation);
-		float dexp = rand_scale(exposure);
+        float dhue = rand_uniform_strong(-hue, hue);
+        float dsat = rand_scale(saturation);
+        float dexp = rand_scale(exposure);
 
-		image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, jitter, dhue, dsat, dexp);
-		d.X.vals[i] = ai.data;
-		
-		//show_image(ai, "aug");
-		//cvWaitKey(0);
+        image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, jitter, dhue, dsat, dexp);
+        d.X.vals[i] = ai.data;
+        
+        //show_image(ai, "aug");
+        //cvWaitKey(0);
 
         fill_truth_detection(filename, boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy, small_object, w, h);
 
-		cvReleaseImage(&src);
+        cvReleaseImage(&src);
     }
     free(random_paths);
     return d;
 }
-#else	// OPENCV
+#else    // OPENCV
 data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, float jitter, float hue, float saturation, float exposure, int small_object)
 {
     c = c ? c : 3;
-	char **random_paths = get_random_paths(paths, n, m);
-	int i;
-	data d = { 0 };
-	d.shallow = 0;
+    char **random_paths = get_random_paths(paths, n, m);
+    int i;
+    data d = { 0 };
+    d.shallow = 0;
 
-	d.X.rows = n;
-	d.X.vals = calloc(d.X.rows, sizeof(float*));
-	d.X.cols = h*w*c;
+    d.X.rows = n;
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.cols = h*w*c;
 
-	d.y = make_matrix(n, 5 * boxes);
-	for (i = 0; i < n; ++i) {
-		image orig = load_image(random_paths[i], 0, 0, c);
+    d.y = make_matrix(n, 5 * boxes);
+    for (i = 0; i < n; ++i) {
+        image orig = load_image(random_paths[i], 0, 0, c);
 
-		int oh = orig.h;
-		int ow = orig.w;
+        int oh = orig.h;
+        int ow = orig.w;
 
-		int dw = (ow*jitter);
-		int dh = (oh*jitter);
+        int dw = (ow*jitter);
+        int dh = (oh*jitter);
 
-		int pleft = rand_uniform_strong(-dw, dw);
-		int pright = rand_uniform_strong(-dw, dw);
-		int ptop = rand_uniform_strong(-dh, dh);
-		int pbot = rand_uniform_strong(-dh, dh);
+        int pleft = rand_uniform_strong(-dw, dw);
+        int pright = rand_uniform_strong(-dw, dw);
+        int ptop = rand_uniform_strong(-dh, dh);
+        int pbot = rand_uniform_strong(-dh, dh);
 
-		int swidth = ow - pleft - pright;
-		int sheight = oh - ptop - pbot;
+        int swidth = ow - pleft - pright;
+        int sheight = oh - ptop - pbot;
 
-		float sx = (float)swidth / ow;
-		float sy = (float)sheight / oh;
+        float sx = (float)swidth / ow;
+        float sy = (float)sheight / oh;
 
-		int flip = use_flip ? random_gen() % 2 : 0;
-		image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
+        int flip = use_flip ? random_gen() % 2 : 0;
+        image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
-		float dx = ((float)pleft / ow) / sx;
-		float dy = ((float)ptop / oh) / sy;
+        float dx = ((float)pleft / ow) / sx;
+        float dy = ((float)ptop / oh) / sy;
 
-		image sized = resize_image(cropped, w, h);
-		if (flip) flip_image(sized);
-		random_distort_image(sized, hue, saturation, exposure);
-		d.X.vals[i] = sized.data;
+        image sized = resize_image(cropped, w, h);
+        if (flip) flip_image(sized);
+        random_distort_image(sized, hue, saturation, exposure);
+        d.X.vals[i] = sized.data;
 
-		fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, dx, dy, 1. / sx, 1. / sy, small_object, w, h);
+        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, dx, dy, 1. / sx, 1. / sy, small_object, w, h);
 
-		free_image(orig);
-		free_image(cropped);
-	}
-	free(random_paths);
-	return d;
+        free_image(orig);
+        free_image(cropped);
+    }
+    free(random_paths);
+    return d;
 }
-#endif	// OPENCV
+#endif    // OPENCV
 
 void *load_thread(void *ptr)
 {
-	//srand(time(0));
+    //srand(time(0));
     //printf("Loading data: %d\n", random_gen());
     load_args a = *(struct load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
@@ -878,9 +878,9 @@ void *load_thread(void *ptr)
     } else if (a.type == IMAGE_DATA){
         *(a.im) = load_image(a.path, 0, 0, a.c);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);
-	}else if (a.type == LETTERBOX_DATA) {
-		*(a.im) = load_image(a.path, 0, 0, a.c);
-		*(a.resized) = letterbox_image(*(a.im), a.w, a.h);
+    }else if (a.type == LETTERBOX_DATA) {
+        *(a.im) = load_image(a.path, 0, 0, a.c);
+        *(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.flip, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     }
@@ -899,7 +899,7 @@ pthread_t load_data_in_thread(load_args args)
 
 void *load_threads(void *ptr)
 {
-	//srand(time(0));
+    //srand(time(0));
     int i;
     load_args args = *(load_args *)ptr;
     if (args.threads == 0) args.threads = 1;

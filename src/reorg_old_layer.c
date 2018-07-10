@@ -77,42 +77,42 @@ void resize_reorg_old_layer(layer *l, int w, int h)
 
 void forward_reorg_old_layer(const layer l, network_state state)
 {
-	if (l.reverse) {
-		reorg_cpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output);
-	}
-	else {
-		reorg_cpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 0, l.output);
-	}
+    if (l.reverse) {
+        reorg_cpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output);
+    }
+    else {
+        reorg_cpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 0, l.output);
+    }
 }
 
 void backward_reorg_old_layer(const layer l, network_state state)
 {
-	if (l.reverse) {
-		reorg_cpu(l.delta, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
-	}
-	else {
-		reorg_cpu(l.delta, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
-	}
+    if (l.reverse) {
+        reorg_cpu(l.delta, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
+    }
+    else {
+        reorg_cpu(l.delta, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
+    }
 }
 
 #ifdef GPU
 void forward_reorg_old_layer_gpu(layer l, network_state state)
 {
-	if (l.reverse) {
-		reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_gpu);
-	}
-	else {
-		reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 0, l.output_gpu);
-	}
+    if (l.reverse) {
+        reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_gpu);
+    }
+    else {
+        reorg_ongpu(state.input, l.w, l.h, l.c, l.batch, l.stride, 0, l.output_gpu);
+    }
 }
 
 void backward_reorg_old_layer_gpu(layer l, network_state state)
 {
-	if (l.reverse) {
-		reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
-	}
-	else {
-		reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
-	}
+    if (l.reverse) {
+        reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 0, state.delta);
+    }
+    else {
+        reorg_ongpu(l.delta_gpu, l.w, l.h, l.c, l.batch, l.stride, 1, state.delta);
+    }
 }
 #endif

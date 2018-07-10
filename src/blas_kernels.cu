@@ -157,16 +157,16 @@ extern "C" void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2
 
 extern "C" void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t)
 {
-	scal_ongpu(n, B1, m, 1);
-	scal_ongpu(n, B2, v, 1);
-	axpy_ongpu(n, -decay*batch, w, 1, d, 1);
+    scal_ongpu(n, B1, m, 1);
+    scal_ongpu(n, B2, v, 1);
+    axpy_ongpu(n, -decay*batch, w, 1, d, 1);
 
-	axpy_ongpu(n, (1 - B1), d, 1, m, 1);
-	mul_ongpu(n, d, 1, d, 1);
-	axpy_ongpu(n, (1 - B2), d, 1, v, 1);
+    axpy_ongpu(n, (1 - B1), d, 1, m, 1);
+    mul_ongpu(n, d, 1, d, 1);
+    axpy_ongpu(n, (1 - B2), d, 1, v, 1);
 
-	adam_gpu(n, w, m, v, B1, B2, rate, eps, t);
-	fill_ongpu(n, 0, d, 1);
+    adam_gpu(n, w, m, v, B1, B2, rate, eps, t);
+    fill_ongpu(n, 0, d, 1);
 }
 
 __global__ void normalize_kernel(int N, float *x, float *mean, float *variance, int batch, int filters, int spatial)
@@ -237,7 +237,7 @@ __global__ void fast_mean_delta_kernel(float *delta, float *variance, int batch,
             local[id] += (i+id < spatial) ? delta[index] : 0;
         }
     }
-	__syncthreads();
+    __syncthreads();
 
     if(id == 0){
         mean_delta[filter] = 0;
@@ -266,7 +266,7 @@ __global__ void  fast_variance_delta_kernel(float *x, float *delta, float *mean,
             local[id] += (i+id < spatial) ? delta[index]*(x[index] - mean[filter]) : 0;
         }
     }
-	__syncthreads();
+    __syncthreads();
 
     if(id == 0){
         variance_delta[filter] = 0;
@@ -462,7 +462,7 @@ __global__ void  fast_mean_kernel(float *x, int batch, int filters, int spatial,
             local[id] += (i+id < spatial) ? x[index] : 0;
         }
     }
-	__syncthreads();
+    __syncthreads();
 
     if(id == 0){
         mean[filter] = 0;
@@ -491,7 +491,7 @@ __global__ void  fast_variance_kernel(float *x, float *mean, int batch, int filt
             local[id] += (i+id < spatial) ? powf((x[index] - mean[filter]), 2) : 0;
         }
     }
-	__syncthreads();
+    __syncthreads();
 
     if(id == 0){
         variance[filter] = 0;
@@ -787,31 +787,31 @@ extern "C" void softmax_gpu(float *input, int n, int offset, int groups, float t
 
 __global__ void upsample_kernel(size_t N, float *x, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
-	size_t i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-	if (i >= N) return;
-	int out_index = i;
-	int out_w = i % (w*stride);
-	i = i / (w*stride);
-	int out_h = i % (h*stride);
-	i = i / (h*stride);
-	int out_c = i%c;
-	i = i / c;
-	int b = i%batch;
+    size_t i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i >= N) return;
+    int out_index = i;
+    int out_w = i % (w*stride);
+    i = i / (w*stride);
+    int out_h = i % (h*stride);
+    i = i / (h*stride);
+    int out_c = i%c;
+    i = i / c;
+    int b = i%batch;
 
-	int in_w = out_w / stride;
-	int in_h = out_h / stride;
-	int in_c = out_c;
+    int in_w = out_w / stride;
+    int in_h = out_h / stride;
+    int in_c = out_c;
 
-	int in_index = b*w*h*c + in_c*w*h + in_h*w + in_w;
+    int in_index = b*w*h*c + in_c*w*h + in_h*w + in_w;
 
 
-	if (forward) out[out_index] += scale * x[in_index];
-	else atomicAdd(x + in_index, scale * out[out_index]);
+    if (forward) out[out_index] += scale * x[in_index];
+    else atomicAdd(x + in_index, scale * out[out_index]);
 }
 
 extern "C" void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
-	size_t size = w*h*c*batch*stride*stride;
-	upsample_kernel << <cuda_gridsize(size), BLOCK >> >(size, in, w, h, c, batch, stride, forward, scale, out);
-	check_error(cudaPeekAtLastError());
+    size_t size = w*h*c*batch*stride*stride;
+    upsample_kernel << <cuda_gridsize(size), BLOCK >> >(size, in, w, h, c, batch, stride, forward, scale, out);
+    check_error(cudaPeekAtLastError());
 }

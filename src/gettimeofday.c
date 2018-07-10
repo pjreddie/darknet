@@ -1,5 +1,5 @@
 #include "gettimeofday.h"
- 
+
 int gettimeofday(struct timeval *tv, struct timezone *tz)
 {
   FILETIME ft;

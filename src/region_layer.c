@@ -27,7 +27,7 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     l.bias_updates = calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + coords + 1);
     l.inputs = l.outputs;
-	l.max_boxes = max_boxes;
+    l.max_boxes = max_boxes;
     l.truths = max_boxes*(5);
     l.delta = calloc(batch*l.outputs, sizeof(float));
     l.output = calloc(batch*l.outputs, sizeof(float));
@@ -53,8 +53,8 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
 
 void resize_region_layer(layer *l, int w, int h)
 {
-	int old_w = l->w;
-	int old_h = l->h;
+    int old_w = l->w;
+    int old_h = l->h;
     l->w = w;
     l->h = h;
 
@@ -65,13 +65,13 @@ void resize_region_layer(layer *l, int w, int h)
     l->delta = realloc(l->delta, l->batch*l->outputs*sizeof(float));
 
 #ifdef GPU
-	if (old_w < w || old_h < h) {
-		cuda_free(l->delta_gpu);
-		cuda_free(l->output_gpu);
+    if (old_w < w || old_h < h) {
+        cuda_free(l->delta_gpu);
+        cuda_free(l->output_gpu);
 
-		l->delta_gpu = cuda_make_array(l->delta, l->batch*l->outputs);
-		l->output_gpu = cuda_make_array(l->output, l->batch*l->outputs);
-	}
+        l->delta_gpu = cuda_make_array(l->delta, l->batch*l->outputs);
+        l->output_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+    }
 #endif
 }
 
@@ -127,34 +127,34 @@ void delta_region_class(float *output, float *delta, int index, int class_id, in
             class_id = hier->parent[class_id];
         }
         *avg_cat += pred;
-    } else {		
-		// Focal loss
-		if (focal_loss) {
-			// Focal Loss
-			float alpha = 0.5;	// 0.25 or 0.5
-			//float gamma = 2;	// hardcoded in many places of the grad-formula	
+    } else {        
+        // Focal loss
+        if (focal_loss) {
+            // Focal Loss
+            float alpha = 0.5;    // 0.25 or 0.5
+            //float gamma = 2;    // hardcoded in many places of the grad-formula    
 
-			int ti = index + class_id;
-			float pt = output[ti] + 0.000000000000001F;
-			// http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiItKDEteCkqKDIqeCpsb2coeCkreC0xKSIsImNvbG9yIjoiIzAwMDAwMCJ9LHsidHlwZSI6MTAwMH1d
-			float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);	// http://blog.csdn.net/linmingan/article/details/77885832	
-			//float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);	// https://github.com/unsky/focal-loss
+            int ti = index + class_id;
+            float pt = output[ti] + 0.000000000000001F;
+            // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiItKDEteCkqKDIqeCpsb2coeCkreC0xKSIsImNvbG9yIjoiIzAwMDAwMCJ9LHsidHlwZSI6MTAwMH1d
+            float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);    // http://blog.csdn.net/linmingan/article/details/77885832    
+            //float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);    // https://github.com/unsky/focal-loss
 
-			for (n = 0; n < classes; ++n) {
-				delta[index + n] = scale * (((n == class_id) ? 1 : 0) - output[index + n]);
+            for (n = 0; n < classes; ++n) {
+                delta[index + n] = scale * (((n == class_id) ? 1 : 0) - output[index + n]);
 
-				delta[index + n] *= alpha*grad;
+                delta[index + n] *= alpha*grad;
 
-				if (n == class_id) *avg_cat += output[index + n];
-			}
-		}
-		else {
-			// default
-			for (n = 0; n < classes; ++n) {
-				delta[index + n] = scale * (((n == class_id) ? 1 : 0) - output[index + n]);
-				if (n == class_id) *avg_cat += output[index + n];
-			}
-		}
+                if (n == class_id) *avg_cat += output[index + n];
+            }
+        }
+        else {
+            // default
+            for (n = 0; n < classes; ++n) {
+                delta[index + n] = scale * (((n == class_id) ? 1 : 0) - output[index + n]);
+                if (n == class_id) *avg_cat += output[index + n];
+            }
+        }
     }
 }
 
@@ -170,9 +170,9 @@ float tisnan(float x)
 
 static int entry_index(layer l, int batch, int location, int entry)
 {
-	int n = location / (l.w*l.h);
-	int loc = location % (l.w*l.h);
-	return batch*l.outputs + n*l.w*l.h*(l.coords + l.classes + 1) + entry*l.w*l.h + loc;
+    int n = location / (l.w*l.h);
+    int loc = location % (l.w*l.h);
+    return batch*l.outputs + n*l.w*l.h*(l.coords + l.classes + 1) + entry*l.w*l.h + loc;
 }
 
 void softmax_tree(float *input, int batch, int inputs, float temp, tree *hierarchy, float *output);
@@ -256,8 +256,8 @@ void forward_region_layer(const region_layer l, network_state state)
                     int best_class_id = -1;
                     for(t = 0; t < l.max_boxes; ++t){
                         box truth = float_to_box(state.truth + t*5 + b*l.truths);
-						int class_id = state.truth[t * 5 + b*l.truths + 4];
-						if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
+                        int class_id = state.truth[t * 5 + b*l.truths + 4];
+                        if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
                         if(!truth.x) break;
                         float iou = box_iou(pred, truth);
                         if (iou > best_iou) {
@@ -295,12 +295,12 @@ void forward_region_layer(const region_layer l, network_state state)
         }
         for(t = 0; t < l.max_boxes; ++t){
             box truth = float_to_box(state.truth + t*5 + b*l.truths);
-			int class_id = state.truth[t * 5 + b*l.truths + 4];
-			if (class_id >= l.classes) {
-				printf(" Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes-1);
-				getchar();
-				continue; // if label contains class_id more than number of classes in the cfg-file
-			}
+            int class_id = state.truth[t * 5 + b*l.truths + 4];
+            if (class_id >= l.classes) {
+                printf(" Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes-1);
+                getchar();
+                continue; // if label contains class_id more than number of classes in the cfg-file
+            }
 
             if(!truth.x) break;
             float best_iou = 0;
@@ -450,7 +450,7 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
-	//cudaStreamSynchronize(get_cuda_stream());
+    //cudaStreamSynchronize(get_cuda_stream());
     network_state cpu_state = state;
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
@@ -460,7 +460,7 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
     free(cpu_state.input);
     if(!state.train) return;
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
-	//cudaStreamSynchronize(get_cuda_stream());
+    //cudaStreamSynchronize(get_cuda_stream());
     if(cpu_state.truth) free(cpu_state.truth);
 }
 
@@ -473,107 +473,107 @@ void backward_region_layer_gpu(region_layer l, network_state state)
 
 void correct_region_boxes(detection *dets, int n, int w, int h, int netw, int neth, int relative)
 {
-	int i;
-	int new_w = 0;
-	int new_h = 0;
-	if (((float)netw / w) < ((float)neth / h)) {
-		new_w = netw;
-		new_h = (h * netw) / w;
-	}
-	else {
-		new_h = neth;
-		new_w = (w * neth) / h;
-	}
-	for (i = 0; i < n; ++i) {
-		box b = dets[i].bbox;
-		b.x = (b.x - (netw - new_w) / 2. / netw) / ((float)new_w / netw);
-		b.y = (b.y - (neth - new_h) / 2. / neth) / ((float)new_h / neth);
-		b.w *= (float)netw / new_w;
-		b.h *= (float)neth / new_h;
-		if (!relative) {
-			b.x *= w;
-			b.w *= w;
-			b.y *= h;
-			b.h *= h;
-		}
-		dets[i].bbox = b;
-	}
+    int i;
+    int new_w = 0;
+    int new_h = 0;
+    if (((float)netw / w) < ((float)neth / h)) {
+        new_w = netw;
+        new_h = (h * netw) / w;
+    }
+    else {
+        new_h = neth;
+        new_w = (w * neth) / h;
+    }
+    for (i = 0; i < n; ++i) {
+        box b = dets[i].bbox;
+        b.x = (b.x - (netw - new_w) / 2. / netw) / ((float)new_w / netw);
+        b.y = (b.y - (neth - new_h) / 2. / neth) / ((float)new_h / neth);
+        b.w *= (float)netw / new_w;
+        b.h *= (float)neth / new_h;
+        if (!relative) {
+            b.x *= w;
+            b.w *= w;
+            b.y *= h;
+            b.h *= h;
+        }
+        dets[i].bbox = b;
+    }
 }
 
 
 void get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets)
 {
-	int i, j, n, z;
-	float *predictions = l.output;
-	if (l.batch == 2) {
-		float *flip = l.output + l.outputs;
-		for (j = 0; j < l.h; ++j) {
-			for (i = 0; i < l.w / 2; ++i) {
-				for (n = 0; n < l.n; ++n) {
-					for (z = 0; z < l.classes + l.coords + 1; ++z) {
-						int i1 = z*l.w*l.h*l.n + n*l.w*l.h + j*l.w + i;
-						int i2 = z*l.w*l.h*l.n + n*l.w*l.h + j*l.w + (l.w - i - 1);
-						float swap = flip[i1];
-						flip[i1] = flip[i2];
-						flip[i2] = swap;
-						if (z == 0) {
-							flip[i1] = -flip[i1];
-							flip[i2] = -flip[i2];
-						}
-					}
-				}
-			}
-		}
-		for (i = 0; i < l.outputs; ++i) {
-			l.output[i] = (l.output[i] + flip[i]) / 2.;
-		}
-	}
-	for (i = 0; i < l.w*l.h; ++i) {
-		int row = i / l.w;
-		int col = i % l.w;
-		for (n = 0; n < l.n; ++n) {
-			int index = n*l.w*l.h + i;
-			for (j = 0; j < l.classes; ++j) {
-				dets[index].prob[j] = 0;
-			}
-			int obj_index = entry_index(l, 0, n*l.w*l.h + i, l.coords);
-			int box_index = entry_index(l, 0, n*l.w*l.h + i, 0);
-			int mask_index = entry_index(l, 0, n*l.w*l.h + i, 4);
-			float scale = l.background ? 1 : predictions[obj_index];
-			dets[index].bbox = get_region_box(predictions, l.biases, n, box_index, col, row, l.w, l.h);// , l.w*l.h);
-			dets[index].objectness = scale > thresh ? scale : 0;
-			if (dets[index].mask) {
-				for (j = 0; j < l.coords - 4; ++j) {
-					dets[index].mask[j] = l.output[mask_index + j*l.w*l.h];
-				}
-			}
+    int i, j, n, z;
+    float *predictions = l.output;
+    if (l.batch == 2) {
+        float *flip = l.output + l.outputs;
+        for (j = 0; j < l.h; ++j) {
+            for (i = 0; i < l.w / 2; ++i) {
+                for (n = 0; n < l.n; ++n) {
+                    for (z = 0; z < l.classes + l.coords + 1; ++z) {
+                        int i1 = z*l.w*l.h*l.n + n*l.w*l.h + j*l.w + i;
+                        int i2 = z*l.w*l.h*l.n + n*l.w*l.h + j*l.w + (l.w - i - 1);
+                        float swap = flip[i1];
+                        flip[i1] = flip[i2];
+                        flip[i2] = swap;
+                        if (z == 0) {
+                            flip[i1] = -flip[i1];
+                            flip[i2] = -flip[i2];
+                        }
+                    }
+                }
+            }
+        }
+        for (i = 0; i < l.outputs; ++i) {
+            l.output[i] = (l.output[i] + flip[i]) / 2.;
+        }
+    }
+    for (i = 0; i < l.w*l.h; ++i) {
+        int row = i / l.w;
+        int col = i % l.w;
+        for (n = 0; n < l.n; ++n) {
+            int index = n*l.w*l.h + i;
+            for (j = 0; j < l.classes; ++j) {
+                dets[index].prob[j] = 0;
+            }
+            int obj_index = entry_index(l, 0, n*l.w*l.h + i, l.coords);
+            int box_index = entry_index(l, 0, n*l.w*l.h + i, 0);
+            int mask_index = entry_index(l, 0, n*l.w*l.h + i, 4);
+            float scale = l.background ? 1 : predictions[obj_index];
+            dets[index].bbox = get_region_box(predictions, l.biases, n, box_index, col, row, l.w, l.h);// , l.w*l.h);
+            dets[index].objectness = scale > thresh ? scale : 0;
+            if (dets[index].mask) {
+                for (j = 0; j < l.coords - 4; ++j) {
+                    dets[index].mask[j] = l.output[mask_index + j*l.w*l.h];
+                }
+            }
 
-			int class_index = entry_index(l, 0, n*l.w*l.h + i, l.coords + !l.background);
-			if (l.softmax_tree) {
+            int class_index = entry_index(l, 0, n*l.w*l.h + i, l.coords + !l.background);
+            if (l.softmax_tree) {
 
-				hierarchy_predictions(predictions + class_index, l.classes, l.softmax_tree, 0);// , l.w*l.h);
-				if (map) {
-					for (j = 0; j < 200; ++j) {
-						int class_index = entry_index(l, 0, n*l.w*l.h + i, l.coords + 1 + map[j]);
-						float prob = scale*predictions[class_index];
-						dets[index].prob[j] = (prob > thresh) ? prob : 0;
-					}
-				}
-				else {
-					int j = hierarchy_top_prediction(predictions + class_index, l.softmax_tree, tree_thresh, l.w*l.h);
-					dets[index].prob[j] = (scale > thresh) ? scale : 0;
-				}
-			}
-			else {
-				if (dets[index].objectness) {
-					for (j = 0; j < l.classes; ++j) {
-						int class_index = entry_index(l, 0, n*l.w*l.h + i, l.coords + 1 + j);
-						float prob = scale*predictions[class_index];
-						dets[index].prob[j] = (prob > thresh) ? prob : 0;
-					}
-				}
-			}
-		}
-	}
-	correct_region_boxes(dets, l.w*l.h*l.n, w, h, netw, neth, relative);
+                hierarchy_predictions(predictions + class_index, l.classes, l.softmax_tree, 0);// , l.w*l.h);
+                if (map) {
+                    for (j = 0; j < 200; ++j) {
+                        int class_index = entry_index(l, 0, n*l.w*l.h + i, l.coords + 1 + map[j]);
+                        float prob = scale*predictions[class_index];
+                        dets[index].prob[j] = (prob > thresh) ? prob : 0;
+                    }
+                }
+                else {
+                    int j = hierarchy_top_prediction(predictions + class_index, l.softmax_tree, tree_thresh, l.w*l.h);
+                    dets[index].prob[j] = (scale > thresh) ? scale : 0;
+                }
+            }
+            else {
+                if (dets[index].objectness) {
+                    for (j = 0; j < l.classes; ++j) {
+                        int class_index = entry_index(l, 0, n*l.w*l.h + i, l.coords + 1 + j);
+                        float prob = scale*predictions[class_index];
+                        dets[index].prob[j] = (prob > thresh) ? prob : 0;
+                    }
+                }
+            }
+        }
+    }
+    correct_region_boxes(dets, l.w*l.h*l.n, w, h, netw, neth, relative);
 }
