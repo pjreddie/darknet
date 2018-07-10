@@ -548,6 +548,9 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
             cvPutText(show_img, labelstr, pt_text, &font, black_color);
         }
     }
+    if (ext_output) {
+        fflush(stdout);
+    }
 }
 
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
