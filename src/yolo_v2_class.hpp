@@ -96,9 +96,15 @@ public:
     std::shared_ptr<image_t> mat_to_image_resize(cv::Mat mat) const
     {
         if (mat.data == NULL) return std::shared_ptr<image_t>(NULL);
-        cv::Mat det_mat;
-        cv::resize(mat, det_mat, cv::Size(get_net_width(), get_net_height()));
-        return mat_to_image(det_mat);
+
+        cv::Size s = mat.size();
+        if (get_net_width() != s.width || get_net_height() != s.height) {
+            cv::Mat det_mat;
+            cv::resize(mat, det_mat, cv::Size(get_net_width(), get_net_height()));
+            return mat_to_image(det_mat);
+        }
+
+        return mat_to_image(mat);
     }
 
     static std::shared_ptr<image_t> mat_to_image(cv::Mat img_src)
