@@ -2,6 +2,7 @@
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
+
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
     list *options = read_data_cfg(datacfg);
@@ -12,7 +13,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network *nets = calloc(ngpus, sizeof(network));
+    network **nets = calloc(ngpus, sizeof(network));
 
     srand(time(0));
     int seed = rand();
@@ -23,16 +24,16 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         cuda_set_device(gpus[i]);
 #endif
         nets[i] = load_network(cfgfile, weightfile, clear);
-        nets[i].learning_rate *= ngpus;
+        nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network net = nets[0];
+    network *net = nets[0];
 
-    int imgs = net.batch * net.subdivisions * ngpus;
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    int imgs = net->batch * net->subdivisions * ngpus;
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     data train, buffer;
 
-    layer l = net.layers[net.n - 1];
+    layer l = net->layers[net->n - 1];
 
     int classes = l.classes;
     float jitter = l.jitter;
@@ -52,17 +53,17 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.d = &buffer;
     args.type = DETECTION_DATA;
     //args.type = INSTANCE_DATA;
-    args.threads = 8;
+    args.threads = 64;
 
     pthread_t load_thread = load_data(args);
-    clock_t time;
+    double time;
     int count = 0;
     //while(i*imgs < N*120){
-    while(get_current_batch(net) < net.max_batches){
+    while(get_current_batch(net) < net->max_batches){
         if(l.random && count++%10 == 0){
             printf("Resizing\n");
             int dim = (rand() % 10 + 10) * 32;
-            if (get_current_batch(net)+200 > net.max_batches) dim = 608;
+            if (get_current_batch(net)+200 > net->max_batches) dim = 608;
             //int dim = (rand() % 4 + 16) * 32;
             printf("%d\n", dim);
             args.w = dim;
@@ -73,43 +74,44 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             free_data(train);
             load_thread = load_data(args);
 
+            #pragma omp parallel for
             for(i = 0; i < ngpus; ++i){
-                resize_network(nets + i, dim, dim);
+                resize_network(nets[i], dim, dim);
             }
             net = nets[0];
         }
-        time=clock();
+        time=what_time_is_it_now();
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
 
         /*
-        int k;
-        for(k = 0; k < l.max_boxes; ++k){
-            box b = float_to_box(train.y.vals[10] + 1 + k*5);
-            if(!b.x) break;
-            printf("loaded: %f %f %f %f\n", b.x, b.y, b.w, b.h);
-        }
-        */
+           int k;
+           for(k = 0; k < l.max_boxes; ++k){
+           box b = float_to_box(train.y.vals[10] + 1 + k*5);
+           if(!b.x) break;
+           printf("loaded: %f %f %f %f\n", b.x, b.y, b.w, b.h);
+           }
+         */
         /*
-        int zz;
-        for(zz = 0; zz < train.X.cols; ++zz){
-            image im = float_to_image(net.w, net.h, 3, train.X.vals[zz]);
-            int k;
-            for(k = 0; k < l.max_boxes; ++k){
-                box b = float_to_box(train.y.vals[zz] + k*5, 1);
-                printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
-                draw_bbox(im, b, 1, 1,0,0);
-            }
-            show_image(im, "truth11");
-            cvWaitKey(0);
-            save_image(im, "truth11");
-        }
-        */
+           int zz;
+           for(zz = 0; zz < train.X.cols; ++zz){
+           image im = float_to_image(net->w, net->h, 3, train.X.vals[zz]);
+           int k;
+           for(k = 0; k < l.max_boxes; ++k){
+           box b = float_to_box(train.y.vals[zz] + k*5, 1);
+           printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+           draw_bbox(im, b, 1, 1,0,0);
+           }
+           show_image(im, "truth11");
+           cvWaitKey(0);
+           save_image(im, "truth11");
+           }
+         */
 
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
+        printf("Loaded: %lf seconds\n", what_time_is_it_now()-time);
 
-        time=clock();
+        time=what_time_is_it_now();
         float loss = 0;
 #ifdef GPU
         if(ngpus == 1){
@@ -124,7 +126,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         avg_loss = avg_loss*.9 + loss*.1;
 
         i = get_current_batch(net);
-        printf("%ld: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
+        printf("%ld: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, i*imgs);
         if(i%100==0){
 #ifdef GPU
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
@@ -154,19 +156,21 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
 static int get_coco_image_id(char *filename)
 {
-    char *p = strrchr(filename, '_');
+    char *p = strrchr(filename, '/');
+    char *c = strrchr(filename, '_');
+    if(c) p = c;
     return atoi(p+1);
 }
 
-static void print_cocos(FILE *fp, char *image_path, box *boxes, float **probs, int num_boxes, int classes, int w, int h)
+static void print_cocos(FILE *fp, char *image_path, detection *dets, int num_boxes, int classes, int w, int h)
 {
     int i, j;
     int image_id = get_coco_image_id(image_path);
     for(i = 0; i < num_boxes; ++i){
-        float xmin = boxes[i].x - boxes[i].w/2.;
-        float xmax = boxes[i].x + boxes[i].w/2.;
-        float ymin = boxes[i].y - boxes[i].h/2.;
-        float ymax = boxes[i].y + boxes[i].h/2.;
+        float xmin = dets[i].bbox.x - dets[i].bbox.w/2.;
+        float xmax = dets[i].bbox.x + dets[i].bbox.w/2.;
+        float ymin = dets[i].bbox.y - dets[i].bbox.h/2.;
+        float ymax = dets[i].bbox.y + dets[i].bbox.h/2.;
 
         if (xmin < 0) xmin = 0;
         if (ymin < 0) ymin = 0;
@@ -179,19 +183,19 @@ static void print_cocos(FILE *fp, char *image_path, box *boxes, float **probs, i
         float bh = ymax - ymin;
 
         for(j = 0; j < classes; ++j){
-            if (probs[i][j]) fprintf(fp, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, probs[i][j]);
+            if (dets[i].prob[j]) fprintf(fp, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, dets[i].prob[j]);
         }
     }
 }
 
-void print_detector_detections(FILE **fps, char *id, box *boxes, float **probs, int total, int classes, int w, int h)
+void print_detector_detections(FILE **fps, char *id, detection *dets, int total, int classes, int w, int h)
 {
     int i, j;
     for(i = 0; i < total; ++i){
-        float xmin = boxes[i].x - boxes[i].w/2. + 1;
-        float xmax = boxes[i].x + boxes[i].w/2. + 1;
-        float ymin = boxes[i].y - boxes[i].h/2. + 1;
-        float ymax = boxes[i].y + boxes[i].h/2. + 1;
+        float xmin = dets[i].bbox.x - dets[i].bbox.w/2. + 1;
+        float xmax = dets[i].bbox.x + dets[i].bbox.w/2. + 1;
+        float ymin = dets[i].bbox.y - dets[i].bbox.h/2. + 1;
+        float ymax = dets[i].bbox.y + dets[i].bbox.h/2. + 1;
 
         if (xmin < 1) xmin = 1;
         if (ymin < 1) ymin = 1;
@@ -199,20 +203,20 @@ void print_detector_detections(FILE **fps, char *id, box *boxes, float **probs, 
         if (ymax > h) ymax = h;
 
         for(j = 0; j < classes; ++j){
-            if (probs[i][j]) fprintf(fps[j], "%s %f %f %f %f %f\n", id, probs[i][j],
+            if (dets[i].prob[j]) fprintf(fps[j], "%s %f %f %f %f %f\n", id, dets[i].prob[j],
                     xmin, ymin, xmax, ymax);
         }
     }
 }
 
-void print_imagenet_detections(FILE *fp, int id, box *boxes, float **probs, int total, int classes, int w, int h)
+void print_imagenet_detections(FILE *fp, int id, detection *dets, int total, int classes, int w, int h)
 {
     int i, j;
     for(i = 0; i < total; ++i){
-        float xmin = boxes[i].x - boxes[i].w/2.;
-        float xmax = boxes[i].x + boxes[i].w/2.;
-        float ymin = boxes[i].y - boxes[i].h/2.;
-        float ymax = boxes[i].y + boxes[i].h/2.;
+        float xmin = dets[i].bbox.x - dets[i].bbox.w/2.;
+        float xmax = dets[i].bbox.x + dets[i].bbox.w/2.;
+        float ymin = dets[i].bbox.y - dets[i].bbox.h/2.;
+        float ymax = dets[i].bbox.y + dets[i].bbox.h/2.;
 
         if (xmin < 0) xmin = 0;
         if (ymin < 0) ymin = 0;
@@ -220,8 +224,8 @@ void print_imagenet_detections(FILE *fp, int id, box *boxes, float **probs, int 
         if (ymax > h) ymax = h;
 
         for(j = 0; j < classes; ++j){
-            int class = j;
-            if (probs[i][class]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, probs[i][class],
+            int clazz = j;
+            if (dets[i].prob[clazz]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, dets[i].prob[clazz],
                     xmin, ymin, xmax, ymax);
         }
     }
@@ -239,18 +243,15 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 2);
-    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 2);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
     list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net.layers[net.n-1];
+    layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     char buff[1024];
@@ -280,11 +281,6 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
         }
     }
 
-
-    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float *));
-
     int m = plist->size;
     int i=0;
     int t;
@@ -299,11 +295,11 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     image *buf_resized = calloc(nthreads, sizeof(image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
 
-    image input = make_image(net.w, net.h, net.c*2);
+    image input = make_image(net->w, net->h, net->c*2);
 
     load_args args = {0};
-    args.w = net.w;
-    args.h = net.h;
+    args.w = net->w;
+    args.h = net->h;
     //args.type = IMAGE_DATA;
     args.type = LETTERBOX_DATA;
 
@@ -313,7 +309,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
         args.resized = &buf_resized[t];
         thr[t] = load_data_in_thread(args);
     }
-    time_t start = time(0);
+    double start = what_time_is_it_now();
     for(i = nthreads; i < m+nthreads; i += nthreads){
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
@@ -330,22 +326,24 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];
             char *id = basecfg(path);
-            copy_cpu(net.w*net.h*net.c, val_resized[t].data, 1, input.data, 1);
+            copy_cpu(net->w*net->h*net->c, val_resized[t].data, 1, input.data, 1);
             flip_image(val_resized[t]);
-            copy_cpu(net.w*net.h*net.c, val_resized[t].data, 1, input.data + net.w*net.h*net.c, 1);
+            copy_cpu(net->w*net->h*net->c, val_resized[t].data, 1, input.data + net->w*net->h*net->c, 1);
 
             network_predict(net, input.data);
             int w = val[t].w;
             int h = val[t].h;
-            get_region_boxes(l, w, h, net.w, net.h, thresh, probs, boxes, 0, 0, map, .5, 0);
-            if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, classes, nms);
+            int num = 0;
+            detection *dets = get_network_boxes(net, w, h, thresh, .5, map, 0, &num);
+            if (nms) do_nms_sort(dets, num, classes, nms);
             if (coco){
-                print_cocos(fp, path, boxes, probs, l.w*l.h*l.n, classes, w, h);
+                print_cocos(fp, path, dets, num, classes, w, h);
             } else if (imagenet){
-                print_imagenet_detections(fp, i+t-nthreads+1, boxes, probs, l.w*l.h*l.n, classes, w, h);
+                print_imagenet_detections(fp, i+t-nthreads+1, dets, num, classes, w, h);
             } else {
-                print_detector_detections(fps, id, boxes, probs, l.w*l.h*l.n, classes, w, h);
+                print_detector_detections(fps, id, dets, num, classes, w, h);
             }
+            free_detections(dets, num);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
@@ -359,7 +357,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
         fprintf(fp, "\n]\n");
         fclose(fp);
     }
-    fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
+    fprintf(stderr, "Total Detection Time: %f Seconds\n", what_time_is_it_now() - start);
 }
 
 
@@ -375,18 +373,15 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 1);
-    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
     list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net.layers[net.n-1];
+    layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     char buff[1024];
@@ -417,10 +412,6 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     }
 
 
-    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float *));
-
     int m = plist->size;
     int i=0;
     int t;
@@ -436,8 +427,8 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
 
     load_args args = {0};
-    args.w = net.w;
-    args.h = net.h;
+    args.w = net->w;
+    args.h = net->h;
     //args.type = IMAGE_DATA;
     args.type = LETTERBOX_DATA;
 
@@ -447,7 +438,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         args.resized = &buf_resized[t];
         thr[t] = load_data_in_thread(args);
     }
-    time_t start = time(0);
+    double start = what_time_is_it_now();
     for(i = nthreads; i < m+nthreads; i += nthreads){
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
@@ -468,15 +459,17 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            get_region_boxes(l, w, h, net.w, net.h, thresh, probs, boxes, 0, 0, map, .5, 0);
-            if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, classes, nms);
+            int nboxes = 0;
+            detection *dets = get_network_boxes(net, w, h, thresh, .5, map, 0, &nboxes);
+            if (nms) do_nms_sort(dets, nboxes, classes, nms);
             if (coco){
-                print_cocos(fp, path, boxes, probs, l.w*l.h*l.n, classes, w, h);
+                print_cocos(fp, path, dets, nboxes, classes, w, h);
             } else if (imagenet){
-                print_imagenet_detections(fp, i+t-nthreads+1, boxes, probs, l.w*l.h*l.n, classes, w, h);
+                print_imagenet_detections(fp, i+t-nthreads+1, dets, nboxes, classes, w, h);
             } else {
-                print_detector_detections(fps, id, boxes, probs, l.w*l.h*l.n, classes, w, h);
+                print_detector_detections(fps, id, dets, nboxes, classes, w, h);
             }
+            free_detections(dets, nboxes);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
@@ -490,33 +483,22 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         fprintf(fp, "\n]\n");
         fclose(fp);
     }
-    fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
+    fprintf(stderr, "Total Detection Time: %f Seconds\n", what_time_is_it_now() - start);
 }
 
-void validate_detector_recall(char *cfgfile, char *weightfile, char *test_list)
+void validate_detector_recall(char *cfgfile, char *weightfile)
 {
-    printf("parsing net");
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        printf("loading weights...");
-        load_weights(&net, weightfile);
-    }
-    printf("set batch network");
-    set_batch_network(&net, 1);
-    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
-  //  list *plist = get_paths("dirc_short.txt");
-    list *plist = get_paths(test_list);
+    list *plist = get_paths("data/coco_val_5k.list");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net.layers[net.n-1];
-    int classes = l.classes;
+    layer l = net->layers[net->n-1];
 
     int j, k;
-    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float *));
 
     int m = plist->size;
     int i=0;
@@ -533,23 +515,23 @@ void validate_detector_recall(char *cfgfile, char *weightfile, char *test_list)
     for(i = 0; i < m; ++i){
         char *path = paths[i];
         image orig = load_image_color(path, 0, 0);
-        image sized = resize_image(orig, net.w, net.h);
+        image sized = resize_image(orig, net->w, net->h);
         char *id = basecfg(path);
         network_predict(net, sized.data);
-        get_region_boxes(l, sized.w, sized.h, net.w, net.h, thresh, probs, boxes, 0, 1, 0, .5, 1);
-        if (nms) do_nms(boxes, probs, l.w*l.h*l.n, 1, nms);
+        int nboxes = 0;
+        detection *dets = get_network_boxes(net, sized.w, sized.h, thresh, .5, 0, 1, &nboxes);
+        if (nms) do_nms_obj(dets, nboxes, 1, nms);
 
         char labelpath[4096];
         find_replace(path, "images", "labels", labelpath);
         find_replace(labelpath, "JPEGImages", "labels", labelpath);
         find_replace(labelpath, ".jpg", ".txt", labelpath);
         find_replace(labelpath, ".JPEG", ".txt", labelpath);
-        find_replace(labelpath, ".jpeg", ".txt", labelpath);
 
         int num_labels = 0;
         box_label *truth = read_boxes(labelpath, &num_labels);
-        for(k = 0; k < l.w*l.h*l.n; ++k){
-            if(probs[k][0] > thresh){
+        for(k = 0; k < nboxes; ++k){
+            if(dets[k].objectness > thresh){
                 ++proposals;
             }
         }
@@ -558,8 +540,8 @@ void validate_detector_recall(char *cfgfile, char *weightfile, char *test_list)
             box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
             float best_iou = 0;
             for(k = 0; k < l.w*l.h*l.n; ++k){
-                float iou = box_iou(boxes[k], t);
-                if(probs[k][0] > thresh && iou > best_iou){
+                float iou = box_iou(dets[k].bbox, t);
+                if(dets[k].objectness > thresh && iou > best_iou){
                     best_iou = iou;
                 }
             }
@@ -581,24 +563,24 @@ void write_detections(image im, int num, float thresh, box *boxes, float **probs
         int i;
         FILE *f_img;
         f_img = fopen(save_name, "w");
-    
+
         for(i = 0; i < num; ++i){
-                int class = max_index(probs[i], classes);
-                float prob = probs[i][class];
+                int clazz = max_index(probs[i], classes);
+                float prob = probs[i][clazz];
                 //write the class only if its prob is greater than zero
                 if(prob){
                         box b = boxes[i];
-           
+
 //			float x_min = b.x - b.w/2.;
 //			float y_min = b.y - b.h/2.;
 //			float x_max = b.x + b.w/2.;
 //			float y_max = b.y + b.h/2.;
- 
+
                         int left  = (b.x-b.w/2.)*im.w;
                         int right = (b.x+b.w/2.)*im.w;
                         int top   = (b.y+b.h/2.)*im.h;
                         int bot   = (b.y-b.h/2.)*im.h;
-            
+
 //			if (x_min < 0) x_min = 0;
 //			if (y_min < 0) y_min = 0;
 //			if (y_max > b.w) x_max = b.w;
@@ -607,7 +589,7 @@ void write_detections(image im, int num, float thresh, box *boxes, float **probs
                         if(right > im.w-1) right = im.w-1;
                         if(bot < 0) bot = 0;
                         if(top > im.h-1) top = im.h-1;
-                        fprintf(f_img, "%s %d %d %d %d %f\n", names[class], left, bot, right, top, prob);
+                        fprintf(f_img, "%s %d %d %d %d %f\n", names[clazz], left, bot, right, top, prob);
                        // fprintf(f_img, "%d %f %f %f %f %f\n", class, x_min, y_min, x_max, y_max, prob);
                     }
             }
@@ -616,121 +598,120 @@ void write_detections(image im, int num, float thresh, box *boxes, float **probs
 
 void test_detector_file(char *datacfg, char *cfgfile, char *weightfile, char *filelistname, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
-    list *options = read_data_cfg(datacfg);
-    char *name_list = option_find_str(options, "names", "data/names.list");
-    char **names = get_labels(name_list);
-    
-    image **alphabet = load_alphabet();
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 1);
-    srand(2222222);
-    double time;
-    char buff[256];
-    char *input = buff;
-    int j;
-    float nms=.4;
-    
-    
-    list *plist = get_paths(filelistname);
-    //int N = plist->size;
-    char **paths = (char **)list_to_array(plist);
-    
-    int m = plist->size;
-    int i=0;
-    
-    
-    for(i = 0; i < m; ++i){
-        //char *path = paths[i];
-        strncpy(input, paths[i], 256);
-        
-        
-        image im = load_image_color(input,0,0);
-        image sized = letterbox_image(im, net.w, net.h);
-        //image sized = resize_image(im, net.w, net.h);
-        //image sized2 = resize_max(im, net.w);
-        //image sized = crop_image(sized2, -((net.w - sized2.w)/2), -((net.h - sized2.h)/2), net.w, net.h);
-        //resize_network(&net, sized.w, sized.h);
-        layer l = net.layers[net.n-1];
-        
-        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
-        
-        float **masks = 0;
-        if (l.coords > 4){
-            masks = calloc(l.w*l.h*l.n, sizeof(float*));
-            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = calloc(l.coords-4, sizeof(float *));
-        }
-        
-        float *X = sized.data;
-        time=what_time_is_it_now();
-        network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
-        //get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, 0, 0, hier_thresh, 1);
-        get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
-        if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        //draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
-        // if output directory is specified then save the images
-        // Example command
-        // ./darknet detector test_file cfg/combine9k.data cfg/yolo9000.cfg data/yolo9000.weights imgs_v/imagelist.txt -thresh 0.01 -outdir img_out_cmu
-        if(outfile){
-            //TODO mimic draw detection and annotations to txt file
-            char buff2[256];
-            char buff3[256];
-            char * imgName = buff2;
-            char * saveName = buff3;
-            strncpy(saveName, outfile, 256);
-            strncpy(imgName, input, 256);
-            int imgName_len = strlen(imgName);
-            //extract filename
-            int dir_len = 0;
-            int ext_len = 0;
-            int jj = 0;
-            for(jj = 0; jj < imgName_len; jj++){
-                if(imgName[jj] == '/'){
-                    dir_len = jj;
-                }
-                if(imgName[jj] == '.'){
-                    ext_len = jj;
-                }
-            }
-            imgName[ext_len] = '\0';
-            imgName += dir_len;
-            //concatenate and give to save_image
-            strcat(saveName, imgName);
-                        printf("saving as: %s \n", saveName);
-            save_image(im, saveName);
-                        //write detections to txt file
-                        strcat(saveName, ".txt");
-                        write_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes, saveName);
-        }
-        else{
-            save_image(im, "predictions");
-#ifdef OPENCV
-            cvNamedWindow("predictions", CV_WINDOW_NORMAL);
-            if(fullscreen){
-                cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-            }
-            show_image(im, "predictions");
-            cvWaitKey(0);
-            cvDestroyAllWindows();
-#endif
-        }
-        
-        free_image(im);
-        free_image(sized);
-        free(boxes);
-        free_ptrs((void **)probs, l.w*l.h*l.n);
-        //if (filename) break;
-                printf("\n");
-    }
-}
 
+}
+//    list *options = read_data_cfg(datacfg);
+//    char *name_list = option_find_str(options, "names", "data/names.list");
+//    char **names = get_labels(name_list);
+//
+//    image **alphabet = load_alphabet();
+//    network *net = load_network(cfgfile, weightfile, 0);
+//    set_batch_network(net, 1);
+//    srand(2222222);
+//    double time;
+//    char buff[256];
+//    char *input = buff;
+//    int j;
+//    float nms=.4;
+//
+//
+//    list *plist = get_paths(filelistname);
+//    //int N = plist->size;
+//    char **paths = (char **)list_to_array(plist);
+//
+//    int m = plist->size;
+//    int i=0;
+//
+//
+//    for(i = 0; i < m; ++i){
+//        //char *path = paths[i];
+//        strncpy(input, paths[i], 256);
+//
+//
+//        image im = load_image_color(input,0,0);
+//        image sized = letterbox_image(im, net->w, net->h);
+//        //image sized = resize_image(im, net.w, net.h);
+//        //image sized2 = resize_max(im, net.w);
+//        //image sized = crop_image(sized2, -((net.w - sized2.w)/2), -((net.h - sized2.h)/2), net.w, net.h);
+//        //resize_network(&net, sized.w, sized.h);
+//        layer l = net.layers[net->n-1];
+//
+//        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+//        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+//        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
+//
+//        float **masks = 0;
+//        if (l.coords > 4){
+//            masks = calloc(l.w*l.h*l.n, sizeof(float*));
+//            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = calloc(l.coords-4, sizeof(float *));
+//        }
+//
+//        float *X = sized.data;
+//        time=what_time_is_it_now();
+//        network_predict(net, X);
+//        printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+//        //get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, 0, 0, hier_thresh, 1);
+//        get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
+//        if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+//        //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+//        //draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
+//        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
+//        // if output directory is specified then save the images
+//        // Example command
+//        // ./darknet detector test_file cfg/combine9k.data cfg/yolo9000.cfg data/yolo9000.weights imgs_v/imagelist.txt -thresh 0.01 -outdir img_out_cmu
+//        if(outfile){
+//            //TODO mimic draw detection and annotations to txt file
+//            char buff2[256];
+//            char buff3[256];
+//            char * imgName = buff2;
+//            char * saveName = buff3;
+//            strncpy(saveName, outfile, 256);
+//            strncpy(imgName, input, 256);
+//            int imgName_len = strlen(imgName);
+//            //extract filename
+//            int dir_len = 0;
+//            int ext_len = 0;
+//            int jj = 0;
+//            for(jj = 0; jj < imgName_len; jj++){
+//                if(imgName[jj] == '/'){
+//                    dir_len = jj;
+//                }
+//                if(imgName[jj] == '.'){
+//                    ext_len = jj;
+//                }
+//            }
+//            imgName[ext_len] = '\0';
+//            imgName += dir_len;
+//            //concatenate and give to save_image
+//            strcat(saveName, imgName);
+//                        printf("saving as: %s \n", saveName);
+//            save_image(im, saveName);
+//                        //write detections to txt file
+//                        strcat(saveName, ".txt");
+//                        write_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes, saveName);
+//        }
+//        else{
+//            save_image(im, "predictions");
+//#ifdef OPENCV
+//            cvNamedWindow("predictions", CV_WINDOW_NORMAL);
+//            if(fullscreen){
+//                cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+//            }
+//            show_image(im, "predictions");
+//            cvWaitKey(0);
+//            cvDestroyAllWindows();
+//#endif
+//        }
+//
+//        free_image(im);
+//        free_image(sized);
+//        free(boxes);
+//        free_ptrs((void **)probs, l.w*l.h*l.n);
+//        //if (filename) break;
+//                printf("\n");
+//    }
+//}
+//
 
 
 
@@ -741,17 +722,13 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels(name_list);
 
     image **alphabet = load_alphabet();
-    network net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(&net, weightfile);
-    }
-    set_batch_network(&net, 1);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
     srand(2222222);
     double time;
     char buff[256];
     char *input = buff;
-    int j;
-    float nms=.3;
+    float nms=.45;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -763,30 +740,25 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             strtok(input, "\n");
         }
         image im = load_image_color(input,0,0);
-        image sized = letterbox_image(im, net.w, net.h);
-        //image sized = resize_image(im, net.w, net.h);
-        //image sized2 = resize_max(im, net.w);
-        //image sized = crop_image(sized2, -((net.w - sized2.w)/2), -((net.h - sized2.h)/2), net.w, net.h);
-        //resize_network(&net, sized.w, sized.h);
-        layer l = net.layers[net.n-1];
+        image sized = letterbox_image(im, net->w, net->h);
+        //image sized = resize_image(im, net->w, net->h);
+        //image sized2 = resize_max(im, net->w);
+        //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
+        //resize_network(net, sized.w, sized.h);
+        layer l = net->layers[net->n-1];
 
-        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
-        float **masks = 0;
-        if (l.coords > 4){
-            masks = calloc(l.w*l.h*l.n, sizeof(float*));
-            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = calloc(l.coords-4, sizeof(float *));
-        }
 
         float *X = sized.data;
         time=what_time_is_it_now();
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
-        get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
-        if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
+        int nboxes = 0;
+        detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+        //printf("%d\n", nboxes);
+        //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+        free_detections(dets, nboxes);
         if(outfile){
             save_image(im, outfile);
         }
@@ -805,16 +777,180 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         free_image(im);
         free_image(sized);
-        free(boxes);
-        free_ptrs((void **)probs, l.w*l.h*l.n);
         if (filename) break;
     }
 }
 
+/*
+void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
+{
+#ifdef OPENCV
+    char *base = basecfg(cfgfile);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+
+    srand(2222222);
+    CvCapture * cap;
+
+    int w = 1280;
+    int h = 720;
+
+    if(filename){
+        cap = cvCaptureFromFile(filename);
+    }else{
+        cap = cvCaptureFromCAM(cam_index);
+    }
+
+    if(w){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+    }
+    if(h){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+    }
+
+    if(!cap) error("Couldn't connect to webcam.\n");
+    cvNamedWindow(base, CV_WINDOW_NORMAL);
+    cvResizeWindow(base, 512, 512);
+    float fps = 0;
+    int i;
+    float nms = .45;
+
+    while(1){
+        image in = get_image_from_stream(cap);
+        //image in_s = resize_image(in, net->w, net->h);
+        image in_s = letterbox_image(in, net->w, net->h);
+        layer l = net->layers[net->n-1];
+
+        float *X = in_s.data;
+        network_predict(net, X);
+        int nboxes = 0;
+        detection *dets = get_network_boxes(net, in.w, in.h, thresh, 0, 0, 0, &nboxes);
+        //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+
+        for(i = 0; i < nboxes; ++i){
+            if(dets[i].prob[class] > thresh){
+                box b = dets[i].bbox;
+                int left  = b.x-b.w/2.;
+                int top   = b.y-b.h/2.;
+                censor_image(in, left, top, b.w, b.h);
+            }
+        }
+        show_image(in, base);
+        cvWaitKey(10);
+        free_detections(dets, nboxes);
+
+
+        free_image(in_s);
+        free_image(in);
+
+
+        float curr = 0;
+        fps = .9*fps + .1*curr;
+        for(i = 0; i < skip; ++i){
+            image in = get_image_from_stream(cap);
+            free_image(in);
+        }
+    }
+    #endif
+}
+
+void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
+{
+#ifdef OPENCV
+    char *base = basecfg(cfgfile);
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+
+    srand(2222222);
+    CvCapture * cap;
+
+    int w = 1280;
+    int h = 720;
+
+    if(filename){
+        cap = cvCaptureFromFile(filename);
+    }else{
+        cap = cvCaptureFromCAM(cam_index);
+    }
+
+    if(w){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+    }
+    if(h){
+        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+    }
+
+    if(!cap) error("Couldn't connect to webcam.\n");
+    cvNamedWindow(base, CV_WINDOW_NORMAL);
+    cvResizeWindow(base, 512, 512);
+    float fps = 0;
+    int i;
+    int count = 0;
+    float nms = .45;
+
+    while(1){
+        image in = get_image_from_stream(cap);
+        //image in_s = resize_image(in, net->w, net->h);
+        image in_s = letterbox_image(in, net->w, net->h);
+        layer l = net->layers[net->n-1];
+
+        show_image(in, base);
+
+        int nboxes = 0;
+        float *X = in_s.data;
+        network_predict(net, X);
+        detection *dets = get_network_boxes(net, in.w, in.h, thresh, 0, 0, 1, &nboxes);
+        //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+
+        for(i = 0; i < nboxes; ++i){
+            if(dets[i].prob[class] > thresh){
+                box b = dets[i].bbox;
+                int size = b.w*in.w > b.h*in.h ? b.w*in.w : b.h*in.h;
+                int dx  = b.x*in.w-size/2.;
+                int dy  = b.y*in.h-size/2.;
+                image bim = crop_image(in, dx, dy, size, size);
+                char buff[2048];
+                sprintf(buff, "results/extract/%07d", count);
+                ++count;
+                save_image(bim, buff);
+                free_image(bim);
+            }
+        }
+        free_detections(dets, nboxes);
+
+
+        free_image(in_s);
+        free_image(in);
+
+
+        float curr = 0;
+        fps = .9*fps + .1*curr;
+        for(i = 0; i < skip; ++i){
+            image in = get_image_from_stream(cap);
+            free_image(in);
+        }
+    }
+    #endif
+}
+*/
+
+/*
+void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, detection *dets)
+{
+    network_predict_image(net, im);
+    layer l = net->layers[net->n-1];
+    int nboxes = num_boxes(net);
+    fill_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 0, dets);
+    if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+}
+*/
+
 void run_detector(int argc, char **argv)
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
-    float thresh = find_float_arg(argc, argv, "-thresh", .24);
+    float thresh = find_float_arg(argc, argv, "-thresh", .5);
     float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
@@ -854,6 +990,7 @@ void run_detector(int argc, char **argv)
     int width = find_int_arg(argc, argv, "-w", 0);
     int height = find_int_arg(argc, argv, "-h", 0);
     int fps = find_int_arg(argc, argv, "-fps", 0);
+    //int class = find_int_arg(argc, argv, "-class", 0);
 
     char *datacfg = argv[3];
     char *cfg = argv[4];
@@ -864,7 +1001,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
-    else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights, test_list);
+    else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
@@ -872,4 +1009,6 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
     }
+    //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
+    //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
 }
