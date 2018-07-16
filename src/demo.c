@@ -10,8 +10,14 @@
 #include <sys/time.h>
 
 #define DEMO 1
+#define FRAMES 3
+#define SAVEVIDEO
 
 #ifdef OPENCV
+
+#ifdef SAVEVIDEO
+static CvVideoWriter *mVideoWriter;
+#endif
 
 static char **demo_names;
 static image **demo_alphabet;
@@ -224,6 +230,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
     }
 
+#ifdef SAVEVIDEO
+        if(cap){
+            int mfps = cvGetCaptureProperty(cap,CV_CAP_PROP_FPS);
+            mVideoWriter=cvCreateVideoWriter("Output.avi",CV_FOURCC('M','J','P','G'),mfps,cvSize(cvGetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH),cvGetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT)),1);
+        }
+#endif
     if(!cap) error("Couldn't connect to webcam.\n");
 
     buff[0] = get_image_from_stream(cap);
@@ -255,6 +267,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             fps = 1./(what_time_is_it_now() - demo_time);
             demo_time = what_time_is_it_now();
             display_in_thread(0);
+            #ifdef SAVEVIDEO
+                save_video(/* disp */ buff[(buff_index + 1)%3], mVideoWriter);
+            #endif
         }else{
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
