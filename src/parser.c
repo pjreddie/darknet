@@ -849,6 +849,7 @@ network *parse_network_cfg(char *filename)
     layer out = get_network_output_layer(net);
     net->outputs = out.outputs;
     net->truths = out.outputs;
+    net->workspace_size = workspace_size;
     if(net->layers[net->n-1].truths) net->truths = net->layers[net->n-1].truths;
     net->output = out.output;
     net->input = calloc(net->inputs*net->batch, sizeof(float));

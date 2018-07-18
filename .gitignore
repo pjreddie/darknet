@@ -5,6 +5,8 @@
 *.png
 *.jpg
 *.pyc
+*.weights
+*.pb
 old/
 mnist/
 data/
@@ -25,3 +27,4 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+
