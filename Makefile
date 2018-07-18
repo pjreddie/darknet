@@ -24,7 +24,7 @@ NVCC=nvcc
 AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
-LDFLAGS= -lm -pthread 
+LDFLAGS= -lm -lpthread 
 COMMON= -Iinclude/ -Isrc/
 CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
@@ -41,7 +41,8 @@ CFLAGS+=$(OPTS)
 ifeq ($(OPENCV), 1) 
 COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
-LDFLAGS+= `pkg-config --libs opencv` 
+#OSX seems to have a bug in pkg-config. Should not affect other ports
+LDFLAGS+= `pkg-config --libs opencv | sed 's/libtbb\.dylib/tbb/'` 
 COMMON+= `pkg-config --cflags opencv` 
 endif
 
