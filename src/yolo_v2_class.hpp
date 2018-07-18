@@ -1,13 +1,13 @@
 #pragma once
 #ifdef YOLODLL_EXPORTS
 #if defined(_MSC_VER)
-#define YOLODLL_API __declspec(dllexport) 
+#define YOLODLL_API __declspec(dllexport)
 #else
 #define YOLODLL_API __attribute__((visibility("default")))
 #endif
 #else
 #if defined(_MSC_VER)
-#define YOLODLL_API __declspec(dllimport) 
+#define YOLODLL_API __declspec(dllimport)
 #else
 #define YOLODLL_API
 #endif
@@ -71,7 +71,7 @@ public:
     YOLODLL_API int get_net_height() const;
     YOLODLL_API int get_net_color_depth() const;
 
-    YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true, 
+    YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true,
                                                 int const frames_story = 10, int const max_dist = 150);
 
     std::vector<bbox_t> detect_resized(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false)
@@ -97,14 +97,14 @@ public:
     {
         if (mat.data == NULL) return std::shared_ptr<image_t>(NULL);
 
-        cv::Size s = mat.size();
-        if (get_net_width() != s.width || get_net_height() != s.height) {
-            cv::Mat det_mat;
-            cv::resize(mat, det_mat, cv::Size(get_net_width(), get_net_height()));
-            return mat_to_image(det_mat);
-        }
+        cv::Size network_size = cv::Size(get_net_width(), get_net_height());
+        cv::Mat det_mat;
+        if (mat.size() != network_size)
+            cv::resize(mat, det_mat, network_size);
+        else
+            det_mat = mat;  // only reference is copied
 
-        return mat_to_image(mat);
+        return mat_to_image(det_mat);
     }
 
     static std::shared_ptr<image_t> mat_to_image(cv::Mat img_src)
@@ -304,7 +304,7 @@ public:
 
         std::vector<bbox_t> result_bbox_vec;
 
-        if (err_cpu.cols == cur_bbox_vec.size() && status_cpu.cols == cur_bbox_vec.size()) 
+        if (err_cpu.cols == cur_bbox_vec.size() && status_cpu.cols == cur_bbox_vec.size())
         {
             for (size_t i = 0; i < cur_bbox_vec.size(); ++i)
             {
