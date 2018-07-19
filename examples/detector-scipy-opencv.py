@@ -36,7 +36,8 @@ sys.path.append(os.path.join(os.getcwd(),'python/'))
 import darknet as dn
 
 # Darknet
-net = dn.load_net("cfg/tiny-yolo.cfg", "tiny-yolo.weights", 0)
+# os.system('wget https://pjreddie.com/media/files/tiny.weights')
+net = dn.load_net("cfg/tiny.cfg", "tiny.weights", 0)
 meta = dn.load_meta("cfg/coco.data")
 r = dn.detect(net, meta, "data/dog.jpg")
 print r
