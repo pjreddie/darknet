@@ -36,7 +36,7 @@ using namespace cv;
 static char INPUT_DATA_FILE[]    = "input.data"; 
 static char INPUT_CFG_FILE[]     = "input.cfg";
 static char INPUT_WEIGHTS_FILE[] = "input.weights";
-static char INPUT_AV_FILE[] = "C:\\Users\\psundareson\\TOOLS\\GENESIS\\Brutality Vs Invisible Wings - Final match 1 - Starter Cup 1 2016 (youtubeconvert.cc).mp4"; // "input.jpg"; // "input.jpg"; //"input.jpg"; //// Can take in either Video or Image file
+static char INPUT_AV_FILE[] = "input.jpg"; // "input.jpg"; //"input.jpg"; //// Can take in either Video or Image file
 #define MAX_OBJECTS_PER_FRAME (100)
 
 #define TARGET_SHOW_FPS (10)
