@@ -13,7 +13,6 @@
 
 ArapahoV2::ArapahoV2()
 {
-    probs = 0;
     classNames = 0;
     l = {};
     net = 0;
@@ -26,14 +25,11 @@ ArapahoV2::ArapahoV2()
     
 ArapahoV2::~ArapahoV2()
 {
-    if(probs)
-        free_ptrs((void **)probs, l.w*l.h*l.n);
     if(classNames)
     {
         //todo
     }
 
-    probs = 0;
     classNames = 0;
     bSetup = false;
     
@@ -114,24 +110,6 @@ bool ArapahoV2::Setup(
     expectedWidth = net->w;
     DPRINTF("Image expected w,h = [%d][%d]!\n", net->w, net->h);            
     
-    probs = (float**)calloc(l.w*l.h*l.n, sizeof(float *));
-    
-    // Error exits
-    if(!probs)
-    {
-        EPRINTF("Error allocating boxes/probs, %p !\n", probs);
-        goto clean_exit;
-    }
-
-    for(j = 0; j < l.w*l.h*l.n; ++j) 
-    {
-        probs[j] = (float*)calloc(l.classes + 1, sizeof(float));
-        if(!probs[j])
-        {
-            EPRINTF("Error allocating probs[%d]!\n", j);            
-            goto clean_exit;
-        }
-    }
     ret = true;
     bSetup = ret;
     DPRINTF("Setup: Done\n");
@@ -139,10 +117,7 @@ bool ArapahoV2::Setup(
     
 clean_exit:        
     free_detections(dets, nboxes);
-    if(probs)
-        free_ptrs((void **)probs, l.w*l.h*l.n);
 
-    probs = NULL;
     return ret;
 }
 
@@ -298,7 +273,7 @@ bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
     
     if(!dets || !outLabels || !outBoxes)
     {
-        EPRINTF("Error NULL boxes/probs, %p !\n", probs);
+        EPRINTF("Error NULL dets/outLabels/outBoxes, %p/%p/%p !\n", dets, outLabels, outBoxes);
         return false;
     }
 
@@ -312,8 +287,9 @@ bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
                 count ++;
             }
         }
-    }    
+    }
     
+    free_detections(dets, nboxes);
     return true;
 }
 

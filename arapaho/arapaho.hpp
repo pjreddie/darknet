@@ -86,7 +86,6 @@
         detection *dets;
         int     nboxes;
         char    **classNames;
-        float   **probs;
         bool    bSetup;
         network* net;
         layer   l;
