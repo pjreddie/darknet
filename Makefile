@@ -1,5 +1,4 @@
 GPU=1
-CUDNN=0
 OPENCV=0
 OPENMP=0
 DEBUG=0
@@ -53,7 +52,9 @@ LDFLAGS+= -L/usr/local/cuda-9.2/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 
 ifeq ($(CUDNN), 1) 
+
 COMMON+= -DCUDNN -I/usr/local/cuda-9.2/include/
+
 CFLAGS+= -DCUDNN
 LDFLAGS+= -lcudnn
 endif
