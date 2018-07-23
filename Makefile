@@ -53,7 +53,11 @@ LDFLAGS+= -L/usr/local/cuda-9.2/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 
 ifeq ($(CUDNN), 1) 
+<<<<<<< HEAD
 COMMON+= -DCUDNN -I/usr/local/cuda-9.2/include/
+=======
+COMMON+= -DCUDNN -I/usr/local/cuda/include/
+>>>>>>> c0983ed7b487b02a310bf08380d35e0485dfcdec
 CFLAGS+= -DCUDNN
 LDFLAGS+= -lcudnn
 endif
