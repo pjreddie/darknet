@@ -224,7 +224,7 @@ image **load_alphabet()
 {
     int i, j;
     const int nsize = 8;
-    image **alphabets = calloc(nsize, sizeof(image));
+    image **alphabets = calloc(nsize, sizeof(image*));
     for(j = 0; j < nsize; ++j){
         alphabets[j] = calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
@@ -256,7 +256,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             }
         }
         if(class >= 0){
-            int width = im.h * .006;
+            int width = fmax(1, im.h * .006);
 
             /*
                if(0){
