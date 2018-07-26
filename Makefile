@@ -1,5 +1,6 @@
 GPU=1
 OPENCV=0
+CUDNN=0
 OPENMP=0
 DEBUG=0
 
@@ -33,7 +34,7 @@ CFLAGS+= -fopenmp
 endif
 
 ifeq ($(DEBUG), 1) 
-OPTS= -g -fsanitize=address
+OPTS= -g #-fsanitize=address
 endif
 
 CFLAGS+=$(OPTS)
@@ -52,17 +53,9 @@ LDFLAGS+= -L/usr/local/cuda-9.2/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 
 ifeq ($(CUDNN), 1) 
-<<<<<<< HEAD
 
 COMMON+= -DCUDNN -I/usr/local/cuda-9.2/include/
 
-=======
-<<<<<<< HEAD
-COMMON+= -DCUDNN -I/usr/local/cuda-9.2/include/
-=======
-COMMON+= -DCUDNN -I/usr/local/cuda/include/
->>>>>>> c0983ed7b487b02a310bf08380d35e0485dfcdec
->>>>>>> 1a18cdebcfdfacb47937e79fee80379c9fadc002
 CFLAGS+= -DCUDNN
 LDFLAGS+= -lcudnn
 endif
@@ -108,4 +101,9 @@ results:
 
 clean:
 	rm -rf $(OBJS) $(SLIB) $(ALIB) $(EXEC) $(EXECOBJ) $(OBJDIR)/*
+
+.PHONY: install
+
+install:
+	cp $(SLIB) /usr/lib/x86_64-linux-gnu/
 
