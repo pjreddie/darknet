@@ -90,6 +90,9 @@ typedef enum {
     UPSAMPLE,
     LOGXENT,
     L2NORM,
+    ODLA,
+    CAFFE,
+    SPLIT,
     BLANK
 } LAYER_TYPE;
 
@@ -108,6 +111,13 @@ typedef struct{
     float eps;
     int t;
 } update_args;
+
+typedef struct{
+    int w,h,c;
+    int size;
+    float *data;
+    void *buffer;
+} tensor;
 
 struct network;
 typedef struct network network;
@@ -286,6 +296,16 @@ struct layer{
     float *dc_cpu; 
 
     float * binary_input;
+
+    int odla_instance;
+    void *odla_runtime;
+    void *caffe_net;
+    void *loadable;
+    int num_output;
+    int num_input;
+    tensor *input_tensor;
+    tensor *input_tensors;
+    tensor *output_tensors;
 
     struct layer *input_layer;
     struct layer *self_layer;

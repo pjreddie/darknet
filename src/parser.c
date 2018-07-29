@@ -34,6 +34,9 @@
 #include "shortcut_layer.h"
 #include "softmax_layer.h"
 #include "lstm_layer.h"
+#include "odla_layer.h"
+#include "caffe_layer.h"
+#include "split_layer.h"
 #include "utils.h"
 
 typedef struct{
@@ -81,6 +84,9 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[softmax]")==0) return SOFTMAX;
     if (strcmp(type, "[route]")==0) return ROUTE;
     if (strcmp(type, "[upsample]")==0) return UPSAMPLE;
+    if (strcmp(type, "[caffe]")==0) return CAFFE;
+    if (strcmp(type, "[odla]")==0) return ODLA;
+    if (strcmp(type, "[split]")==0) return SPLIT;
     return BLANK;
 }
 
@@ -498,6 +504,46 @@ avgpool_layer parse_avgpool(list *options, size_params params)
     return layer;
 }
 
+split_layer parse_split(list *options, size_params params, network *net)
+{
+    int input_layer = option_find_int(options, "input_layer", 0);
+    int tensor = option_find_int(options, "tensor", 0);
+
+    input_layer = params.index + input_layer;
+    fprintf(stderr, "input layer %d tensor %d\n", input_layer, tensor);
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    split_layer layer = make_split_layer(net, batch,w,h,c,input_layer, tensor);
+    return layer;
+}
+
+odla_layer parse_odla(list *options, size_params params)
+{
+    int instance = option_find_int(options, "instance", 0);
+    const char *loadable = option_find_str(options, "loadable", "");
+
+    odla_layer layer = make_odla_layer(params.batch, params.w, params.h, params.c, instance, loadable);
+    layer.w = layer.out_w = params.w;
+    layer.h = layer.out_h = params.h;
+    layer.c = layer.out_c = params.c;
+    return layer;
+}
+
+caffe_layer parse_caffe(list *options, size_params params)
+{
+    const char *cfg = option_find_str(options, "cfg", "");
+    const char *weights = option_find_str(options, "weights", "");
+
+    caffe_layer layer = make_caffe_layer(params.batch, params.w, params.h, params.c, cfg, weights);
+    layer.w = layer.out_w = params.w;
+    layer.h = layer.out_h = params.h;
+    layer.c = layer.out_c = params.c;
+    return layer;
+}
+
 dropout_layer parse_dropout(list *options, size_params params)
 {
     float probability = option_find_float(options, "probability", .5);
@@ -806,6 +852,12 @@ network *parse_network_cfg(char *filename)
             l = parse_reorg(options, params);
         }else if(lt == AVGPOOL){
             l = parse_avgpool(options, params);
+        }else if(lt == CAFFE){
+            l = parse_caffe(options, params);
+        }else if(lt == ODLA){
+            l = parse_odla(options, params);
+        }else if(lt == SPLIT){
+            l = parse_split(options, params, net);
         }else if(lt == ROUTE){
             l = parse_route(options, params, net);
         }else if(lt == UPSAMPLE){
