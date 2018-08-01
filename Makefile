@@ -54,7 +54,7 @@ endif
 
 ifeq ($(CUDNN), 1) 
 
-COMMON+= -DCUDNN -I/usr/local/cuda-9.2/include/
+COMMON+= -DCUDNN -I/usr/local/cuda/include/
 
 CFLAGS+= -DCUDNN
 LDFLAGS+= -lcudnn
@@ -106,3 +106,4 @@ clean:
 
 install:
 	cp $(SLIB) /usr/lib/x86_64-linux-gnu/ && cp include/darknet.h /usr/include
+	
