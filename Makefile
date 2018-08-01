@@ -47,9 +47,9 @@ COMMON+= `pkg-config --cflags opencv`
 endif
 
 ifeq ($(GPU), 1) 
-COMMON+= -DGPU -I/usr/local/cuda-9.2/include/
+COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
-LDFLAGS+= -L/usr/local/cuda-9.2/lib64 -lcuda -lcudart -lcublas -lcurand
+LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 
 ifeq ($(CUDNN), 1) 
@@ -105,5 +105,4 @@ clean:
 .PHONY: install
 
 install:
-	cp $(SLIB) /usr/lib/x86_64-linux-gnu/
-
+	cp $(SLIB) /usr/lib/x86_64-linux-gnu/ && cp include/darknet.h /usr/include
