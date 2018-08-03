@@ -27,6 +27,7 @@
 #include "parser.h"
 #include "region_layer.h"
 #include "yolo_layer.h"
+#include "iseg_layer.h"
 #include "reorg_layer.h"
 #include "rnn_layer.h"
 #include "route_layer.h"
@@ -52,6 +53,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[detection]")==0) return DETECTION;
     if (strcmp(type, "[region]")==0) return REGION;
     if (strcmp(type, "[yolo]")==0) return YOLO;
+    if (strcmp(type, "[iseg]")==0) return ISEG;
     if (strcmp(type, "[local]")==0) return LOCAL;
     if (strcmp(type, "[conv]")==0
             || strcmp(type, "[convolutional]")==0) return CONVOLUTIONAL;
@@ -265,18 +267,19 @@ layer parse_connected(list *options, size_params params)
     return l;
 }
 
-softmax_layer parse_softmax(list *options, size_params params)
+layer parse_softmax(list *options, size_params params)
 {
     int groups = option_find_int_quiet(options, "groups",1);
-    softmax_layer layer = make_softmax_layer(params.batch, params.inputs, groups);
-    layer.temperature = option_find_float_quiet(options, "temperature", 1);
+    layer l = make_softmax_layer(params.batch, params.inputs, groups);
+    l.temperature = option_find_float_quiet(options, "temperature", 1);
     char *tree_file = option_find_str(options, "tree", 0);
-    if (tree_file) layer.softmax_tree = read_tree(tree_file);
-    layer.w = params.w;
-    layer.h = params.h;
-    layer.c = params.c;
-    layer.spatial = option_find_float_quiet(options, "spatial", 0);
-    return layer;
+    if (tree_file) l.softmax_tree = read_tree(tree_file);
+    l.w = params.w;
+    l.h = params.h;
+    l.c = params.c;
+    l.spatial = option_find_float_quiet(options, "spatial", 0);
+    l.noloss =  option_find_int_quiet(options, "noloss", 0);
+    return l;
 }
 
 int *parse_yolo_mask(char *a, int *num)
@@ -335,6 +338,15 @@ layer parse_yolo(list *options, size_params params)
             a = strchr(a, ',')+1;
         }
     }
+    return l;
+}
+
+layer parse_iseg(list *options, size_params params)
+{
+    int classes = option_find_int(options, "classes", 20);
+    int ids = option_find_int(options, "ids", 32);
+    layer l = make_iseg_layer(params.batch, params.w, params.h, classes, ids);
+    assert(l.outputs == params.inputs);
     return l;
 }
 
@@ -472,7 +484,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
 {
     int stride = option_find_int(options, "stride",1);
     int size = option_find_int(options, "size",stride);
-    int padding = option_find_int_quiet(options, "padding", (size-1)/2);
+    int padding = option_find_int_quiet(options, "padding", size-1);
 
     int batch,h,w,c;
     h = params.h;
@@ -791,6 +803,8 @@ network *parse_network_cfg(char *filename)
             l = parse_region(options, params);
         }else if(lt == YOLO){
             l = parse_yolo(options, params);
+        }else if(lt == ISEG){
+            l = parse_iseg(options, params);
         }else if(lt == DETECTION){
             l = parse_detection(options, params);
         }else if(lt == SOFTMAX){
@@ -829,6 +843,7 @@ network *parse_network_cfg(char *filename)
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
         l.dontsave = option_find_int_quiet(options, "dontsave", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
+        l.numload = option_find_int_quiet(options, "numload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
         l.smooth = option_find_float_quiet(options, "smooth", 0);
@@ -1152,7 +1167,8 @@ void load_convolutional_weights(layer l, FILE *fp)
         //load_convolutional_weights_binary(l, fp);
         //return;
     }
-    int num = l.nweights;
+    if(l.numload) l.n = l.numload;
+    int num = l.c/l.groups*l.n*l.size*l.size;
     fread(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.n, fp);

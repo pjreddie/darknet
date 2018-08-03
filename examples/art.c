@@ -24,7 +24,6 @@ void demo_art(char *cfgfile, char *weightfile, int cam_index)
     while(1){
         image in = get_image_from_stream(cap);
         image in_s = resize_image(in, net->w, net->h);
-        show_image(in, window);
 
         float *p = network_predict(net, in_s.data);
 
@@ -45,10 +44,9 @@ void demo_art(char *cfgfile, char *weightfile, int cam_index)
         }
         printf("]\n");
 
+        show_image(in, window, 1);
         free_image(in_s);
         free_image(in);
-
-        cvWaitKey(1);
     }
 #endif
 }
