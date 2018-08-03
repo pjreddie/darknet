@@ -79,8 +79,8 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 void forward_maxpool_layer(const maxpool_layer l, network net)
 {
     int b,i,j,k,m,n;
-    int w_offset = -l.pad/l.stride;
-    int h_offset = -l.pad/l.stride;
+    int w_offset = -l.pad/2;
+    int h_offset = -l.pad/2;
 
     int h = l.out_h;
     int w = l.out_w;
