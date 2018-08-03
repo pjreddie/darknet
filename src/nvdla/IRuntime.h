@@ -32,7 +32,7 @@
 #include "dlaerror.h"
 #include "dlatypes.h"
 
-#include "IType.h"
+#include "NvDlaType.h"
 
 namespace nvdla
 {
@@ -134,7 +134,7 @@ public:
     virtual bool initEMU(void) = 0;
     virtual void stopEMU(void) = 0;
 
-    virtual bool load(NvU8 *, NvS32 instance) = 0;
+    virtual bool load(NvU8 *buf, int instance) = 0;
     virtual void unload(void) = 0;
     virtual NvDlaError allocateSystemMemory(void **h_mem, NvU64 size, void **pData) = 0;
     virtual void freeSystemMemory(void *phMem, NvU64 size) = 0;
