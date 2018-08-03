@@ -151,7 +151,7 @@ void cudnn_convolutional_setup(layer *l)
             l->convDesc,
             l->dstTensorDesc,
             CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-            4000000000,
+            2000000000,
             &l->fw_algo);
     cudnnGetConvolutionBackwardDataAlgorithm(cudnn_handle(),
             l->weightDesc,
@@ -159,7 +159,7 @@ void cudnn_convolutional_setup(layer *l)
             l->convDesc,
             l->dsrcTensorDesc,
             CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
-            4000000000,
+            2000000000,
             &l->bd_algo);
     cudnnGetConvolutionBackwardFilterAlgorithm(cudnn_handle(),
             l->srcTensorDesc,
@@ -167,7 +167,7 @@ void cudnn_convolutional_setup(layer *l)
             l->convDesc,
             l->dweightDesc,
             CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
-            4000000000,
+            2000000000,
             &l->bf_algo);
 }
 #endif
