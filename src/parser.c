@@ -457,7 +457,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
 {
     int stride = option_find_int(options, "stride",1);
     int size = option_find_int(options, "size",stride);
-    int padding = option_find_int_quiet(options, "padding", (size-1)/2);
+    int padding = option_find_int_quiet(options, "padding", size-1);
 
     int batch,h,w,c;
     h = params.h;
@@ -511,7 +511,7 @@ layer parse_batchnorm(list *options, size_params params)
 
 layer parse_shortcut(list *options, size_params params, network net)
 {
-    char *l = option_find(options, "from");   
+    char *l = option_find(options, "from");
     int index = atoi(l);
     if(index < 0) index = params.index + index;
 
@@ -555,7 +555,7 @@ layer parse_upsample(list *options, size_params params, network net)
 
 route_layer parse_route(list *options, size_params params, network net)
 {
-    char *l = option_find(options, "layers");   
+    char *l = option_find(options, "layers");
     int len = strlen(l);
     if(!l) error("Route Layer must specify input layers");
     int n = 1;
@@ -654,8 +654,8 @@ void parse_net_options(list *options, network *net)
         net->step = option_find_int(options, "step", 1);
         net->scale = option_find_float(options, "scale", 1);
     } else if (net->policy == STEPS){
-        char *l = option_find(options, "steps");   
-        char *p = option_find(options, "scales");   
+        char *l = option_find(options, "steps");
+        char *p = option_find(options, "scales");
         if(!l || !p) error("STEPS policy must have steps and scales in cfg file");
 
         int len = strlen(l);
@@ -808,7 +808,7 @@ network parse_network_cfg_custom(char *filename, int batch)
             params.inputs = l.outputs;
         }
         if (l.bflops > 0) bflops += l.bflops;
-    }   
+    }
     free_list(sections);
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
