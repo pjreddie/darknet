@@ -21,7 +21,6 @@ extern int output_width(void *net, int index);
 caffe_layer make_caffe_layer(int batch, int w, int h, int c, const char *cfg, const char *weights)
 {
     layer l = {0};
-#if CAFFE
     int i = 0;
 
     //Unused
@@ -31,6 +30,7 @@ caffe_layer make_caffe_layer(int batch, int w, int h, int c, const char *cfg, co
     l.outputs = w*h*c;
     l.output = calloc(l.outputs*batch, sizeof(float));
 
+#if CAFFE
     l.caffe_net = load_caffe_model(cfg, weights);
     l.num_output = num_outputs(l.caffe_net);
     l.output_tensors = calloc(num_outputs(l.caffe_net), sizeof(tensor));
@@ -44,12 +44,10 @@ caffe_layer make_caffe_layer(int batch, int w, int h, int c, const char *cfg, co
         l.output_tensors[i].data = calloc(l.output_tensors[i].size, sizeof(float));
         fprintf(stderr, "caffe          tensor %d %4d x%4d x%4d   ->  %4d x%4d x%4d\n", i, w, h, c, l.output_tensors[i].w, l.output_tensors[i].h, l.output_tensors[i].c);
     }
+#endif
 
     l.forward = forward_caffe_layer;
     l.backward = backward_caffe_layer;
-#else
-    fprintf(stderr, "Caffe layer not supported\n");
-#endif
     l.type = CAFFE;
     l.batch = batch;
     return l;
@@ -57,15 +55,13 @@ caffe_layer make_caffe_layer(int batch, int w, int h, int c, const char *cfg, co
 
 void resize_caffe_layer(layer *l, int w, int h)
 {
-    fprintf(stderr, "resize_caffe_layer\n");
 }
 
 void forward_caffe_layer(const layer l, network net)
 {
-#if CAFFE
     int i = 0;
 
-    fprintf(stderr, "forward_caffe_layer\n");
+#if CAFFE
     run_caffe_model((void *)l.caffe_net, (float *)net.input);
 
     for (i = 0; i < l.num_output; i++) {
@@ -73,12 +69,10 @@ void forward_caffe_layer(const layer l, network net)
         output = get_output((void *)l.caffe_net, i);
         copy_cpu(l.output_tensors[i].size, output, 1, l.output_tensors[i].data, 1);
     }
-
-    copy_cpu(l.outputs, net.input, 1, l.output, 1);
 #endif
+    copy_cpu(l.outputs, net.input, 1, l.output, 1);
 }
 
 void backward_caffe_layer(const layer l, network net)
 {
-    fprintf(stderr, "backward_caffe_layer\n");
 }

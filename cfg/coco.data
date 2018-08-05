@@ -1,8 +1,8 @@
 classes= 80
-train  = /home/pjreddie/data/coco/trainvalno5k.txt
+train  = /home/secondary/OpenDLA/YOLO/share/darknet/data/coco/trainvalno5k.txt
 #valid  = coco_testdev
-valid = data/coco_val_5k.list
+valid = /home/secondary/OpenDLA/YOLO/share/darknet/data/coco/5k.txt
 names = data/coco.names
-backup = /home/pjreddie/backup/
+backup = /home/secondary/OpenDLA/backup/
 eval=coco
 

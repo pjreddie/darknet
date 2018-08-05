@@ -1,12 +1,5 @@
 
-//#include <gflags/gflags.h>
-//#include <glog/logging.h>
-
 #define CPU_ONLY
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
 #include <iostream>
 #include <cstring>
@@ -58,19 +51,16 @@ extern "C" float* get_output(void *net, int index) {
     const float* begin = output_layer->cpu_data();
     const float* end = begin + output_layer->channels();
     output = std::vector<float>(begin, end);
-    std::cout << "output size " << output.size();
     return (float *)begin;
 }
 
 extern "C" int num_inputs(void *net) {
     Net<float> *caffe_net = (Net<float>*)net;
-    std::cout << "number of inputs " << caffe_net->num_inputs() << std::endl;
     return caffe_net->num_inputs();
 }
 
 extern "C" int num_outputs(void *net) {
     Net<float> *caffe_net = (Net<float>*)net;
-    std::cout << "number of outputs " << caffe_net->num_outputs() << std::endl;
     return caffe_net->num_outputs();
 }
 

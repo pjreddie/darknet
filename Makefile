@@ -3,8 +3,8 @@ CUDNN=0
 OPENCV=0
 OPENMP=0
 DEBUG=0
-CAFFE=0
-ODLA=1
+CAFFE=1
+ODLA=0
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
@@ -17,6 +17,9 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
 
 VPATH=./src/:./examples
 ifeq ($(CAFFE), 1)
+ifeq ($(ODLA), 1)
+$(error Can't build both ODLA and Caffe at the same time)
+endif
 CAFFELIB=libcaffelayer.so
 CAFFEOBJ=obj/caffe_layer_impl.o
 ALIB=
@@ -25,17 +28,30 @@ CAFFELIB=
 CAFFEOBJ=
 ALIB=libdarknet.a
 endif
+ifeq ($(ODLA), 1)
 ODLALIB=libodlalayer.so
 ODLAOBJ=obj/odla_layer_impl.o
 ALIB=
+else
+ODLALIB=
+ODLAOBJ=
+ALIB=libdarknet.a
+endif
+
 SLIB=libdarknet.so
 EXEC=darknet
 OBJDIR=./obj/
 
+ifeq ($(ODLA), 1)
 CPP=/home/secondary/OpenDLA/buildroot/output/host/opt/ext-toolchain/bin/aarch64-linux-gnu-g++
 CC=/home/secondary/OpenDLA/buildroot/output/host/opt/ext-toolchain/bin/aarch64-linux-gnu-gcc
-NVCC=nvcc 
 AR=/home/secondary/OpenDLA/buildroot/output/host/opt/ext-toolchain/bin/aarch64-linux-gnu-ar
+else
+CPP=g++
+CC=gcc
+AR=ar
+endif
+NVCC=nvcc
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
@@ -79,22 +95,24 @@ OBJ+=convolutional_kernels.o deconvolutional_kernels.o activation_kernels.o im2c
 endif
 
 ifeq ($(CAFFE), 1)
-LDFLAGS+= -L/usr/lib -L/home/secondary/OpenDLA/YOLO/darknet -lcaffelayer -lcaffe -lboost_system
+LDFLAGS+= -L/usr/lib -L/home/secondary/OpenDLA/YOLO/share/darknet -lcaffelayer -lcaffe
 LNKDARKNET= -ldarknet
 endif
 
-LDFLAGS+= -L/home/secondary/OpenDLA/YOLO/darknet -lnvdla_runtime
+ifeq ($(ODLA), 1)
+LDFLAGS+= -L/home/secondary/OpenDLA/YOLO/share/darknet -lnvdla_runtime
 LNKDARKNET= -ldarknet
+endif
 
 EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
-all: obj backup results $(CAFFELIB) $(ODLALIB) $(SLIB) $(ALIB) $(EXEC)
+all: obj backup results $(ODLALIB) $(CAFFELIB) $(SLIB) $(ALIB) $(EXEC)
 #all: obj  results $(SLIB) $(ALIB) $(EXEC)
 
 
-$(EXEC): $(EXECOBJ) $(CAFFELIB) $(ODLALIB) $(SLIB) $(ALIB)
+$(EXEC): $(EXECOBJ) $(ODLALIB) $(CAFFELIB) $(SLIB) $(ALIB)
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LNKDARKNET) $(ALIB)
 
 $(ALIB): $(OBJS)
@@ -105,15 +123,17 @@ $(SLIB): $(OBJS)
 
 ifeq ($(CAFFE), 1)
 $(CAFFEOBJ):
-	$(CPP) -Wall -fPIC -O -c src/caffe_layer_impl.cpp -o obj/caffe_layer_impl.o
+	$(CPP) -I/usr/include -Wall -fPIC -O -c src/caffe_layer_impl.cpp -o obj/caffe_layer_impl.o
 $(CAFFELIB): $(CAFFEOBJ)
-	$(CPP) -shared obj/caffe_layer_impl.o -o libcaffelayer.so -lcaffe -lboost_system
+	$(CPP) -shared obj/caffe_layer_impl.o -o libcaffelayer.so -L/usr/lib -L/home/secondary/OpenDLA/YOLO/darknet -lcaffe
 endif
 
+ifeq ($(ODLA), 1)
 $(ODLAOBJ):
 	$(CPP) -Wall -fPIC -O -c src/odla_layer_impl.cpp -o obj/odla_layer_impl.o
 $(ODLALIB): $(ODLAOBJ)
 	$(CPP) -shared obj/odla_layer_impl.o -o libodlalayer.so -L/home/secondary/OpenDLA/YOLO/darknet  -lnvdla_runtime
+endif
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
