@@ -10,8 +10,13 @@ import os
 import platform
 import re
 import sys
-import matplotlib.pyplot as plt
 
+# set non-interactive backend default when os is not windows
+if sys.platform != 'win32':
+    import matplotlib
+    matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 
 
@@ -56,17 +61,19 @@ def log_parser(args):
     iterations = []
     losses = []
     fig, ax = plt.subplots()
+    # set area we focus on
+    ax.set_ylim(0, 8)
 
-    major_locator = MultipleLocator(1)
+    major_locator = MultipleLocator()
     minor_locator = MultipleLocator(0.5)
-
     ax.yaxis.set_major_locator(major_locator)
     ax.yaxis.set_minor_locator(minor_locator)
-
     ax.yaxis.grid(True, which='minor')
 
-    pattern = re.compile(r"([\d]*): .*?, (.*?) avg,")
+    pattern = re.compile(r"([\d].*): .*?, (.*?) avg")
+    # print(pattern.findall(log_content))
     matches = pattern.findall(log_content)
+    # print(type(matches[0]))
     counter = 0
     log_count = len(matches)
 
@@ -92,14 +99,13 @@ def log_parser(args):
     ax.plot(iterations, losses)
     plt.xlabel('Iteration')
     plt.ylabel('Loss')
-    plt.grid()
+    plt.tight_layout()
 
-    save_path = os.path.join(args.save_dir, file_name + '.png')
-    plt.savefig(save_path, dpi=300)
+    # saved as svg
+    save_path = os.path.join(args.save_dir, file_name + '.svg')
+    plt.savefig(save_path, dpi=300, format="svg")
     if args.show_plot:
         plt.show()
-    else:
-        plt.switch_backend('agg')
 
 
 if __name__ == "__main__":
