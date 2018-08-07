@@ -38,6 +38,7 @@
 #include "caffe_layer.h"
 #include "split_layer.h"
 #include "upsample_dla_layer.h"
+#include "converter_layer.h"
 #include "utils.h"
 
 typedef struct{
@@ -89,6 +90,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[odla]")==0) return ODLA;
     if (strcmp(type, "[split]")==0) return SPLIT;
     if (strcmp(type, "[upsample_dla]")==0) return UPSAMPLE_DLA;
+    if (strcmp(type, "[converter]")==0) return CONVERTER;
     return BLANK;
 }
 
@@ -522,6 +524,34 @@ split_layer parse_split(list *options, size_params params, network *net)
     return layer;
 }
 
+converter_layer parse_converter(list *options, size_params params)
+{
+    const char *in_precision_str =
+        option_find_str(options, "in_precision", "");
+    const char *out_precision_str =
+        option_find_str(options, "out_precision", "");
+
+    converter_params c_params = {0};
+    c_params.in_precision = get_precision(in_precision_str);
+    c_params.out_precision = get_precision(out_precision_str);
+    c_params.offset = option_find_float(options, "offset", 0);
+    c_params.scale = option_find_float(options, "scale", 1.);
+    c_params.shifter = option_find_int(options, "shifter", 0);
+    c_params.post_offset = option_find_float(options, "post_offset", 0);
+    c_params.post_scale = option_find_float(options, "post_scale", 1.);
+    c_params.scale_method = GLOBAL_SCALING;
+
+    int batch = params.batch;
+    int w = params.w;
+    int h = params.h;
+    int c = params.c;
+
+    converter_layer layer =
+        make_converter_layer(batch, w, h, c, c_params);
+
+    return layer;
+}
+
 odla_layer parse_odla(list *options, size_params params)
 {
     int instance = option_find_int(options, "instance", 0);
@@ -885,6 +915,8 @@ network *parse_network_cfg(char *filename)
             l.output_gpu = net->layers[count-1].output_gpu;
             l.delta_gpu = net->layers[count-1].delta_gpu;
 #endif
+        }else if(lt == CONVERTER) {
+            l = parse_converter(options, params);
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
