@@ -179,6 +179,9 @@ struct layer{
     float *weights;
     float *weight_updates;
 
+    char *align_bit_weights;
+    float *mean_arr;
+
     float *col_image;
     int   * input_layers;
     int   * input_sizes;

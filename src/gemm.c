@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <math.h>
 
-void gemm_bin(int M, int N, int K, float ALPHA, 
-        char  *A, int lda, 
+void gemm_bin(int M, int N, int K, float ALPHA,
+        char  *A, int lda,
         float *B, int ldb,
         float *C, int ldc)
 {
@@ -62,14 +62,242 @@ void time_random_matrix(int TA, int TB, int m, int k, int n)
 }
 
 
-void gemm(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float BETA,
         float *C, int ldc)
 {
     gemm_cpu( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
 }
+
+
+//--------------------------------------------
+// XNOR bitwise GEMM for binary neural network
+//--------------------------------------------
+
+#include <stdint.h>
+
+static inline unsigned char xnor(unsigned char a, unsigned char b) {
+    //return a == b;
+    return !(a^b);
+}
+
+// INT-32
+static inline uint32_t get_bit_int32(uint32_t const*const src, size_t index) {
+    size_t src_i = index / 32;
+    int src_shift = index % 32;
+    unsigned char val = (src[src_i] & (1 << src_shift)) > 0;
+    return val;
+}
+
+static inline uint32_t xnor_int32(uint32_t a, uint32_t b) {
+    return ~(a^b);
+}
+
+static inline uint64_t xnor_int64(uint64_t a, uint64_t b) {
+    return ~(a^b);
+}
+
+
+static inline uint32_t fill_bit_int32(char src) {
+    if (src == 0) return 0x00000000;
+    else return  0xFFFFFFFF;
+}
+
+static inline uint64_t fill_bit_int64(char src) {
+    if (src == 0) return 0x0000000000000000;
+    else return  0xFFFFFFFFFFFFFFFF;
+}
+
+void binary_int32_printf(uint32_t src) {
+    int i;
+    for (i = 0; i < 32; ++i) {
+        if (src & 1) printf("1");
+        else printf("0");
+        src = src >> 1;
+    }
+    printf("\n");
+}
+
+void binary_int64_printf(uint64_t src) {
+    int i;
+    for (i = 0; i < 64; ++i) {
+        if (src & 1) printf("1");
+        else printf("0");
+        src = src >> 1;
+    }
+    printf("\n");
+}
+
+/*
+void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int *count_arr = calloc(M*N, sizeof(int));
+
+    int i, j, k;
+    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
+        for (k = 0; k < K; ++k) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+            char a_bit = get_bit(A, i*lda + k);
+
+            for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
+                char b_bit = get_bit(B, k*ldb + j);
+                count_arr[i*ldc + j] += xnor(a_bit, b_bit);
+            }
+        }
+    }
+
+    for (i = 0; i < M; ++i) {
+        float mean_val = mean_arr[i];
+        for (j = 0; j < N; ++j) {
+            C[i*ldc + j] = (2 * count_arr[i*ldc + j] - K) * mean_val;
+        }
+    }
+    free(count_arr);
+}
+*/
+
+/*
+void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int *count_arr = calloc(M*N, sizeof(int));
+
+    int i, j, k;
+    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
+        for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
+            for (k = 0; k < K; ++k) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                char a_bit = get_bit(A, i*lda + k);
+                char b_bit = get_bit(B, j*ldb + k);
+                count_arr[i*ldc + j] += xnor(a_bit, b_bit);
+            }
+        }
+    }
+
+    for (i = 0; i < M; ++i) {
+        float mean_val = mean_arr[i];
+        for (j = 0; j < N; ++j) {
+            C[i*ldc + j] = (2 * count_arr[i*ldc + j] - K) * mean_val;
+        }
+    }
+    free(count_arr);
+}
+*/
+
+/*
+void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int *count_arr = calloc(M*N, sizeof(int));
+
+    int i, j, k, h;
+
+#pragma omp parallel for
+    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
+        for (k = 0; k < K; ++k) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+            const char a_bit = get_bit(A, i*lda + k);
+            uint64_t a_bit64 = fill_bit_int64(a_bit);
+            int  k_ldb = k*ldb;
+
+            for (j = 0; j < N; j += 64) { // out_h*out_w - one channel output size [169 - 173056]
+                if ((N - j > 64) && (k_ldb % 8 == 0)) {
+                    uint64_t b_bit64 = *((uint64_t *)(B + (k_ldb + j) / 8));
+                    uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
+                    //printf("\n %d \n",__builtin_popcountll(c_bit64)); // gcc
+                    printf("\n %d \n", __popcnt64(c_bit64));    // msvs
+
+                    int h;
+                    for (h = 0; h < 64; ++h)
+                        if ((c_bit64 >> h) & 1) count_arr[i*ldc + j + h] += 1;
+
+                    //binary_int64_printf(a_bit64);
+                    //binary_int64_printf(b_bit64);
+                    //binary_int64_printf(c_bit64);
+                }
+                else {
+                    for (; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
+                        char b_bit = get_bit(B, k_ldb + j);
+                        if (xnor(a_bit, b_bit)) count_arr[i*ldc + j] += 1;
+                    }
+                }
+
+            }
+        }
+    }
+
+    if (mean_arr) {
+        //int K_2 = K / 2;
+        for (i = 0; i < M; ++i) {
+            float mean_val = mean_arr[i];
+            //float mean_val2 = 2 * mean_val;
+            for (j = 0; j < N; ++j) {
+                C[i*ldc + j] = (2 * count_arr[i*ldc + j] - K) * mean_val;
+                //C[i*ldc + j] = (count_arr[i*ldc + j] - K_2) *mean_val2;
+            }
+        }
+    }
+    else {
+        for (i = 0; i < M; ++i) {
+            for (j = 0; j < N; ++j) {
+                C[i*ldc + j] = count_arr[i*ldc + j] - K / 2;
+            }
+        }
+    }
+
+    free(count_arr);
+
+    //getchar();
+}
+*/
+
+
+/*
+void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int i, j, k, h;
+
+#pragma omp parallel for
+    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
+        float mean_val = mean_arr[i];
+
+        for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
+            int count = 0;
+
+            for (k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));
+                uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));
+                uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
+
+#ifdef WIN32
+                int tmp_count = __popcnt64(c_bit64);
+#else
+                int tmp_count = __builtin_popcountll(c_bit64);
+#endif
+
+                if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
+                count += tmp_count;
+                //binary_int64_printf(c_bit64);
+                //printf(", count = %d \n\n", tmp_count);
+            }
+
+            C[i*ldc + j] = (2 * count - K) * mean_val;
+        }
+    }
+}
+*/
+
+//----------------------------
+
 
 #if (defined(__AVX__) && defined(__x86_64__)) || defined(_WIN64)
 
@@ -78,8 +306,6 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
 #define FMAFlag     ((1UL<<12)|AVXFlag|OSXSAVEFlag)
 #define CLMULFlag   ((1UL<< 1)|AVXFlag|OSXSAVEFlag)
 #define VAESFlag    ((1UL<<25)|AVXFlag|OSXSAVEFlag)
-
-#include <stdint.h>
 
 #ifdef _WIN64
 #include <intrin.h>
@@ -196,6 +422,97 @@ void gemm_nn(int M, int N, int K, float ALPHA,
         }
     }
 }
+
+
+// http://graphics.stanford.edu/~seander/bithacks.html
+// https://stackoverflow.com/questions/17354971/fast-counting-the-number-of-set-bits-in-m128i-register
+
+// 2 x faster than popcnt: https://arxiv.org/pdf/1611.07612.pdf
+
+static inline int popcnt128(__m128i n) {
+    const __m128i n_hi = _mm_unpackhi_epi64(n, n);
+#ifdef _MSC_VER
+    return __popcnt64(_mm_cvtsi128_si64(n)) + __popcnt64(_mm_cvtsi128_si64(n_hi));
+#else
+    return __popcntq(_mm_cvtsi128_si64(n)) + __popcntq(_mm_cvtsi128_si64(n_hi));
+#endif
+}
+
+static inline int popcnt256(__m256i n) {
+    return popcnt128(_mm256_extractf128_si256(n, 0)) + popcnt128(_mm256_extractf128_si256(n, 1));
+}
+
+void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    __m256i all_1 = _mm256_set1_epi8(255);
+    int i, j, k, h;
+
+    #pragma omp parallel for
+    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
+        float mean_val = mean_arr[i];
+
+        for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
+            int count = 0;
+            const int bit_step = 256;
+
+            for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+
+                //__m128i a_bit128 = _mm_loadu_si128((__m128i *)(A + (i*lda + k) / 8));
+                //__m128i b_bit128 = _mm_loadu_si128((__m128i *)(B + (j*ldb + k) / 8));
+                //__m128i xor128 = _mm_xor_si128(a_bit128, b_bit128);
+                //__m128i c_bit128 = _mm_andnot_si128(xor128, all_1);
+                //int tmp_count = popcnt128(c_bit128);
+
+                __m256i a_bit256 = _mm256_loadu_si256((__m256i *)(A + (i*lda + k) / 8));
+                __m256i b_bit256 = _mm256_loadu_si256((__m256i *)(B + (j*ldb + k) / 8));
+                __m256i xor256 = _mm256_xor_si256(a_bit256, b_bit256);
+                __m256i c_bit256 = _mm256_andnot_si256(xor256, all_1); //we can do NOT for wegihts once and do not do this NOT
+                int tmp_count = popcnt256(c_bit256);
+
+                if (K - k < bit_step)  tmp_count = tmp_count - (bit_step - (K - k));    // remove extra bits
+                count += tmp_count;
+                //binary_int64_printf(c_bit64);
+                //printf(", count = %d \n\n", tmp_count);
+            }
+
+            C[i*ldc + j] = (2 * count - K) * mean_val;
+        }
+    }
+}
+
+
+void float_to_bit(float *src, unsigned char *dst, size_t size)
+{
+    size_t dst_size = size / 8 + 1;
+    memset(dst, 0, dst_size);
+
+    size_t i;
+    __m128i all128_0 = _mm_set_epi32(0, 0, 0, 0);
+    __m256 all256_0 = _mm256_set1_ps(0);
+    __m256i bits_asc = _mm256_set_epi32(1, 2, 4, 8, 16, 32, 64, 128);
+    //for(i = 0; i < 8; ++i) bits_asc.m256i_i32[i] = 1 << i;
+
+    for (i = 0; i < size; i+=8)
+    {
+        __m256 src256 = _mm256_loadu_ps((__m256i *)(&src[i]));  // load 256 bits
+        __m256 result256 = _mm256_cmp_ps(src256, all256_0, _CMP_GT_OS); // compare dst[i] = (float[i] > 0)
+
+        __m256i bits256 = _mm256_castps_si256(result256);       // floats to ints32
+        __m256i and256 = _mm256_and_si256(bits256, bits_asc);   // bitwise and
+
+        // sum all elements from single and256
+        __m128i tmp128 = _mm_hadd_epi32(_mm256_extractf128_si256(and256, 0), _mm256_extractf128_si256(and256, 1));
+        tmp128 = _mm_hadd_epi32(tmp128, all128_0);
+        tmp128 = _mm_hadd_epi32(tmp128, all128_0);
+
+        dst[i / 8] = tmp128.m128i_i32[0];
+    }
+    // int _mm256_movemask_epi8 (__m256i a)
+}
+
 #else
 
 void gemm_nn(int M, int N, int K, float ALPHA,
@@ -213,10 +530,76 @@ void gemm_nn(int M, int N, int K, float ALPHA,
         }
     }
 }
+
+void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int i, j, k, h;
+
+#pragma omp parallel for
+    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
+        float mean_val = mean_arr[i];
+
+        for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
+            int count = 0;
+
+            for (k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));
+                uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));
+                uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
+
+#ifdef WIN32
+                int tmp_count = __popcnt64(c_bit64);
+#else
+                int tmp_count = __builtin_popcountll(c_bit64);
+#endif
+
+                if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
+                count += tmp_count;
+                //binary_int64_printf(c_bit64);
+                //printf(", count = %d \n\n", tmp_count);
+            }
+
+            C[i*ldc + j] = (2 * count - K) * mean_val;
+        }
+    }
+}
+
+void float_to_bit(float *src, unsigned char *dst, size_t size)
+{
+    size_t dst_size = size / 8 + 1;
+    memset(dst, 0, dst_size);
+
+    size_t i;
+    char *byte_arr = calloc(size, sizeof(char));
+    for (i = 0; i < size; ++i) {
+        if (src[i] > 0) byte_arr[i] = 1;
+    }
+
+    //for (i = 0; i < size; ++i) {
+    //    dst[i / 8] |= byte_arr[i] << (i % 8);
+    //}
+
+    for (i = 0; i < size; i += 8) {
+        char dst_tmp = 0;
+        dst_tmp |= byte_arr[i + 0] << 0;
+        dst_tmp |= byte_arr[i + 1] << 1;
+        dst_tmp |= byte_arr[i + 2] << 2;
+        dst_tmp |= byte_arr[i + 3] << 3;
+        dst_tmp |= byte_arr[i + 4] << 4;
+        dst_tmp |= byte_arr[i + 5] << 5;
+        dst_tmp |= byte_arr[i + 6] << 6;
+        dst_tmp |= byte_arr[i + 7] << 7;
+        dst[i / 8] = dst_tmp;
+    }
+    free(byte_arr);
+}
 #endif    // __x86_64
 
-void gemm_nt(int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void gemm_nt(int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float *C, int ldc)
 {
@@ -232,8 +615,8 @@ void gemm_nt(int M, int N, int K, float ALPHA,
     }
 }
 
-void gemm_tn(int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void gemm_tn(int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float *C, int ldc)
 {
@@ -248,8 +631,8 @@ void gemm_tn(int M, int N, int K, float ALPHA,
     }
 }
 
-void gemm_tt(int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void gemm_tt(int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float *C, int ldc)
 {
@@ -266,8 +649,8 @@ void gemm_tt(int M, int N, int K, float ALPHA,
 }
 
 
-void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float BETA,
         float *C, int ldc)
@@ -300,21 +683,21 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 
 #include <math.h>
 
-void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A_gpu, int lda, 
+void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A_gpu, int lda,
         float *B_gpu, int ldb,
         float BETA,
         float *C_gpu, int ldc)
 {
     cublasHandle_t handle = blas_handle();
     cudaError_t stream_status = cublasSetStream(handle, get_cuda_stream());
-    cudaError_t status = cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N), 
+    cudaError_t status = cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N),
             (TA ? CUBLAS_OP_T : CUBLAS_OP_N), N, M, K, &ALPHA, B_gpu, ldb, A_gpu, lda, &BETA, C_gpu, ldc);
     check_error(status);
 }
 
-void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float BETA,
         float *C, int ldc)
@@ -435,38 +818,38 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
 int test_gpu_blas()
 {
     /*
-       test_gpu_accuracy(0,0,10,576,75); 
+       test_gpu_accuracy(0,0,10,576,75);
 
-       test_gpu_accuracy(0,0,17,10,10); 
-       test_gpu_accuracy(1,0,17,10,10); 
-       test_gpu_accuracy(0,1,17,10,10); 
-       test_gpu_accuracy(1,1,17,10,10); 
+       test_gpu_accuracy(0,0,17,10,10);
+       test_gpu_accuracy(1,0,17,10,10);
+       test_gpu_accuracy(0,1,17,10,10);
+       test_gpu_accuracy(1,1,17,10,10);
 
-       test_gpu_accuracy(0,0,1000,10,100); 
-       test_gpu_accuracy(1,0,1000,10,100); 
-       test_gpu_accuracy(0,1,1000,10,100); 
-       test_gpu_accuracy(1,1,1000,10,100); 
+       test_gpu_accuracy(0,0,1000,10,100);
+       test_gpu_accuracy(1,0,1000,10,100);
+       test_gpu_accuracy(0,1,1000,10,100);
+       test_gpu_accuracy(1,1,1000,10,100);
 
-       test_gpu_accuracy(0,0,10,10,10); 
+       test_gpu_accuracy(0,0,10,10,10);
 
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,64,2916,363); 
-       time_ongpu(0,0,192,729,1600); 
-       time_ongpu(0,0,384,196,1728); 
-       time_ongpu(0,0,256,196,3456); 
-       time_ongpu(0,0,256,196,2304); 
-       time_ongpu(0,0,128,4096,12544); 
-       time_ongpu(0,0,128,4096,4096); 
+       time_ongpu(0,0,64,2916,363);
+       time_ongpu(0,0,64,2916,363);
+       time_ongpu(0,0,64,2916,363);
+       time_ongpu(0,0,192,729,1600);
+       time_ongpu(0,0,384,196,1728);
+       time_ongpu(0,0,256,196,3456);
+       time_ongpu(0,0,256,196,2304);
+       time_ongpu(0,0,128,4096,12544);
+       time_ongpu(0,0,128,4096,4096);
      */
-    time_ongpu(0,0,64,75,12544); 
-    time_ongpu(0,0,64,75,12544); 
-    time_ongpu(0,0,64,75,12544); 
-    time_ongpu(0,0,64,576,12544); 
-    time_ongpu(0,0,256,2304,784); 
-    time_ongpu(1,1,2304,256,784); 
-    time_ongpu(0,0,512,4608,196); 
-    time_ongpu(1,1,4608,512,196); 
+    time_ongpu(0,0,64,75,12544);
+    time_ongpu(0,0,64,75,12544);
+    time_ongpu(0,0,64,75,12544);
+    time_ongpu(0,0,64,576,12544);
+    time_ongpu(0,0,256,2304,784);
+    time_ongpu(1,1,2304,256,784);
+    time_ongpu(0,0,512,4608,196);
+    time_ongpu(1,1,4608,512,196);
 
     return 0;
 }

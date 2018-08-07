@@ -146,6 +146,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     }
     //set_batch_network(&net, 1);
     fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
     srand(2222222);
 
     if(filename){

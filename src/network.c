@@ -222,7 +222,7 @@ float *get_network_output(network net)
 {
 #ifdef GPU
     if (gpu_index >= 0) return get_network_output_gpu(net);
-#endif 
+#endif
     int i;
     for(i = net.n-1; i > 0; --i) if(net.layers[i].type != COST) break;
     return net.layers[i].output;
@@ -366,7 +366,7 @@ void set_batch_network(network *net, int b)
             /*
             layer *l = net->layers + i;
             cudnn_convolutional_setup(l, cudnn_fastest);
-            // check for excessive memory consumption 
+            // check for excessive memory consumption
             size_t free_byte;
             size_t total_byte;
             check_error(cudaMemGetInfo(&free_byte, &total_byte));
@@ -520,7 +520,7 @@ void visualize_network(network net)
         if(l.type == CONVOLUTIONAL){
             prev = visualize_convolutional_layer(l, buff, prev);
         }
-    } 
+    }
 }
 
 void top_predictions(network net, int k, int *index)
@@ -684,7 +684,7 @@ matrix network_predict_data_multi(network net, data test, int n)
         }
     }
     free(X);
-    return pred;   
+    return pred;
 }
 
 matrix network_predict_data(network net, data test)
@@ -707,7 +707,7 @@ matrix network_predict_data(network net, data test)
         }
     }
     free(X);
-    return pred;   
+    return pred;
 }
 
 void print_network(network net)
@@ -749,7 +749,7 @@ void compare_networks(network n1, network n2, data test)
     printf("%5d %5d\n%5d %5d\n", a, b, c, d);
     float num = pow((abs(b - c) - 1.), 2.);
     float den = b + c;
-    printf("%f\n", num/den); 
+    printf("%f\n", num/den);
 }
 
 float network_accuracy(network net, data d)
@@ -846,4 +846,26 @@ void fuse_conv_batchnorm(network net)
             //printf(" Fusion skip layer type: %d \n", l->type);
         }
     }
+}
+
+
+
+void calculate_binary_weights(network net)
+{
+    int j;
+    for (j = 0; j < net.n; ++j) {
+        layer *l = &net.layers[j];
+
+        if (l->type == CONVOLUTIONAL) {
+            //printf(" Merges Convolutional-%d and batch_norm \n", j);
+
+            if (l->xnor) {
+                //printf("\n %d \n", j);
+                size_t ldb_align = 256; // 256bit for AVX2
+                binary_transpose_align_weights(l, ldb_align);
+            }
+        }
+    }
+    //printf("\n calculate_binary_weights Done! \n");
+
 }
