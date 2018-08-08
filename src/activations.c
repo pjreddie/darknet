@@ -95,8 +95,16 @@ float activate(float x, ACTIVATION a)
 void activate_array(float *x, const int n, const ACTIVATION a)
 {
     int i;
-    for(i = 0; i < n; ++i){
-        x[i] = activate(x[i], a);
+    if (a == LINEAR) {}
+    else if (a == LEAKY) {
+        for (i = 0; i < n; ++i) {
+            x[i] = leaky_activate(x[i]);
+        }
+    }
+    else {
+        for (i = 0; i < n; ++i) {
+            x[i] = activate(x[i], a);
+        }
     }
 }
 
@@ -139,5 +147,5 @@ void gradient_array(const float *x, const int n, const ACTIVATION a, float *delt
     for(i = 0; i < n; ++i){
         delta[i] *= gradient(x[i], a);
     }
-} 
+}
 

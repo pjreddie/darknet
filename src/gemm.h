@@ -1,5 +1,6 @@
 #ifndef GEMM_H
 #define GEMM_H
+#include "activations.h"
 
 static inline void set_bit(unsigned char *const dst, size_t index) {
     size_t dst_i = index / 8;
@@ -16,17 +17,19 @@ static inline unsigned char get_bit(unsigned char const*const src, size_t index)
 
 void float_to_bit(float *src, unsigned char *dst, size_t size);
 
+void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
+    const int lda, const int ldb, const int block_size);
+
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr);
 
+void im2col_cpu_custom(float* data_im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float* data_col);
 
-//void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
-    //unsigned char *A, int lda,
-    //unsigned char *B, int ldb,
-    //float *C, int ldc, float *mean_arr)
-
+void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a);
 
 
 void gemm_bin(int M, int N, int K, float ALPHA,

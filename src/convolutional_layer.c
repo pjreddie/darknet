@@ -593,15 +593,15 @@ void bit_to_float(unsigned char *src, float *dst, size_t size, size_t filters, f
     }
 }
 
-void binary_transpose_align_weights(convolutional_layer *l, size_t ldb_align)
+void binary_align_weights(convolutional_layer *l, size_t lda_align)
 {
     int m = l->n;
     int k = l->size*l->size*l->c;
-    size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
+    size_t new_lda = k + (lda_align - k%lda_align); // (k / 8 + 1) * 8;
 
     binarize_weights(l->weights, m, k, l->binary_weights);
 
-    size_t align_weights_size = new_ldb * m;
+    size_t align_weights_size = new_lda * m;
     size_t align_bit_weights_size = align_weights_size / 8;// +1;
     float *align_weights = calloc(align_weights_size, sizeof(float));
     l->align_bit_weights = calloc(align_bit_weights_size, sizeof(char));
@@ -610,7 +610,7 @@ void binary_transpose_align_weights(convolutional_layer *l, size_t ldb_align)
     // align A without transpose
     for (i = 0; i < m; ++i) {
         for (j = 0; j < k; ++j) {
-            align_weights[i*new_ldb + j] = l->binary_weights[i*k + j];
+            align_weights[i*new_lda + j] = l->binary_weights[i*k + j];
         }
     }
     float_to_bit(align_weights, l->align_bit_weights, align_weights_size);
@@ -619,6 +619,56 @@ void binary_transpose_align_weights(convolutional_layer *l, size_t ldb_align)
     get_mean_array(align_weights, align_weights_size, l->n, l->mean_arr);
 
     free(align_weights);
+}
+
+
+size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, size_t ldb_align)
+{
+    size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
+    size_t t_intput_size = new_ldb * n;
+    size_t t_bit_input_size = t_intput_size / 8;// +1;
+    float *t_input = calloc(t_intput_size, sizeof(float));
+    //char *
+    *t_bit_input = calloc(t_bit_input_size, sizeof(char));
+
+    //printf("\n bit_input_size = %d, n = %d, k = %d, ldb = %d \n", bit_input_size, n, k, n);
+    //printf("\n t_bit_input_size = %d, k = %d, n = %d, new_ldb = %d \n", t_bit_input_size, k, n, new_ldb);
+
+    //printf("\n align_weights_size = %d, k = %d, m = %d, lda = %d \n", align_weights_size, k, m, k);
+    //printf("\n align_bit_weights_size = %d, k = %d, m = %d, new_lda = %d \n", align_bit_weights_size, k, m, new_ldb);
+
+    // transpose and align B
+    int i, j;
+    //#pragma omp parallel for
+    /*
+    for (i = 0; i < n; ++i) {
+        for (j = 0; j < k; ++j) {
+            t_input[i*new_ldb + j] = b[j*n + i];
+        }
+    }*/
+    //transpose_block_SSE4x4(float *A, float *B, const int n, const int m, const int lda, const int ldb, const int block_size)
+
+    //transpose_block(b, t_input, k, n, n, new_ldb, 16);
+
+    int blocksize = 1;
+    int mod_k = 1, mod_n = 1;
+    for (i = 2; i < 256; i *= 2)
+        if (k % i == 0) mod_k = i;
+
+    for (i = 2; i < 256; i *= 2)
+        if (n % i == 0) mod_n = i;
+
+    blocksize = (mod_k < mod_n) ? mod_k : mod_n;
+
+    transpose_block_SSE4x4(b, t_input, k, n, n, new_ldb, blocksize);
+
+    //transpose_block(b, t_input, k, n, n, new_ldb, blocksize);
+    //printf("\n blocksize = %d \n", blocksize);
+
+    float_to_bit(t_input, *t_bit_input, t_intput_size);
+    free(t_input);
+
+    return t_intput_size;
 }
 
 
@@ -652,8 +702,9 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     u++;
 
     for(i = 0; i < l.batch; ++i){
-        im2col_cpu(state.input, l.c, l.h, l.w,
-                l.size, l.stride, l.pad, b);
+        //im2col_cpu(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
+        im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
+
         //gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
         //gemm_nn_custom(m, n, k, 1, a, k, b, n, c, n);
         if (l.xnor) {
@@ -683,8 +734,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
             // transpose B from NxK to KxN (x-axis (ldb = l.size*l.size*l.c) - should be multiple of 8 bits)
             {
+                /*
                 size_t ldb_align = 256;// 8;
-                if (k > 4096)ldb_align = 4096;
 
                 size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
                 size_t t_intput_size = new_ldb * n;
@@ -709,6 +760,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 }
                 float_to_bit(t_input, t_bit_input, t_intput_size);
 
+
+
                 if (!l.align_bit_weights)
                 {
                     size_t align_weights_size = new_ldb * m;
@@ -729,12 +782,17 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
                     free(align_weights);
                 }
+                */
+                size_t ldb_align = 256; // 256 bit for AVX2
+                size_t new_ldb = k + (ldb_align - k%ldb_align);
+                char *t_bit_input = NULL;
+                size_t t_intput_size = binary_transpose_align_input(k, n, b, &t_bit_input, ldb_align);
 
                 gemm_nn_custom_bin_mean_transposed(m, n, k, 1, l.align_bit_weights, new_ldb, t_bit_input, new_ldb, c, n, l.mean_arr);
 
                 //gemm_nn_custom_bin_mean_transposed(m, n, k, 1, bit_weights, k, t_bit_input, new_ldb, c, n, mean_arr);
 
-                free(t_input);
+                //free(t_input);
                 free(t_bit_input);
 
                 //free(align_bit_weights);
@@ -771,7 +829,9 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     }
     add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 
-    activate_array(l.output, m*n*l.batch, l.activation);
+    //activate_array(l.output, m*n*l.batch, l.activation);
+    activate_array_cpu_custom(l.output, m*n*l.batch, l.activation);
+
     if(l.binary || l.xnor) swap_binary(&l);
 }
 
