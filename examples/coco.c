@@ -325,14 +325,10 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
 
         draw_detections(im, dets, l.side*l.side*l.n, thresh, coco_classes, alphabet, 80);
         save_image(im, "prediction");
-        show_image(im, "predictions");
+        show_image(im, "predictions", 0);
         free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
-#ifdef OPENCV
-        cvWaitKey(0);
-        cvDestroyAllWindows();
-#endif
         if (filename) break;
     }
 }
