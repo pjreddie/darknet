@@ -93,6 +93,7 @@ typedef enum {
     ODLA,
     CAFFE,
     SPLIT,
+    UPSAMPLE_DLA,
     BLANK
 } LAYER_TYPE;
 
