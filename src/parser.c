@@ -37,6 +37,7 @@
 #include "odla_layer.h"
 #include "caffe_layer.h"
 #include "split_layer.h"
+#include "upsample_dla_layer.h"
 #include "utils.h"
 
 typedef struct{
@@ -87,6 +88,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[caffe]")==0) return CAFFE;
     if (strcmp(type, "[odla]")==0) return ODLA;
     if (strcmp(type, "[split]")==0) return SPLIT;
+    if (strcmp(type, "[upsample_dla]")==0) return UPSAMPLE_DLA;
     return BLANK;
 }
 
@@ -632,6 +634,15 @@ layer parse_upsample(list *options, size_params params, network *net)
     return l;
 }
 
+layer parse_upsample_dla(list *options, size_params params, network *net)
+{
+
+    int stride = option_find_int(options, "stride",2);
+    layer l = make_upsample_dla_layer(params.batch, params.w, params.h, params.c, stride);
+    l.scale = option_find_float_quiet(options, "scale", 1);
+    return l;
+}
+
 route_layer parse_route(list *options, size_params params, network *net)
 {
     char *l = option_find(options, "layers");
@@ -862,6 +873,8 @@ network *parse_network_cfg(char *filename)
             l = parse_route(options, params, net);
         }else if(lt == UPSAMPLE){
             l = parse_upsample(options, params, net);
+        }else if(lt == UPSAMPLE_DLA){
+            l = parse_upsample_dla(options, params, net);
         }else if(lt == SHORTCUT){
             l = parse_shortcut(options, params, net);
         }else if(lt == DROPOUT){
