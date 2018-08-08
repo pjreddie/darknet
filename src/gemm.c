@@ -427,7 +427,6 @@ void gemm_nn(int M, int N, int K, float ALPHA,
 // http://graphics.stanford.edu/~seander/bithacks.html
 // https://stackoverflow.com/questions/17354971/fast-counting-the-number-of-set-bits-in-m128i-register
 
-// 2 x faster than popcnt: https://arxiv.org/pdf/1611.07612.pdf
 
 static inline int popcnt128(__m128i n) {
     const __m128i n_hi = _mm_unpackhi_epi64(n, n);
@@ -442,13 +441,106 @@ static inline int popcnt256(__m256i n) {
     return popcnt128(_mm256_extractf128_si256(n, 0)) + popcnt128(_mm256_extractf128_si256(n, 1));
 }
 
+static inline __m256i count256(__m256i v) {
+    __m256i lookup =
+        _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2,
+            2, 3, 2, 3, 3, 4, 0, 1, 1, 2, 1, 2, 2, 3,
+            1, 2, 2, 3, 2, 3, 3, 4);
+
+    __m256i low_mask = _mm256_set1_epi8(0x0f);
+
+    __m256i lo = _mm256_and_si256(v, low_mask);
+    __m256i hi = _mm256_and_si256(_mm256_srli_epi32(v, 4), low_mask);
+    __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo);
+    __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi);
+    __m256i total = _mm256_add_epi8(popcnt1, popcnt2);
+
+    return _mm256_sad_epu8(total, _mm256_setzero_si256());
+}
+static inline int popcnt256_custom(__m256i n) {
+    return _mm_popcnt_u64(n.m256i_i64[0]) +
+        _mm_popcnt_u64(n.m256i_i64[1]) +
+        _mm_popcnt_u64(n.m256i_i64[2]) +
+        _mm_popcnt_u64(n.m256i_i64[3]);
+}
+
+static inline void CSA(__m256i * h, __m256i * l, __m256i a, __m256i b, __m256i c)
+{
+    __m256i u = _mm256_xor_si256(a, b);
+    *h = _mm256_or_si256(_mm256_and_si256(a, b), _mm256_and_si256(u, c));
+    *l = _mm256_xor_si256(u, c);
+}
+
+static inline __m256i xnor256(__m256i a_bit256, __m256i b_bit256) {
+    __m256i all_1 = _mm256_set1_epi8(255);
+    __m256i xor256 = _mm256_xor_si256(a_bit256, b_bit256);
+    __m256i c_bit256 = _mm256_andnot_si256(xor256, all_1);
+
+    return c_bit256;
+
+}
+
+// 2 x faster than popcnt: https://arxiv.org/pdf/1611.07612.pdf
+// step = 16*256/8 = 512 bytes = 4096 bit (ldb, lda, bit_step, align - all should be aligned by 4096 bit)
+static inline uint64_t avx_hs_custom(__m256i * A, __m256i * B, uint64_t size) {
+    __m256i total = _mm256_setzero_si256();
+    __m256i ones = _mm256_setzero_si256();
+    __m256i twos = _mm256_setzero_si256();
+    __m256i fours = _mm256_setzero_si256();
+    __m256i eights = _mm256_setzero_si256();
+    __m256i sixteens = _mm256_setzero_si256();
+    __m256i twosA, twosB, foursA, foursB, eightsA, eightsB;
+
+    for (uint64_t i = 0; i < size; i += 16) {
+        //CSA(&twosA, &ones, ones, d[i], d[i + 1]);
+        CSA(&twosA, &ones, ones, xnor256(A[i], B[i]), xnor256(A[i + 1], B[i + 1]));
+        CSA(&twosB, &ones, ones, xnor256(A[i + 2], B[i + 2]), xnor256(A[i + 3], B[i + 3]));
+        CSA(&foursA, &twos, twos, twosA, twosB);
+        CSA(&twosA, &ones, ones, xnor256(A[i + 4], B[i + 4]), xnor256(A[i + 5], B[i + 5]));
+        CSA(&twosB, &ones, ones, xnor256(A[i + 6], B[i + 6]), xnor256(A[i + 7], B[i + 7]));
+        CSA(&foursB, &twos, twos, twosA, twosB);
+        CSA(&eightsA, &fours, fours, foursA, foursB);
+        CSA(&twosA, &ones, ones, xnor256(A[i + 8], B[i + 8]), xnor256(A[i + 9], B[i + 9]));
+        CSA(&twosB, &ones, ones, xnor256(A[i + 10], B[i + 10]), xnor256(A[i + 11], B[i + 11]));
+        CSA(&foursA, &twos, twos, twosA, twosB);
+        CSA(&twosA, &ones, ones, xnor256(A[i + 12], B[i + 12]), xnor256(A[i + 13], B[i + 13]));
+        CSA(&twosB, &ones, ones, xnor256(A[i + 14], B[i + 14]), xnor256(A[i + 15], B[i + 15]));
+        CSA(&foursB, &twos, twos, twosA, twosB);
+        CSA(&eightsB, &fours, fours, foursA, foursB);
+        CSA(&sixteens, &eights, eights, eightsA, eightsB);
+
+        total = _mm256_add_epi64(total, count256(sixteens));
+    }
+    total = _mm256_slli_epi64(total, 4);
+    total = _mm256_add_epi64(total,
+        _mm256_slli_epi64(count256(eights), 3));
+    total = _mm256_add_epi64(total,
+        _mm256_slli_epi64(count256(fours), 2));
+    total = _mm256_add_epi64(total,
+        _mm256_slli_epi64(count256(twos), 1));
+    total = _mm256_add_epi64(total, count256(ones));
+
+    return total.m256i_i64[0] +
+            total.m256i_i64[1] +
+            total.m256i_i64[2] +
+            total.m256i_i64[3];
+
+    //return _mm256_extract_epi64(total, 0)
+    //    + _mm256_extract_epi64(total, 1)
+    //    + _mm256_extract_epi64(total, 2)
+    //    + _mm256_extract_epi64(total, 3);
+}
+
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr)
 {
     __m256i all_1 = _mm256_set1_epi8(255);
-    int i, j, k, h;
+    int i, j, k;
+
+    //printf("\n M = %d, N = %d, K = %d, ldb = %d, M*ldb/8 = %d, N*ldb/8= %d \n", M, N, K, ldb, M*ldb/8, N*ldb/8);
+    //if (K > 4096)  printf("!!!avx_hs!!! \n\n");
 
     #pragma omp parallel for
     for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
@@ -458,25 +550,41 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
             int count = 0;
             const int bit_step = 256;
 
-            for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
 
-                //__m128i a_bit128 = _mm_loadu_si128((__m128i *)(A + (i*lda + k) / 8));
-                //__m128i b_bit128 = _mm_loadu_si128((__m128i *)(B + (j*ldb + k) / 8));
-                //__m128i xor128 = _mm_xor_si128(a_bit128, b_bit128);
-                //__m128i c_bit128 = _mm_andnot_si128(xor128, all_1);
-                //int tmp_count = popcnt128(c_bit128);
+            int hs_count = 0;
+            if (K > 4096) {
+                hs_count = avx_hs_custom(A + (i*lda) / 8, B + (j*ldb) / 8, K / 256);
 
-                __m256i a_bit256 = _mm256_loadu_si256((__m256i *)(A + (i*lda + k) / 8));
-                __m256i b_bit256 = _mm256_loadu_si256((__m256i *)(B + (j*ldb + k) / 8));
-                __m256i xor256 = _mm256_xor_si256(a_bit256, b_bit256);
-                __m256i c_bit256 = _mm256_andnot_si256(xor256, all_1); //we can do NOT for wegihts once and do not do this NOT
-                int tmp_count = popcnt256(c_bit256);
+                int local_bit_step = 4096;
 
-                if (K - k < bit_step)  tmp_count = tmp_count - (bit_step - (K - k));    // remove extra bits
-                count += tmp_count;
-                //binary_int64_printf(c_bit64);
-                //printf(", count = %d \n\n", tmp_count);
+                int f1 = (K % local_bit_step == 0) ? 0 : (local_bit_step - (K % local_bit_step));
+                hs_count = hs_count - f1;    // remove extra bits
+                count = hs_count;
             }
+            else {
+                for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+
+                    //__m128i a_bit128 = _mm_loadu_si128((__m128i *)(A + (i*lda + k) / 8));
+                    //__m128i b_bit128 = _mm_loadu_si128((__m128i *)(B + (j*ldb + k) / 8));
+                    //__m128i xor128 = _mm_xor_si128(a_bit128, b_bit128);
+                    //__m128i c_bit128 = _mm_andnot_si128(xor128, all_1);
+                    //int tmp_count = popcnt128(c_bit128);
+
+                    __m256i a_bit256 = _mm256_loadu_si256((__m256i *)(A + (i*lda + k) / 8));
+                    __m256i b_bit256 = _mm256_loadu_si256((__m256i *)(B + (j*ldb + k) / 8));
+                    __m256i xor256 = _mm256_xor_si256(a_bit256, b_bit256);
+                    __m256i c_bit256 = _mm256_andnot_si256(xor256, all_1); //we can do NOT for wegihts once and do not do this NOT
+                    int tmp_count = popcnt256(c_bit256);
+                    //int tmp_count = popcnt256_custom(c_bit256);
+                    count += tmp_count;
+
+                    //binary_int64_printf(c_bit64);
+                    //printf(", count = %d \n\n", tmp_count);
+                }
+
+                int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+                count = count - f1;    // remove extra bits
+           }
 
             C[i*ldc + j] = (2 * count - K) * mean_val;
         }
@@ -490,27 +598,18 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
     memset(dst, 0, dst_size);
 
     size_t i;
-    __m128i all128_0 = _mm_set_epi32(0, 0, 0, 0);
-    __m256 all256_0 = _mm256_set1_ps(0);
-    __m256i bits_asc = _mm256_set_epi32(1, 2, 4, 8, 16, 32, 64, 128);
-    //for(i = 0; i < 8; ++i) bits_asc.m256i_i32[i] = 1 << i;
+    __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
 
     for (i = 0; i < size; i+=8)
     {
-        __m256 src256 = _mm256_loadu_ps((__m256i *)(&src[i]));  // load 256 bits
-        __m256 result256 = _mm256_cmp_ps(src256, all256_0, _CMP_GT_OS); // compare dst[i] = (float[i] > 0)
+        __m256i src256 = _mm256_loadu_si256((__m256i *)(&src[i]));
+        __m256i result256 = _mm256_and_si256(src256, all256_sing1); // check sign in 8 x 32-bit floats
 
-        __m256i bits256 = _mm256_castps_si256(result256);       // floats to ints32
-        __m256i and256 = _mm256_and_si256(bits256, bits_asc);   // bitwise and
+        uint32_t mask = _mm256_movemask_ps(_mm256_castsi256_ps(result256)); // (val >= 0) ? 0 : 1
+        mask = ~mask;   // inverse mask,  (val >= 0) ? 1 : 0
 
-        // sum all elements from single and256
-        __m128i tmp128 = _mm_hadd_epi32(_mm256_extractf128_si256(and256, 0), _mm256_extractf128_si256(and256, 1));
-        tmp128 = _mm_hadd_epi32(tmp128, all128_0);
-        tmp128 = _mm_hadd_epi32(tmp128, all128_0);
-
-        dst[i / 8] = tmp128.m128i_i32[0];
+        dst[i / 8] = mask;
     }
-    // int _mm256_movemask_epi8 (__m256i a)
 }
 
 #else

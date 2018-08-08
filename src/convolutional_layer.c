@@ -684,6 +684,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             // transpose B from NxK to KxN (x-axis (ldb = l.size*l.size*l.c) - should be multiple of 8 bits)
             {
                 size_t ldb_align = 256;// 8;
+                if (k > 4096)ldb_align = 4096;
+
                 size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
                 size_t t_intput_size = new_ldb * n;
                 size_t t_bit_input_size = t_intput_size / 8;// +1;
