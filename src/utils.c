@@ -210,7 +210,7 @@ void replace_image_to_label(char *input_path, char *output_path) {
     find_replace(input_path, "/images/train2014/", "/labels/train2014/", output_path);    // COCO
     find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);        // COCO
     find_replace(output_path, "/JPEGImages/", "/labels/", output_path);    // PascalVOC
-    find_replace(input_path, "\\images\\train2014\\", "\\labels\\train2014\\", output_path);    // COCO
+    find_replace(output_path, "\\images\\train2014\\", "\\labels\\train2014\\", output_path);    // COCO
     find_replace(output_path, "\\images\\val2014\\", "\\labels\\val2014\\", output_path);        // COCO
     find_replace(output_path, "\\JPEGImages\\", "\\labels\\", output_path);    // PascalVOC
     //find_replace(output_path, "/VOC2007/JPEGImages/", "/VOC2007/labels/", output_path);        // PascalVOC
