@@ -637,32 +637,9 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
     //printf("\n align_weights_size = %d, k = %d, m = %d, lda = %d \n", align_weights_size, k, m, k);
     //printf("\n align_bit_weights_size = %d, k = %d, m = %d, new_lda = %d \n", align_bit_weights_size, k, m, new_ldb);
 
-    // transpose and align B
-    int i, j;
-    //#pragma omp parallel for
-    /*
-    for (i = 0; i < n; ++i) {
-        for (j = 0; j < k; ++j) {
-            t_input[i*new_ldb + j] = b[j*n + i];
-        }
-    }*/
-    //transpose_block_SSE4x4(float *A, float *B, const int n, const int m, const int lda, const int ldb, const int block_size)
-
-    //transpose_block(b, t_input, k, n, n, new_ldb, 16);
-
-    int blocksize = 1;
-    int mod_k = 1, mod_n = 1;
-    for (i = 2; i < 256; i *= 2)
-        if (k % i == 0) mod_k = i;
-
-    for (i = 2; i < 256; i *= 2)
-        if (n % i == 0) mod_n = i;
-
-    blocksize = (mod_k < mod_n) ? mod_k : mod_n;
-
+    int blocksize = 64;
     transpose_block_SSE4x4(b, t_input, k, n, n, new_ldb, blocksize);
 
-    //transpose_block(b, t_input, k, n, n, new_ldb, blocksize);
     //printf("\n blocksize = %d \n", blocksize);
 
     float_to_bit(t_input, *t_bit_input, t_intput_size);

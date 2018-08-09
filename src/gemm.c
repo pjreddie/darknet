@@ -686,47 +686,50 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
 
 static inline void transpose4x4_SSE(float *A, float *B, const int lda, const int ldb)
 {
-    __m128 row1 = _mm_load_ps(&A[0 * lda]);
-    __m128 row2 = _mm_load_ps(&A[1 * lda]);
-    __m128 row3 = _mm_load_ps(&A[2 * lda]);
-    __m128 row4 = _mm_load_ps(&A[3 * lda]);
+    __m128 row1 = _mm_loadu_ps(&A[0 * lda]);
+    __m128 row2 = _mm_loadu_ps(&A[1 * lda]);
+    __m128 row3 = _mm_loadu_ps(&A[2 * lda]);
+    __m128 row4 = _mm_loadu_ps(&A[3 * lda]);
     _MM_TRANSPOSE4_PS(row1, row2, row3, row4);
-    _mm_store_ps(&B[0 * ldb], row1);
-    _mm_store_ps(&B[1 * ldb], row2);
-    _mm_store_ps(&B[2 * ldb], row3);
-    _mm_store_ps(&B[3 * ldb], row4);
+    _mm_storeu_ps(&B[0 * ldb], row1);
+    _mm_storeu_ps(&B[1 * ldb], row2);
+    _mm_storeu_ps(&B[2 * ldb], row3);
+    _mm_storeu_ps(&B[3 * ldb], row4);
 }
 
 void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
     const int lda, const int ldb, const int block_size)
 {
     int i;
-    if (block_size % 4 == 0) {
-        #pragma omp parallel for
-        for (i = 0; i < n; i += block_size) {
-            int j, i2, j2;
+    #pragma omp parallel for
+    for (i = 0; i < n; i += block_size) {
+        int j, i2, j2;
+        //int max_i2 = (i + block_size < n) ? (i + block_size) : n;
+        if (i + block_size < n) {
+            int max_i2 = i + block_size;
             for (j = 0; j < m; j += block_size) {
-                int max_i2 = i + block_size < n ? i + block_size : n;
-                int max_j2 = j + block_size < m ? j + block_size : m;
-                for (i2 = i; i2 < max_i2; i2 += 4) {
-                    for (j2 = j; j2 < max_j2; j2 += 4) {
-                        transpose4x4_SSE(&A[i2*lda + j2], &B[j2*ldb + i2], lda, ldb);
+                //int max_j2 = (j + block_size < m) ? (j + block_size) : m;
+                if (j + block_size < m) {
+                    int max_j2 = j + block_size;
+                    for (i2 = i; i2 < max_i2; i2 += 4) {
+                        for (j2 = j; j2 < max_j2; j2 += 4) {
+                            transpose4x4_SSE(&A[i2*lda + j2], &B[j2*ldb + i2], lda, ldb);
+                        }
+                    }
+                }
+                else {
+                    for (i2 = i; i2 < max_i2; ++i2) {
+                        for (j2 = j; j2 < m; ++j2) {
+                            B[j2*ldb + i2] = A[i2*lda + j2];
+                        }
                     }
                 }
             }
         }
-    }
-    else {
-        #pragma omp parallel for
-        for (i = 0; i < n; i += block_size) {
-            int j, i2, j2;
-            for (j = 0; j < m; j += block_size) {
-                int max_i2 = i + block_size < n ? i + block_size : n;
-                int max_j2 = j + block_size < m ? j + block_size : m;
-                for (i2 = i; i2 < max_i2; ++i2) {
-                    for (j2 = j; j2 < max_j2; ++j2) {
-                        B[j2*ldb + i2] = A[i2*lda + j2];
-                    }
+        else {
+            for (i2 = i; i2 < n; ++i2) {
+                for (j2 = 0; j2 < m; ++j2) {
+                    B[j2*ldb + i2] = A[i2*lda + j2];
                 }
             }
         }
