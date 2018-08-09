@@ -21,15 +21,15 @@ layer make_upsample_dla_layer(int batch, int w, int h, int c, int stride)
         l.out_h = h/stride;
     }
     l.stride = stride;
-    l.outputs = l.out_w*l.out_h*l.out_c;
+    l.outputs = l.out_w*l.out_h*l.out_c/ATOMIC_CUBE;
     l.inputs = l.w*l.h*l.c;
     l.delta =  calloc(l.outputs*batch, ATOMIC_CUBE);
     l.output = calloc(l.outputs*batch, ATOMIC_CUBE);;
 
     l.forward = forward_upsample_dla_layer;
 
-    if(l.reverse) fprintf(stderr, "downsample_dla         %2dx  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
-    else fprintf(stderr, "upsample_dla           %2dx  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
+    if(l.reverse) fprintf(stderr, "downsample_dla     %2dx  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
+    else fprintf(stderr, "upsample_dla       %2dx  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
     return l;
 }
 
@@ -50,7 +50,6 @@ void upsample_dla(float *in, int w, int h, int c, int batch, int stride, int for
 {
     int i, j, k, b;
 
-    fprintf(stderr, "CubyCpy for upsample DLA");
     for(b = 0; b < batch; ++b){
         for(k = 0; k < c; ++k){
             for(j = 0; j < h*stride; ++j){
@@ -66,7 +65,6 @@ void upsample_dla(float *in, int w, int h, int c, int batch, int stride, int for
 
 void forward_upsample_dla_layer(const layer l, network net)
 {
-    fprintf(stderr, "Arvind CubyCpy for upsample DLA");
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
     if(l.reverse){
         upsample_dla(l.output, l.out_w, l.out_h, l.c, l.batch, l.stride, 0, l.scale, net.input);
