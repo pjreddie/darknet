@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <math.h>
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 void gemm_bin(int M, int N, int K, float ALPHA,
         char  *A, int lda,
         float *B, int ldb,
@@ -457,7 +461,8 @@ static inline __m256i count256(__m256i v) {
     __m256i total = _mm256_add_epi8(popcnt1, popcnt2);
 
     return _mm256_sad_epu8(total, _mm256_setzero_si256());
-}
+}
+
 static inline int popcnt256_custom(__m256i n) {
     __m256i val = count256(n);
 
@@ -474,11 +479,13 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 {
     int i;
 
+#if defined(_OPENMP)
     static int max_num_threads = 0;
     if (max_num_threads == 0) {
         max_num_threads = omp_get_max_threads();
         omp_set_num_threads(max_num_threads / 2);
     }
+#endif
 
     #pragma omp parallel for
     for (i = 0; i < M; ++i)

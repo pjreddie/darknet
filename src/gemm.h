@@ -1,6 +1,7 @@
 #ifndef GEMM_H
 #define GEMM_H
 #include "activations.h"
+#include <stdint.h>
 
 static inline void set_bit(unsigned char *const dst, size_t index) {
     size_t dst_i = index / 8;
