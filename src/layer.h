@@ -181,6 +181,7 @@ struct layer{
 
     char *align_bit_weights;
     float *mean_arr;
+    int lda_align;
 
     float *col_image;
     int   * input_layers;

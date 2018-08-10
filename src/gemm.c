@@ -429,6 +429,56 @@ void gemm_nn(int M, int N, int K, float ALPHA,
 }
 
 
+void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
+    float *weights, float *input, float *output)
+{
+    int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
+    int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
+    int i, f, j;
+
+    int fil;
+    // filter index
+#pragma omp parallel for      // "omp parallel for" - automatic parallelization of loop by using OpenMP
+    for (fil = 0; fil < n; ++fil) {
+        int chan, y, x, f_y, f_x;
+        // channel index
+        for (chan = 0; chan < c; ++chan)
+            // input - y
+            for (y = 0; y < h; ++y)
+                // input - x
+                for (x = 0; x < w; ++x)
+                {
+                    int const output_index = fil*w*h + y*w + x;
+                    int const weights_pre_index = fil*c*ksize*ksize + chan*ksize*ksize;
+                    int const input_pre_index = chan*w*h;
+                    float sum = 0;
+
+                    // filter - y
+                    for (f_y = 0; f_y < ksize; ++f_y)
+                    {
+                        int input_y = y + f_y - pad;
+                        // filter - x
+                        for (f_x = 0; f_x < ksize; ++f_x)
+                        {
+                            int input_x = x + f_x - pad;
+                            if (input_y < 0 || input_x < 0 || input_y >= h || input_x >= w) continue;
+
+                            int input_index = input_pre_index + input_y*w + input_x;
+                            int weights_index = weights_pre_index + f_y*ksize + f_x;
+
+                            sum += input[input_index] * weights[weights_index];
+                        }
+                    }
+                    // l.output[filters][width][height] +=
+                    //        state.input[channels][width][height] *
+                    //        l.weights[filters][channels][filter_width][filter_height];
+                    output[output_index] += sum;
+                }
+    }
+}
+
+
+
 // http://graphics.stanford.edu/~seander/bithacks.html
 // https://stackoverflow.com/questions/17354971/fast-counting-the-number-of-set-bits-in-m128i-register
 // https://arxiv.org/pdf/1611.07612.pdf
@@ -541,6 +591,121 @@ static inline float im2col_get_pixel(float *im, int height, int width, int chann
 
 //From Berkeley Vision's Caffe!
 //https://github.com/BVLC/caffe/blob/master/LICENSE
+void im2col_cpu_custom_transpose(float* data_im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float* data_col, int ldb_align)
+{
+    int c, h, w;
+    int height_col = (height + 2 * pad - ksize) / stride + 1;
+    int width_col = (width + 2 * pad - ksize) / stride + 1;
+    int channels_col = channels * ksize * ksize;
+
+    // optimized version
+    if (height_col == height && width_col == width && stride == 1 && pad == 1)
+    {
+#pragma omp parallel for
+        for (c = 0; c < channels_col; ++c) {
+            int w_offset = c % ksize;
+            int h_offset = (c / ksize) % ksize;
+            int c_im = c / ksize / ksize;
+            for (h = pad; h < height_col - pad; ++h) {
+                for (w = pad; w < width_col - pad - 4; w+=8) {
+                    int im_row = h_offset + h - pad;
+                    int im_col = w_offset + w - pad;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = (h * width_col + w)*ldb_align + c;   // transposed & aligned
+
+                    //data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
+                    __m256 src256 = _mm256_loadu_ps((__m256i *)(&data_im[im_col + width*(im_row + height*c_im)]));
+                    data_col[col_index + ldb_align * 0] = src256.m256_f32[0];
+                    data_col[col_index + ldb_align * 1] = src256.m256_f32[1];
+                    data_col[col_index + ldb_align * 2] = src256.m256_f32[2];
+                    data_col[col_index + ldb_align * 3] = src256.m256_f32[3];
+                    data_col[col_index + ldb_align * 4] = src256.m256_f32[4];
+                    data_col[col_index + ldb_align * 5] = src256.m256_f32[5];
+                    data_col[col_index + ldb_align * 6] = src256.m256_f32[6];
+                    data_col[col_index + ldb_align * 7] = src256.m256_f32[7];
+
+                    //_mm256_storeu_ps(&data_col[col_index], src256);
+                }
+
+                for (; w < width_col - pad; ++w) {
+                    int im_row = h_offset + h - pad;
+                    int im_col = w_offset + w - pad;
+                    int col_index = (h * width_col + w)*ldb_align + c;   // transposed & aligned
+                    data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
+                }
+            }
+
+            {
+                w = 0;
+                for (h = 0; h < height_col; ++h) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    int col_index = (h * width_col + w)*ldb_align + c;   // transposed & aligned
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels,
+                        im_row, im_col, c_im, pad);
+                }
+            }
+
+            {
+                w = width_col - 1;
+                for (h = 0; h < height_col; ++h) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    int col_index = (h * width_col + w)*ldb_align + c;   // transposed & aligned
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels,
+                        im_row, im_col, c_im, pad);
+                }
+            }
+
+            {
+                h = 0;
+                for (w = 0; w < width_col; ++w) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    int col_index = (h * width_col + w)*ldb_align + c;   // transposed & aligned
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels,
+                        im_row, im_col, c_im, pad);
+                }
+            }
+
+            {
+                h = height_col - 1;
+                for (w = 0; w < width_col; ++w) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    int col_index = (h * width_col + w)*ldb_align + c;   // transposed & aligned
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels,
+                        im_row, im_col, c_im, pad);
+                }
+            }
+        }
+
+    }
+    else {
+        #pragma omp parallel for
+        for (c = 0; c < channels_col; ++c) {
+            int w_offset = c % ksize;
+            int h_offset = (c / ksize) % ksize;
+            int c_im = c / ksize / ksize;
+            for (h = 0; h < height_col; ++h) {
+                for (w = 0; w < width_col; ++w) {
+                    int im_row = h_offset + h * stride;
+                    int im_col = w_offset + w * stride;
+
+                    int col_index = (h * width_col + w)*ldb_align + c;   // transposed & aligned
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels,
+                        im_row, im_col, c_im, pad);
+                }
+            }
+        }
+    }
+}
+
+
+//From Berkeley Vision's Caffe!
+//https://github.com/BVLC/caffe/blob/master/LICENSE
 void im2col_cpu_custom(float* data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col)
@@ -641,7 +806,7 @@ void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a)
         __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
         __m256 all256_01 = _mm256_set1_ps(0.1F);
 
-        for (i = 0; i < n; i += 8) {
+        for (i = 0; i < n-8; i += 8) {
             //x[i] = (x[i]>0) ? x[i] : .1*x[i];
 
             __m256 src256 = _mm256_loadu_ps((__m256 *)(&x[i]));
@@ -755,6 +920,55 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     }
 }
 
+
+void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
+    float *weights, float *input, float *output)
+{
+    int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
+    int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
+    int i, f, j;
+
+    int fil;
+    // filter index
+#pragma omp parallel for      // "omp parallel for" - automatic parallelization of loop by using OpenMP
+    for (fil = 0; fil < n; ++fil) {
+        int chan, y, x, f_y, f_x;
+        // channel index
+        for (chan = 0; chan < c; ++chan)
+            // input - y
+            for (y = 0; y < h; ++y)
+                // input - x
+                for (x = 0; x < w; ++x)
+                {
+                    int const output_index = fil*w*h + y*w + x;
+                    int const weights_pre_index = fil*c*ksize*ksize + chan*ksize*ksize;
+                    int const input_pre_index = chan*w*h;
+                    float sum = 0;
+
+                    // filter - y
+                    for (f_y = 0; f_y < ksize; ++f_y)
+                    {
+                        int input_y = y + f_y - pad;
+                        // filter - x
+                        for (f_x = 0; f_x < ksize; ++f_x)
+                        {
+                            int input_x = x + f_x - pad;
+                            if (input_y < 0 || input_x < 0 || input_y >= h || input_x >= w) continue;
+
+                            int input_index = input_pre_index + input_y*w + input_x;
+                            int weights_index = weights_pre_index + f_y*ksize + f_x;
+
+                            sum += input[input_index] * weights[weights_index];
+                        }
+                    }
+                    // l.output[filters][width][height] +=
+                    //        state.input[channels][width][height] *
+                    //        l.weights[filters][channels][filter_width][filter_height];
+                    output[output_index] += sum;
+                }
+    }
+}
+
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
@@ -789,6 +1003,13 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
             C[i*ldc + j] = (2 * count - K) * mean_val;
         }
     }
+}
+
+void im2col_cpu_custom_transpose(float* data_im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float* data_col, int ldb_align)
+{
+    printf("\n im2col_cpu_custom_transpose() isn't implemented without AVX \n");
 }
 
 //From Berkeley Vision's Caffe!

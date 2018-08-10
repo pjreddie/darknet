@@ -861,9 +861,9 @@ void calculate_binary_weights(network net)
 
             if (l->xnor) {
                 //printf("\n %d \n", j);
-                size_t ldb_align = 256; // 256bit for AVX2
+                l->lda_align = 256; // 256bit for AVX2
 
-                binary_align_weights(l, ldb_align);
+                binary_align_weights(l);
             }
         }
     }
