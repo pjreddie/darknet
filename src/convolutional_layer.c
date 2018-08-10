@@ -44,7 +44,7 @@ void binarize_weights(float *weights, int n, int size, float *binary)
         }
         mean = mean / size;
         for(i = 0; i < size; ++i){
-            binary[f*size + i] = (weights[f*size + i] > 0) ? mean : -mean;
+            binary[f*size + i] = (weights[f*size + i] > 0) ? mean: -mean;
         }
     }
 }
@@ -688,7 +688,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         //    t_input = calloc(t_intput_size, sizeof(float));
         //    im2col_cpu_custom_transpose(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, t_input, new_ldb);
         //}
-        //else
+        if (l.xnor && l.size == 3 && l.stride == 1 && l.pad == 1) {}
+        else
             im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
 
 
@@ -771,13 +772,18 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 }
                 */
 
-                /*
-                if (l.size == 3 && l.stride == 1 && l.pad == 1) {
+
+                if (l.size == 3 && l.stride == 1 && l.pad == 1)
+                {
+                    //binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.binary_weights);
+                    //printf("\n mean = %f \n", l.mean_arr[0]);
+
                     convolution_2d(l.w, l.h, l.size, l.n, l.c, l.pad, l.stride,
-                        l.weights, state.input, l.output);
+                        //l.weights, state.input, l.output, l.mean_arr);
+                        l.binary_weights, state.input, l.output, l.mean_arr);
                 }
                 else {
-                */
+
                     //size_t ldb_align = 256; // 256 bit for AVX2
                     int ldb_align = l.lda_align;
                     size_t new_ldb = k + (ldb_align - k%ldb_align);
@@ -790,7 +796,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
                     //free(t_input);
                     free(t_bit_input);
-                //}
+                }
 
             }
 

@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
-    float *weights, float *input, float *output);
+    float *weights, float *input, float *output, float *mean);
 
 static inline void set_bit(unsigned char *const dst, size_t index) {
     size_t dst_i = index / 8;

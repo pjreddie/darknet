@@ -429,7 +429,7 @@ void gemm_nn(int M, int N, int K, float ALPHA,
 }
 
 
-void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
+void convolution_2d_old(int w, int h, int ksize, int n, int c, int pad, int stride,
     float *weights, float *input, float *output)
 {
     int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
@@ -473,6 +473,128 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
                     //        state.input[channels][width][height] *
                     //        l.weights[filters][channels][filter_width][filter_height];
                     output[output_index] += sum;
+                }
+    }
+}
+
+void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
+    float *weights, float *input, float *output, float *mean)
+{
+    int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
+    int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
+    int i, f, j;
+
+#if defined(_OPENMP)
+    static int max_num_threads = 0;
+    if (max_num_threads == 0) {
+        max_num_threads = omp_get_max_threads();
+        omp_set_num_threads(4);// max_num_threads / 2);
+    }
+#endif
+
+    //convolution_2d_old(w, h, ksize, n, c, pad, stride, weights, input, output);
+
+    __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
+    for (i = 0; i < ksize*ksize*n*c; i+=8) {
+        *((__m256*)&weights[i]) = _mm256_and_ps(*((__m256*)&weights[i]), _mm256_castsi256_ps(all256_sing1));
+    }
+
+    for (i = 0; i < w*h*c; i += 8) {
+        //*((__m256*)&input[i]) = _mm256_and_ps(*((__m256*)&input[i]), _mm256_castsi256_ps(all256_sing1));
+    }
+
+
+    __m256i all256_last_zero = _mm256_set1_epi32(0xFFFFFFFF);
+    all256_last_zero.m256i_i32[7] = 0;
+
+    __m256i idx256 = _mm256_set_epi32(0, 7, 6, 5, 4, 3, 2, 1);
+    //__m256 all256_sing1 = _mm256_set1_ps(0x80000000);
+    __m256 all256_one = _mm256_set1_ps(1);
+    __m256i all256i_one = _mm256_set1_epi32(1);
+
+    ///__m256i src256 = _mm256_loadu_si256((__m256i *)(&src[i]));
+    ///__m256i result256 = _mm256_and_si256(src256, all256_sing1); // check sign in 8 x 32-bit floats
+
+    int fil;
+    // filter index
+#pragma omp parallel for      // "omp parallel for" - automatic parallelization of loop by using OpenMP
+    for (fil = 0; fil < n; ++fil) {
+        int chan, y, x, f_y, f_x;
+        float cur_mean = fabs(mean[fil]);
+        __m256 mean256 = _mm256_set1_ps(cur_mean);
+        // channel index
+        //for (chan = 0; chan < c; ++chan)
+            // input - y
+            for (y = 0; y < h; ++y)
+                // input - x
+                for (x = 0; x < w-8; x+=8)
+                {
+                    int const output_index = fil*w*h + y*w + x;
+                    float sum = 0;
+                    __m256 sum256 = _mm256_set1_ps(0);
+
+                    for (chan = 0; chan < c; ++chan) {
+                        int const weights_pre_index = fil*c*ksize*ksize + chan*ksize*ksize;
+                        int const input_pre_index = chan*w*h;
+
+
+                        // filter - y
+                        for (f_y = 0; f_y < ksize; ++f_y)
+                        {
+                            int input_y = y + f_y - pad;
+                            //__m256 in = *((__m256*)&input[input_pre_index + input_y*w]);
+                            if (input_y < 0 || input_y >= h) continue;
+                            //__m256 in = _mm256_loadu_ps(&input[input_pre_index + input_y*w + x - pad]);
+
+                            // filter - x
+                            for (f_x = 0; f_x < ksize; ++f_x)
+                            {
+                                int input_x = x + f_x - pad;
+                                //if (input_y < 0 || input_x < 0 || input_y >= h || input_x >= w) continue;
+
+                                int input_index = input_pre_index + input_y*w + input_x;
+                                int weights_index = weights_pre_index + f_y*ksize + f_x;
+                                //if (input_y < 0 || input_y >= h) continue;
+
+                                //sum += input[input_index] * weights[weights_index];
+
+                                __m256 in = *((__m256*)&input[input_index]);
+                                __m256 w = _mm256_set1_ps(weights[weights_index]);
+                                //__m256 w_sign = _mm256_and_ps(w, _mm256_castsi256_ps(all256_sing1)); // check sign in 8 x 32-bit floats
+                                __m256 xor = _mm256_xor_ps(w, in);
+                                //printf("\n xor1 = %f, xor2 = %f \n", xor.m256_f32[0], xor.m256_f32[1]);
+                                //printf("\n in = %f, w = %f, xor = %f \n", in.m256_f32[0], w_sign.m256_f32[0], xor.m256_f32[0]);
+
+                                //__m256 pn1 = _mm256_and_ps(_mm256_castsi256_ps(all256i_one), xor);
+
+
+                                //sum256 = xor;
+                                sum256 = _mm256_add_ps(xor, sum256);
+                                //printf("\n --- \n");
+                                //printf("\n 0 = %f, 1 = %f, 2 = %f, 3 = %f, 4 = %f, 5 = %f, 6 = %f, 7 = %f \n", in.m256_f32[0], in.m256_f32[1], in.m256_f32[2], in.m256_f32[3], in.m256_f32[4], in.m256_f32[5], in.m256_f32[6], in.m256_f32[7]);
+
+                                if (f_x < ksize-1) {
+                                    //in = _mm256_permutevar8x32_ps(in, idx256);
+                                    //in = _mm256_and_ps(in, _mm256_castsi256_ps(all256_last_zero));
+                                }
+                            }
+                        }
+                    }
+                    // l.output[filters][width][height] +=
+                    //        state.input[channels][width][height] *
+                    //        l.weights[filters][channels][filter_width][filter_height];
+                    //output[output_index] += sum;
+
+                    sum256 = _mm256_mul_ps(sum256, mean256);
+                    //printf("\n cur_mean = %f, sum256 = %f, sum256 = %f, in = %f \n",
+                    //    cur_mean, sum256.m256_f32[0], sum256.m256_f32[1], input[input_pre_index]);
+
+                    //__m256 out = *((__m256*)&output[output_index]);
+                    //out = _mm256_add_ps(out, sum256);
+                    //*((__m256*)&output[output_index]) = out;
+                    *((__m256*)&output[output_index]) = sum256;
+
+                    //_mm256_storeu_ps(&C[i*ldc + j], result256);
                 }
     }
 }
@@ -533,7 +655,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     static int max_num_threads = 0;
     if (max_num_threads == 0) {
         max_num_threads = omp_get_max_threads();
-        omp_set_num_threads(max_num_threads / 2);
+        //omp_set_num_threads(max_num_threads / 2);
     }
 #endif
 
@@ -922,7 +1044,7 @@ void gemm_nn(int M, int N, int K, float ALPHA,
 
 
 void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
-    float *weights, float *input, float *output)
+    float *weights, float *input, float *output, float *mean)
 {
     int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
     int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
