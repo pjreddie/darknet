@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define ODLA 1
+
 #if ODLA
 extern void *odla_create_runtime(void);
 extern void odla_load_loadable(void *runtime, const char *loadable, int instance);
@@ -20,6 +22,8 @@ extern int odla_output_width(void *runtime, int index);
 extern int odla_output_height(void *runtime, int index);
 extern void odla_copy_input(float *input, unsigned int size, void *buffer);
 extern void odla_copy_output(void *buffer, unsigned int size, float *output);
+extern int odla_input_size(void *runtime, int index);
+extern int odla_output_size(void *runtime, int index);
 #endif
 
 odla_layer make_odla_layer(int batch, int h, int w, int c, int instance, const char *loadable)
@@ -27,15 +31,11 @@ odla_layer make_odla_layer(int batch, int h, int w, int c, int instance, const c
     int i = 0;
 
     layer l = {0};
+    l.w = w;
+    l.h = h;
+    l.c = c;
     l.type = ODLA;
-    l.batch = batch;
-    l.out_w = w;
-    l.out_h = h;
-    l.out_c = c;
-    l.outputs = w*h*c;
-
     l.odla_instance = instance;
-    l.output = calloc(l.outputs*batch, sizeof(float));
 
 #if ODLA
     //create runtime instance
@@ -52,8 +52,8 @@ odla_layer make_odla_layer(int batch, int h, int w, int c, int instance, const c
         l.input_tensors[i].h = odla_input_height(l.odla_runtime, i);
         l.input_tensors[i].c = odla_input_channel(l.odla_runtime, i);
 
-        l.input_tensors[i].size = (l.input_tensors[i].w * l.input_tensors[i].h * l.input_tensors[i].c);
-        l.input_tensors[i].data = calloc(l.input_tensors[i].size, sizeof(float));
+        l.input_tensors[i].size = odla_input_size(l.odla_runtime, i);
+        l.input_tensors[i].data = calloc(l.input_tensors[i].size, sizeof(uint8_t));
         l.input_tensors[i].buffer = NULL;
         odla_alloc_input_tensor(l.odla_runtime, &l.input_tensors[i].buffer, i);
     }
@@ -66,11 +66,28 @@ odla_layer make_odla_layer(int batch, int h, int w, int c, int instance, const c
         l.output_tensors[i].h = odla_output_height(l.odla_runtime, i);
         l.output_tensors[i].c = odla_output_channel(l.odla_runtime, i);
 
-        l.output_tensors[i].size = (l.output_tensors[i].w * l.output_tensors[i].h * l.output_tensors[i].c);
-        l.output_tensors[i].data = calloc(l.output_tensors[i].size, sizeof(float));
-        odla_alloc_output_tensor(l.odla_runtime, &l.output_tensors[i].buffer, i);
+        l.output_tensors[i].size = odla_output_size(l.odla_runtime, i);
+        l.output_tensors[i].data = calloc(l.output_tensors[i].size, sizeof(int8_t));
         fprintf(stderr, "odla          tensor %d %4d x%4d x%4d   ->  %4d x%4d x%4d\n", i, w, h, c, l.output_tensors[i].w, l.output_tensors[i].h, l.output_tensors[i].c);
+        odla_alloc_output_tensor(l.odla_runtime, &l.output_tensors[i].buffer, i);
     }
+
+
+    /**
+     * Update the output dimension using output tensors
+     * TODO: Make assertion check for #output_tensor > 0
+     * NOTE: Currently supports input of uint8 and output of int8
+     **/
+    l.batch = batch;
+    l.out_w = l.output_tensors[i].w;
+    l.out_h = l.output_tensors[i].h;
+    l.out_c = l.output_tensors[i].c;
+    l.outputs = l.output_tensors[i].size; // TODO: Fixit
+
+    l.output_i8 = calloc(l.outputs*batch, sizeof(int8_t));
+
+    l.output = calloc(l.outputs*batch, sizeof(float));
+    l.output_u8 = calloc(l.outputs*batch, sizeof(uint8_t));
 #endif
 
     l.forward = forward_odla_layer;
@@ -83,35 +100,49 @@ void resize_odla_layer(layer *l, int w, int h)
     fprintf(stderr, "resize_odla_layer\n");
 }
 
+static int32_t align_to(int32_t number, int32_t multiple)
+{
+    if (number % multiple == 0)
+        return number;
+
+    return number + multiple - number % multiple;
+}
 
 void forward_odla_layer(const layer l, network net)
 {
-    int i = 0;
+    int h = 0;
 
-    fprintf(stderr, "forward_odla_layer\n");
+    fprintf(stderr, "%s %d input tensor size %d\n",
+            __func__, __LINE__, l.input_tensors[0].size);
 
-    fprintf(stderr, "%s %d input tensor size %d\n", __func__, __LINE__, l.input_tensors[0].size);
-    //copy input to dla tensor
-//    copy_cpu(l.input_tensors[0].size, net.input, 1, l.input_tensors[0].buffer, 1);
-//    odla_copy_input(net.input, l.input_tensors[0].size, l.input_tensors[0].buffer);
+    /**
+     * Copy line by line from net.input to input tensor buffer
+     * Assumption: input to be in uint8 and NHWC format.
+     **/
+    uint8_t *src = (uint8_t*)net.input_u8;
+    uint8_t *dst = (uint8_t*)l.input_tensors[0].buffer;
+    unsigned size = l.w * l.c * sizeof(uint8_t);
+    for (h = 0; h < l.h; h++) {
+        unsigned srcOffset = l.w * l.c * h;
+        unsigned dstOffset = align_to(l.w * l.c, 32) * h;
+
+        memcpy(dst + dstOffset, src + srcOffset, size);
+    }
 
     //run network
 #if ODLA
+    fprintf(stderr, "%s %d: Executing in ODLA... \n", __func__, __LINE__);
     odla_execute(l.odla_runtime, l.odla_instance);
 #endif
 
-    fprintf(stderr, "%s %d\n", __func__, __LINE__);
-    //copy output from dla tensor
-#if 0
-    for (i = 0; i < l.num_output; i++) {
-    fprintf(stderr, "%s %d\n", __func__, __LINE__);
-        odla_copy_output(l.output_tensors[i].buffer, l.output_tensors[i].size, l.output_tensors[i].data);
-    fprintf(stderr, "%s %d\n", __func__, __LINE__);
-    }
-#endif
-    fprintf(stderr, "%s %d\n", __func__, __LINE__);
-    copy_cpu(l.outputs*l.batch, net.input, 1, l.output, 1);
-    fprintf(stderr, "%s %d\n", __func__, __LINE__);
+    /**
+     * Copy output line by line from output tensor to layer output.
+     * Again expected to be in feature format. Copy to the output appropriately
+     **/
+    fprintf(stderr, "%s %d: Copying output \n", __func__, __LINE__);
+    memcpy(l.output_i8, l.output_tensors[0].buffer,
+            l.outputs * l.batch * sizeof(int8_t));
+    fprintf(stderr, "%s %d: Forward CPU DONE\n", __func__, __LINE__);
 }
 
 void backward_odla_layer(const layer l, network net)

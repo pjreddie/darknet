@@ -74,7 +74,7 @@ extern "C" void odla_alloc_input_tensor(void *runtime, void **buffer, int index)
     if (err)
         fprintf(stderr, "allocateSystemMemory failed\n");
     err = odla_runtime->bindInputTensor(index, hMem);
-    if (!err)
+    if (err != true)
         fprintf(stderr, "bindInputTensor failed\n");
 }
 
@@ -84,15 +84,15 @@ extern "C" void odla_alloc_output_tensor(void *runtime, void **buffer, int index
     int err = 0;
     nvdla::IRuntime::NvDlaTensor tDesc;
     IRuntime *odla_runtime = (IRuntime *)runtime;
-
     err = odla_runtime->getOutputTensorDesc(index, &tDesc);
     if (err)
         fprintf(stderr, "getOutputTensorDesc failed\n");
     err = odla_runtime->allocateSystemMemory(&hMem, tDesc.bufferSize, buffer);
     if (err)
         fprintf(stderr, "allocateSystemMemory failed\n");
+
     err = odla_runtime->bindOutputTensor(index, hMem);
-    if (err)
+    if (err != true)
         fprintf(stderr, "bindOutputTensor failed\n");
 }
 
@@ -148,6 +148,24 @@ extern "C" int odla_output_height(void *runtime, int index)
 
     odla_runtime->getOutputTensorDesc(index, &tDesc);
     return tDesc.dims.h;
+}
+
+extern "C" int odla_input_size(void *runtime, int index)
+{
+    IRuntime *odla_runtime = (IRuntime *)runtime;
+    nvdla::IRuntime::NvDlaTensor tDesc;
+
+    odla_runtime->getInputTensorDesc(index, &tDesc);
+    return tDesc.bufferSize;
+}
+
+extern "C" int odla_output_size(void *runtime, int index)
+{
+    IRuntime *odla_runtime = (IRuntime *)runtime;
+    nvdla::IRuntime::NvDlaTensor tDesc;
+
+    odla_runtime->getOutputTensorDesc(index, &tDesc);
+    return tDesc.bufferSize;
 }
 
 extern "C" void odla_copy_input(float *input, uint32_t size, void *buffer)
