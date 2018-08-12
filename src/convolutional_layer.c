@@ -688,8 +688,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         //    t_input = calloc(t_intput_size, sizeof(float));
         //    im2col_cpu_custom_transpose(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, t_input, new_ldb);
         //}
-        if (l.xnor && l.size == 3 && l.stride == 1 && l.pad == 1) {}
-        else
+        //if (l.xnor && l.size == 3 && l.stride == 1 && l.pad == 1) {}
+        //else
             im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
 
 
@@ -772,7 +772,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 }
                 */
 
-
+                /*
                 if (l.size == 3 && l.stride == 1 && l.pad == 1)
                 {
                     //binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.binary_weights);
@@ -783,12 +783,15 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                         l.binary_weights, state.input, l.output, l.mean_arr);
                 }
                 else {
+                    */
 
                     //size_t ldb_align = 256; // 256 bit for AVX2
                     int ldb_align = l.lda_align;
                     size_t new_ldb = k + (ldb_align - k%ldb_align);
                     char *t_bit_input = NULL;
                     size_t t_intput_size = binary_transpose_align_input(k, n, b, &t_bit_input, ldb_align);
+                    //char *t_bit_input = calloc(new_ldb * n, sizeof(char));    // for im2col_cpu_custom_transpose() only
+                    //float_to_bit(t_input, t_bit_input, new_ldb * n);    // for im2col_cpu_custom_transpose() only
 
                     gemm_nn_custom_bin_mean_transposed(m, n, k, 1, l.align_bit_weights, new_ldb, t_bit_input, new_ldb, c, n, l.mean_arr);
 
@@ -796,7 +799,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
                     //free(t_input);
                     free(t_bit_input);
-                }
+                //}
 
             }
 

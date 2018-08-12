@@ -318,12 +318,36 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 #include <immintrin.h>
 #include <smmintrin.h>
 
+static inline __int32 _mm256_extract_epi64(__m256i a, const int index) {
+    return a.m256i_i64[index];
+}
+
+static inline __int32 _mm256_extract_epi32(__m256i a, const int index) {
+    return a.m256i_i32[index];
+}
+
+static inline float _castu32_f32(uint32_t a) {
+    return *((float *)&a);
+}
+
+static inline float _mm256_extract_float32(__m256 a, const int index) {
+    return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), index));
+}
+
 #else    // Linux GCC/Clang
 #include <x86intrin.h>
 #include <ammintrin.h>
 #include <immintrin.h>
 #include <smmintrin.h>
 #include <cpuid.h>
+
+static inline float _castu32_f32(uint32_t a) {
+    return *((float *)&a);
+}
+
+static inline float _mm256_extract_float32(__m256 a, const int index) {
+    return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), index));
+}
 
 void asm_cpuid(uint32_t* abcd, uint32_t eax)
 {
@@ -504,8 +528,10 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
     }
 
 
-    __m256i all256_last_zero = _mm256_set1_epi32(0xFFFFFFFF);
-    all256_last_zero.m256i_i32[7] = 0;
+    //__m256i all256_last_zero = _mm256_set1_epi32(0xFFFFFFFF);
+    //all256_last_zero.m256i_i32[7] = 0;
+    __m256i all256_last_zero =
+        _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x0);
 
     __m256i idx256 = _mm256_set_epi32(0, 7, 6, 5, 4, 3, 2, 1);
     //__m256 all256_sing1 = _mm256_set1_ps(0x80000000);
@@ -561,15 +587,15 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
                                 __m256 in = *((__m256*)&input[input_index]);
                                 __m256 w = _mm256_set1_ps(weights[weights_index]);
                                 //__m256 w_sign = _mm256_and_ps(w, _mm256_castsi256_ps(all256_sing1)); // check sign in 8 x 32-bit floats
-                                __m256 xor = _mm256_xor_ps(w, in);
-                                //printf("\n xor1 = %f, xor2 = %f \n", xor.m256_f32[0], xor.m256_f32[1]);
-                                //printf("\n in = %f, w = %f, xor = %f \n", in.m256_f32[0], w_sign.m256_f32[0], xor.m256_f32[0]);
+                                __m256 xor256 = _mm256_xor_ps(w, in);
+                                //printf("\n xor256_1 = %f, xor256_2 = %f \n", xor256.m256_f32[0], xor256.m256_f32[1]);
+                                //printf("\n in = %f, w = %f, xor256 = %f \n", in.m256_f32[0], w_sign.m256_f32[0], xor256.m256_f32[0]);
 
-                                //__m256 pn1 = _mm256_and_ps(_mm256_castsi256_ps(all256i_one), xor);
+                                //__m256 pn1 = _mm256_and_ps(_mm256_castsi256_ps(all256i_one), xor256);
 
 
-                                //sum256 = xor;
-                                sum256 = _mm256_add_ps(xor, sum256);
+                                //sum256 = xor256;
+                                sum256 = _mm256_add_ps(xor256, sum256);
                                 //printf("\n --- \n");
                                 //printf("\n 0 = %f, 1 = %f, 2 = %f, 3 = %f, 4 = %f, 5 = %f, 6 = %f, 7 = %f \n", in.m256_f32[0], in.m256_f32[1], in.m256_f32[2], in.m256_f32[3], in.m256_f32[4], in.m256_f32[5], in.m256_f32[6], in.m256_f32[7]);
 
@@ -638,10 +664,14 @@ static inline __m256i count256(__m256i v) {
 static inline int popcnt256_custom(__m256i n) {
     __m256i val = count256(n);
 
-    return val.m256i_i64[0] +
-    val.m256i_i64[1] +
-    val.m256i_i64[2] +
-    val.m256i_i64[3];
+    //return val.m256i_i64[0] +
+    //val.m256i_i64[1] +
+    //val.m256i_i64[2] +
+    //val.m256i_i64[3];
+    return _mm256_extract_epi64(val, 0)
+        + _mm256_extract_epi64(val, 1)
+        + _mm256_extract_epi64(val, 2)
+        + _mm256_extract_epi64(val, 3);
 }
 
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
@@ -686,10 +716,14 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
             }
 
             // count of 1 bits
-            count = count_sum.m256i_i64[0] +
-                count_sum.m256i_i64[1] +
-                count_sum.m256i_i64[2] +
-                count_sum.m256i_i64[3];
+            //count = count_sum.m256i_i64[0] +
+            //    count_sum.m256i_i64[1] +
+            //    count_sum.m256i_i64[2] +
+             //   count_sum.m256i_i64[3];
+            count = _mm256_extract_epi64(count_sum, 0)
+                + _mm256_extract_epi64(count_sum, 1)
+                + _mm256_extract_epi64(count_sum, 2)
+                + _mm256_extract_epi64(count_sum, 3);
 
             int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
             count = count - f1;    // remove extra bits (from empty space for align only)
@@ -738,15 +772,15 @@ void im2col_cpu_custom_transpose(float* data_im,
                     int col_index = (h * width_col + w)*ldb_align + c;   // transposed & aligned
 
                     //data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
-                    __m256 src256 = _mm256_loadu_ps((__m256i *)(&data_im[im_col + width*(im_row + height*c_im)]));
-                    data_col[col_index + ldb_align * 0] = src256.m256_f32[0];
-                    data_col[col_index + ldb_align * 1] = src256.m256_f32[1];
-                    data_col[col_index + ldb_align * 2] = src256.m256_f32[2];
-                    data_col[col_index + ldb_align * 3] = src256.m256_f32[3];
-                    data_col[col_index + ldb_align * 4] = src256.m256_f32[4];
-                    data_col[col_index + ldb_align * 5] = src256.m256_f32[5];
-                    data_col[col_index + ldb_align * 6] = src256.m256_f32[6];
-                    data_col[col_index + ldb_align * 7] = src256.m256_f32[7];
+                    __m256 src256 = _mm256_loadu_ps((float *)(&data_im[im_col + width*(im_row + height*c_im)]));
+                    data_col[col_index + ldb_align * 0] = _mm256_extract_float32(src256, 0);// src256.m256_f32[0];
+                    data_col[col_index + ldb_align * 1] = _mm256_extract_float32(src256, 1);// src256.m256_f32[1];
+                    data_col[col_index + ldb_align * 2] = _mm256_extract_float32(src256, 2);// src256.m256_f32[2];
+                    data_col[col_index + ldb_align * 3] = _mm256_extract_float32(src256, 3);// src256.m256_f32[3];
+                    data_col[col_index + ldb_align * 4] = _mm256_extract_float32(src256, 4);// src256.m256_f32[4];
+                    data_col[col_index + ldb_align * 5] = _mm256_extract_float32(src256, 5);// src256.m256_f32[5];
+                    data_col[col_index + ldb_align * 6] = _mm256_extract_float32(src256, 6);// src256.m256_f32[6];
+                    data_col[col_index + ldb_align * 7] = _mm256_extract_float32(src256, 7);// src256.m256_f32[7];
 
                     //_mm256_storeu_ps(&data_col[col_index], src256);
                 }
@@ -853,7 +887,7 @@ void im2col_cpu_custom(float* data_im,
                     int col_index = (c * height_col + h) * width_col + w;
 
                     //data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
-                    __m256 src256 = _mm256_loadu_ps((__m256i *)(&data_im[im_col + width*(im_row + height*c_im)]));
+                    __m256 src256 = _mm256_loadu_ps((float *)(&data_im[im_col + width*(im_row + height*c_im)]));
                     _mm256_storeu_ps(&data_col[col_index], src256);
                 }
 
@@ -931,13 +965,13 @@ void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a)
         for (i = 0; i < n-8; i += 8) {
             //x[i] = (x[i]>0) ? x[i] : .1*x[i];
 
-            __m256 src256 = _mm256_loadu_ps((__m256 *)(&x[i]));
+            __m256 src256 = _mm256_loadu_ps(&x[i]);
             __m256 mult256 = _mm256_mul_ps((src256), all256_01); // mult * 0.1
 
             __m256i sign256 = _mm256_and_si256(_mm256_castps_si256(src256), all256_sing1); // check sign in 8 x 32-bit floats
 
             __m256 result256 = _mm256_blendv_ps(src256, mult256, _mm256_castsi256_ps(sign256)); // (sign>0) ? src : mult;
-            _mm256_storeu_ps((__m256 *)(&x[i]), result256);
+            _mm256_storeu_ps(&x[i], result256);
         }
 
         for (; i < n; ++i) {
