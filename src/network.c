@@ -203,6 +203,8 @@ void forward_network(network *netp)
         }
         l.forward(l, net);
         net.input = l.output;
+        net.input_i8 = l.output_i8;
+        net.input_u8 = l.output_u8;
         if(l.truth) {
             net.truth = l.output;
         }

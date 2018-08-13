@@ -39,6 +39,10 @@ typedef struct{
 
 metadata get_metadata(char *file);
 
+typedef float fp32;
+typedef signed char int8_t;
+typedef unsigned char uint8_t;
+
 typedef struct{
     int *leaf;
     int n;
@@ -93,6 +97,7 @@ typedef enum {
     ODLA,
     CAFFE,
     SPLIT,
+    CONVERTER,
     UPSAMPLE_DLA,
     BLANK
 } LAYER_TYPE;
@@ -100,6 +105,26 @@ typedef enum {
 typedef enum{
     SSE, MASKED, L1, SEG, SMOOTH,WGAN
 } COST_TYPE;
+
+typedef enum{
+    UINT8, INT8, INT16, FP16, FP32
+} PRECISION;
+
+typedef enum {
+    GLOBAL_SCALING
+} SCALE_METHOD;
+
+typedef struct {
+    PRECISION in_precision;
+    PRECISION out_precision;
+
+    float offset;
+    float scale;
+    int shifter;
+    float post_offset;
+    float post_scale;
+    SCALE_METHOD scale_method;
+} converter_params;
 
 typedef struct{
     int batch;
@@ -191,6 +216,9 @@ struct layer{
     int *mask;
     int total;
 
+    /* converter params */
+    converter_params convert_params;
+
     float alpha;
     float beta;
     float kappa;
@@ -250,6 +278,8 @@ struct layer{
 
     float * delta;
     float * output;
+    int8_t * output_i8;
+    uint8_t * output_u8;
     float * loss;
     float * squared;
     float * norms;
@@ -456,6 +486,8 @@ typedef struct network{
     int subdivisions;
     layer *layers;
     float *output;
+    int8_t *output_i8;
+    uint8_t *output_u8;
     learning_rate_policy policy;
 
     float learning_rate;
@@ -498,6 +530,8 @@ typedef struct network{
     tree *hierarchy;
 
     float *input;
+    int8_t *input_i8;
+    uint8_t *input_u8;
     float *truth;
     float *delta;
     float *workspace;
