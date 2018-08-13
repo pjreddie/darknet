@@ -558,9 +558,6 @@ odla_layer parse_odla(list *options, size_params params)
     const char *loadable = option_find_str(options, "loadable", "");
 
     odla_layer layer = make_odla_layer(params.batch, params.w, params.h, params.c, instance, loadable);
-    layer.w = layer.out_w = params.w;
-    layer.h = layer.out_h = params.h;
-    layer.c = layer.out_c = params.c;
     return layer;
 }
 
