@@ -621,7 +621,7 @@ void binary_align_weights(convolutional_layer *l)
     free(align_weights);
 }
 
-
+// further optimizations: im2col_bin() for XNOR, and then transpose_aling_bin()
 size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, size_t ldb_align)
 {
     size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
@@ -690,7 +690,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         //}
         //if (l.xnor && l.size == 3 && l.stride == 1 && l.pad == 1) {}
         //else
-            im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
+        // further optimizations: im2col_bin() for XNOR, and then transpose_aling_bin()
+        im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
 
 
         //gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
@@ -793,6 +794,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     //char *t_bit_input = calloc(new_ldb * n, sizeof(char));    // for im2col_cpu_custom_transpose() only
                     //float_to_bit(t_input, t_bit_input, new_ldb * n);    // for im2col_cpu_custom_transpose() only
 
+                    // 5x times faster than gemm()-float32
+                    // further optimizations: accelerate maxpool-layer with OpenMP/AVX
                     gemm_nn_custom_bin_mean_transposed(m, n, k, 1, l.align_bit_weights, new_ldb, t_bit_input, new_ldb, c, n, l.mean_arr);
 
                     //gemm_nn_custom_bin_mean_transposed(m, n, k, 1, bit_weights, k, t_bit_input, new_ldb, c, n, mean_arr);
