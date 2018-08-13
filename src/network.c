@@ -578,10 +578,12 @@ void free_detections(detection *dets, int n)
 
 float *network_predict_image(network *net, image im)
 {
-    image imr = letterbox_image(im, net->w, net->h);
+    bool resize = im.w != net->w || im.h != net->h;
+    image imr = resize ? letterbox_image(im, net->w, net->h) : im;
     set_batch_network(net, 1);
     float *p = network_predict(net, imr.data);
-    free_image(imr);
+    if(resize)
+        free_image(imr);
     return p;
 }
 
