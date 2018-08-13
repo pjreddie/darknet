@@ -79,10 +79,10 @@ odla_layer make_odla_layer(int batch, int h, int w, int c, int instance, const c
      * NOTE: Currently supports input of uint8 and output of int8
      **/
     l.batch = batch;
-    l.out_w = l.output_tensors[i].w;
-    l.out_h = l.output_tensors[i].h;
-    l.out_c = l.output_tensors[i].c;
-    l.outputs = l.output_tensors[i].size; // TODO: Fixit
+    l.out_w = l.output_tensors[0].w;
+    l.out_h = l.output_tensors[0].h;
+    l.out_c = l.output_tensors[0].c;
+    l.outputs = l.output_tensors[0].size; // TODO: Fixit
 
     l.output_i8 = calloc(l.outputs*batch, sizeof(int8_t));
 
