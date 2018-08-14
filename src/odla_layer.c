@@ -139,10 +139,12 @@ void forward_odla_layer(const layer l, network net)
      * Copy output line by line from output tensor to layer output.
      * Again expected to be in feature format. Copy to the output appropriately
      **/
-    fprintf(stderr, "%s %d: Copying output \n", __func__, __LINE__);
-    memcpy(l.output_i8, l.output_tensors[0].buffer,
-            l.outputs * l.batch * sizeof(int8_t));
-    fprintf(stderr, "%s %d: Forward CPU DONE\n", __func__, __LINE__);
+    if (l.num_output == 1) {
+        fprintf(stderr, "%s %d: Copying output \n", __func__, __LINE__);
+        memcpy(l.output_i8, l.output_tensors[0].buffer,
+                l.outputs * l.batch * sizeof(int8_t));
+        fprintf(stderr, "%s %d: Forward CPU DONE\n", __func__, __LINE__);
+    }
 }
 
 void backward_odla_layer(const layer l, network net)

@@ -37,7 +37,7 @@ void resize_split_layer(layer *l, int w, int h)
 void forward_split_layer(const layer l, network net)
 {
     fprintf(stderr, "forward_split_layer\n");
-    copy_cpu(l.outputs*l.batch, l.input_tensor->data, 1, l.output, 1);
+    copy_cpu(l.outputs*l.batch, l.input_tensor->buffer, 1, l.output, 1);
 }
 
 void backward_split_layer(const layer l, network net)
