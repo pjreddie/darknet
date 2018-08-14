@@ -666,7 +666,6 @@ layer parse_upsample_dla(list *options, size_params params, network *net)
 
     int stride = option_find_int(options, "stride",2);
     layer l = make_upsample_dla_layer(params.batch, params.w, params.h, params.c, stride);
-    l.scale = option_find_float_quiet(options, "scale", 1);
     return l;
 }
 

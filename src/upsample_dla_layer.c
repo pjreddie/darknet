@@ -46,7 +46,7 @@ void *cubecpy(void *dst, const void *src){
     return dst;
 }
 
-void upsample_dla(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
+void upsample_dla(int8_t *in, int w, int h, int c, int batch, int stride, int forward, int8_t *out)
 {
     int i, j, k, b;
 
@@ -65,10 +65,9 @@ void upsample_dla(float *in, int w, int h, int c, int batch, int stride, int for
 
 void forward_upsample_dla_layer(const layer l, network net)
 {
-    fill_cpu(l.outputs*l.batch, 0, l.output, 1);
     if(l.reverse){
-        upsample_dla(l.output, l.out_w, l.out_h, l.c, l.batch, l.stride, 0, l.scale, net.input);
+        upsample_dla(l.output_i8, l.out_w, l.out_h, l.c, l.batch, l.stride, 0, net.input_i8);
     }else{
-        upsample_dla(net.input, l.w, l.h, l.c, l.batch, l.stride, 1, l.scale, l.output);
+        upsample_dla(net.input_i8, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_i8);
     }
 }
