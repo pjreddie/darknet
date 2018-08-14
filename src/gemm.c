@@ -318,6 +318,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 #include <immintrin.h>
 #include <smmintrin.h>
 
+#if defined(_MSC_VER) && _MSC_VER <= 1900
 static inline __int32 _mm256_extract_epi64(__m256i a, const int index) {
     return a.m256i_i64[index];
 }
@@ -325,6 +326,8 @@ static inline __int32 _mm256_extract_epi64(__m256i a, const int index) {
 static inline __int32 _mm256_extract_epi32(__m256i a, const int index) {
     return a.m256i_i32[index];
 }
+
+#endif
 
 static inline float _castu32_f32(uint32_t a) {
     return *((float *)&a);
@@ -952,6 +955,29 @@ void im2col_cpu_custom(float* data_im,
         //printf("\n Error: is no non-optimized version \n");
         im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col);
     }
+}
+
+void transpose_8x8_bits(unsigned char A[8], unsigned char B[8], int m, int n)
+{
+    unsigned x, y, t;
+
+    // Load the array and pack it into x and y.
+
+    x = (A[0] << 24) | (A[m] << 16) | (A[2 * m] << 8) | A[3 * m];
+    y = (A[4 * m] << 24) | (A[5 * m] << 16) | (A[6 * m] << 8) | A[7 * m];
+
+    t = (x ^ (x >> 7)) & 0x00AA00AA; x = x ^ t ^ (t << 7);
+    t = (y ^ (y >> 7)) & 0x00AA00AA; y = y ^ t ^ (t << 7);
+
+    t = (x ^ (x >> 14)) & 0x0000CCCC; x = x ^ t ^ (t << 14);
+    t = (y ^ (y >> 14)) & 0x0000CCCC; y = y ^ t ^ (t << 14);
+
+    t = (x & 0xF0F0F0F0) | ((y >> 4) & 0x0F0F0F0F);
+    y = ((x << 4) & 0xF0F0F0F0) | (y & 0x0F0F0F0F);
+    x = t;
+
+    B[0] = x >> 24; B[n] = x >> 16; B[2 * n] = x >> 8; B[3 * n] = x;
+    B[4 * n] = y >> 24; B[5 * n] = y >> 16; B[6 * n] = y >> 8; B[7 * n] = y;
 }
 
 void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a)
