@@ -485,6 +485,7 @@ typedef struct network{
     float *truth;
     float *delta;
     float *workspace;
+    size_t workspace_size;
     int train;
     int index;
     float *cost;
