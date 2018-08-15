@@ -26,9 +26,13 @@ extern int odla_input_size(void *runtime, int index);
 extern int odla_output_size(void *runtime, int index);
 #endif
 
-odla_layer make_odla_layer(int batch, int h, int w, int c, int instance, const char *loadable)
+odla_layer make_odla_layer(int batch, int h, int w, int c,
+                            odla_params params)
 {
     int i = 0;
+
+    int instance = params.instance;
+    const char *loadable = params.loadable;
 
     layer l = {0};
     l.w = w;
@@ -36,6 +40,7 @@ odla_layer make_odla_layer(int batch, int h, int w, int c, int instance, const c
     l.c = c;
     l.type = ODLA;
     l.odla_instance = instance;
+    l.dla_params = params;
 
 #if ODLA
     //create runtime instance
@@ -108,10 +113,53 @@ static int32_t align_to(int32_t number, int32_t multiple)
     return number + multiple - number % multiple;
 }
 
+/**
+ * COPYING RULES to input tensor:
+ * [1] Copy from output buffer, if layer != ODLA
+ * [2] Copy from output tensor, otherwise
+ **/
+static void copy_to_input_tensor(tensor *to, layer *from_layer, tensor *from)
+{
+    if (from_layer == NULL)
+        return;
+
+    if (from_layer->type == ODLA && from == NULL)
+        return;
+
+    if (from_layer->type == ODLA) {
+        memcpy(to->buffer, from->buffer, to->size);
+    }
+    else {
+        int8_t *dst = (int8_t *)to->buffer;
+
+        /* Copy line*/
+        int w = from_layer->out_w;
+        int h = from_layer->out_h;
+        int c = from_layer->out_c;
+
+        /* WAR: decide src either i8 or u8 output buffer */
+        if ((w * c) % 32 != 0) {
+            int8_t *src = (int8_t *)from_layer->output_u8;
+            int hh;
+            for (hh = 0; hh < h; hh++) {
+                unsigned srcOffset = w * c * hh;
+                unsigned dstOffset = align_to(w * c, 32) * hh;
+
+                memcpy(dst + dstOffset,
+                        src + srcOffset,
+                        w * c * sizeof(uint8_t));
+            }
+        }
+        else {
+            uint8_t *src = (uint8_t *)from_layer->output_i8;
+            memcpy(dst, src, to->size);
+        }
+    }
+}
+
 void forward_odla_layer(const layer l, network net)
 {
-    int h = 0;
-
+    int i;
     fprintf(stderr, "%s %d input tensor size %d\n",
             __func__, __LINE__, l.input_tensors[0].size);
 
@@ -119,14 +167,26 @@ void forward_odla_layer(const layer l, network net)
      * Copy line by line from net.input to input tensor buffer
      * Assumption: input to be in uint8 and NHWC format.
      **/
-    uint8_t *src = (uint8_t*)net.input_u8;
-    uint8_t *dst = (uint8_t*)l.input_tensors[0].buffer;
-    unsigned size = l.w * l.c * sizeof(uint8_t);
-    for (h = 0; h < l.h; h++) {
-        unsigned srcOffset = l.w * l.c * h;
-        unsigned dstOffset = align_to(l.w * l.c, 32) * h;
+    odla_params params = l.dla_params;
+    for (i = 0; i < params.n_inputs; i++) {
+        int layer_index = params.input_layer_index[i];
+        int tensor_index = params.input_tensor_index[i];
+        layer *from_layer = NULL;
+        tensor *from = NULL;
+        tensor *to = &l.input_tensors[i];
 
-        memcpy(dst + dstOffset, src + srcOffset, size);
+        /*TODO: have some constrain checks*/
+        if (layer_index >= 0 && layer_index < net.n)
+            from_layer = &net.layers[layer_index];
+
+        if (from_layer != NULL) {
+            if (from_layer->type == ODLA &&
+                tensor_index >= 0 && tensor_index < from_layer->num_output) {
+                from = &from_layer->output_tensors[tensor_index];
+            }
+        }
+
+        copy_to_input_tensor(to, from_layer, from);
     }
 
     //run network
@@ -139,10 +199,12 @@ void forward_odla_layer(const layer l, network net)
      * Copy output line by line from output tensor to layer output.
      * Again expected to be in feature format. Copy to the output appropriately
      **/
-    fprintf(stderr, "%s %d: Copying output \n", __func__, __LINE__);
-    memcpy(l.output_i8, l.output_tensors[0].buffer,
-            l.outputs * l.batch * sizeof(int8_t));
-    fprintf(stderr, "%s %d: Forward CPU DONE\n", __func__, __LINE__);
+    if (l.num_output == 1) {
+        fprintf(stderr, "%s %d: Copying output \n", __func__, __LINE__);
+        memcpy(l.output_i8, l.output_tensors[0].buffer,
+                l.outputs * l.batch * sizeof(int8_t));
+        fprintf(stderr, "%s %d: Forward CPU DONE\n", __func__, __LINE__);
+    }
 }
 
 void backward_odla_layer(const layer l, network net)

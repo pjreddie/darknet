@@ -126,6 +126,15 @@ typedef struct {
     SCALE_METHOD scale_method;
 } converter_params;
 
+typedef struct {
+    int instance;
+    char *loadable;
+
+    int *input_layer_index;
+    int *input_tensor_index;
+    int n_inputs;
+} odla_params;
+
 typedef struct{
     int batch;
     float learning_rate;
@@ -218,6 +227,7 @@ struct layer{
 
     /* converter params */
     converter_params convert_params;
+    odla_params dla_params;
 
     float alpha;
     float beta;

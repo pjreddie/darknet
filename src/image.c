@@ -12,8 +12,10 @@
 
 #define NCHW 0
 #define FORCE_CHANNEL_APPEND 1
+#define RGB2BGR 1
 
 // To enable default behaviour, set NCHW to 1, FORCE_CHANNEL_APPEND to 0
+// and RGB2BGR to 0
 
 int windows = 0;
 
@@ -543,12 +545,24 @@ image copy_image(image p)
 
 void rgbgr_image(image im)
 {
+#if NCHW
     int i;
     for(i = 0; i < im.w*im.h; ++i){
         float swap = im.data[i];
         im.data[i] = im.data[i+im.w*im.h*2];
         im.data[i+im.w*im.h*2] = swap;
     }
+#else
+    int i,j;
+    for (i = 0; i < im.w; i++) {
+        for (j = 0; j < im.h; j++) {
+            unsigned offset = i * im.c + j * im.c * im.w;
+            float swap = im.data[offset];
+            im.data[offset] = im.data[offset + 2];
+            im.data[offset + 2] = swap;
+        }
+    }
+#endif
 }
 
 #ifdef OPENCV
@@ -1477,11 +1491,15 @@ image load_image_stb(char *filename, int channels)
                 int dst_index = k + c*i + c*w*j;
 #endif
                 int src_index = k + c*i + c*w*j;
-                im.data[dst_index] = (float)data[src_index]/255.;
+                im.data[dst_index] = (float)data[src_index];
             }
         }
     }
     free(data);
+
+#if RGB2BGR
+    rgbgr_image(im);
+#endif
     return im;
 }
 
@@ -1490,20 +1508,7 @@ image load_image(char *filename, int w, int h, int c)
 #ifdef OPENCV
     image out = load_image_cv(filename, c);
 #else
-
-#if FORCE_CHANNEL_APPEND
-    image out = load_image_stb(filename, 4);
-    /* Force the 4th channel to be zeros, since default sets to 255. */
-    int i, j;
-    for(j = 0; j < out.h; ++j){
-        for(i = 0; i < out.w; ++i){
-            set_pixel(out, i, j, 3, 0);
-        }
-    }
-#else
-    image out = load_image_stb(filename, 3);
-#endif
-
+    image out = load_image_stb(filename, c);
 #endif
 
     if((h && w) && (h != out.h || w != out.w)){
@@ -1516,7 +1521,15 @@ image load_image(char *filename, int w, int h, int c)
 
 image load_image_color(char *filename, int w, int h)
 {
-    return load_image(filename, w, h, 4);
+    image out;
+#if FORCE_CHANNEL_APPEND
+    out = load_image(filename, w, h, 4);
+#else
+    out = load_image(filename, w, h, 3);
+#endif
+
+
+    return out;
 }
 
 image get_image_layer(image m, int l)
