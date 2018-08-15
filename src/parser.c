@@ -554,10 +554,39 @@ converter_layer parse_converter(list *options, size_params params)
 
 odla_layer parse_odla(list *options, size_params params)
 {
-    int instance = option_find_int(options, "instance", 0);
-    const char *loadable = option_find_str(options, "loadable", "");
+    char *input_layers_str = option_find_str(options, "input_layers","");
+    char *input_tensor_str = option_find_str(options, "input_tensor","");
+    int num_input = option_find_int(options, "n_inputs", 0);
 
-    odla_layer layer = make_odla_layer(params.batch, params.w, params.h, params.c, instance, loadable);
+    char *layer_token = strtok(input_layers_str, ",");
+    char *tensor_token = strtok(input_tensor_str, ",");
+
+    odla_params o_params = {0};
+    o_params.instance = option_find_int(options, "instance", 0);
+    o_params.loadable = option_find_str(options, "loadable", "");
+    o_params.n_inputs = num_input;
+    o_params.input_layer_index = calloc(num_input, sizeof(int));
+    o_params.input_tensor_index = calloc(num_input, sizeof(int));
+
+    int count = 0;
+    while (layer_token != NULL && tensor_token != NULL && count < num_input) {
+        o_params.input_layer_index[count] = atoi(layer_token);
+        o_params.input_tensor_index[count] = atoi(tensor_token);
+
+        layer_token = strtok(NULL, ",");
+        tensor_token = strtok(NULL, ",");
+        count++;
+    }
+
+    if (count != num_input) {
+        fprintf(stderr, "WARNING: Bad number of layers/tensors provided."
+                        "Updating n_inputs from %d to %d\n",
+                        num_input, count);
+        o_params.n_inputs = count;
+    }
+
+    odla_layer layer = make_odla_layer(params.batch, params.w, params.h,
+                                        params.c, o_params);
     return layer;
 }
 
