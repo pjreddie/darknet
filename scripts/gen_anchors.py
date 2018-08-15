@@ -141,7 +141,7 @@ def main(argv):
             line = line.rstrip('\n')
             w,h = line.split(' ')[3:]            
             #print(w,h)
-            annotation_dims.append(map(float,(w,h)))
+            annotation_dims.append(tuple(map(float,(w,h))))
     annotation_dims = np.array(annotation_dims)
   
     eps = 0.005
