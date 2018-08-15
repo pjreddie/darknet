@@ -335,7 +335,6 @@ static inline float _castu32_f32(uint32_t a) {
 
 static inline float _mm256_extract_float32(__m256 a, const int index) {
     return a.m256_f32[index];
-    //return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), index));
 }
 
 #else    // Linux GCC/Clang
