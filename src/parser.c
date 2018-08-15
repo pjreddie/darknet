@@ -555,7 +555,7 @@ converter_layer parse_converter(list *options, size_params params)
 odla_layer parse_odla(list *options, size_params params)
 {
     char *input_layers_str = option_find_str(options, "input_layers","");
-    char *input_tensor_str = option_find_str(options, "input_tensor","");
+    char *input_tensor_str = option_find_str(options, "input_tensors","");
     int num_input = option_find_int(options, "n_inputs", 0);
 
     char *layer_token = strtok(input_layers_str, ",");
