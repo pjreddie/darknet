@@ -98,13 +98,17 @@ typedef enum {
     CAFFE,
     SPLIT,
     CONVERTER,
-    UPSAMPLE_DLA,
+    UPSAMPLE_ODLA,
     BLANK
 } LAYER_TYPE;
 
 typedef enum{
     SSE, MASKED, L1, SEG, SMOOTH,WGAN
 } COST_TYPE;
+
+typedef enum {
+    NCHW, NHWC
+} DLA_DATA_FORMAT;
 
 typedef enum{
     UINT8, INT8, INT16, FP16, FP32
@@ -117,22 +121,22 @@ typedef enum {
 typedef struct {
     PRECISION in_precision;
     PRECISION out_precision;
+    DLA_DATA_FORMAT in_format;
+    DLA_DATA_FORMAT out_format;
 
     float offset;
     float scale;
     int shifter;
     float post_offset;
     float post_scale;
+
     SCALE_METHOD scale_method;
 } converter_params;
 
 typedef struct {
     int instance;
     char *loadable;
-
-    int *input_layer_index;
-    int *input_tensor_index;
-    int n_inputs;
+    int input_tensor;
 } odla_params;
 
 typedef struct{
@@ -161,6 +165,7 @@ struct layer;
 typedef struct layer layer;
 
 struct layer{
+    int layer_index;
     LAYER_TYPE type;
     ACTIVATION activation;
     COST_TYPE cost_type;
@@ -288,8 +293,6 @@ struct layer{
 
     float * delta;
     float * output;
-    int8_t * output_i8;
-    uint8_t * output_u8;
     float * loss;
     float * squared;
     float * norms;
@@ -344,9 +347,12 @@ struct layer{
     void *loadable;
     int num_output;
     int num_input;
-    tensor *input_tensor;
+    int8_t * output_i8;
+    int input_tensor;
     tensor *input_tensors;
     tensor *output_tensors;
+    int upsample_output_layer;
+    int upsample_output_tensor;
 
     struct layer *input_layer;
     struct layer *self_layer;

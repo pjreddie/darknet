@@ -21,7 +21,6 @@ extern int output_width(void *net, int index);
 caffe_layer make_caffe_layer(int batch, int w, int h, int c, const char *cfg, const char *weights)
 {
     layer l = {0};
-    int i = 0;
 
     //Unused
     l.out_w = w;
@@ -31,6 +30,7 @@ caffe_layer make_caffe_layer(int batch, int w, int h, int c, const char *cfg, co
     l.output = calloc(l.outputs*batch, sizeof(float));
 
 #if CAFFE
+    int i = 0;
     l.caffe_net = load_caffe_model(cfg, weights);
     l.num_output = num_outputs(l.caffe_net);
     l.output_tensors = calloc(num_outputs(l.caffe_net), sizeof(tensor));
@@ -59,9 +59,9 @@ void resize_caffe_layer(layer *l, int w, int h)
 
 void forward_caffe_layer(const layer l, network net)
 {
-    int i = 0;
-
 #if CAFFE
+    int  i =0;
+
     run_caffe_model((void *)l.caffe_net, (float *)net.input);
 
     for (i = 0; i < l.num_output; i++) {

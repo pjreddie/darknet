@@ -37,7 +37,7 @@
 #include "odla_layer.h"
 #include "caffe_layer.h"
 #include "split_layer.h"
-#include "upsample_dla_layer.h"
+#include "upsample_odla_layer.h"
 #include "converter_layer.h"
 #include "utils.h"
 
@@ -89,7 +89,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[caffe]")==0) return CAFFE;
     if (strcmp(type, "[odla]")==0) return ODLA;
     if (strcmp(type, "[split]")==0) return SPLIT;
-    if (strcmp(type, "[upsample_dla]")==0) return UPSAMPLE_DLA;
+    if (strcmp(type, "[upsample_odla]")==0) return UPSAMPLE_ODLA;
     if (strcmp(type, "[converter]")==0) return CONVERTER;
     return BLANK;
 }
@@ -554,36 +554,11 @@ converter_layer parse_converter(list *options, size_params params)
 
 odla_layer parse_odla(list *options, size_params params)
 {
-    char *input_layers_str = option_find_str(options, "input_layers","");
-    char *input_tensor_str = option_find_str(options, "input_tensors","");
-    int num_input = option_find_int(options, "n_inputs", 0);
-
-    char *layer_token = strtok(input_layers_str, ",");
-    char *tensor_token = strtok(input_tensor_str, ",");
-
     odla_params o_params = {0};
+
     o_params.instance = option_find_int(options, "instance", 0);
     o_params.loadable = option_find_str(options, "loadable", "");
-    o_params.n_inputs = num_input;
-    o_params.input_layer_index = calloc(num_input, sizeof(int));
-    o_params.input_tensor_index = calloc(num_input, sizeof(int));
-
-    int count = 0;
-    while (layer_token != NULL && tensor_token != NULL && count < num_input) {
-        o_params.input_layer_index[count] = atoi(layer_token);
-        o_params.input_tensor_index[count] = atoi(tensor_token);
-
-        layer_token = strtok(NULL, ",");
-        tensor_token = strtok(NULL, ",");
-        count++;
-    }
-
-    if (count != num_input) {
-        fprintf(stderr, "WARNING: Bad number of layers/tensors provided."
-                        "Updating n_inputs from %d to %d\n",
-                        num_input, count);
-        o_params.n_inputs = count;
-    }
+    o_params.input_tensor = option_find_int(options, "input_tensor", 0);
 
     odla_layer layer = make_odla_layer(params.batch, params.w, params.h,
                                         params.c, o_params);
@@ -690,11 +665,18 @@ layer parse_upsample(list *options, size_params params, network *net)
     return l;
 }
 
-layer parse_upsample_dla(list *options, size_params params, network *net)
+layer parse_upsample_odla(list *options, size_params params, network *net)
 {
-
     int stride = option_find_int(options, "stride",2);
-    layer l = make_upsample_dla_layer(params.batch, params.w, params.h, params.c, stride);
+    int output_layer = option_find_int(options, "output_layer", -1);
+    int tensor = option_find_int(options, "tensor", -1);
+
+    output_layer = params.index + output_layer;
+
+    if (output_layer == -1 || tensor == -1)
+        fprintf(stderr, "ERROR: upsample_odla layer requires output layer and tensor index\n");
+
+    layer l = make_upsample_odla_layer(params.batch, params.w, params.h, params.c, stride, output_layer, tensor);
     return l;
 }
 
@@ -928,8 +910,8 @@ network *parse_network_cfg(char *filename)
             l = parse_route(options, params, net);
         }else if(lt == UPSAMPLE){
             l = parse_upsample(options, params, net);
-        }else if(lt == UPSAMPLE_DLA){
-            l = parse_upsample_dla(options, params, net);
+        }else if(lt == UPSAMPLE_ODLA){
+            l = parse_upsample_odla(options, params, net);
         }else if(lt == SHORTCUT){
             l = parse_shortcut(options, params, net);
         }else if(lt == DROPOUT){
@@ -955,6 +937,7 @@ network *parse_network_cfg(char *filename)
         l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
         l.smooth = option_find_float_quiet(options, "smooth", 0);
         option_unused(options);
+        l.layer_index = count;
         net->layers[count] = l;
         if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;
         free_section(s);

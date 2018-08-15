@@ -10,13 +10,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-#define NCHW 0
-#define FORCE_CHANNEL_APPEND 1
-#define RGB2BGR 1
-
-// To enable default behaviour, set NCHW to 1, FORCE_CHANNEL_APPEND to 0
-// and RGB2BGR to 0
-
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
@@ -54,11 +47,7 @@ image mask_to_rgb(image mask)
 static float get_pixel(image m, int x, int y, int c)
 {
     assert(x < m.w && y < m.h && c < m.c);
-#if NCHW
     return m.data[c*m.h*m.w + y*m.w + x];
-#else
-    return m.data[y*m.c*m.w + x*m.c + c];
-#endif
 }
 static float get_pixel_extend(image m, int x, int y, int c)
 {
@@ -76,20 +65,12 @@ static void set_pixel(image m, int x, int y, int c, float val)
 {
     if (x < 0 || y < 0 || c < 0 || x >= m.w || y >= m.h || c >= m.c) return;
     assert(x < m.w && y < m.h && c < m.c);
-#if NCHW
     m.data[c*m.h*m.w + y*m.w + x] = val;
-#else
-    m.data[y*m.c*m.w + x*m.c + c] = val;
-#endif
 }
 static void add_pixel(image m, int x, int y, int c, float val)
 {
     assert(x < m.w && y < m.h && c < m.c);
-#if NCHW
     m.data[c*m.h*m.w + y*m.w + x] += val;
-#else
-    m.data[y*m.c*m.w + x*m.c + c] += val;
-#endif
 }
 
 static float bilinear_interpolate(image im, float x, float y, int c)
@@ -545,24 +526,12 @@ image copy_image(image p)
 
 void rgbgr_image(image im)
 {
-#if NCHW
     int i;
     for(i = 0; i < im.w*im.h; ++i){
         float swap = im.data[i];
         im.data[i] = im.data[i+im.w*im.h*2];
         im.data[i+im.w*im.h*2] = swap;
     }
-#else
-    int i,j;
-    for (i = 0; i < im.w; i++) {
-        for (j = 0; j < im.h; j++) {
-            unsigned offset = i * im.c + j * im.c * im.w;
-            float swap = im.data[offset];
-            im.data[offset] = im.data[offset + 2];
-            im.data[offset + 2] = swap;
-        }
-    }
-#endif
 }
 
 #ifdef OPENCV
@@ -1476,30 +1445,23 @@ image load_image_stb(char *filename, int channels)
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     if (!data) {
         fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
-        exit(0);
+        image im = make_image(w, h, c);
+        im.data = NULL;
+        return im;
     }
     if(channels) c = channels;
     int i,j,k;
     image im = make_image(w, h, c);
-    fprintf(stderr, "IMAGE: %d x %d x %d, channels: %d\n\n", w, h, c, channels);
     for(k = 0; k < c; ++k){
         for(j = 0; j < h; ++j){
             for(i = 0; i < w; ++i){
-#if NCHW
                 int dst_index = i + w*j + w*h*k;
-#else
-                int dst_index = k + c*i + c*w*j;
-#endif
                 int src_index = k + c*i + c*w*j;
-                im.data[dst_index] = (float)data[src_index];
+                im.data[dst_index] = (float)data[src_index]/255.;
             }
         }
     }
     free(data);
-
-#if RGB2BGR
-    rgbgr_image(im);
-#endif
     return im;
 }
 
@@ -1521,15 +1483,7 @@ image load_image(char *filename, int w, int h, int c)
 
 image load_image_color(char *filename, int w, int h)
 {
-    image out;
-#if FORCE_CHANNEL_APPEND
-    out = load_image(filename, w, h, 4);
-#else
-    out = load_image(filename, w, h, 3);
-#endif
-
-
-    return out;
+    return load_image(filename, w, h, 3);
 }
 
 image get_image_layer(image m, int l)

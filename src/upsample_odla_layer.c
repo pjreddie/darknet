@@ -1,9 +1,9 @@
-#include "upsample_dla_layer.h"
+#include "upsample_odla_layer.h"
 #include "blas.h"
 
 #include <stdio.h>
 
-layer make_upsample_dla_layer(int batch, int w, int h, int c, int stride)
+layer make_upsample_odla_layer(int batch, int w, int h, int c, int stride, int output_layer, int tensor)
 {
     layer l = {0};
     l.type = UPSAMPLE;
@@ -14,19 +14,12 @@ layer make_upsample_dla_layer(int batch, int w, int h, int c, int stride)
     l.out_w = w*stride;
     l.out_h = h*stride;
     l.out_c = c;
-    if(stride < 0){
-        stride = -stride;
-        l.reverse=1;
-        l.out_w = w/stride;
-        l.out_h = h/stride;
-    }
     l.stride = stride;
-    l.outputs = l.out_w*l.out_h*l.out_c/ATOMIC_CUBE;
-    l.inputs = l.w*l.h*l.c;
-    l.delta =  calloc(l.outputs*batch, ATOMIC_CUBE);
-    l.output = calloc(l.outputs*batch, ATOMIC_CUBE);;
+    l.upsample_output_layer = output_layer;
+    l.upsample_output_tensor = tensor;
+    l.reverse = 0;
 
-    l.forward = forward_upsample_dla_layer;
+    l.forward = forward_upsample_odla_layer;
 
     if(l.reverse) fprintf(stderr, "downsample_dla     %2dx  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
     else fprintf(stderr, "upsample_dla       %2dx  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
@@ -63,11 +56,13 @@ void upsample_dla(int8_t *in, int w, int h, int c, int batch, int stride, int fo
     }
 }
 
-void forward_upsample_dla_layer(const layer l, network net)
+void forward_upsample_odla_layer(const layer l, network net)
 {
-    if(l.reverse){
-        upsample_dla(l.output_i8, l.out_w, l.out_h, l.c, l.batch, l.stride, 0, net.input_i8);
-    }else{
-        upsample_dla(net.input_i8, l.w, l.h, l.c, l.batch, l.stride, 1, l.output_i8);
-    }
+    int8_t *output;
+    layer *output_layer;
+
+    output_layer = &net.layers[l.upsample_output_layer];
+    output = output_layer->output_tensors[l.upsample_output_tensor].buffer;
+
+    upsample_dla(net.input_i8, l.w, l.h, l.c, l.batch, l.stride, 1, output);
 }
