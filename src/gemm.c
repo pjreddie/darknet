@@ -306,12 +306,6 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 
 #if (defined(__AVX__) && defined(__x86_64__)) || defined(_WIN64)
 
-#define OSXSAVEFlag (1UL<<27)
-#define AVXFlag     ((1UL<<28)|OSXSAVEFlag)
-#define FMAFlag     ((1UL<<12)|AVXFlag|OSXSAVEFlag)
-#define CLMULFlag   ((1UL<< 1)|AVXFlag|OSXSAVEFlag)
-#define VAESFlag    ((1UL<<25)|AVXFlag|OSXSAVEFlag)
-
 #ifdef _WIN64
 #include <intrin.h>
 #include <ammintrin.h>
@@ -326,7 +320,6 @@ static inline __int32 _mm256_extract_epi64(__m256i a, const int index) {
 static inline __int32 _mm256_extract_epi32(__m256i a, const int index) {
     return a.m256i_i32[index];
 }
-
 #endif
 
 static inline float _castu32_f32(uint32_t a) {
@@ -368,31 +361,118 @@ void asm_cpuid(uint32_t* abcd, uint32_t eax)
     abcd[2] = ecx;
     abcd[3] = edx;
 }
-
 #endif
 
-int simd_detect_x86(unsigned int idFeature)
-{
-    uint32_t regs[4];    // EAX, EBX, ECX, EDX;
+
+
 #ifdef _WIN32
-    __cpuid(regs, 0);
-    if (regs[0] > 1U) __cpuid(regs, 1);
+//  Windows
+#define cpuid(info, x)    __cpuidex(info, x, 0)
 #else
-    __get_cpuid(0, &regs[0], &regs[1], &regs[2], &regs[3]);
-    if(regs[0] > 1U) __get_cpuid(1, &regs[0], &regs[1], &regs[2], &regs[3]);
+//  GCC Intrinsics
+#include <cpuid.h>
+void cpuid(int info[4], int InfoType) {
+    __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
+}
 #endif
 
-    if ((regs[2] & idFeature) != idFeature)
-        return 0;
-    return 1;
+
+//  Misc.
+static int HW_MMX, HW_x64, HW_RDRAND, HW_BMI1, HW_BMI2, HW_ADX, HW_PREFETCHWT1;
+static int HW_ABM;      // Advanced Bit Manipulation
+
+//  SIMD: 128-bit
+static int HW_SSE, HW_SSE2, HW_SSE3, HW_SSSE3, HW_SSE41, HW_SSE42, HW_SSE4a, HW_AES, HW_SHA;
+
+//  SIMD: 256-bit
+static int HW_AVX, HW_XOP, HW_FMA3, HW_FMA4, HW_AVX2;
+
+//  SIMD: 512-bit
+static int HW_AVX512F;    //  AVX512 Foundation
+static int HW_AVX512CD;   //  AVX512 Conflict Detection
+static int HW_AVX512PF;   //  AVX512 Prefetch
+static int HW_AVX512ER;   //  AVX512 Exponential + Reciprocal
+static int HW_AVX512VL;   //  AVX512 Vector Length Extensions
+static int HW_AVX512BW;   //  AVX512 Byte + Word
+static int HW_AVX512DQ;   //  AVX512 Doubleword + Quadword
+static int HW_AVX512IFMA; //  AVX512 Integer 52-bit Fused Multiply-Add
+static int HW_AVX512VBMI; //  AVX512 Vector Byte Manipulation Instructions
+
+// https://stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
+void check_cpu_features(void) {
+    int info[4];
+    cpuid(info, 0);
+    int nIds = info[0];
+
+    cpuid(info, 0x80000000);
+    unsigned nExIds = info[0];
+
+    //  Detect Features
+    if (nIds >= 0x00000001) {
+        cpuid(info, 0x00000001);
+        HW_MMX = (info[3] & ((int)1 << 23)) != 0;
+        HW_SSE = (info[3] & ((int)1 << 25)) != 0;
+        HW_SSE2 = (info[3] & ((int)1 << 26)) != 0;
+        HW_SSE3 = (info[2] & ((int)1 << 0)) != 0;
+
+        HW_SSSE3 = (info[2] & ((int)1 << 9)) != 0;
+        HW_SSE41 = (info[2] & ((int)1 << 19)) != 0;
+        HW_SSE42 = (info[2] & ((int)1 << 20)) != 0;
+        HW_AES = (info[2] & ((int)1 << 25)) != 0;
+
+        HW_AVX = (info[2] & ((int)1 << 28)) != 0;
+        HW_FMA3 = (info[2] & ((int)1 << 12)) != 0;
+
+        HW_RDRAND = (info[2] & ((int)1 << 30)) != 0;
+    }
+    if (nIds >= 0x00000007) {
+        cpuid(info, 0x00000007);
+        HW_AVX2 = (info[1] & ((int)1 << 5)) != 0;
+
+        HW_BMI1 = (info[1] & ((int)1 << 3)) != 0;
+        HW_BMI2 = (info[1] & ((int)1 << 8)) != 0;
+        HW_ADX = (info[1] & ((int)1 << 19)) != 0;
+        HW_SHA = (info[1] & ((int)1 << 29)) != 0;
+        HW_PREFETCHWT1 = (info[2] & ((int)1 << 0)) != 0;
+
+        HW_AVX512F = (info[1] & ((int)1 << 16)) != 0;
+        HW_AVX512CD = (info[1] & ((int)1 << 28)) != 0;
+        HW_AVX512PF = (info[1] & ((int)1 << 26)) != 0;
+        HW_AVX512ER = (info[1] & ((int)1 << 27)) != 0;
+        HW_AVX512VL = (info[1] & ((int)1 << 31)) != 0;
+        HW_AVX512BW = (info[1] & ((int)1 << 30)) != 0;
+        HW_AVX512DQ = (info[1] & ((int)1 << 17)) != 0;
+        HW_AVX512IFMA = (info[1] & ((int)1 << 21)) != 0;
+        HW_AVX512VBMI = (info[2] & ((int)1 << 1)) != 0;
+    }
+    if (nExIds >= 0x80000001) {
+        cpuid(info, 0x80000001);
+        HW_x64 = (info[3] & ((int)1 << 29)) != 0;
+        HW_ABM = (info[2] & ((int)1 << 5)) != 0;
+        HW_SSE4a = (info[2] & ((int)1 << 6)) != 0;
+        HW_FMA4 = (info[2] & ((int)1 << 16)) != 0;
+        HW_XOP = (info[2] & ((int)1 << 11)) != 0;
+    }
 }
 
-int is_fma_avx() {
+int is_avx() {
     static int result = -1;
     if (result == -1) {
-        result = simd_detect_x86(AVXFlag);
+        check_cpu_features();
+        result = HW_AVX;
         if (result == 1) printf(" Used AVX \n");
         else printf(" Not used AVX \n");
+    }
+    return result;
+}
+
+int is_fma_avx2() {
+    static int result = -1;
+    if (result == -1) {
+        check_cpu_features();
+        result = HW_FMA3 && HW_AVX2;
+        if (result == 1) printf(" Used FMA & AVX2 \n");
+        else printf(" Not used FMA & AVX2 \n");
     }
     return result;
 }
@@ -404,7 +484,7 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     float *C, int ldc)
 {
     int i, j, k;
-    if (is_fma_avx() == 1) {    // AVX
+    if (is_avx() == 1) {    // AVX
         for (i = 0; i < M; ++i) {
             for (k = 0; k < K; ++k) {
                 float A_PART = ALPHA*A[i*lda + k];
@@ -878,7 +958,7 @@ void im2col_cpu_custom(float* data_im,
     int channels_col = channels * ksize * ksize;
 
     // optimized version
-    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx())
+    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2())
     {
         #pragma omp parallel for
         for (c = 0; c < channels_col; ++c) {
@@ -987,7 +1067,7 @@ void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a)
     {}
     else if (a == LEAKY)
     {
-        if (is_fma_avx()) {
+        if (is_fma_avx2()) {
             __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
             __m256 all256_01 = _mm256_set1_ps(0.1F);
 
