@@ -396,6 +396,7 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
         }
         image im = load_image_color(paths[i], 0, 0);
         image crop = center_crop_image(im, net->w, net->h);
+        //grayscale_image_3c(crop);
         //show_image(im, "orig");
         //show_image(crop, "cropped");
         //cvWaitKey(0);

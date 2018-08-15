@@ -127,6 +127,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
         show_image(crop, "crop");
         cvWaitKey(0);
         */
+        //grayscale_image_3c(crop);
         free_image(im);
         X.vals[i] = crop.data;
         X.cols = crop.h*crop.w*crop.c;

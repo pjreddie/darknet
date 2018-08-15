@@ -109,9 +109,8 @@ void forward_iseg_layer(const layer l, network net)
         }
 
 
-        memset(l.counts, 0, 90*sizeof(float));
+        memset(l.counts, 0, 90*sizeof(int));
         for(i = 0; i < 90; ++i){
-            l.counts[i] = 0;
             fill_cpu(ids, 0, l.sums[i], 1);
             
             int c = net.truth[b*l.truths + i*(l.w*l.h+1)];
@@ -153,7 +152,7 @@ void forward_iseg_layer(const layer l, network net)
             scal_cpu(ids, 1.f/l.counts[i], l.sums[i], 1);
             if(b == 0 && net.gpu_index == 0){
                 printf("%4d, %6.3f, ", l.counts[i], mse[i]);
-                for(j = 0; j < ids/4; ++j){
+                for(j = 0; j < ids; ++j){
                     printf("%6.3f,", l.sums[i][j]);
                 }
                 printf("\n");
@@ -178,6 +177,13 @@ void forward_iseg_layer(const layer l, network net)
                         }
                     }
                 }
+            }
+        }
+
+        for(i = 0; i < ids; ++i){
+            for(k = 0; k < l.w*l.h; ++k){
+                int index = b*l.outputs + (i+l.classes)*l.w*l.h + k;
+                l.delta[index] *= .01;
             }
         }
     }
