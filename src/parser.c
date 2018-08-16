@@ -668,9 +668,10 @@ layer parse_upsample(list *options, size_params params, network *net)
 layer parse_upsample_odla(list *options, size_params params, network *net)
 {
     int stride = option_find_int(options, "stride",2);
-    int output_layer = option_find_int(options, "output_layer", -1);
-    int tensor = option_find_int(options, "tensor", -1);
+    int output_layer = option_find_int(options, "output_layer_index", 0);
+    int tensor = option_find_int(options, "tensor_index", 0);
 
+    fprintf(stderr, "out layer %d tensor %d\n", output_layer, tensor);
     output_layer = params.index + output_layer;
 
     if (output_layer == -1 || tensor == -1)

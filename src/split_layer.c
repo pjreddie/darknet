@@ -12,6 +12,7 @@ split_layer make_split_layer(network *net, int batch, int w, int h, int c, int i
     l.type = SPLIT;
     l.batch = 1;
 
+    fprintf(stderr, "%s input layer index %d tensor %d\n", __func__, input_layer_index, tensor_index);
     input_layer = &net->layers[input_layer_index];
 
     if (input_layer->type != ODLA) {
@@ -32,7 +33,7 @@ split_layer make_split_layer(network *net, int batch, int w, int h, int c, int i
 
     l.forward = forward_split_layer;
     l.backward = backward_split_layer;
-    fprintf(stderr, "split          tensor %d %4d x%4d x%4d   ->  %4d x%4d x%4d\n", tensor_index, w, h, c, l.out_w, l.out_h, l.out_c);
+    fprintf(stderr, "split          tensor %d %4d x%4d x%4d   ->  %4d x%4d x%4d\n", tensor_index, l.w, l.h, l.c, l.out_w, l.out_h, l.out_c);
     return l;
 }
 

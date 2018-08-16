@@ -36,6 +36,27 @@ PRECISION get_precision(const char *s)
     return precision;
 }
 
+static double int_to_fp_elmt(
+    int8_t in_element,
+    converter_params params
+)
+{
+    // ignored post_scale and offset, because post_scale always 1 and offset always 0;
+    
+    // FIXME: use double just to apple-to-apple compare with AMOD; float should be fine
+    // for demo which provide better perf;
+    double scale = params.scale;
+    double shifter = pow(2.0, params.shifter);
+
+    double out_value;
+    out_value = ((double)in_element) * scale/shifter;
+
+    return out_value;
+}
+
+
+
+
 /**
  * Converts from in_element double to int in specified range
  * [min_value, max_value]
@@ -73,23 +94,6 @@ static long long int fp_to_int_elmt(
         out_value = max_value;
     else if (out_value < min_value)
         out_value = min_value;
-
-    return out_value;
-}
-
-static double int_to_fp_elmt(
-    long long int in_element,
-    converter_params params
-)
-{
-    double scale = params.scale;
-    double shifter = pow(2.0, params.shifter);
-    double post_scale = params.post_scale;
-    double offset = params.offset;
-
-    double out_value;
-    out_value = ((double)in_element - offset) * scale/shifter;
-    out_value = out_value * post_scale;
 
     return out_value;
 }
@@ -142,8 +146,5 @@ void int8_to_fp32(int8_t *in, fp32 *out, unsigned count,
 
     for (i = 0; i < count; i++) {
         out[i] = (fp32)int_to_fp_elmt(in[i], params);
-        if (fpclassify(out[i]) == FP_SUBNORMAL) {
-            out[i] = 0;
-        }
     }
 }

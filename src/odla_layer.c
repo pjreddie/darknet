@@ -121,19 +121,19 @@ void forward_odla_layer(const layer l, network net)
 
     fprintf(stderr, "copying input to tensor index %d\n", l.input_tensor);
 
-#if 0
-    for (int i = 0; i < l.num_input; i++) {
-        char filename[80];
-        snprintf(filename, sizeof(filename), "input_%02d_%02d.dimg", l.layer_index, i);
-        odla_dump_data(filename, (int8_t *)l.input_tensors[i].buffer, l.input_tensors[i].w, l.input_tensors[i].h, l.input_tensors[i].c);
-    }
-#endif
-
-    //copy from network i8 output to one of input tensors
+   //copy from network i8 output to one of input tensors
     //it is assumed that another input is from upsample layer which will
     //update upsampled output directly in tensor buffer to avoid one
     //more memcpy
     memcpy(input, net.input_i8, l.input_tensors[l.input_tensor].size);
+
+    if (l.num_input > 1) {
+      for (int i = 0; i < l.num_input; i++) {
+        char filename[80];
+        snprintf(filename, sizeof(filename), "input_%02d_%02d.dimg", l.layer_index, i);
+        odla_dump_data(filename, (int8_t *)l.input_tensors[i].buffer, l.input_tensors[i].w, l.input_tensors[i].h, l.input_tensors[i].c);
+      }
+    }
 
     //run network
     fprintf(stderr, "%s %d: Executing in ODLA... \n", __func__, __LINE__);

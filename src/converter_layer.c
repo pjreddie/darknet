@@ -42,10 +42,13 @@ void convert_nchw_to_nhwc(uint8_t *in, int w, int h, int c, uint8_t *out)
 
 void convert_fd_to_nchw(float *in, int w, int h, int c, float *out)
 {
+    unsigned int line_stride = w * 32;
+    unsigned int surface_stride = line_stride * h;
     for (int i = 0; i < c; i++) {
         for (int j = 0; j < h; j++) {
             for (int k = 0; k < w; k++) {
-                out[w*h*i + w*j + k] = in[w*32*h*(i/32) + w*32*j + i];
+                int surface_index = i/32;
+                out[w*h*i + w*j + k] = in[surface_stride*surface_index + line_stride*j + 32*k + i%32];
             }
         }
     }
