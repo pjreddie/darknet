@@ -370,7 +370,6 @@ void asm_cpuid(uint32_t* abcd, uint32_t eax)
 #define cpuid(info, x)    __cpuidex(info, x, 0)
 #else
 //  GCC Intrinsics
-#include <cpuid.h>
 void cpuid(int info[4], int InfoType) {
     __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 }
