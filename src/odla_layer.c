@@ -24,6 +24,7 @@ extern int odla_output_size(void *runtime, int index);
 
 static void odla_dump_data(const char *filename, int8_t *data, int w, int h, int c)
 {
+#if 0
     FILE *fp;
 
     fp = fopen(filename, "w");
@@ -49,6 +50,7 @@ static void odla_dump_data(const char *filename, int8_t *data, int w, int h, int
     fprintf(fp, "}\n");
 
     fclose(fp);
+#endif
 }
 
 odla_layer make_odla_layer(int batch, int h, int w, int c,

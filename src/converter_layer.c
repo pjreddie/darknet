@@ -86,7 +86,7 @@ void forward_converter_layer(const converter_layer l, network net)
     converter_params params = l.convert_params;
 
     if (params.in_precision == FP32 && params.out_precision == UINT8) {
-#if 0
+#if 1
         uint8_t *temp = calloc(count, sizeof(uint8_t));
         fp32_to_uint8(net.input, temp, count, params);
         odla_dump_image_data(temp, l.w, l.h, l.c);
@@ -94,7 +94,7 @@ void forward_converter_layer(const converter_layer l, network net)
         free(temp);
 #endif
         //reference data for validation
-        memcpy((uint8_t *)l.output_i8, reshaped_data, 692224);
+//        memcpy((uint8_t *)l.output_i8, reshaped_data, 692224);
     } else if (params.in_precision == INT8 && params.out_precision == FP32) {
         float *temp = calloc(count, sizeof(float));
         int8_to_fp32(net.input_i8, temp, count, params);

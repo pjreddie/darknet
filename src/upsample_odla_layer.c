@@ -59,6 +59,7 @@ void upsample_dla(int8_t *in, int w, int h, int c, int batch, int stride, int fo
 
 static void odla_dump_us_data(const char *filename, int8_t *data, int w, int h, int c)
 {
+#if 0
     FILE *fp;
 
     fp = fopen(filename, "w");
@@ -84,6 +85,7 @@ static void odla_dump_us_data(const char *filename, int8_t *data, int w, int h, 
     fprintf(fp, "}\n");
 
     fclose(fp);
+#endif
 }
 
 void forward_upsample_odla_layer(const layer l, network net)
