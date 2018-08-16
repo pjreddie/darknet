@@ -36,7 +36,7 @@ static void odla_dump_data(const char *filename, int8_t *data, int w, int h, int
         for (int j = 0; j < h; j++) {
             for (int k = 0; k < w; k++) {
                 int surface_index = i / 32;
-                fprintf(fp, "  double_data: %d\n", data[surface_stride*surface_index + line_stride*j + 32*k + i]);
+                fprintf(fp, "  double_data: %d\n", data[surface_stride*surface_index + line_stride*j + 32*k + i%32]);
             }
         }
     }
