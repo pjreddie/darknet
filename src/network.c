@@ -168,6 +168,14 @@ char *get_layer_string(LAYER_TYPE a)
             return "normalization";
         case BATCHNORM:
             return "batchnorm";
+        case SPLIT:
+            return "split";
+        case CONVERTER:
+            return "converter";
+        case ODLA:
+            return "odla";
+        case UPSAMPLE_ODLA:
+            return "upsample_odla";
         default:
             break;
     }
