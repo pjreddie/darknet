@@ -28,11 +28,15 @@ static void odla_dump_data(const char *filename, int8_t *data, int w, int h, int
 
     fp = fopen(filename, "w");
 
+    unsigned int line_stride = w * 32;
+    unsigned int surface_stride = line_stride * h;
+
     fprintf(fp, "blobs {\n");
     for (int i = 0; i < c; i++) {
         for (int j = 0; j < h; j++) {
             for (int k = 0; k < w; k++) {
-                fprintf(fp, "  double_data: %d\n", data[w*32*h*(i/32) + 32*k + i]);
+                int surface_index = i / 32;
+                fprintf(fp, "  double_data: %d\n", data[surface_stride*surface_index + line_stride*j + 32*k + i]);
             }
         }
     }
