@@ -88,16 +88,9 @@ odla_layer make_odla_layer(int batch, int h, int w, int c,
     l.num_input = odla_num_input(l.odla_runtime);
     l.input_tensors = calloc(l.num_input, sizeof(tensor));
     for (i = 0; i < l.num_input; i++) {
-        if (prev_odla_layer == NULL) {
-            l.input_tensors[i].w = odla_input_width(l.odla_runtime, i);
-            l.input_tensors[i].h = odla_input_height(l.odla_runtime, i);
-            l.input_tensors[i].c = odla_input_channel(l.odla_runtime, i);
-
-            l.input_tensors[i].size = odla_input_size(l.odla_runtime, i);
-            l.input_tensors[i].buffer = NULL;
-            odla_alloc_input_tensor(l.odla_runtime, &l.input_tensors[i].buffer, i, &l.input_tensors[i].hMem);
-        }
-        else {
+        /* If source of data to input tensor is from previous odla layer,
+            just bind the already allocated memory */
+        if (prev_odla_layer != NULL && i == l.input_tensor) {
             if (prev_odla_tensor != NULL) {
                 l.input_tensors[i] = *prev_odla_tensor;
                 odla_bind_input_tensor(l.odla_runtime, i, l.input_tensors[i].hMem);
@@ -106,6 +99,16 @@ odla_layer make_odla_layer(int batch, int h, int w, int c,
                 fprintf(stderr, "Invalid from_odla_tensor!\n");
             }
         }
+        else {
+            l.input_tensors[i].w = odla_input_width(l.odla_runtime, i);
+            l.input_tensors[i].h = odla_input_height(l.odla_runtime, i);
+            l.input_tensors[i].c = odla_input_channel(l.odla_runtime, i);
+
+            l.input_tensors[i].size = odla_input_size(l.odla_runtime, i);
+            l.input_tensors[i].buffer = NULL;
+            odla_alloc_input_tensor(l.odla_runtime, &l.input_tensors[i].buffer, i, &l.input_tensors[i].hMem);
+        }
+
     }
 
     //setup output tensors
