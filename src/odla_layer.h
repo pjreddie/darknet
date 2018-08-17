@@ -7,7 +7,7 @@
 typedef layer odla_layer;
 
 odla_layer make_odla_layer(int batch, int w, int h, int c,
-                            odla_params params);
+                            odla_params params, network *net);
 void forward_odla_layer(const layer l, network net);
 void backward_odla_layer(const layer l, network net);
 void resize_odla_layer(layer *l, int w, int h);

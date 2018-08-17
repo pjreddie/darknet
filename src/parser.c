@@ -552,16 +552,23 @@ converter_layer parse_converter(list *options, size_params params)
     return layer;
 }
 
-odla_layer parse_odla(list *options, size_params params)
+odla_layer parse_odla(list *options, size_params params, network *net)
 {
     odla_params o_params = {0};
 
     o_params.instance = option_find_int(options, "instance", 0);
     o_params.loadable = option_find_str(options, "loadable", "");
     o_params.input_tensor = option_find_int(options, "input_tensor", 0);
+    o_params.from_odla_layer = option_find_int(options, "from_odla_layer", 0);
+    if (o_params.from_odla_layer != 0)
+        o_params.from_odla_layer += params.index;
+    else
+        o_params.from_odla_layer = -1;
+
+    o_params.from_odla_tensor = option_find_int(options, "from_odla_tensor", 0);
 
     odla_layer layer = make_odla_layer(params.batch, params.w, params.h,
-                                        params.c, o_params);
+                                        params.c, o_params, net);
     return layer;
 }
 
@@ -904,7 +911,7 @@ network *parse_network_cfg(char *filename)
         }else if(lt == CAFFE){
             l = parse_caffe(options, params);
         }else if(lt == ODLA){
-            l = parse_odla(options, params);
+            l = parse_odla(options, params, net);
         }else if(lt == SPLIT){
             l = parse_split(options, params, net);
         }else if(lt == ROUTE){

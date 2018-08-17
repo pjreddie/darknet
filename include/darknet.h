@@ -137,6 +137,8 @@ typedef struct {
     int instance;
     char *loadable;
     int input_tensor;
+    int from_odla_layer;
+    int from_odla_tensor;
 } odla_params;
 
 typedef struct{
@@ -156,6 +158,7 @@ typedef struct{
     int size;
     float *data;
     void *buffer;
+    void *hMem;
 } tensor;
 
 struct network;
