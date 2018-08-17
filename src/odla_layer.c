@@ -9,8 +9,9 @@ extern void *odla_get_output(void *runtime, int index);
 extern void odla_execute(void *runtime, int instance);
 extern int odla_num_input(void *runtime);
 extern int odla_num_output(void *runtime);
-extern void odla_alloc_input_tensor(void *runtime, void *buffer, int index);
-extern void odla_alloc_output_tensor(void *runtime, void *buffer, int index);
+extern void odla_alloc_input_tensor(void *runtime, void *buffer, int index, void **memory_handle);
+extern void odla_bind_input_tensor(void *runtime, int index, void *memory_handle);
+extern void odla_alloc_output_tensor(void *runtime, void *buffer, int index, void **memory_handle);
 extern int odla_input_channel(void *runtime, int index);
 extern int odla_input_width(void *runtime, int index);
 extern int odla_input_height(void *runtime, int index);
@@ -54,7 +55,7 @@ static void odla_dump_data(const char *filename, int8_t *data, int w, int h, int
 }
 
 odla_layer make_odla_layer(int batch, int h, int w, int c,
-                            odla_params params)
+                            odla_params params, network *net)
 {
     int i = 0;
 
@@ -70,6 +71,13 @@ odla_layer make_odla_layer(int batch, int h, int w, int c,
     l.dla_params = params;
     l.input_tensor = params.input_tensor;
 
+    layer *prev_odla_layer = NULL;
+    tensor *prev_odla_tensor = NULL;
+    if (params.from_odla_layer != -1) {
+        prev_odla_layer = &net->layers[params.from_odla_layer];
+        prev_odla_tensor = &prev_odla_layer->output_tensors[params.from_odla_tensor];
+    }
+
     //create runtime instance
     l.odla_runtime = odla_create_runtime();
 
@@ -80,13 +88,27 @@ odla_layer make_odla_layer(int batch, int h, int w, int c,
     l.num_input = odla_num_input(l.odla_runtime);
     l.input_tensors = calloc(l.num_input, sizeof(tensor));
     for (i = 0; i < l.num_input; i++) {
-        l.input_tensors[i].w = odla_input_width(l.odla_runtime, i);
-        l.input_tensors[i].h = odla_input_height(l.odla_runtime, i);
-        l.input_tensors[i].c = odla_input_channel(l.odla_runtime, i);
+        /* If source of data to input tensor is from previous odla layer,
+            just bind the already allocated memory */
+        if (prev_odla_layer != NULL && i == l.input_tensor) {
+            if (prev_odla_tensor != NULL) {
+                l.input_tensors[i] = *prev_odla_tensor;
+                odla_bind_input_tensor(l.odla_runtime, i, l.input_tensors[i].hMem);
+            }
+            else {
+                fprintf(stderr, "Invalid from_odla_tensor!\n");
+            }
+        }
+        else {
+            l.input_tensors[i].w = odla_input_width(l.odla_runtime, i);
+            l.input_tensors[i].h = odla_input_height(l.odla_runtime, i);
+            l.input_tensors[i].c = odla_input_channel(l.odla_runtime, i);
 
-        l.input_tensors[i].size = odla_input_size(l.odla_runtime, i);
-        l.input_tensors[i].buffer = NULL;
-        odla_alloc_input_tensor(l.odla_runtime, &l.input_tensors[i].buffer, i);
+            l.input_tensors[i].size = odla_input_size(l.odla_runtime, i);
+            l.input_tensors[i].buffer = NULL;
+            odla_alloc_input_tensor(l.odla_runtime, &l.input_tensors[i].buffer, i, &l.input_tensors[i].hMem);
+        }
+
     }
 
     //setup output tensors
@@ -99,7 +121,7 @@ odla_layer make_odla_layer(int batch, int h, int w, int c,
 
         l.output_tensors[i].size = odla_output_size(l.odla_runtime, i);
         fprintf(stderr, "odla          tensor %d %4d x%4d x%4d   ->  %4d x%4d x%4d\n", i, w, h, c, l.output_tensors[i].w, l.output_tensors[i].h, l.output_tensors[i].c);
-        odla_alloc_output_tensor(l.odla_runtime, &l.output_tensors[i].buffer, i);
+        odla_alloc_output_tensor(l.odla_runtime, &l.output_tensors[i].buffer, i, &l.output_tensors[i].hMem);
     }
 
     l.batch = batch;
@@ -127,7 +149,10 @@ void forward_odla_layer(const layer l, network net)
     //it is assumed that another input is from upsample layer which will
     //update upsampled output directly in tensor buffer to avoid one
     //more memcpy
-    memcpy(input, net.input_i8, l.input_tensors[l.input_tensor].size);
+
+    /* If previous layer is not odla layer, do memcpy */
+    if (l.dla_params.from_odla_layer == -1)
+        memcpy(input, net.input_i8, l.input_tensors[l.input_tensor].size);
 
     if (l.num_input > 1) {
       for (int i = 0; i < l.num_input; i++) {

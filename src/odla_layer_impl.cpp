@@ -60,7 +60,7 @@ extern "C" int odla_num_output(void *runtime)
     return num_output;
 }
 
-extern "C" void odla_alloc_input_tensor(void *runtime, void **buffer, int index)
+extern "C" void odla_alloc_input_tensor(void *runtime, void **buffer, int index, void **memory_handle)
 {
     void *hMem = NULL;
     int err = 0;
@@ -76,9 +76,11 @@ extern "C" void odla_alloc_input_tensor(void *runtime, void **buffer, int index)
     err = odla_runtime->bindInputTensor(index, hMem);
     if (err != true)
         fprintf(stderr, "bindInputTensor failed\n");
+
+    *memory_handle = hMem;
 }
 
-extern "C" void odla_alloc_output_tensor(void *runtime, void **buffer, int index)
+extern "C" void odla_alloc_output_tensor(void *runtime, void **buffer, int index, void **memory_handle)
 {
     void *hMem = NULL;
     int err = 0;
@@ -94,6 +96,18 @@ extern "C" void odla_alloc_output_tensor(void *runtime, void **buffer, int index
     err = odla_runtime->bindOutputTensor(index, hMem);
     if (err != true)
         fprintf(stderr, "bindOutputTensor failed\n");
+
+    *memory_handle = hMem;
+}
+
+extern "C" void odla_bind_input_tensor(void *runtime, int index, void *memory_handle)
+{
+    int err = 0;
+
+    IRuntime *odla_runtime = (IRuntime *)runtime;
+    err = odla_runtime->bindInputTensor(index, memory_handle);
+    if (err != true)
+        fprintf(stderr, "bindInputTensor failed\n");
 }
 
 extern "C" int odla_input_channel(void *runtime, int index)
