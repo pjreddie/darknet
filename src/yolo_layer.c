@@ -121,12 +121,12 @@ void delta_yolo_class(float *output, float *delta, int index, int class_id, int 
     if (focal_loss) {
         // Focal Loss
         float alpha = 0.5;    // 0.25 or 0.5
-        //float gamma = 2;    // hardcoded in many places of the grad-formula    
+        //float gamma = 2;    // hardcoded in many places of the grad-formula
 
         int ti = index + stride*class_id;
         float pt = output[ti] + 0.000000000000001F;
         // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiItKDEteCkqKDIqeCpsb2coeCkreC0xKSIsImNvbG9yIjoiIzAwMDAwMCJ9LHsidHlwZSI6MTAwMH1d
-        float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);    // http://blog.csdn.net/linmingan/article/details/77885832    
+        float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);    // http://blog.csdn.net/linmingan/article/details/77885832
         //float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);    // https://github.com/unsky/focal-loss
 
         for (n = 0; n < classes; ++n) {
@@ -206,7 +206,7 @@ void forward_yolo_layer(const layer l, network_state state)
                             getchar();
                             continue; // if label contains class_id more than number of classes in the cfg-file
                         }
-                        if(!truth.x) break;
+                        if(!truth.x) break;  // continue;
                         float iou = box_iou(pred, truth);
                         if (iou > best_iou) {
                             best_iou = iou;
@@ -237,7 +237,7 @@ void forward_yolo_layer(const layer l, network_state state)
             int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
             if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
 
-            if(!truth.x) break;
+            if(!truth.x) break;  // continue;
             float best_iou = 0;
             int best_n = 0;
             i = (truth.x * l.w);
@@ -307,8 +307,8 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
     }
     for (i = 0; i < n; ++i){
         box b = dets[i].bbox;
-        b.x =  (b.x - (netw - new_w)/2./netw) / ((float)new_w/netw); 
-        b.y =  (b.y - (neth - new_h)/2./neth) / ((float)new_h/neth); 
+        b.x =  (b.x - (netw - new_w)/2./netw) / ((float)new_w/netw);
+        b.y =  (b.y - (neth - new_h)/2./neth) / ((float)new_h/neth);
         b.w *= (float)netw/new_w;
         b.h *= (float)neth/new_h;
         if(!relative){
