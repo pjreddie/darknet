@@ -4,7 +4,7 @@ OPENCV=0
 OPENMP=0
 DEBUG=0
 CAFFE=0
-ODLA=1
+ODLA=0
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \

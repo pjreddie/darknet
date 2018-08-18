@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#if 0
 extern void *odla_create_runtime(void);
 extern void odla_load_loadable(void *runtime, const char *loadable, int instance);
 extern void *odla_get_output(void *runtime, int index);
@@ -22,6 +23,8 @@ extern void odla_copy_input(float *input, unsigned int size, void *buffer);
 extern void odla_copy_output(void *buffer, unsigned int size, float *output);
 extern int odla_input_size(void *runtime, int index);
 extern int odla_output_size(void *runtime, int index);
+#endif
+
 
 static void odla_dump_data(const char *filename, int8_t *data, int w, int h, int c)
 {
@@ -71,6 +74,7 @@ odla_layer make_odla_layer(int batch, int h, int w, int c,
     l.dla_params = params;
     l.input_tensor = params.input_tensor;
 
+#if 0
     layer *prev_odla_layer = NULL;
     tensor *prev_odla_tensor = NULL;
     if (params.from_odla_layer != -1) {
@@ -128,7 +132,7 @@ odla_layer make_odla_layer(int batch, int h, int w, int c,
     l.out_w = l.output_tensors[0].w;
     l.out_h = l.output_tensors[0].h;
     l.out_c = l.output_tensors[0].c;
-
+#endif
     l.forward = forward_odla_layer;
     l.backward = backward_odla_layer;
     return l;
@@ -141,6 +145,7 @@ void resize_odla_layer(layer *l, int w, int h)
 
 void forward_odla_layer(const layer l, network net)
 {
+#if 0
     int8_t *input = (int8_t *)l.input_tensors[l.input_tensor].buffer;
 
     fprintf(stderr, "copying input to tensor index %d\n", l.input_tensor);
@@ -171,6 +176,7 @@ void forward_odla_layer(const layer l, network net)
         snprintf(filename, sizeof(filename), "output_%02d_%02d.dimg", l.layer_index, i);
         odla_dump_data(filename, (int8_t *)l.output_tensors[i].buffer, l.output_tensors[i].w, l.output_tensors[i].h, l.output_tensors[i].c);
     }
+#endif
 }
 
 void backward_odla_layer(const layer l, network net)
