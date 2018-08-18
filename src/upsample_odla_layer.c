@@ -28,8 +28,10 @@ layer make_upsample_odla_layer(int batch, int w, int h, int c, int stride, int o
 
 void cubecpy(uint8_t *dst, const uint8_t *src, int dst_line_stride, int stride)
 {
-    for(int y = 0; y < stride; y++) {
-        for(int x = 0; x < stride; x++) {
+    int x, y;
+
+    for(y = 0; y < stride; y++) {
+        for(x = 0; x < stride; x++) {
             memcpy(&dst[y*dst_line_stride+x*ATOMIC_CUBE], src, ATOMIC_CUBE);
         }
     }
