@@ -593,6 +593,22 @@ int show_image(image p, const char *name, int ms)
 
 #ifdef OPENCV
 
+void image_into_ipl(image p, IplImage *disp)
+{
+    int x,y,k;
+    if(p.c == 3) rgbgr_image(p);
+
+    int step = disp->widthStep;
+
+    for(y = 0; y < p.h; ++y){
+        for(x = 0; x < p.w; ++x){
+            for(k= 0; k < p.c; ++k){
+                disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(p,x,y,k)*255);
+            }
+        }
+    }
+}
+
 void ipl_into_image(IplImage* src, image im)
 {
     unsigned char *data = (unsigned char *)src->imageData;
