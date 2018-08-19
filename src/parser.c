@@ -536,6 +536,7 @@ converter_layer parse_converter(list *options, size_params params)
     c_params.out_precision = get_precision(out_precision_str);
     c_params.offset = option_find_float(options, "offset", 0);
     c_params.scale = option_find_float(options, "scale", 1.);
+    c_params.dim_scale = option_find_float(options, "dim_scale", 1.);
     c_params.shifter = option_find_int(options, "shifter", 0);
     c_params.post_offset = option_find_float(options, "post_offset", 0);
     c_params.post_scale = option_find_float(options, "post_scale", 1.);

@@ -46,26 +46,30 @@ converter_layer make_converter_layer(int batch, int w, int h, int c,
     return l;
 }
 
-void convert_nchw_to_nhwc(uint8_t *in, int w, int h, int c, uint8_t *out)
+void convert_nchw_to_nhwc(float *in, int w, int h, int c, uint8_t *out, converter_params params)
 {
-    for (int i = 0; i < c; i++) {
-        for (int j = 0; j < h; j++) {
-            for (int k = 0; k < w; k++) {
-                out[j*w*c + c*k + i] = in[w*h*i + w*j + k];
+    int i,j,k;
+
+    for (i = 0; i < c; i++) {
+        for (j = 0; j < h; j++) {
+            for (k = 0; k < w; k++) {
+                out[j*w*c + c*k + i] = fp_to_int_elmt(in[w*h*i + w*j + k], 0, 255, params, i);
             }
         }
     }
 }
 
-void convert_fd_to_nchw(float *in, int w, int h, int c, float *out)
+void convert_fd_to_nchw(int8_t *in, int w, int h, int c, float *out, converter_params params)
 {
+    int i, j, k;
     unsigned int line_stride = w * 32;
     unsigned int surface_stride = line_stride * h;
-    for (int i = 0; i < c; i++) {
-        for (int j = 0; j < h; j++) {
-            for (int k = 0; k < w; k++) {
+
+    for (i = 0; i < c; i++) {
+        for (j = 0; j < h; j++) {
+            for (k = 0; k < w; k++) {
                 int surface_index = i/32;
-                out[w*h*i + w*j + k] = in[surface_stride*surface_index + line_stride*j + 32*k + i%32];
+                out[w*h*i + w*j + k] = (fp32)int_to_fp_elmt(in[surface_stride*surface_index + line_stride*j + 32*k + i%32], params, i);
             }
         }
     }
@@ -105,19 +109,19 @@ void forward_converter_layer(const converter_layer l, network net)
 
     if (params.in_precision == FP32 && params.out_precision == UINT8) {
 #if 1
-        uint8_t *temp = calloc(bufsize, sizeof(uint8_t));
-        fp32_to_uint8(net.input, temp, count, params);
-        odla_dump_image_data(temp, l.w, l.h, l.c);
-        convert_nchw_to_nhwc(temp, l.w, l.h, l.c, (uint8_t*)l.output_i8);
-        free(temp);
+//        uint8_t *temp = calloc(bufsize, sizeof(uint8_t));
+//        fp32_to_uint8(net.input, temp, count, params);
+//        odla_dump_image_data(temp, l.w, l.h, l.c);
+        convert_nchw_to_nhwc(net.input, l.w, l.h, l.c, (uint8_t*)l.output_i8, params);
+//        free(temp);
 #endif
         //reference data for validation
 //        memcpy((uint8_t *)l.output_i8, reshaped_data, 692224);
     } else if (params.in_precision == INT8 && params.out_precision == FP32) {
-        float *temp = calloc(bufsize, sizeof(float));
-        int8_to_fp32(net.input_i8, temp, count, params);
-        convert_fd_to_nchw(temp, l.w, l.h, l.c, l.output);
-        free(temp);
+//        float *temp = calloc(bufsize, sizeof(float));
+//        int8_to_fp32(net.input_i8, temp, count, params);
+        convert_fd_to_nchw(net.input_i8, l.w, l.h, l.c, l.output, params);
+//        free(temp);
     }
     else {
         fprintf(stderr, "Unsupported conversion from %s to %s\n",

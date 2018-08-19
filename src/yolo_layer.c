@@ -135,6 +135,7 @@ void forward_yolo_layer(const layer l, network net)
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
 
 #ifndef GPU
+#if 1
     for (b = 0; b < l.batch; ++b){
         for(n = 0; n < l.n; ++n){
             int index = entry_index(l, b, n*l.w*l.h, 0);
@@ -143,6 +144,7 @@ void forward_yolo_layer(const layer l, network net)
             activate_array(l.output + index, (1+l.classes)*l.w*l.h, LOGISTIC);
         }
     }
+#endif
 #endif
 
     memset(l.delta, 0, l.outputs * l.batch * sizeof(float));

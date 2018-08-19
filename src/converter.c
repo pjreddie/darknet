@@ -36,9 +36,10 @@ PRECISION get_precision(const char *s)
     return precision;
 }
 
-static double int_to_fp_elmt(
+double int_to_fp_elmt(
     int8_t in_element,
-    converter_params params
+    converter_params params,
+    int channel
 )
 {
     // ignored post_scale and offset, because post_scale always 1 and offset always 0;
@@ -61,11 +62,12 @@ static double int_to_fp_elmt(
  * Converts from in_element double to int in specified range
  * [min_value, max_value]
  **/
-static long long int fp_to_int_elmt(
+long long int fp_to_int_elmt(
     double in_element,
     long long int min_value,
     long long int max_value,
-    converter_params params
+    converter_params params,
+    int channel
 )
 {
     double scale = params.scale;
@@ -107,7 +109,7 @@ void fp32_to_uint8(fp32 *in, uint8_t *out, unsigned count,
 
     for (i = 0; i < count; i++) {
         long long int out_value =
-            fp_to_int_elmt(in[i], min_value, max_value, params);
+            fp_to_int_elmt(in[i], min_value, max_value, params, 0);
         out[i] = (uint8_t)out_value;
     }
 }
@@ -121,7 +123,7 @@ void fp32_to_int8(fp32 *in, int8_t *out, unsigned count,
 
     for (i = 0; i < count; i++) {
         long long int out_value =
-            fp_to_int_elmt(in[i], min_value, max_value, params);
+            fp_to_int_elmt(in[i], min_value, max_value, params, 0);
         out[i] = (int8_t)out_value;
     }
 }
@@ -132,7 +134,7 @@ void uint8_to_fp32(uint8_t *in, fp32 *out, unsigned count,
     unsigned i = 0;
 
     for (i = 0; i < count; i++) {
-        out[i] = (fp32)int_to_fp_elmt(in[i], params);
+        out[i] = (fp32)int_to_fp_elmt(in[i], params, 0);
         if (fpclassify(out[i]) == FP_SUBNORMAL) {
             out[i] = 0;
         }
@@ -145,6 +147,6 @@ void int8_to_fp32(int8_t *in, fp32 *out, unsigned count,
     unsigned i = 0;
 
     for (i = 0; i < count; i++) {
-        out[i] = (fp32)int_to_fp_elmt(in[i], params);
+        out[i] = (fp32)int_to_fp_elmt(in[i], params, 0);
     }
 }

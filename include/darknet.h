@@ -126,6 +126,7 @@ typedef struct {
 
     float offset;
     float scale;
+    float dim_scale;
     int shifter;
     float post_offset;
     float post_scale;
