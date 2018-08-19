@@ -488,6 +488,8 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
 2. To use Yolo as DLL-file in your C++ console application - open in MSVS2015 file `build\darknet\yolo_console_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_console_dll
 
     * you can run your console application from Windows Explorer `build\darknet\x64\yolo_console_dll.exe`
+    **use this command**: `yolo_console_dll.exe data/coco.names yolov3.cfg yolov3.weights test.mp4`
+    
     * or you can run from MSVS2015 (before this - you should copy 2 files `yolo-voc.cfg` and `yolo-voc.weights` to the directory `build\darknet\` )
     * after launching your console application and entering the image file name - you will see info for each object: 
     `<obj_id> <left_x> <top_y> <width> <height> <probability>`
