@@ -34,6 +34,8 @@ char *get_activation_string(ACTIVATION a)
             return "hardtan";
         case LHTAN:
             return "lhtan";
+        case SWISH:
+            return "swish";
         default:
             break;
     }
@@ -55,6 +57,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "leaky")==0) return LEAKY;
     if (strcmp(s, "tanh")==0) return TANH;
     if (strcmp(s, "stair")==0) return STAIR;
+    if (strcmp(s, "swish")==0) return SWISH;
     fprintf(stderr, "Couldn't find activation function %s, going with ReLU\n", s);
     return RELU;
 }
@@ -88,6 +91,8 @@ float activate(float x, ACTIVATION a)
             return hardtan_activate(x);
         case LHTAN:
             return lhtan_activate(x);
+        case SWISH:
+            return swish_activate(x);
     }
     return 0;
 }
@@ -129,6 +134,8 @@ float gradient(float x, ACTIVATION a)
             return hardtan_gradient(x);
         case LHTAN:
             return lhtan_gradient(x);
+        case SWISH:
+            return swish_gradient(x);
     }
     return 0;
 }
