@@ -132,6 +132,7 @@ size_t get_workspace_size(layer l){
         return most;
     }
     #endif
+    if(l.xnor) return (size_t)l.bit_align*l.size*l.size*l.c * sizeof(float);
     return (size_t)l.out_h*l.out_w*l.size*l.size*l.c*sizeof(float);
 }
 
@@ -305,6 +306,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     if(xnor){
         l.binary_weights = calloc(c*n*size*size, sizeof(float));
         l.binary_input = calloc(l.inputs*l.batch, sizeof(float));
+
+        int align = 8;
+        int src_align = l.out_h*l.out_w;
+        l.bit_align = src_align + (align - src_align % align);
     }
 
     if(batch_normalize){
@@ -622,7 +627,7 @@ void binary_align_weights(convolutional_layer *l)
 }
 
 // further optimizations: im2col_bin() for XNOR, and then transpose_aling_bin()
-size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, size_t ldb_align)
+size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, size_t ldb_align, int bit_align)
 {
     size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
     size_t t_intput_size = new_ldb * n;
@@ -637,12 +642,17 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
     //printf("\n align_weights_size = %d, k = %d, m = %d, lda = %d \n", align_weights_size, k, m, k);
     //printf("\n align_bit_weights_size = %d, k = %d, m = %d, new_lda = %d \n", align_bit_weights_size, k, m, new_ldb);
 
-    int blocksize = 64;
-    transpose_block_SSE4x4(b, t_input, k, n, n, new_ldb, blocksize);
+    int src_size = k * bit_align;
 
-    //printf("\n blocksize = %d \n", blocksize);
+    float_to_bit(b, t_input, src_size);
 
-    float_to_bit(t_input, *t_bit_input, t_intput_size);
+    // b - [bit_align, k] - [l.bit_align, l.size*l.size*l.c] = src_size
+    // t_input - [bit_align, k] - [n', k]
+    // t_bit_input - [new_ldb, n] - [k', n]
+
+    transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
+    //transpose_bin(b, *t_bit_input, k, n, bit_align, new_ldb, 8);
+
     free(t_input);
 
     return t_intput_size;
@@ -691,12 +701,16 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         //if (l.xnor && l.size == 3 && l.stride == 1 && l.pad == 1) {}
         //else
         // further optimizations: im2col_bin() for XNOR, and then transpose_aling_bin()
-        im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
+        //im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
 
 
         //gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
         //gemm_nn_custom(m, n, k, 1, a, k, b, n, c, n);
         if (l.xnor) {
+            //im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
+            memset(b, 0, l.bit_align*l.size*l.size*l.c * sizeof(float));
+            im2col_cpu_custom_bin(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
+
             size_t output_size = l.outputs;
             //float *count_output = calloc(output_size, sizeof(float));
             //size_t bit_output_size = output_size / 8 + 1;
@@ -790,7 +804,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     int ldb_align = l.lda_align;
                     size_t new_ldb = k + (ldb_align - k%ldb_align);
                     char *t_bit_input = NULL;
-                    size_t t_intput_size = binary_transpose_align_input(k, n, b, &t_bit_input, ldb_align);
+                    size_t t_intput_size = binary_transpose_align_input(k, n, b, &t_bit_input, ldb_align, l.bit_align);
                     //char *t_bit_input = calloc(new_ldb * n, sizeof(char));    // for im2col_cpu_custom_transpose() only
                     //float_to_bit(t_input, t_bit_input, new_ldb * n);    // for im2col_cpu_custom_transpose() only
 
@@ -825,6 +839,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             //free(mean_arr);
         }
         else {
+            im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
+
             gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
             // bit-count to float
         }

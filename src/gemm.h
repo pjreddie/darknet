@@ -11,18 +11,23 @@ static inline void set_bit(unsigned char *const dst, size_t index) {
     size_t dst_i = index / 8;
     int dst_shift = index % 8;
     dst[dst_i] |= 1 << dst_shift;
+    //dst[dst_i] |= 1 << (8 - dst_shift);
 }
 
 static inline unsigned char get_bit(unsigned char const*const src, size_t index) {
     size_t src_i = index / 8;
     int src_shift = index % 8;
     unsigned char val = (src[src_i] & (1 << src_shift)) > 0;
+    //unsigned char val = (src[src_i] & (1 << (8 - src_shift))) > 0;
     return val;
 }
 
 void float_to_bit(float *src, unsigned char *dst, size_t size);
 
 void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
+    const int lda, const int ldb, const int block_size);
+
+void transpose_bin(char *A, char *B, const int n, const int m,
     const int lda, const int ldb, const int block_size);
 
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
@@ -33,6 +38,10 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 void im2col_cpu_custom(float* data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col);
+
+void im2col_cpu_custom_bin(float* data_im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float* data_col, int bit_align);
 
 void im2col_cpu_custom_transpose(float* data_im,
     int channels, int height, int width,
