@@ -1,5 +1,6 @@
 #include "maxpool_layer.h"
 #include "cuda.h"
+#include "gemm.h"
 #include <stdio.h>
 
 image get_maxpool_image(maxpool_layer l)
@@ -79,6 +80,11 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 
 void forward_maxpool_layer(const maxpool_layer l, network_state state)
 {
+    if (!state.train) {
+        forward_maxpool_layer_avx(state.input, l.output, l.indexes, l.size, l.w, l.h, l.out_w, l.out_h, l.c, l.pad, l.stride, l.batch);
+        return;
+    }
+
     int b,i,j,k,m,n;
     int w_offset = -l.pad / 2;
     int h_offset = -l.pad / 2;

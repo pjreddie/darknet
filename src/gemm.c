@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <float.h>
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -594,7 +595,7 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
     static int max_num_threads = 0;
     if (max_num_threads == 0) {
         max_num_threads = omp_get_max_threads();
-        omp_set_num_threads(4);// max_num_threads / 2);
+        omp_set_num_threads( max_num_threads / 2);
     }
 #endif
 
@@ -1167,6 +1168,100 @@ void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
 }
 
 
+void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, int w, int h, int out_w, int out_h, int c,
+    int pad, int stride, int batch)
+{
+
+    int w_offset = -pad / 2;
+    int h_offset = -pad / 2;
+    int b, k;
+
+    for (b = 0; b < batch; ++b) {
+        #pragma omp parallel for
+        for (k = 0; k < c; ++k) {
+            int i, j, m, n;
+            for (i = 0; i < out_h; ++i) {
+                //for (j = 0; j < out_w; ++j) {
+                j = 0;
+
+                if(stride == 1 && is_avx() == 1) {
+                    for (j = 0; j < out_w - 8 - (size - 1); j += 8) {
+                        int out_index = j + out_w*(i + out_h*(k + c*b));
+                        __m256 max256 = _mm256_set1_ps(-FLT_MAX);
+                        for (n = 0; n < size; ++n) {
+                            for (m = 0; m < size; ++m) {
+                                int cur_h = h_offset + i*stride + n;
+                                int cur_w = w_offset + j*stride + m;
+                                int index = cur_w + w*(cur_h + h*(k + b*c));
+                                int valid = (cur_h >= 0 && cur_h < h &&
+                                    cur_w >= 0 && cur_w < w);
+                                if (!valid) continue;
+
+                                __m256 src256 = _mm256_loadu_ps(&src[index]);
+                                max256 = _mm256_max_ps(src256, max256);
+                            }
+                        }
+                        _mm256_storeu_ps(&dst[out_index], max256);
+
+                    }
+                }
+                else if (size == 2 && stride == 2 && is_avx() == 1) {
+                    for (j = 0; j < out_w - 4; j += 4) {
+                        int out_index = j + out_w*(i + out_h*(k + c*b));
+                        float max = -FLT_MAX;
+                        int max_i = -1;
+                        __m128 max128 = _mm_set1_ps(-FLT_MAX);
+
+                        for (n = 0; n < size; ++n) {
+                            //for (m = 0; m < size; ++m)
+                            m = 0;
+                            {
+                                int cur_h = h_offset + i*stride + n;
+                                int cur_w = w_offset + j*stride + m;
+                                int index = cur_w + w*(cur_h + h*(k + b*c));
+                                int valid = (cur_h >= 0 && cur_h < h &&
+                                    cur_w >= 0 && cur_w < w);
+                                if (!valid) continue;
+
+                                __m256 src256 = _mm256_loadu_ps(&src[index]);
+                                __m256 src256_2 = _mm256_permute_ps(src256, (1 << 0) | (3 << 4));
+                                __m256 max256 = _mm256_max_ps(src256, src256_2);
+
+                                __m128 src128_0 = _mm256_extractf128_ps(max256, 0);
+                                __m128 src128_1 = _mm256_extractf128_ps(max256, 1);
+                                __m128 src128 = _mm_shuffle_ps(src128_0, src128_1, (2 << 2) | (2 << 6));
+
+                                max128 = _mm_max_ps(src128, max128);
+                            }
+                        }
+                        _mm_storeu_ps(&dst[out_index], max128);
+                    }
+                }
+
+                for (; j < out_w; ++j) {
+                    int out_index = j + out_w*(i + out_h*(k + c*b));
+                    float max = -FLT_MAX;
+                    int max_i = -1;
+                    for (n = 0; n < size; ++n) {
+                        for (m = 0; m < size; ++m) {
+                            int cur_h = h_offset + i*stride + n;
+                            int cur_w = w_offset + j*stride + m;
+                            int index = cur_w + w*(cur_h + h*(k + b*c));
+                            int valid = (cur_h >= 0 && cur_h < h &&
+                                cur_w >= 0 && cur_w < w);
+                            float val = (valid != 0) ? src[index] : -FLT_MAX;
+                            max_i = (val > max) ? index : max_i;
+                            max = (val > max) ? val : max;
+                        }
+                    }
+                    dst[out_index] = max;
+                    indexes[out_index] = max_i;
+                }
+            }
+        }
+    }
+}
+
 #else
 
 void gemm_nn(int M, int N, int K, float ALPHA,
@@ -1283,6 +1378,8 @@ void im2col_cpu_custom(float* data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col)
 {
+    im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col);
+    return;
 
     int c, h, w;
     int height_col = (height + 2 * pad - ksize) / stride + 1;
@@ -1304,7 +1401,7 @@ void im2col_cpu_custom(float* data_im,
                     int col_index = (c * height_col + h) * width_col + w;
 
                     data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
-    }
+                }
 
                 for (; w < width_col - pad; ++w) {
                     int im_row = h_offset + h - pad;
@@ -1313,7 +1410,7 @@ void im2col_cpu_custom(float* data_im,
 
                     data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
                 }
-}
+    }
 
             {
                 w = 0;
@@ -1445,7 +1542,44 @@ void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
             }
         }
 }
-#endif    // __x86_64
+
+void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, int w, int h, int out_w, int out_h, int c,
+    int pad, int stride, int batch)
+{
+    int b, k;
+    int w_offset = -pad / 2;
+    int h_offset = -pad / 2;
+
+    for (b = 0; b < batch; ++b) {
+        #pragma omp parallel for
+        for (k = 0; k < c; ++k) {
+            int i, j, m, n;
+            for (i = 0; i < out_h; ++i) {
+                for (j = 0; j < out_w; ++j) {
+                    int out_index = j + out_w*(i + out_h*(k + c*b));
+                    float max = -FLT_MAX;
+                    int max_i = -1;
+                    for (n = 0; n < size; ++n) {
+                        for (m = 0; m < size; ++m) {
+                            int cur_h = h_offset + i*stride + n;
+                            int cur_w = w_offset + j*stride + m;
+                            int index = cur_w + w*(cur_h + h*(k + b*c));
+                            int valid = (cur_h >= 0 && cur_h < h &&
+                                cur_w >= 0 && cur_w < w);
+                            float val = (valid != 0) ? src[index] : -FLT_MAX;
+                            max_i = (val > max) ? index : max_i;
+                            max = (val > max) ? val : max;
+                        }
+                    }
+                    dst[out_index] = max;
+                    indexes[out_index] = max_i;
+                }
+            }
+        }
+    }
+}
+
+#endif    // AVX
 
 void gemm_nt(int M, int N, int K, float ALPHA,
         float *A, int lda,
