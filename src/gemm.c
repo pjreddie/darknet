@@ -306,6 +306,83 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 //----------------------------
 
 
+void transpose_8x8_bits_my(unsigned char *A, unsigned char *B, int lda, int ldb)
+{
+    unsigned x, y, t;
+    for (y = 0; y < 8; ++y) {
+        for (x = 0; x < 8; ++x) {
+            if (A[y * lda] & (1 << x)) B[x * ldb] |= 1 << y;
+        }
+    }
+}
+
+unsigned char reverse_byte_1(char a)
+{
+    return ((a & 0x1) << 7) | ((a & 0x2) << 5) |
+        ((a & 0x4) << 3) | ((a & 0x8) << 1) |
+        ((a & 0x10) >> 1) | ((a & 0x20) >> 3) |
+        ((a & 0x40) >> 5) | ((a & 0x80) >> 7);
+}
+
+unsigned char reverse_byte_2(unsigned char a)
+{
+    return ((a * 0x0802LU & 0x22110LU) | (a * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+}
+
+static unsigned char lookup[16] = {
+    0x0, 0x8, 0x4, 0xc, 0x2, 0xa, 0x6, 0xe,
+    0x1, 0x9, 0x5, 0xd, 0x3, 0xb, 0x7, 0xf, };
+
+unsigned char reverse_byte(unsigned char n) {
+    // Reverse the top and bottom nibble then swap them.
+    return (lookup[n & 0b1111] << 4) | lookup[n >> 4];
+}
+
+
+void transpose8rS32_reversed_diagonale(unsigned char* A, int m, int n, unsigned char* B)
+{
+    unsigned x, y, t;
+
+    // Load the array and pack it into x and y.
+    x = (A[0] << 24) | (A[m] << 16) | (A[2 * m] << 8) | A[3 * m];
+    y = (A[4 * m] << 24) | (A[5 * m] << 16) | (A[6 * m] << 8) | A[7 * m];
+
+    t = (x ^ (x >> 7)) & 0x00AA00AA;  x = x ^ t ^ (t << 7);
+    t = (y ^ (y >> 7)) & 0x00AA00AA;  y = y ^ t ^ (t << 7);
+
+    t = (x ^ (x >> 14)) & 0x0000CCCC;  x = x ^ t ^ (t << 14);
+    t = (y ^ (y >> 14)) & 0x0000CCCC;  y = y ^ t ^ (t << 14);
+
+    t = (x & 0xF0F0F0F0) | ((y >> 4) & 0x0F0F0F0F);
+    y = ((x << 4) & 0xF0F0F0F0) | (y & 0x0F0F0F0F);
+    x = t;
+
+    B[7 * n] = reverse_byte(x >> 24);  B[6 * n] = reverse_byte(x >> 16);  B[5 * n] = reverse_byte(x >> 8);  B[4 * n] = reverse_byte(x);
+    B[3 * n] = reverse_byte(y >> 24);  B[2 * n] = reverse_byte(y >> 16);  B[1 * n] = reverse_byte(y >> 8);  B[0 * n] = reverse_byte(y);
+}
+
+void transpose_bin(char *A, char *B, const int n, const int m,
+    const int lda, const int ldb, const int block_size)
+{
+    int i;
+#pragma omp parallel for
+    for (i = 0; i < n; i += 8) {
+        int j;
+        for (j = 0; j < m - 8; j += 8) {
+            int a_index = i*lda + j;
+            int b_index = j*ldb + i;
+            //transpose_8x8_bits_my(&A[a_index/8], &B[b_index/8], lda/8, ldb/8);
+            transpose8rS32_reversed_diagonale(&A[a_index / 8], lda / 8, ldb / 8, &B[b_index / 8]);
+        }
+        for (; j < m; ++j) {
+            if (get_bit(A, i*lda + j)) set_bit(B, j*ldb + i);
+        }
+    }
+}
+
+//----------------------------
+
+
 #if (defined(__AVX__) && defined(__x86_64__)) || defined(_WIN64)
 
 #ifdef _WIN64
@@ -1038,10 +1115,9 @@ void im2col_cpu_custom(float* data_im,
     }
 }
 
-
 //From Berkeley Vision's Caffe!
 //https://github.com/BVLC/caffe/blob/master/LICENSE
-void im2col_cpu_custom_bin(float* data_im,
+void im2col_cpu_custom_align(float* data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col, int bit_align)
 {
@@ -1053,11 +1129,6 @@ void im2col_cpu_custom_bin(float* data_im,
     // optimized version
     if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2())
     {
-        __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
-
-        //int algin = 8;
-        //int ldb = width_col * height_col;
-        //int new_ldb = ldb + (algin - ldb % algin);
         int new_ldb = bit_align;
 
         #pragma omp parallel for
@@ -1075,16 +1146,114 @@ void im2col_cpu_custom_bin(float* data_im,
                     //data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
                     __m256 src256 = _mm256_loadu_ps((float *)(&data_im[im_col + width*(im_row + height*c_im)]));
                     _mm256_storeu_ps(&data_col[col_index], src256);
+                }
 
-                    /*/
-                    __m256i src256 = _mm256_loadu_si256((__m256i *)(&data_im[im_col + width*(im_row + height*c_im)]));
-                    __m256i result256 = _mm256_and_si256(src256, all256_sing1); // check sign in 8 x 32-bit floats
+                for (; w < width_col - pad; ++w) {
+                    int im_row = h_offset + h - pad;
+                    int im_col = w_offset + w - pad;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+                    data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
+                }
+            }
 
-                    uint32_t mask = _mm256_movemask_ps(_mm256_castsi256_ps(result256)); // (val >= 0) ? 0 : 1
-                    mask = ~mask;   // inverse mask,  (val >= 0) ? 1 : 0
+            {
+                w = 0;
+                for (h = 0; h < height_col; ++h) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                }
+            }
 
-                    data_col[col_index / 8] = mask; // dst[i / 8] = mask;
-                    */
+            {
+                w = width_col - 1;
+                for (h = 0; h < height_col; ++h) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                }
+            }
+
+            {
+                h = 0;
+                for (w = 0; w < width_col; ++w) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                }
+            }
+
+            {
+                h = height_col - 1;
+                for (w = 0; w < width_col; ++w) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                }
+            }
+        }
+
+    }
+    else {
+        printf("\n Error: is no non-optimized version \n");
+        //im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col); // must be aligned for transpose after float_to_bin
+        // float_to_bit(b, t_input, src_size);
+        // transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
+    }
+}
+
+
+//From Berkeley Vision's Caffe!
+//https://github.com/BVLC/caffe/blob/master/LICENSE
+void im2col_cpu_custom_bin(float* data_im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float* data_col, int bit_align)
+{
+    int c, h, w;
+    int height_col = (height + 2 * pad - ksize) / stride + 1;
+    int width_col = (width + 2 * pad - ksize) / stride + 1;
+    int channels_col = channels * ksize * ksize;
+
+    // optimized version
+    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2())
+    {
+        __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
+        __m256 float_zero256 = _mm256_set1_ps(0.00);
+
+        int new_ldb = bit_align;
+
+        #pragma omp parallel for
+        for (c = 0; c < channels_col; ++c) {
+            int w_offset = c % ksize;
+            int h_offset = (c / ksize) % ksize;
+            int c_im = c / ksize / ksize;
+            for (h = pad; h < height_col - pad; ++h) {
+                for (w = pad; w < width_col - pad - 8; w += 8) {
+                    int im_row = h_offset + h - pad;
+                    int im_col = w_offset + w - pad;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+
+                    //__m256i src256 = _mm256_loadu_si256((__m256i *)(&data_im[im_col + width*(im_row + height*c_im)]));
+                    //__m256i result256 = _mm256_and_si256(src256, all256_sing1); // check sign in 8 x 32-bit floats
+                    //uint16_t mask = _mm256_movemask_ps(_mm256_castsi256_ps(result256)); // (val >= 0) ? 0 : 1
+                    //mask = ~mask;   // inverse mask,  (val >= 0) ? 1 : 0
+
+                    __m256 src256 = _mm256_loadu_ps((float *)(&data_im[im_col + width*(im_row + height*c_im)]));
+                    __m256 result256 = _mm256_cmp_ps(src256, float_zero256, _CMP_GT_OS);
+                    uint16_t mask = _mm256_movemask_ps(result256); // (val > 0) ? 0 : 1
+
+                    uint16_t *dst_ptr = &((unsigned char*)data_col)[col_index / 8];
+                    *dst_ptr |= (mask << (col_index % 8));
                 }
 
                 for (; w < width_col - pad; ++w) {
@@ -1093,9 +1262,9 @@ void im2col_cpu_custom_bin(float* data_im,
                     //int col_index = (c * height_col + h) * width_col + w;
                     int col_index = c * new_ldb + h * width_col + w;
 
-                    data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
+                    //data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
                     float val = data_im[im_col + width*(im_row + height*c_im)];
-                    //if(val > 0) set_bit(data_col, col_index);
+                    if(val > 0) set_bit(data_col, col_index);
                 }
             }
 
@@ -1107,9 +1276,9 @@ void im2col_cpu_custom_bin(float* data_im,
                     //int col_index = (c * height_col + h) * width_col + w;
                     int col_index = c * new_ldb + h * width_col + w;
 
-                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    //if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit(data_col, col_index);
                 }
             }
 
@@ -1121,9 +1290,9 @@ void im2col_cpu_custom_bin(float* data_im,
                     //int col_index = (c * height_col + h) * width_col + w;
                     int col_index = c * new_ldb + h * width_col + w;
 
-                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    //if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit(data_col, col_index);
                 }
             }
 
@@ -1135,9 +1304,9 @@ void im2col_cpu_custom_bin(float* data_im,
                     //int col_index = (c * height_col + h) * width_col + w;
                     int col_index = c * new_ldb + h * width_col + w;
 
-                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    //if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit(data_col, col_index);
                 }
             }
 
@@ -1149,9 +1318,9 @@ void im2col_cpu_custom_bin(float* data_im,
                     //int col_index = (c * height_col + h) * width_col + w;
                     int col_index = c * new_ldb + h * width_col + w;
 
-                    data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    //if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit(data_col, col_index);
                 }
             }
         }
@@ -1159,92 +1328,12 @@ void im2col_cpu_custom_bin(float* data_im,
     }
     else {
         printf("\n Error: is no non-optimized version \n");
-        //im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col);
-    }
-
-    /*
-    int src_size = bit_align*channels_col;
-    char *bit_arr = calloc(src_size, sizeof(float));
-    float_to_bit(data_col, bit_arr, src_size);
-    memcpy(data_col, bit_arr, src_size * sizeof(float));
-    free(bit_arr);
-    */
-}
-
-
-void transpose_8x8_bits_my(unsigned char *A, unsigned char *B, int lda, int ldb)
-{
-    unsigned x, y, t;
-    for (y = 0; y < 8; ++y) {
-        for (x = 0; x < 8; ++x) {
-            if(A[y * lda] & (1 << x)) B[x * ldb] |= 1 << y;
-        }
+        //im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col); // must be aligned for transpose after float_to_bin
+        // float_to_bit(b, t_input, src_size);
+        // transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
     }
 }
 
-unsigned char reverse_byte_1(char a)
-{
-    return ((a & 0x1) << 7) | ((a & 0x2) << 5) |
-        ((a & 0x4) << 3) | ((a & 0x8) << 1) |
-        ((a & 0x10) >> 1) | ((a & 0x20) >> 3) |
-        ((a & 0x40) >> 5) | ((a & 0x80) >> 7);
-}
-
-unsigned char reverse_byte_2(unsigned char a)
-{
-    return ((a * 0x0802LU & 0x22110LU) | (a * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
-}
-
-static unsigned char lookup[16] = {
-    0x0, 0x8, 0x4, 0xc, 0x2, 0xa, 0x6, 0xe,
-    0x1, 0x9, 0x5, 0xd, 0x3, 0xb, 0x7, 0xf, };
-
-unsigned char reverse_byte(unsigned char n) {
-    // Reverse the top and bottom nibble then swap them.
-    return (lookup[n & 0b1111] << 4) | lookup[n >> 4];
-}
-
-
-void transpose8rS32_reversed_diagonale(unsigned char* A, int m, int n, unsigned char* B)
-{
-    unsigned x, y, t;
-
-    // Load the array and pack it into x and y.
-    x = (A[0] << 24) | (A[m] << 16) | (A[2 * m] << 8) | A[3 * m];
-    y = (A[4 * m] << 24) | (A[5 * m] << 16) | (A[6 * m] << 8) | A[7 * m];
-
-    t = (x ^ (x >> 7)) & 0x00AA00AA;  x = x ^ t ^ (t << 7);
-    t = (y ^ (y >> 7)) & 0x00AA00AA;  y = y ^ t ^ (t << 7);
-
-    t = (x ^ (x >> 14)) & 0x0000CCCC;  x = x ^ t ^ (t << 14);
-    t = (y ^ (y >> 14)) & 0x0000CCCC;  y = y ^ t ^ (t << 14);
-
-    t = (x & 0xF0F0F0F0) | ((y >> 4) & 0x0F0F0F0F);
-    y = ((x << 4) & 0xF0F0F0F0) | (y & 0x0F0F0F0F);
-    x = t;
-
-    B[7 * n] = reverse_byte(x >> 24);  B[6 * n] = reverse_byte(x >> 16);  B[5 * n] = reverse_byte(x >> 8);  B[4 * n] = reverse_byte(x);
-    B[3 * n] = reverse_byte(y >> 24);  B[2 * n] = reverse_byte(y >> 16);  B[1 * n] = reverse_byte(y >> 8);  B[0 * n] = reverse_byte(y);
-}
-
-void transpose_bin(char *A, char *B, const int n, const int m,
-    const int lda, const int ldb, const int block_size)
-{
-    int i;
-    #pragma omp parallel for
-    for (i = 0; i < n; i += 8) {
-        int j;
-        for (j = 0; j < m - 8; j += 8) {
-            int a_index = i*lda + j;
-            int b_index = j*ldb + i;
-            //transpose_8x8_bits_my(&A[a_index/8], &B[b_index/8], lda/8, ldb/8);
-            transpose8rS32_reversed_diagonale(&A[a_index / 8], lda / 8, ldb / 8, &B[b_index / 8]);
-        }
-        for (; j < m; ++j) {
-            if (get_bit(A, i*lda + j)) set_bit(B, j*ldb + i);
-        }
-    }
-}
 
 void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a)
 {
@@ -1288,14 +1377,14 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
 
     size_t i;
     __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
-    __m256 float_zero256 = _mm256_set1_ps(0.00001);
+    __m256 float_zero256 = _mm256_set1_ps(0.0);
 
     for (i = 0; i < size; i+=8)
     {
         //__m256i src256 = _mm256_loadu_si256((__m256i *)(&src[i]));
         //__m256i result256 = _mm256_and_si256(src256, all256_sing1); // check sign in 8 x 32-bit floats
         //uint32_t mask = _mm256_movemask_ps(_mm256_castsi256_ps(result256)); // (val >= 0) ? 0 : 1
-        //mask = ~mask;   // inverse mask,  (val >= 0) ? 1 : 0
+        ////mask = ~mask;   // inverse mask,  (val >= 0) ? 1 : 0
 
         __m256 src256 = _mm256_loadu_ps((float *)(&src[i]));
         __m256 result256 = _mm256_cmp_ps(src256, float_zero256, _CMP_GT_OS);
@@ -1653,6 +1742,118 @@ void im2col_cpu_custom(float* data_im,
         im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col);
     }
 }
+
+
+//From Berkeley Vision's Caffe!
+//https://github.com/BVLC/caffe/blob/master/LICENSE
+void im2col_cpu_custom_bin(float* data_im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float* data_col, int bit_align)
+{
+    int c, h, w;
+    int height_col = (height + 2 * pad - ksize) / stride + 1;
+    int width_col = (width + 2 * pad - ksize) / stride + 1;
+    int channels_col = channels * ksize * ksize;
+
+    // optimized version
+    if (height_col == height && width_col == width && stride == 1 && pad == 1)
+    {
+        int new_ldb = bit_align;
+
+        #pragma omp parallel for
+        for (c = 0; c < channels_col; ++c) {
+            int w_offset = c % ksize;
+            int h_offset = (c / ksize) % ksize;
+            int c_im = c / ksize / ksize;
+            for (h = pad; h < height_col - pad; ++h) {
+                for (w = pad; w < width_col - pad - 8; w += 1) {
+                    int im_row = h_offset + h - pad;
+                    int im_col = w_offset + w - pad;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+
+                    float val = data_im[im_col + width*(im_row + height*c_im)];
+                    if (val > 0) set_bit(data_col, col_index);
+                }
+
+                for (; w < width_col - pad; ++w) {
+                    int im_row = h_offset + h - pad;
+                    int im_col = w_offset + w - pad;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+
+                    //data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
+                    float val = data_im[im_col + width*(im_row + height*c_im)];
+                    if (val > 0) set_bit(data_col, col_index);
+                }
+            }
+
+            {
+                w = 0;
+                for (h = 0; h < height_col; ++h) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+
+                    //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    if (val > 0) set_bit(data_col, col_index);
+                }
+            }
+
+            {
+                w = width_col - 1;
+                for (h = 0; h < height_col; ++h) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+
+                    //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    if (val > 0) set_bit(data_col, col_index);
+                }
+            }
+
+            {
+                h = 0;
+                for (w = 0; w < width_col; ++w) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+
+                    //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    if (val > 0) set_bit(data_col, col_index);
+                }
+            }
+
+            {
+                h = height_col - 1;
+                for (w = 0; w < width_col; ++w) {
+                    int im_row = h_offset + h;
+                    int im_col = w_offset + w;
+                    //int col_index = (c * height_col + h) * width_col + w;
+                    int col_index = c * new_ldb + h * width_col + w;
+
+                    //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
+                    if (val > 0) set_bit(data_col, col_index);
+                }
+            }
+        }
+
+    }
+    else {
+        printf("\n Error: is no non-optimized version \n");
+        //im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col); // must be aligned for transpose after float_to_bin
+        // float_to_bit(b, t_input, src_size);
+        // transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
+    }
+}
+
 
 void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a)
 {

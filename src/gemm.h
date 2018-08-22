@@ -39,6 +39,10 @@ void im2col_cpu_custom(float* data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col);
 
+void im2col_cpu_custom_align(float* data_im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float* data_col, int bit_align);
+
 void im2col_cpu_custom_bin(float* data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col, int bit_align);

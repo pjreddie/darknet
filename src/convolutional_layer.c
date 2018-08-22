@@ -632,7 +632,7 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
     size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
     size_t t_intput_size = new_ldb * n;
     size_t t_bit_input_size = t_intput_size / 8;// +1;
-    float *t_input = calloc(t_intput_size, sizeof(float));
+    //float *t_input = calloc(t_intput_size, sizeof(float));
     //char *
     *t_bit_input = calloc(t_bit_input_size, sizeof(char));
 
@@ -643,17 +643,18 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
     //printf("\n align_bit_weights_size = %d, k = %d, m = %d, new_lda = %d \n", align_bit_weights_size, k, m, new_ldb);
 
     int src_size = k * bit_align;
+    //printf("\n src_size = %d \n", src_size);
 
-    float_to_bit(b, t_input, src_size);
+    //float_to_bit(b, t_input, src_size);
 
     // b - [bit_align, k] - [l.bit_align, l.size*l.size*l.c] = src_size
     // t_input - [bit_align, k] - [n', k]
     // t_bit_input - [new_ldb, n] - [k', n]
 
-    transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
-    //transpose_bin(b, *t_bit_input, k, n, bit_align, new_ldb, 8);
+    //transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
+    transpose_bin(b, *t_bit_input, k, n, bit_align, new_ldb, 8);
 
-    free(t_input);
+    //free(t_input);
 
     return t_intput_size;
 }
@@ -706,9 +707,9 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
         //gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
         //gemm_nn_custom(m, n, k, 1, a, k, b, n, c, n);
-        if (l.xnor) {
-            //im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
+        if (l.xnor && (l.stride == 1 && l.pad == 1)) {
             memset(b, 0, l.bit_align*l.size*l.size*l.c * sizeof(float));
+            //im2col_cpu_custom_align(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
             im2col_cpu_custom_bin(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
 
             size_t output_size = l.outputs;
