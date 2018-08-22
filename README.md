@@ -227,7 +227,9 @@ More information about training by the link: http://pjreddie.com/darknet/yolo/#t
 
 1. Train it first on 1 GPU for like 1000 iterations: `darknet.exe detector train data/voc.data cfg/yolov3-voc.cfg darknet53.conv.74`
 
-2. Then stop and by using partially-trained model `/backup/yolov3-voc_1000.weights` run training with multigpu (up to 4 GPUs): `darknet.exe detector train data/voc.data cfg/yolov3-voc.cfg /backup/yolov3-voc_1000.weights -gpus 0,1,2,3`
+2. Adjust the learning rate (`cfg/yolov3-voc.cfg`) to fit the amount of GPUs. The learning rate should be equal to `0.001`, regardless of how many GPUs are used for training. So `learning_rate * GPUs = 0.001`. For 4 GPUs adjust the value to `learning_rate = 0.00025`.
+
+3. Then stop and by using partially-trained model `/backup/yolov3-voc_1000.weights` run training with multigpu (up to 4 GPUs): `darknet.exe detector train data/voc.data cfg/yolov3-voc.cfg /backup/yolov3-voc_1000.weights -gpus 0,1,2,3`
 
 https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
