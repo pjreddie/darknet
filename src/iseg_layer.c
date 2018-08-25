@@ -12,7 +12,7 @@
 
 layer make_iseg_layer(int batch, int w, int h, int classes, int ids)
 {
-    layer l = {0};
+    layer l = {};
     l.type = ISEG;
 
     l.h = h;
@@ -24,19 +24,19 @@ layer make_iseg_layer(int batch, int w, int h, int classes, int ids)
     l.classes = classes;
     l.batch = batch;
     l.extra = ids;
-    l.cost = calloc(1, sizeof(float));
+    l.cost = (float*)calloc(1, sizeof(float));
     l.outputs = h*w*l.c;
     l.inputs = l.outputs;
     l.truths = 90*(l.w*l.h+1);
-    l.delta = calloc(batch*l.outputs, sizeof(float));
-    l.output = calloc(batch*l.outputs, sizeof(float));
+    l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
+    l.output = (float*)calloc(batch*l.outputs, sizeof(float));
 
-    l.counts = calloc(90, sizeof(int));
-    l.sums = calloc(90, sizeof(float*));
+    l.counts = (int*)calloc(90, sizeof(int));
+    l.sums = (float**)calloc(90, sizeof(float*));
     if(ids){
         int i;
         for(i = 0; i < 90; ++i){
-            l.sums[i] = calloc(ids, sizeof(float));
+            l.sums[i] = (float*)calloc(ids, sizeof(float));
         }
     }
 
@@ -63,8 +63,8 @@ void resize_iseg_layer(layer *l, int w, int h)
     l->outputs = h*w*l->c;
     l->inputs = l->outputs;
 
-    l->output = realloc(l->output, l->batch*l->outputs*sizeof(float));
-    l->delta = realloc(l->delta, l->batch*l->outputs*sizeof(float));
+    l->output = (float*)realloc(l->output, l->batch*l->outputs*sizeof(float));
+    l->delta = (float*)realloc(l->delta, l->batch*l->outputs*sizeof(float));
 
 #ifdef GPU
     cuda_free(l->delta_gpu);
@@ -127,7 +127,7 @@ void forward_iseg_layer(const layer l, network net)
             }
         }
 
-        float *mse = calloc(90, sizeof(float));
+        float *mse = (float*)calloc(90, sizeof(float));
         for(i = 0; i < 90; ++i){
             int c = net.truth[b*l.truths + i*(l.w*l.h+1)];
             if(c < 0) break;

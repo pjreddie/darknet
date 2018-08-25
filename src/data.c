@@ -790,7 +790,7 @@ data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int b
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
     d.y = make_matrix(n, (((w/div)*(h/div))+1)*boxes);

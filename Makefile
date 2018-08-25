@@ -115,13 +115,6 @@ EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
-<<<<<<< HEAD
-=======
-all: obj backup results $(SLIB) $(ALIB) $(EXEC)
-#all: obj  results $(SLIB) $(ALIB) $(EXEC)
-
-
->>>>>>> upstream/master
 $(EXEC): $(EXECOBJ) $(ALIB)
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(ALIB)
 
