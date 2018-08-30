@@ -179,8 +179,11 @@ struct layer{
     float *weights;
     float *weight_updates;
 
+    char *align_bit_weights_gpu;
+    float *mean_arr_gpu;
     char *align_bit_weights;
     float *mean_arr;
+    int align_bit_weights_size;
     int lda_align;
     int bit_align;
 

@@ -324,7 +324,7 @@ unsigned char reverse_byte_1(char a)
         ((a & 0x40) >> 5) | ((a & 0x80) >> 7);
 }
 
-unsigned char reverse_byte_2(unsigned char a)
+unsigned char reverse_byte(unsigned char a)
 {
     return ((a * 0x0802LU & 0x22110LU) | (a * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
 }
@@ -333,7 +333,7 @@ static unsigned char lookup[16] = {
     0x0, 0x8, 0x4, 0xc, 0x2, 0xa, 0x6, 0xe,
     0x1, 0x9, 0x5, 0xd, 0x3, 0xb, 0x7, 0xf, };
 
-unsigned char reverse_byte(unsigned char n) {
+unsigned char reverse_byte_3(unsigned char n) {
     // Reverse the top and bottom nibble then swap them.
     return (lookup[n & 0b1111] << 4) | lookup[n >> 4];
 }
