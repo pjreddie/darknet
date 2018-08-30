@@ -315,7 +315,7 @@ void save_autotrack_target(image im, detection *dets, int num, float thresh, cha
             box b = dets[i].bbox;
             printf("labelstr:%s\n", labelstr);
 
-            if (!strcmp(labelstr, "bottle"))
+            if (!strcmp(labelstr, "person"))
             {
                 i_x = (b.x - b.w / 2.) * im.w;
                 i_y = (b.y - b.h / 2.) * im.h;
@@ -586,7 +586,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     cvDestroyWindow("Demo");
     cvReleaseCapture(&cap);
 }
-
+#ifdef OPENTRACKER
 void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
     if (remove("tracker.txt") != 0)
@@ -683,7 +683,7 @@ void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, cons
 
     printf("End of tracking.\n");
 }
-
+#endif
 #ifdef TS
 // General loop detect TS and detect Target
 // (New function define by Raphael)

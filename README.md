@@ -1,17 +1,10 @@
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
-# Darknet #
-Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
-
-For more information see the [Darknet project website](http://pjreddie.com/darknet).
-
-For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
-
-Run the pretrained weights
+# Quick run the pretrained weights
 ---------------------
 * Run on one Image
 ```
-./darknet detector test cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights /media/elab/sdd/data/TLP/Sam/img/00001.jpg
+./darknet detector test cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights ./data/dog.jpg
 ```
 * Run on a series of images
 ```
@@ -22,7 +15,50 @@ Run the pretrained weights
 ./darknet detector demo cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
 ```
 
-Train Imagenet
+# Run with [OpenTracker](https://github.com/rockkingjy/OpenTracker)
+-----------------
+Copy trackers' source file from [[OpenTracker](https://github.com/rockkingjy/OpenTracker)] and make install:
+```
+git clone https://github.com/rockkingjy/OpenTracker.git
+cd OpenTracker
+make -j`nproc`
+sudo make install
+```
+set flag in `makefile`:
+```
+OPENTRACKER=1
+```
+and run:
+```
+./darknet detector tracking cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
+```
+It will first run the yolo detection. Then when a `person` comes into the vision field, then it will automatically do the tracking.
+
+# Run with a touchscreen and OpenTracker:
+---------------------
+In `makefile` set:
+```
+TS=1
+```
+Assuming that your touchscreen is connected to /dev/input/event6, else modify it (must be run under sudo):
+```
+sudo ./darknet detector tracking cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
+```
+or
+```
+sudo ./darknet detector tracking cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
+```
+It will first run the yolo detection, with touchscreen, you choose the object to track, then it will track automatically.
+
+
+# Run with maestro motor
+--------------------
+In Makefile set:
+```
+MAESTRO=1
+```
+
+# Train Imagenet
 -----------------
 
 Download the data and create the list file and put them in the data/ folder:
@@ -31,7 +67,7 @@ find `pwd`/ILSVRC2012_img_train -name \*.JPEG > imagenet1k.train.list
 find `pwd`/ILSVRC2012_img_val -name \*.JPEG > imagenet1k.valid.list
 ```
 
-Training coco and voc
+# Training coco and voc
 ------------------
 Remember to create backup_** before training
 ```
@@ -39,7 +75,7 @@ Remember to create backup_** before training
 ./darknet detector train cfg/voc.data cfg/yolov3-voc.cfg darknet53.conv.74 -gpus 0
 ```
 
-Run on Mac
+# Run on Mac
 ------------------
 ```
 brew install opencv@2
@@ -52,7 +88,7 @@ export CPPFLAGS=-I/usr/local/opt/opencv@2/include
 export PKG_CONFIG_PATH=/usr/local/opt/opencv@2/lib/pkgconfig
 ```
 
-Net compression
+# Net compression (not finished)
 -----------------
 ```
 ./darknet detector test cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights data/dog.jpg
@@ -63,45 +99,4 @@ GPU=0 CUDNN=0 OPENMP=1: 4.199370 seconds.
 
 yolov3.cfg: width=208 height=208: 2.430844 seconds.
 
-Run with a touchscreen and tracker:
----------------------
-In Makefile set:
-```
-TS=1
-```
-Assuming that your touchscreen is connected to /dev/input/event6, else modify it (must be run under sudo):
-```
-sudo ./darknet detector tracking cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
-```
-or
-```
-sudo ./darknet detector tracking cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
-```
 
-Run with maestro motor
---------------------
-In Makefile set:
-```
-MAESTRO=1
-```
-
-Run tracker
------------------
-Copy trackers' source file from : [[Trackers_cpp](https://github.com/rockkingjy/Trackers_cpp)].
-
-Change Makefile to the path of the trackers:
-```
-ifeq ($(TS), 1)
-COMMON+= -DTS 
-CFLAGS+= -DTS
-VPATH+=/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf:./tracker
-COMMON+=-I/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf/ -Itracker/
-LDFLAGS+= -lstdc++ `pkg-config --libs opencv` 
-OBJ+=fhog.o kcftracker.o trackersdarknet.o
-endif
-```
-and run:
-```
-./darknet detector tracking cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
-```
-It will first run the yolo detection. Then when a bottle comes into the vision field, then it will automatically do the tracking.

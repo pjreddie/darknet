@@ -1,8 +1,4 @@
 
-#include "/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf/kcftracker.hpp"
-//#include "goturn/network/regressor.h"
-//#include "goturn/tracker/tracker.h"
-
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -11,6 +7,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+
+#include "opentracker/eco/eco.hpp"
+#include "opentracker/eco/parameters.hpp"
+#include "opentracker/kcf/kcftracker.hpp"
 
 #ifdef MAESTRO
 #include "maestro.h"
@@ -48,7 +48,7 @@ bool trackersdarknet()
     int show_flag = 1;
 
 #ifdef DEBUG
-    string path = "/media/elab/sdd/mycodes/darknet"; //"/home/nvidia/amy/Sam";//
+    string path = "/media/elab/sdd/mycodes/darknet";
 #else
     string path = "/home/nvidia/amy/darknet";
 #endif
@@ -86,11 +86,11 @@ bool trackersdarknet()
 
     // Create KCFTracker:
     bool HOG = true, FIXEDWINDOW = true, MULTISCALE = true, LAB = true, DSST = false; //LAB color space features
-    KCFTracker kcftracker(HOG, FIXEDWINDOW, MULTISCALE, LAB, DSST);
+    kcf::KCFTracker kcftracker(HOG, FIXEDWINDOW, MULTISCALE, LAB, DSST);
 
     // Create DSSTTracker:
     DSST = true;
-    KCFTracker dssttracker(HOG, FIXEDWINDOW, MULTISCALE, LAB, DSST);
+    kcf::KCFTracker dssttracker(HOG, FIXEDWINDOW, MULTISCALE, LAB, DSST);
 
     // Create Opencv tracker:
     string trackerTypes[6] = {"BOOSTING", "MIL", "KCF", "TLD", "MEDIANFLOW", "GOTURN"};

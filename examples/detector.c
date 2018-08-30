@@ -943,14 +943,17 @@ void run_detector(int argc, char **argv)
         trackersdarknet();
     }
 #endif
+#ifdef OPENTRACKER
     else if(0==strcmp(argv[2], "tracking")) {
+        printf("tracker running\n");
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-
+        printf("tracker running\n");
         tracking(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
     }
+#endif
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
 }

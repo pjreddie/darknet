@@ -2,11 +2,14 @@ GPU=1
 CUDNN=1
 OPENCV=1
 OPENMP=1
+# DEBUG=1: run on pc;=0:run on TX1/2, show full screen;
 DEBUG=1
-TS=1
+# when use OpenTracker set to 1;
+OPENTRACKER=1
+# TS: touchscreen demo
+TS=0
+# MAESTRO: the motor for turing the cameras
 MAESTRO=0
-
-#touchscreen setting
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
@@ -71,16 +74,19 @@ OBJ+=convolutional_kernels.o deconvolutional_kernels.o activation_kernels.o im2c
 endif
 
 #add by rockking 26/04/2018 start
-COMMONCPP=-std=c++0x 
+ifeq ($(OPENTRACKER), 1)
+COMMON+= -DOPENTRACKER 
+CFLAGS+= -DOPENTRACKER
+VPATH+= ./tracker
+COMMON+= -Itracker/
+CXXFLAGS+= -std=c++0x 
+LDFLAGS+= -lstdc++ `pkg-config --libs opencv` -lopentracker
+OBJ+= trackersdarknet.o
+endif
+
 ifeq ($(TS), 1)
 COMMON+= -DTS 
 CFLAGS+= -DTS
-#VPATH+=:./tracker:./tracker/kcf:./tracker/opencvtrackers
-#COMMON+=-Itracker/ -Itracker/kcf/ -Itracker/opencvtrackers/
-VPATH+=/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf:./tracker
-COMMON+=-I/media/elab/sdd/mycodes/tracker/Trackers_cpp/kcf/ -Itracker/
-LDFLAGS+= -lstdc++ `pkg-config --libs opencv` 
-OBJ+=fhog.o kcftracker.o trackersdarknet.o
 endif
 
 ifeq ($(MAESTRO), 1)
@@ -113,7 +119,7 @@ $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 #add by rockking 26/04/2018 start
 $(OBJDIR)%.o: %.cpp $(DEPS)
-	$(CC) $(COMMON) $(COMMONCPP) $(CFLAGS) -c $< -o $@
+	$(CC) $(COMMON) $(CFLAGS) $(CXXFLAGS) -c $< -o $@
 #add by rockking 26/04/2018 end
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@

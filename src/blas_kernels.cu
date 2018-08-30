@@ -301,7 +301,6 @@ __global__ void  fast_variance_delta_kernel(float *x, float *delta, float *mean,
     }
 }
 
-
 __global__ void mean_delta_kernel(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
