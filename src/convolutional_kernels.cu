@@ -127,136 +127,94 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         if (l.align_bit_weights_gpu && !state.train)
         {
             cudaError_t status;
-            status = cudaMemcpy(l.align_bit_weights, l.align_bit_weights_gpu, l.align_bit_weights_size, cudaMemcpyDeviceToHost);
-            check_error(status);
+            //status = cudaMemcpy(l.align_bit_weights, l.align_bit_weights_gpu, l.align_bit_weights_size, cudaMemcpyDeviceToHost);
+            //check_error(status);
 
-            float *input = (float *)calloc(l.c*l.h*l.w*l.batch, sizeof(float));
-            float *workspace = (float *)calloc(l.bit_align*l.size*l.size*l.c, sizeof(float));
-            float *output = (float *)calloc(l.batch*l.out_c*l.out_h*l.out_w, sizeof(float));
+            //float *input = (float *)calloc(l.c*l.h*l.w*l.batch, sizeof(float));
+            //float *workspace = (float *)calloc(l.bit_align*l.size*l.size*l.c, sizeof(float));
+            //float *output = (float *)calloc(l.batch*l.out_c*l.out_h*l.out_w, sizeof(float));
 
-            status = cudaMemcpy(input, state.input, l.c*l.h*l.w*l.batch*sizeof(float), cudaMemcpyDeviceToHost);
-            check_error(status);
+            //status = cudaMemcpy(input, state.input, l.c*l.h*l.w*l.batch*sizeof(float), cudaMemcpyDeviceToHost);
+            //check_error(status);
 
             int m = l.n;
             int k = l.size*l.size*l.c;
             int n = l.out_w*l.out_h;
             float * a = l.weights_gpu;
             //float * b = state.workspace;
-            float *b = workspace;
+            //float *b = workspace;
             //float * c = l.output_gpu;
-            float *c = output;
+            //float *c = output;
 
             int ldb_align = l.lda_align;
             size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
             size_t t_intput_size = new_ldb * n;
             size_t t_bit_input_size = t_intput_size / 8;// +1;
 
-            char *t_bit_input = (char *)calloc(t_bit_input_size, sizeof(char));
-            int src_size = k * l.bit_align;
+            //char *t_bit_input = (char *)calloc(t_bit_input_size, sizeof(char));
+            //int src_size = k * l.bit_align;
 
             //im2col_cpu_custom_bin(input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
 
-            float *align_workspace = NULL;
-            int align_workspace_size = l.bit_align * k; // aligned: n*k
-            status = cudaMalloc((void **)&align_workspace, align_workspace_size*sizeof(float));
-            check_error(status);
+            //float *align_workspace = NULL;
+            //int align_workspace_size = l.bit_align * k; // aligned: n*k
+            //status = cudaMalloc((void **)&align_workspace, align_workspace_size*sizeof(float));
+            //check_error(status);
 
             int i = 0;
-            im2col_align_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, align_workspace, l.bit_align);
+            im2col_align_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, l.align_workspace_gpu, l.bit_align);
 
-            float_to_bit_gpu(align_workspace, (unsigned char *)state.workspace, align_workspace_size);
+            float_to_bit_gpu(l.align_workspace_gpu, (unsigned char *)state.workspace, l.align_workspace_size);
 
             if(1)
             {
-                {
-                    /*
-                    status = cudaMemcpy(t_bit_input, state.workspace, t_bit_input_size, cudaMemcpyDeviceToHost);
-                    check_error(status);
-                    for (int y = 0; y < 8; ++y) {
-                        for (int x = 0; x < 8; ++x) {
-                            int index = x + y*l.bit_align;
-                            if (get_bit((unsigned char *)t_bit_input, index)) printf("1, ");
-                            else printf("0, ");
-                        }
-                        printf("\n");
-                    }
-                    printf("\n");
-                    */
-                }
+                fill_int8_gpu((unsigned char *)l.align_workspace_gpu, 0, t_bit_input_size);
 
-                fill_int8_gpu((unsigned char *)align_workspace, 0, t_bit_input_size);
-
-                transpose_bin_gpu((unsigned char *)state.workspace, (unsigned char *)align_workspace, k, n, l.bit_align, new_ldb, 8);
+                transpose_bin_gpu((unsigned char *)state.workspace, (unsigned char *)l.align_workspace_gpu, k, n, l.bit_align, new_ldb, 8);
                 //cudaDeviceSynchronize();
 
                 //int size_transposed_array = l.bit_align * new_ldb;
-                status = cudaMemcpy(t_bit_input, align_workspace, t_bit_input_size, cudaMemcpyDeviceToHost);
-                check_error(status);
-
-                /*
-                for (int y = 0; y < 8; ++y) {
-                    for (int x = 0; x < 8; ++x) {
-                        int index = x + y*new_ldb;
-                        if (get_bit((unsigned char *)t_bit_input, index)) printf("1, ");
-                        else printf("0, ");
-                    }
-                    printf("\n");
-                }
-                printf("-----------\n");
-                //getchar();
-                */
+                //status = cudaMemcpy(t_bit_input, l.align_workspace_gpu, t_bit_input_size, cudaMemcpyDeviceToHost);
+                //check_error(status);
             }
 
+            /*
             if (0) {
-                status = cudaMemcpy(b, state.workspace, align_workspace_size / 8, cudaMemcpyDeviceToHost);
+                status = cudaMemcpy(b, state.workspace, l.align_workspace_size / 8, cudaMemcpyDeviceToHost);
                 check_error(status);
-
-                for (int y = 0; y < 8; ++y) {
-                    for (int x = 0; x < 8; ++x) {
-                        int index = x + y*l.bit_align;
-                        if (get_bit((unsigned char *)b, index)) printf("1, ");
-                        else printf("0, ");
-                    }
-                    printf("\n");
-                }
-                printf("\n");
-
-                //float *im2 = (float *)calloc(align_workspace_size, sizeof(float));
-                //status = cudaMemcpy(im2, align_workspace, align_workspace_size * sizeof(float), cudaMemcpyDeviceToHost);
+                //float *im2 = (float *)calloc(l.align_workspace_size, sizeof(float));
+                //status = cudaMemcpy(im2, l.align_workspace_gpu, l.align_workspace_size * sizeof(float), cudaMemcpyDeviceToHost);
                 //check_error(status);
-                //float_to_bit(im2, (unsigned char *)b, align_workspace_size);
+                //float_to_bit(im2, (unsigned char *)b, l.align_workspace_size);
 
                 memset(t_bit_input, 0, t_bit_input_size);
                 // b - [bit_align, k] - [l.bit_align, l.size*l.size*l.c] = src_size
                 // t_input - [bit_align, k] - [n', k]
                 // t_bit_input - [new_ldb, n] - [k', n]
                 transpose_bin((char *)b, t_bit_input, k, n, l.bit_align, new_ldb, 8);
-
-                for (int y = 0; y < 8; ++y) {
-                    for (int x = 0; x < 8; ++x) {
-                        int index = x + y*new_ldb;
-                        if (get_bit((unsigned char *)t_bit_input, index)) printf("1, ");
-                        else printf("0, ");
-                    }
-                    printf("\n");
-                }
-                printf("-----------\n");
-                //getchar();
-
-                //free(im2);
             }
+            */
+
+            //status = cudaMemcpy(l.align_bit_weights, l.align_bit_weights_gpu, new_ldb * m / 8, cudaMemcpyDeviceToHost);
+            //check_error(status);
+
+            //status = cudaMemcpy(l.mean_arr, l.mean_arr_gpu, l.n * sizeof(float), cudaMemcpyDeviceToHost);
+            //check_error(status);
 
             // 5x times faster than gemm()-float32
-            gemm_nn_custom_bin_mean_transposed(m, n, k, 1, (unsigned char *)l.align_bit_weights, new_ldb, (unsigned char *)t_bit_input, new_ldb, c, n, l.mean_arr);
+            //gemm_nn_custom_bin_mean_transposed(m, n, k, 1, (unsigned char *)l.align_bit_weights, new_ldb, (unsigned char *)t_bit_input, new_ldb, c, n, l.mean_arr);
+            //status = cudaMemcpy(l.output_gpu, output, l.batch*l.out_c*l.out_h*l.out_w * sizeof(float), cudaMemcpyHostToDevice);
+            //check_error(status);
 
-            status = cudaMemcpy(l.output_gpu, output, l.batch*l.out_c*l.out_h*l.out_w * sizeof(float), cudaMemcpyHostToDevice);
-            check_error(status);
+            gemm_nn_custom_bin_mean_transposed_gpu(m, n, k, 1,
+                (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.align_workspace_gpu, new_ldb, l.output_gpu, n, l.mean_arr_gpu);
+            //cudaDeviceSynchronize();
 
-            free(t_bit_input);
-            free(input);
-            free(workspace);
-            free(output);
-            cudaFree(align_workspace);
+            //free(t_bit_input);
+            //free(input);
+            //free(workspace);
+            //free(output);
+            //cudaFree(align_workspace);
 
             add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
             activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);

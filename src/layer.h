@@ -181,6 +181,9 @@ struct layer{
 
     char *align_bit_weights_gpu;
     float *mean_arr_gpu;
+    float *align_workspace_gpu;
+    int align_workspace_size;
+
     char *align_bit_weights;
     float *mean_arr;
     int align_bit_weights_size;

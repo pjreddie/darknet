@@ -22,5 +22,10 @@ void transpose_bin_gpu(unsigned char *A, unsigned char *B, const int n, const in
 
 void fill_int8_gpu(unsigned char *src, unsigned char val, size_t size);
 
+void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr);
+
 #endif
 #endif

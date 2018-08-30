@@ -218,7 +218,6 @@ __global__ void transpose_bin_gpu_kernel(unsigned char *A, unsigned char *B, con
             if (j < m - 8) {
                 int a_index = i*lda + j;
                 int b_index = j*ldb + i;
-                //transpose_8x8_bits_my(&A[a_index/8], &B[b_index/8], lda/8, ldb/8);
                 transpose8rS32_reversed_diagonale(&A[a_index / 8], lda / 8, ldb / 8, &B[b_index / 8]);
             }
             else if (j < m) {
@@ -250,5 +249,79 @@ __global__ void fill_int8_gpu_kernel(unsigned char *src, unsigned char val, size
 
 void fill_int8_gpu(unsigned char *src, unsigned char val, size_t size) {
     const int num_blocks = size / BLOCK + 1;
-    fill_int8_gpu_kernel<<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(src, val, size);
+    fill_int8_gpu_kernel<<<num_blocks, BLOCK, 0, get_cuda_stream()>>>(src, val, size);
+}
+
+// --------------------------------
+
+typedef unsigned long long int uint64_t;
+
+__device__ __host__ static inline uint64_t xnor_int64(uint64_t a, uint64_t b) {
+    return ~(a^b);
+}
+
+__global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+
+    //if (index == 0)
+    {
+        int i, j, k, h;
+
+        //#pragma omp parallel for
+        //for (i = 0; i < M; ++i)
+        i = index % M;
+        //if(i < M)
+        {   // l.n - filters [16 - 55 - 1024]
+            float mean_val = mean_arr[i];
+
+            //for (j = 0; j < N; ++j)
+            j = index / M;
+            if(j < N)
+            { // out_h*out_w - one channel output size [169 - 173056]
+                int count = 0;
+
+                for (k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                    uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));
+                    uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));
+                    uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
+
+                    //#ifdef WIN32
+                    //                int tmp_count = __popcnt64(c_bit64);
+                    //#else
+                    //                int tmp_count = __builtin_popcountll(c_bit64);
+                    //#endif
+
+                    int tmp_count = __popcll(c_bit64);
+
+                    if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
+                    count += tmp_count;
+                    //binary_int64_printf(c_bit64);
+                    //printf(", count = %d \n\n", tmp_count);
+                }
+
+                C[i*ldc + j] = (2 * count - K) * mean_val;
+            }
+        }
+    }
+}
+
+
+void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K, float ALPHA_UNUSED,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    size_t size = M*N;
+    const int num_blocks = size / BLOCK + 1;
+
+    gemm_nn_custom_bin_mean_transposed_gpu_kernel<<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(
+        M, N, K, ALPHA_UNUSED,
+        A, lda,
+        B, ldb,
+        C, ldc,
+        mean_arr);
 }
