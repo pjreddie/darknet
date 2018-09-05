@@ -5,6 +5,10 @@
 #include <string.h>
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SECRET_NUM -1234
 extern int gpu_index;
 
@@ -802,4 +806,8 @@ size_t rand_size_t();
 float rand_normal();
 float rand_uniform(float min, float max);
 
+#ifdef __cplusplus
+}
+#endif
+	
 #endif
