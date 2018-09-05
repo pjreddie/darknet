@@ -635,11 +635,22 @@ image load_image_cv(char *filename, int channels)
     if( (src = cvLoadImage(filename, flag)) == 0 )
     {
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
-        char buff[256];
-        sprintf(buff, "echo %s >> bad.list", filename);
-        system(buff);
+        char truncated_buffer[1024];
+        
+        // Check the length of the buffer
+        if(strlen(filename) > 1024) {
+            sprintf(truncated_buffer, "This filename is too long");
+        }
+        else {
+            sprintf(truncated_buffer, "%s", filename);
+        }
+
+        // Write directly to the file rather than using the system call to write
+        FILE* bad_list = fopen("bad.list", "a");
+        fwrite(truncated_buffer, sizeof(char), strlen(truncated_buffer), bad_list);
+        fwrite("\n", 1, 1, bad_list);
+
         return make_image(10,10,3);
-        //exit(0);
     }
     image out = ipl_to_image(src);
     cvReleaseImage(&src);

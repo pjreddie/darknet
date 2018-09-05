@@ -6,3 +6,5 @@ Darknet is an open source neural network framework written in C and CUDA. It is 
 For more information see the [Darknet project website](http://pjreddie.com/darknet).
 
 For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
+
+Darknet has not been tested for security vulnerabilities, and could be vulnerable to attacks. Consider the risks before deploying in a production environment.
