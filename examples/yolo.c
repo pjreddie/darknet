@@ -5,7 +5,7 @@ char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "c
 void train_yolo(char *cfgfile, char *weightfile)
 {
     char *train_images = "/data/voc/train.txt";
-    char *backup_directory = "/home/pjreddie/backup/";
+    char *backup_directory = "/backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
@@ -104,7 +104,7 @@ void validate_yolo(char *cfg, char *weights)
 
     char *base = "results/comp4_det_test_";
     //list *plist = get_paths("data/voc.2007.test");
-    list *plist = get_paths("/home/pjreddie/data/voc/2007_test.txt");
+    list *plist = get_paths("data/voc/tcl_test.txt");
     //list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
