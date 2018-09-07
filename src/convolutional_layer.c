@@ -605,6 +605,7 @@ void binary_align_weights(convolutional_layer *l)
     int m = l->n;
     int k = l->size*l->size*l->c;
     size_t new_lda = k + (l->lda_align - k % l->lda_align); // (k / 8 + 1) * 8;
+    l->new_lda = new_lda;
 
     binarize_weights(l->weights, m, k, l->binary_weights);
 

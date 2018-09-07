@@ -141,7 +141,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             size_t t_intput_size = new_ldb * n;
             size_t t_bit_input_size = t_intput_size / 8;// +1;
 
-
+            /*
             int i = 0;
             im2col_align_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, l.align_workspace_gpu, l.bit_align);
             //cudaDeviceSynchronize();
@@ -160,23 +160,46 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu, new_ldb, l.output_gpu, n, l.mean_arr_gpu);
             //cudaDeviceSynchronize();
             //check_error(status);
-
+            */
 
             {
-                //float_to_bit_gpu(state.input, (unsigned char *)l.align_workspace_gpu, input_size);
+                //
 
                 /*
                 float *input_cpu = (float *)calloc(input_size, sizeof(float));
                 status = cudaMemcpy(input_cpu, state.input, input_size* sizeof(float), cudaMemcpyDeviceToHost);
                 check_error(status);
 
-                convolve_bin_cpu(input_cpu, l.weights, l.output, l.w, l.h, l.c, l.n, l.size, l.pad); // CPU
+                // swaped(binary_weights <-> l.weights)
+                convolve_cpu(input_cpu, l.weights, l.output, l.w, l.h, l.c, l.n, l.size, l.pad); // CPU
                 status = cudaMemcpy(l.output_gpu, l.output, l.outputs * sizeof(float), cudaMemcpyHostToDevice);
                 check_error(status);
                 free(input_cpu);
                 */
 
-                //convolve_bin_gpu(state.input, l.weights_gpu, l.output_gpu, l.w, l.h, l.c, l.n, l.size, l.pad);
+                /*
+                float *input_cpu = (float *)calloc(input_size, sizeof(float));
+                float *input_bin_cpu = (float *)calloc(input_size, sizeof(char));
+                //float *weights_bin_cpu = (float *)calloc(l.n*l.c*l.size*l.size, sizeof(char));
+                status = cudaMemcpy(input_cpu, state.input, input_size * sizeof(float), cudaMemcpyDeviceToHost);
+                check_error(status);
+                float_to_bit(input_cpu, (unsigned char *)input_bin_cpu, input_size);
+                //float_to_bit(l.weights, (unsigned char *)weights_bin_cpu, l.n*l.c*l.size*l.size); // l.align_bit_weights
+
+                convolve_bin_cpu(input_bin_cpu, (float *)l.align_bit_weights, l.output, l.w, l.h, l.c, l.n, l.size, l.pad, l.new_lda, l.mean_arr); // CPU
+                status = cudaMemcpy(l.output_gpu, l.output, l.outputs * sizeof(float), cudaMemcpyHostToDevice);
+                check_error(status);
+                //free(weights_bin_cpu);
+                free(input_bin_cpu);
+                free(input_cpu);
+                */
+
+                float_to_bit_gpu(state.input, (unsigned char *)l.align_workspace_gpu, input_size);
+                convolve_bin_gpu(l.align_workspace_gpu, (float *)l.align_bit_weights_gpu, l.output_gpu, l.w, l.h, l.c, l.n, l.size, l.pad, l.new_lda, l.mean_arr_gpu);
+
+
+                //convolve_gpu(state.input, l.weights_gpu, l.output_gpu, l.w, l.h, l.c, l.n, l.size, l.pad);
+
                 //cudaDeviceSynchronize();
                 //check_error(status);
 
@@ -309,10 +332,16 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     int k = l.size*l.size*l.c;
     int n = l.out_w*l.out_h;
     for(i = 0; i < l.batch; ++i){
-        im2col_ongpu(state.input + i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, state.workspace);
+        float *im = state.input + i*l.c*l.h*l.w;
         float * a = l.weights_gpu;
         float * b = state.workspace;
         float * c = l.output_gpu;
+        if (l.size == 1) {
+            b = im;
+        }
+        else {
+            im2col_ongpu(im, l.c, l.h, l.w, l.size, l.stride, l.pad, state.workspace);
+        }
         gemm_ongpu(0,0,m,n,k,1.,a,k,b,n,1.,c+i*m*n,n);
     }
 #endif
