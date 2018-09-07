@@ -131,10 +131,11 @@ __global__ void float_to_bit_gpu_kernel(float *src, unsigned char *dst, size_t s
 
     //for (; index < size_aligned; index += blockDim.x*gridDim.x)
     {
-        src_val = src[index];
-        //if(index < size) src_val = src[index];
-        //else src_val = 0;
-        unsigned int bit_mask = __ballot_sync(0xffffffff, src_val > 0);
+        //src_val = src[index];
+        if(index < size) src_val = src[index];
+        else src_val = 0;
+        //unsigned int bit_mask = __ballot_sync(0xffffffff, src_val > 0);
+        unsigned int bit_mask = __ballot(src_val > 0);
         if (threadIdx.x % WARP_SIZE == 0) ((unsigned int*)dst)[index / 32] = bit_mask;
     }
 }
