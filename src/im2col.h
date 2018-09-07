@@ -1,6 +1,8 @@
 #ifndef IM2COL_H
 #define IM2COL_H
 
+#include <stddef.h>
+
 void im2col_cpu(float* data_im,
         int channels, int height, int width,
         int ksize, int stride, int pad, float* data_col);
@@ -26,6 +28,10 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr);
+
+void convolve_bin_gpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad);
+
+void convolve_bin_cpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad);
 
 #endif
 #endif

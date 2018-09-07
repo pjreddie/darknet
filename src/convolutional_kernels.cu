@@ -117,6 +117,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     }
 
     if(l.xnor){
+
         if (!l.align_bit_weights_gpu || state.train) {
             binarize_weights_gpu(l.weights_gpu, l.n, l.c*l.size*l.size, l.binary_weights_gpu);
         }
@@ -128,6 +129,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         if (l.align_bit_weights_gpu && !state.train)
         {
             cudaError_t status = cudaSuccess;
+            int input_size = l.c*l.h*l.w*l.batch;
 
             int m = l.n;
             int k = l.size*l.size*l.c;
@@ -138,6 +140,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
             size_t t_intput_size = new_ldb * n;
             size_t t_bit_input_size = t_intput_size / 8;// +1;
+
 
             int i = 0;
             im2col_align_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, l.align_workspace_gpu, l.bit_align);
@@ -152,12 +155,33 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             transpose_bin_gpu((unsigned char *)state.workspace, (unsigned char *)l.transposed_align_workspace_gpu, k, n, l.bit_align, new_ldb, 8);
             //cudaDeviceSynchronize();
 
-
             // should be optimized
             gemm_nn_custom_bin_mean_transposed_gpu(m, n, k,
                 (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu, new_ldb, l.output_gpu, n, l.mean_arr_gpu);
             //cudaDeviceSynchronize();
             //check_error(status);
+
+
+            {
+                //float_to_bit_gpu(state.input, (unsigned char *)l.align_workspace_gpu, input_size);
+
+                /*
+                float *input_cpu = (float *)calloc(input_size, sizeof(float));
+                status = cudaMemcpy(input_cpu, state.input, input_size* sizeof(float), cudaMemcpyDeviceToHost);
+                check_error(status);
+
+                convolve_bin_cpu(input_cpu, l.weights, l.output, l.w, l.h, l.c, l.n, l.size, l.pad); // CPU
+                status = cudaMemcpy(l.output_gpu, l.output, l.outputs * sizeof(float), cudaMemcpyHostToDevice);
+                check_error(status);
+                free(input_cpu);
+                */
+
+                //convolve_bin_gpu(state.input, l.weights_gpu, l.output_gpu, l.w, l.h, l.c, l.n, l.size, l.pad);
+                //cudaDeviceSynchronize();
+                //check_error(status);
+
+
+            }
 
             add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
             activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);

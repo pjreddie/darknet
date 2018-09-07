@@ -637,6 +637,8 @@ void binary_align_weights(convolutional_layer *l)
     check_error(status);
     status = cudaMemcpy(l->align_bit_weights_gpu, l->align_bit_weights, l->align_bit_weights_size, cudaMemcpyHostToDevice);
     check_error(status);
+    status = cudaMemcpy(l->binary_weights_gpu, l->binary_weights, m*k*sizeof(float), cudaMemcpyHostToDevice);
+    check_error(status);
 
     l->mean_arr_gpu = cuda_make_array(l->mean_arr, l->n);
     cudaDeviceSynchronize();

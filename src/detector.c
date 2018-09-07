@@ -1026,19 +1026,24 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 
     char buff[1024];
     FILE* fw = fopen("anchors.txt", "wb");
-    printf("\nSaving anchors to the file: anchors.txt \n");
-    printf("anchors = ");
-    for (i = 0; i < num_of_clusters; ++i) {
-        sprintf(buff, "%2.4f,%2.4f", centers->data.fl[i * 2], centers->data.fl[i * 2 + 1]);
-        printf("%s", buff);
-        fwrite(buff, sizeof(char), strlen(buff), fw);
-        if (i + 1 < num_of_clusters) {
-            fwrite(", ", sizeof(char), 2, fw);
-            printf(", ");
+    if (fw) {
+        printf("\nSaving anchors to the file: anchors.txt \n");
+        printf("anchors = ");
+        for (i = 0; i < num_of_clusters; ++i) {
+            sprintf(buff, "%2.4f,%2.4f", centers->data.fl[i * 2], centers->data.fl[i * 2 + 1]);
+            printf("%s", buff);
+            fwrite(buff, sizeof(char), strlen(buff), fw);
+            if (i + 1 < num_of_clusters) {
+                fwrite(", ", sizeof(char), 2, fw);
+                printf(", ");
+            }
         }
+        printf("\n");
+        fclose(fw);
     }
-    printf("\n");
-    fclose(fw);
+    else {
+        printf(" Error: file anchors.txt can't be open \n");
+    }
 
     if (show) {
         size_t img_size = 700;
