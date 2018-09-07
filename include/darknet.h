@@ -263,7 +263,7 @@ struct layer{
 
     float * m;
     float * v;
-    
+
     float * bias_m;
     float * bias_v;
     float * scale_m;
@@ -288,7 +288,7 @@ struct layer{
     float *g_cpu;
     float *o_cpu;
     float *c_cpu;
-    float *dc_cpu; 
+    float *dc_cpu;
 
     float * binary_input;
 
@@ -315,7 +315,7 @@ struct layer{
 
     struct layer *input_h_layer;
     struct layer *state_h_layer;
-	
+
     struct layer *wz;
     struct layer *uz;
     struct layer *wr;
@@ -355,7 +355,7 @@ struct layer{
     float *g_gpu;
     float *o_gpu;
     float *c_gpu;
-    float *dc_gpu; 
+    float *dc_gpu;
 
     float *m_gpu;
     float *v_gpu;
@@ -695,7 +695,9 @@ void free_network(network *net);
 void set_batch_network(network *net, int b);
 void set_temp_network(network *net, float t);
 image load_image(char *filename, int w, int h, int c);
+image load_image_from_memory(char *buf, int len, int w, int h, int c);
 image load_image_color(char *filename, int w, int h);
+image load_image_from_memory_color(char *buf, int len, int w, int h);
 image make_image(int w, int h, int c);
 image resize_image(image im, int w, int h);
 void censor_image(image im, int dx, int dy, int w, int h);
