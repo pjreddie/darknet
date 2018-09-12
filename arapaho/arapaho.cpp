@@ -69,7 +69,6 @@ bool ArapahoV2::Setup(
         return false;
     }
 
-    int j;
     bool ret = false;
     
     bSetup = false;
@@ -113,11 +112,6 @@ bool ArapahoV2::Setup(
     ret = true;
     bSetup = ret;
     DPRINTF("Setup: Done\n");
-    return ret;
-    
-clean_exit:        
-    free_detections(dets, nboxes);
-
     return ret;
 }
 
@@ -213,9 +207,7 @@ bool ArapahoV2::Detect(
             float thresh, 
             float hier_thresh,
             int & objectCount)
-{
-    int count=0;
-        
+{     
     objectCount = 0;
     threshold = thresh;
     
