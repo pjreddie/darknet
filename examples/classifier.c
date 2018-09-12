@@ -679,7 +679,7 @@ void csv_classifier(char *datacfg, char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
     int m = plist->size;
     free_list(plist);
-    int *indexes = calloc(top, sizeof(int));
+    int *indexes = (int*)calloc(top, sizeof(int));
 
     for(i = 0; i < m; ++i){
         double time = what_time_is_it_now();

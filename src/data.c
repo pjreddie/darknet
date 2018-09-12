@@ -784,7 +784,7 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
 
 data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int boxes, int div, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
 {
-    char **random_paths = get_random_paths(paths, n, m);
+    char **random_paths = (char**)get_random_paths(paths, n, m);
     int i;
     data d = {0};
     d.shallow = 0;
