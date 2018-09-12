@@ -2,10 +2,8 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "maxpool_layer.h"
 #include "cuda.h"
-}
 
 __global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, int pad, float *input, float *output, int *indexes)
 {

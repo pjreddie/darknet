@@ -1,6 +1,9 @@
 #ifndef DATA_H
 #define DATA_H
+
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 #include <pthread.h>
+#endif
 
 #include "darknet.h"
 #include "matrix.h"
@@ -20,6 +23,17 @@ static inline float distance_from_edge(int x, int max)
 }
 void load_data_blocking(load_args args);
 
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
+pthread_t load_data(load_args args);
+
+#endif
 
 void print_letters(float *pred, int n);
 data load_data_captcha(char **paths, int n, int m, int k, int w, int h);
@@ -46,5 +60,10 @@ void randomize_data(data d);
 data *split_data(data d, int part, int total);
 data concat_datas(data *d, int n);
 void fill_truth(char *path, char **labels, int k, float *truth);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

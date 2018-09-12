@@ -19,7 +19,7 @@ char *fgetgo(FILE *fp)
 {
     if(feof(fp)) return 0;
     size_t size = 96;
-    char *line = malloc(size*sizeof(char));
+    char *line = (char*)malloc(size*sizeof(char));
     if(size != fread(line, sizeof(char), size, fp)){
         free(line);
         return 0;
@@ -32,21 +32,21 @@ moves load_go_moves(char *filename)
 {
     moves m;
     m.n = 128;
-    m.data = calloc(128, sizeof(char*));
+    m.data = (char**)calloc(128, sizeof(char*));
     FILE *fp = fopen(filename, "rb");
     int count = 0;
     char *line = 0;
     while ((line = fgetgo(fp))) {
         if (count >= m.n) {
             m.n *= 2;
-            m.data = realloc(m.data, m.n*sizeof(char*));
+            m.data = (char**)realloc(m.data, m.n*sizeof(char*));
         }
         m.data[count] = line;
         ++count;
     }
     printf("%d\n", count);
     m.n = count;
-    m.data = realloc(m.data, count*sizeof(char*));
+    m.data = (char**)realloc(m.data, count*sizeof(char*));
     return m;
 }
 
@@ -138,7 +138,7 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    network **nets = (network**)calloc(ngpus, sizeof(network*));
 
     srand(time(0));
     int seed = rand();
@@ -226,7 +226,7 @@ static void propagate_liberty(float *board, int *lib, int *visited, int row, int
 
 static int *calculate_liberties(float *board)
 {
-    int *lib = calloc(19*19, sizeof(int));
+    int *lib = (int*)calloc(19*19, sizeof(int));
     int visited[19*19];
     int i, j;
     for(j = 0; j < 19; ++j){
@@ -393,7 +393,7 @@ void free_mcts(mcts_tree *root)
 float *network_predict_rotations(network *net, float *next)
 {
     int n = net->batch;
-    float *in = calloc(19*19*3*n, sizeof(float));
+    float *in = (float*)calloc(19*19*3*n, sizeof(float));
     image im = float_to_image(19, 19, 3, next);
     int i,j;
     int *inds = random_index_order(0, 8);
@@ -423,14 +423,14 @@ float *network_predict_rotations(network *net, float *next)
 
 mcts_tree *expand(float *next, float *ko, network *net)
 {
-    mcts_tree *root = calloc(1, sizeof(mcts_tree));
+    mcts_tree *root = (mcts_tree*)calloc(1, sizeof(mcts_tree));
     root->board = next;
-    root->children = calloc(19*19+1, sizeof(mcts_tree*));
-    root->prior = calloc(19*19 + 1, sizeof(float));
-    root->prob = calloc(19*19 + 1, sizeof(float));
-    root->mean = calloc(19*19 + 1, sizeof(float));
-    root->value = calloc(19*19 + 1, sizeof(float));
-    root->visit_count = calloc(19*19 + 1, sizeof(int));
+    root->children = (mcts_tree**)calloc(19*19+1, sizeof(mcts_tree*));
+    root->prior = (float*)calloc(19*19 + 1, sizeof(float));
+    root->prob = (float*)calloc(19*19 + 1, sizeof(float));
+    root->mean = (float*)calloc(19*19 + 1, sizeof(float));
+    root->value = (float*)calloc(19*19 + 1, sizeof(float));
+    root->visit_count = (int*)calloc(19*19 + 1, sizeof(int));
     root->total_count = 1;
     int i;
     float *pred = network_predict_rotations(net, next);
@@ -453,7 +453,7 @@ mcts_tree *expand(float *next, float *ko, network *net)
 
 float *copy_board(float *board)
 {
-    float *next = calloc(19*19*3, sizeof(float));
+    float *next = (float*)calloc(19*19*3, sizeof(float));
     copy_cpu(19*19*3, board, 1, next, 1);
     return next;
 }
@@ -739,8 +739,8 @@ void valid_go(char *cfgfile, char *weightfile, int multi, char *filename)
     set_batch_network(net, 1);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
 
-    float *board = calloc(19*19*3, sizeof(float));
-    float *move = calloc(19*19+2, sizeof(float));
+    float *board = (float*)calloc(19*19*3, sizeof(float));
+    float *move = (float*)calloc(19*19+2, sizeof(float));
     // moves m = load_go_moves("/home/pjreddie/backup/go.test");
     moves m = load_go_moves(filename);
 
@@ -816,10 +816,10 @@ void engine_go(char *filename, char *weightfile, int mcts_iters, float secs, flo
     network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
-    float *board = calloc(19*19*3, sizeof(float));
+    float *board = (float*)calloc(19*19*3, sizeof(float));
     flip_board(board);
-    float *one = calloc(19*19*3, sizeof(float));
-    float *two = calloc(19*19*3, sizeof(float));
+    float *one = (float*)calloc(19*19*3, sizeof(float));
+    float *two = (float*)calloc(19*19*3, sizeof(float));
     int ponder_player = 0;
     int passed = 0;
     int move_num = 0;
@@ -1101,9 +1101,9 @@ void test_go(char *cfg, char *weights, int multi)
     network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     srand(time(0));
-    float *board = calloc(19*19*3, sizeof(float));
+    float *board = (float*)calloc(19*19*3, sizeof(float));
     flip_board(board);
-    float *move = calloc(19*19+1, sizeof(float));
+    float *move = (float*)calloc(19*19+1, sizeof(float));
     int color = 1;
     while(1){
         float result = predict_move2(net, board, move, multi);
@@ -1224,7 +1224,7 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
             load_weights(net2, w2);
         }
     } else {
-        net2 = calloc(1, sizeof(network));
+        net2 = (network*)calloc(1, sizeof(network));
         *net2 = *net;
     }
     srand(time(0));
@@ -1232,10 +1232,10 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
     int count = 0;
     //set_batch_network(net, 1);
     //set_batch_network(net2, 1);
-    float *board = calloc(19*19*3, sizeof(float));
+    float *board = (float*)calloc(19*19*3, sizeof(float));
     flip_board(board);
-    float *one = calloc(19*19*3, sizeof(float));
-    float *two = calloc(19*19*3, sizeof(float));
+    float *one = (float*)calloc(19*19*3, sizeof(float));
+    float *two = (float*)calloc(19*19*3, sizeof(float));
     int done = 0;
     int player = 1;
     int p1 = 0;
@@ -1337,7 +1337,7 @@ void run_go(int argc, char **argv)
         for(i = 0; i < len; ++i){
             if (gpu_list[i] == ',') ++ngpus;
         }
-        gpus = calloc(ngpus, sizeof(int));
+        gpus = (int*)calloc(ngpus, sizeof(int));
         for(i = 0; i < ngpus; ++i){
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',')+1;

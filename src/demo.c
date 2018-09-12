@@ -7,7 +7,9 @@
 #include "box.h"
 #include "image.h"
 #include "demo.h"
+#if defined __linux__ || defined __APPLE__
 #include <sys/time.h>
+#endif
 
 #define DEMO 1
 
@@ -201,11 +203,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     int i;
     demo_total = size_network(net);
-    predictions = calloc(demo_frame, sizeof(float*));
+    predictions = (float**)calloc(demo_frame, sizeof(float*));
     for (i = 0; i < demo_frame; ++i){
-        predictions[i] = calloc(demo_total, sizeof(float));
+        predictions[i] = (float*)calloc(demo_total, sizeof(float));
     }
-    avg = calloc(demo_total, sizeof(float));
+    avg = (float*)calloc(demo_total, sizeof(float));
 
     if(filename){
         printf("video file: %s\n", filename);

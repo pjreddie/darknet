@@ -92,7 +92,7 @@ float get_current_rate(network *net)
     size_t batch_num = get_current_batch(net);
     int i;
     float rate;
-    if (batch_num < net->burn_in) return net->learning_rate * pow((float)batch_num / net->burn_in, net->power);
+    if ((int)batch_num < net->burn_in) return net->learning_rate * pow((float)batch_num / net->burn_in, net->power);
     switch (net->policy) {
         case CONSTANT:
             return net->learning_rate;
@@ -101,7 +101,7 @@ float get_current_rate(network *net)
         case STEPS:
             rate = net->learning_rate;
             for(i = 0; i < net->num_steps; ++i){
-                if(net->steps[i] > batch_num) return rate;
+                if(net->steps[i] > (int)batch_num) return rate;
                 rate *= net->scales[i];
             }
             return rate;
@@ -176,12 +176,12 @@ char *get_layer_string(LAYER_TYPE a)
 
 network *make_network(int n)
 {
-    network *net = calloc(1, sizeof(network));
+    network *net = (network*)calloc(1, sizeof(network));
     net->n = n;
-    net->layers = calloc(net->n, sizeof(layer));
-    net->seen = calloc(1, sizeof(size_t));
-    net->t    = calloc(1, sizeof(int));
-    net->cost = calloc(1, sizeof(float));
+    net->layers = (layer*)calloc(net->n, sizeof(layer));
+    net->seen = (size_t*)calloc(1, sizeof(size_t));
+    net->t    = (int*)calloc(1, sizeof(int));
+    net->cost = (float*)calloc(1, sizeof(float));
     return net;
 }
 
@@ -359,7 +359,13 @@ int resize_network(network *net, int w, int h)
 {
 #ifdef GPU
     cuda_set_device(net->gpu_index);
-    cuda_free(net->workspace);
+    if(gpu_index >= 0){
+        cuda_free(net->workspace);
+    }
+#ifdef _ENABLE_CUDA_MEM_DEBUG
+    cuda_dump_mem_stat();
+#endif
+    
 #endif
     int i;
     //if(w == net->w && h == net->h) return 0;
@@ -414,8 +420,8 @@ int resize_network(network *net, int w, int h)
     net->output = out.output;
     free(net->input);
     free(net->truth);
-    net->input = calloc(net->inputs*net->batch, sizeof(float));
-    net->truth = calloc(net->truths*net->batch, sizeof(float));
+    net->input = (float*)calloc(net->inputs*net->batch, sizeof(float));
+    net->truth = (float*)calloc(net->truths*net->batch, sizeof(float));
 #ifdef GPU
     if(gpu_index >= 0){
         cuda_free(net->input_gpu);
@@ -427,11 +433,11 @@ int resize_network(network *net, int w, int h)
         }
     }else {
         free(net->workspace);
-        net->workspace = calloc(1, workspace_size);
+        net->workspace = (float*) calloc(1, workspace_size);
     }
 #else
     free(net->workspace);
-    net->workspace = calloc(1, workspace_size);
+    net->workspace = (float*)calloc(1, workspace_size);
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;
@@ -446,7 +452,7 @@ layer get_network_detection_layer(network *net)
         }
     }
     fprintf(stderr, "Detection layer not found!!\n");
-    layer l = {0};
+    layer l = {};
     return l;
 }
 
@@ -529,11 +535,11 @@ detection *make_network_boxes(network *net, float thresh, int *num)
     int i;
     int nboxes = num_detections(net, thresh);
     if(num) *num = nboxes;
-    detection *dets = calloc(nboxes, sizeof(detection));
+    detection *dets = (detection *)calloc(nboxes, sizeof(detection));
     for(i = 0; i < nboxes; ++i){
-        dets[i].prob = calloc(l.classes, sizeof(float));
+        dets[i].prob = (float*)calloc(l.classes, sizeof(float));
         if(l.coords > 4){
-            dets[i].mask = calloc(l.coords-4, sizeof(float));
+            dets[i].mask = (float*)calloc(l.coords-4, sizeof(float));
         }
     }
     return dets;
@@ -593,7 +599,8 @@ matrix network_predict_data_multi(network *net, data test, int n)
     int i,j,b,m;
     int k = net->outputs;
     matrix pred = make_matrix(test.X.rows, k);
-    float *X = calloc(net->batch*test.X.rows, sizeof(float));
+
+    float *X = (float*)calloc(net->batch*test.X.rows, sizeof(float));
     for(i = 0; i < test.X.rows; i += net->batch){
         for(b = 0; b < net->batch; ++b){
             if(i+b == test.X.rows) break;
@@ -618,9 +625,11 @@ matrix network_predict_data(network *net, data test)
     int i,j,b;
     int k = net->outputs;
     matrix pred = make_matrix(test.X.rows, k);
-    float *X = calloc(net->batch*test.X.cols, sizeof(float));
+
+    float *X = (float*)calloc(net->batch*test.X.cols, sizeof(float));
     for(i = 0; i < test.X.rows; i += net->batch){
         for(b = 0; b < net->batch; ++b){
+
             if(i+b == test.X.rows) break;
             memcpy(X+b*test.X.cols, test.X.vals[i+b], test.X.cols*sizeof(float));
         }
@@ -696,6 +705,7 @@ float *network_accuracies(network *net, data d, int n)
     return acc;
 }
 
+
 layer get_network_output_layer(network *net)
 {
     int i;
@@ -706,6 +716,7 @@ layer get_network_output_layer(network *net)
 }
 
 float network_accuracy_multi(network *net, data d, int n)
+
 {
     matrix guess = network_predict_data_multi(net, d, n);
     float acc = matrix_topk_accuracy(d.y, guess,1);
@@ -726,6 +737,10 @@ void free_network(network *net)
     if(net->input_gpu) cuda_free(net->input_gpu);
     if(net->truth_gpu) cuda_free(net->truth_gpu);
 #endif
+
+
+
+
     free(net);
 }
 
@@ -755,6 +770,7 @@ int network_outputs(network *net)
 float *network_output(network *net)
 {
     return network_output_layer(net).output;
+
 }
 
 #ifdef GPU

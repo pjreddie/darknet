@@ -351,7 +351,7 @@ box decode_box(box b, box anchor)
     box decode;
     decode.x = b.x * anchor.w + anchor.x;
     decode.y = b.y * anchor.h + anchor.y;
-    decode.w = pow(2., b.w) * anchor.w;
-    decode.h = pow(2., b.h) * anchor.h;
+    decode.w = pow(2.f, b.w) * anchor.w;
+    decode.h = pow(2.f, b.h) * anchor.h;
     return decode;
 }

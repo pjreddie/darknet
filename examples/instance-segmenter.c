@@ -11,7 +11,7 @@ void train_isegmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    network **nets = (network**)calloc(ngpus, sizeof(network*));
 
     srand(time(0));
     int seed = rand();
@@ -249,7 +249,7 @@ void run_isegmenter(int argc, char **argv)
         for(i = 0; i < len; ++i){
             if (gpu_list[i] == ',') ++ngpus;
         }
-        gpus = calloc(ngpus, sizeof(int));
+        gpus = (int*)calloc(ngpus, sizeof(int));
         for(i = 0; i < ngpus; ++i){
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',')+1;

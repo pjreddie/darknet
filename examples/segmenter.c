@@ -10,7 +10,7 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    network **nets = (network**)calloc(ngpus, sizeof(network*));
 
     srand(time(0));
     int seed = rand();
@@ -71,7 +71,7 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     load_thread = load_data(args);
 
     int epoch = (*net->seen)/N;
-    while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
+    while(get_current_batch(net) < (unsigned int)net->max_batches || net->max_batches == 0){
         double time = what_time_is_it_now();
 
         pthread_join(load_thread, 0);
@@ -106,7 +106,7 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         avg_loss = avg_loss*.9 + loss*.1;
         printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, *net->seen);
         free_data(train);
-        if(*net->seen/N > epoch){
+        if(*net->seen/N > (unsigned int)epoch){
             epoch = *net->seen/N;
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
@@ -237,7 +237,7 @@ void run_segmenter(int argc, char **argv)
         for(i = 0; i < len; ++i){
             if (gpu_list[i] == ',') ++ngpus;
         }
-        gpus = calloc(ngpus, sizeof(int));
+        gpus = (int*)calloc(ngpus, sizeof(int));
         for(i = 0; i < ngpus; ++i){
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',')+1;

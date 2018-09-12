@@ -6,31 +6,34 @@
 layer make_batchnorm_layer(int batch, int w, int h, int c)
 {
     fprintf(stderr, "Batch Normalization Layer: %d x %d x %d image\n", w,h,c);
-    layer l = {0};
+
+    layer l = {};
     l.type = BATCHNORM;
     l.batch = batch;
     l.h = l.out_h = h;
     l.w = l.out_w = w;
     l.c = l.out_c = c;
-    l.output = calloc(h * w * c * batch, sizeof(float));
-    l.delta  = calloc(h * w * c * batch, sizeof(float));
+    l.output = (float*)calloc(h * w * c * batch, sizeof(float));
+    l.delta  = (float*)calloc(h * w * c * batch, sizeof(float));
     l.inputs = w*h*c;
     l.outputs = l.inputs;
 
-    l.scales = calloc(c, sizeof(float));
-    l.scale_updates = calloc(c, sizeof(float));
-    l.biases = calloc(c, sizeof(float));
-    l.bias_updates = calloc(c, sizeof(float));
+    l.scales = (float*)calloc(c, sizeof(float));
+    l.scale_updates = (float*)calloc(c, sizeof(float));
+    l.biases = (float*)calloc(c, sizeof(float));
+    l.bias_updates = (float*)calloc(c, sizeof(float));
+
     int i;
     for(i = 0; i < c; ++i){
         l.scales[i] = 1;
     }
 
-    l.mean = calloc(c, sizeof(float));
-    l.variance = calloc(c, sizeof(float));
+    l.mean = (float*)calloc(c, sizeof(float));
+    l.variance = (float*)calloc(c, sizeof(float));
 
-    l.rolling_mean = calloc(c, sizeof(float));
-    l.rolling_variance = calloc(c, sizeof(float));
+    l.rolling_mean = (float*)calloc(c, sizeof(float));
+    l.rolling_variance = (float*)calloc(c, sizeof(float));
+
 
     l.forward = forward_batchnorm_layer;
     l.backward = backward_batchnorm_layer;
@@ -228,9 +231,30 @@ void forward_batchnorm_layer_gpu(layer l, network net)
         add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.out_c, l.out_w*l.out_h);
 #endif
     } else {
+
+#ifdef CUDNN
+        float one = 1;
+        float zero = 0;
+        cudnnBatchNormalizationForwardInference(cudnn_handle(),
+            CUDNN_BATCHNORM_SPATIAL,
+            &one,
+            &zero,
+            l.dstTensorDesc,
+            l.x_gpu,
+            l.dstTensorDesc,
+            l.output_gpu,
+            l.normTensorDesc,
+            l.scales_gpu,
+            l.biases_gpu,
+            l.rolling_mean_gpu,
+            l.rolling_variance_gpu,
+            .00001);
+
+#else
         normalize_gpu(l.output_gpu, l.rolling_mean_gpu, l.rolling_variance_gpu, l.batch, l.out_c, l.out_h*l.out_w);
         scale_bias_gpu(l.output_gpu, l.scales_gpu, l.batch, l.out_c, l.out_h*l.out_w);
         add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.out_c, l.out_w*l.out_h);
+#endif
     }
 
 }

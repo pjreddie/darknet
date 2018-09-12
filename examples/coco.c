@@ -51,15 +51,22 @@ void train_coco(char *cfgfile, char *weightfile)
     args.saturation = net->saturation;
     args.hue = net->hue;
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data_in_thread(args);
+#endif
     clock_t time;
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net->max_batches){
         i += 1;
         time=clock();
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         pthread_join(load_thread, 0);
+#endif
         train = buffer;
+
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         load_thread = load_data_in_thread(args);
+#endif
 
         printf("Loaded: %lf seconds\n", sec(clock()-time));
 
@@ -142,9 +149,14 @@ void validate_coco(char *cfg, char *weights)
     int classes = l.classes;
 
     char buff[1024];
+#if defined __linux__ || defined __APPLE__
     snprintf(buff, 1024, "%s/coco_results.json", base);
+#else
+    _snprintf(buff, 1024, "%s/coco_results.json", base);
+#endif
     FILE *fp = fopen(buff, "w");
     fprintf(fp, "[\n");
+
 
     int m = plist->size;
     int i=0;
@@ -155,11 +167,15 @@ void validate_coco(char *cfg, char *weights)
     float iou_thresh = .5;
 
     int nthreads = 8;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
-    pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
+    image *val = (image*)calloc(nthreads, sizeof(image));
+    image *val_resized = (image*)calloc(nthreads, sizeof(image));
+    image *buf = (image*)calloc(nthreads, sizeof(image));
+    image *buf_resized = (image*)calloc(nthreads, sizeof(image));
+
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
+    pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
+#else
+#endif
 
     load_args args = {0};
     args.w = net->w;
@@ -170,13 +186,18 @@ void validate_coco(char *cfg, char *weights)
         args.path = paths[i+t];
         args.im = &buf[t];
         args.resized = &buf_resized[t];
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         thr[t] = load_data_in_thread(args);
+#endif
     }
     time_t start = time(0);
     for(i = nthreads; i < m+nthreads; i += nthreads){
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
+
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
             pthread_join(thr[t], 0);
+#endif
             val[t] = buf[t];
             val_resized[t] = buf_resized[t];
         }
@@ -184,7 +205,9 @@ void validate_coco(char *cfg, char *weights)
             args.path = paths[i+t];
             args.im = &buf[t];
             args.resized = &buf_resized[t];
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
             thr[t] = load_data_in_thread(args);
+#endif
         }
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];
@@ -225,12 +248,17 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     int side = l.side;
 
     int j, k;
-    FILE **fps = calloc(classes, sizeof(FILE *));
+    FILE **fps = (FILE**)calloc(classes, sizeof(FILE *));
     for(j = 0; j < classes; ++j){
         char buff[1024];
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
+#else
+		_snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
+#endif
         fps[j] = fopen(buff, "w");
     }
+
 
     int m = plist->size;
     int i=0;
@@ -302,6 +330,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     clock_t time;
     char buff[256];
     char *input = buff;
+
     while(1){
         if(filename){
             strncpy(input, filename, 256);

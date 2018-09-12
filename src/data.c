@@ -2,12 +2,15 @@
 #include "utils.h"
 #include "image.h"
 #include "cuda.h"
+#include "tree.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 list *get_paths(char *filename)
 {
@@ -22,40 +25,27 @@ list *get_paths(char *filename)
     return lines;
 }
 
-/*
-char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
-{
-    char **random_paths = calloc(n, sizeof(char*));
-    int i;
-    pthread_mutex_lock(&mutex);
-    for(i = 0; i < n; ++i){
-        int index = rand()%m;
-        indexes[i] = index;
-        random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
-    }
-    pthread_mutex_unlock(&mutex);
-    return random_paths;
-}
-*/
-
 char **get_random_paths(char **paths, int n, int m)
 {
-    char **random_paths = calloc(n, sizeof(char*));
+    char **random_paths = (char**)calloc(n, sizeof(char*));
     int i;
-    pthread_mutex_lock(&mutex);
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
+	pthread_mutex_lock(&mutex);
+#endif
     for(i = 0; i < n; ++i){
         int index = rand()%m;
         random_paths[i] = paths[index];
         //if(i == 0) printf("%s\n", paths[index]);
     }
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_mutex_unlock(&mutex);
+#endif
     return random_paths;
 }
 
 char **find_replace_paths(char **paths, int n, char *find, char *replace)
 {
-    char **replace_paths = calloc(n, sizeof(char*));
+    char **replace_paths = (char**)calloc(n, sizeof(char*));
     int i;
     for(i = 0; i < n; ++i){
         char replaced[4096];
@@ -70,7 +60,7 @@ matrix load_image_paths_gray(char **paths, int n, int w, int h)
     int i;
     matrix X;
     X.rows = n;
-    X.vals = calloc(X.rows, sizeof(float*));
+    X.vals = (float**)calloc(X.rows, sizeof(float*));
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
@@ -91,7 +81,7 @@ matrix load_image_paths(char **paths, int n, int w, int h)
     int i;
     matrix X;
     X.rows = n;
-    X.vals = calloc(X.rows, sizeof(float*));
+    X.vals = (float**)calloc(X.rows, sizeof(float*));
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
@@ -107,7 +97,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
     int i;
     matrix X;
     X.rows = n;
-    X.vals = calloc(X.rows, sizeof(float*));
+    X.vals = (float**)calloc(X.rows, sizeof(float*));
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
@@ -144,11 +134,11 @@ box_label *read_boxes(char *filename, int *n)
     int id;
     int count = 0;
     int size = 64;
-    box_label *boxes = calloc(size, sizeof(box_label));
+    box_label *boxes = (box_label*)calloc(size, sizeof(box_label));
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
         if(count == size) {
             size = size * 2;
-            boxes = realloc(boxes, size*sizeof(box_label));
+            boxes = (box_label*)realloc(boxes, size*sizeof(box_label));
         }
         boxes[count].id = id;
         boxes[count].x = x;
@@ -181,6 +171,15 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 {
     int i;
     for(i = 0; i < n; ++i){
+#ifdef _ENABLE_ZERO_COORD_LABEL_FIX
+        if(boxes[i].x == 0 && boxes[i].y == 0) {
+            boxes[i].x = 0.001;
+            boxes[i].y = 0.001;
+            boxes[i].w = 0.001;
+            boxes[i].h = 0.001;
+            continue;
+        }        
+#else        
         if(boxes[i].x == 0 && boxes[i].y == 0) {
             boxes[i].x = 999999;
             boxes[i].y = 999999;
@@ -188,6 +187,7 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             boxes[i].h = 999999;
             continue;
         }
+#endif
         boxes[i].left   = boxes[i].left  * sx - dx;
         boxes[i].right  = boxes[i].right * sx - dx;
         boxes[i].top    = boxes[i].top   * sy - dy;
@@ -356,7 +356,7 @@ box bound_image(image im)
             }
         }
     }
-    box b = {minx, miny, maxx-minx + 1, maxy-miny + 1};
+    box b = { static_cast<float>(minx), static_cast<float>(miny), maxx-minx + 1.0f, maxy-miny + 1.0f};
     //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
     return b;
 }
@@ -503,7 +503,7 @@ void fill_truth_captcha(char *path, int n, float *truth)
     char *begin = strrchr(path, '/');
     ++begin;
     int i;
-    for(i = 0; i < strlen(begin) && i < n && begin[i] != '.'; ++i){
+    for(i = 0; i < (int)strlen(begin) && i < n && begin[i] != '.'; ++i){
         int index = alphanum_to_int(begin[i]);
         if(index > 35) printf("Bad %c\n", begin[i]);
         truth[i*NUMCHARS+index] = 1;
@@ -742,13 +742,13 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
 
     d.y.rows = n;
     d.y.cols = h*w*classes/div/div;
-    d.y.vals = calloc(d.X.rows, sizeof(float*));
+    d.y.vals = (float**)calloc(d.X.rows, sizeof(float*));
 
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
@@ -784,13 +784,13 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
 
 data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int boxes, int div, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
 {
-    char **random_paths = get_random_paths(paths, n, m);
+    char **random_paths = (char**)get_random_paths(paths, n, m);
     int i;
     data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
     d.y = make_matrix(n, (((w/div)*(h/div))+1)*boxes);
@@ -830,7 +830,7 @@ data load_data_mask(int n, char **paths, int m, int w, int h, int classes, int b
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
     d.y = make_matrix(n, (coords+1)*boxes);
@@ -870,7 +870,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
 
@@ -924,7 +924,7 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*6;
 
     int k = 2*(classes);
@@ -933,7 +933,7 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
         image im1 = load_image_color(paths[i*2],   w, h);
         image im2 = load_image_color(paths[i*2+1], w, h);
 
-        d.X.vals[i] = calloc(d.X.cols, sizeof(float));
+        d.X.vals[i] = (float*)calloc(d.X.cols, sizeof(float));
         memcpy(d.X.vals[i],         im1.data, h*w*3*sizeof(float));
         memcpy(d.X.vals[i] + h*w*3, im2.data, h*w*3*sizeof(float));
 
@@ -957,7 +957,7 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
         while(fscanf(fp2, "%d %f", &id, &iou) == 2){
             if (d.y.vals[i][2*id + 1] < iou) d.y.vals[i][2*id + 1] = iou;
         }
-
+        
         for (j = 0; j < classes; ++j){
             if (d.y.vals[i][2*j] > .5 &&  d.y.vals[i][2*j+1] < .5){
                 d.y.vals[i][2*j] = 1;
@@ -984,7 +984,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
 {
     int index = rand()%n;
     char *random_path = paths[index];
-
+    
     image orig = load_image_color(random_path, 0, 0);
     int h = orig.h;
     int w = orig.w;
@@ -995,7 +995,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     d.h = h;
 
     d.X.rows = 1;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
     int k = (4+classes)*90;
@@ -1041,7 +1041,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
     d.y = make_matrix(n, 5*boxes);
@@ -1132,10 +1132,11 @@ void *load_thread(void *ptr)
     return 0;
 }
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 pthread_t load_data_in_thread(load_args args)
 {
     pthread_t thread;
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct load_args *ptr = (struct load_args*) calloc(1, sizeof(struct load_args));
     *ptr = args;
     if(pthread_create(&thread, 0, load_thread, ptr)) error("Thread creation failed");
     return thread;
@@ -1149,8 +1150,8 @@ void *load_threads(void *ptr)
     data *out = args.d;
     int total = args.n;
     free(ptr);
-    data *buffers = calloc(args.threads, sizeof(data));
-    pthread_t *threads = calloc(args.threads, sizeof(pthread_t));
+    data *buffers = (data*)calloc(args.threads, sizeof(data));
+    pthread_t *threads = (pthread_t*)calloc(args.threads, sizeof(pthread_t));
     for(i = 0; i < args.threads; ++i){
         args.d = buffers + i;
         args.n = (i+1) * total/args.threads - i * total/args.threads;
@@ -1172,7 +1173,7 @@ void *load_threads(void *ptr)
 
 void load_data_blocking(load_args args)
 {
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct load_args *ptr = (struct load_args*)calloc(1, sizeof(struct load_args));
     *ptr = args;
     load_thread(ptr);
 }
@@ -1180,11 +1181,12 @@ void load_data_blocking(load_args args)
 pthread_t load_data(load_args args)
 {
     pthread_t thread;
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct load_args *ptr = (struct load_args*)calloc(1, sizeof(struct load_args));
     *ptr = args;
     if(pthread_create(&thread, 0, load_threads, ptr)) error("Thread creation failed");
     return thread;
 }
+#endif
 
 data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int out_h)
 {
@@ -1212,20 +1214,6 @@ data load_data_old(char **paths, int n, int m, char **labels, int k, int w, int 
     return d;
 }
 
-/*
-   data load_data_study(char **paths, int n, int m, char **labels, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
-   {
-   data d = {0};
-   d.indexes = calloc(n, sizeof(int));
-   if(m) paths = get_random_paths_indexes(paths, n, m, d.indexes);
-   d.shallow = 0;
-   d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure);
-   d.y = load_labels_paths(paths, n, labels, k);
-   if(m) free(paths);
-   return d;
-   }
- */
-
 data load_data_super(char **paths, int n, int m, int w, int h, int scale)
 {
     if(m) paths = get_random_paths(paths, n, m);
@@ -1234,11 +1222,11 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
 
     int i;
     d.X.rows = n;
-    d.X.vals = calloc(n, sizeof(float*));
+    d.X.vals = (float**)calloc(n, sizeof(float*));
     d.X.cols = w*h*3;
 
     d.y.rows = n;
-    d.y.vals = calloc(n, sizeof(float*));
+    d.y.vals = (float**)calloc(n, sizeof(float*));
     d.y.cols = w*scale * h*scale * 3;
 
     for(i = 0; i < n; ++i){
@@ -1280,8 +1268,8 @@ data select_data(data *orig, int *inds)
     d.X.cols = orig[0].X.cols;
     d.y.cols = orig[0].y.cols;
 
-    d.X.vals = calloc(orig[0].X.rows, sizeof(float *));
-    d.y.vals = calloc(orig[0].y.rows, sizeof(float *));
+    d.X.vals = (float**)calloc(orig[0].X.rows, sizeof(float *));
+    d.y.vals = (float**)calloc(orig[0].y.rows, sizeof(float *));
     int i;
     for(i = 0; i < d.X.rows; ++i){
         d.X.vals[i] = orig[inds[i]].X.vals[i];
@@ -1292,7 +1280,7 @@ data select_data(data *orig, int *inds)
 
 data *tile_data(data orig, int divs, int size)
 {
-    data *ds = calloc(divs*divs, sizeof(data));
+    data *ds = (data*)calloc(divs*divs, sizeof(data));
     int i, j;
 #pragma omp parallel for
     for(i = 0; i < divs*divs; ++i){
@@ -1302,7 +1290,7 @@ data *tile_data(data orig, int divs, int size)
         d.h = orig.h/divs * size;
         d.X.rows = orig.X.rows;
         d.X.cols = d.w*d.h*3;
-        d.X.vals = calloc(d.X.rows, sizeof(float*));
+        d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
 
         d.y = copy_matrix(orig.y);
 #pragma omp parallel for
@@ -1326,7 +1314,7 @@ data resize_data(data orig, int w, int h)
     int i;
     d.X.rows = orig.X.rows;
     d.X.cols = w*h*3;
-    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
 
     d.y = copy_matrix(orig.y);
 #pragma omp parallel for
@@ -1369,7 +1357,7 @@ matrix concat_matrix(matrix m1, matrix m2)
     matrix m;
     m.cols = m1.cols;
     m.rows = m1.rows+m2.rows;
-    m.vals = calloc(m1.rows + m2.rows, sizeof(float*));
+    m.vals = (float**)calloc(m1.rows + m2.rows, sizeof(float*));
     for(i = 0; i < m1.rows; ++i){
         m.vals[count++] = m1.vals[i];
     }
@@ -1395,9 +1383,9 @@ data concat_datas(data *d, int n)
     int i;
     data out = {0};
     for(i = 0; i < n; ++i){
-        data new = concat_data(d[i], out);
+        data new1 = concat_data(d[i], out);
         free_data(out);
-        out = new;
+        out = new1;
     }
     return out;
 }
@@ -1434,8 +1422,8 @@ data load_cifar10_data(char *filename)
     for(i = 0; i < 10000; ++i){
         unsigned char bytes[3073];
         fread(bytes, 1, 3073, fp);
-        int class = bytes[0];
-        y.vals[i][class] = 1;
+        int class1 = bytes[0];
+        y.vals[i][class1] = 1;
         for(j = 0; j < X.cols; ++j){
             X.vals[i][j] = (double)bytes[j+1];
         }
@@ -1497,8 +1485,8 @@ data load_all_cifar10()
         for(i = 0; i < 10000; ++i){
             unsigned char bytes[3073];
             fread(bytes, 1, 3073, fp);
-            int class = bytes[0];
-            y.vals[i+b*10000][class] = 1;
+            int class1 = bytes[0];
+            y.vals[i+b*10000][class1] = 1;
             for(j = 0; j < X.cols; ++j){
                 X.vals[i+b*10000][j] = (double)bytes[j+1];
             }
@@ -1634,8 +1622,8 @@ data get_random_data(data d, int num)
     r.X.cols = d.X.cols;
     r.y.cols = d.y.cols;
 
-    r.X.vals = calloc(num, sizeof(float *));
-    r.y.vals = calloc(num, sizeof(float *));
+    r.X.vals = (float**)calloc(num, sizeof(float *));
+    r.y.vals = (float**)calloc(num, sizeof(float *));
 
     int i;
     for(i = 0; i < num; ++i){
@@ -1648,7 +1636,7 @@ data get_random_data(data d, int num)
 
 data *split_data(data d, int part, int total)
 {
-    data *split = calloc(2, sizeof(data));
+    data *split = (data*)calloc(2, sizeof(data));
     int i;
     int start = part*d.X.rows/total;
     int end = (part+1)*d.X.rows/total;
@@ -1661,10 +1649,10 @@ data *split_data(data d, int part, int total)
     train.X.cols = test.X.cols = d.X.cols;
     train.y.cols = test.y.cols = d.y.cols;
 
-    train.X.vals = calloc(train.X.rows, sizeof(float*));
-    test.X.vals = calloc(test.X.rows, sizeof(float*));
-    train.y.vals = calloc(train.y.rows, sizeof(float*));
-    test.y.vals = calloc(test.y.rows, sizeof(float*));
+    train.X.vals = (float**)calloc(train.X.rows, sizeof(float*));
+    test.X.vals =(float**) calloc(test.X.rows, sizeof(float*));
+    train.y.vals = (float**)calloc(train.y.rows, sizeof(float*));
+    test.y.vals = (float**)calloc(test.y.rows, sizeof(float*));
 
     for(i = 0; i < start; ++i){
         train.X.vals[i] = d.X.vals[i];

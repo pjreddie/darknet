@@ -12,14 +12,14 @@
 layer make_l2norm_layer(int batch, int inputs)
 {
     fprintf(stderr, "l2norm                                         %4d\n",  inputs);
-    layer l = {0};
+    layer l = {};
     l.type = L2NORM;
     l.batch = batch;
     l.inputs = inputs;
     l.outputs = inputs;
-    l.output = calloc(inputs*batch, sizeof(float));
-    l.scales = calloc(inputs*batch, sizeof(float));
-    l.delta = calloc(inputs*batch, sizeof(float));
+    l.output = (float*)calloc(inputs*batch, sizeof(float));
+    l.scales = (float*)calloc(inputs*batch, sizeof(float));
+    l.delta = (float*)calloc(inputs*batch, sizeof(float));
 
     l.forward = forward_l2norm_layer;
     l.backward = backward_l2norm_layer;

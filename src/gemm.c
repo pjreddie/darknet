@@ -30,7 +30,7 @@ void gemm_bin(int M, int N, int K, float ALPHA,
 float *random_matrix(int rows, int cols)
 {
     int i;
-    float *m = calloc(rows*cols, sizeof(float));
+    float *m = (float*)calloc(rows*cols, sizeof(float));
     for(i = 0; i < rows*cols; ++i){
         m[i] = (float)rand()/RAND_MAX;
     }
@@ -176,9 +176,9 @@ void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float *C_gpu, int ldc)
 {
     cublasHandle_t handle = blas_handle();
-    cudaError_t status = cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N), 
+    cublasStatus_t status = cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N), 
             (TA ? CUBLAS_OP_T : CUBLAS_OP_N), N, M, K, &ALPHA, B_gpu, ldb, A_gpu, lda, &BETA, C_gpu, ldc);
-    check_error(status);
+    check_cublas_error(status);
 }
 
 #include <stdio.h>

@@ -2,7 +2,6 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "convolutional_layer.h"
 #include "batchnorm_layer.h"
 #include "gemm.h"
@@ -11,7 +10,6 @@ extern "C" {
 #include "col2im.h"
 #include "utils.h"
 #include "cuda.h"
-}
 
 __global__ void binarize_kernel(float *x, int n, float *binary)
 {

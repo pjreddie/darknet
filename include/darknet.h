@@ -20,8 +20,8 @@ extern int gpu_index;
     #endif
 #endif
 
+#ifdef OPENCV
 #ifndef __cplusplus
-    #ifdef OPENCV
     #include "opencv2/highgui/highgui_c.h"
     #include "opencv2/imgproc/imgproc_c.h"
     #include "opencv2/core/version.hpp"
@@ -29,7 +29,20 @@ extern int gpu_index;
     #include "opencv2/videoio/videoio_c.h"
     #include "opencv2/imgcodecs/imgcodecs_c.h"
     #endif
+#else
+    #include <opencv2/opencv.hpp>
+#endif
+#endif
+
+#if defined(__APPLE__)
+    #include <AvailabilityMacros.h>
+    #ifdef MAC_OS_X_VERSION_10_12
+        #define _snprintf snprintf
     #endif
+#endif
+
+#ifdef __cplusplus 
+extern "C" {
 #endif
 
 typedef struct{
@@ -588,6 +601,12 @@ typedef struct{
 } box_label;
 
 
+#ifdef OPENCV
+image get_image_from_stream(CvCapture *cap);
+#endif
+
+
+
 network *load_network(char *cfg, char *weights, int clear);
 load_args get_base_args(network *net);
 
@@ -758,14 +777,15 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh);
 
 matrix make_matrix(int rows, int cols);
 
-#ifndef __cplusplus
-#ifdef OPENCV
-image get_image_from_stream(CvCapture *cap);
-#endif
-#endif
+
+
+
 void free_image(image m);
 float train_network(network *net, data d);
+
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
 pthread_t load_data_in_thread(load_args args);
+#endif
 void load_data_blocking(load_args args);
 list *get_paths(char *filename);
 void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves, int stride);
@@ -801,5 +821,9 @@ int *read_intlist(char *s, int *n, int d);
 size_t rand_size_t();
 float rand_normal();
 float rand_uniform(float min, float max);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif

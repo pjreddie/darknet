@@ -2,10 +2,8 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "avgpool_layer.h"
 #include "cuda.h"
-}
 
 __global__ void forward_avgpool_layer_kernel(int n, int w, int h, int c, float *input, float *output)
 {

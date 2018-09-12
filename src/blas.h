@@ -1,8 +1,14 @@
 #ifndef BLAS_H
 #define BLAS_H
+
 #include "darknet.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void flatten(float *x, int size, int layers, int batch, int forward);
+
 void pm(int M, int N, float *A);
 float *random_matrix(int rows, int cols);
 void time_random_matrix(int TA, int TB, int m, int k, int n);
@@ -44,9 +50,19 @@ void softmax(float *input, int n, float temp, int stride, float *output);
 void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
 void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
 
+#ifdef __cplusplus
+}
+#endif
+
+
 #ifdef GPU
 #include "cuda.h"
 #include "tree.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 void axpy_gpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_gpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
@@ -59,6 +75,7 @@ void scale_mask_gpu(int N, float * X, float mask_num, float * mask, float scale)
 void const_gpu(int N, float ALPHA, float *X, int INCX);
 void pow_gpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void mul_gpu(int N, float *X, int INCX, float *Y, int INCY);
+
 
 void mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
 void variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
@@ -97,9 +114,19 @@ void softmax_gpu(float *input, int n, int batch, int batch_offset, int groups, i
 void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t);
 void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t);
 
+
 void flatten_gpu(float *x, int spatial, int layers, int batch, int forward, float *out);
 void softmax_tree(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
 void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
 
+
+#ifdef __cplusplus
+}
 #endif
+
+
+#endif
+
+
+
 #endif

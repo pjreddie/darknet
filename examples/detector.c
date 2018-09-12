@@ -1,4 +1,5 @@
 #include "darknet.h"
+#include <locale.h> 
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
@@ -13,7 +14,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network **nets = calloc(ngpus, sizeof(network));
+    network **nets = (network**)calloc(ngpus, sizeof(network*));
 
     srand(time(0));
     int seed = rand();
@@ -55,8 +56,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //args.type = INSTANCE_DATA;
     args.threads = 64;
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
     pthread_t load_thread = load_data(args);
+
+#endif
+
     double time;
+
     int count = 0;
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net->max_batches){
@@ -69,22 +75,34 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             args.w = dim;
             args.h = dim;
 
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
             pthread_join(load_thread, 0);
+#endif
             train = buffer;
             free_data(train);
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
             load_thread = load_data(args);
 
+#endif
+
+
             #pragma omp parallel for
+
             for(i = 0; i < ngpus; ++i){
                 resize_network(nets[i], dim, dim);
             }
             net = nets[0];
         }
-        time=what_time_is_it_now();
-        pthread_join(load_thread, 0);
-        train = buffer;
-        load_thread = load_data(args);
 
+        time=what_time_is_it_now();
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
+
+        pthread_join(load_thread, 0);
+#endif
+        train = buffer;
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
+        load_thread = load_data(args);
+#endif
         /*
            int k;
            for(k = 0; k < l.max_boxes; ++k){
@@ -224,8 +242,10 @@ void print_imagenet_detections(FILE *fp, int id, detection *dets, int total, int
         if (ymax > h) ymax = h;
 
         for(j = 0; j < classes; ++j){
-            int class = j;
-            if (dets[i].prob[class]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, dets[i].prob[class],
+
+            int class1 = j;
+            if (dets[i].prob[class1]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, dets[i].prob[class1],
+
                     xmin, ymin, xmax, ymax);
         }
     }
@@ -262,24 +282,37 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     int imagenet = 0;
     if(0==strcmp(type, "coco")){
         if(!outfile) outfile = "coco_results";
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
+#else
+        _snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
+#endif
         fp = fopen(buff, "w");
         fprintf(fp, "[\n");
         coco = 1;
     } else if(0==strcmp(type, "imagenet")){
         if(!outfile) outfile = "imagenet-detection";
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
+#else
+        _snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
+#endif
         fp = fopen(buff, "w");
         imagenet = 1;
         classes = 200;
     } else {
         if(!outfile) outfile = "comp4_det_test_";
-        fps = calloc(classes, sizeof(FILE *));
+        fps = (FILE**)calloc(classes, sizeof(FILE *));
         for(j = 0; j < classes; ++j){
+#if defined __linux__ || defined __APPLE__
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+#else
+            _snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+#endif
             fps[j] = fopen(buff, "w");
         }
     }
+
 
     int m = plist->size;
     int i=0;
@@ -289,11 +322,11 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     float nms = .45;
 
     int nthreads = 4;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
-    pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
+    image *val = (image*)calloc(nthreads, sizeof(image));
+    image *val_resized = (image*)calloc(nthreads, sizeof(image));
+    image *buf = (image*)calloc(nthreads, sizeof(image));
+    image *buf_resized = (image*)calloc(nthreads, sizeof(image));
+    pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
 
     image input = make_image(net->w, net->h, net->c*2);
 
@@ -392,24 +425,39 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int imagenet = 0;
     if(0==strcmp(type, "coco")){
         if(!outfile) outfile = "coco_results";
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
+#else
+	_snprintf(buff, 1024, "%s/%s.json", prefix, outfile);
+#endif
         fp = fopen(buff, "w");
         fprintf(fp, "[\n");
         coco = 1;
     } else if(0==strcmp(type, "imagenet")){
         if(!outfile) outfile = "imagenet-detection";
+#if defined __linux__ || defined __APPLE__
         snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
+#else
+	_snprintf(buff, 1024, "%s/%s.txt", prefix, outfile);
+#endif
         fp = fopen(buff, "w");
         imagenet = 1;
         classes = 200;
     } else {
+
         if(!outfile) outfile = "comp4_det_test_";
-        fps = calloc(classes, sizeof(FILE *));
+        fps = (FILE**)calloc(classes, sizeof(FILE *));
         for(j = 0; j < classes; ++j){
+#if defined __linux__ || defined __APPLE__
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+#else
+	    _snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+#endif
             fps[j] = fopen(buff, "w");
         }
     }
+
+
 
 
     int m = plist->size;
@@ -420,11 +468,13 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     float nms = .45;
 
     int nthreads = 4;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
-    pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
+    image *val = (image*)calloc(nthreads, sizeof(image));
+    image *val_resized = (image*)calloc(nthreads, sizeof(image));
+    image *buf = (image*)calloc(nthreads, sizeof(image));
+    image *buf_resized = (image*)calloc(nthreads, sizeof(image));
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
+    pthread_t *thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
+#endif
 
     load_args args = {0};
     args.w = net->w;
@@ -436,13 +486,20 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         args.path = paths[i+t];
         args.im = &buf[t];
         args.resized = &buf_resized[t];
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
         thr[t] = load_data_in_thread(args);
+
+#endif
+
     }
     double start = what_time_is_it_now();
+
     for(i = nthreads; i < m+nthreads; i += nthreads){
         fprintf(stderr, "%d\n", i);
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
             pthread_join(thr[t], 0);
+#endif
             val[t] = buf[t];
             val_resized[t] = buf_resized[t];
         }
@@ -450,7 +507,9 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             args.path = paths[i+t];
             args.im = &buf[t];
             args.resized = &buf_resized[t];
+#if defined __linux__ || defined __APPLE__ || defined PTHREAD_WINDOWS
             thr[t] = load_data_in_thread(args);
+#endif
         }
         for(t = 0; t < nthreads && i+t-nthreads < m; ++t){
             char *path = paths[i+t-nthreads];
@@ -499,6 +558,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     layer l = net->layers[net->n-1];
 
     int j, k;
+
 
     int m = plist->size;
     int i=0;
@@ -566,13 +626,17 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels(name_list);
 
     image **alphabet = load_alphabet();
+
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
+
     srand(2222222);
     double time;
     char buff[256];
     char *input = buff;
+
     float nms=.45;
+
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -590,6 +654,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
         //resize_network(net, sized.w, sized.h);
         layer l = net->layers[net->n-1];
+
 
 
         float *X = sized.data;
@@ -791,6 +856,10 @@ void network_detect(network *net, image im, float thresh, float hier_thresh, flo
 
 void run_detector(int argc, char **argv)
 {
+    // Set locales
+    setlocale(LC_NUMERIC, "C");
+
+
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .5);
     float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
@@ -814,7 +883,7 @@ void run_detector(int argc, char **argv)
         for(i = 0; i < len; ++i){
             if (gpu_list[i] == ',') ++ngpus;
         }
-        gpus = calloc(ngpus, sizeof(int));
+        gpus = (int*)calloc(ngpus, sizeof(int));
         for(i = 0; i < ngpus; ++i){
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',')+1;

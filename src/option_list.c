@@ -69,7 +69,7 @@ int read_option(char *s, list *options)
 
 void option_insert(list *l, char *key, char *val)
 {
-    kvp *p = malloc(sizeof(kvp));
+    kvp *p = (kvp*)malloc(sizeof(kvp));
     p->key = key;
     p->val = val;
     p->used = 0;
