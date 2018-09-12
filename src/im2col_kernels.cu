@@ -1,6 +1,7 @@
-#include "cuda_runtime.h"
+﻿#include "cuda_runtime.h"
 #include "curand.h"
 #include "cublas_v2.h"
+#include <stdint.h>
 
 extern "C" {
 #include "im2col.h"
@@ -70,6 +71,8 @@ __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
     const int height_col, const int width_col,
     float *data_col, const int bit_align)
 {
+    //__shared__ float tmp_s[1];
+
     int index = blockIdx.x*blockDim.x + threadIdx.x;
     for (; index < n; index += blockDim.x*gridDim.x) {
         int w_out = index % width_col;
@@ -90,8 +93,14 @@ __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
                 int h = h_in + i;
                 int w = w_in + j;
 
-                *data_col_ptr = (h >= 0 && w >= 0 && h < height && w < width) ?
+                float val = (h >= 0 && w >= 0 && h < height && w < width) ?
                     data_im_ptr[i * width + j] : 0;
+
+                *data_col_ptr = val;
+                //tmp_s[0] = val;
+
+                //*data_col_ptr = (h >= 0 && w >= 0 && h < height && w < width) ?
+                //    data_im_ptr[i * width + j] : 0;
 
                 //float src_val = (h >= 0 && w >= 0 && h < height && w < width) ? data_im_ptr[i * width + j] : 0;
                 //unsigned int bit_mask = __ballot_sync(0xffffffff, src_val > 0);
@@ -204,6 +213,10 @@ __device__ __host__ void transpose8rS32_reversed_diagonale(unsigned char* A, int
 
     B[7 * n] = reverse_byte(x >> 24);  B[6 * n] = reverse_byte(x >> 16);  B[5 * n] = reverse_byte(x >> 8);  B[4 * n] = reverse_byte(x);
     B[3 * n] = reverse_byte(y >> 24);  B[2 * n] = reverse_byte(y >> 16);  B[1 * n] = reverse_byte(y >> 8);  B[0 * n] = reverse_byte(y);
+
+    //__device__ ​ unsigned int 	__brev(unsigned int  x)
+    //Reverse the bit order of a 32 bit unsigned integer.
+    // https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__INTRINSIC__INT.html
 }
 
 
@@ -257,10 +270,10 @@ void fill_int8_gpu(unsigned char *src, unsigned char val, size_t size) {
 }
 // --------------------------------
 
-typedef unsigned long long int uint64_t;
-typedef unsigned int uint32_t;
-typedef unsigned char uint8_t;
-typedef char int8_t;
+//typedef unsigned long long int uint64_t;
+//typedef unsigned int uint32_t;
+//typedef unsigned char uint8_t;
+//typedef char int8_t;
 
 __device__ __host__ static inline uint64_t broadcast_bit_1_to_64(uint8_t src) {
     return (src > 0) ? 0xFFFFFFFFFFFFFFFF : 0;
@@ -272,6 +285,29 @@ __device__ __host__ static inline uint8_t xnor_bit1(uint8_t a, uint8_t b) {
 
 __device__ __host__ static inline uint64_t xnor_int64(uint64_t a, uint64_t b) {
     return ~(a^b);
+}
+
+__device__ __host__ static inline uint4 xnor_int128(uint4 a, uint4 b) {
+    uint4 res;
+    res.w = ~(a.w^b.w);
+    res.x = ~(a.x^b.x);
+    res.y = ~(a.y^b.y);
+    res.z = ~(a.z^b.z);
+    return res;
+}
+
+__device__ __host__ static inline ulonglong4 xnor_int256(ulonglong4 a, ulonglong4 b) {
+    ulonglong4 res;
+    res.w = ~(a.w^b.w);
+    res.x = ~(a.x^b.x);
+    res.y = ~(a.y^b.y);
+    res.z = ~(a.z^b.z);
+    return res;
+}
+
+
+__device__ static inline int popcnt_256(ulonglong4 a) {
+    return __popcll(a.w) + __popcll(a.x) + __popcll(a.y) + __popcll(a.z);
 }
 
 /*
@@ -320,75 +356,87 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 */
 
 
-/*
+
 // B (input) in the shared_memory
 __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr)
 {
-    int index = blockIdx.x*blockDim.x + threadIdx.x;
 
-    __shared__ uint64_t B_s[4096];  // 32 KB // [ldb x N`]
+    __shared__ uint64_t B_s[4096];  // 32 KB // [ldb x N`] // max = 262 144 bits
 
     int start_j = blockIdx.x*blockDim.x / M;
     int end_j = (blockIdx.x*blockDim.x + blockDim.x) / M + 1;
 
     size_t shared_size = ldb * (end_j - start_j);
 
-    int j_cur = index / M;
-    int local_j = j_cur - start_j;
+    //float tmp_shared_size = ldb * (blockDim.x / M);
+    //int passes = (4096 * 64) / tmp_shared_size - 1;
+    //size_t shared_size = tmp_shared_size * passes;
 
-    for (int k = threadIdx.x * 64; k < shared_size; k += blockDim.x * 64) {
+    int k;
+    for (int k = threadIdx.x * 256; k < shared_size; k += blockDim.x * 256) {
         int x = start_j*ldb + k;
-        if (x < (N*ldb)) *((uint64_t *)(B_s + k / 8)) = *((uint64_t *)(B + x / 8));
+        if (x < (N*ldb)) *((ulonglong4 *)(B_s + k / 8)) = *((ulonglong4 *)(B + x / 8));
     }
 
-    //if (j_cur < N && (index % M == 0 || threadIdx.x == 0)) {
-      //  for (int k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-        //    *((uint64_t *)(B_s + (local_j*ldb + k) / 8)) = *((uint64_t *)(B + (j_cur*ldb + k) / 8));    // input
-        //}
-    //}
+    ////if (j_cur < N && (index % M == 0 || threadIdx.x == 0)) {
+      ////  for (int k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+        ////    *((uint64_t *)(B_s + (local_j*ldb + k) / 8)) = *((uint64_t *)(B + (j_cur*ldb + k) / 8));    // input
+        ////}
+    ////}
     __syncthreads();
 
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+
+
     //if (index == 0)
+    //for(int in_tmp = threadIdx.x; in_tmp < 1*blockDim.x; in_tmp += blockDim.x)
     {
-        int i, j, k, h;
+        //int index = blockIdx.x*blockDim.x*1 + in_tmp;
+
+        int j_cur = index / M;
+        int local_j = j_cur - start_j;
+
+        int i, j, h;
 
         //#pragma omp parallel for
         //for (i = 0; i < M; ++i)
         i = index % M;
         //if(i < M)
         {   // l.n - filters [16 - 55 - 1024]
+            // further improvements: for (l.n == 1024) iterate several (j)
             float mean_val = mean_arr[i];
 
             //for (j = 0; j < N; ++j)
             j = index / M;
             if (j < N)
             { // out_h*out_w - one channel output size [169 - 173056]
+                const int bit_step = 256;
                 int count = 0;
+                int k = 0;
+                for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
+                    ulonglong4 a_bit256 = *((ulonglong4 *)(A + (i*lda + k) / 8));    // weights
+                    //ulonglong4 b_bit256 = *((ulonglong4 *)(B + (j*ldb + k) / 8));
+                    ulonglong4 b_bit256 = *((ulonglong4 *)(B_s + (local_j*ldb + k) / 8));    // input
+                    ulonglong4 c_bit256 = xnor_int256(a_bit256, b_bit256);
 
-                for (k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                    uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));    // weights
-                    //uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));
-                    uint64_t b_bit64 = *((uint64_t *)(B_s + (local_j*ldb + k) / 8));    // input
-                    uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
-
-                    int tmp_count = __popcll(c_bit64);
-
-                    if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
-                    count += tmp_count;
-                    //binary_int64_printf(c_bit64);
-                    //printf(", count = %d \n\n", tmp_count);
+                    count += __popcll(c_bit256.w) + __popcll(c_bit256.x) +
+                        __popcll(c_bit256.y) + __popcll(c_bit256.z);
                 }
 
+                int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+                count = count - f1;    // remove extra bits (from empty space for align only)
+
                 C[i*ldc + j] = (2 * count - K) * mean_val;
+                //B_s[0] = (2 * count - K) * mean_val;
             }
         }
     }
 }
-*/
 
+/*
 // A (weights) in the shared_memory
 __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K,
     unsigned char *A, int lda,
@@ -447,8 +495,10 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
         }
     }
 }
+*/
 
 #include <cstdio>
+
 
 void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     unsigned char *A, int lda,
@@ -742,7 +792,7 @@ __global__ void convolve_bin_gpu_kernel(float *input, float *weights, float *out
     int index2 = index / in_w;
     y = index2 % in_h;
     fil = index2 / in_h;
-    if (fil < n)    // (1-6 for one BLOCK)
+    //if (fil < n)    // (1-6 for one BLOCK)
     {
         //float mean_val = mean_arr_gpu[fil];
         int const output_index = fil*in_w*in_h + y*in_w + x;
@@ -772,48 +822,76 @@ __global__ void convolve_bin_gpu_kernel(float *input, float *weights, float *out
             int const weights_pre_index = fil*new_lda + chan*size*size;
             int const input_pre_index = chan*in_w*in_h;
 
-            __shared__ uint32_t input_shared[416*416/32];   // 21.2 KB bytes
-            const int input_shared_size = in_w*in_h / 32;
+            __shared__ uint32_t input_shared[416*416/32 + 1];   // 21.2 KB bytes (for input size 832x832)
+            const int input_shared_size = in_w*in_h / 32 + 1;
             const int add_input_index = input_pre_index % 32;
+            __syncthreads();    // why??? but is required
 
             for (int s = threadIdx.x; s < input_shared_size; s += blockDim.x) {
-                input_shared[s] = ((uint32_t *)weights)[input_pre_index / 32 + s];
+                input_shared[s] = ((uint32_t *)input)[input_pre_index / 32 + s];
             }
             __syncthreads();
 
-            // filter - y
-            for (f_y = 0; f_y < size; ++f_y)
+            /*
+            __shared__ uint8_t input_shared[208 * 208 / 8 + 1];   // 5.4 KB bytes (for input size 416x416)
+            const int input_shared_size = in_w*in_h / 8 + 1;
+            const int add_input_index = input_pre_index % 8;
+            __syncthreads();
+
+            for (int s = threadIdx.x; s < input_shared_size; s += blockDim.x) {
+                ((uint8_t *)input_shared)[s] = ((uint8_t *)input)[input_pre_index / 8 + s];
+            }
+            __syncthreads();
+            */
+            int src_index = -1;
+            uint32_t input_byte;
+
+            if (fil < n)    // (1-6 for one BLOCK)
             {
-                int input_y = y + f_y - pad;
-                // filter - x
-                for (f_x = 0; f_x < size; ++f_x)
+                // filter - y
+                for (f_y = 0; f_y < size; ++f_y)
                 {
-                    int input_x = x + f_x - pad;
-                    if (input_y < 0 || input_x < 0 || input_y >= in_h || input_x >= in_w) continue;
+                    int input_y = y + f_y - pad;
+                    // filter - x
+                    for (f_x = 0; f_x < size; ++f_x)
+                    {
+                        int input_x = x + f_x - pad;
+                        if (input_y < 0 || input_x < 0 || input_y >= in_h || input_x >= in_w) continue;
 
-                    int input_index = input_pre_index + input_y*in_w + input_x;
-                    int weights_index = weights_pre_index + f_y*size + f_x;
-                    //int weights_index = fil*in_c*size*size + chan*size*size + f_y*size + f_x;
-                    //int weights_index = fil*new_lda + chan*size*size + f_y*size + f_x;
+                        int input_index = input_pre_index + input_y*in_w + input_x;
+                        int weights_index = weights_pre_index + f_y*size + f_x;
+                        //int weights_index = fil*in_c*size*size + chan*size*size + f_y*size + f_x;
+                        //int weights_index = fil*new_lda + chan*size*size + f_y*size + f_x;
 
-                    uint8_t in_bit = get_bit((uint8_t *)input, input_index);
-                    //uint8_t w_bit = get_bit((uint8_t *)weights, weights_index);
+                        //uint8_t in_bit = get_bit((uint8_t *)input, input_index);
+                        //uint8_t w_bit = get_bit((uint8_t *)weights, weights_index);
 
-                    //int weights_index = fil*in_c*size*size + chan*size*size + f_y*size + f_x;
-                    int weights_shared_index = (fil - min_fil)*new_lda + chan*size*size + f_y*size + f_x;
-                    //uint8_t in_bit = get_bit((uint8_t *)weights_shared, weights_shared_index);
-                    uint8_t w_bit = get_bit((uint8_t *)weights_shared, weights_shared_index);
+                        //int weights_index = fil*in_c*size*size + chan*size*size + f_y*size + f_x;
+                        int weights_shared_index = (fil - min_fil)*new_lda + chan*size*size + f_y*size + f_x;
+                        //uint8_t in_bit = get_bit((uint8_t *)weights_shared, weights_shared_index);
+                        uint8_t w_bit = get_bit((uint8_t *)weights_shared, weights_shared_index);
 
-                    //int input_index = input_pre_index + input_y*in_w + input_x;
-                    //int input_shared_index = /*input_pre_index +*/ input_y*in_w + input_x + add_input_index;
-                    //uint8_t in_bit = get_bit((uint8_t *)input_shared, input_shared_index);
+                        //int input_index = input_pre_index + input_y*in_w + input_x;
+                        int input_shared_index = /*input_pre_index +*/ input_y*in_w + input_x + add_input_index;
+                        uint8_t in_bit = get_bit((uint8_t *)input_shared, input_shared_index);
+                        /*
+                        int new_src_index = input_shared_index / 32;
+                        int src_shift = input_shared_index % 32;
+                        //if (new_src_index != src_index)
+                        {
+                            src_index = new_src_index;
+                            input_byte = ((uint32_t *)input_shared)[src_index];
+                        }
+                        uint8_t in_bit = (input_byte & (1 << src_shift)) >> src_shift;
+                        */
 
-                    int res = xnor_bit1(in_bit, w_bit);
-                    sum += res;
-                    good_val++;
+                        int res = xnor_bit1(in_bit, w_bit);
+                        sum += res;
+                        good_val++;
 
-                    //sum += input[input_index] *weights[weights_index];
+                        //sum += input[input_index] *weights[weights_index];
 
+                    }
                 }
             }
             // l.output[filters][width][height] +=
@@ -822,7 +900,8 @@ __global__ void convolve_bin_gpu_kernel(float *input, float *weights, float *out
             //output[output_index] += sum;
         }
         sum = sum - (good_val - sum);
-        output[output_index] = sum * mean_arr_gpu[fil]; // atoimcAdd for inter-BLOCK sum
+        //output[output_index] = sum * mean_arr_gpu[fil]; // atoimcAdd for inter-BLOCK sum
+        atomicAdd(&output[output_index], sum * mean_arr_gpu[fil]);
     }
 
 }
