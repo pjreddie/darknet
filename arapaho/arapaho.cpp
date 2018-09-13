@@ -22,7 +22,7 @@ ArapahoV2::ArapahoV2()
     bSetup = false;
     setlocale(LC_NUMERIC,"C");
 }
-    
+
 ArapahoV2::~ArapahoV2()
 {
     if(classNames)
@@ -32,13 +32,13 @@ ArapahoV2::~ArapahoV2()
 
     classNames = 0;
     bSetup = false;
-    
-    // free VRAM & Ram 
+
+    // free VRAM & Ram
     if(net)
         free_network(net);
     net = NULL;
 }
-    
+
 bool ArapahoV2::Setup(
             ArapahoV2Params & p,
             int & expectedWidth,
@@ -46,13 +46,13 @@ bool ArapahoV2::Setup(
                      )
 {
     expectedHeight = expectedWidth = 0;
-    
+
     if(!p.datacfg)
     {
         DPRINTF("No data configuration file specified!\n");
         return false;
     }
-    
+
     list *options = read_data_cfg(p.datacfg);
     char nameField[] = "names";
     char defaultName[] = "data/names.list";
@@ -70,9 +70,9 @@ bool ArapahoV2::Setup(
     }
 
     bool ret = false;
-    
+
     bSetup = false;
-    
+
     // Early exits
     if(!p.cfgfile)
     {
@@ -84,18 +84,18 @@ bool ArapahoV2::Setup(
     {
         EPRINTF("No weights file specified!\n");
         return false;
-    }    
+    }
 
     // Print some debug info
     nms = p.nms;
     maxClasses = p.maxClasses;
-    
+
     net = parse_network_cfg(p.cfgfile);
-    DPRINTF("Setup: net->n = %d\n", net->n);   
+    DPRINTF("Setup: net->n = %d\n", net->n);
     DPRINTF("net->layers[0].batch = %d\n", net->layers[0].batch);
-    
+
     load_weights(net, p.weightfile);
-    set_batch_network(net, 1);     
+    set_batch_network(net, 1);
     l = net->layers[net->n-1];
     DPRINTF("Setup: layers = %d, %d, %d\n", l.w, l.h, l.n);
 
@@ -103,12 +103,12 @@ bool ArapahoV2::Setup(
     if(l.classes > maxClasses)
     {
         EPRINTF("Warning: Read classes from cfg (%d) > maxClasses (%d)\n", l.classes, maxClasses);
-    }    
-    
+    }
+
     expectedHeight = net->h;
     expectedWidth = net->w;
-    DPRINTF("Image expected w,h = [%d][%d]!\n", net->w, net->h);            
-    
+    DPRINTF("Image expected w,h = [%d][%d]!\n", net->w, net->h);
+
     ret = true;
     bSetup = ret;
     DPRINTF("Setup: Done\n");
@@ -189,7 +189,7 @@ bool ArapahoV2::Detect(
             return false;
         }
     }
-    
+
     __Detect(inputImage.data, thresh, hier_thresh, objectCount);
 
     free_image(inputImage);
@@ -204,13 +204,13 @@ bool ArapahoV2::Detect(
 //
 bool ArapahoV2::Detect(
             const cv::Mat & inputMat,
-            float thresh, 
+            float thresh,
             float hier_thresh,
             int & objectCount)
-{     
+{
     objectCount = 0;
     threshold = thresh;
-    
+
     // Early exits
     if(!bSetup)
     {
@@ -224,7 +224,7 @@ bool ArapahoV2::Detect(
                     inputMat.rows != net->h);
         return false;
     }
-    
+
     //Convert to rgb
     cv::Mat inputRgb;
     cvtColor(inputMat, inputRgb, CV_BGR2RGB);
@@ -253,16 +253,16 @@ bool ArapahoV2::Detect(
 
     return true;
 }
-    
+
 //
 // Query API to get box coordinates and box labels for objects detected
 //
 bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
 {
-    
+
     int count = 0;
     int i, j;
-    
+
     if(!dets || !outLabels || !outBoxes)
     {
         EPRINTF("Error NULL dets/outLabels/outBoxes, %p/%p/%p !\n", dets, outLabels, outBoxes);
@@ -280,7 +280,7 @@ bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
             }
         }
     }
-    
+
     free_detections(dets, nboxes);
     return true;
 }
@@ -293,14 +293,14 @@ void ArapahoV2::__Detect(float* inData, float thresh, float hier_thresh, int & o
     int i, j;
     // Predict
     network_predict(net, inData);
-    
+
     nboxes = 0;
     dets = get_network_boxes(net, 1, 1, thresh, 0, 0, 0, &nboxes);
     if(nms)
     {
         do_nms_sort(dets, nboxes, l.classes, 0.5);
     }
-    // Update object counts  
+    // Update object counts
     for(i = 0;i < (nboxes);i ++)
     {
         for(j = 0; j < l.classes; ++j){
