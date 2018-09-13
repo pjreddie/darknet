@@ -175,17 +175,9 @@ void demo_segmenter(char *datacfg, char *cfg, char *weights, int cam_index, cons
     set_batch_network(net, 1);
 
     srand(2222222);
-    CvCapture * cap;
-
-    if(filename){
-        cap = cvCaptureFromFile(filename);
-    }else{
-        cap = cvCaptureFromCAM(cam_index);
-    }
+    void * cap = open_video_stream(filename, cam_index, 0,0,0);
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow("Segmenter", CV_WINDOW_NORMAL); 
-    cvResizeWindow("Segmenter", 512, 512);
     float fps = 0;
 
     while(1){

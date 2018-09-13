@@ -155,21 +155,13 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
     set_batch_network(net, 1);
 
     srand(2222222);
-    CvCapture * cap;
-
-    if(filename){
-        cap = cvCaptureFromFile(filename);
-    }else{
-        cap = cvCaptureFromCAM(cam_index);
-    }
     list *options = read_data_cfg(datacfg);
     int classes = option_find_int(options, "classes", 1);
     char *name_list = option_find_str(options, "names", 0);
     char **names = get_labels(name_list);
 
+    void * cap = open_video_stream(filename, cam_index, 0,0,0);
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow("Regressor", CV_WINDOW_NORMAL); 
-    cvResizeWindow("Regressor", 512, 512);
     float fps = 0;
 
     while(1){

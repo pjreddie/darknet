@@ -9,7 +9,6 @@ extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *
 extern void run_yolo(int argc, char **argv);
 extern void run_detector(int argc, char **argv);
 extern void run_coco(int argc, char **argv);
-extern void run_captcha(int argc, char **argv);
 extern void run_nightmare(int argc, char **argv);
 extern void run_classifier(int argc, char **argv);
 extern void run_regressor(int argc, char **argv);
@@ -396,9 +395,6 @@ void visualize(char *cfgfile, char *weightfile)
 {
     network *net = load_network(cfgfile, weightfile, 0);
     visualize_network(net);
-#ifdef OPENCV
-    cvWaitKey(0);
-#endif
 }
 
 int main(int argc, char **argv)
@@ -465,8 +461,6 @@ int main(int argc, char **argv)
         composite_3d(argv[2], argv[3], argv[4], (argc > 5) ? atof(argv[5]) : 0);
     } else if (0 == strcmp(argv[1], "test")){
         test_resize(argv[2]);
-    } else if (0 == strcmp(argv[1], "captcha")){
-        run_captcha(argc, argv);
     } else if (0 == strcmp(argv[1], "nightmare")){
         run_nightmare(argc, argv);
     } else if (0 == strcmp(argv[1], "rgbgr")){
