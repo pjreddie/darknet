@@ -81,7 +81,7 @@
             float hier_thresh,
             int & objectCount);
 
-        bool GetBoxes(box* outBoxes, std::string* outLabels, int boxCount);
+        bool GetBoxes(box* outBoxes, std::string* outLabels, float* outProbs, int boxCount);
     private:
         detection *dets;
         int     nboxes;
