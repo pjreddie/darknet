@@ -862,8 +862,13 @@ void calculate_binary_weights(network net)
             if (l->xnor) {
                 //printf("\n %d \n", j);
                 l->lda_align = 256; // 256bit for AVX2
+                //if (l->size*l->size*l->c >= 2048) l->lda_align = 512;
 
                 binary_align_weights(l);
+
+                if(net.layers[j + 1].use_bin_output) {
+                    l->activation = LINEAR;
+                }
             }
         }
     }

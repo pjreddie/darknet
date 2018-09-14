@@ -8,6 +8,10 @@ extern "C" {
 #include "cuda.h"
 }
 
+#include <stdio.h>
+#include <assert.h>
+#include <cuda.h>
+
 // src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu
 // You may also want to read: https://github.com/BVLC/caffe/blob/master/LICENSE
 
@@ -105,6 +109,7 @@ __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
                 //float src_val = (h >= 0 && w >= 0 && h < height && w < width) ? data_im_ptr[i * width + j] : 0;
                 //unsigned int bit_mask = __ballot_sync(0xffffffff, src_val > 0);
                 //if (threadIdx.x % WARP_SIZE == 0) *((unsigned int*)data_col_ptr_32) = bit_mask;
+                // use atomicOr() // *dst_ptr |= (mask << (col_index % 8));
                 //data_col_ptr_32 += bit_align / 32;
 
                 //data_col_ptr += height_col * width_col;
@@ -283,6 +288,10 @@ __device__ __host__ static inline uint8_t xnor_bit1(uint8_t a, uint8_t b) {
     return ~(a^b) & 0b1;
 }
 
+__device__ __host__ static inline uint32_t xnor_int32(uint32_t a, uint32_t b) {
+    return ~(a^b);
+}
+
 __device__ __host__ static inline uint64_t xnor_int64(uint64_t a, uint64_t b) {
     return ~(a^b);
 }
@@ -356,7 +365,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 */
 
 
-
+/*
 // B (input) in the shared_memory
 __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K,
     unsigned char *A, int lda,
@@ -367,25 +376,27 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
     __shared__ uint64_t B_s[4096];  // 32 KB // [ldb x N`] // max = 262 144 bits
 
     int start_j = blockIdx.x*blockDim.x / M;
-    int end_j = (blockIdx.x*blockDim.x + blockDim.x) / M + 1;
+    {
+        int end_j = (blockIdx.x*blockDim.x + blockDim.x) / M + 1;
 
-    size_t shared_size = ldb * (end_j - start_j);
+        size_t shared_size = ldb * (end_j - start_j);
 
-    //float tmp_shared_size = ldb * (blockDim.x / M);
-    //int passes = (4096 * 64) / tmp_shared_size - 1;
-    //size_t shared_size = tmp_shared_size * passes;
+        //float tmp_shared_size = ldb * (blockDim.x / M);
+        //int passes = (4096 * 64) / tmp_shared_size - 1;
+        //size_t shared_size = tmp_shared_size * passes;
 
-    int k;
-    for (int k = threadIdx.x * 256; k < shared_size; k += blockDim.x * 256) {
-        int x = start_j*ldb + k;
-        if (x < (N*ldb)) *((ulonglong4 *)(B_s + k / 8)) = *((ulonglong4 *)(B + x / 8));
-    }
+        int k;
+        for (int k = threadIdx.x * 256; k < shared_size; k += blockDim.x * 256) {
+            int x = start_j*ldb + k;
+            if (x < (N*ldb)) *((ulonglong4 *)(B_s + k / 8)) = *((ulonglong4 *)(B + x / 8));
+        }
 
-    ////if (j_cur < N && (index % M == 0 || threadIdx.x == 0)) {
-      ////  for (int k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-        ////    *((uint64_t *)(B_s + (local_j*ldb + k) / 8)) = *((uint64_t *)(B + (j_cur*ldb + k) / 8));    // input
+        ////if (j_cur < N && (index % M == 0 || threadIdx.x == 0)) {
+          ////  for (int k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+            ////    *((uint64_t *)(B_s + (local_j*ldb + k) / 8)) = *((uint64_t *)(B + (j_cur*ldb + k) / 8));    // input
+            ////}
         ////}
-    ////}
+    }
     __syncthreads();
 
     int index = blockIdx.x*blockDim.x + threadIdx.x;
@@ -427,14 +438,19 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 }
 
                 int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
-                count = count - f1;    // remove extra bits (from empty space for align only)
+                //C[i*ldc + j] += 2 * count*mean_val;
+                //C[i*ldc + j] += -2 * f1*mean_val;
+                //C[i*ldc + j] += - K*mean_val;
 
+                count = count - f1;    // remove extra bits (from empty space for align only)
                 C[i*ldc + j] = (2 * count - K) * mean_val;
+
                 //B_s[0] = (2 * count - K) * mean_val;
             }
         }
     }
 }
+*/
 
 /*
 // A (weights) in the shared_memory
@@ -497,13 +513,293 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 }
 */
 
-#include <cstdio>
+__inline__ __device__
+int warpAllReduceSum(int val) {
+    for (int mask = WARP_SIZE / 2; mask > 0; mask /= 2)
+        val += __shfl_xor(val, mask);
+    return val;
+}
 
 
+// Coalescing
+// A (weights) in the shared_memory - GOOD
+__global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr, float *bias_arr)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+
+    __shared__ uint8_t A_s[6144*8/4];
+    //__shared__ uint64_t A_s[6144];  // 48 KB // [lda x M`]
+    //__shared__ uint8_t A_s[6144*8];  // 48 KB // [lda x M`]
+
+    int start_i = blockIdx.x*blockDim.x / N;
+    int end_i = (blockIdx.x*blockDim.x + blockDim.x) / N + 1;
+
+    size_t shared_size = lda * (end_i - start_i);
+
+    int i_cur = index / N;
+    int local_i = i_cur - start_i;
+
+    for (int k = threadIdx.x * 64; k < shared_size; k += blockDim.x * 64) {
+        int x = start_i*lda + k;
+        if (x < (M*lda)) *((uint64_t *)(A_s + k / 8)) = *((uint64_t *)(A + x / 8));
+    }
+    __syncthreads();
+
+    int i, j, k, h;
+
+    j = index % N;
+    {    // out_h*out_w - one channel output size [169 - 173056]
+        i = index / N;
+        //if (i < M)  // l.n - filters [16 - 55 - 1024]
+        {
+            int count = 0;
+            k = 0;
+
+//#ifdef NON_USED
+            // 32 thread X 64 bit = 2048 bit
+            for (; k < (K - 2048); k += 2048) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                uint64_t c_bit64;
+
+                //int64_t A_cur_index = (i*lda + k) / 8;
+                int64_t A_cur_index = (local_i*lda + k) / 8;
+                int64_t B_cur_index = (j*ldb + k) / 8;
+                if (i >= M) A_cur_index = 0;
+
+                #pragma unroll WARP_SIZE
+                for (int t = 0; t < WARP_SIZE; ++t) {
+                    const int lane_id = threadIdx.x % WARP_SIZE;
+
+                    const int64_t A_i = __shfl(A_cur_index, t) + 8 * lane_id;
+                    const int64_t B_i = __shfl(B_cur_index, t) + 8 * lane_id;
+
+                    {
+                        //uint64_t a_bit64 = *((uint64_t *)(A + A_i));    // weights
+                        uint64_t a_bit64 = *((uint64_t *)(A_s + A_i));    // weights
+                        uint64_t b_bit64 = *((uint64_t *)(B + B_i));    // input
+                        c_bit64 = xnor_int64(a_bit64, b_bit64);
+                        int tmp_count = __popcll(c_bit64);
+
+                        int sum_count = warpAllReduceSum(tmp_count);
+                        if (lane_id == t) count += sum_count;
+                    }
+                }
+            }
+//#endif
+
+//#ifdef NON_USED
+            // 32 thread X 32 bit = 1024 bit
+            for (; k < (K - 1024); k += 1024) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+
+                //int64_t A_cur_index = (i*lda + k) / 8;
+                int64_t A_cur_index = (local_i*lda + k) / 8;
+                int64_t B_cur_index = (j*ldb + k) / 8;
+                if (i >= M) A_cur_index = 0;
+
+                #pragma unroll WARP_SIZE
+                for (int t = 0; t < WARP_SIZE; ++t) {
+                    const int lane_id = threadIdx.x % WARP_SIZE;
+
+                    const int64_t A_i = __shfl(A_cur_index, t) + 4 * lane_id;
+                    const int64_t B_i = __shfl(B_cur_index, t) + 4 * lane_id;
+
+                    {
+                        //uint64_t a_bit64 = *((uint64_t *)(A + A_i));    // weights
+                        uint32_t a_bit32 = *((uint32_t *)(A_s + A_i));    // weights
+                        uint32_t b_bit32 = *((uint32_t *)(B + B_i));    // input
+                        uint32_t c_bit32 = xnor_int32(a_bit32, b_bit32);
+                        int tmp_count = __popc(c_bit32);
+
+                        int sum_count = warpAllReduceSum(tmp_count);
+                        if (lane_id == t) count += sum_count;
+                    }
+                }
+            }
+//#endif
+
+            if (i < M)
+            {
+                float mean_val = mean_arr[i];
+                float bias_val = bias_arr[i];
+
+//#ifdef NON_USED
+                for (; k < K; k += 256) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
+                    //ulonglong4 a_bit256 = *((ulonglong4 *)(A + (i*lda + k) / 8));    // weights
+                    ulonglong4 a_bit256 = *((ulonglong4 *)(A_s + (local_i*lda + k) / 8));    // weights
+                    ulonglong4 b_bit256 = *((ulonglong4 *)(B + (j*ldb + k) / 8));    // input
+                    ulonglong4 c_bit256 = xnor_int256(a_bit256, b_bit256);
+
+                    count += __popcll(c_bit256.w) + __popcll(c_bit256.x) +
+                        __popcll(c_bit256.y) + __popcll(c_bit256.z);
+                }
+//#endif
+
+#ifdef NON_USED
+                for (; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                    //uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));    // weights
+                    uint64_t a_bit64 = *((uint64_t *)(A_s + (local_i*lda + k) / 8));    // weights
+                    uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));            // input
+                    uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
+
+                    count += __popcll(c_bit64);
+                }
+#endif
+
+                const int bit_step = 256;
+                int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+                count = count - f1;    // remove extra bits (from empty space for align only)
+
+                C[i*ldc + j] = (2 * count - K) *mean_val + bias_val;
+            }
+        }
+    }
+}
+
+
+/*
+// Coalescing
+// B (input) in the shared_memory - GOOD
+__global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr, float *bias_arr)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+
+    __shared__ uint8_t B_s[4096*8];  // 32 KB // [ldb x N`] // max = 262 144 bits
+    //__shared__ uint64_t B_s[4096];  // 32 KB // [ldb x N`] // max = 262 144 bits
+
+    int start_j = blockIdx.x*blockDim.x / M;
+    int end_j = (blockIdx.x*blockDim.x + blockDim.x) / M + 1;
+
+    size_t shared_size = ldb * (end_j - start_j);
+
+    int j_cur = index / M;
+    int local_j = j_cur - start_j;
+
+    for (int k = threadIdx.x * 256; k < shared_size; k += blockDim.x * 256) {
+        int x = start_j*ldb + k;
+        if (x < (N*ldb)) *((ulonglong4 *)(B_s + k / 8)) = *((ulonglong4 *)(B + x / 8));
+    }
+    __syncthreads();
+
+    int i, j, k;
+
+    i = index % M;   // l.n - filters [16 - 55 - 1024]
+    {
+        j = index / M;  // out_h*out_w - one channel output size [169 - 173056]
+        if (j < N)
+        {
+            int count = 0;
+            k = 0;
+
+//#ifdef NON_USED
+            // 32 thread X 64 bit = 2048 bit
+            for (; k < (K - 2048); k += 2048) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                uint64_t c_bit64;
+
+                int64_t A_cur_index = (i*lda + k) / 8;
+                //int64_t B_cur_index = (j*ldb + k) / 8;
+                int64_t B_cur_index = (local_j*ldb + k) / 8;
+                if (i >= M) A_cur_index = 0;
+
+                #pragma unroll WARP_SIZE
+                for (int t = 0; t < WARP_SIZE; ++t) {
+                    const int lane_id = threadIdx.x % WARP_SIZE;
+
+                    const int64_t A_i = __shfl(A_cur_index, t) + 8 * lane_id;
+                    const int64_t B_i = __shfl(B_cur_index, t) + 8 * lane_id;
+
+                    {
+                        uint64_t a_bit64 = *((uint64_t *)(A + A_i));    // weights
+                        //uint64_t b_bit64 = *((uint64_t *)(B + B_i));    // input
+                        uint64_t b_bit64 = *((uint64_t *)(B_s + B_i));    // input
+                        c_bit64 = xnor_int64(a_bit64, b_bit64);
+                        int tmp_count = __popcll(c_bit64);
+
+                        int sum_count = warpAllReduceSum(tmp_count);
+                        if (lane_id == t) count += sum_count;
+                    }
+                }
+            }
+//#endif
+
+//#ifdef NON_USED
+            // 32 thread X 32 bit = 1024 bit
+            for (; k < (K - 1024); k += 1024) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+
+                int64_t A_cur_index = (i*lda + k) / 8;
+                //int64_t B_cur_index = (j*ldb + k) / 8;
+                int64_t B_cur_index = (local_j*ldb + k) / 8;
+                if (i >= M) A_cur_index = 0;
+
+                #pragma unroll WARP_SIZE
+                for (int t = 0; t < WARP_SIZE; ++t) {
+                    const int lane_id = threadIdx.x % WARP_SIZE;
+
+                    const int64_t A_i = __shfl(A_cur_index, t) + 4 * lane_id;
+                    const int64_t B_i = __shfl(B_cur_index, t) + 4 * lane_id;
+
+                    {
+                        uint32_t a_bit32 = *((uint32_t *)(A + A_i));    // weights
+                        //uint32_t b_bit32 = *((uint32_t *)(B + B_i));    // input
+                        uint32_t b_bit32 = *((uint32_t *)(B_s + B_i));    // input
+                        uint32_t c_bit32 = xnor_int32(a_bit32, b_bit32);
+                        int tmp_count = __popc(c_bit32);
+
+                        int sum_count = warpAllReduceSum(tmp_count);
+                        if (lane_id == t) count += sum_count;
+                    }
+                }
+            }
+//#endif
+
+            if (i < M)
+            {
+                float mean_val = mean_arr[i];
+                float bias_val = bias_arr[i];
+
+//#ifdef NON_USED
+                for (; k < K; k += 256) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
+                    ulonglong4 a_bit256 = *((ulonglong4 *)(A + (i*lda + k) / 8));    // weights
+                    //ulonglong4 b_bit256 = *((ulonglong4 *)(B + (j*ldb + k) / 8));    // input
+                    ulonglong4 b_bit256 = *((ulonglong4 *)(B_s + (local_j*ldb + k) / 8));    // input
+                    ulonglong4 c_bit256 = xnor_int256(a_bit256, b_bit256);
+
+                    count += __popcll(c_bit256.w) + __popcll(c_bit256.x) +
+                        __popcll(c_bit256.y) + __popcll(c_bit256.z);
+                }
+//#endif
+
+#ifdef NON_USED
+                for (; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                    uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));    // weights
+                    //uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));            // input
+                    uint64_t b_bit64 = *((uint64_t *)(B_s + (local_j*ldb + k) / 8));            // input
+                    uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
+
+                    count += __popcll(c_bit64);
+                }
+#endif
+
+                const int bit_step = 256;
+                int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+                count = count - f1;    // remove extra bits (from empty space for align only)
+
+                C[i*ldc + j] = (2 * count - K) * mean_val + bias_val;
+            }
+        }
+    }
+}
+*/
+
+// GOOD
 void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr)
+    float *C, int ldc, float *mean_arr, float *bias)
 {
     size_t size = M*N;
     const int num_blocks = size / BLOCK + 1;
@@ -516,6 +812,143 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     //printf(" shared_memory: (w) lda*BLOCK/N = %d, (i) ldb*BLOCK/M = %d, \t lda = %d \n\n", lda*BLOCK / N, ldb*BLOCK / M, lda);
 
     gemm_nn_custom_bin_mean_transposed_gpu_kernel<<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(
+        M, N, K,
+        A, lda,
+        B, ldb,
+        C, ldc,
+        mean_arr, bias);
+}
+// --------------------------------
+
+
+
+
+// --------------------------------
+// sequentially - B (input) in the shared_memory - BAD
+// --------------------------------
+__global__ void gemm_nn_custom_bin_mean_transposed_sequentially_gpu_kernel(int M, int N, int K,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    //__shared__ float mean_shared[32];
+    //__shared__ uint32_t B_s[8192];  // 32 KB // [ldb x N`] // max = 262 144 bits
+    //__shared__ uint32_t B_s[4096];  // 16 KB // [ldb x N`] // max = 131 072 bits
+    __shared__ uint8_t B_s[4096*4];  // 16 KB // [ldb x N`] // max = 131 072 bits
+
+
+    const int K_items = WARP_SIZE;
+    int start_j = blockIdx.x*blockDim.x / (K_items * M);
+
+    {
+        int end_j = (blockIdx.x*blockDim.x + blockDim.x) / (K_items * M) + 1;
+        if (end_j > N) end_j = N;
+        size_t shared_size = ldb * (end_j - start_j);
+
+        if (shared_size != 0) {
+            //if(threadIdx.x == 0) printf(" start_j = %d, end_j = %d, shared_size = %d \n", start_j, end_j, shared_size);
+
+            int k;
+            for (int k = threadIdx.x * 32; k < shared_size; k += blockDim.x * 32) {
+                int x = start_j*ldb + k;
+                if (x < (N*ldb)) *((uint32_t *)(B_s + k / 8)) = *((uint32_t *)(B + x / 8));
+            }
+        }
+    }
+    __syncthreads();
+
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+
+    {
+        int i;  // l.n
+        int j;  // out_h*out_w
+        int k;  // l.size * l.size * l.c
+
+        const int index2 = index / K_items;
+        i = index2 % M; // max M
+        j = index2 / M; // max N
+                        //j = index2 % N; // max N
+                        //i = index2 / N; // max M
+
+                        //int j_cur = index / M;
+                        //int local_j = j_cur - start_j;
+        int local_j = j - start_j;
+
+        //if (i <= 1 && j <= 1 ) printf(" k = %d, K = %d, K_items = %d, i = %d, j = %d, lda = %d, ldb = %d, ldc = %d \n",
+        //    k, K, K_items, i, j, lda, ldb, ldc);
+        {   // l.n - filters [16 - 55 - 1024]
+            // further improvements: for (l.n == 1024) iterate several (j)
+
+
+            if (j < N)
+            { // out_h*out_w - one channel output size [169 - 173056]
+
+                int count = 0;
+
+
+                const int bit_step = 32;
+                for (k = (threadIdx.x % WARP_SIZE) * bit_step; k < K; k += bit_step*WARP_SIZE)
+                {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
+                    uint32_t a_bit32 = *((uint32_t *)(A + (i*lda + k) / 8));    // weights
+                                                                                //uint32_t b_bit32 = *((uint32_t *)(B + (j*ldb + k) / 8));    // input
+                    uint32_t b_bit32 = *((uint32_t *)(B_s + (local_j*ldb + k) / 8));    // input
+                    uint32_t c_bit32 = xnor_int32(a_bit32, b_bit32);
+
+                    count += __popc(c_bit32);
+                }
+
+                /*
+                const int bit_step = 64;
+                for (k = (threadIdx.x % WARP_SIZE) * bit_step; k < K; k += bit_step*WARP_SIZE)
+                {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
+                uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));    // weights
+                //uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));
+                uint64_t b_bit64 = *((uint64_t *)(B_s + (local_j*ldb + k) / 8));    // input
+                uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
+                count += __popcll(c_bit64);
+                }
+                */
+
+
+                //atomicAdd(&C[i*ldc + j], (2 * count) * mean_val);
+
+                for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2)
+                    count += __shfl_down(count, offset);
+
+
+                if (threadIdx.x % WARP_SIZE == 0) {
+                    int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+                    count = count - f1;
+                    float mean_val = mean_arr[i];
+                    C[i*ldc + j] = (2 * count - K) * mean_val;
+                    //B_s[threadIdx.x / WARP_SIZE] = (2 * count - K) * mean_val;
+                }
+            }
+        }
+    }
+}
+
+// sequentially - BAD
+void gemm_nn_custom_bin_mean_transposed_sequentially_gpu(int M, int N, int K,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    //size_t size = M*N;
+    size_t size = M*N * 32;
+
+    const int num_blocks = size / BLOCK + 1;
+
+    //printf(" K = %d \n", K);
+
+    /*
+    printf("\n gemm_bin size = %d, num_blocks = %d, M*K = %d KB, N*K = %d KB \n (w) M*K/num_blocks = %d KB, (i) N*K/num_blocks = %d KB \n",
+    size, num_blocks, M*K / 1024, N*K / 1024, M*lda / num_blocks / 1024, N*ldb / num_blocks / 1024);
+    printf(" M / 512 = %d, N / 512 = %d, M*lda / 512 = %d, N*ldb / 512 = %d \n", M / 512, N / 512, M*lda/512, N*ldb/512);
+    */
+    //printf(" shared_memory: (w) lda*BLOCK/N = %d, (i) ldb*BLOCK/M = %d, \t lda = %d \n\n", lda*BLOCK / N, ldb*BLOCK / M, lda);
+
+    gemm_nn_custom_bin_mean_transposed_sequentially_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(
         M, N, K,
         A, lda,
         B, ldb,

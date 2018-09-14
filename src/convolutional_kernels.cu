@@ -117,13 +117,16 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     }
 
     if(l.xnor){
-
         if (!l.align_bit_weights_gpu || state.train) {
             binarize_weights_gpu(l.weights_gpu, l.n, l.c*l.size*l.size, l.binary_weights_gpu);
+
+            swap_binary(&l);
+            binarize_gpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input_gpu);
+            state.input = l.binary_input_gpu;
         }
-        swap_binary(&l);
-        binarize_gpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input_gpu);
-        state.input = l.binary_input_gpu;
+        //swap_binary(&l);
+        //binarize_gpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input_gpu);
+        //state.input = l.binary_input_gpu;
         //cudaDeviceSynchronize();
 
         if (l.align_bit_weights_gpu && !state.train)
@@ -141,6 +144,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             size_t t_intput_size = new_ldb * n;
             size_t t_bit_input_size = t_intput_size / 8;// +1;
 
+            //if(0)
             {
                 int i = 0;
                 im2col_align_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, l.align_workspace_gpu, l.bit_align);
@@ -156,10 +160,18 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //cudaDeviceSynchronize();
 
                 // should be optimized
-                gemm_nn_custom_bin_mean_transposed_gpu(m, n, k,
-                    (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu, new_ldb, l.output_gpu, n, l.mean_arr_gpu);
+                //if(0) {//if (k > 1000) {    // sequentially input-shared - BAD
+                //    gemm_nn_custom_bin_mean_transposed_sequentially_gpu(m, n, k,
+                //        (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu, new_ldb, l.output_gpu, n, l.mean_arr_gpu);
+                //}
+                //else {  // coalescing & weights-shared-memory - GOOD
+                    gemm_nn_custom_bin_mean_transposed_gpu(m, n, k,
+                        (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu,
+                        new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu);
+                //}
                 //cudaDeviceSynchronize();
                 //check_error(status);
+                //getchar();
             }
 
 
@@ -172,12 +184,14 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
                 //cudaDeviceSynchronize();
                 //check_error(status);
+
+                add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
             }
             */
 
-            add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
-            activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
-            if (l.binary || l.xnor) swap_binary(&l);
+            //add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
+            if(l.activation != LINEAR) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
+            //if (l.binary || l.xnor) swap_binary(&l);
             //cudaDeviceSynchronize();
             return;
         }

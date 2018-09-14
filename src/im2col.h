@@ -24,7 +24,14 @@ void transpose_bin_gpu(unsigned char *A, unsigned char *B, const int n, const in
 
 void fill_int8_gpu(unsigned char *src, unsigned char val, size_t size);
 
+// shared_memory + partial coalescing = GOOD
 void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr, float *bias);
+
+// sequentially - BAD
+void gemm_nn_custom_bin_mean_transposed_sequentially_gpu(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr);
