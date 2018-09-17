@@ -12,6 +12,9 @@ extern "C" {
 #include <assert.h>
 #include <cuda.h>
 
+#define WARP_SIZE 32
+
+
 // src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu
 // You may also want to read: https://github.com/BVLC/caffe/blob/master/LICENSE
 
@@ -66,7 +69,6 @@ void im2col_ongpu(float *im,
 }
 // --------------------------------
 
-#define WARP_SIZE 32
 
 __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
     const int height, const int width, const int ksize,
@@ -568,7 +570,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 int64_t B_cur_index = (j*ldb + k) / 8;
                 if (i >= M) A_cur_index = 0;
 
-                #pragma unroll WARP_SIZE
+                #pragma unroll
                 for (int t = 0; t < WARP_SIZE; ++t) {
                     const int lane_id = threadIdx.x % WARP_SIZE;
 
@@ -598,7 +600,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 int64_t B_cur_index = (j*ldb + k) / 8;
                 if (i >= M) A_cur_index = 0;
 
-                #pragma unroll WARP_SIZE
+                #pragma unroll
                 for (int t = 0; t < WARP_SIZE; ++t) {
                     const int lane_id = threadIdx.x % WARP_SIZE;
 
@@ -705,7 +707,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 int64_t B_cur_index = (local_j*ldb + k) / 8;
                 if (i >= M) A_cur_index = 0;
 
-                #pragma unroll WARP_SIZE
+                #pragma unroll
                 for (int t = 0; t < WARP_SIZE; ++t) {
                     const int lane_id = threadIdx.x % WARP_SIZE;
 
@@ -735,7 +737,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 int64_t B_cur_index = (local_j*ldb + k) / 8;
                 if (i >= M) A_cur_index = 0;
 
-                #pragma unroll WARP_SIZE
+                #pragma unroll
                 for (int t = 0; t < WARP_SIZE; ++t) {
                     const int lane_id = threadIdx.x % WARP_SIZE;
 
