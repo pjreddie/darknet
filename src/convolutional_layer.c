@@ -65,12 +65,18 @@ void binarize_input(float *input, int n, int size, float *binary)
 
 int convolutional_out_height(convolutional_layer l)
 {
-    return (l.h + 2*l.pad - l.size) / l.stride + 1;
+    int out_height = (l.h + 2*l.pad - l.size) / l.stride;
+    if(l.size & 1) out_height += 1;
+
+    return out_height;
 }
 
 int convolutional_out_width(convolutional_layer l)
 {
-    return (l.w + 2*l.pad - l.size) / l.stride + 1;
+    int out_width = (l.w + 2*l.pad - l.size) / l.stride;
+    if(l.size & 1) out_width += 1;
+
+    return out_width;
 }
 
 image get_convolutional_image(convolutional_layer l)
