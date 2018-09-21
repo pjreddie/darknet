@@ -228,9 +228,28 @@ void forward_batchnorm_layer_gpu(layer l, network net)
         add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.out_c, l.out_w*l.out_h);
 #endif
     } else {
+#ifdef CUDNN
+        float one = 1;
+        float zero = 0;
+        cudnnBatchNormalizationForwardInference(cudnn_handle(),
+            CUDNN_BATCHNORM_SPATIAL,
+            &one,
+            &zero,
+            l.dstTensorDesc,
+            l.x_gpu,
+            l.dstTensorDesc,
+            l.output_gpu,
+            l.normTensorDesc,
+            l.scales_gpu,
+            l.biases_gpu,
+            l.rolling_mean_gpu,
+            l.rolling_variance_gpu,
+            .00001);
+#else
         normalize_gpu(l.output_gpu, l.rolling_mean_gpu, l.rolling_variance_gpu, l.batch, l.out_c, l.out_h*l.out_w);
         scale_bias_gpu(l.output_gpu, l.scales_gpu, l.batch, l.out_c, l.out_h*l.out_w);
         add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.out_c, l.out_w*l.out_h);
+#endif
     }
 
 }
