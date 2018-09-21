@@ -163,11 +163,12 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int binary = option_find_int_quiet(options, "binary", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
+    int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam);
+    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
-    layer.use_bin_output = option_find_int_quiet(options, "bin_output", 0);
+
     if(params.net.adam){
         layer.B1 = params.net.B1;
         layer.B2 = params.net.B2;
@@ -819,6 +820,8 @@ network parse_network_cfg_custom(char *filename, int batch)
 #ifdef GPU
         if(gpu_index >= 0){
             net.workspace = cuda_make_array(0, workspace_size/sizeof(float) + 1);
+            int size = get_network_input_size(net) * net.batch;
+            net.input_state_gpu = cuda_make_array(0, size);
         }else {
             net.workspace = calloc(1, workspace_size);
         }

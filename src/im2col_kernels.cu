@@ -45,6 +45,7 @@ __global__ void im2col_gpu_kernel(const int n, const float* data_im,
                 *data_col_ptr = (h >= 0 && w >= 0 && h < height && w < width) ?
                     data_im_ptr[i * width + j] : 0;
 
+                //data_im[(channel_in * height + h_in) * width + w_in + i * width + j];
                 //*data_col_ptr = data_im_ptr[ii * width + jj];
 
                 data_col_ptr += height_col * width_col;
@@ -69,7 +70,7 @@ void im2col_ongpu(float *im,
 }
 // --------------------------------
 
-
+/*
 __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
     const int height, const int width, const int ksize,
     const int pad,
@@ -120,6 +121,71 @@ __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
         }
     }
 }
+*/
+
+// float 32
+__global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
+    const int height, const int width, const int ksize,
+    const int pad,
+    const int stride,
+    const int height_col, const int width_col,
+    float *data_col, const int bit_align)
+{
+    __shared__ float tmp_s[1];
+
+//#define SHRED_VALS ((BLOCK / 169) * )
+    __shared__ float dst_s[1024];
+    //__shared__ float dst_s[1024];
+    //__shared__ uint32_t bit_s[32];
+    __shared__ uint8_t bit_s[128];
+
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    for (; index < n; index += blockDim.x*gridDim.x) {
+        int w_out = index % width_col;
+        int h_index = index / width_col;
+        int h_out = h_index % height_col;
+        int channel_in = h_index / height_col;
+        int channel_out = channel_in * ksize * ksize;
+        int h_in = h_out * stride - pad;
+        int w_in = w_out * stride - pad;
+        //float* data_col_ptr = data_col;
+        //float* data_col_ptr_32 = data_col + (channel_out * bit_align + h_out * width_col + w_out) / 32;
+        //data_col_ptr += (channel_out * height_col + h_out) * width_col + w_out;
+        //data_col_ptr += channel_out * bit_align + h_out * width_col + w_out;
+        float* data_col_ptr = &data_col[channel_out * bit_align + h_out * width_col + w_out];
+        const float* data_im_ptr = data_im;
+        data_im_ptr += (channel_in * height + h_in) * width + w_in;
+        for (int i = 0; i < ksize; ++i) {
+            for (int j = 0; j < ksize; ++j) {
+                int h = h_in + i;
+                int w = w_in + j;
+
+                float val = (h >= 0 && w >= 0 && h < height && w < width) ?
+                    data_im_ptr[i * width + j] : 0;
+
+                int pre_out_index = index % (width_col*height_col);
+                int out_index = (channel_out + i*ksize + j) * bit_align + pre_out_index;// h_out * width_col + w_out;
+                data_col[out_index] = val;
+
+                //*data_col_ptr = val;
+                //dst_s[threadIdx.x] = val;
+                //tmp_s[0] = val;
+
+                //*data_col_ptr = (h >= 0 && w >= 0 && h < height && w < width) ?
+                //    data_im_ptr[i * width + j] : 0;
+
+                //float src_val = (h >= 0 && w >= 0 && h < height && w < width) ? data_im_ptr[i * width + j] : 0;
+                //unsigned int bit_mask = __ballot_sync(0xffffffff, src_val > 0);
+                //if (threadIdx.x % WARP_SIZE == 0) *((unsigned int*)data_col_ptr_32) = bit_mask;
+                // use atomicOr() // *dst_ptr |= (mask << (col_index % 8));
+                //data_col_ptr_32 += bit_align / 32;
+
+                //data_col_ptr += height_col * width_col;
+                data_col_ptr += bit_align;
+            }
+        }
+    }
+}
 
 void im2col_align_ongpu(float *im,
     int channels, int height, int width,
@@ -132,6 +198,354 @@ void im2col_align_ongpu(float *im,
     im2col_align_gpu_kernel << <(num_kernels + BLOCK - 1) / BLOCK,
         BLOCK, 0, get_cuda_stream() >> >(
             num_kernels, im, height, width, ksize, pad,
+            stride, height_col,
+            width_col, data_col, bit_align);
+}
+
+
+// --------------------------------
+
+/*
+// binary im2col
+__global__ void im2col_align_bin_gpu_kernel(const int n, const float* data_im,
+    const int height, const int width, const int ksize, const int channels,
+    const int pad,
+    const int stride,
+    const int height_col, const int width_col,
+    float *data_col, const int bit_align)
+{
+    __shared__ float tmp_s[1];
+
+    //#define SHRED_VALS ((BLOCK / 169) * )
+    __shared__ float dst_s[1024];
+    //__shared__ float dst_s[1024];
+    //__shared__ uint32_t bit_s[32];
+    __shared__ uint8_t bit_s[128];
+
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    for (; index < n; index += blockDim.x*gridDim.x)
+    {
+        //int c_index = index;
+        //int channel_in = c_index % channels;
+
+        int h_out = index % height_col;
+        int c_index = index / height_col;
+        int channel_in = c_index % channels;
+
+        int channel_out = channel_in * ksize * ksize;
+
+        int j_index = c_index / channels;
+        int j = j_index % ksize;
+        int i = j_index / ksize;
+        if (i < ksize)
+        {
+            for (int w_out = 0; w_out < width_col; ++w_out)
+            {
+                int h_in = h_out * stride - pad;
+                int w_in = w_out * stride - pad;
+
+                int h = h_in + i;
+                int w = w_in + j;
+
+                float val = (h >= 0 && w >= 0 && h < height && w < width) ?
+                    data_im[(channel_in * height + h_in) * width + w_in + i * width + j] : 0;
+
+                //int pre_out_index = index % (width_col*height_col);
+                int pre_out_index = h_out * width_col + w_out;
+                int out_index = (channel_out + i*ksize + j) * bit_align + pre_out_index;
+                data_col[out_index] = val;
+
+
+            }// w_out
+        }
+    }
+}
+*/
+
+/*
+// binary im2col
+__global__ void im2col_align_bin_gpu_kernel(const int n, const float* data_im,
+    const int height, const int width, const int ksize, const int channels,
+    const int pad,
+    const int stride,
+    const int height_col, const int width_col,
+    float *data_col, const int bit_align)
+{
+    __shared__ float tmp_s[1];
+    __shared__ ulonglong4 tmp256_s[1];
+
+
+    //#define SHRED_VALS ((BLOCK / 169) * )
+    //__shared__ float dst_s[1024];
+    //__shared__ float dst_s[1024];
+    //__shared__ uint32_t bit_s[32];
+    //__shared__ uint8_t bit_s[128];
+
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    //for (; index < n; index += blockDim.x*gridDim.x)
+    {
+        //int c_index = index;
+        //int channel_in = c_index % channels;
+
+        int h_out = index % height_col;
+        int c_index = index / height_col;
+        int channel_in = c_index % channels;
+
+        int channel_out = channel_in * ksize * ksize;
+
+        int j_index = c_index / channels;
+        int j = j_index % ksize;
+        int i = j_index / ksize;
+
+        int h_in = h_out * stride - pad;
+        int h = h_in + i;
+
+        //if (i < ksize)
+        {
+            int w_out = 0;
+
+            // the end of padding
+            //if(0)
+            for (; w_out < (width_col); w_out += 32)
+            {
+                int w = w_out * stride - pad + j;
+                int pre_in_index = (channel_in * height + h_in) * width + i * width;
+                int in_index = pre_in_index + w;
+                //float *src_p = (float *)&data_im[in_index];
+
+                int pre_out_index = h_out * width_col + w_out;
+                int out_index = (channel_out + i*ksize + j) * bit_align + pre_out_index;
+                // float *dst_p = (float *)&data_col[out_index];
+
+                if (i >= ksize) {
+                    out_index = -1;
+                }
+
+                #pragma unroll
+                for (int t = 0; t < WARP_SIZE; ++t) {
+                    const int lane_id = threadIdx.x % WARP_SIZE;
+
+                    //const int64_t cur_pre_in_index = pre_in_index;
+                    //const int64_t cur_j = j;
+                    //const int64_t out_i = out_index;// __shfl(out_index, t) + lane_id;
+
+                    const int64_t cur_out_index = __shfl(out_index, t);
+                    if (cur_out_index >= 0)
+                    {
+                        const int64_t cur_pre_in_index = __shfl(pre_in_index, t);
+                        const int64_t cur_j = __shfl(j, t);
+                        const int64_t cur_h = __shfl(h, t);
+
+                        int cur_w = ((w_out + lane_id) * stride - pad + cur_j);
+                        int in_index = cur_pre_in_index + cur_w;
+
+                        float val = (cur_w >= 0 && cur_w < width && cur_h >= 0 && cur_h < height) ?
+                            data_im[in_index] : float();
+
+                        if ((w_out + lane_id) < width_col) {
+                            data_col[cur_out_index + lane_id] = val;
+                            //tmp_s[0] = val;
+
+                            //uint32_t bit_mask = __ballot(val > 0);
+                            //uint8_t *bit8_ptr = &(((uint8_t *)data_col)[cur_out_index / 8]);
+                            //uint32_t *bit32_ptr = (uint32_t *)bit8_ptr;
+                            //*bit32_ptr = bit_mask;
+                        }
+                    }
+                }
+
+            }// w_out
+
+#ifdef NOT_USED
+            if (i < ksize && h >= 0 && h < height)
+            {
+
+                // wait for align address and the end of padding
+                for (; w_out < width_col; ++w_out)
+                {
+                    int w_in = w_out * stride - pad;
+                    int w = w_in + j;
+
+                    int in_index = (channel_in * height + h_in) * width + w_in + i * width + j;
+                    float *src_p = (float *)&data_im[in_index];
+
+                    int pre_out_index = h_out * width_col + w_out;
+                    int out_index = (channel_out + i*ksize + j) * bit_align + pre_out_index;
+                    float *dst_p = (float *)&data_col[out_index];
+
+                    if (((uint64_t)src_p % 32 == 0) && ((uint64_t)dst_p % 32 == 0) && w > 0) {
+                        //printf(" aligned addresses and there is no padding \n");
+                        break;
+                    }
+
+                    float val = (w >= 0 && w < width) ?
+                        (*src_p) : float();
+
+                    *dst_p = val;
+                    //tmp_s[0] = val;
+                }// w_out
+
+                // ulonglong4 (256 bit) / instead of float (32 bit) = 8x times
+                for (; w_out < (width_col - 8); w_out += 8)
+                {
+                    int w_in = w_out * stride - pad;
+                    int w = w_in + j;
+
+                    ulonglong4 *src_p = (ulonglong4 *)&data_im[(channel_in * height + h_in) * width + w_in + i * width + j];
+
+                    int pre_out_index = h_out * width_col + w_out;
+                    int out_index = (channel_out + i*ksize + j) * bit_align + pre_out_index;
+                    ulonglong4 *dst_p = (ulonglong4 *)&data_col[out_index];
+
+                    ulonglong4 val = (w < width) ?
+                        (*src_p) : ulonglong4();
+
+                    *dst_p = val;
+                    //tmp256_s[0] = val;
+                }// w_out
+
+                for (; w_out < width_col; ++w_out)
+                {
+                    //int h_in = h_out * stride - pad;
+                    int w_in = w_out * stride - pad;
+
+                    //int h = h_in + i;
+                    int w = w_in + j;
+
+                    float val = (w < width) ?
+                        data_im[(channel_in * height + h_in) * width + w_in + i * width + j] : 0;
+
+                    int pre_out_index = h_out * width_col + w_out;
+                    int out_index = (channel_out + i*ksize + j) * bit_align + pre_out_index;
+                    data_col[out_index] = val;
+                    //tmp_s[0] = val;
+                }// w_out
+            }
+#endif  // NOT_USED
+        }
+    }
+}
+*/
+
+
+// binary im2col - stride=1
+__global__ void im2col_align_bin_gpu_kernel(const int n, const float* data_im,
+    const int height, const int width, const int ksize, const int channels,
+    const int pad,
+    const int stride,
+    const int height_col, const int width_col,
+    float *data_col, const int bit_align)
+{
+    __shared__ float tmp_s[1];
+    __shared__ ulonglong4 tmp256_s[1];
+
+
+    //#define SHRED_VALS ((BLOCK / 169) * )
+    //__shared__ float dst_s[1024];
+    //__shared__ float dst_s[1024];
+    //__shared__ uint32_t bit_s[32];
+    //__shared__ uint8_t bit_s[128];
+
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    //for (; index < n; index += blockDim.x*gridDim.x)
+    {
+        int c_index = index;
+        int channel_in = c_index % channels;
+
+        //int h_out = index % height_col;
+        //int c_index = index / height_col;
+        //int channel_in = c_index % channels;
+
+        int channel_out = channel_in * ksize * ksize;
+
+        int j_index = c_index / channels;
+        int j = j_index % ksize;
+        int i = j_index / ksize;
+
+        int pre_out_index = (channel_out + i*ksize + j) * bit_align;
+        int j_pad = (j - pad);
+        int i_pad = (i - pad);
+
+        for(int wh_index = 0; wh_index < (height_col*width_col); wh_index += 32)
+        //for (int h_out = 0; h_out < height_col; ++h_out)
+        {
+
+            // the end of padding
+            //if(0)
+            //for (int w_out = 0; w_out < (width_col); w_out += 32)
+            {
+                const int w_out = wh_index % width_col;
+                const int h_out = wh_index / width_col;
+
+                const int w = w_out + j_pad;
+                const int h = h_out + i_pad;
+
+                int pre_in_index = channel_in * height * width;
+                int pre_in_wh_index = h * width + w;
+
+                int send_wh_index = wh_index;
+                if (i >= ksize) send_wh_index = height_col*width_col;
+
+                #pragma unroll
+                for (int t = 0; t < WARP_SIZE; ++t)
+                {
+                    const int lane_id = threadIdx.x % WARP_SIZE;
+
+                    const int cur_wh_index = __shfl(send_wh_index, t) + lane_id;
+
+                    if (cur_wh_index < (width_col*height_col))// && (cur_i_pad+pad) < ksize)
+                    {
+                        const int cur_pre_out_index = __shfl(pre_out_index, t);
+
+                        const int cur_pre_in_index = __shfl(pre_in_index, t);
+                        const int cur_pre_in_wh_index = __shfl(pre_in_wh_index, t) + lane_id;
+
+                        int w = cur_pre_in_wh_index % width;
+                        int h = cur_pre_in_wh_index / width;
+                        int in_index = cur_pre_in_index + cur_pre_in_wh_index;
+
+                        int out_index = cur_pre_out_index + cur_wh_index;
+
+                        float val = (w >= 0 && w < width && h >= 0 && h < height) ?
+                            data_im[in_index] : float();
+
+                        //data_col[out_index] = val;
+                        //tmp_s[0] = val;
+
+                        uint32_t bit_mask = __ballot(val > 0);
+                        if (lane_id == 0) {
+                            uint8_t *bit8_ptr = &(((uint8_t *)data_col)[out_index / 8]);
+                            uint32_t *bit32_ptr = (uint32_t *)bit8_ptr;
+                            *bit32_ptr = bit_mask;
+                        }
+                    }
+
+
+                }
+
+            }// w_out
+
+        }
+    }
+}
+
+
+void im2col_align_bin_ongpu(float *im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float *data_col, int bit_align) {
+    // We are going to launch channels * height_col * width_col kernels, each
+    // kernel responsible for copying a single-channel grid.
+    int height_col = (height + 2 * pad - ksize) / stride + 1;
+    int width_col = (width + 2 * pad - ksize) / stride + 1;
+    //int num_kernels = channels * height_col * width_col * ksize * ksize;
+    //int num_kernels = channels * ksize * ksize * height_col;
+    int num_kernels = channels * ksize * ksize;
+    int num_blocks = num_kernels / BLOCK + 1;
+
+    //im2col_align_bin_gpu_kernel << <(num_kernels + BLOCK - 1) / BLOCK,
+    im2col_align_bin_gpu_kernel << <num_blocks,
+        BLOCK, 0, get_cuda_stream() >> >(
+            num_kernels, im, height, width, ksize, channels, pad,
             stride, height_col,
             width_col, data_col, bit_align);
 }
@@ -560,7 +974,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
             int count = 0;
             k = 0;
 
-//#ifdef NON_USED
+//#ifdef NOT_USED
             // 32 thread X 64 bit = 2048 bit
             for (; k < (K - 2048); k += 2048) {   // l.size*l.size*l.c - one filter size [27 - 9216]
                 uint64_t c_bit64;
@@ -591,7 +1005,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
             }
 //#endif
 
-//#ifdef NON_USED
+//#ifdef NOT_USED
             // 32 thread X 32 bit = 1024 bit
             for (; k < (K - 1024); k += 1024) {   // l.size*l.size*l.c - one filter size [27 - 9216]
 
@@ -626,7 +1040,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 float mean_val = mean_arr[i];
                 float bias_val = bias_arr[i];
 
-//#ifdef NON_USED
+//#ifdef NOT_USED
                 for (; k < K; k += 256) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
                     //ulonglong4 a_bit256 = *((ulonglong4 *)(A + (i*lda + k) / 8));    // weights
                     ulonglong4 a_bit256 = *((ulonglong4 *)(A_s + (local_i*lda + k) / 8));    // weights
@@ -638,7 +1052,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 }
 //#endif
 
-#ifdef NON_USED
+#ifdef NOT_USED
                 for (; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
                     //uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));    // weights
                     uint64_t a_bit64 = *((uint64_t *)(A_s + (local_i*lda + k) / 8));    // weights
@@ -697,7 +1111,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
             int count = 0;
             k = 0;
 
-//#ifdef NON_USED
+//#ifdef NOT_USED
             // 32 thread X 64 bit = 2048 bit
             for (; k < (K - 2048); k += 2048) {   // l.size*l.size*l.c - one filter size [27 - 9216]
                 uint64_t c_bit64;
@@ -728,7 +1142,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
             }
 //#endif
 
-//#ifdef NON_USED
+//#ifdef NOT_USED
             // 32 thread X 32 bit = 1024 bit
             for (; k < (K - 1024); k += 1024) {   // l.size*l.size*l.c - one filter size [27 - 9216]
 
@@ -763,7 +1177,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 float mean_val = mean_arr[i];
                 float bias_val = bias_arr[i];
 
-//#ifdef NON_USED
+//#ifdef NOT_USED
                 for (; k < K; k += 256) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
                     ulonglong4 a_bit256 = *((ulonglong4 *)(A + (i*lda + k) / 8));    // weights
                     //ulonglong4 b_bit256 = *((ulonglong4 *)(B + (j*ldb + k) / 8));    // input
@@ -775,7 +1189,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 }
 //#endif
 
-#ifdef NON_USED
+#ifdef NOT_USED
                 for (; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
                     uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));    // weights
                     //uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));            // input

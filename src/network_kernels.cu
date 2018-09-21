@@ -51,7 +51,7 @@ void forward_network_gpu(network net, network_state state)
     for(i = 0; i < net.n; ++i){
         state.index = i;
         layer l = net.layers[i];
-        if(l.delta_gpu){
+        if(l.delta_gpu && state.train){
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
         l.forward_gpu(l, state);
@@ -428,13 +428,15 @@ float *network_predict_gpu(network net, float *input)
     network_state state;
     state.index = 0;
     state.net = net;
-    state.input = cuda_make_array(input, size);
+    //state.input = cuda_make_array(input, size);   // memory will be allocated in the parse_network_cfg_custom()
+    state.input = net.input_state_gpu;
+    cuda_push_array(state.input, input, size);
     state.truth = 0;
     state.train = 0;
     state.delta = 0;
     forward_network_gpu(net, state);
     float *out = get_network_output_gpu(net);
-    cuda_free(state.input);
+    //cuda_free(state.input);   // will be freed in the free_network()
     return out;
 }
 

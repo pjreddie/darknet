@@ -64,6 +64,8 @@ typedef struct network{
     tree *hierarchy;
 
     #ifdef GPU
+    float *input_state_gpu;
+
     float **input_gpu;
     float **truth_gpu;
 	float **input16_gpu;

@@ -257,7 +257,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam)
+convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output)
 {
     int i;
     convolutional_layer l = {0};
@@ -269,6 +269,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.n = n;
     l.binary = binary;
     l.xnor = xnor;
+    l.use_bin_output = use_bin_output;
     l.batch = batch;
     l.stride = stride;
     l.size = size;
@@ -307,7 +308,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.binary_weights = calloc(c*n*size*size, sizeof(float));
         l.binary_input = calloc(l.inputs*l.batch, sizeof(float));
 
-        int align = 8;
+        int align = 32;// 8;
         int src_align = l.out_h*l.out_w;
         l.bit_align = src_align + (align - src_align % align);
     }
@@ -404,8 +405,9 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     //fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c);
     l.bflops = (2.0 * l.n * l.size*l.size*l.c * l.out_h*l.out_w) / 1000000000.;
-    if (l.xnor) fprintf(stderr, "convX ");
-    else  fprintf(stderr, "conv  ");
+    if (l.xnor && l.use_bin_output) fprintf(stderr, "convXB");
+    else if (l.xnor) fprintf(stderr, "convX ");
+    else fprintf(stderr, "conv  ");
     fprintf(stderr, "%5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d %5.3f BF\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
     return l;
@@ -428,7 +430,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 
 void test_convolutional_layer()
 {
-    convolutional_layer l = make_convolutional_layer(1, 5, 5, 3, 2, 5, 2, 1, LEAKY, 1, 0, 0, 0);
+    convolutional_layer l = make_convolutional_layer(1, 5, 5, 3, 2, 5, 2, 1, LEAKY, 1, 0, 0, 0, 0);
     l.batch_normalize = 1;
     float data[] = {1,1,1,1,1,
         1,1,1,1,1,

@@ -17,6 +17,10 @@ void im2col_align_ongpu(float *im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float *data_col, int bit_align);
 
+void im2col_align_bin_ongpu(float *im,
+    int channels, int height, int width,
+    int ksize, int stride, int pad, float *data_col, int bit_align);
+
 void float_to_bit_gpu(float *src, unsigned char *dst, size_t size);
 
 void transpose_bin_gpu(unsigned char *A, unsigned char *B, const int n, const int m,
