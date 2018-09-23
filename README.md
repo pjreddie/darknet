@@ -3,6 +3,7 @@
 
 [![CircleCI](https://circleci.com/gh/AlexeyAB/darknet.svg?style=svg)](https://circleci.com/gh/AlexeyAB/darknet)
 
+0. [Improvements in this repository](#improvements-in-this-repository)
 1. [How to use](#how-to-use)
 2. [How to compile on Linux](#how-to-compile-on-linux)
 3. [How to compile on Windows](#how-to-compile-on-windows)
@@ -68,6 +69,30 @@ You can get cfg-files by path: `darknet/cfg/`
 [![Everything Is AWESOME](http://img.youtube.com/vi/VOC3huqHrss/0.jpg)](https://www.youtube.com/watch?v=VOC3huqHrss "Everything Is AWESOME")
 
 Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
+
+### Improvements in this repository
+
+* added support for Windows
+* improved binary neural network performance **2x-4x times** for Detection on CPU and GPU if you trained your own weights by using this XNOR-net model (bit-1 inference) : https://github.com/AlexeyAB/darknet/blob/master/cfg/yolov3-tiny_xnor.cfg
+* improved neural network performance **~7%** by fusing 2 layers into 1: Convolutional + Batch-norm
+* improved neural network performance Detection **3x times**, Training **2 x times** on GPU Volta (Tesla V100, Titan V, ...) using Tensor Cores if `CUDNN_HALF` defined in the `Makefile` or `darknet.sln`
+* improved performance **~1.2x** times on FullHD, **~2x** times on 4K, for detection on the video (file/stream) using `darknet detector demo`... 
+* improved performance **3.5 X times** of data augmentation for training (using OpenCV SSE/AVX functions instead of hand-written functions) - removes bottleneck for training on multi-GPU or GPU Volta
+* improved performance of detection and training on Intel CPU with AVX (Yolo v3 **~85%**, Yolo v2 ~10%)
+* fixed usage of `[reorg]`-layer
+* optimized memory allocation during network resizing when `random=1`
+* optimized initialization GPU for detection - we use batch=1 initially instead of re-init with batch=1
+* added correct calculation of **mAP, F1, IoU, Precision-Recall** using command `darknet detector map`...
+* added drawing of chart of average loss during training
+* added calculation of anchors for training
+* added example of Detection and Tracking objects: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
+* fixed code for use Web-cam on OpenCV 3.x
+* run-time tips and warnings if you use incorrect cfg-file or dataset
+* many other fixes of code...
+
+And added manual - [How to train Yolo v3/v2 (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
+
+Also, you might be interested in using a simplified repository where is implemented INT8-quantization (+30% speedup and -1% mAP reduced): https://github.com/AlexeyAB/yolo2_light
 
 ### How to use:
 
