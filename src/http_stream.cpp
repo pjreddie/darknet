@@ -1,3 +1,5 @@
+#include "http_stream.h"
+
 #ifdef OPENCV
 //
 // a single-threaded, multi client(using select), debug webserver - streaming out mjpg.
@@ -40,6 +42,7 @@ struct _INIT_W32DATA
 #include <cstdio>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 using std::cerr;
 using std::endl;
 
@@ -52,7 +55,6 @@ using std::endl;
 #endif
 using namespace cv;
 
-#include "http_stream.h"
 #include "image.h"
 
 
@@ -280,7 +282,7 @@ image image_data_augmentation(IplImage* ipl, int w, int h,
     cv::Rect img_rect(cv::Point2i(0, 0), img.size());
     cv::Rect new_src_rect = src_rect & img_rect;
 
-    cv::Rect dst_rect(cv::Point2i(std::max(0, -pleft), std::max(0, -ptop)), new_src_rect.size());
+    cv::Rect dst_rect(cv::Point2i(std::max<int>(0, -pleft), std::max<int>(0, -ptop)), new_src_rect.size());
 
     cv::Mat cropped(cv::Size(src_rect.width, src_rect.height), img.type());
     cropped.setTo(cv::Scalar::all(0));
@@ -329,6 +331,8 @@ image image_data_augmentation(IplImage* ipl, int w, int h,
 
 
 #endif    // OPENCV
+
+// -----------------------------------------------------
 
 #if __cplusplus >= 201103L || _MSC_VER >= 1900  // C++11
 

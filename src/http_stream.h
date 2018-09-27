@@ -2,6 +2,11 @@
 #ifndef HTTP_STREAM_H
 #define HTTP_STREAM_H
 
+#ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
