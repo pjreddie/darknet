@@ -6,6 +6,7 @@
 extern "C" {
 #endif
 #include "image.h"
+#include <stdint.h>
 
 void send_mjpeg(IplImage* ipl, int port, int timeout, int quality);
 CvCapture* get_capture_webcam(int index);
@@ -16,6 +17,14 @@ int get_stream_fps_cpp(CvCapture *cap);
 image image_data_augmentation(IplImage* ipl, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
     float jitter, float dhue, float dsat, float dexp);
+
+double get_time_point();
+void start_timer();
+void stop_timer();
+double get_time();
+void stop_timer_and_show();
+void stop_timer_and_show_name(char *name);
+void show_total_time();
 
 #ifdef __cplusplus
 }

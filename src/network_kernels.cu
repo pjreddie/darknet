@@ -40,12 +40,16 @@ extern "C" {
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
+#include "http_stream.h"
+
 float * get_network_output_gpu_layer(network net, int i);
 float * get_network_delta_gpu_layer(network net, int i);
 float * get_network_output_gpu(network net);
 
 void forward_network_gpu(network net, network_state state)
 {
+    //cudaDeviceSynchronize();
+    //printf("\n");
     state.workspace = net.workspace;
     int i;
     for(i = 0; i < net.n; ++i){
@@ -54,7 +58,12 @@ void forward_network_gpu(network net, network_state state)
         if(l.delta_gpu && state.train){
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
+        //printf("%d - type: %d - ", i, l.type);
+        //start_timer();
         l.forward_gpu(l, state);
+        //cudaDeviceSynchronize();
+        //stop_timer_and_show();
+
         if(net.wait_stream)
             cudaStreamSynchronize(get_cuda_stream());
         state.input = l.output_gpu;
@@ -75,6 +84,8 @@ void forward_network_gpu(network net, network_state state)
         }
 */
     }
+    //cudaDeviceSynchronize();
+    //show_total_time();
 }
 
 void backward_network_gpu(network net, network_state state)

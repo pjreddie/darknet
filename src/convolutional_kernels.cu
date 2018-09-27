@@ -17,6 +17,16 @@ extern "C" {
 #include "cuda.h"
 }
 
+extern "C" {
+    double get_time_point();
+    void start_timer();
+    void stop_timer();
+    double get_time();
+    void stop_timer_and_show();
+    void stop_timer_and_show_name(char *name);
+    void show_total_time();
+}
+
 __global__ void binarize_kernel(float *x, int n, float *binary)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -146,25 +156,33 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //cudaDeviceSynchronize();
 
                 int i = 0;
-                if (l.stride == 1 && l.c >= 256 && l.w > 13 && l.size > 1 && 0) // disabled
+                // if (l.stride == 1 && l.c >= 256 && l.size > 1)
+                if (l.stride == 1 && l.c >= 1024 && l.size > 1 && 0)// && l.w >= 13) // disabled
                 {
                     // stride=1 only
+                    //start_timer();
                     im2col_align_bin_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, state.workspace, l.bit_align);
                     //cudaDeviceSynchronize();
+                    //stop_timer_and_show_name("im2col_align_bin_ongpu");
                 }
                 else
                 {
+                    //start_timer();
                     im2col_align_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, l.align_workspace_gpu, l.bit_align);
                     //cudaDeviceSynchronize();
+                    //stop_timer_and_show_name("im2col_align_ongpu");
                     //getchar();
 
                     // should be optimized
+                    //start_timer();
                     float_to_bit_gpu(l.align_workspace_gpu, (unsigned char *)state.workspace, l.align_workspace_size);
                     //cudaDeviceSynchronize();
+                    //stop_timer_and_show_name("float_to_bit_gpu");
                 }
-
+                //start_timer();
                 transpose_bin_gpu((unsigned char *)state.workspace, (unsigned char *)l.transposed_align_workspace_gpu, k, n, l.bit_align, new_ldb, 8);
                 //cudaDeviceSynchronize();
+                //stop_timer_and_show_name("transpose_bin_gpu");
 
                 // should be optimized
                 //if(0) {//if (k > 1000) {    // sequentially input-shared - BAD
@@ -172,9 +190,12 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //        (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu, new_ldb, l.output_gpu, n, l.mean_arr_gpu);
                 //}
                 //else {  // coalescing & weights-shared-memory - GOOD
+                    //start_timer();
                     gemm_nn_custom_bin_mean_transposed_gpu(m, n, k,
                         (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu,
                         new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu);
+                    //cudaDeviceSynchronize();
+                    //stop_timer_and_show_name("gemm_nn_custom_bin_mean_transposed_gpu");
                 //}
                 //cudaDeviceSynchronize();
                 //check_error(status);
@@ -325,6 +346,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
 
 #else
+    fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
+
     int i;
     int m = l.n;
     int k = l.size*l.size*l.c;

@@ -47,7 +47,7 @@ __device__ float stair_activate_kernel(float x)
     if (n%2 == 0) return floor(x/2.);
     else return (x - n) + floor(x/2.);
 }
- 
+
 
 __device__ float hardtan_gradient_kernel(float x)
 {
@@ -146,19 +146,29 @@ __global__ void activate_array_kernel(float *x, int n, ACTIVATION a)
     if(i < n) x[i] = activate_kernel(x[i], a);
 }
 
+__global__ void activate_array_leaky_kernel(float *x, int n)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        float val = x[index];
+        x[index] = (val > 0) ? val : val / 10;
+    }
+}
+
 __global__ void gradient_array_kernel(float *x, int n, ACTIVATION a, float *delta)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(i < n) delta[i] *= gradient_kernel(x[i], a);
 }
 
-extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a) 
+extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
 {
-    activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
+    if(a == LEAKY) activate_array_leaky_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta) 
+extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta)
 {
     gradient_array_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, a, delta);
     check_error(cudaPeekAtLastError());

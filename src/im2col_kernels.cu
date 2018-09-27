@@ -131,13 +131,13 @@ __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
     const int height_col, const int width_col,
     float *data_col, const int bit_align)
 {
-    __shared__ float tmp_s[1];
+    //__shared__ float tmp_s[1];
 
 //#define SHRED_VALS ((BLOCK / 169) * )
-    __shared__ float dst_s[1024];
+    //__shared__ float dst_s[1024];
     //__shared__ float dst_s[1024];
     //__shared__ uint32_t bit_s[32];
-    __shared__ uint8_t bit_s[128];
+    //__shared__ uint8_t bit_s[128];
 
     int index = blockIdx.x*blockDim.x + threadIdx.x;
     for (; index < n; index += blockDim.x*gridDim.x) {
@@ -551,7 +551,7 @@ void im2col_align_bin_ongpu(float *im,
 }
 // --------------------------------
 
-
+/*
 __global__ void float_to_bit_gpu_kernel(float *src, unsigned char *dst, size_t size)
 {
     //const int size_aligned = size + (WARP_SIZE - size % WARP_SIZE);
@@ -569,12 +569,45 @@ __global__ void float_to_bit_gpu_kernel(float *src, unsigned char *dst, size_t s
         if (threadIdx.x % WARP_SIZE == 0) ((unsigned int*)dst)[index / 32] = bit_mask;
     }
 }
+*/
+
+__global__ void float_to_bit_gpu_kernel(float *src, unsigned char *dst, size_t size)
+{
+    //const int size_aligned = size + (WARP_SIZE - size % WARP_SIZE);
+    __shared__ uint32_t tmp[WARP_SIZE];
+
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    float src_val;
+    uint32_t *dst32_ptr = ((unsigned int*)dst);
+
+    //for (; index < size_aligned; index += blockDim.x*gridDim.x)
+    {
+        //src_val = src[index];
+        if (index < size) src_val = src[index];
+        else src_val = 0;
+        //unsigned int bit_mask = __ballot_sync(0xffffffff, src_val > 0);
+        const int num_of_warps = blockDim.x / WARP_SIZE;
+        const int warp_id = threadIdx.x / WARP_SIZE;
+        const int lane_id = threadIdx.x % WARP_SIZE;
+
+        uint32_t bit_mask = __ballot(src_val > 0);
+        if (lane_id == 0) tmp[warp_id] = bit_mask;
+
+        __syncthreads();
+        if (warp_id == 0) {
+            if (lane_id < num_of_warps) {
+                dst32_ptr[index / 32 + lane_id] = tmp[lane_id];
+            }
+        }
+        __syncthreads();
+    }
+}
 
 
 void float_to_bit_gpu(float *src, unsigned char *dst, size_t size)
 {
-    const int num_blocks = size / BLOCK + 1;
-    float_to_bit_gpu_kernel<<<num_blocks, BLOCK, 0, get_cuda_stream()>>>(src, dst, size);
+    const int num_blocks = size / 1024 + 1;
+    float_to_bit_gpu_kernel<<<num_blocks, 1024, 0, get_cuda_stream()>>>(src, dst, size);
 }
 // --------------------------------
 

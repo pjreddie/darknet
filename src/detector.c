@@ -25,6 +25,8 @@
 #pragma comment(lib, "opencv_highgui" OPENCV_VERSION ".lib")
 #endif
 
+#include "http_stream.h"
+
 IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size);
 void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches);
 #endif    // OPENCV
@@ -1142,13 +1144,14 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
 
         float *X = sized.data;
-        time= what_time_is_it_now();
+
+        //time= what_time_is_it_now();
+        double time = get_time_point();
         network_predict(net, X);
         //network_predict_image(&net, im); letterbox = 1;
-        printf("%s: Predicted in %f seconds.\n", input, (what_time_is_it_now()-time));
-        //get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
-        // if (nms) do_nms_sort_v2(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        //draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
+        printf("%s: Predicted in %lf milli-seconds.\n", input, ((double)get_time_point() - time) / 1000);
+        //printf("%s: Predicted in %f seconds.\n", input, (what_time_is_it_now()-time));
+
         int nboxes = 0;
         detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
         if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
