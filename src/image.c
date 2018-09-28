@@ -23,6 +23,7 @@
 #include "http_stream.h"
 #endif
 
+extern int check_mistakes;
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
@@ -960,8 +961,6 @@ image ipl_to_image(IplImage* src)
     }
     return out;
 }
-
-extern int check_mistakes;
 
 image load_image_cv(char *filename, int channels)
 {
