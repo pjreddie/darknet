@@ -31,6 +31,8 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
 
 #include "http_stream.h"
 
+int check_mistakes;
+
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show)
@@ -941,6 +943,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
                 sprintf(buff, "echo \"Wrong label: %s - j = %d, x = %f, y = %f, width = %f, height = %f\" >> bad_label.list",
                     labelpath, j, truth[j].x, truth[j].y, truth[j].w, truth[j].h);
                 system(buff);
+                if (check_mistakes) getchar();
             }
             number_of_boxes++;
             rel_width_height_array = realloc(rel_width_height_array, 2 * number_of_boxes * sizeof(float));
@@ -1223,6 +1226,7 @@ void run_detector(int argc, char **argv)
 {
     int dont_show = find_arg(argc, argv, "-dont_show");
     int show = find_arg(argc, argv, "-show");
+    check_mistakes = find_arg(argc, argv, "-check_mistakes");
     int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
     char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
     char *outfile = find_char_arg(argc, argv, "-out", 0);

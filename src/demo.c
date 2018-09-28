@@ -185,6 +185,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
     for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes, sizeof(float *));
 
+    if (l.classes != demo_classes) {
+        printf("Parameters don't match: in cfg-file classes=%d, in data-file classes=%d \n", l.classes, demo_classes);
+        getchar();
+        exit(0);
+    }
+
+
     flag_exit = 0;
 
     pthread_t fetch_thread;
