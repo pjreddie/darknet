@@ -232,8 +232,8 @@ int main()
                     // Show labels
                     if (labels[objId].c_str())
                     {
-                        char str[200];
-                        sprintf(str, "%s: %f", labels[objId].c_str(), probs[objId]);
+                        char probAsString[200];
+                        sprintf(probAsString, "%s: %f", labels[objId].c_str(), probs[objId]);
                         DPRINTF("Label:%s, Probabilty: %f\n\n", labels[objId].c_str(), probAsString);
                         putText(image, str, cvPoint(leftTopX, leftTopY),
                             FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200, 200, 250), 1, CV_AA);
