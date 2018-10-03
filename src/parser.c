@@ -976,7 +976,7 @@ void save_weights_upto(network net, char *filename, int cutoff)
     fwrite(&major, sizeof(int), 1, fp);
     fwrite(&minor, sizeof(int), 1, fp);
     fwrite(&revision, sizeof(int), 1, fp);
-    fwrite(net.seen, sizeof(int), 1, fp);
+    fwrite(net.seen, sizeof(uint64_t), 1, fp);
 
     int i;
     for(i = 0; i < net.n && i < cutoff; ++i){
