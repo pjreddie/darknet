@@ -971,8 +971,8 @@ void save_weights_upto(network net, char *filename, int cutoff)
     if(!fp) file_error(filename);
 
     int major = 0;
-    int minor = 1;
-    int revision = 0;
+    int minor = 2;
+    int revision = 5;
     fwrite(&major, sizeof(int), 1, fp);
     fwrite(&minor, sizeof(int), 1, fp);
     fwrite(&revision, sizeof(int), 1, fp);
