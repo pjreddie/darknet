@@ -829,6 +829,8 @@ float *forward_network_gpu_to_layer(network *netp, int layer_id) //CADAR
         net.input = l.output;
 
         if(i == layer_id){
+            pull_network_output(netp);
+            calc_network_cost(netp);
             return l.output;
         }
 

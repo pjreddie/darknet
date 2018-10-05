@@ -371,7 +371,7 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
 
     demo_time = what_time_is_it_now();
 
-    net->index = glob_layer_id;
+    // net->index = glob_layer_id;
     layer l = net->layers[glob_layer_id];
 
     int f_idx = 0;
@@ -391,6 +391,8 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
         printf("Pooling %i:1. Final size: %i\n", pooling_size, achieved_size);
     }
 
+    float *X = malloc(l.outputs * sizeof(float));
+    float *desc = malloc(achieved_size * sizeof(float));
 
     while (!demo_done)
     {
@@ -404,8 +406,8 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
 
         image letterbox_im = letterbox_image(im, net->w, net->h);
 
-        float *X = letterbox_im.data;
-        float *desc = network_predict_layer(net, X, glob_layer_id);
+        X = letterbox_im.data;
+        desc = network_predict_layer(net, X, glob_layer_id);
 
         if(pooling == 1){
             float *desc_pool = max_pooling(desc, l.outputs, pooling_size);
@@ -433,11 +435,12 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
         printf("\nFPS:%.1f\n", fps);
         printf("Frame: %i\n\n", count);
 
-
-        // free(X);
-        // printf("FREE X\n");
+        free(X);
+        printf("Free X\n");
         // free(desc);
-        // printf("FREE DESC\n");
+        printf("Free desc\n");
+        free_image(im);
+        printf("Free Im\n");
         ++count;
     }
     fclose(fp);
