@@ -327,23 +327,13 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
     demo_classes = classes;
     demo_thresh = thresh;
     demo_hier = hier;
-    printf("Demo\n");
     net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
-    pthread_t detect_thread;
-    pthread_t fetch_thread;
     srand(2222222);
     glob_layer_id = layer_id;
 
     int i;
     demo_total = size_network(net);
-    predictions = calloc(demo_frame, sizeof(float *));
-    for (i = 0; i < demo_frame; ++i)
-    {
-        predictions[i] = calloc(demo_total, sizeof(float));
-    }
-    avg = calloc(demo_total, sizeof(float));
-
     if (filename)
     {
         printf("video file: %s\n", filename);
@@ -357,21 +347,9 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
     if (!cap)
         error("Couldn't connect to webcam.\n");
 
-    buff[0] = get_image_from_stream(cap);
-    buff[1] = copy_image(buff[0]);
-    buff[2] = copy_image(buff[0]);
-    buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
-    buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
-    buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
-
     int count = 0;
-    // if(!prefix){
-    //     make_window("Demo", 1352, 1013, fullscreen);
-    // }
-
     demo_time = what_time_is_it_now();
 
-    // net->index = glob_layer_id;
     layer l = net->layers[glob_layer_id];
 
     int f_idx = 0;
@@ -379,7 +357,6 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
     printf("Features File: %s\n", out_filename);
     fp = fopen(out_filename, "w");
     printf("Layer %i Size: %i\n", glob_layer_id, l.outputs);
-    // return 0;
     int pooling = 0;
     int pooling_size = 0;
     int achieved_size = 0;
@@ -392,7 +369,7 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
     }
 
     float *X = malloc(l.outputs * sizeof(float));
-    float *desc = malloc(achieved_size * sizeof(float));
+    float *desc;// = malloc(achieved_size * sizeof(float));
 
     while (!demo_done)
     {
@@ -430,17 +407,13 @@ void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, 
         fps = 1. / (what_time_is_it_now() - demo_time);
         demo_time = what_time_is_it_now();
 
-        printf("\033[2J");
-        printf("\033[1;1H");
-        printf("\nFPS:%.1f\n", fps);
-        printf("Frame: %i\n\n", count);
+        // printf("\033[2J");
+        // printf("\033[1;1H");
+        // printf("\nFPS:%.1f\n", fps);
+        // printf("Frame: %i\n\n", count);
 
         free(X);
-        printf("Free X\n");
-        // free(desc);
-        printf("Free desc\n");
         free_image(im);
-        printf("Free Im\n");
         ++count;
     }
     fclose(fp);
