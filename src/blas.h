@@ -37,9 +37,12 @@ void weighted_sum_cpu(float *a, float *b, float *s, int num, float *c);
 
 void softmax(float *input, int n, float temp, float *output, int stride);
 void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
+void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
+void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
 
 #ifdef GPU
 #include "cuda.h"
+#include "tree.h"
 
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
@@ -47,6 +50,7 @@ void copy_ongpu(int N, float * X, int INCX, float * Y, int INCY);
 void copy_ongpu_offset(int N, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
 void scal_ongpu(int N, float ALPHA, float * X, int INCX);
 void supp_ongpu(int N, float ALPHA, float * X, int INCX);
+void mask_gpu_new_api(int N, float * X, float mask_num, float * mask, float val);
 void mask_ongpu(int N, float * X, float mask_num, float * mask);
 void const_ongpu(int N, float ALPHA, float *X, int INCX);
 void pow_ongpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
@@ -71,6 +75,7 @@ void scale_bias_gpu(float *output, float *biases, int batch, int n, int size);
 void add_bias_gpu(float *output, float *biases, int batch, int n, int size);
 void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size);
 
+void softmax_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error);
 void smooth_l1_gpu(int n, float *pred, float *truth, float *delta, float *error);
 void l2_gpu(int n, float *pred, float *truth, float *delta, float *error);
 void weighted_delta_gpu(float *a, float *b, float *s, float *da, float *db, float *ds, int num, float *dc);
@@ -79,6 +84,7 @@ void mult_add_into_gpu(int num, float *a, float *b, float *c);
 
 void reorg_ongpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
 
+void softmax_gpu_new_api(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
 void softmax_gpu(float *input, int n, int offset, int groups, float temp, float *output);
 void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t);
 void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t);
@@ -86,6 +92,8 @@ void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2,
 void flatten_ongpu(float *x, int spatial, int layers, int batch, int forward, float *out);
 
 void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
+
+void softmax_tree_gpu(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
 
 #endif
 #endif

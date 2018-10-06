@@ -83,6 +83,7 @@ struct layer{
     int side;
     int stride;
     int reverse;
+	int spatial;
     int pad;
     int sqrt;
     int flip;
@@ -100,6 +101,7 @@ struct layer{
     float shift;
     float ratio;
 	int focal_loss;
+	int noloss;
     int softmax;
     int classes;
     int coords;
@@ -198,6 +200,7 @@ struct layer{
     int   * input_sizes;
     float * delta;
     float * output;
+	float * loss;
     float * squared;
     float * norms;
 
@@ -289,6 +292,7 @@ struct layer{
     float * scale_updates_gpu;
 
     float * output_gpu;
+	float * loss_gpu;
     float * delta_gpu;
     float * rand_gpu;
     float * squared_gpu;
