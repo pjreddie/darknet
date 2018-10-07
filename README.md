@@ -33,6 +33,7 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet (includ
 * Note: darknet-cpp requires a C++11 compiler for darknet-cpp, and arapaho builds.
 
 * Note: CMake wrapper for Linux is available at - https://gist.github.com/prabindh/6bb3c429b8e8347edcf9b5e0b2f54a20
+This uses existing Makefile and is just a wrapper.
 
 **Usage**
 
