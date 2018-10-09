@@ -15,60 +15,22 @@
 ./darknet detector demo cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
 ```
 
-# Run with [OpenTracker](https://github.com/rockkingjy/OpenTracker)
------------------
-Copy trackers' source file from [[OpenTracker](https://github.com/rockkingjy/OpenTracker)] and make install:
-```
-git clone https://github.com/rockkingjy/OpenTracker.git
-cd OpenTracker
-make -j`nproc`
-sudo make install
-```
-set flag in `makefile`:
-```
-OPENTRACKER=1
-```
-and run:
-```
-./darknet detector tracking cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
-```
-It will first run the yolo detection. Then when a `person` comes into the vision field, then it will automatically do the tracking.
-
-# Run with a touchscreen and OpenTracker:
----------------------
-In `makefile` set:
-```
-TS=1
-```
-Assuming that your touchscreen is connected to /dev/input/event6, else modify it (must be run under sudo):
-```
-sudo ./darknet detector tracking cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
-```
-or
-```
-sudo ./darknet detector tracking cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
-```
-It will first run the yolo detection, with touchscreen, you choose the object to track, then it will track automatically.
-
-
-# Run with maestro motor
---------------------
-In Makefile set:
-```
-MAESTRO=1
-```
-
 # Train with your own data with reference [[Link](https://github.com/AlexeyAB/darknet)]
 -------------------
 Train with the command:
 ```
-./darknet detector train cfg/nfpa.data cfg/nfpa-yolov3-voc.cfg darknet53.conv.74 -gpus 0
+./darknet detector train cfg/nuts.data cfg/nuts-yolov3-voc.cfg darknet53.conv.74 -gpus 0
 ./darknet detector train cfg/nuts.data cfg/nuts-yolov3-voc.cfg backup_nuts/nfpa-yolov3-voc.backup -gpus 0
 
+./darknet detector train cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg darknet53.conv.74 -gpus 0
+./darknet detector train cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg backup_wildhog/wildhog-yolov3-tiny.backup -gpus 0
 ```
 After train, run with:
 ```
 ./darknet detector test cfg/nfpa.data cfg/nfpa-yolov3-voc.cfg backup_nfpa/nfpa-yolov3-voc_20000.weights
+
+
+./darknet detector test cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg backup_wildhog/wildhog-yolov3-tiny_10000.weights
 ```
 
 
@@ -114,3 +76,45 @@ GPU=0 CUDNN=0 OPENMP=1: 4.199370 seconds.
 yolov3.cfg: width=208 height=208: 2.430844 seconds.
 
 
+# Run with [OpenTracker](https://github.com/rockkingjy/OpenTracker)
+-----------------
+Copy trackers' source file from [[OpenTracker](https://github.com/rockkingjy/OpenTracker)] and make install:
+```
+git clone https://github.com/rockkingjy/OpenTracker.git
+cd OpenTracker
+make -j`nproc`
+sudo make install
+```
+set flag in `makefile`:
+```
+OPENTRACKER=1
+```
+and run:
+```
+./darknet detector tracking cfg/coco.data cfg/yolov3.cfg weights/yolov3.weights
+```
+It will first run the yolo detection. Then when a `person` comes into the vision field, then it will automatically do the tracking.
+
+# Run with a touchscreen and OpenTracker:
+---------------------
+In `makefile` set:
+```
+TS=1
+```
+Assuming that your touchscreen is connected to /dev/input/event6, else modify it (must be run under sudo):
+```
+sudo ./darknet detector tracking cfg/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights "/dev/input/event6"
+```
+or
+```
+sudo ./darknet detector tracking cfg/coco.data cfg/yolov3.cfg yolov3.weights "/dev/input/event4"
+```
+It will first run the yolo detection, with touchscreen, you choose the object to track, then it will track automatically.
+
+
+# Run with maestro motor
+--------------------
+In Makefile set:
+```
+MAESTRO=1
+```

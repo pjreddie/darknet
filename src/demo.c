@@ -44,8 +44,10 @@ static int imagewriting_flag = 0;
 
 #define DEMO 1
 
-#ifdef OPENCV
-
+#ifdef OPENCV    
+#include <cv.h>
+#include <highgui.h>
+#include <opencv/highgui.h>
 static char **demo_names;
 static image **demo_alphabet;
 static int demo_classes;
@@ -166,7 +168,7 @@ void *detect_in_thread(void *ptr)
         save_autotrack_target(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
     }
 
-    save_image_png(display, "yolo"); //save image as png file.
+    save_image(display, "yolo"); //save image as png file.
     free_detections(dets, nboxes);
 
     demo_index = (demo_index + 1) % demo_frame;
@@ -266,10 +268,13 @@ void *display_in_thread(void *ptr)
 //fetch image to buff[buff_index];
 void *fetch_in_thread(void *ptr)
 {
-    int status = fill_image_from_stream(cap, buff[buff_index]);
-    letterbox_image_into(buff[buff_index], net->w, net->h, buff_letter[buff_index]);
-    if (status == 0)
+    free_image(buff[buff_index]);
+    buff[buff_index] = get_image_from_stream(cap);
+    if(buff[buff_index].data == 0) {
         demo_done = 1;
+        return 0;
+    }
+    letterbox_image_into(buff[buff_index], net->w, net->h, buff_letter[buff_index]);
     return 0;
 }
 
@@ -566,6 +571,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     cvDestroyWindow("Demo");
     cvReleaseCapture(&cap);
 }
+/*
 #ifdef OPENTRACKER
 void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
@@ -608,15 +614,15 @@ void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, cons
     cap = cvCaptureFromCAM(cam_index);
     if (w)
     {
-        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
+        cvSetCaptureProperty(cap, 3, w);
     }
     if (h)
     {
-        cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
+        cvSetCaptureProperty(cap, 4, h);
     }
     if (frames)
     {
-        cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, frames);
+        cvSetCaptureProperty(cap, 5, frames);
     }
     if (!cap)
         error("Couldn't connect to webcam.\n");
@@ -627,7 +633,7 @@ void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, cons
     buff_letter[0] = letterbox_image(buff[0], net->w, net->h); //squeez the image to a letterbox
     buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
     buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
-    ipl = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, buff[0].c);
+    //ipl = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, buff[0].c);
 
     cvNamedWindow("Demo", CV_WINDOW_NORMAL);
     if (fullscreen)
@@ -664,6 +670,7 @@ void tracking(char *cfgfile, char *weightfile, float thresh, int cam_index, cons
     printf("End of tracking.\n");
 }
 #endif
+
 #ifdef TS
 // General loop detect TS and detect Target
 // (New function define by Raphael)
@@ -811,7 +818,7 @@ void demo_TS(char *cfgfile, char *weightfile, float thresh, int cam_index, const
     // End modification Raphael
 }
 #endif
-
+*/
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg, float hier, int w, int h, int frames, int fullscreen)
 {

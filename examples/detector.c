@@ -1,5 +1,9 @@
 #include "darknet.h"
 
+#ifdef OPENCV
+#include <opencv/highgui.h>
+#endif
+
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 
@@ -683,7 +687,7 @@ void test_detectorlist(char *datacfg, char *cfgfile, char *weightfile, char *fil
             if(fullscreen){
                 cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
             }
-            show_image(im, "predictions");
+            show_image(im, "predictions", 0);
             cvWaitKey(1);
             //cvDestroyAllWindows();
     #endif
@@ -928,6 +932,7 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
     }
+    /*
 #ifdef TS 
     else if(0==strcmp(argv[2], "demo_ts")) {
         list *options = read_data_cfg(datacfg);
@@ -949,6 +954,7 @@ void run_detector(int argc, char **argv)
         tracking(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
     }
 #endif
+*/
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
 }
