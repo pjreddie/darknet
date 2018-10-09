@@ -9,6 +9,7 @@
 #include "demo.h"
 #include <sys/time.h>
 #include <semaphore.h>
+#include <stdbool.h>
 
 #ifdef TS
 
@@ -53,9 +54,7 @@ static network *net;
 static image buff[3]; //0-fetch;1-display;2-detect;
 static image buff_letter[3];
 static int buff_index = 0;
-static CvCapture *cap_pic;
-static CvCapture *cap;
-static IplImage *ipl;
+static void * cap;
 static float fps = 0;
 static float demo_thresh = 0;
 static float demo_hier = .5;
@@ -177,6 +176,7 @@ void *detect_in_thread(void *ptr)
 
 void *track_in_thread(void *ptr)
 {
+/*<<<<<<< HEAD
     char buf[10];
     pthread_t detect_thread;
     sleep(5);
@@ -217,17 +217,23 @@ void *track_in_thread(void *ptr)
 
         //sleep(0.1);
     }
+=======*/
+    free_image(buff[buff_index]);
+    buff[buff_index] = get_image_from_stream(cap);
+    if(buff[buff_index].data == 0) {
+        demo_done = 1;
+        return 0;
+    }
+    letterbox_image_into(buff[buff_index], net->w, net->h, buff_letter[buff_index]);
+    return 0;
 }
 
 //display image of buff[(buff_index+1)%3];
 void *display_in_thread(void *ptr)
 {
-    show_image_cv(buff[(buff_index + 1) % 3], "Demo", ipl);
-    int c = cvWaitKey(1);
-    if (c != -1)
-        c = c % 256;
-    if (c == 27)
-    {
+    int c = show_image(buff[(buff_index + 1)%3], "Demo", 1);
+    if (c != -1) c = c%256;
+    if (c == 27) {
         demo_done = 1;
         return 0;
     }
@@ -512,24 +518,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     if (filename)
     {
         printf("video file: %s\n", filename);
-        cap = cvCaptureFromFile(filename);
-    }
-    else
-    {
-        cap = cvCaptureFromCAM(cam_index);
-
-        if (w)
-        {
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);
-        }
-        if (h)
-        {
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT, h);
-        }
-        if (frames)
-        {
-            cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, frames);
-        }
+        cap = open_video_stream(filename, 0, 0, 0, 0);
+    }else{
+        cap = open_video_stream(0, cam_index, w, h, frames);
     }
 
     if (!cap)
@@ -541,21 +532,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
     buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
     buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
-    ipl = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, buff[0].c);
 
     int count = 0;
-    if (!prefix)
-    {
-        cvNamedWindow("Demo", CV_WINDOW_NORMAL);
-        if (fullscreen)
-        {
-            cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-        }
-        else
-        {
-            cvMoveWindow("Demo", 0, 0);
-            cvResizeWindow("Demo", 1352, 1013);
-        }
+    if(!prefix){
+        make_window("Demo", 1352, 1013, fullscreen);
     }
 
     demo_time = what_time_is_it_now();

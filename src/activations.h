@@ -33,6 +33,7 @@ static inline float logistic_activate(float x){return 1./(1. + exp(-x));}
 static inline float loggy_activate(float x){return 2./(1. + exp(-x)) - 1;}
 static inline float relu_activate(float x){return x*(x>0);}
 static inline float elu_activate(float x){return (x >= 0)*x + (x < 0)*(exp(x)-1);}
+static inline float selu_activate(float x){return (x >= 0)*1.0507*x + (x < 0)*1.0507*1.6732*(exp(x)-1);}
 static inline float relie_activate(float x){return (x>0) ? x : .01*x;}
 static inline float ramp_activate(float x){return x*(x>0)+.1*x;}
 static inline float leaky_activate(float x){return (x>0) ? x : .1*x;}
@@ -75,6 +76,7 @@ static inline float stair_gradient(float x)
 }
 static inline float relu_gradient(float x){return (x>0);}
 static inline float elu_gradient(float x){return (x >= 0) + (x < 0)*(x + 1);}
+static inline float selu_gradient(float x){return (x >= 0)*1.0507 + (x < 0)*(x + 1.0507*1.6732);}
 static inline float relie_gradient(float x){return (x>0) ? 1 : .01;}
 static inline float ramp_gradient(float x){return (x>0)+.1;}
 static inline float leaky_gradient(float x){return (x>0) ? 1 : .1;}

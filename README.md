@@ -58,6 +58,20 @@ In Makefile set:
 MAESTRO=1
 ```
 
+# Train with your own data with reference [[Link](https://github.com/AlexeyAB/darknet)]
+-------------------
+Train with the command:
+```
+./darknet detector train cfg/nfpa.data cfg/nfpa-yolov3-voc.cfg darknet53.conv.74 -gpus 0
+./darknet detector train cfg/nuts.data cfg/nuts-yolov3-voc.cfg backup_nuts/nfpa-yolov3-voc.backup -gpus 0
+
+```
+After train, run with:
+```
+./darknet detector test cfg/nfpa.data cfg/nfpa-yolov3-voc.cfg backup_nfpa/nfpa-yolov3-voc_20000.weights
+```
+
+
 # Train Imagenet
 -----------------
 
