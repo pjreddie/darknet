@@ -86,6 +86,33 @@ __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_
 
 extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
+
+#ifdef CUDNN
+    if (!state.train) {// && layer.stride == layer.size) {
+        // cudnnPoolingBackward
+        cudnnStatus_t maxpool_status;
+
+        float alpha = 1, beta = 0;
+        maxpool_status = cudnnPoolingForward(
+            cudnn_handle(),
+            layer.poolingDesc,
+            &alpha,
+            layer.srcTensorDesc,
+            state.input,
+            &beta,
+            layer.dstTensorDesc,
+            layer.output_gpu);
+
+        //maxpool_status = cudnnDestroyPoolingDescriptor(poolingDesc);
+        //cudnnDestroyTensorDescriptor(layer.srcTensorDesc);
+        //cudnnDestroyTensorDescriptor(layer.dstTensorDesc);
+
+        return;
+    }
+#endif
+
+
+
     int h = layer.out_h;
     int w = layer.out_w;
     int c = layer.c;

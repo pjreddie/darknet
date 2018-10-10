@@ -21,6 +21,8 @@
 #include "http_stream.h"
 #endif
 #include "http_stream.h"
+
+#define CV_RGB(r, g, b) cvScalar( (b), (g), (r), 0 )
 #endif
 
 extern int check_mistakes;
