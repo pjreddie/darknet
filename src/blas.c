@@ -244,6 +244,28 @@ void l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
     }
 }
 
+void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        float t = truth[i];
+        float p = pred[i];
+        error[i] = (t) ? -log(p) : 0;
+        delta[i] = t-p;
+    }
+}
+
+void logistic_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        float t = truth[i];
+        float p = pred[i];
+        error[i] = -t*log(p) - (1-t)*log(1-p);
+        delta[i] = t-p;
+    }
+}
+
 void l2_cpu(int n, float *pred, float *truth, float *delta, float *error)
 {
     int i;

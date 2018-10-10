@@ -162,6 +162,20 @@ int *cuda_make_int_array(size_t n)
     return x_gpu;
 }
 
+int *cuda_make_int_array_new_api(int *x, size_t n)
+{
+	int *x_gpu;
+	size_t size = sizeof(int)*n;
+	cudaError_t status = cudaMalloc((void **)&x_gpu, size);
+	check_error(status);
+	if (x) {
+		status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
+		check_error(status);
+	}
+	if (!x_gpu) error("Cuda malloc failed\n");
+	return x_gpu;
+}
+
 void cuda_free(float *x_gpu)
 {
     //cudaStreamSynchronize(get_cuda_stream());
