@@ -11,6 +11,8 @@
 
 #include "arapaho.hpp"
 
+image ipl_to_image(IplImage* src);
+
 ArapahoV2::ArapahoV2()
 {
     classNames = 0;
@@ -228,28 +230,16 @@ bool ArapahoV2::Detect(
     //Convert to rgb
     cv::Mat inputRgb;
     cvtColor(inputMat, inputRgb, CV_BGR2RGB);
-    // Convert the bytes to float
-    cv::Mat floatMat;
-    inputRgb.convertTo(floatMat, CV_32FC3, 1/255.0);
+    //Convert to IplImage
+    IplImage ipl_img = inputRgb;
+    image im = ipl_to_image(&ipl_img);
 
-    if (floatMat.rows != net->h || floatMat.cols != net->w)
-    {
-        DPRINTF("Detect: Resizing image to match network \n");
-        resize(floatMat, floatMat, cv::Size(net->w, net->h));
-    }
+    image sized = letterbox_image( im, net->w, net->h );
 
-    if (floatMat.channels() != 3)
-    {
-        EPRINTF("Detect: channels = %d \n", floatMat.channels());
-        return false;
-    }
-    // Get the image to suit darknet
-    cv::Mat floatMatChannels[3];
-    cv::split(floatMat, floatMatChannels);
-    vconcat(floatMatChannels[0], floatMatChannels[1], floatMat);
-    vconcat(floatMat, floatMatChannels[2], floatMat);
+    __Detect( sized.data, thresh, hier_thresh, objectCount );
 
-    __Detect((float*)floatMat.data, thresh, hier_thresh, objectCount);
+    free_image( im );
+    free_image( sized );
 
     return true;
 }
