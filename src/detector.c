@@ -27,6 +27,8 @@
 
 IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size);
 void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches);
+
+#define CV_RGB(r, g, b) cvScalar( (b), (g), (r), 0 )
 #endif    // OPENCV
 
 #include "http_stream.h"
