@@ -23,6 +23,9 @@ OS := $(shell uname)
 # Tesla V100
 # ARCH= -gencode arch=compute_70,code=[sm_70,compute_70]
 
+# GeForce RTX 2080 Ti, RTX 2080, RTX 2070	Quadro RTX 8000, Quadro RTX 6000, Quadro RTX 5000	Tesla T4
+# ARCH= -gencode arch=compute_75,code=[sm_75,compute_75]
+
 # Jetson XAVIER
 # ARCH= -gencode arch=compute_72,code=[sm_72,compute_72]
 

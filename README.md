@@ -370,7 +370,7 @@ If you made you custom model that isn't based on other models, then you can trai
  
 ## When should I stop training:
 
-Usually sufficient 2000 iterations for each class(object). But for a more precise definition when you should stop training, use the following manual:
+Usually sufficient 2000 iterations for each class(object), but not less than 4000 iterations in total. But for a more precise definition when you should stop training, use the following manual:
 
 1. During training, you will see varying indicators of error, and you should stop when no longer decreases **0.XXXXXXX avg**:
 

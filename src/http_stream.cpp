@@ -322,6 +322,11 @@ image image_data_augmentation(IplImage* ipl, int w, int h,
         sized *= dexp;
     }
 
+    //std::stringstream window_name;
+    //window_name << "augmentation - " << ipl;
+    //cv::imshow(window_name.str(), sized);
+    //cv::waitKey(0);
+
     // Mat -> IplImage -> image
     IplImage src = sized;
     image out = ipl_to_image(&src);
