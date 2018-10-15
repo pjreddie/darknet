@@ -1,0 +1,8 @@
+classes= 601
+train  = /home/pjreddie/data/openimsv4/openimages.train.list
+#valid  = coco_testdev
+valid = data/coco_val_5k.list
+names = data/openimages.names
+backup = /home/pjreddie/backup/
+eval=coco
+
