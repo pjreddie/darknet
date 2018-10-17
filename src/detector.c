@@ -108,7 +108,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.small_object = net.small_object;
     args.d = &buffer;
     args.type = DETECTION_DATA;
-    args.threads = 16;    // 64
+    args.threads = 64;    // 16 or 64
 
     args.angle = net.angle;
     args.exposure = net.exposure;
@@ -116,7 +116,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.hue = net.hue;
 
 #ifdef OPENCV
-    args.threads = 3 * ngpus;
+    args.threads = 3 * ngpus;   // Amazon EC2 Tesla V100: p3.2xlarge (8 logical cores) - p3.16xlarge
+    //args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores)
     IplImage* img = NULL;
     float max_img_loss = 5;
     int number_of_lines = 100;
