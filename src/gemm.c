@@ -307,6 +307,82 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 
 //----------------------------
 
+// is not used
+void transpose_32x32_bits_my(uint32_t *A, uint32_t *B, int lda, int ldb)
+{
+    unsigned x, y, t;
+    for (y = 0; y < 32; ++y) {
+        for (x = 0; x < 32; ++x) {
+            if (A[y * lda] & (1 << x)) B[x * ldb] |= (uint32_t)1 << y;
+        }
+    }
+}
+
+uint8_t reverse_8_bit(uint8_t a) {
+    return ((a * 0x0802LU & 0x22110LU) | (a * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+}
+
+uint32_t reverse_32_bit(uint32_t a)
+{
+    // unsigned int __rbit(unsigned int val) // for ARM    //__asm__("rbit %0, %1\n" : "=r"(output) : "r"(input));
+    return (reverse_8_bit(a >> 24) << 0) |
+        (reverse_8_bit(a >> 16) << 8) |
+        (reverse_8_bit(a >> 8) << 16) |
+        (reverse_8_bit(a >> 0) << 24);
+}
+
+#define swap(a0, a1, j, m) t = (a0 ^ (a1 >>j)) & m; a0 = a0 ^ t; a1 = a1 ^ (t << j);
+
+void transpose32_optimized(uint32_t A[32]) {
+    int j, k;
+    unsigned m, t;
+
+    //m = 0x0000FFFF;
+    //for (j = 16; j != 0; j = j >> 1, m = m ^ (m << j)) {
+    //    for (k = 0; k < 32; k = (k + j + 1) & ~j) {
+    //        t = (A[k] ^ (A[k + j] >> j)) & m;
+    //        A[k] = A[k] ^ t;
+    //        A[k + j] = A[k + j] ^ (t << j);
+    //    }
+    //}
+
+    j = 16;
+    m = 0x0000FFFF;
+    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
+
+    j = 8;
+    m = 0x00ff00ff;
+    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
+
+    j = 4;
+    m = 0x0f0f0f0f;
+    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
+
+    j = 2;
+    m = 0x33333333;
+    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
+
+    j = 1;
+    m = 0x55555555;
+    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
+
+    // reverse Y
+    for (j = 0; j < 16; ++j) {
+        uint32_t tmp = A[j];
+        A[j] = reverse_32_bit(A[31 - j]);
+        A[31 - j] = reverse_32_bit(tmp);
+    }
+}
+
+void transpose_32x32_bits_reversed_diagonale(uint32_t *A, uint32_t *B, int m, int n)
+{
+    unsigned A_tmp[32];
+    int i;
+    for (i = 0; i < 32; ++i) A_tmp[i] = A[i * m];
+    transpose32_optimized(A_tmp);
+    for (i = 0; i < 32; ++i) B[i*n] = A_tmp[i];
+}
+
 
 void transpose_8x8_bits_my(unsigned char *A, unsigned char *B, int lda, int ldb)
 {
@@ -363,6 +439,8 @@ void transpose8rS32_reversed_diagonale(unsigned char* A, int m, int n, unsigned 
     B[3 * n] = reverse_byte(y >> 24);  B[2 * n] = reverse_byte(y >> 16);  B[1 * n] = reverse_byte(y >> 8);  B[0 * n] = reverse_byte(y);
 }
 
+/*
+// transpose by 8-bit
 void transpose_bin(char *A, char *B, const int n, const int m,
     const int lda, const int ldb, const int block_size)
 {
@@ -381,11 +459,33 @@ void transpose_bin(char *A, char *B, const int n, const int m,
         }
     }
 }
+*/
+
+// transpose by 32-bit
+void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
+    const int lda, const int ldb, const int block_size)
+{
+    //printf("\n n = %d (n mod 32 = %d), m = %d (m mod 32 = %d) \n", n, n % 32, m, m % 32);
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < n; i += 32) {
+        int j;
+        for (j = 0; j < m - 32; j += 32) {
+            int a_index = i*lda + j;
+            int b_index = j*ldb + i;
+            transpose_32x32_bits_reversed_diagonale(&A[a_index / 32], &B[b_index / 32], lda / 32, ldb / 32);
+            //transpose_32x32_bits_my(&A[a_index/32], &B[b_index/32], lda/32, ldb/32);
+        }
+        for (; j < m; ++j) {
+            if (get_bit(A, i*lda + j)) set_bit(B, j*ldb + i);
+        }
+    }
+}
 
 //----------------------------
 
 
-#if (defined(__AVX__) && defined(__x86_64__)) || defined(_WIN64)
+#if (defined(__AVX__) && defined(__x86_64__)) || defined(_WIN641)
 
 #ifdef _WIN64
 #include <intrin.h>
