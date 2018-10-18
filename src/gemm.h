@@ -27,7 +27,7 @@ void float_to_bit(float *src, unsigned char *dst, size_t size);
 void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
     const int lda, const int ldb, const int block_size);
 
-void transpose_bin(char *A, char *B, const int n, const int m,
+void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
     const int lda, const int ldb, const int block_size);
 
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
