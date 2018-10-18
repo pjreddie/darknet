@@ -160,6 +160,39 @@ void draw_label(image a, int r, int c, image label, const float *rgb)
     }
 }
 
+void draw_box_bw(image a, int x1, int y1, int x2, int y2, int brightness)
+{
+    //normalize_image(a);
+    int i;
+    if (x1 < 0) x1 = 0;
+    if (x1 >= a.w) x1 = a.w - 1;
+    if (x2 < 0) x2 = 0;
+    if (x2 >= a.w) x2 = a.w - 1;
+
+    if (y1 < 0) y1 = 0;
+    if (y1 >= a.h) y1 = a.h - 1;
+    if (y2 < 0) y2 = 0;
+    if (y2 >= a.h) y2 = a.h - 1;
+
+    for (i = x1; i <= x2; ++i) {
+        a.data[i + y1*a.w + 0 * a.w*a.h] = brightness;
+        a.data[i + y2*a.w + 0 * a.w*a.h] = brightness;
+    }
+    for (i = y1; i <= y2; ++i) {
+        a.data[x1 + i*a.w + 0 * a.w*a.h] = brightness;
+        a.data[x2 + i*a.w + 0 * a.w*a.h] = brightness;
+    }
+}
+
+void draw_box_width_bw(image a, int x1, int y1, int x2, int y2, int w, int brightness)
+{
+    int i;
+    for (i = 0; i < w; ++i) {
+        int alternate_color = (w % 2) ? (brightness) : (255 - brightness);
+        draw_box_bw(a, x1 + i, y1 + i, x2 - i, y2 - i, alternate_color);
+    }
+}
+
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b)
 {
     //normalize_image(a);
@@ -349,7 +382,12 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
             //int b_height = bot - top;
             //sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
 
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            if (im.c == 1) {
+                draw_box_width_bw(im, left, top, right, bot, width, 192);    // 1 channel Black-White
+            }
+            else {
+                draw_box_width(im, left, top, right, bot, width, red, green, blue); // 3 channels RGB
+            }
             if (alphabet) {
                 char labelstr[4096] = { 0 };
                 strcat(labelstr, names[selected_detections[i].best_class]);
