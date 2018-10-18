@@ -160,7 +160,7 @@ void draw_label(image a, int r, int c, image label, const float *rgb)
     }
 }
 
-void draw_box_bw(image a, int x1, int y1, int x2, int y2, int brightness)
+void draw_box_bw(image a, int x1, int y1, int x2, int y2, float brightness)
 {
     //normalize_image(a);
     int i;
@@ -184,11 +184,11 @@ void draw_box_bw(image a, int x1, int y1, int x2, int y2, int brightness)
     }
 }
 
-void draw_box_width_bw(image a, int x1, int y1, int x2, int y2, int w, int brightness)
+void draw_box_width_bw(image a, int x1, int y1, int x2, int y2, int w, float brightness)
 {
     int i;
     for (i = 0; i < w; ++i) {
-        int alternate_color = (w % 2) ? (brightness) : (255 - brightness);
+        float alternate_color = (w % 2) ? (brightness) : (1.0 - brightness);
         draw_box_bw(a, x1 + i, y1 + i, x2 - i, y2 - i, alternate_color);
     }
 }
@@ -383,7 +383,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
             //sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
 
             if (im.c == 1) {
-                draw_box_width_bw(im, left, top, right, bot, width, 192);    // 1 channel Black-White
+                draw_box_width_bw(im, left, top, right, bot, width, 0.8);    // 1 channel Black-White
             }
             else {
                 draw_box_width(im, left, top, right, bot, width, red, green, blue); // 3 channels RGB
