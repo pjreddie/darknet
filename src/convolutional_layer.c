@@ -160,6 +160,9 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
     // 3. FP32 Master Copy of Weights
     // More: http://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#tensor_ops
     cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH);
+#if((CUDNN_MAJOR*10 + CUDNN_MINOR) >= 72)   // cuDNN >= 7.2
+    cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH_ALLOW_CONVERSION);
+#endif
 #endif
 
     // INT8_CONFIG, INT8_EXT_CONFIG, INT8x4_CONFIG and INT8x4_EXT_CONFIG are only supported

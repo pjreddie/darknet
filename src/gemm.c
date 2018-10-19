@@ -378,8 +378,10 @@ void transpose_32x32_bits_reversed_diagonale(uint32_t *A, uint32_t *B, int m, in
 {
     unsigned A_tmp[32];
     int i;
+    #pragma unroll
     for (i = 0; i < 32; ++i) A_tmp[i] = A[i * m];
     transpose32_optimized(A_tmp);
+    #pragma unroll
     for (i = 0; i < 32; ++i) B[i*n] = A_tmp[i];
 }
 
@@ -390,7 +392,6 @@ void transpose_8x8_bits_my(unsigned char *A, unsigned char *B, int lda, int ldb)
     for (y = 0; y < 8; ++y) {
         for (x = 0; x < 8; ++x) {
             if (A[y * lda] & (1 << x)) B[x * ldb] |= 1 << y;
-            //B[x * ldb] = 1;
         }
     }
 }
