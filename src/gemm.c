@@ -390,6 +390,7 @@ void transpose_8x8_bits_my(unsigned char *A, unsigned char *B, int lda, int ldb)
     for (y = 0; y < 8; ++y) {
         for (x = 0; x < 8; ++x) {
             if (A[y * lda] & (1 << x)) B[x * ldb] |= 1 << y;
+            //B[x * ldb] = 1;
         }
     }
 }
@@ -417,13 +418,14 @@ unsigned char reverse_byte_3(unsigned char n) {
 }
 
 
-void transpose8rS32_reversed_diagonale(unsigned char* A, int m, int n, unsigned char* B)
+void transpose8rS32_reversed_diagonale(unsigned char* A, unsigned char* B, int m, int n)
 {
     unsigned x, y, t;
 
+    x = y = 0;
     // Load the array and pack it into x and y.
-    x = (A[0] << 24) | (A[m] << 16) | (A[2 * m] << 8) | A[3 * m];
-    y = (A[4 * m] << 24) | (A[5 * m] << 16) | (A[6 * m] << 8) | A[7 * m];
+    //x = (A[0] << 24) | (A[m] << 16) | (A[2 * m] << 8) | A[3 * m];
+    //y = (A[4 * m] << 24) | (A[5 * m] << 16) | (A[6 * m] << 8) | A[7 * m];
 
     t = (x ^ (x >> 7)) & 0x00AA00AA;  x = x ^ t ^ (t << 7);
     t = (y ^ (y >> 7)) & 0x00AA00AA;  y = y ^ t ^ (t << 7);
@@ -444,15 +446,16 @@ void transpose8rS32_reversed_diagonale(unsigned char* A, int m, int n, unsigned 
 void transpose_bin(char *A, char *B, const int n, const int m,
     const int lda, const int ldb, const int block_size)
 {
+    //printf("\n n = %d, ldb = %d \t\t m = %d, lda = %d \n", n, ldb, m, lda);
     int i;
     #pragma omp parallel for
     for (i = 0; i < n; i += 8) {
         int j;
-        for (j = 0; j < m - 8; j += 8) {
+        for (j = 0; j < m; j += 8) {
             int a_index = i*lda + j;
             int b_index = j*ldb + i;
             //transpose_8x8_bits_my(&A[a_index/8], &B[b_index/8], lda/8, ldb/8);
-            transpose8rS32_reversed_diagonale(&A[a_index / 8], lda / 8, ldb / 8, &B[b_index / 8]);
+            transpose8rS32_reversed_diagonale(&A[a_index / 8], &B[b_index / 8], lda / 8, ldb / 8);
         }
         for (; j < m; ++j) {
             if (get_bit(A, i*lda + j)) set_bit(B, j*ldb + i);
@@ -461,16 +464,18 @@ void transpose_bin(char *A, char *B, const int n, const int m,
 }
 */
 
+
 // transpose by 32-bit
 void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
     const int lda, const int ldb, const int block_size)
 {
     //printf("\n n = %d (n mod 32 = %d), m = %d (m mod 32 = %d) \n", n, n % 32, m, m % 32);
+    //printf("\n lda = %d (lda mod 32 = %d), ldb = %d (ldb mod 32 = %d) \n", lda, lda % 32, ldb, ldb % 32);
     int i;
     #pragma omp parallel for
     for (i = 0; i < n; i += 32) {
         int j;
-        for (j = 0; j < m - 32; j += 32) {
+        for (j = 0; j < m; j += 32) {
             int a_index = i*lda + j;
             int b_index = j*ldb + i;
             transpose_32x32_bits_reversed_diagonale(&A[a_index / 32], &B[b_index / 32], lda / 32, ldb / 32);
@@ -481,11 +486,10 @@ void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
         }
     }
 }
-
 //----------------------------
 
 
-#if (defined(__AVX__) && defined(__x86_64__)) || defined(_WIN641)
+#if (defined(__AVX__) && defined(__x86_64__)) || defined(_WIN64)
 
 #ifdef _WIN64
 #include <intrin.h>

@@ -654,7 +654,8 @@ void binary_align_weights(convolutional_layer *l)
 size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, size_t ldb_align, int bit_align)
 {
     size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
-    size_t t_intput_size = new_ldb * n;
+    //printf("\n n = %d, bit_align = %d \n", n, bit_align);
+    size_t t_intput_size = new_ldb * bit_align;// n;
     size_t t_bit_input_size = t_intput_size / 8;// +1;
 
     *t_bit_input = calloc(t_bit_input_size, sizeof(char));
