@@ -93,7 +93,7 @@
         int     maxClasses;
         float     threshold;
 
-        void __Detect(float* inData, float thresh, float hier_thresh, int & objectCount);
+        void __Detect(float* inData, int w, int h, float thresh, float hier_thresh, int & objectCount);
     };
 
     //////////////////////////////////////////////////////////////////////////

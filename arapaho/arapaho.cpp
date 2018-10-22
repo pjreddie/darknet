@@ -192,7 +192,7 @@ bool ArapahoV2::Detect(
         }
     }
 
-    __Detect(inputImage.data, thresh, hier_thresh, objectCount);
+    __Detect(inputImage.data, inputImage.w, inputImage.h, thresh, hier_thresh, objectCount);
 
     free_image(inputImage);
     return true;
@@ -231,19 +231,13 @@ bool ArapahoV2::Detect(
     cv::Mat inputRgb;
     cvtColor(inputMat, inputRgb, CV_BGR2RGB);
 
-    if (inputRgb.rows != net->h || inputRgb.cols != net->w)
-    {
-      DPRINTF("Detect: Resizing image to match network \n");
-      resize(inputRgb, inputRgb, cv::Size(net->w, net->h));
-    }
-
     //Convert to IplImage
     IplImage ipl_img = inputRgb;
     image im = ipl_to_image(&ipl_img);
 
     image sized = letterbox_image( im, net->w, net->h );
 
-    __Detect( sized.data, thresh, hier_thresh, objectCount );
+    __Detect( sized.data, im.w, im.h, thresh, hier_thresh, objectCount );
 
     free_image( im );
     free_image( sized );
@@ -285,14 +279,14 @@ bool ArapahoV2::GetBoxes(box* outBoxes, std::string* outLabels, int boxCount)
 //////////////////////////////////////////////////////////////////
 /// Private APIs
 //////////////////////////////////////////////////////////////////
-void ArapahoV2::__Detect(float* inData, float thresh, float hier_thresh, int & objectCount)
+void ArapahoV2::__Detect(float* inData, int w, int h, float thresh, float hier_thresh, int & objectCount)
 {
     int i, j;
     // Predict
     network_predict(net, inData);
 
     nboxes = 0;
-    dets = get_network_boxes(net, 1, 1, thresh, 0, 0, 0, &nboxes);
+    dets = get_network_boxes(net, w, h, thresh, 0, 0, 1, &nboxes);
     if(nms)
     {
         do_nms_sort(dets, nboxes, l.classes, 0.5);
