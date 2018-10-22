@@ -289,7 +289,7 @@ void ArapahoV2::__Detect(float* inData, int w, int h, float thresh, float hier_t
     dets = get_network_boxes(net, w, h, thresh, 0, 0, 1, &nboxes);
     if(nms)
     {
-        do_nms_sort(dets, nboxes, l.classes, 0.5);
+        do_nms_obj(dets, nboxes, l.classes, 0.45);
     }
     // Update object counts
     for(i = 0;i < (nboxes);i ++)
