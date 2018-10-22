@@ -230,6 +230,13 @@ bool ArapahoV2::Detect(
     //Convert to rgb
     cv::Mat inputRgb;
     cvtColor(inputMat, inputRgb, CV_BGR2RGB);
+
+    if (inputRgb.rows != net->h || inputRgb.cols != net->w)
+    {
+      DPRINTF("Detect: Resizing image to match network \n");
+      resize(inputRgb, inputRgb, cv::Size(net->w, net->h));
+    }
+
     //Convert to IplImage
     IplImage ipl_img = inputRgb;
     image im = ipl_to_image(&ipl_img);
