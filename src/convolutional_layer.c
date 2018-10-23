@@ -615,7 +615,7 @@ void binary_align_weights(convolutional_layer *l)
     binarize_weights(l->weights, m, k, l->binary_weights);
 
     size_t align_weights_size = new_lda * m;
-    l->align_bit_weights_size = align_weights_size / 8;// +1;
+    l->align_bit_weights_size = align_weights_size / 8 + 1;
     float *align_weights = calloc(align_weights_size, sizeof(float));
     l->align_bit_weights = calloc(l->align_bit_weights_size, sizeof(char));
 

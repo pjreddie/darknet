@@ -1719,6 +1719,25 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
     }
 }
 
+static inline int popcnt_64(uint64_t val64) {
+#ifdef WIN32  // Windows
+#ifdef _WIN64 // Windows 64-bit
+    int tmp_count = __popcnt64(val64);
+#else         // Windows 32-bit
+    int tmp_count = __popcnt(val64);
+    tmp_count += __popcnt(val64 >> 32);
+#endif
+#else   // Linux
+#ifdef __x86_64__  // Linux 64-bit
+    int tmp_count = __builtin_popcountll(val64);
+#else  // Linux 32-bit
+    int tmp_count = __builtin_popcount(val64);
+    tmp_count += __builtin_popcount(val64);
+#endif
+#endif
+    return tmp_count;
+}
+
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
@@ -1739,11 +1758,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
                 uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));
                 uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
 
-#ifdef WIN32
-                int tmp_count = __popcnt64(c_bit64);
-#else
-                int tmp_count = __builtin_popcountll(c_bit64);
-#endif
+                int tmp_count = popcnt_64(c_bit64);
 
                 if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
                 count += tmp_count;

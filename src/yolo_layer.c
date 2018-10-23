@@ -374,17 +374,19 @@ int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh,
         for(n = 0; n < l.n; ++n){
             int obj_index  = entry_index(l, 0, n*l.w*l.h + i, 4);
             float objectness = predictions[obj_index];
-            if(objectness <= thresh) continue;
-            int box_index  = entry_index(l, 0, n*l.w*l.h + i, 0);
-            dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
-            dets[count].objectness = objectness;
-            dets[count].classes = l.classes;
-            for(j = 0; j < l.classes; ++j){
-                int class_index = entry_index(l, 0, n*l.w*l.h + i, 4 + 1 + j);
-                float prob = objectness*predictions[class_index];
-                dets[count].prob[j] = (prob > thresh) ? prob : 0;
+            //if(objectness <= thresh) continue;
+            if (objectness > thresh) {
+                int box_index = entry_index(l, 0, n*l.w*l.h + i, 0);
+                dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
+                dets[count].objectness = objectness;
+                dets[count].classes = l.classes;
+                for (j = 0; j < l.classes; ++j) {
+                    int class_index = entry_index(l, 0, n*l.w*l.h + i, 4 + 1 + j);
+                    float prob = objectness*predictions[class_index];
+                    dets[count].prob[j] = (prob > thresh) ? prob : 0;
+                }
+                ++count;
             }
-            ++count;
         }
     }
     correct_yolo_boxes(dets, count, w, h, netw, neth, relative, letter);
