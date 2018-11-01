@@ -25,6 +25,9 @@ darknet53.conv.74
 darknet
 .fuse*
 
+wildhog_yolov3_tiny.txt
+yolov3-tiny.conv.15
+
 # OS Generated #
 .DS_Store*
 ehthumbs.db

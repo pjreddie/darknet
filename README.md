@@ -17,22 +17,35 @@
 
 # Train with your own data with reference [[Link](https://github.com/AlexeyAB/darknet)]
 -------------------
+## Train Yolov3 without pre-trained weights:
+```
+./darknet detector train cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg -gpus 0
+```
+
+## Train Yolov3 with pre-trained weights:
+```
+./darknet detector train cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg darknet53.conv.74 -gpus 0 >> wildhog_yolov3_tiny.txt
+```
+
+## Train Yolov3-tiny with pre-trained weights:
+First prepare the pretrained weights:
+```
+./darknet partial cfg/yolov3-tiny.cfg yolov3-tiny.weights yolov3-tiny.conv.15 15
+```
 Train with the command:
 ```
-./darknet detector train cfg/nuts.data cfg/nuts-yolov3-voc.cfg darknet53.conv.74 -gpus 0
-./darknet detector train cfg/nuts.data cfg/nuts-yolov3-voc.cfg backup_nuts/nfpa-yolov3-voc.backup -gpus 0
-
-./darknet detector train cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg darknet53.conv.74 -gpus 0
-./darknet detector train cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg backup_wildhog/wildhog-yolov3-tiny.backup -gpus 0
-```
-After train, run with:
-```
-./darknet detector test cfg/nfpa.data cfg/nfpa-yolov3-voc.cfg backup_nfpa/nfpa-yolov3-voc_20000.weights
-
-
-./darknet detector test cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg backup_wildhog/wildhog-yolov3-tiny_10000.weights
+./darknet detector train cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg  yolov3-tiny.conv.15 -gpus 0
 ```
 
+## After train, run with:
+```
+./darknet detector test cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg backup_wildhog/wildhog-yolov3-tiny_final.weights ./wildhog.jpg
+
+./darknet detector test cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg backup_wildhog/wildhog-yolov3-tiny.backup 
+
+./darknet detector demo cfg/wildhog.data cfg/wildhog-yolov3-tiny.cfg backup_wildhog/wildhog-yolov3-tiny.backup 
+
+```
 
 # Train Imagenet
 -----------------

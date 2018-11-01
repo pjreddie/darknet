@@ -349,13 +349,13 @@ void save_autotrack_target(image im, detection *dets, int num, float thresh, cha
         i_h = 0;
         detect_flag = 0;
     }
-    printf("demo.c - Tracking target: %s,%d,%d,%d,%d,%d\n", labelref, i_x, i_y, i_w, i_h, detect_flag);
+    //printf("demo.c - Tracking target: %s,%d,%d,%d,%d,%d\n", labelref, i_x, i_y, i_w, i_h, detect_flag);
     FILE *f = fopen("yolo.txt", "w");
     if (f == NULL)
     {
         printf("ERROR opening yolo.txt.\n");
     }
-    fprintf(f, "%s,%d,%d,%d,%d,%d\n", labelref, i_x, i_y, i_w, i_h, detect_flag); //format: label,x,y,w,h
+    //fprintf(f, "%s,%d,%d,%d,%d,%d\n", labelref, i_x, i_y, i_w, i_h, detect_flag); //format: label,x,y,w,h
     fclose(f);
 }
 
