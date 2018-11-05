@@ -1123,6 +1123,38 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
             int count = 0;
             k = 0;
 
+#ifdef NOT_USED
+            // 32 thread X 256 bit = 8192 bit
+            for (; k < (K - 8192); k += 8192) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                ulonglong4 c_bit256;
+
+                //int64_t A_cur_index = (i*lda + k) / 8;
+                int64_t A_cur_index = (local_i*lda + k) / 8;
+                int64_t B_cur_index = (j*ldb + k) / 8;
+                if (i >= M) A_cur_index = 0;
+
+                #pragma unroll
+                for (int t = 0; t < WARP_SIZE; ++t) {
+                    const int lane_id = threadIdx.x % WARP_SIZE;
+
+                    const int64_t A_i = __shfl(A_cur_index, t) + 32 * lane_id;
+                    const int64_t B_i = __shfl(B_cur_index, t) + 32 * lane_id;
+
+                    {
+                        //ulonglong4 a_bit256 = *((ulonglong4 *)(A + A_i));    // weights
+                        ulonglong4 a_bit256 = *((ulonglong4 *)(A_s + A_i));    // weights
+                        ulonglong4 b_bit256 = *((ulonglong4 *)(B + B_i));    // input
+                        c_bit256 = xnor_int256(a_bit256, b_bit256);
+                        int tmp_count = __popcll(c_bit256.w) + __popcll(c_bit256.x) +
+                                __popcll(c_bit256.y) + __popcll(c_bit256.z);
+
+                        int sum_count = warpAllReduceSum(tmp_count);
+                        if (lane_id == t) count += sum_count;
+                    }
+                }
+            }
+#endif
+
 //#ifdef NOT_USED
             // 32 thread X 64 bit = 2048 bit
             for (; k < (K - 2048); k += 2048) {   // l.size*l.size*l.c - one filter size [27 - 9216]

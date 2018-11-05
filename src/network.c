@@ -866,10 +866,10 @@ void calculate_binary_weights(network net)
                 //if (l->size*l->size*l->c >= 2048) l->lda_align = 512;
 
                 binary_align_weights(l);
-            }
 
-            if (net.layers[j].use_bin_output) {
-                l->activation = LINEAR;
+                if (net.layers[j].use_bin_output) {
+                    l->activation = LINEAR;
+                }
             }
         }
     }

@@ -314,6 +314,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         int align = 32;// 8;
         int src_align = l.out_h*l.out_w;
         l.bit_align = src_align + (align - src_align % align);
+
+        l.mean_arr = calloc(l.n, sizeof(float));
     }
 
     if(batch_normalize){
@@ -369,6 +371,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         }
         if(xnor){
             l.binary_weights_gpu = cuda_make_array(l.weights, c*n*size*size);
+            l.mean_arr_gpu = cuda_make_array(0, l.n);
             l.binary_input_gpu = cuda_make_array(0, l.inputs*l.batch);
         }
 
@@ -628,7 +631,7 @@ void binary_align_weights(convolutional_layer *l)
     }
     float_to_bit(align_weights, l->align_bit_weights, align_weights_size);
 
-    l->mean_arr = calloc(l->n, sizeof(float));
+    //l->mean_arr = calloc(l->n, sizeof(float));
     get_mean_array(align_weights, align_weights_size, l->n, l->mean_arr);
 
 #ifdef GPU
@@ -646,7 +649,8 @@ void binary_align_weights(convolutional_layer *l)
     status = cudaMemcpy(l->binary_weights_gpu, l->binary_weights, m*k*sizeof(float), cudaMemcpyHostToDevice);
     check_error(status);
 
-    l->mean_arr_gpu = cuda_make_array(l->mean_arr, l->n);
+    //l->mean_arr_gpu = cuda_make_array(l->mean_arr, l->n);
+    cuda_push_array(l->mean_arr_gpu, l->mean_arr, l->n);
     cudaDeviceSynchronize();
 #endif // GPU
 
