@@ -976,7 +976,7 @@ void rgb_to_hsv(image im)
             float min = three_way_min(r,g,b);
             float delta = max - min;
             v = max;
-            if(max == 0){
+            if(max == 0 || delta < 0.00001){
                 s = 0;
                 h = 0;
             }else{
