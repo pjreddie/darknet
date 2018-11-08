@@ -6,7 +6,7 @@ import glob, os
 # current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Directory where the data will reside, relative to 'darknet.exe'
-path_data = '/media/elab/sdd/data/WildHog/hogmodel_Elab/'
+path_data = '/media/elab/sdd/data/WildHog/wildhog_downsampling/'
 
 # Percentage of images to be used for the test set
 percentage_test = 10
@@ -20,10 +20,6 @@ counter = 1
 index_test = round(100 / percentage_test)
 for pathAndFilename in glob.iglob(os.path.join(path_data, "*.jpg")):
     title, ext = os.path.splitext(os.path.basename(pathAndFilename))
-    #file = open(title + '.txt', 'w')
-    #file.write('0 0.5 0.5 1 1')
-    #file.close()
-
     if counter == index_test:
         counter = 1
         file_test.write(path_data + title + '.jpg' + "\n")

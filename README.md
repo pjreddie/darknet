@@ -1,5 +1,14 @@
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
+
+
+
+# Features of this Darknet
+
+* In tools/, some tools for darknet.
+* In api/, a API interface for darknet.
+
+
 # Quick run the pretrained weights
 ---------------------
 * Run on one Image
