@@ -100,8 +100,8 @@ float_pair get_seq2seq_data(char **source, char **dest, int n, int characters, s
     float *y = calloc(batch * steps * characters, sizeof(float));
     for(i = 0; i < batch; ++i){
         int index = rand()%n;
-        int slen = strlen(source[index]);
-        int dlen = strlen(dest[index]);
+        //int slen = strlen(source[index]);
+        //int dlen = strlen(dest[index]);
         for(j = 0; j < steps; ++j){
             unsigned char curr = source[index][j];
             unsigned char next = dest[index][j];

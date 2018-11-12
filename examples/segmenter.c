@@ -42,7 +42,6 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
-    clock_t time;
 
     load_args args = {0};
     args.w = net->w;
@@ -73,14 +72,14 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 
     int epoch = (*net->seen)/N;
     while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
-        time=clock();
+        double time = what_time_is_it_now();
 
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
 
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
-        time=clock();
+        printf("Loaded: %lf seconds\n", what_time_is_it_now()-time);
+        time = what_time_is_it_now();
 
         float loss = 0;
 #ifdef GPU
@@ -97,18 +96,15 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
             image im = float_to_image(net->w, net->h, net->c, train.X.vals[net->batch*(net->subdivisions-1)]);
             image mask = mask_to_rgb(tr);
             image prmask = mask_to_rgb(pred);
-            show_image(im, "input");
-            show_image(prmask, "pred");
-            show_image(mask, "truth");
-#ifdef OPENCV
-            cvWaitKey(100);
-#endif
+            show_image(im, "input", 1);
+            show_image(prmask, "pred", 1);
+            show_image(mask, "truth", 100);
             free_image(mask);
             free_image(prmask);
         }
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net->seen);
+        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, *net->seen);
         free_data(train);
         if(*net->seen/N > epoch){
             epoch = *net->seen/N;
@@ -159,13 +155,10 @@ void predict_segmenter(char *datafile, char *cfg, char *weights, char *filename)
         float *predictions = network_predict(net, X);
         image pred = get_network_image(net);
         image prmask = mask_to_rgb(pred);
-        show_image(sized, "orig");
-        show_image(prmask, "pred");
-#ifdef OPENCV
-        cvWaitKey(0);
-#endif
         printf("Predicted: %f\n", predictions[0]);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        show_image(sized, "orig", 1);
+        show_image(prmask, "pred", 0);
         free_image(im);
         free_image(sized);
         free_image(prmask);
@@ -182,17 +175,9 @@ void demo_segmenter(char *datacfg, char *cfg, char *weights, int cam_index, cons
     set_batch_network(net, 1);
 
     srand(2222222);
-    CvCapture * cap;
-
-    if(filename){
-        cap = cvCaptureFromFile(filename);
-    }else{
-        cap = cvCaptureFromCAM(cam_index);
-    }
+    void * cap = open_video_stream(filename, cam_index, 0,0,0);
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow("Segmenter", CV_WINDOW_NORMAL); 
-    cvResizeWindow("Segmenter", 512, 512);
     float fps = 0;
 
     while(1){
@@ -210,13 +195,11 @@ void demo_segmenter(char *datacfg, char *cfg, char *weights, int cam_index, cons
 
         image pred = get_network_image(net);
         image prmask = mask_to_rgb(pred);
-        show_image(prmask, "Segmenter");
+        show_image(prmask, "Segmenter", 10);
         
         free_image(in_s);
         free_image(in);
         free_image(prmask);
-
-        cvWaitKey(10);
 
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);

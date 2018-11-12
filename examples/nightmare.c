@@ -83,6 +83,10 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
      */
 
     //rate = rate / abs_mean(out.data, out.w*out.h*out.c);
+    image gray = make_image(out.w, out.h, out.c);
+    fill_image(gray, .5);
+    axpy_cpu(orig.w*orig.h*orig.c, -1, orig.data, 1, gray.data, 1);
+    axpy_cpu(orig.w*orig.h*orig.c, .1, gray.data, 1, out.data, 1);
 
     if(norm) normalize_array(out.data, out.w*out.h*out.c);
     axpy_cpu(orig.w*orig.h*orig.c, rate, out.data, 1, orig.data, 1);
@@ -372,10 +376,7 @@ void run_nightmare(int argc, char **argv)
             if(reconstruct){
                 reconstruct_picture(net, features, im, update, rate, momentum, lambda, smooth_size, 1);
                 //if ((n+1)%30 == 0) rate *= .5;
-                show_image(im, "reconstruction");
-#ifdef OPENCV
-                cvWaitKey(10);
-#endif
+                show_image(im, "reconstruction", 10);
             }else{
                 int layer = max_layer + rand()%range - range/2;
                 int octave = rand()%octaves;
@@ -396,8 +397,7 @@ void run_nightmare(int argc, char **argv)
         }
         printf("%d %s\n", e, buff);
         save_image(im, buff);
-        //show_image(im, buff);
-        //cvWaitKey(0);
+        //show_image(im, buff, 0);
 
         if(rotate){
             image rot = rotate_image(im, rotate);

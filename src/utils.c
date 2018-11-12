@@ -7,6 +7,7 @@
 #include <float.h>
 #include <limits.h>
 #include <time.h>
+#include <sys/time.h>
 
 #include "utils.h"
 
@@ -25,9 +26,11 @@ double get_wall_time()
 
 double what_time_is_it_now()
 {
-    struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
-    return now.tv_sec + now.tv_nsec*1e-9;
+    struct timeval time;
+    if (gettimeofday(&time,NULL)){
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
 int *read_intlist(char *gpu_list, int *ngpus, int d)
@@ -625,6 +628,15 @@ int max_index(float *a, int n)
         }
     }
     return max_i;
+}
+
+int int_index(int *a, int val, int n)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        if(a[i] == val) return i;
+    }
+    return -1;
 }
 
 int rand_int(int min, int max)

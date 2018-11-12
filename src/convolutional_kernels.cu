@@ -111,9 +111,13 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
             float *a = l.weights_gpu + j*l.nweights/l.groups;
             float *b = net.workspace;
             float *c = l.output_gpu + (i*l.groups + j)*n*m;
+            float *im = net.input_gpu + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
 
-            im2col_gpu(net.input_gpu + (i*l.groups + j)*l.c/l.groups*l.h*l.w,
-                l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
+            if (l.size == 1){
+                b = im;
+            } else {
+                im2col_gpu(im, l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
+            }
             gemm_gpu(0,0,m,n,k,1,a,k,b,n,1,c,n);
         }
     }
@@ -236,22 +240,26 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
             float *b = net.workspace;
             float *c = l.weight_updates_gpu + j*l.nweights/l.groups;
 
-            float *im = net.input_gpu+(i*l.groups + j)*l.c/l.groups*l.h*l.w;
+            float *im  = net.input_gpu+(i*l.groups + j)*l.c/l.groups*l.h*l.w;
+            float *imd = net.delta_gpu+(i*l.groups + j)*l.c/l.groups*l.h*l.w;
 
-            im2col_gpu(im, l.c/l.groups, l.h, l.w,
-                    l.size, l.stride, l.pad, b);
+            im2col_gpu(im, l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
             gemm_gpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
 
-            if(net.delta_gpu){
-                if(l.binary || l.xnor) swap_binary(&l);
+            if (net.delta_gpu) {
+                if (l.binary || l.xnor) swap_binary(&l);
                 a = l.weights_gpu + j*l.nweights/l.groups;
                 b = l.delta_gpu + (i*l.groups + j)*m*k;
                 c = net.workspace;
+                if (l.size == 1) {
+                    c = imd;
+                }
 
                 gemm_gpu(1,0,n,k,m,1,a,n,b,k,0,c,k);
 
-                col2im_gpu(net.workspace, l.c/l.groups, l.h, l.w, l.size, l.stride, 
-                    l.pad, net.delta_gpu + (i*l.groups + j)*l.c/l.groups*l.h*l.w);
+                if (l.size != 1) {
+                    col2im_gpu(net.workspace, l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, imd);
+                }
                 if(l.binary || l.xnor) {
                     swap_binary(&l);
                 }
@@ -313,6 +321,9 @@ void update_convolutional_layer_gpu(layer l, update_args a)
             axpy_gpu(l.n, learning_rate/batch, l.scale_updates_gpu, 1, l.scales_gpu, 1);
             scal_gpu(l.n, momentum, l.scale_updates_gpu, 1);
         }
+    }
+    if(l.clip){
+        constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
     }
 }
 

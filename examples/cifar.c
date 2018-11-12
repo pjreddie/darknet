@@ -157,14 +157,14 @@ char *labels[] = {"airplane","automobile","bird","cat","deer","dog","frog","hors
         int class = max_index(train.y.vals[i], 10);
         char buff[256];
         sprintf(buff, "data/cifar/train/%d_%s",i,labels[class]);
-        save_image_png(im, buff);
+        save_image_options(im, buff, PNG, 0);
     }
     for(i = 0; i < test.X.rows; ++i){
         image im = float_to_image(32, 32, 3, test.X.vals[i]);
         int class = max_index(test.y.vals[i], 10);
         char buff[256];
         sprintf(buff, "data/cifar/test/%d_%s",i,labels[class]);
-        save_image_png(im, buff);
+        save_image_options(im, buff, PNG, 0);
     }
 }
 
