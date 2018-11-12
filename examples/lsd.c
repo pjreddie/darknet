@@ -174,9 +174,9 @@ void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg
         printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, floss, aloss, floss_avg, aloss_avg, get_current_rate(gnet), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, gbase, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, gbase, i);
             save_weights(gnet, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%100==0){
@@ -363,9 +363,9 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
         printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, gloss, aloss, gloss_avg, aloss_avg, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, base, i);
             save_weights(net, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%100==0){
@@ -594,9 +594,9 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
         printf("%d: adv: %f | adv_avg: %f, %f rate, %lf seconds, %d images\n", i, aloss, aloss_avg, get_current_rate(gnet), sec(clock()-time), i*imgs);
         if(i%10000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, base, i);
             save_weights(gnet, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%1000==0){
@@ -766,9 +766,9 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
         printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, gloss, aloss, gloss_avg, aloss_avg, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, base, i);
             save_weights(net, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%100==0){
@@ -941,9 +941,9 @@ void train_lsd2(char *cfgfile, char *weightfile, char *acfgfile, char *aweightfi
         printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, gloss, aloss, gloss_avg, aloss_avg, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, base, i);
             save_weights(net, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%100==0){
@@ -1026,7 +1026,7 @@ void train_lsd(char *cfgfile, char *weightfile, int clear)
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%6d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         if(i%100==0){
