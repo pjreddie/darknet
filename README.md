@@ -1,20 +1,8 @@
+# Darknet
+
+Convolutional Neural Networks  卷积神经网络
+
 ## Compilation  编译
-
-```c
-// example/detection.c
-// :138
-    // 这里是保存weights方式，超过1000步，就10000步保存一次；少于1000步就100步保存一次
-    if(i%10000==0 || (i < 1000 && i%100 == 0)){
-#ifdef GPU
-        if(ngpus != 1) sync_nets(nets, ngpus, 0);
-#endif
-        char buff[256];
-        sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
-        save_weights(net, buff);
-    }
-```
-
-也可以改变为 `if(i%1000==0 || (i < 1000 && i%100 == 0)){`  每1000步保存一次
 
 ```shell
 sh$ vi Makefile
