@@ -10,13 +10,14 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 
 ## Compilation
 
+
 ```shell
 sh$ vi Makefile
 |[
-GPU=1     # with CUDA to accelerate by using GPU (CUDA should be in /usr/local/cuda)
-CUDNN=1   # with cuDNN v5-v7 to accelerate training by using GPU (should be in /usr/local/cudnn)
+GPU=1     # default is 0, with CUDA to accelerate by using GPU (CUDA should be in /usr/local/cuda)
+CUDNN=1   # default is 0, with cuDNN v5-v7 to accelerate training by using GPU (should be in /usr/local/cudnn)
 OPENCV=0  # to detect on video
-OPENMP=1  # to support using multi-core CPU
+OPENMP=1  # default is 0, to support using multi-core CPU
 DEBUG=0
 ]|
 
