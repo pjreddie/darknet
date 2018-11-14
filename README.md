@@ -1,8 +1,14 @@
 # Darknet
 
-Convolutional Neural Networks  卷积神经网络
+![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
-## Compilation  编译
+Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
+
+For more information see the [Darknet project website](http://pjreddie.com/darknet).
+
+For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
+
+## Compilation
 
 ```shell
 sh$ vi Makefile
@@ -33,7 +39,7 @@ sh$ make
 
  ```conf
 [net]
-#  用于BGD(Batch Gradient Descent) 批梯度下降算法，
+#  for BGD(Batch Gradient Descent)
 batch=32
 # divide 1 batch into N sub-batches
 subdivisions=16
@@ -43,16 +49,12 @@ width=640
 height=640
 # RGB
 channels=3
-
-
 momentum=0.9
-# 
 decay=0.0005
 angle=0
 saturation = 1.5
 exposure = 1.5
 hue=.1
-
 
 # learning_rate * GPUs = 0.001; 4GPUs = 0.00025; 8GPUs=0.000125
 learning_rate=0.000125
@@ -65,9 +67,7 @@ burn_in=8000
 max_batches = 48000
 # constant, step exp, poly, steps, sig, random
 policy=steps
-# 
 steps=10000,25000
-# 学习率变化比率，和 steps 个数一致
 # after 10000, multiply the learning_rate by 0.1, then after 25000 multiply again by 0.1
 scales=.1,.1
 
@@ -77,23 +77,20 @@ filters=32
 size=3
 stride=1
 pad=1
-# 激活函数，logistic, loggy, relu, elu, relie, plse, hardtan, lhtan, linear, ramp, leaky, tanh, stair
+# activation function: ogistic, loggy, relu, elu, relie, plse, hardtan, lhtan, linear, ramp, leaky, tanh, stair
 activation=leaky
-
-
 
 [yolo]
 mask = 6,7,8
-# 预测框初始宽高
+# initial width and height of prediction boxes
 anchors = 10,13,  16,30,  33,23,  30,61,  62,45,  59,119,  116,90,  156,198,  373,326
 classes=9
 num=9
-# 抖动增加噪声来抑制过拟合
+# increase jitter to avoid overfitting
 jitter=.3
 ignore_thresh = .5
 truth_thresh = 1
 # increase precision by training Yolo for differenct resolutions
-# 是否启用Multi-Scale Training，随机使用不同尺寸图片进行训练；若为0，训练大小跟输入大小一致
 random=1
 
 
@@ -115,7 +112,9 @@ classes=10
 
 ```ini
 classes= 4
-train  = 3d_data/train.txt           ; 这里包含训练图片集，并包含一个.txt 标注数据； 如 /tmp/a.jpg  ==> 表示同时包含 /tmp/a.jpg 和 annotation/tmp/a.txt
+; training images
+; @notice there must be one annotation data (e.g. /tmp/a.txt) for each training image (/tmp/a.jpg).
+train  = 3d_data/train.txt
 valid  = 3d_data/test.txt
 names = data/3d_4sku.names
 backup = backup/3d_4sku_2_6000
@@ -134,12 +133,15 @@ sh$ ./darknet detector train cfg/coco.data cfg/yolov3.cfg backup/yolov3.backup
 # Test
 # @notice set batch=1 and subdivisions=1 when do test
 #   `detect` is shorthand for `detector test cfg/coco.data`
-# @param -thresh default to 0.25, displays objects detected with a confidence of .25+
-sh$ ./darknet detect cfg/yolov3.cfg trained.weights data/dog.jpg -thresh 0.25
+# @param -thresh default to 0.25, displays objects detected with a confidence of .5+
+# @out existed directory or file path; output the prediction(s) into this directory or this file path.
+sh$ ./darknet detect cfg/yolov3.cfg trained.weights data/dog.jpg -thresh 0.5
 
-sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights data/dog.jpg -thresh 0.25
-sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights -thresh 0.25
-sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights -thresh 0.25
+sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights data/valid.txt -out predictions.jpg -thresh 0.5 -gpus 0
+sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights data/valid.txt -out /tmp -thresh 0.5
+sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights data/dog.jpg -thresh 0.5
+sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights -thresh 0.5
+sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights -thresh 0.5
 ```
 
 ### When should I stop training
@@ -152,17 +154,16 @@ sh$ ./darknet detector test cfg/coco.data cfg/yolov3.cfg trained.weights -thresh
 
 ### How to improve object detection
 
-1. Before training
-  * set flag `random=1` and increase `width` and `height` in `.cfg`
-  * recalculate anchors, and set the anchors to `yolo.anchors` in `.cfg`
-    * `sh$ ./darknet detector calc_anchors data/xx.data -num_of_clusters 9 -width 416 -height 416`
+> Before training
+>> set flag `random=1` and increase `width` and `height` in `.cfg`
+>> recalculate anchors, and set the anchors to `yolo.anchors` in `.cfg`
+>>> `sh$ ./darknet detector calc_anchors data/xx.data -num_of_clusters 9 -width 416 -height 416`
 
 ## Train Log
 
 Let's have a look at IOU (Intersection over Union, also known as the [Jaccard index](https://en.wikipedia.org/wiki/Jaccard_index).
 
 ![IoU](https://timebutt.github.io/static/content/images/2017/06/Intersection_over_Union_-_visual_equation-1.png)
-
 
 ```cfg
 [net]
@@ -192,9 +193,9 @@ Region 82 Avg IOU: -nan, Class: -nan, Obj: -nan, No Obj: 0.000060, .5R: -nan, .7
 
 ** Subdivision Output
 
-* `Region Avg IOU: 0.702134` the average of the IoU of every image in the current *subdivision*. A 70.2134% overlap in this case. 代表预测的bounding box和ground truth的交集与并集之比，期望该值趋近于1。
-* `Class: 0.942936` 是标注物体的概率，期望该值趋近于1.
-* `Obj: 0.804691` 期望该值趋近于1.
-* `No Obj: 0.015181` 期望该值越来越小但不为零.
-* `Avg Recall` is defined the code as `recall/count`, and thus a metric for how many *positives* detected out of the total amount of positives in this subdivision. 期望该值趋近1
+* `Region Avg IOU: 0.702134` the average of the IoU of every image in the current *subdivision*. A 70.2134% overlap in this case. 
+* `Class: 0.942936`
+* `Obj: 0.804691`
+* `No Obj: 0.015181`
+* `Avg Recall` is defined the code as `recall/count`, and thus a metric for how many *positives* detected out of the total amount of positives in this subdivision.
 * `count: 82` the amount of *positives* (objects to be detected).
