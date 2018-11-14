@@ -636,6 +636,64 @@ void validate_detector_recall(char* cfgfile, char* weightfile) {
     }
 }
 
+void make_test_predictions(char* input,
+                           network* net,
+                           float thresh,
+                           float hier_thresh,
+                           float nms,
+                           char** names,
+                           image** alphabet,
+                           char* outfile) {
+    double time;
+    image im = load_image_color(input, 0, 0);
+    image sized = letterbox_image(im, net->w, net->h);
+    // image sized = resize_image(im, net->w, net->h);
+    // image sized2 = resize_max(im, net->w);
+    // image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h
+    // - sized2.h)/2), net->w, net->h); resize_network(net, sized.w,
+    // sized.h);
+    layer l = net->layers[net->n - 1];
+
+    float* X = sized.data;
+    time = what_time_is_it_now();
+    network_predict(net, X);
+    printf("%s: Predicted in %f seconds.\n", input,
+           what_time_is_it_now() - time);
+    int nboxes = 0;
+    detection* dets =
+        get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+    // printf("%d\n", nboxes);
+    // if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    if (nms)
+        do_nms_sort(dets, nboxes, l.classes, nms);
+    draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+    free_detections(dets, nboxes);
+    if (outfile) {
+        struct stat st;
+        stat(outfile, &st);
+        if (S_ISDIR(st.st_mode)) {
+            char save_to[256];
+            char* filename = strrchr(input, '/') + 1;
+            strtok(filename, ".");
+            strcpy(save_to, outfile);
+            strcat(save_to, "/");
+            strcat(save_to, filename);
+            save_image(im, save_to);
+        } else {
+            save_image(im, outfile);
+        }
+    } else {
+        save_image(im, "predictions");
+#ifdef OPENCV
+        make_window("predictions", 512, 512, 0);
+        show_image(im, "predictions", 0);
+#endif
+    }
+
+    free_image(im);
+    free_image(sized);
+}
+
 void test_detector(char* datacfg,
                    char* cfgfile,
                    char* weightfile,
@@ -652,7 +710,7 @@ void test_detector(char* datacfg,
     network* net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
-    double time;
+
     char buff[256];
     char* input = buff;
     float nms = .45;
@@ -667,50 +725,28 @@ void test_detector(char* datacfg,
                 return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, 0, 0);
-        image sized = letterbox_image(im, net->w, net->h);
-        // image sized = resize_image(im, net->w, net->h);
-        // image sized2 = resize_max(im, net->w);
-        // image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h
-        // - sized2.h)/2), net->w, net->h); resize_network(net, sized.w,
-        // sized.h);
-        layer l = net->layers[net->n - 1];
-
-        float* X = sized.data;
-        time = what_time_is_it_now();
-        network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input,
-               what_time_is_it_now() - time);
-        int nboxes = 0;
-        detection* dets = get_network_boxes(net, im.w, im.h, thresh,
-                                            hier_thresh, 0, 1, &nboxes);
-        // printf("%d\n", nboxes);
-        // if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        if (nms)
-            do_nms_sort(dets, nboxes, l.classes, nms);
-        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
-        free_detections(dets, nboxes);
-        if (outfile) {
-            struct stat st;
-            stat(outfile, &st);
-            if (S_ISDIR(st.st_mode)) {
-                char save_to[strlen(outfile) + 1 + strlen("predictions")];
-                strcpy(save_to, outfile);
-                strcpy(save_to, "/predictions");
-                save_image(im, save_to);
-            } else {
-                save_image(im, outfile);
+        if (strcmp(strrchr(input, '.'), ".txt") == 0) {
+            char* line = NULL;
+            size_t len = 0;
+            ssize_t read;
+            FILE* fp = fopen(input, "r");
+            if (fp == NULL) {
+                printf("Open %s fail", input);
+                return;
+            }
+            while ((read = getline(&line, &len, fp)) != -1) {
+                strtok(line, "\n");
+                make_test_predictions(line, net, thresh, hier_thresh, nms,
+                                      names, alphabet, outfile);
+            }
+            fclose(fp);
+            if (line) {
+                free(line);
             }
         } else {
-            save_image(im, "predictions");
-#ifdef OPENCV
-            make_window("predictions", 512, 512, 0);
-            show_image(im, "predictions", 0);
-#endif
+            make_test_predictions(input, net, thresh, hier_thresh, nms, names,
+                                  alphabet, outfile);
         }
-
-        free_image(im);
-        free_image(sized);
         if (filename)
             break;
     }

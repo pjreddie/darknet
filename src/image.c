@@ -320,7 +320,7 @@ void draw_detections(image im,
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, labelstr, (im.h * .03));
+                image label = get_label(alphabet, labelstr, (im.h * .008));
                 draw_label(im, top + width, left, label, rgb);
                 free_image(label);
             }
