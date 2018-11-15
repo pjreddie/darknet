@@ -10,7 +10,6 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 
 ## Compilation
 
-
 ```shell
 sh$ vi Makefile
 |[
@@ -44,10 +43,10 @@ sh$ make
 batch=32
 # divide 1 batch into N sub-batches
 subdivisions=16
-# width/height must be divisible by 32, increase it will increase precision
-# it may cause `out of memory (GPU)`
-width=640
-height=640
+# width/height must be divisible by 32 (and suggest ), increase it will increase precision
+# increase it may cause `out of memory (GPU)`
+width=608
+height=608
 # RGB
 channels=3
 momentum=0.9

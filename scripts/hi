@@ -43,24 +43,97 @@ mkdir -p $PredictionsDir
 
 cd $BinDir
 
+
+
+tuneParams() {
+    gpuNum=$(grep gpus $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g' | sed 's/,/ /g' | wc -w)
+
+    echo "-GPUs-"$gpuNum
+
+    batch=$(sed -n '/^batch/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    subdivisions=$(sed -n '/^subdivisions/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    width=$(sed -n '/^width/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    height=$(sed -n '/^height/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    channels=$(sed -n '/^channels/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    momentum=$(sed -n '/^momentum/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    decay=$(sed -n '/^decay/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    angle=$(sed -n '/^angle/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    saturation=$(sed -n '/^saturation/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    exposure=$(sed -n '/^exposure/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    hue=$(sed -n '/^hue/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    learning_rate=$(sed -n '/^learning_rate/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    burn_in=$(sed -n '/^burn_in/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    max_batches=$(sed -n '/^max_batches/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    policy=$(sed -n '/^policy/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    steps=$(sed -n '/^steps/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+    scales=$(sed -n '/^scales/p' $Cnf | awk -F '=' '{print $2}' | sed 's/^ //g;s/ $//g')
+
+    if [ -n "$batch" ]; then
+        sed -i "s/^\s*batch\s*=.*$/batch=$batch/g" ${TrainCfg}
+    fi
+    if [ -n "$subdivisions" ]; then
+        sed -i "s/^\s*subdivisions\s*=.*$/subdivisions=$subdivisions/g" ${TrainCfg}
+    fi
+    if [ -n "$width" ]; then
+        sed -i "s/^\s*width\s*=.*$/width=$width/g" ${TrainCfg}
+    fi
+    if [ -n "$height" ]; then
+        sed -i "s/^\s*height\s*=.*$/height=$height/g" ${TrainCfg}
+    fi
+    if [ -n "$channels" ]; then
+        sed -i "s/^\s*channels\s*=.*$/channels=$channels/g" ${TrainCfg}
+    fi
+    if [ -n "$momentum" ]; then
+        sed -i "s/^\s*momentum\s*=.*$/momentum=$momentum/g" ${TrainCfg}
+    fi
+    if [ -n "$decay" ]; then
+        sed -i "s/^\s*decay\s*=.*$/decay=$decay/g" ${TrainCfg}
+    fi
+    if [ -n "$angle" ]; then
+        sed -i "s/^\s*angle\s*=.*$/angle=$angle/g" ${TrainCfg}
+    fi
+    if [ -n "$saturation" ]; then
+        sed -i "s/^\s*saturation\s*=.*$/saturation=$saturation/g" ${TrainCfg}
+    fi
+    if [ -n "$exposure" ]; then
+        sed -i "s/^\s*exposure\s*=.*$/exposure=$exposure/g" ${TrainCfg}
+    fi
+    if [ -n "$momentum" ]; then
+        sed -i "s/^\s*momentum\s*=.*$/momentum=$height/g" ${TrainCfg}
+    fi
+    if [ -n "$hue" ]; then
+        sed -i "s/^\s*hue\s*=.*$/hue=$hue/g" ${TrainCfg}
+    fi
+    if [ -n "$learning_rate" ]; then
+        if [ "$learning_rate" == "auto" ]; then
+            learning_rate=$(echo "scale=8; 0.001/${gpuNum}" | bc | sed -r 's/0+$//g')
+        fi
+        sed -i "s/^\s*learning_rate\s*=.*$/learning_rate=$learning_rate/g" ${TrainCfg}
+    fi
+    if [ -n "$burn_in" ]; then
+        if [ "$burn_in" == "auto" ]; then
+            burn_in=$[ $gpuNum * 1000 ]
+        fi
+        sed -i "s/^\s*burn_in\s*=.*$/burn_in=$burn_in/g" ${TrainCfg}
+    fi
+    if [ -n "$max_batches" ]; then
+        sed -i "s/^\s*max_batches\s*=.*$/max_batches=$max_batches/g" ${TrainCfg}
+    fi
+    if [ -n "$policy" ]; then
+        sed -i "s/^\s*policy\s*=.*$/policy=$policy/g" ${TrainCfg}
+    fi
+    if [ -n "$steps" ]; then
+        sed -i "s/^\s*steps\s*=.*$/steps=$steps/g" ${TrainCfg}
+    fi
+    if [ -n "$scales" ]; then
+        sed -i "s/^\s*scales\s*=.*$/scales=$scales/g" ${TrainCfg}
+    fi
+}
+
+
 case $1 in
     "train")
-        batch=$(grep batch $Cnf | awk -F '=' '{print $2}')
-        subdivisions=$(grep subdivisions $Cnf | awk -F '=' '{print $2}')
-        width=$(grep width $Cnf | awk -F '=' '{print $2}')
-        height=$(grep height $Cnf | awk -F '=' '{print $2}')
-        if [ -n "$batch" ]; then
-            sed -i "s/^\s*batch\s*=.*$/batch=$batch/g" ${TrainCfg}
-        fi
-        if [ -n "$subdivisions" ]; then
-            sed -i "s/^\s*subdivisions\s*=.*$/subdivisions=$subdivisions/g" ${TrainCfg}
-        fi
-        if [ -n "$width" ]; then
-            sed -i "s/^\s*width\s*=.*$/width=$width/g" ${TrainCfg}
-        fi
-        if [ -n "$height" ]; then
-            sed -i "s/^\s*height\s*=.*$/height=$height/g" ${TrainCfg}
-        fi
+        tuneParams
 
         if [ -f "$BackUpFile" ]; then
             echo "${BinDir}/darknet detector train ${TrainData} ${TrainCfg} ${BackUpFile} -gpus $GPUs >> ${Log} 2>&1 &"
@@ -103,3 +176,5 @@ case $1 in
         echo "Error: Unknown command $1"
     ;;
 esac
+
+
