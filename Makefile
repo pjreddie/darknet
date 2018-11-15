@@ -18,8 +18,8 @@ ARCH?=-gencode=arch=compute_52,code=[sm_52,compute_52]
 VPATH=./src/:./examples
 EXEC?=darknet
 LIB_BASE?=lib${EXEC}
-SLIB?=${LIB_BASE}net.so
-ALIB?=${LIB_BASE}libdarknet.a
+SLIB?=${LIB_BASE}.so
+ALIB?=${LIB_BASE}.a
 OBJDIR=./obj/
 
 # Compiler
