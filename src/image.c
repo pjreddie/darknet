@@ -705,6 +705,9 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
         }
     }
     cvPutText(img, "Iteration number", cvPoint(draw_size / 2, img_size - 10), &font, CV_RGB(0, 0, 0));
+    char max_batches_buff[100];
+    sprintf(max_batches_buff, "in cfg max_batches=%d", max_batches);
+    cvPutText(img, max_batches_buff, cvPoint(draw_size - 195, img_size - 10), &font, CV_RGB(0, 0, 0));
     cvPutText(img, "Press 's' to save: chart.jpg", cvPoint(5, img_size - 10), &font, CV_RGB(0, 0, 0));
     printf(" If error occurs - run training with flag: -dont_show \n");
     cvNamedWindow("average loss", CV_WINDOW_NORMAL);
@@ -728,15 +731,20 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     if (pt1.y < 0) pt1.y = 1;
     cvCircle(img, pt1, 1, CV_RGB(0, 0, 255), CV_FILLED, 8, 0);
 
-    sprintf(char_buff, "current avg loss = %2.4f", avg_loss);
+    sprintf(char_buff, "current avg loss = %2.4f    iteration = %d", avg_loss, current_batch);
     pt1.x = img_size / 2, pt1.y = 30;
-    pt2.x = pt1.x + 250, pt2.y = pt1.y + 20;
+    pt2.x = pt1.x + 460, pt2.y = pt1.y + 20;
     cvRectangle(img, pt1, pt2, CV_RGB(255, 255, 255), CV_FILLED, 8, 0);
     pt1.y += 15;
     cvPutText(img, char_buff, pt1, &font, CV_RGB(0, 0, 0));
     cvShowImage("average loss", img);
     int k = cvWaitKey(20);
-    if (k == 's' || current_batch == (max_batches-1)) cvSaveImage("chart.jpg", img, 0);
+    if (k == 's' || current_batch == (max_batches - 1)) {
+        cvSaveImage("chart.jpg", img, 0);
+        cvPutText(img, "- Saved", cvPoint(250, img_size - 10), &font, CV_RGB(255, 0, 0));
+    }
+    else
+        cvPutText(img, "- Saved", cvPoint(250, img_size - 10), &font, CV_RGB(255, 255, 255));
 }
 #endif    // OPENCV
 

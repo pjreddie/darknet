@@ -695,17 +695,29 @@ void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float 
         adam_gpu(size, layer.weights_gpu, layer.m_gpu, layer.v_gpu, layer.B1, layer.B2, learning_rate/batch, layer.eps, layer.t+1);
         fill_ongpu(size, 0, layer.weight_updates_gpu, 1);
     }else{
-        // update weights:
-        // weights_gpu = weights_gpu*(1 - decay*lr) + weight_updates_gpu*lr / (batch*subdivision) =
-        //  weights_gpu*(1 - 0.0005*0.001) + weight_updates_gpu*0.001/(64*8) =
-        //  weights_gpu * 0.999 999 5 + weight_updates_gpu * 0.000 001 953125
-        //
-        // weight_updates_gpu = (weight_updates_gpu - weights_gpu*decay*batch*subdivision)*momentum =
-        //  (weight_updates_gpu - weights_gpu * 0.0005 * 64 * 8) * 0.9 =
-        //  weight_updates_gpu*0.9 - weights_gpu*0.2304
-        axpy_ongpu(size, -decay*batch, layer.weights_gpu, 1, layer.weight_updates_gpu, 1);
-        axpy_ongpu(size, learning_rate/batch, layer.weight_updates_gpu, 1, layer.weights_gpu, 1);
-        scal_ongpu(size, momentum, layer.weight_updates_gpu, 1);
+        axpy_ongpu(size, -decay*batch, layer.weights_gpu, 1, layer.weight_updates_gpu, 1);  // wu = wu - w*decay*batch
+        axpy_ongpu(size, learning_rate/batch, layer.weight_updates_gpu, 1, layer.weights_gpu, 1); // w = w + wu*lr/batch
+        scal_ongpu(size, momentum, layer.weight_updates_gpu, 1);    // wu = wu*momentum // wu = (wu - w*decay*batch)*momentum
+        // w = w + (wu - w*decay*batch)*lr/batch = w + wu*lr/batch - w*decay*lr = w*(1-decay*lr) + wu*lr/batch
+        //wu_prev = (wu_old - w_old*decay*batch)*momentum
+
+
+        //weights_update = weights_update_new + (weights_update_old - weights_old*decay*batch)*momentum - weights_new*decay*batch =
+        // = weights_update_new + weights_update_old*momentum - weights_old*decay*batch*momentum - weights_new*decay*batch
+        // = weights_update_new + weights_update_old*momentum - (weights_old*momentum + weights_new)*decay*batch
+
+        //------------- RESULT --------------
+        // weights_update = weights_update_new + weights_update_old*momentum - (weights_old*momentum + weights_new)*decay*batch
+        //-----------------------------------
+
+        // weights_newest = weights_new + (weights_update_new + weights_update_old*momentum - (weights_old*momentum + weights_new)*decay*batch)*lr/batch
+        // = weights_new + weights_update_new*lr/batch + weights_update_old*momentum*lr/batch - weights_old*momentum*decay*batch*lr/batch - weights_new*decay*batch*lr/batch
+        // = weights_new + weights_update_new*lr/batch + weights_update_old*momentum*lr/batch - weights_old*momentum*decay*lr - weights_new*decay*lr
+        // = weights_new*(1 - decay*lr) - weights_old*momentum*decay*lr + (weights_update_new + weights_update_old*momentum)*lr/batch
+
+        //------------- RESULT --------------
+        // weights_newest = weights_new*(1 - decay*lr) - weights_old*momentum*(decay*lr) + (weights_update_new + weights_update_old*momentum)*lr/batch
+        //-----------------------------------
     }
 }
 
