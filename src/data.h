@@ -38,7 +38,7 @@ data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int 
 void get_random_batch(data d, int n, float *X, float *y);
 data get_data_part(data d, int part, int total);
 data get_random_data(data d, int num);
-data load_categorical_data_csv(char *filename, int target, int k);
+data load_categorical_data_csv(const char *filename, int target, int k);
 void normalize_data_rows(data d);
 void scale_data_rows(data d, float s);
 void translate_data_rows(data d, float s);

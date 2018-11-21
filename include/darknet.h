@@ -18,6 +18,16 @@
 #endif
 
 #ifdef __cplusplus
+#ifdef OPENCV
+#include <opencv2/opencv.hpp>
+#endif
+#else
+#ifdef OPENCV
+#include <opencv/cv.h>
+#endif
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -29,7 +39,7 @@ typedef struct{
     char **names;
 } metadata;
 
-metadata get_metadata(char *file);
+metadata get_metadata(const char *file);
 
 typedef struct{
     int *leaf;
@@ -584,7 +594,7 @@ typedef struct{
 } box_label;
 
 
-network *load_network(char *cfg, char *weights, int clear);
+network *load_network(const char *cfg, const char *weights, int clear);
 load_args get_base_args(network *net);
 
 void free_data(data d);
@@ -602,8 +612,8 @@ typedef struct list{
 } list;
 
 pthread_t load_data(load_args args);
-list *read_data_cfg(char *filename);
-list *read_cfg(char *filename);
+list *read_data_cfg(const char *filename);
+list *read_cfg(const char *filename);
 unsigned char *read_file(char *filename);
 data resize_data(data orig, int w, int h);
 data *tile_data(data orig, int divs, int size);
@@ -656,11 +666,11 @@ float train_network_sgd(network *net, data d, int n);
 void rgbgr_image(image im);
 data copy_data(data d);
 data concat_data(data d1, data d2);
-data load_cifar10_data(char *filename);
+data load_cifar10_data(const char *filename);
 float matrix_topk_accuracy(matrix truth, matrix guess, int k);
 void matrix_add_matrix(matrix from, matrix to);
 void scale_matrix(matrix m, float scale);
-matrix csv_to_matrix(char *filename);
+matrix csv_to_matrix(const char *filename);
 float *network_accuracies(network *net, data d, int n);
 float train_network_datum(network *net);
 image make_random_image(int w, int h, int c);
@@ -672,18 +682,18 @@ void rescale_weights(layer l, float scale, float trans);
 void rgbgr_weights(layer l);
 image *get_weights(layer l);
 
-void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
+void demo(const char *cfgfile, const char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
 void get_detection_detections(layer l, int w, int h, float thresh, detection *dets);
 
-char *option_find_str(list *l, char *key, char *def);
-int option_find_int(list *l, char *key, int def);
-int option_find_int_quiet(list *l, char *key, int def);
+char *option_find_str(list *l, const char *key, const char *def);
+int option_find_int(list *l, const char *key, int def);
+int option_find_int_quiet(list *l, const char *key, int def);
 
-network *parse_network_cfg(char *filename);
-void save_weights(network *net, char *filename);
-void load_weights(network *net, char *filename);
-void save_weights_upto(network *net, char *filename, int cutoff);
-void load_weights_upto(network *net, char *filename, int start, int cutoff);
+network *parse_network_cfg(const char *filename);
+void save_weights(network *net, const char *filename);
+void load_weights(network *net, const char *filename);
+void save_weights_upto(network *net, const char *filename, int cutoff);
+void load_weights_upto(network *net, const char *filename, int start, int cutoff);
 
 void zero_objectness(layer l);
 void get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets);
@@ -748,13 +758,19 @@ void free_detections(detection *dets, int n);
 
 void reset_network_state(network *net, int b);
 
-char **get_labels(char *filename);
+char **get_labels(const char *filename);
 void do_nms_obj(detection *dets, int total, int classes, float thresh);
 void do_nms_sort(detection *dets, int total, int classes, float thresh);
 
 matrix make_matrix(int rows, int cols);
 
 #ifdef OPENCV
+IplImage *image_to_ipl(image im);
+image ipl_to_image(IplImage* src);
+#ifdef __cplusplus
+cv::Mat image_to_mat(image im);
+image mat_to_image(cv::Mat m);
+#endif
 void *open_video_stream(const char *f, int c, int w, int h, int fps);
 image get_image_from_stream(void *p);
 void make_window(char *name, int w, int h, int fullscreen);
