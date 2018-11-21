@@ -1,4 +1,6 @@
 *.o
+*.a
+*.so
 *.dSYM
 *.csv
 *.out
@@ -25,3 +27,7 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+
+# Jetbrains files
+.idea/
+cmake-build-*
