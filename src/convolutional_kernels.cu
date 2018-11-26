@@ -716,7 +716,8 @@ void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float 
         // = weights_new*(1 - decay*lr) - weights_old*momentum*decay*lr + (weights_update_new + weights_update_old*momentum)*lr/batch
 
         //------------- RESULT --------------
-        // weights_newest = weights_new*(1 - decay*lr) - weights_old*momentum*(decay*lr) + (weights_update_new + weights_update_old*momentum)*lr/batch
+        // weights_newest = weights_new*(1 - decay*lr) - weights_old*momentum*(decay*lr) + (weights_update_new + weights_update_old*momentum)*lr/batch =
+        // = weights_new - (weights_new + weights_old*momentum)*decay*lr + (weights_update_new + weights_update_old*momentum)*lr / batch
         //-----------------------------------
     }
 }
