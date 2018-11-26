@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "box.h"
 #include <stdio.h>
 #include <math.h>

@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "iseg_layer.h"
 #include "activations.h"
 #include "blas.h"

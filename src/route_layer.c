@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "route_layer.h"
 #include "cuda.h"
 #include "blas.h"

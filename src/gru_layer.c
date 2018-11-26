@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "gru_layer.h"
 #include "connected_layer.h"
 #include "utils.h"

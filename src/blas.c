@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "blas.h"
 
 #include <math.h>

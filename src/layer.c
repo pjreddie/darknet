@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "layer.h"
 #include "cuda.h"
 

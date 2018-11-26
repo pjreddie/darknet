@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "region_layer.h"
 #include "activations.h"
 #include "blas.h"

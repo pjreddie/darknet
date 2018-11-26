@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "gemm.h"
 #include "utils.h"
 #include "cuda.h"

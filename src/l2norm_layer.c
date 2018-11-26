@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "l2norm_layer.h"
 #include "activations.h"
 #include "blas.h"

@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "connected_layer.h"
 #include "convolutional_layer.h"
 #include "batchnorm_layer.h"

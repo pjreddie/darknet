@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "data.h"
 #include "utils.h"
 #include "image.h"

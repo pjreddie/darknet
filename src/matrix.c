@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "matrix.h"
 #include "utils.h"
 #include "blas.h"
