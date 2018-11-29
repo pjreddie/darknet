@@ -1,0 +1,6 @@
+classes= 1
+train  = data/train.list
+#valid  = coco_testdev
+valid = data/test.txt
+names = data/frog.names
+backup =backup/
