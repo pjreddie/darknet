@@ -12,8 +12,7 @@
 
 int windows = 0;
 
-float colors[6][3] = {{1, 0, 1}, {0, 0, 1}, {0, 1, 1},
-                      {0, 1, 0}, {1, 1, 0}, {1, 0, 0}};
+float colors[6][3] = {{1, 0, 1}, {0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0}};
 
 float get_color(int c, int x, int max) {
     float ratio = ((float)x / max) * 5;
@@ -267,16 +266,22 @@ void draw_detections(image im,
     for (i = 0; i < num; ++i) {
         char labelstr[4096] = {0};
         int class = -1;
+        float p;
+        char ps[10];
         for (j = 0; j < classes; ++j) {
             if (dets[i].prob[j] > thresh) {
+                p = dets[i].prob[j] * 100;
+                sprintf(ps, ":  %.0f%%", p);
                 if (class < 0) {
                     strcat(labelstr, names[j]);
+                    strcat(labelstr, ps);
                     class = j;
                 } else {
                     strcat(labelstr, ", ");
                     strcat(labelstr, names[j]);
+                    strcat(labelstr, ps);
                 }
-                printf("%s: %.0f%%\n", names[j], dets[i].prob[j] * 100);
+                printf("%s: %s\n", names[j], ps);
             }
         }
         if (class >= 0) {
