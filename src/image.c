@@ -267,11 +267,11 @@ void draw_detections(image im,
         char labelstr[4096] = {0};
         int class = -1;
         float p;
-        char ps[10];
+        char ps[7];
         for (j = 0; j < classes; ++j) {
             if (dets[i].prob[j] > thresh) {
                 p = dets[i].prob[j] * 100;
-                sprintf(ps, ":  %.0f%%", p);
+                sprintf(ps, ": %.0f%%", p);
                 if (class < 0) {
                     strcat(labelstr, names[j]);
                     strcat(labelstr, ps);
