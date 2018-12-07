@@ -91,8 +91,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
     int init_w = net.w;
     int init_h = net.h;
-    int iter_save;
+    int iter_save, iter_save_last;
     iter_save = get_current_batch(net);
+    iter_save_last = get_current_batch(net);
 
     load_args args = {0};
     args.w = net.w;
@@ -210,13 +211,23 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
         //if (i % 100 == 0) {
-        if(i >= (iter_save + 100)) {
+        if(i >= (iter_save + 1000)) {
             iter_save = i;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            save_weights(net, buff);
+        }
+
+        if (i >= (iter_save_last + 100)) {
+            iter_save_last = i;
+#ifdef GPU
+            if (ngpus != 1) sync_nets(nets, ngpus, 0);
+#endif
+            char buff[256];
+            sprintf(buff, "%s/%s_last.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         free_data(train);

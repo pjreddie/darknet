@@ -42,6 +42,7 @@ typedef struct network{
     int   *steps;
     int num_steps;
     int burn_in;
+    int cudnn_half;
 
     int adam;
     float B1;

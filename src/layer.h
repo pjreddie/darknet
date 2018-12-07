@@ -299,14 +299,16 @@ struct layer{
     float * norms_gpu;
     #ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
+    cudnnTensorDescriptor_t srcTensorDesc16, dstTensorDesc16;
     cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
+    cudnnTensorDescriptor_t dsrcTensorDesc16, ddstTensorDesc16;
 	cudnnTensorDescriptor_t normTensorDesc, normDstTensorDesc, normDstTensorDescF16;
-    cudnnFilterDescriptor_t weightDesc;
-    cudnnFilterDescriptor_t dweightDesc;
+    cudnnFilterDescriptor_t weightDesc, weightDesc16;
+    cudnnFilterDescriptor_t dweightDesc, dweightDesc16;
     cudnnConvolutionDescriptor_t convDesc;
-    cudnnConvolutionFwdAlgo_t fw_algo;
-    cudnnConvolutionBwdDataAlgo_t bd_algo;
-    cudnnConvolutionBwdFilterAlgo_t bf_algo;
+    cudnnConvolutionFwdAlgo_t fw_algo, fw_algo16;
+    cudnnConvolutionBwdDataAlgo_t bd_algo, bd_algo16;
+    cudnnConvolutionBwdFilterAlgo_t bf_algo, bf_algo16;
     cudnnPoolingDescriptor_t poolingDesc;
     #endif
     #endif
