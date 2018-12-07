@@ -138,8 +138,8 @@ void fast_binarize_weights_gpu(float *weights, int n, int size, float *binary, f
 __global__ void cuda_f32_to_f16(float* input_f32, size_t size, half *output_f16)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    //if (idx < size) output_f16[idx] = __float2half(input_f32[idx]);
-    if (idx < size) output_f16[idx] = __float2half_rn(input_f32[idx]);
+    if (idx < size) output_f16[idx] = __float2half(input_f32[idx]);
+    //if (idx < size) output_f16[idx] = __float2half_rn(input_f32[idx]); // can't be compiled on Linux without casting
     // __float2half_ru, __float2half_rd, __float2half_rz, __float2half_rn
     //if (idx < size) *((unsigned short *)output_f16 + idx) = __float2half(input_f32[idx]);
 }
