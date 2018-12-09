@@ -411,9 +411,13 @@ Choose weights-file **with the highest mAP (mean average precision)** or IoU (in
 
 For example, **bigger mAP** gives weights `yolo-obj_8000.weights` - then **use this weights for detection**.
 
-Or just train with `-map` flag: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -map` So you will see loss-chart with mAP-chart (mAP will be calculated for each 4 Epochs using `valid=valid.txt` file that is specified in `obj.data` file)
+Or just train with `-map` flag: 
 
-![loss_chart_map_chart](https://hsto.org/webt/ip/fx/tn/ipfxtn_fpxwh_0zj8kvm2kdgpd4.jpeg)
+`darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -map` 
+
+So you will see loss-chart with mAP-chart (mAP will be calculated for each 4 Epochs using `valid=valid.txt` file that is specified in `obj.data` file)
+
+![loss_chart_map_chart](https://hsto.org/webt/yd/vl/ag/ydvlagutof2zcnjodstgroen8ac.jpeg)
 
 Example of custom object detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_8000.weights`
 
