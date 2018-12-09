@@ -46,7 +46,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *valid_images = option_find_str(options, "valid", train_images);
     char *backup_directory = option_find_str(options, "backup", "/backup/");
 
-    int valid_images_num = 0;
+    int train_images_num = 0;
     if (calc_map) {
         FILE* valid_file = fopen(valid_images, "r");
         if (!valid_file) {
@@ -55,8 +55,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             exit(-1);
         }
         else fclose(valid_file);
-        list *plist = get_paths(valid_images);
-        valid_images_num = plist->size;
+        list *plist = get_paths(train_images);
+        train_images_num = plist->size;
         free_list(plist);
     }
 
@@ -229,7 +229,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
 #ifdef OPENCV
         if (!dont_show) {
-            if (calc_map && (i >= (iter_map + valid_images_num/10) || i == net.max_batches) && i >= 1000) {
+            if (calc_map && (i >= (iter_map + 4*train_images_num/net.batch) || i == net.max_batches) && i >= 1000) {
                 iter_map = i;
                 mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net);
                 printf("\n mean_average_precision = %f \n", mean_average_precision);
