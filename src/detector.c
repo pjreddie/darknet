@@ -229,7 +229,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
 #ifdef OPENCV
         if (!dont_show) {
-            if (calc_map && (i >= (iter_map + 4*train_images_num/net.batch) || i == net.max_batches) && i >= 1000) {
+            int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);
+            if (calc_map && (i >= (iter_map + calc_map_for_each) || i == net.max_batches) && i >= net.burn_in && i >= 1000) {
                 iter_map = i;
                 mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net);
                 printf("\n mean_average_precision = %f \n", mean_average_precision);
