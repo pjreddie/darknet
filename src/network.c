@@ -377,6 +377,9 @@ void set_batch_network(network *net, int b)
             }
             */
         }
+        else if (net->layers[i].type == MAXPOOL) {
+            cudnn_maxpool_setup(net->layers + i);
+        }
 #endif
     }
 }

@@ -295,7 +295,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 //#ifdef CUDNN_HALF
     //if (state.use_mixed_precision) {
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
-    if(state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > state.net.burn_in))
+    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > state.net.burn_in))
     {
         //printf("\n CUDNN_HALF!!! state.index = %d \n", state.index);
 

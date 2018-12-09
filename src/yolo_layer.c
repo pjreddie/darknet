@@ -364,6 +364,7 @@ void avg_flipped_yolo(layer l)
 
 int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets, int letter)
 {
+    //printf("\n l.batch = %d, l.w = %d, l.h = %d, l.n = %d \n", l.batch, l.w, l.h, l.n);
     int i,j,n;
     float *predictions = l.output;
     if (l.batch == 2) avg_flipped_yolo(l);
@@ -376,6 +377,7 @@ int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh,
             float objectness = predictions[obj_index];
             //if(objectness <= thresh) continue;    // incorrect behavior for Nan values
             if (objectness > thresh) {
+                //printf("\n objectness = %f, thresh = %f, i = %d, n = %d \n", objectness, thresh, i, n);
                 int box_index = entry_index(l, 0, n*l.w*l.h + i, 0);
                 dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
                 dets[count].objectness = objectness;
