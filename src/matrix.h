@@ -5,6 +5,13 @@ typedef struct matrix{
     float **vals;
 } matrix;
 
+typedef struct {
+    int *assignments;
+    matrix centers;
+} model;
+
+
+model do_kmeans(matrix data, int k);
 matrix make_matrix(int rows, int cols);
 void free_matrix(matrix m);
 void print_matrix(matrix m);

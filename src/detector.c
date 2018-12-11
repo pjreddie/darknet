@@ -964,7 +964,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     return mean_average_precision;
 }
 
-#ifdef OPENCV
+//#ifdef OPENCV
 typedef struct {
     float w, h;
 } anchors_t;
@@ -979,6 +979,17 @@ int anchors_comparator(const void *pa, const void *pb)
     return 0;
 }
 
+int anchors_data_comparator(const float **pa, const float **pb)
+{
+    float *a = (float *)*pa;
+    float *b = (float *)*pb;
+    float diff = b[0]*b[1] - a[0]*a[1];
+    if (diff < 0) return 1;
+    else if (diff > 0) return -1;
+    return 0;
+}
+
+
 void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int show)
 {
     printf("\n num_of_clusters = %d, width = %d, height = %d \n", num_of_clusters, width, height);
@@ -991,12 +1002,14 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
     //float pointsdata[] = { 1,1, 2,2, 6,6, 5,5, 10,10 };
     float *rel_width_height_array = calloc(1000, sizeof(float));
 
+
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.list");
     list *plist = get_paths(train_images);
     int number_of_images = plist->size;
     char **paths = (char **)list_to_array(plist);
 
+    srand(time(0));
     int number_of_boxes = 0;
     printf(" read labels from %d images \n", number_of_images);
 
@@ -1030,85 +1043,57 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
         }
     }
     printf("\n all loaded. \n");
+    printf("\n calculating k-means++ ...");
 
-    CvMat* points = cvCreateMat(number_of_boxes, 2, CV_32FC1);
-    CvMat* centers = cvCreateMat(num_of_clusters, 2, CV_32FC1);
-    CvMat* labels = cvCreateMat(number_of_boxes, 1, CV_32SC1);
+    matrix boxes_data;
+    model anchors_data;
+    boxes_data = make_matrix(number_of_boxes, 2);
 
+    printf("\n");
     for (i = 0; i < number_of_boxes; ++i) {
-        points->data.fl[i * 2] = rel_width_height_array[i * 2];
-        points->data.fl[i * 2 + 1] = rel_width_height_array[i * 2 + 1];
-        //cvSet1D(points, i * 2, cvScalar(rel_width_height_array[i * 2], 0, 0, 0));
-        //cvSet1D(points, i * 2 + 1, cvScalar(rel_width_height_array[i * 2 + 1], 0, 0, 0));
+        float w = boxes_data.vals[i][0] = rel_width_height_array[i * 2];
+        float h = boxes_data.vals[i][1] = rel_width_height_array[i * 2 + 1];
+        //if (w > 410 || h > 410) printf("i:%d,  w = %f, h = %f \n", i, w, h);
     }
 
+    // Is used: distance(box, centroid) = 1 - IoU(box, centroid)
 
-    const int attemps = 10;
-    double compactness;
+    // K-means
+    anchors_data = do_kmeans(boxes_data, num_of_clusters);
 
-    enum {
-        KMEANS_RANDOM_CENTERS = 0,
-        KMEANS_USE_INITIAL_LABELS = 1,
-        KMEANS_PP_CENTERS = 2
-    };
-
-    printf("\n calculating k-means++ ...");
-    // Should be used: distance(box, centroid) = 1 - IoU(box, centroid)
-    cvKMeans2(points, num_of_clusters, labels,
-        cvTermCriteria(CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10000, 0), attemps,
-        0, KMEANS_PP_CENTERS,
-        centers, &compactness);
-
-    // sort anchors
-    qsort(centers->data.fl, num_of_clusters, 2*sizeof(float), anchors_comparator);
-
-    //orig 2.0 anchors = 1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52
-    //float orig_anch[] = { 1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52 };
-    // worse than ours (even for 19x19 final size - for input size 608x608)
-
-    //orig anchors = 1.3221,1.73145, 3.19275,4.00944, 5.05587,8.09892, 9.47112,4.84053, 11.2364,10.0071
-    //float orig_anch[] = { 1.3221,1.73145, 3.19275,4.00944, 5.05587,8.09892, 9.47112,4.84053, 11.2364,10.0071 };
-    // orig (IoU=59.90%) better than ours (59.75%)
+    qsort(anchors_data.centers.vals, num_of_clusters, 2 * sizeof(float), anchors_data_comparator);
 
     //gen_anchors.py = 1.19, 1.99, 2.79, 4.60, 4.53, 8.92, 8.06, 5.29, 10.32, 10.66
     //float orig_anch[] = { 1.19, 1.99, 2.79, 4.60, 4.53, 8.92, 8.06, 5.29, 10.32, 10.66 };
 
-    // ours: anchors = 9.3813,6.0095, 3.3999,5.3505, 10.9476,11.1992, 5.0161,9.8314, 1.5003,2.1595
-    //float orig_anch[] = { 9.3813,6.0095, 3.3999,5.3505, 10.9476,11.1992, 5.0161,9.8314, 1.5003,2.1595 };
-    //for (i = 0; i < num_of_clusters * 2; ++i) centers->data.fl[i] = orig_anch[i];
-
-    //for (i = 0; i < number_of_boxes; ++i)
-    //    printf("%2.2f,%2.2f, ", points->data.fl[i * 2], points->data.fl[i * 2 + 1]);
-
     printf("\n");
     float avg_iou = 0;
     for (i = 0; i < number_of_boxes; ++i) {
-        float box_w = points->data.fl[i * 2];
-        float box_h = points->data.fl[i * 2 + 1];
+        float box_w = rel_width_height_array[i * 2]; //points->data.fl[i * 2];
+        float box_h = rel_width_height_array[i * 2 + 1]; //points->data.fl[i * 2 + 1];
         //int cluster_idx = labels->data.i[i];
         int cluster_idx = 0;
         float min_dist = FLT_MAX;
+        float best_iou = 0;
         for (j = 0; j < num_of_clusters; ++j) {
-            float anchor_w = centers->data.fl[j * 2];
-            float anchor_h = centers->data.fl[j * 2 + 1];
-            float w_diff = anchor_w - box_w;
-            float h_diff = anchor_h - box_h;
-            float distance = sqrt(w_diff*w_diff + h_diff*h_diff);
-            if (distance < min_dist) min_dist = distance, cluster_idx = j;
+            float anchor_w = anchors_data.centers.vals[j][0];   // centers->data.fl[j * 2];
+            float anchor_h = anchors_data.centers.vals[j][1];   // centers->data.fl[j * 2 + 1];
+            float min_w = (box_w < anchor_w) ? box_w : anchor_w;
+            float min_h = (box_h < anchor_h) ? box_h : anchor_h;
+            float box_intersect = min_w*min_h;
+            float box_union = box_w*box_h + anchor_w*anchor_h - box_intersect;
+            float iou = box_intersect / box_union;
+            float distance = 1 - iou;
+            if (distance < min_dist) min_dist = distance, cluster_idx = j, best_iou = iou;
         }
 
-        float anchor_w = centers->data.fl[cluster_idx * 2];
-        float anchor_h = centers->data.fl[cluster_idx * 2 + 1];
-        float min_w = (box_w < anchor_w) ? box_w : anchor_w;
-        float min_h = (box_h < anchor_h) ? box_h : anchor_h;
-        float box_intersect = min_w*min_h;
-        float box_union = box_w*box_h + anchor_w*anchor_h - box_intersect;
-        float iou = box_intersect / box_union;
-        if (iou > 1 || iou < 0) { // || box_w > width || box_h > height) {
+        float anchor_w = anchors_data.centers.vals[cluster_idx][0]; //centers->data.fl[cluster_idx * 2];
+        float anchor_h = anchors_data.centers.vals[cluster_idx][1]; //centers->data.fl[cluster_idx * 2 + 1];
+        if (best_iou > 1 || best_iou < 0) { // || box_w > width || box_h > height) {
             printf(" Wrong label: i = %d, box_w = %d, box_h = %d, anchor_w = %d, anchor_h = %d, iou = %f \n",
-                i, box_w, box_h, anchor_w, anchor_h, iou);
+                i, box_w, box_h, anchor_w, anchor_h, best_iou);
         }
-        else avg_iou += iou;
+        else avg_iou += best_iou;
     }
     avg_iou = 100 * avg_iou / number_of_boxes;
     printf("\n avg IoU = %2.2f %% \n", avg_iou);
@@ -1119,7 +1104,10 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
         printf("\nSaving anchors to the file: anchors.txt \n");
         printf("anchors = ");
         for (i = 0; i < num_of_clusters; ++i) {
-            sprintf(buff, "%2.4f,%2.4f", centers->data.fl[i * 2], centers->data.fl[i * 2 + 1]);
+            float anchor_w = anchors_data.centers.vals[i][0]; //centers->data.fl[i * 2];
+            float anchor_h = anchors_data.centers.vals[i][1]; //centers->data.fl[i * 2 + 1];
+            if(width > 32) sprintf(buff, "%3.0f,%3.0f", anchor_w, anchor_h);
+            else sprintf(buff, "%2.4f,%2.4f", anchor_w, anchor_h);
             printf("%s", buff);
             fwrite(buff, sizeof(char), strlen(buff), fw);
             if (i + 1 < num_of_clusters) {
@@ -1135,6 +1123,27 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
     }
 
     if (show) {
+#ifdef OPENCV
+        CvMat* labels = cvCreateMat(number_of_boxes, 1, CV_32SC1);
+        CvMat* points = cvCreateMat(number_of_boxes, 2, CV_32FC1);
+        CvMat* centers = cvCreateMat(num_of_clusters, 2, CV_32FC1);
+
+        for (i = 0; i < number_of_boxes; ++i) {
+            points->data.fl[i * 2] = rel_width_height_array[i * 2];
+            points->data.fl[i * 2 + 1] = rel_width_height_array[i * 2 + 1];
+            //cvSet1D(points, i * 2, cvScalar(rel_width_height_array[i * 2], 0, 0, 0));
+            //cvSet1D(points, i * 2 + 1, cvScalar(rel_width_height_array[i * 2 + 1], 0, 0, 0));
+        }
+
+        for (i = 0; i < num_of_clusters; ++i) {
+            centers->data.fl[i * 2] = anchors_data.centers.vals[i][0];
+            centers->data.fl[i * 2 + 1] = anchors_data.centers.vals[i][1];
+        }
+
+        for (i = 0; i < number_of_boxes; ++i) {
+            labels->data.i[i] = anchors_data.assignments[i];
+        }
+
         size_t img_size = 700;
         IplImage* img = cvCreateImage(cvSize(img_size, img_size), 8, 3);
         cvZero(img);
@@ -1161,18 +1170,20 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
         cvWaitKey(0);
         cvReleaseImage(&img);
         cvDestroyAllWindows();
-    }
-
-    free(rel_width_height_array);
-    cvReleaseMat(&points);
-    cvReleaseMat(&centers);
-    cvReleaseMat(&labels);
-}
-#else
-void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int show) {
-    printf(" k-means++ can't be used without OpenCV, because there is used cvKMeans2 implementation \n");
-}
+        cvReleaseMat(&labels);
+        cvReleaseMat(&points);
+        cvReleaseMat(&centers);
 #endif // OPENCV
+    }
+    free(rel_width_height_array);
+
+    getchar();
+}
+//#else
+//void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int show) {
+//    printf(" k-means++ can't be used without OpenCV, because there is used cvKMeans2 implementation \n");
+//}
+//#endif // OPENCV
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
                    float hier_thresh, int dont_show, int ext_output, int save_labels)
