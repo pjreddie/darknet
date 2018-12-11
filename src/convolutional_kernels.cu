@@ -553,7 +553,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             state.workspace,
             l.workspace_size,
             &one,
-            l.dweightDesc,
+            l.dweightDesc16,
             l.weight_updates_gpu16);    // l.weight_updates_gpu);
 
         cuda_convert_f16_to_f32(l.weight_updates_gpu16, l.c*l.n*l.size*l.size, l.weight_updates_gpu);
