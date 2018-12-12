@@ -339,7 +339,7 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
    * (file `yolo-obj_xxxx.weights` will be saved to the `build\darknet\x64\backup\` for each 1000 iterations)
    * (To disable Loss-Window use `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -dont_show`, if you train on computer without monitor like a cloud Amazaon EC2)
 
-8.1. For training with mAP (mean average precisions) calculation for each 4 Epochs (set `valid=valid.txt` or `train.txt` in `obj.data` file): `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -map`
+8.1. For training with mAP (mean average precisions) calculation for each 4 Epochs (set `valid=valid.txt` or `train.txt` in `obj.data` file) and run: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -map`
 
 9. After training is complete - get result `yolo-obj_final.weights` from path `build\darknet\x64\backup\`
 
@@ -405,7 +405,7 @@ To get weights from Early Stopping Point:
 
 And comapre last output lines for each weights (7000, 8000, 9000):
 
-Choose weights-file **with the highest mAP (mean average precision)** or IoU (intersect of union)
+Choose weights-file **with the highest mAP (mean average precision)** or IoU (intersect over union)
 
 For example, **bigger mAP** gives weights `yolo-obj_8000.weights` - then **use this weights for detection**.
 
@@ -413,13 +413,13 @@ Or just train with `-map` flag:
 
 `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -map` 
 
-So you will see loss-chart with mAP-chart (mAP will be calculated for each 4 Epochs using `valid=valid.txt` file that is specified in `obj.data` file)
+So you will see mAP-chart (red-line) in the Loss-chart Window. mAP will be calculated for each 4 Epochs using `valid=valid.txt` file that is specified in `obj.data` file (`1 Epoch = images_in_train_txt / batch` iterations)
 
 ![loss_chart_map_chart](https://hsto.org/webt/yd/vl/ag/ydvlagutof2zcnjodstgroen8ac.jpeg)
 
 Example of custom object detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_8000.weights`
 
-* **IoU** (intersect of union) - average instersect of union of objects and detections for a certain threshold = 0.24
+* **IoU** (intersect over union) - average instersect over union of objects and detections for a certain threshold = 0.24
 
 * **mAP** (mean average precision) - mean value of `average precisions` for each class, where `average precision` is average value of 11 points on PR-curve for each possible threshold (each probability of detection) for the same class (Precision-Recall in terms of PascalVOC, where Precision=TP/(TP+FP) and Recall=TP/(TP+FN) ), page-11: http://homepages.inf.ed.ac.uk/ckiw/postscript/ijcv_voc09.pdf
 
@@ -499,7 +499,7 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
 
 ## Using Yolo9000
 
- Simultaneous detection and classification of 9000 objects:
+ Simultaneous detection and classification of 9000 objects: `darknet.exe detector test cfg/combine9k.data cfg/yolo9000.cfg yolo9000.weights data/dog.jpg`
 
 * `yolo9000.weights` - (186 MB Yolo9000 Model) requires 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo9000.weights
 
