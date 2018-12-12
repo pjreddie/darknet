@@ -25,7 +25,7 @@ image get_image_from_stream_cpp(CvCapture *cap);
 #include "http_stream.h"
 
 IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size);
-void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision);
+void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision, int draw_precision);
 
 #endif
 
@@ -153,7 +153,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
 #ifdef OPENCV
         if(!dont_show)
-            draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, -1);
+            draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, -1, 0);
 #endif  // OPENCV
 
         if (i >= (iter_save + 100)) {

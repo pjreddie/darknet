@@ -720,7 +720,7 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
     return img;
 }
 
-void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision)
+void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision, int draw_precision)
 {
     int img_offset = 50;
     int draw_size = img_size - img_offset;
@@ -734,28 +734,26 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     cvCircle(img, pt1, 1, CV_RGB(0, 0, 255), CV_FILLED, 8, 0);
 
     // precision
-    if (precision >= 0) {
+    if (draw_precision) {
         static float old_precision = 0;
-        static iteration_old = 0;
+        static int iteration_old = 0;
+        if(iteration_old == 0) cvPutText(img, "mAP%", cvPoint(0, 12), &font, CV_RGB(255, 0, 0));
 
-        if (old_precision != precision) {
-            cvLine(img,
-                cvPoint(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
-                cvPoint(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
-                CV_RGB(255, 0, 0), 1, 8, 0);
+        cvLine(img,
+            cvPoint(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
+            cvPoint(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
+            CV_RGB(255, 0, 0), 1, 8, 0);
 
-            old_precision = precision;
-            iteration_old = current_batch;
-            sprintf(char_buff, "%2.0f%% ", precision * 100);
-            CvFont font3;
-            cvInitFont(&font3, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 5, CV_AA);
-            cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font3, CV_RGB(255, 255, 255));
+        old_precision = precision;
+        iteration_old = current_batch;
+        sprintf(char_buff, "%2.0f%% ", precision * 100);
+        CvFont font3;
+        cvInitFont(&font3, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 5, CV_AA);
+        cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font3, CV_RGB(255, 255, 255));
 
-            CvFont font2;
-            cvInitFont(&font2, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 1, CV_AA);
-            cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font2, CV_RGB(200, 0, 0));
-        }
-        cvPutText(img, "mAP%", cvPoint(0, 12), &font, CV_RGB(255, 0, 0));
+        CvFont font2;
+        cvInitFont(&font2, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 1, CV_AA);
+        cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font2, CV_RGB(200, 0, 0));
     }
 
     sprintf(char_buff, "current avg loss = %2.4f    iteration = %d", avg_loss, current_batch);

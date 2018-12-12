@@ -26,7 +26,7 @@
 #endif
 
 IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size);
-void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision);
+void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision, int draw_precision);
 
 #define CV_RGB(r, g, b) cvScalar( (b), (g), (r), 0 )
 #endif    // OPENCV
@@ -229,14 +229,16 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
 #ifdef OPENCV
         if (!dont_show) {
+            int draw_precision = 0;
             int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);
             if (calc_map && (i >= (iter_map + calc_map_for_each) || i == net.max_batches) && i >= net.burn_in && i >= 1000) {
                 iter_map = i;
                 mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net);
                 printf("\n mean_average_precision = %f \n", mean_average_precision);
+                draw_precision = 1;
             }
 
-            draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision);
+            draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision);
         }
 #endif    // OPENCV
 
