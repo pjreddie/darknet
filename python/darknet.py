@@ -1,6 +1,13 @@
 from ctypes import *
 import math
 import random
+import cv2
+from time import time
+import os
+import numpy as np
+
+data_dir = '/path_to_your_testing_images/'
+output_dir = '/path_to_your_output_directory/'
 
 def sample(probs):
     s = sum(probs)
@@ -42,10 +49,10 @@ class METADATA(Structure):
     _fields_ = [("classes", c_int),
                 ("names", POINTER(c_char_p))]
 
-    
+
 
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
-lib = CDLL("libdarknet.so", RTLD_GLOBAL)
+lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -122,11 +129,25 @@ def classify(net, meta, im):
     res = sorted(res, key=lambda x: -x[1])
     return res
 
+def draw_boxes(result, im_path):
+    image = cv2.imread(os.path.join(data_dir, im_path), cv2.IMREAD_COLOR)
+    for i in range(len(result)):
+    #    print(i, ':', result[i][2])
+        x, y = result[i][2][0], result[i][2][1]
+        w, h = result[i][2][2],result[i][2][3]
+
+        cv2.rectangle(image, (int(x - w / 2), int(y - h / 2) ), (int(x + w / 2), int(y + h / 2)), (0,255,0), 2)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(image, str(result[i][0].decode()).capitalize(), (int(x), int(y)), font, 1e-3*724, (0,0,223), 2, cv2.LINE_AA)
+    cv2.imwrite(os.path.join(output_dir, im_path), image)
+
 def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
     im = load_image(image, 0, 0)
     num = c_int(0)
     pnum = pointer(num)
+    start_time = time()
     predict_image(net, im)
+    pred_time = time() - start_time
     dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum)
     num = pnum[0]
     if (nms): do_nms_obj(dets, num, meta.classes, nms);
@@ -140,17 +161,27 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
     res = sorted(res, key=lambda x: -x[1])
     free_image(im)
     free_detections(dets, num)
-    return res
-    
-if __name__ == "__main__":
-    #net = load_net("cfg/densenet201.cfg", "/home/pjreddie/trained/densenet201.weights", 0)
-    #im = load_image("data/wolf.jpg", 0, 0)
-    #meta = load_meta("cfg/imagenet1k.data")
-    #r = classify(net, meta, im)
-    #print r[:10]
-    net = load_net("cfg/tiny-yolo.cfg", "tiny-yolo.weights", 0)
-    meta = load_meta("cfg/coco.data")
-    r = detect(net, meta, "data/dog.jpg")
-    print r
-    
+    return res, pred_time
 
+if __name__ == "__main__":
+
+
+    net = load_net(b"cfg/yolov3-tiny.cfg", b"yolov3-tiny.weights", 0)
+    meta = load_meta(b"cfg/coco.data")
+    total_pred_time = 0
+    img_paths = os.listdir(data_dir)
+    img_paths = sorted(img_paths)
+    total_time_taken = 0
+    for img_path in img_paths:
+        tick = time()
+        r, pred_time = detect(net, meta, str.encode(os.path.join(data_dir, img_path)))
+        tock = time()
+        total_pred_time += pred_time
+        total_time_taken += tock-tick
+        draw_boxes(r, img_path)
+        print('Time taken: {}sec,\nResult: {}'.format(tock-tick, r))
+    print('FPS for prediction : {}\nFPS for total process : {}'.format(float(len(img_paths)/total_pred_time),
+         float(len(img_paths)/total_time_taken)))
+
+
+print("Done!!")
