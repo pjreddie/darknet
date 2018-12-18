@@ -222,7 +222,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         i = get_current_batch(net);
         if (net.cudnn_half) {
-            if (i < net.burn_in) printf("\n Tensor Cores are disabled until the first %d iterations are reached.", 2*net.burn_in);
+            if (i < net.burn_in*3) printf("\n Tensor Cores are disabled until the first %d iterations are reached.", 3*net.burn_in);
             else printf("\n Tensor Cores are used.");
         }
         printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), (what_time_is_it_now()-time), i*imgs);
@@ -232,6 +232,19 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             int draw_precision = 0;
             int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);
             if (calc_map && (i >= (iter_map + calc_map_for_each) || i == net.max_batches) && i >= net.burn_in && i >= 1000) {
+                if (l.random) {
+                    printf("Resizing to initial size: %d x %d \n", init_w, init_h);
+                    args.w = init_w;
+                    args.h = init_h;
+                    pthread_join(load_thread, 0);
+                    train = buffer;
+                    load_thread = load_data(args);
+                    int k;
+                    for (k = 0; k < ngpus; ++k) {
+                        resize_network(nets + k, init_w, init_h);
+                    }
+                    net = nets[0];
+                }
                 iter_map = i;
                 mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net);
                 printf("\n mean_average_precision = %f \n", mean_average_precision);

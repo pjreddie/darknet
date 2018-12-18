@@ -737,6 +737,7 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     if (draw_precision) {
         static float old_precision = 0;
         static int iteration_old = 0;
+        static int text_iteration_old = 0;
         if(iteration_old == 0) cvPutText(img, "mAP%", cvPoint(0, 12), &font, CV_RGB(255, 0, 0));
 
         cvLine(img,
@@ -744,16 +745,19 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
             cvPoint(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
             CV_RGB(255, 0, 0), 1, 8, 0);
 
+        if (((int)(old_precision*10) != (int)(precision*10)) || (current_batch - text_iteration_old) >= max_batches/10) {
+            text_iteration_old = current_batch;
+            sprintf(char_buff, "%2.0f%% ", precision * 100);
+            CvFont font3;
+            cvInitFont(&font3, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 5, CV_AA);
+            cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font3, CV_RGB(255, 255, 255));
+
+            CvFont font2;
+            cvInitFont(&font2, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 1, CV_AA);
+            cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font2, CV_RGB(200, 0, 0));
+        }
         old_precision = precision;
         iteration_old = current_batch;
-        sprintf(char_buff, "%2.0f%% ", precision * 100);
-        CvFont font3;
-        cvInitFont(&font3, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 5, CV_AA);
-        cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font3, CV_RGB(255, 255, 255));
-
-        CvFont font2;
-        cvInitFont(&font2, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 1, CV_AA);
-        cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font2, CV_RGB(200, 0, 0));
     }
 
     sprintf(char_buff, "current avg loss = %2.4f    iteration = %d", avg_loss, current_batch);
@@ -762,8 +766,6 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     cvRectangle(img, pt1, pt2, CV_RGB(255, 255, 255), CV_FILLED, 8, 0);
     pt1.y += 15;
     cvPutText(img, char_buff, pt1, &font, CV_RGB(0, 0, 0));
-
-
 
     cvShowImage("average loss", img);
     int k = cvWaitKey(20);
