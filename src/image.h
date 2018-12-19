@@ -67,3 +67,6 @@ image get_image_layer(image m, int l);
 
 #endif
 
+#ifdef NUMPY
+image ndarray_to_image(unsigned char* src, long* shape, long* strides);
+#endif
