@@ -482,7 +482,13 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
     * `train_network_width * train_obj_width / train_image_width ~= detection_network_width * detection_obj_width / detection_image_width`
     * `train_network_height * train_obj_height / train_image_height ~= detection_network_height * detection_obj_height / detection_image_height`
-  
+    
+    I.e. for each object from Test dataset there must be at least 1 object in the Training dataset with about the same relative size:
+
+    `object width in percent from Training dataset` ~= `object width in percent from Test dataset` 
+   
+    That is, if only objects that occupied 80-90% of the image were present in the training set, then the trained network will not be able to detect objects that occupy 1-10% of the image.
+    
   * to speedup training (with decreasing detection accuracy) do Fine-Tuning instead of Transfer-Learning, set param `stopbackward=1` here: https://github.com/AlexeyAB/darknet/blob/6d44529cf93211c319813c90e0c1adb34426abe5/cfg/yolov3.cfg#L548
     then do this command: `./darknet partial cfg/yolov3.cfg yolov3.weights yolov3.conv.81 81` will be created file `yolov3.conv.81`,
     then train by using weights file `yolov3.conv.81` instead of `darknet53.conv.74`
