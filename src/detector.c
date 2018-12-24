@@ -93,13 +93,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
                 net_map.layers[k].rolling_mean = l.rolling_mean;
                 net_map.layers[k].rolling_variance = l.rolling_variance;
                 net_map.layers[k].weights = l.weights;
-
+#ifdef GPU
                 net_map.layers[k].biases_gpu = l.biases_gpu;
                 net_map.layers[k].scales_gpu = l.scales_gpu;
                 net_map.layers[k].rolling_mean_gpu = l.rolling_mean_gpu;
                 net_map.layers[k].rolling_variance_gpu = l.rolling_variance_gpu;
                 net_map.layers[k].weights_gpu = l.weights_gpu;
                 net_map.layers[k].weights_gpu16 = l.weights_gpu16;
+#endif  // GPU
             }
         }
     }
