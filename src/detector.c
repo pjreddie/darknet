@@ -44,6 +44,36 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *valid_images = option_find_str(options, "valid", train_images);
     char *backup_directory = option_find_str(options, "backup", "/backup/");
 
+    int train_images_num = 0;
+    network net_map;
+    if (calc_map) {
+        FILE* valid_file = fopen(valid_images, "r");
+        if (!valid_file) {
+            printf("\n Error: There is no %s file for mAP calculation!\n Don't use -map flag.\n Or set valid=%s in your %s file. \n", valid_images, train_images, datacfg);
+            getchar();
+            exit(-1);
+        }
+        else fclose(valid_file);
+        list *plist = get_paths(train_images);
+        train_images_num = plist->size;
+        free_list(plist);
+
+        cuda_set_device(gpus[0]);
+        printf(" Prepare additional network for mAP calculation...\n");
+        net_map = parse_network_cfg_custom(cfgfile, 1);
+        int k;  // free memory unnecessary arrays
+        for (k = 0; k < net_map.n; ++k) {
+            free_layer(net_map.layers[k]);
+        }
+#ifdef GPU
+        cuda_free(net_map.workspace);
+        if (*net_map.input16_gpu) cuda_free(*net_map.input16_gpu);
+        if (*net_map.output16_gpu) cuda_free(*net_map.output16_gpu);
+#else
+        free(net_map.workspace);
+#endif
+    }
+
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
@@ -67,44 +97,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     }
     srand(time(0));
     network net = nets[0];
-
-    int train_images_num = 0;
-    network net_map;
-    if (calc_map) {
-        FILE* valid_file = fopen(valid_images, "r");
-        if (!valid_file) {
-            printf("\n Error: There is no %s file for mAP calculation!\n Don't use -map flag.\n Or set valid=%s in your %s file. \n", valid_images, train_images, datacfg);
-            getchar();
-            exit(-1);
-        }
-        else fclose(valid_file);
-        list *plist = get_paths(train_images);
-        train_images_num = plist->size;
-        free_list(plist);
-
-        cuda_set_device(net.gpu_index);
-        printf(" Prepare additional network for mAP calculation...\n");
-        net_map = parse_network_cfg_custom(cfgfile, 1);
-        int k;
-        for (k = 0; k < net.n; ++k) {
-            layer l = net.layers[k];
-            if (l.type == CONVOLUTIONAL) {
-                net_map.layers[k].biases = l.biases;
-                net_map.layers[k].scales = l.scales;
-                net_map.layers[k].rolling_mean = l.rolling_mean;
-                net_map.layers[k].rolling_variance = l.rolling_variance;
-                net_map.layers[k].weights = l.weights;
-#ifdef GPU
-                net_map.layers[k].biases_gpu = l.biases_gpu;
-                net_map.layers[k].scales_gpu = l.scales_gpu;
-                net_map.layers[k].rolling_mean_gpu = l.rolling_mean_gpu;
-                net_map.layers[k].rolling_variance_gpu = l.rolling_variance_gpu;
-                net_map.layers[k].weights_gpu = l.weights_gpu;
-                net_map.layers[k].weights_gpu16 = l.weights_gpu16;
-#endif  // GPU
-            }
-        }
-    }
 
     const int actual_batch_size = net.batch * net.subdivisions;
     if (actual_batch_size == 1) {
@@ -159,7 +151,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
 #ifdef OPENCV
     args.threads = 3 * ngpus;   // Amazon EC2 Tesla V100: p3.2xlarge (8 logical cores) - p3.16xlarge
-                                //args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores)
+    //args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores)
     IplImage* img = NULL;
     float max_img_loss = 5;
     int number_of_lines = 100;
@@ -255,8 +247,50 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             int draw_precision = 0;
             int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);
             if (calc_map && (i >= (iter_map + calc_map_for_each) || i == net.max_batches) && i >= net.burn_in && i >= 1000) {
+                if (l.random) {
+                    printf("Resizing to initial size: %d x %d \n", init_w, init_h);
+                    args.w = init_w;
+                    args.h = init_h;
+                    pthread_join(load_thread, 0);
+                    train = buffer;
+                    load_thread = load_data(args);
+                    int k;
+                    for (k = 0; k < ngpus; ++k) {
+                        resize_network(nets + k, init_w, init_h);
+                    }
+                    net = nets[0];
+                }
+
+                // combine Training and Validation networks
+                network net_combined = make_network(net.n);
+                layer *old_layers = net_combined.layers;
+                net_combined = net;
+                net_combined.layers = old_layers;
+                net_combined.batch = 1;
+
+                int k;
+                for (k = 0; k < net.n; ++k) {
+                    layer *l = &(net.layers[k]);
+                    net_combined.layers[k] = net.layers[k];
+                    net_combined.layers[k].batch = 1;
+
+                    if (l->type == CONVOLUTIONAL) {
+#ifdef CUDNN
+                        net_combined.layers[k].normTensorDesc = net_map.layers[k].normTensorDesc;
+                        net_combined.layers[k].normDstTensorDesc = net_map.layers[k].normDstTensorDesc;
+                        net_combined.layers[k].normDstTensorDescF16 = net_map.layers[k].normDstTensorDescF16;
+
+                        net_combined.layers[k].srcTensorDesc = net_map.layers[k].srcTensorDesc;
+                        net_combined.layers[k].dstTensorDesc = net_map.layers[k].dstTensorDesc;
+
+                        net_combined.layers[k].srcTensorDesc16 = net_map.layers[k].srcTensorDesc16;
+                        net_combined.layers[k].dstTensorDesc16 = net_map.layers[k].dstTensorDesc16;
+#endif // CUDNN
+                    }
+                }
+
                 iter_map = i;
-                mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net_map);
+                mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net_combined);
                 printf("\n mean_average_precision = %f \n", mean_average_precision);
                 draw_precision = 1;
             }
@@ -312,8 +346,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     free_list_contents_kvp(options);
     free_list(options);
 
+    for (i = 0; i < ngpus; ++i) free_network(nets[i]);
     free(nets);
-    free_network(net);
+    //free_network(net);
 }
 
 
