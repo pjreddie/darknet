@@ -81,9 +81,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         list *plist = get_paths(train_images);
         train_images_num = plist->size;
         free_list(plist);
+
+        cuda_set_device(net.gpu_index);
         printf(" Prepare additional network for mAP calculation...\n");
         net_map = parse_network_cfg_custom(cfgfile, 1);
-
         int k;
         for (k = 0; k < net.n; ++k) {
             layer l = net.layers[k];
@@ -104,7 +105,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             }
         }
     }
-
 
     const int actual_batch_size = net.batch * net.subdivisions;
     if (actual_batch_size == 1) {
