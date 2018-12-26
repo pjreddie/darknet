@@ -67,6 +67,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         }
 #ifdef GPU
         cuda_free(net_map.workspace);
+        cuda_free(net_map.input_state_gpu);
         if (*net_map.input16_gpu) cuda_free(*net_map.input16_gpu);
         if (*net_map.output16_gpu) cuda_free(*net_map.output16_gpu);
 #else
@@ -245,7 +246,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #ifdef OPENCV
         if (!dont_show) {
             int draw_precision = 0;
-            int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);
+            int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
             if (calc_map && (i >= (iter_map + calc_map_for_each) || i == net.max_batches) && i >= net.burn_in && i >= 1000) {
                 if (l.random) {
                     printf("Resizing to initial size: %d x %d \n", init_w, init_h);
@@ -262,32 +263,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
                 }
 
                 // combine Training and Validation networks
-                network net_combined = make_network(net.n);
-                layer *old_layers = net_combined.layers;
-                net_combined = net;
-                net_combined.layers = old_layers;
-                net_combined.batch = 1;
-
-                int k;
-                for (k = 0; k < net.n; ++k) {
-                    layer *l = &(net.layers[k]);
-                    net_combined.layers[k] = net.layers[k];
-                    net_combined.layers[k].batch = 1;
-
-                    if (l->type == CONVOLUTIONAL) {
-#ifdef CUDNN
-                        net_combined.layers[k].normTensorDesc = net_map.layers[k].normTensorDesc;
-                        net_combined.layers[k].normDstTensorDesc = net_map.layers[k].normDstTensorDesc;
-                        net_combined.layers[k].normDstTensorDescF16 = net_map.layers[k].normDstTensorDescF16;
-
-                        net_combined.layers[k].srcTensorDesc = net_map.layers[k].srcTensorDesc;
-                        net_combined.layers[k].dstTensorDesc = net_map.layers[k].dstTensorDesc;
-
-                        net_combined.layers[k].srcTensorDesc16 = net_map.layers[k].srcTensorDesc16;
-                        net_combined.layers[k].dstTensorDesc16 = net_map.layers[k].dstTensorDesc16;
-#endif // CUDNN
-                    }
-                }
+                network net_combined = combine_train_valid_networks(net, net_map);
 
                 iter_map = i;
                 mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net_combined);

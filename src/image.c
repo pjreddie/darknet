@@ -710,7 +710,7 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
     char max_batches_buff[100];
     sprintf(max_batches_buff, "in cfg max_batches=%d", max_batches);
     cvPutText(img, max_batches_buff, cvPoint(draw_size - 195, img_size - 10), &font, CV_RGB(0, 0, 0));
-    cvPutText(img, "Press 's' to save: chart.jpg", cvPoint(5, img_size - 10), &font, CV_RGB(0, 0, 0));
+    cvPutText(img, "Press 's' to save: chart.png", cvPoint(5, img_size - 10), &font, CV_RGB(0, 0, 0));
     printf(" If error occurs - run training with flag: -dont_show \n");
     cvNamedWindow("average loss", CV_WINDOW_NORMAL);
     cvMoveWindow("average loss", 0, 0);
@@ -770,7 +770,11 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     cvShowImage("average loss", img);
     int k = cvWaitKey(20);
     if (k == 's' || current_batch == (max_batches - 1) || current_batch % 100 == 0) {
-        cvSaveImage("chart.jpg", img, 0);
+        //cvSaveImage("chart.jpg", img, 0);
+        IplImage* img_rgb = cvCreateImage(cvSize(img->width, img->height), 8, 3);
+        cvCvtColor(img, img_rgb, CV_RGB2BGR);
+        stbi_write_png("chart.png", img_rgb->width, img_rgb->height, 3, (char *)img_rgb->imageData, 0);
+        cvRelease(&img_rgb);
         cvPutText(img, "- Saved", cvPoint(250, img_size - 10), &font, CV_RGB(255, 0, 0));
     }
     else

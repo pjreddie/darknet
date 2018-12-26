@@ -156,6 +156,7 @@ int get_network_nuisance(network net);
 int get_network_background(network net);
 YOLODLL_API void fuse_conv_batchnorm(network net);
 YOLODLL_API void calculate_binary_weights(network net);
+network combine_train_valid_networks(network net_train, network net_map);
 
 #ifdef __cplusplus
 }

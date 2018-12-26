@@ -879,3 +879,35 @@ void calculate_binary_weights(network net)
     //printf("\n calculate_binary_weights Done! \n");
 
 }
+
+// combine Training and Validation networks
+network combine_train_valid_networks(network net_train, network net_map)
+{
+    network net_combined = make_network(net_train.n);
+    layer *old_layers = net_combined.layers;
+    net_combined = net_train;
+    net_combined.layers = old_layers;
+    net_combined.batch = 1;
+
+    int k;
+    for (k = 0; k < net_train.n; ++k) {
+        layer *l = &(net_train.layers[k]);
+        net_combined.layers[k] = net_train.layers[k];
+        net_combined.layers[k].batch = 1;
+
+        if (l->type == CONVOLUTIONAL) {
+#ifdef CUDNN
+            net_combined.layers[k].normTensorDesc = net_map.layers[k].normTensorDesc;
+            net_combined.layers[k].normDstTensorDesc = net_map.layers[k].normDstTensorDesc;
+            net_combined.layers[k].normDstTensorDescF16 = net_map.layers[k].normDstTensorDescF16;
+
+            net_combined.layers[k].srcTensorDesc = net_map.layers[k].srcTensorDesc;
+            net_combined.layers[k].dstTensorDesc = net_map.layers[k].dstTensorDesc;
+
+            net_combined.layers[k].srcTensorDesc16 = net_map.layers[k].srcTensorDesc16;
+            net_combined.layers[k].dstTensorDesc16 = net_map.layers[k].dstTensorDesc16;
+#endif // CUDNN
+        }
+    }
+    return net_combined;
+}
