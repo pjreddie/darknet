@@ -100,6 +100,7 @@ struct layer{
     float exposure;
     float shift;
     float ratio;
+    float learning_rate_scale;
 	int focal_loss;
 	int noloss;
     int softmax;
@@ -122,11 +123,14 @@ struct layer{
     float B1;
     float B2;
     float eps;
-    float *m_gpu;
-    float *v_gpu;
+
     int t;
     float *m;
     float *v;
+    float * bias_m;
+    float * bias_v;
+    float * scale_m;
+    float * scale_v;
 
     tree *softmax_tree;
     int  *map;
@@ -245,7 +249,7 @@ struct layer{
 
     size_t workspace_size;
 
-    #ifdef GPU
+#ifdef GPU
     float *z_gpu;
     float *r_gpu;
     float *h_gpu;
@@ -262,6 +266,14 @@ struct layer{
     float * save_delta_gpu;
     float * concat_gpu;
     float * concat_delta_gpu;
+
+    // adam
+    float *m_gpu;
+    float *v_gpu;
+    float *bias_m_gpu;
+    float *scale_m_gpu;
+    float *bias_v_gpu;
+    float *scale_v_gpu;
 
     float *binary_input_gpu;
     float *binary_weights_gpu;
@@ -310,8 +322,8 @@ struct layer{
     cudnnConvolutionBwdDataAlgo_t bd_algo, bd_algo16;
     cudnnConvolutionBwdFilterAlgo_t bf_algo, bf_algo16;
     cudnnPoolingDescriptor_t poolingDesc;
-    #endif
-    #endif
+    #endif  // CUDNN
+#endif  // GPU
 };
 
 void free_layer(layer);

@@ -805,6 +805,7 @@ network parse_network_cfg_custom(char *filename, int batch)
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
+        l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
         option_unused(options);
         net.layers[count] = l;
         if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;

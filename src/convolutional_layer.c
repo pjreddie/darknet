@@ -390,6 +390,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.adam = 1;
         l.m = calloc(c*n*size*size, sizeof(float));
         l.v = calloc(c*n*size*size, sizeof(float));
+        l.bias_m = calloc(n, sizeof(float));
+        l.scale_m = calloc(n, sizeof(float));
+        l.bias_v = calloc(n, sizeof(float));
+        l.scale_v = calloc(n, sizeof(float));
     }
 
 #ifdef GPU
@@ -401,6 +405,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         if (adam) {
             l.m_gpu = cuda_make_array(l.m, c*n*size*size);
             l.v_gpu = cuda_make_array(l.v, c*n*size*size);
+            l.bias_m_gpu = cuda_make_array(l.bias_m, n);
+            l.bias_v_gpu = cuda_make_array(l.bias_v, n);
+            l.scale_m_gpu = cuda_make_array(l.scale_m, n);
+            l.scale_v_gpu = cuda_make_array(l.scale_v, n);
         }
 
         l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
