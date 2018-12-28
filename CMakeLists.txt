@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 set(GPU ON)
 set(CUDNN ON)
 set(OPENCV ON)
-set(DEBUG ON)
+set(DEBUG OFF)
 
 #add_definitions(-DOPENMP)
 cmake_policy(SET CMP0054 NEW)
@@ -192,8 +192,7 @@ set_runtime(STATIC)
 add_library(darknet_cpp STATIC ${CPP_SOURCES})
 add_library(darknet_app STATIC ${APP_SOURCES})
 
-add_executable(${PROJECT_NAME} ${C_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/examples/darknet.c)
-#CUDA_ADD_CUBLAS_TO_TARGET(${PROJECT_NAME})
+add_library(${PROJECT_NAME} SHARED ${C_SOURCES})
 
 target_link_libraries(${PROJECT_NAME}
     darknet_cpp
@@ -208,13 +207,14 @@ if (OPENCV)
 endif()
 
 if (GPU)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcompiler="-fPIC")
     cuda_add_library(darknet_cuda STATIC ${CUDA_SOURCES})
     target_link_libraries(${PROJECT_NAME}
 	darknet_cuda
-	cublas
-	curand
+	${CUDA_curand_LIBRARY}
 	${CUDA_LIBRARIES}
     )
+    CUDA_ADD_CUBLAS_TO_TARGET(${PROJECT_NAME})
 endif()
 
 if (CUDNN)
@@ -222,4 +222,14 @@ if (CUDNN)
 	${CUDNN_LIBRARIES}
     )
 endif()
+
+set(APP_NAME executable)
+add_executable(${APP_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/examples/darknet.c)
+target_link_libraries(${APP_NAME} ${PROJECT_NAME})
+set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+
+add_custom_target(link_target ALL
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${PROJECT_SOURCE_DIR}/install/lib${PROJECT_NAME}.so
+    ${PROJECT_SOURCE_DIR}/lib${PROJECT_NAME}.so)
 
