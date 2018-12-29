@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.8)
 set(GPU ON)
 set(CUDNN ON)
 set(OPENCV ON)
-set(DEBUG OFF)
 
 #add_definitions(-DOPENMP)
 cmake_policy(SET CMP0054 NEW)
@@ -11,6 +10,18 @@ cmake_policy(SET CMP0071 NEW)
 cmake_policy(SET CMP0046 NEW)
 
 project(darknet)
+
+if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+  if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+  endif()
+endif()
+
+string(ASCII 27 Esc)
+set(ColourReset "${Esc}[m")
+set(Green       "${Esc}[32m")
+
+message("${Green}-- Project build-type: ${CMAKE_BUILD_TYPE}${ColourReset}")
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -181,10 +192,6 @@ endif()
 
 if (OPENCV AND GPU)
     set(OpenCV_CUDA ON)
-endif()
-
-if (DEBUG)
-    add_definitions(-DDEBUG)
 endif()
 
 set_runtime(STATIC)
