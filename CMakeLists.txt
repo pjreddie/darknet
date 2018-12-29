@@ -230,6 +230,7 @@ set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 
 add_custom_target(link_target ALL
     COMMAND ${CMAKE_COMMAND} -E create_symlink
-    ${PROJECT_SOURCE_DIR}/install/lib${PROJECT_NAME}.so
-    ${PROJECT_SOURCE_DIR}/lib${PROJECT_NAME}.so)
+    $<TARGET_FILE:${PROJECT_NAME}>
+    ${PROJECT_SOURCE_DIR}/$<TARGET_FILE_NAME:${PROJECT_NAME}>
+)
 
