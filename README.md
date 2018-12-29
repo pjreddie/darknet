@@ -201,7 +201,7 @@ Then add to your created project:
 - add to project all `.c` & `.cu` files and file `http_stream.cpp` from `\src`
 - (right click on project) -> properties  -> Linker -> General -> Additional Library Directories, put here: 
 
-`C:\opencv_3.0\opencv\build\x64\vc14\lib;$(CUDA_PATH)lib\$(PlatformName);$(cudnn)\lib\x64;%(AdditionalLibraryDirectories)`
+`C:\opencv_3.0\opencv\build\x64\vc14\lib;$(CUDA_PATH)\lib\$(PlatformName);$(cudnn)\lib\x64;%(AdditionalLibraryDirectories)`
 -  (right click on project) -> properties  -> Linker -> Input -> Additional dependecies, put here: 
 
 `..\..\3rdparty\lib\x64\pthreadVC2.lib;cublas.lib;curand.lib;cudart.lib;cudnn.lib;%(AdditionalDependencies)`
