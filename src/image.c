@@ -269,7 +269,7 @@ image **load_alphabet()
 
 
 // Creates array of detections with prob > thresh and fills best_class for them
-detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num)
+detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num, char **names)
 {
     int selected_num = 0;
     detection_with_class* result_arr = calloc(dets_num, sizeof(detection_with_class));
@@ -279,7 +279,8 @@ detection_with_class* get_actual_detections(detection *dets, int dets_num, float
         float best_class_prob = thresh;
         int j;
         for (j = 0; j < dets[i].classes; ++j) {
-            if (dets[i].prob[j] > best_class_prob ) {
+            int show = strncmp(names[j], "dont_show", 9);
+            if (dets[i].prob[j] > best_class_prob && show) {
                 best_class = j;
                 best_class_prob = dets[i].prob[j];
             }
@@ -314,7 +315,7 @@ int compare_by_probs(const void *a_ptr, const void *b_ptr) {
 void draw_detections_v3(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
     int selected_detections_num;
-    detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num);
+    detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num, names);
 
     // text output
     qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_lefts);
@@ -489,7 +490,8 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
         char labelstr[4096] = { 0 };
         int class_id = -1;
         for (j = 0; j < classes; ++j) {
-            if (dets[i].prob[j] > thresh) {
+            int show = strncmp(names[j], "dont_show", 9);
+            if (dets[i].prob[j] > thresh && show) {
                 if (class_id < 0) {
                     strcat(labelstr, names[j]);
                     class_id = j;
