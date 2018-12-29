@@ -1191,7 +1191,9 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     }
     else {
         printf("\n seen 32 \n");
-        fread(net->seen, sizeof(int), 1, fp);
+        uint32_t iseen = 0;
+        fread(&iseen, sizeof(uint32_t), 1, fp);
+        *net->seen = iseen;
     }
     int transpose = (major > 1000) || (minor > 1000);
 
