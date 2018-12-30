@@ -27,6 +27,10 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_C_COMPILER /usr/bin/gcc)
+# enables all -O3 optimizations
+
+add_definitions(-Ofast)
+add_definitions(-Wno-unused-result)
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
