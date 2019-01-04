@@ -3,6 +3,8 @@
 
 [![CircleCI](https://circleci.com/gh/AlexeyAB/darknet.svg?style=svg)](https://circleci.com/gh/AlexeyAB/darknet)
 
+* [Requirements](#requirements)
+* [Pre-trained models](#pre-trained-models)
 0. [Improvements in this repository](#improvements-in-this-repository)
 1. [How to use](#how-to-use)
 2. [How to compile on Linux](#how-to-compile-on-linux)
@@ -28,7 +30,7 @@
 
 
 # "You Only Look Once: Unified, Real-Time Object Detection (versions 2 & 3)"
-A Yolo cross-platform Windows and Linux version (for object detection). Contributtors: https://github.com/pjreddie/darknet/graphs/contributors
+A Yolo cross-platform Windows and Linux version (for object detection). Contributtors: https://github.com/AlexeyAB/darknet/graphs/contributors
 
 This repository is forked from Linux-version: https://github.com/pjreddie/darknet
 
@@ -37,12 +39,12 @@ More details: http://pjreddie.com/darknet/yolo/
 This repository supports:
 
 * both Windows and Linux
-* both OpenCV 2.x.x and OpenCV <= 3.4.0 (3.4.1 and higher isn't supported)
-* both cuDNN v5-v7
+* both OpenCV 2.x.x and OpenCV <= 3.4.0 (3.4.1 and higher isn't supported, but you can try)
+* both cuDNN >= v7
 * CUDA >= 7.5
 * also create SO-library on Linux and DLL-library on Windows
 
-##### Requires: 
+##### Requirements: 
 * **Linux GCC>=4.9 or Windows MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
 * **CUDA 10.0**: https://developer.nvidia.com/cuda-toolkit-archive (on Linux do [Post-installation Actions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#post-installation-actions))
 * **OpenCV 3.3.0**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.3.0/opencv-3.3.0-vc14.exe/download
@@ -50,7 +52,10 @@ This repository supports:
   - OpenCV allows to show image or video detection in the window and store result to file that specified in command line `-out_filename res.avi`
 * **GPU with CC >= 3.0**: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
 
-##### Pre-trained models for different cfg-files can be downloaded from (smaller -> faster & lower quality):
+##### Pre-trained models
+
+There are weights-file for different cfg-files (smaller size -> faster speed & lower accuracy:
+
 * `yolov3-openimages.cfg` (247 MB COCO **Yolo v3**) - requires 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov3-openimages.weights
 * `yolov3-spp.cfg` (240 MB COCO **Yolo v3**) - requires 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov3-spp.weights
 * `yolov3.cfg` (236 MB COCO **Yolo v3**) - requires 4 GB GPU-RAM: https://pjreddie.com/media/files/yolov3.weights
@@ -97,17 +102,6 @@ Also, you might be interested in using a simplified repository where is implemen
 
 ### How to use:
 
-##### Example of usage in cmd-files from `build\darknet\x64\`:
-
-* `darknet_yolo_v3.cmd` - initialization with 236 MB **Yolo v3** COCO-model yolov3.weights & yolov3.cfg and show detection on the image: dog.jpg
-
-* `darknet_voc.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and waiting for entering the name of the image file
-* `darknet_demo_voc.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4
-* `darknet_demo_store.cmd` - initialization with 194 MB VOC-model yolo-voc.weights & yolo-voc.cfg and play your video file which you must rename to: test.mp4, and store result to: res.avi
-* `darknet_net_cam_voc.cmd` - initialization with 194 MB VOC-model, play video from network video-camera mjpeg-stream (also from you phone)
-* `darknet_web_cam_voc.cmd` - initialization with 194 MB VOC-model, play video from Web-Camera number #0
-* `darknet_coco_9000.cmd` - initialization with 186 MB Yolo9000 COCO-model, and show detection on the image: dog.jpg
-* `darknet_coco_9000_demo.cmd` - initialization with 186 MB Yolo9000 COCO-model, and show detection on the video (if it is present): street4k.mp4, and store result to: res.avi
 
 ##### How to use on the command line:
 
@@ -126,6 +120,8 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 * Remeber to put data/9k.tree and data/coco9k.map under the same folder of your app if you use the cpp api to build an app
 * To process a list of images `data/train.txt` and save results of detection to `result.txt` use:                             
     `darknet.exe detector test cfg/coco.data yolov3.cfg yolov3.weights -dont_show -ext_output < data/train.txt > result.txt`
+* To calculate anchors: `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
+* To check accuracy mAP50: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
 
 ##### For using network video-camera mjpeg-stream with any Android smartphone:
 
@@ -164,7 +160,7 @@ To run Darknet on Linux use examples from this article, just use `./darknet` ins
 
     1.1. Find files `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` (or `opencv_world340.dll` and `opencv_ffmpeg340_64.dll`) in `C:\opencv_3.0\opencv\build\x64\vc14\bin` and put it near with `darknet.exe`
     
-    1.2 Check that there are `bin` and `include` folders in the `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1` if aren't, then copy them to this folder from the path where is CUDA installed
+    1.2 Check that there are `bin` and `include` folders in the `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.0` if aren't, then copy them to this folder from the path where is CUDA installed
     
     1.3. To install CUDNN (speedup neural network), do the following:
       
@@ -476,6 +472,11 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   * for training for small objects - set `layers = -1, 11` instead of https://github.com/AlexeyAB/darknet/blob/6390a5a2ab61a0bdf6f1a9a6b4a739c16b36e0d7/cfg/yolov3.cfg#L720
       and set `stride=4` instead of https://github.com/AlexeyAB/darknet/blob/6390a5a2ab61a0bdf6f1a9a6b4a739c16b36e0d7/cfg/yolov3.cfg#L717
   
+  * for training for both small and large objects use modified models:
+      * Full-model: 5 yolo layers: https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov3_5l.cfg
+      * Tiny-model: 3 yolo layers: https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov3-tiny_3l.cfg
+      * Spatial-full-model: 3 yolo layers: https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov3-spp.cfg
+  
   * If you train the model to distinguish Left and Right objects as separate classes (left/right hand, left/right-turn on road signs, ...) then for disabling flip data augmentation - add `flip=0` here: https://github.com/AlexeyAB/darknet/blob/3d2d0a7c98dbc8923d9ff705b81ff4f7940ea6ff/cfg/yolov3.cfg#L17
   
   * General rule - your training dataset should include such a set of relative sizes of objects that you want to detect: 
@@ -532,7 +533,7 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
 ## How to use Yolo as DLL
 
 1. To compile Yolo as C++ DLL-file `yolo_cpp_dll.dll` - open in MSVS2015 file `build\darknet\yolo_cpp_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_cpp_dll
-    * You should have installed **CUDA 9.1**
+    * You should have installed **CUDA 10.0**
     * To use cuDNN do: (right click on project) -> properties -> C/C++ -> Preprocessor -> Preprocessor Definitions, and add at the beginning of line: `CUDNN;`
 
 2. To use Yolo as DLL-file in your C++ console application - open in MSVS2015 file `build\darknet\yolo_console_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_console_dll
