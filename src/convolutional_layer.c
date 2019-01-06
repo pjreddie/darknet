@@ -888,6 +888,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
             if(l.c % 32 == 0)
             {
+                //printf(" l.index = %d - new XNOR \n", l.index);
+
                 int ldb_align = l.lda_align;
                 size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
                 size_t t_intput_size = new_ldb * l.bit_align;// n;
@@ -906,7 +908,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
                 free(re_packed_input);
 
-                // convolution the packed inputs and weights: float x 32 by channel (as in cuDNN)
+                // slow - convolution the packed inputs and weights: float x 32 by channel (as in cuDNN)
                 //convolution_repacked((uint32_t *)bin_re_packed_input, (uint32_t *)l.align_bit_weights, l.output,
                 //    l.w, l.h, l.c, l.n, l.size, l.pad, l.new_lda, l.mean_arr);
 
@@ -920,10 +922,11 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
                 int new_k = l.size*l.size*l.c / 32;
 
-//                gemm_nn_bin_32bit_packed(m, n, new_k, 1,
-//                    l.align_bit_weights, l.new_lda/32,
-//                    b, n,
-//                    c, n, l.mean_arr);
+                // good for (l.c == 64)
+                //gemm_nn_bin_32bit_packed(m, n, new_k, 1,
+                //    l.align_bit_weights, l.new_lda/32,
+                //    b, n,
+                //    c, n, l.mean_arr);
 
 // // then exit from if()
 
@@ -951,6 +954,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             else { // else (l.c % 32 != 0)
 
                 //--------------------------------------------------------
+                //printf(" l.index = %d - old XNOR \n", l.index);
 
                 //im2col_cpu_custom_align(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
                 im2col_cpu_custom_bin(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
@@ -993,6 +997,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
         }
         else {
+            //printf(" l.index = %d - FP32 \n", l.index);
             im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
 
             gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);

@@ -22,6 +22,9 @@ static inline unsigned char get_bit(unsigned char const*const src, size_t index)
     return val;
 }
 
+int is_avx();
+int is_fma_avx2();
+
 void float_to_bit(float *src, unsigned char *dst, size_t size);
 
 void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,

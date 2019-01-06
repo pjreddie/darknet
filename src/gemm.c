@@ -489,9 +489,9 @@ void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
 }
 
 static inline int popcnt_32(uint32_t val32) {
-#ifdef WIN32  // Windows
+#ifdef WIN32  // Windows MSVS
     int tmp_count = __popcnt(val32);
-#else   // Linux
+#else   // Linux GCC
     int tmp_count = __builtin_popcount(val32);
 #endif
     return tmp_count;
@@ -755,39 +755,15 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
                 __m256i all_1 = _mm256_set1_epi8(255);
                 __m256i xnor256 = _mm256_andnot_si256(xor256, all_1); // xnor = not(xor(a,b))
 
-                //_m256 count = _mm256_set_ps(
-                /*
-                __m256i count = _mm256_setr_epi32(
-                    (int)popcnt_32(xnor256.m256i_u32[0]),
-                    (int)popcnt_32(xnor256.m256i_u32[1]),
-                    (int)popcnt_32(xnor256.m256i_u32[2]),
-                    (int)popcnt_32(xnor256.m256i_u32[3]),
-                    (int)popcnt_32(xnor256.m256i_u32[4]),
-                    (int)popcnt_32(xnor256.m256i_u32[5]),
-                    (int)popcnt_32(xnor256.m256i_u32[6]),
-                    (int)popcnt_32(xnor256.m256i_u32[7]));
-
-                __m256i val2 = _mm256_set1_epi32(2);
-                count = _mm256_mullo_epi32(count, val2);
-
-                __m256i val32 = _mm256_set1_epi32(32);
-                count = _mm256_sub_epi32(count, val32);
-
-                int z;
-                for (z = 0; z < 8; ++z) {
-                    C[i*ldc + j + z] += count.m256i_i32[z] * mean_val;
-                }
-                */
-
                 __m256 count = _mm256_setr_ps(
-                    popcnt_32(xnor256.m256i_u32[0]),
-                    popcnt_32(xnor256.m256i_u32[1]),
-                    popcnt_32(xnor256.m256i_u32[2]),
-                    popcnt_32(xnor256.m256i_u32[3]),
-                    popcnt_32(xnor256.m256i_u32[4]),
-                    popcnt_32(xnor256.m256i_u32[5]),
-                    popcnt_32(xnor256.m256i_u32[6]),
-                    popcnt_32(xnor256.m256i_u32[7]));
+                    popcnt_32(_mm256_extract_epi32(xnor256, 0)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 1)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 2)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 3)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 4)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 5)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 6)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 7)));
 
                 __m256 val2 = _mm256_set1_ps(2);
                 count = _mm256_mul_ps(count, val2);     // count * 2
@@ -2274,17 +2250,19 @@ void gemm_nn_bin_transposed_32bit_packed(int M, int N, int K, float ALPHA,
     for (i = 0; i < M; ++i) {   // l.n
         int j, s;
         float mean_val = mean_arr[i];
-        for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
+        for (j = 0; j < N; ++j) // out_h*out_w;
         {
-            register uint32_t A_PART = ((uint32_t*)A)[i*lda + s];
-            for (j = 0; j < N; ++j) // out_h*out_w;
+            float val = 0;
+            for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
             {
+                register uint32_t A_PART = ((uint32_t*)A)[i*lda + s];
                 register uint32_t B_PART = ((uint32_t*)B)[j*ldb + s];
                 uint32_t xnor_result = ~(A_PART ^ B_PART);
                 int32_t count = popcnt_32(xnor_result);  // must be Signed int
 
-                C[i*ldc + j] += (2 * count - 32) * mean_val;
+                val += (2 * count - 32) * mean_val;
             }
+            C[i*ldc + j] += val;
         }
     }
 }
@@ -2422,6 +2400,8 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         }
     }
 
+    is_avx();   // initialize static variable
+    is_fma_avx2();
     int t;
     #pragma omp parallel for
     for (t = 0; t < M; ++t) {
