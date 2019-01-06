@@ -1724,6 +1724,14 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
 
 #else   // AVX
 
+int is_avx() {
+    return 0;
+}
+
+int is_fma_avx2() {
+    return 0;
+}
+
 void gemm_nn(int M, int N, int K, float ALPHA,
     float *A, int lda,
     float *B, int ldb,
