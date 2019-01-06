@@ -1,6 +1,7 @@
 #pragma once
 #ifndef HTTP_STREAM_H
 #define HTTP_STREAM_H
+#include "darknet.h"
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"

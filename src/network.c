@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <assert.h>
+#include "darknet.h"
 #include "network.h"
 #include "image.h"
 #include "data.h"
@@ -31,21 +32,22 @@
 #include "upsample_layer.h"
 #include "parser.h"
 
-network *load_network_custom(char *cfg, char *weights, int clear, int batch)
+load_args get_base_args(network *net)
 {
-    printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
-    network *net = calloc(1, sizeof(network));
-    *net = parse_network_cfg_custom(cfg, batch);
-    if (weights && weights[0] != 0) {
-        load_weights(net, weights);
-    }
-    if (clear) (*net->seen) = 0;
-    return net;
-}
+    load_args args = { 0 };
+    args.w = net->w;
+    args.h = net->h;
+    args.size = net->w;
 
-network *load_network(char *cfg, char *weights, int clear)
-{
-    return load_network_custom(cfg, weights, clear, 0);
+    args.min = net->min_crop;
+    args.max = net->max_crop;
+    args.angle = net->angle;
+    args.aspect = net->aspect;
+    args.exposure = net->exposure;
+    args.center = net->center;
+    args.saturation = net->saturation;
+    args.hue = net->hue;
+    return args;
 }
 
 int get_current_batch(network net)

@@ -1,9 +1,11 @@
 #ifndef MATRIX_H
 #define MATRIX_H
-typedef struct matrix{
-    int rows, cols;
-    float **vals;
-} matrix;
+#include "darknet.h"
+
+//typedef struct matrix{
+//    int rows, cols;
+//    float **vals;
+//} matrix;
 
 typedef struct {
     int *assignments;
