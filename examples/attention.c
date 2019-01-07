@@ -287,7 +287,7 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
         printf("\n");
         copy_cpu(classes, pred, 1, avgs, 1);
         top_k(pred + classes, divs*divs, divs*divs, inds);
-        show_image(crop, "crop");
+        show_image(crop, "crop", 1);
         for(j = 0; j < extra; ++j){
             int index = inds[j];
             int row = index / divs;
@@ -298,7 +298,7 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
             image tile = crop_image(crop, x, y, net->w, net->h);
             float *pred = network_predict(net, tile.data);
             axpy_cpu(classes, 1., pred, 1, avgs, 1);
-            show_image(tile, "tile");
+            show_image(tile, "tile", 1);
             //cvWaitKey(10);
         }
         if(net->hierarchy) hierarchy_predictions(pred, net->outputs, net->hierarchy, 1, 1);
