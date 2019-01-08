@@ -41,6 +41,8 @@ static int cpp_video_capture = 0;
 static float fps = 0;
 static float demo_thresh = 0;
 static int demo_ext_output = 0;
+static long long int frame_id = 0;
+static int demo_json_port = -1;
 
 static float *predictions[FRAMES];
 static int demo_index = 0;
@@ -114,6 +116,12 @@ void *detect_in_thread(void *ptr)
     det_img = ipl_images[(demo_index + FRAMES / 2 + 1) % FRAMES];
     demo_index = (demo_index + 1)%FRAMES;
 
+    ++frame_id;
+    if (demo_json_port > 0) {
+        int timeout = 200;
+        send_json(dets, nboxes, l.classes, demo_names, frame_id, demo_json_port, timeout);
+    }
+
     draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
     free_detections(dets, nboxes);
 
@@ -130,7 +138,7 @@ double get_wall_time()
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, int ext_output)
+    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int json_port, int dont_show, int ext_output)
 {
     //skip = frame_skip;
     image **alphabet = load_alphabet();
@@ -140,6 +148,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     demo_classes = classes;
     demo_thresh = thresh;
     demo_ext_output = ext_output;
+    demo_json_port = json_port;
     printf("Demo\n");
     net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
     if(weightfile){
@@ -355,7 +364,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, int ext_output)
+    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int json_port, int dont_show, int ext_output)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

@@ -1352,6 +1352,7 @@ void run_detector(int argc, char **argv)
     int calc_map = find_arg(argc, argv, "-map");
     check_mistakes = find_arg(argc, argv, "-check_mistakes");
     int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
+    int json_port = find_int_arg(argc, argv, "-json_port", -1);
     char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
     char *outfile = find_char_arg(argc, argv, "-out", 0);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
@@ -1419,7 +1420,7 @@ void run_detector(int argc, char **argv)
             if (strlen(filename) > 0)
                 if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
-            http_stream_port, dont_show, ext_output);
+            http_stream_port, json_port, dont_show, ext_output);
 
         free_list_contents_kvp(options);
         free_list(options);

@@ -658,6 +658,44 @@ void free_detections(detection *dets, int n)
     free(dets);
 }
 
+char *detection_to_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id)
+{
+    const float thresh = 0.005; // function get_network_boxes() has already filtred dets by actual threshold
+
+    char *send_buf = (char *)calloc(1024, sizeof(char));
+    sprintf(send_buf, "{\n \"frame_id\":%d, \n \"objects\":[ \n", frame_id);
+
+    int i, j;
+    int class_id = -1;
+    for (i = 0; i < nboxes; ++i) {
+        for (j = 0; j < classes; ++j) {
+            int show = strncmp(names[j], "dont_show", 9);
+            if (dets[i].prob[j] > thresh && show)
+            {
+                if (class_id != -1) strcat(send_buf, ", \n");
+                class_id = j;
+                char *buf = (char *)calloc(2048, sizeof(char));
+                //sprintf(buf, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f}",
+                //    image_id, j, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h, dets[i].prob[j]);
+
+                sprintf(buf, "  {\"class_id\":%d, \"name\":\"%s\", \"relative coordinates\":{\"center_x\":%f, \"center_y\":%f, \"width\":%f, \"height\":%f}, \"confidence\":%f}",
+                    j, names[j], dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h, dets[i].prob[j]);
+
+                int send_buf_len = strlen(send_buf);
+                int buf_len = strlen(buf);
+                int total_len = send_buf_len + buf_len + 100;
+                send_buf = (char *)realloc(send_buf, total_len * sizeof(char));
+                if (!send_buf) return;// exit(-1);
+                strcat(send_buf, buf);
+                free(buf);
+            }
+        }
+    }
+    strcat(send_buf, "\n ] \n}, \n");
+    return send_buf;
+}
+
+
 float *network_predict_image(network *net, image im)
 {
     //image imr = letterbox_image(im, net->w, net->h);
