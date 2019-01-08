@@ -51,6 +51,7 @@ static float *avg;
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
 void show_image_cv_ipl(IplImage *disp, const char *name);
+void save_cv_png(IplImage *img, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 image get_image_from_stream_letterbox(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 int get_stream_fps(CvCapture *cap, int cpp_video_capture);
@@ -264,7 +265,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             }else{
                 char buff[256];
                 sprintf(buff, "%s_%08d.jpg", prefix, count);
-                cvSaveImage(buff, show_img, 0);
+                save_cv_png(buff, show_img);
+                //cvSaveImage(buff, show_img, 0);
                 //save_image(disp, buff);
             }
 
