@@ -58,13 +58,14 @@ using namespace cv;
 #include "image.h"
 
 
-class MJPGWriter
+class MJPG_sender
 {
     SOCKET sock;
     SOCKET maxfd;
     fd_set master;
     int timeout; // master sock timeout, shutdown after timeout millis.
     int quality; // jpeg compression [1..100]
+    int close_all_sockets;
 
     int _write(int sock, char const*const s, int len)
     {
@@ -74,18 +75,20 @@ class MJPGWriter
 
 public:
 
-    MJPGWriter(int port = 0, int _timeout = 200000, int _quality = 30)
+    MJPG_sender(int port = 0, int _timeout = 200000, int _quality = 30)
         : sock(INVALID_SOCKET)
         , timeout(_timeout)
         , quality(_quality)
     {
+        close_all_sockets = 0;
         FD_ZERO(&master);
         if (port)
             open(port);
     }
 
-    ~MJPGWriter()
+    ~MJPG_sender()
     {
+        close_all();
         release();
     }
 
@@ -95,6 +98,13 @@ public:
             ::shutdown(sock, 2);
         sock = (INVALID_SOCKET);
         return false;
+    }
+
+    void close_all()
+    {
+        close_all_sockets = 1;
+        cv::Mat tmp(cv::Size(10, 10), CV_8UC3);
+        write(tmp);
     }
 
     bool open(int port)
@@ -107,12 +117,12 @@ public:
         address.sin_port = htons(port);    // ::htons(port);
         if (::bind(sock, (SOCKADDR*)&address, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
         {
-            cerr << "error : couldn't bind sock " << sock << " to port " << port << "!" << endl;
+            cerr << "error MJPG_sender: couldn't bind sock " << sock << " to port " << port << "!" << endl;
             return release();
         }
         if (::listen(sock, 10) == SOCKET_ERROR)
         {
-            cerr << "error : couldn't listen on sock " << sock << " on port " << port << " !" << endl;
+            cerr << "error MJPG_sender: couldn't listen on sock " << sock << " on port " << port << " !" << endl;
             return release();
         }
         FD_ZERO(&master);
@@ -158,8 +168,14 @@ public:
                 SOCKET      client = ::accept(sock, (SOCKADDR*)&address, &addrlen);
                 if (client == SOCKET_ERROR)
                 {
-                    cerr << "error : couldn't accept connection on sock " << sock << " !" << endl;
+                    cerr << "error MJPG_sender: couldn't accept connection on sock " << sock << " !" << endl;
                     return false;
+                }
+                if (setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (char *)&to, sizeof(to)) < 0) {
+                    cerr << "error MJPG_sender: SO_RCVTIMEO setsockopt failed\n";
+                }
+                if (setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (char *)&to, sizeof(to)) < 0) {
+                    cerr << "error MJPG_sender: SO_SNDTIMEO setsockopt failed\n";
                 }
                 maxfd = (maxfd>client ? maxfd : client);
                 FD_SET(client, &master);
@@ -174,10 +190,20 @@ public:
                     "Pragma: no-cache\r\n"
                     "Content-Type: multipart/x-mixed-replace; boundary=mjpegstream\r\n"
                     "\r\n", 0);
-                cerr << "new client " << client << endl;
+                cerr << "MJPG_sender: new client " << client << endl;
             }
             else // existing client, just stream pix
             {
+                if (close_all_sockets) {
+                    int result = ::shutdown(s, 1); // 0 close input, 1 close output, 2 close both
+                    char *buf = (char *)calloc(1024, sizeof(char));
+                    ::recv(s, buf, 1024, 0);
+                    free(buf);
+                    closesocket(s);
+                    printf("MJPG_sender: close clinet: %d \n", result);
+                    continue;
+                }
+
                 char head[400];
                 sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
                 _write(s, head, 0);
@@ -185,7 +211,7 @@ public:
                 //cerr << "known client " << s << " " << n << endl;
                 if (n < outlen)
                 {
-                    cerr << "kill client " << s << endl;
+                    cerr << "MJPG_sender: kill client " << s << endl;
                     ::shutdown(s, 2);
                     FD_CLR(s, &master);
                 }
@@ -198,7 +224,7 @@ public:
 
 void send_mjpeg(IplImage* ipl, int port, int timeout, int quality)
 {
-    static MJPGWriter wri(port, timeout, quality);
+    static MJPG_sender wri(port, timeout, quality);
     cv::Mat mat = cv::cvarrToMat(ipl);
     wri.write(mat);
     std::cout << " MJPEG-stream sent. \n";
@@ -211,6 +237,7 @@ class JSON_sender
     SOCKET maxfd;
     fd_set master;
     int timeout; // master sock timeout, shutdown after timeout millis.
+    int close_all_sockets;
 
     int _write(int sock, char const*const s, int len)
     {
@@ -224,6 +251,7 @@ public:
         : sock(INVALID_SOCKET)
         , timeout(_timeout)
     {
+        close_all_sockets = 0;
         FD_ZERO(&master);
         if (port)
             open(port);
@@ -231,6 +259,7 @@ public:
 
     ~JSON_sender()
     {
+        close_all();
         release();
     }
 
@@ -240,6 +269,13 @@ public:
             ::shutdown(sock, 2);
         sock = (INVALID_SOCKET);
         return false;
+    }
+
+    void close_all()
+    {
+        close_all_sockets = 1;
+        char tmp[1];
+        write(tmp);
     }
 
     bool open(int port)
@@ -252,12 +288,12 @@ public:
         address.sin_port = htons(port);    // ::htons(port);
         if (::bind(sock, (SOCKADDR*)&address, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
         {
-            cerr << "error : couldn't bind sock " << sock << " to port " << port << "!" << endl;
+            cerr << "error JSON_sender: couldn't bind sock " << sock << " to port " << port << "!" << endl;
             return release();
         }
         if (::listen(sock, 10) == SOCKET_ERROR)
         {
-            cerr << "error : couldn't listen on sock " << sock << " on port " << port << " !" << endl;
+            cerr << "error JSON_sender: couldn't listen on sock " << sock << " on port " << port << " !" << endl;
             return release();
         }
         FD_ZERO(&master);
@@ -298,8 +334,14 @@ public:
                 SOCKET      client = ::accept(sock, (SOCKADDR*)&address, &addrlen);
                 if (client == SOCKET_ERROR)
                 {
-                    cerr << "error : couldn't accept connection on sock " << sock << " !" << endl;
+                    cerr << "error JSON_sender: couldn't accept connection on sock " << sock << " !" << endl;
                     return false;
+                }
+                if (setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (char *)&to, sizeof(to)) < 0) {
+                    cerr << "error JSON_sender: SO_RCVTIMEO setsockopt failed\n";
+                }
+                if (setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (char *)&to, sizeof(to)) < 0) {
+                    cerr << "error JSON_sender: SO_SNDTIMEO setsockopt failed\n";
                 }
                 maxfd = (maxfd>client ? maxfd : client);
                 FD_SET(client, &master);
@@ -315,23 +357,37 @@ public:
                     "Content-Type: application/json\r\n"
                     //"Content-Type: multipart/x-mixed-replace; boundary=boundary\r\n"
                     "\r\n", 0);
-                cerr << "new client " << client << endl;
+                cerr << "JSON_sender: new client " << client << endl;
             }
             else // existing client, just stream pix
             {
-                char head[400];
+                // Graceful closes will first close their output channels and then wait for the peer
+                // on the other side of the connection to close its output channels. When both sides are done telling
+                // each other they won’t be sending any more data (i.e., closing output channels),
+                // the connection can be closed fully, with no risk of reset.
+                if (close_all_sockets) {
+                    int result = ::shutdown(s, 1); // 0 close input, 1 close output, 2 close both
+                    char *buf = (char *)calloc(1024, sizeof(char));
+                    ::recv(s, buf, 1024, 0);
+                    free(buf);
+                    closesocket(s);
+                    printf("JSON_sender: close clinet: %d \n", result);
+                    continue;
+                }
+
+                //char head[400];
                 // application/json
                 // application/x-resource+json or application/x-collection+json -  when you are representing REST resources and collections
                 // text/json or text/javascript or text/plain.
                 // https://stackoverflow.com/questions/477816/what-is-the-correct-json-content-type
                 //sprintf(head, "\r\nContent-Length: %zu\r\n\r\n", outlen);
                 //sprintf(head, "--boundary\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n", outlen);
-                _write(s, head, 0);
+                //_write(s, head, 0);
                 int n = _write(s, outputbuf, outlen);
                 //cerr << "known client " << s << " " << n << endl;
                 if (n < outlen)
                 {
-                    cerr << "kill client " << s << endl;
+                    cerr << "JSON_sender: kill client " << s << endl;
                     ::shutdown(s, 2);
                     FD_CLR(s, &master);
                 }
@@ -342,19 +398,10 @@ public:
 };
 // ----------------------------------------
 
-// JSON format:
-//{
-// "frame_id":8990,
-// "objects":[
-//  {"class_id":4, "name":"aeroplane", "relative coordinates":{"center_x":0.398831, "center_y":0.630203, "width":0.057455, "height":0.020396}, "confidence":0.793070},
-//  {"class_id":14, "name":"bird", "relative coordinates":{"center_x":0.398831, "center_y":0.630203, "width":0.057455, "height":0.020396}, "confidence":0.265497}
-// ]
-//},
-
 void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout)
 {
     static JSON_sender js(port, timeout);
-    char *send_buf = detection_to_json(dets, nboxes, classes, names, frame_id);
+    char *send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
 
     js.write(send_buf);
     std::cout << " JSON-stream sent. \n";
