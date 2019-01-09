@@ -199,7 +199,7 @@ public:
                     char *buf = (char *)calloc(1024, sizeof(char));
                     ::recv(s, buf, 1024, 0);
                     free(buf);
-                    ::closesocket(s);
+                    //::closesocket(s);
                     printf("MJPG_sender: close clinet: %d \n", result);
                     continue;
                 }
@@ -370,7 +370,7 @@ public:
                     char *buf = (char *)calloc(1024, sizeof(char));
                     ::recv(s, buf, 1024, 0);
                     free(buf);
-                    ::closesocket(s);
+                    //::closesocket(s);
                     printf("JSON_sender: close clinet: %d \n", result);
                     continue;
                 }
