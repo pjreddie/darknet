@@ -705,7 +705,8 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
             }
         }
     }
-    strcat(send_buf, "\n ] \n}, \n");
+    //strcat(send_buf, "\n ] \n}, \n");
+    strcat(send_buf, "\n ] \n}");
     return send_buf;
 }
 

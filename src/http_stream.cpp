@@ -274,8 +274,7 @@ public:
     void close_all()
     {
         close_all_sockets = 1;
-        char tmp[1];
-        write(tmp);
+        write("\n]");   // close JSON array
     }
 
     bool open(int port)
@@ -357,10 +356,26 @@ public:
                     "Content-Type: application/json\r\n"
                     //"Content-Type: multipart/x-mixed-replace; boundary=boundary\r\n"
                     "\r\n", 0);
+                _write(client, "[\n", 0);   // open JSON array
                 cerr << "JSON_sender: new client " << client << endl;
             }
             else // existing client, just stream pix
             {
+                //char head[400];
+                // application/x-resource+json or application/x-collection+json -  when you are representing REST resources and collections
+                // application/json or text/json or text/javascript or text/plain.
+                // https://stackoverflow.com/questions/477816/what-is-the-correct-json-content-type
+                //sprintf(head, "\r\nContent-Length: %zu\r\n\r\n", outlen);
+                //sprintf(head, "--boundary\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n", outlen);
+                //_write(s, head, 0);
+                int n = _write(s, outputbuf, outlen);
+                if (n < outlen)
+                {
+                    cerr << "JSON_sender: kill client " << s << endl;
+                    ::shutdown(s, 2);
+                    FD_CLR(s, &master);
+                }
+
                 // Graceful closes will first close their output channels and then wait for the peer
                 // on the other side of the connection to close its output channels. When both sides are done telling
                 // each other they won’t be sending any more data (i.e., closing output channels),
@@ -372,24 +387,6 @@ public:
                     free(buf);
                     //::closesocket(s);
                     printf("JSON_sender: close clinet: %d \n", result);
-                    continue;
-                }
-
-                //char head[400];
-                // application/json
-                // application/x-resource+json or application/x-collection+json -  when you are representing REST resources and collections
-                // text/json or text/javascript or text/plain.
-                // https://stackoverflow.com/questions/477816/what-is-the-correct-json-content-type
-                //sprintf(head, "\r\nContent-Length: %zu\r\n\r\n", outlen);
-                //sprintf(head, "--boundary\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n", outlen);
-                //_write(s, head, 0);
-                int n = _write(s, outputbuf, outlen);
-                //cerr << "known client " << s << " " << n << endl;
-                if (n < outlen)
-                {
-                    cerr << "JSON_sender: kill client " << s << endl;
-                    ::shutdown(s, 2);
-                    FD_CLR(s, &master);
                 }
             }
         }
@@ -401,7 +398,9 @@ public:
 void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout)
 {
     static JSON_sender js(port, timeout);
-    char *send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
+    static char *send_buf = NULL;
+    if(send_buf) js.write(", \n");
+    send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
 
     js.write(send_buf);
     std::cout << " JSON-stream sent. \n";
