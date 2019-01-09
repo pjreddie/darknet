@@ -508,6 +508,14 @@ void save_cv_png(IplImage *img, const char *name)
     cvRelease(&img_rgb);
 }
 
+void save_cv_jpg(IplImage *img, const char *name)
+{
+    IplImage* img_rgb = cvCreateImage(cvSize(img->width, img->height), 8, 3);
+    cvCvtColor(img, img_rgb, CV_RGB2BGR);
+    stbi_write_jpg(name, img_rgb->width, img_rgb->height, 3, (char *)img_rgb->imageData, 80);
+    cvRelease(&img_rgb);
+}
+
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
     int i, j;
@@ -802,7 +810,7 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     int k = cvWaitKey(20);
     if (k == 's' || current_batch == (max_batches - 1) || current_batch % 100 == 0) {
         //cvSaveImage("chart.jpg", img, 0);
-        save_cv_png("chart.png", img);
+        save_cv_png(img, "chart.png");
         cvPutText(img, "- Saved", cvPoint(250, img_size - 10), &font, CV_RGB(255, 0, 0));
     }
     else

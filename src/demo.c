@@ -54,6 +54,7 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
 void show_image_cv_ipl(IplImage *disp, const char *name);
 void save_cv_png(IplImage *img, const char *name);
+void save_cv_jpg(IplImage *img, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 image get_image_from_stream_letterbox(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 int get_stream_fps(CvCapture *cap, int cpp_video_capture);
@@ -140,6 +141,7 @@ double get_wall_time()
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
     int frame_skip, char *prefix, char *out_filename, int http_stream_port, int json_port, int dont_show, int ext_output)
 {
+    in_img = det_img = show_img = NULL;
     //skip = frame_skip;
     image **alphabet = load_alphabet();
     int delay = frame_skip;
@@ -274,9 +276,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             }else{
                 char buff[256];
                 sprintf(buff, "%s_%08d.jpg", prefix, count);
-                save_cv_png(buff, show_img);
-                //cvSaveImage(buff, show_img, 0);
-                //save_image(disp, buff);
+                if(show_img) save_cv_jpg(show_img, buff);
             }
 
             // if you run it with param -http_port 8090  then open URL in your web-browser: http://localhost:8090
@@ -302,6 +302,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             if (flag_exit == 1) break;
 
             if(delay == 0){
+                printf("\n show_img = det_img; \n");
                 show_img = det_img;
             }
             det_img = in_img;
