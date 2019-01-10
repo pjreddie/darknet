@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include "network.h"
 #include "region_layer.h"
 #include "cost_layer.h"

@@ -753,7 +753,8 @@ LIB_API void reset_rnn(network *net);
 LIB_API float *network_predict_image(network *net, image im);
 LIB_API float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, const float iou_thresh, network *existing_net);
 LIB_API void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map);
-LIB_API void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int ext_output);
+LIB_API void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
+    float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile);
 LIB_API int network_width(network *net);
 LIB_API int network_height(network *net);
 LIB_API void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh, int norm);
