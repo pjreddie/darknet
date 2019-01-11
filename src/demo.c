@@ -302,7 +302,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             if (flag_exit == 1) break;
 
             if(delay == 0){
-                printf("\n show_img = det_img; \n");
                 show_img = det_img;
             }
             det_img = in_img;

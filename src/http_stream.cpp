@@ -21,7 +21,22 @@ struct _INIT_W32DATA
     WSADATA w;
     _INIT_W32DATA() { WSAStartup(MAKEWORD(2, 1), &w); }
 } _init_once;
-#else       /* ! win32 */
+
+// Graceful closes will first close their output channels and then wait for the peer
+// on the other side of the connection to close its output channels. When both sides are done telling
+// each other they won’t be sending any more data (i.e., closing output channels),
+// the connection can be closed fully, with no risk of reset.
+static int close_socket(SOCKET s) {
+    int close_output = ::shutdown(s, 1); // 0 close input, 1 close output, 2 close both
+    char *buf = (char *)calloc(1024, sizeof(char));
+    ::recv(s, buf, 1024, 0);
+    free(buf);
+    int close_input = ::shutdown(s, 0);
+    int result = ::closesocket(s);
+    printf("Close socket: out = %d, in = %d \n", close_output, close_input);
+    return result;
+}
+#else   // nix
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -29,6 +44,7 @@ struct _INIT_W32DATA
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <signal.h>
 #define PORT        unsigned short
 #define SOCKET    int
 #define HOSTENT  struct hostent
@@ -37,7 +53,29 @@ struct _INIT_W32DATA
 #define ADDRPOINTER  unsigned int*
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR   -1
-#endif /* _WIN32 */
+struct _IGNORE_PIPE_SIGNAL
+{
+    struct sigaction new_actn, old_actn;
+    _IGNORE_PIPE_SIGNAL() {
+        new_actn.sa_handler = SIG_IGN;  // ignore the broken pipe signal
+        sigemptyset(&new_actn.sa_mask);
+        new_actn.sa_flags = 0;
+        sigaction(SIGPIPE, &new_actn, &old_actn);
+        // sigaction (SIGPIPE, &old_actn, NULL); // - to restore the previous signal handling
+    }
+} _init_once;
+
+static int close_socket(SOCKET s) {
+    int close_output = ::shutdown(s, 1); // 0 close input, 1 close output, 2 close both
+    char *buf = (char *)calloc(1024, sizeof(char));
+    ::recv(s, buf, 1024, 0);
+    free(buf);
+    int close_input = ::shutdown(s, 0);
+    int result = close(s);
+    printf("Close socket: out = %d, in = %d \n", close_output, close_input);
+    return result;
+}
+#endif // _WIN32
 
 #include <cstdio>
 #include <vector>
@@ -139,8 +177,9 @@ public:
     bool write(const Mat & frame)
     {
         fd_set rread = master;
-        struct timeval to = { 0,timeout };
-        if (::select(maxfd+1, &rread, NULL, NULL, &to) <= 0)
+        struct timeval select_timeout = { 0, 0 };
+        struct timeval socket_timeout = { 0, timeout };
+        if (::select(maxfd+1, &rread, NULL, NULL, &select_timeout) <= 0)
             return true; // nothing broken, there's just noone listening
 
         std::vector<uchar> outbuf;
@@ -171,10 +210,10 @@ public:
                     cerr << "error MJPG_sender: couldn't accept connection on sock " << sock << " !" << endl;
                     return false;
                 }
-                if (setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (char *)&to, sizeof(to)) < 0) {
+                if (setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (char *)&socket_timeout, sizeof(socket_timeout)) < 0) {
                     cerr << "error MJPG_sender: SO_RCVTIMEO setsockopt failed\n";
                 }
-                if (setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (char *)&to, sizeof(to)) < 0) {
+                if (setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (char *)&socket_timeout, sizeof(socket_timeout)) < 0) {
                     cerr << "error MJPG_sender: SO_SNDTIMEO setsockopt failed\n";
                 }
                 maxfd = (maxfd>client ? maxfd : client);
@@ -195,11 +234,7 @@ public:
             else // existing client, just stream pix
             {
                 if (close_all_sockets) {
-                    int result = ::shutdown(s, 1); // 0 close input, 1 close output, 2 close both
-                    char *buf = (char *)calloc(1024, sizeof(char));
-                    ::recv(s, buf, 1024, 0);
-                    free(buf);
-                    //::closesocket(s);
+                    int result = close_socket(s);
                     printf("MJPG_sender: close clinet: %d \n", result);
                     continue;
                 }
@@ -309,8 +344,9 @@ public:
     bool write(char *outputbuf)
     {
         fd_set rread = master;
-        struct timeval to = { 0,timeout };
-        if (::select(maxfd + 1, &rread, NULL, NULL, &to) <= 0)
+        struct timeval select_timeout = { 0, 0 };
+        struct timeval socket_timeout = { 0, timeout };
+        if (::select(maxfd + 1, &rread, NULL, NULL, &select_timeout) <= 0)
             return true; // nothing broken, there's just noone listening
 
         size_t outlen = strlen(outputbuf);
@@ -336,10 +372,10 @@ public:
                     cerr << "error JSON_sender: couldn't accept connection on sock " << sock << " !" << endl;
                     return false;
                 }
-                if (setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (char *)&to, sizeof(to)) < 0) {
+                if (setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (char *)&socket_timeout, sizeof(socket_timeout)) < 0) {
                     cerr << "error JSON_sender: SO_RCVTIMEO setsockopt failed\n";
                 }
-                if (setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (char *)&to, sizeof(to)) < 0) {
+                if (setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (char *)&socket_timeout, sizeof(socket_timeout)) < 0) {
                     cerr << "error JSON_sender: SO_SNDTIMEO setsockopt failed\n";
                 }
                 maxfd = (maxfd>client ? maxfd : client);
@@ -376,17 +412,10 @@ public:
                     FD_CLR(s, &master);
                 }
 
-                // Graceful closes will first close their output channels and then wait for the peer
-                // on the other side of the connection to close its output channels. When both sides are done telling
-                // each other they won’t be sending any more data (i.e., closing output channels),
-                // the connection can be closed fully, with no risk of reset.
                 if (close_all_sockets) {
-                    int result = ::shutdown(s, 1); // 0 close input, 1 close output, 2 close both
-                    char *buf = (char *)calloc(1024, sizeof(char));
-                    ::recv(s, buf, 1024, 0);
-                    free(buf);
-                    //::closesocket(s);
+                    int result = close_socket(s);
                     printf("JSON_sender: close clinet: %d \n", result);
+                    continue;
                 }
             }
         }
