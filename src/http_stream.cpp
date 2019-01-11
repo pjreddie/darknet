@@ -24,7 +24,7 @@ struct _INIT_W32DATA
 
 // Graceful closes will first close their output channels and then wait for the peer
 // on the other side of the connection to close its output channels. When both sides are done telling
-// each other they won’t be sending any more data (i.e., closing output channels),
+// each other they won,t be sending any more data (i.e., closing output channels),
 // the connection can be closed fully, with no risk of reset.
 static int close_socket(SOCKET s) {
     int close_output = ::shutdown(s, 1); // 0 close input, 1 close output, 2 close both
@@ -153,6 +153,14 @@ public:
         address.sin_addr.s_addr = INADDR_ANY;
         address.sin_family = AF_INET;
         address.sin_port = htons(port);    // ::htons(port);
+        int reuse = 1;
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0)
+            cerr << "setsockopt(SO_REUSEADDR) failed" << endl;
+
+#ifdef SO_REUSEPORT
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuse, sizeof(reuse)) < 0)
+            cerr << "setsockopt(SO_REUSEPORT) failed" << endl;
+#endif
         if (::bind(sock, (SOCKADDR*)&address, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
         {
             cerr << "error MJPG_sender: couldn't bind sock " << sock << " to port " << port << "!" << endl;
@@ -179,7 +187,7 @@ public:
         fd_set rread = master;
         struct timeval select_timeout = { 0, 0 };
         struct timeval socket_timeout = { 0, timeout };
-        if (::select(maxfd+1, &rread, NULL, NULL, &select_timeout) <= 0)
+        if (::select(maxfd + 1, &rread, NULL, NULL, &select_timeout) <= 0)
             return true; // nothing broken, there's just noone listening
 
         std::vector<uchar> outbuf;
@@ -195,7 +203,7 @@ public:
             int addrlen = sizeof(SOCKADDR);
             SOCKET s = rread.fd_array[i];    // fd_set on win is an array, while ...
 #else
-        for (int s = 0; s<=maxfd; s++)
+        for (int s = 0; s <= maxfd; s++)
         {
             socklen_t addrlen = sizeof(SOCKADDR);
             if (!FD_ISSET(s, &rread))      // ... on linux it's a bitmask ;)
@@ -251,6 +259,10 @@ public:
                     FD_CLR(s, &master);
                 }
             }
+        }
+        if (close_all_sockets) {
+            int result = close_socket(sock);
+            printf("MJPG_sender: close acceptor: %d \n\n", result);
         }
         return true;
     }
@@ -320,6 +332,14 @@ public:
         address.sin_addr.s_addr = INADDR_ANY;
         address.sin_family = AF_INET;
         address.sin_port = htons(port);    // ::htons(port);
+        int reuse = 1;
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0)
+            cerr << "setsockopt(SO_REUSEADDR) failed" << endl;
+
+#ifdef SO_REUSEPORT
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuse, sizeof(reuse)) < 0)
+            cerr << "setsockopt(SO_REUSEPORT) failed" << endl;
+#endif
         if (::bind(sock, (SOCKADDR*)&address, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
         {
             cerr << "error JSON_sender: couldn't bind sock " << sock << " to port " << port << "!" << endl;
@@ -419,6 +439,10 @@ public:
                 }
             }
         }
+        if (close_all_sockets) {
+            int result = close_socket(sock);
+            printf("JSON_sender: close acceptor: %d \n\n", result);
+        }
         return true;
     }
 };
@@ -428,7 +452,7 @@ void send_json(detection *dets, int nboxes, int classes, char **names, long long
 {
     static JSON_sender js(port, timeout);
     static char *send_buf = NULL;
-    if(send_buf) js.write(", \n");
+    if (send_buf) js.write(", \n");
     send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
 
     js.write(send_buf);
@@ -603,7 +627,7 @@ double get_time() {
 
 void stop_timer_and_show() {
     stop_timer();
-    std::cout << " " << get_time()*1000 << " msec" << std::endl;
+    std::cout << " " << get_time() * 1000 << " msec" << std::endl;
 }
 
 void stop_timer_and_show_name(char *name) {
