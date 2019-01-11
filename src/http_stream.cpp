@@ -413,6 +413,7 @@ public:
                     //"Content-Type: multipart/x-mixed-replace; boundary=boundary\r\n"
                     "\r\n", 0);
                 _write(client, "[\n", 0);   // open JSON array
+                int n = _write(client, outputbuf, outlen);
                 cerr << "JSON_sender: new client " << client << endl;
             }
             else // existing client, just stream pix
@@ -424,6 +425,7 @@ public:
                 //sprintf(head, "\r\nContent-Length: %zu\r\n\r\n", outlen);
                 //sprintf(head, "--boundary\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n", outlen);
                 //_write(s, head, 0);
+                if(!close_all_sockets) _write(s, ", \n", 0);
                 int n = _write(s, outputbuf, outlen);
                 if (n < outlen)
                 {
@@ -451,9 +453,7 @@ public:
 void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout)
 {
     static JSON_sender js(port, timeout);
-    static char *send_buf = NULL;
-    if (send_buf) js.write(", \n");
-    send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
+    char *send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
 
     js.write(send_buf);
     std::cout << " JSON-stream sent. \n";
