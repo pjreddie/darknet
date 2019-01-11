@@ -90,7 +90,8 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 * optimized memory allocation during network resizing when `random=1`
 * optimized initialization GPU for detection - we use batch=1 initially instead of re-init with batch=1
 * added correct calculation of **mAP, F1, IoU, Precision-Recall** using command `darknet detector map`...
-* added drawing of chart of average loss during training
+* added drawing of chart of average-Loss and accuracy-mAP (`-map` flag) during training
+* run `./darknet detector demo ... -json_port 8070 -mjpeg_port 8090` as JSON and MJPEG server to get results online over the network by using your soft or Web-browser
 * added calculation of anchors for training
 * added example of Detection and Tracking objects: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
 * fixed code for use Web-cam on OpenCV 3.x
@@ -108,13 +109,14 @@ Also, you might be interested in using a simplified repository where is implemen
 
 On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector test ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights`
 
-* **Yolo v3** COCO - image: `darknet.exe detector test data/coco.data cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
+* Yolo v3 COCO - **image**: `darknet.exe detector test data/coco.data cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
 * Output coordinates of objects: `darknet.exe detector test data/coco.data yolov3.cfg yolov3.weights -ext_output dog.jpg`
-* **Yolo v3** COCO - video: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -ext_output test.mp4`
-* **Yolo v3** COCO - WebCam 0: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -c 0`
-* **Yolo v3** COCO for net-videocam - Smart WebCam: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg`
+* Yolo v3 COCO - **video**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -ext_output test.mp4`
+* Yolo v3 COCO - **WebCam 0**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -c 0`
+* Yolo v3 COCO for **net-videocam** - Smart WebCam: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg`
 * **Yolo v3 - save result to the file res.avi**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -out_filename res.avi`
 * **Yolo v3 Tiny** COCO - video: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights test.mp4`
+* **JSON and MJPEG server** that allows multiple connections from your soft or Web-browser `ip-address:8070` or 8090: `./darknet detector demo ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights test50.mp4 -json_port 8070 -http_port 8090 -ext_output`
 * **Yolo v3 Tiny** on GPU #0: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights -i 0 test.mp4`
 * Alternative method Yolo v3 COCO - image: `darknet.exe detect cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
 * 186 MB Yolo9000 - image: `darknet.exe detector test cfg/combine9k.data yolo9000.cfg yolo9000.weights`
