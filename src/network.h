@@ -150,7 +150,7 @@ float get_network_cost(network net);
 //LIB_API network *load_network(char *cfg, char *weights, int clear);
 //LIB_API float *network_predict_image(network *net, image im);
 //LIB_API float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, const float iou_thresh, network *existing_net);
-//LIB_API void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map);
+//LIB_API void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, int mjpeg_port);
 //LIB_API int network_width(network *net);
 //LIB_API int network_height(network *net);
 //LIB_API void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh, int norm);
