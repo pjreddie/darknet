@@ -116,7 +116,7 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 * Yolo v3 COCO for **net-videocam** - Smart WebCam: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg`
 * **Yolo v3 - save result to the file res.avi**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -out_filename res.avi`
 * **Yolo v3 Tiny** COCO - video: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights test.mp4`
-* **JSON and MJPEG server** that allows multiple connections from your soft or Web-browser `ip-address:8070` or 8090: `./darknet detector demo ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights test50.mp4 -json_port 8070 -http_port 8090 -ext_output`
+* **JSON and MJPEG server** that allows multiple connections from your soft or Web-browser `ip-address:8070` or 8090: `./darknet detector demo ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights test50.mp4 -json_port 8070 -mjpeg_port 8090 -ext_output`
 * **Yolo v3 Tiny** on GPU #0: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights -i 0 test.mp4`
 * Alternative method Yolo v3 COCO - image: `darknet.exe detect cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
 * 186 MB Yolo9000 - image: `darknet.exe detector test cfg/combine9k.data yolo9000.cfg yolo9000.weights`
@@ -340,7 +340,8 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
      
    * (file `yolo-obj_last.weights` will be saved to the `build\darknet\x64\backup\` for each 100 iterations)
    * (file `yolo-obj_xxxx.weights` will be saved to the `build\darknet\x64\backup\` for each 1000 iterations)
-   * (To disable Loss-Window use `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -dont_show`, if you train on computer without monitor like a cloud Amazaon EC2)
+   * (to disable Loss-Window use `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -dont_show`, if you train on computer without monitor like a cloud Amazon EC2)
+   * (to see the mAP & Loss-chart during training on remote server without GUI, use command `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -dont_show -mjpeg_port 8090 -map` then open URL `http://ip-address:8090` in Chrome/Firefox browser)
 
 8.1. For training with mAP (mean average precisions) calculation for each 4 Epochs (set `valid=valid.txt` or `train.txt` in `obj.data` file) and run: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -map`
 

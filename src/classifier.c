@@ -24,8 +24,9 @@ image get_image_from_stream(CvCapture *cap);
 image get_image_from_stream_cpp(CvCapture *cap);
 #include "http_stream.h"
 
-IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size);
-void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision, int draw_precision);
+IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show);
+void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
+    float precision, int draw_precision, int dont_show, int mjpeg_port);
 
 #endif
 
@@ -41,7 +42,7 @@ float *get_regression_values(char **labels, int n)
     return v;
 }
 
-void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show)
+void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int mjpeg_port)
 {
     int i;
 
@@ -114,8 +115,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     float max_img_loss = 5;
     int number_of_lines = 100;
     int img_size = 1000;
-    if (!dont_show)
-        img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size);
+    img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size, dont_show);
 #endif  //OPENCV
 
     data train;
@@ -152,8 +152,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
 #ifdef OPENCV
-        if(!dont_show)
-            draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, -1, 0);
+        draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, -1, 0, dont_show, mjpeg_port);
 #endif  // OPENCV
 
         if (i >= (iter_save + 100)) {
@@ -1186,6 +1185,7 @@ void run_classifier(int argc, char **argv)
         return;
     }
 
+    int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
     int gpu = 0;
@@ -1221,7 +1221,7 @@ void run_classifier(int argc, char **argv)
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
-    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show);
+    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show, mjpeg_port);
     else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "gun")) gun_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "threat")) threat_classifier(data, cfg, weights, cam_index, filename);

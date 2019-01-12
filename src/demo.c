@@ -139,7 +139,7 @@ double get_wall_time()
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int json_port, int dont_show, int ext_output)
+    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output)
 {
     in_img = det_img = show_img = NULL;
     //skip = frame_skip;
@@ -279,10 +279,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 if(show_img) save_cv_jpg(show_img, buff);
             }
 
-            // if you run it with param -http_port 8090  then open URL in your web-browser: http://localhost:8090
-            if (http_stream_port > 0 && show_img) {
+            // if you run it with param -mjpeg_port 8090  then open URL in your web-browser: http://localhost:8090
+            if (mjpeg_port > 0 && show_img) {
                 //int port = 8090;
-                int port = http_stream_port;
+                int port = mjpeg_port;
                 int timeout = 200;
                 int jpeg_quality = 30;    // 1 - 100
                 send_mjpeg(show_img, port, timeout, jpeg_quality);
@@ -364,7 +364,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int json_port, int dont_show, int ext_output)
+    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
