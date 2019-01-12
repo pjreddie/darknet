@@ -152,6 +152,7 @@ if __name__ == "__main__":
     net = load_net("../cfg/tiny-yolo.cfg", "../tiny-yolo.weights", 0) 
     meta = load_meta("../cfg/coco.data")
     r = detect(net, meta, "../data/dog.jpg")
+    # you will face error for coco.names just modify the path of coco.names into coco.data
     print r
     
 
