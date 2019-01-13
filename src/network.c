@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <assert.h>
+#include "darknet.h"
 #include "network.h"
 #include "image.h"
 #include "data.h"
@@ -31,21 +32,22 @@
 #include "upsample_layer.h"
 #include "parser.h"
 
-network *load_network_custom(char *cfg, char *weights, int clear, int batch)
+load_args get_base_args(network *net)
 {
-    printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
-    network *net = calloc(1, sizeof(network));
-    *net = parse_network_cfg_custom(cfg, batch);
-    if (weights && weights[0] != 0) {
-        load_weights(net, weights);
-    }
-    if (clear) (*net->seen) = 0;
-    return net;
-}
+    load_args args = { 0 };
+    args.w = net->w;
+    args.h = net->h;
+    args.size = net->w;
 
-network *load_network(char *cfg, char *weights, int clear)
-{
-    return load_network_custom(cfg, weights, clear, 0);
+    args.min = net->min_crop;
+    args.max = net->max_crop;
+    args.angle = net->angle;
+    args.aspect = net->aspect;
+    args.exposure = net->exposure;
+    args.center = net->center;
+    args.saturation = net->saturation;
+    args.hue = net->hue;
+    return args;
 }
 
 int get_current_batch(network net)
@@ -177,7 +179,7 @@ network make_network(int n)
     network net = {0};
     net.n = n;
     net.layers = calloc(net.n, sizeof(layer));
-    net.seen = calloc(1, sizeof(int));
+    net.seen = calloc(1, sizeof(uint64_t));
 #ifdef GPU
     net.input_gpu = calloc(1, sizeof(float *));
     net.truth_gpu = calloc(1, sizeof(float *));
@@ -190,6 +192,8 @@ network make_network(int n)
     return net;
 }
 
+double get_time_point();
+
 void forward_network(network net, network_state state)
 {
     state.workspace = net.workspace;
@@ -200,7 +204,9 @@ void forward_network(network net, network_state state)
         if(l.delta){
             scal_cpu(l.outputs * l.batch, 0, l.delta, 1);
         }
+        //double time = get_time_point();
         l.forward(l, state);
+        //printf("%d - Predicted in %lf milli-seconds.\n", i, ((double)get_time_point() - time) / 1000);
         state.input = l.output;
     }
 }
@@ -376,6 +382,9 @@ void set_batch_network(network *net, int b)
                 l->workspace_size = get_workspace_size(*l);
             }
             */
+        }
+        else if (net->layers[i].type == MAXPOOL) {
+            cudnn_maxpool_setup(net->layers + i);
         }
 #endif
     }
@@ -649,6 +658,59 @@ void free_detections(detection *dets, int n)
     free(dets);
 }
 
+// JSON format:
+//{
+// "frame_id":8990,
+// "objects":[
+//  {"class_id":4, "name":"aeroplane", "relative coordinates":{"center_x":0.398831, "center_y":0.630203, "width":0.057455, "height":0.020396}, "confidence":0.793070},
+//  {"class_id":14, "name":"bird", "relative coordinates":{"center_x":0.398831, "center_y":0.630203, "width":0.057455, "height":0.020396}, "confidence":0.265497}
+// ]
+//},
+
+char *detection_to_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, char *filename)
+{
+    const float thresh = 0.005; // function get_network_boxes() has already filtred dets by actual threshold
+
+    char *send_buf = (char *)calloc(1024, sizeof(char));
+    if (filename) {
+        sprintf(send_buf, "{\n \"frame_id\":%d, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename);
+    }
+    else {
+        sprintf(send_buf, "{\n \"frame_id\":%d, \n \"objects\": [ \n", frame_id);
+    }
+
+    int i, j;
+    int class_id = -1;
+    for (i = 0; i < nboxes; ++i) {
+        for (j = 0; j < classes; ++j) {
+            int show = strncmp(names[j], "dont_show", 9);
+            if (dets[i].prob[j] > thresh && show)
+            {
+                if (class_id != -1) strcat(send_buf, ", \n");
+                class_id = j;
+                char *buf = (char *)calloc(2048, sizeof(char));
+                //sprintf(buf, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f}",
+                //    image_id, j, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h, dets[i].prob[j]);
+
+                sprintf(buf, "  {\"class_id\":%d, \"name\":\"%s\", \"relative_coordinates\":{\"center_x\":%f, \"center_y\":%f, \"width\":%f, \"height\":%f}, \"confidence\":%f}",
+                    j, names[j], dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h, dets[i].prob[j]);
+
+                int send_buf_len = strlen(send_buf);
+                int buf_len = strlen(buf);
+                int total_len = send_buf_len + buf_len + 100;
+                send_buf = (char *)realloc(send_buf, total_len * sizeof(char));
+                if (!send_buf) return;// exit(-1);
+                strcat(send_buf, buf);
+                free(buf);
+            }
+        }
+    }
+    //strcat(send_buf, "\n ] \n}, \n");
+    strcat(send_buf, "\n ] \n}");
+    return send_buf;
+}
+
+
 float *network_predict_image(network *net, image im)
 {
     //image imr = letterbox_image(im, net->w, net->h);
@@ -875,4 +937,36 @@ void calculate_binary_weights(network net)
     }
     //printf("\n calculate_binary_weights Done! \n");
 
+}
+
+// combine Training and Validation networks
+network combine_train_valid_networks(network net_train, network net_map)
+{
+    network net_combined = make_network(net_train.n);
+    layer *old_layers = net_combined.layers;
+    net_combined = net_train;
+    net_combined.layers = old_layers;
+    net_combined.batch = 1;
+
+    int k;
+    for (k = 0; k < net_train.n; ++k) {
+        layer *l = &(net_train.layers[k]);
+        net_combined.layers[k] = net_train.layers[k];
+        net_combined.layers[k].batch = 1;
+
+        if (l->type == CONVOLUTIONAL) {
+#ifdef CUDNN
+            net_combined.layers[k].normTensorDesc = net_map.layers[k].normTensorDesc;
+            net_combined.layers[k].normDstTensorDesc = net_map.layers[k].normDstTensorDesc;
+            net_combined.layers[k].normDstTensorDescF16 = net_map.layers[k].normDstTensorDescF16;
+
+            net_combined.layers[k].srcTensorDesc = net_map.layers[k].srcTensorDesc;
+            net_combined.layers[k].dstTensorDesc = net_map.layers[k].dstTensorDesc;
+
+            net_combined.layers[k].srcTensorDesc16 = net_map.layers[k].srcTensorDesc16;
+            net_combined.layers[k].dstTensorDesc16 = net_map.layers[k].dstTensorDesc16;
+#endif // CUDNN
+        }
+    }
+    return net_combined;
 }

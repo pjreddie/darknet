@@ -487,6 +487,15 @@ void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
         }
     }
 }
+
+static inline int popcnt_32(uint32_t val32) {
+#ifdef WIN32  // Windows MSVS
+    int tmp_count = __popcnt(val32);
+#else   // Linux GCC
+    int tmp_count = __builtin_popcount(val32);
+#endif
+    return tmp_count;
+}
 //----------------------------
 
 
@@ -720,6 +729,67 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     }
 }
 
+
+
+
+void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
+    uint32_t *A, int lda,
+    uint32_t *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < M; ++i) {   // l.n
+        int j, s;
+        float mean_val = mean_arr[i];
+        //printf(" l.mean_arr[i] = %d \n ", l.mean_arr[i]);
+        for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
+        {
+            register uint32_t A_PART = A[i*lda + s];
+            __m256i a256 = _mm256_set1_epi32(A_PART);
+
+            for (j = 0; j < N - 8; j += 8)
+            {
+                __m256i b256 = *((__m256i*)&B[s*ldb + j]);
+                __m256i xor256 = _mm256_xor_si256(a256, b256);  // xnor = xor(a,b)
+                __m256i all_1 = _mm256_set1_epi8(255);
+                __m256i xnor256 = _mm256_andnot_si256(xor256, all_1); // xnor = not(xor(a,b))
+
+                __m256 count = _mm256_setr_ps(
+                    popcnt_32(_mm256_extract_epi32(xnor256, 0)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 1)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 2)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 3)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 4)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 5)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 6)),
+                    popcnt_32(_mm256_extract_epi32(xnor256, 7)));
+
+                __m256 val2 = _mm256_set1_ps(2);
+                count = _mm256_mul_ps(count, val2);     // count * 2
+
+                __m256 val32 = _mm256_set1_ps(32);
+                count = _mm256_sub_ps(count, val32);    // count - 32
+
+                __m256 mean256 = _mm256_set1_ps(mean_val);
+                count = _mm256_mul_ps(count, mean256);  // count * mean_val
+
+                __m256 c256 = *((__m256*)&C[i*ldc + j]);
+                count = _mm256_add_ps(count, c256);     // c = c + count
+                *((__m256*)&C[i*ldc + j]) = count;
+            }
+
+            for (; j < N; ++j) // out_h*out_w;
+            {
+                register uint32_t B_PART = B[s*ldb + j];
+                uint32_t xnor_result = ~(A_PART ^ B_PART);
+                int32_t count = popcnt_32(xnor_result);  // must be Signed int
+
+                C[i*ldc + j] += (2 * count - 32) * mean_val;
+            }
+        }
+    }
+}
 
 void convolution_2d_old(int w, int h, int ksize, int n, int c, int pad, int stride,
     float *weights, float *input, float *output)
@@ -1652,7 +1722,15 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
     }
 }
 
-#else
+#else   // AVX
+
+int is_avx() {
+    return 0;
+}
+
+int is_fma_avx2() {
+    return 0;
+}
 
 void gemm_nn(int M, int N, int K, float ALPHA,
     float *A, int lda,
@@ -1665,6 +1743,36 @@ void gemm_nn(int M, int N, int K, float ALPHA,
             register float A_PART = ALPHA*A[i*lda + k];
             for (j = 0; j < N; ++j) {
                 C[i*ldc + j] += A_PART*B[k*ldb + j];
+            }
+        }
+    }
+}
+
+void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
+    uint32_t *A, int lda,
+    uint32_t *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < M; ++i) {   // l.n
+        int j, s;
+        float mean_val = mean_arr[i];
+        //printf(" l.mean_arr[i] = %d \n ", l.mean_arr[i]);
+        for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
+        {
+            //register float A_PART = 1*a[i*k + s];
+            register uint32_t A_PART = A[i*lda + s];
+            for (j = 0; j < N; ++j) // out_h*out_w;
+            {
+                //c[i*n + j] += A_PART*b[s*n + j];
+                register uint32_t B_PART = B[s*ldb + j];
+                uint32_t xnor_result = ~(A_PART ^ B_PART);
+                //printf(" xnor_result = %d, ", xnor_result);
+                int32_t count = popcnt_32(xnor_result);  // must be Signed int
+
+                C[i*ldc + j] += (2 * count - 32) * mean_val;
+                //c[i*n + j] += count*mean;
             }
         }
     }
@@ -2102,6 +2210,137 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
 
 #endif    // AVX
 
+
+// 32 channels -> 1 channel (with 32 floats)
+// 256 channels -> 8 channels (with 32 floats)
+void repack_input(float *input, float *re_packed_input, int w, int h, int c)
+{
+    const int items_per_channel = w * h;
+    int chan, i;
+    for (chan = 0; chan < c; chan += 32)
+    {
+        for (i = 0; i < items_per_channel; ++i)
+        {
+            int c_pack;
+            for (c_pack = 0; c_pack < 32; ++c_pack) {
+                float src = input[(chan + c_pack)*items_per_channel + i];
+
+                re_packed_input[chan*items_per_channel + i * 32 + c_pack] = src;
+            }
+        }
+    }
+}
+
+void transpose_uint32(uint32_t *src, uint32_t *dst, int src_h, int src_w, int src_align, int dst_align)
+{
+    //l.bit_align - algined (n) by 32
+    //new_ldb - aligned (k) by 256
+
+    int i;
+    //#pragma omp parallel for
+    for (i = 0; i < src_h; i += 1)  // l.size*l.size*l.c;
+    {
+        int j;
+        for (j = 0; j < src_w; j += 1)  // out_h*out_w;
+        {
+            ((uint32_t *)dst)[j*dst_align / 32 + i] = ((uint32_t *)src)[i*src_align + j];
+        }
+    }
+}
+
+void gemm_nn_bin_transposed_32bit_packed(int M, int N, int K, float ALPHA,
+    uint32_t *A, int lda,
+    uint32_t *B, int ldb,
+    float *C, int ldc, float *mean_arr)
+{
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < M; ++i) {   // l.n
+        int j, s;
+        float mean_val = mean_arr[i];
+        for (j = 0; j < N; ++j) // out_h*out_w;
+        {
+            float val = 0;
+            for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
+            {
+                register uint32_t A_PART = ((uint32_t*)A)[i*lda + s];
+                register uint32_t B_PART = ((uint32_t*)B)[j*ldb + s];
+                uint32_t xnor_result = ~(A_PART ^ B_PART);
+                int32_t count = popcnt_32(xnor_result);  // must be Signed int
+
+                val += (2 * count - 32) * mean_val;
+            }
+            C[i*ldc + j] += val;
+        }
+    }
+}
+
+void convolution_repacked(uint32_t *packed_input, uint32_t *packed_weights, float *output,
+    int w, int h, int c, int n, int size, int pad, int new_lda, float *mean_arr)
+{
+    int fil;
+    // filter index
+    #pragma omp parallel for
+    for (fil = 0; fil < n; ++fil) {
+        float mean_val = mean_arr[fil];
+        int chan, c_pack, y, x, f_y, f_x;
+        // channel index
+        for (chan = 0; chan < c / 32; ++chan)
+            //for (chan = 0; chan < l.c; chan += 32)
+            //for (c_pack = 0; c_pack < 32; ++c_pack)
+            // input - y
+            for (y = 0; y < h; ++y)
+                // input - x
+                for (x = 0; x < w; ++x)
+                {
+                    int const output_index = fil*w*h + y*w + x;
+                    float sum = 0;
+
+                    // filter - y
+                    for (f_y = 0; f_y < size; ++f_y)
+                    {
+                        int input_y = y + f_y - pad;
+                        // filter - x
+                        for (f_x = 0; f_x < size; ++f_x)
+                        {
+                            int input_x = x + f_x - pad;
+                            if (input_y < 0 || input_x < 0 || input_y >= h || input_x >= w) continue;
+
+                            // normal
+                            //float input = state.input[(chan + c_pack)*l.w*l.h + input_y*l.w + input_x];
+                            //float weight = l.weights[fil*l.c*l.size*l.size + (chan + c_pack)*l.size*l.size + f_y*l.size + f_x];
+
+                            // packed
+                            //float input = re_packed_input[chan*l.w*l.h + (input_y*l.w + input_x) * 32 + c_pack];
+                            //float weight = l.weights[fil*l.c*l.size*l.size + chan*l.size*l.size + (f_y*l.size + f_x) * 32 + c_pack];
+                            //sum += input * weight;
+
+                            //float input = re_packed_input[chan*l.w*l.h + (input_y*l.w + input_x) * 32 + c_pack];
+                            //float weight = l.weights[fil*l.c*l.size*l.size + chan*l.size*l.size + (f_y*l.size + f_x) * 32 + c_pack];
+                            //uint32_t bit1 = input > 0;
+                            //uint32_t bit2 = weight > 0;
+                            //uint32_t count = (~(bit1 ^ bit2)) & 1;
+                            //float result = (2 * (float)count - 1) * mean_val;
+                            //printf("\n mul = %f, bit1 = %d, bit2 = %d, count = %d, mean = %f, result = %f  ", input*weight, bit1, bit2, count, mean_val, result);
+                            //sum += result;
+
+                            uint32_t input = ((uint32_t *)packed_input)[chan*w*h + input_y*w + input_x];
+                            //uint32_t weight = ((uint32_t *)l.align_bit_weights)[fil*l.c*l.size*l.size/32 + chan*l.size*l.size + f_y*l.size + f_x];
+                            uint32_t weight = ((uint32_t *)packed_weights)[fil*new_lda / 32 + chan*size*size + f_y*size + f_x];
+
+                            uint32_t xnor_result = ~(input ^ weight);
+                            int32_t count = popcnt_32(xnor_result); // mandatory Signed int
+                            sum += (2 * count - 32) * mean_val;
+                        }
+                    }
+                    // l.output[filters][width][height] +=
+                    //        state.input[channels][width][height] *
+                    //        l.weights[filters][channels][filter_width][filter_height];
+                    output[output_index] += sum;
+                }
+    }
+}
+
 void gemm_nt(int M, int N, int K, float ALPHA,
         float *A, int lda,
         float *B, int ldb,
@@ -2169,6 +2408,8 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         }
     }
 
+    is_avx();   // initialize static variable
+    is_fma_avx2();
     int t;
     #pragma omp parallel for
     for (t = 0; t < M; ++t) {

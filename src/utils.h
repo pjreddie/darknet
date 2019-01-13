@@ -11,25 +11,27 @@
 #define SECRET_NUM -1234
 #define TWO_PI 6.2831853071795864769252866
 
-#ifdef YOLODLL_EXPORTS
+#ifdef LIB_EXPORTS
 #if defined(_MSC_VER)
-#define YOLODLL_API __declspec(dllexport) 
+#define LIB_API __declspec(dllexport)
 #else
-#define YOLODLL_API __attribute__((visibility("default")))
+#define LIB_API __attribute__((visibility("default")))
 #endif
 #else
 #if defined(_MSC_VER)
-#define YOLODLL_API
+#define LIB_API
 #else
-#define YOLODLL_API
+#define LIB_API
 #endif
 #endif
+
+LIB_API void free_ptrs(void **ptrs, int n);
+LIB_API void top_k(float *a, int n, int k, int *index);
 
 double what_time_is_it_now();
 int *read_map(char *filename);
 void shuffle(void *arr, size_t n, size_t size);
 void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections);
-YOLODLL_API void free_ptrs(void **ptrs, int n);
 char *basecfg(char *cfgfile);
 int alphanum_to_int(char c);
 char int_to_alphanum(int i);
@@ -47,7 +49,6 @@ void file_error(char *s);
 void strip(char *s);
 void strip_args(char *s);
 void strip_char(char *s, char bad);
-YOLODLL_API void top_k(float *a, int n, int k, int *index);
 list *split_str(char *s, char delim);
 char *fgetl(FILE *fp);
 list *parse_csv_line(char *line);

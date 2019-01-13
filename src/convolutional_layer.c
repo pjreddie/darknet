@@ -136,19 +136,54 @@ size_t get_workspace_size(layer l){
     return (size_t)l.out_h*l.out_w*l.size*l.size*l.c*sizeof(float);
 }
 
+size_t get_workspace_size16(layer l) {
+#if defined(CUDNN) && defined(CUDNN_HALF)
+    if (gpu_index >= 0) {
+        size_t most = 0;
+        size_t s = 0;
+        cudnnGetConvolutionForwardWorkspaceSize(cudnn_handle(),
+            l.srcTensorDesc16,
+            l.weightDesc16,
+            l.convDesc,
+            l.dstTensorDesc16,
+            l.fw_algo16,
+            &s);
+        if (s > most) most = s;
+        cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnn_handle(),
+            l.srcTensorDesc16,
+            l.ddstTensorDesc16,
+            l.convDesc,
+            l.dweightDesc16,
+            l.bf_algo16,
+            &s);
+        if (s > most) most = s;
+        cudnnGetConvolutionBackwardDataWorkspaceSize(cudnn_handle(),
+            l.weightDesc16,
+            l.ddstTensorDesc16,
+            l.convDesc,
+            l.dsrcTensorDesc16,
+            l.bd_algo16,
+            &s);
+        if (s > most) most = s;
+        return most;
+    }
+#endif
+    return 0;
+    //if (l.xnor) return (size_t)l.bit_align*l.size*l.size*l.c * sizeof(float);
+    //return (size_t)l.out_h*l.out_w*l.size*l.size*l.c * sizeof(float);
+}
+
 #ifdef GPU
 #ifdef CUDNN
 void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 {
 
-#ifdef CUDNN_HALF
+// CUDNN_HALF
     // TRUE_HALF_CONFIG is only supported on architectures with true fp16 support (compute capability 5.3 and 6.0):
     //   Tegra X1, Jetson TX1, DRIVE CX, DRIVE PX, Quadro GP100, Tesla P100
     // PSEUDO_HALF_CONFIG is required for Tensor Cores - our case!
-    const cudnnDataType_t data_type = CUDNN_DATA_HALF;
-#else
+
     cudnnDataType_t data_type = CUDNN_DATA_FLOAT;
-#endif
 
 #if(CUDNN_MAJOR >= 7)
     // Tensor Core uses CUDNN_TENSOR_OP_MATH instead of CUDNN_DEFAULT_MATH
@@ -179,11 +214,25 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
     cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->out_c, l->out_h, l->out_w);
     cudnnSetFilter4dDescriptor(l->weightDesc, data_type, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size);
 
+//#ifdef CUDNN_HALF
+    // backward delta
+    cudnnSetTensor4dDescriptor(l->dsrcTensorDesc16, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, l->batch, l->c, l->h, l->w);
+    cudnnSetTensor4dDescriptor(l->ddstTensorDesc16, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, l->batch, l->out_c, l->out_h, l->out_w);
+    cudnnSetFilter4dDescriptor(l->dweightDesc16, CUDNN_DATA_HALF, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size);
+
+    // forward
+    cudnnSetTensor4dDescriptor(l->srcTensorDesc16, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, l->batch, l->c, l->h, l->w);
+    cudnnSetTensor4dDescriptor(l->dstTensorDesc16, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, l->batch, l->out_c, l->out_h, l->out_w);
+    cudnnSetFilter4dDescriptor(l->weightDesc16, CUDNN_DATA_HALF, CUDNN_TENSOR_NCHW, l->n, l->c, l->size, l->size);
+
+    // batch norm
+    cudnnSetTensor4dDescriptor(l->normDstTensorDescF16, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, l->batch, l->out_c, l->out_h, l->out_w);
+//#endif
+
     // batch norm
     cudnnSetTensor4dDescriptor(l->normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l->out_c, 1, 1);
     cudnnSetTensor4dDescriptor(l->normDstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w);
 
-    cudnnSetTensor4dDescriptor(l->normDstTensorDescF16, CUDNN_TENSOR_NCHW, data_type, l->batch, l->out_c, l->out_h, l->out_w);
 #if(CUDNN_MAJOR >= 6)
     cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT);    // cudnn >= 6.0
 #else
@@ -225,32 +274,32 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
             0,
             &l->bf_algo);
 
-    if (data_type == CUDNN_DATA_HALF)
+    //if (data_type == CUDNN_DATA_HALF)
     {
         // HALF-16 if(data_type == CUDNN_DATA_HALF)
-        l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
-        l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
-        l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
+        l->fw_algo16 = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
+        l->bd_algo16 = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
+        l->bf_algo16 = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
 
         // FLOAT-32 if(data_type == CUDNN_DATA_FLOAT)
-        //l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED;
-        //l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED;
-        //l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED;
+        //l->fw_algo16 = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED;
+        //l->bd_algo16 = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED;
+        //l->bf_algo16 = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED;
 
         int fw = 0, bd = 0, bf = 0;
-        if (l->fw_algo == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM) fw = 1;
+        if (l->fw_algo16 == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM) fw = 1;
             //printf("Tensor Cores - Forward enabled: l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM \n");
-        if (l->fw_algo == CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED) fw = 2;
+        if (l->fw_algo16 == CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED) fw = 2;
             //printf("Tensor Cores - Forward enabled: l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED \n");
 
-        if (l->bd_algo == CUDNN_CONVOLUTION_BWD_DATA_ALGO_1) bd = 1;
+        if (l->bd_algo16 == CUDNN_CONVOLUTION_BWD_DATA_ALGO_1) bd = 1;
             //printf("Tensor Cores - Backward-data enabled: l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1  \n");
-        if (l->bd_algo == CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED) bd = 2;
+        if (l->bd_algo16 == CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED) bd = 2;
             //printf("Tensor Cores - Backward-data enabled: l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED \n");
 
-        if (l->bf_algo == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1) bf = 1;
+        if (l->bf_algo16 == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1) bf = 1;
             //printf("Tensor Cores - Backward-filter enabled: l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1   \n");
-        if (l->bf_algo == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED) bf = 2;
+        if (l->bf_algo16 == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED) bf = 2;
             //printf("Tensor Cores - Backward-filter enabled: l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED \n");
 
         //if (fw == 2 && bd == 2 && bf == 2) printf("TF ");
@@ -260,12 +309,13 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output)
+convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index)
 {
     int i;
     convolutional_layer l = {0};
     l.type = CONVOLUTIONAL;
 
+    l.index = index;
     l.h = h;
     l.w = w;
     l.c = c;
@@ -340,6 +390,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.adam = 1;
         l.m = calloc(c*n*size*size, sizeof(float));
         l.v = calloc(c*n*size*size, sizeof(float));
+        l.bias_m = calloc(n, sizeof(float));
+        l.scale_m = calloc(n, sizeof(float));
+        l.bias_v = calloc(n, sizeof(float));
+        l.scale_v = calloc(n, sizeof(float));
     }
 
 #ifdef GPU
@@ -351,6 +405,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         if (adam) {
             l.m_gpu = cuda_make_array(l.m, c*n*size*size);
             l.v_gpu = cuda_make_array(l.v, c*n*size*size);
+            l.bias_m_gpu = cuda_make_array(l.bias_m, n);
+            l.bias_v_gpu = cuda_make_array(l.bias_v, n);
+            l.scale_m_gpu = cuda_make_array(l.scale_m, n);
+            l.scale_v_gpu = cuda_make_array(l.scale_v, n);
         }
 
         l.weights_gpu = cuda_make_array(l.weights, c*n*size*size);
@@ -392,21 +450,32 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
             l.x_norm_gpu = cuda_make_array(l.output, l.batch*out_h*out_w*n);
         }
 #ifdef CUDNN
-        cudnnCreateTensorDescriptor(&l.normDstTensorDesc);
-        cudnnCreateTensorDescriptor(&l.normDstTensorDescF16);
         cudnnCreateTensorDescriptor(&l.normTensorDesc);
+
+        cudnnCreateTensorDescriptor(&l.normDstTensorDesc);
         cudnnCreateTensorDescriptor(&l.srcTensorDesc);
         cudnnCreateTensorDescriptor(&l.dstTensorDesc);
         cudnnCreateFilterDescriptor(&l.weightDesc);
         cudnnCreateTensorDescriptor(&l.dsrcTensorDesc);
         cudnnCreateTensorDescriptor(&l.ddstTensorDesc);
         cudnnCreateFilterDescriptor(&l.dweightDesc);
+
+        cudnnCreateTensorDescriptor(&l.normDstTensorDescF16);
+        cudnnCreateTensorDescriptor(&l.srcTensorDesc16);
+        cudnnCreateTensorDescriptor(&l.dstTensorDesc16);
+        cudnnCreateFilterDescriptor(&l.weightDesc16);
+        cudnnCreateTensorDescriptor(&l.dsrcTensorDesc16);
+        cudnnCreateTensorDescriptor(&l.ddstTensorDesc16);
+        cudnnCreateFilterDescriptor(&l.dweightDesc16);
+
         cudnnCreateConvolutionDescriptor(&l.convDesc);
         cudnn_convolutional_setup(&l, cudnn_fastest);
 #endif
     }
 #endif
     l.workspace_size = get_workspace_size(l);
+    size_t workspace_size16 = get_workspace_size16(l);
+    if (workspace_size16 > l.workspace_size) l.workspace_size = workspace_size16;
     l.activation = activation;
 
     //fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c);
@@ -436,7 +505,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 
 void test_convolutional_layer()
 {
-    convolutional_layer l = make_convolutional_layer(1, 5, 5, 3, 2, 5, 2, 1, LEAKY, 1, 0, 0, 0, 0);
+    convolutional_layer l = make_convolutional_layer(1, 5, 5, 3, 2, 5, 2, 1, LEAKY, 1, 0, 0, 0, 0, 0);
     l.batch_normalize = 1;
     float data[] = {1,1,1,1,1,
         1,1,1,1,1,
@@ -510,6 +579,8 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 #endif
 #endif
     l->workspace_size = get_workspace_size(*l);
+    size_t workspace_size16 = get_workspace_size16(*l);
+    if (workspace_size16 > l->workspace_size) l->workspace_size = workspace_size16;
 
 #ifdef CUDNN
     // check for excessive memory consumption
@@ -520,6 +591,8 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         printf(" used slow CUDNN algo without Workspace! Need memory: %zu, available: %zu\n", l->workspace_size, (free_byte < total_byte/2) ? free_byte : total_byte/2);
         cudnn_convolutional_setup(l, cudnn_smallest);
         l->workspace_size = get_workspace_size(*l);
+        size_t workspace_size16 = get_workspace_size16(*l);
+        if (workspace_size16 > l->workspace_size) l->workspace_size = workspace_size16;
     }
 #endif
 }
@@ -629,6 +702,102 @@ void binary_align_weights(convolutional_layer *l)
             align_weights[i*new_lda + j] = l->binary_weights[i*k + j];
         }
     }
+
+
+    //if (l->c % 32 == 0)
+    if(gpu_index < 0 && l->stride == 1 && l->pad == 1 && l->c % 32 == 0)
+    {
+        int fil, chan;
+        const int items_per_filter = l->c * l->size * l->size;
+        //const int dst_items_per_filter = new_lda;
+        for (fil = 0; fil < l->n; ++fil)
+        {
+            for (chan = 0; chan < l->c; chan += 32)
+            {
+                const int items_per_channel = l->size*l->size;
+                for (i = 0; i < items_per_channel; ++i)
+                {
+                    uint32_t val = 0;
+                    int c_pack;
+                    for (c_pack = 0; c_pack < 32; ++c_pack) {
+                        float src = l->binary_weights[fil*items_per_filter + (chan + c_pack)*items_per_channel + i];
+
+                        //align_weights[fil*items_per_filter + chan*items_per_channel + i * 32 + c_pack] = src;
+
+                        align_weights[fil*new_lda + chan*items_per_channel + i*32 + c_pack] = src;
+                        //val |= (src << c);
+                    }
+
+                }
+            }
+        }
+
+        //printf("\n l.index = %d \t aw[0] = %f, aw[1] = %f, aw[2] = %f, aw[3] = %f \n", l->index, align_weights[0], align_weights[1], align_weights[2], align_weights[3]);
+        //memcpy(l->binary_weights, align_weights, (l->size * l->size * l->c * l->n) * sizeof(float));
+
+        float_to_bit(align_weights, l->align_bit_weights, align_weights_size);
+
+        get_mean_array(l->binary_weights, m*k, l->n, l->mean_arr);
+        //get_mean_array(l->binary_weights, m*new_lda, l->n, l->mean_arr);
+    }
+    else {
+        float_to_bit(align_weights, l->align_bit_weights, align_weights_size);
+
+        get_mean_array(l->binary_weights, m*k, l->n, l->mean_arr);
+    }
+
+    //l->mean_arr = calloc(l->n, sizeof(float));
+
+    //get_mean_array(align_weights, align_weights_size, l->n, l->mean_arr);
+
+
+
+
+#ifdef GPU
+    cudaError_t status;
+    l->align_workspace_size = l->bit_align * l->size * l->size * l->c;
+    status = cudaMalloc((void **)&l->align_workspace_gpu, l->align_workspace_size * sizeof(float));
+    status = cudaMalloc((void **)&l->transposed_align_workspace_gpu, l->align_workspace_size * sizeof(float));
+    check_error(status);
+
+    //l->align_bit_weights_gpu = cuda_make_array(l->align_bit_weights, l->align_bit_weights_size * sizeof(char)/sizeof(float));
+    status = cudaMalloc((void **)&l->align_bit_weights_gpu, l->align_bit_weights_size);
+    check_error(status);
+    status = cudaMemcpy(l->align_bit_weights_gpu, l->align_bit_weights, l->align_bit_weights_size, cudaMemcpyHostToDevice);
+    check_error(status);
+    status = cudaMemcpy(l->binary_weights_gpu, l->binary_weights, m*k * sizeof(float), cudaMemcpyHostToDevice);
+    check_error(status);
+
+    //l->mean_arr_gpu = cuda_make_array(l->mean_arr, l->n);
+    cuda_push_array(l->mean_arr_gpu, l->mean_arr, l->n);
+    cudaDeviceSynchronize();
+#endif // GPU
+
+    free(align_weights);
+}
+
+/*
+void binary_align_weights(convolutional_layer *l)
+{
+    int m = l->n;
+    int k = l->size*l->size*l->c;
+    size_t new_lda = k + (l->lda_align - k % l->lda_align); // (k / 8 + 1) * 8;
+    l->new_lda = new_lda;
+
+    binarize_weights(l->weights, m, k, l->binary_weights);
+
+    size_t align_weights_size = new_lda * m;
+    l->align_bit_weights_size = align_weights_size / 8 + 1;
+    float *align_weights = calloc(align_weights_size, sizeof(float));
+    l->align_bit_weights = calloc(l->align_bit_weights_size, sizeof(char));
+
+    size_t i, j;
+    // align A without transpose
+    for (i = 0; i < m; ++i) {
+        for (j = 0; j < k; ++j) {
+            align_weights[i*new_lda + j] = l->binary_weights[i*k + j];
+        }
+    }
     float_to_bit(align_weights, l->align_bit_weights, align_weights_size);
 
     //l->mean_arr = calloc(l->n, sizeof(float));
@@ -656,6 +825,7 @@ void binary_align_weights(convolutional_layer *l)
 
     free(align_weights);
 }
+*/
 
 // binary transpose
 size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, size_t ldb_align, int bit_align)
@@ -709,117 +879,102 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     u++;
 
     for(i = 0; i < l.batch; ++i){
-        //im2col_cpu(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
-
-        //float *t_input = NULL;
-        //if (l.xnor) {
-        //    size_t new_ldb = k + (l.lda_align - k%l.lda_align);
-        //    size_t t_intput_size = new_ldb * n;
-        //    t_input = calloc(t_intput_size, sizeof(float));
-        //    im2col_cpu_custom_transpose(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, t_input, new_ldb);
-        //}
-        //if (l.xnor && l.size == 3 && l.stride == 1 && l.pad == 1) {}
-        //else
-        // further optimizations: im2col_bin() for XNOR, and then transpose_aling_bin()
-        //im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
-
 
         //gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
         //gemm_nn_custom(m, n, k, 1, a, k, b, n, c, n);
-        if (l.xnor && l.align_bit_weights && !state.train && (l.stride == 1 && l.pad == 1)) {
+        if (l.xnor && l.align_bit_weights && !state.train && (l.stride == 1 && l.pad == 1))
+        {
             memset(b, 0, l.bit_align*l.size*l.size*l.c * sizeof(float));
-            //im2col_cpu_custom_align(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
-            im2col_cpu_custom_bin(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
 
-            size_t output_size = l.outputs;
-            //float *count_output = calloc(output_size, sizeof(float));
-            //size_t bit_output_size = output_size / 8 + 1;
-            //char *bit_output = calloc(bit_output_size, sizeof(char));
-
-            size_t intput_size = n * k; // (out_h*out_w) X (l.size*l.size*l.c) : after im2col()
-            size_t bit_input_size = intput_size / 8 + 1;
-            //char *bit_input = calloc(bit_input_size, sizeof(char));
-
-            size_t weights_size = k * m; //l.size*l.size*l.c*l.n;
-            size_t bit_weights_size = weights_size / 8 + 1;
-            //char *bit_weights = calloc(bit_weights_size, sizeof(char));
-            //float *mean_arr = calloc(l.n, sizeof(float));
-
-            // test: float->bit->float
-            //get_mean_array(l.weights, weights_size, l.n, mean_arr);
-            //float_to_bit(l.weights, bit_weights, weights_size);
-            //memset(l.weights, 0, weights_size * sizeof(float));
-            //bit_to_float(bit_weights, l.weights, weights_size, l.n, mean_arr); // just for test float->bit->float
-
-            //float_to_bit(b, bit_input, intput_size);
-            //memset(b, 0, intput_size * sizeof(float));
-            //bit_to_float(bit_input, b, intput_size, 1, NULL); // just for test float->bit->float
-
-            // transpose B from NxK to KxN (x-axis (ldb = l.size*l.size*l.c) - should be multiple of 8 bits)
+            if(l.c % 32 == 0)
             {
-                /*
-                size_t ldb_align = 256;// 8;
+                //printf(" l.index = %d - new XNOR \n", l.index);
 
+                int ldb_align = l.lda_align;
                 size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
-                size_t t_intput_size = new_ldb * n;
+                size_t t_intput_size = new_ldb * l.bit_align;// n;
                 size_t t_bit_input_size = t_intput_size / 8;// +1;
-                float *t_input = calloc(t_intput_size, sizeof(float));
+
+                const int new_c = l.c / 32;
+
+                float *re_packed_input = calloc(l.c * l.w * l.h, sizeof(float));
+                uint32_t *bin_re_packed_input = calloc(new_c * l.w * l.h + 1, sizeof(uint32_t));
+
+                // float32x4 by channel (as in cuDNN)
+                repack_input(state.input, re_packed_input, l.w, l.h, l.c);
+
+                // 32 x floats -> 1 x uint32_t
+                float_to_bit(re_packed_input, (char *)bin_re_packed_input, l.c * l.w * l.h);
+
+                free(re_packed_input);
+
+                // slow - convolution the packed inputs and weights: float x 32 by channel (as in cuDNN)
+                //convolution_repacked((uint32_t *)bin_re_packed_input, (uint32_t *)l.align_bit_weights, l.output,
+                //    l.w, l.h, l.c, l.n, l.size, l.pad, l.new_lda, l.mean_arr);
+
+                // // then exit from if()
+
+
+                im2col_cpu_custom((float *)bin_re_packed_input, new_c, l.h, l.w, l.size, l.stride, l.pad, b);
+                //im2col_cpu((float *)bin_re_packed_input, new_c, l.h, l.w, l.size, l.stride, l.pad, b);
+
+                free(bin_re_packed_input);
+
+                int new_k = l.size*l.size*l.c / 32;
+
+                // good for (l.c == 64)
+                //gemm_nn_bin_32bit_packed(m, n, new_k, 1,
+                //    l.align_bit_weights, l.new_lda/32,
+                //    b, n,
+                //    c, n, l.mean_arr);
+
+// // then exit from if()
+
+
+                //size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
+                //size_t t_intput_size = new_ldb * l.bit_align;// n;
+                //size_t t_bit_input_size = t_intput_size / 8;// +1;
+
                 char *t_bit_input = calloc(t_bit_input_size, sizeof(char));
 
-                //printf("\n bit_input_size = %d, n = %d, k = %d, ldb = %d \n", bit_input_size, n, k, n);
-                //printf("\n t_bit_input_size = %d, k = %d, n = %d, new_ldb = %d \n", t_bit_input_size, k, n, new_ldb);
+                transpose_uint32((uint32_t *)b, t_bit_input, new_k, n, n, new_ldb);
 
+                // the main GEMM function
+                gemm_nn_custom_bin_mean_transposed(m, n, k, 1, l.align_bit_weights, new_ldb, t_bit_input, new_ldb, c, n, l.mean_arr);
 
-                //printf("\n align_weights_size = %d, k = %d, m = %d, lda = %d \n", align_weights_size, k, m, k);
-                //printf("\n align_bit_weights_size = %d, k = %d, m = %d, new_lda = %d \n", align_bit_weights_size, k, m, new_ldb);
+                // // alternative GEMM
+                //gemm_nn_bin_transposed_32bit_packed(m, n, new_k, 1,
+                //    l.align_bit_weights, l.new_lda/32,
+                //    t_bit_input, new_ldb / 32,
+                //    c, n, l.mean_arr);
 
+                free(t_bit_input);
 
-                // transpose and align B
-                int i, j;
-                for (i = 0; i < n; ++i) {
-                    for (j = 0; j < k; ++j) {
-                        t_input[i*new_ldb + j] = b[j*n + i];
-                    }
-                }
-                float_to_bit(t_input, t_bit_input, t_intput_size);
+            }
+            else { // else (l.c % 32 != 0)
 
+                //--------------------------------------------------------
+                //printf(" l.index = %d - old XNOR \n", l.index);
 
+                //im2col_cpu_custom_align(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
+                im2col_cpu_custom_bin(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
 
-                if (!l.align_bit_weights)
+                size_t output_size = l.outputs;
+                //float *count_output = calloc(output_size, sizeof(float));
+                //size_t bit_output_size = output_size / 8 + 1;
+                //char *bit_output = calloc(bit_output_size, sizeof(char));
+
+                size_t intput_size = n * k; // (out_h*out_w) X (l.size*l.size*l.c) : after im2col()
+                size_t bit_input_size = intput_size / 8 + 1;
+                //char *bit_input = calloc(bit_input_size, sizeof(char));
+
+                size_t weights_size = k * m; //l.size*l.size*l.c*l.n;
+                size_t bit_weights_size = weights_size / 8 + 1;
+                //char *bit_weights = calloc(bit_weights_size, sizeof(char));
+                //float *mean_arr = calloc(l.n, sizeof(float));
+
+                // transpose B from NxK to KxN (x-axis (ldb = l.size*l.size*l.c) - should be multiple of 8 bits)
                 {
-                    size_t align_weights_size = new_ldb * m;
-                    size_t align_bit_weights_size = align_weights_size / 8;// +1;
-                    float *align_weights = calloc(align_weights_size, sizeof(float));
-                    l.align_bit_weights = calloc(align_bit_weights_size, sizeof(char));
-
-                    // align A without transpose
-                    for (i = 0; i < m; ++i) {
-                        for (j = 0; j < k; ++j) {
-                            align_weights[i*new_ldb + j] = a[i*k + j];
-                        }
-                    }
-                    float_to_bit(align_weights, l.align_bit_weights, align_weights_size);
-
-                    l.mean_arr = calloc(l.n, sizeof(float));
-                    get_mean_array(align_weights, align_weights_size, l.n, l.mean_arr);
-
-                    free(align_weights);
-                }
-                */
-
-                /*
-                if (l.size == 3 && l.stride == 1 && l.pad == 1)
-                {
-                    //binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.binary_weights);
-                    //printf("\n mean = %f \n", l.mean_arr[0]);
-
-                    convolution_2d(l.w, l.h, l.size, l.n, l.c, l.pad, l.stride,
-                        //l.weights, state.input, l.output, l.mean_arr);
-                        l.binary_weights, state.input, l.output, l.mean_arr);
-                }
-                else {
-                    */
-
                     //size_t ldb_align = 256; // 256 bit for AVX2
                     int ldb_align = l.lda_align;
                     size_t new_ldb = k + (ldb_align - k%ldb_align);
@@ -835,29 +990,14 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
                     //free(t_input);
                     free(t_bit_input);
-                //}
+                    //}
+                }
 
             }
 
-            // for bit_input: (k * n)
-            //if (u == 8) gemm_nn_custom_bin_mean(m, n, k, 1, bit_weights, k, bit_input, n, c, n, mean_arr);  // last xnor layer
-            //else gemm_nn_custom_bin_mean(m, n, k, 1, bit_weights, k, bit_input, n, c, n, NULL);
-
-            //gemm_nn_custom_bin_mean(m, n, k, 1, bit_weights, k, bit_input, n, c, n, mean_arr);
-
-            //printf("\n u = %d \n", u);
-
-            //gemm_nn_custom(m, n, k, 1, a, k, b, n, c, n);
-
-            //int j;
-            //if (u != 8) for (j = 0; j < l.n; ++j) l.biases[j] = l.biases[j] / (mean_arr[j]*2);
-
-            //free(count_output);
-            //free(bit_input);
-            //free(bit_weights);
-            //free(mean_arr);
         }
         else {
+            //printf(" l.index = %d - FP32 \n", l.index);
             im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
 
             gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);

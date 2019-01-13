@@ -41,6 +41,8 @@ static int cpp_video_capture = 0;
 static float fps = 0;
 static float demo_thresh = 0;
 static int demo_ext_output = 0;
+static long long int frame_id = 0;
+static int demo_json_port = -1;
 
 static float *predictions[FRAMES];
 static int demo_index = 0;
@@ -51,6 +53,8 @@ static float *avg;
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
 void show_image_cv_ipl(IplImage *disp, const char *name);
+void save_cv_png(IplImage *img, const char *name);
+void save_cv_jpg(IplImage *img, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 image get_image_from_stream_letterbox(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 int get_stream_fps(CvCapture *cap, int cpp_video_capture);
@@ -113,6 +117,12 @@ void *detect_in_thread(void *ptr)
     det_img = ipl_images[(demo_index + FRAMES / 2 + 1) % FRAMES];
     demo_index = (demo_index + 1)%FRAMES;
 
+    ++frame_id;
+    if (demo_json_port > 0) {
+        int timeout = 200;
+        send_json(dets, nboxes, l.classes, demo_names, frame_id, demo_json_port, timeout);
+    }
+
     draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
     free_detections(dets, nboxes);
 
@@ -129,8 +139,9 @@ double get_wall_time()
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, int ext_output)
+    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output)
 {
+    in_img = det_img = show_img = NULL;
     //skip = frame_skip;
     image **alphabet = load_alphabet();
     int delay = frame_skip;
@@ -139,6 +150,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     demo_classes = classes;
     demo_thresh = thresh;
     demo_ext_output = ext_output;
+    demo_json_port = json_port;
     printf("Demo\n");
     net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
     if(weightfile){
@@ -264,14 +276,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             }else{
                 char buff[256];
                 sprintf(buff, "%s_%08d.jpg", prefix, count);
-                cvSaveImage(buff, show_img, 0);
-                //save_image(disp, buff);
+                if(show_img) save_cv_jpg(show_img, buff);
             }
 
-            // if you run it with param -http_port 8090  then open URL in your web-browser: http://localhost:8090
-            if (http_stream_port > 0 && show_img) {
+            // if you run it with param -mjpeg_port 8090  then open URL in your web-browser: http://localhost:8090
+            if (mjpeg_port > 0 && show_img) {
                 //int port = 8090;
-                int port = http_stream_port;
+                int port = mjpeg_port;
                 int timeout = 200;
                 int jpeg_quality = 30;    // 1 - 100
                 send_mjpeg(show_img, port, timeout, jpeg_quality);
@@ -353,7 +364,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, int ext_output)
+    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

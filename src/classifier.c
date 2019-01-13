@@ -24,8 +24,9 @@ image get_image_from_stream(CvCapture *cap);
 image get_image_from_stream_cpp(CvCapture *cap);
 #include "http_stream.h"
 
-IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size);
-void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches);
+IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show);
+void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
+    float precision, int draw_precision, int dont_show, int mjpeg_port);
 
 #endif
 
@@ -41,7 +42,7 @@ float *get_regression_values(char **labels, int n)
     return v;
 }
 
-void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show)
+void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int mjpeg_port)
 {
     int i;
 
@@ -114,8 +115,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     float max_img_loss = 5;
     int number_of_lines = 100;
     int img_size = 1000;
-    if (!dont_show)
-        img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size);
+    img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size, dont_show);
 #endif  //OPENCV
 
     data train;
@@ -152,15 +152,14 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
 #ifdef OPENCV
-        if(!dont_show)
-            draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches);
+        draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, -1, 0, dont_show, mjpeg_port);
 #endif  // OPENCV
 
         if (i >= (iter_save + 100)) {
             iter_save = i;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
-#endif            
+#endif
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, i);
             save_weights(net, buff);
@@ -169,7 +168,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     }
 #ifdef GPU
     if (ngpus != 1) sync_nets(nets, ngpus, 0);
-#endif    
+#endif
     char buff[256];
     sprintf(buff, "%s/%s_final.weights", backup_directory, base);
     save_weights(net, buff);
@@ -918,7 +917,7 @@ void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_i
     int *indexes = calloc(top, sizeof(int));
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    //cvNamedWindow("Threat", CV_WINDOW_NORMAL); 
+    //cvNamedWindow("Threat", CV_WINDOW_NORMAL);
     //cvResizeWindow("Threat", 512, 512);
     float fps = 0;
     int i;
@@ -948,15 +947,15 @@ void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_i
         float *predictions = network_predict(net, in_s.data);
         float curr_threat = 0;
         if(1){
-            curr_threat = predictions[0] * 0 + 
-                predictions[1] * .6 + 
+            curr_threat = predictions[0] * 0 +
+                predictions[1] * .6 +
                 predictions[2];
         } else {
             curr_threat = predictions[218] +
-                predictions[539] + 
-                predictions[540] + 
-                predictions[368] + 
-                predictions[369] + 
+                predictions[539] +
+                predictions[540] +
+                predictions[368] +
+                predictions[369] +
                 predictions[370];
         }
         threat = roll * curr_threat + (1-roll) * threat;
@@ -964,24 +963,24 @@ void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_i
         draw_box_width(out, x2 + border, y1 + .02*h, x2 + .5 * w, y1 + .02*h + border, border, 0,0,0);
         if(threat > .97) {
             draw_box_width(out,  x2 + .5 * w + border,
-                    y1 + .02*h - 2*border, 
-                    x2 + .5 * w + 6*border, 
+                    y1 + .02*h - 2*border,
+                    x2 + .5 * w + 6*border,
                     y1 + .02*h + 3*border, 3*border, 1,0,0);
         }
         draw_box_width(out,  x2 + .5 * w + border,
-                y1 + .02*h - 2*border, 
-                x2 + .5 * w + 6*border, 
+                y1 + .02*h - 2*border,
+                x2 + .5 * w + 6*border,
                 y1 + .02*h + 3*border, .5*border, 0,0,0);
         draw_box_width(out, x2 + border, y1 + .42*h, x2 + .5 * w, y1 + .42*h + border, border, 0,0,0);
         if(threat > .57) {
             draw_box_width(out,  x2 + .5 * w + border,
-                    y1 + .42*h - 2*border, 
-                    x2 + .5 * w + 6*border, 
+                    y1 + .42*h - 2*border,
+                    x2 + .5 * w + 6*border,
                     y1 + .42*h + 3*border, 3*border, 1,1,0);
         }
         draw_box_width(out,  x2 + .5 * w + border,
-                y1 + .42*h - 2*border, 
-                x2 + .5 * w + 6*border, 
+                y1 + .42*h - 2*border,
+                x2 + .5 * w + 6*border,
                 y1 + .42*h + 3*border, .5*border, 0,0,0);
 
         draw_box_width(out, x1, y1, x2, y2, border, 0,0,0);
@@ -1056,7 +1055,7 @@ void gun_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
     int *indexes = calloc(top, sizeof(int));
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow("Threat Detection", CV_WINDOW_NORMAL); 
+    cvNamedWindow("Threat Detection", CV_WINDOW_NORMAL);
     cvResizeWindow("Threat Detection", 512, 512);
     float fps = 0;
     int i;
@@ -1138,7 +1137,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     int *indexes = calloc(top, sizeof(int));
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow("Classifier", CV_WINDOW_NORMAL); 
+    cvNamedWindow("Classifier", CV_WINDOW_NORMAL);
     cvResizeWindow("Classifier", 512, 512);
     float fps = 0;
     int i;
@@ -1186,6 +1185,7 @@ void run_classifier(int argc, char **argv)
         return;
     }
 
+    int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
     int gpu = 0;
@@ -1221,7 +1221,7 @@ void run_classifier(int argc, char **argv)
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
-    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show);
+    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show, mjpeg_port);
     else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "gun")) gun_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "threat")) threat_classifier(data, cfg, weights, cam_index, filename);

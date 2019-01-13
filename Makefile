@@ -7,7 +7,7 @@ OPENMP=0
 LIBSO=0
 
 # set GPU=1 and CUDNN=1 to speedup on GPU
-# set CUDNN_HALF=1 to further speedup 3 x times (Mixed-precision using Tensor Cores) on GPU Tesla V100, Titan V, DGX-2
+# set CUDNN_HALF=1 to further speedup 3 x times (Mixed-precision on Tensor Cores) GPU: Volta, Xavier, Turing and higher
 # set AVX=1 and OPENMP=1 to speedup on CPU (if error occurs then set AVX=0)
 
 DEBUG=0
@@ -47,7 +47,7 @@ EXEC=darknet
 OBJDIR=./obj/
 
 ifeq ($(LIBSO), 1)
-LIBNAMESO=darknet.so
+LIBNAMESO=libdarknet.so
 APPNAMESO=uselib
 endif
 
@@ -56,7 +56,7 @@ CPP=g++
 NVCC=nvcc 
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
-COMMON= 
+COMMON= -Iinclude/ 
 CFLAGS=-Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas
 
 ifeq ($(DEBUG), 1) 
@@ -115,18 +115,18 @@ OBJ+=convolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_kernel
 endif
 
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
-DEPS = $(wildcard src/*.h) Makefile
+DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
-all: obj backup results $(EXEC) $(LIBNAMESO) $(APPNAMESO)
+all: obj backup results setchmod $(EXEC) $(LIBNAMESO) $(APPNAMESO)
 
 ifeq ($(LIBSO), 1) 
 CFLAGS+= -fPIC
 
-$(LIBNAMESO): $(OBJS) src/yolo_v2_class.hpp src/yolo_v2_class.cpp
-	$(CPP) -shared -std=c++11 -fvisibility=hidden -DYOLODLL_EXPORTS $(COMMON) $(CFLAGS) $(OBJS) src/yolo_v2_class.cpp -o $@ $(LDFLAGS)
+$(LIBNAMESO): $(OBJS) include/yolo_v2_class.hpp src/yolo_v2_class.cpp
+	$(CPP) -shared -std=c++11 -fvisibility=hidden -DLIB_EXPORTS $(COMMON) $(CFLAGS) $(OBJS) src/yolo_v2_class.cpp -o $@ $(LDFLAGS)
 	
-$(APPNAMESO): $(LIBNAMESO) src/yolo_v2_class.hpp src/yolo_console_dll.cpp
-	$(CPP) -std=c++11 $(COMMON) $(CFLAGS) -o $@ src/yolo_console_dll.cpp $(LDFLAGS) -L ./ $(LIBNAMESO)
+$(APPNAMESO): $(LIBNAMESO) include/yolo_v2_class.hpp src/yolo_console_dll.cpp
+	$(CPP) -std=c++11 $(COMMON) $(CFLAGS) -o $@ src/yolo_console_dll.cpp $(LDFLAGS) -L ./ -l:$(LIBNAMESO)
 endif
 
 $(EXEC): $(OBJS)
@@ -147,6 +147,8 @@ backup:
 	mkdir -p backup
 results:
 	mkdir -p results
+setchmod:
+	chmod +x *.sh
 
 .PHONY: clean
 

@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include "cuda_runtime.h"
 #include "curand.h"
 #include "cublas_v2.h"
@@ -113,37 +114,72 @@ __device__ float activate_kernel(float x, ACTIVATION a)
 
 __device__ float gradient_kernel(float x, ACTIVATION a)
 {
-    switch(a){
-        case LINEAR:
-            return linear_gradient_kernel(x);
-        case LOGISTIC:
-            return logistic_gradient_kernel(x);
-        case LOGGY:
-            return loggy_gradient_kernel(x);
-        case RELU:
-            return relu_gradient_kernel(x);
-        case ELU:
-            return elu_gradient_kernel(x);
-        case SELU:
-            return selu_gradient_kernel(x);
-        case RELIE:
-            return relie_gradient_kernel(x);
-        case RAMP:
-            return ramp_gradient_kernel(x);
-        case LEAKY:
-            return leaky_gradient_kernel(x);
-        case TANH:
-            return tanh_gradient_kernel(x);
-        case PLSE:
-            return plse_gradient_kernel(x);
-        case STAIR:
-            return stair_gradient_kernel(x);
-        case HARDTAN:
-            return hardtan_gradient_kernel(x);
-        case LHTAN:
-            return lhtan_gradient_kernel(x);
+    switch (a) {
+    case LINEAR:
+        return linear_gradient_kernel(x);
+    case LOGISTIC:
+        return logistic_gradient_kernel(x);
+    case LOGGY:
+        return loggy_gradient_kernel(x);
+    case RELU:
+        return relu_gradient_kernel(x);
+    case ELU:
+        return elu_gradient_kernel(x);
+    case SELU:
+        return selu_gradient_kernel(x);
+    case RELIE:
+        return relie_gradient_kernel(x);
+    case RAMP:
+        return ramp_gradient_kernel(x);
+    case LEAKY:
+        return leaky_gradient_kernel(x);
+    case TANH:
+        return tanh_gradient_kernel(x);
+    case PLSE:
+        return plse_gradient_kernel(x);
+    case STAIR:
+        return stair_gradient_kernel(x);
+    case HARDTAN:
+        return hardtan_gradient_kernel(x);
+    case LHTAN:
+        return lhtan_gradient_kernel(x);
     }
     return 0;
+}
+
+__global__ void binary_gradient_array_kernel(float *x, float *dy, int n, int s, BINARY_ACTIVATION a, float *dx)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    int i = id % s;
+    int b = id / s;
+    float x1 = x[b*s + i];
+    float x2 = x[b*s + s / 2 + i];
+    if (id < n) {
+        float de = dy[id];
+        dx[b*s + i] = x2*de;
+        dx[b*s + s / 2 + i] = x1*de;
+    }
+}
+
+extern "C" void binary_gradient_array_gpu(float *x, float *dx, int n, int size, BINARY_ACTIVATION a, float *y)
+{
+    binary_gradient_array_kernel << <cuda_gridsize(n / 2), BLOCK >> >(x, dx, n / 2, size, a, y);
+    check_error(cudaPeekAtLastError());
+}
+__global__ void binary_activate_array_kernel(float *x, int n, int s, BINARY_ACTIVATION a, float *y)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    int i = id % s;
+    int b = id / s;
+    float x1 = x[b*s + i];
+    float x2 = x[b*s + s / 2 + i];
+    if (id < n) y[id] = x1*x2;
+}
+
+extern "C" void binary_activate_array_gpu(float *x, int n, int size, BINARY_ACTIVATION a, float *y)
+{
+    binary_activate_array_kernel << <cuda_gridsize(n / 2), BLOCK >> >(x, n / 2, size, a, y);
+    check_error(cudaPeekAtLastError());
 }
 
 __global__ void activate_array_kernel(float *x, int n, ACTIVATION a)
