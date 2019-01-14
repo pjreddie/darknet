@@ -1,15 +1,15 @@
 #pragma once
 #ifdef LIB_EXPORTS
 #if defined(_MSC_VER)
-#define LIB_EXPORTS __declspec(dllexport)
+#define LIB_API __declspec(dllexport)
 #else
-#define LIB_EXPORTS __attribute__((visibility("default")))
+#define LIB_API __attribute__((visibility("default")))
 #endif
 #else
 #if defined(_MSC_VER)
-#define LIB_EXPORTS __declspec(dllimport)
+#define LIB_API
 #else
-#define LIB_EXPORTS
+#define LIB_API
 #endif
 #endif
 
@@ -45,12 +45,12 @@ struct bbox_t_container {
 #include "opencv2/imgproc/imgproc_c.h"    // C
 #endif    // OPENCV
 
-extern "C" LIB_EXPORTS int init(const char *configurationFilename, const char *weightsFilename, int gpu);
-extern "C" LIB_EXPORTS int detect_image(const char *filename, bbox_t_container &container);
-extern "C" LIB_EXPORTS int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container);
-extern "C" LIB_EXPORTS int dispose();
-extern "C" LIB_EXPORTS int get_device_count();
-extern "C" LIB_EXPORTS int get_device_name(int gpu, char* deviceName);
+extern "C" LIB_API int init(const char *configurationFilename, const char *weightsFilename, int gpu);
+extern "C" LIB_API int detect_image(const char *filename, bbox_t_container &container);
+extern "C" LIB_API int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container);
+extern "C" LIB_API int dispose();
+extern "C" LIB_API int get_device_count();
+extern "C" LIB_API int get_device_name(int gpu, char* deviceName);
 
 class Detector {
     std::shared_ptr<void> detector_gpu_ptr;
@@ -60,18 +60,18 @@ public:
     float nms = .4;
     bool wait_stream;
 
-    LIB_EXPORTS Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
-    LIB_EXPORTS ~Detector();
+    LIB_API Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
+    LIB_API ~Detector();
 
-    LIB_EXPORTS std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2, bool use_mean = false);
-    LIB_EXPORTS std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
-    static LIB_EXPORTS image_t load_image(std::string image_filename);
-    static LIB_EXPORTS void free_image(image_t m);
-    LIB_EXPORTS int get_net_width() const;
-    LIB_EXPORTS int get_net_height() const;
-    LIB_EXPORTS int get_net_color_depth() const;
+    LIB_API std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2, bool use_mean = false);
+    LIB_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
+    static LIB_API image_t load_image(std::string image_filename);
+    static LIB_API void free_image(image_t m);
+    LIB_API int get_net_width() const;
+    LIB_API int get_net_height() const;
+    LIB_API int get_net_color_depth() const;
 
-    LIB_EXPORTS std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true,
+    LIB_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true,
                                                 int const frames_story = 10, int const max_dist = 150);
 
     std::vector<bbox_t> detect_resized(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false)
@@ -613,13 +613,13 @@ public:
 
 /*
     // C - wrappers
-    LIB_EXPORTS void create_detector(char const* cfg_filename, char const* weight_filename, int gpu_id);
-    LIB_EXPORTS void delete_detector();
-    LIB_EXPORTS bbox_t* detect_custom(image_t img, float thresh, bool use_mean, int *result_size);
-    LIB_EXPORTS bbox_t* detect_resized(image_t img, int init_w, int init_h, float thresh, bool use_mean, int *result_size);
-    LIB_EXPORTS bbox_t* detect(image_t img, int *result_size);
-    LIB_EXPORTS image_t load_img(char *image_filename);
-    LIB_EXPORTS void free_img(image_t m);
+    LIB_API void create_detector(char const* cfg_filename, char const* weight_filename, int gpu_id);
+    LIB_API void delete_detector();
+    LIB_API bbox_t* detect_custom(image_t img, float thresh, bool use_mean, int *result_size);
+    LIB_API bbox_t* detect_resized(image_t img, int init_w, int init_h, float thresh, bool use_mean, int *result_size);
+    LIB_API bbox_t* detect(image_t img, int *result_size);
+    LIB_API image_t load_img(char *image_filename);
+    LIB_API void free_img(image_t m);
 
 #ifdef __cplusplus
 }    // extern "C"
@@ -628,7 +628,7 @@ static std::shared_ptr<void> c_detector_ptr;
 static std::vector<bbox_t> c_result_vec;
 
 void create_detector(char const* cfg_filename, char const* weight_filename, int gpu_id) {
-    c_detector_ptr = std::make_shared<LIB_EXPORTS Detector>(cfg_filename, weight_filename, gpu_id);
+    c_detector_ptr = std::make_shared<LIB_API Detector>(cfg_filename, weight_filename, gpu_id);
 }
 
 void delete_detector() { c_detector_ptr.reset(); }

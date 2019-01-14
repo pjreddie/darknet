@@ -100,7 +100,7 @@ struct detector_gpu_t {
     unsigned int *track_id;
 };
 
-LIB_EXPORTS Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id) : cur_gpu_id(gpu_id)
+LIB_API Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id) : cur_gpu_id(gpu_id)
 {
     wait_stream = 0;
     int old_gpu_index;
@@ -147,7 +147,7 @@ LIB_EXPORTS Detector::Detector(std::string cfg_filename, std::string weight_file
 }
 
 
-LIB_EXPORTS Detector::~Detector()
+LIB_API Detector::~Detector()
 {
     detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
     layer l = detector_gpu.net.layers[detector_gpu.net.n - 1];
@@ -171,21 +171,21 @@ LIB_EXPORTS Detector::~Detector()
 #endif
 }
 
-LIB_EXPORTS int Detector::get_net_width() const {
+LIB_API int Detector::get_net_width() const {
     detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
     return detector_gpu.net.w;
 }
-LIB_EXPORTS int Detector::get_net_height() const {
+LIB_API int Detector::get_net_height() const {
     detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
     return detector_gpu.net.h;
 }
-LIB_EXPORTS int Detector::get_net_color_depth() const {
+LIB_API int Detector::get_net_color_depth() const {
     detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
     return detector_gpu.net.c;
 }
 
 
-LIB_EXPORTS std::vector<bbox_t> Detector::detect(std::string image_filename, float thresh, bool use_mean)
+LIB_API std::vector<bbox_t> Detector::detect(std::string image_filename, float thresh, bool use_mean)
 {
     std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { if (img->data) free(img->data); delete img; });
     *image_ptr = load_image(image_filename);
@@ -214,7 +214,7 @@ static image load_image_stb(char *filename, int channels)
     return im;
 }
 
-LIB_EXPORTS image_t Detector::load_image(std::string image_filename)
+LIB_API image_t Detector::load_image(std::string image_filename)
 {
     char *input = const_cast<char *>(image_filename.data());
     image im = load_image_stb(input, 3);
@@ -229,14 +229,14 @@ LIB_EXPORTS image_t Detector::load_image(std::string image_filename)
 }
 
 
-LIB_EXPORTS void Detector::free_image(image_t m)
+LIB_API void Detector::free_image(image_t m)
 {
     if (m.data) {
         free(m.data);
     }
 }
 
-LIB_EXPORTS std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use_mean)
+LIB_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use_mean)
 {
     detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
     network &net = detector_gpu.net;
@@ -322,7 +322,7 @@ LIB_EXPORTS std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
     return bbox_vec;
 }
 
-LIB_EXPORTS std::vector<bbox_t> Detector::tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history,
+LIB_API std::vector<bbox_t> Detector::tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history,
     int const frames_story, int const max_dist)
 {
     detector_gpu_t &det_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
