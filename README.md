@@ -170,9 +170,11 @@ To run Darknet on Linux use examples from this article, just use `./darknet` ins
     
     1.3. To install CUDNN (speedup neural network), do the following:
       
-    * download and install **cuDNN v7.4.1 for CUDA 10.0**: https://developer.nvidia.com/cudnn
+    * download and install **cuDNN v7.4.1 for CUDA 10.0**: https://developer.nvidia.com/rdp/cudnn-archive
       
     * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
+    
+    * copy file `cudnn64_7.dll` to the folder `\build\darknet\x64` near with `darknet.exe`
     
     1.4. If you want to build **without CUDNN** then: open `\darknet.sln` -> (right click on project) -> properties  -> C/C++ -> Preprocessor -> Preprocessor Definitions, and remove this: `CUDNN;`
 
