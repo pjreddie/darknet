@@ -704,8 +704,9 @@ void binary_align_weights(convolutional_layer *l)
     }
 
 
-    //if (l->c % 32 == 0)
-    if(gpu_index < 0 && l->stride == 1 && l->pad == 1 && l->c % 32 == 0)
+    if (l->c % 32 == 0)
+    //if(gpu_index < 0 && l->stride == 1 && l->pad == 1 && l->c % 32 == 0)
+    //if (l->stride == 1 && l->pad == 1 && l->c % 32 == 0)
     {
         int fil, chan;
         const int items_per_filter = l->c * l->size * l->size;

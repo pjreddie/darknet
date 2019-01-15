@@ -631,8 +631,9 @@ void stop_timer_and_show() {
 }
 
 void stop_timer_and_show_name(char *name) {
+    stop_timer();
     std::cout << " " << name;
-    stop_timer_and_show();
+    std::cout << " " << get_time() * 1000 << " msec" << std::endl;
 }
 
 void show_total_time() {
