@@ -36,7 +36,7 @@ __global__ void binarize_kernel(float *x, int n, float *binary)
 
 void binarize_gpu(float *x, int n, float *binary)
 {
-    binarize_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, binary);
+    binarize_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(x, n, binary);
     check_error(cudaPeekAtLastError());
 }
 
@@ -79,7 +79,7 @@ __global__ void binarize_weights_kernel(float *weights, int n, int size, float *
 
 void binarize_weights_gpu(float *weights, int n, int size, float *binary)
 {
-    binarize_weights_kernel << <cuda_gridsize(n), BLOCK >> >(weights, n, size, binary);
+    binarize_weights_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> >(weights, n, size, binary);
     check_error(cudaPeekAtLastError());
 }
 
@@ -126,7 +126,7 @@ void fast_binarize_weights_gpu(float *weights, int n, int size, float *binary, f
 
         set_zero_kernel << <(n/BLOCK + 1), BLOCK >> > (mean_arr_gpu, n);
         reduce_kernel << <num_blocks, BLOCK >> > (weights, n, size, mean_arr_gpu);
-        binarize_weights_mean_kernel << <num_blocks, BLOCK >> > (weights, n, size, binary, mean_arr_gpu);
+        binarize_weights_mean_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (weights, n, size, binary, mean_arr_gpu);
         check_error(cudaPeekAtLastError());
     }
     else {
@@ -296,7 +296,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //printf("\n n = %d, n % 32 = %d, new_ldb = %d, new_ldb % 32 = %d \n", n, n % 32, new_ldb, new_ldb % 32);
 
                 //start_timer();
-                transpose_uint32_gpu_2((uint32_t *)state.workspace, (uint32_t *)l.transposed_align_workspace_gpu, new_k, n, n, new_ldb);
+                transpose_uint32_gpu((uint32_t *)state.workspace, (uint32_t *)l.transposed_align_workspace_gpu, new_k, n, n, new_ldb);
                 //cudaDeviceSynchronize();
                 //stop_timer_and_show_name("transpose_uint32_gpu");
 
