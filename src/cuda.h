@@ -38,6 +38,7 @@ extern "C" {
     dim3 cuda_gridsize(size_t n);
     cudaStream_t get_cuda_stream();
     cudaStream_t get_cuda_memcpy_stream();
+    int get_number_of_blocks(int array_size, int block_size);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -220,10 +220,11 @@ __global__ void gradient_array_kernel(float *x, int n, ACTIVATION a, float *delt
 
 extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
 {
+    const int num_blocks = get_number_of_blocks(n, BLOCK);
     if (a == LINEAR) return;
-    else if(a == LEAKY) activate_array_leaky_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == LOGISTIC) activate_array_logistic_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == SELU) activate_array_selu_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if(a == LEAKY) activate_array_leaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == LOGISTIC) activate_array_logistic_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == SELU) activate_array_selu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
     else activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
     check_error(cudaPeekAtLastError());
 }

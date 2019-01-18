@@ -777,57 +777,6 @@ void binary_align_weights(convolutional_layer *l)
     free(align_weights);
 }
 
-/*
-void binary_align_weights(convolutional_layer *l)
-{
-    int m = l->n;
-    int k = l->size*l->size*l->c;
-    size_t new_lda = k + (l->lda_align - k % l->lda_align); // (k / 8 + 1) * 8;
-    l->new_lda = new_lda;
-
-    binarize_weights(l->weights, m, k, l->binary_weights);
-
-    size_t align_weights_size = new_lda * m;
-    l->align_bit_weights_size = align_weights_size / 8 + 1;
-    float *align_weights = calloc(align_weights_size, sizeof(float));
-    l->align_bit_weights = calloc(l->align_bit_weights_size, sizeof(char));
-
-    size_t i, j;
-    // align A without transpose
-    for (i = 0; i < m; ++i) {
-        for (j = 0; j < k; ++j) {
-            align_weights[i*new_lda + j] = l->binary_weights[i*k + j];
-        }
-    }
-    float_to_bit(align_weights, l->align_bit_weights, align_weights_size);
-
-    //l->mean_arr = calloc(l->n, sizeof(float));
-    get_mean_array(align_weights, align_weights_size, l->n, l->mean_arr);
-
-#ifdef GPU
-    cudaError_t status;
-    l->align_workspace_size = l->bit_align * l->size * l->size * l->c;
-    status = cudaMalloc((void **)&l->align_workspace_gpu, l->align_workspace_size * sizeof(float));
-    status = cudaMalloc((void **)&l->transposed_align_workspace_gpu, l->align_workspace_size * sizeof(float));
-    check_error(status);
-
-    //l->align_bit_weights_gpu = cuda_make_array(l->align_bit_weights, l->align_bit_weights_size * sizeof(char)/sizeof(float));
-    status = cudaMalloc((void **)&l->align_bit_weights_gpu, l->align_bit_weights_size);
-    check_error(status);
-    status = cudaMemcpy(l->align_bit_weights_gpu, l->align_bit_weights, l->align_bit_weights_size, cudaMemcpyHostToDevice);
-    check_error(status);
-    status = cudaMemcpy(l->binary_weights_gpu, l->binary_weights, m*k*sizeof(float), cudaMemcpyHostToDevice);
-    check_error(status);
-
-    //l->mean_arr_gpu = cuda_make_array(l->mean_arr, l->n);
-    cuda_push_array(l->mean_arr_gpu, l->mean_arr, l->n);
-    cudaDeviceSynchronize();
-#endif // GPU
-
-    free(align_weights);
-}
-*/
-
 // binary transpose
 size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, size_t ldb_align, int bit_align)
 {

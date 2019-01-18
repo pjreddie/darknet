@@ -230,6 +230,11 @@ void cuda_pull_array_async(float *x_gpu, float *x, size_t n)
     //cudaStreamSynchronize(get_cuda_stream());
 }
 
+int get_number_of_blocks(int array_size, int block_size)
+{
+    return array_size / block_size + ((array_size % block_size > 0) ? 1 : 0);
+}
+
 #else // GPU
 #include "cuda.h"
 void cuda_set_device(int n) {}

@@ -635,7 +635,8 @@ __global__ void float_to_bit_gpu_kernel(float *src, unsigned char *dst, size_t s
 void float_to_bit_gpu(float *src, unsigned char *dst, size_t size)
 {
     //const int num_blocks = size / 1024 + 1;
-    const int num_blocks = size / (32*1024) + 1;
+    //const int num_blocks = size / (32*1024) + 1;
+    const int num_blocks = get_number_of_blocks(size, 32 * 1024);
     float_to_bit_gpu_kernel<<<num_blocks, 1024, 0, get_cuda_stream()>>>(src, dst, size);
 }
 // --------------------------------
@@ -1025,16 +1026,17 @@ void repack_input_gpu_2(float *input, float *re_packed_input, int w, int h, int 
 // --------------------------------
 
 
+
 // 32 channels -> 1 channel (with 32 floats)
 // 256 channels -> 8 channels (with 32 floats)
 __global__ void repack_input_kernel_bin(float *input, uint32_t *re_packed_input_bin, int w, int h, int c)
 {
-    __shared__ uint32_t tmp[32];
+    //__shared__ uint32_t tmp[32];
     int index = blockIdx.x*blockDim.x + threadIdx.x;
 
-    const int num_of_warps = blockDim.x / WARP_SIZE;
-    const int warp_id = threadIdx.x / WARP_SIZE;
-    const int lane_id = threadIdx.x % WARP_SIZE;
+    //const int num_of_warps = blockDim.x / WARP_SIZE;
+    //const int warp_id = threadIdx.x / WARP_SIZE;
+    //const int lane_id = threadIdx.x % WARP_SIZE;
 
     const int items_per_channel = w * h;
 
@@ -1058,18 +1060,8 @@ __global__ void repack_input_kernel_bin(float *input, uint32_t *re_packed_input_
                 float src = input[(chan + c_pack)*items_per_channel + i];
 
                 uint32_t bit_mask = __ballot(src > 0);
-                //if (threadIdx.x % 32 == 0)
-                //    re_packed_input_bin[chan*items_per_channel/32 + i + c_pack/32] = bit_mask;
-
-                if (lane_id == 0) tmp[warp_id] = bit_mask;
-
-                __syncthreads();
-                if (warp_id == 0) {
-                    if (lane_id < num_of_warps) {
-                        re_packed_input_bin[chan*items_per_channel / 32 + i + lane_id] = tmp[lane_id];
-                    }
-                }
-                __syncthreads();
+                if (threadIdx.x % 32 == 0)
+                    re_packed_input_bin[chan*items_per_channel / 32 + i] = bit_mask;
             }
         }
     }
@@ -1078,9 +1070,74 @@ __global__ void repack_input_kernel_bin(float *input, uint32_t *re_packed_input_
 void repack_input_gpu_bin(float *input, uint32_t *re_packed_input_bin, int w, int h, int c)
 {
     int size = w * h * c;
-    const int num_blocks = size / BLOCK + 1;
-    repack_input_kernel_bin << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c);
+    const int block_size = 128;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    repack_input_kernel_bin << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c);
 }
+
+
+/*
+// 32 channels -> 1 channel (with 32 floats)
+// 256 channels -> 8 channels (with 32 floats)
+__global__ void repack_input_kernel_bin(float *input, uint32_t *re_packed_input_bin, int w, int h, int c, int items_per_channel_align)
+{
+    __shared__ float tmp[33*32];    // misalgined array 32x32
+    //const int index = blockIdx.x*blockDim.x + threadIdx.x;
+
+    const int num_of_warps = blockDim.x / WARP_SIZE;
+    const int warp_id = threadIdx.x / WARP_SIZE;
+    const int lane_id = threadIdx.x % WARP_SIZE;
+
+    const int items_per_channel = w * h;
+    //const int items_per_channel_align = items_per_channel + (32 - items_per_channel % 32);
+    const int blocks_per_wh = items_per_channel_align / 32;
+    //const int blocks_per_c = c / 32;
+
+    // input[C x H x W] = input[C x ITEMS]
+    // BLOCK per C x ITEMS = 32x32
+
+    const int block_item_id = blockIdx.x % blocks_per_wh;
+    const int block_channel_id = blockIdx.x / blocks_per_wh;
+
+    const int block_item = block_item_id * 32;
+    const int block_channel = block_channel_id * 32;
+
+    const int lane_item = block_item + lane_id;
+    const int warp_channel = block_channel + warp_id;
+
+    if (warp_channel < c)
+    {
+        float src = 0;
+
+        if (lane_item < items_per_channel)
+            src = input[warp_channel*items_per_channel + lane_item];
+
+        tmp[warp_id * 33 + lane_id] = src;
+        __syncthreads();
+        src = tmp[lane_id * 33 + warp_id];
+
+        uint32_t bit_mask = __ballot(src > 0);
+
+        const int warp_item = block_item + warp_id;
+
+        if (lane_id == 0 && warp_item < items_per_channel)
+            re_packed_input_bin[block_channel_id*items_per_channel + warp_item] = bit_mask;
+    }
+}
+
+#define BLOCK_REPACK 1024
+void repack_input_gpu_bin(float *input, uint32_t *re_packed_input_bin, int w, int h, int c)
+{
+    int items_per_channel = w*h;
+    int items_per_channel_align = items_per_channel + (32 - items_per_channel % 32);
+    int channel_align = c + (32 - c % 32);
+
+    //int size = w * h * c;
+    int size = items_per_channel_align * channel_align;
+    const int num_blocks = get_number_of_blocks(size, BLOCK_REPACK);
+    repack_input_kernel_bin << <num_blocks, BLOCK_REPACK, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c, items_per_channel_align);
+}
+*/
 // --------------------------------
 
 
@@ -1657,7 +1714,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     float *C, int ldc, float *mean_arr, float *bias)
 {
     size_t size = M*N;
-    const int num_blocks = size / BLOCK + 1;
+    const int num_blocks = get_number_of_blocks(size, BLOCK);
 
     /*
     printf("\n gemm_bin size = %d, num_blocks = %d, M*K = %d KB, N*K = %d KB \n (w) M*K/num_blocks = %d KB, (i) N*K/num_blocks = %d KB \n",
