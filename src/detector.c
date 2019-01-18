@@ -178,8 +178,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             //int dim_h = (random_val + (init_h / 32 - 5)) * 32;    // +-160
 
             float random_val = rand_scale(1.4);    // *x or /x
-            int dim_w = roundl(random_val*init_w / 32) * 32;
-            int dim_h = roundl(random_val*init_h / 32) * 32;
+            int dim_w = roundl(random_val*init_w / 32 + 1) * 32;
+            int dim_h = roundl(random_val*init_h / 32 + 1) * 32;
+
+            if (get_current_batch(net) == 0) {
+                dim_w = roundl(1.4*init_w / 32 + 1) * 32;
+                dim_h = roundl(1.4*init_h / 32 + 1) * 32;
+            }
 
             if (dim_w < 32) dim_w = 32;
             if (dim_h < 32) dim_h = 32;
