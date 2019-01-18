@@ -704,8 +704,9 @@ void binary_align_weights(convolutional_layer *l)
     }
 
 
-    //if (l->c % 32 == 0)
-    if(gpu_index < 0 && l->stride == 1 && l->pad == 1 && l->c % 32 == 0)
+    if (l->c % 32 == 0)
+    //if(gpu_index < 0 && l->stride == 1 && l->pad == 1 && l->c % 32 == 0)
+    //if (l->stride == 1 && l->pad == 1 && l->c % 32 == 0)
     {
         int fil, chan;
         const int items_per_filter = l->c * l->size * l->size;
@@ -882,7 +883,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
         //gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
         //gemm_nn_custom(m, n, k, 1, a, k, b, n, c, n);
-        if (l.xnor && l.align_bit_weights && !state.train && (l.stride == 1 && l.pad == 1))
+        if (l.xnor && l.align_bit_weights && !state.train)
         {
             memset(b, 0, l.bit_align*l.size*l.size*l.c * sizeof(float));
 

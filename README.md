@@ -110,21 +110,24 @@ Also, you might be interested in using a simplified repository where is implemen
 On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector test ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights`
 
 * Yolo v3 COCO - **image**: `darknet.exe detector test data/coco.data cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
-* Output coordinates of objects: `darknet.exe detector test data/coco.data yolov3.cfg yolov3.weights -ext_output dog.jpg`
+* **Output coordinates** of objects: `darknet.exe detector test data/coco.data yolov3.cfg yolov3.weights -ext_output dog.jpg`
 * Yolo v3 COCO - **video**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -ext_output test.mp4`
 * Yolo v3 COCO - **WebCam 0**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -c 0`
 * Yolo v3 COCO for **net-videocam** - Smart WebCam: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg`
-* **Yolo v3 - save result to the file res.avi**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -out_filename res.avi`
-* **Yolo v3 Tiny** COCO - video: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights test.mp4`
-* **JSON and MJPEG server** that allows multiple connections from your soft or Web-browser `ip-address:8070` or 8090: `./darknet detector demo ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights test50.mp4 -json_port 8070 -mjpeg_port 8090 -ext_output`
-* **Yolo v3 Tiny** on GPU #0: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights -i 0 test.mp4`
+* Yolo v3 - **save result videofile res.avi**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -out_filename res.avi`
+* Yolo v3 **Tiny** COCO - video: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights test.mp4`
+* **JSON and MJPEG server** that allows multiple connections from your soft or Web-browser `ip-address:8070` and 8090: `./darknet detector demo ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights test50.mp4 -json_port 8070 -mjpeg_port 8090 -ext_output`
+* Yolo v3 Tiny **on GPU #0**: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights -i 0 test.mp4`
 * Alternative method Yolo v3 COCO - image: `darknet.exe detect cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
+* Train on **Amazon EC2**, to see mAP & Loss-chart using URL like: `http://ec2-35-160-228-91.us-west-2.compute.amazonaws.com:8090` in the Chrome/Firefox: 
+    `./darknet detector train cfg/coco.data yolov3.cfg darknet53.conv.74 -dont_show -mjpeg_port 8090 -map`
 * 186 MB Yolo9000 - image: `darknet.exe detector test cfg/combine9k.data yolo9000.cfg yolo9000.weights`
 * Remeber to put data/9k.tree and data/coco9k.map under the same folder of your app if you use the cpp api to build an app
 * To process a list of images `data/train.txt` and save results of detection to `result.txt` use:                             
     `darknet.exe detector test cfg/coco.data yolov3.cfg yolov3.weights -dont_show -ext_output < data/train.txt > result.txt`
 * To calculate anchors: `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
-* To check accuracy mAP50: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
+* To check accuracy mAP@IoU=50: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
+* To check accuracy mAP@IoU=75: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights -iou_thresh 0.75`
 
 ##### For using network video-camera mjpeg-stream with any Android smartphone:
 
@@ -167,9 +170,11 @@ To run Darknet on Linux use examples from this article, just use `./darknet` ins
     
     1.3. To install CUDNN (speedup neural network), do the following:
       
-    * download and install **cuDNN v7.4.1 for CUDA 10.0**: https://developer.nvidia.com/cudnn
+    * download and install **cuDNN v7.4.1 for CUDA 10.0**: https://developer.nvidia.com/rdp/cudnn-archive
       
     * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
+    
+    * copy file `cudnn64_7.dll` to the folder `\build\darknet\x64` near with `darknet.exe`
     
     1.4. If you want to build **without CUDNN** then: open `\darknet.sln` -> (right click on project) -> properties  -> C/C++ -> Preprocessor -> Preprocessor Definitions, and remove this: `CUDNN;`
 
@@ -488,7 +493,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
     * `train_network_width * train_obj_width / train_image_width ~= detection_network_width * detection_obj_width / detection_image_width`
     * `train_network_height * train_obj_height / train_image_height ~= detection_network_height * detection_obj_height / detection_image_height`
     
-    I.e. for each object from Test dataset there must be at least 1 object in the Training dataset with about the same relative size:
+    I.e. for each object from Test dataset there must be at least 1 object in the Training dataset with the same class_id and about the same relative size:
 
     `object width in percent from Training dataset` ~= `object width in percent from Test dataset` 
    
@@ -497,6 +502,8 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   * to speedup training (with decreasing detection accuracy) do Fine-Tuning instead of Transfer-Learning, set param `stopbackward=1` here: https://github.com/AlexeyAB/darknet/blob/6d44529cf93211c319813c90e0c1adb34426abe5/cfg/yolov3.cfg#L548
     then do this command: `./darknet partial cfg/yolov3.cfg yolov3.weights yolov3.conv.81 81` will be created file `yolov3.conv.81`,
     then train by using weights file `yolov3.conv.81` instead of `darknet53.conv.74`
+
+  * The more different objects you want to detect, the more complex network model should be used. But each: `model of object, side, illimination, scale, each 30 grad` of the turn and inclination angles - these are different objects from a neural network perspective.
 
 
 2. After training - for detection:
@@ -545,7 +552,6 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
     * you can run your console application from Windows Explorer `build\darknet\x64\yolo_console_dll.exe`
     **use this command**: `yolo_console_dll.exe data/coco.names yolov3.cfg yolov3.weights test.mp4`
     
-    * or you can run from MSVS2015 (before this - you should copy 2 files `yolo-voc.cfg` and `yolo-voc.weights` to the directory `build\darknet\` )
     * after launching your console application and entering the image file name - you will see info for each object: 
     `<obj_id> <left_x> <top_y> <width> <height> <probability>`
     * to use simple OpenCV-GUI you should uncomment line `//#define OPENCV` in `yolo_console_dll.cpp`-file: [link](https://github.com/AlexeyAB/darknet/blob/a6cbaeecde40f91ddc3ea09aa26a03ab5bbf8ba8/src/yolo_console_dll.cpp#L5)
@@ -553,18 +559,27 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
    
 `yolo_cpp_dll.dll`-API: [link](https://github.com/AlexeyAB/darknet/blob/master/src/yolo_v2_class.hpp#L42)
 ```
+struct bbox_t {
+    unsigned int x, y, w, h;    // (x,y) - top-left corner, (w, h) - width & height of bounded box
+    float prob;                    // confidence - probability that the object was found correctly
+    unsigned int obj_id;        // class of object - from range [0, classes-1]
+    unsigned int track_id;        // tracking id for video (0 - untracked, 1 - inf - tracked object)
+    unsigned int frames_counter;// counter of frames on which the object was detected
+};
+
 class Detector {
 public:
-	Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
-	~Detector();
+        Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
+        ~Detector();
 
-	std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2, bool use_mean = false);
-	std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
-	static image_t load_image(std::string image_filename);
-	static void free_image(image_t m);
+        std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2, bool use_mean = false);
+        std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
+        static image_t load_image(std::string image_filename);
+        static void free_image(image_t m);
 
 #ifdef OPENCV
-	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false);
+        std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false);
+	std::shared_ptr<image_t> mat_to_image_resize(cv::Mat mat) const;
 #endif
 };
 ```

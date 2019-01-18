@@ -755,6 +755,7 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
                 __m256i all_1 = _mm256_set1_epi8(255);
                 __m256i xnor256 = _mm256_andnot_si256(xor256, all_1); // xnor = not(xor(a,b))
 
+                // waiting for - CPUID Flags: AVX512VPOPCNTDQ: __m512i _mm512_popcnt_epi32(__m512i a)
                 __m256 count = _mm256_setr_ps(
                     popcnt_32(_mm256_extract_epi32(xnor256, 0)),
                     popcnt_32(_mm256_extract_epi32(xnor256, 1)),

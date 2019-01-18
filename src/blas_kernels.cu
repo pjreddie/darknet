@@ -439,6 +439,13 @@ __global__ void copy_kernel(int N,  float *X, int OFFX, int INCX, float *Y, int 
     if(i < N) Y[i*INCY + OFFY] = X[i*INCX + OFFX];
 }
 
+__global__ void simple_copy_kernel(int size, float *src, float *dst)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size)
+        dst[index] = src[index];
+}
+
 __global__ void mul_kernel(int N, float *X, int INCX, float *Y, int INCY)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -555,6 +562,13 @@ extern "C" void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int I
 extern "C" void copy_ongpu(int N, float * X, int INCX, float * Y, int INCY)
 {
     copy_ongpu_offset(N, X, 0, INCX, Y, 0, INCY);
+}
+
+extern "C" void simple_copy_ongpu(int size, float *src, float *dst)
+{
+    const int num_blocks = size / BLOCK + 1;
+    simple_copy_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(size, src, dst);
+    check_error(cudaPeekAtLastError());
 }
 
 extern "C" void mul_ongpu(int N, float * X, int INCX, float * Y, int INCY)
@@ -675,6 +689,41 @@ extern "C" void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int 
 
     int size = batch * minw * minh * minc;
     shortcut_kernel<<<cuda_gridsize(size), BLOCK, 0, get_cuda_stream()>>>(size, minw, minh, minc, stride, sample, batch, w1, h1, c1, add, w2, h2, c2, out);
+    check_error(cudaPeekAtLastError());
+}
+
+__global__ void input_shortcut_kernel(float *in, int size, int minw, int minh, int minc, int stride, int sample, int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= size) return;
+    int i = id % minw;
+    id /= minw;
+    int j = id % minh;
+    id /= minh;
+    int k = id % minc;
+    id /= minc;
+    int b = id % batch;
+
+    int out_index = i*sample + w2*(j*sample + h2*(k + c2*b));
+    int add_index = i*stride + w1*(j*stride + h1*(k + c1*b));
+    out[out_index] = in[out_index] + add[add_index];
+}
+
+extern "C" void input_shortcut_gpu(float *in, int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
+{
+    int minw = (w1 < w2) ? w1 : w2;
+    int minh = (h1 < h2) ? h1 : h2;
+    int minc = (c1 < c2) ? c1 : c2;
+
+    int stride = w1 / w2;
+    int sample = w2 / w1;
+    assert(stride == h1 / h2);
+    assert(sample == h2 / h1);
+    if (stride < 1) stride = 1;
+    if (sample < 1) sample = 1;
+
+    int size = batch * minw * minh * minc;
+    input_shortcut_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> >(in, size, minw, minh, minc, stride, sample, batch, w1, h1, c1, add, w2, h2, c2, out);
     check_error(cudaPeekAtLastError());
 }
 
@@ -877,7 +926,7 @@ __global__ void upsample_kernel(size_t N, float *x, int w, int h, int c, int bat
 extern "C" void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
     size_t size = w*h*c*batch*stride*stride;
-    upsample_kernel << <cuda_gridsize(size), BLOCK >> >(size, in, w, h, c, batch, stride, forward, scale, out);
+    upsample_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> >(size, in, w, h, c, batch, stride, forward, scale, out);
     check_error(cudaPeekAtLastError());
 }
 

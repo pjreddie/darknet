@@ -192,8 +192,23 @@ __global__ void activate_array_leaky_kernel(float *x, int n)
 {
     int index = blockIdx.x*blockDim.x + threadIdx.x;
     if (index < n) {
-        float val = x[index];
-        x[index] = (val > 0) ? val : val / 10;
+        x[index] = leaky_activate_kernel(x[index]);
+    }
+}
+
+__global__ void activate_array_selu_kernel(float *x, int n)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        x[index] = selu_activate_kernel(x[index]);
+    }
+}
+
+__global__ void activate_array_logistic_kernel(float *x, int n)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        x[index] = logistic_activate_kernel(x[index]);
     }
 }
 
@@ -205,7 +220,10 @@ __global__ void gradient_array_kernel(float *x, int n, ACTIVATION a, float *delt
 
 extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
 {
-    if(a == LEAKY) activate_array_leaky_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
+    if (a == LINEAR) return;
+    else if(a == LEAKY) activate_array_leaky_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == LOGISTIC) activate_array_logistic_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == SELU) activate_array_selu_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
     else activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
     check_error(cudaPeekAtLastError());
 }
