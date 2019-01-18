@@ -786,10 +786,14 @@ network parse_network_cfg_custom(char *filename, int batch)
             l = parse_avgpool(options, params);
         }else if(lt == ROUTE){
             l = parse_route(options, params, net);
+            int k;
+            for (k = 0; k < l.n; ++k) net.layers[l.input_layers[k]].use_bin_output = 0;
         }else if (lt == UPSAMPLE) {
             l = parse_upsample(options, params, net);
         }else if(lt == SHORTCUT){
             l = parse_shortcut(options, params, net);
+            net.layers[count - 1].use_bin_output = 0;
+            net.layers[l.index].use_bin_output = 0;
         }else if(lt == DROPOUT){
             l = parse_dropout(options, params);
             l.output = net.layers[count-1].output;

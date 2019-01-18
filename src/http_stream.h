@@ -27,14 +27,6 @@ image image_data_augmentation(IplImage* ipl, int w, int h,
     float jitter, float dhue, float dsat, float dexp);
 #endif  // OPENCV
 
-double get_time_point();
-void start_timer();
-void stop_timer();
-double get_time();
-void stop_timer_and_show();
-void stop_timer_and_show_name(char *name);
-void show_total_time();
-
 #ifdef __cplusplus
 }
 #endif

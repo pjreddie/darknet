@@ -795,6 +795,15 @@ LIB_API tree *read_tree(char *filename);
 LIB_API metadata get_metadata(char *file);
 
 
+// http_stream.h
+LIB_API double get_time_point();
+void start_timer();
+void stop_timer();
+double get_time();
+void stop_timer_and_show();
+void stop_timer_and_show_name(char *name);
+void show_total_time();
+
 #ifdef __cplusplus
 }
 #endif  // __cplusplus

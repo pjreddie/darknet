@@ -192,8 +192,6 @@ network make_network(int n)
     return net;
 }
 
-double get_time_point();
-
 void forward_network(network net, network_state state)
 {
     state.workspace = net.workspace;
