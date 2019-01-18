@@ -53,6 +53,14 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.backward_gpu = backward_yolo_layer_gpu;
     l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
+
+    free(l.output);
+    if (cudaSuccess == cudaHostAlloc(&l.output, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.output_pinned = 1;
+    else l.output = calloc(batch*l.outputs, sizeof(float));
+
+    free(l.delta);
+    if (cudaSuccess == cudaHostAlloc(&l.delta, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.delta_pinned = 1;
+    else l.delta = calloc(batch*l.outputs, sizeof(float));
 #endif
 
     fprintf(stderr, "yolo\n");
@@ -411,13 +419,14 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
         }
     }
     if(!state.train || l.onlyforward){
-        cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+        //cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+        cuda_pull_array_async(l.output_gpu, l.output, l.batch*l.outputs);
         return;
     }
 
-    //cuda_pull_array(l.output_gpu, state.input, l.batch*l.inputs);
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
-    cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
+    cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+    memcpy(in_cpu, l.output, l.batch*l.outputs*sizeof(float));
     float *truth_cpu = 0;
     if (state.truth) {
         int num_truth = l.batch*l.truths;

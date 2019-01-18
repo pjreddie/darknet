@@ -692,6 +692,14 @@ extern "C" void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int 
     check_error(cudaPeekAtLastError());
 }
 
+__global__ void simple_input_shortcut_kernel(float *in, int size, float *add, float *out)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= size) return;
+
+    out[id] = in[id] + add[id];
+}
+
 __global__ void input_shortcut_kernel(float *in, int size, int minw, int minh, int minc, int stride, int sample, int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
 {
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -711,6 +719,13 @@ __global__ void input_shortcut_kernel(float *in, int size, int minw, int minh, i
 
 extern "C" void input_shortcut_gpu(float *in, int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
 {
+    if (w1 == w2 && h1 == h2 && c1 == c2) {
+        int size = batch * w1 * h1 * c1;
+        simple_input_shortcut_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> >(in, size, add, out);
+        check_error(cudaPeekAtLastError());
+        return;
+    }
+
     int minw = (w1 < w2) ? w1 : w2;
     int minh = (h1 < h2) ? h1 : h2;
     int minc = (c1 < c2) ? c1 : c2;

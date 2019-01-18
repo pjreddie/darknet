@@ -87,6 +87,8 @@ void forward_network_gpu(network net, network_state state)
         }
 */
     }
+    cudaStreamSynchronize(get_cuda_stream());   // sync CUDA-functions
+    //cudaStreamSynchronize(get_cuda_memcpy_stream());   // sync cudaMemcpyAsync()
     //cudaDeviceSynchronize();
     //show_total_time();
 }
@@ -444,7 +446,8 @@ float *network_predict_gpu(network net, float *input)
     state.net = net;
     //state.input = cuda_make_array(input, size);   // memory will be allocated in the parse_network_cfg_custom()
     state.input = net.input_state_gpu;
-    cuda_push_array(state.input, input, size);
+    memcpy(net.input_pinned_cpu, input, size * sizeof(float));
+    cuda_push_array(state.input, net.input_pinned_cpu, size);
     state.truth = 0;
     state.train = 0;
     state.delta = 0;

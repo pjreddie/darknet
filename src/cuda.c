@@ -82,6 +82,27 @@ cudaStream_t get_cuda_stream() {
     return streamsArray[i];
 }
 
+static cudaStream_t streamsArray2[16];    // cudaStreamSynchronize( get_cuda_memcpy_stream() );
+static int streamInit2[16] = { 0 };
+
+cudaStream_t get_cuda_memcpy_stream() {
+    int i = cuda_get_device();
+    if (!streamInit2[i]) {
+        cudaError_t status = cudaStreamCreate(&streamsArray2[i]);
+        //cudaError_t status = cudaStreamCreateWithFlags(&streamsArray2[i], cudaStreamNonBlocking);
+        if (status != cudaSuccess) {
+            printf(" cudaStreamCreate Memcpy error: %d \n", status);
+            const char *s = cudaGetErrorString(status);
+            char buffer[256];
+            printf("CUDA Error: %s\n", s);
+            status = cudaStreamCreateWithFlags(&streamsArray2[i], cudaStreamDefault);
+            check_error(status);
+        }
+        streamInit2[i] = 1;
+    }
+    return streamsArray2[i];
+}
+
 
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle()
@@ -116,6 +137,7 @@ float *cuda_make_array(float *x, size_t n)
     float *x_gpu;
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMalloc((void **)&x_gpu, size);
+    if (status != cudaSuccess) fprintf(stderr, " Try to set subdivisions=64 in your cfg-file. \n");
     check_error(status);
     if(x){
         //status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
@@ -198,6 +220,14 @@ void cuda_pull_array(float *x_gpu, float *x, size_t n)
     cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDeviceToHost, get_cuda_stream());
     check_error(status);
     cudaStreamSynchronize(get_cuda_stream());
+}
+
+void cuda_pull_array_async(float *x_gpu, float *x, size_t n)
+{
+    size_t size = sizeof(float)*n;
+    cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDeviceToHost, get_cuda_stream());
+    check_error(status);
+    //cudaStreamSynchronize(get_cuda_stream());
 }
 
 #else // GPU

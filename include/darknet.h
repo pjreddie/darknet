@@ -316,6 +316,8 @@ struct layer {
     float *col_image;
     float * delta;
     float * output;
+    int delta_pinned;
+    int output_pinned;
     float * loss;
     float * squared;
     float * norms;
@@ -582,6 +584,8 @@ typedef struct network {
     float *output_gpu;
 
     float *input_state_gpu;
+    float *input_pinned_cpu;
+    int input_pinned_cpu_flag;
 
     float **input_gpu;
     float **truth_gpu;
@@ -777,6 +781,7 @@ LIB_API pthread_t load_data_in_thread(load_args args);
 
 // cuda.h
 LIB_API void cuda_pull_array(float *x_gpu, float *x, size_t n);
+LIB_API void cuda_pull_array_async(float *x_gpu, float *x, size_t n);
 LIB_API void cuda_set_device(int n);
 
 // utils.h

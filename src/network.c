@@ -856,6 +856,10 @@ void free_network(network net)
     if (gpu_index >= 0) cuda_free(net.workspace);
     else free(net.workspace);
     if (net.input_state_gpu) cuda_free(net.input_state_gpu);
+    if (net.input_pinned_cpu) {   // CPU
+        if (net.input_pinned_cpu_flag) cudaFreeHost(net.input_pinned_cpu);
+        else free(net.input_pinned_cpu);
+    }
     if (*net.input_gpu) cuda_free(*net.input_gpu);
     if (*net.truth_gpu) cuda_free(*net.truth_gpu);
     if (net.input_gpu) free(net.input_gpu);

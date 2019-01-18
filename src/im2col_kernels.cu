@@ -1030,7 +1030,6 @@ void repack_input_gpu_2(float *input, float *re_packed_input, int w, int h, int 
 __global__ void repack_input_kernel_bin(float *input, uint32_t *re_packed_input_bin, int w, int h, int c)
 {
     __shared__ uint32_t tmp[32];
-
     int index = blockIdx.x*blockDim.x + threadIdx.x;
 
     const int num_of_warps = blockDim.x / WARP_SIZE;
@@ -1350,6 +1349,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr, float *bias_arr)
 {
+    // total 57%
     int index = blockIdx.x*blockDim.x + threadIdx.x;
 
     __shared__ uint8_t A_s[6144*8/4];
@@ -1363,7 +1363,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 
     int i_cur = index / N;
     int local_i = i_cur - start_i;
-
+    // ~10%
     for (int k = threadIdx.x * 64; k < shared_size; k += blockDim.x * 64) {
         int x = start_i*lda + k;
         if (x < (M*lda)) *((uint64_t *)(A_s + k / 8)) = *((uint64_t *)(A + x / 8));
@@ -1371,7 +1371,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
     __syncthreads();
 
     int i, j, k, h;
-
+    // 47% = 29 + 10 + 8
     j = index % N;
     {    // out_h*out_w - one channel output size [169 - 173056]
         i = index / N;
@@ -1413,7 +1413,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 #endif
 
 //#ifdef NOT_USED
-            // 32 thread X 64 bit = 2048 bit
+            // 32 thread X 64 bit = 2048 bit // 29%
             for (; k < (K - 2048); k += 2048) {   // l.size*l.size*l.c - one filter size [27 - 9216]
                 uint64_t c_bit64;
 
@@ -1444,7 +1444,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 //#endif
 
 //#ifdef NOT_USED
-            // 32 thread X 32 bit = 1024 bit
+            // 32 thread X 32 bit = 1024 bit // 10%
             for (; k < (K - 1024); k += 1024) {   // l.size*l.size*l.c - one filter size [27 - 9216]
 
                 //int64_t A_cur_index = (i*lda + k) / 8;
@@ -1479,6 +1479,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 float bias_val = bias_arr[i];
 
 //#ifdef NOT_USED
+                // 8%
                 for (; k < K; k += 256) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
                     //ulonglong4 a_bit256 = *((ulonglong4 *)(A + (i*lda + k) / 8));    // weights
                     ulonglong4 a_bit256 = *((ulonglong4 *)(A_s + (local_i*lda + k) / 8));    // weights

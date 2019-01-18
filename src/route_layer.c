@@ -67,7 +67,7 @@ void resize_route_layer(route_layer *l, network *net)
     l->output_gpu  = cuda_make_array(l->output, l->outputs*l->batch);
     l->delta_gpu   = cuda_make_array(l->delta,  l->outputs*l->batch);
 #endif
-    
+
 }
 
 void forward_route_layer(const route_layer l, network_state state)
@@ -110,7 +110,8 @@ void forward_route_layer_gpu(const route_layer l, network_state state)
         float *input = state.net.layers[index].output_gpu;
         int input_size = l.input_sizes[i];
         for(j = 0; j < l.batch; ++j){
-            copy_ongpu(input_size, input + j*input_size, 1, l.output_gpu + offset + j*l.outputs, 1);
+            //copy_ongpu(input_size, input + j*input_size, 1, l.output_gpu + offset + j*l.outputs, 1);
+            simple_copy_ongpu(input_size, input + j*input_size, l.output_gpu + offset + j*l.outputs);
         }
         offset += input_size;
     }

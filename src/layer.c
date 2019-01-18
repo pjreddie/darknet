@@ -35,6 +35,16 @@ void free_layer(layer l)
 	if (l.weight_updates)     free(l.weight_updates);
     if (l.align_bit_weights)  free(l.align_bit_weights);
     if (l.mean_arr)           free(l.mean_arr);
+#ifdef GPU
+    if (l.delta && l.delta_pinned) {
+        cudaFreeHost(l.delta);
+        l.delta = NULL;
+    }
+    if (l.output && l.output_pinned) {
+        cudaFreeHost(l.output);
+        l.output = NULL;
+    }
+#endif  // GPU
 	if (l.delta)              free(l.delta);
 	if (l.output)             free(l.output);
 	if (l.squared)            free(l.squared);
