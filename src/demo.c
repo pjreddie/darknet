@@ -359,8 +359,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         free(alphabet[j]);
     }
     free(alphabet);
-
     free_network(net);
+    //cudaProfilerStop();
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,

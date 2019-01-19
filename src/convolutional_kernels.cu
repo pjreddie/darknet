@@ -296,7 +296,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //start_timer();
                 gemm_nn_custom_bin_mean_transposed_gpu(m, n, k,
                     (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu,
-                    new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu);
+                    new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu, l.activation);
                 //cudaDeviceSynchronize();
                 //stop_timer_and_show_name("gemm_nn_custom_bin_mean_transposed_gpu");
 
@@ -366,7 +366,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                     //start_timer();
                     gemm_nn_custom_bin_mean_transposed_gpu(m, n, k,
                         (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu,
-                        new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu);
+                        new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu, l.activation);
                     //cudaDeviceSynchronize();
                     //stop_timer_and_show_name("gemm_nn_custom_bin_mean_transposed_gpu");
                 //}
@@ -391,7 +391,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             */
 
             //add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
-            if(l.activation != LINEAR) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
+            if(l.activation != LINEAR && l.activation != LEAKY) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
             //if (l.binary || l.xnor) swap_binary(&l);
             //cudaDeviceSynchronize();
             return;
