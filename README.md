@@ -470,6 +470,8 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
    then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file
 
+    (also you can change indexes of anchors `masks=` for each [yolo]-layer, so that 1st-[yolo]-layer has anchors larger than 60x60, 2nd larger than 30x30, 3rd remaining)
+
   * check that each object are mandatory labeled in your dataset - no one object in your data set should not be without label. In the most training issues - there are wrong labels in your dataset (got labels by using some conversion script, marked with a third-party tool, ...). Always check your dataset by using: https://github.com/AlexeyAB/Yolo_mark
 
   * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides, on different backgrounds - you should preferably have 2000 different images for each class or more, and you should train `2000*classes` iterations or more
