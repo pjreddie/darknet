@@ -400,6 +400,12 @@ int resize_network(network *net, int w, int h)
             cuda_free(*net->truth_gpu);
             *net->truth_gpu = 0;
         }
+
+        if (net->input_state_gpu) cuda_free(net->input_state_gpu);
+        if (net->input_pinned_cpu) {
+            if (net->input_pinned_cpu_flag) cudaFreeHost(net->input_pinned_cpu);
+            else free(net->input_pinned_cpu);
+        }
     }
 #endif
     int i;
@@ -448,14 +454,24 @@ int resize_network(network *net, int w, int h)
         h = l.out_h;
         if(l.type == AVGPOOL) break;
     }
+    const int size = get_network_input_size(*net) * net->batch;
 #ifdef GPU
     if(gpu_index >= 0){
         printf(" try to allocate workspace = %zu * sizeof(float), ", workspace_size / sizeof(float) + 1);
         net->workspace = cuda_make_array(0, workspace_size/sizeof(float) + 1);
+        net->input_state_gpu = cuda_make_array(0, size);
+        if (cudaSuccess == cudaHostAlloc(&net->input_pinned_cpu, size * sizeof(float), cudaHostRegisterMapped))
+            net->input_pinned_cpu_flag = 1;
+        else {
+            net->input_pinned_cpu = calloc(size, sizeof(float));
+            net->input_pinned_cpu_flag = 0;
+        }
         printf(" CUDA allocate done! \n");
     }else {
         free(net->workspace);
         net->workspace = calloc(1, workspace_size);
+        if(!net->input_pinned_cpu_flag)
+            net->input_pinned_cpu = realloc(net->input_pinned_cpu, size * sizeof(float));
     }
 #else
     free(net->workspace);
