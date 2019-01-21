@@ -222,10 +222,15 @@ int kmeans_expectation(matrix data, int *assignments, matrix centers)
 
 void kmeans_maximization(matrix data, int *assignments, matrix centers)
 {
+    matrix old_centers = make_matrix(centers.rows, centers.cols);
+
     int i, j;
     int *counts = calloc(centers.rows, sizeof(int));
     for (i = 0; i < centers.rows; ++i) {
-        for (j = 0; j < centers.cols; ++j) centers.vals[i][j] = 0;
+        for (j = 0; j < centers.cols; ++j) {
+            old_centers.vals[i][j] = centers.vals[i][j];
+            centers.vals[i][j] = 0;
+        }
     }
     for (i = 0; i < data.rows; ++i) {
         ++counts[assignments[i]];
@@ -240,6 +245,13 @@ void kmeans_maximization(matrix data, int *assignments, matrix centers)
             }
         }
     }
+
+    for (i = 0; i < centers.rows; ++i) {
+        for (j = 0; j < centers.cols; ++j) {
+            if(centers.vals[i][j] == 0) centers.vals[i][j] = old_centers.vals[i][j];
+        }
+    }
+    free_matrix(old_centers);
 }
 
 
@@ -292,7 +304,7 @@ model do_kmeans(matrix data, int k)
     int *assignments = calloc(data.rows, sizeof(int));
     //smart_centers(data, centers);
     random_centers(data, centers);  // IoU = 67.31% after kmeans
-    //
+
     /*
     // IoU = 63.29%, anchors = 10,13,  16,30,  33,23,  30,61,  62,45,  59,119,  116,90,  156,198,  373,326
     centers.vals[0][0] = 10; centers.vals[0][1] = 13;
@@ -308,9 +320,11 @@ model do_kmeans(matrix data, int k)
 
     // range centers [min - max] using exp graph or Pyth example
     if (k == 1) kmeans_maximization(data, assignments, centers);
-    while (!kmeans_expectation(data, assignments, centers)) {
+    int i;
+    for(i = 0; i < 1000 && !kmeans_expectation(data, assignments, centers); ++i) {
         kmeans_maximization(data, assignments, centers);
     }
+    printf("\n iterations = %d \n", i);
     model m;
     m.assignments = assignments;
     m.centers = centers;
