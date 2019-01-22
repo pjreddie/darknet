@@ -719,6 +719,16 @@ void binary_align_weights(convolutional_layer *l)
 
         float_to_bit(align_weights, l->align_bit_weights, align_weights_size);
 
+        /*
+        if ((l->n % 8) == 0 && ((l->out_w*l->out_h) % 8) == 0 && l->c >= 64 && l->n == 128) {
+            int M = l->n;
+            int N = l->out_w*l->out_h;
+            //printf("\n M = %d, N = %d, M %% 8 = %d, N %% 8 = %d - weights \n", M, N, M % 8, N % 8);
+            for (i = 0; i < align_weights_size / 8; ++i) l->align_bit_weights[i] = ~(l->align_bit_weights[i]);
+        }
+        */
+
+
         get_mean_array(l->binary_weights, m*k, l->n, l->mean_arr);
         //get_mean_array(l->binary_weights, m*new_lda, l->n, l->mean_arr);
     }
