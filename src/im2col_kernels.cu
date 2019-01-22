@@ -1880,6 +1880,21 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 }
 */
 
+// further optimization - use WMMA GEMM for using Tensor Cores
+// https://github.com/NVIDIA-developer-blog/code-samples/blob/master/posts/tensor-cores/simpleTensorCoreGEMM.cu
+// https://github.com/NVIDIA/cuda-samples/blob/master/Samples/cudaTensorCoreGemm/cudaTensorCoreGemm.cu
+// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#wmma-subbyte
+// nvcuda::wmma::col_major ->  cutlass::MatrixLayout::kColumnMajor (matrix is not transposed)
+
+// Matrix A	Matrix B	Accumulator	Matrix Size (m-n-k)
+// precision::b1	precision::b1	int	8x8x128
+
+// The only dimensions currently supported by WMMA for XNOR
+// const int WMMA_M = 8;
+// const int WMMA_N = 8;
+// const int WMMA_K = 128;
+
+
 // GOOD
 void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     unsigned char *A, int lda,

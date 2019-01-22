@@ -91,7 +91,7 @@ cudaStream_t get_cuda_memcpy_stream() {
         cudaError_t status = cudaStreamCreate(&streamsArray2[i]);
         //cudaError_t status = cudaStreamCreateWithFlags(&streamsArray2[i], cudaStreamNonBlocking);
         if (status != cudaSuccess) {
-            printf(" cudaStreamCreate Memcpy error: %d \n", status);
+            printf(" cudaStreamCreate-Memcpy error: %d \n", status);
             const char *s = cudaGetErrorString(status);
             char buffer[256];
             printf("CUDA Error: %s\n", s);
@@ -180,6 +180,7 @@ int *cuda_make_int_array(size_t n)
     int *x_gpu;
     size_t size = sizeof(int)*n;
     cudaError_t status = cudaMalloc((void **)&x_gpu, size);
+    if(status != cudaSuccess) fprintf(stderr, " Try to set subdivisions=64 in your cfg-file. \n");
     check_error(status);
     return x_gpu;
 }

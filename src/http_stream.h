@@ -25,6 +25,8 @@ int get_stream_fps_cpp(CvCapture *cap);
 image image_data_augmentation(IplImage* ipl, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
     float jitter, float dhue, float dsat, float dexp);
+
+image load_image_resize(char *filename, int w, int h, int c);
 #endif  // OPENCV
 
 #ifdef __cplusplus

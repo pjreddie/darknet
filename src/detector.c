@@ -1274,9 +1274,11 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             if (!input) break;
             strtok(input, "\n");
         }
+        //image im = load_image_resize(input, net.w, net.h, net.c);
+        //image sized = copy_image(im);
         image im = load_image(input, 0, 0, net.c);
-        int letterbox = 0;
         image sized = resize_image(im, net.w, net.h);
+        int letterbox = 0;
         //image sized = letterbox_image(im, net.w, net.h); letterbox = 1;
         layer l = net.layers[net.n - 1];
 

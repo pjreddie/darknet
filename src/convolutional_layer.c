@@ -285,25 +285,6 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
         //l->fw_algo16 = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED;
         //l->bd_algo16 = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED;
         //l->bf_algo16 = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED;
-
-        int fw = 0, bd = 0, bf = 0;
-        if (l->fw_algo16 == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM) fw = 1;
-            //printf("Tensor Cores - Forward enabled: l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM \n");
-        if (l->fw_algo16 == CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED) fw = 2;
-            //printf("Tensor Cores - Forward enabled: l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED \n");
-
-        if (l->bd_algo16 == CUDNN_CONVOLUTION_BWD_DATA_ALGO_1) bd = 1;
-            //printf("Tensor Cores - Backward-data enabled: l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1  \n");
-        if (l->bd_algo16 == CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED) bd = 2;
-            //printf("Tensor Cores - Backward-data enabled: l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED \n");
-
-        if (l->bf_algo16 == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1) bf = 1;
-            //printf("Tensor Cores - Backward-filter enabled: l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1   \n");
-        if (l->bf_algo16 == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED) bf = 2;
-            //printf("Tensor Cores - Backward-filter enabled: l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED \n");
-
-        //if (fw == 2 && bd == 2 && bf == 2) printf("TF ");
-        //else if (fw == 1 && bd == 1 && bf == 1) printf("TH ");
     }
 }
 #endif
