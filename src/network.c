@@ -713,7 +713,7 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
                 int buf_len = strlen(buf);
                 int total_len = send_buf_len + buf_len + 100;
                 send_buf = (char *)realloc(send_buf, total_len * sizeof(char));
-                if (!send_buf) return;// exit(-1);
+                if (!send_buf) return 0;// exit(-1);
                 strcat(send_buf, buf);
                 free(buf);
             }
