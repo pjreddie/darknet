@@ -593,7 +593,7 @@ image image_data_augmentation(IplImage* ipl, int w, int h,
 }
 
 
-image load_image_resize(char *filename, int w, int h, int c)
+image load_image_resize(char *filename, int w, int h, int c, image *im)
 {
     image out;
     cv::Mat img(h, w, CV_8UC3);
@@ -607,15 +607,19 @@ image load_image_resize(char *filename, int w, int h, int c)
         }
         //throw std::runtime_error("runtime_error");
         cv::Mat loaded_image = cv::imread(filename, flag);
-        cv::resize(loaded_image, img, cv::Size(w, h), 0, 0, CV_INTER_LINEAR);
-        cv::cvtColor(img, img, cv::COLOR_RGB2BGR);
+        cv::cvtColor(loaded_image, loaded_image, cv::COLOR_RGB2BGR);
+        IplImage tmp1 = loaded_image;
+        *im = ipl_to_image(&tmp1);
 
-        IplImage tmp = img;
-        out = ipl_to_image(&tmp);
+        cv::resize(loaded_image, img, cv::Size(w, h), 0, 0, CV_INTER_LINEAR);
+
+        IplImage tmp2 = img;
+        out = ipl_to_image(&tmp2);
     }
     catch (...) {
         fprintf(stderr, "OpenCV can't load image %s channels\n", filename);
         out = make_image(w, h, c);
+        *im = make_image(w, h, c);
     }
     return out;
 }
