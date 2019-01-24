@@ -213,6 +213,7 @@
     <ClCompile Include="..\..\src\layer.c" />
     <ClCompile Include="..\..\src\list.c" />
     <ClCompile Include="..\..\src\local_layer.c" />
+    <ClCompile Include="..\..\src\lstm_layer.c" />
     <ClCompile Include="..\..\src\matrix.c" />
     <ClCompile Include="..\..\src\maxpool_layer.c" />
     <ClCompile Include="..\..\src\network.c" />
@@ -271,6 +272,7 @@
     <ClInclude Include="..\..\src\layer.h" />
     <ClInclude Include="..\..\src\list.h" />
     <ClInclude Include="..\..\src\local_layer.h" />
+    <ClInclude Include="..\..\src\lstm_layer.h" />
     <ClInclude Include="..\..\src\matrix.h" />
     <ClInclude Include="..\..\src\maxpool_layer.h" />
     <ClInclude Include="..\..\src\network.h" />
