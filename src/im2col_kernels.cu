@@ -1433,7 +1433,6 @@ int warpAllReduceSum(int val) {
 // Tensor Cores binary (CC >= 7.3 && CUDA >= 10.0) - __CUDA_SUBBYTE_IMMA__
 #if CUDART_VERSION >= 10000
 #include <mma.h>
-using namespace nvcuda;
 #endif
 
 
@@ -1548,6 +1547,9 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel_old(int M, int 
 #define WMMA_K 128
 #define WMMA_K32 (WMMA_K/32)
 
+#if __CUDA_ARCH__ >= 730
+                using namespace nvcuda;
+
                 wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, wmma::experimental::precision::b1, wmma::row_major> a_frag;
                 wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, wmma::experimental::precision::b1, wmma::col_major> b_frag;
                 wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, int> c_frag;
@@ -1606,7 +1608,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel_old(int M, int 
                     }
                     */
 
-                //#endif
+#endif // __CUDA_ARCH__ >= 730
 
                 #pragma UNROLL
                 for (int i_d = 0; i_d < WMMA_M; ++i_d) {
@@ -1682,7 +1684,6 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
         i = index / N;
         //if (i < M)  // l.n - filters [16 - 55 - 1024]
         {
-            int bit_step = 256;
             int count = 0;
             k = 0;
 
@@ -2035,6 +2036,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     }
     else {
         /*
+#if CUDART_VERSION >= 10000
         if (M % 8 == 0 && N % 8 == 0 && M == 128) {
             //printf(" lda = %d, ldb = %d, ldc = %d, lda/32 = %d, ldb/32 = %d, ldc/32 = %d \n", lda, ldb, ldc, lda / 32, ldb / 32, ldc / 32);
             gemm_nn_custom_bin_mean_transposed_tensor_kernel_old << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
@@ -2044,7 +2046,9 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
                 C, ldc,
                 mean_arr, bias);
         }
-        else*/
+        else
+#endif  // CUDART_VERSION >= 10000
+            */
         {
             gemm_nn_custom_bin_mean_transposed_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
                 M, N, K,
