@@ -117,6 +117,26 @@ void operations(char *cfgfile)
             ops += 2l * l.n * l.size*l.size*l.c * l.out_h*l.out_w;
         } else if(l.type == CONNECTED){
             ops += 2l * l.inputs * l.outputs;
+		} else if (l.type == RNN){
+            ops += 2l * l.input_layer->inputs * l.input_layer->outputs;
+            ops += 2l * l.self_layer->inputs * l.self_layer->outputs;
+            ops += 2l * l.output_layer->inputs * l.output_layer->outputs;
+        } else if (l.type == GRU){
+            ops += 2l * l.uz->inputs * l.uz->outputs;
+            ops += 2l * l.uh->inputs * l.uh->outputs;
+            ops += 2l * l.ur->inputs * l.ur->outputs;
+            ops += 2l * l.wz->inputs * l.wz->outputs;
+            ops += 2l * l.wh->inputs * l.wh->outputs;
+            ops += 2l * l.wr->inputs * l.wr->outputs;
+        } else if (l.type == LSTM){
+            ops += 2l * l.uf->inputs * l.uf->outputs;
+            ops += 2l * l.ui->inputs * l.ui->outputs;
+            ops += 2l * l.ug->inputs * l.ug->outputs;
+            ops += 2l * l.uo->inputs * l.uo->outputs;
+            ops += 2l * l.wf->inputs * l.wf->outputs;
+            ops += 2l * l.wi->inputs * l.wi->outputs;
+            ops += 2l * l.wg->inputs * l.wg->outputs;
+            ops += 2l * l.wo->inputs * l.wo->outputs;
         }
     }
     printf("Floating Point Operations: %ld\n", ops);
@@ -220,6 +240,16 @@ void reset_normalize_net(char *cfgfile, char *weightfile, char *outfile)
             denormalize_connected_layer(*l.state_r_layer);
             denormalize_connected_layer(*l.state_h_layer);
         }
+        if (l.type == LSTM && l.batch_normalize) {
+            denormalize_connected_layer(*l.wf);
+            denormalize_connected_layer(*l.wi);
+            denormalize_connected_layer(*l.wg);
+            denormalize_connected_layer(*l.wo);
+            denormalize_connected_layer(*l.uf);
+            denormalize_connected_layer(*l.ui);
+            denormalize_connected_layer(*l.ug);
+            denormalize_connected_layer(*l.uo);
+		}
     }
     save_weights(net, outfile);
 }
@@ -262,6 +292,17 @@ void normalize_net(char *cfgfile, char *weightfile, char *outfile)
             *l.state_h_layer = normalize_layer(*l.state_h_layer, l.state_h_layer->outputs);
             net.layers[i].batch_normalize=1;
         }
+        if (l.type == LSTM && l.batch_normalize) {
+            *l.wf = normalize_layer(*l.wf, l.wf->outputs);
+            *l.wi = normalize_layer(*l.wi, l.wi->outputs);
+            *l.wg = normalize_layer(*l.wg, l.wg->outputs);
+            *l.wo = normalize_layer(*l.wo, l.wo->outputs);
+            *l.uf = normalize_layer(*l.uf, l.uf->outputs);
+            *l.ui = normalize_layer(*l.ui, l.ui->outputs);
+            *l.ug = normalize_layer(*l.ug, l.ug->outputs);
+            *l.uo = normalize_layer(*l.uo, l.uo->outputs);
+            net.layers[i].batch_normalize=1;
+        }
     }
     save_weights(net, outfile);
 }
@@ -294,6 +335,25 @@ void statistics_net(char *cfgfile, char *weightfile)
             statistics_connected_layer(*l.state_r_layer);
             printf("State H\n");
             statistics_connected_layer(*l.state_h_layer);
+        }
+        if (l.type == LSTM && l.batch_normalize) {
+            printf("LSTM Layer %d\n", i);
+            printf("wf\n");
+            statistics_connected_layer(*l.wf);
+            printf("wi\n");
+            statistics_connected_layer(*l.wi);
+            printf("wg\n");
+            statistics_connected_layer(*l.wg);
+            printf("wo\n");
+            statistics_connected_layer(*l.wo);
+            printf("uf\n");
+            statistics_connected_layer(*l.uf);
+            printf("ui\n");
+            statistics_connected_layer(*l.ui);
+            printf("ug\n");
+            statistics_connected_layer(*l.ug);
+            printf("uo\n");
+            statistics_connected_layer(*l.uo);
         }
         printf("\n");
     }
@@ -332,6 +392,25 @@ void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
             l.state_h_layer->batch_normalize = 0;
             net.layers[i].batch_normalize=0;
         }
+        if (l.type == GRU && l.batch_normalize) {
+            denormalize_connected_layer(*l.wf);
+            denormalize_connected_layer(*l.wi);
+            denormalize_connected_layer(*l.wg);
+            denormalize_connected_layer(*l.wo);
+            denormalize_connected_layer(*l.uf);
+            denormalize_connected_layer(*l.ui);
+            denormalize_connected_layer(*l.ug);
+            denormalize_connected_layer(*l.uo);
+            l.wf->batch_normalize = 0;
+            l.wi->batch_normalize = 0;
+            l.wg->batch_normalize = 0;
+            l.wo->batch_normalize = 0;
+            l.uf->batch_normalize = 0;
+            l.ui->batch_normalize = 0;
+            l.ug->batch_normalize = 0;
+            l.uo->batch_normalize = 0;
+            net.layers[i].batch_normalize=0;
+		}
     }
     save_weights(net, outfile);
 }
