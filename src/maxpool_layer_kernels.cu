@@ -87,7 +87,7 @@ __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_
 extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
 
-#ifdef CUDNN
+#ifdef CUDNN_DISABLED
     if (!state.train && layer.stride == layer.size) {
         // cudnnPoolingBackward
         cudnnStatus_t maxpool_status;

@@ -579,3 +579,14 @@ void get_region_detections(layer l, int w, int h, int netw, int neth, float thre
     }
     correct_region_boxes(dets, l.w*l.h*l.n, w, h, netw, neth, relative);
 }
+
+void zero_objectness(layer l)
+{
+    int i, n;
+    for (i = 0; i < l.w*l.h; ++i) {
+        for (n = 0; n < l.n; ++n) {
+            int obj_index = entry_index(l, 0, n*l.w*l.h + i, l.coords);
+            l.output[obj_index] = 0;
+        }
+    }
+}
