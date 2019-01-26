@@ -201,7 +201,7 @@ void forward_network(network net, network_state state)
     for(i = 0; i < net.n; ++i){
         state.index = i;
         layer l = net.layers[i];
-        if(l.delta){
+        if(l.delta && state.train){
             scal_cpu(l.outputs * l.batch, 0, l.delta, 1);
         }
         //double time = get_time_point();

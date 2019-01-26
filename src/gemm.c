@@ -1151,6 +1151,23 @@ static inline int popcnt256_custom(__m256i n) {
         + _mm256_extract_epi64(val, 3);
 }
 
+static inline void xnor_avx2_popcnt(__m256i a_bit256, __m256i b_bit256, __m256i *count_sum) {
+    __m256i c_bit256 = _mm256_set1_epi8(255);
+
+    __m256i xor256 = _mm256_xor_si256(a_bit256, b_bit256);  // xnor = not(xor(a,b))
+    c_bit256 = _mm256_andnot_si256(xor256, c_bit256);  // can be optimized - we can do other NOT for wegihts once and do not do this NOT
+
+    *count_sum = _mm256_add_epi64(count256(c_bit256), *count_sum);    //  1st part - popcnt Mula’s algorithm
+}
+
+// 2nd part - popcnt Mula’s algorithm
+static inline int get_count_mula(__m256i count_sum) {
+    return _mm256_extract_epi64(count_sum, 0)
+        + _mm256_extract_epi64(count_sum, 1)
+        + _mm256_extract_epi64(count_sum, 2)
+        + _mm256_extract_epi64(count_sum, 3);
+}
+
 // 5x times faster than gemm()-float32
 // further optimizations: do mean-mult only for the last layer
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
@@ -1168,45 +1185,101 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     }
 #endif
 
+    //#pragma omp parallel for
+    //for (i = 0; i < M; ++i)
     #pragma omp parallel for
-    for (i = 0; i < M; ++i)
+    for (i = 0; i < (M/2)*2; i += 2)
     {   // l.n - filters [16 - 55 - 1024]
-        float mean_val = mean_arr[i];
+        float mean_val_0 = mean_arr[i + 0];
+        float mean_val_1 = mean_arr[i + 1];
         int j, k;
         __m256i all_1 = _mm256_set1_epi8(255);
 
-        for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
-            int count = 0;
+        //for (j = 0; j < N; ++j)
+        for (j = 0; j < (N/2)*2; j += 2)
+        { // out_h*out_w - one channel output size [169 - 173056]
+            //int count = 0;
             const int bit_step = 256;
-            __m256i count_sum = _mm256_set1_epi8(0);
+            __m256i count_sum_0 = _mm256_set1_epi8(0);
+            __m256i count_sum_1 = _mm256_set1_epi8(0);
+            __m256i count_sum_2 = _mm256_set1_epi8(0);
+            __m256i count_sum_3 = _mm256_set1_epi8(0);
 
             for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                __m256i a_bit256 = _mm256_loadu_si256((__m256i *)(A + (i*lda + k) / 8));
-                __m256i b_bit256 = _mm256_loadu_si256((__m256i *)(B + (j*ldb + k) / 8));
-                __m256i xor256 = _mm256_xor_si256(a_bit256, b_bit256);  // xnor = not(xor(a,b))
-                __m256i c_bit256 = _mm256_andnot_si256(xor256, all_1);  // can be optimized - we can do other NOT for wegihts once and do not do this NOT
 
-                count_sum = _mm256_add_epi64(count256(c_bit256), count_sum);    //  Mula’s algorithm
+                __m256i a_bit256_0 = _mm256_loadu_si256((__m256i *)(A + ((i + 0)*lda + k) / 8));
+                __m256i b_bit256_0 = _mm256_loadu_si256((__m256i *)(B + ((j + 0)*ldb + k) / 8));
+
+                __m256i a_bit256_1 = _mm256_loadu_si256((__m256i *)(A + ((i + 1)*lda + k) / 8));
+                __m256i b_bit256_1 = _mm256_loadu_si256((__m256i *)(B + ((j + 1)*ldb + k) / 8));
+
+
+                xnor_avx2_popcnt(a_bit256_0, b_bit256_0, &count_sum_0);
+                xnor_avx2_popcnt(a_bit256_0, b_bit256_1, &count_sum_1);
+
+                xnor_avx2_popcnt(a_bit256_1, b_bit256_0, &count_sum_2);
+                xnor_avx2_popcnt(a_bit256_1, b_bit256_1, &count_sum_3);
 
                 //count += popcnt256(c_bit256);
-
                 //binary_int64_printf(c_bit64);
                 //printf(", count = %d \n\n", tmp_count);
             }
 
-            // count of 1 bits
-            //count = count_sum.m256i_i64[0] +
-            //    count_sum.m256i_i64[1] +
-            //    count_sum.m256i_i64[2] +
-             //   count_sum.m256i_i64[3];
-            count = _mm256_extract_epi64(count_sum, 0)
-                + _mm256_extract_epi64(count_sum, 1)
-                + _mm256_extract_epi64(count_sum, 2)
-                + _mm256_extract_epi64(count_sum, 3);
+            int count_0 = get_count_mula(count_sum_0);
+            int count_1 = get_count_mula(count_sum_1);
+            int count_2 = get_count_mula(count_sum_2);
+            int count_3 = get_count_mula(count_sum_3);
 
-            int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+            const int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+            count_0 = count_0 - f1;    // remove extra bits (from empty space for align only)
+            count_1 = count_1 - f1;
+            count_2 = count_2 - f1;
+            count_3 = count_3 - f1;
+            C[i*ldc + (j + 0)] = (2 * count_0 - K) * mean_val_0;
+            C[i*ldc + (j + 1)] = (2 * count_1 - K) * mean_val_0;
+            C[(i + 1)*ldc + (j + 0)] = (2 * count_2 - K) * mean_val_1;
+            C[(i + 1)*ldc + (j + 1)] = (2 * count_3 - K) * mean_val_1;
+        }
+
+        int i_d;
+        for (i_d = 0; i_d < 2; ++i_d)
+        {
+            float mean_val = mean_arr[i + i_d];
+            for (j = (N / 2) * 2; j < N; j += 1)
+            { // out_h*out_w - one channel output size [169 - 173056]
+                const int bit_step = 256;
+                __m256i count_sum = _mm256_set1_epi8(0);
+
+                for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                    __m256i a_bit256_0 = _mm256_loadu_si256((__m256i *)(A + ((i + i_d + 0)*lda + k) / 8));
+                    __m256i b_bit256_0 = _mm256_loadu_si256((__m256i *)(B + ((j + 0)*ldb + k) / 8));
+                    xnor_avx2_popcnt(a_bit256_0, b_bit256_0, &count_sum);
+                }
+                int count = get_count_mula(count_sum);
+                const int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+                count = count - f1;    // remove extra bits (from empty space for align only)
+                C[(i + i_d)*ldc + j] = (2 * count - K) * mean_val;
+            }
+        }
+    }
+
+    for (i = (M / 2) * 2; i < M; i += 1)
+    {
+        float mean_val = mean_arr[i];
+        int j, k;
+        for (j = 0; j < N; j += 1)
+        { // out_h*out_w - one channel output size [169 - 173056]
+            const int bit_step = 256;
+            __m256i count_sum = _mm256_set1_epi8(0);
+
+            for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                __m256i a_bit256_0 = _mm256_loadu_si256((__m256i *)(A + ((i + 0)*lda + k) / 8));
+                __m256i b_bit256_0 = _mm256_loadu_si256((__m256i *)(B + ((j + 0)*ldb + k) / 8));
+                xnor_avx2_popcnt(a_bit256_0, b_bit256_0, &count_sum);
+            }
+            int count = get_count_mula(count_sum);
+            const int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
             count = count - f1;    // remove extra bits (from empty space for align only)
-
             C[i*ldc + j] = (2 * count - K) * mean_val;
         }
     }

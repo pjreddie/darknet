@@ -58,8 +58,17 @@ void resize_shortcut_layer(layer *l, int w, int h)
 
 void forward_shortcut_layer(const layer l, network_state state)
 {
-    copy_cpu(l.outputs*l.batch, state.input, 1, l.output, 1);
-    shortcut_cpu(l.batch, l.w, l.h, l.c, state.net.layers[l.index].output, l.out_w, l.out_h, l.out_c, l.output);
+    if (l.w == l.out_w && l.h == l.out_h && l.c == l.out_c) {
+        int size = l.batch * l.w * l.h * l.c;
+        int i;
+        #pragma omp parallel for
+        for(i = 0; i < size; ++i)
+            l.output[i] = state.input[i] + state.net.layers[l.index].output[i];
+    }
+    else {
+        copy_cpu(l.outputs*l.batch, state.input, 1, l.output, 1);
+        shortcut_cpu(l.batch, l.w, l.h, l.c, state.net.layers[l.index].output, l.out_w, l.out_h, l.out_c, l.output);
+    }
     activate_array(l.output, l.outputs*l.batch, l.activation);
 }
 

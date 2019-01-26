@@ -776,7 +776,12 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
     size_t t_intput_size = new_ldb * bit_align;// n;
     size_t t_bit_input_size = t_intput_size / 8;// +1;
 
-    *t_bit_input = calloc(t_bit_input_size, sizeof(char));
+    static int last_t_bit_input_size = 0;
+    if (last_t_bit_input_size < t_bit_input_size) {
+        last_t_bit_input_size = t_bit_input_size;
+        *t_bit_input = realloc(*t_bit_input, last_t_bit_input_size * sizeof(char));
+    }
+    memset(*t_bit_input, 0, t_bit_input_size * sizeof(char));
     int src_size = k * bit_align;
 
     // b - [bit_align, k] - [l.bit_align, l.size*l.size*l.c] = src_size
@@ -798,7 +803,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
 
-    if(l.xnor){
+    if (l.xnor && (!l.align_bit_weights || state.train)) {
         if (!l.align_bit_weights || state.train) {
             binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.binary_weights);
             //printf("\n binarize_weights l.align_bit_weights = %p \n", l.align_bit_weights);
@@ -838,8 +843,26 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
                 const int new_c = l.c / 32;
 
-                float *re_packed_input = calloc(l.c * l.w * l.h, sizeof(float));
-                uint32_t *bin_re_packed_input = calloc(new_c * l.w * l.h + 1, sizeof(uint32_t));
+                static float *re_packed_input = NULL;
+                static int last_re_packed_input_size = 0;
+                int re_packed_input_size = l.c * l.w * l.h;
+                if (last_re_packed_input_size < re_packed_input_size) {
+                    last_re_packed_input_size = re_packed_input_size;
+                    re_packed_input = realloc(re_packed_input, last_re_packed_input_size * sizeof(float));
+                }
+                memset(re_packed_input, 0, re_packed_input_size * sizeof(float));
+
+                static uint32_t *bin_re_packed_input = NULL;
+                static int last_bin_re_packed_input_size = 0;
+                int in_re_packed_input_size = new_c * l.w * l.h + 1;
+                if (last_bin_re_packed_input_size < in_re_packed_input_size) {
+                    last_bin_re_packed_input_size = in_re_packed_input_size;
+                    bin_re_packed_input = realloc(bin_re_packed_input, last_bin_re_packed_input_size * sizeof(uint32_t));
+                }
+                memset(bin_re_packed_input, 0, in_re_packed_input_size * sizeof(uint32_t));
+
+                //float *re_packed_input = calloc(l.c * l.w * l.h, sizeof(float));
+                //uint32_t *bin_re_packed_input = calloc(new_c * l.w * l.h + 1, sizeof(uint32_t));
 
                 // float32x4 by channel (as in cuDNN)
                 repack_input(state.input, re_packed_input, l.w, l.h, l.c);
@@ -847,7 +870,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 // 32 x floats -> 1 x uint32_t
                 float_to_bit(re_packed_input, (char *)bin_re_packed_input, l.c * l.w * l.h);
 
-                free(re_packed_input);
+                //free(re_packed_input);
 
                 // slow - convolution the packed inputs and weights: float x 32 by channel (as in cuDNN)
                 //convolution_repacked((uint32_t *)bin_re_packed_input, (uint32_t *)l.align_bit_weights, l.output,
@@ -859,7 +882,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 im2col_cpu_custom((float *)bin_re_packed_input, new_c, l.h, l.w, l.size, l.stride, l.pad, b);
                 //im2col_cpu((float *)bin_re_packed_input, new_c, l.h, l.w, l.size, l.stride, l.pad, b);
 
-                free(bin_re_packed_input);
+                //free(bin_re_packed_input);
 
                 int new_k = l.size*l.size*l.c / 32;
 
@@ -876,7 +899,14 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 //size_t t_intput_size = new_ldb * l.bit_align;// n;
                 //size_t t_bit_input_size = t_intput_size / 8;// +1;
 
-                char *t_bit_input = calloc(t_bit_input_size, sizeof(char));
+                //char *t_bit_input = calloc(t_bit_input_size, sizeof(char));
+                static char *t_bit_input = NULL;
+                static int last_t_bit_input_size = 0;
+                if (last_t_bit_input_size < t_bit_input_size) {
+                    last_t_bit_input_size = t_bit_input_size;
+                    t_bit_input = realloc(t_bit_input, last_t_bit_input_size * sizeof(char));
+                }
+                memset(t_bit_input, 0, t_bit_input_size * sizeof(char));
 
                 transpose_uint32((uint32_t *)b, t_bit_input, new_k, n, n, new_ldb);
 
@@ -889,10 +919,11 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 //    t_bit_input, new_ldb / 32,
                 //    c, n, l.mean_arr);
 
-                free(t_bit_input);
+                //free(t_bit_input);
 
             }
-            else { // else (l.c % 32 != 0)
+            else
+            { // else (l.c % 32 != 0)
 
                 //--------------------------------------------------------
                 //printf(" l.index = %d - old XNOR \n", l.index);
@@ -919,7 +950,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     //size_t ldb_align = 256; // 256 bit for AVX2
                     int ldb_align = l.lda_align;
                     size_t new_ldb = k + (ldb_align - k%ldb_align);
-                    char *t_bit_input = NULL;
+                    static char *t_bit_input = NULL;
                     size_t t_intput_size = binary_transpose_align_input(k, n, b, &t_bit_input, ldb_align, l.bit_align);
                     //char *t_bit_input = calloc(new_ldb * n, sizeof(char));    // for im2col_cpu_custom_transpose() only
                     //float_to_bit(t_input, t_bit_input, new_ldb * n);    // for im2col_cpu_custom_transpose() only
@@ -930,11 +961,17 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     //gemm_nn_custom_bin_mean_transposed(m, n, k, 1, bit_weights, k, t_bit_input, new_ldb, c, n, mean_arr);
 
                     //free(t_input);
-                    free(t_bit_input);
+                    //free(t_bit_input);
                     //}
                 }
 
             }
+
+            add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
+
+            //activate_array(l.output, m*n*l.batch, l.activation);
+            activate_array_cpu_custom(l.output, m*n*l.batch, l.activation);
+            return;
 
         }
         else {
