@@ -137,16 +137,16 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
     } else {
         FILE *fp = fopen(filename, "rb");
 
-        fseek(fp, 0, SEEK_END); 
+        fseek(fp, 0, SEEK_END);
         size = ftell(fp);
-        fseek(fp, 0, SEEK_SET); 
+        fseek(fp, 0, SEEK_SET);
 
         text = calloc(size+1, sizeof(char));
         fread(text, 1, size, fp);
         fclose(fp);
     }
 
-    char *backup_directory = "/home/pjreddie/backup/";
+    char *backup_directory = "backup";
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
     float avg_loss = -1;

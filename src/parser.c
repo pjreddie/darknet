@@ -238,7 +238,7 @@ connected_layer parse_connected(list *options, size_params params)
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
 
-    connected_layer layer = make_connected_layer(params.batch, params.inputs, output, activation, batch_normalize);
+    connected_layer layer = make_connected_layer(params.batch, 1, params.inputs, output, activation, batch_normalize);
 
     return layer;
 }

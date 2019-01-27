@@ -41,17 +41,17 @@ layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, 
 
     l.input_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.input_layer) = make_connected_layer(batch*steps, inputs, hidden, activation, batch_normalize);
+    *(l.input_layer) = make_connected_layer(batch, steps, inputs, hidden, activation, batch_normalize);
     l.input_layer->batch = batch;
 
     l.self_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.self_layer) = make_connected_layer(batch*steps, hidden, hidden, (log==2)?LOGGY:(log==1?LOGISTIC:activation), batch_normalize);
+    *(l.self_layer) = make_connected_layer(batch, steps, hidden, hidden, (log==2)?LOGGY:(log==1?LOGISTIC:activation), batch_normalize);
     l.self_layer->batch = batch;
 
     l.output_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.output_layer) = make_connected_layer(batch*steps, hidden, outputs, activation, batch_normalize);
+    *(l.output_layer) = make_connected_layer(batch, steps, hidden, outputs, activation, batch_normalize);
     l.output_layer->batch = batch;
 
     l.outputs = outputs;
@@ -95,6 +95,7 @@ void forward_rnn_layer(layer l, network_state state)
     if(state.train) fill_cpu(l.hidden * l.batch, 0, l.state, 1);
 
     for (i = 0; i < l.steps; ++i) {
+
         s.input = state.input;
         forward_connected_layer(input_layer, s);
 
@@ -209,6 +210,7 @@ void forward_rnn_layer_gpu(layer l, network_state state)
     if(state.train) fill_ongpu(l.hidden * l.batch, 0, l.state_gpu, 1);
 
     for (i = 0; i < l.steps; ++i) {
+
         s.input = state.input;
         forward_connected_layer_gpu(input_layer, s);
 
