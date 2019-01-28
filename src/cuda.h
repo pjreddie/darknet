@@ -20,6 +20,26 @@ extern int gpu_index;
 #include "cudnn.h"
 #endif // CUDNN
 
+#ifndef __DATE__
+#define __DATE__
+#endif
+
+#ifndef __TIME__
+#define __TIME__
+#endif
+
+#ifndef __FUNCTION__
+#define __FUNCTION__
+#endif
+
+#ifndef __LINE__
+#define __LINE__ 0
+#endif
+
+#ifndef __FILE__
+#define __FILE__
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
