@@ -47,7 +47,7 @@ __global__ void binarize_input_kernel(float *input, int n, int size, float *bina
 
 void binarize_input_gpu(float *input, int n, int size, float *binary)
 {
-    binarize_input_kernel<<<cuda_gridsize(size), BLOCK>>>(input, n, size, binary);
+    binarize_input_kernel<<<cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >>>(input, n, size, binary);
     check_error(cudaPeekAtLastError());
 }
 
@@ -114,8 +114,8 @@ void fast_binarize_weights_gpu(float *weights, int n, int size, float *binary, f
         size_t gridsize = n * size;
         const int num_blocks = gridsize / BLOCK + 1;
 
-        set_zero_kernel << <(n/BLOCK + 1), BLOCK >> > (mean_arr_gpu, n);
-        reduce_kernel << <num_blocks, BLOCK >> > (weights, n, size, mean_arr_gpu);
+        set_zero_kernel << <(n/BLOCK + 1), BLOCK, 0, get_cuda_stream() >> > (mean_arr_gpu, n);
+        reduce_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (weights, n, size, mean_arr_gpu);
         binarize_weights_mean_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (weights, n, size, binary, mean_arr_gpu);
         check_error(cudaPeekAtLastError());
     }

@@ -125,7 +125,7 @@ extern "C" void backward_maxpool_layer_gpu(maxpool_layer layer, network_state st
 {
     size_t n = layer.h*layer.w*layer.c*layer.batch;
 
-    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.pad, layer.delta_gpu, state.delta, layer.indexes_gpu);
+    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.pad, layer.delta_gpu, state.delta, layer.indexes_gpu);
     check_error(cudaPeekAtLastError());
 }
 

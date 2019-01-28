@@ -18,7 +18,7 @@ __device__ float get_pixel_kernel(float *image, int w, int h, int x, int y, int 
 __device__ float3 rgb_to_hsv_kernel(float3 rgb)
 {
     float r = rgb.x;
-    float g = rgb.y; 
+    float g = rgb.y;
     float b = rgb.z;
 
     float h, s, v;
@@ -46,7 +46,7 @@ __device__ float3 rgb_to_hsv_kernel(float3 rgb)
 __device__ float3 hsv_to_rgb_kernel(float3 hsv)
 {
     float h = hsv.x;
-    float s = hsv.y; 
+    float s = hsv.y;
     float v = hsv.z;
 
     float r, g, b;
@@ -88,8 +88,8 @@ __device__ float bilinear_interpolate_kernel(float *image, int w, int h, float x
     float dx = x - ix;
     float dy = y - iy;
 
-    float val = (1-dy) * (1-dx) * get_pixel_kernel(image, w, h, ix, iy, c) + 
-        dy     * (1-dx) * get_pixel_kernel(image, w, h, ix, iy+1, c) + 
+    float val = (1-dy) * (1-dx) * get_pixel_kernel(image, w, h, ix, iy, c) +
+        dy     * (1-dx) * get_pixel_kernel(image, w, h, ix, iy+1, c) +
         (1-dy) *   dx   * get_pixel_kernel(image, w, h, ix+1, iy, c) +
         dy     *   dx   * get_pixel_kernel(image, w, h, ix+1, iy+1, c);
     return val;
@@ -171,7 +171,7 @@ __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, i
 
     input += w*h*c*b;
 
-    float x = (flip) ? w - dw - j - 1 : j + dw;    
+    float x = (flip) ? w - dw - j - 1 : j + dw;
     float y = i + dh;
 
     float rx = cos(angle)*(x-cx) - sin(angle)*(y-cy) + cx;
@@ -195,12 +195,12 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
 
     int size = layer.batch * layer.w * layer.h;
 
-    levels_image_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, layer.rand_gpu, layer.batch, layer.w, layer.h, state.train, layer.saturation, layer.exposure, translate, scale, layer.shift);
+    levels_image_kernel<<<cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >>>(state.input, layer.rand_gpu, layer.batch, layer.w, layer.h, state.train, layer.saturation, layer.exposure, translate, scale, layer.shift);
     check_error(cudaPeekAtLastError());
 
     size = layer.batch*layer.c*layer.out_w*layer.out_h;
 
-    forward_crop_layer_kernel<<<cuda_gridsize(size), BLOCK>>>(state.input, layer.rand_gpu, size, layer.c, layer.h, layer.w, layer.out_h, layer.out_w, state.train, layer.flip, radians, layer.output_gpu);
+    forward_crop_layer_kernel<<<cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >>>(state.input, layer.rand_gpu, size, layer.c, layer.h, layer.w, layer.out_h, layer.out_w, state.train, layer.flip, radians, layer.output_gpu);
     check_error(cudaPeekAtLastError());
 
 /*
@@ -215,7 +215,7 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
        scale_image(im2, 1/scale);
        translate_image(im3, -translate);
        scale_image(im3, 1/scale);
-       
+
        show_image(im, "cropped");
        show_image(im2, "cropped2");
        show_image(im3, "cropped3");

@@ -192,7 +192,7 @@ int *cuda_make_int_array_new_api(int *x, size_t n)
 	cudaError_t status = cudaMalloc((void **)&x_gpu, size);
 	check_error(status);
 	if (x) {
-		status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
+		status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
 		check_error(status);
 	}
 	if (!x_gpu) error("Cuda malloc failed\n");
