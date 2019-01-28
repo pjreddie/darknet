@@ -62,7 +62,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         cuda_set_device(gpus[0]);
         printf(" Prepare additional network for mAP calculation...\n");
-        net_map = parse_network_cfg_custom(cfgfile, 1);
+        net_map = parse_network_cfg_custom(cfgfile, 1, 0);
         int k;  // free memory unnecessary arrays
         for (k = 0; k < net_map.n; ++k) {
             free_layer(net_map.layers[k]);
@@ -424,7 +424,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -548,7 +548,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
 void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 {
-    network net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -662,7 +662,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         net = *existing_net;
     }
     else {
-        net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
+        net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
         if (weightfile) {
             load_weights(&net, weightfile);
         }
@@ -1235,7 +1235,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
 
     image **alphabet = load_alphabet();
-    network net = parse_network_cfg_custom(cfgfile, 1); // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 0); // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }

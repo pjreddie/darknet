@@ -80,6 +80,7 @@ float find_float_arg(int argc, char **argv, char *arg, float def);
 int find_arg(int argc, char* argv[], char *arg);
 char *find_char_arg(int argc, char **argv, char *arg, char *def);
 int sample_array(float *a, int n);
+int sample_array_custom(float *a, int n);
 void print_statistics(float *a, int n);
 unsigned int random_gen();
 float random_float();

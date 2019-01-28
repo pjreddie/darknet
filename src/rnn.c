@@ -163,11 +163,15 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
     int i = (*net.seen)/net.batch;
 
     int streams = batch/steps;
+    printf("\n batch = %d, steps = %d, streams = %d, subdivisions = %d, text_size = %d \n", batch, steps, streams, net.subdivisions, size);
+    printf(" global_batch = %d \n", batch*net.subdivisions);
     size_t *offsets = calloc(streams, sizeof(size_t));
     int j;
     for(j = 0; j < streams; ++j){
         offsets[j] = rand_size_t()%size;
+        //printf(" offset[%d] = %d, ", j, offsets[j]);
     }
+    //printf("\n");
 
     clock_t time;
     while(get_current_batch(net) < net.max_batches){
@@ -234,7 +238,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
 
-    network net = parse_network_cfg(cfgfile);
+    network net = parse_network_cfg_custom(cfgfile, 1, 1);  // batch=1, time_steps=1
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -273,7 +277,9 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
         for(j = 0; j < inputs; ++j){
             if (out[j] < .0001) out[j] = 0;
         }
-        c = sample_array(out, inputs);
+        //c = sample_array(out, inputs);
+        c = sample_array_custom(out, inputs);
+        //c = max_index(out, inputs);
         print_symbol(c, tokens);
     }
     printf("\n");

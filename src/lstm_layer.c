@@ -106,6 +106,8 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
     l.backward_gpu = backward_lstm_layer_gpu;
     l.update_gpu = update_lstm_layer_gpu;
 
+    //l.state_gpu = cuda_make_array(l.state, batch*l.outputs);
+
     l.output_gpu = cuda_make_array(0, batch*outputs*steps);
     l.delta_gpu = cuda_make_array(0, batch*l.outputs*steps);
 
@@ -125,6 +127,7 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
     l.dc_gpu = cuda_make_array(0, batch*outputs);
     l.dh_gpu = cuda_make_array(0, batch*outputs);
 #ifdef CUDNN
+    /*
         cudnnSetTensor4dDescriptor(l.wf->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.wf->out_c, l.wf->out_h, l.wf->out_w);
         cudnnSetTensor4dDescriptor(l.wi->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.wi->out_c, l.wi->out_h, l.wi->out_w);
         cudnnSetTensor4dDescriptor(l.wg->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.wg->out_c, l.wg->out_h, l.wg->out_w);
@@ -134,6 +137,7 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
         cudnnSetTensor4dDescriptor(l.ui->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.ui->out_c, l.ui->out_h, l.ui->out_w);
         cudnnSetTensor4dDescriptor(l.ug->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.ug->out_c, l.ug->out_h, l.ug->out_w);
         cudnnSetTensor4dDescriptor(l.uo->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, batch, l.uo->out_c, l.uo->out_h, l.uo->out_w);
+        */
 #endif
 
 #endif
@@ -424,7 +428,7 @@ void forward_lstm_layer_gpu(layer l, network_state state)
     }
 
     for (i = 0; i < l.steps; ++i) {
-        s.input = l.state_gpu;
+        s.input = l.h_gpu;
         forward_connected_layer_gpu(wf, s);
         forward_connected_layer_gpu(wi, s);
         forward_connected_layer_gpu(wg, s);

@@ -152,7 +152,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     demo_ext_output = ext_output;
     demo_json_port = json_port;
     printf("Demo\n");
-    net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
+    net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
     if(weightfile){
         load_weights(&net, weightfile);
     }

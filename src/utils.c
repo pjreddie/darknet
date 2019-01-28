@@ -616,11 +616,25 @@ void scale_array(float *a, int n, float s)
 int sample_array(float *a, int n)
 {
     float sum = sum_array(a, n);
-    scale_array(a, n, 1./sum);
+    scale_array(a, n, 1. / sum);
     float r = rand_uniform(0, 1);
     int i;
-    for(i = 0; i < n; ++i){
+    for (i = 0; i < n; ++i) {
         r = r - a[i];
+        if (r <= 0) return i;
+    }
+    return n - 1;
+}
+
+int sample_array_custom(float *a, int n)
+{
+    float sum = sum_array(a, n);
+    scale_array(a, n, 1./sum);
+    float r = rand_uniform(0, 1);
+    int start_index = rand_int(0, 0);
+    int i;
+    for(i = 0; i < n; ++i){
+        r = r - a[(i + start_index) % n];
         if (r <= 0) return i;
     }
     return n-1;

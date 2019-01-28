@@ -630,7 +630,7 @@ void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
 
 void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int layer_num)
 {
-    network net = parse_network_cfg_custom(cfgfile, 1);
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -713,7 +713,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
 
 void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top)
 {
-    network net = parse_network_cfg_custom(cfgfile, 1);
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -1109,7 +1109,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
 {
 #ifdef OPENCV
     printf("Classifier Demo\n");
-    network net = parse_network_cfg_custom(cfgfile, 1);
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);
     if(weightfile){
         load_weights(&net, weightfile);
     }
