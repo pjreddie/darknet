@@ -444,7 +444,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         cuda_convert_f32_to_f16(state.input, input16_size, input16);
 
         //fill_ongpu(output16_size / 2, 0, (float *)output16, 1);
-        cudnnConvolutionForward(cudnn_handle(),
+        CHECK_CUDNN(cudnnConvolutionForward(cudnn_handle(),
             &alpha,
             l.srcTensorDesc16,
             input16,
@@ -456,7 +456,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             l.workspace_size,
             &beta,
             l.dstTensorDesc16,
-            output16);
+            output16));
 
 
         if (l.batch_normalize)
@@ -469,7 +469,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 float zero = 0;
                 // Batch-normalization can still take FP16 inputs and outputs, saving half the bandwidth
                 // compared to FP32, it’s just that the statistics and value adjustment should be done in FP32.
-                cudnnBatchNormalizationForwardTraining(cudnn_handle(),
+                CHECK_CUDNN(cudnnBatchNormalizationForwardTraining(cudnn_handle(),
                     CUDNN_BATCHNORM_SPATIAL,
                     &one,
                     &zero,
@@ -485,7 +485,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                     l.rolling_variance_gpu,    // output (should be FP32)
                     .00001,
                     l.mean_gpu,            // output (should be FP32)
-                    l.variance_gpu);    // output (should be FP32)
+                    l.variance_gpu));    // output (should be FP32)
 
                 cuda_convert_f16_to_f32(output16, output16_size, l.output_gpu);
                 //forward_batchnorm_layer_gpu(l, state);
@@ -508,7 +508,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
         //#else
 
-        cudnnConvolutionForward(cudnn_handle(),
+        CHECK_CUDNN(cudnnConvolutionForward(cudnn_handle(),
             &alpha, //&one,
             l.srcTensorDesc,
             state.input,
@@ -520,7 +520,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             l.workspace_size,
             &beta,  //&one,
             l.dstTensorDesc,
-            l.output_gpu);
+            l.output_gpu));
 
         //cudaDeviceSynchronize();
         if (l.batch_normalize) {
@@ -624,7 +624,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             //}
             float one = 1;
             float zero = 0;
-            cudnnBatchNormalizationBackward(cudnn_handle(),
+            CHECK_CUDNN(cudnnBatchNormalizationBackward(cudnn_handle(),
                 CUDNN_BATCHNORM_SPATIAL,
                 &one,
                 &zero,
@@ -642,7 +642,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 l.bias_updates_gpu,        // output (should be FP32)
                 .00001,
                 l.mean_gpu,                // input (should be FP32)
-                l.variance_gpu);        // input (should be FP32)
+                l.variance_gpu));        // input (should be FP32)
             copy_ongpu(l.outputs*l.batch / 2, l.x_norm_gpu, 1, delta16, 1);
             //cudaMemcpyAsync(delta16, l.x_norm_gpu, l.outputs*l.batch * sizeof(half), cudaMemcpyDefault, get_cuda_stream());
         }
@@ -659,7 +659,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         //   so we should copy f32 to f16, or compute: f16=(w_up - w*d*b*s)*m
         cuda_convert_f32_to_f16(l.weight_updates_gpu, l.c*l.n*l.size*l.size, l.weight_updates_gpu16);
 
-        cudnnConvolutionBackwardFilter(cudnn_handle(),
+        CHECK_CUDNN(cudnnConvolutionBackwardFilter(cudnn_handle(),
             &one,
             l.srcTensorDesc16,
             input16, //state.input,
@@ -671,7 +671,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             l.workspace_size,
             &one,
             l.dweightDesc16,
-            l.weight_updates_gpu16);    // l.weight_updates_gpu);
+            l.weight_updates_gpu16));    // l.weight_updates_gpu);
 
         cuda_convert_f16_to_f32(l.weight_updates_gpu16, l.c*l.n*l.size*l.size, l.weight_updates_gpu);
 
@@ -682,7 +682,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             // calculate delta for the next layer
             // convert input: l.weights_gpu (w), l.delta_gpu (dy) from fp32 to fp16
             // get output: state.delta (dx) and convert it to fp32 (ONLY if it is fp16)
-            cudnnConvolutionBackwardData(cudnn_handle(),
+            CHECK_CUDNN(cudnnConvolutionBackwardData(cudnn_handle(),
                 &alpha,
                 l.weightDesc16,
                 l.weights_gpu16, //l.weights_gpu,
@@ -694,7 +694,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 l.workspace_size,
                 &beta,
                 l.dsrcTensorDesc16,
-                input16);    // state.delta);
+                input16));    // state.delta);
 
             cuda_convert_f16_to_f32(input16, input16_size, state.delta);
 
@@ -711,7 +711,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
         // calculate conv weight updates
         // if used: beta=1 then loss decreases faster
-        cudnnConvolutionBackwardFilter(cudnn_handle(),
+        CHECK_CUDNN(cudnnConvolutionBackwardFilter(cudnn_handle(),
             &one,
             l.srcTensorDesc,
             state.input,
@@ -723,13 +723,13 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             l.workspace_size,
             &one,
             l.dweightDesc,
-            l.weight_updates_gpu);
+            l.weight_updates_gpu));
 
         if (state.delta) {
             if (l.binary || l.xnor) swap_binary(&l);
             // http://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#cudnnConvolutionBackwardData
             // calculate delta for the next layer
-            cudnnConvolutionBackwardData(cudnn_handle(),
+            CHECK_CUDNN(cudnnConvolutionBackwardData(cudnn_handle(),
                 &one,
                 l.weightDesc,
                 l.weights_gpu,
@@ -741,7 +741,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 l.workspace_size,
                 &one,
                 l.dsrcTensorDesc,
-                state.delta);
+                state.delta));
             if (l.binary || l.xnor) swap_binary(&l);
             if (l.xnor) gradient_array_ongpu(original_input, l.batch*l.c*l.h*l.w, HARDTAN, state.delta);
         }

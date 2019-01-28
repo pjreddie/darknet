@@ -35,6 +35,9 @@ void check_error(cudaError_t status)
         printf("CUDA Error: %s\n", s);
         assert(0);
         snprintf(buffer, 256, "CUDA Error: %s", s);
+#ifdef WIN32
+        getchar();
+#endif
         error(buffer);
     }
     if (status2 != cudaSuccess)
@@ -44,8 +47,18 @@ void check_error(cudaError_t status)
         printf("CUDA Error Prev: %s\n", s);
         assert(0);
         snprintf(buffer, 256, "CUDA Error Prev: %s", s);
+#ifdef WIN32
+        getchar();
+#endif
         error(buffer);
     }
+}
+
+void check_error_extended(cudaError_t status, char *file, int line, char *date_time)
+{
+    if (status != cudaSuccess)
+        printf("CUDA Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    check_error(status);
 }
 
 dim3 cuda_gridsize(size_t n){
@@ -116,6 +129,45 @@ cudnnHandle_t cudnn_handle()
         cudnnStatus_t status = cudnnSetStream(handle[i], get_cuda_stream());
     }
     return handle[i];
+}
+
+
+void cudnn_check_error(cudnnStatus_t status)
+{
+    //cudaDeviceSynchronize();
+    cudnnStatus_t status2;
+    cudnnStatus_t status_tmp = cudnnQueryRuntimeError(cudnn_handle(), &status2, CUDNN_ERRQUERY_RAWCODE, NULL);
+    if (status != CUDNN_STATUS_SUCCESS)
+    {
+        const char *s = cudnnGetErrorString(status);
+        char buffer[256];
+        printf("cuDNN Error: %s\n", s);
+        assert(0);
+        snprintf(buffer, 256, "cuDNN Error: %s", s);
+#ifdef WIN32
+        getchar();
+#endif
+        error(buffer);
+    }
+    if (status2 != CUDNN_STATUS_SUCCESS)
+    {
+        const char *s = cudnnGetErrorString(status);
+        char buffer[256];
+        printf("cuDNN Error Prev: %s\n", s);
+        assert(0);
+        snprintf(buffer, 256, "cuDNN Error Prev: %s", s);
+#ifdef WIN32
+        getchar();
+#endif
+        error(buffer);
+    }
+}
+
+void cudnn_check_error_extended(cudnnStatus_t status, char *file, int line, char *date_time)
+{
+    if (status != cudaSuccess)
+        printf("\n cuDNN Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    cudnn_check_error(status);
 }
 #endif
 

@@ -167,7 +167,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
+    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -845,7 +845,6 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
     printf("Total BFLOPS %5.3f \n", bflops);
-        //printf("%ld\n", workspace_size);
 #ifdef GPU
     get_cuda_stream();
     get_cuda_memcpy_stream();
@@ -864,6 +863,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             check_error(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
         }
         if (workspace_size) {
+            printf(" Allocate workspace_size = %zu \n", workspace_size);
             net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
         }
         else {

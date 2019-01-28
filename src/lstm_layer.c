@@ -40,41 +40,49 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
     fprintf(stderr, "\t\t");
     *(l.uf) = make_connected_layer(batch, steps, inputs, outputs, LINEAR, batch_normalize);
     l.uf->batch = batch;
+    if (l.workspace_size < l.uf->workspace_size) l.workspace_size = l.uf->workspace_size;
 
     l.ui = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.ui) = make_connected_layer(batch, steps, inputs, outputs, LINEAR, batch_normalize);
     l.ui->batch = batch;
+    if (l.workspace_size < l.ui->workspace_size) l.workspace_size = l.ui->workspace_size;
 
     l.ug = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.ug) = make_connected_layer(batch, steps, inputs, outputs, LINEAR, batch_normalize);
     l.ug->batch = batch;
+    if (l.workspace_size < l.ug->workspace_size) l.workspace_size = l.ug->workspace_size;
 
     l.uo = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.uo) = make_connected_layer(batch, steps, inputs, outputs, LINEAR, batch_normalize);
     l.uo->batch = batch;
+    if (l.workspace_size < l.uo->workspace_size) l.workspace_size = l.uo->workspace_size;
 
     l.wf = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.wf) = make_connected_layer(batch, steps, outputs, outputs, LINEAR, batch_normalize);
     l.wf->batch = batch;
+    if (l.workspace_size < l.wf->workspace_size) l.workspace_size = l.wf->workspace_size;
 
     l.wi = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.wi) = make_connected_layer(batch, steps, outputs, outputs, LINEAR, batch_normalize);
     l.wi->batch = batch;
+    if (l.workspace_size < l.wi->workspace_size) l.workspace_size = l.wi->workspace_size;
 
     l.wg = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.wg) = make_connected_layer(batch, steps, outputs, outputs, LINEAR, batch_normalize);
     l.wg->batch = batch;
+    if (l.workspace_size < l.wg->workspace_size) l.workspace_size = l.wg->workspace_size;
 
     l.wo = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.wo) = make_connected_layer(batch, steps, outputs, outputs, LINEAR, batch_normalize);
     l.wo->batch = batch;
+    if (l.workspace_size < l.wo->workspace_size) l.workspace_size = l.wo->workspace_size;
 
     l.batch_normalize = batch_normalize;
     l.outputs = outputs;
@@ -161,6 +169,7 @@ void forward_lstm_layer(layer l, network_state state)
 {
     network_state s = { 0 };
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer wf = *(l.wf);
     layer wi = *(l.wi);
@@ -247,6 +256,7 @@ void backward_lstm_layer(layer l, network_state state)
 {
     network_state s = { 0 };
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer wf = *(l.wf);
     layer wi = *(l.wi);
@@ -403,6 +413,7 @@ void forward_lstm_layer_gpu(layer l, network_state state)
 {
     network_state s = { 0 };
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer wf = *(l.wf);
     layer wi = *(l.wi);
@@ -489,6 +500,7 @@ void backward_lstm_layer_gpu(layer l, network_state state)
 {
     network_state s = { 0 };
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer wf = *(l.wf);
     layer wi = *(l.wi);

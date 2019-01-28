@@ -119,6 +119,7 @@ void forward_gru_layer(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_z_layer = *(l.input_z_layer);
     layer input_r_layer = *(l.input_r_layer);
@@ -219,6 +220,7 @@ void forward_gru_layer_gpu(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_z_layer = *(l.input_z_layer);
     layer input_r_layer = *(l.input_r_layer);
@@ -295,6 +297,7 @@ void backward_gru_layer_gpu(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_z_layer = *(l.input_z_layer);
     layer input_r_layer = *(l.input_r_layer);

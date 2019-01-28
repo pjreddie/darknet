@@ -24,6 +24,9 @@ extern int gpu_index;
 extern "C" {
 #endif // __cplusplus
     void check_error(cudaError_t status);
+    void check_error_extended(cudaError_t status, char *file, int line, char *date_time);
+#define CHECK_CUDA(X) check_error_extended(X, __FILE__ " : " __FUNCTION__, __LINE__,  __DATE__ " - " __TIME__ );
+
     cublasHandle_t blas_handle();
     float *cuda_make_array(float *x, size_t n);
     int *cuda_make_int_array(size_t n);
@@ -46,6 +49,9 @@ extern "C" {
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();
 enum {cudnn_fastest, cudnn_smallest};
+
+void cudnn_check_error_extended(cudnnStatus_t status, char *file, int line, char *date_time);
+#define CHECK_CUDNN(X) cudnn_check_error_extended(X, __FILE__ " : " __FUNCTION__, __LINE__,  __DATE__ " - " __TIME__ );
 #endif
 
 #else // GPU

@@ -48,18 +48,21 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
 
     l.input_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.input_layer) = make_convolutional_layer(batch*steps, h, w, c, hidden_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
+    *(l.input_layer) = make_convolutional_layer(batch, steps, h, w, c, hidden_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
     l.input_layer->batch = batch;
+    if (l.workspace_size < l.input_layer->workspace_size) l.workspace_size = l.input_layer->workspace_size;
 
     l.self_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.self_layer) = make_convolutional_layer(batch*steps, h, w, hidden_filters, hidden_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
+    *(l.self_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, hidden_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
     l.self_layer->batch = batch;
+    if (l.workspace_size < l.self_layer->workspace_size) l.workspace_size = l.self_layer->workspace_size;
 
     l.output_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
-    *(l.output_layer) = make_convolutional_layer(batch*steps, h, w, hidden_filters, output_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
+    *(l.output_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, output_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
     l.output_layer->batch = batch;
+    if (l.workspace_size < l.output_layer->workspace_size) l.workspace_size = l.output_layer->workspace_size;
 
     l.output = l.output_layer->output;
     l.delta = l.output_layer->delta;
@@ -92,6 +95,7 @@ void forward_crnn_layer(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
@@ -133,6 +137,7 @@ void backward_crnn_layer(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
@@ -206,6 +211,7 @@ void forward_crnn_layer_gpu(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
@@ -247,6 +253,7 @@ void backward_crnn_layer_gpu(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);

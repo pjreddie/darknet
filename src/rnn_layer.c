@@ -43,16 +43,19 @@ layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, 
     fprintf(stderr, "\t\t");
     *(l.input_layer) = make_connected_layer(batch, steps, inputs, hidden, activation, batch_normalize);
     l.input_layer->batch = batch;
+    if (l.workspace_size < l.input_layer->workspace_size) l.workspace_size = l.input_layer->workspace_size;
 
     l.self_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.self_layer) = make_connected_layer(batch, steps, hidden, hidden, (log==2)?LOGGY:(log==1?LOGISTIC:activation), batch_normalize);
     l.self_layer->batch = batch;
+    if (l.workspace_size < l.self_layer->workspace_size) l.workspace_size = l.self_layer->workspace_size;
 
     l.output_layer = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.output_layer) = make_connected_layer(batch, steps, hidden, outputs, activation, batch_normalize);
     l.output_layer->batch = batch;
+    if (l.workspace_size < l.output_layer->workspace_size) l.workspace_size = l.output_layer->workspace_size;
 
     l.outputs = outputs;
     l.output = l.output_layer->output;
@@ -84,6 +87,7 @@ void forward_rnn_layer(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
@@ -126,6 +130,7 @@ void backward_rnn_layer(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
@@ -199,6 +204,7 @@ void forward_rnn_layer_gpu(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
@@ -241,6 +247,7 @@ void backward_rnn_layer_gpu(layer l, network_state state)
 {
     network_state s = {0};
     s.train = state.train;
+    s.workspace = state.workspace;
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);

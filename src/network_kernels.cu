@@ -58,7 +58,7 @@ void forward_network_gpu(network net, network_state state)
         if(l.delta_gpu && state.train){
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
-        //printf("%d - type: %d - ", i, l.type);
+        //printf("\n layer %d - type: %d - \n", i, l.type);
         //start_timer();
         l.forward_gpu(l, state);
         //cudaDeviceSynchronize();
