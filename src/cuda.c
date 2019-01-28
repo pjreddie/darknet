@@ -135,8 +135,10 @@ cudnnHandle_t cudnn_handle()
 void cudnn_check_error(cudnnStatus_t status)
 {
     //cudaDeviceSynchronize();
-    cudnnStatus_t status2;
+    cudnnStatus_t status2 = CUDNN_STATUS_SUCCESS;
+#ifdef CUDNN_ERRQUERY_RAWCODE
     cudnnStatus_t status_tmp = cudnnQueryRuntimeError(cudnn_handle(), &status2, CUDNN_ERRQUERY_RAWCODE, NULL);
+#endif
     if (status != CUDNN_STATUS_SUCCESS)
     {
         const char *s = cudnnGetErrorString(status);
