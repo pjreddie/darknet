@@ -42,7 +42,7 @@ void check_error(cudaError_t status)
     }
     if (status2 != cudaSuccess)
     {
-        const char *s = cudaGetErrorString(status);
+        const char *s = cudaGetErrorString(status2);
         char buffer[256];
         printf("CUDA Error Prev: %s\n", s);
         assert(0);
@@ -153,7 +153,7 @@ void cudnn_check_error(cudnnStatus_t status)
     }
     if (status2 != CUDNN_STATUS_SUCCESS)
     {
-        const char *s = cudnnGetErrorString(status);
+        const char *s = cudnnGetErrorString(status2);
         char buffer[256];
         printf("cuDNN Error Prev: %s\n", s);
         assert(0);
