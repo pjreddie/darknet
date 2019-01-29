@@ -418,7 +418,7 @@ int main(int argc, char **argv)
         cuda_set_device(gpu_index);
     }
 #endif
-
+    
     if (0 == strcmp(argv[1], "average")){
         average(argc, argv);
     } else if (0 == strcmp(argv[1], "yolo")){

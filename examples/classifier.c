@@ -77,23 +77,29 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     args.hue = net->hue;
     args.size = net->w;
 
-    args.paths = paths;
-    args.classes = classes;
-    args.n = imgs;
-    args.m = N;
-    args.labels = labels;
+    args.paths = paths; //paths of images
+    args.classes = classes; //number of classes for classification
+    args.n = imgs; //batch_size*subdivisions*ngpus
+    args.m = N; //total number of images
+    args.labels = labels; //labels of images
+    //printf("classes:%d\n ",args.classes);
+    //printf("paths in imagenet1k.train.list:%s\n ",*args.paths);
+    //printf("labels in imagenet.labels.list:%s\n ",*args.labels);
+
     if (tag){
         args.type = TAG_DATA;
+        printf("TAG_DATA\n ");
     } else {
         args.type = CLASSIFICATION_DATA;
+        printf("CLASSIFICATION_DATA\n ");
     }
 
     data train;
     data buffer;
     pthread_t load_thread;
     args.d = &buffer;
-    load_thread = load_data(args);
 
+    load_thread = load_data(args);
     int count = 0;
     int epoch = (*net->seen)/N;
     while(get_current_batch(net) < net->max_batches || net->max_batches == 0){

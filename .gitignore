@@ -16,8 +16,17 @@ convnet/
 decaf/
 submission/
 cfg/
+backup*/
+weights/
+bad.list
+darknet53.conv.74
+*.a
+*.so
 darknet
 .fuse*
+
+wildhog_yolov3_tiny.txt
+yolov3-tiny.conv.15
 
 # OS Generated #
 .DS_Store*
@@ -25,3 +34,5 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+capture.txt
+.vscode/

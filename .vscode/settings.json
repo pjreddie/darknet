@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "functional": "cpp",
+        "*.ipp": "c"
+    }
+}
