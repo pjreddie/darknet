@@ -1,8 +1,6 @@
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
-
-
-
+./darknet detector train cfg/wildhog.data cfg/yolov3-tiny.cfg yolov3-tiny.conv.15 -gpus 0 >> backup_wildhog/wildhog_yolov3_tiny.txt
 # Features of this Darknet
 
 * In tools/, some tools for darknet.

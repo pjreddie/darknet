@@ -5,7 +5,7 @@ OPENMP=1
 # DEBUG=1: run on pc;=0:run on TX1/2, show full screen;
 DEBUG=1
 # when use OpenTracker set to 1;
-OPENTRACKER=1
+OPENTRACKER=0
 # TS: touchscreen demo
 TS=0
 # MAESTRO: the motor for turing the cameras
