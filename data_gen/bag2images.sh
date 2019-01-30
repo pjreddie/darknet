@@ -17,16 +17,25 @@ echo $orig_file_name
 # echo "Completed decompression"
 
 duration_str=`rosbag info $orig_file_name | grep duration`
-#echo $duration_str
 strindex() { 
   x="${1%%$2*}"
   [[ "$x" = "$1" ]] && echo -1 || echo "${#x}"
 }
+
+# Find the time in minutes
+search_char=':'
+search_index=`strindex "$duration_str" "$search_char"`+2
+new_str=${duration_str: $search_index}
+search_char='s'
+search_index=`strindex "$new_str" "$search_char"`
+dur_mins=${new_str::$search_index}
+
+# find the time in seconds
 search_char='('
 search_index=`strindex "$duration_str" "$search_char"`+1
 new_str=${duration_str: $search_index}
 bag_file_seconds=${new_str%??}
-echo $bag_file_seconds
+echo "Bag file duration "$dur_mins"s"
 
 # Save the bag file as jpegs
 echo "---------------------"
