@@ -46,15 +46,28 @@ dir=`pwd`
 file_path=`pwd`/bag_file/$orig_file_name
 export_path=`pwd`/images/
 
-./scripts/loading_bar.py $bag_file_seconds &
+# ./scripts/loading_bar.py $bag_file_seconds &
 
-roslaunch launch/export.launch bag_file:=$file_path image_dir:=$export_path &> tmp.txt
+# roslaunch launch/export.launch bag_file:=$file_path image_dir:=$export_path &> tmp.txt
 
-rm tmp.txt
-pkill python
+# rm tmp.txt
+# pkill python
 
 
 echo "Finished Exporting images"
 
 num=`ls -1 images/ | wc -l`
 echo "Number of images: "$num
+
+read -p "Move images into OpenLabeling? (y/n)" res
+
+zip_name=${orig_file_name::-4}_unlabeled.zip
+#echo $zip_name
+
+case $res in
+    [Yy]* ) mv images/* OpenLabeling/main/input/;;
+    * ) mkdir zipped_images; cd images; zip $zip_name *; mv $zip_name ../zipped_images/; cd ..;;
+esac
+
+echo "Images are zipped and located in zipped_images/$zip_name"
+
