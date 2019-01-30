@@ -20,12 +20,13 @@ model_gen/darknet
 .fuse*
 
 # Data Gen
-data_gen/bag_file/
-data_gen/images/
-data_gen/OpenLabeling/main/input
-data_gen/OpenLabeling/main/class_lists.txt
+# data_gen/bag_file/*
+# data_gen/images/*
+# data_gen/OpenLabeling/main/input/
+# data_gen/OpenLabeling/main/class_lists.txt
 
-*~ # emacs
+# emacs
+*~
 
 # OS Generated #
 .DS_Store*
