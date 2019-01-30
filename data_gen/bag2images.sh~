@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# Get bag file ready to play
+cd bag_file
+num=`ls -1 | wc -l`
+if [ $num -gt 1 ]
+then
+    echo "ERROR: Only one bag file allowed in the bag_file directory"
+    exit
+fi
+
+tmp=$(ls)
+echo $tmp
+
+# echo "Decompressing bag file"
+# cd bag_file
+# rosbag decompress *.bag
+# echo "Completed decompression"
+
+# # Save the bag file as jpegs
+
+# echo "Replaying the rosbag and generating images"
+# cd ..
+# dir=`pwd`
+# file_path=`pwd`/autonomous_gate.bag
+# export_path=`pwd`/images/
+# roslaunch export.launch bag_file:=$file_path image_dir:=$export_path
+
+# echo "Finished Exporting images"

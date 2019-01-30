@@ -5,23 +5,31 @@
 *.png
 *.jpg
 *.pyc
-old/
-mnist/
-data/
-caffe/
-grasp/
-images/
-opencv/
-convnet/
-decaf/
-submission/
-cfg/
-darknet
+model_gen/old/
+model_gen/mnist/
+model_gen/data/
+model_gen/caffe/
+model_gen/grasp/
+model_gen/images/
+model_gen/opencv/
+model_gen/convnet/
+model_gen/decaf/
+model_gen/submission/
+model_gen/cfg/
+model_gen/darknet
 .fuse*
+
+# Data Gen
+data_gen/bag_file/
+data_gen/images/
+data_gen/OpenLabeling/main/input
+data_gen/OpenLabeling/main/class_lists.txt
+
+*~ # emacs
 
 # OS Generated #
 .DS_Store*
-ehthumbs.db
+model_gen/ehthumbs.db
 Icon?
-Thumbs.db
+model_gen/Thumbs.db
 *.swp
