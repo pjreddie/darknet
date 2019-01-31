@@ -459,12 +459,13 @@ int resize_network(network *net, int w, int h)
     const int size = get_network_input_size(*net) * net->batch;
 #ifdef GPU
     if(gpu_index >= 0){
-        printf(" try to allocate workspace = %zu * sizeof(float), ", workspace_size / sizeof(float) + 1);
+        printf(" try to allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
         net->workspace = cuda_make_array(0, workspace_size/sizeof(float) + 1);
         net->input_state_gpu = cuda_make_array(0, size);
         if (cudaSuccess == cudaHostAlloc(&net->input_pinned_cpu, size * sizeof(float), cudaHostRegisterMapped))
             net->input_pinned_cpu_flag = 1;
         else {
+            cudaGetLastError(); // reset CUDA-error
             net->input_pinned_cpu = calloc(size, sizeof(float));
             net->input_pinned_cpu_flag = 0;
         }

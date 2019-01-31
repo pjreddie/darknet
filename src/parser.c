@@ -853,7 +853,10 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         int size = get_network_input_size(net) * net.batch;
         net.input_state_gpu = cuda_make_array(0, size);
         if (cudaSuccess == cudaHostAlloc(&net.input_pinned_cpu, size * sizeof(float), cudaHostRegisterMapped)) net.input_pinned_cpu_flag = 1;
-        else net.input_pinned_cpu = calloc(size, sizeof(float));
+        else {
+            cudaGetLastError(); // reset CUDA-error
+            net.input_pinned_cpu = calloc(size, sizeof(float));
+        }
 
         // pre-allocate memory for inference on Tensor Cores (fp16)
         if (net.cudnn_half) {
@@ -863,7 +866,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             check_error(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
         }
         if (workspace_size) {
-            printf(" Allocate workspace_size = %zu \n", workspace_size);
+            printf(" Allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
             net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
         }
         else {

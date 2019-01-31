@@ -56,11 +56,17 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
 
     free(l.output);
     if (cudaSuccess == cudaHostAlloc(&l.output, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.output_pinned = 1;
-    else l.output = calloc(batch*l.outputs, sizeof(float));
+    else {
+        cudaGetLastError(); // reset CUDA-error
+        l.output = calloc(batch*l.outputs, sizeof(float));
+    }
 
     free(l.delta);
     if (cudaSuccess == cudaHostAlloc(&l.delta, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.delta_pinned = 1;
-    else l.delta = calloc(batch*l.outputs, sizeof(float));
+    else {
+        cudaGetLastError(); // reset CUDA-error
+        l.delta = calloc(batch*l.outputs, sizeof(float));
+    }
 #endif
 
     fprintf(stderr, "yolo\n");
@@ -84,6 +90,7 @@ void resize_yolo_layer(layer *l, int w, int h)
     if (l->output_pinned) {
         cudaFreeHost(l->output);
         if (cudaSuccess != cudaHostAlloc(&l->output, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
+            cudaGetLastError(); // reset CUDA-error
             l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
             l->output_pinned = 0;
         }
@@ -92,6 +99,7 @@ void resize_yolo_layer(layer *l, int w, int h)
     if (l->delta_pinned) {
         cudaFreeHost(l->delta);
         if (cudaSuccess != cudaHostAlloc(&l->delta, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
+            cudaGetLastError(); // reset CUDA-error
             l->delta = realloc(l->delta, l->batch*l->outputs * sizeof(float));
             l->delta_pinned = 0;
         }
