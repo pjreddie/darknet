@@ -277,9 +277,10 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
         for(j = 0; j < inputs; ++j){
             if (out[j] < .0001) out[j] = 0;
         }
-        //c = sample_array(out, inputs);
-        c = sample_array_custom(out, inputs);
+        c = sample_array(out, inputs);
+        //c = sample_array_custom(out, inputs);
         //c = max_index(out, inputs);
+        //c = top_max_index(out, inputs, 2);
         print_symbol(c, tokens);
     }
     printf("\n");

@@ -654,6 +654,31 @@ int max_index(float *a, int n)
     return max_i;
 }
 
+int top_max_index(float *a, int n, int k)
+{
+    float *values = calloc(k, sizeof(float));
+    int *indexes = calloc(k, sizeof(int));
+    if (n <= 0) return -1;
+    int i, j;
+    for (i = 0; i < n; ++i) {
+        for (j = 0; j < k; ++j) {
+            if (a[i] > values[j]) {
+                values[j] = a[i];
+                indexes[j] = i;
+                break;
+            }
+        }
+    }
+    int count = 0;
+    for (j = 0; j < k; ++j) if (values[j] > 0) count++;
+    int get_index = rand_int(0, count-1);
+    int val = indexes[get_index];
+    free(indexes);
+    free(values);
+    return val;
+}
+
+
 int int_index(int *a, int val, int n)
 {
     int i;

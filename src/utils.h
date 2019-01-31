@@ -59,6 +59,7 @@ void normalize_array(float *a, int n);
 void scale_array(float *a, int n, float s);
 void translate_array(float *a, int n, float s);
 int max_index(float *a, int n);
+int top_max_index(float *a, int n, int k);
 float constrain(float min, float max, float a);
 int constrain_int(int a, int min, int max);
 float mse_array(float *a, int n);
