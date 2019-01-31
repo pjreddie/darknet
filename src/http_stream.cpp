@@ -6,6 +6,13 @@
 //  on win, _WIN32 has to be defined, must link against ws2_32.lib (socks on linux are for free)
 //
 
+#include <cstdio>
+#include <vector>
+#include <iostream>
+#include <algorithm>
+using std::cerr;
+using std::endl;
+
 //
 // socket related abstractions:
 //
@@ -33,7 +40,7 @@ static int close_socket(SOCKET s) {
     free(buf);
     int close_input = ::shutdown(s, 0);
     int result = ::closesocket(s);
-    printf("Close socket: out = %d, in = %d \n", close_output, close_input);
+    cerr << "Close socket: out = " << close_output << ", in = " << close_input << " \n";
     return result;
 }
 #else   // nix
@@ -72,17 +79,11 @@ static int close_socket(SOCKET s) {
     free(buf);
     int close_input = ::shutdown(s, 0);
     int result = close(s);
-    printf("Close socket: out = %d, in = %d \n", close_output, close_input);
+    std::cerr << "Close socket: out = " << close_output << ", in = " << close_input << " \n";
     return result;
 }
 #endif // _WIN32
 
-#include <cstdio>
-#include <vector>
-#include <iostream>
-#include <algorithm>
-using std::cerr;
-using std::endl;
 
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -243,7 +244,7 @@ public:
             {
                 if (close_all_sockets) {
                     int result = close_socket(s);
-                    printf("MJPG_sender: close clinet: %d \n", result);
+                    cerr << "MJPG_sender: close clinet: " << result << " \n";
                     continue;
                 }
 
@@ -262,7 +263,7 @@ public:
         }
         if (close_all_sockets) {
             int result = close_socket(sock);
-            printf("MJPG_sender: close acceptor: %d \n\n", result);
+            cerr << "MJPG_sender: close acceptor: " << result << " \n\n";
         }
         return true;
     }
@@ -271,10 +272,15 @@ public:
 
 void send_mjpeg(IplImage* ipl, int port, int timeout, int quality)
 {
-    static MJPG_sender wri(port, timeout, quality);
-    cv::Mat mat = cv::cvarrToMat(ipl);
-    wri.write(mat);
-    std::cout << " MJPEG-stream sent. \n";
+    try {
+        static MJPG_sender wri(port, timeout, quality);
+        cv::Mat mat = cv::cvarrToMat(ipl);
+        wri.write(mat);
+        std::cout << " MJPEG-stream sent. \n";
+    }
+    catch (...) {
+        cerr << " Error in send_mjpeg() function \n";
+    }
 }
 // ----------------------------------------
 
@@ -436,14 +442,14 @@ public:
 
                 if (close_all_sockets) {
                     int result = close_socket(s);
-                    printf("JSON_sender: close clinet: %d \n", result);
+                    cerr << "JSON_sender: close clinet: " << result << " \n";
                     continue;
                 }
             }
         }
         if (close_all_sockets) {
             int result = close_socket(sock);
-            printf("JSON_sender: close acceptor: %d \n\n", result);
+            cerr << "JSON_sender: close acceptor: " << result << " \n\n";
         }
         return true;
     }
@@ -452,12 +458,17 @@ public:
 
 void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout)
 {
-    static JSON_sender js(port, timeout);
-    char *send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
+    try {
+        static JSON_sender js(port, timeout);
+        char *send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
 
-    js.write(send_buf);
-    std::cout << " JSON-stream sent. \n";
-    free(send_buf);
+        js.write(send_buf);
+        std::cout << " JSON-stream sent. \n";
+        free(send_buf);
+    }
+    catch (...) {
+        cerr << " Error in send_json() function \n";
+    }
 }
 
 // ----------------------------------------
@@ -468,7 +479,7 @@ CvCapture* get_capture_video_stream(char *path) {
         cap = (CvCapture*)new cv::VideoCapture(path);
     }
     catch (...) {
-        std::cout << " Error: video-stream " << path << " can't be opened! \n";
+        cerr << " Error: video-stream " << path << " can't be opened! \n";
     }
     return cap;
 }
@@ -482,7 +493,7 @@ CvCapture* get_capture_webcam(int index) {
         //((cv::VideoCapture*)cap)->set(CV_CAP_PROP_FRAME_HEIGHT, 960);
     }
     catch (...) {
-        std::cout << " Error: Web-camera " << index << " can't be opened! \n";
+        cerr << " Error: Web-camera " << index << " can't be opened! \n";
     }
     return cap;
 }
@@ -520,7 +531,7 @@ int get_stream_fps_cpp(CvCapture *cap) {
 #endif
     }
     catch (...) {
-        std::cout << " Can't get FPS of source videofile. For output video FPS = 25 by default. \n";
+        cerr << " Can't get FPS of source videofile. For output video FPS = 25 by default. \n";
     }
     return fps;
 }
@@ -533,62 +544,68 @@ image image_data_augmentation(IplImage* ipl, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
     float jitter, float dhue, float dsat, float dexp)
 {
-    cv::Mat img = cv::cvarrToMat(ipl);
+    image out;
+    try {
+        cv::Mat img = cv::cvarrToMat(ipl);
 
-    // crop
-    cv::Rect src_rect(pleft, ptop, swidth, sheight);
-    cv::Rect img_rect(cv::Point2i(0, 0), img.size());
-    cv::Rect new_src_rect = src_rect & img_rect;
+        // crop
+        cv::Rect src_rect(pleft, ptop, swidth, sheight);
+        cv::Rect img_rect(cv::Point2i(0, 0), img.size());
+        cv::Rect new_src_rect = src_rect & img_rect;
 
-    cv::Rect dst_rect(cv::Point2i(std::max<int>(0, -pleft), std::max<int>(0, -ptop)), new_src_rect.size());
+        cv::Rect dst_rect(cv::Point2i(std::max<int>(0, -pleft), std::max<int>(0, -ptop)), new_src_rect.size());
 
-    cv::Mat cropped(cv::Size(src_rect.width, src_rect.height), img.type());
-    cropped.setTo(cv::Scalar::all(0));
+        cv::Mat cropped(cv::Size(src_rect.width, src_rect.height), img.type());
+        cropped.setTo(cv::Scalar::all(0));
 
-    img(new_src_rect).copyTo(cropped(dst_rect));
+        img(new_src_rect).copyTo(cropped(dst_rect));
 
-    // resize
-    cv::Mat sized;
-    cv::resize(cropped, sized, cv::Size(w, h), 0, 0, INTER_LINEAR);
+        // resize
+        cv::Mat sized;
+        cv::resize(cropped, sized, cv::Size(w, h), 0, 0, INTER_LINEAR);
 
-    // flip
-    if (flip) {
-        cv::flip(sized, cropped, 1);    // 0 - x-axis, 1 - y-axis, -1 - both axes (x & y)
-        sized = cropped.clone();
+        // flip
+        if (flip) {
+            cv::flip(sized, cropped, 1);    // 0 - x-axis, 1 - y-axis, -1 - both axes (x & y)
+            sized = cropped.clone();
+        }
+
+        // HSV augmentation
+        // CV_BGR2HSV, CV_RGB2HSV, CV_HSV2BGR, CV_HSV2RGB
+        if (ipl->nChannels >= 3)
+        {
+            cv::Mat hsv_src;
+            cvtColor(sized, hsv_src, CV_BGR2HSV);    // also BGR -> RGB
+
+            std::vector<cv::Mat> hsv;
+            cv::split(hsv_src, hsv);
+
+            hsv[1] *= dsat;
+            hsv[2] *= dexp;
+            hsv[0] += 179 * dhue;
+
+            cv::merge(hsv, hsv_src);
+
+            cvtColor(hsv_src, sized, CV_HSV2RGB);    // now RGB instead of BGR
+        }
+        else
+        {
+            sized *= dexp;
+        }
+
+        //std::stringstream window_name;
+        //window_name << "augmentation - " << ipl;
+        //cv::imshow(window_name.str(), sized);
+        //cv::waitKey(0);
+
+        // Mat -> IplImage -> image
+        IplImage src = sized;
+        out = ipl_to_image(&src);
     }
-
-    // HSV augmentation
-    // CV_BGR2HSV, CV_RGB2HSV, CV_HSV2BGR, CV_HSV2RGB
-    if (ipl->nChannels >= 3)
-    {
-        cv::Mat hsv_src;
-        cvtColor(sized, hsv_src, CV_BGR2HSV);    // also BGR -> RGB
-
-        std::vector<cv::Mat> hsv;
-        cv::split(hsv_src, hsv);
-
-        hsv[1] *= dsat;
-        hsv[2] *= dexp;
-        hsv[0] += 179 * dhue;
-
-        cv::merge(hsv, hsv_src);
-
-        cvtColor(hsv_src, sized, CV_HSV2RGB);    // now RGB instead of BGR
+    catch (...) {
+        cerr << "OpenCV can't augment image: " << w  << " x " << h << " \n";
+        out = ipl_to_image(ipl);
     }
-    else
-    {
-        sized *= dexp;
-    }
-
-    //std::stringstream window_name;
-    //window_name << "augmentation - " << ipl;
-    //cv::imshow(window_name.str(), sized);
-    //cv::waitKey(0);
-
-    // Mat -> IplImage -> image
-    IplImage src = sized;
-    image out = ipl_to_image(&src);
-
     return out;
 }
 
@@ -603,7 +620,7 @@ image load_image_resize(char *filename, int w, int h, int c, image *im)
         else if (c == 1) { flag = 0; img = cv::Mat(h, w, CV_8UC1); }
         else if (c == 3) { flag = 1; img = cv::Mat(h, w, CV_8UC3); }
         else {
-            fprintf(stderr, "OpenCV can't force load with %d channels\n", c);
+            cerr << "OpenCV can't force load with " << c << " channels\n";
         }
         //throw std::runtime_error("runtime_error");
         cv::Mat loaded_image = cv::imread(filename, flag);
@@ -617,7 +634,7 @@ image load_image_resize(char *filename, int w, int h, int c, image *im)
         out = ipl_to_image(&tmp2);
     }
     catch (...) {
-        fprintf(stderr, "OpenCV can't load image %s channels\n", filename);
+        cerr << "OpenCV can't load image %s " << filename << " \n";
         out = make_image(w, h, c);
         *im = make_image(w, h, c);
     }
