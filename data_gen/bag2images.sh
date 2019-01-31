@@ -1,20 +1,37 @@
 #!/usr/bin/env bash
 
+# Clear old data
+num=`ls -l images/ | wc -l`
+if [ $num -gt 1 ]
+then
+    echo "Emptying images directory..."
+    rm images/*
+fi
+
+num=`ls -l OpenLabeling/main/input/ | wc -l`
+if [ $num -ne 1 ]
+then
+    read -p "OpenLabeling directory currently contains images. Delete and empty the input directory? (y/n)" res
+    case $res in
+	[Yy]* ) rm OpenLabeling/main/input/*;;
+	* ) echo "Warning: For data purity please select no when prompted whether to load generated images into OpenLabeling.";;
+    esac
+fi
+
 # Get bag file ready to play
 cd bag_file
 num=`ls -1 | wc -l`
-if [ $num -gt 1 ]
+if [ $num -ne 1 ]
 then
     echo "ERROR: Only one bag file allowed in the bag_file directory"
     exit
 fi
 
 orig_file_name=$(ls)
-echo $orig_file_name
 
-# echo "Decompressing bag file"
-# rosbag decompress $orig_file_name
-# echo "Completed decompression"
+echo "Decompressing "$orig_file_name
+rosbag decompress $orig_file_name
+echo "Completed decompression"
 
 duration_str=`rosbag info $orig_file_name | grep duration`
 strindex() { 
@@ -46,13 +63,12 @@ dir=`pwd`
 file_path=`pwd`/bag_file/$orig_file_name
 export_path=`pwd`/images/
 
-# ./scripts/loading_bar.py $bag_file_seconds &
+./scripts/loading_bar.py $bag_file_seconds &
 
-# roslaunch launch/export.launch bag_file:=$file_path image_dir:=$export_path &> tmp.txt
+roslaunch launch/export.launch bag_file:=$file_path image_dir:=$export_path &> tmp.txt
 
-# rm tmp.txt
-# pkill python
-
+rm tmp.txt
+pkill python
 
 echo "Finished Exporting images"
 
@@ -62,12 +78,13 @@ echo "Number of images: "$num
 read -p "Move images into OpenLabeling? (y/n)" res
 
 zip_name=${orig_file_name::-4}_unlabeled.zip
-#echo $zip_name
 
 case $res in
-    [Yy]* ) mv images/* OpenLabeling/main/input/;;
-    * ) mkdir zipped_images; cd images; zip $zip_name *; mv $zip_name ../zipped_images/; cd ..;;
+    [Yy]* ) mv images/* OpenLabeling/main/input/; echo "Images are located in OpenLabeling/main/input/";;
+    * ) mkdir -p zipped_images; cd images; zip $zip_name *; mv $zip_name ../zipped_images/; cd ..; rm images/*; echo "Images are zipped and located in zipped_images/$zip_name";;
 esac
 
-echo "Images are zipped and located in zipped_images/$zip_name"
+echo "Deleting the uncompressed file for unneccessary space usage"
+rm bag_file/$orig_file_name
+mv bag_file/* bag_file/$orig_file_name
 
