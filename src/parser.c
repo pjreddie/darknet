@@ -182,13 +182,17 @@ convolutional_layer parse_convolutional(list *options, size_params params)
 
 layer parse_crnn(list *options, size_params params)
 {
-    int output_filters = option_find_int(options, "output_filters",1);
-    int hidden_filters = option_find_int(options, "hidden_filters",1);
+    int size = option_find_int_quiet(options, "size", 3);
+    int stride = option_find_int_quiet(options, "stride", 1);
+    int pad = option_find_int_quiet(options, "pad", 1);
+
+    int output_filters = option_find_int(options, "output",1);
+    int hidden_filters = option_find_int(options, "hidden",1);
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
 
-    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, params.time_steps, activation, batch_normalize);
+    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, params.time_steps, size, stride, pad, activation, batch_normalize);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
@@ -866,7 +870,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             check_error(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
         }
         if (workspace_size) {
-            printf(" Allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
+            printf(" Allocate additional workspace_size = %1.2f MB \n", (float)workspace_size/1000000);
             net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
         }
         else {
@@ -1167,6 +1171,7 @@ void load_convolutional_weights(layer l, FILE *fp)
     }
     int num = l.n*l.c*l.size*l.size;
     fread(l.biases, sizeof(float), l.n, fp);
+    //fread(l.weights, sizeof(float), num, fp); // as in connected layer
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.n, fp);
         fread(l.rolling_mean, sizeof(float), l.n, fp);

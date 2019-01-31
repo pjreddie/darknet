@@ -35,6 +35,9 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
     l.type = LSTM;
     l.steps = steps;
     l.inputs = inputs;
+    l.out_w = 1;
+    l.out_h = 1;
+    l.out_c = outputs;
 
     l.uf = malloc(sizeof(layer));
     fprintf(stderr, "\t\t");

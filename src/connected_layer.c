@@ -67,6 +67,8 @@ connected_layer make_connected_layer(int batch, int steps, int inputs, int outpu
     l.size = 1;
     l.stride = 1;
     l.pad = 0;
+    l.activation = activation;
+    l.learning_rate_scale = 1;
 
     l.output = calloc(total_batch*outputs, sizeof(float));
     l.delta = calloc(total_batch*outputs, sizeof(float));
@@ -145,7 +147,6 @@ connected_layer make_connected_layer(int batch, int steps, int inputs, int outpu
     l.workspace_size = get_connected_workspace_size(l);
 #endif  // CUDNN
 #endif  // GPU
-    l.activation = activation;
     fprintf(stderr, "connected                            %4d  ->  %4d\n", inputs, outputs);
     return l;
 }

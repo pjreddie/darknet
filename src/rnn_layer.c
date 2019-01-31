@@ -36,6 +36,9 @@ layer make_rnn_layer(int batch, int inputs, int hidden, int outputs, int steps, 
     l.steps = steps;
     l.hidden = hidden;
     l.inputs = inputs;
+    l.out_w = 1;
+    l.out_h = 1;
+    l.out_c = outputs;
 
     l.state = calloc(batch*hidden*(steps+1), sizeof(float));
 
@@ -264,7 +267,7 @@ void backward_rnn_layer_gpu(layer l, network_state state)
 
         l.state_gpu -= l.hidden*l.batch;
 
-        copy_ongpu(l.hidden*l.batch, self_layer.delta_gpu, 1, input_layer.delta_gpu, 1);
+        copy_ongpu(l.hidden*l.batch, self_layer.delta_gpu, 1, input_layer.delta_gpu, 1);    // the same delta for Input and Self layers
 
         s.input = l.state_gpu;
         s.delta = self_layer.delta_gpu - l.hidden*l.batch;

@@ -26,7 +26,7 @@ static void increment_layer(layer *l, int steps)
 #endif
 }
 
-layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int output_filters, int steps, ACTIVATION activation, int batch_normalize)
+layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int output_filters, int steps, int size, int stride, int pad, ACTIVATION activation, int batch_normalize)
 {
     fprintf(stderr, "CRNN Layer: %d x %d x %d image, %d filters\n", h,w,c,output_filters);
     batch = batch / steps;
@@ -47,20 +47,20 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
     l.state = calloc(l.hidden*batch*(steps+1), sizeof(float));
 
     l.input_layer = malloc(sizeof(layer));
-    fprintf(stderr, "\t\t");
-    *(l.input_layer) = make_convolutional_layer(batch, steps, h, w, c, hidden_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
+    fprintf(stderr, "");
+    *(l.input_layer) = make_convolutional_layer(batch, steps, h, w, c, hidden_filters, size, stride, pad, activation, batch_normalize, 0, 0, 0, 0, 0);
     l.input_layer->batch = batch;
     if (l.workspace_size < l.input_layer->workspace_size) l.workspace_size = l.input_layer->workspace_size;
 
     l.self_layer = malloc(sizeof(layer));
-    fprintf(stderr, "\t\t");
-    *(l.self_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, hidden_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
+    fprintf(stderr, "");
+    *(l.self_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, hidden_filters, size, stride, pad, activation, batch_normalize, 0, 0, 0, 0, 0);
     l.self_layer->batch = batch;
     if (l.workspace_size < l.self_layer->workspace_size) l.workspace_size = l.self_layer->workspace_size;
 
     l.output_layer = malloc(sizeof(layer));
-    fprintf(stderr, "\t\t");
-    *(l.output_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, output_filters, 3, 1, 1,  activation, batch_normalize, 0, 0, 0, 0, 0);
+    fprintf(stderr, "");
+    *(l.output_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, output_filters, size, stride, pad, activation, batch_normalize, 0, 0, 0, 0, 0);
     l.output_layer->batch = batch;
     if (l.workspace_size < l.output_layer->workspace_size) l.workspace_size = l.output_layer->workspace_size;
 
@@ -75,8 +75,7 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
     l.forward_gpu = forward_crnn_layer_gpu;
     l.backward_gpu = backward_crnn_layer_gpu;
     l.update_gpu = update_crnn_layer_gpu;
-
-    l.state_gpu = cuda_make_array(l.state, l.hidden*batch*(steps+1));
+    l.state_gpu = cuda_make_array(l.state, batch*l.hidden*(steps + 1));
     l.output_gpu = l.output_layer->output_gpu;
     l.delta_gpu = l.output_layer->delta_gpu;
 #endif
@@ -263,8 +262,8 @@ void backward_crnn_layer_gpu(layer l, network_state state)
     increment_layer(&output_layer, l.steps - 1);
     l.state_gpu += l.hidden*l.batch*l.steps;
     for (i = l.steps-1; i >= 0; --i) {
-        copy_ongpu(l.hidden * l.batch, input_layer.output_gpu, 1, l.state_gpu, 1);
-        axpy_ongpu(l.hidden * l.batch, 1, self_layer.output_gpu, 1, l.state_gpu, 1);
+        //copy_ongpu(l.hidden * l.batch, input_layer.output_gpu, 1, l.state_gpu, 1);   // commented in RNN
+        //axpy_ongpu(l.hidden * l.batch, 1, self_layer.output_gpu, 1, l.state_gpu, 1); // commented in RNN
 
         s.input = l.state_gpu;
         s.delta = self_layer.delta_gpu;
@@ -272,12 +271,13 @@ void backward_crnn_layer_gpu(layer l, network_state state)
 
         l.state_gpu -= l.hidden*l.batch;
 
+        copy_ongpu(l.hidden*l.batch, self_layer.delta_gpu, 1, input_layer.delta_gpu, 1);
+
         s.input = l.state_gpu;
         s.delta = self_layer.delta_gpu - l.hidden*l.batch;
         if (i == 0) s.delta = 0;
         backward_convolutional_layer_gpu(self_layer, s);
 
-        copy_ongpu(l.hidden*l.batch, self_layer.delta_gpu, 1, input_layer.delta_gpu, 1);
         if (i > 0 && l.shortcut) axpy_ongpu(l.hidden*l.batch, 1, self_layer.delta_gpu, 1, self_layer.delta_gpu - l.hidden*l.batch, 1);
         s.input = state.input + i*l.inputs*l.batch;
         if(state.delta) s.delta = state.delta + i*l.inputs*l.batch;
