@@ -21,10 +21,10 @@
 
 
 
-|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/webt/pw/zd/0j/pwzd0jb9g7znt_dbsyw9qzbnvti.jpeg) mAP (AP50) https://pjreddie.com/media/files/papers/YOLOv3.pdf |
+|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_time](https://user-images.githubusercontent.com/4096485/52151356-e5d4a380-2683-11e9-9d7d-ac7bc192c477.jpg) mAP@0.5 (AP50) https://pjreddie.com/media/files/papers/YOLOv3.pdf |
 |---|---|
 
-* YOLOv3-spp (is not indicated) better than YOLOv3 - mAP = 60.6%, FPS = 20: https://pjreddie.com/darknet/yolo/
+* YOLOv3-spp better than YOLOv3 - mAP = 60.6%, FPS = 20: https://pjreddie.com/darknet/yolo/
 * Yolo v3 source chart for the RetinaNet on MS COCO got from Table 1 (e): https://arxiv.org/pdf/1708.02002.pdf
 * Yolo v2 on Pascal VOC 2007: https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg
 * Yolo v2 on Pascal VOC 2012 (comp4): https://hsto.org/files/3a6/fdf/b53/3a6fdfb533f34cee9b52bdd9bb0b19d9.jpg
@@ -109,15 +109,17 @@ Also, you might be interested in using a simplified repository where is implemen
 
 On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector test ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights`
 
-* Yolo v3 COCO - **image**: `darknet.exe detector test data/coco.data cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
-* **Output coordinates** of objects: `darknet.exe detector test data/coco.data yolov3.cfg yolov3.weights -ext_output dog.jpg`
-* Yolo v3 COCO - **video**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -ext_output test.mp4`
-* Yolo v3 COCO - **WebCam 0**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -c 0`
-* Yolo v3 COCO for **net-videocam** - Smart WebCam: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg`
-* Yolo v3 - **save result videofile res.avi**: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -out_filename res.avi`
-* Yolo v3 **Tiny** COCO - video: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights test.mp4`
+On Linux find executable file `./darknet` in the root directory, while on Windows find it in the directory `\build\darknet\x64` 
+
+* Yolo v3 COCO - **image**: `darknet.exe detector test cfg/coco.data cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
+* **Output coordinates** of objects: `darknet.exe detector test cfg/coco.data yolov3.cfg yolov3.weights -ext_output dog.jpg`
+* Yolo v3 COCO - **video**: `darknet.exe detector demo cfg/coco.data cfg/yolov3.cfg yolov3.weights -ext_output test.mp4`
+* Yolo v3 COCO - **WebCam 0**: `darknet.exe detector demo cfg/coco.data cfg/yolov3.cfg yolov3.weights -c 0`
+* Yolo v3 COCO for **net-videocam** - Smart WebCam: `darknet.exe detector demo cfg/coco.data cfg/yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg`
+* Yolo v3 - **save result videofile res.avi**: `darknet.exe detector demo cfg/coco.data cfg/yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -out_filename res.avi`
+* Yolo v3 **Tiny** COCO - video: `darknet.exe detector demo cfg/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights test.mp4`
 * **JSON and MJPEG server** that allows multiple connections from your soft or Web-browser `ip-address:8070` and 8090: `./darknet detector demo ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights test50.mp4 -json_port 8070 -mjpeg_port 8090 -ext_output`
-* Yolo v3 Tiny **on GPU #0**: `darknet.exe detector demo data/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights -i 0 test.mp4`
+* Yolo v3 Tiny **on GPU #0**: `darknet.exe detector demo cfg/coco.data cfg/yolov3-tiny.cfg yolov3-tiny.weights -i 0 test.mp4`
 * Alternative method Yolo v3 COCO - image: `darknet.exe detect cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
 * Train on **Amazon EC2**, to see mAP & Loss-chart using URL like: `http://ec2-35-160-228-91.us-west-2.compute.amazonaws.com:8090` in the Chrome/Firefox: 
     `./darknet detector train cfg/coco.data yolov3.cfg darknet53.conv.74 -dont_show -mjpeg_port 8090 -map`
@@ -125,6 +127,8 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 * Remeber to put data/9k.tree and data/coco9k.map under the same folder of your app if you use the cpp api to build an app
 * To process a list of images `data/train.txt` and save results of detection to `result.txt` use:                             
     `darknet.exe detector test cfg/coco.data yolov3.cfg yolov3.weights -dont_show -ext_output < data/train.txt > result.txt`
+* Pseudo-lableing - to process a list of images `data/new_train.txt` and save results of detection in Yolo training format for each image as label `<image_name>.txt` (in this way you can increase the amount of training data) use:
+    `darknet.exe detector test cfg/coco.data yolov3.cfg yolov3.weights -thresh 0.25 -dont_show -save_labels < data/new_train.txt`
 * To calculate anchors: `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
 * To check accuracy mAP@IoU=50: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
 * To check accuracy mAP@IoU=75: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights -iou_thresh 0.75`
@@ -247,7 +251,7 @@ Then add to your created project:
 
 7. Start training by using `train_voc.cmd` or by using the command line: 
 
-    `darknet.exe detector train data/voc.data cfg/yolov3-voc.cfg darknet53.conv.74` 
+    `darknet.exe detector train cfg/voc.data cfg/yolov3-voc.cfg darknet53.conv.74` 
 
 (**Note:** To disable Loss-Window use flag `-dont_show`. If you are using CPU, try `darknet_no_gpu.exe` instead of `darknet.exe`.)
 
@@ -259,9 +263,9 @@ More information about training by the link: http://pjreddie.com/darknet/yolo/#t
 
 ## How to train with multi-GPU:
 
-1. Train it first on 1 GPU for like 1000 iterations: `darknet.exe detector train data/voc.data cfg/yolov3-voc.cfg darknet53.conv.74`
+1. Train it first on 1 GPU for like 1000 iterations: `darknet.exe detector train cfg/voc.data cfg/yolov3-voc.cfg darknet53.conv.74`
 
-2. Then stop and by using partially-trained model `/backup/yolov3-voc_1000.weights` run training with multigpu (up to 4 GPUs): `darknet.exe detector train data/voc.data cfg/yolov3-voc.cfg /backup/yolov3-voc_1000.weights -gpus 0,1,2,3`
+2. Then stop and by using partially-trained model `/backup/yolov3-voc_1000.weights` run training with multigpu (up to 4 GPUs): `darknet.exe detector train cfg/voc.data cfg/yolov3-voc.cfg /backup/yolov3-voc_1000.weights -gpus 0,1,2,3`
 
 Only for small datasets sometimes better to decrease learning rate, for 4 GPUs set `learning_rate = 0.00025` (i.e. learning_rate = 0.001 / GPUs). In this case also increase 4x times `burn_in =` and `max_batches =` in your cfg-file. I.e. use `burn_in = 4000` instead of `1000`.
 
