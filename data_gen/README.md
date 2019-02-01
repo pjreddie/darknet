@@ -8,6 +8,10 @@ This directory helps generate the data for YOLO to train with by:
 - Exporting unlabeled and labeled images to zip files with ease
 
 ## Getting Started
+0. (Only need to do once) install needed pkgs:
+```
+./install.sh
+```
 1. Move a bag file into the bag_file directory
 - Note: it is expected this bag file is compressed, straight from the google drive
 2. Generate jpgs from the bag file with
