@@ -11,9 +11,9 @@ fi
 num=`ls -l OpenLabeling/main/input/ | wc -l`
 if [ $num -ne 1 ]
 then
-    read -p "OpenLabeling directory currently contains images. Delete and empty the input directory? (y/n)" res
+    read -p "OpenLabeling directory currently contains images. Delete and empty the input & output directory? (y/n)" res
     case $res in
-	[Yy]* ) rm OpenLabeling/main/input/*;;
+	[Yy]* ) rm OpenLabeling/main/input/*; rm -r OpenLabeling/main/output/*;;
 	* ) echo "Warning: For data purity please select no when prompted whether to load generated images into OpenLabeling.";;
     esac
 fi
@@ -28,6 +28,7 @@ then
 fi
 
 orig_file_name=$(ls)
+file_name_extension=${orig_file_name::-4}
 
 echo "Decompressing "$orig_file_name
 rosbag decompress $orig_file_name
@@ -61,12 +62,15 @@ echo "---------------------"
 cd ..
 dir=`pwd`
 file_path=`pwd`/bag_file/$orig_file_name
-export_path=`pwd`/images/
+export_path=`pwd`/images/$file_name_extension
 
+# launch the loading bar in the bkgnd
 ./scripts/loading_bar.py $bag_file_seconds &
 
+# export images to a specific path
 roslaunch launch/export.launch bag_file:=$file_path image_dir:=$export_path &> tmp.txt
 
+# make sure everything's killed
 rm tmp.txt
 pkill python
 

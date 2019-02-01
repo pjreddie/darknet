@@ -5,6 +5,6 @@
 	
      <node name="extract" pkg="image_view" type="extract_images" respawn="false" required="true" cwd="ROS_HOME">
         <remap from="image" to="/occam/image0"/>
-	<param name="filename_format" value="$(arg image_dir)/image0_%04d.jpg" />
+	<param name="filename_format" value="$(arg image_dir)-image0_%04d.jpg" />
       </node> 
     </launch>
