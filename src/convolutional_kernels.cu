@@ -180,7 +180,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         //state.input = l.binary_input_gpu;
         //cudaDeviceSynchronize();
 
-        if (l.align_bit_weights_gpu && !state.train && l.c >= 64)// && l.size > 1)
+        if (l.align_bit_weights_gpu && !state.train && l.c >= 32)
         {
             //return;
             cudaError_t status = cudaSuccess;
@@ -196,10 +196,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             size_t t_intput_size = new_ldb * n;
             size_t t_bit_input_size = t_intput_size / 8;// +1;
 
-            //if(0)
             if (l.c % 32 == 0)
-            //if (l.stride == 1 && l.pad == 1 && l.c % 32 == 0)
-            //if(1)
             {
                 //printf("\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - new XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
                 //printf("l.align_workspace_size = %d, (l.c * l.w * l.h)  = %d \n", l.align_workspace_size, (l.c * l.w * l.h));
@@ -296,7 +293,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //start_timer();
                 gemm_nn_custom_bin_mean_transposed_gpu(m, n, k,
                     (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu,
-                    new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu, l.activation);
+                    new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu, l.activation == LEAKY);
                 //cudaDeviceSynchronize();
                 //stop_timer_and_show_name("gemm_nn_custom_bin_mean_transposed_gpu");
 
@@ -366,7 +363,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                     //start_timer();
                     gemm_nn_custom_bin_mean_transposed_gpu(m, n, k,
                         (unsigned char *)l.align_bit_weights_gpu, new_ldb, (unsigned char *)l.transposed_align_workspace_gpu,
-                        new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu, l.activation);
+                        new_ldb, l.output_gpu, n, l.mean_arr_gpu, l.biases_gpu, l.activation == LEAKY);
                     //cudaDeviceSynchronize();
                     //stop_timer_and_show_name("gemm_nn_custom_bin_mean_transposed_gpu");
                 //}
@@ -391,7 +388,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             */
 
             //add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
-            if(l.activation != LINEAR && l.activation != LEAKY) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
+            if (l.activation != LINEAR && l.activation != LEAKY) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
+            //if(l.activation != LINEAR && l.activation != LEAKY) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
             //if (l.binary || l.xnor) swap_binary(&l);
             //cudaDeviceSynchronize();
             return;

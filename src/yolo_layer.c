@@ -116,6 +116,11 @@ void resize_yolo_layer(layer *l, int w, int h)
 box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, int stride)
 {
     box b;
+    // ln - natural logarithm (base = e)
+    // x` = t.x * lw - i;   // x = ln(x`/(1-x`))   // x - output of previous conv-layer
+    // y` = t.y * lh - i;   // y = ln(y`/(1-y`))   // y - output of previous conv-layer
+                            // w = ln(t.w * net.w / anchors_w); // w - output of previous conv-layer
+                            // h = ln(t.h * net.h / anchors_h); // h - output of previous conv-layer
     b.x = (i + x[index + 0*stride]) / lw;
     b.y = (j + x[index + 1*stride]) / lh;
     b.w = exp(x[index + 2*stride]) * biases[2*n]   / w;
@@ -437,6 +442,10 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
     for (b = 0; b < l.batch; ++b){
         for(n = 0; n < l.n; ++n){
             int index = entry_index(l, b, n*l.w*l.h, 0);
+            // y = 1./(1. + exp(-x))
+            // x = ln(y/(1-y))  // ln - natural logarithm (base = e)
+            // if(y->1) x -> inf
+            // if(y->0) x -> -inf
             activate_array_ongpu(l.output_gpu + index, 2*l.w*l.h, LOGISTIC);    // x,y
             index = entry_index(l, b, n*l.w*l.h, 4);
             activate_array_ongpu(l.output_gpu + index, (1+l.classes)*l.w*l.h, LOGISTIC); // classes and objectness

@@ -44,7 +44,7 @@ void fill_int8_gpu(unsigned char *src, unsigned char val, size_t size);
 void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias, ACTIVATION a);
+    float *C, int ldc, float *mean_arr, float *bias, int leaky_activation);
 
 // sequentially - BAD
 void gemm_nn_custom_bin_mean_transposed_sequentially_gpu(int M, int N, int K,

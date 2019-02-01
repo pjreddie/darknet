@@ -1433,193 +1433,133 @@ int warpAllReduceSum(int val) {
 // Tensor Cores binary (CC >= 7.3 && CUDA >= 10.0) - __CUDA_SUBBYTE_IMMA__
 #if CUDART_VERSION >= 10000
 #include <mma.h>
-#endif
-
-
-
-// Coalescing
-// A (weights) in the shared_memory - GOOD
-__global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, int K,
-    unsigned char *A, int lda,
-    unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias_arr)
-{
-    // total 57%
-    int index = blockIdx.x*blockDim.x + threadIdx.x;
-
-    __shared__ uint8_t A_s[6144 * 8 / 4];
-    //__shared__ uint64_t A_s[6144];  // 48 KB // [lda x M`]
-    //__shared__ uint8_t A_s[6144*8];  // 48 KB // [lda x M`]
-
-    int start_i = blockIdx.x*blockDim.x / N;
-    int end_i = (blockIdx.x*blockDim.x + blockDim.x) / N + 1;
-
-    size_t shared_size = lda * (end_i - start_i);
-
-    int i_cur = index / N;
-    int local_i = i_cur - start_i;
-    // ~10%
-    for (int k = threadIdx.x * 64; k < shared_size; k += blockDim.x * 64) {
-        int x = start_i*lda + k;
-        if (x < (M*lda)) *((uint64_t *)(A_s + k / 8)) = *((uint64_t *)(A + x / 8));
-    }
-    __syncthreads();
-
-    int i, j, k, h;
-    // 47% = 29 + 10 + 8
-    j = index % N;
-    {    // out_h*out_w - one channel output size [169 - 173056]
-        i = index / N;
-        //if (i < M)  // l.n - filters [16 - 55 - 1024]
-        {
-            int count = 0;
-            k = 0;
-
-
-            if (i < M)
-            {
-                float mean_val = mean_arr[i];
-                float bias_val = bias_arr[i];
-
-                for (; k < K; k += 128) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
-                                            //uint4 a_bit128 = *((uint4 *)(A + (i*lda + k) / 8));    // weights
-                    uint4 a_bit128 = *((uint4 *)(A_s + (local_i*lda + k) / 8));    // weights
-                    uint4 b_bit128 = *((uint4 *)(B + (j*ldb + k) / 8));    // input
-                    uint4 c_bit128 = xor_int128(a_bit128, b_bit128);
-
-                    count += __popc(c_bit128.w) + __popc(c_bit128.x) +
-                        __popc(c_bit128.y) + __popc(c_bit128.z);
-                }
-
-
-                const int bit_step = 128;// 256;
-                int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
-                count = count - f1;    // remove extra bits (from empty space for align only)
-
-                C[i*ldc + j] = (2 * count - K) *mean_val + bias_val;
-            }
-        }
-    }
-}
-
-#if CUDART_VERSION >= 10000
-// Coalescing
-// A (weights) in the shared_memory - GOOD
-__global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel_old(int M, int N, int K,
-    unsigned char *A, int lda,
-    unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias_arr)
-{
-    // total 57%
-    int index = blockIdx.x*blockDim.x + threadIdx.x;
-
-    __shared__ int C_s[8*8 * 32];    // BIN GEMM WMMA
-
-    const int lane_id = threadIdx.x % 32;
-    const int warp_id = threadIdx.x / 32;
-    const int global_warp_id = index / 32;
-
-
-    int i, j, k, h;
-    // 47% = 29 + 10 + 8
-    j = global_warp_id % (N / 8);
-    j = j * 8;
-    {    // out_h*out_w - one channel output size [169 - 173056]
-        i = global_warp_id / (N / 8);
-        i = i * 8;
-
-        if (i == 0 && j == 0 && lane_id == 0) {
-           // printf(" i = %d, j = %d, global_warp_id = %d, index = %d \n ", i, j, global_warp_id, index);
-        }
-
-        //if (i < M)  // l.n - filters [16 - 55 - 1024]
-        {
-            int count = 0;
-            k = 0;
-
-            if (i < M)
-            {
-                // Tensor Cores binary (CC >= 7.3 && CUDA >= 10.0) - __CUDA_SUBBYTE_IMMA__
-                //#if __CUDA_ARCH__ >= 730 && CUDART_VERSION >= 10000
 
 #define WMMA_M 8
 #define WMMA_N 8
 #define WMMA_K 128
 #define WMMA_K32 (WMMA_K/32)
 
+// Tensor Cores are used for XOR-GEMM
+__global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, int K,
+    unsigned char *A, int lda,
+    unsigned char *B, int ldb,
+    float *C, int ldc, float *mean_arr, float *bias_arr, int leaky_activation)
+{
+    // total 57%
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+
+    __shared__ int C_s[8*8 * 32];    // Temprorary result of GEMM WMMA
+
+    const int lane_id = threadIdx.x % 32;
+    const int warp_id = threadIdx.x / 32;
+    const int global_warp_id = index / 32;
+
+    const int N_aligned = N + WMMA_N - (N % WMMA_N);
+
+    int i, j, k, h;
+    // 47% = 29 + 10 + 8
+    j = global_warp_id % (N_aligned / WMMA_N);
+    j = j * WMMA_N;
+    {    // out_h*out_w - one channel output size [169 - 173056]
+        i = global_warp_id / (N_aligned / WMMA_N);
+        i = i * WMMA_M;
+
+        int count = 0;
+        k = 0;
+
+        if (i < M)  //if (i < M)  // l.n - filters [16 - 55 - 1024]
+        {
+            if (j + WMMA_N > N) j = N - WMMA_N;   // must be: j+7 < N
+            if (i + WMMA_M > M) i = M - WMMA_M;   // must be: i+7 < M
+
 #if __CUDA_ARCH__ >= 730
-                using namespace nvcuda;
+            // Tensor Cores
+            using namespace nvcuda;
 
-                wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, wmma::experimental::precision::b1, wmma::row_major> a_frag;
-                wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, wmma::experimental::precision::b1, wmma::col_major> b_frag;
-                wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, int> c_frag;
-                wmma::fill_fragment(c_frag, 0); // !!!! XOR isn't XNOR !!!!!!!!!!
+            wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, wmma::experimental::precision::b1, wmma::row_major> a_frag;
+            wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, wmma::experimental::precision::b1, wmma::col_major> b_frag;
+            wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, int> c_frag;
+            wmma::fill_fragment(c_frag, 0); // !!!! XOR isn't XNOR !!!!!!!!!!
 
-                // lda, ldb - are in bits, should be divided by /8 or /32
+            // 8 x 8 x 4 (uint32_t, 4 * 32 = 128 bit)
+            for (; k < K; k += 128)  // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
+            {
+                int64_t A_cur_index = (i*lda + k) / 8;
+                //int64_t A_cur_index = (local_i*lda + k) / 8;
+                int64_t B_cur_index = (j*ldb + k) / 8;
 
-                // 8 x 8 x 4 (uint32_t, 4 * 32 = 128 bit)
-                for (; k < K; k += 128)
-                {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
-                    int64_t A_cur_index = (i*lda + k) / 8;
-                    //int64_t A_cur_index = (local_i*lda + k) / 8;
-                    int64_t B_cur_index = (j*ldb + k) / 8;
+                // lda, ldb - are in bits
+                wmma::load_matrix_sync(a_frag, (uint32_t *)(A + A_cur_index), lda);   // lda = M
+                wmma::load_matrix_sync(b_frag, (uint32_t *)(B + B_cur_index), ldb);   // ldb = K
 
-                    wmma::load_matrix_sync(a_frag, (uint32_t *)(A + A_cur_index), lda);   // lda = M
-                    wmma::load_matrix_sync(b_frag, (uint32_t *)(B + B_cur_index), ldb);   // ldb = K
+                wmma::bmma_sync(c_frag, a_frag, b_frag, c_frag);    // XOR-GEMM
+            }
+            // C[i*ldc + j]
+            wmma::store_matrix_sync(&C_s[warp_id*WMMA_M*WMMA_N], c_frag, WMMA_N, wmma::mem_row_major);
+#else // __CUDA_ARCH__ >= 730
 
+            // Custom XOR-GEMM
+            int k_d = lane_id % 4;
+            int i_d = lane_id / 4;
+            int j_d = lane_id / 4;
 
-                    /*
-                    if (i == 0 && j == 0) {
-                        printf(" %d - %u, ", lane_id, a_frag.x[0]);
-                    }
+            int32_t accum_c_val[8]; // wmma::fill_fragment(c_frag, 0);
+            for (int local_j = 0; local_j < 8; ++local_j) {
+                accum_c_val[local_j] = 0;
+            }
 
+            // 8 x 8 x 4 (uint32_t, 4 * 32 = 128 bit)
+            for (; k < K; k += 128)  // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
+            {
+                int64_t A_cur_index = (i*lda + k) / 8;
+                //int64_t A_cur_index = (local_i*lda + k) / 8;
+                int64_t B_cur_index = (j*ldb + k) / 8;
 
-                   if (i == 0 && j == 0 && lane_id == 1) {
-                        printf("\n\n now raw mem \n");
+                // lda, ldb - are in bits
+                // 8*4 = 32
+                // 8*8 = 64
+                int k_d = lane_id % 4;
+                int i_d = lane_id / 4;
+                int j_d = lane_id / 4;
+                uint32_t a_val = *(uint32_t *)(A + ((i + i_d)*lda + (k + k_d*32)) / 8); // wmma::load_matrix_sync(a_frag, (uint32_t *)(A + A_cur_index), lda);
+                uint32_t b_val = *(uint32_t *)(B + ((j + j_d)*ldb + (k + k_d*32)) / 8); // wmma::load_matrix_sync(b_frag, (uint32_t *)(B + B_cur_index), ldb);
 
-                        for (int i_d = 0; i_d < WMMA_M; ++i_d) {    //8
-                            for (int k_d = 0; k_d < WMMA_K; k_d += 32) {  //4
-                                uint32_t a_bit32 = *((uint32_t *)(A + ((i + i_d)*lda + (k + k_d)) / 8));    // weights
-                                //uint32_t a_bit32 = *((uint32_t *)(A + A_cur_index + i_d*lda/8 + k_d/ 8));    // weights
-                                printf(" %d - %u, ", i_d*WMMA_K32 + k_d/32, a_bit32);
-                            }
-                            printf("\n");
-                        }
-                        printf("\n\n");
-                    }
-                   */
-
-
-                    wmma::bmma_sync(c_frag, a_frag, b_frag, c_frag);
-
-                    // C[i*ldc + j]
-                    wmma::store_matrix_sync(&C_s[warp_id*WMMA_M*WMMA_N], c_frag, WMMA_N, wmma::mem_row_major);
+                // wmma::bmma_sync(c_frag, a_frag, b_frag, c_frag);
+                int32_t c_val[8];  // 8 x 32 threads = 256
+                #pragma UNROLL
+                for (int local_j = 0; local_j < 8; ++local_j)
+                {
+                    uint32_t b_val_cur = __shfl(b_val, local_j *4 + k_d);
+                    c_val[local_j] = __popc(xor_int32(a_val, b_val_cur));
                 }
 
-                    /*
-                    for (; k < K; k += 128) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
-                    uint4 a_bit128 = *((uint4 *)(A + (i*lda + k) / 8));    // weights
-                    //uint4 a_bit128 = *((uint4 *)(A_s + (local_i*lda + k) / 8));    // weights
-                    uint4 b_bit128 = *((uint4 *)(B + (j*ldb + k) / 8));    // input
-                    uint4 c_bit128 = xnor_int128(a_bit128, b_bit128);
-
-                    count += __popc(c_bit128.w) + __popc(c_bit128.x) +
-                    __popc(c_bit128.y) + __popc(c_bit128.z);
+                #pragma UNROLL
+                for (int local_j = 0; local_j < 8; ++local_j)
+                {
+                    #pragma UNROLL
+                    for (int local_k = 0; local_k < 4; ++local_k) {
+                        accum_c_val[local_j] += __shfl(c_val[local_j], i_d * 4 + local_k);
                     }
-                    */
+                }
+            }
 
+            // only the first 8 threads (i) contain 8 good values each, in c_val[8] (j) = 8 x 8 =64
+            // wmma::store_matrix_sync(&C_s[warp_id*WMMA_M*WMMA_N], c_frag, WMMA_N, wmma::mem_row_major);
+            if (k_d == 0) {
+                for (int local_j = 0; local_j < 8; ++local_j)
+                {
+                    C_s[warp_id*WMMA_M*WMMA_N + i_d*WMMA_N + local_j] = accum_c_val[local_j];
+                }
+            }
 #endif // __CUDA_ARCH__ >= 730
 
-                #pragma UNROLL
-                for (int i_d = 0; i_d < WMMA_M; ++i_d) {
-                    for (int j_d = 0; j_d < WMMA_N; ++j_d)
+            {
+                int i_d = lane_id % WMMA_M;
+                {
+
+                    for (int j_d = lane_id / WMMA_M; j_d < WMMA_N; j_d += WMMA_N / 2)
                     {
-
                         int count = C_s[warp_id*WMMA_M*WMMA_N + i_d*WMMA_N + j_d];
-
-                        if (i == 0 && j == 0 && lane_id == 0) {
-                            //printf(" %d -", count);
-                        }
 
                         const int bit_step = 128;
                         int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
@@ -1627,21 +1567,15 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel_old(int M, int 
 
                         count = (2 * count - K);
 
-                        if (i == 0 && j == 0 && lane_id == 0) {
-                            //printf(" %d,", count);
-                        }
-
                         float mean_val = mean_arr[i + i_d];
                         float bias_val = bias_arr[i + i_d];
+                        float dst_val = count *mean_val + bias_val;
+                        if (leaky_activation)
+                            dst_val = (dst_val > 0) ? (dst_val) : (0.1*dst_val);    // Leaky activation
 
-                        C[(i + i_d)*ldc + (j + j_d)] = count *mean_val + bias_val;
-
-                        //C[(i + i_d)*ldc + (j + j_d)] = (2 * count - K) *mean_val + bias_val;
+                        C[(i + i_d)*ldc + (j + j_d)] = dst_val;
                     }
 
-                    if (i == 0 && j == 0 && lane_id == 0) {
-                        //printf(" i = %d, j = %d, i_d = %d \n ", i, j, i_d);
-                    }
                 }
             }
         }
@@ -1654,7 +1588,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel_old(int M, int 
 __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias_arr)
+    float *C, int ldc, float *mean_arr, float *bias_arr, int leaky_activation)
 {
     // total 57%
     int index = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1813,185 +1747,15 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 const int bit_step = 256;
                 int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
                 count = count - f1;    // remove extra bits (from empty space for align only)
-
-                C[i*ldc + j] = (2 * count - K) *mean_val + bias_val;
-            }
-        }
-    }
-}
-
-
-// Coalescing - with LEAKY activation
-// A (weights) in the shared_memory - GOOD
-__global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel_leaky(int M, int N, int K,
-    unsigned char *A, int lda,
-    unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias_arr)
-{
-    // total 57%
-    int index = blockIdx.x*blockDim.x + threadIdx.x;
-
-    __shared__ uint8_t A_s[6144 * 8 / 4];
-    //__shared__ uint64_t A_s[6144];  // 48 KB // [lda x M`]
-    //__shared__ uint8_t A_s[6144*8];  // 48 KB // [lda x M`]
-
-    int start_i = blockIdx.x*blockDim.x / N;
-    int end_i = (blockIdx.x*blockDim.x + blockDim.x) / N + 1;
-
-    size_t shared_size = lda * (end_i - start_i);
-
-    int i_cur = index / N;
-    int local_i = i_cur - start_i;
-    // ~10%
-    for (int k = threadIdx.x * 64; k < shared_size; k += blockDim.x * 64) {
-        int x = start_i*lda + k;
-        if (x < (M*lda)) *((uint64_t *)(A_s + k / 8)) = *((uint64_t *)(A + x / 8));
-    }
-    __syncthreads();
-
-    int i, j, k, h;
-    // 47% = 29 + 10 + 8
-    j = index % N;
-    {    // out_h*out_w - one channel output size [169 - 173056]
-        i = index / N;
-        //if (i < M)  // l.n - filters [16 - 55 - 1024]
-        {
-            int count = 0;
-            k = 0;
-
-#ifdef NOT_USED
-            // 32 thread X 256 bit = 8192 bit
-            for (; k < (K - 8192); k += 8192) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                ulonglong4 c_bit256;
-
-                //int64_t A_cur_index = (i*lda + k) / 8;
-                int64_t A_cur_index = (local_i*lda + k) / 8;
-                int64_t B_cur_index = (j*ldb + k) / 8;
-                if (i >= M) A_cur_index = 0;
-
-#pragma unroll
-                for (int t = 0; t < WARP_SIZE; ++t) {
-                    const int lane_id = threadIdx.x % WARP_SIZE;
-
-                    const int64_t A_i = __shfl(A_cur_index, t) + 32 * lane_id;
-                    const int64_t B_i = __shfl(B_cur_index, t) + 32 * lane_id;
-
-                    {
-                        //ulonglong4 a_bit256 = *((ulonglong4 *)(A + A_i));    // weights
-                        ulonglong4 a_bit256 = *((ulonglong4 *)(A_s + A_i));    // weights
-                        ulonglong4 b_bit256 = *((ulonglong4 *)(B + B_i));    // input
-                        c_bit256 = xnor_int256(a_bit256, b_bit256);
-                        int tmp_count = __popcll(c_bit256.w) + __popcll(c_bit256.x) +
-                            __popcll(c_bit256.y) + __popcll(c_bit256.z);
-
-                        int sum_count = warpAllReduceSum(tmp_count);
-                        if (lane_id == t) count += sum_count;
-                    }
-                }
-            }
-#endif
-
-//#ifdef NOT_USED
-            // 32 thread X 64 bit = 2048 bit // 29%
-            for (; k < (K - 2048); k += 2048) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                uint64_t c_bit64;
-
-                //int64_t A_cur_index = (i*lda + k) / 8;
-                int64_t A_cur_index = (local_i*lda + k) / 8;
-                int64_t B_cur_index = (j*ldb + k) / 8;
-                if (i >= M) A_cur_index = 0;
-
-#pragma unroll
-                for (int t = 0; t < WARP_SIZE; ++t) {
-                    const int lane_id = threadIdx.x % WARP_SIZE;
-
-                    const int64_t A_i = __shfl(A_cur_index, t) + 8 * lane_id;
-                    const int64_t B_i = __shfl(B_cur_index, t) + 8 * lane_id;
-
-                    {
-                        //uint64_t a_bit64 = *((uint64_t *)(A + A_i));    // weights
-                        uint64_t a_bit64 = *((uint64_t *)(A_s + A_i));    // weights
-                        uint64_t b_bit64 = *((uint64_t *)(B + B_i));    // input
-                        c_bit64 = xnor_int64(a_bit64, b_bit64);
-                        int tmp_count = __popcll(c_bit64);
-
-                        int sum_count = warpAllReduceSum(tmp_count);
-                        if (lane_id == t) count += sum_count;
-                    }
-                }
-            }
-//#endif
-
-            //#ifdef NOT_USED
-            // 32 thread X 32 bit = 1024 bit // 10%
-            for (; k < (K - 1024); k += 1024) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-
-                                                  //int64_t A_cur_index = (i*lda + k) / 8;
-                int64_t A_cur_index = (local_i*lda + k) / 8;
-                int64_t B_cur_index = (j*ldb + k) / 8;
-                if (i >= M) A_cur_index = 0;
-
-#pragma unroll
-                for (int t = 0; t < WARP_SIZE; ++t) {
-                    const int lane_id = threadIdx.x % WARP_SIZE;
-
-                    const int64_t A_i = __shfl(A_cur_index, t) + 4 * lane_id;
-                    const int64_t B_i = __shfl(B_cur_index, t) + 4 * lane_id;
-
-                    {
-                        //uint64_t a_bit64 = *((uint64_t *)(A + A_i));    // weights
-                        uint32_t a_bit32 = *((uint32_t *)(A_s + A_i));    // weights
-                        uint32_t b_bit32 = *((uint32_t *)(B + B_i));    // input
-                        uint32_t c_bit32 = xnor_int32(a_bit32, b_bit32);
-                        int tmp_count = __popc(c_bit32);
-
-                        int sum_count = warpAllReduceSum(tmp_count);
-                        if (lane_id == t) count += sum_count;
-                    }
-                }
-            }
-            //#endif
-
-            if (i < M)
-            {
-                float mean_val = mean_arr[i];
-                float bias_val = bias_arr[i];
-
-                //#ifdef NOT_USED
-                // 8%
-                for (; k < K; k += 256) {   // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
-                                            //ulonglong4 a_bit256 = *((ulonglong4 *)(A + (i*lda + k) / 8));    // weights
-                    ulonglong4 a_bit256 = *((ulonglong4 *)(A_s + (local_i*lda + k) / 8));    // weights
-                    ulonglong4 b_bit256 = *((ulonglong4 *)(B + (j*ldb + k) / 8));    // input
-                    ulonglong4 c_bit256 = xnor_int256(a_bit256, b_bit256);
-
-                    count += __popcll(c_bit256.w) + __popcll(c_bit256.x) +
-                        __popcll(c_bit256.y) + __popcll(c_bit256.z);
-                }
-                //#endif
-
-#ifdef NOT_USED
-                for (; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                                           //uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));    // weights
-                    uint64_t a_bit64 = *((uint64_t *)(A_s + (local_i*lda + k) / 8));    // weights
-                    uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));            // input
-                    uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
-
-                    count += __popcll(c_bit64);
-                }
-#endif
-
-                const int bit_step = 256;
-                int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
-                count = count - f1;    // remove extra bits (from empty space for align only)
-
                 float dst_val = (2 * count - K) *mean_val + bias_val;
-                dst_val = (dst_val > 0) ? (dst_val) : (0.1*dst_val);    // Leaky activation
+                if(leaky_activation)
+                    dst_val = (dst_val > 0) ? (dst_val) : (0.1*dst_val);    // Leaky activation
                 C[i*ldc + j] = dst_val;
             }
         }
     }
 }
+
 
 // further optimization - use WMMA GEMM for using Tensor Cores
 // https://github.com/NVIDIA-developer-blog/code-samples/blob/master/posts/tensor-cores/simpleTensorCoreGEMM.cu
@@ -2012,7 +1776,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel_leaky(int M, int N
 void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias, ACTIVATION a)
+    float *C, int ldc, float *mean_arr, float *bias, int leaky_activation)
 {
     size_t size = M*N;
     const int num_blocks = get_number_of_blocks(size, BLOCK);
@@ -2026,38 +1790,39 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     */
     //printf(" shared_memory: (w) lda*BLOCK/N = %d, (i) ldb*BLOCK/M = %d, \t lda = %d \n\n", lda*BLOCK / N, ldb*BLOCK / M, lda);
 
-    if (a == LEAKY) {
-        gemm_nn_custom_bin_mean_transposed_gpu_kernel_leaky << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
+#if CUDART_VERSION >= 10000
+    //if (M % 8 == 0 && N % 8 == 0 && M == 128)
+    //if (M >= 32)    // l.n >= 32
+    if (1)
+    {
+        const int M_aligned = M + (8 - (M % 8));
+        const int N_aligned = N + (8 - (N % 8));
+        size_t size = (M_aligned / 8)*(N_aligned / 8)*WARP_SIZE;
+        const int num_blocks = get_number_of_blocks(size, BLOCK);
+
+        //printf(" lda = %d, ldb = %d, ldc = %d, lda/32 = %d, ldb/32 = %d, ldc/32 = %d \n", lda, ldb, ldc, lda / 32, ldb / 32, ldc / 32);
+        //printf("  l.c (K/9) = %d, M (l.n) = %d \n", (K%9 == 0)? K / 9: K, M);
+        gemm_nn_custom_bin_mean_transposed_tensor_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
             M, N, K,
             A, lda,
             B, ldb,
             C, ldc,
-            mean_arr, bias);
+            mean_arr, bias, leaky_activation);
+
+        //cudaDeviceSynchronize();
+        //getchar();
     }
-    else {
-        /*
-#if CUDART_VERSION >= 10000
-        if (M % 8 == 0 && N % 8 == 0 && M == 128) {
-            //printf(" lda = %d, ldb = %d, ldc = %d, lda/32 = %d, ldb/32 = %d, ldc/32 = %d \n", lda, ldb, ldc, lda / 32, ldb / 32, ldc / 32);
-            gemm_nn_custom_bin_mean_transposed_tensor_kernel_old << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
-                M, N, K,
-                A, lda,
-                B, ldb,
-                C, ldc,
-                mean_arr, bias);
-        }
-        else
+    else
 #endif  // CUDART_VERSION >= 10000
-            */
-        {
-            gemm_nn_custom_bin_mean_transposed_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
-                M, N, K,
-                A, lda,
-                B, ldb,
-                C, ldc,
-                mean_arr, bias);
-        }
+    {
+        gemm_nn_custom_bin_mean_transposed_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
+            M, N, K,
+            A, lda,
+            B, ldb,
+            C, ldc,
+            mean_arr, bias, leaky_activation);
     }
+
 }
 // --------------------------------
 
