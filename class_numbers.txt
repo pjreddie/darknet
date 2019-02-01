@@ -1,2 +1,2 @@
-0 : start_gate_poll
-1 : path
+0 start_gate_poll
+1 path

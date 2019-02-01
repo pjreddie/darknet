@@ -10,7 +10,7 @@ fi
 num=`ls -l OpenLabeling/main/input/ | wc -l`
 if [ $num -ne 1 ]
 then
-    echo "OpenLabeling directory currently contains images. Please run labeled2zip.sh to save and clear these images"
+    echo "OpenLabeling directory currently contains images. Please enter OpenLabeling/main and run labeled2zip.sh to save and clear these images if they are finished being labeled."
     exit
 fi
 

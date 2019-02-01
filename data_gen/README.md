@@ -12,14 +12,17 @@ This directory helps generate the data for YOLO to train with by:
 ```
 ./install.sh
 ```
-1. Move a bag file into the bag_file directory
-- Note: it is expected this bag file is compressed, straight from the google drive
+1. Move a bag file into the bag_file directory, if the directory "bag_file" does not exist it, create it with:
+```
+mkdir bag_file
+```
+- Note: it is expected the .bag file in the directory "bag_file" is compressed, straight from the google drive
 2. Generate jpgs from the bag file with
 ```
 ./bag2images
 ```
 3. If you wish to label the jpgs now, select yes when prompted to move the images to the OpenLabeling directory
-- Note if you select no, a zip file ending in "_unlabeled.zip" will be created containing the jpgs. From there see the section below titled "Labeling images from an *_unlabeled.zip file"
+- Note if you select no, a zip file ending in "_unlabeled.zip" will be created containing the jpgs. From there see the section below titled "Labeling images from an *_unlabeled.zip file" 
 4. To start labeling: change directories: 
 ```
 cd OpenLabeling/main
@@ -32,7 +35,7 @@ python main.py
 ```
 ./labeled2zip
 ```
-7. You will see two zip files. Put the "negatives-" one in the YTS/Negatives/Unprocessed directory. Put the other one in the same directory as the original bag file used to generate the data.
+7. You will see two zip files. On the google drive, put the "negatives-" zip in the YTS/Negatives/Unprocessed directory. Put the other one in the same directory as the original bag file used to generate the data.
 
 ### Labeling images from an *_unlabeled.zip file
 1. Move the zip file into the zipped_images directory

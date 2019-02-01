@@ -8,13 +8,13 @@ then
     rm images/*
 fi
 
-num=`ls -l OpenLabeling/main/input/ | wc -l`
-if [ $num -ne 1 ]
+openLabelCount=`ls -l OpenLabeling/main/input/ | wc -l`
+if [ $openLabelCount -ne 1 ]
 then
     read -p "OpenLabeling directory currently contains images. Delete and empty the input & output directory? (y/n)" res
     case $res in
-	[Yy]* ) rm OpenLabeling/main/input/*; rm -r OpenLabeling/main/output/*;;
-	* ) echo "Warning: For data purity please select no when prompted whether to load generated images into OpenLabeling.";;
+	[Yy]* ) rm OpenLabeling/main/input/*; rm -r OpenLabeling/main/output/*; openLabelCount=1;;
+	* ) ;;
     esac
 fi
 
@@ -78,17 +78,25 @@ echo "Finished Exporting images"
 
 num=`ls -1 images/ | wc -l`
 echo "Number of images: "$num
-
-read -p "Move images into OpenLabeling? (y/n)" res
-
 zip_name=${orig_file_name::-4}_unlabeled.zip
 
-case $res in
-    [Yy]* ) mv images/* OpenLabeling/main/input/; echo "Images are located in OpenLabeling/main/input/";;
-    * ) mkdir -p zipped_images; cd images; zip $zip_name *; mv $zip_name ../zipped_images/; cd ..; rm images/*; echo "Images are zipped and located in zipped_images/$zip_name";;
-esac
+if [ $openLabelCount -eq 1 ]
+then
+    cp images/* OpenLabeling/main/input/
+    echo "Images have been copied to OpenLabeling/main/input/, ready for labeling"
+fi
 
-echo "Deleting the uncompressed file for unneccessary space usage"
+# Zip the unlabeled images
+mkdir -p zipped_images
+cd images
+zip -q $zip_name *
+mv $zip_name ../zipped_images/
+cd ..
+rm images/*
+echo "---------------------"
+echo "Success, images have been zipped and are located in zipped_images/"$zip_name
+
+echo "Deleting the uncompressed bag file for unneccessary space usage"
 rm bag_file/$orig_file_name
 mv bag_file/* bag_file/$orig_file_name
 
