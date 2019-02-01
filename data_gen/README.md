@@ -8,30 +8,32 @@ This directory helps generate the data for YOLO to train with by:
 - Exporting unlabeled and labeled images to zip files with ease
 
 ## Getting Started
-1 Move a bag file into the bag_file directory
+1. Move a bag file into the bag_file directory
 - Note: it is expected this bag file is compressed, straight from the google drive
-2 Generate images from the bag file
+2. Generate jpgs from the bag file with
 ```
 ./bag2images
 ```
-3 If you wish to train the bag files now, select yes when prompted to move the images to OpenLabeling
-- Note if you select No, a zip file with the string "_unlabeled" appended to it will be created containing the jpgs
-4 Change directories to prepare for labeling
+3. If you wish to label the jpgs now, select yes when prompted to move the images to the OpenLabeling directory
+- Note if you select no, a zip file ending in "_unlabeled.zip" will be created containing the jpgs.
+4. To start labeling: change directories: 
 ```
 cd OpenLabeling/main
 ```
-5 Begin Labeling images
+5. Begin Labeling images. Take note of the keystrokes and ability to undo boxes by following the README directions in the OpenLabeling directory.
 ```
 python main.py
 ```
-6 Once labeling is done, we are ready to export the images and load them and their labels to the drive. Run the following to split the data into positive and negative examples and create zip files.
+6. Once labeling is done, we are ready to export the images and load them and their labels to the drive. Run the following to split the data into positive and negative examples and create zip files.
 ```
 ./labeled2zip
 ```
-7 You will see 2 zip files. Please put the "negatives-" one in the YTS/Negatives/Unprocessed directory. Put the other one in the same directory as the original bag file used to generate the data.
+7. You will see two zip files. Please put the "negatives-" one in the YTS/Negatives/Unprocessed directory. Put the other one in the same directory as the original bag file used to generate the data.
 
 ### Labeling images from an *_unlabeled.zip file
-1 Move the zip file into the zipped_images directory
-2 $ ./label_zip
-3 $ cd OpenLabeling/main
-4 $ python main.py
+1. Move the zip file into the zipped_images directory
+```
+./label_zip
+```
+2. Continue with steps 4-7) above
+
