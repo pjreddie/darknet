@@ -87,7 +87,7 @@ void forward_network_gpu(network net, network_state state)
         }
 */
     }
-    cudaStreamSynchronize(get_cuda_stream());   // sync CUDA-functions
+    //cudaStreamSynchronize(get_cuda_stream());   // sync CUDA-functions
     //cudaDeviceSynchronize();
     //show_total_time();
 }

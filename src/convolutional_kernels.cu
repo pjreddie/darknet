@@ -27,7 +27,7 @@ __global__ void binarize_kernel(float *x, int n, float *binary)
 void binarize_gpu(float *x, int n, float *binary)
 {
     binarize_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(x, n, binary);
-    check_error(cudaPeekAtLastError());
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 __global__ void binarize_input_kernel(float *input, int n, int size, float *binary)
@@ -48,7 +48,7 @@ __global__ void binarize_input_kernel(float *input, int n, int size, float *bina
 void binarize_input_gpu(float *input, int n, int size, float *binary)
 {
     binarize_input_kernel<<<cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >>>(input, n, size, binary);
-    check_error(cudaPeekAtLastError());
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 __global__ void binarize_weights_kernel(float *weights, int n, int size, float *binary)
@@ -70,7 +70,7 @@ __global__ void binarize_weights_kernel(float *weights, int n, int size, float *
 void binarize_weights_gpu(float *weights, int n, int size, float *binary)
 {
     binarize_weights_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> >(weights, n, size, binary);
-    check_error(cudaPeekAtLastError());
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 #define WARP_SIZE 32
@@ -121,7 +121,7 @@ void fast_binarize_weights_gpu(float *weights, int n, int size, float *binary, f
         set_zero_kernel << <(n/BLOCK + 1), BLOCK, 0, get_cuda_stream() >> > (mean_arr_gpu, n);
         reduce_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (weights, n, size, mean_arr_gpu);
         binarize_weights_mean_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (weights, n, size, binary, mean_arr_gpu);
-        check_error(cudaPeekAtLastError());
+        CHECK_CUDA(cudaPeekAtLastError());
     }
     else {
         binarize_weights_gpu(weights, n, size, binary);
@@ -140,6 +140,7 @@ __global__ void cuda_f32_to_f16(float* input_f32, size_t size, half *output_f16)
 
 void cuda_convert_f32_to_f16(float* input_f32, size_t size, float *output_f16) {
     cuda_f32_to_f16 <<< size / BLOCK + 1, BLOCK, 0, get_cuda_stream() >>> (input_f32, size, (half *)output_f16);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 __global__ void cuda_f16_to_f32(half* input_f16, size_t size, float *output_f32)
@@ -151,6 +152,7 @@ __global__ void cuda_f16_to_f32(half* input_f16, size_t size, float *output_f32)
 
 void cuda_convert_f16_to_f32(float* input_f16, size_t size, float *output_f32) {
     cuda_f16_to_f32 <<< size / BLOCK + 1, BLOCK, 0, get_cuda_stream() >>> ((half *)input_f16, size, output_f32);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 half *cuda_make_f16_from_f32_array(float *src, size_t n)
@@ -465,7 +467,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         {
             if (state.train) // Training
             {
-                copy_ongpu(l.outputs*l.batch / 2, output16, 1, l.x_gpu, 1);
+                simple_copy_ongpu(l.outputs*l.batch / 2, output16, l.x_gpu);
+                //copy_ongpu(l.outputs*l.batch / 2, output16, 1, l.x_gpu, 1);
                 //cudaMemcpyAsync(l.x_gpu, output16, l.outputs*l.batch*sizeof(half), cudaMemcpyDefault, get_cuda_stream());
                 float one = 1;
                 float zero = 0;
@@ -645,7 +648,9 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 .00001,
                 l.mean_gpu,                // input (should be FP32)
                 l.variance_gpu));        // input (should be FP32)
-            copy_ongpu(l.outputs*l.batch / 2, l.x_norm_gpu, 1, delta16, 1);
+
+            simple_copy_ongpu(l.outputs*l.batch / 2, l.x_norm_gpu, delta16);
+            //copy_ongpu(l.outputs*l.batch / 2, l.x_norm_gpu, 1, delta16, 1);
             //cudaMemcpyAsync(delta16, l.x_norm_gpu, l.outputs*l.batch * sizeof(half), cudaMemcpyDefault, get_cuda_stream());
         }
         else
@@ -789,19 +794,20 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
 void pull_convolutional_layer(convolutional_layer layer)
 {
-    cuda_pull_array(layer.weights_gpu, layer.weights, layer.c*layer.n*layer.size*layer.size);
-    cuda_pull_array(layer.biases_gpu, layer.biases, layer.n);
-    cuda_pull_array(layer.weight_updates_gpu, layer.weight_updates, layer.c*layer.n*layer.size*layer.size);
-    cuda_pull_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
+    cuda_pull_array_async(layer.weights_gpu, layer.weights, layer.c*layer.n*layer.size*layer.size);
+    cuda_pull_array_async(layer.biases_gpu, layer.biases, layer.n);
+    cuda_pull_array_async(layer.weight_updates_gpu, layer.weight_updates, layer.c*layer.n*layer.size*layer.size);
+    cuda_pull_array_async(layer.bias_updates_gpu, layer.bias_updates, layer.n);
     if (layer.batch_normalize){
-        cuda_pull_array(layer.scales_gpu, layer.scales, layer.n);
-        cuda_pull_array(layer.rolling_mean_gpu, layer.rolling_mean, layer.n);
-        cuda_pull_array(layer.rolling_variance_gpu, layer.rolling_variance, layer.n);
+        cuda_pull_array_async(layer.scales_gpu, layer.scales, layer.n);
+        cuda_pull_array_async(layer.rolling_mean_gpu, layer.rolling_mean, layer.n);
+        cuda_pull_array_async(layer.rolling_variance_gpu, layer.rolling_variance, layer.n);
     }
     if (layer.adam){
-        cuda_pull_array(layer.m_gpu, layer.m, layer.c*layer.n*layer.size*layer.size);
-        cuda_pull_array(layer.v_gpu, layer.v, layer.c*layer.n*layer.size*layer.size);
+        cuda_pull_array_async(layer.m_gpu, layer.m, layer.c*layer.n*layer.size*layer.size);
+        cuda_pull_array_async(layer.v_gpu, layer.v, layer.c*layer.n*layer.size*layer.size);
     }
+    cudaStreamSynchronize(get_cuda_stream());
 }
 
 void push_convolutional_layer(convolutional_layer layer)
