@@ -848,7 +848,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     free_list(sections);
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
-    printf("Total BFLOPS %5.3f \n", bflops);
+    fprintf(stderr, "Total BFLOPS %5.3f \n", bflops);
 #ifdef GPU
     get_cuda_stream();
     get_cuda_memcpy_stream();
@@ -870,7 +870,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             check_error(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
         }
         if (workspace_size) {
-            printf(" Allocate additional workspace_size = %1.2f MB \n", (float)workspace_size/1000000);
+            fprintf(stderr, " Allocate additional workspace_size = %1.2f MB \n", (float)workspace_size/1000000);
             net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
         }
         else {

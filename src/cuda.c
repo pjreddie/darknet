@@ -54,7 +54,7 @@ void check_error(cudaError_t status)
     }
 }
 
-void check_error_extended(cudaError_t status, char *file, int line, char *date_time)
+void check_error_extended(cudaError_t status, const char *file, int line, const char *date_time)
 {
     if (status != cudaSuccess)
         printf("CUDA Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
@@ -165,7 +165,7 @@ void cudnn_check_error(cudnnStatus_t status)
     }
 }
 
-void cudnn_check_error_extended(cudnnStatus_t status, char *file, int line, char *date_time)
+void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line, const char *date_time)
 {
     if (status != cudaSuccess)
         printf("\n cuDNN Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
