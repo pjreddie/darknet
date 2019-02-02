@@ -16,16 +16,6 @@ then
     rm images/*
 fi
 
-# openLabelCount=`ls -l OpenLabeling/main/input/ | wc -l`
-# if [ $openLabelCount -ne 1 ]
-# then
-#     read -p "OpenLabeling directory currently contains images. Delete and empty the input & output directory? (y/n)" res
-#     case $res in
-# 	[Yy]* ) rm OpenLabeling/main/input/*; rm -r OpenLabeling/main/output/*; openLabelCount=1;;
-# 	* ) ;;
-#     esac
-# fi
-
 orig_file_name=$1
 file_name_root=${orig_file_name::-4}
 
@@ -38,9 +28,15 @@ if [ -n "$zip_exists" ]; then
     rm zipped_images/$file_name_root*
 fi
 
-echo "Decompressing "$orig_file_name
-rosbag decompress $orig_file_name
-echo "Completed decompression"
+check_compressed=`rosbag info $orig_file_name | grep compression |grep none`
+if [ -z "$check_compressed" ]; then
+    echo "Decompressing "$orig_file_name
+    rosbag decompress $orig_file_name
+    echo "Completed decompression"
+else
+    echo "Bag file already decompressed"
+    already_compressed=1    
+fi
 
 duration_str=`rosbag info $orig_file_name | grep duration`
 strindex() { 
@@ -80,18 +76,12 @@ roslaunch launch/export.launch bag_file:=$file_path image_dir:=$export_path &> t
 # make sure everything's killed
 rm tmp.txt
 pkill python
-
 echo "Finished Exporting images"
 
-num=`ls -1 images/ | wc -l`
-echo "Number of images: "$num
+# Inform user about data generated
+num_images=`ls -1 images/ | wc -l`
+echo "Number of images: "$num_images
 zip_name=${orig_file_name::-4}_unlabeled.zip
-
-# if [ $openLabelCount -eq 1 ]
-# then
-#     cp images/* OpenLabeling/main/input/
-#     echo "Images have been copied to OpenLabeling/main/input/, ready for labeling"
-# fi
 
 # Zip the unlabeled images
 cd images
@@ -102,7 +92,11 @@ rm images/*
 echo "---------------------"
 echo "Success, images have been zipped and are located in zipped_images/"$zip_name
 
-echo "Deleting the uncompressed bag file for unneccessary space usage"
-rm $orig_file_name
-mv $file_name_root.orig.bag $orig_file_name
+if [ -z $already_compressed ]
+then
+    echo "Deleting the uncompressed bag file for unneccessary space usage"
+    rm $orig_file_name
+    mv $file_name_root.orig.bag $orig_file_name
+fi
+
 
