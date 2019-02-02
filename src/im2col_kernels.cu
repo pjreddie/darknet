@@ -1779,6 +1779,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
 
     //if (M % 8 == 0 && N % 8 == 0 && M == 128)
     //if (M >= 32)    // l.n >= 32
+#if CUDA_VERSION >= 10000
     if (1)
     {
         const int M_aligned = M + (8 - (M % 8));
@@ -1799,6 +1800,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
         //getchar();
     }
     else
+#endif  //# CUDA_VERSION >= 10000
     {
         gemm_nn_custom_bin_mean_transposed_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
             M, N, K,
