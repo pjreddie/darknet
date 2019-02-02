@@ -26,9 +26,6 @@ int cuda_get_device()
 
 void check_error(cudaError_t status)
 {
-#ifdef DEBUG
-    cudaDeviceSynchronize();
-#endif
     cudaError_t status2 = cudaGetLastError();
     if (status != cudaSuccess)
     {
@@ -58,6 +55,11 @@ void check_error(cudaError_t status)
 
 void check_error_extended(cudaError_t status, const char *file, int line, const char *date_time)
 {
+    if (status != cudaSuccess)
+        printf("CUDA Prev Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+#ifdef DEBUG
+    status = cudaDeviceSynchronize();
+#endif
     if (status != cudaSuccess)
         printf("CUDA Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
     check_error(status);
@@ -171,6 +173,11 @@ void cudnn_check_error(cudnnStatus_t status)
 
 void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line, const char *date_time)
 {
+    if (status != cudaSuccess)
+        printf("\n cuDNN Prev Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+#ifdef DEBUG
+    status = cudaDeviceSynchronize();
+#endif
     if (status != cudaSuccess)
         printf("\n cuDNN Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
     cudnn_check_error(status);

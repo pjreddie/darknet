@@ -86,6 +86,8 @@ void im2col_ongpu(float *im,
                 num_kernels, im, height, width, ksize, pad,
                 stride, height_col,
                 width_col, data_col);
+
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -219,6 +221,8 @@ void im2col_align_ongpu(float *im,
             num_kernels, im, height, width, ksize, pad,
             stride, height_col,
             width_col, data_col, bit_align);
+
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 
@@ -346,6 +350,8 @@ void im2col_align_bin_ongpu(float *im,
             num_kernels, im, height, width, ksize, channels, pad,
             stride, height_col,
             width_col, data_col, bit_align);
+
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -436,6 +442,7 @@ void float_to_bit_gpu(float *src, unsigned char *dst, size_t size)
     //const int num_blocks = size / (32*1024) + 1;
     const int num_blocks = get_number_of_blocks(size, 32 * 1024);
     float_to_bit_gpu_kernel<<<num_blocks, 1024, 0, get_cuda_stream()>>>(src, dst, size);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -653,6 +660,7 @@ void transpose_bin_gpu(unsigned char *A, unsigned char *B, const int n, const in
     const int num_blocks32 = size32 / BLOCK_TRANSPOSE32 + 1;
     transpose_bin_gpu_kernel_32 << <num_blocks32, BLOCK_TRANSPOSE32, 0, get_cuda_stream() >> >((uint32_t *)A, (uint32_t *)B, n, m, lda, ldb, block_size);
     //transpose_bin_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(A, B, n, m, lda, ldb, block_size);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -679,6 +687,7 @@ void transpose_uint32_gpu(uint32_t *src, uint32_t *dst, int src_h, int src_w, in
     int size = src_w * src_h;
     const int num_blocks = size / BLOCK + 1;
     transpose_uint32_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(src, dst, src_h, src_w, src_align, dst_align);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -744,6 +753,7 @@ void transpose_uint32_gpu_2(uint32_t *src, uint32_t *dst, int src_h, int src_w, 
     int size = src_w_align * src_h_align;
     int num_blocks = size / TRANS_BLOCK;
     transpose_uint32_kernel_2 << <num_blocks, TRANS_BLOCK, 0, get_cuda_stream() >> >(src, dst, src_h, src_w, src_align, dst_align);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -781,6 +791,7 @@ void repack_input_gpu(float *input, float *re_packed_input, int w, int h, int c)
     int size = w * h * c;
     const int num_blocks = size / BLOCK + 1;
     repack_input_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(input, re_packed_input, w, h, c);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -820,6 +831,7 @@ void repack_input_gpu_2(float *input, float *re_packed_input, int w, int h, int 
     int size = w * h * c;
     const int num_blocks = size / BLOCK + 1;
     repack_input_kernel_2 << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(input, re_packed_input, w, h, c);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -869,6 +881,7 @@ void repack_input_gpu_bin(float *input, uint32_t *re_packed_input_bin, int w, in
     const int num_blocks = get_number_of_blocks(size, block_size);
     //printf("\n num_blocks = %d, num_blocks/32 = %d,  block_size = %d \n", num_blocks, num_blocks / 32, block_size);
     repack_input_kernel_bin << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 /*
@@ -919,6 +932,7 @@ void repack_input_gpu_bin(float *input, uint32_t *re_packed_input_bin, int w, in
     const int num_blocks = get_number_of_blocks(size, block_size);
     printf("\n num_blocks = %d, num_blocks/32 = %d,  block_size = %d \n", num_blocks, num_blocks/32, block_size);
     repack_input_kernel_bin << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 */
 
@@ -932,6 +946,7 @@ __global__ void fill_int8_gpu_kernel(unsigned char *src, unsigned char val, size
 void fill_int8_gpu(unsigned char *src, unsigned char val, size_t size) {
     const int num_blocks = size / BLOCK + 1;
     fill_int8_gpu_kernel<<<num_blocks, BLOCK, 0, get_cuda_stream()>>>(src, val, size);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -1761,7 +1776,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     */
     //printf(" shared_memory: (w) lda*BLOCK/N = %d, (i) ldb*BLOCK/M = %d, \t lda = %d \n\n", lda*BLOCK / N, ldb*BLOCK / M, lda);
 
-#if CUDART_VERSION >= 10000
+
     //if (M % 8 == 0 && N % 8 == 0 && M == 128)
     //if (M >= 32)    // l.n >= 32
     if (1)
@@ -1784,7 +1799,6 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
         //getchar();
     }
     else
-#endif  // CUDART_VERSION >= 10000
     {
         gemm_nn_custom_bin_mean_transposed_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
             M, N, K,
@@ -1793,7 +1807,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
             C, ldc,
             mean_arr, bias, leaky_activation);
     }
-
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
 
@@ -1973,6 +1987,7 @@ void convolve_gpu(float *input, float *weights, float *output, int in_w, int in_
     //printf("\n array_size = %d, num_blocks = %d, w = %d, h = %d, n = %d, c = %d, pad = %d \n", array_size, num_blocks, in_w, in_h, n, in_c, pad);
 
     convolve_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (input, weights, output, in_w, in_h, in_c, n, size, pad);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 // --------------------------------
@@ -2188,6 +2203,7 @@ void convolve_bin_gpu(float *input, float *weights, float *output, int in_w, int
     //printf("\n array_size = %d, num_blocks = %d, w = %d, h = %d, n = %d, c = %d, pad = %d \n", array_size, num_blocks, in_w, in_h, n, in_c, pad);
 
     convolve_bin_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (input, weights, output, in_w, in_h, in_c, n, size, pad, new_lda, mean_arr_gpu);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 // --------------------------------
