@@ -84,7 +84,11 @@ __global__ void set_zero_kernel(float *src, int size)
 __inline__ __device__
 float warpAllReduceSum(float val) {
     for (int mask = WARP_SIZE / 2; mask > 0; mask /= 2)
+#if CUDA_VERSION >= 9000
+        val += __shfl_xor_sync(0xffffffff, val, mask);
+#else
         val += __shfl_xor(val, mask);
+#endif
     return val;
 }
 
