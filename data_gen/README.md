@@ -8,21 +8,21 @@ This directory helps generate the data for YOLO to train with by:
 - Exporting unlabeled and labeled images to zip files with ease
 
 ## Getting Started
-0. (Only need to do once) install needed pkgs:
+0. (Only need to do once) install needed pkgs for OpenLabeling:
 ```
 ./install.sh
 ```
-1. Move a bag file into the bag_file directory, if the directory "bag_file" does not exist it, create it with:
+NOTE: You'll need pip installed to install the needed pkgs
+1. Move a bag file into the data_gen directory
+- Note: it is expected the .bag file is compressed
+2. Generate a zip archive of jpgs from the bag file by running the following script and passing in the name of the bag file
 ```
-mkdir bag_file
+./bag2images ___.bag
 ```
-- Note: it is expected the .bag file in the directory "bag_file" is compressed, straight from the google drive
-2. Generate jpgs from the bag file with
+3. A zip file ending in "_unlabeled.zip" will have been created containing the jpgs. From there see the section below titled "Labeling images from an *_unlabeled.zip file." Run the following command to unzip and load the unlabeled images into OpenLabeling:
 ```
-./bag2images
+./label_zip
 ```
-3. If you wish to label the jpgs now, select yes when prompted to move the images to the OpenLabeling directory
-- Note if you select no, a zip file ending in "_unlabeled.zip" will be created containing the jpgs. From there see the section below titled "Labeling images from an *_unlabeled.zip file" 
 4. To start labeling: change directories: 
 ```
 cd OpenLabeling/main
