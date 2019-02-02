@@ -26,7 +26,9 @@ int cuda_get_device()
 
 void check_error(cudaError_t status)
 {
-    //cudaDeviceSynchronize();
+#ifdef DEBUG
+    cudaDeviceSynchronize();
+#endif
     cudaError_t status2 = cudaGetLastError();
     if (status != cudaSuccess)
     {
@@ -134,7 +136,9 @@ cudnnHandle_t cudnn_handle()
 
 void cudnn_check_error(cudnnStatus_t status)
 {
-    //cudaDeviceSynchronize();
+#ifdef DEBUG
+    cudaDeviceSynchronize();
+#endif
     cudnnStatus_t status2 = CUDNN_STATUS_SUCCESS;
 #ifdef CUDNN_ERRQUERY_RAWCODE
     cudnnStatus_t status_tmp = cudnnQueryRuntimeError(cudnn_handle(), &status2, CUDNN_ERRQUERY_RAWCODE, NULL);

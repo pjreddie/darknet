@@ -338,7 +338,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 }
                 else*/
                 {
-                    start_timer();
+                    //start_timer();
                     im2col_align_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, l.align_workspace_gpu, l.bit_align);
                     //cudaDeviceSynchronize();
                     //stop_timer_and_show_name("im2col_align_ongpu");
