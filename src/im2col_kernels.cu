@@ -17,7 +17,7 @@ extern "C" {
 
 template<typename T1, typename T2>
 __device__ inline T1 __shfl_custom(T1 val, T2 lane) {
-#if CUDA_VERSION >= 9000
+#if CUDART_VERSION >= 9000
     return __shfl_sync(FULL_MASK, val, lane);
 #else
     return __shfl(val, lane);
@@ -26,7 +26,7 @@ __device__ inline T1 __shfl_custom(T1 val, T2 lane) {
 
 template<typename T>
 __device__ inline uint32_t __ballot_custom(T val) {
-#if CUDA_VERSION >= 9000
+#if CUDART_VERSION >= 9000
     return __ballot_sync(FULL_MASK, val);
 #else
     return __ballot(val);
@@ -1223,7 +1223,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 __inline__ __device__
 int warpAllReduceSum(int val) {
     for (int mask = WARP_SIZE / 2; mask > 0; mask /= 2)
-#if CUDA_VERSION >= 9000
+#if CUDART_VERSION >= 9000
         val += __shfl_xor_sync(FULL_MASK, val, mask);
 #else
         val += __shfl_xor(val, mask);
@@ -1233,7 +1233,7 @@ int warpAllReduceSum(int val) {
 }
 
 // Tensor Cores binary (CC >= 7.3 && CUDA >= 10.0) - __CUDA_SUBBYTE_IMMA__
-#if CUDA_VERSION >= 10000
+#if CUDART_VERSION >= 10000
 #include <mma.h>
 
 #define WMMA_M 8
@@ -1779,7 +1779,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
 
     //if (M % 8 == 0 && N % 8 == 0 && M == 128)
     //if (M >= 32)    // l.n >= 32
-#if CUDA_VERSION >= 10000
+#if CUDART_VERSION >= 10000
     if (1)
     {
         const int M_aligned = M + (8 - (M % 8));
@@ -1800,7 +1800,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
         //getchar();
     }
     else
-#endif  //# CUDA_VERSION >= 10000
+#endif  //# CUDART_VERSION >= 10000
     {
         gemm_nn_custom_bin_mean_transposed_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
             M, N, K,

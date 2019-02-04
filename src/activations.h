@@ -76,11 +76,11 @@ static inline float loggy_gradient(float x)
 static inline float stair_gradient(float x)
 {
     if (floor(x) == x) return 0;
-    return 1;
+    return 1.0f;
 }
 static inline float relu_gradient(float x){return (x>0);}
 static inline float elu_gradient(float x){return (x >= 0) + (x < 0)*(x + 1);}
-static inline float selu_gradient(float x) { return (x >= 0)*1.0507 + (x < 0)*(x + 1.0507f*1.6732f); }
+static inline float selu_gradient(float x) { return (x >= 0)*1.0507f + (x < 0)*(x + 1.0507f*1.6732f); }
 static inline float relie_gradient(float x){return (x>0) ? 1 : .01f;}
 static inline float ramp_gradient(float x){return (x>0)+.1f;}
 static inline float leaky_gradient(float x){return (x>0) ? 1 : .1f;}

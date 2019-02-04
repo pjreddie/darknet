@@ -45,7 +45,7 @@ struct network;
 typedef struct network network;
 
 struct network_state;
-typedef struct network_state;
+typedef struct network_state network_state;
 
 struct layer;
 typedef struct layer layer;

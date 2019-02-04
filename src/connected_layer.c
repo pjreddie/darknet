@@ -84,7 +84,7 @@ connected_layer make_connected_layer(int batch, int steps, int inputs, int outpu
     l.update = update_connected_layer;
 
     //float scale = 1./sqrt(inputs);
-    float scale = sqrt(2./inputs);
+    float scale = sqrt(2.f/inputs);
     for(i = 0; i < outputs*inputs; ++i){
         l.weights[i] = scale*rand_uniform(-1, 1);
     }
@@ -182,10 +182,10 @@ void forward_connected_layer(connected_layer l, network_state state)
             mean_cpu(l.output, l.batch, l.outputs, 1, l.mean);
             variance_cpu(l.output, l.mean, l.batch, l.outputs, 1, l.variance);
 
-            scal_cpu(l.outputs, .95, l.rolling_mean, 1);
-            axpy_cpu(l.outputs, .05, l.mean, 1, l.rolling_mean, 1);
-            scal_cpu(l.outputs, .95, l.rolling_variance, 1);
-            axpy_cpu(l.outputs, .05, l.variance, 1, l.rolling_variance, 1);
+            scal_cpu(l.outputs, .95f, l.rolling_mean, 1);
+            axpy_cpu(l.outputs, .05f, l.mean, 1, l.rolling_mean, 1);
+            scal_cpu(l.outputs, .95f, l.rolling_variance, 1);
+            axpy_cpu(l.outputs, .05f, l.variance, 1, l.rolling_variance, 1);
 
             copy_cpu(l.outputs*l.batch, l.output, 1, l.x, 1);
             normalize_cpu(l.output, l.mean, l.variance, l.batch, l.outputs, 1);
@@ -242,7 +242,7 @@ void denormalize_connected_layer(layer l)
 {
     int i, j;
     for(i = 0; i < l.outputs; ++i){
-        float scale = l.scales[i]/sqrt(l.rolling_variance[i] + .000001);
+        float scale = l.scales[i]/sqrt(l.rolling_variance[i] + .000001f);
         for(j = 0; j < l.inputs; ++j){
             l.weights[i*l.inputs + j] *= scale;
         }
@@ -285,6 +285,7 @@ void pull_connected_layer(connected_layer l)
         cuda_pull_array(l.rolling_mean_gpu, l.rolling_mean, l.outputs);
         cuda_pull_array(l.rolling_variance_gpu, l.rolling_variance, l.outputs);
     }
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 void push_connected_layer(connected_layer l)
@@ -298,6 +299,7 @@ void push_connected_layer(connected_layer l)
         cuda_push_array(l.rolling_mean_gpu, l.rolling_mean, l.outputs);
         cuda_push_array(l.rolling_variance_gpu, l.rolling_variance, l.outputs);
     }
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 void update_connected_layer_gpu(connected_layer l, int batch, float learning_rate, float momentum, float decay)
@@ -317,7 +319,6 @@ void update_connected_layer_gpu(connected_layer l, int batch, float learning_rat
 
 void forward_connected_layer_gpu(connected_layer l, network_state state)
 {
-    int i;
     fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
 
     int m = l.batch;

@@ -84,7 +84,7 @@ __global__ void set_zero_kernel(float *src, int size)
 __inline__ __device__
 float warpAllReduceSum(float val) {
     for (int mask = WARP_SIZE / 2; mask > 0; mask /= 2)
-#if CUDA_VERSION >= 9000
+#if CUDART_VERSION >= 9000
         val += __shfl_xor_sync(0xffffffff, val, mask);
 #else
         val += __shfl_xor(val, mask);
@@ -807,6 +807,7 @@ void pull_convolutional_layer(convolutional_layer layer)
         cuda_pull_array_async(layer.m_gpu, layer.m, layer.c*layer.n*layer.size*layer.size);
         cuda_pull_array_async(layer.v_gpu, layer.v, layer.c*layer.n*layer.size*layer.size);
     }
+    CHECK_CUDA(cudaPeekAtLastError());
     cudaStreamSynchronize(get_cuda_stream());
 }
 
@@ -828,6 +829,7 @@ void push_convolutional_layer(convolutional_layer layer)
         cuda_push_array(layer.m_gpu, layer.m, layer.c*layer.n*layer.size*layer.size);
         cuda_push_array(layer.v_gpu, layer.v, layer.c*layer.n*layer.size*layer.size);
     }
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay)

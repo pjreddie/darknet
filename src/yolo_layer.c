@@ -454,6 +454,7 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
     if(!state.train || l.onlyforward){
         //cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
         cuda_pull_array_async(l.output_gpu, l.output, l.batch*l.outputs);
+        CHECK_CUDA(cudaPeekAtLastError());
         return;
     }
 
