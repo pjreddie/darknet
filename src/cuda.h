@@ -15,6 +15,8 @@ extern int gpu_index;
 #include "cuda_runtime.h"
 #include "curand.h"
 #include "cublas_v2.h"
+#include "cuda_runtime_api.h"
+#include "driver_types.h"
 
 #ifdef CUDNN
 #include "cudnn.h"
@@ -62,6 +64,7 @@ extern "C" {
     cudaStream_t get_cuda_stream();
     cudaStream_t get_cuda_memcpy_stream();
     int get_number_of_blocks(int array_size, int block_size);
+    int get_gpu_compute_capability(int i);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

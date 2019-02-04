@@ -13,14 +13,14 @@ void cuda_set_device(int n)
 {
     gpu_index = n;
     cudaError_t status = cudaSetDevice(n);
-    check_error(status);
+    CHECK_CUDA(status);
 }
 
 int cuda_get_device()
 {
     int n = 0;
     cudaError_t status = cudaGetDevice(&n);
-    check_error(status);
+    CHECK_CUDA(status);
     return n;
 }
 
@@ -92,7 +92,7 @@ cudaStream_t get_cuda_stream() {
             char buffer[256];
             printf("CUDA Error: %s\n", s);
             status = cudaStreamCreateWithFlags(&streamsArray[i], cudaStreamDefault);
-            check_error(status);
+            CHECK_CUDA(status);
         }
         streamInit[i] = 1;
     }
@@ -113,7 +113,7 @@ cudaStream_t get_cuda_memcpy_stream() {
             char buffer[256];
             printf("CUDA Error: %s\n", s);
             status = cudaStreamCreateWithFlags(&streamsArray2[i], cudaStreamDefault);
-            check_error(status);
+            CHECK_CUDA(status);
         }
         streamInit2[i] = 1;
     }
@@ -192,6 +192,7 @@ cublasHandle_t blas_handle()
     if(!init[i]) {
         cublasCreate(&handle[i]);
         cublasStatus_t status = cublasSetStream(handle[i], get_cuda_stream());
+        CHECK_CUDA(status);
         init[i] = 1;
     }
     return handle[i];
@@ -203,11 +204,11 @@ float *cuda_make_array(float *x, size_t n)
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMalloc((void **)&x_gpu, size);
     if (status != cudaSuccess) fprintf(stderr, " Try to set subdivisions=64 in your cfg-file. \n");
-    check_error(status);
+    CHECK_CUDA(status);
     if(x){
         //status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
         status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
-        check_error(status);
+        CHECK_CUDA(status);
     }
     if(!x_gpu) error("Cuda malloc failed\n");
     return x_gpu;
@@ -224,7 +225,7 @@ void cuda_random(float *x_gpu, size_t n)
         init[i] = 1;
     }
     curandGenerateUniform(gen[i], x_gpu, n);
-    check_error(cudaPeekAtLastError());
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 float cuda_compare(float *x_gpu, float *x, size_t n, char *s)
@@ -246,7 +247,7 @@ int *cuda_make_int_array(size_t n)
     size_t size = sizeof(int)*n;
     cudaError_t status = cudaMalloc((void **)&x_gpu, size);
     if(status != cudaSuccess) fprintf(stderr, " Try to set subdivisions=64 in your cfg-file. \n");
-    check_error(status);
+    CHECK_CUDA(status);
     return x_gpu;
 }
 
@@ -255,11 +256,11 @@ int *cuda_make_int_array_new_api(int *x, size_t n)
 	int *x_gpu;
 	size_t size = sizeof(int)*n;
 	cudaError_t status = cudaMalloc((void **)&x_gpu, size);
-	check_error(status);
+    CHECK_CUDA(status);
 	if (x) {
 		//status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
         cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
-		check_error(status);
+        CHECK_CUDA(status);
 	}
 	if (!x_gpu) error("Cuda malloc failed\n");
 	return x_gpu;
@@ -269,7 +270,7 @@ void cuda_free(float *x_gpu)
 {
     //cudaStreamSynchronize(get_cuda_stream());
     cudaError_t status = cudaFree(x_gpu);
-    check_error(status);
+    CHECK_CUDA(status);
 }
 
 void cuda_push_array(float *x_gpu, float *x, size_t n)
@@ -277,7 +278,7 @@ void cuda_push_array(float *x_gpu, float *x, size_t n)
     size_t size = sizeof(float)*n;
     //cudaError_t status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
     cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
-    check_error(status);
+    CHECK_CUDA(status);
 }
 
 void cuda_pull_array(float *x_gpu, float *x, size_t n)
@@ -285,7 +286,7 @@ void cuda_pull_array(float *x_gpu, float *x, size_t n)
     size_t size = sizeof(float)*n;
     //cudaError_t status = cudaMemcpy(x, x_gpu, size, cudaMemcpyDeviceToHost);
     cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDeviceToHost, get_cuda_stream());
-    check_error(status);
+    CHECK_CUDA(status);
     cudaStreamSynchronize(get_cuda_stream());
 }
 
@@ -300,6 +301,16 @@ void cuda_pull_array_async(float *x_gpu, float *x, size_t n)
 int get_number_of_blocks(int array_size, int block_size)
 {
     return array_size / block_size + ((array_size % block_size > 0) ? 1 : 0);
+}
+
+int get_gpu_compute_capability(int i)
+{
+    typedef struct cudaDeviceProp cudaDeviceProp;
+    cudaDeviceProp prop;
+    cudaError_t status = cudaGetDeviceProperties(&prop, i);
+    CHECK_CUDA(status);
+    int cc = prop.major * 10 + prop.minor;
+    return cc;
 }
 
 #else // GPU
