@@ -139,7 +139,7 @@ __global__ void cuda_f32_to_f16(float* input_f32, size_t size, half *output_f16)
 }
 
 void cuda_convert_f32_to_f16(float* input_f32, size_t size, float *output_f16) {
-    cuda_f32_to_f16 <<< size / BLOCK + 1, BLOCK, 0, get_cuda_stream() >>> (input_f32, size, (half *)output_f16);
+    cuda_f32_to_f16 <<< get_number_of_blocks(size, BLOCK), BLOCK, 0, get_cuda_stream() >>> (input_f32, size, (half *)output_f16);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -151,7 +151,7 @@ __global__ void cuda_f16_to_f32(half* input_f16, size_t size, float *output_f32)
 }
 
 void cuda_convert_f16_to_f32(float* input_f16, size_t size, float *output_f32) {
-    cuda_f16_to_f32 <<< size / BLOCK + 1, BLOCK, 0, get_cuda_stream() >>> ((half *)input_f16, size, output_f32);
+    cuda_f16_to_f32 <<< get_number_of_blocks(size, BLOCK), BLOCK, 0, get_cuda_stream() >>> ((half *)input_f16, size, output_f32);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -161,6 +161,7 @@ half *cuda_make_f16_from_f32_array(float *src, size_t n)
     size_t size = sizeof(half)*n;
     CHECK_CUDA(cudaMalloc((void **)&dst16, size));
     if (src) {
+        assert(n > 0);
         cuda_convert_f32_to_f16(src, n, (float *)dst16);
     }
     if (!dst16) error("Cuda malloc failed\n");
@@ -434,6 +435,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             //printf("\n input16_size: cur = %zu \t max = %zu \n", input16_size, *state.net.max_input16_size);
             *state.net.max_input16_size = input16_size;
             if (*state.net.input16_gpu) cuda_free(*state.net.input16_gpu);
+            assert(*state.net.max_input16_size > 0);
             *state.net.input16_gpu = (float *)cuda_make_f16_from_f32_array(NULL, *state.net.max_input16_size);
         }
         float *input16 = *state.net.input16_gpu;
@@ -441,10 +443,12 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         if (*state.net.max_output16_size < output16_size) {
             *state.net.max_output16_size = output16_size;
             if (*state.net.output16_gpu) cuda_free(*state.net.output16_gpu);
+            assert(*state.net.max_output16_size > 0);
             *state.net.output16_gpu = (float *)cuda_make_f16_from_f32_array(NULL, *state.net.max_output16_size);
         }
         float *output16 = *state.net.output16_gpu;
 
+        assert(input16_size > 0);
         cuda_convert_f32_to_f16(state.input, input16_size, input16);
 
         //fill_ongpu(output16_size / 2, 0, (float *)output16, 1);
@@ -608,6 +612,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         if (*state.net.max_input16_size < input16_size) {
             *state.net.max_input16_size = input16_size;
             if (*state.net.input16_gpu) cuda_free(*state.net.input16_gpu);
+            assert(*state.net.max_input16_size > 0);
             *state.net.input16_gpu = (float *)cuda_make_f16_from_f32_array(NULL, *state.net.max_input16_size);
         }
         float *input16 = *state.net.input16_gpu;
@@ -615,10 +620,13 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         if (*state.net.max_output16_size < delta16_size) {
             *state.net.max_output16_size = delta16_size;
             if (*state.net.output16_gpu) cuda_free(*state.net.output16_gpu);
+            assert(*state.net.max_output16_size > 0);
             *state.net.output16_gpu = (float *)cuda_make_f16_from_f32_array(NULL, *state.net.max_output16_size);
         }
         float *delta16 = *state.net.output16_gpu;
 
+        assert(input16_size > 0);
+        assert(delta16_size > 0);
         cuda_convert_f32_to_f16(state.input, input16_size, input16);
         cuda_convert_f32_to_f16(l.delta_gpu, delta16_size, delta16);
 
@@ -664,6 +672,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         // calculate conv weight updates
         // Already: l.weight_updates_gpu = (l.weight_updates_gpu - l.weight*decay*batch*subdivision)*momentum
         //   so we should copy f32 to f16, or compute: f16=(w_up - w*d*b*s)*m
+        assert((l.c*l.n*l.size*l.size) > 0);
         cuda_convert_f32_to_f16(l.weight_updates_gpu, l.c*l.n*l.size*l.size, l.weight_updates_gpu16);
 
         CHECK_CUDNN(cudnnConvolutionBackwardFilter(cudnn_handle(),
@@ -815,6 +824,7 @@ void push_convolutional_layer(convolutional_layer layer)
 {
     cuda_push_array(layer.weights_gpu, layer.weights, layer.c*layer.n*layer.size*layer.size);
 #ifdef CUDNN_HALF
+    assert((layer.c*layer.n*layer.size*layer.size) > 0);
     cuda_convert_f32_to_f16(layer.weights_gpu, layer.c*layer.n*layer.size*layer.size, layer.weights_gpu16);
 #endif
     cuda_push_array(layer.biases_gpu, layer.biases, layer.n);
