@@ -139,7 +139,7 @@ __global__ void cuda_f32_to_f16(float* input_f32, size_t size, half *output_f16)
 }
 
 void cuda_convert_f32_to_f16(float* input_f32, size_t size, float *output_f16) {
-    cuda_f32_to_f16 <<< get_number_of_blocks(size, BLOCK), BLOCK, 0, get_cuda_stream() >>> (input_f32, size, (half *)output_f16);
+    cuda_f32_to_f16 <<< size / BLOCK + 1, BLOCK, 0, get_cuda_stream() >>> (input_f32, size, (half *)output_f16);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -151,7 +151,7 @@ __global__ void cuda_f16_to_f32(half* input_f16, size_t size, float *output_f32)
 }
 
 void cuda_convert_f16_to_f32(float* input_f16, size_t size, float *output_f32) {
-    cuda_f16_to_f32 <<< get_number_of_blocks(size, BLOCK), BLOCK, 0, get_cuda_stream() >>> ((half *)input_f16, size, output_f32);
+    cuda_f16_to_f32 <<< size / BLOCK + 1, BLOCK, 0, get_cuda_stream() >>> ((half *)input_f16, size, output_f32);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
