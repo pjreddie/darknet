@@ -309,7 +309,7 @@ int get_gpu_compute_capability(int i)
     cudaDeviceProp prop;
     cudaError_t status = cudaGetDeviceProperties(&prop, i);
     CHECK_CUDA(status);
-    int cc = prop.major * 10 + prop.minor;
+    int cc = prop.major * 100 + prop.minor * 10;    // __CUDA_ARCH__ format
     return cc;
 }
 

@@ -671,8 +671,10 @@ void parse_net_options(list *options, network *net)
     net->policy = get_policy(policy_s);
     net->burn_in = option_find_int_quiet(options, "burn_in", 0);
 #ifdef CUDNN_HALF
-    if(get_gpu_compute_capability(net->gpu_index) >= 7000) net->cudnn_half = 1;
+    int compute_capability = get_gpu_compute_capability(net->gpu_index);
+    if(get_gpu_compute_capability(net->gpu_index) >= 700) net->cudnn_half = 1;
     else net->cudnn_half = 0;
+    fprintf(stderr, " compute_capability = %d, cudnn_half = %d \n", compute_capability, net->cudnn_half);
 #endif
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
