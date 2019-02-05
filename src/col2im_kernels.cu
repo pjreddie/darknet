@@ -54,5 +54,7 @@ void col2im_ongpu(float *data_col,
                 num_kernels, data_col, height, width, ksize, pad,
                 stride, height_col,
                 width_col, data_im);
+
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 

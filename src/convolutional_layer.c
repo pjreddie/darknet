@@ -574,7 +574,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     // check for excessive memory consumption
     size_t free_byte;
     size_t total_byte;
-    check_error(cudaMemGetInfo(&free_byte, &total_byte));
+    CHECK_CUDA(cudaMemGetInfo(&free_byte, &total_byte));
     if (l->workspace_size > free_byte || l->workspace_size >= total_byte / 2) {
         printf(" used slow CUDNN algo without Workspace! Need memory: %zu, available: %zu\n", l->workspace_size, (free_byte < total_byte/2) ? free_byte : total_byte/2);
         cudnn_convolutional_setup(l, cudnn_smallest);
@@ -759,19 +759,19 @@ void binary_align_weights(convolutional_layer *l)
     l->align_workspace_size = l->bit_align * l->size * l->size * l->c;
     status = cudaMalloc((void **)&l->align_workspace_gpu, l->align_workspace_size * sizeof(float));
     status = cudaMalloc((void **)&l->transposed_align_workspace_gpu, l->align_workspace_size * sizeof(float));
-    check_error(status);
+    CHECK_CUDA(status);
 
     //l->align_bit_weights_gpu = cuda_make_array(l->align_bit_weights, l->align_bit_weights_size * sizeof(char)/sizeof(float));
     status = cudaMalloc((void **)&l->align_bit_weights_gpu, l->align_bit_weights_size);
-    check_error(status);
+    CHECK_CUDA(status);
     status = cudaMemcpy(l->align_bit_weights_gpu, l->align_bit_weights, l->align_bit_weights_size, cudaMemcpyHostToDevice);
-    check_error(status);
+    CHECK_CUDA(status);
     status = cudaMemcpy(l->binary_weights_gpu, l->binary_weights, m*k * sizeof(float), cudaMemcpyHostToDevice);
-    check_error(status);
+    CHECK_CUDA(status);
 
     //l->mean_arr_gpu = cuda_make_array(l->mean_arr, l->n);
     cuda_push_array(l->mean_arr_gpu, l->mean_arr, l->n);
-    cudaDeviceSynchronize();
+    CHECK_CUDA(cudaDeviceSynchronize());
 #endif // GPU
 
     free(align_weights);

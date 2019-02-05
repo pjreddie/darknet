@@ -255,6 +255,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         int draw_precision = 0;
         int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
+        if (calc_map) printf(" Next mAP calculation at %d iterations \n", (iter_map + calc_map_for_each));
         if (calc_map && (i >= (iter_map + calc_map_for_each) || i == net.max_batches) && i >= net.burn_in && i >= 1000) {
             if (l.random) {
                 printf("Resizing to initial size: %d x %d \n", init_w, init_h);
@@ -275,7 +276,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
             iter_map = i;
             mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net_combined);
-            printf("\n mean_average_precision = %f \n", mean_average_precision);
+            printf("\n mean_average_precision (mAP@0.5) = %f \n", mean_average_precision);
             draw_precision = 1;
         }
 #ifdef OPENCV
@@ -973,13 +974,9 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         thresh_calc_avg_iou, tp_for_thresh, fp_for_thresh, unique_truth_count - tp_for_thresh, avg_iou * 100);
 
     mean_average_precision = mean_average_precision / classes;
-    if (iou_thresh == 0.5) {
-        printf("\n mean average precision (mAP) = %f, or %2.2f %% \n", mean_average_precision, mean_average_precision * 100);
-    }
-    else {
-        printf("\n average precision (AP) = %f, or %2.2f %% for IoU threshold = %f \n", mean_average_precision, mean_average_precision * 100, iou_thresh);
-    }
+    printf("\n IoU threshold = %2.2f %% \n", iou_thresh * 100);
 
+    printf(" mean average precision (mAP@%0.2f) = %f, or %2.2f %% \n", iou_thresh, mean_average_precision, mean_average_precision * 100);
 
     for (i = 0; i < classes; ++i) {
         free(pr[i]);

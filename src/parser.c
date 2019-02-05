@@ -865,9 +865,9 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         // pre-allocate memory for inference on Tensor Cores (fp16)
         if (net.cudnn_half) {
             *net.max_input16_size = max_inputs;
-            check_error(cudaMalloc((void **)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)
+            CHECK_CUDA(cudaMalloc((void **)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)
             *net.max_output16_size = max_outputs;
-            check_error(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
+            CHECK_CUDA(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
         }
         if (workspace_size) {
             fprintf(stderr, " Allocate additional workspace_size = %1.2f MB \n", (float)workspace_size/1000000);

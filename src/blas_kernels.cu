@@ -723,7 +723,7 @@ extern "C" void input_shortcut_gpu(float *in, int batch, int w1, int h1, int c1,
     if (w1 == w2 && h1 == h2 && c1 == c2) {
         int size = batch * w1 * h1 * c1;
         simple_input_shortcut_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> >(in, size, add, out);
-        check_error(cudaPeekAtLastError());
+        CHECK_CUDA(cudaPeekAtLastError());
         return;
     }
 
