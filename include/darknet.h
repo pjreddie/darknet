@@ -8,8 +8,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pthread.h>
 #include <stdint.h>
+#include <assert.h>
+#include <pthread.h>
 
 #ifdef LIB_EXPORTS
 #if defined(_MSC_VER)
