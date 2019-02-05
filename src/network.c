@@ -556,6 +556,12 @@ void top_predictions(network net, int k, int *index)
     top_k(out, size, k, index);
 }
 
+// A version of network_predict that uses a pointer for the network
+// struct to make the python binding work properly.
+float *network_predict_ptr(network *net, float *input)
+{
+    return network_predict(*net, input);
+}
 
 float *network_predict(network net, float *input)
 {
