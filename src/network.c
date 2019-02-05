@@ -731,10 +731,17 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
 float *network_predict_image(network *net, image im)
 {
     //image imr = letterbox_image(im, net->w, net->h);
-    image imr = resize_image(im, net->w, net->h);
-    set_batch_network(net, 1);
-    float *p = network_predict(*net, imr.data);
-    free_image(imr);
+    float *p;
+    if (im.w == net->w && im.h == net->h) {
+        // Input image is the same size as our net, predict on that image
+        p = network_predict(*net, im.data);
+    }
+    else {
+        // Need to resize image to the desired size for the net
+        image imr = resize_image(im, net->w, net->h);
+        p = network_predict(*net, imr.data);
+        free_image(imr);
+    }
     return p;
 }
 
