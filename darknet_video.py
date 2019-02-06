@@ -60,7 +60,7 @@ lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
 lib.network_height.restype = c_int
 
-predict = lib.network_predict
+predict = lib.network_predict_ptr
 predict.argtypes = [c_void_p, POINTER(c_float)]
 predict.restype = POINTER(c_float)
 
@@ -88,7 +88,7 @@ free_detections.argtypes = [POINTER(DETECTION), c_int]
 free_ptrs = lib.free_ptrs
 free_ptrs.argtypes = [POINTER(c_void_p), c_int]
 
-network_predict = lib.network_predict
+network_predict = lib.network_predict_ptr
 network_predict.argtypes = [c_void_p, POINTER(c_float)]
 
 reset_rnn = lib.reset_rnn

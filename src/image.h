@@ -33,7 +33,7 @@ image random_crop_image(image im, int w, int h);
 image random_augment_image(image im, float angle, float aspect, int low, int high, int size);
 void random_distort_image(image im, float hue, float saturation, float exposure);
 //LIB_API image resize_image(image im, int w, int h);
-LIB_API void copy_image_from_bytes(image im, char *pdata);
+//LIB_API void copy_image_from_bytes(image im, char *pdata);
 void fill_image(image m, float s);
 void letterbox_image_into(image im, int w, int h, image boxed);
 //LIB_API image letterbox_image(image im, int w, int h);

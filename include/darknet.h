@@ -745,6 +745,7 @@ LIB_API void do_nms_obj(detection *dets, int total, int classes, float thresh);
 
 // network.h
 LIB_API float *network_predict(network net, float *input);
+LIB_API float *network_predict_ptr(network *net, float *input);
 LIB_API detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num, int letter);
 LIB_API void free_detections(detection *dets, int n);
 LIB_API void fuse_conv_batchnorm(network net);
@@ -766,6 +767,7 @@ LIB_API void optimize_picture(network *net, image orig, int max_layer, float sca
 
 // image.h
 LIB_API image resize_image(image im, int w, int h);
+LIB_API void copy_image_from_bytes(image im, char *pdata);
 LIB_API image letterbox_image(image im, int w, int h);
 LIB_API void rgbgr_image(image im);
 LIB_API image make_image(int w, int h, int c);

@@ -247,6 +247,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         if (mean_average_precision > 0) {
             printf("\n Last accuracy mAP@0.5 = %2.2f %% ", mean_average_precision*100);
         }
+        int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
+        if (calc_map) printf("\n (next mAP calculation at %d iterations) ", (iter_map + calc_map_for_each));
+
         if (net.cudnn_half) {
             if (i < net.burn_in * 3) printf("\n Tensor Cores are disabled until the first %d iterations are reached.", 3 * net.burn_in);
             else printf("\n Tensor Cores are used.");
@@ -254,8 +257,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), i*imgs);
 
         int draw_precision = 0;
-        int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
-        if (calc_map) printf(" Next mAP calculation at %d iterations \n", (iter_map + calc_map_for_each));
         if (calc_map && (i >= (iter_map + calc_map_for_each) || i == net.max_batches) && i >= net.burn_in && i >= 1000) {
             if (l.random) {
                 printf("Resizing to initial size: %d x %d \n", init_w, init_h);
