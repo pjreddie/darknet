@@ -17,7 +17,7 @@
 8. [How to improve object detection](#how-to-improve-object-detection)
 9. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
 10. [Using Yolo9000](#using-yolo9000)
-11. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
+11. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
 
 
 
@@ -551,7 +551,21 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
     * `inet9k.map` - map 200 categories from ImageNet to WordTree `9k.tree`: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/inet9k.map
 
 
-## How to use Yolo as DLL
+## How to use Yolo as DLL and SO libraries
+
+* on Linux - set `LIBSO=1` in the `Makefile` and do `make`
+* on Windows - compile `build\darknet\yolo_cpp_dll.sln` or `build\darknet\yolo_cpp_dll_no_gpu.sln` solution
+
+There are 2 APIs:
+* C API: https://github.com/AlexeyAB/darknet/blob/master/include/darknet.h
+    * Python examples using the C API::     
+         * https://github.com/AlexeyAB/darknet/blob/master/darknet.py	
+         * https://github.com/AlexeyAB/darknet/blob/master/darknet_video.py
+    
+* C++ API: https://github.com/AlexeyAB/darknet/blob/master/include/yolo_v2_class.hpp
+    * C++ example that uses C++ API: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
+    
+----
 
 1. To compile Yolo as C++ DLL-file `yolo_cpp_dll.dll` - open in MSVS2015 file `build\darknet\yolo_cpp_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_cpp_dll
     * You should have installed **CUDA 10.0**
