@@ -556,6 +556,12 @@ void top_predictions(network net, int k, int *index)
     top_k(out, size, k, index);
 }
 
+// A version of network_predict that uses a pointer for the network
+// struct to make the python binding work properly.
+float *network_predict_ptr(network *net, float *input)
+{
+    return network_predict(*net, input);
+}
 
 float *network_predict(network net, float *input)
 {
@@ -731,10 +737,17 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
 float *network_predict_image(network *net, image im)
 {
     //image imr = letterbox_image(im, net->w, net->h);
-    image imr = resize_image(im, net->w, net->h);
-    set_batch_network(net, 1);
-    float *p = network_predict(*net, imr.data);
-    free_image(imr);
+    float *p;
+    if (im.w == net->w && im.h == net->h) {
+        // Input image is the same size as our net, predict on that image
+        p = network_predict(*net, im.data);
+    }
+    else {
+        // Need to resize image to the desired size for the net
+        image imr = resize_image(im, net->w, net->h);
+        p = network_predict(*net, imr.data);
+        free_image(imr);
+    }
     return p;
 }
 
