@@ -110,7 +110,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     args.type = CLASSIFICATION_DATA;
 
 #ifdef OPENCV
-    args.threads = 3;
+    //args.threads = 3;
     IplImage* img = NULL;
     float max_img_loss = 5;
     int number_of_lines = 100;
