@@ -32,7 +32,6 @@ void check_error(cudaError_t status)
         const char *s = cudaGetErrorString(status);
         char buffer[256];
         printf("CUDA Error: %s\n", s);
-        assert(0);
         snprintf(buffer, 256, "CUDA Error: %s", s);
 #ifdef WIN32
         getchar();
@@ -44,7 +43,6 @@ void check_error(cudaError_t status)
         const char *s = cudaGetErrorString(status2);
         char buffer[256];
         printf("CUDA Error Prev: %s\n", s);
-        assert(0);
         snprintf(buffer, 256, "CUDA Error Prev: %s", s);
 #ifdef WIN32
         getchar();
@@ -56,12 +54,12 @@ void check_error(cudaError_t status)
 void check_error_extended(cudaError_t status, const char *file, int line, const char *date_time)
 {
     if (status != cudaSuccess)
-        printf("CUDA Prev Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+        printf("CUDA status Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
 #ifdef DEBUG
     status = cudaDeviceSynchronize();
-#endif
     if (status != cudaSuccess)
-        printf("CUDA Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+        printf("CUDA status = cudaDeviceSynchronize() Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+#endif
     check_error(status);
 }
 
@@ -150,7 +148,6 @@ void cudnn_check_error(cudnnStatus_t status)
         const char *s = cudnnGetErrorString(status);
         char buffer[256];
         printf("cuDNN Error: %s\n", s);
-        assert(0);
         snprintf(buffer, 256, "cuDNN Error: %s", s);
 #ifdef WIN32
         getchar();
@@ -162,7 +159,6 @@ void cudnn_check_error(cudnnStatus_t status)
         const char *s = cudnnGetErrorString(status2);
         char buffer[256];
         printf("cuDNN Error Prev: %s\n", s);
-        assert(0);
         snprintf(buffer, 256, "cuDNN Error Prev: %s", s);
 #ifdef WIN32
         getchar();
@@ -173,13 +169,13 @@ void cudnn_check_error(cudnnStatus_t status)
 
 void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line, const char *date_time)
 {
-    if (status != cudaSuccess)
-        printf("\n cuDNN Prev Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    if (status != CUDNN_STATUS_SUCCESS)
+        printf("\n cuDNN status Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
 #ifdef DEBUG
     status = cudaDeviceSynchronize();
+    if (status != CUDNN_STATUS_SUCCESS)
+        printf("\n cuDNN status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
 #endif
-    if (status != cudaSuccess)
-        printf("\n cuDNN Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
     cudnn_check_error(status);
 }
 #endif
