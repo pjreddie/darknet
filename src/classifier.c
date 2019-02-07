@@ -23,12 +23,14 @@
 image get_image_from_stream(CvCapture *cap);
 image get_image_from_stream_cpp(CvCapture *cap);
 #include "http_stream.h"
-
 IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show);
+
 void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
-    float precision, int draw_precision, int dont_show, int mjpeg_port);
+    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port);
 
 #endif
+
+float validate_classifier_single(char *datacfg, char *filename, char *weightfile, network *existing_net, int topk_custom);
 
 float *get_regression_values(char **labels, int n)
 {
@@ -42,7 +44,7 @@ float *get_regression_values(char **labels, int n)
     return v;
 }
 
-void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int mjpeg_port)
+void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int mjpeg_port, int calc_topk)
 {
     int i;
 
@@ -83,7 +85,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     list *plist = get_paths(train_list);
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
-    int N = plist->size;
+    int train_images_num = plist->size;
     clock_t time;
 
     load_args args = {0};
@@ -105,14 +107,14 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     args.paths = paths;
     args.classes = classes;
     args.n = imgs;
-    args.m = N;
+    args.m = train_images_num;
     args.labels = labels;
     args.type = CLASSIFICATION_DATA;
 
 #ifdef OPENCV
     //args.threads = 3;
     IplImage* img = NULL;
-    float max_img_loss = 5;
+    float max_img_loss = 10;
     int number_of_lines = 100;
     int img_size = 1000;
     img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size, dont_show);
@@ -126,6 +128,8 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
     int iter_save = get_current_batch(net);
     int iter_save_last = get_current_batch(net);
+    int iter_topk = get_current_batch(net);
+    float topk = 0;
 
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
@@ -152,9 +156,32 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
         i = get_current_batch(net);
 
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+        int calc_topk_for_each = iter_topk + 4 * train_images_num / (net.batch * net.subdivisions);  // calculate TOPk for each 4 Epochs
+        calc_topk_for_each = fmax(calc_topk_for_each, net.burn_in);
+        calc_topk_for_each = fmax(calc_topk_for_each, 1000);
+        if (i % 10 == 0) {
+            if (calc_topk) {
+                fprintf(stderr, "\n (next TOP5 calculation at %d iterations) ", calc_topk_for_each);
+                if (topk > 0) fprintf(stderr, " Last accuracy TOP5 = %2.2f %% \n", topk * 100);
+            }
+
+            if (net.cudnn_half) {
+                if (i < net.burn_in * 3) fprintf(stderr, " Tensor Cores are disabled until the first %d iterations are reached.\n", 3 * net.burn_in);
+                else fprintf(stderr, " Tensor Cores are used.\n");
+            }
+        }
+
+        int draw_precision = 0;
+        if (calc_topk && (i >= calc_topk_for_each || i == net.max_batches)) {
+            iter_topk = i;
+            topk = validate_classifier_single(datacfg, cfgfile, weightfile, &net, 5); // calc TOP5
+            printf("\n accuracy TOP5 = %f \n", topk);
+            draw_precision = 1;
+        }
+
+        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
 #ifdef OPENCV
-        draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, -1, 0, dont_show, mjpeg_port);
+        draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, "top5", dont_show, mjpeg_port);
 #endif  // OPENCV
 
         if (i >= (iter_save + 1000)) {
@@ -512,14 +539,25 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
 }
 
 
-void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
+float validate_classifier_single(char *datacfg, char *filename, char *weightfile, network *existing_net, int topk_custom)
 {
     int i, j;
-    network net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(&net, weightfile);
+    network net;
+    int old_batch = -1;
+    if (existing_net) {
+        net = *existing_net;    // for validation during training
+        old_batch = net.batch;
+        set_batch_network(&net, 1);
     }
-    set_batch_network(&net, 1);
+    else {
+        net = parse_network_cfg_custom(filename, 1, 0);
+        if (weightfile) {
+            load_weights(&net, weightfile);
+        }
+        //set_batch_network(&net, 1);
+        fuse_conv_batchnorm(net);
+        calculate_binary_weights(net);
+    }
     srand(time(0));
 
     list *options = read_data_cfg(datacfg);
@@ -530,7 +568,9 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
     char *valid_list = option_find_str(options, "valid", "data/train.list");
     int classes = option_find_int(options, "classes", 2);
     int topk = option_find_int(options, "top", 1);
+    if (topk_custom > 0) topk = topk_custom;    // for validation during training
     if (topk > classes) topk = classes;
+    printf(" TOP calculation...\n");
 
     char **labels = get_labels(label_list);
     list *plist = get_paths(valid_list);
@@ -571,8 +611,15 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
             if(indexes[j] == class_id) avg_topk += 1;
         }
 
-        printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
+        if (existing_net) printf("\r");
+        else printf("\n");
+        printf("%d: top 1: %f, top %d: %f", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
+    if (existing_net) {
+        set_batch_network(&net, old_batch);
+    }
+    float topk_result = avg_topk / i;
+    return topk_result;
 }
 
 void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
@@ -1198,6 +1245,7 @@ void run_classifier(int argc, char **argv)
     }
 
     int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
+    int calc_topk = find_int_arg(argc, argv, "-topk", -1);
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
     int gpu = 0;
@@ -1233,13 +1281,13 @@ void run_classifier(int argc, char **argv)
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
-    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show, mjpeg_port);
+    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show, mjpeg_port, calc_topk);
     else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "gun")) gun_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "threat")) threat_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "test")) test_classifier(data, cfg, weights, layer);
     else if(0==strcmp(argv[2], "label")) label_classifier(data, cfg, weights);
-    else if(0==strcmp(argv[2], "valid")) validate_classifier_single(data, cfg, weights);
+    else if(0==strcmp(argv[2], "valid")) validate_classifier_single(data, cfg, weights, NULL, -1);
     else if(0==strcmp(argv[2], "validmulti")) validate_classifier_multi(data, cfg, weights);
     else if(0==strcmp(argv[2], "valid10")) validate_classifier_10(data, cfg, weights);
     else if(0==strcmp(argv[2], "validcrop")) validate_classifier_crop(data, cfg, weights);

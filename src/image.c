@@ -762,7 +762,7 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
 }
 
 void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
-    float precision, int draw_precision, int dont_show, int mjpeg_port)
+    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port)
 {
     int img_offset = 50;
     int draw_size = img_size - img_offset;
@@ -780,7 +780,7 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
         static float old_precision = 0;
         static int iteration_old = 0;
         static int text_iteration_old = 0;
-        if(iteration_old == 0) cvPutText(img, "mAP%", cvPoint(0, 12), &font, CV_RGB(255, 0, 0));
+        if(iteration_old == 0) cvPutText(img, accuracy_name, cvPoint(0, 12), &font, CV_RGB(255, 0, 0));
 
         cvLine(img,
             cvPoint(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
@@ -815,7 +815,6 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
         k = cvWaitKey(20);
     }
     if (k == 's' || current_batch == (max_batches - 1) || current_batch % 100 == 0) {
-        //cvSaveImage("chart.jpg", img, 0);
         save_cv_png(img, "chart.png");
         cvPutText(img, "- Saved", cvPoint(250, img_size - 10), &font, CV_RGB(255, 0, 0));
     }
