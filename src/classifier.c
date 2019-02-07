@@ -1245,7 +1245,6 @@ void run_classifier(int argc, char **argv)
     }
 
     int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
-    int calc_topk = find_int_arg(argc, argv, "-topk", -1);
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
     int gpu = 0;
@@ -1270,6 +1269,7 @@ void run_classifier(int argc, char **argv)
     }
 
     int dont_show = find_arg(argc, argv, "-dont_show");
+    int calc_topk = find_arg(argc, argv, "-topk");
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int top = find_int_arg(argc, argv, "-t", 0);
     int clear = find_arg(argc, argv, "-clear");
