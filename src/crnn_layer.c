@@ -215,6 +215,16 @@ void forward_crnn_layer_gpu(layer l, network_state state)
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
     layer output_layer = *(l.output_layer);
+    /*
+#ifdef CUDNN_HALF
+// slow and bad
+    s.index = state.index;
+    s.net = state.net;
+    cuda_convert_f32_to_f16(input_layer.weights_gpu, input_layer.c*input_layer.n*input_layer.size*input_layer.size, input_layer.weights_gpu16);
+    cuda_convert_f32_to_f16(self_layer.weights_gpu, self_layer.c*self_layer.n*self_layer.size*self_layer.size, self_layer.weights_gpu16);
+    cuda_convert_f32_to_f16(output_layer.weights_gpu, output_layer.c*output_layer.n*output_layer.size*output_layer.size, output_layer.weights_gpu16);
+#endif  //CUDNN_HALF
+    */
 
     fill_ongpu(l.outputs * l.batch * l.steps, 0, output_layer.delta_gpu, 1);
     fill_ongpu(l.hidden * l.batch * l.steps, 0, self_layer.delta_gpu, 1);

@@ -1,6 +1,7 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+//#include "cuda_runtime.h"
+//#include "curand.h"
+//#include "cublas_v2.h"
+#include "cuda.h"
 
 extern "C" {
 #include <stdio.h>
@@ -61,7 +62,7 @@ void forward_network_gpu(network net, network_state state)
         //printf("\n layer %d - type: %d - \n", i, l.type);
         //start_timer();
         l.forward_gpu(l, state);
-        //cudaDeviceSynchronize();
+        //CHECK_CUDA(cudaDeviceSynchronize());
         //stop_timer_and_show();
 
         if(net.wait_stream)
@@ -152,7 +153,7 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     int i;
     for (i = 0; i < net.n; ++i) {
         layer l = net.layers[i];
-        if (l.weights_gpu) {
+        if (l.weights_gpu && l.weights_gpu16) {
             assert((l.c*l.n*l.size*l.size) > 0);
             cuda_convert_f32_to_f16(l.weights_gpu, l.c*l.n*l.size*l.size, l.weights_gpu16);
         }
