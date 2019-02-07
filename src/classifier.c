@@ -125,6 +125,8 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     load_thread = load_data(args);
 
     int iter_save = get_current_batch(net);
+    int iter_save_last = get_current_batch(net);
+
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
 
@@ -155,13 +157,23 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, -1, 0, dont_show, mjpeg_port);
 #endif  // OPENCV
 
-        if (i >= (iter_save + 100)) {
+        if (i >= (iter_save + 1000)) {
             iter_save = i;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, i);
+            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            save_weights(net, buff);
+        }
+
+        if (i >= (iter_save_last + 100)) {
+            iter_save_last = i;
+#ifdef GPU
+            if (ngpus != 1) sync_nets(nets, ngpus, 0);
+#endif
+            char buff[256];
+            sprintf(buff, "%s/%s_last.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         free_data(train);
