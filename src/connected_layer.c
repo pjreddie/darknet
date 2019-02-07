@@ -11,8 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-static size_t get_connected_workspace_size(layer l) {
+size_t get_connected_workspace_size(layer l)
+{
 #ifdef CUDNN
+    return get_convolutional_workspace_size(l);
+    /*
     if (gpu_index >= 0) {
         size_t most = 0;
         size_t s = 0;
@@ -42,6 +45,7 @@ static size_t get_connected_workspace_size(layer l) {
         if (s > most) most = s;
         return most;
     }
+    */
 #endif
     return 0;
 }

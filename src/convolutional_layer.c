@@ -100,7 +100,7 @@ image get_convolutional_delta(convolutional_layer l)
     return float_to_image(w,h,c,l.delta);
 }
 
-size_t get_workspace_size(layer l){
+size_t get_workspace_size32(layer l){
 #ifdef CUDNN
     if(gpu_index >= 0){
         size_t most = 0;
@@ -173,6 +173,12 @@ size_t get_workspace_size16(layer l) {
     //return (size_t)l.out_h*l.out_w*l.size*l.size*l.c * sizeof(float);
 }
 
+size_t get_convolutional_workspace_size(layer l) {
+    size_t workspace_size = get_workspace_size32(l);
+    size_t workspace_size16 = get_workspace_size16(l);
+    if (workspace_size16 > workspace_size) workspace_size = workspace_size16;
+    return workspace_size;
+}
 #ifdef GPU
 #ifdef CUDNN
 void create_convolutional_cudnn_tensors(layer *l)
@@ -462,9 +468,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 #endif
     }
 #endif
-    l.workspace_size = get_workspace_size(l);
-    size_t workspace_size16 = get_workspace_size16(l);
-    if (workspace_size16 > l.workspace_size) l.workspace_size = workspace_size16;
+    l.workspace_size = get_convolutional_workspace_size(l);
 
     //fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c);
     l.bflops = (2.0 * l.n * l.size*l.size*l.c * l.out_h*l.out_w) / 1000000000.;
@@ -566,9 +570,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     cudnn_convolutional_setup(l, cudnn_fastest);
 #endif
 #endif
-    l->workspace_size = get_workspace_size(*l);
-    size_t workspace_size16 = get_workspace_size16(*l);
-    if (workspace_size16 > l->workspace_size) l->workspace_size = workspace_size16;
+    l->workspace_size = get_convolutional_workspace_size(*l);
 
 #ifdef CUDNN
     // check for excessive memory consumption
@@ -578,9 +580,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     if (l->workspace_size > free_byte || l->workspace_size >= total_byte / 2) {
         printf(" used slow CUDNN algo without Workspace! Need memory: %zu, available: %zu\n", l->workspace_size, (free_byte < total_byte/2) ? free_byte : total_byte/2);
         cudnn_convolutional_setup(l, cudnn_smallest);
-        l->workspace_size = get_workspace_size(*l);
-        size_t workspace_size16 = get_workspace_size16(*l);
-        if (workspace_size16 > l->workspace_size) l->workspace_size = workspace_size16;
+        l->workspace_size = get_convolutional_workspace_size(*l);
     }
 #endif
 }
