@@ -360,34 +360,63 @@ float train_network_batch(network net, data d, int n)
     return (float)sum/(n*batch);
 }
 
+int recalculate_workspace_size(network *net)
+{
+#ifdef GPU
+    cuda_set_device(net->gpu_index);
+    if (gpu_index >= 0) cuda_free(net->workspace);
+#endif
+    int i;
+    size_t workspace_size = 0;
+    for (i = 0; i < net->n; ++i) {
+        layer l = net->layers[i];
+        //printf(" %d: layer = %d,", i, l.type);
+        if (l.type == CONVOLUTIONAL) {
+            l.workspace_size = get_convolutional_workspace_size(l);
+        }
+        else if (l.type == CONNECTED) {
+            l.workspace_size = get_connected_workspace_size(l);
+        }
+        if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;
+        net->layers[i] = l;
+    }
+
+#ifdef GPU
+    if (gpu_index >= 0) {
+        printf("\n try to allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
+        net->workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
+        printf(" CUDA allocate done! \n");
+    }
+    else {
+        free(net->workspace);
+        net->workspace = calloc(1, workspace_size);
+    }
+#else
+    free(net->workspace);
+    net->workspace = calloc(1, workspace_size);
+#endif
+    //fprintf(stderr, " Done!\n");
+    return 0;
+}
+
 void set_batch_network(network *net, int b)
 {
     net->batch = b;
     int i;
     for(i = 0; i < net->n; ++i){
         net->layers[i].batch = b;
+
 #ifdef CUDNN
         if(net->layers[i].type == CONVOLUTIONAL){
             cudnn_convolutional_setup(net->layers + i, cudnn_fastest);
-            /*
-            layer *l = net->layers + i;
-            cudnn_convolutional_setup(l, cudnn_fastest);
-            // check for excessive memory consumption
-            size_t free_byte;
-            size_t total_byte;
-            check_error(cudaMemGetInfo(&free_byte, &total_byte));
-            if (l->workspace_size > free_byte || l->workspace_size >= total_byte / 2) {
-                printf(" used slow CUDNN algo without Workspace! \n");
-                cudnn_convolutional_setup(l, cudnn_smallest);
-                l->workspace_size = get_workspace_size(*l);
-            }
-            */
         }
         else if (net->layers[i].type == MAXPOOL) {
             cudnn_maxpool_setup(net->layers + i);
         }
 #endif
+
     }
+    recalculate_workspace_size(net); // recalculate workspace size
 }
 
 int resize_network(network *net, int w, int h)
