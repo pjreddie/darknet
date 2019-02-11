@@ -457,6 +457,8 @@ struct layer {
 
     float *binary_input_gpu;
     float *binary_weights_gpu;
+    float *bin_conv_shortcut_in_gpu;
+    float *bin_conv_shortcut_out_gpu;
 
     float * mean_gpu;
     float * variance_gpu;

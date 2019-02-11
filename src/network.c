@@ -975,7 +975,7 @@ void fuse_conv_batchnorm(network net)
     }
 }
 
-
+void forward_blank_layer(layer l, network_state state) {}
 
 void calculate_binary_weights(network net)
 {
@@ -995,6 +995,19 @@ void calculate_binary_weights(network net)
 
                 if (net.layers[j].use_bin_output) {
                     l->activation = LINEAR;
+                }
+
+                // fuse conv_xnor + shortcut -> conv_xnor
+                if ((j + 1) < net.n && net.layers[j].type == CONVOLUTIONAL) {
+                    layer *sc = &net.layers[j + 1];
+                    if (sc->type == SHORTCUT && sc->w == sc->out_w && sc->h == sc->out_h && sc->c == sc->out_c)
+                    {
+                        l->bin_conv_shortcut_in_gpu = net.layers[net.layers[j + 1].index].output_gpu;
+                        l->bin_conv_shortcut_out_gpu = net.layers[j + 1].output_gpu;
+
+                        net.layers[j + 1].type = BLANK;
+                        net.layers[j + 1].forward_gpu = forward_blank_layer;
+                    }
                 }
             }
         }

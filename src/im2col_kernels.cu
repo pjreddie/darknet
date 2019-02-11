@@ -1247,7 +1247,8 @@ int warpAllReduceSum(int val) {
 __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias_arr, int leaky_activation)
+    float *C, int ldc, float *mean_arr, float *bias_arr, int leaky_activation,
+    float *shortcut_in_gpu, float *shortcut_out_gpu)
 {
     // total 57%
     int index = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1411,9 +1412,14 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
                         float bias_val = bias_arr[i + i_d];
                         float dst_val = count *mean_val + bias_val;
                         if (leaky_activation)
-                            dst_val = (dst_val > 0) ? (dst_val) : (0.1f*dst_val);    // Leaky activation
+                            dst_val = (dst_val >= 0) ? (dst_val) : (0.1f*dst_val);    // Leaky activation
 
-                        C[(i + i_d)*ldc + (c_x*8 + j + j_d)] = dst_val;
+                        size_t out_index = (i + i_d)*ldc + (c_x * 8 + j + j_d);
+                        C[out_index] = dst_val;
+
+                        if (shortcut_out_gpu) {
+                            shortcut_out_gpu[out_index] = shortcut_in_gpu[out_index] + dst_val;
+                        }
                     }
 
                 }
@@ -1574,7 +1580,8 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
 __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias_arr, int leaky_activation)
+    float *C, int ldc, float *mean_arr, float *bias_arr, int leaky_activation,
+    float *shortcut_in_gpu, float *shortcut_out_gpu)
 {
     // total 57%
     int index = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1628,7 +1635,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                         //ulonglong4 a_bit256 = *((ulonglong4 *)(A + A_i));    // weights
                         ulonglong4 a_bit256 = *((ulonglong4 *)(A_s + A_i));    // weights
                         ulonglong4 b_bit256 = *((ulonglong4 *)(B + B_i));    // input
-                        c_bit256 = xnor_int256(a_bit256, b_bit256);
+                        c_bit256 = xor_int256(a_bit256, b_bit256);
                         int tmp_count = __popcll(c_bit256.w) + __popcll(c_bit256.x) +
                             __popcll(c_bit256.y) + __popcll(c_bit256.z);
 
@@ -1661,7 +1668,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                         //uint64_t a_bit64 = *((uint64_t *)(A + A_i));    // weights
                         uint64_t a_bit64 = *((uint64_t *)(A_s + A_i));    // weights
                         uint64_t b_bit64 = *((uint64_t *)(B + B_i));    // input
-                        c_bit64 = xnor_int64(a_bit64, b_bit64);
+                        c_bit64 = xor_int64(a_bit64, b_bit64);
                         int tmp_count = __popcll(c_bit64);
 
                         int sum_count = warpAllReduceSum(tmp_count);
@@ -1691,7 +1698,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                         //uint64_t a_bit64 = *((uint64_t *)(A + A_i));    // weights
                         uint32_t a_bit32 = *((uint32_t *)(A_s + A_i));    // weights
                         uint32_t b_bit32 = *((uint32_t *)(B + B_i));    // input
-                        uint32_t c_bit32 = xnor_int32(a_bit32, b_bit32);
+                        uint32_t c_bit32 = xor_int32(a_bit32, b_bit32);
                         int tmp_count = __popc(c_bit32);
 
                         int sum_count = warpAllReduceSum(tmp_count);
@@ -1712,7 +1719,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                     //ulonglong4 a_bit256 = *((ulonglong4 *)(A + (i*lda + k) / 8));    // weights
                     ulonglong4 a_bit256 = *((ulonglong4 *)(A_s + (local_i*lda + k) / 8));    // weights
                     ulonglong4 b_bit256 = *((ulonglong4 *)(B + (j*ldb + k) / 8));    // input
-                    ulonglong4 c_bit256 = xnor_int256(a_bit256, b_bit256);
+                    ulonglong4 c_bit256 = xor_int256(a_bit256, b_bit256);
 
                     count += __popcll(c_bit256.w) + __popcll(c_bit256.x) +
                         __popcll(c_bit256.y) + __popcll(c_bit256.z);
@@ -1724,7 +1731,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                     //uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));    // weights
                     uint64_t a_bit64 = *((uint64_t *)(A_s + (local_i*lda + k) / 8));    // weights
                     uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));            // input
-                    uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
+                    uint64_t c_bit64 = xor_int64(a_bit64, b_bit64);
 
                     count += __popcll(c_bit64);
                 }
@@ -1735,8 +1742,13 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                 count = count - f1;    // remove extra bits (from empty space for align only)
                 float dst_val = (2 * count - K) *mean_val + bias_val;
                 if(leaky_activation)
-                    dst_val = (dst_val > 0) ? (dst_val) : (0.1f*dst_val);    // Leaky activation
-                C[i*ldc + j] = dst_val;
+                    dst_val = (dst_val >= 0) ? (dst_val) : (0.1f*dst_val);    // Leaky activation
+                size_t out_index = i*ldc + j;
+                C[out_index] = dst_val;
+
+                if (shortcut_out_gpu) {
+                    shortcut_out_gpu[out_index] = shortcut_in_gpu[out_index] + dst_val;
+                }
             }
         }
     }
@@ -1762,7 +1774,8 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr, float *bias, int leaky_activation)
+    float *C, int ldc, float *mean_arr, float *bias, int leaky_activation,
+    float *shortcut_in_gpu, float *shortcut_out_gpu)
 {
     int size = M*N;
     const int num_blocks = get_number_of_blocks(size, BLOCK);
@@ -1794,7 +1807,8 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
             A, lda,
             B, ldb,
             C, ldc,
-            mean_arr, bias, leaky_activation);
+            mean_arr, bias, leaky_activation,
+            shortcut_in_gpu, shortcut_out_gpu);
 
         //cudaDeviceSynchronize();
         //getchar();
@@ -1807,7 +1821,8 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
             A, lda,
             B, ldb,
             C, ldc,
-            mean_arr, bias, leaky_activation);
+            mean_arr, bias, leaky_activation,
+            shortcut_in_gpu, shortcut_out_gpu);
     }
     CHECK_CUDA(cudaPeekAtLastError());
 }
