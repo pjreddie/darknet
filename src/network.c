@@ -997,6 +997,7 @@ void calculate_binary_weights(network net)
                     l->activation = LINEAR;
                 }
 
+#ifdef GPU
                 // fuse conv_xnor + shortcut -> conv_xnor
                 if ((j + 1) < net.n && net.layers[j].type == CONVOLUTIONAL) {
                     layer *sc = &net.layers[j + 1];
@@ -1009,6 +1010,7 @@ void calculate_binary_weights(network net)
                         net.layers[j + 1].forward_gpu = forward_blank_layer;
                     }
                 }
+#endif  // GPU
             }
         }
     }
