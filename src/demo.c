@@ -298,8 +298,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         if(delay < 0){
             delay = frame_skip;
 
-            double after = get_wall_time();
-            float curr = 1./(after - before);
+            //double after = get_wall_time();
+            //float curr = 1./(after - before);
+            double after = get_time_point();    // more accurate time measurements
+            float curr = 1000000. / (after - before);
             fps = curr;
             before = after;
         }
