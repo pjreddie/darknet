@@ -64,6 +64,8 @@ void free_layer(layer l)
 	if (l.r_cpu)              free(l.r_cpu);
 	if (l.h_cpu)              free(l.h_cpu);
 	if (l.binary_input)       free(l.binary_input);
+    if (l.bin_re_packed_input) free(l.bin_re_packed_input);
+    if (l.t_bit_input)        free(l.t_bit_input);
     if (l.loss)               free(l.loss);
 
 #ifdef GPU

@@ -132,7 +132,12 @@ size_t get_workspace_size32(layer l){
         return most;
     }
     #endif
-    if(l.xnor) return (size_t)l.bit_align*l.size*l.size*l.c * sizeof(float);
+    if (l.xnor) {
+        size_t re_packed_input_size = l.c * l.w * l.h * sizeof(float);
+        size_t workspace_size = (size_t)l.bit_align*l.size*l.size*l.c * sizeof(float);
+        if (workspace_size < re_packed_input_size) workspace_size = re_packed_input_size;
+        return workspace_size;
+    }
     return (size_t)l.out_h*l.out_w*l.size*l.size*l.c*sizeof(float);
 }
 
@@ -379,6 +384,16 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         l.bit_align = src_align + (align - src_align % align);
 
         l.mean_arr = calloc(l.n, sizeof(float));
+
+        const size_t new_c = l.c / 32;
+        size_t in_re_packed_input_size = new_c * l.w * l.h + 1;
+        l.bin_re_packed_input = calloc(in_re_packed_input_size, sizeof(uint32_t));
+
+        l.lda_align = 256;  // AVX2
+        int k = l.size*l.size*l.c;
+        size_t k_aligned = k + (l.lda_align - k%l.lda_align);
+        size_t t_bit_input_size = k_aligned * l.bit_align / 8;
+        l.t_bit_input = calloc(t_bit_input_size, sizeof(char));
     }
 
     if(batch_normalize){
@@ -785,11 +800,6 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
     size_t t_intput_size = new_ldb * bit_align;// n;
     size_t t_bit_input_size = t_intput_size / 8;// +1;
 
-    static int last_t_bit_input_size = 0;
-    if (last_t_bit_input_size < t_bit_input_size) {
-        last_t_bit_input_size = t_bit_input_size;
-        *t_bit_input = realloc(*t_bit_input, last_t_bit_input_size * sizeof(char));
-    }
     memset(*t_bit_input, 0, t_bit_input_size * sizeof(char));
     int src_size = k * bit_align;
 
@@ -850,34 +860,21 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 size_t t_intput_size = new_ldb * l.bit_align;// n;
                 size_t t_bit_input_size = t_intput_size / 8;// +1;
 
-                const int new_c = l.c / 32;
-
-                static float *re_packed_input = NULL;
-                static int last_re_packed_input_size = 0;
                 int re_packed_input_size = l.c * l.w * l.h;
-                if (last_re_packed_input_size < re_packed_input_size) {
-                    last_re_packed_input_size = re_packed_input_size;
-                    re_packed_input = realloc(re_packed_input, last_re_packed_input_size * sizeof(float));
-                }
-                memset(re_packed_input, 0, re_packed_input_size * sizeof(float));
+                memset(state.workspace, 0, re_packed_input_size * sizeof(float));
 
-                static uint32_t *bin_re_packed_input = NULL;
-                static int last_bin_re_packed_input_size = 0;
-                int in_re_packed_input_size = new_c * l.w * l.h + 1;
-                if (last_bin_re_packed_input_size < in_re_packed_input_size) {
-                    last_bin_re_packed_input_size = in_re_packed_input_size;
-                    bin_re_packed_input = realloc(bin_re_packed_input, last_bin_re_packed_input_size * sizeof(uint32_t));
-                }
-                memset(bin_re_packed_input, 0, in_re_packed_input_size * sizeof(uint32_t));
+                const size_t new_c = l.c / 32;
+                size_t in_re_packed_input_size = new_c * l.w * l.h + 1;
+                memset(l.bin_re_packed_input, 0, in_re_packed_input_size * sizeof(uint32_t));
 
                 //float *re_packed_input = calloc(l.c * l.w * l.h, sizeof(float));
                 //uint32_t *bin_re_packed_input = calloc(new_c * l.w * l.h + 1, sizeof(uint32_t));
 
                 // float32x4 by channel (as in cuDNN)
-                repack_input(state.input, re_packed_input, l.w, l.h, l.c);
+                repack_input(state.input, state.workspace, l.w, l.h, l.c);
 
                 // 32 x floats -> 1 x uint32_t
-                float_to_bit(re_packed_input, (char *)bin_re_packed_input, l.c * l.w * l.h);
+                float_to_bit(state.workspace, (char *)l.bin_re_packed_input, l.c * l.w * l.h);
 
                 //free(re_packed_input);
 
@@ -888,7 +885,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 // // then exit from if()
 
 
-                im2col_cpu_custom((float *)bin_re_packed_input, new_c, l.h, l.w, l.size, l.stride, l.pad, b);
+                im2col_cpu_custom((float *)l.bin_re_packed_input, new_c, l.h, l.w, l.size, l.stride, l.pad, state.workspace);
                 //im2col_cpu((float *)bin_re_packed_input, new_c, l.h, l.w, l.size, l.stride, l.pad, b);
 
                 //free(bin_re_packed_input);
@@ -903,24 +900,10 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
 // // then exit from if()
 
-
-                //size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
-                //size_t t_intput_size = new_ldb * l.bit_align;// n;
-                //size_t t_bit_input_size = t_intput_size / 8;// +1;
-
-                //char *t_bit_input = calloc(t_bit_input_size, sizeof(char));
-                static char *t_bit_input = NULL;
-                static int last_t_bit_input_size = 0;
-                if (last_t_bit_input_size < t_bit_input_size) {
-                    last_t_bit_input_size = t_bit_input_size;
-                    t_bit_input = realloc(t_bit_input, last_t_bit_input_size * sizeof(char));
-                }
-                memset(t_bit_input, 0, t_bit_input_size * sizeof(char));
-
-                transpose_uint32((uint32_t *)b, t_bit_input, new_k, n, n, new_ldb);
+                transpose_uint32((uint32_t *)state.workspace, l.t_bit_input, new_k, n, n, new_ldb);
 
                 // the main GEMM function
-                gemm_nn_custom_bin_mean_transposed(m, n, k, 1, l.align_bit_weights, new_ldb, t_bit_input, new_ldb, c, n, l.mean_arr);
+                gemm_nn_custom_bin_mean_transposed(m, n, k, 1, l.align_bit_weights, new_ldb, l.t_bit_input, new_ldb, c, n, l.mean_arr);
 
                 // // alternative GEMM
                 //gemm_nn_bin_transposed_32bit_packed(m, n, new_k, 1,
@@ -938,7 +921,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 //printf(" l.index = %d - old XNOR \n", l.index);
 
                 //im2col_cpu_custom_align(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
-                im2col_cpu_custom_bin(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
+                im2col_cpu_custom_bin(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, state.workspace, l.bit_align);
 
                 size_t output_size = l.outputs;
                 //float *count_output = calloc(output_size, sizeof(float));
@@ -959,13 +942,10 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     //size_t ldb_align = 256; // 256 bit for AVX2
                     int ldb_align = l.lda_align;
                     size_t new_ldb = k + (ldb_align - k%ldb_align);
-                    static char *t_bit_input = NULL;
-                    size_t t_intput_size = binary_transpose_align_input(k, n, b, &t_bit_input, ldb_align, l.bit_align);
-                    //char *t_bit_input = calloc(new_ldb * n, sizeof(char));    // for im2col_cpu_custom_transpose() only
-                    //float_to_bit(t_input, t_bit_input, new_ldb * n);    // for im2col_cpu_custom_transpose() only
+                    size_t t_intput_size = binary_transpose_align_input(k, n, state.workspace, &l.t_bit_input, ldb_align, l.bit_align);
 
                     // 5x times faster than gemm()-float32
-                    gemm_nn_custom_bin_mean_transposed(m, n, k, 1, l.align_bit_weights, new_ldb, t_bit_input, new_ldb, c, n, l.mean_arr);
+                    gemm_nn_custom_bin_mean_transposed(m, n, k, 1, l.align_bit_weights, new_ldb, l.t_bit_input, new_ldb, c, n, l.mean_arr);
 
                     //gemm_nn_custom_bin_mean_transposed(m, n, k, 1, bit_weights, k, t_bit_input, new_ldb, c, n, mean_arr);
 

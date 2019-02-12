@@ -365,7 +365,9 @@ struct layer {
     float *c_cpu;
     float *dc_cpu;
 
-    float * binary_input;
+    float *binary_input;
+    uint32_t *bin_re_packed_input;
+    char *t_bit_input;
 
     struct layer *input_layer;
     struct layer *self_layer;
