@@ -47,19 +47,19 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
     l.state = calloc(l.hidden*batch*(steps+1), sizeof(float));
 
     l.input_layer = malloc(sizeof(layer));
-    fprintf(stderr, "");
+    //fprintf(stderr, "");
     *(l.input_layer) = make_convolutional_layer(batch, steps, h, w, c, hidden_filters, size, stride, pad, activation, batch_normalize, 0, 0, 0, 0, 0);
     l.input_layer->batch = batch;
     if (l.workspace_size < l.input_layer->workspace_size) l.workspace_size = l.input_layer->workspace_size;
 
     l.self_layer = malloc(sizeof(layer));
-    fprintf(stderr, "");
+    //fprintf(stderr, "");
     *(l.self_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, hidden_filters, size, stride, pad, activation, batch_normalize, 0, 0, 0, 0, 0);
     l.self_layer->batch = batch;
     if (l.workspace_size < l.self_layer->workspace_size) l.workspace_size = l.self_layer->workspace_size;
 
     l.output_layer = malloc(sizeof(layer));
-    fprintf(stderr, "");
+    //fprintf(stderr, "");
     *(l.output_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, output_filters, size, stride, pad, activation, batch_normalize, 0, 0, 0, 0, 0);
     l.output_layer->batch = batch;
     if (l.workspace_size < l.output_layer->workspace_size) l.workspace_size = l.output_layer->workspace_size;

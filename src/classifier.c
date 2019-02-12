@@ -179,7 +179,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             draw_precision = 1;
         }
 
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
 #ifdef OPENCV
         draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, "top5", dont_show, mjpeg_port);
 #endif  // OPENCV
@@ -200,7 +200,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
-            sprintf(buff, "%s/%s_last.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_last.weights", backup_directory, base);
             save_weights(net, buff);
         }
         free_data(train);

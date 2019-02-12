@@ -485,8 +485,8 @@ int resize_network(network *net, int w, int h)
         h = l.out_h;
         if(l.type == AVGPOOL) break;
     }
-    const int size = get_network_input_size(*net) * net->batch;
 #ifdef GPU
+    const int size = get_network_input_size(*net) * net->batch;
     if(gpu_index >= 0){
         printf(" try to allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
         net->workspace = cuda_make_array(0, workspace_size/sizeof(float) + 1);
@@ -725,10 +725,10 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
 
     char *send_buf = (char *)calloc(1024, sizeof(char));
     if (filename) {
-        sprintf(send_buf, "{\n \"frame_id\":%d, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename);
+        sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename);
     }
     else {
-        sprintf(send_buf, "{\n \"frame_id\":%d, \n \"objects\": [ \n", frame_id);
+        sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"objects\": [ \n", frame_id);
     }
 
     int i, j;
