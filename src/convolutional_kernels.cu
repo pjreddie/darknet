@@ -420,7 +420,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 //#ifdef CUDNN_HALF
     //if (state.use_mixed_precision) {
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
-    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in))
+    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
+        l.c % 8 == 0 && l.n % 8 == 0)
     {
         //printf("\n CUDNN_HALF!!! state.index = %d \n", state.index);
 
@@ -605,7 +606,8 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
 //#ifdef CUDNN_HALF
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
-    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in))
+    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
+        l.c % 8 == 0 && l.n % 8 == 0)
     {
 
         const size_t input16_size = l.batch*l.c*l.w*l.h;
