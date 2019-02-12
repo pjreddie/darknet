@@ -313,6 +313,8 @@ layer parse_yolo(list *options, size_params params)
     int *mask = parse_yolo_mask(a, &num);           // mask is the same as the `mask` in cfg that indicates the available anchors,
                                                     // num is the number of the mask.
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
+                                                    // params.{w, h} is the spatial shape of the yolo layer (i.e. grids shape),
+                                                    // params.batch is applied to the whole network.
     assert(l.outputs == params.inputs);
 
     l.max_boxes = option_find_int_quiet(options, "max",90);
