@@ -2065,11 +2065,11 @@ static inline int popcnt_64(uint64_t val64) {
     tmp_count += __popcnt(val64 >> 32);
 #endif
 #else   // Linux
-#ifdef __x86_64__  // Linux 64-bit
+#if defined(__x86_64__) || defined(__aarch64__)  // Linux 64-bit
     int tmp_count = __builtin_popcountll(val64);
 #else  // Linux 32-bit
     int tmp_count = __builtin_popcount(val64);
-    tmp_count += __builtin_popcount(val64);
+    tmp_count += __builtin_popcount(val64 >> 32);
 #endif
 #endif
     return tmp_count;
