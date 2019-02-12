@@ -306,11 +306,12 @@ int *parse_yolo_mask(char *a, int *num)
 layer parse_yolo(list *options, size_params params)
 {
     int classes = option_find_int(options, "classes", 20);
-    int total = option_find_int(options, "num", 1);
+    int total = option_find_int(options, "num", 1); // total is the number of the whole anchors.
     int num = total;
 
     char *a = option_find_str(options, "mask", 0);
-    int *mask = parse_yolo_mask(a, &num);
+    int *mask = parse_yolo_mask(a, &num);           // mask is the same as the `mask` in cfg that indicates the available anchors,
+                                                    // num is the number of the mask.
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
     assert(l.outputs == params.inputs);
 
