@@ -474,11 +474,6 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
   * increase network resolution in your `.cfg`-file (`height=608`, `width=608` or any value multiple of 32) - it will increase precision
 
-  * recalculate anchors for your dataset for `width` and `height` from cfg-file:
-  `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
-   then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file
-
-    (also you can change indexes of anchors `masks=` for each [yolo]-layer, so that 1st-[yolo]-layer has anchors larger than 60x60, 2nd larger than 30x30, 3rd remaining)
 
   * check that each object are mandatory labeled in your dataset - no one object in your data set should not be without label. In the most training issues - there are wrong labels in your dataset (got labels by using some conversion script, marked with a third-party tool, ...). Always check your dataset by using: https://github.com/AlexeyAB/Yolo_mark
 
@@ -488,7 +483,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
   * for training with a large number of objects in each image, add the parameter `max=200` or higher value in the last `[yolo]`-layer or `[region]`-layer in your cfg-file (the global maximum number of objects that can be detected by YoloV3 is `0,0615234375*(width*height)` where are width and height are parameters from `[net]` section in cfg-file) 
   
-  * for training for small objects - set `layers = -1, 11` instead of https://github.com/AlexeyAB/darknet/blob/6390a5a2ab61a0bdf6f1a9a6b4a739c16b36e0d7/cfg/yolov3.cfg#L720
+  * for training for small objects (smaller than 16x16 after the image is resized to 416x416) - set `layers = -1, 11` instead of https://github.com/AlexeyAB/darknet/blob/6390a5a2ab61a0bdf6f1a9a6b4a739c16b36e0d7/cfg/yolov3.cfg#L720
       and set `stride=4` instead of https://github.com/AlexeyAB/darknet/blob/6390a5a2ab61a0bdf6f1a9a6b4a739c16b36e0d7/cfg/yolov3.cfg#L717
   
   * for training for both small and large objects use modified models:
@@ -514,6 +509,10 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
     then train by using weights file `yolov3.conv.81` instead of `darknet53.conv.74`
 
   * The more different objects you want to detect, the more complex network model should be used. But each: `model of object, side, illimination, scale, each 30 grad` of the turn and inclination angles - these are different objects from a neural network perspective.
+
+  * recalculate anchors for your dataset for `width` and `height` from cfg-file:
+  `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
+   then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file. But you should change indexes of anchors `masks=` for each [yolo]-layer, so that 1st-[yolo]-layer has anchors larger than 60x60, 2nd larger than 30x30, 3rd remaining. If many of the calculated anchors do not fit under the appropriate layers - then just try using all the default anchors.
 
 
 2. After training - for detection:
