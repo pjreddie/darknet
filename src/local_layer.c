@@ -26,7 +26,7 @@ int local_out_width(local_layer l)
 local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation)
 {
     int i;
-    local_layer l = {0};
+    local_layer l = { (LAYER_TYPE)0 };
     l.type = LOCAL;
 
     l.h = h;
@@ -47,19 +47,19 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = l.w * l.h * l.c;
 
-    l.weights = calloc(c*n*size*size*locations, sizeof(float));
-    l.weight_updates = calloc(c*n*size*size*locations, sizeof(float));
+    l.weights = (float*)calloc(c * n * size * size * locations, sizeof(float));
+    l.weight_updates = (float*)calloc(c * n * size * size * locations, sizeof(float));
 
-    l.biases = calloc(l.outputs, sizeof(float));
-    l.bias_updates = calloc(l.outputs, sizeof(float));
+    l.biases = (float*)calloc(l.outputs, sizeof(float));
+    l.bias_updates = (float*)calloc(l.outputs, sizeof(float));
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c));
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1,1);
 
-    l.col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
-    l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
-    l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
+    l.col_image = (float*)calloc(out_h * out_w * size * size * c, sizeof(float));
+    l.output = (float*)calloc(l.batch * out_h * out_w * n, sizeof(float));
+    l.delta = (float*)calloc(l.batch * out_h * out_w * n, sizeof(float));
     
     l.forward = forward_local_layer;
     l.backward = backward_local_layer;

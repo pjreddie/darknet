@@ -7,7 +7,10 @@
 #include <math.h>
 #include <float.h>
 #include <string.h>
-
+#include <stdint.h>
+#ifdef _WIN32
+#include <intrin.h>
+#endif
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
@@ -37,7 +40,7 @@ void gemm_bin(int M, int N, int K, float ALPHA,
 float *random_matrix(int rows, int cols)
 {
     int i;
-    float *m = calloc(rows*cols, sizeof(float));
+    float* m = (float*)calloc(rows * cols, sizeof(float));
     for(i = 0; i < rows*cols; ++i){
         m[i] = (float)rand()/RAND_MAX;
     }
@@ -83,7 +86,6 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
 // XNOR bitwise GEMM for binary neural network
 //--------------------------------------------
 
-#include <stdint.h>
 
 static inline unsigned char xnor(unsigned char a, unsigned char b) {
     //return a == b;
@@ -318,6 +320,7 @@ void transpose_32x32_bits_my(uint32_t *A, uint32_t *B, int lda, int ldb)
     }
 }
 
+#ifndef GPU
 uint8_t reverse_8_bit(uint8_t a) {
     return ((a * 0x0802LU & 0x22110LU) | (a * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
 }
@@ -465,6 +468,9 @@ void transpose_bin(char *A, char *B, const int n, const int m,
 }
 */
 
+#else
+extern void transpose_32x32_bits_reversed_diagonale(uint32_t* A, uint32_t* B, int m, int n);
+#endif
 
 // transpose by 32-bit
 void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
@@ -483,7 +489,7 @@ void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
             //transpose_32x32_bits_my(&A[a_index/32], &B[b_index/32], lda/32, ldb/32);
         }
         for (; j < m; ++j) {
-            if (get_bit(A, i*lda + j)) set_bit(B, j*ldb + i);
+            if (get_bit((const unsigned char* const)A, i * lda + j)) set_bit((unsigned char* const)B, j * ldb + i);
         }
     }
 }
@@ -703,7 +709,7 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     else {
         for (i = 0; i < M; ++i) {
             for (k = 0; k < K; ++k) {
-                register float A_PART = ALPHA*A[i*lda + k];
+                float A_PART = ALPHA * A[i * lda + k];
                 for (j = 0; j < N; ++j) {
                     C[i*ldc + j] += A_PART*B[k*ldb + j];
                 }
@@ -730,9 +736,6 @@ void gemm_nn(int M, int N, int K, float ALPHA,
 }
 
 
-#define TILE_M 4    // 4 ops
-#define TILE_N 16   // AVX2 = 2 ops * 8 floats
-#define TILE_K 16   // loop
 
 void gemm_nn_fast(int M, int N, int K, float ALPHA,
     float *A, int lda,
@@ -1286,16 +1289,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 }
 
 
-static inline float im2col_get_pixel(float *im, int height, int width, int channels,
-    int row, int col, int channel, int pad)
-{
-    row -= pad;
-    col -= pad;
 
-    if (row < 0 || col < 0 ||
-        row >= height || col >= width) return 0;
-    return im[col + width*(row + height*channel)];
-}
 
 //From Berkeley Vision's Caffe!
 //https://github.com/BVLC/caffe/blob/master/LICENSE
@@ -1645,7 +1639,7 @@ void im2col_cpu_custom_bin(float* data_im,
                     __m256 result256 = _mm256_cmp_ps(src256, float_zero256, _CMP_GT_OS);
                     uint16_t mask = _mm256_movemask_ps(result256); // (val > 0) ? 0 : 1
 
-                    uint16_t *dst_ptr = &((unsigned char*)data_col)[col_index / 8];
+                    uint16_t* dst_ptr = &((uint16_t*)data_col)[col_index / 8];
                     *dst_ptr |= (mask << (col_index % 8));
                 }
 
@@ -1657,7 +1651,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
                     float val = data_im[im_col + width*(im_row + height*c_im)];
-                    if(val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char* const)data_col, col_index);
                 }
             }
 
@@ -1671,7 +1665,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char* const)data_col, col_index);
                 }
             }
 
@@ -1685,7 +1679,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char* const)data_col, col_index);
                 }
             }
 
@@ -1699,7 +1693,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char* const)data_col, col_index);
                 }
             }
 
@@ -1713,7 +1707,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char* const)data_col, col_index);
                 }
             }
         }
@@ -1952,7 +1946,7 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     int i, j, k;
     for (i = 0; i < M; ++i) {
         for (k = 0; k < K; ++k) {
-            register float A_PART = ALPHA*A[i*lda + k];
+            float A_PART = ALPHA * A[i * lda + k];
             for (j = 0; j < N; ++j) {
                 C[i*ldc + j] += A_PART*B[k*ldb + j];
             }
@@ -2239,7 +2233,7 @@ void im2col_cpu_custom_bin(float* data_im,
                     int col_index = c * new_ldb + h * width_col + w;
 
                     float val = data_im[im_col + width*(im_row + height*c_im)];
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char*)data_col, col_index);
                 }
 
                 for (; w < width_col - pad; ++w) {
@@ -2250,7 +2244,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
                     float val = data_im[im_col + width*(im_row + height*c_im)];
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char*)data_col, col_index);
                 }
             }
 
@@ -2264,7 +2258,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char*)data_col, col_index);
                 }
             }
 
@@ -2278,7 +2272,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char*)data_col, col_index);
                 }
             }
 
@@ -2292,7 +2286,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char*)data_col, col_index);
                 }
             }
 
@@ -2306,7 +2300,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
                     //data_col[col_index] = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
                     float val = im2col_get_pixel(data_im, height, width, channels, im_row, im_col, c_im, pad);
-                    if (val > 0) set_bit(data_col, col_index);
+                    if (val > 0) set_bit((unsigned char*)data_col, col_index);
                 }
             }
         }
@@ -2346,7 +2340,7 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
     memset(dst, 0, dst_size);
 
     size_t i;
-    char *byte_arr = calloc(size, sizeof(char));
+    char* byte_arr = (char*)calloc(size, sizeof(char));
     for (i = 0; i < size; ++i) {
         if (src[i] > 0) byte_arr[i] = 1;
     }
@@ -2578,7 +2572,7 @@ void gemm_nt(int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(j = 0; j < N; ++j){
-            register float sum = 0;
+            float sum = 0;
             for(k = 0; k < K; ++k){
                 sum += ALPHA*A[i*lda+k]*B[j*ldb + k];
             }
@@ -2595,7 +2589,7 @@ void gemm_tn(int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(k = 0; k < K; ++k){
-            register float A_PART = ALPHA*A[k*lda+i];
+            float A_PART = ALPHA * A[k * lda + i];
             for(j = 0; j < N; ++j){
                 C[i*ldc+j] += A_PART*B[k*ldb+j];
             }
@@ -2611,7 +2605,7 @@ void gemm_tt(int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(j = 0; j < N; ++j){
-            register float sum = 0;
+            float sum = 0;
             for(k = 0; k < K; ++k){
                 sum += ALPHA*A[i+k*lda]*B[k+j*ldb];
             }
@@ -2668,9 +2662,9 @@ void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float *C_gpu, int ldc)
 {
     cublasHandle_t handle = blas_handle();
-    cudaError_t stream_status = cublasSetStream(handle, get_cuda_stream());
+    cudaError_t stream_status = (cudaError_t)cublasSetStream(handle, get_cuda_stream());
     CHECK_CUDA(stream_status);
-    cudaError_t status = cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N),
+    cudaError_t status = (cudaError_t)cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N),
             (TA ? CUBLAS_OP_T : CUBLAS_OP_N), N, M, K, &ALPHA, B_gpu, ldb, A_gpu, lda, &BETA, C_gpu, ldc);
     CHECK_CUDA(status);
 }

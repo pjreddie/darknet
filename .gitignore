@@ -28,3 +28,8 @@ Thumbs.db
 # CMake #
 cmake-build-debug/
 CMakeLists.txt
+build_*/
+build.*
+cmake/
+*.patch
+.gitignore

@@ -1,3 +1,4 @@
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,16 +6,13 @@
 #include <assert.h>
 #include <float.h>
 #include <limits.h>
+#include "darkunistd.h"
 #ifdef WIN32
-#include "unistd.h"
 #include "gettimeofday.h"
 #else
-#include <unistd.h>
 #include <sys/time.h>
 #endif
-#include "utils.h"
 
-#pragma warning(disable: 4996)
 
 double what_time_is_it_now()
 {
@@ -34,7 +32,7 @@ int *read_map(char *filename)
     if(!file) file_error(filename);
     while((str=fgetl(file))){
         ++n;
-        map = realloc(map, n*sizeof(int));
+        map = (int*)realloc(map, n * sizeof(int));
         map[n-1] = atoi(str);
     }
     return map;
@@ -54,7 +52,7 @@ void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections)
 void shuffle(void *arr, size_t n, size_t size)
 {
     size_t i;
-    void *swp = calloc(1, size);
+    void* swp = (void*)calloc(1, size);
     for(i = 0; i < n-1; ++i){
         size_t j = i + rand()/(RAND_MAX / (n-i)+1);
         memcpy(swp,            (char*)arr+(j*size), size);
@@ -167,9 +165,9 @@ void pm(int M, int N, float *A)
     printf("\n");
 }
 
-void find_replace(char *str, char *orig, char *rep, char *output)
+void find_replace(const char* str, char* orig, char* rep, char* output)
 {
-    char *buffer = calloc(8192, sizeof(char));
+    char* buffer = (char*)calloc(8192, sizeof(char));
     char *p;
 
     sprintf(buffer, "%s", str);
@@ -187,7 +185,7 @@ void find_replace(char *str, char *orig, char *rep, char *output)
 
 void trim(char *str)
 {
-    char *buffer = calloc(8192, sizeof(char));
+    char* buffer = (char*)calloc(8192, sizeof(char));
     sprintf(buffer, "%s", str);
 
     char *p = buffer;
@@ -205,7 +203,7 @@ void trim(char *str)
 
 void find_replace_extension(char *str, char *orig, char *rep, char *output)
 {
-    char *buffer = calloc(8192, sizeof(char));
+    char* buffer = (char*)calloc(8192, sizeof(char));
 
     sprintf(buffer, "%s", str);
     char *p = strstr(buffer, orig);
@@ -222,7 +220,7 @@ void find_replace_extension(char *str, char *orig, char *rep, char *output)
     free(buffer);
 }
 
-void replace_image_to_label(char *input_path, char *output_path)
+void replace_image_to_label(const char* input_path, char* output_path)
 {
     find_replace(input_path, "/images/train2014/", "/labels/train2014/", output_path);    // COCO
     find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);        // COCO
@@ -356,7 +354,7 @@ char *fgetl(FILE *fp)
 {
     if(feof(fp)) return 0;
     size_t size = 512;
-    char *line = malloc(size*sizeof(char));
+    char* line = (char*)malloc(size * sizeof(char));
     if(!fgets(line, size, fp)){
         free(line);
         return 0;
@@ -367,7 +365,7 @@ char *fgetl(FILE *fp)
     while((line[curr-1] != '\n') && !feof(fp)){
         if(curr == size-1){
             size *= 2;
-            line = realloc(line, size*sizeof(char));
+            line = (char*)realloc(line, size * sizeof(char));
             if(!line) {
                 printf("%ld\n", size);
                 malloc_error();
@@ -446,7 +444,7 @@ void write_all(int fd, char *buffer, size_t bytes)
 
 char *copy_string(char *s)
 {
-    char *copy = malloc(strlen(s)+1);
+    char* copy = (char*)malloc(strlen(s) + 1);
     strncpy(copy, s, strlen(s)+1);
     return copy;
 }
@@ -482,7 +480,7 @@ int count_fields(char *line)
 
 float *parse_fields(char *line, int n)
 {
-    float *field = calloc(n, sizeof(float));
+    float* field = (float*)calloc(n, sizeof(float));
     char *c, *p, *end;
     int count = 0;
     int done = 0;
@@ -656,8 +654,8 @@ int max_index(float *a, int n)
 
 int top_max_index(float *a, int n, int k)
 {
-    float *values = calloc(k, sizeof(float));
-    int *indexes = calloc(k, sizeof(int));
+    float *values = (float*)calloc(k, sizeof(float));
+    int *indexes = (int*)calloc(k, sizeof(int));
     if (n <= 0) return -1;
     int i, j;
     for (i = 0; i < n; ++i) {
@@ -716,7 +714,7 @@ float rand_normal()
     rand1 = rand() / ((double) RAND_MAX);
     if(rand1 < 1e-100) rand1 = 1e-100;
     rand1 = -2 * log(rand1);
-    rand2 = (rand() / ((double) RAND_MAX)) * TWO_PI;
+    rand2 = (rand() / ((double)RAND_MAX)) * 2.0 * M_PI;
 
     return sqrt(rand1) * cos(rand2);
 }
@@ -765,9 +763,9 @@ float rand_scale(float s)
 float **one_hot_encode(float *a, int n, int k)
 {
     int i;
-    float **t = calloc(n, sizeof(float*));
+    float** t = (float**)calloc(n, sizeof(float*));
     for(i = 0; i < n; ++i){
-        t[i] = calloc(k, sizeof(float));
+        t[i] = (float*)calloc(k, sizeof(float));
         int index = (int)a[i];
         t[i][index] = 1;
     }

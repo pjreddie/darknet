@@ -4,10 +4,10 @@
 #include "parser.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/core/version.hpp"
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/core/version.hpp>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio_c.h"
+#include <opencv2/videoio/videoio_c.h>
 #endif
 image get_image_from_stream(CvCapture *cap);
 #endif
@@ -50,8 +50,8 @@ void extract_voxel(char *lfile, char *rfile, char *prefix)
 
 void train_voxel(char *cfgfile, char *weightfile)
 {
-    char *train_images = "/data/imagenet/imagenet1k.train.list";
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* train_images = "data/imagenet/imagenet1k.train.list";
+    char* backup_directory = "backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);

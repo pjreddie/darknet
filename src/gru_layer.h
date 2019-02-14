@@ -6,6 +6,9 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_normalize);
 
 void forward_gru_layer(layer l, network_state state);
@@ -20,5 +23,8 @@ void push_gru_layer(layer l);
 void pull_gru_layer(layer l);
 #endif
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

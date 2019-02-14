@@ -3,7 +3,6 @@
 //#include "cublas_v2.h"
 #include "cuda.h"
 
-extern "C" {
 #include <stdio.h>
 #include <time.h>
 #include <assert.h>
@@ -35,10 +34,9 @@ extern "C" {
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "blas.h"
-}
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 #include "http_stream.h"
@@ -396,9 +394,11 @@ void sync_nets(network *nets, int n, int interval)
 float train_networks(network *nets, int n, data d, int interval)
 {
     int i;
+#ifdef _DEBUG
     int batch = nets[0].batch;
     int subdivisions = nets[0].subdivisions;
     assert(batch * subdivisions * n == d.X.rows);
+#endif
     pthread_t *threads = (pthread_t *) calloc(n, sizeof(pthread_t));
     float *errors = (float *) calloc(n, sizeof(float));
 

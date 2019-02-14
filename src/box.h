@@ -27,6 +27,9 @@ typedef struct detection_with_class {
 	int best_class;
 } detection_with_class;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 box float_to_box(float *f);
 float box_iou(box a, box b);
 float box_rmse(box a, box b);
@@ -42,4 +45,7 @@ box encode_box(box b, box anchor);
 // Return number of selected detections in *selected_detections_num
 detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num, char **names);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -5,6 +5,9 @@
 #include "layer.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes, int max_boxes);
 void forward_yolo_layer(const layer l, network_state state);
 void backward_yolo_layer(const layer l, network_state state);
@@ -18,4 +21,7 @@ void forward_yolo_layer_gpu(const layer l, network_state state);
 void backward_yolo_layer_gpu(layer l, network_state state);
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -1,5 +1,5 @@
 #include <iostream>
-#include <iomanip> 
+#include <iomanip>
 #include <string>
 #include <vector>
 #include <queue>
@@ -9,10 +9,6 @@
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 
-#ifdef _WIN32
-#define OPENCV
-#define GPU
-#endif
 
 // To use tracking - uncomment the following line. Tracking is supported only by OpenCV 3.x
 //#define TRACK_OPTFLOW
@@ -25,10 +21,11 @@
 
 #ifdef OPENCV
 #include <opencv2/opencv.hpp>            // C++
-#include "opencv2/core/version.hpp"
+#include <opencv2/core/version.hpp>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio.hpp"
+#include <opencv2/videoio/videoio.hpp>
 #define OPENCV_VERSION CVAUX_STR(CV_VERSION_MAJOR)"" CVAUX_STR(CV_VERSION_MINOR)"" CVAUX_STR(CV_VERSION_REVISION)
+#ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "opencv_world" OPENCV_VERSION ".lib")
 #ifdef TRACK_OPTFLOW
 #pragma comment(lib, "opencv_cudaoptflow" OPENCV_VERSION ".lib")
@@ -37,11 +34,14 @@
 #pragma comment(lib, "opencv_imgproc" OPENCV_VERSION ".lib")
 #pragma comment(lib, "opencv_highgui" OPENCV_VERSION ".lib")
 #endif    // TRACK_OPTFLOW
+#endif    // USE_CMAKE_LIBS
 #else
 #define OPENCV_VERSION CVAUX_STR(CV_VERSION_EPOCH)""CVAUX_STR(CV_VERSION_MAJOR)""CVAUX_STR(CV_VERSION_MINOR)
+#ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "opencv_core" OPENCV_VERSION ".lib")
 #pragma comment(lib, "opencv_imgproc" OPENCV_VERSION ".lib")
 #pragma comment(lib, "opencv_highgui" OPENCV_VERSION ".lib")
+#endif    // USE_CMAKE_LIBS
 #endif    // CV_VERSION_EPOCH
 
 class track_kalman {
@@ -146,10 +146,10 @@ public:
                     //else std::cout << "shakin \n";
 
                     if (dx_vec[index] > 1000 || dy_vec[index] > 1000) {
-                        //std::cout << "!!! bad dx or dy, dx = " << dx_vec[index] << ", dy = " << dy_vec[index] << 
+                        //std::cout << "!!! bad dx or dy, dx = " << dx_vec[index] << ", dy = " << dy_vec[index] <<
                         //    ", delta_time = " << delta_time << ", update = " << update << std::endl;
                         dx_vec[index] = 0;
-                        dy_vec[index] = 0;                        
+                        dy_vec[index] = 0;
                     }
                     old_result_vec[k].x = new_result_vec[i].x;
                     old_result_vec[k].y = new_result_vec[i].y;
@@ -178,7 +178,7 @@ public:
 };
 
 
-void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, 
+void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names,
     int current_det_fps = -1, int current_cap_fps = -1)
 {
     int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
@@ -191,8 +191,8 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
             if (i.track_id > 0) obj_name += " - " + std::to_string(i.track_id);
             cv::Size const text_size = getTextSize(obj_name, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, 2, 0);
             int const max_width = (text_size.width > i.w + 2) ? text_size.width : (i.w + 2);
-            cv::rectangle(mat_img, cv::Point2f(std::max((int)i.x - 1, 0), std::max((int)i.y - 30, 0)), 
-                cv::Point2f(std::min((int)i.x + max_width, mat_img.cols-1), std::min((int)i.y, mat_img.rows-1)), 
+            cv::rectangle(mat_img, cv::Point2f(std::max((int)i.x - 1, 0), std::max((int)i.y - 30, 0)),
+                cv::Point2f(std::min((int)i.x + max_width, mat_img.cols-1), std::min((int)i.y, mat_img.rows-1)),
                 color, CV_FILLED, 8, 0);
             putText(mat_img, obj_name, cv::Point2f(i.x, i.y - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(0, 0, 0), 2);
         }
@@ -208,7 +208,7 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
 void show_console_result(std::vector<bbox_t> const result_vec, std::vector<std::string> const obj_names) {
     for (auto &i : result_vec) {
         if (obj_names.size() > i.obj_id) std::cout << obj_names[i.obj_id] << " - ";
-        std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x << ", y = " << i.y 
+        std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x << ", y = " << i.y
             << ", w = " << i.w << ", h = " << i.h
             << std::setprecision(3) << ", prob = " << i.prob << std::endl;
     }
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
     std::string  weights_file = "yolov3.weights";
     std::string filename;
 
-    if (argc > 4) {    //voc.names yolo-voc.cfg yolo-voc.weights test.mp4        
+    if (argc > 4) {    //voc.names yolo-voc.cfg yolo-voc.weights test.mp4
         names_file = argv[1];
         cfg_file = argv[2];
         weights_file = argv[3];
@@ -251,12 +251,12 @@ int main(int argc, char *argv[])
     detector.wait_stream = true;
 #endif
 
-    while (true) 
-    {        
+    while (true)
+    {
         std::cout << "input image or video filename: ";
         if(filename.size() == 0) std::cin >> filename;
         if (filename.size() == 0) break;
-        
+
         try {
 #ifdef OPENCV
             extrapolate_coords_t extrapolate_coords;
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
                 if (save_output_videofile)
                     output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(35, video_fps), frame_size, true);
 
-                while (!cur_frame.empty()) 
+                while (!cur_frame.empty())
                 {
                     // always sync
                     if (t_cap.joinable()) {
@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
                             extrapolate_coords.update_result(result_vec, cur_time_extrapolate - 1);
                         }
 #else
-                        result_vec = detector.tracking_id(result_vec);    // comment it - if track_id is not required                    
+                        result_vec = detector.tracking_id(result_vec);    // comment it - if track_id is not required
                         extrapolate_coords.new_result(result_vec, cur_time_extrapolate - 1);
 #endif
                         // add old tracked objects
@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
                             auto current_image = det_image;
                             consumed = true;
                             while (current_image.use_count() > 0 && !exit_flag) {
-                                auto result = detector.detect_resized(*current_image, frame_size.width, frame_size.height, 
+                                auto result = detector.detect_resized(*current_image, frame_size.width, frame_size.height,
                                     thresh, false);    // true
                                 ++fps_det_counter;
                                 std::unique_lock<std::mutex> lock(mtx);
@@ -399,7 +399,7 @@ int main(int argc, char *argv[])
                         result_vec = tracker_flow.tracking_flow(cur_frame);    // track optical flow
                         extrapolate_coords.update_result(result_vec, cur_time_extrapolate);
                         small_preview.draw(cur_frame, show_small_boxes);
-#endif                        
+#endif
                         auto result_vec_draw = result_vec;
                         if (extrapolate_flag) {
                             result_vec_draw = extrapolate_coords.predict(cur_time_extrapolate);
@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
                             if (t_videowrite.joinable()) t_videowrite.join();
                             write_frame = cur_frame.clone();
                             videowrite_ready = false;
-                            t_videowrite = std::thread([&]() { 
+                            t_videowrite = std::thread([&]() {
                                  output_video << write_frame; videowrite_ready = true;
                             });
                         }
@@ -444,7 +444,7 @@ int main(int argc, char *argv[])
             else if (file_ext == "txt") {    // list of image files
                 std::ifstream file(filename);
                 if (!file.is_open()) std::cout << "File not found! \n";
-                else 
+                else
                     for (std::string line; file >> line;) {
                         std::cout << line << std::endl;
                         cv::Mat mat_img = cv::imread(line);
@@ -453,11 +453,11 @@ int main(int argc, char *argv[])
                         //draw_boxes(mat_img, result_vec, obj_names);
                         //cv::imwrite("res_" + line, mat_img);
                     }
-                
+
             }
             else {    // image file
                 cv::Mat mat_img = cv::imread(filename);
-                
+
                 auto start = std::chrono::steady_clock::now();
                 std::vector<bbox_t> result_vec = detector.detect(mat_img);
                 auto end = std::chrono::steady_clock::now();
@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
             std::vector<bbox_t> result_vec = detector.detect(img);
             detector.free_image(img);
             show_console_result(result_vec, obj_names);
-#endif            
+#endif
         }
         catch (std::exception &e) { std::cerr << "exception: " << e.what() << "\n"; getchar(); }
         catch (...) { std::cerr << "unknown exception \n"; getchar(); }

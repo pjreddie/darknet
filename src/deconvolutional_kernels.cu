@@ -2,7 +2,6 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "gemm.h"
@@ -11,7 +10,6 @@ extern "C" {
 #include "col2im.h"
 #include "utils.h"
 #include "cuda.h"
-}
 
 extern "C" void forward_deconvolutional_layer_gpu(deconvolutional_layer layer, network_state state)
 {
@@ -95,7 +93,7 @@ extern "C" void push_deconvolutional_layer(deconvolutional_layer layer)
     cuda_push_array(layer.bias_updates_gpu, layer.bias_updates, layer.n);
 }
 
-extern "C" void update_deconvolutional_layer_gpu(deconvolutional_layer layer, float learning_rate, float momentum, float decay)
+extern "C" void update_deconvolutional_layer_gpu(deconvolutional_layer layer, int skip, float learning_rate, float momentum, float decay)
 {
     int size = layer.size*layer.size*layer.c*layer.n;
 

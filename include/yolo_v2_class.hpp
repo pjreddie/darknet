@@ -1,17 +1,7 @@
-#pragma once
-#ifdef LIB_EXPORTS
-#if defined(_MSC_VER)
-#define LIB_API __declspec(dllexport)
-#else
-#define LIB_API __attribute__((visibility("default")))
-#endif
-#else
-#if defined(_MSC_VER)
-#define LIB_API
-#else
-#define LIB_API
-#endif
-#endif
+#ifndef YOLO_V2_CLASS_HPP
+#define YOLO_V2_CLASS_HPP
+
+#include "darknet.h"
 
 struct bbox_t {
     unsigned int x, y, w, h;    // (x,y) - top-left corner, (w, h) - width & height of bounded box
@@ -28,7 +18,6 @@ struct image_t {
     float *data;                // pointer to the image data
 };
 
-#define C_SHARP_MAX_OBJECTS 1000
 struct bbox_t_container {
     bbox_t candidates[C_SHARP_MAX_OBJECTS];
 };
@@ -41,8 +30,8 @@ struct bbox_t_container {
 
 #ifdef OPENCV
 #include <opencv2/opencv.hpp>            // C++
-#include "opencv2/highgui/highgui_c.h"    // C
-#include "opencv2/imgproc/imgproc_c.h"    // C
+#include <opencv2/highgui/highgui_c.h>   // C
+#include <opencv2/imgproc/imgproc_c.h>   // C
 #endif    // OPENCV
 
 extern "C" LIB_API int init(const char *configurationFilename, const char *weightsFilename, int gpu);
@@ -658,3 +647,4 @@ void free_img(image_t m) {
 
 #endif    // __cplusplus
 */
+#endif

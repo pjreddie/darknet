@@ -3,12 +3,12 @@
 #include "parser.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 void train_writing(char *cfgfile, char *weightfile)
 {
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* backup_directory = "backup/";
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
