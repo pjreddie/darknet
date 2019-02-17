@@ -8,6 +8,28 @@ endif()
 
 project(darknet)
 
+# To enable CUDA, launch cmake with -DENABLE_CUDA. Also it is advisable to set the highest compute model from below, depending on your specific card capabilities
+# If CUDA is not required, this setting is completely ignored.
+#set(COMPUTE_MODEL "75")  #Tesla T4, RTX 2080
+#set(COMPUTE_MODEL "72")  #Jetson Xavier
+#set(COMPUTE_MODEL "70")  #Tesla V100
+#set(COMPUTE_MODEL "62")  #Jetson TX2
+#set(COMPUTE_MODEL "61")  #Telsa P40
+set(COMPUTE_MODEL "60")  #Telsa P100
+#set(COMPUTE_MODEL "53")  #Jetson TX1
+#set(COMPUTE_MODEL "52")  #Tesla M40/M60
+#set(COMPUTE_MODEL "37")  #Tesla K80
+#set(COMPUTE_MODEL "35")  #Tesla K20/K40
+#set(COMPUTE_MODEL "30")  #Tesla K10, Quadro K4000
+###
+if(FORCE_CUSTOM_LIBS)
+  include_directories(${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
+  set(PTHREADS_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
+  set(PTHREADS_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/3rdparty/lib/x64/pthreadVC2.lib)
+  add_definitions(-D_TIMESPEC_DEFINED)
+endif()
+###
+
 enable_language(C)
 enable_language(CXX)
 if(ENABLE_CUDA)
@@ -57,10 +79,12 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   string(REGEX REPLACE "-O3" "-Ofast" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
 endif()
 
-if(APPLE)
-  find_package(OpenCV PATHS "/usr/local/Cellar/opencv@3/3.4.5" NO_DEFAULT_PATH)
-else()
-  find_package(OpenCV)
+if(NOT FORCE_CUSTOM_LIBS)
+  if(APPLE)
+    find_package(OpenCV PATHS "/usr/local/Cellar/opencv@3/3.4.5" NO_DEFAULT_PATH)
+  else()
+    find_package(OpenCV)
+  endif()
 endif()
 
 if(OpenCV_FOUND)
@@ -70,24 +94,18 @@ endif()
 
 if(ENABLE_CUDA)
   add_definitions(-DGPU)
-  #set(COMPUTE_MODEL "75")  #Tesla T4, RTX 2080
-  #set(COMPUTE_MODEL "72")  #Jetson Xavier
-  #set(COMPUTE_MODEL "70")  #Tesla V100
-  #set(COMPUTE_MODEL "62")  #Jetson TX2
-  #set(COMPUTE_MODEL "61")  #Telsa P40
-  #set(COMPUTE_MODEL "60")  #Telsa P100
-  #set(COMPUTE_MODEL "53")  #Jetson TX1
-  #set(COMPUTE_MODEL "52")  #Tesla M40/M60
-  #set(COMPUTE_MODEL "37")  #Tesla K80
-  #set(COMPUTE_MODEL "35")  #Tesla K20/K40
-  set(COMPUTE_MODEL "30")  #Tesla K10, Quadro K4000
-  if(COMPUTE_MODEL VERSION_GREATER_EQUAL 53)
-    add_definitions(-DCUDNN_HALF)
+  if(COMPUTE_MODEL VERSION_GREATER_EQUAL 75 AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS_EQUAL 9)
+    message(STATUS "CUDA 10 is required for Compute Model 7.5 - Lowering settings to 7.0")
+    set(COMPUTE_MODEL "70")
   endif()
   find_package(CUDNN)
   if(CUDNN_FOUND)
     add_definitions(-DCUDNN)
     include_directories(${CUDNN_INCLUDE_DIR})
+    if(COMPUTE_MODEL VERSION_GREATER_EQUAL 53)
+      add_definitions(-DCUDNN_HALF)
+      message(STATUS "Enabled CUDNN_HALF")
+    endif()
   endif()
   if (MSVC)
     if(CUDNN_FOUND)

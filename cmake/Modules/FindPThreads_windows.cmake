@@ -25,7 +25,9 @@
 include(${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake)
 include(${CMAKE_ROOT}/Modules/SelectLibraryConfigurations.cmake)
 
-find_path(PTHREADS_INCLUDE_DIR NAMES pthread.h)
+if(NOT PTHREADS_INCLUDE_DIR)
+  find_path(PTHREADS_INCLUDE_DIR NAMES pthread.h)
+endif()
 
 # Allow libraries to be set manually
 if(NOT PTHREADS_LIBRARY)
