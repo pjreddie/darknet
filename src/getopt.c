@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#include <getopt.h>
+#include "getopt.h"
 
 #ifdef __cplusplus
 extern "C" {

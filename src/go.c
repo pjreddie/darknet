@@ -10,7 +10,8 @@
 
 int inverted = 1;
 int noi = 1;
-static const unsigned int n_ind = 5;
+//static const unsigned int n_ind = 5;
+#define n_ind 5
 
 typedef struct {
     char **data;
@@ -357,7 +358,7 @@ int generate_move(network net, int player, float *board, int multi, float thresh
     predict_move(net, board, move, multi);
     if (player < 0) flip_board(board);
 
-    
+
     for(i = 0; i < 19; ++i){
         for(j = 0; j < 19; ++j){
             if (!legal_go(board, ko, player, i, j)) move[i*19 + j] = 0;
@@ -392,7 +393,7 @@ int generate_move(network net, int player, float *board, int multi, float thresh
     }
 
     if(suicide_go(board, player, row, col)){
-        return -1; 
+        return -1;
     }
     if(suicide_go(board, player, index/19, index%19)) index = max;
     return index;
@@ -461,17 +462,17 @@ void engine_go(char *filename, char *weightfile, int multi)
         } else if (!strcmp(buff, "known_command")){
             char comm[256];
             scanf("%s", comm);
-            int known = (!strcmp(comm, "protocol_version") || 
-                    !strcmp(comm, "name") || 
-                    !strcmp(comm, "version") || 
-                    !strcmp(comm, "known_command") || 
-                    !strcmp(comm, "list_commands") || 
-                    !strcmp(comm, "quit") || 
-                    !strcmp(comm, "boardsize") || 
-                    !strcmp(comm, "clear_board") || 
-                    !strcmp(comm, "komi") || 
-                    !strcmp(comm, "final_status_list") || 
-                    !strcmp(comm, "play") || 
+            int known = (!strcmp(comm, "protocol_version") ||
+                    !strcmp(comm, "name") ||
+                    !strcmp(comm, "version") ||
+                    !strcmp(comm, "known_command") ||
+                    !strcmp(comm, "list_commands") ||
+                    !strcmp(comm, "quit") ||
+                    !strcmp(comm, "boardsize") ||
+                    !strcmp(comm, "clear_board") ||
+                    !strcmp(comm, "komi") ||
+                    !strcmp(comm, "final_status_list") ||
+                    !strcmp(comm, "play") ||
                     !strcmp(comm, "genmove"));
             if(known) printf("=%s true\n\n", ids);
             else printf("=%s false\n\n", ids);
@@ -575,7 +576,7 @@ void engine_go(char *filename, char *weightfile, int multi)
                     }
                 }
                 fprintf(f, "final_status_list dead\n");
-                fclose(f);                
+                fclose(f);
 #ifdef _WIN32
 				FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
 #else
@@ -716,7 +717,7 @@ float score_game(float *board)
         }
     }
     fprintf(f, "final_score\n");
-    fclose(f);  
+    fclose(f);
 #ifdef _WIN32
 	FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
 #else
@@ -841,5 +842,3 @@ void run_go(int argc, char **argv)
     else if(0==strcmp(argv[2], "test")) test_go(cfg, weights, multi);
     else if(0==strcmp(argv[2], "engine")) engine_go(cfg, weights, multi);
 }
-
-

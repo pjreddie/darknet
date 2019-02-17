@@ -13,6 +13,9 @@
 #include <sys/time.h>
 #endif
 
+#ifndef USE_CMAKE_LIBS
+#pragma warning(disable: 4996)
+#endif
 
 double what_time_is_it_now()
 {
