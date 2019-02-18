@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define NUMCHARS 37
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 list *get_paths(char *filename)
@@ -1347,4 +1349,3 @@ data *split_data(data d, int part, int total)
     split[1] = test;
     return split;
 }
-

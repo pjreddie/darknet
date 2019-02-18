@@ -162,4 +162,3 @@ void backward_maxpool_layer(const maxpool_layer l, network_state state)
         state.delta[index] += l.delta[i];
     }
 }
-

@@ -56,4 +56,3 @@ extern "C" void backward_avgpool_layer_gpu(avgpool_layer layer, network_state st
     backward_avgpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(n, layer.w, layer.h, layer.c, state.delta, layer.delta_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
-

@@ -13,6 +13,10 @@ extern int gpu_index;
 
 #ifdef GPU
 
+#define BLOCK 512
+#define FULL_MASK 0xffffffff
+#define WARP_SIZE 32
+#define BLOCK_TRANSPOSE32 256
 
 #include <cuda_runtime.h>
 #include <curand.h>

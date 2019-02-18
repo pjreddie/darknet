@@ -24,7 +24,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
- 
+
 static unsigned char g_first_time = 1;
 static LARGE_INTEGER g_counts_per_sec;
 
@@ -36,4 +36,3 @@ LIB_API int clock_gettime(int, struct timespec*);
 #endif
 
 #endif
-

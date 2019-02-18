@@ -52,9 +52,9 @@ void resize_normalization_layer(layer *layer, int w, int h)
     layer->norms = (float*)realloc(layer->norms, h * w * c * batch * sizeof(float));
 #ifdef GPU
     cuda_free(layer->output_gpu);
-    cuda_free(layer->delta_gpu); 
-    cuda_free(layer->squared_gpu); 
-    cuda_free(layer->norms_gpu);   
+    cuda_free(layer->delta_gpu);
+    cuda_free(layer->squared_gpu);
+    cuda_free(layer->norms_gpu);
     layer->output_gpu =  cuda_make_array(layer->output, h * w * c * batch);
     layer->delta_gpu =   cuda_make_array(layer->delta, h * w * c * batch);
     layer->squared_gpu = cuda_make_array(layer->squared, h * w * c * batch);

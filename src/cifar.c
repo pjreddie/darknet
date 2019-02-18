@@ -273,5 +273,3 @@ void run_cifar(int argc, char **argv)
     else if(0==strcmp(argv[2], "csvtrain")) test_cifar_csvtrain(cfg, weights);
     else if(0==strcmp(argv[2], "eval")) eval_cifar_csv();
 }
-
-

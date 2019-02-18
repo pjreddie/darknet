@@ -1295,5 +1295,3 @@ void run_classifier(int argc, char **argv)
     else if(0==strcmp(argv[2], "validcrop")) validate_classifier_crop(data, cfg, weights);
     else if(0==strcmp(argv[2], "validfull")) validate_classifier_full(data, cfg, weights);
 }
-
-

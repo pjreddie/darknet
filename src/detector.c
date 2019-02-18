@@ -8,6 +8,14 @@
 #include "demo.h"
 #include "option_list.h"
 
+#ifndef __COMPAR_FN_T
+#define __COMPAR_FN_T
+typedef int (*__compar_fn_t)(const void*, const void*);
+#ifdef __USE_GNU
+typedef __compar_fn_t comparison_fn_t;
+#endif
+#endif
+
 #ifdef OPENCV
 #include <opencv2/highgui/highgui_c.h>
 #include <opencv2/core/core_c.h>

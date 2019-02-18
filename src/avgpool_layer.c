@@ -68,4 +68,3 @@ void backward_avgpool_layer(const avgpool_layer l, network_state state)
         }
     }
 }
-

@@ -62,7 +62,7 @@ void resize_upsample_layer(layer *l, int w, int h)
     l->output_gpu  = cuda_make_array(l->output, l->outputs*l->batch);
     l->delta_gpu   = cuda_make_array(l->delta,  l->outputs*l->batch);
 #endif
-    
+
 }
 
 void forward_upsample_layer(const layer l, network_state net)

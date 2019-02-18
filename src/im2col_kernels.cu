@@ -2214,4 +2214,3 @@ void convolve_bin_gpu(float *input, float *weights, float *output, int in_w, int
 }
 
 // --------------------------------
-

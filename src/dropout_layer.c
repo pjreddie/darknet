@@ -23,7 +23,7 @@ dropout_layer make_dropout_layer(int batch, int inputs, float probability)
     #endif
     fprintf(stderr, "dropout       p = %.2f               %4d  ->  %4d\n", probability, inputs, inputs);
     return l;
-} 
+}
 
 void resize_dropout_layer(dropout_layer *l, int inputs)
 {
@@ -57,4 +57,3 @@ void backward_dropout_layer(dropout_layer l, network_state state)
         else state.delta[i] *= l.scale;
     }
 }
-

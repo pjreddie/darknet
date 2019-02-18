@@ -145,4 +145,3 @@ void backward_cost_layer_gpu(const cost_layer l, network_state state)
     axpy_ongpu(l.batch*l.inputs, l.scale, l.delta_gpu, 1, state.delta, 1);
 }
 #endif
-

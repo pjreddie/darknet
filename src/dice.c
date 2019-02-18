@@ -115,4 +115,3 @@ void run_dice(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_dice(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_dice(cfg, weights);
 }
-

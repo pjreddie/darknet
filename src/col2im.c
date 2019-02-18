@@ -14,7 +14,7 @@ void col2im_add_pixel(float *im, int height, int width, int channels,
 //This one might be too, can't remember.
 void col2im_cpu(float* data_col,
          int channels,  int height,  int width,
-         int ksize,  int stride, int pad, float* data_im) 
+         int ksize,  int stride, int pad, float* data_im)
 {
     int c,h,w;
     int height_col = (height + 2*pad - ksize) / stride + 1;
@@ -37,4 +37,3 @@ void col2im_cpu(float* data_col,
         }
     }
 }
-

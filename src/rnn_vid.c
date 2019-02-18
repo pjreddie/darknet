@@ -213,4 +213,3 @@ void run_vid_rnn(int argc, char **argv)
 #else
 void run_vid_rnn(int argc, char **argv){}
 #endif
-

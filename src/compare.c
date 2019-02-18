@@ -180,7 +180,7 @@ int bbox_comparator(const void *a, const void *b)
     memcpy(X,                   im1.data, im1.w*im1.h*im1.c*sizeof(float));
     memcpy(X+im1.w*im1.h*im1.c, im2.data, im2.w*im2.h*im2.c*sizeof(float));
     float *predictions = network_predict(net, X);
-    
+
     free_image(im1);
     free_image(im2);
     free(X);
@@ -218,7 +218,7 @@ void bbox_fight(network net, sortable_bbox *a, sortable_bbox *b, int classes, in
             bbox_update(a, b, i, result);
         }
     }
-    
+
     free_image(im1);
     free_image(im2);
     free(X);

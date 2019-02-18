@@ -173,7 +173,7 @@ void backward_deconvolutional_layer(deconvolutional_layer l, network_state state
         float *b = l.col_image;
         float *c = l.weight_updates;
 
-        im2col_cpu(l.delta + i*l.n*size, l.n, out_h, out_w, 
+        im2col_cpu(l.delta + i*l.n*size, l.n, out_h, out_w,
                 l.size, l.stride, 0, b);
         gemm(0,1,m,n,k,alpha,a,k,b,k,1,c,n);
 
@@ -201,6 +201,3 @@ void update_deconvolutional_layer(deconvolutional_layer l, int skip, float learn
     axpy_cpu(size, learning_rate, l.weight_updates, 1, l.weights, 1);
     scal_cpu(size, momentum, l.weight_updates, 1);
 }
-
-
-

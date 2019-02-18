@@ -459,4 +459,3 @@ float *network_predict_gpu(network net, float *input)
     //cuda_free(state.input);   // will be freed in the free_network()
     return out;
 }
-

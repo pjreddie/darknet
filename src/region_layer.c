@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define DOABS 1
 
 region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords, int max_boxes)
 {

@@ -47,9 +47,9 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
     l.forward_gpu = forward_softmax_layer_gpu;
     l.backward_gpu = backward_softmax_layer_gpu;
 
-    l.output_gpu = cuda_make_array(l.output, inputs*batch); 
-    l.loss_gpu = cuda_make_array(l.loss, inputs*batch); 
-    l.delta_gpu = cuda_make_array(l.delta, inputs*batch); 
+    l.output_gpu = cuda_make_array(l.output, inputs*batch);
+    l.loss_gpu = cuda_make_array(l.loss, inputs*batch);
+    l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
     #endif
     return l;
 }

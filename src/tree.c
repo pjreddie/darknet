@@ -40,7 +40,7 @@ void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leave
     for(j = 0; j < n; ++j){
         int parent = hier->parent[j];
         if(parent >= 0){
-            predictions[j] *= predictions[parent]; 
+            predictions[j] *= predictions[parent];
         }
     }
     if(only_leaves){
@@ -86,7 +86,7 @@ tree *read_tree(char *filename)
 {
     tree t = {0};
     FILE *fp = fopen(filename, "r");
-    
+
     char *line;
     int last_parent = -1;
     int group_size = 0;

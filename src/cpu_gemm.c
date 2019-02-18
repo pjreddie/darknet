@@ -1,7 +1,7 @@
 //#include "mini_blas.h"
 
-void cpu_gemm_nn(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void cpu_gemm_nn(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float BETA,
         float *C, int ldc)
@@ -17,8 +17,8 @@ void cpu_gemm_nn(int TA, int TB, int M, int N, int K, float ALPHA,
     }
 }
 
-void cpu_gemm_nt(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void cpu_gemm_nt(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float BETA,
         float *C, int ldc)
@@ -35,8 +35,8 @@ void cpu_gemm_nt(int TA, int TB, int M, int N, int K, float ALPHA,
     }
 }
 
-void cpu_gemm_tn(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void cpu_gemm_tn(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float BETA,
         float *C, int ldc)
@@ -51,8 +51,8 @@ void cpu_gemm_tn(int TA, int TB, int M, int N, int K, float ALPHA,
         }
     }
 }
-void cpu_gemm_tt(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void cpu_gemm_tt(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float BETA,
         float *C, int ldc)
@@ -68,8 +68,8 @@ void cpu_gemm_tt(int TA, int TB, int M, int N, int K, float ALPHA,
 }
 
 
-void cpu_gemm(int TA, int TB, int M, int N, int K, float ALPHA, 
-        float *A, int lda, 
+void cpu_gemm(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
         float *B, int ldb,
         float BETA,
         float *C, int ldc)

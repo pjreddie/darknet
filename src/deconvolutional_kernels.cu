@@ -59,7 +59,7 @@ extern "C" void backward_deconvolutional_layer_gpu(deconvolutional_layer layer, 
         float *b = layer.col_image_gpu;
         float *c = layer.weight_updates_gpu;
 
-        im2col_ongpu(layer.delta_gpu + i*layer.n*size, layer.n, out_h, out_w, 
+        im2col_ongpu(layer.delta_gpu + i*layer.n*size, layer.n, out_h, out_w,
                 layer.size, layer.stride, 0, b);
         gemm_ongpu(0,1,m,n,k,alpha,a,k,b,k,1,c,n);
 
@@ -104,4 +104,3 @@ extern "C" void update_deconvolutional_layer_gpu(deconvolutional_layer layer, in
     axpy_ongpu(size, learning_rate, layer.weight_updates_gpu, 1, layer.weights_gpu, 1);
     scal_ongpu(size, momentum, layer.weight_updates_gpu, 1);
 }
-

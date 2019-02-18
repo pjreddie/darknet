@@ -220,4 +220,3 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network_state state)
        cvWaitKey(0);
        */
 }
-

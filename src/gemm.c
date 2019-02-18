@@ -15,6 +15,10 @@
 #include <omp.h>
 #endif
 
+#define TILE_M 4 // 4 ops
+#define TILE_N 16 // AVX2 = 2 ops * 8 floats
+#define TILE_K 16 // loop
+
 void gemm_bin(int M, int N, int K, float ALPHA,
         char  *A, int lda,
         float *B, int ldb,
@@ -1160,10 +1164,10 @@ static inline void xnor_avx2_popcnt(__m256i a_bit256, __m256i b_bit256, __m256i 
     __m256i xor256 = _mm256_xor_si256(a_bit256, b_bit256);  // xnor = not(xor(a,b))
     c_bit256 = _mm256_andnot_si256(xor256, c_bit256);  // can be optimized - we can do other NOT for wegihts once and do not do this NOT
 
-    *count_sum = _mm256_add_epi64(count256(c_bit256), *count_sum);    //  1st part - popcnt Mula’s algorithm
+    *count_sum = _mm256_add_epi64(count256(c_bit256), *count_sum);    //  1st part - popcnt Mula's algorithm
 }
 
-// 2nd part - popcnt Mula’s algorithm
+// 2nd part - popcnt Mula's algorithm
 static inline int get_count_mula(__m256i count_sum) {
     return _mm256_extract_epi64(count_sum, 0)
         + _mm256_extract_epi64(count_sum, 1)
@@ -2827,4 +2831,3 @@ int test_gpu_blas()
     return 0;
 }
 #endif
-

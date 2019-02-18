@@ -55,4 +55,3 @@ void col2im_ongpu(float *data_col,
 
     CHECK_CUDA(cudaPeekAtLastError());
 }
-

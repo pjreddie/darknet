@@ -26,40 +26,10 @@
 #endif
 #endif
 
-#ifdef _WIN32
-#define PORT unsigned long
-#define ADDRPOINTER int*
-#else
-#define PORT unsigned short
-#define SOCKET int
-#define HOSTENT struct hostent
-#define SOCKADDR struct sockaddr
-#define SOCKADDR_IN struct sockaddr_in
-#define ADDRPOINTER unsigned int*
-#define INVALID_SOCKET -1
-#define SOCKET_ERROR -1
-#endif
-#define FULL_MASK 0xffffffff
-#define WARP_SIZE 32
-#define BLOCK 512
-#define NUMCHARS 37
 #define NFRAMES 3
-#define BLOCK_TRANSPOSE32 256
-#define DOABS 1
 #define SECRET_NUM -1234
-#define C_SHARP_MAX_OBJECTS 1000
-#define TILE_M 4 // 4 ops
-#define TILE_N 16 // AVX2 = 2 ops * 8 floats
-#define TILE_K 16 // loop
-#ifndef __COMPAR_FN_T
-#define __COMPAR_FN_T
-typedef int (*__compar_fn_t)(const void*, const void*);
-#ifdef __USE_GNU
-typedef __compar_fn_t comparison_fn_t;
-#endif
-#endif
+
 #ifdef GPU
-#define BLOCK 512
 
 #include "cuda_runtime.h"
 #include "curand.h"
@@ -101,8 +71,6 @@ typedef struct metadata metadata;
 struct tree;
 typedef struct tree tree;
 
-
-#define SECRET_NUM -1234
 extern int gpu_index;
 
 // option_list.h

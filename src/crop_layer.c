@@ -88,16 +88,15 @@ void forward_crop_layer(const crop_layer l, network_state state)
             for(i = 0; i < l.out_h; ++i){
                 for(j = 0; j < l.out_w; ++j){
                     if(flip){
-                        col = l.w - dw - j - 1;    
+                        col = l.w - dw - j - 1;
                     }else{
                         col = j + dw;
                     }
                     row = i + dh;
-                    index = col+l.w*(row+l.h*(c + l.c*b)); 
+                    index = col+l.w*(row+l.h*(c + l.c*b));
                     l.output[count++] = state.input[index]*scale + trans;
                 }
             }
         }
     }
 }
-

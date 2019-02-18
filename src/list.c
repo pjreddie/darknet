@@ -34,7 +34,7 @@ void *list_pop(list *l){
     if(l->back) l->back->next = 0;
     free(b);
     --l->size;
-    
+
     return val;
 }
 

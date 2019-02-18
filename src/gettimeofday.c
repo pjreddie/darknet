@@ -8,7 +8,7 @@ LIB_API int gettimeofday(struct timeval* tp, struct timezone* tzp)
   FILETIME file_time;
   uint64_t time;
 
- 
+
   GetSystemTime(&system_time);
   SystemTimeToFileTime(&system_time, &file_time);
   time = ((uint64_t)file_time.dwLowDateTime);
@@ -18,7 +18,7 @@ LIB_API int gettimeofday(struct timeval* tp, struct timezone* tzp)
   tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
   return 0;
   }
- 
+
 LIB_API int clock_gettime(int dummy, struct timespec* ct)
   {
   LARGE_INTEGER count;
@@ -30,7 +30,7 @@ LIB_API int clock_gettime(int dummy, struct timespec* ct)
       g_counts_per_sec.QuadPart = 0;
     }
   }
- 
+
   if ((NULL == ct) || (g_counts_per_sec.QuadPart <= 0) || (0 == QueryPerformanceCounter(&count))) {
     return -1;
 }

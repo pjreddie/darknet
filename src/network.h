@@ -167,4 +167,3 @@ network combine_train_valid_networks(network net_train, network net_map);
 #endif
 
 #endif
-

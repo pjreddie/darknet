@@ -11,13 +11,13 @@ extern "C" {
 #endif
 LIB_API layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_normalize);
 
-void forward_lstm_layer(layer l, network_state state); 
+void forward_lstm_layer(layer l, network_state state);
 void update_lstm_layer(layer l, int batch, float learning_rate, float momentum, float decay);
 
 #ifdef GPU
 void forward_lstm_layer_gpu(layer l, network_state state);
 void backward_lstm_layer_gpu(layer l, network_state state);
-void update_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay); 
+void update_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay);
 #endif
 
 #ifdef __cplusplus
