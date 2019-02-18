@@ -102,7 +102,7 @@ class MJPG_sender
     SOCKET sock;
     SOCKET maxfd;
     fd_set master;
-    int timeout; // master sock timeout, shutdown after timeout millis.
+    int timeout; // master sock timeout, shutdown after timeout usec.
     int quality; // jpeg compression [1..100]
     int close_all_sockets;
 
@@ -289,7 +289,7 @@ class JSON_sender
     SOCKET sock;
     SOCKET maxfd;
     fd_set master;
-    int timeout; // master sock timeout, shutdown after timeout millis.
+    int timeout; // master sock timeout, shutdown after timeout usec.
     int close_all_sockets;
 
     int _write(int sock, char const*const s, int len)

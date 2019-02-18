@@ -821,7 +821,7 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     else
         cvPutText(img, "- Saved", cvPoint(250, img_size - 10), &font, CV_RGB(255, 255, 255));
 
-    if (mjpeg_port > 0) send_mjpeg(img, mjpeg_port, 2000, 80);
+    if (mjpeg_port > 0) send_mjpeg(img, mjpeg_port, 200000, 80);
 }
 #endif    // OPENCV
 
