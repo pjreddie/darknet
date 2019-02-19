@@ -1,3 +1,6 @@
+# To use your libs, launch cmake with -DUSE_INTEGRATED_LIBS:BOOL=FALSE
+# To enable CUDA, launch cmake with -DENABLE_CUDA. Also it is advisable to set the highest compute model with -DCOMPUTE_MODEL=..., depending on your specific card capabilities. If CUDA is not required, this setting is completely ignored.
+
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 #set(CMAKE_VERBOSE_MAKEFILE 1)
@@ -8,27 +11,13 @@ endif()
 
 project(darknet)
 
-# To enable CUDA, launch cmake with -DENABLE_CUDA. Also it is advisable to set the highest compute model from below, depending on your specific card capabilities
-# If CUDA is not required, this setting is completely ignored.
-#set(COMPUTE_MODEL "75")  #Tesla T4, RTX 2080
-#set(COMPUTE_MODEL "72")  #Jetson Xavier
-#set(COMPUTE_MODEL "70")  #Tesla V100
-#set(COMPUTE_MODEL "62")  #Jetson TX2
-#set(COMPUTE_MODEL "61")  #Telsa P40
-set(COMPUTE_MODEL "60")  #Telsa P100
-#set(COMPUTE_MODEL "53")  #Jetson TX1
-#set(COMPUTE_MODEL "52")  #Tesla M40/M60
-#set(COMPUTE_MODEL "37")  #Tesla K80
-#set(COMPUTE_MODEL "35")  #Tesla K20/K40
-#set(COMPUTE_MODEL "30")  #Tesla K10, Quadro K4000
-###
-if(FORCE_CUSTOM_LIBS)
-  include_directories(${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
-  set(PTHREADS_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
-  set(PTHREADS_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/3rdparty/lib/x64/pthreadVC2.lib)
-  add_definitions(-D_TIMESPEC_DEFINED)
+if(WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(USE_INTEGRATED_LIBS "TRUE" CACHE BOOL "Use libs distributed with this repo")
+else()
+  set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
 endif()
-###
+
+set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable building with CUDA")
 
 enable_language(C)
 enable_language(CXX)
@@ -40,6 +29,33 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
+
+set(COMPUTE_MODEL_75 "75") #Compute capability for Tesla T4, RTX 2080
+set(COMPUTE_MODEL_72 "72") #Compute capability for Jetson Xavier
+set(COMPUTE_MODEL_70 "70") #Compute capability for Tesla V100
+set(COMPUTE_MODEL_62 "62") #Compute capability for Jetson TX2
+set(COMPUTE_MODEL_61 "61") #Compute capability for Tesla P40
+set(COMPUTE_MODEL_60 "60") #Compute capability for Tesla P100
+set(COMPUTE_MODEL_53 "53") #Compute capability for Jetson TX1
+set(COMPUTE_MODEL_52 "52") #Compute capability for Tesla M40/M60
+set(COMPUTE_MODEL_37 "37") #Compute capability for Tesla K80
+set(COMPUTE_MODEL_35 "35") #Compute capability for Tesla K20/K40
+set(COMPUTE_MODEL_30 "30") #Compute capability for Tesla K10, Quadro K4000
+
+set(default_compute_model ${COMPUTE_MODEL_30})
+if(NOT COMPUTE_MODEL)
+  message(STATUS "Setting the compute model to '${default_compute_model}' as none was specified.")
+  set(COMPUTE_MODEL "${default_compute_model}" CACHE
+      STRING "Choose the best compute model supported by your GPU" FORCE)
+  set_property(CACHE COMPUTE_MODEL PROPERTY STRINGS ${COMPUTE_MODEL_75} ${COMPUTE_MODEL_72} ${COMPUTE_MODEL_70} ${COMPUTE_MODEL_62} ${COMPUTE_MODEL_61} ${COMPUTE_MODEL_60} ${COMPUTE_MODEL_53} ${COMPUTE_MODEL_52} ${COMPUTE_MODEL_37} ${COMPUTE_MODEL_35} ${COMPUTE_MODEL_30})
+endif()
+
+if(USE_INTEGRATED_LIBS)
+  include_directories(${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
+  set(PTHREADS_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
+  set(PTHREADS_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/3rdparty/lib/x64/pthreadVC2.lib)
+  add_definitions(-D_TIMESPEC_DEFINED)
+endif()
 
 if(NOT APPLE)
   set(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -79,7 +95,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   string(REGEX REPLACE "-O3" "-Ofast" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
 endif()
 
-if(NOT FORCE_CUSTOM_LIBS)
+if(NOT USE_INTEGRATED_LIBS)
   if(APPLE)
     find_package(OpenCV PATHS "/usr/local/Cellar/opencv@3/3.4.5" NO_DEFAULT_PATH)
   else()

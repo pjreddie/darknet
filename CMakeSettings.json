@@ -4,13 +4,31 @@
       "buildCommandArgs": "-m -v:minimal",
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
       "cmakeCommandArgs": "",
+      "configurationType": "Release",
+      "generator": "Visual Studio 15 2017 Win64",
+      "name": "x64-Release CPU - int. libs",
+      "variables": [
+        {
+          "name": "USE_INTEGRATED_LIBS",
+          "value": "TRUE"
+        }
+      ]
+    },
+    {
+      "buildCommandArgs": "-m -v:minimal",
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+      "cmakeCommandArgs": "",
       "configurationType": "Debug",
       "generator": "Visual Studio 15 2017 Win64",
-      "name": "x64-Debug",
+      "name": "x64-Debug CPU",
       "variables": [
         {
           "name": "CMAKE_TOOLCHAIN_FILE",
           "value": "${env.VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake"
+        },
+        {
+          "name": "USE_INTEGRATED_LIBS",
+          "value": "FALSE"
         },
         {
           "name": "VCPKG_TARGET_TRIPLET",
@@ -24,11 +42,67 @@
       "cmakeCommandArgs": "",
       "configurationType": "Release",
       "generator": "Visual Studio 15 2017 Win64",
-      "name": "x64-Release",
+      "name": "x64-Release CPU",
       "variables": [
         {
           "name": "CMAKE_TOOLCHAIN_FILE",
           "value": "${env.VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake"
+        },
+        {
+          "name": "USE_INTEGRATED_LIBS",
+          "value": "FALSE"
+        },
+        {
+          "name": "VCPKG_TARGET_TRIPLET",
+          "value": "${env.VCPKG_DEFAULT_TRIPLET}"
+        }
+      ]
+    },
+    {
+      "buildCommandArgs": "-m -v:minimal",
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+      "cmakeCommandArgs": "",
+      "configurationType": "Debug",
+      "generator": "Visual Studio 15 2017 Win64",
+      "name": "x64-Debug GPU",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${env.VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake"
+        },
+        {
+          "name": "USE_INTEGRATED_LIBS",
+          "value": "FALSE"
+        },
+        {
+          "name": "ENABLE_CUDA",
+          "value": "TRUE"
+        },
+        {
+          "name": "VCPKG_TARGET_TRIPLET",
+          "value": "${env.VCPKG_DEFAULT_TRIPLET}"
+        }
+      ]
+    },
+    {
+      "buildCommandArgs": "-m -v:minimal",
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+      "cmakeCommandArgs": "",
+      "configurationType": "Release",
+      "generator": "Visual Studio 15 2017 Win64",
+      "name": "x64-Release GPU",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${env.VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake"
+        },
+        {
+          "name": "USE_INTEGRATED_LIBS",
+          "value": "FALSE"
+        },
+        {
+          "name": "ENABLE_CUDA",
+          "value": "TRUE"
         },
         {
           "name": "VCPKG_TARGET_TRIPLET",
