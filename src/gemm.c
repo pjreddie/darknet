@@ -18,6 +18,11 @@
 #define TILE_M 4 // 4 ops
 #define TILE_N 16 // AVX2 = 2 ops * 8 floats
 #define TILE_K 16 // loop
+#ifdef __cplusplus
+#define PUT_IN_REGISTER
+#else
+#define PUT_IN_REGISTER register
+#endif
 
 void gemm_bin(int M, int N, int K, float ALPHA,
         char  *A, int lda,
@@ -713,7 +718,7 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     else {
         for (i = 0; i < M; ++i) {
             for (k = 0; k < K; ++k) {
-                float A_PART = ALPHA * A[i * lda + k];
+                PUT_IN_REGISTER float A_PART = ALPHA * A[i * lda + k];
                 for (j = 0; j < N; ++j) {
                     C[i*ldc + j] += A_PART*B[k*ldb + j];
                 }
@@ -845,7 +850,7 @@ void gemm_nn_fast(int M, int N, int K, float ALPHA,
                 {
                     for (k_d = k; k_d < (k + TILE_K); ++k_d)
                     {
-                        register float A_PART = ALPHA*A[i_d*lda + k_d];
+                        PUT_IN_REGISTER float A_PART = ALPHA*A[i_d*lda + k_d];
                         C[i_d*ldc + j] += A_PART*B[k_d*ldb + j];
                     }
                 }
@@ -856,7 +861,7 @@ void gemm_nn_fast(int M, int N, int K, float ALPHA,
         {
             for (i_d = i; i_d < (i + TILE_M); ++i_d)
             {
-                register float A_PART = ALPHA*A[i_d*lda + k];
+                PUT_IN_REGISTER float A_PART = ALPHA*A[i_d*lda + k];
                 for (j = 0; j < N; ++j) {
                     C[i_d*ldc + j] += A_PART*B[k*ldb + j];
                 }
@@ -867,7 +872,7 @@ void gemm_nn_fast(int M, int N, int K, float ALPHA,
     for (i = (M / TILE_M)*TILE_M; i < M; ++i) {
         int j, k;
         for (k = 0; k < K; ++k) {
-            register float A_PART = ALPHA*A[i*lda + k];
+            PUT_IN_REGISTER float A_PART = ALPHA*A[i*lda + k];
             for (j = 0; j < N; ++j) {
                 C[i*ldc + j] += A_PART*B[k*ldb + j];
             }
@@ -890,7 +895,7 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
         //printf(" l.mean_arr[i] = %d \n ", l.mean_arr[i]);
         for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
         {
-            register uint32_t A_PART = A[i*lda + s];
+            PUT_IN_REGISTER uint32_t A_PART = A[i*lda + s];
             __m256i a256 = _mm256_set1_epi32(A_PART);
 
             for (j = 0; j < N - 8; j += 8)
@@ -927,7 +932,7 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
 
             for (; j < N; ++j) // out_h*out_w;
             {
-                register uint32_t B_PART = B[s*ldb + j];
+                PUT_IN_REGISTER uint32_t B_PART = B[s*ldb + j];
                 uint32_t xnor_result = ~(A_PART ^ B_PART);
                 int32_t count = popcnt_32(xnor_result);  // must be Signed int
 
@@ -1950,7 +1955,7 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     int i, j, k;
     for (i = 0; i < M; ++i) {
         for (k = 0; k < K; ++k) {
-            float A_PART = ALPHA * A[i * lda + k];
+            PUT_IN_REGISTER float A_PART = ALPHA * A[i * lda + k];
             for (j = 0; j < N; ++j) {
                 C[i*ldc + j] += A_PART*B[k*ldb + j];
             }
@@ -1967,7 +1972,7 @@ void gemm_nn_fast(int M, int N, int K, float ALPHA,
     #pragma omp parallel for
     for (i = 0; i < M; ++i) {
         for (k = 0; k < K; ++k) {
-            register float A_PART = ALPHA*A[i*lda + k];
+            PUT_IN_REGISTER float A_PART = ALPHA*A[i*lda + k];
             for (j = 0; j < N; ++j) {
                 C[i*ldc + j] += A_PART*B[k*ldb + j];
             }
@@ -1988,12 +1993,12 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
         //printf(" l.mean_arr[i] = %d \n ", l.mean_arr[i]);
         for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
         {
-            //register float A_PART = 1*a[i*k + s];
-            register uint32_t A_PART = A[i*lda + s];
+            //PUT_IN_REGISTER float A_PART = 1*a[i*k + s];
+            PUT_IN_REGISTER uint32_t A_PART = A[i * lda + s];
             for (j = 0; j < N; ++j) // out_h*out_w;
             {
                 //c[i*n + j] += A_PART*b[s*n + j];
-                register uint32_t B_PART = B[s*ldb + j];
+                PUT_IN_REGISTER uint32_t B_PART = B[s * ldb + j];
                 uint32_t xnor_result = ~(A_PART ^ B_PART);
                 //printf(" xnor_result = %d, ", xnor_result);
                 int32_t count = popcnt_32(xnor_result);  // must be Signed int
@@ -2490,8 +2495,8 @@ void gemm_nn_bin_transposed_32bit_packed(int M, int N, int K, float ALPHA,
             float val = 0;
             for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
             {
-                register uint32_t A_PART = ((uint32_t*)A)[i*lda + s];
-                register uint32_t B_PART = ((uint32_t*)B)[j*ldb + s];
+                PUT_IN_REGISTER uint32_t A_PART = ((uint32_t*)A)[i*lda + s];
+                PUT_IN_REGISTER uint32_t B_PART = ((uint32_t*)B)[j * ldb + s];
                 uint32_t xnor_result = ~(A_PART ^ B_PART);
                 int32_t count = popcnt_32(xnor_result);  // must be Signed int
 
@@ -2576,7 +2581,7 @@ void gemm_nt(int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(j = 0; j < N; ++j){
-            float sum = 0;
+            PUT_IN_REGISTER float sum = 0;
             for(k = 0; k < K; ++k){
                 sum += ALPHA*A[i*lda+k]*B[j*ldb + k];
             }
@@ -2593,7 +2598,7 @@ void gemm_tn(int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(k = 0; k < K; ++k){
-            float A_PART = ALPHA * A[k * lda + i];
+            PUT_IN_REGISTER float A_PART = ALPHA * A[k * lda + i];
             for(j = 0; j < N; ++j){
                 C[i*ldc+j] += A_PART*B[k*ldb+j];
             }
@@ -2609,7 +2614,7 @@ void gemm_tt(int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(j = 0; j < N; ++j){
-            float sum = 0;
+            PUT_IN_REGISTER float sum = 0;
             for(k = 0; k < K; ++k){
                 sum += ALPHA*A[i+k*lda]*B[k+j*ldb];
             }

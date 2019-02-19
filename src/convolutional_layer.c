@@ -18,6 +18,12 @@
 #include "xnor_layer.h"
 #endif
 
+#ifdef __cplusplus
+#define PUT_IN_REGISTER
+#else
+#define PUT_IN_REGISTER register
+#endif
+
 #ifndef AI2
 #define AI2 0
 void forward_xnor_layer(layer l, network_state state);
@@ -644,7 +650,7 @@ void gemm_nn_custom(int M, int N, int K, float ALPHA,
     int i, j, k;
     for (i = 0; i < M; ++i) {
         for (k = 0; k < K; ++k) {
-            float A_PART = ALPHA * A[i * lda + k];
+            PUT_IN_REGISTER float A_PART = ALPHA * A[i * lda + k];
             //printf("\n weight = %f \n", A_PART);
             for (j = 0; j < N; ++j) {
                 C[i*ldc + j] += A_PART*B[k*ldb + j];

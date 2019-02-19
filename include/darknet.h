@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <pthread.h>
 
+#ifndef LIB_API
 #ifdef LIB_EXPORTS
 #if defined(_MSC_VER)
 #define LIB_API __declspec(dllexport)
@@ -23,6 +24,7 @@
 #define LIB_API
 #else
 #define LIB_API
+#endif
 #endif
 #endif
 

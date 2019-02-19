@@ -1,4 +1,9 @@
 //#include "mini_blas.h"
+#ifdef __cplusplus
+#define PUT_IN_REGISTER
+#else
+#define PUT_IN_REGISTER register
+#endif
 
 void cpu_gemm_nn(int TA, int TB, int M, int N, int K, float ALPHA,
         float *A, int lda,
@@ -9,7 +14,7 @@ void cpu_gemm_nn(int TA, int TB, int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(k = 0; k < K; ++k){
-            float A_PART = ALPHA * A[i * lda + k];
+            PUT_IN_REGISTER float A_PART = ALPHA * A[i * lda + k];
             for(j = 0; j < N; ++j){
                 C[i*ldc+j] += A_PART*B[k*ldb+j];
             }
@@ -26,7 +31,7 @@ void cpu_gemm_nt(int TA, int TB, int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(j = 0; j < N; ++j){
-            float sum = 0;
+            PUT_IN_REGISTER float sum = 0;
             for(k = 0; k < K; ++k){
                 sum += ALPHA*A[i*lda+k]*B[k+j*ldb];
             }
@@ -44,7 +49,7 @@ void cpu_gemm_tn(int TA, int TB, int M, int N, int K, float ALPHA,
     int i,j,k;
     for(i = 0; i < M; ++i){
         for(k = 0; k < K; ++k){
-            float A_PART = ALPHA * A[k * lda + i];
+            PUT_IN_REGISTER float A_PART = ALPHA * A[k * lda + i];
             for(j = 0; j < N; ++j){
                 C[i*ldc+j] += A_PART*B[k*ldb+j];
             }

@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include "yolo_v2_class.hpp"
 
 #include "network.h"

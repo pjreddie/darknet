@@ -3,6 +3,9 @@
 #include "blas.h"
 #include "cuda.h"
 #include <stdio.h>
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
 #include <math.h>
 
 #ifndef STB_IMAGE_IMPLEMENTATION
