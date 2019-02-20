@@ -1,5 +1,4 @@
 # To use your libs, launch cmake with -DUSE_INTEGRATED_LIBS:BOOL=FALSE
-# To enable CUDA, launch cmake with -DENABLE_CUDA. Also it is advisable to set the highest compute model with -DCOMPUTE_MODEL=..., depending on your specific card capabilities. If CUDA is not required, this setting is completely ignored.
 
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
@@ -17,12 +16,13 @@ else()
   set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
 endif()
 
-set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable building with CUDA")
-
 enable_language(C)
 enable_language(CXX)
-if(ENABLE_CUDA)
-  enable_language(CUDA) # do not enable after searching for OpenCV package!
+
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+  enable_language(CUDA)
 endif()
 
 set(CMAKE_CXX_STANDARD 11)
@@ -30,24 +30,24 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/" ${CMAKE_MODULE_
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
 
-set(COMPUTE_MODEL_75 "75") #Compute capability for Tesla T4, RTX 2080
-set(COMPUTE_MODEL_72 "72") #Compute capability for Jetson Xavier
-set(COMPUTE_MODEL_70 "70") #Compute capability for Tesla V100
-set(COMPUTE_MODEL_62 "62") #Compute capability for Jetson TX2
-set(COMPUTE_MODEL_61 "61") #Compute capability for Tesla P40
-set(COMPUTE_MODEL_60 "60") #Compute capability for Tesla P100
-set(COMPUTE_MODEL_53 "53") #Compute capability for Jetson TX1
-set(COMPUTE_MODEL_52 "52") #Compute capability for Tesla M40/M60
-set(COMPUTE_MODEL_37 "37") #Compute capability for Tesla K80
-set(COMPUTE_MODEL_35 "35") #Compute capability for Tesla K20/K40
-set(COMPUTE_MODEL_30 "30") #Compute capability for Tesla K10, Quadro K4000
+set(CUDA_COMPUTE_MODEL_75 "75") #Compute capability for Tesla T4, RTX 2080
+set(CUDA_COMPUTE_MODEL_72 "72") #Compute capability for Jetson Xavier
+set(CUDA_COMPUTE_MODEL_70 "70") #Compute capability for Tesla V100
+set(CUDA_COMPUTE_MODEL_62 "62") #Compute capability for Jetson TX2
+set(CUDA_COMPUTE_MODEL_61 "61") #Compute capability for Tesla P40
+set(CUDA_COMPUTE_MODEL_60 "60") #Compute capability for Tesla P100
+set(CUDA_COMPUTE_MODEL_53 "53") #Compute capability for Jetson TX1
+set(CUDA_COMPUTE_MODEL_52 "52") #Compute capability for Tesla M40/M60
+set(CUDA_COMPUTE_MODEL_37 "37") #Compute capability for Tesla K80
+set(CUDA_COMPUTE_MODEL_35 "35") #Compute capability for Tesla K20/K40
+set(CUDA_COMPUTE_MODEL_30 "30") #Compute capability for Tesla K10, Quadro K4000
 
-set(default_compute_model ${COMPUTE_MODEL_30})
-if(NOT COMPUTE_MODEL)
-  message(STATUS "Setting the compute model to '${default_compute_model}' as none was specified.")
-  set(COMPUTE_MODEL "${default_compute_model}" CACHE
+set(default_cuda_compute_model ${CUDA_COMPUTE_MODEL_30})
+if(CMAKE_CUDA_COMPILER AND NOT CUDA_COMPUTE_MODEL)
+  message(STATUS "Setting the compute model to ${default_cuda_compute_model} as none was specified.")
+  set(CUDA_COMPUTE_MODEL "${default_cuda_compute_model}" CACHE
       STRING "Choose the best compute model supported by your GPU" FORCE)
-  set_property(CACHE COMPUTE_MODEL PROPERTY STRINGS ${COMPUTE_MODEL_75} ${COMPUTE_MODEL_72} ${COMPUTE_MODEL_70} ${COMPUTE_MODEL_62} ${COMPUTE_MODEL_61} ${COMPUTE_MODEL_60} ${COMPUTE_MODEL_53} ${COMPUTE_MODEL_52} ${COMPUTE_MODEL_37} ${COMPUTE_MODEL_35} ${COMPUTE_MODEL_30})
+  set_property(CACHE CUDA_COMPUTE_MODEL PROPERTY STRINGS ${CUDA_COMPUTE_MODEL_75} ${CUDA_COMPUTE_MODEL_72} ${CUDA_COMPUTE_MODEL_70} ${CUDA_COMPUTE_MODEL_62} ${CUDA_COMPUTE_MODEL_61} ${CUDA_COMPUTE_MODEL_60} ${CUDA_COMPUTE_MODEL_53} ${CUDA_COMPUTE_MODEL_52} ${CUDA_COMPUTE_MODEL_37} ${CUDA_COMPUTE_MODEL_35} ${CUDA_COMPUTE_MODEL_30})
 endif()
 
 if(USE_INTEGRATED_LIBS)
@@ -108,17 +108,17 @@ if(OpenCV_FOUND)
   include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
-if(ENABLE_CUDA)
+if(CMAKE_CUDA_COMPILER)
   add_definitions(-DGPU)
-  if(COMPUTE_MODEL VERSION_GREATER_EQUAL 75 AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS_EQUAL 9)
+  if(CUDA_COMPUTE_MODEL VERSION_GREATER_EQUAL 75 AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS_EQUAL 9)
     message(STATUS "CUDA 10 is required for Compute Model 7.5 - Lowering settings to 7.0")
-    set(COMPUTE_MODEL "70")
+    set(CUDA_COMPUTE_MODEL ${CUDA_COMPUTE_MODEL_70})
   endif()
   find_package(CUDNN)
   if(CUDNN_FOUND)
     add_definitions(-DCUDNN)
     include_directories(${CUDNN_INCLUDE_DIR})
-    if(COMPUTE_MODEL VERSION_GREATER_EQUAL 53)
+    if(CUDA_COMPUTE_MODEL VERSION_GREATER_EQUAL 53)
       add_definitions(-DCUDNN_HALF)
       message(STATUS "Enabled CUDNN_HALF")
     endif()
@@ -126,29 +126,29 @@ if(ENABLE_CUDA)
   if (MSVC)
     if(CUDNN_FOUND)
       if(OpenCV_FOUND)
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${COMPUTE_MODEL},code=[sm_${COMPUTE_MODEL},compute_${COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DCUDNN,/DOPENCV\" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DCUDNN,/DOPENCV\" ${CMAKE_CUDA_FLAGS}")
       else()
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${COMPUTE_MODEL},code=[sm_${COMPUTE_MODEL},compute_${COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DCUDNN\" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DCUDNN\" ${CMAKE_CUDA_FLAGS}")
       endif()
     else()
       if(OpenCV_FOUND)
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${COMPUTE_MODEL},code=[sm_${COMPUTE_MODEL},compute_${COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DOPENCV\" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DOPENCV\" ${CMAKE_CUDA_FLAGS}")
       else()
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${COMPUTE_MODEL},code=[sm_${COMPUTE_MODEL},compute_${COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU\" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU\" ${CMAKE_CUDA_FLAGS}")
       endif()
     endif()
   else()
     if(CUDNN_FOUND)
       if(OpenCV_FOUND)
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${COMPUTE_MODEL},code=[sm_${COMPUTE_MODEL},compute_${COMPUTE_MODEL}] --compiler-options \"-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -fPIC -fopenmp -Ofast -DOPENCV -DGPU -DCUDNN \" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] --compiler-options \"-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -fPIC -fopenmp -Ofast -DOPENCV -DGPU -DCUDNN \" ${CMAKE_CUDA_FLAGS}")
       else()
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${COMPUTE_MODEL},code=[sm_${COMPUTE_MODEL},compute_${COMPUTE_MODEL}] --compiler-options \"-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -fPIC -fopenmp -Ofast -DGPU -DCUDNN \" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] --compiler-options \"-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -fPIC -fopenmp -Ofast -DGPU -DCUDNN \" ${CMAKE_CUDA_FLAGS}")
       endif()
     else()
       if(OpenCV_FOUND)
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${COMPUTE_MODEL},code=[sm_${COMPUTE_MODEL},compute_${COMPUTE_MODEL}] --compiler-options \"-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -fPIC -fopenmp -Ofast -DOPENCV -DGPU \" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] --compiler-options \"-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -fPIC -fopenmp -Ofast -DOPENCV -DGPU \" ${CMAKE_CUDA_FLAGS}")
       else()
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${COMPUTE_MODEL},code=[sm_${COMPUTE_MODEL},compute_${COMPUTE_MODEL}] --compiler-options \"-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -fPIC -fopenmp -Ofast -DGPU \" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] --compiler-options \"-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -fPIC -fopenmp -Ofast -DGPU \" ${CMAKE_CUDA_FLAGS}")
       endif()
     endif()
   endif()
@@ -195,7 +195,7 @@ list(REMOVE_ITEM sources
   ${CMAKE_CURRENT_LIST_DIR}/src/getopt.c
 )
 
-if(ENABLE_CUDA)
+if(CMAKE_CUDA_COMPILER)
   file(GLOB cuda_sources "${CMAKE_CURRENT_LIST_DIR}/src/*.cu")
 endif()
 
@@ -215,7 +215,7 @@ set_source_files_properties(${sources} PROPERTIES LANGUAGE CXX)
 
 add_library(darklib SHARED ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
 set_target_properties(darklib PROPERTIES POSITION_INDEPENDENT_CODE ON)
-if(ENABLE_CUDA)
+if(CMAKE_CUDA_COMPILER)
   set_target_properties(darklib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif()
 target_compile_definitions(darklib PRIVATE LIB_EXPORTS=1)
@@ -264,7 +264,7 @@ endif()
 target_link_libraries(darknet Threads::Threads)
 target_link_libraries(darklib Threads::Threads)
 
-if(ENABLE_CUDA)
+if(CMAKE_CUDA_COMPILER)
   target_link_libraries(darknet curand cublas)
   target_link_libraries(darklib curand cublas)
 endif()

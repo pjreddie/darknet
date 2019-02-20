@@ -19,26 +19,18 @@
 #  ``CUDNN_LIBRARIES``
 #    The CUDNN libraries.
 #
-# Hints
-# ^^^^^
-#
-#  ``CUDNN_ROOT_DIR``
-#    Set this variable to a directory that contains a CUDNN installation.
-#
 
 include(FindPackageHandleStandardArgs)
 
-#set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
-
 if(NOT CUDNN_INCLUDE_DIR)
   find_path(CUDNN_INCLUDE_DIR cudnn.h
-    HINTS ${CUDNN_ROOT_DIR} ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR}
+    HINTS ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR}
     PATH_SUFFIXES cuda/include include)
 endif()
 
 if(NOT CUDNN_LIBRARY)
   find_library(CUDNN_LIBRARY cudnn
-    HINTS ${CUDNN_ROOT_DIR} ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR}
+    HINTS ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR}
     PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
 endif()
 
