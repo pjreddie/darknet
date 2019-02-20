@@ -477,8 +477,6 @@ void transpose_bin(char *A, char *B, const int n, const int m,
 }
 */
 
-#else
-extern void transpose_32x32_bits_reversed_diagonale(uint32_t* A, uint32_t* B, int m, int n);
 #endif
 
 // transpose by 32-bit

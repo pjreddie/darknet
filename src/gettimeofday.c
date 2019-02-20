@@ -1,7 +1,7 @@
 #ifdef _WIN32
 #include "gettimeofday.h"
 
-LIB_API int gettimeofday(struct timeval* tp, struct timezone* tzp)
+int gettimeofday(struct timeval* tp, struct timezone* tzp)
 {
   static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
   SYSTEMTIME system_time;
@@ -19,7 +19,7 @@ LIB_API int gettimeofday(struct timeval* tp, struct timezone* tzp)
   return 0;
   }
 
-LIB_API int clock_gettime(int dummy, struct timespec* ct)
+int clock_gettime(int dummy, struct timespec* ct)
   {
   LARGE_INTEGER count;
 

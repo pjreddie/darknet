@@ -93,9 +93,9 @@ image load_image(char *filename, int w, int h, int c);
 image **load_alphabet();
 
 #ifdef OPENCV
-LIB_API image get_image_from_stream(CvCapture* cap);
-LIB_API image get_image_from_stream_cpp(CvCapture* cap);
-LIB_API image ipl_to_image(IplImage* src);
+image get_image_from_stream(CvCapture* cap);
+image get_image_from_stream_cpp(CvCapture* cap);
+image ipl_to_image(IplImage* src);
 #endif
 //float get_pixel(image m, int x, int y, int c);
 //float get_pixel_extend(image m, int x, int y, int c);

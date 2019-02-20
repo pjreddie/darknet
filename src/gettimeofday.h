@@ -28,8 +28,8 @@ extern "C" {
 static unsigned char g_first_time = 1;
 static LARGE_INTEGER g_counts_per_sec;
 
-LIB_API int gettimeofday(struct timeval*, struct timezone*);
-LIB_API int clock_gettime(int, struct timespec*);
+int gettimeofday(struct timeval*, struct timezone*);
+int clock_gettime(int, struct timespec*);
 
 #ifdef __cplusplus
 }
