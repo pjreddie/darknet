@@ -24,13 +24,13 @@ include(FindPackageHandleStandardArgs)
 
 if(NOT CUDNN_INCLUDE_DIR)
   find_path(CUDNN_INCLUDE_DIR cudnn.h
-    HINTS ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR}
+    HINTS ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR} $ENV{cudnn}
     PATH_SUFFIXES cuda/include include)
 endif()
 
 if(NOT CUDNN_LIBRARY)
   find_library(CUDNN_LIBRARY cudnn
-    HINTS ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR}
+    HINTS ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR} $ENV{cudnn}
     PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
 endif()
 
