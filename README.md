@@ -10,15 +10,18 @@
 0.  [Improvements in this repository](#improvements-in-this-repository)
 1.  [How to use](#how-to-use)
 2.  [How to compile on Linux](#how-to-compile-on-linux)
-3.  [How to compile on Windows](#how-to-compile-on-windows)
+3.  How to compile on Windows
+    * [Using vcpkg](#how-to-compile-on-windows-using-vcpkg)
+    * [Legacy way](#how-to-compile-on-windows-legacy-way)
 4.  [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
+    * [How to train with multi-GPU:](#how-to-train-with-multi-gpu)
 5.  [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
+    * [How to train tiny-yolo (to detect your custom objects)](#how-to-train-tiny-yolo-to-detect-your-custom-objects)
 6.  [When should I stop training](#when-should-i-stop-training)
 7.  [How to calculate mAP on PascalVOC 2007](#how-to-calculate-map-on-pascalvoc-2007)
 8.  [How to improve object detection](#how-to-improve-object-detection)
 9.  [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-10. [Using Yolo9000](#using-yolo9000)
-11. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
+10. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_time](https://user-images.githubusercontent.com/4096485/52151356-e5d4a380-2683-11e9-9d7d-ac7bc192c477.jpg) mAP@0.5 (AP50) https://pjreddie.com/media/files/papers/YOLOv3.pdf |
 |---|---|
@@ -39,7 +42,7 @@ More details: http://pjreddie.com/darknet/yolo/
 This repository supports:
 
 * both Windows and Linux
-* both OpenCV 2.x.x and OpenCV <= 3.4.0 (3.4.1 and higher isn't supported, but you can try)
+* both OpenCV 2.x.x and OpenCV <= 4.0
 * both cuDNN >= v7
 * CUDA >= 7.5
 * also create SO-library on Linux and DLL-library on Windows
@@ -48,8 +51,9 @@ This repository supports:
 
 * **CMake >= 3.8** for modern CUDA support: https://cmake.org/download/
 * **CUDA 10.0**: https://developer.nvidia.com/cuda-toolkit-archive (on Linux do [Post-installation Actions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#post-installation-actions))
-* **OpenCV < 4.0**: use your preferred package manager (brew, apt) or build from source using [vcpkg](https://github.com/Microsoft/vcpkg)
+* **OpenCV < 4.0**: use your preferred package manager (brew, apt), build from source using [vcpkg](https://github.com/Microsoft/vcpkg) or [OpenCV Releases](https://opencv.org/releases.html)
 * **GPU with CC >= 3.0**: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
+* on Linux **GCC or Clang**, on Windows **MSVS 2017 (v15)** https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community&rel=15#
 
 #### Pre-trained models
 
@@ -200,7 +204,7 @@ PS Code\vcpkg>         .\vcpkg install pthreads opencv #replace with opencv[cuda
     
     1.4. If you want to build **without CUDNN** then: open `\darknet.sln` -> (right click on project) -> properties  -> C/C++ -> Preprocessor -> Preprocessor Definitions, and remove this: `CUDNN;`
 
-2. If you have other version of **CUDA (not 10.0)** then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 10.0" and change it to your CUDA-version, then do step 1
+2. If you have other version of **CUDA (not 10.0)** then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 10.0" and change it to your CUDA-version. Then open `\darknet.sln` -> (right click on project) -> properties  -> CUDA C/C++ -> Device and remove there `;compute_75,sm_75`. Then do step 1
 
 3. If you **don't have GPU**, but have **MSVS 2015 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet_no_gpu.sln`, set **x64** and **Release**, and do the: Build -> Build darknet_no_gpu
 
