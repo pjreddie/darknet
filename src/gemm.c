@@ -1646,7 +1646,7 @@ void im2col_cpu_custom_bin(float* data_im,
                     __m256 result256 = _mm256_cmp_ps(src256, float_zero256, _CMP_GT_OS);
                     uint16_t mask = _mm256_movemask_ps(result256); // (val > 0) ? 0 : 1
 
-                    uint16_t* dst_ptr = &((uint16_t*)data_col)[col_index / 8];
+                    uint16_t* dst_ptr = (uint16_t*)&((uint8_t*)data_col)[col_index / 8];
                     *dst_ptr |= (mask << (col_index % 8));
                 }
 
