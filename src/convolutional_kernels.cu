@@ -3,10 +3,11 @@
 #include "cublas_v2.h"
 
 #ifdef CUDNN
+#ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "cudnn.lib")
 #endif
+#endif
 
-extern "C" {
 #include "convolutional_layer.h"
 #include "batchnorm_layer.h"
 #include "gemm.h"
@@ -15,7 +16,7 @@ extern "C" {
 #include "col2im.h"
 #include "utils.h"
 #include "cuda.h"
-}
+
 
 __global__ void binarize_kernel(float *x, int n, float *binary)
 {
@@ -73,7 +74,6 @@ void binarize_weights_gpu(float *weights, int n, int size, float *binary)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
-#define WARP_SIZE 32
 
 __global__ void set_zero_kernel(float *src, int size)
 {
@@ -477,10 +477,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 simple_copy_ongpu(l.outputs*l.batch / 2, output16, l.x_gpu);
                 //copy_ongpu(l.outputs*l.batch / 2, output16, 1, l.x_gpu, 1);
                 //cudaMemcpyAsync(l.x_gpu, output16, l.outputs*l.batch*sizeof(half), cudaMemcpyDefault, get_cuda_stream());
-                float one = 1;
-                float zero = 0;
+                float one = 1.0f;
+                float zero = 0.0f;
                 // Batch-normalization can still take FP16 inputs and outputs, saving half the bandwidth
-                // compared to FP32, it’s just that the statistics and value adjustment should be done in FP32.
+                // compared to FP32, it's just that the statistics and value adjustment should be done in FP32.
                 CHECK_CUDNN(cudnnBatchNormalizationForwardTraining(cudnn_handle(),
                     CUDNN_BATCHNORM_SPATIAL,
                     &one,
@@ -639,8 +639,8 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             //    l.mean_gpu = l.rolling_mean_gpu;
             //    l.variance_gpu = l.rolling_variance_gpu;
             //}
-            float one = 1;
-            float zero = 0;
+            float one = 1.0f;
+            float zero = 0.0f;
             CHECK_CUDNN(cudnnBatchNormalizationBackward(cudnn_handle(),
                 CUDNN_BATCHNORM_SPATIAL,
                 &one,
@@ -936,4 +936,3 @@ void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float 
     }
 }
 */
-

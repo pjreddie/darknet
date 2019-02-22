@@ -12,6 +12,9 @@ typedef struct {
     matrix centers;
 } model;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 model do_kmeans(matrix data, int k);
 matrix make_matrix(int rows, int cols);
@@ -28,4 +31,7 @@ matrix resize_matrix(matrix m, int size);
 
 float *pop_column(matrix *m, int c);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

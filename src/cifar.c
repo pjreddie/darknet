@@ -5,7 +5,7 @@
 #include "blas.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 void train_cifar(char *cfgfile, char *weightfile)
@@ -20,7 +20,7 @@ void train_cifar(char *cfgfile, char *weightfile)
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* backup_directory = "backup/";
     int classes = 10;
     int N = 50000;
 
@@ -68,7 +68,7 @@ void train_cifar_distill(char *cfgfile, char *weightfile)
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* backup_directory = "backup/";
     int classes = 10;
     int N = 50000;
 
@@ -273,5 +273,3 @@ void run_cifar(int argc, char **argv)
     else if(0==strcmp(argv[2], "csvtrain")) test_cifar_csvtrain(cfg, weights);
     else if(0==strcmp(argv[2], "eval")) eval_cifar_csv();
 }
-
-

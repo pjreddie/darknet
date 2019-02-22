@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include "yolo_v2_class.hpp"
 
 #include "network.h"
@@ -20,7 +21,6 @@ extern "C" {
 #include <iostream>
 #include <algorithm>
 
-#define FRAMES 3
 
 //static Detector* detector = NULL;
 static std::unique_ptr<Detector> detector;
@@ -93,9 +93,9 @@ void check_cuda(cudaError_t status) {
 
 struct detector_gpu_t {
     network net;
-    image images[FRAMES];
+    image images[NFRAMES];
     float *avg;
-    float *predictions[FRAMES];
+    float* predictions[NFRAMES];
     int demo_index;
     unsigned int *track_id;
 };
@@ -135,8 +135,8 @@ LIB_API Detector::Detector(std::string cfg_filename, std::string weight_filename
     int j;
 
     detector_gpu.avg = (float *)calloc(l.outputs, sizeof(float));
-    for (j = 0; j < FRAMES; ++j) detector_gpu.predictions[j] = (float *)calloc(l.outputs, sizeof(float));
-    for (j = 0; j < FRAMES; ++j) detector_gpu.images[j] = make_image(1, 1, 3);
+    for (j = 0; j < NFRAMES; ++j) detector_gpu.predictions[j] = (float*)calloc(l.outputs, sizeof(float));
+    for (j = 0; j < NFRAMES; ++j) detector_gpu.images[j] = make_image(1, 1, 3);
 
     detector_gpu.track_id = (unsigned int *)calloc(l.classes, sizeof(unsigned int));
     for (j = 0; j < l.classes; ++j) detector_gpu.track_id[j] = 1;
@@ -155,8 +155,8 @@ LIB_API Detector::~Detector()
     free(detector_gpu.track_id);
 
     free(detector_gpu.avg);
-    for (int j = 0; j < FRAMES; ++j) free(detector_gpu.predictions[j]);
-    for (int j = 0; j < FRAMES; ++j) if(detector_gpu.images[j].data) free(detector_gpu.images[j].data);
+    for (int j = 0; j < NFRAMES; ++j) free(detector_gpu.predictions[j]);
+    for (int j = 0; j < NFRAMES; ++j) if (detector_gpu.images[j].data) free(detector_gpu.images[j].data);
 
     int old_gpu_index;
 #ifdef GPU
@@ -275,9 +275,9 @@ LIB_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use
 
     if (use_mean) {
         memcpy(detector_gpu.predictions[detector_gpu.demo_index], prediction, l.outputs * sizeof(float));
-        mean_arrays(detector_gpu.predictions, FRAMES, l.outputs, detector_gpu.avg);
+        mean_arrays(detector_gpu.predictions, NFRAMES, l.outputs, detector_gpu.avg);
         l.output = detector_gpu.avg;
-        detector_gpu.demo_index = (detector_gpu.demo_index + 1) % FRAMES;
+        detector_gpu.demo_index = (detector_gpu.demo_index + 1) % NFRAMES;
     }
     //get_region_boxes(l, 1, 1, thresh, detector_gpu.probs, detector_gpu.boxes, 0, 0);
     //if (nms) do_nms_sort(detector_gpu.boxes, detector_gpu.probs, l.w*l.h*l.n, l.classes, nms);

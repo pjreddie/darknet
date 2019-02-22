@@ -9,7 +9,7 @@ void train_dice(char *cfgfile, char *weightfile)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* backup_directory = "backup/";
     printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -115,4 +115,3 @@ void run_dice(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_dice(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_dice(cfg, weights);
 }
-

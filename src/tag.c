@@ -3,7 +3,7 @@
 #include "parser.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 void train_tag(char *cfgfile, char *weightfile, int clear)
@@ -11,7 +11,7 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* backup_directory = "backup/";
     printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -20,7 +20,7 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     if(clear) *net.seen = 0;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
-    list *plist = get_paths("/home/pjreddie/tag/train.list");
+    list* plist = get_paths("tag/train.list");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
@@ -150,4 +150,3 @@ void run_tag(int argc, char **argv)
     if(0==strcmp(argv[2], "train")) train_tag(cfg, weights, clear);
     else if(0==strcmp(argv[2], "test")) test_tag(cfg, weights, filename);
 }
-

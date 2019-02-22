@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <pthread.h>
 
+#ifndef LIB_API
 #ifdef LIB_EXPORTS
 #if defined(_MSC_VER)
 #define LIB_API __declspec(dllexport)
@@ -25,9 +26,12 @@
 #define LIB_API
 #endif
 #endif
+#endif
+
+#define NFRAMES 3
+#define SECRET_NUM -1234
 
 #ifdef GPU
-#define BLOCK 512
 
 #include "cuda_runtime.h"
 #include "curand.h"
@@ -69,8 +73,6 @@ typedef struct metadata metadata;
 struct tree;
 typedef struct tree tree;
 
-
-#define SECRET_NUM -1234
 extern int gpu_index;
 
 // option_list.h

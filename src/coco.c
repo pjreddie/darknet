@@ -9,7 +9,7 @@
 #include "demo.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
@@ -22,7 +22,7 @@ void train_coco(char *cfgfile, char *weightfile)
     //char *train_images = "/home/pjreddie/data/coco/train.txt";
     char *train_images = "data/coco.trainval.txt";
     //char *train_images = "data/bags.train.list";
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* backup_directory = "backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
@@ -164,9 +164,9 @@ void validate_coco(char *cfgfile, char *weightfile)
     FILE *fp = fopen(buff, "w");
     fprintf(fp, "[\n");
 
-    box *boxes = calloc(side*side*l.n, sizeof(box));
-    float **probs = calloc(side*side*l.n, sizeof(float *));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    box* boxes = (box*)calloc(side * side * l.n, sizeof(box));
+    float** probs = (float**)calloc(side * side * l.n, sizeof(float*));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -177,11 +177,11 @@ void validate_coco(char *cfgfile, char *weightfile)
     float iou_thresh = .5;
 
     int nthreads = 8;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
-    pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
+    image* val = (image*)calloc(nthreads, sizeof(image));
+    image* val_resized = (image*)calloc(nthreads, sizeof(image));
+    image* buf = (image*)calloc(nthreads, sizeof(image));
+    image* buf_resized = (image*)calloc(nthreads, sizeof(image));
+    pthread_t* thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
 
     load_args args = {0};
     args.w = net.w;
@@ -240,7 +240,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
+    list* plist = get_paths("data/voc/test/2007_test.txt");
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -248,15 +248,15 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     int side = l.side;
 
     int j, k;
-    FILE **fps = calloc(classes, sizeof(FILE *));
+    FILE** fps = (FILE**)calloc(classes, sizeof(FILE*));
     for(j = 0; j < classes; ++j){
         char buff[1024];
         snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
         fps[j] = fopen(buff, "w");
     }
-    box *boxes = calloc(side*side*l.n, sizeof(box));
-    float **probs = calloc(side*side*l.n, sizeof(float *));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    box* boxes = (box*)calloc(side * side * l.n, sizeof(box));
+    float** probs = (float**)calloc(side * side * l.n, sizeof(float*));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -328,9 +328,9 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     char buff[256];
     char *input = buff;
     int j;
-    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
-    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
-    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+    box* boxes = (box*)calloc(l.side * l.side * l.n, sizeof(box));
+    float** probs = (float**)calloc(l.side * l.side * l.n, sizeof(float*));
+    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = (float*)calloc(l.classes, sizeof(float));
     while(1){
         if(filename){
             strncpy(input, filename, 256);

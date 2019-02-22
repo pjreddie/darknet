@@ -98,7 +98,7 @@ void free_layer(layer l)
 	if (l.x_gpu)                   cuda_free(l.x_gpu);
 	if (l.x_norm_gpu)              cuda_free(l.x_norm_gpu);
 
-    if (l.align_bit_weights_gpu)   cuda_free(l.align_bit_weights_gpu);
+    if (l.align_bit_weights_gpu)   cuda_free((float *)l.align_bit_weights_gpu);
     if (l.mean_arr_gpu)            cuda_free(l.mean_arr_gpu);
     if (l.align_workspace_gpu)     cuda_free(l.align_workspace_gpu);
     if (l.transposed_align_workspace_gpu) cuda_free(l.transposed_align_workspace_gpu);

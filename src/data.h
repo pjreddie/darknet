@@ -2,14 +2,14 @@
 #define DATA_H
 #include <pthread.h>
 
-#if defined(_MSC_VER) && _MSC_VER < 1900
-	#define inline __inline
-#endif
-
+#include "darknet.h"
 #include "darknet.h"
 #include "matrix.h"
 #include "list.h"
 #include "image.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "tree.h"
 
 static inline float distance_from_edge(int x, int max)
@@ -115,5 +115,8 @@ data *split_data(data d, int part, int total);
 data concat_data(data d1, data d2);
 data concat_datas(data *d, int n);
 void fill_truth(char *path, char **labels, int k, float *truth);
+#ifdef __cplusplus
+}
 
+#endif
 #endif

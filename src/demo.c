@@ -9,20 +9,18 @@
 #include "demo.h"
 #ifdef WIN32
 #include <time.h>
-#include <winsock.h>
 #include "gettimeofday.h"
 #else
 #include <sys/time.h>
 #endif
 
-#define FRAMES 3
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-#include "opencv2/core/version.hpp"
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/core/version.hpp>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio_c.h"
+#include <opencv2/videoio/videoio_c.h>
 #endif
 #include "http_stream.h"
 image get_image_from_stream(CvCapture *cap);
@@ -45,10 +43,10 @@ static int demo_ext_output = 0;
 static long long int frame_id = 0;
 static int demo_json_port = -1;
 
-static float *predictions[FRAMES];
+static float* predictions[NFRAMES];
 static int demo_index = 0;
-static image images[FRAMES];
-static IplImage* ipl_images[FRAMES];
+static image images[NFRAMES];
+static IplImage* ipl_images[NFRAMES];
 static float *avg;
 
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
@@ -77,7 +75,7 @@ void *fetch_in_thread(void *ptr)
         //error("Stream closed.");
         printf("Stream closed.\n");
         flag_exit = 1;
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
     //in_s = resize_image(in, net.w, net.h);
 
@@ -91,14 +89,14 @@ void *detect_in_thread(void *ptr)
     float *prediction = network_predict(net, X);
 
     memcpy(predictions[demo_index], prediction, l.outputs*sizeof(float));
-    mean_arrays(predictions, FRAMES, l.outputs, avg);
+    mean_arrays(predictions, NFRAMES, l.outputs, avg);
     l.output = avg;
 
     free_image(det_s);
 
     ipl_images[demo_index] = det_img;
-    det_img = ipl_images[(demo_index + FRAMES / 2 + 1) % FRAMES];
-    demo_index = (demo_index + 1) % FRAMES;
+    det_img = ipl_images[(demo_index + NFRAMES / 2 + 1) % NFRAMES];
+    demo_index = (demo_index + 1) % NFRAMES;
 
     if (letter_box)
         dets = get_network_boxes(&net, in_img->width, in_img->height, demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
@@ -110,11 +108,11 @@ void *detect_in_thread(void *ptr)
 
 double get_wall_time()
 {
-    struct timeval time;
-    if (gettimeofday(&time,NULL)){
+    struct timeval walltime;
+    if (gettimeofday(&walltime, NULL)) {
         return 0;
     }
-    return (double)time.tv_sec + (double)time.tv_usec * .000001;
+    return (double)walltime.tv_sec + (double)walltime.tv_usec * .000001;
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
@@ -161,8 +159,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     int j;
 
     avg = (float *) calloc(l.outputs, sizeof(float));
-    for(j = 0; j < FRAMES; ++j) predictions[j] = (float *) calloc(l.outputs, sizeof(float));
-    for(j = 0; j < FRAMES; ++j) images[j] = make_image(1,1,3);
+    for(j = 0; j < NFRAMES; ++j) predictions[j] = (float *) calloc(l.outputs, sizeof(float));
+    for(j = 0; j < NFRAMES; ++j) images[j] = make_image(1,1,3);
 
     if (l.classes != demo_classes) {
         printf("Parameters don't match: in cfg-file classes=%d, in data-file classes=%d \n", l.classes, demo_classes);
@@ -185,7 +183,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     det_img = in_img;
     det_s = in_s;
 
-    for(j = 0; j < FRAMES/2; ++j){
+    for (j = 0; j < NFRAMES / 2; ++j) {
         fetch_in_thread(0);
         detect_in_thread(0);
         det_img = in_img;
@@ -318,10 +316,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     free_image(in_s);
 
     free(avg);
-    for (j = 0; j < FRAMES; ++j) free(predictions[j]);
-    for (j = 0; j < FRAMES; ++j) free_image(images[j]);
+    for (j = 0; j < NFRAMES; ++j) free(predictions[j]);
+    for (j = 0; j < NFRAMES; ++j) free_image(images[j]);
 
-    free_ptrs(names, net.layers[net.n - 1].classes);
+    free_ptrs((void **)names, net.layers[net.n - 1].classes);
 
     int i;
     const int nsize = 8;
@@ -342,4 +340,3 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
 #endif
-

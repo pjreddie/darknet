@@ -5,10 +5,10 @@
 #include "blas.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/core/version.hpp"
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/core/version.hpp>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio_c.h"
+#include <opencv2/videoio/videoio_c.h>
 #endif
 image get_image_from_stream(CvCapture *cap);
 image ipl_to_image(IplImage* src);
@@ -28,10 +28,10 @@ float_pair get_rnn_vid_data(network net, char **files, int n, int batch, int ste
     image out_im = get_network_image(net);
     int output_size = out_im.w*out_im.h*out_im.c;
     printf("%d %d %d\n", out_im.w, out_im.h, out_im.c);
-    float *feats = calloc(net.batch*batch*output_size, sizeof(float));
+    float* feats = (float*)calloc(net.batch * batch * output_size, sizeof(float));
     for(b = 0; b < batch; ++b){
         int input_size = net.w*net.h*net.c;
-        float *input = calloc(input_size*net.batch, sizeof(float));
+        float* input = (float*)calloc(input_size * net.batch, sizeof(float));
         char *filename = files[rand()%n];
         CvCapture *cap = cvCaptureFromFile(filename);
         int frames = cvGetCaptureProperty(cap, CV_CAP_PROP_FRAME_COUNT);
@@ -80,7 +80,7 @@ float_pair get_rnn_vid_data(network net, char **files, int n, int batch, int ste
 void train_vid_rnn(char *cfgfile, char *weightfile)
 {
     char *train_videos = "data/vid/train.txt";
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* backup_directory = "backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
@@ -101,7 +101,7 @@ void train_vid_rnn(char *cfgfile, char *weightfile)
     int batch = net.batch / net.time_steps;
 
     network extractor = parse_network_cfg("cfg/extractor.cfg");
-    load_weights(&extractor, "/home/pjreddie/trained/yolo-coco.conv");
+    load_weights(&extractor, "trained/yolo-coco.conv");
 
     while(get_current_batch(net) < net.max_batches){
         i += 1;
@@ -154,7 +154,7 @@ image save_reconstruction(network net, image *init, float *feat, char *name, int
 void generate_vid_rnn(char *cfgfile, char *weightfile)
 {
     network extractor = parse_network_cfg("cfg/extractor.recon.cfg");
-    load_weights(&extractor, "/home/pjreddie/trained/yolo-coco.conv");
+    load_weights(&extractor, "trained/yolo-coco.conv");
 
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -164,7 +164,7 @@ void generate_vid_rnn(char *cfgfile, char *weightfile)
     set_batch_network(&net, 1);
 
     int i;
-    CvCapture *cap = cvCaptureFromFile("/extra/vid/ILSVRC2015/Data/VID/snippets/val/ILSVRC2015_val_00007030.mp4");
+    CvCapture* cap = cvCaptureFromFile("extra/vid/ILSVRC2015/Data/VID/snippets/val/ILSVRC2015_val_00007030.mp4");
     float *feat;
     float *next;
 	next = NULL;
@@ -191,9 +191,9 @@ void generate_vid_rnn(char *cfgfile, char *weightfile)
     }
     for(i = 0; i < 30; ++i){
         next = network_predict(net, next);
-        image new = save_reconstruction(extractor, &last, next, "new", i);
+        image newimage = save_reconstruction(extractor, &last, next, "newimage", i);
         free_image(last);
-        last = new;
+        last = newimage;
     }
 }
 
@@ -213,4 +213,3 @@ void run_vid_rnn(int argc, char **argv)
 #else
 void run_vid_rnn(int argc, char **argv){}
 #endif
-

@@ -5,9 +5,14 @@
 #include <stdint.h>
 #include "darknet.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void im2col_cpu(float* data_im,
         int channels, int height, int width,
         int ksize, int stride, int pad, float* data_col);
+float im2col_get_pixel(float* im, int height, int width, int channels,
+    int row, int col, int channel, int pad);
 
 #ifdef GPU
 
@@ -63,5 +68,8 @@ void convolve_bin_cpu(float *input, float *weights, float *output, int in_w, int
 
 void convolve_cpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad);
 
+#endif
+#ifdef __cplusplus
+}
 #endif
 #endif

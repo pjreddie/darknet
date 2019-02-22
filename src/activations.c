@@ -162,4 +162,3 @@ void gradient_array(const float *x, const int n, const ACTIVATION a, float *delt
         delta[i] *= gradient(x[i], a);
     }
 }
-

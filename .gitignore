@@ -24,7 +24,3 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
-
-# CMake #
-cmake-build-debug/
-CMakeLists.txt

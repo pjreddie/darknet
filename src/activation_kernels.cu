@@ -3,10 +3,8 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "activations.h"
 #include "cuda.h"
-}
 
 
 __device__ float lhtan_activate_kernel(float x)

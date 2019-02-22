@@ -6,14 +6,14 @@
 #include <stdint.h>
 #include "layer.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "image.h"
 #include "data.h"
 #include "tree.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /*
 typedef enum {
     CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
@@ -167,4 +167,3 @@ network combine_train_valid_networks(network net_train, network net_map);
 #endif
 
 #endif
-

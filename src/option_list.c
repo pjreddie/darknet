@@ -3,6 +3,7 @@
 #include <string.h>
 #include "option_list.h"
 #include "utils.h"
+#include "data.h"
 
 list *read_data_cfg(char *filename)
 {
@@ -71,7 +72,7 @@ int read_option(char *s, list *options)
 
 void option_insert(list *l, char *key, char *val)
 {
-    kvp *p = malloc(sizeof(kvp));
+    kvp* p = (kvp*)malloc(sizeof(kvp));
     p->key = key;
     p->val = val;
     p->used = 0;

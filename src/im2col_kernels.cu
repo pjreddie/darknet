@@ -1,19 +1,15 @@
-﻿#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#include <cuda_runtime.h>
+#include <curand.h>
+#include <cublas_v2.h>
 #include <stdint.h>
 
-extern "C" {
 #include "im2col.h"
 #include "cuda.h"
-}
 
 #include <stdio.h>
 #include <assert.h>
-#include <cuda.h>
+//#include <cuda.h>
 
-#define FULL_MASK 0xffffffff
-#define WARP_SIZE 32
 
 template<typename T1, typename T2>
 __device__ inline T1 __shfl_custom(T1 val, T2 lane) {
@@ -154,11 +150,6 @@ __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
 {
     //__shared__ float tmp_s[1];
 
-//#define SHRED_VALS ((BLOCK / 169) * )
-    //__shared__ float dst_s[1024];
-    //__shared__ float dst_s[1024];
-    //__shared__ uint32_t bit_s[32];
-    //__shared__ uint8_t bit_s[128];
 
     int index = blockIdx.x*blockDim.x + threadIdx.x;
     for (; index < n; index += blockDim.x*gridDim.x) {
@@ -604,8 +595,7 @@ __device__ void transpose32_optimized(uint32_t A[32]) {
     }
 }
 
-#define BLOCK_TRANSPOSE32 256
-
+extern "C" {
 __device__ void transpose_32x32_bits_reversed_diagonale(uint32_t *A, uint32_t *B, int m, int n)
 {
     //unsigned A_tmp[32];
@@ -626,7 +616,7 @@ __device__ void transpose_32x32_bits_reversed_diagonale(uint32_t *A, uint32_t *B
     #pragma unroll 32
     for (i = 0; i < 32; ++i) B[i*n] = A_tmp[i];
 }
-
+}
 
 // transpose 32x32 bit
 __global__ void transpose_bin_gpu_kernel_32(uint32_t *A, uint32_t *B, const int n, const int m,
@@ -2224,4 +2214,3 @@ void convolve_bin_gpu(float *input, float *weights, float *output, int in_w, int
 }
 
 // --------------------------------
-
