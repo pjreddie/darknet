@@ -32,12 +32,13 @@ void bilinear_init(layer l)
 }
 
 
-layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int adam)
+layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int groups, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int adam)
 {
     int i;
     layer l = {0};
     l.type = DECONVOLUTIONAL;
-
+	
+	l.groups = groups;
     l.h = h;
     l.w = w;
     l.c = c;
