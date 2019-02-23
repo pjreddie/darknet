@@ -2,6 +2,7 @@
 #include "curand.h"
 #include "cublas_v2.h"
 #include <assert.h>
+#include <cfloat>
 
 extern "C" {
 #include "blas.h"
@@ -773,7 +774,8 @@ __global__ void softmax_x_ent_kernel(int n, float *pred, float *truth, float *de
     if(i < n){
         float t = truth[i];
         float p = pred[i];
-        error[i] = (t) ? -log(p) : 0;
+        float loss = -log(max(FLT_MIN,p)); 
+        error[i] = (t) ? loss : 0;
         delta[i] = t-p;
     }
 }

@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef max
+#define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#endif
+
 void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
 {
     int b,i,j,k;
@@ -268,7 +273,9 @@ void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *er
     for(i = 0; i < n; ++i){
         float t = truth[i];
         float p = pred[i];
-        error[i] = (t) ? -log(p) : 0;
+        // needed for numerical stability:
+        float loss = max(p, FLT_MIN); 
+        error[i] = (t) ? -log(loss) : 0;
         delta[i] = t-p;
     }
 }

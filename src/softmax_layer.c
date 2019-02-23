@@ -47,7 +47,11 @@ void forward_softmax_layer(const softmax_layer l, network net)
             count += group_size;
         }
     } else {
-        softmax_cpu(net.input, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output);
+    	if(l.spatial){
+    		softmax_cpu(net.input, l.c, l.batch, l.inputs, l.w*l.h, 1, l.w*l.h, l.temperature, l.output);
+    	}else{
+        	softmax_cpu(net.input, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output);
+        }
     }
 
     if(net.truth && !l.noloss){
@@ -83,7 +87,7 @@ void forward_softmax_layer_gpu(const softmax_layer l, network net)
         */
     } else {
         if(l.spatial){
-            softmax_gpu(net.input_gpu, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu);
+            softmax_gpu(net.input_gpu, l.c, l.batch*l.c, l.inputs, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu);
         }else{
             softmax_gpu(net.input_gpu, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output_gpu);
         }
