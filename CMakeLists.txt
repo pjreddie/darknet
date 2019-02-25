@@ -1,6 +1,6 @@
 # To use your libs, launch cmake with -DUSE_INTEGRATED_LIBS:BOOL=FALSE
 
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.4)
 
 #set(CMAKE_VERBOSE_MAKEFILE 1)
 
@@ -21,12 +21,17 @@ enable_language(CXX)
 
 set(ENABLE_CUDA "TRUE" CACHE BOOL "Enable CUDA build")
 
-include(CheckLanguage)
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-  enable_language(CUDA)
+if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
+  set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA build" FORCE)
+  message(WARNING "To build with CUDA support you need CMake 3.8.0+")
 else()
-  set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA build")
+  include(CheckLanguage)
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+  else()
+    set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA build" FORCE)
+  endif()
 endif()
 
 set(CMAKE_CXX_STANDARD 11)
@@ -112,9 +117,6 @@ endif()
 
 if(ENABLE_CUDA)
   add_definitions(-DGPU)
-  if(NOT WIN32)
-    include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
-  endif()
   if(CUDA_COMPUTE_MODEL VERSION_GREATER_EQUAL ${CUDA_COMPUTE_MODEL_75} AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS_EQUAL 9)
     message(STATUS "CUDA 10 is required for Compute Model 7.5 - Lowering settings to 7.0")
     set(CUDA_COMPUTE_MODEL ${CUDA_COMPUTE_MODEL_70})
@@ -226,7 +228,7 @@ endif()
 target_compile_definitions(darklib PRIVATE LIB_EXPORTS=1)
 set_target_properties(darklib PROPERTIES LINKER_LANGUAGE CXX)
 
-if(OpenCV_VERSION_MAJOR GREATER_EQUAL 3)
+if(OpenCV_VERSION VERSION_GREATER "3.0")
   add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
   target_compile_definitions(uselib_track PRIVATE TRACK_OPTFLOW=1)
   set_target_properties(uselib_track PROPERTIES LINKER_LANGUAGE CXX)
@@ -275,7 +277,7 @@ if(ENABLE_CUDA)
 endif()
 
 target_link_libraries(uselib darklib)
-if(OpenCV_VERSION_MAJOR GREATER_EQUAL 3)
+if(OpenCV_VERSION VERSION_GREATER "3.0")
   target_link_libraries(uselib_track darklib)
   install(TARGETS uselib_track DESTINATION ${CMAKE_SOURCE_DIR}/)
 endif()

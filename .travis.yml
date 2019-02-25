@@ -1,0 +1,233 @@
+language: cpp
+
+matrix:
+  include:
+
+    - os: osx
+      compiler: gcc
+      name: macOS - gcc@5 - opencv@2
+      env:
+        - MATRIX_EVAL="brew update && brew install gcc@5 gcc opencv@2 && CC=gcc-5 && CXX=g++-5 && OpenCV_DIR=/usr/local/opt/opencv@2"
+
+    - os: osx
+      compiler: gcc
+      name: macOS - gcc@5 - opencv@3
+      env:
+        - MATRIX_EVAL="brew update && brew install gcc@5 gcc opencv@3 && CC=gcc-5 && CXX=g++-5 && OpenCV_DIR=/usr/local/opt/opencv@3"
+
+    - os: osx
+      compiler: gcc
+      name: macOS - native gcc (llvm backend) - opencv@2
+      env:
+        - MATRIX_EVAL="brew update && brew install opencv@2 && OpenCV_DIR=/usr/local/opt/opencv@2"
+
+    - os: osx
+      compiler: gcc
+      name: macOS - native gcc (llvm backend) - opencv@3
+      env:
+        - MATRIX_EVAL="brew update && brew install opencv@3 && OpenCV_DIR=/usr/local/opt/opencv@3"
+
+    - os: osx
+      compiler: clang
+      name: macOS - native clang - opencv@2
+      env:
+        - MATRIX_EVAL="brew update && brew install opencv@2 && OpenCV_DIR=/usr/local/opt/opencv@2"
+
+    - os: osx
+      compiler: clang
+      name: macOS - native clang - opencv@3
+      env:
+        - MATRIX_EVAL="brew update && brew install opencv@3 && OpenCV_DIR=/usr/local/opt/opencv@3"
+
+    - os: linux
+      compiler: clang
+      name: ubuntu - native clang
+      addons:
+        apt:
+          update: true
+          packages:
+            - libopencv-dev
+      env:
+        - MATRIX_EVAL=""
+
+    - os: linux
+      compiler: clang
+      name: ubuntu - clang@3.6
+      addons:
+        apt:
+          update: true
+          packages:
+            - libopencv-dev
+            - clang-3.6
+      env:
+        - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
+
+    - os: linux
+      compiler: clang
+      name: ubuntu - clang@3.8
+      addons:
+        apt:
+          update: true
+          sources:
+            - llvm-toolchain-precise-3.8
+          packages:
+            - libopencv-dev
+            - clang-3.8
+      env:
+        - MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
+
+    - os: linux
+      compiler: clang
+      name: ubuntu - clang@3.9
+      addons:
+        apt:
+          update: true
+          sources:
+            - llvm-toolchain-trusty-3.9
+          packages:
+            - libopencv-dev
+            - clang-3.9
+      env:
+        - MATRIX_EVAL="CC=clang-3.9 && CXX=clang++-3.9"
+
+    - os: linux
+      compiler: clang
+      name: ubuntu - clang@4.0
+      addons:
+        apt:
+          update: true
+          sources:
+            - llvm-toolchain-trusty-4.0
+          packages:
+            - libopencv-dev
+            - clang-4.0
+      env:
+        - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
+
+    - os: linux
+      compiler: clang
+      name: ubuntu - clang@5.0
+      addons:
+        apt:
+          update: true
+          sources:
+            - llvm-toolchain-trusty-5.0
+          packages:
+            - libopencv-dev
+            - clang-5.0
+      env:
+        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+
+    - os: linux
+      compiler: clang
+      name: ubuntu - clang@6.0
+      addons:
+        apt:
+          update: true
+          sources:
+            - llvm-toolchain-trusty-6.0
+            - ubuntu-toolchain-r-test
+          packages:
+            - libopencv-dev
+            - clang-6.0
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+
+    - os: linux
+      compiler: gcc
+      name: ubuntu - native gcc
+      addons:
+        apt:
+          update: true
+          packages:
+            - libopencv-dev
+            - gfortran
+      env:
+        - MATRIX_EVAL=""
+
+    - os: linux
+      compiler: gcc
+      name: ubuntu - gcc@4.9
+      addons:
+        apt:
+          update: true
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - libopencv-dev
+            - g++-4.9
+      env:
+         - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+
+    - os: linux
+      compiler: gcc
+      name: ubuntu - gcc@5.0
+      addons:
+        apt:
+          update: true
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - libopencv-dev
+            - g++-5
+      env:
+         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+
+    - os: linux
+      compiler: gcc
+      name: ubuntu - gcc@6.0
+      addons:
+        apt:
+          update: true
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-6
+            - libopencv-dev
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+
+    - os: linux
+      compiler: gcc
+      name: ubuntu - gcc@7.0
+      addons:
+        apt:
+          update: true
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - libopencv-dev
+            - g++-7
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+
+    - os: linux
+      compiler: gcc
+      name: ubuntu - gcc@8.0
+      addons:
+        apt:
+          update: true
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - libopencv-dev
+            - g++-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+
+before_install:
+  - eval "${MATRIX_EVAL}"
+
+before_script:
+  - mkdir build_debug
+  - cd build_debug
+  - cmake .. -DCMAKE_BUILD_TYPE="Debug"
+  - cd ..
+  - mkdir build_release
+  - cd build_release
+  - cmake .. -DCMAKE_BUILD_TYPE="Release"
+  - cd ..
+
+script:
+  - cd build_debug && cmake --build . --target install && cd ..
+  - cd build_release && cmake --build . --target install && cd ..
