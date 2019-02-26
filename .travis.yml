@@ -7,37 +7,37 @@ matrix:
       compiler: gcc
       name: macOS - gcc@5 - opencv@2
       env:
-        - MATRIX_EVAL="brew update && brew install gcc@5 gcc opencv@2 && CC=gcc-5 && CXX=g++-5 && OpenCV_DIR=/usr/local/opt/opencv@2"
+        - MATRIX_EVAL="brew install gcc@5 opencv@2 && CC=gcc-5 && CXX=g++-5 && OpenCV_DIR=/usr/local/opt/opencv@2"
 
     - os: osx
       compiler: gcc
       name: macOS - gcc@5 - opencv@3
       env:
-        - MATRIX_EVAL="brew update && brew install gcc@5 gcc opencv@3 && CC=gcc-5 && CXX=g++-5 && OpenCV_DIR=/usr/local/opt/opencv@3"
+        - MATRIX_EVAL="brew install gcc@5 opencv@3 && CC=gcc-5 && CXX=g++-5 && OpenCV_DIR=/usr/local/opt/opencv@3"
 
     - os: osx
       compiler: gcc
       name: macOS - native gcc (llvm backend) - opencv@2
       env:
-        - MATRIX_EVAL="brew update && brew install opencv@2 && OpenCV_DIR=/usr/local/opt/opencv@2"
+        - MATRIX_EVAL="brew install opencv@2 && OpenCV_DIR=/usr/local/opt/opencv@2"
 
     - os: osx
       compiler: gcc
       name: macOS - native gcc (llvm backend) - opencv@3
       env:
-        - MATRIX_EVAL="brew update && brew install opencv@3 && OpenCV_DIR=/usr/local/opt/opencv@3"
+        - MATRIX_EVAL="brew install opencv@3 && OpenCV_DIR=/usr/local/opt/opencv@3"
 
     - os: osx
       compiler: clang
       name: macOS - native clang - opencv@2
       env:
-        - MATRIX_EVAL="brew update && brew install opencv@2 && OpenCV_DIR=/usr/local/opt/opencv@2"
+        - MATRIX_EVAL="brew install opencv@2 && OpenCV_DIR=/usr/local/opt/opencv@2"
 
     - os: osx
       compiler: clang
       name: macOS - native clang - opencv@3
       env:
-        - MATRIX_EVAL="brew update && brew install opencv@3 && OpenCV_DIR=/usr/local/opt/opencv@3"
+        - MATRIX_EVAL="brew install opencv@3 && OpenCV_DIR=/usr/local/opt/opencv@3"
 
     - os: linux
       compiler: clang
@@ -216,7 +216,7 @@ matrix:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
 
 before_install:
-  - eval "${MATRIX_EVAL}"
+  - travis_retry eval "${MATRIX_EVAL}"
 
 before_script:
   - mkdir build_debug
