@@ -1,6 +1,5 @@
 image: Visual Studio 2017
 clone_folder: c:\projects\darknet
-configuration: Release
 
 environment:
     WORKSPACE: C:\projects
@@ -13,7 +12,9 @@ environment:
       COMPILER: vs
       VCPKG_ROOT: C:\projects\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
-
+    - platform: Win64
+      COMPILER: vs
+      USE_INTEGRATED_LIBS: yes
 
 install:
   - if [%COMPILER%]==[vs] cinst cmake ninja
@@ -26,23 +27,24 @@ install:
   - mkdir cygwin-downloads
   - ps: if($env:COMPILER -eq "cygwin") { Invoke-WebRequest https://cygwin.com/setup-x86_64.exe -OutFile $env:WORKSPACE\cygwin-setup.exe }
   - if [%COMPILER%]==[cygwin] %WORKSPACE%\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --root C:\cygwin64 --local-package-dir %WORKSPACE%\cygwin-downloads --packages gcc-g++,cmake,libopencv-devel
-  - if [%COMPILER%]==[vs] git clone https://github.com/Microsoft/vcpkg
-  - if [%COMPILER%]==[vs] cd %VCPKG_ROOT%
-  - if [%COMPILER%]==[vs] bootstrap-vcpkg.bat
-  - if [%COMPILER%]==[vs] vcpkg integrate install
-  - if [%COMPILER%]==[vs] vcpkg install opencv pthreads
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] git clone https://github.com/Microsoft/vcpkg
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd %VCPKG_ROOT%
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] bootstrap-vcpkg.bat
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg integrate install
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv pthreads
   - cd %WORKSPACE%\darknet\
   - mkdir build_debug && cd build_debug
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Debug"'
-  - if [%COMPILER%]==[vs] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Debug" ..
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Debug" ..
   - cd ..
   - mkdir build_release && cd build_release
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release"'
-  - if [%COMPILER%]==[vs] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Release" ..
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Release" ..
+  - if [%COMPILER%]==[vs] if     [%USE_INTEGRATED_LIBS%]==[yes] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" -DCMAKE_BUILD_TYPE="Release" ..
   - cd ..
 
 build_script:
-  - if [%COMPILER%]==[cygwin] cd build_debug   && %CYGSH% 'cmake --build .'        && cd ..
-  - if [%COMPILER%]==[cygwin] cd build_release && %CYGSH% 'cmake --build .'        && cd ..
-  - if [%COMPILER%]==[vs]     cd build_debug   && cmake --build . --config Debug   && cd ..
-  - if [%COMPILER%]==[vs]     cd build_release && cmake --build . --config Release && cd ..
+  - if [%COMPILER%]==[cygwin]                                   cd build_debug   && %CYGSH% 'cmake --build .'        && cd ..
+  - if [%COMPILER%]==[cygwin]                                   cd build_release && %CYGSH% 'cmake --build .'        && cd ..
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd build_debug   && cmake --build . --config Debug   && cd ..
+  - if [%COMPILER%]==[vs]                                       cd build_release && cmake --build . --config Release && cd ..
