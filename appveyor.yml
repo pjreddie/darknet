@@ -34,7 +34,7 @@ install:
   - cd %WORKSPACE%\
   - if [%USE_CUDA%]==[yes] curl -L https://developer.nvidia.com/compute/cuda/10.0/Prod/local_installers/cuda_10.0.130_411.31_windows -o cuda_10.0.130_411.31_windows.exe
   - if [%USE_CUDA%]==[yes] if NOT EXIST C:\CUDA mkdir C:\CUDA
-  - if [%USE_CUDA%]==[yes] 7z x cuda_10.0.130_411.31_windows.exe -oC:\CUDA nvcc/* nvrtc*/*
+  - if [%USE_CUDA%]==[yes] 7z x cuda_10.0.130_411.31_windows.exe -oC:\CUDA
   - mkdir cygwin-downloads
   - ps: if($env:COMPILER -eq "cygwin") { Invoke-WebRequest https://cygwin.com/setup-x86_64.exe -OutFile $env:WORKSPACE\cygwin-setup.exe }
   - if [%COMPILER%]==[cygwin] %WORKSPACE%\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --root C:\cygwin64 --local-package-dir %WORKSPACE%\cygwin-downloads --packages gcc-g++,cmake,libopencv-devel
