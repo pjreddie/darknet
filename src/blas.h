@@ -102,6 +102,9 @@ void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int for
 
 void softmax_tree_gpu(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
 
+void fix_nan_and_inf(float *input, size_t size);
+int is_nan_or_inf(float *input, size_t size);
+
 #endif
 #ifdef __cplusplus
 }
