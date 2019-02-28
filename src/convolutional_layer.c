@@ -348,6 +348,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.xnor = xnor;
     l.use_bin_output = use_bin_output;
     l.batch = batch;
+    l.steps = steps;
     l.stride = stride;
     l.size = size;
     l.pad = padding;
@@ -544,6 +545,7 @@ void test_convolutional_layer()
 
 void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 {
+    int total_batch = l->batch*l->steps;
     int old_w = l->w;
     int old_h = l->h;
     l->w = w;
@@ -557,11 +559,11 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     l->outputs = l->out_h * l->out_w * l->out_c;
     l->inputs = l->w * l->h * l->c;
 
-    l->output = (float*)realloc(l->output, l->batch * l->outputs * sizeof(float));
-    l->delta = (float*)realloc(l->delta, l->batch * l->outputs * sizeof(float));
+    l->output = (float*)realloc(l->output, total_batch * l->outputs * sizeof(float));
+    l->delta = (float*)realloc(l->delta, total_batch * l->outputs * sizeof(float));
     if(l->batch_normalize){
-        l->x = (float*)realloc(l->x, l->batch * l->outputs * sizeof(float));
-        l->x_norm = (float*)realloc(l->x_norm, l->batch * l->outputs * sizeof(float));
+        l->x = (float*)realloc(l->x, total_batch * l->outputs * sizeof(float));
+        l->x_norm = (float*)realloc(l->x_norm, total_batch * l->outputs * sizeof(float));
     }
 
     if (l->xnor) {
@@ -573,15 +575,15 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         cuda_free(l->delta_gpu);
         cuda_free(l->output_gpu);
 
-        l->delta_gpu = cuda_make_array(l->delta, l->batch*l->outputs);
-        l->output_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+        l->delta_gpu = cuda_make_array(l->delta, total_batch*l->outputs);
+        l->output_gpu = cuda_make_array(l->output, total_batch*l->outputs);
 
         if (l->batch_normalize) {
             cuda_free(l->x_gpu);
             cuda_free(l->x_norm_gpu);
 
-            l->x_gpu = cuda_make_array(l->output, l->batch*l->outputs);
-            l->x_norm_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+            l->x_gpu = cuda_make_array(l->output, total_batch*l->outputs);
+            l->x_norm_gpu = cuda_make_array(l->output, total_batch*l->outputs);
         }
 
         if (l->xnor) {
