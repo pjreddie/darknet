@@ -70,7 +70,7 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
 #endif
 
     fprintf(stderr, "yolo\n");
-    srand(0);
+    srand(time(0));
 
     return l;
 }

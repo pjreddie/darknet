@@ -181,7 +181,7 @@ void reconstruct_picture(network net, float *features, image recon, image update
 
 void run_nightmare(int argc, char **argv)
 {
-    srand(0);
+    srand(time(0));
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [cfg] [weights] [image] [layer] [options! (optional)]\n", argv[0], argv[1]);
         return;

@@ -348,7 +348,7 @@ float train_network_batch(network net, data d, int n)
     int batch = 2;
     for(i = 0; i < n; ++i){
         for(j = 0; j < batch; ++j){
-            int index = rand()%d.X.rows;
+            int index = random_gen()%d.X.rows;
             state.input = d.X.vals[index];
             state.truth = d.y.vals[index];
             forward_network(net, state);
