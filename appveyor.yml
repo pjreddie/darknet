@@ -12,6 +12,14 @@ environment:
       COMPILER: vs
       VCPKG_ROOT: C:\projects\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
+      USE_CUDA: yes
+      CUDACXX: C:\CUDA\nvcc\bin\nvcc.exe
+      CUDA_PATH: C:\CUDA\nvcc
+    - platform: Win64
+      COMPILER: vs
+      VCPKG_ROOT: C:\projects\vcpkg
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+      USE_CUDA: no
     - platform: Win64
       COMPILER: vs
       USE_INTEGRATED_LIBS: yes
@@ -24,6 +32,9 @@ install:
   - if [%COMPILER%]==[cygwin] SET PATH=%PATH:C:\Program Files\Git\usr\bin;=%
   - git submodule -q update --init --recursive
   - cd %WORKSPACE%\
+  - if [%USE_CUDA%]==[yes] curl -L https://developer.nvidia.com/compute/cuda/10.0/Prod/local_installers/cuda_10.0.130_411.31_windows -o cuda_10.0.130_411.31_windows.exe
+  - if [%USE_CUDA%]==[yes] if NOT EXIST C:\CUDA mkdir C:\CUDA
+  - if [%USE_CUDA%]==[yes] 7z x cuda_10.0.130_411.31_windows.exe -oC:\CUDA nvcc/* nvrtc*/*
   - mkdir cygwin-downloads
   - ps: if($env:COMPILER -eq "cygwin") { Invoke-WebRequest https://cygwin.com/setup-x86_64.exe -OutFile $env:WORKSPACE\cygwin-setup.exe }
   - if [%COMPILER%]==[cygwin] %WORKSPACE%\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --root C:\cygwin64 --local-package-dir %WORKSPACE%\cygwin-downloads --packages gcc-g++,cmake,libopencv-devel
@@ -31,7 +42,8 @@ install:
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd %VCPKG_ROOT%
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] bootstrap-vcpkg.bat
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg integrate install
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv pthreads
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if NOT [%USE_CUDA%]==[yes] vcpkg install opencv pthreads
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if     [%USE_CUDA%]==[yes] vcpkg install opencv[cuda] pthreads
   - cd %WORKSPACE%\darknet\
   - mkdir build_debug && cd build_debug
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Debug"'
