@@ -13,8 +13,8 @@ environment:
       VCPKG_ROOT: C:\projects\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
       USE_CUDA: yes
-      CUDACXX: C:\CUDA\nvcc\bin\nvcc.exe
-      CUDA_PATH: C:\CUDA\nvcc
+      CUDACXX: C:\CUDA\bin\nvcc.exe
+      CUDA_PATH: C:\CUDA\
     - platform: Win64
       COMPILER: vs
       VCPKG_ROOT: C:\projects\vcpkg
@@ -33,8 +33,12 @@ install:
   - git submodule -q update --init --recursive
   - cd %WORKSPACE%\
   - if [%USE_CUDA%]==[yes] curl -L https://developer.nvidia.com/compute/cuda/10.0/Prod/local_installers/cuda_10.0.130_411.31_windows -o cuda_10.0.130_411.31_windows.exe
-  - if [%USE_CUDA%]==[yes] if NOT EXIST C:\CUDA mkdir C:\CUDA
-  - if [%USE_CUDA%]==[yes] 7z x cuda_10.0.130_411.31_windows.exe -oC:\CUDA
+  - if [%USE_CUDA%]==[yes] mkdir C:\CUDATEMP
+  - if [%USE_CUDA%]==[yes] mkdir C:\CUDA
+  - if [%USE_CUDA%]==[yes] 7z x cuda_10.0.130_411.31_windows.exe -oC:\CUDATEMP
+  - if [%USE_CUDA%]==[yes] cd C:\CUDATEMP
+  - if [%USE_CUDA%]==[yes] FOR /D %%G in ("*") DO xcopy C:\CUDATEMP\%%G\* C:\CUDA\ /s /y
+  - cd %WORKSPACE%\
   - mkdir cygwin-downloads
   - ps: if($env:COMPILER -eq "cygwin") { Invoke-WebRequest https://cygwin.com/setup-x86_64.exe -OutFile $env:WORKSPACE\cygwin-setup.exe }
   - if [%COMPILER%]==[cygwin] %WORKSPACE%\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --root C:\cygwin64 --local-package-dir %WORKSPACE%\cygwin-downloads --packages gcc-g++,cmake,libopencv-devel
