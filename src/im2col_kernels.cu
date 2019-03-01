@@ -1818,7 +1818,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
 }
 // --------------------------------
 
-
+/*
 void convolve_cpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad)
 {
     int fil;
@@ -1929,6 +1929,7 @@ void convolve_bin_cpu(float *input, float *weights, float *output, int in_w, int
                 }
     }
 }
+*/
 // --------------------------------
 
 __global__ void convolve_gpu_kernel(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad)
