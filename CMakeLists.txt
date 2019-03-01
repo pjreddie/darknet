@@ -103,7 +103,7 @@ else()
 endif()
 
 if(OpenCV_FOUND)
-  if(NOT OpenCV_CUDA_VERSION)
+  if(ENABLE_CUDA AND NOT OpenCV_CUDA_VERSION)
     set(SKIP_USELIB_TRACK "TRUE" CACHE BOOL "Skip building uselib_track" FORCE)
     message(WARNING "The build of OpenCV does not have CUDA support, so some tools have been disabled! Please rebuild OpenCV with CUDA support to build them!")
   endif()
