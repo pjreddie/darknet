@@ -63,10 +63,9 @@ void convolve_gpu(float *input, float *weights, float *output, int in_w, int in_
 void convolve_bin_gpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad,
     int new_lda, float *mean_arr_gpu);
 
-void convolve_bin_cpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n,
-    int size, int pad, int new_lda, float *mean_arr_gpu);
+//void convolve_bin_cpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad, int new_lda, float *mean_arr_gpu);
 
-void convolve_cpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad);
+//void convolve_cpu(float *input, float *weights, float *output, int in_w, int in_h, int in_c, int n, int size, int pad);
 
 #endif
 #ifdef __cplusplus
