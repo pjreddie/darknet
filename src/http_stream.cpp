@@ -115,7 +115,7 @@ class MJPG_sender
 
 public:
 
-    MJPG_sender(int port = 0, int _timeout = 200000, int _quality = 30)
+    MJPG_sender(int port = 0, int _timeout = 400000, int _quality = 30)
         : sock(INVALID_SOCKET)
         , timeout(_timeout)
         , quality(_quality)
@@ -230,17 +230,17 @@ public:
                 }
                 maxfd = (maxfd>client ? maxfd : client);
                 FD_SET(client, &master);
-                _write(client, "HTTP/1.0 200 OK\n", 0);
+                _write(client, "HTTP/1.0 200 OK\r\n", 0);
                 _write(client,
-                    "Server: Mozarella/2.2\n"
-                    "Accept-Range: bytes\n"
-                    "Connection: close\n"
-                    "Max-Age: 0\n"
-                    "Expires: 0\n"
-                    "Cache-Control: no-cache, private\n"
-                    "Pragma: no-cache\n"
-                    "Content-Type: multipart/x-mixed-replace; boundary=mjpegstream\n"
-                    "\n", 0);
+                    "Server: Mozarella/2.2\r\n"
+                    "Accept-Range: bytes\r\n"
+                    "Connection: close\r\n"
+                    "Max-Age: 0\r\n"
+                    "Expires: 0\r\n"
+                    "Cache-Control: no-cache, private\r\n"
+                    "Pragma: no-cache\r\n"
+                    "Content-Type: multipart/x-mixed-replace; boundary=mjpegstream\r\n"
+                    "\r\n", 0);
                 cerr << "MJPG_sender: new client " << client << endl;
             }
             else // existing client, just stream pix
@@ -252,7 +252,7 @@ public:
                 }
 
                 char head[400];
-                sprintf(head, "--mjpegstream\nContent-Type: image/jpeg\nContent-Length: %zu\n\n", outlen);
+                sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
                 _write(s, head, 0);
                 int n = _write(s, (char*)(&outbuf[0]), outlen);
                 //cerr << "known client " << s << " " << n << endl;
@@ -303,7 +303,7 @@ class JSON_sender
 
 public:
 
-    JSON_sender(int port = 0, int _timeout = 200000)
+    JSON_sender(int port = 0, int _timeout = 400000)
         : sock(INVALID_SOCKET)
         , timeout(_timeout)
     {
@@ -409,18 +409,18 @@ public:
                 }
                 maxfd = (maxfd>client ? maxfd : client);
                 FD_SET(client, &master);
-                _write(client, "HTTP/1.0 200 OK\n", 0);
+                _write(client, "HTTP/1.0 200 OK\r\n", 0);
                 _write(client,
-                    "Server: Mozarella/2.2\n"
-                    "Accept-Range: bytes\n"
-                    "Connection: close\n"
-                    "Max-Age: 0\n"
-                    "Expires: 0\n"
-                    "Cache-Control: no-cache, private\n"
-                    "Pragma: no-cache\n"
-                    "Content-Type: application/json\n"
+                    "Server: Mozarella/2.2\r\n"
+                    "Accept-Range: bytes\r\n"
+                    "Connection: close\r\n"
+                    "Max-Age: 0\r\n"
+                    "Expires: 0\r\n"
+                    "Cache-Control: no-cache, private\r\n"
+                    "Pragma: no-cache\r\n"
+                    "Content-Type: application/json\r\n"
                     //"Content-Type: multipart/x-mixed-replace; boundary=boundary\r\n"
-                    "\n", 0);
+                    "\r\n", 0);
                 _write(client, "[\n", 0);   // open JSON array
                 int n = _write(client, outputbuf, outlen);
                 cerr << "JSON_sender: new client " << client << endl;

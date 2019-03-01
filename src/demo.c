@@ -129,7 +129,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     demo_ext_output = ext_output;
     demo_json_port = json_port;
     printf("Demo\n");
-    net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
+    net = parse_network_cfg_custom(cfgfile, 1, 1);    // set batch=1
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -237,7 +237,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
             ++frame_id;
             if (demo_json_port > 0) {
-                int timeout = 200;
+                int timeout = 400000;
                 send_json(local_dets, local_nboxes, l.classes, demo_names, frame_id, demo_json_port, timeout);
             }
 
@@ -268,8 +268,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             // if you run it with param -mjpeg_port 8090  then open URL in your web-browser: http://localhost:8090
             if (mjpeg_port > 0 && show_img) {
                 int port = mjpeg_port;
-                int timeout = 200;
-                int jpeg_quality = 30;    // 1 - 100
+                int timeout = 400000;
+                int jpeg_quality = 40;    // 1 - 100
                 send_mjpeg(show_img, port, timeout, jpeg_quality);
             }
 
