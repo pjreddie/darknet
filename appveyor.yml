@@ -15,6 +15,7 @@ environment:
       USE_CUDA: yes
       CUDACXX: C:\CUDA\bin\nvcc.exe
       CUDA_PATH: C:\CUDA\
+      CUDA_PATH_V10_0: C:\CUDA\
     - platform: Win64
       COMPILER: vs
       VCPKG_ROOT: C:\projects\vcpkg
@@ -46,6 +47,7 @@ install:
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd %VCPKG_ROOT%
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] bootstrap-vcpkg.bat
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg integrate install
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%USE_CUDA%]==[yes] vcpkg install cuda
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv pthreads   ## opencv[cuda] is too big to build, timing out (>1h). We use plain openCV also for CUDA builds (toolchain can manage this strange situation anyway)
   - cd %WORKSPACE%\darknet\
   - mkdir build_debug && cd build_debug
