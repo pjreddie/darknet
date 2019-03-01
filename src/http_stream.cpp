@@ -196,8 +196,9 @@ public:
         std::vector<int> params;
         params.push_back(IMWRITE_JPEG_QUALITY);
         params.push_back(quality);
-        //cv::imencode(".jpg", frame, outbuf, params);  //REMOVED FOR COMPATIBILITY
-        std::cerr << "cv::imencode call disabled!" << std::endl;
+        cv::imencode(".jpg", frame, outbuf, params);  //REMOVED FOR COMPATIBILITY
+        // https://docs.opencv.org/3.4/d4/da8/group__imgcodecs.html#ga292d81be8d76901bff7988d18d2b42ac
+        //std::cerr << "cv::imencode call disabled!" << std::endl;
         size_t outlen = outbuf.size();
 
 #ifdef _WIN32
