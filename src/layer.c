@@ -11,8 +11,10 @@ void free_layer(layer l)
         if (l.output_layer) free_layer(*l.output_layer);
         l.output = NULL;
         l.delta = NULL;
+#ifdef GPU
         l.output_gpu = NULL;
         l.delta_gpu = NULL;
+#endif // GPU
     }
     if (l.type == DROPOUT) {
         if (l.rand)           free(l.rand);
