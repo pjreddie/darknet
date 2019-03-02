@@ -570,7 +570,9 @@ typedef struct network {
     float saturation;
     float hue;
     int random;
-    int small_object;
+    int track;
+    int augment_speed;
+    int try_fix_nan;
 
     int gpu_index;
     tree *hierarchy;
@@ -698,7 +700,9 @@ typedef struct load_args {
     int scale;
     int center;
     int coords;
-    int small_object;
+    int mini_batch;
+    int track;
+    int augment_speed;
     float jitter;
     int flip;
     float angle;

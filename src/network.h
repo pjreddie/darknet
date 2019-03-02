@@ -161,6 +161,7 @@ int get_network_background(network net);
 //LIB_API void fuse_conv_batchnorm(network net);
 //LIB_API void calculate_binary_weights(network net);
 network combine_train_valid_networks(network net_train, network net_map);
+void copy_weights_net(network net_train, network *net_map);
 
 #ifdef __cplusplus
 }

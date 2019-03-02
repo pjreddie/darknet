@@ -354,6 +354,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.pad = padding;
     l.batch_normalize = batch_normalize;
     l.learning_rate_scale = 1;
+    l.nweights = l.c*l.n*l.size*l.size;
 
     l.weights = (float*)calloc(c * n * size * size, sizeof(float));
     l.weight_updates = (float*)calloc(c * n * size * size, sizeof(float));

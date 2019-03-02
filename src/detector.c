@@ -76,11 +76,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         cuda_set_device(gpus[0]);
         printf(" Prepare additional network for mAP calculation...\n");
-        net_map = parse_network_cfg_custom(cfgfile, 1, 0);
+        net_map = parse_network_cfg_custom(cfgfile, 1, 1);
+
+
         int k;  // free memory unnecessary arrays
         for (k = 0; k < net_map.n; ++k) {
-            free_layer(net_map.layers[k]);
+                free_layer(net_map.layers[k]);
         }
+        /*
 #ifdef GPU
         cuda_free(net_map.workspace);
         cuda_free(net_map.input_state_gpu);
@@ -89,6 +92,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #else
         free(net_map.workspace);
 #endif
+        */
     }
 
     srand(time(0));
@@ -156,7 +160,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.flip = net.flip;
     args.jitter = jitter;
     args.num_boxes = l.max_boxes;
-    args.small_object = net.small_object;
     args.d = &buffer;
     args.type = DETECTION_DATA;
     args.threads = 64;    // 16 or 64
@@ -175,6 +178,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int img_size = 1000;
     img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size, dont_show);
 #endif    //OPENCV
+    if (net.track) {
+        args.track = net.track;
+        args.augment_speed = net.augment_speed;
+        args.threads = net.subdivisions * ngpus;    // 2 * ngpus;
+        args.mini_batch = net.batch / net.time_steps;
+        printf("\n Tracking! batch = %d, subdiv = %d, time_steps = %d, mini_batch = %d \n", net.batch, net.subdivisions, net.time_steps, args.mini_batch);
+    }
+    //printf(" imgs = %d \n", imgs);
 
     pthread_t load_thread = load_data(args);
     double time;
@@ -183,14 +194,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     while (get_current_batch(net) < net.max_batches) {
         if (l.random && count++ % 10 == 0) {
             printf("Resizing\n");
-            //int dim = (rand() % 12 + (init_w/32 - 5)) * 32;    // +-160
-            //int dim = (rand() % 4 + 16) * 32;
-            //if (get_current_batch(net)+100 > net.max_batches) dim = 544;
-
-            //int random_val = rand() % 12;
-            //int dim_w = (random_val + (init_w / 32 - 5)) * 32;    // +-160
-            //int dim_h = (random_val + (init_h / 32 - 5)) * 32;    // +-160
-
             float random_val = rand_scale(1.4);    // *x or /x
             int dim_w = roundl(random_val*init_w / 32 + 1) * 32;
             int dim_h = roundl(random_val*init_h / 32 + 1) * 32;
@@ -259,11 +262,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         i = get_current_batch(net);
 
-        int calc_map_for_each = iter_map + 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
-        calc_map_for_each = fmax(calc_map_for_each, net.burn_in);
-        calc_map_for_each = fmax(calc_map_for_each, 1000);
+        int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
+        calc_map_for_each = fmax(calc_map_for_each, 100);
+        int next_map_calc = iter_map + calc_map_for_each;
+        next_map_calc = fmax(next_map_calc, net.burn_in);
+        next_map_calc = fmax(next_map_calc, 1000);
         if (calc_map) {
-            printf("\n (next mAP calculation at %d iterations) ", calc_map_for_each);
+            printf("\n (next mAP calculation at %d iterations) ", next_map_calc);
             if (mean_average_precision > 0) printf("\n Last accuracy mAP@0.5 = %2.2f %% ", mean_average_precision * 100);
         }
 
@@ -274,7 +279,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), i*imgs);
 
         int draw_precision = 0;
-        if (calc_map && (i >= calc_map_for_each || i == net.max_batches)) {
+        if (calc_map && (i >= next_map_calc || i == net.max_batches)) {
             if (l.random) {
                 printf("Resizing to initial size: %d x %d \n", init_w, init_h);
                 args.w = init_w;
@@ -289,11 +294,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
                 net = nets[0];
             }
 
+            copy_weights_net(net, &net_map);
+
             // combine Training and Validation networks
-            network net_combined = combine_train_valid_networks(net, net_map);
+            //network net_combined = combine_train_valid_networks(net, net_map);
 
             iter_map = i;
-            mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net_combined);
+            mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net_map);// &net_combined);
             printf("\n mean_average_precision (mAP@0.5) = %f \n", mean_average_precision);
             draw_precision = 1;
         }
@@ -351,6 +358,11 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     for (i = 0; i < ngpus; ++i) free_network(nets[i]);
     free(nets);
     //free_network(net);
+
+    if (calc_map) {
+        net_map.n = 0;
+        free_network(net_map);
+    }
 }
 
 
@@ -443,7 +455,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 1);    // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -568,7 +580,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
 void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 {
-    network net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 1);    // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -682,7 +694,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         net = *existing_net;
     }
     else {
-        net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
+        net = parse_network_cfg_custom(cfgfile, 1, 1);    // set batch=1
         if (weightfile) {
             load_weights(&net, weightfile);
         }
@@ -1251,7 +1263,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
 
     image **alphabet = load_alphabet();
-    network net = parse_network_cfg_custom(cfgfile, 1, 0); // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }

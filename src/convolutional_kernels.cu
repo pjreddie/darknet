@@ -519,6 +519,15 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     else {
 
         //#else
+        /*
+        int input_nan_inf = is_nan_or_inf(state.input, l.inputs * l.batch);
+        printf("\n is_nan_or_inf(state.input) = %d \n", input_nan_inf);
+        if (input_nan_inf) getchar();
+
+        int weights_nan_inf = is_nan_or_inf(l.weights_gpu, l.size * l.size * l.c * l.n);
+        printf("\n is_nan_or_inf(l.weights_gpu) = %d \n", weights_nan_inf);
+        if (weights_nan_inf) getchar();
+        */
 
         CHECK_CUDNN(cudnnConvolutionForward(cudnn_handle(),
             &alpha, //&one,
@@ -581,6 +590,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     //if(l.dot > 0) dot_error_gpu(l);
     if(l.binary || l.xnor) swap_binary(&l);
     //cudaDeviceSynchronize();    // for correct profiling of performance
+
+    if (state.net.try_fix_nan) {
+        fix_nan_and_inf(l.output_gpu, l.outputs*l.batch);
+    }
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
@@ -609,7 +622,6 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
     if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
         l.c % 8 == 0 && l.n % 8 == 0)
     {
-
         const size_t input16_size = l.batch*l.c*l.w*l.h;
         const size_t delta16_size = l.batch*l.n*l.out_w*l.out_h;
 
@@ -762,6 +774,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 &one,
                 l.dsrcTensorDesc,
                 state.delta));
+
             if (l.binary || l.xnor) swap_binary(&l);
             if (l.xnor) gradient_array_ongpu(original_input, l.batch*l.c*l.h*l.w, HARDTAN, state.delta);
         }
@@ -803,6 +816,14 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         }
     }
 #endif
+    if (state.net.try_fix_nan) {
+        if (state.delta) {
+            fix_nan_and_inf(state.delta, l.inputs * l.batch);
+        }
+        int size = l.size * l.size * l.c * l.n;
+        fix_nan_and_inf(l.weight_updates_gpu, size);
+        fix_nan_and_inf(l.weights_gpu, size);
+    }
 }
 
 void pull_convolutional_layer(convolutional_layer layer)

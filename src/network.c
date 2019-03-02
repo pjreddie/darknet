@@ -452,6 +452,9 @@ int resize_network(network *net, int w, int h)
         //printf(" %d: layer = %d,", i, l.type);
         if(l.type == CONVOLUTIONAL){
             resize_convolutional_layer(&l, w, h);
+        }
+        else if (l.type == CRNN) {
+            resize_crnn_layer(&l, w, h);
         }else if(l.type == CROP){
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
@@ -1018,6 +1021,68 @@ void calculate_binary_weights(network net)
 
 }
 
+void copy_cudnn_descriptors(layer src, layer *dst)
+{
+    dst->normTensorDesc = src.normTensorDesc;
+    dst->normDstTensorDesc = src.normDstTensorDesc;
+    dst->normDstTensorDescF16 = src.normDstTensorDescF16;
+
+    dst->srcTensorDesc = src.srcTensorDesc;
+    dst->dstTensorDesc = src.dstTensorDesc;
+
+    dst->srcTensorDesc16 = src.srcTensorDesc16;
+    dst->dstTensorDesc16 = src.dstTensorDesc16;
+
+    //dst->batch = 1;
+    //dst->steps = 1;
+}
+
+void copy_weights_pointers_gpu(layer src, layer *dst)
+{
+    dst->weights_gpu = src.weights_gpu;
+    dst->weights_gpu16 = src.weights_gpu16;
+    dst->biases_gpu = src.biases_gpu;
+    dst->scales_gpu = src.scales_gpu;
+    dst->rolling_mean_gpu = src.rolling_mean_gpu;
+    dst->rolling_variance_gpu = src.rolling_variance_gpu;
+    dst->mean_gpu = src.mean_gpu;
+    dst->variance_gpu = src.variance_gpu;
+    //dst->align_bit_weights_gpu = src.align_bit_weights_gpu;
+    dst->x_gpu = src.x_gpu;
+
+    dst->output_gpu = src.output_gpu;
+}
+
+void copy_weights_net(network net_train, network *net_map)
+{
+    int k;
+    for (k = 0; k < net_train.n; ++k) {
+        layer *l = &(net_train.layers[k]);
+        layer tmp_layer;
+        copy_cudnn_descriptors(net_map->layers[k], &tmp_layer);
+        net_map->layers[k] = net_train.layers[k];
+        copy_cudnn_descriptors(tmp_layer, &net_map->layers[k]);
+
+        if (l->type == CRNN) {
+            layer tmp_input_layer, tmp_self_layer, tmp_output_layer;
+            copy_cudnn_descriptors(*net_map->layers[k].input_layer, &tmp_input_layer);
+            copy_cudnn_descriptors(*net_map->layers[k].self_layer, &tmp_self_layer);
+            copy_cudnn_descriptors(*net_map->layers[k].output_layer, &tmp_output_layer);
+            net_map->layers[k].input_layer = net_train.layers[k].input_layer;
+            net_map->layers[k].self_layer = net_train.layers[k].self_layer;
+            net_map->layers[k].output_layer = net_train.layers[k].output_layer;
+            //net_map->layers[k].output_gpu = net_map->layers[k].output_layer->output_gpu;  // already copied out of if()
+
+            copy_cudnn_descriptors(tmp_input_layer, net_map->layers[k].input_layer);
+            copy_cudnn_descriptors(tmp_self_layer, net_map->layers[k].self_layer);
+            copy_cudnn_descriptors(tmp_output_layer, net_map->layers[k].output_layer);
+        }
+        net_map->layers[k].batch = 1;
+        net_map->layers[k].steps = 1;
+    }
+}
+
+
 // combine Training and Validation networks
 network combine_train_valid_networks(network net_train, network net_map)
 {
@@ -1026,26 +1091,48 @@ network combine_train_valid_networks(network net_train, network net_map)
     net_combined = net_train;
     net_combined.layers = old_layers;
     net_combined.batch = 1;
+    net_combined.time_steps = 1;
 
     int k;
     for (k = 0; k < net_train.n; ++k) {
         layer *l = &(net_train.layers[k]);
-        net_combined.layers[k] = net_train.layers[k];
-        net_combined.layers[k].batch = 1;
 
-        if (l->type == CONVOLUTIONAL) {
 #ifdef CUDNN
-            net_combined.layers[k].normTensorDesc = net_map.layers[k].normTensorDesc;
-            net_combined.layers[k].normDstTensorDesc = net_map.layers[k].normDstTensorDesc;
-            net_combined.layers[k].normDstTensorDescF16 = net_map.layers[k].normDstTensorDescF16;
+        if (l->type == CONVOLUTIONAL) {
+            /*
+            net_combined.layers[k] = net_train.layers[k];
+            net_combined.layers[k].batch = 1;
+            net_combined.layers[k].steps = 1;
+            copy_cudnn_descriptors(net_map.layers[k], &net_combined.layers[k]);
+            */
+            net_combined.layers[k] = net_map.layers[k];
+            //net_combined.layers[k] = net_train.layers[k];
+            net_combined.layers[k].batch = 1;
+            net_combined.layers[k].steps = 1;
 
-            net_combined.layers[k].srcTensorDesc = net_map.layers[k].srcTensorDesc;
-            net_combined.layers[k].dstTensorDesc = net_map.layers[k].dstTensorDesc;
+            copy_weights_pointers_gpu(net_train.layers[k], &net_combined.layers[k]);
 
-            net_combined.layers[k].srcTensorDesc16 = net_map.layers[k].srcTensorDesc16;
-            net_combined.layers[k].dstTensorDesc16 = net_map.layers[k].dstTensorDesc16;
-#endif // CUDNN
+            net_combined.layers[k].output_gpu = net_train.layers[k].output_gpu;
+
         }
+        else if (l->type == CRNN) {
+            net_combined.layers[k] = net_map.layers[k];
+            net_combined.layers[k].batch = 1;
+            net_combined.layers[k].steps = 1;
+            // Don't use copy_cudnn_descriptors() here
+
+            copy_weights_pointers_gpu(*net_train.layers[k].input_layer, net_combined.layers[k].input_layer);
+            copy_weights_pointers_gpu(*net_train.layers[k].self_layer, net_combined.layers[k].self_layer);
+            copy_weights_pointers_gpu(*net_train.layers[k].output_layer, net_combined.layers[k].output_layer);
+
+            net_combined.layers[k].output_gpu = net_combined.layers[k].output_layer->output_gpu;
+        }
+        else {
+            net_combined.layers[k] = net_train.layers[k];
+            net_combined.layers[k].batch = 1;
+            net_combined.layers[k].steps = 1;
+        }
+#endif // CUDNN
     }
     return net_combined;
 }
