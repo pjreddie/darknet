@@ -14,14 +14,14 @@
     * [Using vcpkg](#how-to-compile-on-windows-using-vcpkg)
     * [Legacy way](#how-to-compile-on-windows-legacy-way)
 4.  [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
-    * [How to train with multi-GPU:](#how-to-train-with-multi-gpu)
-5.  [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
-    * [How to train tiny-yolo (to detect your custom objects)](#how-to-train-tiny-yolo-to-detect-your-custom-objects)
-6.  [When should I stop training](#when-should-i-stop-training)
-7.  [How to calculate mAP on PascalVOC 2007](#how-to-calculate-map-on-pascalvoc-2007)
-8.  [How to improve object detection](#how-to-improve-object-detection)
-9.  [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-10. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
+5.  [How to train with multi-GPU:](#how-to-train-with-multi-gpu)
+6.  [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
+7.  [How to train tiny-yolo (to detect your custom objects)](#how-to-train-tiny-yolo-to-detect-your-custom-objects)
+8.  [When should I stop training](#when-should-i-stop-training)
+9.  [How to calculate mAP on PascalVOC 2007](#how-to-calculate-map-on-pascalvoc-2007)
+10.  [How to improve object detection](#how-to-improve-object-detection)
+11.  [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+12. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_time](https://user-images.githubusercontent.com/4096485/52151356-e5d4a380-2683-11e9-9d7d-ac7bc192c477.jpg) mAP@0.5 (AP50) https://pjreddie.com/media/files/papers/YOLOv3.pdf |
 |---|---|
@@ -423,7 +423,7 @@ Usually sufficient 2000 iterations for each class(object), but not less than 400
   * **9002** - iteration number (number of batch)
   * **0.060730 avg** - average loss (error) - **the lower, the better**
 
-  When you see that average loss **0.xxxxxx avg** no longer decreases at many iterations then you should stop training.
+  When you see that average loss **0.xxxxxx avg** no longer decreases at many iterations then you should stop training. The final avgerage loss can be from `0.05` (for a small model and easy dataset) to `3.0` (for a big model and a difficult dataset).
 
 2. Once training is stopped, you should take some of last `.weights`-files from `darknet\build\darknet\x64\backup` and choose the best of them:
 
@@ -531,11 +531,11 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
     then do this command: `./darknet partial cfg/yolov3.cfg yolov3.weights yolov3.conv.81 81` will be created file `yolov3.conv.81`,
     then train by using weights file `yolov3.conv.81` instead of `darknet53.conv.74`
 
-  * The more different objects you want to detect, the more complex network model should be used. But each: `model of object, side, illimination, scale, each 30 grad` of the turn and inclination angles - these are different objects from a neural network perspective.
+  * each: `model of object, side, illimination, scale, each 30 grad` of the turn and inclination angles - these are *different objects* from an internal perspective of the neural network. So the more *different objects* you want to detect, the more complex network model should be used.
 
   * recalculate anchors for your dataset for `width` and `height` from cfg-file:
   `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
-   then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file. But you should change indexes of anchors `masks=` for each [yolo]-layer, so that 1st-[yolo]-layer has anchors larger than 60x60, 2nd larger than 30x30, 3rd remaining. If many of the calculated anchors do not fit under the appropriate layers - then just try using all the default anchors.
+   then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file. But you should change indexes of anchors `masks=` for each [yolo]-layer, so that 1st-[yolo]-layer has anchors larger than 60x60, 2nd larger than 30x30, 3rd remaining. Also you should change the `filters=(classes + 5)*<number of mask>` before each [yolo]-layer. If many of the calculated anchors do not fit under the appropriate layers - then just try using all the default anchors.
 
 
 2. After training - for detection:
