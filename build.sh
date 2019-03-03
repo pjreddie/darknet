@@ -2,13 +2,6 @@
 
 number_of_build_workers=8
 
-if [[ "$OSTYPE" == "darwin"* && "$1" == "gcc" ]]; then
-  export CC="/usr/local/bin/gcc-8"
-  export CXX="/usr/local/bin/g++-8"
-fi
-
-rm -f uselib darknet
-
 # DEBUG
 mkdir -p build_debug
 cd build_debug
