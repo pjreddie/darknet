@@ -48,18 +48,18 @@ if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
 }
 
 if (Test-Path $vcpkg_path) {
-  # DEBUG
-  New-Item -Path .\build_win_debug -ItemType directory -Force
-  Set-Location build_win_debug
-  cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Debug" $shared_lib ..
-  cmake --build . --config Debug --parallel ${number_of_build_workers} --target install
-  Set-Location ..
-
   # RELEASE
   New-Item -Path .\build_win_release -ItemType directory -Force
   Set-Location build_win_release
   cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $shared_lib ..
   cmake --build . --config Release --parallel ${number_of_build_workers} --target install
+  Set-Location ..
+
+  # DEBUG
+  New-Item -Path .\build_win_debug -ItemType directory -Force
+  Set-Location build_win_debug
+  cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Debug" $shared_lib ..
+  cmake --build . --config Debug --parallel ${number_of_build_workers} --target install
   Set-Location ..
 }
 else {
