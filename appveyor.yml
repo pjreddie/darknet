@@ -58,10 +58,10 @@ install:
   - cd ..
 
 build_script:
-  - if [%COMPILER%]==[cygwin]                                   cd build_debug   && %CYGSH% 'cmake --build . --target install'        && cd ..
-  - if [%COMPILER%]==[cygwin]                                   cd build_release && %CYGSH% 'cmake --build . --target install'        && cd ..
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd build_debug   && cmake --build . --config Debug --target install   && cd ..
-  - if [%COMPILER%]==[vs]                                       cd build_release && cmake --build . --config Release --target install && cd ..
+  - if [%COMPILER%]==[cygwin]                                   cd build_debug   && %CYGSH% 'cmake --build . --target install -- -j8'              && cd ..
+  - if [%COMPILER%]==[cygwin]                                   cd build_release && %CYGSH% 'cmake --build . --target install -- -j8'              && cd ..
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd build_debug   && cmake --build . --config Debug --parallel 8 --target install   && cd ..
+  - if [%COMPILER%]==[vs]                                       cd build_release && cmake --build . --config Release --parallel 8 --target install && cd ..
 
 artifacts:
   - path: './darklib.lib'

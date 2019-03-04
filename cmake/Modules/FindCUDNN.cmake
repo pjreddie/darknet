@@ -56,9 +56,37 @@ if(CUDNN_FOUND)
   else()
     set(CUDNN_VERSION "${CUDNN_VERSION_MAJOR}.${CUDNN_VERSION_MINOR}.${CUDNN_VERSION_PATCH}")
   endif()
+endif()
 
-  set(CUDNN_INCLUDE_DIRS ${CUDNN_INCLUDE_DIR})
-  set(CUDNN_LIBRARIES ${CUDNN_LIBRARY})
-  message(STATUS "Found cuDNN: v${CUDNN_VERSION}  (include: ${CUDNN_INCLUDE_DIR}, library: ${CUDNN_LIBRARY})")
-  mark_as_advanced(CUDNN_ROOT_DIR CUDNN_LIBRARY CUDNN_INCLUDE_DIR)
+set(CUDNN_INCLUDE_DIRS ${CUDNN_INCLUDE_DIR})
+set(CUDNN_LIBRARIES ${CUDNN_LIBRARY})
+message(STATUS "Found cuDNN: v${CUDNN_VERSION}  (include: ${CUDNN_INCLUDE_DIR}, library: ${CUDNN_LIBRARY})")
+mark_as_advanced(CUDNN_ROOT_DIR CUDNN_LIBRARY CUDNN_INCLUDE_DIR)
+
+# Register imported libraries:
+# 1. If we can find a Windows .dll file (or if we can find both Debug and
+#    Release libraries), we will set appropriate target properties for these.
+# 2. However, for most systems, we will only register the import location and
+#    include directory.
+
+# Look for dlls, for Release and Debug libraries.
+if(WIN32)
+  string( REPLACE ".lib" ".dll" CUDNN_LIBRARY_DLL "${CUDNN_LIBRARY}" )
+endif()
+
+if( CUDNN_FOUND AND NOT TARGET CuDNN::CuDNN )
+  if( EXISTS "${CUDNN_LIBRARY_RELEASE_DLL}" )
+    add_library( CuDNN::CuDNN      SHARED IMPORTED )
+    set_target_properties( CuDNN::CuDNN PROPERTIES
+      IMPORTED_LOCATION                 "${CUDNN_LIBRARY_DLL}"
+      IMPORTED_IMPLIB                   "${CUDNN_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES     "${CUDNN_INCLUDE_DIR}"
+      IMPORTED_LINK_INTERFACE_LANGUAGES "C" )
+  else()
+    add_library( CuDNN::CuDNN      UNKNOWN IMPORTED )
+    set_target_properties( CuDNN::CuDNN PROPERTIES
+      IMPORTED_LOCATION                 "${CUDNN_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES     "${CUDNN_INCLUDE_DIR}"
+      IMPORTED_LINK_INTERFACE_LANGUAGES "C" )
+  endif()
 endif()

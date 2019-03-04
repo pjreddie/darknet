@@ -1,14 +1,17 @@
-# To use your libs, launch cmake with -DUSE_INTEGRATED_LIBS:BOOL=FALSE
-
 cmake_minimum_required(VERSION 3.4)
 
-#set(CMAKE_VERBOSE_MAKEFILE 1)
+set(Darknet_MAJOR_VERSION 1)
+set(Darknet_MINOR_VERSION 0)
+set(Darknet_PATCH_VERSION 0)
+set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION})
+
+set(CMAKE_VERBOSE_MAKEFILE "FALSE" CACHE BOOL "Create verbose makefile")
 
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 endif()
 
-project(darknet)
+project(Darknet VERSION ${Darknet_VERSION})
 
 if(WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(USE_INTEGRATED_LIBS "TRUE" CACHE BOOL "Use libs distributed with this repo")
@@ -21,10 +24,20 @@ enable_language(CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
-include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
 
-set(SKIP_USELIB_TRACK "FALSE" CACHE BOOL "Skip building uselib_track" FORCE)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Install prefix" FORCE)
+set(INSTALL_BIN_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where exe and dll will be installed" FORCE)
+set(INSTALL_LIB_DIR      "lib"                       CACHE PATH "Path where lib will be installed")
+set(INSTALL_INCLUDE_DIR  "include"                   CACHE PATH "Path where headers will be installed")
+set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
+# Make relative paths absolute (needed later on)
+foreach(p LIB BIN INCLUDE CMAKE)
+  set(var INSTALL_${p}_DIR)
+  if(NOT IS_ABSOLUTE "${${var}}")
+    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+  endif()
+endforeach()
+
 set(ENABLE_CUDA "TRUE" CACHE BOOL "Enable CUDA build")
 if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
   set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA build" FORCE)
@@ -61,17 +74,12 @@ endif()
 
 if(USE_INTEGRATED_LIBS)
   include_directories(${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
-  set(PTHREADS_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
-  set(PTHREADS_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/3rdparty/lib/x64/pthreadVC2.lib)
+  set(PThreads_windows_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
+  set(PThreads_windows_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/3rdparty/lib/x64/pthreadVC2.lib)
   add_definitions(-D_TIMESPEC_DEFINED)
 endif()
 
-if(NOT APPLE)
-  set(CMAKE_SKIP_BUILD_RPATH  FALSE)
-  set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-endif()
-set(CMAKE_INSTALL_RPATH "${CMAKE_SOURCE_DIR}")
+set(CMAKE_DEBUG_POSTFIX d)
 
 add_definitions(-DUSE_CMAKE_LIBS)
 
@@ -96,19 +104,18 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   string(REGEX REPLACE "-O3" "-Ofast" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
 endif()
 
-if(APPLE)
-  find_package(OpenCV PATHS "/usr/local/Cellar/opencv@3/3.4.5" NO_DEFAULT_PATH)
-else()
+set(ENABLE_OPENCV "TRUE" CACHE BOOL "Enable OpenCV integration")
+if(ENABLE_OPENCV)
   find_package(OpenCV)
 endif()
 
+set(SKIP_USELIB_TRACK "FALSE" CACHE BOOL "Skip building uselib_track" FORCE)
 if(OpenCV_FOUND)
   if(ENABLE_CUDA AND NOT OpenCV_CUDA_VERSION)
     set(SKIP_USELIB_TRACK "TRUE" CACHE BOOL "Skip building uselib_track" FORCE)
     message(WARNING "The build of OpenCV does not have CUDA support, so some tools have been disabled! Please rebuild OpenCV with CUDA support to build them!")
   endif()
   add_definitions(-DOPENCV)
-  include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
 if(ENABLE_CUDA)
@@ -124,7 +131,6 @@ if(ENABLE_CUDA)
   find_package(CUDNN)
   if(CUDNN_FOUND)
     add_definitions(-DCUDNN)
-    include_directories(${CUDNN_INCLUDE_DIR})
     if(CUDA_COMPUTE_MODEL VERSION_GREATER_EQUAL ${CUDA_COMPUTE_MODEL_70})
       add_definitions(-DCUDNN_HALF)
       message(STATUS "Enabled CUDNN_HALF")
@@ -165,7 +171,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD ON)
 find_package(Threads REQUIRED)
 if(MSVC)
   find_package(PThreads_windows REQUIRED)
-  include_directories(${PTHREADS_INCLUDE_DIR})
 endif()
 
 if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
@@ -180,7 +185,7 @@ endif()
 #look for all *.h files in src folder
 file(GLOB headers "${CMAKE_CURRENT_LIST_DIR}/src/*.h")
 #add also files in the include folder
-list(APPEND sources
+list(APPEND headers
   ${CMAKE_CURRENT_LIST_DIR}/include/darknet.h
 )
 #remove windows only files, will be re-added if necessary later
@@ -188,6 +193,7 @@ list(REMOVE_ITEM headers
   ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.h
   ${CMAKE_CURRENT_LIST_DIR}/src/getopt.h
 )
+set(exported_headers ${headers})
 
 #look for all *.c files in src folder
 file(GLOB sources "${CMAKE_CURRENT_LIST_DIR}/src/*.c")
@@ -223,7 +229,7 @@ endif()
 
 set_source_files_properties(${sources} PROPERTIES LANGUAGE CXX)
 
-add_library(darklib SHARED ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
+add_library(darklib ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
 set_target_properties(darklib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(ENABLE_CUDA)
   set_target_properties(darklib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -235,6 +241,8 @@ if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
   target_compile_definitions(uselib_track PRIVATE TRACK_OPTFLOW=1)
   set_target_properties(uselib_track PROPERTIES LINKER_LANGUAGE CXX)
+  target_include_directories(uselib_track PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include>)
+  target_link_libraries(uselib_track PRIVATE ${OpenCV_LIBS})
 endif()
 
 add_executable(uselib ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
@@ -244,45 +252,97 @@ add_executable(darknet ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c ${sources} ${head
 set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/src/darknet.c PROPERTIES LANGUAGE CXX)
 set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
 
+target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include>)
+target_include_directories(darklib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include>)
+target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include>)
+
 if(CUDNN_FOUND)
-  target_link_libraries(darknet ${CUDNN_LIBRARY})
-  target_link_libraries(darklib ${CUDNN_LIBRARY})
+  target_link_libraries(darknet PRIVATE CuDNN::CuDNN)
+  target_link_libraries(darklib PRIVATE CuDNN::CuDNN)
 endif()
 
 if(OpenCV_FOUND)
-  target_link_libraries(darknet ${OpenCV_LIBS})
-  target_link_libraries(darklib ${OpenCV_LIBS})
+  target_link_libraries(darknet PRIVATE ${OpenCV_LIBS})
+  target_link_libraries(uselib PRIVATE ${OpenCV_LIBS})
+  target_link_libraries(darklib PRIVATE ${OpenCV_LIBS})
 endif()
 
 if(OPENMP_FOUND)
-  target_link_libraries(darknet OpenMP::OpenMP_CXX)
-  target_link_libraries(darklib OpenMP::OpenMP_CXX)
+  target_link_libraries(darknet PRIVATE OpenMP::OpenMP_CXX)
+  target_link_libraries(darklib PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
-  target_link_libraries(darknet m)
-  target_link_libraries(darklib m)
+  target_link_libraries(darknet PRIVATE m)
+  target_link_libraries(darklib PRIVATE m)
 endif()
 
 if(MSVC)
-  target_link_libraries(darknet ${PTHREADS_LIBRARY})
-  target_link_libraries(darknet wsock32 ws2_32)
-  target_link_libraries(darklib ${PTHREADS_LIBRARY})
-  target_link_libraries(darklib wsock32 ws2_32)
+  target_link_libraries(darknet PRIVATE PThreads_windows::PThreads_windows)
+  target_link_libraries(darknet PRIVATE wsock32 ws2_32)
+  target_link_libraries(darklib PRIVATE PThreads_windows::PThreads_windows)
+  target_link_libraries(darklib PRIVATE wsock32 ws2_32)
 endif()
 
-target_link_libraries(darknet Threads::Threads)
-target_link_libraries(darklib Threads::Threads)
+target_link_libraries(darknet PRIVATE Threads::Threads)
+target_link_libraries(darklib PRIVATE Threads::Threads)
 
 if(ENABLE_CUDA)
-  target_link_libraries(darknet curand cublas)
-  target_link_libraries(darklib curand cublas)
+  target_link_libraries(darknet PRIVATE curand cublas)
+  target_link_libraries(darklib PRIVATE curand cublas)
+  set_target_properties(darklib PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
 
-target_link_libraries(uselib darklib)
+target_link_libraries(uselib PRIVATE darklib)
 if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
-  target_link_libraries(uselib_track darklib)
-  install(TARGETS uselib_track DESTINATION ${CMAKE_SOURCE_DIR}/)
+  target_link_libraries(uselib_track PRIVATE darklib)
 endif()
 
-install(TARGETS darklib uselib darknet DESTINATION ${CMAKE_SOURCE_DIR}/)
+set_target_properties(darklib PROPERTIES PUBLIC_HEADER "${exported_headers};${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp")
+
+install(TARGETS darklib uselib darknet EXPORT DarknetTargets
+  RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
+  LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
+  PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
+  COMPONENT dev
+)
+if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
+  install(TARGETS uselib_track
+    EXPORT DarknetTargets
+    RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
+    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
+    PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
+    COMPONENT dev
+  )
+endif()
+
+install(EXPORT DarknetTargets
+  FILE DarknetTargets.cmake
+  NAMESPACE Darknet::
+  DESTINATION "${INSTALL_CMAKE_DIR}"
+)
+
+# Export the package for use from the build-tree (this registers the build-tree with a global CMake-registry)
+export(PACKAGE Darknet)
+
+# Create the DarknetConfig.cmake
+# First of all we compute the relative path between the cmake config file and the include path
+file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
+set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
+configure_file(DarknetConfig.cmake.in "${PROJECT_BINARY_DIR}/DarknetConfig.cmake" @ONLY)
+set(CONF_INCLUDE_DIRS "\${Darknet_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+configure_file(DarknetConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/DarknetConfig.cmake" @ONLY)
+
+# Create the DarknetConfigVersion.cmake
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file("${PROJECT_BINARY_DIR}/DarknetConfigVersion.cmake"
+  COMPATIBILITY SameMajorVersion
+)
+
+install(FILES
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/DarknetConfig.cmake"
+  "${PROJECT_BINARY_DIR}/DarknetConfigVersion.cmake"
+  DESTINATION "${INSTALL_CMAKE_DIR}"
+)

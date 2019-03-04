@@ -69,14 +69,22 @@ if (Test-Path $vcpkg_path) {
   Set-Location build_win_release
   cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $shared_lib ..
   cmake --build . --config Release --parallel ${number_of_build_workers} --target install
+  Remove-Item DarknetConfig.cmake
+  Remove-Item DarknetConfigVersion.cmake
   Set-Location ..
+#  Remove-Item -Force DarknetConfig.cmake
+#  Remove-Item -Force DarknetConfigVersion.cmake
 
   # DEBUG
   New-Item -Path .\build_win_debug -ItemType directory -Force
   Set-Location build_win_debug
   cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Debug" $shared_lib ..
   cmake --build . --config Debug --parallel ${number_of_build_workers} --target install
+  Remove-Item DarknetConfig.cmake
+  Remove-Item DarknetConfigVersion.cmake
   Set-Location ..
+#  Remove-Item -Force DarknetConfig.cmake
+#  Remove-Item -Force DarknetConfigVersion.cmake
 }
 else {
   # USE LOCAL PTHREAD LIB, NO VCPKG, ONLY RELEASE
@@ -85,5 +93,9 @@ else {
   Set-Location build_win_release_novcpkg
   cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" $shared_lib ..
   cmake --build . --config Release --parallel ${number_of_build_workers} --target install
+  Remove-Item DarknetConfig.cmake
+  Remove-Item DarknetConfigVersion.cmake
   Set-Location ..
+#  Remove-Item -Force DarknetConfig.cmake
+#  Remove-Item -Force DarknetConfigVersion.cmake
 }

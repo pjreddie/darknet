@@ -4,6 +4,7 @@
 *.out
 *.png
 *.so
+*.exe
 mnist/
 data/
 caffe/
@@ -15,8 +16,10 @@ decaf/
 submission/
 cfg/
 build/darknet/*
+build_*/
 !build/darknet/YoloWrapper.cs
 .fuse*
+*.weights
 
 # OS Generated #
 .DS_Store*
@@ -24,3 +27,8 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+
+lib/
+include/
+share/
+
