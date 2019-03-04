@@ -47,6 +47,22 @@ if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
   Write-Host "Visual Studio 2017 ${vstype} Command Prompt variables set.`n" -ForegroundColor Yellow
 }
 
+if ($null -eq (Get-Command "nvcc.exe" -ErrorAction SilentlyContinue)) {
+  if (Test-Path env:CUDA_PATH) {
+    $env:PATH += ";${env:CUDA_PATH}\bin"
+  }
+  else {
+    Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder`n" -ForegroundColor Yellow
+  }
+}
+
+if (Test-Path env:CUDA_PATH) {
+  if (-Not(Test-Path env:CUDA_TOOLKIT_ROOT_DIR)) {
+    $env:CUDA_TOOLKIT_ROOT_DIR = "${env:CUDA_PATH}"
+    Write-Host "Added missing env variable CUDA_TOOLKIT_ROOT_DIR`n" -ForegroundColor Yellow
+  }
+}
+
 if (Test-Path $vcpkg_path) {
   # RELEASE
   New-Item -Path .\build_win_release -ItemType directory -Force
