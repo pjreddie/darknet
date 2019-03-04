@@ -5,18 +5,6 @@ matrix:
 
     - os: osx
       compiler: gcc
-      name: macOS - gcc@5 - opencv@2
-      env:
-        - MATRIX_EVAL="brew install gcc@5 opencv@2 && CC=gcc-5 && CXX=g++-5 && OpenCV_DIR=/usr/local/opt/opencv@2"
-
-    - os: osx
-      compiler: gcc
-      name: macOS - gcc@5 - opencv@3
-      env:
-        - MATRIX_EVAL="brew install gcc@5 opencv@3 && CC=gcc-5 && CXX=g++-5 && OpenCV_DIR=/usr/local/opt/opencv@3"
-
-    - os: osx
-      compiler: gcc
       name: macOS - native gcc (llvm backend) - opencv@2
       env:
         - MATRIX_EVAL="brew install opencv@2 && OpenCV_DIR=/usr/local/opt/opencv@2"
