@@ -8,7 +8,7 @@
 * [Explanations in issues](https://github.com/AlexeyAB/darknet/issues?q=is%3Aopen+is%3Aissue+label%3AExplanations)
 
 0.  [Improvements in this repository](#improvements-in-this-repository)
-1.  [How to use](#how-to-use)
+1.  [How to use](#how-to-use-on-the-command-line)
 2.  [How to compile on Linux](#how-to-compile-on-linux)
 3.  How to compile on Windows
     * [Using vcpkg](#how-to-compile-on-windows-using-vcpkg)

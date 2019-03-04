@@ -263,7 +263,7 @@ void forward_crnn_layer_gpu(layer l, network_state state)
     s.train = state.train;
     s.workspace = state.workspace;
     s.net = state.net;
-    if(!state.train) s.index = state.index;  // use TC only for detection
+    //if(!state.train) s.index = state.index;  // don't use TC at all (especially without cuda_convert_f32_to_f16() )
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
