@@ -10,16 +10,31 @@ environment:
       CYGSH: C:\cygwin64\bin\bash -c
     - platform: Win64
       COMPILER: vs
+      configuration: Release
       VCPKG_ROOT: C:\projects\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
       USE_CUDA: yes
     - platform: Win64
       COMPILER: vs
+      configuration: Debug
+      VCPKG_ROOT: C:\projects\vcpkg
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+      USE_CUDA: yes
+    - platform: Win64
+      COMPILER: vs
+      configuration: Release
       VCPKG_ROOT: C:\projects\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
       USE_CUDA: no
     - platform: Win64
       COMPILER: vs
+      configuration: Debug
+      VCPKG_ROOT: C:\projects\vcpkg
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+      USE_CUDA: no
+    - platform: Win64
+      COMPILER: vs
+      configuration: Release
       USE_INTEGRATED_LIBS: yes
 
 install:
@@ -49,26 +64,20 @@ install:
   - cd %WORKSPACE%\darknet\
   - mkdir build_debug && cd build_debug
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Debug"'
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Debug" ..
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%configuration%]==[Debug] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Debug" ..
   - cd ..
   - mkdir build_release && cd build_release
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release"'
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Release" ..
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%configuration%]==[Release] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Release" ..
   - if [%COMPILER%]==[vs] if     [%USE_INTEGRATED_LIBS%]==[yes] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" -DCMAKE_BUILD_TYPE="Release" ..
   - cd ..
 
 build_script:
-  - if [%COMPILER%]==[cygwin]                                   cd build_debug   && %CYGSH% 'cmake --build . --target install -- -j8'              && cd ..
-  - if [%COMPILER%]==[cygwin]                                   cd build_release && %CYGSH% 'cmake --build . --target install -- -j8'              && cd ..
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd build_debug   && cmake --build . --config Debug --parallel 8 --target install   && cd ..
-  - if [%COMPILER%]==[vs]                                       cd build_release && cmake --build . --config Release --parallel 8 --target install && cd ..
+  - if [%COMPILER%]==[cygwin]                                                                   cd build_debug   && %CYGSH% 'cmake --build . --target install -- -j8'              && cd ..
+  - if [%COMPILER%]==[cygwin]                                                                   cd build_release && %CYGSH% 'cmake --build . --target install -- -j8'              && cd ..
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%configuration%]==[Debug]   cd build_debug   && cmake --build . --config Debug --parallel 8 --target install   && cd ..
+  - if [%COMPILER%]==[vs]                                       if [%configuration%]==[Release] cd build_release && cmake --build . --config Release --parallel 8 --target install && cd ..
 
 artifacts:
-  - path: './darklib.lib'
-    name: darklib.lib
-  - path: './darklib.dll'
-    name: darklib.dll
-  - path: './uselib.exe'
-    name: uselib.exe
-  - path: './darknet.exe'
-    name: darknet.exe
+  - path: lib
+  - path: '*.exe'
