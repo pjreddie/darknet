@@ -100,7 +100,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     args.exposure = net.exposure;
     args.saturation = net.saturation;
     args.hue = net.hue;
-    args.size = net.w;
+    args.size = net.w > net.h ? net.w : net.h;
 
     args.paths = paths;
     args.classes = classes;
