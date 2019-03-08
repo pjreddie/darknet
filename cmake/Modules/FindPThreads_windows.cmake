@@ -31,8 +31,8 @@ endif()
 
 # Allow libraries to be set manually
 if(NOT PThreads_windows_LIBRARY)
-  find_library(PThreads_windows_LIBRARY_RELEASE NAMES pthreadsVC2)
-  find_library(PThreads_windows_LIBRARY_DEBUG NAMES pthreadsVC2d)
+  find_library(PThreads_windows_LIBRARY_RELEASE NAMES pthreadsVC2 pthreadVC2)
+  find_library(PThreads_windows_LIBRARY_DEBUG NAMES pthreadsVC2d pthreadVC2d)
   select_library_configurations(PThreads_windows)
 endif()
 
