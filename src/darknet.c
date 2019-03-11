@@ -1,6 +1,9 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include <crtdbg.h>
+#endif
 
 #include "darknet.h"
 #include "parser.h"
