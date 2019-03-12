@@ -59,7 +59,7 @@ else
 CC=gcc
 endif
 
-CPP=g++
+CPP=g++ -std=c++11
 NVCC=nvcc
 OPTS=-Ofast
 LDFLAGS= -lm -pthread
