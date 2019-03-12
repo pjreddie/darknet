@@ -20,7 +20,7 @@ EXEC=darknet
 OBJDIR=./obj/
 
 CC=gcc
-CPP=g++
+CPP=g++ -std=c++11
 NVCC=nvcc 
 AR=ar
 ARFLAGS=rcs
