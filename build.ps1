@@ -63,7 +63,7 @@ if (Test-Path env:CUDA_PATH) {
   }
 }
 
-if (Test-Path $vcpkg_path) {
+if ($vcpkg_path) {
   # RELEASE
   New-Item -Path .\build_win_release -ItemType directory -Force
   Set-Location build_win_release
@@ -72,8 +72,6 @@ if (Test-Path $vcpkg_path) {
   Remove-Item DarknetConfig.cmake
   Remove-Item DarknetConfigVersion.cmake
   Set-Location ..
-#  Remove-Item -Force DarknetConfig.cmake
-#  Remove-Item -Force DarknetConfigVersion.cmake
 
   # DEBUG
   New-Item -Path .\build_win_debug -ItemType directory -Force
@@ -83,8 +81,6 @@ if (Test-Path $vcpkg_path) {
   Remove-Item DarknetConfig.cmake
   Remove-Item DarknetConfigVersion.cmake
   Set-Location ..
-#  Remove-Item -Force DarknetConfig.cmake
-#  Remove-Item -Force DarknetConfigVersion.cmake
 }
 else {
   # USE LOCAL PTHREAD LIB, NO VCPKG, ONLY RELEASE
@@ -96,6 +92,4 @@ else {
   Remove-Item DarknetConfig.cmake
   Remove-Item DarknetConfigVersion.cmake
   Set-Location ..
-#  Remove-Item -Force DarknetConfig.cmake
-#  Remove-Item -Force DarknetConfigVersion.cmake
 }
