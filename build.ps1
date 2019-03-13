@@ -2,12 +2,13 @@
 
 $number_of_build_workers=8
 #$shared_lib="-DBUILD_SHARED_LIBS:BOOL=ON"
+$force_using_include_libs=$false
 
-if (Test-Path env:VCPKG_ROOT) {
+if ((Test-Path env:VCPKG_ROOT) -and -not $force_using_include_libs) {
   $vcpkg_path = "$env:VCPKG_ROOT"
   Write-Host "Found vcpkg in VCPKG_ROOT: $vcpkg_path"
 }
-elseif (Test-Path "${env:WORKSPACE}\vcpkg") {
+elseif ((Test-Path "${env:WORKSPACE}\vcpkg") -and -not $force_using_include_libs) {
   $vcpkg_path = "${env:WORKSPACE}\vcpkg"
   Write-Host "Found vcpkg in WORKSPACE\vcpkg: $vcpkg_path"
 }
