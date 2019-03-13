@@ -76,7 +76,7 @@ if(USE_INTEGRATED_LIBS)
   set(PThreads_windows_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/pthreads CACHE PATH "Path where pthreads for windows can be located")
   add_definitions(-D_TIMESPEC_DEFINED)
 endif()
-set(Stb_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/stb/include CACHE PATH "Path where Stb image library can be located")
+set(Stb_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/stb CACHE PATH "Path where Stb image library can be located")
 
 set(CMAKE_DEBUG_POSTFIX d)
 add_definitions(-DUSE_CMAKE_LIBS)

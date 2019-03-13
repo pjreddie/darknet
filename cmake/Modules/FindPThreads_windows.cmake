@@ -26,13 +26,13 @@ include(${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake)
 include(${CMAKE_ROOT}/Modules/SelectLibraryConfigurations.cmake)
 
 if(NOT PThreads_windows_INCLUDE_DIR)
-  find_path(PThreads_windows_INCLUDE_DIR NAMES pthread.h)
+  find_path(PThreads_windows_INCLUDE_DIR NAMES pthread.h PATHS ${PThreads_windows_DIR} PATH_SUFFIXES include)
 endif()
 
 # Allow libraries to be set manually
 if(NOT PThreads_windows_LIBRARY)
-  find_library(PThreads_windows_LIBRARY_RELEASE NAMES pthreadsVC2 pthreadVC2)
-  find_library(PThreads_windows_LIBRARY_DEBUG NAMES pthreadsVC2d pthreadVC2d)
+  find_library(PThreads_windows_LIBRARY_RELEASE NAMES pthreadsVC2 pthreadVC2 PATHS ${PThreads_windows_DIR} PATH_SUFFIXES lib)
+  find_library(PThreads_windows_LIBRARY_DEBUG NAMES pthreadsVC2d pthreadVC2d PATHS ${PThreads_windows_DIR} PATH_SUFFIXES lib)
   select_library_configurations(PThreads_windows)
 endif()
 
