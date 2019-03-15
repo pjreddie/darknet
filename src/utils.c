@@ -252,6 +252,8 @@ void replace_image_to_label(const char* input_path, char* output_path)
     find_replace_extension(output_path, ".BMP", ".txt", output_path);
     find_replace_extension(output_path, ".ppm", ".txt", output_path);
     find_replace_extension(output_path, ".PPM", ".txt", output_path);
+    find_replace_extension(output_path, ".tiff", ".txt", output_path);
+    find_replace_extension(output_path, ".TIFF", ".txt", output_path);
 }
 
 float sec(clock_t clocks)
