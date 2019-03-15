@@ -255,11 +255,11 @@ void replace_image_to_label(const char* input_path, char* output_path)
     find_replace_extension(output_path, ".tiff", ".txt", output_path);
     find_replace_extension(output_path, ".TIFF", ".txt", output_path);
     
-    // Check file ends with txt and exists:
+    // Check file ends with txt:
     char output_path_ext[3];
     memcpy( output_path_ext, &output_path[strlen(output_path)-3], 3);
     if( strcmp("txt", output_path_ext) != 0){
-        fprintf(stderr, "Failed to find valid annotation file: %s \n", output_path_ext);
+        fprintf(stderr, "Failed to infer label file name (check image extension is supported): %s \n", output_path);
     }
 }
 
