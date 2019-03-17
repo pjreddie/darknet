@@ -8,7 +8,7 @@
 #include <future>
 #include <atomic>
 #include <mutex>         // std::mutex, std::unique_lock
-#include <unordered_map> // std::unordered_map
+#include <cmath>
 
 
 // It makes sense only for video-Camera (not for video-File)
@@ -184,7 +184,7 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
             cv::Size const text_size = getTextSize(obj_name, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, 2, 0);
             int max_width = (text_size.width > i.w + 2) ? text_size.width : (i.w + 2);
             std::string coords_3d;
-            if (!isnan(i.z_3d)) {
+            if (!std::isnan(i.z_3d)) {
                 std::stringstream ss;
                 ss << std::fixed << std::setprecision(2) << "x:" << i.x_3d << "m y:" << i.y_3d << "m z:" << i.z_3d << "m ";
                 coords_3d = ss.str();

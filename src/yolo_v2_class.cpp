@@ -20,6 +20,7 @@ extern "C" {
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 
 //static Detector* detector = NULL;
@@ -411,7 +412,7 @@ LIB_API bool Detector::send_json_http(std::vector<bbox_t> cur_bbox_vec, std::vec
 
         send_str += buf;
 
-        if (!isnan(i.z_3d)) {
+        if (!std::isnan(i.z_3d)) {
             sprintf(buf, "\n    , \"coordinates_in_meters\":{\"x_3d\":%.2f, \"y_3d\":%.2f, \"z_3d\":%.2f}",
                 i.x_3d*100, i.y_3d, i.z_3d);
             send_str += buf;
