@@ -44,6 +44,7 @@ struct bbox_t_container {
 #include <vector>
 #include <deque>
 #include <algorithm>
+#include <chrono>
 
 #ifdef OPENCV
 #include <opencv2/opencv.hpp>            // C++
