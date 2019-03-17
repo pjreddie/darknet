@@ -25,6 +25,7 @@ struct bbox_t {
     unsigned int obj_id;           // class of object - from range [0, classes-1]
     unsigned int track_id;         // tracking id for video (0 - untracked, 1 - inf - tracked object)
     unsigned int frames_counter;   // counter of frames on which the object was detected
+    float x_3d, y_3d, z_3d;        // center of object (in Meters) if ZED 3D Camera is used
 };
 
 struct image_t {
@@ -60,8 +61,8 @@ extern "C" LIB_API int get_device_name(int gpu, char* deviceName);
 class Detector {
     std::shared_ptr<void> detector_gpu_ptr;
     std::deque<std::vector<bbox_t>> prev_bbox_vec_deque;
-    const int cur_gpu_id;
 public:
+    const int cur_gpu_id;
     float nms = .4;
     bool wait_stream;
 
@@ -78,6 +79,11 @@ public:
 
     LIB_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true,
                                                 int const frames_story = 5, int const max_dist = 40);
+
+    LIB_API void *get_cuda_context();
+
+    LIB_API bool send_json_http(std::vector<bbox_t> cur_bbox_vec, std::vector<std::string> obj_names, int frame_id, 
+        std::string filename = "", int timeout = 400000, int port = 8070);
 
     std::vector<bbox_t> detect_resized(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false)
     {
@@ -115,7 +121,10 @@ public:
     static std::shared_ptr<image_t> mat_to_image(cv::Mat img_src)
     {
         cv::Mat img;
-        cv::cvtColor(img_src, img, cv::COLOR_RGB2BGR);
+        if (img_src.channels() == 4) cv::cvtColor(img_src, img, cv::COLOR_RGBA2BGR);
+        else if (img_src.channels() == 3) cv::cvtColor(img_src, img, cv::COLOR_RGB2BGR);
+        else if (img_src.channels() == 1) cv::cvtColor(img_src, img, cv::COLOR_GRAY2BGR);
+        else std::cerr << " Warning: img_src.channels() is not 1, 3 or 4. It is = " << img_src.channels() << std::endl;
         std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); delete img; });
         std::shared_ptr<IplImage> ipl_small = std::make_shared<IplImage>(img);
         *image_ptr = ipl_to_image(ipl_small.get());
@@ -166,7 +175,7 @@ private:
 #endif    // OPENCV
 
 };
-
+// --------------------------------------------------------------------------------
 
 
 #if defined(TRACK_OPTFLOW) && defined(OPENCV) && defined(GPU)
@@ -183,7 +192,7 @@ public:
     const int flow_error;
 
 
-    Tracker_optflow(int _gpu_id = 0, int win_size = 9, int max_level = 3, int iterations = 8000, int _flow_error = -1) :
+    Tracker_optflow(int _gpu_id = 0, int win_size = 15, int max_level = 3, int iterations = 8000, int _flow_error = -1) :
         gpu_count(cv::cuda::getCudaEnabledDeviceCount()), gpu_id(std::min(_gpu_id, gpu_count-1)),
         flow_error((_flow_error > 0)? _flow_error:(win_size*4))
     {
@@ -249,18 +258,32 @@ public:
         if (old_gpu_id != gpu_id)
             cv::cuda::setDevice(gpu_id);
 
-        if (src_mat.channels() == 3) {
+        if (src_mat.channels() == 1 || src_mat.channels() == 3 || src_mat.channels() == 4) {
             if (src_mat_gpu.cols == 0) {
                 src_mat_gpu = cv::cuda::GpuMat(src_mat.size(), src_mat.type());
                 src_grey_gpu = cv::cuda::GpuMat(src_mat.size(), CV_8UC1);
             }
 
-            update_cur_bbox_vec(_cur_bbox_vec);
+            if (src_mat.channels() == 1) {
+                src_mat_gpu.upload(src_mat, stream);
+                src_mat_gpu.copyTo(src_grey_gpu);
+            }
+            else if (src_mat.channels() == 3) {
+                src_mat_gpu.upload(src_mat, stream);
+                cv::cuda::cvtColor(src_mat_gpu, src_grey_gpu, CV_BGR2GRAY, 1, stream);
+            }
+            else if (src_mat.channels() == 4) {
+                src_mat_gpu.upload(src_mat, stream);
+                cv::cuda::cvtColor(src_mat_gpu, src_grey_gpu, CV_BGRA2GRAY, 1, stream);
+            }
+            else {
+                std::cerr << " Warning: src_mat.channels() is not: 1, 3 or 4. It is = " << src_mat.channels() << " \n";
+                return;
+            }
 
-            //src_grey_gpu.upload(src_mat, stream);    // use BGR
-            src_mat_gpu.upload(src_mat, stream);
-            cv::cuda::cvtColor(src_mat_gpu, src_grey_gpu, CV_BGR2GRAY, 1, stream);
         }
+        update_cur_bbox_vec(_cur_bbox_vec);
+
         if (old_gpu_id != gpu_id)
             cv::cuda::setDevice(old_gpu_id);
     }
@@ -355,7 +378,7 @@ public:
     const int flow_error;
 
 
-    Tracker_optflow(int win_size = 9, int max_level = 3, int iterations = 8000, int _flow_error = -1) :
+    Tracker_optflow(int win_size = 15, int max_level = 3, int iterations = 8000, int _flow_error = -1) :
         flow_error((_flow_error > 0)? _flow_error:(win_size*4))
     {
         sync_PyrLKOpticalFlow = cv::SparsePyrLKOpticalFlow::create();
@@ -396,12 +419,20 @@ public:
 
     void update_tracking_flow(cv::Mat new_src_mat, std::vector<bbox_t> _cur_bbox_vec)
     {
-        if (new_src_mat.channels() == 3) {
-
-            update_cur_bbox_vec(_cur_bbox_vec);
-
+        if (new_src_mat.channels() == 1) {
+            src_grey = new_src_mat.clone();
+        }
+        else if (new_src_mat.channels() == 3) {
             cv::cvtColor(new_src_mat, src_grey, CV_BGR2GRAY, 1);
         }
+        else if (new_src_mat.channels() == 4) {
+            cv::cvtColor(new_src_mat, src_grey, CV_BGRA2GRAY, 1);
+        }
+        else {
+            std::cerr << " Warning: new_src_mat.channels() is not: 1, 3 or 4. It is = " << new_src_mat.channels() << " \n";
+            return;
+        }        
+        update_cur_bbox_vec(_cur_bbox_vec);
     }
 
 
@@ -416,6 +447,7 @@ public:
 
         if (src_grey.rows != dst_grey.rows || src_grey.cols != dst_grey.cols) {
             src_grey = dst_grey.clone();
+            //std::cerr << " Warning: src_grey.rows != dst_grey.rows || src_grey.cols != dst_grey.cols \n";
             return cur_bbox_vec;
         }
 
@@ -611,56 +643,361 @@ public:
         }
     }
 };
+
+
+class track_kalman_t 
+{
+    int track_id_counter;
+    std::chrono::steady_clock::time_point global_last_time;
+    float dT;
+
+public:
+    int max_objects;    // max objects for tracking
+    int min_frames;     // min frames to consider an object as detected
+    const float max_dist;   // max distance (in px) to track with the same ID
+    cv::Size img_size;  // max value of x,y,w,h
+
+    struct tst_t {
+        int track_id;
+        int state_id;
+        std::chrono::steady_clock::time_point last_time;
+        int detection_count;
+        tst_t() : track_id(-1), state_id(-1) {}
+    };
+    std::vector<tst_t> track_id_state_id_time;
+    std::vector<bbox_t> result_vec_pred;
+
+    struct one_kalman_t;
+    std::vector<one_kalman_t> kalman_vec;
+
+    struct one_kalman_t
+    {
+        cv::KalmanFilter kf;
+        cv::Mat state;
+        cv::Mat meas;
+        int measSize, stateSize, contrSize;
+
+        void set_delta_time(float dT) {
+            kf.transitionMatrix.at<float>(2) = dT;
+            kf.transitionMatrix.at<float>(9) = dT;
+        }
+
+        void set(bbox_t box)
+        {
+            initialize_kalman();
+
+            kf.errorCovPre.at<float>(0) = 1; // px
+            kf.errorCovPre.at<float>(7) = 1; // px
+            kf.errorCovPre.at<float>(14) = 1;
+            kf.errorCovPre.at<float>(21) = 1;
+            kf.errorCovPre.at<float>(28) = 1; // px
+            kf.errorCovPre.at<float>(35) = 1; // px
+
+            state.at<float>(0) = box.x;
+            state.at<float>(1) = box.y;
+            state.at<float>(2) = 0;
+            state.at<float>(3) = 0;
+            state.at<float>(4) = box.w;
+            state.at<float>(5) = box.h;
+            // <<<< Initialization
+
+            kf.statePost = state;
+        }
+
+        // Kalman.correct() calculates: statePost = statePre + gain * (z(k)-measurementMatrix*statePre);
+        // corrected state (x(k)): x(k)=x'(k)+K(k)*(z(k)-H*x'(k))
+        void correct(bbox_t box) {
+            meas.at<float>(0) = box.x;
+            meas.at<float>(1) = box.y;
+            meas.at<float>(2) = box.w;
+            meas.at<float>(3) = box.h;
+
+            kf.correct(meas);
+
+            bbox_t new_box = predict();
+            if (new_box.w == 0 || new_box.h == 0) {
+                set(box);
+                //std::cerr << " force set(): track_id = " << box.track_id <<
+                //    ", x = " << box.x << ", y = " << box.y << ", w = " << box.w << ", h = " << box.h << std::endl;
+            }
+        }
+
+        // Kalman.predict() calculates: statePre = TransitionMatrix * statePost;
+        // predicted state (x'(k)): x(k)=A*x(k-1)+B*u(k)
+        bbox_t predict() {
+            bbox_t box;
+            state = kf.predict();
+
+            box.x = state.at<float>(0);
+            box.y = state.at<float>(1);
+            box.w = state.at<float>(4);
+            box.h = state.at<float>(5);
+            return box;
+        }
+
+        void initialize_kalman()
+        {
+            kf = cv::KalmanFilter(stateSize, measSize, contrSize, CV_32F);
+
+            // Transition State Matrix A
+            // Note: set dT at each processing step!
+            // [ 1 0 dT 0  0 0 ]
+            // [ 0 1 0  dT 0 0 ]
+            // [ 0 0 1  0  0 0 ]
+            // [ 0 0 0  1  0 0 ]
+            // [ 0 0 0  0  1 0 ]
+            // [ 0 0 0  0  0 1 ]
+            cv::setIdentity(kf.transitionMatrix);
+
+            // Measure Matrix H
+            // [ 1 0 0 0 0 0 ]
+            // [ 0 1 0 0 0 0 ]
+            // [ 0 0 0 0 1 0 ]
+            // [ 0 0 0 0 0 1 ]
+            kf.measurementMatrix = cv::Mat::zeros(measSize, stateSize, CV_32F);
+            kf.measurementMatrix.at<float>(0) = 1.0f;
+            kf.measurementMatrix.at<float>(7) = 1.0f;
+            kf.measurementMatrix.at<float>(16) = 1.0f;
+            kf.measurementMatrix.at<float>(23) = 1.0f;
+
+            // Process Noise Covariance Matrix Q - result smoother with lower values (1e-2)
+            // [ Ex   0   0     0     0    0  ]
+            // [ 0    Ey  0     0     0    0  ]
+            // [ 0    0   Ev_x  0     0    0  ]
+            // [ 0    0   0     Ev_y  0    0  ]
+            // [ 0    0   0     0     Ew   0  ]
+            // [ 0    0   0     0     0    Eh ]
+            //cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-3));
+            kf.processNoiseCov.at<float>(0) = 1e-2;
+            kf.processNoiseCov.at<float>(7) = 1e-2;
+            kf.processNoiseCov.at<float>(14) = 1e-2;// 5.0f;
+            kf.processNoiseCov.at<float>(21) = 1e-2;// 5.0f;
+            kf.processNoiseCov.at<float>(28) = 1e-2;
+            kf.processNoiseCov.at<float>(35) = 1e-2;
+
+            // Measures Noise Covariance Matrix R - result smoother with higher values (1e-1)
+            cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-1));
+
+            //cv::setIdentity(kf.errorCovPost, cv::Scalar::all(1e-2));
+            // <<<< Kalman Filter
+
+            set_delta_time(0);
+        }
+
+
+        one_kalman_t(int _stateSize = 6, int _measSize = 4, int _contrSize = 0) :
+            kf(_stateSize, _measSize, _contrSize, CV_32F), measSize(_measSize), stateSize(_stateSize), contrSize(_contrSize)
+        {
+            state = cv::Mat(stateSize, 1, CV_32F);  // [x,y,v_x,v_y,w,h]
+            meas = cv::Mat(measSize, 1, CV_32F);    // [z_x,z_y,z_w,z_h]
+            //cv::Mat procNoise(stateSize, 1, type)
+            // [E_x,E_y,E_v_x,E_v_y,E_w,E_h]
+
+            initialize_kalman();
+        }
+    };
+    // ------------------------------------------
+
+
+
+    track_kalman_t(int _max_objects = 1000, int _min_frames = 3, float _max_dist = 40, cv::Size _img_size = cv::Size(10000, 10000)) :
+        max_objects(_max_objects), min_frames(_min_frames), max_dist(_max_dist), img_size(_img_size), 
+        track_id_counter(0)
+    {
+        kalman_vec.resize(max_objects);
+        track_id_state_id_time.resize(max_objects);
+        result_vec_pred.resize(max_objects);
+    }
+
+    float calc_dt() {
+        dT = std::chrono::duration<double>(std::chrono::steady_clock::now() - global_last_time).count();
+        return dT;
+    }
+
+    static float get_distance(float src_x, float src_y, float dst_x, float dst_y) {
+        return sqrtf((src_x - dst_x)*(src_x - dst_x) + (src_y - dst_y)*(src_y - dst_y));
+    }
+
+    void clear_old_states() {
+        // clear old bboxes
+        for (size_t state_id = 0; state_id < track_id_state_id_time.size(); ++state_id)
+        {
+            float time_sec = std::chrono::duration<double>(std::chrono::steady_clock::now() - track_id_state_id_time[state_id].last_time).count();
+            float time_wait = 0.5;    // 0.5 second
+            if (track_id_state_id_time[state_id].track_id > -1)
+            {
+                if ((result_vec_pred[state_id].x > img_size.width) ||
+                    (result_vec_pred[state_id].y > img_size.height))
+                {
+                    track_id_state_id_time[state_id].track_id = -1;
+                }
+
+                if (time_sec >= time_wait || track_id_state_id_time[state_id].detection_count < 0) {
+                    //std::cerr << " remove track_id = " << track_id_state_id_time[state_id].track_id << ", state_id = " << state_id << std::endl;
+                    track_id_state_id_time[state_id].track_id = -1; // remove bbox
+                }
+            }
+        }
+    }
+
+    tst_t get_state_id(bbox_t find_box, std::vector<bool> &busy_vec)
+    {
+        tst_t tst;
+        tst.state_id = -1;
+
+        float min_dist = std::numeric_limits<float>::max();
+
+        for (size_t i = 0; i < max_objects; ++i)
+        {
+            if (track_id_state_id_time[i].track_id > -1 && result_vec_pred[i].obj_id == find_box.obj_id && busy_vec[i] == false)
+            {
+                bbox_t pred_box = result_vec_pred[i];
+
+                float dist = get_distance(pred_box.x, pred_box.y, find_box.x, find_box.y);
+
+                float movement_dist = std::max(max_dist, static_cast<float>(std::max(pred_box.w, pred_box.h)) );
+
+                if ((dist < movement_dist) && (dist < min_dist)) {
+                    min_dist = dist;
+                    tst.state_id = i;
+                }
+            }
+        }
+
+        if (tst.state_id > -1) {
+            track_id_state_id_time[tst.state_id].last_time = std::chrono::steady_clock::now();
+            track_id_state_id_time[tst.state_id].detection_count = std::max(track_id_state_id_time[tst.state_id].detection_count + 2, 10);
+            tst = track_id_state_id_time[tst.state_id];
+            busy_vec[tst.state_id] = true;
+        }
+        else {
+            //std::cerr << " Didn't find: obj_id = " << find_box.obj_id << ", x = " << find_box.x << ", y = " << find_box.y << 
+            //    ", track_id_counter = " << track_id_counter << std::endl;
+        }
+
+        return tst;
+    }
+
+    tst_t new_state_id(std::vector<bool> &busy_vec)
+    {
+        tst_t tst;
+        // find empty cell to add new track_id
+        auto it = std::find_if(track_id_state_id_time.begin(), track_id_state_id_time.end(), [&](tst_t &v) { return v.track_id == -1; });
+        if (it != track_id_state_id_time.end()) {
+            it->state_id = it - track_id_state_id_time.begin();
+            //it->track_id = track_id_counter++;
+            it->track_id = 0;
+            it->last_time = std::chrono::steady_clock::now();
+            it->detection_count = 1;
+            tst = *it;
+            busy_vec[it->state_id] = true;
+        }
+
+        return tst;
+    }
+
+    std::vector<tst_t> find_state_ids(std::vector<bbox_t> result_vec)
+    {
+        std::vector<tst_t> tst_vec(result_vec.size());
+
+        std::vector<bool> busy_vec(max_objects, false);
+
+        for (size_t i = 0; i < result_vec.size(); ++i)
+        {
+            tst_t tst = get_state_id(result_vec[i], busy_vec);
+            int state_id = tst.state_id;
+            int track_id = tst.track_id;
+
+            // if new state_id
+            if (state_id < 0) {
+                tst = new_state_id(busy_vec);
+                state_id = tst.state_id;
+                track_id = tst.track_id;
+                if (state_id > -1) {
+                    kalman_vec[state_id].set(result_vec[i]);
+                    //std::cerr << " post: ";
+                }
+            }
+
+            //std::cerr << " track_id = " << track_id << ", state_id = " << state_id <<
+            //    ", x = " << result_vec[i].x << ", det_count = " << tst.detection_count << std::endl;
+
+            if (state_id > -1) {
+                tst_vec[i] = tst;
+                result_vec_pred[state_id] = result_vec[i];
+                result_vec_pred[state_id].track_id = track_id;
+            }
+        }
+
+        return tst_vec;
+    }
+
+    std::vector<bbox_t> predict()
+    {
+        clear_old_states();
+        std::vector<bbox_t> result_vec;
+
+        for (size_t i = 0; i < max_objects; ++i)
+        {
+            tst_t tst = track_id_state_id_time[i];
+            if (tst.track_id > -1) {
+                bbox_t box = kalman_vec[i].predict();
+
+                result_vec_pred[i].x = box.x;
+                result_vec_pred[i].y = box.y;
+                result_vec_pred[i].w = box.w;
+                result_vec_pred[i].h = box.h;
+
+                if (tst.detection_count >= min_frames)
+                {
+                    if (track_id_state_id_time[i].track_id == 0) {
+                        track_id_state_id_time[i].track_id = ++track_id_counter;
+                        result_vec_pred[i].track_id = track_id_counter;
+                    }
+
+                    result_vec.push_back(result_vec_pred[i]);
+                }
+            }
+        }
+        //std::cerr << "         result_vec.size() = " << result_vec.size() << std::endl;
+
+        //global_last_time = std::chrono::steady_clock::now();
+
+        return result_vec;
+    }
+
+
+    std::vector<bbox_t> correct(std::vector<bbox_t> result_vec)
+    {
+        calc_dt();
+        clear_old_states();
+
+        for (size_t i = 0; i < max_objects; ++i)
+            track_id_state_id_time[i].detection_count--;
+
+        std::vector<tst_t> tst_vec = find_state_ids(result_vec);
+
+        for (size_t i = 0; i < tst_vec.size(); ++i) {
+            tst_t tst = tst_vec[i];
+            int state_id = tst.state_id;
+            if (state_id > -1)
+            {
+                kalman_vec[state_id].set_delta_time(dT);
+                kalman_vec[state_id].correct(result_vec_pred[state_id]);
+            }
+        }
+
+        result_vec = predict();
+
+        global_last_time = std::chrono::steady_clock::now();
+
+        return result_vec;
+    }
+
+};
+// ----------------------------------------------
 #endif    // OPENCV
 
-//extern "C" {
 #endif    // __cplusplus
 
-/*
-    // C - wrappers
-    LIB_API void create_detector(char const* cfg_filename, char const* weight_filename, int gpu_id);
-    LIB_API void delete_detector();
-    LIB_API bbox_t* detect_custom(image_t img, float thresh, bool use_mean, int *result_size);
-    LIB_API bbox_t* detect_resized(image_t img, int init_w, int init_h, float thresh, bool use_mean, int *result_size);
-    LIB_API bbox_t* detect(image_t img, int *result_size);
-    LIB_API image_t load_img(char *image_filename);
-    LIB_API void free_img(image_t m);
-
-#ifdef __cplusplus
-}    // extern "C"
-
-static std::shared_ptr<void> c_detector_ptr;
-static std::vector<bbox_t> c_result_vec;
-
-void create_detector(char const* cfg_filename, char const* weight_filename, int gpu_id) {
-    c_detector_ptr = std::make_shared<LIB_API Detector>(cfg_filename, weight_filename, gpu_id);
-}
-
-void delete_detector() { c_detector_ptr.reset(); }
-
-bbox_t* detect_custom(image_t img, float thresh, bool use_mean, int *result_size) {
-    c_result_vec = static_cast<Detector*>(c_detector_ptr.get())->detect(img, thresh, use_mean);
-    *result_size = c_result_vec.size();
-    return c_result_vec.data();
-}
-
-bbox_t* detect_resized(image_t img, int init_w, int init_h, float thresh, bool use_mean, int *result_size) {
-    c_result_vec = static_cast<Detector*>(c_detector_ptr.get())->detect_resized(img, init_w, init_h, thresh, use_mean);
-    *result_size = c_result_vec.size();
-    return c_result_vec.data();
-}
-
-bbox_t* detect(image_t img, int *result_size) {
-    return detect_custom(img, 0.24, true, result_size);
-}
-
-image_t load_img(char *image_filename) {
-    return static_cast<Detector*>(c_detector_ptr.get())->load_image(image_filename);
-}
-void free_img(image_t m) {
-    static_cast<Detector*>(c_detector_ptr.get())->free_image(m);
-}
-
-#endif    // __cplusplus
-*/
-#endif
+#endif    // YOLO_V2_CLASS_HPP

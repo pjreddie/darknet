@@ -14,6 +14,15 @@ int gpu_index = 0;
 #include "assert.h"
 #include <stdlib.h>
 #include <time.h>
+#include <cuda.h>
+
+#pragma comment(lib, "cuda.lib")
+
+#ifdef CUDNN
+#ifndef USE_CMAKE_LIBS
+#pragma comment(lib, "cudnn.lib")
+#endif  // USE_CMAKE_LIBS
+#endif  // CUDNN
 
 void cuda_set_device(int n)
 {
@@ -28,6 +37,14 @@ int cuda_get_device()
     cudaError_t status = cudaGetDevice(&n);
     CHECK_CUDA(status);
     return n;
+}
+
+void *cuda_get_context()
+{
+    CUcontext pctx;
+    CUresult status = cuCtxGetCurrent(&pctx);
+    if(status != CUDA_SUCCESS) fprintf(stderr, " Error: cuCtxGetCurrent() is failed \n");
+    return (void *)pctx;
 }
 
 void check_error(cudaError_t status)

@@ -1,7 +1,7 @@
 #ifndef LOCAL_LAYER_H
 #define LOCAL_LAYER_H
 
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "image.h"
 #include "activations.h"
 #include "layer.h"

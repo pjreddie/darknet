@@ -3,7 +3,7 @@
 #include "cublas_v2.h"
 
 #include "maxpool_layer.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 
 __global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, int pad, float *input, float *output, int *indexes)
 {

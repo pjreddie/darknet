@@ -4,11 +4,10 @@
 #include <stdint.h>
 
 #include "im2col.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 
 #include <stdio.h>
 #include <assert.h>
-//#include <cuda.h>
 
 
 template<typename T1, typename T2>

@@ -1,5 +1,5 @@
 #include "maxpool_layer.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "gemm.h"
 #include <stdio.h>
 
@@ -32,8 +32,8 @@ void cudnn_maxpool_setup(layer *l)
         CUDNN_NOT_PROPAGATE_NAN,    // CUDNN_PROPAGATE_NAN, CUDNN_NOT_PROPAGATE_NAN
         l->size,
         l->size,
-        0, //l.pad,
-        0, //l.pad,
+        l->pad/2, //0, //l.pad,
+        l->pad/2, //0, //l.pad,
         l->stride,
         l->stride);
 

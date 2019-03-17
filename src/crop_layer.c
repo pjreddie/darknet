@@ -1,5 +1,5 @@
 #include "crop_layer.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include <stdio.h>
 
 image get_crop_image(crop_layer l)

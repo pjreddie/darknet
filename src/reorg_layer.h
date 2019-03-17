@@ -2,7 +2,7 @@
 #define REORG_LAYER_H
 
 #include "image.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "layer.h"
 #include "network.h"
 

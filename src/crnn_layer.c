@@ -1,7 +1,7 @@
 #include "crnn_layer.h"
 #include "convolutional_layer.h"
 #include "utils.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "blas.h"
 #include "gemm.h"
 
@@ -268,16 +268,18 @@ void forward_crnn_layer_gpu(layer l, network_state state)
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
     layer output_layer = *(l.output_layer);
-    /*
-#ifdef CUDNN_HALF
-// slow and bad
-    s.index = state.index;
-    s.net = state.net;
-    cuda_convert_f32_to_f16(input_layer.weights_gpu, input_layer.c*input_layer.n*input_layer.size*input_layer.size, input_layer.weights_gpu16);
-    cuda_convert_f32_to_f16(self_layer.weights_gpu, self_layer.c*self_layer.n*self_layer.size*self_layer.size, self_layer.weights_gpu16);
-    cuda_convert_f32_to_f16(output_layer.weights_gpu, output_layer.c*output_layer.n*output_layer.size*output_layer.size, output_layer.weights_gpu16);
+
+/*
+#ifdef CUDNN_HALF   // slow and bad for training
+    if (!state.train && state.net.cudnn_half) {
+        s.index = state.index;
+        cuda_convert_f32_to_f16(input_layer.weights_gpu, input_layer.c*input_layer.n*input_layer.size*input_layer.size, input_layer.weights_gpu16);
+        cuda_convert_f32_to_f16(self_layer.weights_gpu, self_layer.c*self_layer.n*self_layer.size*self_layer.size, self_layer.weights_gpu16);
+        cuda_convert_f32_to_f16(output_layer.weights_gpu, output_layer.c*output_layer.n*output_layer.size*output_layer.size, output_layer.weights_gpu16);
+    }
 #endif  //CUDNN_HALF
-    */
+*/
+
 
     if (state.train) {
         fill_ongpu(l.outputs * l.batch * l.steps, 0, output_layer.delta_gpu, 1);

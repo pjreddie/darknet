@@ -5,21 +5,146 @@
 #include <queue>
 #include <fstream>
 #include <thread>
+#include <future>
 #include <atomic>
-#include <mutex>              // std::mutex, std::unique_lock
-#include <condition_variable> // std::condition_variable
+#include <mutex>         // std::mutex, std::unique_lock
+#include <unordered_map> // std::unordered_map
 
 
-// To use tracking - uncomment the following line. Tracking is supported only by OpenCV 3.x
+// It makes sense only for video-Camera (not for video-File)
+// To use - uncomment the following line. Optical-flow is supported only by OpenCV 3.x - 4.x
 //#define TRACK_OPTFLOW
+//#define GPU
 
-//#include "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_runtime.h"
-//#pragma comment(lib, "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/lib/x64/cudart.lib")
-//static std::shared_ptr<image_t> device_ptr(NULL, [](void *img) { cudaDeviceReset(); });
+// To use 3D-stereo camera ZED - uncomment the following line. ZED_SDK should be installed.
+//#define ZED_STEREO
+
 
 #include "yolo_v2_class.hpp"    // imported functions from DLL
 
 #ifdef OPENCV
+#ifdef ZED_STEREO
+#include <sl_zed/Camera.hpp>
+#pragma comment(lib, "sl_core64.lib")
+#pragma comment(lib, "sl_input64.lib")
+#pragma comment(lib, "sl_zed64.lib")
+
+float getMedian(std::vector<float> &v) {
+    size_t n = v.size() / 2;
+    std::nth_element(v.begin(), v.begin() + n, v.end());
+    return v[n];
+}
+
+std::vector<bbox_t> get_3d_coordinates(std::vector<bbox_t> bbox_vect, cv::Mat xyzrgba)
+{
+    bool valid_measure;
+    int i, j;
+    const int R_max = 4;
+
+    std::vector<bbox_t> bbox3d_vect;
+
+    for (auto &cur_box : bbox_vect) {
+
+        int center_i = cur_box.x + cur_box.w * 0.5f, center_j = cur_box.y + cur_box.h * 0.5f;
+
+        std::vector<float> x_vect, y_vect, z_vect;
+        for (int R = 0; R < R_max; R++) {
+            for (int y = -R; y <= R; y++) {
+                for (int x = -R; x <= R; x++) {
+                    i = center_i + x;
+                    j = center_j + y;
+                    sl::float4 out(NAN, NAN, NAN, NAN);
+                    if (i >= 0 && i < xyzrgba.cols && j >= 0 && j < xyzrgba.rows) {
+                        cv::Vec4f &elem = xyzrgba.at<cv::Vec4f>(j, i);  // x,y,z,w
+                        out.x = elem[0];
+                        out.y = elem[1];
+                        out.z = elem[2];
+                        out.w = elem[3];
+                    }
+                    valid_measure = std::isfinite(out.z);
+                    if (valid_measure)
+                    {
+                        x_vect.push_back(out.x);
+                        y_vect.push_back(out.y);
+                        z_vect.push_back(out.z);
+                    }
+                }
+            }
+        }
+
+        if (x_vect.size() * y_vect.size() * z_vect.size() > 0)
+        {
+            cur_box.x_3d = getMedian(x_vect);
+            cur_box.y_3d = getMedian(y_vect);
+            cur_box.z_3d = getMedian(z_vect);
+        }
+        else {
+            cur_box.x_3d = NAN;
+            cur_box.y_3d = NAN;
+            cur_box.z_3d = NAN;
+        }
+
+        bbox3d_vect.emplace_back(cur_box);
+    }
+
+    return bbox3d_vect;
+}
+
+cv::Mat slMat2cvMat(sl::Mat &input) {
+    // Mapping between MAT_TYPE and CV_TYPE
+    int cv_type = -1;
+    switch (input.getDataType()) {
+    case sl::MAT_TYPE_32F_C1:
+        cv_type = CV_32FC1;
+        break;
+    case sl::MAT_TYPE_32F_C2:
+        cv_type = CV_32FC2;
+        break;
+    case sl::MAT_TYPE_32F_C3:
+        cv_type = CV_32FC3;
+        break;
+    case sl::MAT_TYPE_32F_C4:
+        cv_type = CV_32FC4;
+        break;
+    case sl::MAT_TYPE_8U_C1:
+        cv_type = CV_8UC1;
+        break;
+    case sl::MAT_TYPE_8U_C2:
+        cv_type = CV_8UC2;
+        break;
+    case sl::MAT_TYPE_8U_C3:
+        cv_type = CV_8UC3;
+        break;
+    case sl::MAT_TYPE_8U_C4:
+        cv_type = CV_8UC4;
+        break;
+    default:
+        break;
+    }
+    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(sl::MEM_CPU));
+}
+
+cv::Mat zed_capture_rgb(sl::Camera &zed) {
+    sl::Mat left;
+    zed.retrieveImage(left);
+    return slMat2cvMat(left).clone();
+}
+
+cv::Mat zed_capture_3d(sl::Camera &zed) {
+    sl::Mat cur_cloud;
+    zed.retrieveMeasure(cur_cloud, sl::MEASURE_XYZ);
+    return slMat2cvMat(cur_cloud).clone();
+}
+
+static sl::Camera zed; // ZED-camera
+
+#else   // ZED_STEREO
+std::vector<bbox_t> get_3d_coordinates(std::vector<bbox_t> bbox_vect, cv::Mat xyzrgba) {
+    return bbox_vect;
+}
+#endif  // ZED_STEREO
+
+
 #include <opencv2/opencv.hpp>            // C++
 #include <opencv2/core/version.hpp>
 #ifndef CV_VERSION_EPOCH
@@ -44,139 +169,6 @@
 #endif    // USE_CMAKE_LIBS
 #endif    // CV_VERSION_EPOCH
 
-class track_kalman {
-public:
-    cv::KalmanFilter kf;
-    int state_size, meas_size, contr_size;
-
-
-    track_kalman(int _state_size = 10, int _meas_size = 10, int _contr_size = 0)
-        : state_size(_state_size), meas_size(_meas_size), contr_size(_contr_size)
-    {
-        kf.init(state_size, meas_size, contr_size, CV_32F);
-
-        cv::setIdentity(kf.measurementMatrix);
-        cv::setIdentity(kf.measurementNoiseCov, cv::Scalar::all(1e-1));
-        cv::setIdentity(kf.processNoiseCov, cv::Scalar::all(1e-5));
-        cv::setIdentity(kf.errorCovPost, cv::Scalar::all(1e-2));
-        cv::setIdentity(kf.transitionMatrix);
-    }
-
-    void set(std::vector<bbox_t> result_vec) {
-        for (size_t i = 0; i < result_vec.size() && i < state_size*2; ++i) {
-            kf.statePost.at<float>(i * 2 + 0) = result_vec[i].x;
-            kf.statePost.at<float>(i * 2 + 1) = result_vec[i].y;
-        }
-    }
-
-    // Kalman.correct() calculates: statePost = statePre + gain * (z(k)-measurementMatrix*statePre);
-    // corrected state (x(k)): x(k)=x'(k)+K(k)*(z(k)-H*x'(k))
-    std::vector<bbox_t> correct(std::vector<bbox_t> result_vec) {
-        cv::Mat measurement(meas_size, 1, CV_32F);
-        for (size_t i = 0; i < result_vec.size() && i < meas_size * 2; ++i) {
-            measurement.at<float>(i * 2 + 0) = result_vec[i].x;
-            measurement.at<float>(i * 2 + 1) = result_vec[i].y;
-        }
-        cv::Mat estimated = kf.correct(measurement);
-        for (size_t i = 0; i < result_vec.size() && i < meas_size * 2; ++i) {
-            result_vec[i].x = estimated.at<float>(i * 2 + 0);
-            result_vec[i].y = estimated.at<float>(i * 2 + 1);
-        }
-        return result_vec;
-    }
-
-    // Kalman.predict() calculates: statePre = TransitionMatrix * statePost;
-    // predicted state (x'(k)): x(k)=A*x(k-1)+B*u(k)
-    std::vector<bbox_t> predict() {
-        std::vector<bbox_t> result_vec;
-        cv::Mat control;
-        cv::Mat prediction = kf.predict(control);
-        for (size_t i = 0; i < prediction.rows && i < state_size * 2; ++i) {
-            result_vec[i].x = prediction.at<float>(i * 2 + 0);
-            result_vec[i].y = prediction.at<float>(i * 2 + 1);
-        }
-        return result_vec;
-    }
-
-};
-
-
-
-
-class extrapolate_coords_t {
-public:
-    std::vector<bbox_t> old_result_vec;
-    std::vector<float> dx_vec, dy_vec, time_vec;
-    std::vector<float> old_dx_vec, old_dy_vec;
-
-    void new_result(std::vector<bbox_t> new_result_vec, float new_time) {
-        old_dx_vec = dx_vec;
-        old_dy_vec = dy_vec;
-        if (old_dx_vec.size() != old_result_vec.size()) std::cout << "old_dx != old_res \n";
-        dx_vec = std::vector<float>(new_result_vec.size(), 0);
-        dy_vec = std::vector<float>(new_result_vec.size(), 0);
-        update_result(new_result_vec, new_time, false);
-        old_result_vec = new_result_vec;
-        time_vec = std::vector<float>(new_result_vec.size(), new_time);
-    }
-
-    void update_result(std::vector<bbox_t> new_result_vec, float new_time, bool update = true) {
-        for (size_t i = 0; i < new_result_vec.size(); ++i) {
-            for (size_t k = 0; k < old_result_vec.size(); ++k) {
-                if (old_result_vec[k].track_id == new_result_vec[i].track_id && old_result_vec[k].obj_id == new_result_vec[i].obj_id) {
-                    float const delta_time = new_time - time_vec[k];
-                    if (abs(delta_time) < 1) break;
-                    size_t index = (update) ? k : i;
-                    float dx = ((float)new_result_vec[i].x - (float)old_result_vec[k].x) / delta_time;
-                    float dy = ((float)new_result_vec[i].y - (float)old_result_vec[k].y) / delta_time;
-                    float old_dx = dx, old_dy = dy;
-
-                    // if it's shaking
-                    if (update) {
-                        if (dx * dx_vec[i] < 0) dx = dx / 2;
-                        if (dy * dy_vec[i] < 0) dy = dy / 2;
-                    } else {
-                        if (dx * old_dx_vec[k] < 0) dx = dx / 2;
-                        if (dy * old_dy_vec[k] < 0) dy = dy / 2;
-                    }
-                    dx_vec[index] = dx;
-                    dy_vec[index] = dy;
-
-                    //if (old_dx == dx && old_dy == dy) std::cout << "not shakin \n";
-                    //else std::cout << "shakin \n";
-
-                    if (dx_vec[index] > 1000 || dy_vec[index] > 1000) {
-                        //std::cout << "!!! bad dx or dy, dx = " << dx_vec[index] << ", dy = " << dy_vec[index] <<
-                        //    ", delta_time = " << delta_time << ", update = " << update << std::endl;
-                        dx_vec[index] = 0;
-                        dy_vec[index] = 0;
-                    }
-                    old_result_vec[k].x = new_result_vec[i].x;
-                    old_result_vec[k].y = new_result_vec[i].y;
-                    time_vec[k] = new_time;
-                    break;
-                }
-            }
-        }
-    }
-
-    std::vector<bbox_t> predict(float cur_time) {
-        std::vector<bbox_t> result_vec = old_result_vec;
-        for (size_t i = 0; i < old_result_vec.size(); ++i) {
-            float const delta_time = cur_time - time_vec[i];
-            auto &bbox = result_vec[i];
-            float new_x = (float) bbox.x + dx_vec[i] * delta_time;
-            float new_y = (float) bbox.y + dy_vec[i] * delta_time;
-            if (new_x > 0) bbox.x = new_x;
-            else bbox.x = 0;
-            if (new_y > 0) bbox.y = new_y;
-            else bbox.y = 0;
-        }
-        return result_vec;
-    }
-
-};
-
 
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names,
     int current_det_fps = -1, int current_cap_fps = -1)
@@ -190,11 +182,22 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
             std::string obj_name = obj_names[i.obj_id];
             if (i.track_id > 0) obj_name += " - " + std::to_string(i.track_id);
             cv::Size const text_size = getTextSize(obj_name, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, 2, 0);
-            int const max_width = (text_size.width > i.w + 2) ? text_size.width : (i.w + 2);
-            cv::rectangle(mat_img, cv::Point2f(std::max((int)i.x - 1, 0), std::max((int)i.y - 30, 0)),
-                cv::Point2f(std::min((int)i.x + max_width, mat_img.cols-1), std::min((int)i.y, mat_img.rows-1)),
+            int max_width = (text_size.width > i.w + 2) ? text_size.width : (i.w + 2);
+            std::string coords_3d;
+            if (!isnan(i.z_3d)) {
+                std::stringstream ss;
+                ss << std::fixed << std::setprecision(2) << "x:" << i.x_3d << "m y:" << i.y_3d << "m z:" << i.z_3d << "m ";
+                coords_3d = ss.str();
+                cv::Size const text_size_3d = getTextSize(ss.str(), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, 1, 0);
+                int const max_width_3d = (text_size_3d.width > i.w + 2) ? text_size_3d.width : (i.w + 2);
+                if (max_width_3d > max_width) max_width = max_width_3d;
+            }
+
+            cv::rectangle(mat_img, cv::Point2f(std::max((int)i.x - 1, 0), std::max((int)i.y - 35, 0)),
+                cv::Point2f(std::min((int)i.x + max_width, mat_img.cols - 1), std::min((int)i.y, mat_img.rows - 1)),
                 color, CV_FILLED, 8, 0);
-            putText(mat_img, obj_name, cv::Point2f(i.x, i.y - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(0, 0, 0), 2);
+            putText(mat_img, obj_name, cv::Point2f(i.x, i.y - 16), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(0, 0, 0), 2);
+            if(!coords_3d.empty()) putText(mat_img, coords_3d, cv::Point2f(i.x, i.y-1), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(0, 0, 0), 1);
         }
     }
     if (current_det_fps >= 0 && current_cap_fps >= 0) {
@@ -205,7 +208,8 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
 #endif    // OPENCV
 
 
-void show_console_result(std::vector<bbox_t> const result_vec, std::vector<std::string> const obj_names) {
+void show_console_result(std::vector<bbox_t> const result_vec, std::vector<std::string> const obj_names, int frame_id = -1) {
+    if (frame_id >= 0) std::cout << " Frame: " << frame_id << std::endl;
     for (auto &i : result_vec) {
         if (obj_names.size() > i.obj_id) std::cout << obj_names[i.obj_id] << " - ";
         std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x << ", y = " << i.y
@@ -223,6 +227,38 @@ std::vector<std::string> objects_names_from_file(std::string const filename) {
     return file_lines;
 }
 
+template<typename T>
+class send_one_replaceable_object_t {
+    const bool sync;
+    std::atomic<T *> a_ptr;
+public:
+
+    void send(T const& _obj) {
+        T *new_ptr = new T;
+        *new_ptr = _obj;
+        if (sync) {
+            while (a_ptr.load()) std::this_thread::sleep_for(std::chrono::milliseconds(3));
+        }
+        std::unique_ptr<T> old_ptr(a_ptr.exchange(new_ptr));
+    }
+
+    T receive() {
+        std::unique_ptr<T> ptr;
+        do {
+            while(!a_ptr.load()) std::this_thread::sleep_for(std::chrono::milliseconds(3));
+            ptr.reset(a_ptr.exchange(NULL));
+        } while (!ptr);
+        T obj = *ptr;
+        return obj;
+    }
+
+    bool is_object_present() {
+        return (a_ptr.load() != NULL);
+    }
+
+    send_one_replaceable_object_t(bool _sync) : sync(_sync), a_ptr(NULL)
+    {}
+};
 
 int main(int argc, char *argv[])
 {
@@ -239,17 +275,23 @@ int main(int argc, char *argv[])
     }
     else if (argc > 1) filename = argv[1];
 
-    float const thresh = (argc > 5) ? std::stof(argv[5]) : 0.20;
+    float const thresh = (argc > 5) ? std::stof(argv[5]) : 0.2;
 
     Detector detector(cfg_file, weights_file);
 
     auto obj_names = objects_names_from_file(names_file);
     std::string out_videofile = "result.avi";
-    bool const save_output_videofile = true;
-#ifdef TRACK_OPTFLOW
+    bool const save_output_videofile = false;   // true - for history
+    bool const send_network = false;        // true - for remote detection
+    bool const use_kalman_filter = false;   // true - for stationary camera
+
+    bool detection_sync = true;             // true - for video-file
+#ifdef TRACK_OPTFLOW    // for slow GPU
+    detection_sync = false;
     Tracker_optflow tracker_flow;
-    detector.wait_stream = true;
-#endif
+    //detector.wait_stream = true;
+#endif  // TRACK_OPTFLOW
+
 
     while (true)
     {
@@ -259,187 +301,318 @@ int main(int argc, char *argv[])
 
         try {
 #ifdef OPENCV
-            extrapolate_coords_t extrapolate_coords;
-            bool extrapolate_flag = false;
-            float cur_time_extrapolate = 0, old_time_extrapolate = 0;
             preview_boxes_t large_preview(100, 150, false), small_preview(50, 50, true);
             bool show_small_boxes = false;
 
             std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
             std::string const protocol = filename.substr(0, 7);
             if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov" ||     // video file
-                protocol == "rtmp://" || protocol == "rtsp://" || protocol == "http://" || protocol == "https:/")    // video network stream
+                protocol == "rtmp://" || protocol == "rtsp://" || protocol == "http://" || protocol == "https:/" ||    // video network stream
+                filename == "zed_camera" || file_ext == "svo" || filename == "web_camera")   // ZED stereo camera
+
             {
-                cv::Mat cap_frame, cur_frame, det_frame, write_frame;
-                std::queue<cv::Mat> track_optflow_queue;
-                int passed_flow_frames = 0;
-                std::shared_ptr<image_t> det_image;
-                std::vector<bbox_t> result_vec, thread_result_vec;
-                detector.nms = 0.02;    // comment it - if track_id is not required
-                std::atomic<bool> consumed, videowrite_ready;
-                bool exit_flag = false;
-                consumed = true;
-                videowrite_ready = true;
-                std::atomic<int> fps_det_counter, fps_cap_counter;
-                fps_det_counter = 0;
-                fps_cap_counter = 0;
-                int current_det_fps = 0, current_cap_fps = 0;
-                std::thread t_detect, t_cap, t_videowrite;
-                std::mutex mtx;
-                std::condition_variable cv_detected, cv_pre_tracked;
+                if (protocol == "rtsp://" || protocol == "http://" || protocol == "https:/" || filename == "zed_camera" || filename == "web_camera")
+                    detection_sync = false;
+
+                cv::Mat cur_frame;
+                std::atomic<int> fps_cap_counter(0), fps_det_counter(0);
+                std::atomic<int> current_fps_cap(0), current_fps_det(0);
+                std::atomic<bool> exit_flag(false);
                 std::chrono::steady_clock::time_point steady_start, steady_end;
-                cv::VideoCapture cap(filename); cap >> cur_frame;
-                int const video_fps = cap.get(CV_CAP_PROP_FPS);
+                int video_fps = 25;
+                bool use_zed_camera = false;
+
+                track_kalman_t track_kalman;
+
+#ifdef ZED_STEREO
+                sl::InitParameters init_params;
+                init_params.camera_resolution = sl::RESOLUTION_HD720;
+                init_params.coordinate_units = sl::UNIT_METER;
+                //init_params.sdk_cuda_ctx = (CUcontext)detector.get_cuda_context();
+                init_params.sdk_gpu_id = detector.cur_gpu_id;
+                init_params.camera_buffer_count_linux = 2;
+                if (file_ext == "svo") init_params.svo_input_filename.set(filename.c_str());
+                if (filename == "zed_camera" || file_ext == "svo") {
+                    std::cout << "ZED 3D Camera " << zed.open(init_params) << std::endl;
+                    cur_frame = zed_capture_rgb(zed);
+                    use_zed_camera = true;
+                }
+#endif  // ZED_STEREO
+
+                cv::VideoCapture cap;
+                if (filename == "web_camera") {
+                    cap.open(0);
+                    video_fps = cap.get(CV_CAP_PROP_FPS);
+                    cap >> cur_frame;
+                } else if (!use_zed_camera) {
+                    cap.open(filename);
+                    video_fps = cap.get(CV_CAP_PROP_FPS);
+                    cap >> cur_frame;
+                }
                 cv::Size const frame_size = cur_frame.size();
+                //cv::Size const frame_size(cap.get(CV_CAP_PROP_FRAME_WIDTH), cap.get(CV_CAP_PROP_FRAME_HEIGHT));
+                std::cout << "\n Video size: " << frame_size << std::endl;
+
                 cv::VideoWriter output_video;
                 if (save_output_videofile)
                     output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(35, video_fps), frame_size, true);
 
-                while (!cur_frame.empty())
+                struct detection_data_t {
+                    cv::Mat cap_frame;
+                    std::shared_ptr<image_t> det_image;
+                    std::vector<bbox_t> result_vec;
+                    cv::Mat draw_frame;
+                    bool new_detection;
+                    uint64_t frame_id;
+                    bool exit_flag;
+                    cv::Mat zed_cloud;
+                    std::queue<cv::Mat> track_optflow_queue;
+                    detection_data_t() : exit_flag(false), new_detection(false) {}
+                };
+
+                const bool sync = detection_sync; // sync data exchange
+                send_one_replaceable_object_t<detection_data_t> cap2prepare(sync), cap2draw(sync),
+                    prepare2detect(sync), detect2draw(sync), draw2show(sync), draw2write(sync), draw2net(sync);
+
+                std::thread t_cap, t_prepare, t_detect, t_post, t_draw, t_write, t_network;
+
+                // capture new video-frame
+                if (t_cap.joinable()) t_cap.join();
+                t_cap = std::thread([&]()
                 {
-                    // always sync
-                    if (t_cap.joinable()) {
-                        t_cap.join();
-                        ++fps_cap_counter;
-                        cur_frame = cap_frame.clone();
-                    }
-                    t_cap = std::thread([&]() { cap >> cap_frame; });
-                    ++cur_time_extrapolate;
-
-                    // swap result bouned-boxes and input-frame
-                    if(consumed)
-                    {
-                        std::unique_lock<std::mutex> lock(mtx);
-                        det_image = detector.mat_to_image_resize(cur_frame);
-                        auto old_result_vec = detector.tracking_id(result_vec);
-                        auto detected_result_vec = thread_result_vec;
-                        result_vec = detected_result_vec;
-#ifdef TRACK_OPTFLOW
-                        // track optical flow
-                        if (track_optflow_queue.size() > 0) {
-                            //std::cout << "\n !!!! all = " << track_optflow_queue.size() << ", cur = " << passed_flow_frames << std::endl;
-                            cv::Mat first_frame = track_optflow_queue.front();
-                            tracker_flow.update_tracking_flow(track_optflow_queue.front(), result_vec);
-
-                            while (track_optflow_queue.size() > 1) {
-                                track_optflow_queue.pop();
-                                result_vec = tracker_flow.tracking_flow(track_optflow_queue.front(), true);
-                            }
-                            track_optflow_queue.pop();
-                            passed_flow_frames = 0;
-
-                            result_vec = detector.tracking_id(result_vec);
-                            auto tmp_result_vec = detector.tracking_id(detected_result_vec, false);
-                            small_preview.set(first_frame, tmp_result_vec);
-
-                            extrapolate_coords.new_result(tmp_result_vec, old_time_extrapolate);
-                            old_time_extrapolate = cur_time_extrapolate;
-                            extrapolate_coords.update_result(result_vec, cur_time_extrapolate - 1);
+                    uint64_t frame_id = 0;
+                    detection_data_t detection_data;
+                    do {
+                        detection_data = detection_data_t();
+#ifdef ZED_STEREO
+                        if (use_zed_camera) {
+                            while (zed.grab() != sl::SUCCESS) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                            detection_data.cap_frame = zed_capture_rgb(zed);
+                            detection_data.zed_cloud = zed_capture_3d(zed);
                         }
-#else
-                        result_vec = detector.tracking_id(result_vec);    // comment it - if track_id is not required
-                        extrapolate_coords.new_result(result_vec, cur_time_extrapolate - 1);
-#endif
-                        // add old tracked objects
-                        for (auto &i : old_result_vec) {
-                            auto it = std::find_if(result_vec.begin(), result_vec.end(),
-                                [&i](bbox_t const& b) { return b.track_id == i.track_id && b.obj_id == i.obj_id; });
-                            bool track_id_absent = (it == result_vec.end());
-                            if (track_id_absent) {
-                                if (i.frames_counter-- > 1)
-                                    result_vec.push_back(i);
+                        else
+#endif   // ZED_STEREO
+                        {
+                            cap >> detection_data.cap_frame;
+                        }
+                        fps_cap_counter++;
+                        detection_data.frame_id = frame_id++;
+                        if (detection_data.cap_frame.empty() || exit_flag) {
+                            std::cout << " exit_flag: detection_data.cap_frame.size = " << detection_data.cap_frame.size() << std::endl;
+                            detection_data.exit_flag = true;
+                            detection_data.cap_frame = cv::Mat(frame_size, CV_8UC3);
+                        }
+
+                        if (!detection_sync) {
+                            cap2draw.send(detection_data);       // skip detection
+                        }
+                        cap2prepare.send(detection_data);
+                    } while (!detection_data.exit_flag);
+                    std::cout << " t_cap exit \n";
+                });
+
+
+                // pre-processing video frame (resize, convertion)
+                t_prepare = std::thread([&]()
+                {
+                    std::shared_ptr<image_t> det_image;
+                    detection_data_t detection_data;
+                    do {
+                        detection_data = cap2prepare.receive();
+
+                        det_image = detector.mat_to_image_resize(detection_data.cap_frame);
+                        detection_data.det_image = det_image;
+                        prepare2detect.send(detection_data);    // detection
+
+                    } while (!detection_data.exit_flag);
+                    std::cout << " t_prepare exit \n";
+                });
+
+
+                // detection by Yolo
+                if (t_detect.joinable()) t_detect.join();
+                t_detect = std::thread([&]()
+                {
+                    std::shared_ptr<image_t> det_image;
+                    detection_data_t detection_data;
+                    do {
+                        detection_data = prepare2detect.receive();
+                        det_image = detection_data.det_image;
+                        std::vector<bbox_t> result_vec;
+
+                        if(det_image)
+                            result_vec = detector.detect_resized(*det_image, frame_size.width, frame_size.height, thresh, true);  // true
+                        fps_det_counter++;
+                        //std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+                        detection_data.new_detection = true;
+                        detection_data.result_vec = result_vec;
+                        detect2draw.send(detection_data);
+                    } while (!detection_data.exit_flag);
+                    std::cout << " t_detect exit \n";
+                });
+
+                // draw rectangles (and track objects)
+                t_draw = std::thread([&]()
+                {
+                    std::queue<cv::Mat> track_optflow_queue;
+                    detection_data_t detection_data;
+                    do {
+
+                        // for Video-file
+                        if (detection_sync) {
+                            detection_data = detect2draw.receive();
+                        }
+                        // for Video-camera
+                        else
+                        {
+                            // get new Detection result if present
+                            if (detect2draw.is_object_present()) {
+                                cv::Mat old_cap_frame = detection_data.cap_frame;   // use old captured frame
+                                detection_data = detect2draw.receive();
+                                if (!old_cap_frame.empty()) detection_data.cap_frame = old_cap_frame;
+                            }
+                            // get new Captured frame
+                            else {
+                                std::vector<bbox_t> old_result_vec = detection_data.result_vec; // use old detections
+                                detection_data = cap2draw.receive();
+                                detection_data.result_vec = old_result_vec;
+                            }
+                        }
+
+                        cv::Mat cap_frame = detection_data.cap_frame;
+                        cv::Mat draw_frame = detection_data.cap_frame.clone();
+                        std::vector<bbox_t> result_vec = detection_data.result_vec;
+
+#ifdef TRACK_OPTFLOW
+                        if (detection_data.new_detection) {
+                            tracker_flow.update_tracking_flow(detection_data.cap_frame, detection_data.result_vec);
+                            while (track_optflow_queue.size() > 0) {
+                                draw_frame = track_optflow_queue.back();
+                                result_vec = tracker_flow.tracking_flow(track_optflow_queue.front(), false);
+                                track_optflow_queue.pop();
+                            }
+                        }
+                        else {
+                            track_optflow_queue.push(cap_frame);
+                            result_vec = tracker_flow.tracking_flow(cap_frame, false);
+                        }
+                        detection_data.new_detection = true;    // to correct kalman filter
+#endif //TRACK_OPTFLOW
+
+                        // track ID by using kalman filter
+                        if (use_kalman_filter) {
+                            if (detection_data.new_detection) {
+                                result_vec = track_kalman.correct(result_vec);
                             }
                             else {
-                                it->frames_counter = std::min((unsigned)3, i.frames_counter + 1);
+                                result_vec = track_kalman.predict();
                             }
                         }
-#ifdef TRACK_OPTFLOW
-                        tracker_flow.update_cur_bbox_vec(result_vec);
-                        result_vec = tracker_flow.tracking_flow(cur_frame, true);    // track optical flow
-#endif
-                        consumed = false;
-                        cv_pre_tracked.notify_all();
-                    }
-                    // launch thread once - Detection
-                    if (!t_detect.joinable()) {
-                        t_detect = std::thread([&]() {
-                            auto current_image = det_image;
-                            consumed = true;
-                            while (current_image.use_count() > 0 && !exit_flag) {
-                                auto result = detector.detect_resized(*current_image, frame_size.width, frame_size.height,
-                                    thresh, false);    // true
-                                ++fps_det_counter;
-                                std::unique_lock<std::mutex> lock(mtx);
-                                thread_result_vec = result;
-                                consumed = true;
-                                cv_detected.notify_all();
-                                if (detector.wait_stream) {
-                                    while (consumed && !exit_flag) cv_pre_tracked.wait(lock);
-                                }
-                                current_image = det_image;
-                            }
-                        });
-                    }
-                    //while (!consumed);    // sync detection
-
-                    if (!cur_frame.empty()) {
-                        steady_end = std::chrono::steady_clock::now();
-                        if (std::chrono::duration<double>(steady_end - steady_start).count() >= 1) {
-                            current_det_fps = fps_det_counter;
-                            current_cap_fps = fps_cap_counter;
-                            steady_start = steady_end;
-                            fps_det_counter = 0;
-                            fps_cap_counter = 0;
+                        // track ID by using custom function
+                        else {
+                            int frame_story = std::max(5, current_fps_cap.load());
+                            result_vec = detector.tracking_id(result_vec, true, frame_story, 40);
                         }
 
-                        large_preview.set(cur_frame, result_vec);
-#ifdef TRACK_OPTFLOW
-                        ++passed_flow_frames;
-                        track_optflow_queue.push(cur_frame.clone());
-                        result_vec = tracker_flow.tracking_flow(cur_frame);    // track optical flow
-                        extrapolate_coords.update_result(result_vec, cur_time_extrapolate);
-                        small_preview.draw(cur_frame, show_small_boxes);
-#endif
-                        auto result_vec_draw = result_vec;
-                        if (extrapolate_flag) {
-                            result_vec_draw = extrapolate_coords.predict(cur_time_extrapolate);
-                            cv::putText(cur_frame, "extrapolate", cv::Point2f(10, 40), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0, cv::Scalar(50, 50, 0), 2);
+                        if (use_zed_camera && !detection_data.zed_cloud.empty()) {
+                            result_vec = get_3d_coordinates(result_vec, detection_data.zed_cloud);
                         }
-                        draw_boxes(cur_frame, result_vec_draw, obj_names, current_det_fps, current_cap_fps);
-                        //show_console_result(result_vec, obj_names);
-                        large_preview.draw(cur_frame);
 
-                        cv::imshow("window name", cur_frame);
-                        int key = cv::waitKey(3);    // 3 or 16ms
-                        if (key == 'f') show_small_boxes = !show_small_boxes;
-                        if (key == 'p') while (true) if(cv::waitKey(100) == 'p') break;
-                        if (key == 'e') extrapolate_flag = !extrapolate_flag;
-                        if (key == 27) { exit_flag = true; break; }
+                        //small_preview.set(draw_frame, result_vec);
+                        //large_preview.set(draw_frame, result_vec);
+                        draw_boxes(draw_frame, result_vec, obj_names, current_fps_det, current_fps_cap);
+                        //show_console_result(result_vec, obj_names, detection_data.frame_id);
+                        //large_preview.draw(draw_frame);
+                        //small_preview.draw(draw_frame, true);
 
-                        if (output_video.isOpened() && videowrite_ready) {
-                            if (t_videowrite.joinable()) t_videowrite.join();
-                            write_frame = cur_frame.clone();
-                            videowrite_ready = false;
-                            t_videowrite = std::thread([&]() {
-                                 output_video << write_frame; videowrite_ready = true;
-                            });
-                        }
+                        detection_data.result_vec = result_vec;
+                        detection_data.draw_frame = draw_frame;
+                        draw2show.send(detection_data);
+                        if (send_network) draw2net.send(detection_data);
+                        if (output_video.isOpened()) draw2write.send(detection_data);
+                    } while (!detection_data.exit_flag);
+                    std::cout << " t_draw exit \n";
+                });
+
+
+                // write frame to videofile
+                t_write = std::thread([&]()
+                {
+                    if (output_video.isOpened()) {
+                        detection_data_t detection_data;
+                        cv::Mat output_frame;
+                        do {
+                            detection_data = draw2write.receive();
+                            if(detection_data.draw_frame.channels() == 4) cv::cvtColor(detection_data.draw_frame, output_frame, CV_RGBA2RGB);
+                            else output_frame = detection_data.draw_frame;
+                            output_video << output_frame;
+                        } while (!detection_data.exit_flag);
+                        output_video.release();
+                    }
+                    std::cout << " t_write exit \n";
+                });
+
+                // send detection to the network
+                t_network = std::thread([&]()
+                {
+                    if (send_network) {
+                        detection_data_t detection_data;
+                        do {
+                            detection_data = draw2net.receive();
+
+                            detector.send_json_http(detection_data.result_vec, obj_names, detection_data.frame_id, filename);
+
+                        } while (!detection_data.exit_flag);
+                    }
+                    std::cout << " t_network exit \n";
+                });
+
+
+                // show detection
+                detection_data_t detection_data;
+                do {
+
+                    steady_end = std::chrono::steady_clock::now();
+                    float time_sec = std::chrono::duration<double>(steady_end - steady_start).count();
+                    if (time_sec >= 1) {
+                        current_fps_det = fps_det_counter.load() / time_sec;
+                        current_fps_cap = fps_cap_counter.load() / time_sec;
+                        steady_start = steady_end;
+                        fps_det_counter = 0;
+                        fps_cap_counter = 0;
                     }
 
-#ifndef TRACK_OPTFLOW
-                    // wait detection result for video-file only (not for net-cam)
-                    if (protocol != "rtsp://" && protocol != "http://" && protocol != "https:/") {
-                        std::unique_lock<std::mutex> lock(mtx);
-                        while (!consumed) cv_detected.wait(lock);
-                    }
-#endif
-                }
-                exit_flag = true;
+                    detection_data = draw2show.receive();
+                    cv::Mat draw_frame = detection_data.draw_frame;
+
+                    //if (extrapolate_flag) {
+                    //    cv::putText(draw_frame, "extrapolate", cv::Point2f(10, 40), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0, cv::Scalar(50, 50, 0), 2);
+                    //}
+
+                    cv::imshow("window name", draw_frame);
+                    int key = cv::waitKey(3);    // 3 or 16ms
+                    if (key == 'f') show_small_boxes = !show_small_boxes;
+                    if (key == 'p') while (true) if (cv::waitKey(100) == 'p') break;
+                    //if (key == 'e') extrapolate_flag = !extrapolate_flag;
+                    if (key == 27) { exit_flag = true;}
+
+                    //std::cout << " current_fps_det = " << current_fps_det << ", current_fps_cap = " << current_fps_cap << std::endl;
+                } while (!detection_data.exit_flag);
+                std::cout << " show detection exit \n";
+
+                cv::destroyWindow("window name");
+                // wait for all threads
                 if (t_cap.joinable()) t_cap.join();
+                if (t_prepare.joinable()) t_prepare.join();
                 if (t_detect.joinable()) t_detect.join();
-                if (t_videowrite.joinable()) t_videowrite.join();
-                std::cout << "Video ended \n";
+                if (t_post.joinable()) t_post.join();
+                if (t_draw.joinable()) t_draw.join();
+                if (t_write.joinable()) t_write.join();
+                if (t_network.joinable()) t_network.join();
+
                 break;
+
             }
             else if (file_ext == "txt") {    // list of image files
                 std::ifstream file(filename);
@@ -470,14 +643,14 @@ int main(int argc, char *argv[])
                 show_console_result(result_vec, obj_names);
                 cv::waitKey(0);
             }
-#else
+#else   // OPENCV
             //std::vector<bbox_t> result_vec = detector.detect(filename);
 
             auto img = detector.load_image(filename);
             std::vector<bbox_t> result_vec = detector.detect(img);
             detector.free_image(img);
             show_console_result(result_vec, obj_names);
-#endif
+#endif  // OPENCV
         }
         catch (std::exception &e) { std::cerr << "exception: " << e.what() << "\n"; getchar(); }
         catch (...) { std::cerr << "unknown exception \n"; getchar(); }

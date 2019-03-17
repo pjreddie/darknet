@@ -133,7 +133,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>C:\opencv_3.0\opencv\build\include;..\..\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(CUDNN)\include;$(cudnn)\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CUDNN_HALF;OPENCV;CUDNN;_TIMESPEC_DEFINED;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;GPU;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>OPENCV;CUDNN_HALF;CUDNN;_TIMESPEC_DEFINED;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;GPU;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <CLanguageStandard>c11</CLanguageStandard>
       <CppLanguageStandard>c++1y</CppLanguageStandard>
       <PrecompiledHeaderCompileAs>CompileAsCpp</PrecompiledHeaderCompileAs>
@@ -188,8 +188,8 @@
     <ClCompile Include="..\..\src\cpu_gemm.c" />
     <ClCompile Include="..\..\src\crnn_layer.c" />
     <ClCompile Include="..\..\src\crop_layer.c" />
-    <ClCompile Include="..\..\src\cuda.c" />
     <ClCompile Include="..\..\src\darknet.c" />
+    <ClCompile Include="..\..\src\dark_cuda.c" />
     <ClCompile Include="..\..\src\data.c" />
     <ClCompile Include="..\..\src\deconvolutional_layer.c" />
     <ClCompile Include="..\..\src\demo.c" />
@@ -251,7 +251,7 @@
     <ClInclude Include="..\..\src\cost_layer.h" />
     <ClInclude Include="..\..\src\crnn_layer.h" />
     <ClInclude Include="..\..\src\crop_layer.h" />
-    <ClInclude Include="..\..\src\cuda.h" />
+    <ClInclude Include="..\..\src\dark_cuda.h" />
     <ClInclude Include="..\..\src\data.h" />
     <ClInclude Include="..\..\src\deconvolutional_layer.h" />
     <ClInclude Include="..\..\src\demo.h" />

@@ -923,6 +923,11 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     printf("\n detections_count = %d, unique_truth_count = %d  \n", detections_count, unique_truth_count);
 
 
+    int* detection_per_class_count = (int*)calloc(classes, sizeof(int));
+    for (j = 0; j < detections_count; ++j) {
+        detection_per_class_count[detections[j].class_id]++;
+    }
+
     int* truth_flags = (int*)calloc(unique_truth_count, sizeof(int));
 
     int rank;
@@ -945,7 +950,8 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             {
                 truth_flags[d.unique_truth_index] = 1;
                 pr[d.class_id][rank].tp++;    // true-positive
-            }
+            } else
+                pr[d.class_id][rank].fp++;
         }
         else {
             pr[d.class_id][rank].fp++;    // false-positive
@@ -963,6 +969,10 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
 
             if ((tp + fn) > 0) pr[i][rank].recall = (double)tp / (double)(tp + fn);
             else pr[i][rank].recall = 0;
+
+            if (rank == (detections_count - 1) && detection_per_class_count[i] != (tp + fp)) {    // check for last rank
+                    printf(" class_id: %d - detections = %d, tp+fp = %d, tp = %d, fp = %d \n", i, detection_per_class_count[i], tp+fp, tp, fp);
+            }
         }
     }
 
@@ -1014,6 +1024,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     free(pr);
     free(detections);
     free(truth_classes_count);
+    free(detection_per_class_count);
 
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
     if (reinforcement_fd != NULL) fclose(reinforcement_fd);
