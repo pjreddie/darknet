@@ -5,7 +5,7 @@
 #include "blas.h"
 #include "assert.h"
 #include "classifier.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #ifdef WIN32
 #include <time.h>
 #include "gettimeofday.h"

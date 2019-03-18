@@ -1,7 +1,7 @@
 #include "data.h"
 #include "utils.h"
 #include "image.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 
 #include <stdio.h>
 #include <stdlib.h>

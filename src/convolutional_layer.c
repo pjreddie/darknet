@@ -8,12 +8,6 @@
 #include <stdio.h>
 #include <time.h>
 
-#ifdef CUDNN
-#ifndef USE_CMAKE_LIBS
-#pragma comment(lib, "cudnn.lib")
-#endif
-#endif
-
 #ifdef AI2
 #include "xnor_layer.h"
 #endif

@@ -8,7 +8,7 @@
 #include "darknet.h"
 #include "parser.h"
 #include "utils.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "blas.h"
 #include "connected_layer.h"
 

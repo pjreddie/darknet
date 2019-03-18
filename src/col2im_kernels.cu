@@ -3,7 +3,7 @@
 #include "cublas_v2.h"
 
 #include "col2im.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 
 // src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu
 // You may also want to read: https://github.com/BVLC/caffe/blob/master/LICENSE

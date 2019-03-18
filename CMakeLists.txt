@@ -288,8 +288,8 @@ target_link_libraries(darknet PRIVATE Threads::Threads)
 target_link_libraries(darklib PRIVATE Threads::Threads)
 
 if(ENABLE_CUDA)
-  target_link_libraries(darknet PRIVATE curand cublas)
-  target_link_libraries(darklib PRIVATE curand cublas)
+  target_link_libraries(darknet PRIVATE curand cublas cuda)
+  target_link_libraries(darklib PRIVATE curand cublas cuda)
   set_target_properties(darklib PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
 

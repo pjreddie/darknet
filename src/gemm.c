@@ -1,7 +1,7 @@
 #include "gemm.h"
 #include "utils.h"
 #include "im2col.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>

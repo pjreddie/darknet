@@ -18,11 +18,12 @@ extern int gpu_index;
 #define WARP_SIZE 32
 #define BLOCK_TRANSPOSE32 256
 
+#include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <cublas_v2.h>
 #include <cuda_runtime_api.h>
-#include <driver_types.h>
+//#include <driver_types.h>
 
 #ifdef CUDNN
 #include <cudnn.h>
@@ -87,4 +88,4 @@ void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line
 #else // GPU
 //LIB_API void cuda_set_device(int n);
 #endif // GPU
-#endif // CUDA_H
+#endif // DARKCUDA_H
