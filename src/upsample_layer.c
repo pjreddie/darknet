@@ -1,12 +1,12 @@
 #include "upsample_layer.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "blas.h"
 
 #include <stdio.h>
 
 layer make_upsample_layer(int batch, int w, int h, int c, int stride)
 {
-    layer l = {0};
+    layer l = { (LAYER_TYPE)0 };
     l.type = UPSAMPLE;
     l.batch = batch;
     l.w = w;
@@ -24,8 +24,8 @@ layer make_upsample_layer(int batch, int w, int h, int c, int stride)
     l.stride = stride;
     l.outputs = l.out_w*l.out_h*l.out_c;
     l.inputs = l.w*l.h*l.c;
-    l.delta =  calloc(l.outputs*batch, sizeof(float));
-    l.output = calloc(l.outputs*batch, sizeof(float));;
+    l.delta = (float*)calloc(l.outputs * batch, sizeof(float));
+    l.output = (float*)calloc(l.outputs * batch, sizeof(float));
 
     l.forward = forward_upsample_layer;
     l.backward = backward_upsample_layer;
@@ -53,8 +53,8 @@ void resize_upsample_layer(layer *l, int w, int h)
     }
     l->outputs = l->out_w*l->out_h*l->out_c;
     l->inputs = l->h*l->w*l->c;
-    l->delta =  realloc(l->delta, l->outputs*l->batch*sizeof(float));
-    l->output = realloc(l->output, l->outputs*l->batch*sizeof(float));
+    l->delta = (float*)realloc(l->delta, l->outputs * l->batch * sizeof(float));
+    l->output = (float*)realloc(l->output, l->outputs * l->batch * sizeof(float));
 
 #ifdef GPU
     cuda_free(l->output_gpu);
@@ -62,7 +62,7 @@ void resize_upsample_layer(layer *l, int w, int h)
     l->output_gpu  = cuda_make_array(l->output, l->outputs*l->batch);
     l->delta_gpu   = cuda_make_array(l->delta,  l->outputs*l->batch);
 #endif
-    
+
 }
 
 void forward_upsample_layer(const layer l, network_state net)

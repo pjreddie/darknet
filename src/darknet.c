@@ -1,16 +1,19 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include <crtdbg.h>
+#endif
 
 #include "darknet.h"
 #include "parser.h"
 #include "utils.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "blas.h"
 #include "connected_layer.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
@@ -258,12 +261,12 @@ layer normalize_layer(layer l, int n)
 {
     int j;
     l.batch_normalize=1;
-    l.scales = calloc(n, sizeof(float));
+    l.scales = (float*)calloc(n, sizeof(float));
     for(j = 0; j < n; ++j){
         l.scales[j] = 1;
     }
-    l.rolling_mean = calloc(n, sizeof(float));
-    l.rolling_variance = calloc(n, sizeof(float));
+    l.rolling_mean = (float*)calloc(n, sizeof(float));
+    l.rolling_variance = (float*)calloc(n, sizeof(float));
     return l;
 }
 
@@ -476,7 +479,7 @@ int main(int argc, char **argv)
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
 		int ext_output = find_arg(argc, argv, "-ext_output");
         char *filename = (argc > 4) ? argv[4]: 0;
-        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, 0.5, 0, 1, 0, NULL);
+        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, 0.5, 0, ext_output, 0, NULL);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
     } else if (0 == strcmp(argv[1], "go")){
@@ -540,4 +543,3 @@ int main(int argc, char **argv)
     }
     return 0;
 }
-

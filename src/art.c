@@ -6,7 +6,6 @@
 #include "classifier.h"
 #ifdef WIN32
 #include <time.h>
-#include <winsock.h>
 #include "gettimeofday.h"
 #else
 #include <sys/time.h>
@@ -14,10 +13,10 @@
 
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/core/version.hpp"
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/core/version.hpp>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio_c.h"
+#include <opencv2/videoio/videoio_c.h>
 #endif
 image get_image_from_stream(CvCapture *cap);
 #endif
@@ -39,7 +38,7 @@ void demo_art(char *cfgfile, char *weightfile, int cam_index)
 
     char *window = "ArtJudgementBot9000!!!";
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow(window, CV_WINDOW_NORMAL); 
+    cvNamedWindow(window, CV_WINDOW_NORMAL);
     cvResizeWindow(window, 512, 512);
     int i;
     int idx[] = {37, 401, 434};
@@ -85,4 +84,3 @@ void run_art(int argc, char **argv)
     char *weights = argv[3];
     demo_art(cfg, weights, cam_index);
 }
-

@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #ifndef _UNISTD_H
 #define _UNISTD_H    1
 
@@ -6,12 +7,13 @@
 *  Please add functionality as needed
 */
 
-#include <stdlib.h>
+#include <Winsock2.h>
+#include <direct.h> /* for _getcwd() and _chdir() */
+#include "getopt.h"
 #include <io.h>
 #include <process.h> /* for getpid() and the exec..() family */
-#include <direct.h> /* for _getcwd() and _chdir() */
+#include <stdlib.h>
 
-#include "getopt.h" /* getopt at: https://gist.github.com/ashelly/7776712 */
 #define srandom srand
 #define random rand
 
@@ -19,7 +21,7 @@
 These may be OR'd together.  */
 #define R_OK    4       /* Test for read permission.  */
 #define W_OK    2       /* Test for write permission.  */
-//#define   X_OK    1       /* execute permission - unsupported in windows*/
+#define X_OK R_OK       /* execute permission - unsupported in Windows, */
 #define F_OK    0       /* Test for existence.  */
 
 #define access _access
@@ -48,5 +50,7 @@ These may be OR'd together.  */
 //typedef unsigned __int16  uint16_t;
 //typedef unsigned __int32  uint32_t;
 //typedef unsigned __int64  uint64_t;
-
-#endif /* unistd.h  */
+#endif /* _UNISTD_H  */
+#else
+#include <unistd.h>
+#endif /* _WIN32  */

@@ -180,16 +180,16 @@ network make_network(int n)
 {
     network net = {0};
     net.n = n;
-    net.layers = calloc(net.n, sizeof(layer));
-    net.seen = calloc(1, sizeof(uint64_t));
+    net.layers = (layer*)calloc(net.n, sizeof(layer));
+    net.seen = (uint64_t*)calloc(1, sizeof(uint64_t));
 #ifdef GPU
-    net.input_gpu = calloc(1, sizeof(float *));
-    net.truth_gpu = calloc(1, sizeof(float *));
+    net.input_gpu = (float**)calloc(1, sizeof(float*));
+    net.truth_gpu = (float**)calloc(1, sizeof(float*));
 
-    net.input16_gpu = calloc(1, sizeof(float *));
-    net.output16_gpu = calloc(1, sizeof(float *));
-    net.max_input16_size = calloc(1, sizeof(size_t));
-    net.max_output16_size = calloc(1, sizeof(size_t));
+    net.input16_gpu = (float**)calloc(1, sizeof(float*));
+    net.output16_gpu = (float**)calloc(1, sizeof(float*));
+    net.max_input16_size = (size_t*)calloc(1, sizeof(size_t));
+    net.max_output16_size = (size_t*)calloc(1, sizeof(size_t));
 #endif
     return net;
 }
@@ -300,8 +300,8 @@ float train_network_datum(network net, float *x, float *y)
 float train_network_sgd(network net, data d, int n)
 {
     int batch = net.batch;
-    float *X = calloc(batch*d.X.cols, sizeof(float));
-    float *y = calloc(batch*d.y.cols, sizeof(float));
+    float* X = (float*)calloc(batch * d.X.cols, sizeof(float));
+    float* y = (float*)calloc(batch * d.y.cols, sizeof(float));
 
     int i;
     float sum = 0;
@@ -320,8 +320,8 @@ float train_network(network net, data d)
     assert(d.X.rows % net.batch == 0);
     int batch = net.batch;
     int n = d.X.rows / batch;
-    float *X = calloc(batch*d.X.cols, sizeof(float));
-    float *y = calloc(batch*d.y.cols, sizeof(float));
+    float* X = (float*)calloc(batch * d.X.cols, sizeof(float));
+    float* y = (float*)calloc(batch * d.y.cols, sizeof(float));
 
     int i;
     float sum = 0;
@@ -348,7 +348,7 @@ float train_network_batch(network net, data d, int n)
     int batch = 2;
     for(i = 0; i < n; ++i){
         for(j = 0; j < batch; ++j){
-            int index = rand()%d.X.rows;
+            int index = random_gen()%d.X.rows;
             state.input = d.X.vals[index];
             state.truth = d.y.vals[index];
             forward_network(net, state);
@@ -389,11 +389,11 @@ int recalculate_workspace_size(network *net)
     }
     else {
         free(net->workspace);
-        net->workspace = calloc(1, workspace_size);
+        net->workspace = (float*)calloc(1, workspace_size);
     }
 #else
     free(net->workspace);
-    net->workspace = calloc(1, workspace_size);
+    net->workspace = (float*)calloc(1, workspace_size);
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;
@@ -452,6 +452,9 @@ int resize_network(network *net, int w, int h)
         //printf(" %d: layer = %d,", i, l.type);
         if(l.type == CONVOLUTIONAL){
             resize_convolutional_layer(&l, w, h);
+        }
+        else if (l.type == CRNN) {
+            resize_crnn_layer(&l, w, h);
         }else if(l.type == CROP){
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
@@ -495,19 +498,19 @@ int resize_network(network *net, int w, int h)
             net->input_pinned_cpu_flag = 1;
         else {
             cudaGetLastError(); // reset CUDA-error
-            net->input_pinned_cpu = calloc(size, sizeof(float));
+            net->input_pinned_cpu = (float*)calloc(size, sizeof(float));
             net->input_pinned_cpu_flag = 0;
         }
         printf(" CUDA allocate done! \n");
     }else {
         free(net->workspace);
-        net->workspace = calloc(1, workspace_size);
+        net->workspace = (float*)calloc(1, workspace_size);
         if(!net->input_pinned_cpu_flag)
-            net->input_pinned_cpu = realloc(net->input_pinned_cpu, size * sizeof(float));
+            net->input_pinned_cpu = (float*)realloc(net->input_pinned_cpu, size * sizeof(float));
     }
 #else
     free(net->workspace);
-    net->workspace = calloc(1, workspace_size);
+    net->workspace = (float*)calloc(1, workspace_size);
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;
@@ -534,7 +537,7 @@ detection_layer get_network_detection_layer(network net)
         }
     }
     fprintf(stderr, "Detection layer not found!!\n");
-    detection_layer l = {0};
+    detection_layer l = { (LAYER_TYPE)0 };
     return l;
 }
 
@@ -632,11 +635,11 @@ detection *make_network_boxes(network *net, float thresh, int *num)
     int i;
     int nboxes = num_detections(net, thresh);
     if (num) *num = nboxes;
-    detection *dets = calloc(nboxes, sizeof(detection));
+    detection* dets = (detection*)calloc(nboxes, sizeof(detection));
     for (i = 0; i < nboxes; ++i) {
-        dets[i].prob = calloc(l.classes, sizeof(float));
+        dets[i].prob = (float*)calloc(l.classes, sizeof(float));
         if (l.coords > 4) {
-            dets[i].mask = calloc(l.coords - 4, sizeof(float));
+            dets[i].mask = (float*)calloc(l.coords - 4, sizeof(float));
         }
     }
     return dets;
@@ -645,10 +648,10 @@ detection *make_network_boxes(network *net, float thresh, int *num)
 
 void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, float thresh, int *map, float hier, int relative, detection *dets, int letter)
 {
-    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+    box* boxes = (box*)calloc(l.w * l.h * l.n, sizeof(box));
+    float** probs = (float**)calloc(l.w * l.h * l.n, sizeof(float*));
     int i, j;
-    for (j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float));
+    for (j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(l.classes, sizeof(float));
     get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, map);
     for (j = 0; j < l.w*l.h*l.n; ++j) {
         dets[j].classes = l.classes;
@@ -789,7 +792,7 @@ matrix network_predict_data_multi(network net, data test, int n)
     int i,j,b,m;
     int k = get_network_output_size(net);
     matrix pred = make_matrix(test.X.rows, k);
-    float *X = calloc(net.batch*test.X.rows, sizeof(float));
+    float* X = (float*)calloc(net.batch * test.X.rows, sizeof(float));
     for(i = 0; i < test.X.rows; i += net.batch){
         for(b = 0; b < net.batch; ++b){
             if(i+b == test.X.rows) break;
@@ -814,7 +817,7 @@ matrix network_predict_data(network net, data test)
     int i,j,b;
     int k = get_network_output_size(net);
     matrix pred = make_matrix(test.X.rows, k);
-    float *X = calloc(net.batch*test.X.cols, sizeof(float));
+    float* X = (float*)calloc(net.batch * test.X.cols, sizeof(float));
     for(i = 0; i < test.X.rows; i += net.batch){
         for(b = 0; b < net.batch; ++b){
             if(i+b == test.X.rows) break;
@@ -988,7 +991,7 @@ void calculate_binary_weights(network net)
 
             if (l->xnor) {
                 //printf("\n %d \n", j);
-                l->lda_align = 256; // 256bit for AVX2
+                //l->lda_align = 256; // 256bit for AVX2    // set in make_convolutional_layer()
                 //if (l->size*l->size*l->c >= 2048) l->lda_align = 512;
 
                 binary_align_weights(l);
@@ -1017,6 +1020,51 @@ void calculate_binary_weights(network net)
     //printf("\n calculate_binary_weights Done! \n");
 
 }
+
+void copy_cudnn_descriptors(layer src, layer *dst)
+{
+#ifdef CUDNN
+    dst->normTensorDesc = src.normTensorDesc;
+    dst->normDstTensorDesc = src.normDstTensorDesc;
+    dst->normDstTensorDescF16 = src.normDstTensorDescF16;
+
+    dst->srcTensorDesc = src.srcTensorDesc;
+    dst->dstTensorDesc = src.dstTensorDesc;
+
+    dst->srcTensorDesc16 = src.srcTensorDesc16;
+    dst->dstTensorDesc16 = src.dstTensorDesc16;
+#endif // CUDNN
+}
+
+void copy_weights_net(network net_train, network *net_map)
+{
+    int k;
+    for (k = 0; k < net_train.n; ++k) {
+        layer *l = &(net_train.layers[k]);
+        layer tmp_layer;
+        copy_cudnn_descriptors(net_map->layers[k], &tmp_layer);
+        net_map->layers[k] = net_train.layers[k];
+        copy_cudnn_descriptors(tmp_layer, &net_map->layers[k]);
+
+        if (l->type == CRNN) {
+            layer tmp_input_layer, tmp_self_layer, tmp_output_layer;
+            copy_cudnn_descriptors(*net_map->layers[k].input_layer, &tmp_input_layer);
+            copy_cudnn_descriptors(*net_map->layers[k].self_layer, &tmp_self_layer);
+            copy_cudnn_descriptors(*net_map->layers[k].output_layer, &tmp_output_layer);
+            net_map->layers[k].input_layer = net_train.layers[k].input_layer;
+            net_map->layers[k].self_layer = net_train.layers[k].self_layer;
+            net_map->layers[k].output_layer = net_train.layers[k].output_layer;
+            //net_map->layers[k].output_gpu = net_map->layers[k].output_layer->output_gpu;  // already copied out of if()
+
+            copy_cudnn_descriptors(tmp_input_layer, net_map->layers[k].input_layer);
+            copy_cudnn_descriptors(tmp_self_layer, net_map->layers[k].self_layer);
+            copy_cudnn_descriptors(tmp_output_layer, net_map->layers[k].output_layer);
+        }
+        net_map->layers[k].batch = 1;
+        net_map->layers[k].steps = 1;
+    }
+}
+
 
 // combine Training and Validation networks
 network combine_train_valid_networks(network net_train, network net_map)

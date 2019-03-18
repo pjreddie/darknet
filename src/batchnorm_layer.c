@@ -5,29 +5,29 @@
 layer make_batchnorm_layer(int batch, int w, int h, int c)
 {
     fprintf(stderr, "Batch Normalization Layer: %d x %d x %d image\n", w,h,c);
-    layer layer = {0};
+    layer layer = { (LAYER_TYPE)0 };
     layer.type = BATCHNORM;
     layer.batch = batch;
     layer.h = layer.out_h = h;
     layer.w = layer.out_w = w;
     layer.c = layer.out_c = c;
-    layer.output = calloc(h * w * c * batch, sizeof(float));
-    layer.delta  = calloc(h * w * c * batch, sizeof(float));
+    layer.output = (float*)calloc(h * w * c * batch, sizeof(float));
+    layer.delta = (float*)calloc(h * w * c * batch, sizeof(float));
     layer.inputs = w*h*c;
     layer.outputs = layer.inputs;
 
-    layer.scales = calloc(c, sizeof(float));
-    layer.scale_updates = calloc(c, sizeof(float));
+    layer.scales = (float*)calloc(c, sizeof(float));
+    layer.scale_updates = (float*)calloc(c, sizeof(float));
     int i;
     for(i = 0; i < c; ++i){
         layer.scales[i] = 1;
     }
 
-    layer.mean = calloc(c, sizeof(float));
-    layer.variance = calloc(c, sizeof(float));
+    layer.mean = (float*)calloc(c, sizeof(float));
+    layer.variance = (float*)calloc(c, sizeof(float));
 
-    layer.rolling_mean = calloc(c, sizeof(float));
-    layer.rolling_variance = calloc(c, sizeof(float));
+    layer.rolling_mean = (float*)calloc(c, sizeof(float));
+    layer.rolling_variance = (float*)calloc(c, sizeof(float));
 
     layer.forward = forward_batchnorm_layer;
     layer.backward = backward_batchnorm_layer;
@@ -205,6 +205,15 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
             .00001,
             l.mean_gpu,            // output (should be FP32)
             l.variance_gpu);    // output (should be FP32)
+
+        if (state.net.try_fix_nan) {
+            fix_nan_and_inf(l.scales_gpu, l.n);
+            fix_nan_and_inf(l.biases_gpu, l.n);
+            fix_nan_and_inf(l.mean_gpu, l.n);
+            fix_nan_and_inf(l.variance_gpu, l.n);
+            fix_nan_and_inf(l.rolling_mean_gpu, l.n);
+            fix_nan_and_inf(l.rolling_variance_gpu, l.n);
+        }
 #else
         fast_mean_gpu(l.output_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.mean_gpu);
         fast_variance_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.variance_gpu);
@@ -272,5 +281,10 @@ void backward_batchnorm_layer_gpu(layer l, network_state state)
 #endif
     if (l.type == BATCHNORM) simple_copy_ongpu(l.outputs*l.batch, l.delta_gpu, state.delta);
         //copy_ongpu(l.outputs*l.batch, l.delta_gpu, 1, state.delta, 1);
+
+    if (state.net.try_fix_nan) {
+        fix_nan_and_inf(l.scale_updates_gpu, l.n);
+        fix_nan_and_inf(l.bias_updates_gpu, l.n);
+    }
 }
 #endif

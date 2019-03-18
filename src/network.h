@@ -6,14 +6,14 @@
 #include <stdint.h>
 #include "layer.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "image.h"
 #include "data.h"
 #include "tree.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /*
 typedef enum {
     CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
@@ -161,10 +161,10 @@ int get_network_background(network net);
 //LIB_API void fuse_conv_batchnorm(network net);
 //LIB_API void calculate_binary_weights(network net);
 network combine_train_valid_networks(network net_train, network net_map);
+void copy_weights_net(network net_train, network *net_map);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

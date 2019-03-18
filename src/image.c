@@ -1,29 +1,37 @@
-#include "darknet.h"
 #include "image.h"
 #include "utils.h"
 #include "blas.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include <stdio.h>
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
 #include <math.h>
 
+#ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#endif
+#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#endif
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-#include "opencv2/core/types_c.h"
-#include "opencv2/core/version.hpp"
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/core/types_c.h>
+#include <opencv2/core/version.hpp>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio_c.h"
-#include "opencv2/imgcodecs/imgcodecs_c.h"
+#include <opencv2/videoio/videoio_c.h>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include "http_stream.h"
 #endif
 #include "http_stream.h"
 
+#ifndef CV_RGB
 #define CV_RGB(r, g, b) cvScalar( (b), (g), (r), 0 )
+#endif
 #endif
 
 extern int check_mistakes;
@@ -255,9 +263,9 @@ image **load_alphabet()
 {
     int i, j;
     const int nsize = 8;
-    image **alphabets = calloc(nsize, sizeof(image));
+    image** alphabets = (image**)calloc(nsize, sizeof(image*));
     for(j = 0; j < nsize; ++j){
-        alphabets[j] = calloc(128, sizeof(image));
+        alphabets[j] = (image*)calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
             char buff[256];
             sprintf(buff, "data/labels/%d_%d.png", i, j);
@@ -273,7 +281,7 @@ image **load_alphabet()
 detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num, char **names)
 {
     int selected_num = 0;
-    detection_with_class* result_arr = calloc(dets_num, sizeof(detection_with_class));
+    detection_with_class* result_arr = (detection_with_class*)calloc(dets_num, sizeof(detection_with_class));
     int i;
     for (i = 0; i < dets_num; ++i) {
         int best_class = -1;
@@ -505,7 +513,7 @@ void save_cv_png(IplImage *img, const char *name)
     IplImage* img_rgb = cvCreateImage(cvSize(img->width, img->height), 8, 3);
     cvCvtColor(img, img_rgb, CV_RGB2BGR);
     stbi_write_png(name, img_rgb->width, img_rgb->height, 3, (char *)img_rgb->imageData, 0);
-    cvRelease(&img_rgb);
+    cvRelease((void**)&img_rgb);
 }
 
 void save_cv_jpg(IplImage *img, const char *name)
@@ -513,7 +521,7 @@ void save_cv_jpg(IplImage *img, const char *name)
     IplImage* img_rgb = cvCreateImage(cvSize(img->width, img->height), 8, 3);
     cvCvtColor(img, img_rgb, CV_RGB2BGR);
     stbi_write_jpg(name, img_rgb->width, img_rgb->height, 3, (char *)img_rgb->imageData, 80);
-    cvRelease(&img_rgb);
+    cvRelease((void**)&img_rgb);
 }
 
 void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
@@ -821,7 +829,7 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     else
         cvPutText(img, "- Saved", cvPoint(250, img_size - 10), &font, CV_RGB(255, 255, 255));
 
-    if (mjpeg_port > 0) send_mjpeg(img, mjpeg_port, 2000, 80);
+    if (mjpeg_port > 0) send_mjpeg(img, mjpeg_port, 500000, 100);
 }
 #endif    // OPENCV
 
@@ -952,8 +960,8 @@ void normalize_image(image p)
 
 void normalize_image2(image p)
 {
-    float *min = calloc(p.c, sizeof(float));
-    float *max = calloc(p.c, sizeof(float));
+    float* min = (float*)calloc(p.c, sizeof(float));
+    float* max = (float*)calloc(p.c, sizeof(float));
     int i,j;
     for(i = 0; i < p.c; ++i) min[i] = max[i] = p.data[i*p.h*p.w];
 
@@ -982,7 +990,7 @@ void normalize_image2(image p)
 image copy_image(image p)
 {
     image copy = p;
-    copy.data = calloc(p.h*p.w*p.c, sizeof(float));
+    copy.data = (float*)calloc(p.h * p.w * p.c, sizeof(float));
     memcpy(copy.data, p.data, p.h*p.w*p.c*sizeof(float));
     return copy;
 }
@@ -1252,7 +1260,7 @@ void save_image_png(image im, const char *name)
     char buff[256];
     //sprintf(buff, "%s (%d)", name, windows);
     sprintf(buff, "%s.png", name);
-    unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
+    unsigned char* data = (unsigned char*)calloc(im.w * im.h * im.c, sizeof(unsigned char));
     int i,k;
     for(k = 0; k < im.c; ++k){
         for(i = 0; i < im.w*im.h; ++i){
@@ -1273,7 +1281,7 @@ void save_image_options(image im, const char *name, IMTYPE f, int quality)
     else if (f == TGA) sprintf(buff, "%s.tga", name);
     else if (f == JPG) sprintf(buff, "%s.jpg", name);
     else               sprintf(buff, "%s.png", name);
-    unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
+    unsigned char* data = (unsigned char*)calloc(im.w * im.h * im.c, sizeof(unsigned char));
     int i, k;
     for (k = 0; k < im.c; ++k) {
         for (i = 0; i < im.w*im.h; ++i) {
@@ -1331,14 +1339,14 @@ image make_empty_image(int w, int h, int c)
 image make_image(int w, int h, int c)
 {
     image out = make_empty_image(w,h,c);
-    out.data = calloc(h*w*c, sizeof(float));
+    out.data = (float*)calloc(h * w * c, sizeof(float));
     return out;
 }
 
 image make_random_image(int w, int h, int c)
 {
     image out = make_empty_image(w,h,c);
-    out.data = calloc(h*w*c, sizeof(float));
+    out.data = (float*)calloc(h * w * c, sizeof(float));
     int i;
     for(i = 0; i < w*h*c; ++i){
         out.data[i] = (rand_normal() * .25) + .5;
@@ -1585,7 +1593,7 @@ image random_augment_image(image im, float angle, float aspect, int low, int hig
     int min = (im.h < im.w*aspect) ? im.h : im.w*aspect;
     float scale = (float)r / min;
 
-    float rad = rand_uniform(-angle, angle) * TWO_PI / 360.;
+    float rad = rand_uniform(-angle, angle) * 2.0 * M_PI / 360.;
 
     float dx = (im.w*scale/aspect - size) / 2.;
     float dy = (im.h*scale - size) / 2.;

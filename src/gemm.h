@@ -3,6 +3,9 @@
 #include "activations.h"
 #include <stdint.h>
 #include <stddef.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
     float *weights, float *input, float *output, float *mean);
@@ -56,6 +59,7 @@ void im2col_cpu_custom_transpose(float* data_im,
 
 void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a);
 
+void transpose_32x32_bits_reversed_diagonale(uint32_t *A, uint32_t *B, int m, int n);
 
 void gemm_bin(int M, int N, int K, float ALPHA,
         char  *A, int lda,
@@ -108,5 +112,8 @@ void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float *B, int ldb,
         float BETA,
         float *C, int ldc);
+#endif
+#ifdef __cplusplus
+}
 #endif
 #endif

@@ -98,9 +98,9 @@ float box_iou(box a, box b)
 
 float box_rmse(box a, box b)
 {
-    return sqrt(pow(a.x-b.x, 2) + 
-                pow(a.y-b.y, 2) + 
-                pow(a.w-b.w, 2) + 
+    return sqrt(pow(a.x-b.x, 2) +
+                pow(a.y-b.y, 2) +
+                pow(a.w-b.w, 2) +
                 pow(a.h-b.h, 2));
 }
 
@@ -249,10 +249,10 @@ int nms_comparator(const void *pa, const void *pb)
 void do_nms_sort_v2(box *boxes, float **probs, int total, int classes, float thresh)
 {
     int i, j, k;
-    sortable_bbox *s = calloc(total, sizeof(sortable_bbox));
+    sortable_bbox* s = (sortable_bbox*)calloc(total, sizeof(sortable_bbox));
 
     for(i = 0; i < total; ++i){
-        s[i].index = i;       
+        s[i].index = i;
         s[i].class_id = 0;
         s[i].probs = probs;
     }

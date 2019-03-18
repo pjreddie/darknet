@@ -26,7 +26,7 @@ int local_out_width(local_layer l)
 local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation)
 {
     int i;
-    local_layer l = {0};
+    local_layer l = { (LAYER_TYPE)0 };
     l.type = LOCAL;
 
     l.h = h;
@@ -47,20 +47,20 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = l.w * l.h * l.c;
 
-    l.weights = calloc(c*n*size*size*locations, sizeof(float));
-    l.weight_updates = calloc(c*n*size*size*locations, sizeof(float));
+    l.weights = (float*)calloc(c * n * size * size * locations, sizeof(float));
+    l.weight_updates = (float*)calloc(c * n * size * size * locations, sizeof(float));
 
-    l.biases = calloc(l.outputs, sizeof(float));
-    l.bias_updates = calloc(l.outputs, sizeof(float));
+    l.biases = (float*)calloc(l.outputs, sizeof(float));
+    l.bias_updates = (float*)calloc(l.outputs, sizeof(float));
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c));
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1,1);
 
-    l.col_image = calloc(out_h*out_w*size*size*c, sizeof(float));
-    l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
-    l.delta  = calloc(l.batch*out_h * out_w * n, sizeof(float));
-    
+    l.col_image = (float*)calloc(out_h * out_w * size * size * c, sizeof(float));
+    l.output = (float*)calloc(l.batch * out_h * out_w * n, sizeof(float));
+    l.delta = (float*)calloc(l.batch * out_h * out_w * n, sizeof(float));
+
     l.forward = forward_local_layer;
     l.backward = backward_local_layer;
     l.update = update_local_layer;
@@ -101,7 +101,7 @@ void forward_local_layer(const local_layer l, network_state state)
 
     for(i = 0; i < l.batch; ++i){
         float *input = state.input + i*l.w*l.h*l.c;
-        im2col_cpu(input, l.c, l.h, l.w, 
+        im2col_cpu(input, l.c, l.h, l.w,
                 l.size, l.stride, l.pad, l.col_image);
         float *output = l.output + i*l.outputs;
         for(j = 0; j < locations; ++j){
@@ -132,10 +132,10 @@ void backward_local_layer(local_layer l, network_state state)
 
     for(i = 0; i < l.batch; ++i){
         float *input = state.input + i*l.w*l.h*l.c;
-        im2col_cpu(input, l.c, l.h, l.w, 
+        im2col_cpu(input, l.c, l.h, l.w,
                 l.size, l.stride, l.pad, l.col_image);
 
-        for(j = 0; j < locations; ++j){ 
+        for(j = 0; j < locations; ++j){
             float *a = l.delta + i*l.outputs + j;
             float *b = l.col_image + j;
             float *c = l.weight_updates + j*l.size*l.size*l.c*l.n;
@@ -147,7 +147,7 @@ void backward_local_layer(local_layer l, network_state state)
         }
 
         if(state.delta){
-            for(j = 0; j < locations; ++j){ 
+            for(j = 0; j < locations; ++j){
                 float *a = l.weights + j*l.size*l.size*l.c*l.n;
                 float *b = l.delta + i*l.outputs + j;
                 float *c = l.col_image + j;
@@ -191,7 +191,7 @@ void forward_local_layer_gpu(const local_layer l, network_state state)
 
     for(i = 0; i < l.batch; ++i){
         float *input = state.input + i*l.w*l.h*l.c;
-        im2col_ongpu(input, l.c, l.h, l.w, 
+        im2col_ongpu(input, l.c, l.h, l.w,
                 l.size, l.stride, l.pad, l.col_image_gpu);
         float *output = l.output_gpu + i*l.outputs;
         for(j = 0; j < locations; ++j){
@@ -221,10 +221,10 @@ void backward_local_layer_gpu(local_layer l, network_state state)
 
     for(i = 0; i < l.batch; ++i){
         float *input = state.input + i*l.w*l.h*l.c;
-        im2col_ongpu(input, l.c, l.h, l.w, 
+        im2col_ongpu(input, l.c, l.h, l.w,
                 l.size, l.stride, l.pad, l.col_image_gpu);
 
-        for(j = 0; j < locations; ++j){ 
+        for(j = 0; j < locations; ++j){
             float *a = l.delta_gpu + i*l.outputs + j;
             float *b = l.col_image_gpu + j;
             float *c = l.weight_updates_gpu + j*l.size*l.size*l.c*l.n;
@@ -236,7 +236,7 @@ void backward_local_layer_gpu(local_layer l, network_state state)
         }
 
         if(state.delta){
-            for(j = 0; j < locations; ++j){ 
+            for(j = 0; j < locations; ++j){
                 float *a = l.weights_gpu + j*l.size*l.size*l.c*l.n;
                 float *b = l.delta_gpu + i*l.outputs + j;
                 float *c = l.col_image_gpu + j;

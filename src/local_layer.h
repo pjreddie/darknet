@@ -1,7 +1,7 @@
 #ifndef LOCAL_LAYER_H
 #define LOCAL_LAYER_H
 
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "image.h"
 #include "activations.h"
 #include "layer.h"
@@ -9,6 +9,9 @@
 
 typedef layer local_layer;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #ifdef GPU
 void forward_local_layer_gpu(local_layer layer, network_state state);
 void backward_local_layer_gpu(local_layer layer, network_state state);
@@ -27,5 +30,8 @@ void update_local_layer(local_layer layer, int batch, float learning_rate, float
 void bias_output(float *output, float *biases, int batch, int n, int size);
 void backward_bias(float *bias_updates, float *delta, int batch, int n, int size);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

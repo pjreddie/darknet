@@ -184,15 +184,18 @@ layer parse_crnn(list *options, size_params params)
 {
     int size = option_find_int_quiet(options, "size", 3);
     int stride = option_find_int_quiet(options, "stride", 1);
-    int pad = option_find_int_quiet(options, "pad", 1);
+    int pad = option_find_int_quiet(options, "pad", 0);
+    int padding = option_find_int_quiet(options, "padding", 0);
+    if (pad) padding = size / 2;
 
     int output_filters = option_find_int(options, "output",1);
     int hidden_filters = option_find_int(options, "hidden",1);
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+    int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, params.time_steps, size, stride, pad, activation, batch_normalize);
+    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, params.time_steps, size, stride, padding, activation, batch_normalize, xnor);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
@@ -272,7 +275,7 @@ int *parse_yolo_mask(char *a, int *num)
         for (i = 0; i < len; ++i) {
             if (a[i] == ',') ++n;
         }
-        mask = calloc(n, sizeof(int));
+        mask = (int*)calloc(n, sizeof(int));
         for (i = 0; i < n; ++i) {
             int val = atoi(a);
             mask[i] = val;
@@ -587,8 +590,8 @@ route_layer parse_route(list *options, size_params params, network net)
         if (l[i] == ',') ++n;
     }
 
-    int *layers = calloc(n, sizeof(int));
-    int *sizes = calloc(n, sizeof(int));
+    int* layers = (int*)calloc(n, sizeof(int));
+    int* sizes = (int*)calloc(n, sizeof(int));
     for(i = 0; i < n; ++i){
         int index = atoi(l);
         l = strchr(l, ',')+1;
@@ -638,6 +641,9 @@ void parse_net_options(list *options, network *net)
     net->decay = option_find_float(options, "decay", .0001);
     int subdivs = option_find_int(options, "subdivisions",1);
     net->time_steps = option_find_int_quiet(options, "time_steps",1);
+    net->track = option_find_int_quiet(options, "track", 0);
+    net->augment_speed = option_find_int_quiet(options, "augment_speed", 2);
+    net->try_fix_nan = option_find_int_quiet(options, "try_fix_nan", 0);
     net->batch /= subdivs;
     net->batch *= net->time_steps;
     net->subdivisions = subdivs;
@@ -657,7 +663,6 @@ void parse_net_options(list *options, network *net)
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
     net->flip = option_find_int_quiet(options, "flip", 1);
 
-    net->small_object = option_find_int_quiet(options, "small_object", 0);
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);
     net->saturation = option_find_float_quiet(options, "saturation", 1);
@@ -693,8 +698,8 @@ void parse_net_options(list *options, network *net)
         for(i = 0; i < len; ++i){
             if (l[i] == ',') ++n;
         }
-        int *steps = calloc(n, sizeof(int));
-        float *scales = calloc(n, sizeof(float));
+        int* steps = (int*)calloc(n, sizeof(int));
+        float* scales = (float*)calloc(n, sizeof(float));
         for(i = 0; i < n; ++i){
             int step    = atoi(l);
             float scale = atof(p);
@@ -748,6 +753,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     params.inputs = net.inputs;
     if (batch > 0) net.batch = batch;
     if (time_steps > 0) net.time_steps = time_steps;
+    if (net.batch < net.time_steps) net.batch = net.time_steps;
     params.batch = net.batch;
     params.time_steps = net.time_steps;
     params.net = net;
@@ -765,7 +771,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         fprintf(stderr, "%4d ", count);
         s = (section *)n->val;
         options = s->options;
-        layer l = {0};
+        layer l = { (LAYER_TYPE)0 };
         LAYER_TYPE lt = string_to_layer_type(s->type);
         if(lt == CONVOLUTIONAL){
             l = parse_convolutional(options, params);
@@ -864,7 +870,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         if (cudaSuccess == cudaHostAlloc(&net.input_pinned_cpu, size * sizeof(float), cudaHostRegisterMapped)) net.input_pinned_cpu_flag = 1;
         else {
             cudaGetLastError(); // reset CUDA-error
-            net.input_pinned_cpu = calloc(size, sizeof(float));
+            net.input_pinned_cpu = (float*)calloc(size, sizeof(float));
         }
 
         // pre-allocate memory for inference on Tensor Cores (fp16)
@@ -879,12 +885,12 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
         }
         else {
-            net.workspace = calloc(1, workspace_size);
+            net.workspace = (float*)calloc(1, workspace_size);
         }
     }
 #else
         if (workspace_size) {
-            net.workspace = calloc(1, workspace_size);
+            net.workspace = (float*)calloc(1, workspace_size);
         }
 #endif
 
@@ -911,7 +917,7 @@ list *read_cfg(char *filename)
         strip(line);
         switch(line[0]){
             case '[':
-                current = malloc(sizeof(section));
+                current = (section*)malloc(sizeof(section));
                 list_insert(sections, current);
                 current->options = make_list();
                 current->type = line;
@@ -984,10 +990,10 @@ void save_convolutional_weights(layer l, FILE *fp)
         fwrite(l.rolling_variance, sizeof(float), l.n, fp);
     }
     fwrite(l.weights, sizeof(float), num, fp);
-    if(l.adam){
-        fwrite(l.m, sizeof(float), num, fp);
-        fwrite(l.v, sizeof(float), num, fp);
-    }
+    //if(l.adam){
+    //    fwrite(l.m, sizeof(float), num, fp);
+    //    fwrite(l.v, sizeof(float), num, fp);
+    //}
 }
 
 void save_batchnorm_weights(layer l, FILE *fp)
@@ -1091,7 +1097,7 @@ void save_weights(network net, char *filename)
 
 void transpose_matrix(float *a, int rows, int cols)
 {
-    float *transpose = calloc(rows*cols, sizeof(float));
+    float* transpose = (float*)calloc(rows * cols, sizeof(float));
     int x, y;
     for(x = 0; x < rows; ++x){
         for(y = 0; y < cols; ++y){
@@ -1198,10 +1204,10 @@ void load_convolutional_weights(layer l, FILE *fp)
         }
     }
     fread(l.weights, sizeof(float), num, fp);
-    if(l.adam){
-        fread(l.m, sizeof(float), num, fp);
-        fread(l.v, sizeof(float), num, fp);
-    }
+    //if(l.adam){
+    //    fread(l.m, sizeof(float), num, fp);
+    //    fread(l.v, sizeof(float), num, fp);
+    //}
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
@@ -1313,7 +1319,7 @@ void load_weights(network *net, char *filename)
 network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 {
     printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
-    network *net = calloc(1, sizeof(network));
+    network* net = (network*)calloc(1, sizeof(network));
     *net = parse_network_cfg_custom(cfg, batch, 0);
     if (weights && weights[0] != 0) {
         load_weights(net, weights);
@@ -1326,7 +1332,7 @@ network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 network *load_network(char *cfg, char *weights, int clear)
 {
     printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
-    network *net = calloc(1, sizeof(network));
+    network* net = (network*)calloc(1, sizeof(network));
     *net = parse_network_cfg(cfg);
     if (weights && weights[0] != 0) {
         load_weights(net, weights);

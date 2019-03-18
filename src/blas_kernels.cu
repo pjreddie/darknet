@@ -3,12 +3,10 @@
 #include "cublas_v2.h"
 #include <assert.h>
 
-extern "C" {
 #include "blas.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "utils.h"
 #include "tree.h"
-}
 
 __global__ void scale_bias_kernel(float *output, float *biases, int n, int size)
 {
@@ -976,4 +974,51 @@ extern "C" void softmax_tree_gpu(float *input, int spatial, int batch, int strid
     CHECK_CUDA(cudaPeekAtLastError());
 	cuda_free((float *)tree_groups_size);
 	cuda_free((float *)tree_groups_offset);
+}
+
+
+__global__ void fix_nan_and_inf_kernel(float *input, size_t size)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        float val = input[index];
+        if (isnan(val) || isinf(val))
+            input[index] = index;  // pseudo random value
+    }
+}
+
+extern "C" void fix_nan_and_inf(float *input, size_t size)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    fix_nan_and_inf_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, size);
+    CHECK_CUDA(cudaPeekAtLastError());
+    //CHECK_CUDA(cudaDeviceSynchronize());
+}
+
+
+__global__ void is_nan_or_inf_kernel(float *input, size_t size, int *pinned_return)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        float val = input[index];
+        if (isnan(val) || isinf(val))
+            *pinned_return = 1;
+    }
+}
+
+extern "C" int is_nan_or_inf(float *input, size_t size)
+{
+    int *pinned_return;
+    CHECK_CUDA(cudaHostAlloc(&pinned_return, sizeof(int), cudaHostRegisterMapped));
+    *pinned_return = 0;
+
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    is_nan_or_inf_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, size, pinned_return);
+    CHECK_CUDA(cudaDeviceSynchronize());
+    int ret_val = *pinned_return;
+
+    CHECK_CUDA(cudaFreeHost(pinned_return));
+    return ret_val;
 }

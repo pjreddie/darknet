@@ -1,6 +1,6 @@
 #include "activation_layer.h"
 #include "utils.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "blas.h"
 #include "gemm.h"
 
@@ -11,15 +11,15 @@
 
 layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
 {
-    layer l = {0};
+    layer l = { (LAYER_TYPE)0 };
     l.type = ACTIVE;
 
     l.inputs = inputs;
     l.outputs = inputs;
     l.batch=batch;
 
-    l.output = calloc(batch*inputs, sizeof(float*));
-    l.delta = calloc(batch*inputs, sizeof(float*));
+    l.output = (float*)calloc(batch * inputs, sizeof(float));
+    l.delta = (float*)calloc(batch * inputs, sizeof(float));
 
     l.forward = forward_activation_layer;
     l.backward = backward_activation_layer;

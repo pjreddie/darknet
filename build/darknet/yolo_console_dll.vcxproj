@@ -51,8 +51,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -93,7 +92,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\opencv_3.0\opencv\build\x64\vc14\lib;C:\opencv_2.4.13\opencv\build\x64\vc12\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\opencv_3.0\opencv\build\x64\vc14\lib;C:\opencv_2.4.13\opencv\build\x64\vc12\lib;$(CUDA_PATH)\lib\x64\;$(ZED_SDK_ROOT_DIR)\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -117,15 +116,16 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\..\include;C:\opencv_source\opencv\bin\install\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\include;C:\opencv_source\opencv\bin\install\include;$(CUDA_PATH)\include;$(ZED_SDK_ROOT_DIR)\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>OPENCV;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\opencv_source\opencv\bin\install\x64\vc14\lib;C:\opencv_3.0\opencv\build\x64\vc14\lib;C:\opencv_2.4.13\opencv\build\x64\vc12\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\opencv_source\opencv\bin\install\x64\vc14\lib;C:\opencv_3.0\opencv\build\x64\vc14\lib;C:\opencv_2.4.13\opencv\build\x64\vc12\lib;$(CUDA_PATH)\lib\x64\;$(ZED_SDK_ROOT_DIR)\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -138,6 +138,5 @@
     <ClInclude Include="..\..\include\yolo_v2_class.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

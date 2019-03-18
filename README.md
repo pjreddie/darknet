@@ -1,25 +1,27 @@
 # Yolo-v3 and Yolo-v2 for Windows and Linux
-### (neural network for object detection) - Tensor Cores can be used on [Linux](https://github.com/AlexeyAB/darknet#how-to-compile-on-linux) and [Windows](https://github.com/AlexeyAB/darknet#how-to-compile-on-windows)
+### (neural network for object detection) - Tensor Cores can be used on [Linux](https://github.com/AlexeyAB/darknet#how-to-compile-on-linux) and [Windows](https://github.com/AlexeyAB/darknet#how-to-compile-on-windows-using-vcpkg)
 
 [![CircleCI](https://circleci.com/gh/AlexeyAB/darknet.svg?style=svg)](https://circleci.com/gh/AlexeyAB/darknet)
 
 * [Requirements](#requirements)
 * [Pre-trained models](#pre-trained-models)
 * [Explanations in issues](https://github.com/AlexeyAB/darknet/issues?q=is%3Aopen+is%3Aissue+label%3AExplanations)
-0. [Improvements in this repository](#improvements-in-this-repository)
-1. [How to use](#how-to-use)
-2. [How to compile on Linux](#how-to-compile-on-linux)
-3. [How to compile on Windows](#how-to-compile-on-windows)
-4. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
-5. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
-6. [When should I stop training](#when-should-i-stop-training)
-7. [How to calculate mAP on PascalVOC 2007](#how-to-calculate-map-on-pascalvoc-2007)
-8. [How to improve object detection](#how-to-improve-object-detection)
-9. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-10. [Using Yolo9000](#using-yolo9000)
-11. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
 
-
+0.  [Improvements in this repository](#improvements-in-this-repository)
+1.  [How to use](#how-to-use-on-the-command-line)
+2.  [How to compile on Linux](#how-to-compile-on-linux)
+3.  How to compile on Windows
+    * [Using vcpkg](#how-to-compile-on-windows-using-vcpkg)
+    * [Legacy way](#how-to-compile-on-windows-legacy-way)
+4.  [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
+5.  [How to train with multi-GPU:](#how-to-train-with-multi-gpu)
+6.  [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
+7.  [How to train tiny-yolo (to detect your custom objects)](#how-to-train-tiny-yolo-to-detect-your-custom-objects)
+8.  [When should I stop training](#when-should-i-stop-training)
+9.  [How to calculate mAP on PascalVOC 2007](#how-to-calculate-map-on-pascalvoc-2007)
+10.  [How to improve object detection](#how-to-improve-object-detection)
+11.  [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+12. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_time](https://user-images.githubusercontent.com/4096485/52151356-e5d4a380-2683-11e9-9d7d-ac7bc192c477.jpg) mAP@0.5 (AP50) https://pjreddie.com/media/files/papers/YOLOv3.pdf |
 |---|---|
@@ -29,9 +31,9 @@
 * Yolo v2 on Pascal VOC 2007: https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg
 * Yolo v2 on Pascal VOC 2012 (comp4): https://hsto.org/files/3a6/fdf/b53/3a6fdfb533f34cee9b52bdd9bb0b19d9.jpg
 
+## "You Only Look Once: Unified, Real-Time Object Detection (versions 2 & 3)"
 
-# "You Only Look Once: Unified, Real-Time Object Detection (versions 2 & 3)"
-A Yolo cross-platform Windows and Linux version (for object detection). Contributtors: https://github.com/AlexeyAB/darknet/graphs/contributors
+A Yolo cross-platform Windows and Linux version (for object detection). Contributors: https://github.com/AlexeyAB/darknet/graphs/contributors
 
 This repository is forked from Linux-version: https://github.com/pjreddie/darknet
 
@@ -40,20 +42,21 @@ More details: http://pjreddie.com/darknet/yolo/
 This repository supports:
 
 * both Windows and Linux
-* both OpenCV 2.x.x and OpenCV <= 3.4.0 (3.4.1 and higher isn't supported, but you can try)
+* both OpenCV 2.x.x and OpenCV <= 4.0
 * both cuDNN >= v7
 * CUDA >= 7.5
 * also create SO-library on Linux and DLL-library on Windows
 
-##### Requirements: 
-* **Linux GCC>=4.9 or Windows MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
-* **CUDA 10.0**: https://developer.nvidia.com/cuda-toolkit-archive (on Linux do [Post-installation Actions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#post-installation-actions))
-* **OpenCV 3.3.0**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.3.0/opencv-3.3.0-vc14.exe/download
-* **or OpenCV 2.4.13**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.13/opencv-2.4.13.2-vc14.exe/download
-  - OpenCV allows to show image or video detection in the window and store result to file that specified in command line `-out_filename res.avi`
-* **GPU with CC >= 3.0**: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
+### Requirements
 
-##### Pre-trained models
+* **CMake >= 3.8** for modern CUDA support: https://cmake.org/download/
+* **CUDA 10.0**: https://developer.nvidia.com/cuda-toolkit-archive (on Linux do [Post-installation Actions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#post-installation-actions))
+* **OpenCV < 4.0**: use your preferred package manager (brew, apt), build from source using [vcpkg](https://github.com/Microsoft/vcpkg) or [OpenCV Releases](https://opencv.org/releases.html) (on Windows set system variable `OPENCV_DIR` = `C:\opencv\build` where are `include` and `x64` folders [image](https://user-images.githubusercontent.com/4096485/53249516-5130f480-36c9-11e9-8238-a6e82e48c6f2.png))
+* **cuDNN >= 7.0 for CUDA 10.0** https://developer.nvidia.com/rdp/cudnn-archive (set system variable `CUDNN` = `C:\cudnn` where did you unpack cuDNN. On Linux in `.bashrc`-file, on Windows see the [image](https://user-images.githubusercontent.com/4096485/53249764-019ef880-36ca-11e9-8ffe-d9cf47e7e462.jpg) )
+* **GPU with CC >= 3.0**: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
+* on Linux **GCC or Clang**, on Windows **MSVS 2017 (v15)** https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community&rel=15#
+
+#### Pre-trained models
 
 There are weights-file for different cfg-files (smaller size -> faster speed & lower accuracy:
 
@@ -71,11 +74,11 @@ Put it near compiled: darknet.exe
 
 You can get cfg-files by path: `darknet/cfg/`
 
-##### Examples of results:
+##### Examples of results
 
-[![Everything Is AWESOME](http://img.youtube.com/vi/VOC3huqHrss/0.jpg)](https://www.youtube.com/watch?v=VOC3huqHrss "Everything Is AWESOME")
+[![Yolo v3](http://img.youtube.com/vi/VOC3huqHrss/0.jpg)](https://www.youtube.com/watch?v=MPU2HistivI "Yolo v3")
 
-Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
+Others: https://www.youtube.com/user/pjreddie/videos
 
 ### Improvements in this repository
 
@@ -102,10 +105,7 @@ And added manual - [How to train Yolo v3/v2 (to detect your custom objects)](#ho
 
 Also, you might be interested in using a simplified repository where is implemented INT8-quantization (+30% speedup and -1% mAP reduced): https://github.com/AlexeyAB/yolo2_light
 
-### How to use:
-
-
-##### How to use on the command line:
+#### How to use on the command line
 
 On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector test ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights`
 
@@ -133,10 +133,9 @@ On Linux find executable file `./darknet` in the root directory, while on Window
 * To check accuracy mAP@IoU=50: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
 * To check accuracy mAP@IoU=75: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights -iou_thresh 0.75`
 
-##### For using network video-camera mjpeg-stream with any Android smartphone:
+##### For using network video-camera mjpeg-stream with any Android smartphone
 
 1. Download for Android phone mjpeg-stream soft: IP Webcam / Smart WebCam
-
 
     * Smart WebCam - preferably: https://play.google.com/store/apps/details?id=com.acontech.android.SmartWebCam2
     * IP Webcam: https://play.google.com/store/apps/details?id=com.pas.webcam
@@ -145,14 +144,13 @@ On Linux find executable file `./darknet` in the root directory, while on Window
 3. Start Smart WebCam on your phone
 4. Replace the address below, on shown in the phone application (Smart WebCam) and launch:
 
-
 * Yolo v3 COCO-model: `darknet.exe detector demo data/coco.data yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
 
-
-### How to compile on Linux:
+### How to compile on Linux
 
 Just do `make` in the darknet directory.
 Before make, you can set such options in the `Makefile`: [link](https://github.com/AlexeyAB/darknet/blob/9c1b9a2cf6363546c152251be578a21f3c3caec6/Makefile#L1)
+
 * `GPU=1` to build with CUDA to accelerate by using GPU (CUDA should be in `/usr/local/cuda`)
 * `CUDNN=1` to build with cuDNN v5-v7 to accelerate training by using GPU (cuDNN should be in `/usr/local/cudnn`)
 * `CUDNN_HALF=1` to build for Tensor Cores (on Titan V / Tesla V100 / DGX-2 and later) speedup Detection 3x, Training 2x
@@ -164,9 +162,34 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 
 To run Darknet on Linux use examples from this article, just use `./darknet` instead of `darknet.exe`, i.e. use this command: `./darknet detector test ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights`
 
-### How to compile on Windows:
+### How to compile on Windows (using `vcpkg`)
 
-1. If you have **MSVS 2015, CUDA 10.0, cuDNN 7.4 and OpenCV 3.x** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release** https://hsto.org/webt/uh/fk/-e/uhfk-eb0q-hwd9hsxhrikbokd6u.jpeg and do the: Build -> Build darknet. Also add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg **NOTE:** If installing OpenCV, use OpenCV 3.4.0 or earlier. This is a bug in OpenCV 3.4.1 in the C API (see [#500](https://github.com/AlexeyAB/darknet/issues/500)).
+1. Install or update Visual Studio to at least version 2017, making sure to have it fully patched (run again the installer if not sure to automatically update to latest version). If you need to install from scratch, download VS from here: [Visual Studio 2017 Community](http://visualstudio.com)
+
+2. Install CUDA and cuDNN
+
+3. Install `git` and `cmake`. Make sure they are on the Path at least for the current account
+
+4. Install [vcpkg](https://github.com/Microsoft/vcpkg) and try to install a test library to make sure everything is working, for example `vcpkg install opengl`
+
+5. Define an environment variables, `VCPKG_ROOT`, pointing to the install path of `vcpkg`
+
+6. Define another environment variable, with name `VCPKG_DEFAULT_TRIPLET` and value `x64-windows`
+
+7. Open a Powershell (as a standard user) and type (the last command requires a confirmation and is used to clean up unnecessary files)
+
+```PowerShell
+PS \>                  cd $env:VCPKG_ROOT
+PS Code\vcpkg>         .\vcpkg install pthreads opencv #replace with opencv[cuda] in case you want to use cuda-accelerated openCV
+```
+
+8. [necessary only with CUDA] Customize the CMakeLists.txt with the preferred compute capability
+
+9. Build with the Powershell script `build.ps1` or use the "Open Folder" functionality of Visual Studio 2017. In the first option, if you want to use Visual Studio, you will find a custom solution created for you by CMake after the build containing all the appropriate config flags for your system.
+
+### How to compile on Windows (legacy way)
+
+1. If you have **MSVS 2015, CUDA 10.0, cuDNN 7.4 and OpenCV 3.x** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release** https://hsto.org/webt/uh/fk/-e/uhfk-eb0q-hwd9hsxhrikbokd6u.jpeg and do the: Build -> Build darknet. Also add Windows system variable `CUDNN` with path to CUDNN: https://user-images.githubusercontent.com/4096485/53249764-019ef880-36ca-11e9-8ffe-d9cf47e7e462.jpg **NOTE:** If installing OpenCV, use OpenCV 3.4.0 or earlier. This is a bug in OpenCV 3.4.1 in the C API (see [#500](https://github.com/AlexeyAB/darknet/issues/500)).
 
     1.1. Find files `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` (or `opencv_world340.dll` and `opencv_ffmpeg340_64.dll`) in `C:\opencv_3.0\opencv\build\x64\vc14\bin` and put it near with `darknet.exe`
     
@@ -176,13 +199,13 @@ To run Darknet on Linux use examples from this article, just use `./darknet` ins
       
     * download and install **cuDNN v7.4.1 for CUDA 10.0**: https://developer.nvidia.com/rdp/cudnn-archive
       
-    * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
+    * add Windows system variable `CUDNN` with path to CUDNN: https://user-images.githubusercontent.com/4096485/53249764-019ef880-36ca-11e9-8ffe-d9cf47e7e462.jpg
     
     * copy file `cudnn64_7.dll` to the folder `\build\darknet\x64` near with `darknet.exe`
     
     1.4. If you want to build **without CUDNN** then: open `\darknet.sln` -> (right click on project) -> properties  -> C/C++ -> Preprocessor -> Preprocessor Definitions, and remove this: `CUDNN;`
 
-2. If you have other version of **CUDA (not 10.0)** then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 10.0" and change it to your CUDA-version, then do step 1
+2. If you have other version of **CUDA (not 10.0)** then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 10.0" and change it to your CUDA-version. Then open `\darknet.sln` -> (right click on project) -> properties  -> CUDA C/C++ -> Device and remove there `;compute_75,sm_75`. Then do step 1
 
 3. If you **don't have GPU**, but have **MSVS 2015 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet_no_gpu.sln`, set **x64** and **Release**, and do the: Build -> Build darknet_no_gpu
 
@@ -204,7 +227,7 @@ Also, you can to create your own `darknet.sln` & `darknet.vcxproj`, this example
 Then add to your created project:
 - (right click on project) -> properties  -> C/C++ -> General -> Additional Include Directories, put here: 
 
-`C:\opencv_3.0\opencv\build\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(cudnn)\include`
+`C:\opencv_3.0\opencv\build\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(CUDNN)\include`
 - (right click on project) -> Build dependecies -> Build Customizations -> set check on CUDA 9.1 or what version you have - for example as here: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/01/VS2013-R-5.jpg
 - add to project:
     * all `.c` files
@@ -213,7 +236,7 @@ Then add to your created project:
     * file `darknet.h` from `\include` directory
 - (right click on project) -> properties  -> Linker -> General -> Additional Library Directories, put here: 
 
-`C:\opencv_3.0\opencv\build\x64\vc14\lib;$(CUDA_PATH)lib\$(PlatformName);$(cudnn)\lib\x64;%(AdditionalLibraryDirectories)`
+`C:\opencv_3.0\opencv\build\x64\vc14\lib;$(CUDA_PATH)lib\$(PlatformName);$(CUDNN)\lib\x64;%(AdditionalLibraryDirectories)`
 -  (right click on project) -> properties  -> Linker -> Input -> Additional dependecies, put here: 
 
 `..\..\3rdparty\lib\x64\pthreadVC2.lib;cublas.lib;curand.lib;cudart.lib;cudnn.lib;%(AdditionalDependencies)`
@@ -321,11 +344,13 @@ Training Yolo v3:
 
 5. You should label each object on images from your dataset. Use this visual GUI-software for marking bounded boxes of objects and generating annotation files for Yolo v2 & v3: https://github.com/AlexeyAB/Yolo_mark
 
-It will create `.txt`-file for each `.jpg`-image-file - in the same directory and with the same name, but with `.txt`-extension, and put to file: object number and object coordinates on this image, for each object in new line: `<object-class> <x> <y> <width> <height>`
+It will create `.txt`-file for each `.jpg`-image-file - in the same directory and with the same name, but with `.txt`-extension, and put to file: object number and object coordinates on this image, for each object in new line: 
+
+`<object-class> <x_center> <y_center> <width> <height>`
 
   Where: 
   * `<object-class>` - integer object number from `0` to `(classes-1)`
-  * `<x_center> <y_center> <width> <height>` - float values relative to width and height of image, it can be equal from (0.0 to 1.0]
+  * `<x_center> <y_center> <width> <height>` - float values **relative** to width and height of image, it can be equal from `(0.0 to 1.0]`
   * for example: `<x> = <absolute_x> / <image_width>` or `<height> = <absolute_height> / <image_height>`
   * atention: `<x_center> <y_center>` - are center of rectangle (are not top-left corner)
 
@@ -400,7 +425,7 @@ Usually sufficient 2000 iterations for each class(object), but not less than 400
   * **9002** - iteration number (number of batch)
   * **0.060730 avg** - average loss (error) - **the lower, the better**
 
-  When you see that average loss **0.xxxxxx avg** no longer decreases at many iterations then you should stop training.
+  When you see that average loss **0.xxxxxx avg** no longer decreases at many iterations then you should stop training. The final avgerage loss can be from `0.05` (for a small model and easy dataset) to `3.0` (for a big model and a difficult dataset).
 
 2. Once training is stopped, you should take some of last `.weights`-files from `darknet\build\darknet\x64\backup` and choose the best of them:
 
@@ -474,11 +499,6 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
   * increase network resolution in your `.cfg`-file (`height=608`, `width=608` or any value multiple of 32) - it will increase precision
 
-  * recalculate anchors for your dataset for `width` and `height` from cfg-file:
-  `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
-   then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file
-
-    (also you can change indexes of anchors `masks=` for each [yolo]-layer, so that 1st-[yolo]-layer has anchors larger than 60x60, 2nd larger than 30x30, 3rd remaining)
 
   * check that each object are mandatory labeled in your dataset - no one object in your data set should not be without label. In the most training issues - there are wrong labels in your dataset (got labels by using some conversion script, marked with a third-party tool, ...). Always check your dataset by using: https://github.com/AlexeyAB/Yolo_mark
 
@@ -488,7 +508,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
   * for training with a large number of objects in each image, add the parameter `max=200` or higher value in the last `[yolo]`-layer or `[region]`-layer in your cfg-file (the global maximum number of objects that can be detected by YoloV3 is `0,0615234375*(width*height)` where are width and height are parameters from `[net]` section in cfg-file) 
   
-  * for training for small objects - set `layers = -1, 11` instead of https://github.com/AlexeyAB/darknet/blob/6390a5a2ab61a0bdf6f1a9a6b4a739c16b36e0d7/cfg/yolov3.cfg#L720
+  * for training for small objects (smaller than 16x16 after the image is resized to 416x416) - set `layers = -1, 11` instead of https://github.com/AlexeyAB/darknet/blob/6390a5a2ab61a0bdf6f1a9a6b4a739c16b36e0d7/cfg/yolov3.cfg#L720
       and set `stride=4` instead of https://github.com/AlexeyAB/darknet/blob/6390a5a2ab61a0bdf6f1a9a6b4a739c16b36e0d7/cfg/yolov3.cfg#L717
   
   * for training for both small and large objects use modified models:
@@ -513,7 +533,11 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
     then do this command: `./darknet partial cfg/yolov3.cfg yolov3.weights yolov3.conv.81 81` will be created file `yolov3.conv.81`,
     then train by using weights file `yolov3.conv.81` instead of `darknet53.conv.74`
 
-  * The more different objects you want to detect, the more complex network model should be used. But each: `model of object, side, illimination, scale, each 30 grad` of the turn and inclination angles - these are different objects from a neural network perspective.
+  * each: `model of object, side, illimination, scale, each 30 grad` of the turn and inclination angles - these are *different objects* from an internal perspective of the neural network. So the more *different objects* you want to detect, the more complex network model should be used.
+
+  * recalculate anchors for your dataset for `width` and `height` from cfg-file:
+  `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
+   then set the same 9 `anchors` in each of 3 `[yolo]`-layers in your cfg-file. But you should change indexes of anchors `masks=` for each [yolo]-layer, so that 1st-[yolo]-layer has anchors larger than 60x60, 2nd larger than 30x30, 3rd remaining. Also you should change the `filters=(classes + 5)*<number of mask>` before each [yolo]-layer. If many of the calculated anchors do not fit under the appropriate layers - then just try using all the default anchors.
 
 
 2. After training - for detection:

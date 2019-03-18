@@ -4,13 +4,13 @@
 #include "parser.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 void train_super(char *cfgfile, char *weightfile)
 {
-    char *train_images = "/data/imagenet/imagenet1k.train.list";
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* train_images = "data/imagenet/imagenet1k.train.list";
+    char* backup_directory = "backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);

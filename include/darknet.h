@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <pthread.h>
 
+#ifndef LIB_API
 #ifdef LIB_EXPORTS
 #if defined(_MSC_VER)
 #define LIB_API __declspec(dllexport)
@@ -25,9 +26,12 @@
 #define LIB_API
 #endif
 #endif
+#endif
+
+#define NFRAMES 3
+#define SECRET_NUM -1234
 
 #ifdef GPU
-#define BLOCK 512
 
 #include "cuda_runtime.h"
 #include "curand.h"
@@ -69,8 +73,6 @@ typedef struct metadata metadata;
 struct tree;
 typedef struct tree tree;
 
-
-#define SECRET_NUM -1234
 extern int gpu_index;
 
 // option_list.h
@@ -365,7 +367,9 @@ struct layer {
     float *c_cpu;
     float *dc_cpu;
 
-    float * binary_input;
+    float *binary_input;
+    uint32_t *bin_re_packed_input;
+    char *t_bit_input;
 
     struct layer *input_layer;
     struct layer *self_layer;
@@ -566,7 +570,9 @@ typedef struct network {
     float saturation;
     float hue;
     int random;
-    int small_object;
+    int track;
+    int augment_speed;
+    int try_fix_nan;
 
     int gpu_index;
     tree *hierarchy;
@@ -694,7 +700,9 @@ typedef struct load_args {
     int scale;
     int center;
     int coords;
-    int small_object;
+    int mini_batch;
+    int track;
+    int augment_speed;
     float jitter;
     int flip;
     float angle;
@@ -784,10 +792,11 @@ LIB_API void free_data(data d);
 LIB_API pthread_t load_data(load_args args);
 LIB_API pthread_t load_data_in_thread(load_args args);
 
-// cuda.h
+// dark_cuda.h
 LIB_API void cuda_pull_array(float *x_gpu, float *x, size_t n);
 LIB_API void cuda_pull_array_async(float *x_gpu, float *x, size_t n);
 LIB_API void cuda_set_device(int n);
+LIB_API void *cuda_get_context();
 
 // utils.h
 LIB_API void free_ptrs(void **ptrs, int n);
@@ -801,6 +810,8 @@ LIB_API metadata get_metadata(char *file);
 
 
 // http_stream.h
+LIB_API void delete_json_sender();
+LIB_API void send_json_custom(char const* send_buf, int port, int timeout);
 LIB_API double get_time_point();
 void start_timer();
 void stop_timer();
