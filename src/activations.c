@@ -102,8 +102,15 @@ void activate_array(float *x, const int n, const ACTIVATION a)
     int i;
     if (a == LINEAR) {}
     else if (a == LEAKY) {
+        #pragma omp parallel for
         for (i = 0; i < n; ++i) {
             x[i] = leaky_activate(x[i]);
+        }
+    }
+    else if (a == LOGISTIC) {
+        #pragma omp parallel for
+        for (i = 0; i < n; ++i) {
+            x[i] = logistic_activate(x[i]);
         }
     }
     else {
@@ -155,4 +162,3 @@ void gradient_array(const float *x, const int n, const ACTIVATION a, float *delt
         delta[i] *= gradient(x[i], a);
     }
 }
-

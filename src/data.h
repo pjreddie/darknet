@@ -2,14 +2,14 @@
 #define DATA_H
 #include <pthread.h>
 
-#if defined(_MSC_VER) && _MSC_VER < 1900
-	#define inline __inline
-#endif
-
+#include "darknet.h"
 #include "darknet.h"
 #include "matrix.h"
 #include "list.h"
 #include "image.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "tree.h"
 
 static inline float distance_from_edge(int x, int max)
@@ -86,7 +86,7 @@ void print_letters(float *pred, int n);
 data load_data_captcha(char **paths, int n, int m, int k, int w, int h);
 data load_data_captcha_encode(char **paths, int n, int m, int w, int h);
 data load_data_old(char **paths, int n, int m, char **labels, int k, int w, int h);
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, float jitter, float hue, float saturation, float exposure, int small_object);
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, float jitter, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed);
 data load_data_tag(char **paths, int n, int m, int k, int use_flip, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure);
 matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure);
 data load_data_super(char **paths, int n, int m, int w, int h, int scale);
@@ -115,5 +115,8 @@ data *split_data(data d, int part, int total);
 data concat_data(data d1, data d2);
 data concat_datas(data *d, int n);
 void fill_truth(char *path, char **labels, int k, float *truth);
+#ifdef __cplusplus
+}
 
+#endif
 #endif

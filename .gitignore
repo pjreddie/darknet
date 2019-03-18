@@ -4,6 +4,7 @@
 *.out
 *.png
 *.so
+*.exe
 mnist/
 data/
 caffe/
@@ -15,8 +16,10 @@ decaf/
 submission/
 cfg/
 build/darknet/*
+build_*/
 !build/darknet/YoloWrapper.cs
 .fuse*
+*.weights
 
 # OS Generated #
 .DS_Store*
@@ -25,6 +28,7 @@ Icon?
 Thumbs.db
 *.swp
 
-# CMake #
-cmake-build-debug/
-CMakeLists.txt
+lib/
+include/
+share/
+

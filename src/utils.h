@@ -4,25 +4,9 @@
 #include <time.h>
 #include "list.h"
 
-#if defined(_MSC_VER) && _MSC_VER < 1900
-	#define snprintf(buf,len, format,...) _snprintf_s(buf, len,len, format, __VA_ARGS__)
-#endif
-
-#define SECRET_NUM -1234
-#define TWO_PI 6.2831853071795864769252866
-
-#ifdef LIB_EXPORTS
-#if defined(_MSC_VER)
-#define LIB_API __declspec(dllexport)
-#else
-#define LIB_API __attribute__((visibility("default")))
-#endif
-#else
-#if defined(_MSC_VER)
-#define LIB_API
-#else
-#define LIB_API
-#endif
+#include "darknet.h"
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 LIB_API void free_ptrs(void **ptrs, int n);
@@ -41,8 +25,8 @@ void read_all(int fd, char *buffer, size_t bytes);
 void write_all(int fd, char *buffer, size_t bytes);
 int read_all_fail(int fd, char *buffer, size_t bytes);
 int write_all_fail(int fd, char *buffer, size_t bytes);
-void find_replace(char *str, char *orig, char *rep, char *output);
-void replace_image_to_label(char *input_path, char *output_path);
+LIB_API void find_replace(const char* str, char* orig, char* rep, char* output);
+void replace_image_to_label(const char* input_path, char* output_path);
 void error(const char *s);
 void malloc_error();
 void file_error(char *s);
@@ -59,6 +43,7 @@ void normalize_array(float *a, int n);
 void scale_array(float *a, int n, float s);
 void translate_array(float *a, int n, float s);
 int max_index(float *a, int n);
+int top_max_index(float *a, int n, int k);
 float constrain(float min, float max, float a);
 int constrain_int(int a, int min, int max);
 float mse_array(float *a, int n);
@@ -80,11 +65,20 @@ float find_float_arg(int argc, char **argv, char *arg, float def);
 int find_arg(int argc, char* argv[], char *arg);
 char *find_char_arg(int argc, char **argv, char *arg, char *def);
 int sample_array(float *a, int n);
+int sample_array_custom(float *a, int n);
 void print_statistics(float *a, int n);
 unsigned int random_gen();
 float random_float();
 float rand_uniform_strong(float min, float max);
+float rand_precalc_random(float min, float max, float random_part);
+double double_rand(void);
+unsigned int uint_rand(unsigned int less_than);
+int check_array_is_nan(float *arr, int size);
+int check_array_is_inf(float *arr, int size);
 int int_index(int *a, int val, int n);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

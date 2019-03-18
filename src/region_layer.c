@@ -2,7 +2,7 @@
 #include "activations.h"
 #include "blas.h"
 #include "box.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "utils.h"
 #include <stdio.h>
 #include <assert.h>
@@ -13,7 +13,7 @@
 
 region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords, int max_boxes)
 {
-    region_layer l = {0};
+    region_layer l = { (LAYER_TYPE)0 };
     l.type = REGION;
 
     l.n = n;
@@ -22,15 +22,15 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     l.w = w;
     l.classes = classes;
     l.coords = coords;
-    l.cost = calloc(1, sizeof(float));
-    l.biases = calloc(n*2, sizeof(float));
-    l.bias_updates = calloc(n*2, sizeof(float));
+    l.cost = (float*)calloc(1, sizeof(float));
+    l.biases = (float*)calloc(n * 2, sizeof(float));
+    l.bias_updates = (float*)calloc(n * 2, sizeof(float));
     l.outputs = h*w*n*(classes + coords + 1);
     l.inputs = l.outputs;
     l.max_boxes = max_boxes;
     l.truths = max_boxes*(5);
-    l.delta = calloc(batch*l.outputs, sizeof(float));
-    l.output = calloc(batch*l.outputs, sizeof(float));
+    l.delta = (float*)calloc(batch * l.outputs, sizeof(float));
+    l.output = (float*)calloc(batch * l.outputs, sizeof(float));
     int i;
     for(i = 0; i < n*2; ++i){
         l.biases[i] = .5;
@@ -46,23 +46,25 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
 #endif
 
     fprintf(stderr, "detection\n");
-    srand(0);
+    srand(time(0));
 
     return l;
 }
 
 void resize_region_layer(layer *l, int w, int h)
 {
+#ifdef GPU
     int old_w = l->w;
     int old_h = l->h;
+#endif
     l->w = w;
     l->h = h;
 
     l->outputs = h*w*l->n*(l->classes + l->coords + 1);
     l->inputs = l->outputs;
 
-    l->output = realloc(l->output, l->batch*l->outputs*sizeof(float));
-    l->delta = realloc(l->delta, l->batch*l->outputs*sizeof(float));
+    l->output = (float*)realloc(l->output, l->batch * l->outputs * sizeof(float));
+    l->delta = (float*)realloc(l->delta, l->batch * l->outputs * sizeof(float));
 
 #ifdef GPU
     if (old_w < w || old_h < h) {
@@ -444,11 +446,11 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
         softmax_gpu(l.output_gpu+5, l.classes, l.classes + 5, l.w*l.h*l.n*l.batch, 1, l.output_gpu + 5);
     }
 
-    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
+    float* in_cpu = (float*)calloc(l.batch * l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){
         int num_truth = l.batch*l.truths;
-        truth_cpu = calloc(num_truth, sizeof(float));
+        truth_cpu = (float*)calloc(num_truth, sizeof(float));
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
@@ -578,4 +580,15 @@ void get_region_detections(layer l, int w, int h, int netw, int neth, float thre
         }
     }
     correct_region_boxes(dets, l.w*l.h*l.n, w, h, netw, neth, relative);
+}
+
+void zero_objectness(layer l)
+{
+    int i, n;
+    for (i = 0; i < l.w*l.h; ++i) {
+        for (n = 0; n < l.n; ++n) {
+            int obj_index = entry_index(l, 0, n*l.w*l.h + i, l.coords);
+            l.output[obj_index] = 0;
+        }
+    }
 }

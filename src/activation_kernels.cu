@@ -3,10 +3,8 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "activations.h"
-#include "cuda.h"
-}
+#include "dark_cuda.h"
 
 
 __device__ float lhtan_activate_kernel(float x)
@@ -28,26 +26,26 @@ __device__ float hardtan_activate_kernel(float x)
     return x;
 }
 __device__ float linear_activate_kernel(float x){return x;}
-__device__ float logistic_activate_kernel(float x){return 1./(1. + exp(-x));}
-__device__ float loggy_activate_kernel(float x){return 2./(1. + exp(-x)) - 1;}
+__device__ float logistic_activate_kernel(float x){return 1.f/(1.f + expf(-x));}
+__device__ float loggy_activate_kernel(float x){return 2.f/(1.f + expf(-x)) - 1;}
 __device__ float relu_activate_kernel(float x){return x*(x>0);}
-__device__ float elu_activate_kernel(float x){return (x >= 0)*x + (x < 0)*(exp(x)-1);}
+__device__ float elu_activate_kernel(float x){return (x >= 0)*x + (x < 0)*(expf(x)-1);}
 __device__ float selu_activate_kernel(float x) { return (x >= 0)*1.0507f*x + (x < 0)*1.0507f*1.6732f*(expf(x) - 1); }
-__device__ float relie_activate_kernel(float x){return (x>0) ? x : .01*x;}
-__device__ float ramp_activate_kernel(float x){return x*(x>0)+.1*x;}
-__device__ float leaky_activate_kernel(float x){return (x>0) ? x : .1*x;}
-__device__ float tanh_activate_kernel(float x){return (2/(1 + exp(-2*x)) - 1);}
+__device__ float relie_activate_kernel(float x){return (x>0) ? x : .01f*x;}
+__device__ float ramp_activate_kernel(float x){return x*(x>0)+.1f*x;}
+__device__ float leaky_activate_kernel(float x){return (x>0) ? x : .1f*x;}
+__device__ float tanh_activate_kernel(float x){return (2/(1 + expf(-2*x)) - 1);}
 __device__ float plse_activate_kernel(float x)
 {
-    if(x < -4) return .01 * (x + 4);
-    if(x > 4)  return .01 * (x - 4) + 1;
-    return .125*x + .5;
+    if(x < -4) return .01f * (x + 4);
+    if(x > 4)  return .01f * (x - 4) + 1;
+    return .125f*x + .5f;
 }
 __device__ float stair_activate_kernel(float x)
 {
-    int n = floor(x);
-    if (n%2 == 0) return floor(x/2.);
-    else return (x - n) + floor(x/2.);
+    int n = floorf(x);
+    if (n%2 == 0) return floorf(x/2.f);
+    else return (x - n) + floorf(x/2.f);
 }
 
 
@@ -60,17 +58,17 @@ __device__ float linear_gradient_kernel(float x){return 1;}
 __device__ float logistic_gradient_kernel(float x){return (1-x)*x;}
 __device__ float loggy_gradient_kernel(float x)
 {
-    float y = (x+1.)/2.;
+    float y = (x+1.F)/2.F;
     return 2*(1-y)*y;
 }
 __device__ float relu_gradient_kernel(float x){return (x>0);}
 __device__ float elu_gradient_kernel(float x){return (x >= 0) + (x < 0)*(x + 1);}
-__device__ float selu_gradient_kernel(float x) { return (x >= 0)*1.0507 + (x < 0)*(x + 1.0507*1.6732); }
-__device__ float relie_gradient_kernel(float x){return (x>0) ? 1 : .01;}
-__device__ float ramp_gradient_kernel(float x){return (x>0)+.1;}
-__device__ float leaky_gradient_kernel(float x){return (x>0) ? 1 : .1;}
+__device__ float selu_gradient_kernel(float x) { return (x >= 0)*1.0507f + (x < 0)*(x + 1.0507f*1.6732f); }
+__device__ float relie_gradient_kernel(float x){return (x>0) ? 1 : .01f;}
+__device__ float ramp_gradient_kernel(float x){return (x>0)+.1f;}
+__device__ float leaky_gradient_kernel(float x){return (x>0) ? 1 : .1f;}
 __device__ float tanh_gradient_kernel(float x){return 1-x*x;}
-__device__ float plse_gradient_kernel(float x){return (x < 0 || x > 1) ? .01 : .125;}
+__device__ float plse_gradient_kernel(float x){return (x < 0 || x > 1) ? .01f : .125f;}
 __device__ float stair_gradient_kernel(float x)
 {
     if (floor(x) == x) return 0;
@@ -163,8 +161,8 @@ __global__ void binary_gradient_array_kernel(float *x, float *dy, int n, int s, 
 
 extern "C" void binary_gradient_array_gpu(float *x, float *dx, int n, int size, BINARY_ACTIVATION a, float *y)
 {
-    binary_gradient_array_kernel << <cuda_gridsize(n / 2), BLOCK >> >(x, dx, n / 2, size, a, y);
-    check_error(cudaPeekAtLastError());
+    binary_gradient_array_kernel << <cuda_gridsize(n / 2), BLOCK, 0, get_cuda_stream() >> >(x, dx, n / 2, size, a, y);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 __global__ void binary_activate_array_kernel(float *x, int n, int s, BINARY_ACTIVATION a, float *y)
 {
@@ -178,8 +176,8 @@ __global__ void binary_activate_array_kernel(float *x, int n, int s, BINARY_ACTI
 
 extern "C" void binary_activate_array_gpu(float *x, int n, int size, BINARY_ACTIVATION a, float *y)
 {
-    binary_activate_array_kernel << <cuda_gridsize(n / 2), BLOCK >> >(x, n / 2, size, a, y);
-    check_error(cudaPeekAtLastError());
+    binary_activate_array_kernel << <cuda_gridsize(n / 2), BLOCK, 0, get_cuda_stream() >> >(x, n / 2, size, a, y);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 __global__ void activate_array_kernel(float *x, int n, ACTIVATION a)
@@ -218,18 +216,59 @@ __global__ void gradient_array_kernel(float *x, int n, ACTIVATION a, float *delt
     if(i < n) delta[i] *= gradient_kernel(x[i], a);
 }
 
+__global__ void gradient_array_leaky_kernel(float *x, int n, float *delta)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        delta[index] *= leaky_gradient_kernel(x[index]);
+    }
+}
+
+__global__ void gradient_array_selu_kernel(float *x, int n, float *delta)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        delta[index] *= selu_gradient_kernel(x[index]);
+    }
+}
+
+__global__ void gradient_array_logistic_kernel(float *x, int n, float *delta)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        delta[index] *= logistic_gradient_kernel(x[index]);
+    }
+}
+
+__global__ void gradient_array_hardtan_kernel(float *x, int n, float *delta)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        delta[index] *= hardtan_gradient_kernel(x[index]);
+    }
+}
+
 extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
 {
+    const int num_blocks = get_number_of_blocks(n, BLOCK);
     if (a == LINEAR) return;
-    else if(a == LEAKY) activate_array_leaky_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == LOGISTIC) activate_array_logistic_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == SELU) activate_array_selu_kernel << <(n / BLOCK + 1), BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
-    check_error(cudaPeekAtLastError());
+    else if(a == LEAKY) activate_array_leaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == LOGISTIC) activate_array_logistic_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == SELU) activate_array_selu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else
+        activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta)
 {
-    gradient_array_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, a, delta);
-    check_error(cudaPeekAtLastError());
+    const int num_blocks = get_number_of_blocks(n, BLOCK);
+    if (a == LINEAR) return;
+    else if (a == LEAKY) gradient_array_leaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == LOGISTIC) gradient_array_logistic_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == SELU) gradient_array_selu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == HARDTAN) gradient_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else
+        gradient_array_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (x, n, a, delta);
+    CHECK_CUDA(cudaPeekAtLastError());
 }

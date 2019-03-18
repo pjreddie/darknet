@@ -125,7 +125,16 @@ lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
 lib.network_height.restype = c_int
 
-predict = lib.network_predict
+copy_image_from_bytes = lib.copy_image_from_bytes
+copy_image_from_bytes.argtypes = [IMAGE,c_char_p]
+
+def network_width(net):
+    return lib.network_width(net)
+
+def network_height(net):
+    return lib.network_height(net)
+
+predict = lib.network_predict_ptr
 predict.argtypes = [c_void_p, POINTER(c_float)]
 predict.restype = POINTER(c_float)
 
@@ -151,7 +160,7 @@ free_detections.argtypes = [POINTER(DETECTION), c_int]
 free_ptrs = lib.free_ptrs
 free_ptrs.argtypes = [POINTER(c_void_p), c_int]
 
-network_predict = lib.network_predict
+network_predict = lib.network_predict_ptr
 network_predict.argtypes = [c_void_p, POINTER(c_float)]
 
 reset_rnn = lib.reset_rnn
@@ -223,6 +232,13 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     """
     #pylint: disable= C0321
     im = load_image(image, 0, 0)
+    if debug: print("Loaded image")
+    ret = detect_image(net, meta, im, thresh, hier_thresh, nms, debug)
+    free_image(im)
+    if debug: print("freed image")
+    return ret
+
+def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     #import cv2
     #custom_image_bgr = cv2.imread(image) # use: detect(,,imagePath,)
     #custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
@@ -230,7 +246,6 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     #import scipy.misc
     #custom_image = scipy.misc.imread(image)
     #im, arr = array_to_image(custom_image)		# you should comment line below: free_image(im)
-    if debug: print("Loaded image")
     num = c_int(0)
     if debug: print("Assigned num")
     pnum = pointer(num)
@@ -267,8 +282,6 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     if debug: print("did range")
     res = sorted(res, key=lambda x: -x[1])
     if debug: print("did sort")
-    free_image(im)
-    if debug: print("freed image")
     free_detections(dets, num)
     if debug: print("freed detections")
     return res

@@ -1,8 +1,5 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#include "dark_cuda.h"
 
-extern "C" {
 #include <stdio.h>
 #include <time.h>
 #include <assert.h>
@@ -34,10 +31,9 @@ extern "C" {
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "blas.h"
-}
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 #include "http_stream.h"
@@ -58,10 +54,10 @@ void forward_network_gpu(network net, network_state state)
         if(l.delta_gpu && state.train){
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
-        //printf("%d - type: %d - ", i, l.type);
+        //printf("\n layer %d - type: %d - \n", i, l.type);
         //start_timer();
         l.forward_gpu(l, state);
-        //cudaDeviceSynchronize();
+        //CHECK_CUDA(cudaDeviceSynchronize());
         //stop_timer_and_show();
 
         if(net.wait_stream)
@@ -87,6 +83,7 @@ void forward_network_gpu(network net, network_state state)
         }
 */
     }
+    //cudaStreamSynchronize(get_cuda_stream());   // sync CUDA-functions
     //cudaDeviceSynchronize();
     //show_total_time();
 }
@@ -110,6 +107,18 @@ void backward_network_gpu(network net, network_state state)
             state.delta = prev.delta_gpu;
         }
         l.backward_gpu(l, state);
+
+        /*
+        if(i != 0)
+        {
+            layer l = net.layers[i - 1];
+            int state_delta_nan_inf = is_nan_or_inf(state.delta, l.outputs * l.batch);
+            int state_input_nan_inf = is_nan_or_inf(state.input, l.outputs * l.batch);
+            printf("\n i - %d  is_nan_or_inf(s.delta) = %d \n", i, state_delta_nan_inf);
+            printf(" i - %d  is_nan_or_inf(s.input) = %d \n", i, state_input_nan_inf);
+            if (state_delta_nan_inf || state_input_nan_inf) { printf(" found "); getchar(); }
+        }
+        */
     }
 }
 
@@ -151,7 +160,17 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     int i;
     for (i = 0; i < net.n; ++i) {
         layer l = net.layers[i];
-        cuda_convert_f32_to_f16(l.weights_gpu, l.c*l.n*l.size*l.size, l.weights_gpu16);
+        if (l.weights_gpu && l.weights_gpu16 && net.cudnn_half){
+            assert((l.c*l.n*l.size*l.size) > 0);
+            if (l.type == CONVOLUTIONAL) {
+                cuda_convert_f32_to_f16(l.weights_gpu, l.c*l.n*l.size*l.size, l.weights_gpu16);
+            }
+            else if (l.type == CRNN) {
+                //cuda_convert_f32_to_f16(l.input_layer->weights_gpu, l.input_layer->nweights, l.input_layer->weights_gpu16);
+                //cuda_convert_f32_to_f16(l.self_layer->weights_gpu, l.self_layer->nweights, l.self_layer->weights_gpu16);
+                //cuda_convert_f32_to_f16(l.output_layer->weights_gpu, l.output_layer->nweights, l.output_layer->weights_gpu16);
+            }
+        }
     }
 #endif
     forward_network_gpu(net, state);
@@ -391,9 +410,11 @@ void sync_nets(network *nets, int n, int interval)
 float train_networks(network *nets, int n, data d, int interval)
 {
     int i;
+#ifdef _DEBUG
     int batch = nets[0].batch;
     int subdivisions = nets[0].subdivisions;
     assert(batch * subdivisions * n == d.X.rows);
+#endif
     pthread_t *threads = (pthread_t *) calloc(n, sizeof(pthread_t));
     float *errors = (float *) calloc(n, sizeof(float));
 
@@ -444,7 +465,8 @@ float *network_predict_gpu(network net, float *input)
     state.net = net;
     //state.input = cuda_make_array(input, size);   // memory will be allocated in the parse_network_cfg_custom()
     state.input = net.input_state_gpu;
-    cuda_push_array(state.input, input, size);
+    memcpy(net.input_pinned_cpu, input, size * sizeof(float));
+    cuda_push_array(state.input, net.input_pinned_cpu, size);
     state.truth = 0;
     state.train = 0;
     state.delta = 0;
@@ -453,4 +475,3 @@ float *network_predict_gpu(network net, float *input)
     //cuda_free(state.input);   // will be freed in the free_network()
     return out;
 }
-

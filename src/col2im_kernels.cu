@@ -2,10 +2,8 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "col2im.h"
-#include "cuda.h"
-}
+#include "dark_cuda.h"
 
 // src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu
 // You may also want to read: https://github.com/BVLC/caffe/blob/master/LICENSE
@@ -50,9 +48,10 @@ void col2im_ongpu(float *data_col,
     int width_col = (width + 2 * pad - ksize) / stride + 1;
     int num_kernels = channels * height * width;
     col2im_gpu_kernel<<<(num_kernels+BLOCK-1)/BLOCK,
-        BLOCK>>>(
+        BLOCK, 0, get_cuda_stream() >>>(
                 num_kernels, data_col, height, width, ksize, pad,
                 stride, height_col,
                 width_col, data_im);
-}
 
+    CHECK_CUDA(cudaPeekAtLastError());
+}

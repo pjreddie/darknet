@@ -7,11 +7,11 @@
 #include "demo.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-#include "opencv2/core/version.hpp"
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/core/version.hpp>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio_c.h"
+#include <opencv2/videoio/videoio_c.h>
 #endif
 #endif
 
@@ -19,8 +19,8 @@ char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "c
 
 void train_yolo(char *cfgfile, char *weightfile)
 {
-    char *train_images = "/data/voc/train.txt";
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* train_images = "data/voc/train.txt";
+    char* backup_directory = "backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
@@ -125,7 +125,7 @@ void validate_yolo(char *cfgfile, char *weightfile)
 
     char *base = "results/comp4_det_test_";
     //list *plist = get_paths("data/voc.2007.test");
-    list *plist = get_paths("/home/pjreddie/data/voc/2007_test.txt");
+    list* plist = get_paths("data/voc/2007_test.txt");
     //list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
@@ -133,15 +133,15 @@ void validate_yolo(char *cfgfile, char *weightfile)
     int classes = l.classes;
 
     int j;
-    FILE **fps = calloc(classes, sizeof(FILE *));
+    FILE** fps = (FILE**)calloc(classes, sizeof(FILE*));
     for(j = 0; j < classes; ++j){
         char buff[1024];
         snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
-    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
-    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
-    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    box* boxes = (box*)calloc(l.side * l.side * l.n, sizeof(box));
+    float** probs = (float**)calloc(l.side * l.side * l.n, sizeof(float*));
+    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -152,11 +152,11 @@ void validate_yolo(char *cfgfile, char *weightfile)
     float iou_thresh = .5;
 
     int nthreads = 8;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
-    pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
+    image* val = (image*)calloc(nthreads, sizeof(image));
+    image* val_resized = (image*)calloc(nthreads, sizeof(image));
+    image* buf = (image*)calloc(nthreads, sizeof(image));
+    image* buf_resized = (image*)calloc(nthreads, sizeof(image));
+    pthread_t* thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
 
     load_args args = {0};
     args.w = net.w;
@@ -220,15 +220,15 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
     int side = l.side;
 
     int j, k;
-    FILE **fps = calloc(classes, sizeof(FILE *));
+    FILE** fps = (FILE**)calloc(classes, sizeof(FILE*));
     for(j = 0; j < classes; ++j){
         char buff[1024];
         snprintf(buff, 1024, "%s%s.txt", base, voc_names[j]);
         fps[j] = fopen(buff, "w");
     }
-    box *boxes = calloc(side*side*l.n, sizeof(box));
-    float **probs = calloc(side*side*l.n, sizeof(float *));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    box* boxes = (box*)calloc(side * side * l.n, sizeof(box));
+    float** probs = (float**)calloc(side * side * l.n, sizeof(float*));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -299,9 +299,9 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     char *input = buff;
     int j;
     float nms=.4;
-    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
-    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
-    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+    box* boxes = (box*)calloc(l.side * l.side * l.n, sizeof(box));
+    float** probs = (float**)calloc(l.side * l.side * l.n, sizeof(float*));
+    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = (float*)calloc(l.classes, sizeof(float));
     while(1){
         if(filename){
             strncpy(input, filename, 256);

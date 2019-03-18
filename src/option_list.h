@@ -9,6 +9,9 @@ typedef struct{
     int used;
 } kvp;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 list *read_data_cfg(char *filename);
 int read_option(char *s, list *options);
@@ -28,4 +31,7 @@ void option_unused(list *l);
 
 //LIB_API metadata get_metadata(char *file);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -1,5 +1,12 @@
 #ifndef BLAS_H
 #define BLAS_H
+#ifdef GPU
+#include "dark_cuda.h"
+#include "tree.h"
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 void flatten(float *x, int size, int layers, int batch, int forward);
 void pm(int M, int N, float *A);
 float *random_matrix(int rows, int cols);
@@ -41,8 +48,6 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
 void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
 
 #ifdef GPU
-#include "cuda.h"
-#include "tree.h"
 
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
@@ -97,5 +102,11 @@ void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int for
 
 void softmax_tree_gpu(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
 
+void fix_nan_and_inf(float *input, size_t size);
+int is_nan_or_inf(float *input, size_t size);
+
+#endif
+#ifdef __cplusplus
+}
 #endif
 #endif

@@ -1,20 +1,38 @@
-#pragma once
-
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <Winsock2.h>
+#include <stdint.h>
 #include < time.h >
-#include <windows.h> //I've ommited this line.
-#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
-  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
-#else
-  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
-#endif
- 
-struct timezone 
-{
-  int  tz_minuteswest; /* minutes W of Greenwich */
-  int  tz_dsttime;     /* type of dst correction */
-};
- 
-int gettimeofday(struct timeval *tv, struct timezone *tz);
+#include "darknet.h"
 
-/* never worry about timersub type activies again -- from GLIBC and upcased. */
-int timersub(struct timeval *a, struct timeval *b, struct timeval *result);
+#define CLOCK_REALTIME (1)
+#define BILLION (1E9)
+
+#ifndef timersub
+#define timersub(a, b, result)                       \
+  do {                                               \
+    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;    \
+    (result)->tv_usec = (a)->tv_usec - (b)->tv_usec; \
+    if ((result)->tv_usec < 0) {                     \
+      --(result)->tv_sec;                            \
+      (result)->tv_usec += 1000000;                  \
+    }                                                \
+  } while (0)
+#endif // timersub
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+static unsigned char g_first_time = 1;
+static LARGE_INTEGER g_counts_per_sec;
+
+int gettimeofday(struct timeval*, struct timezone*);
+int clock_gettime(int, struct timespec*);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

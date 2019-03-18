@@ -5,13 +5,13 @@
 #include "blas.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 int inverted = 1;
 int noi = 1;
-//static const int nind = 5;
-#define nind 5
+//static const unsigned int n_ind = 5;
+#define n_ind 5
 
 typedef struct {
     char **data;
@@ -22,7 +22,7 @@ char *fgetgo(FILE *fp)
 {
     if(feof(fp)) return 0;
     size_t size = 94;
-    char *line = malloc(size*sizeof(char));
+    char* line = (char*)malloc(size * sizeof(char));
     if(size != fread(line, sizeof(char), size, fp)){
         free(line);
         return 0;
@@ -35,21 +35,21 @@ moves load_go_moves(char *filename)
 {
     moves m;
     m.n = 128;
-    m.data = calloc(128, sizeof(char*));
+    m.data = (char**)calloc(128, sizeof(char*));
     FILE *fp = fopen(filename, "rb");
     int count = 0;
     char *line = 0;
     while((line = fgetgo(fp))){
         if(count >= m.n){
             m.n *= 2;
-            m.data = realloc(m.data, m.n*sizeof(char*));
+            m.data = (char**)realloc(m.data, m.n * sizeof(char*));
         }
         m.data[count] = line;
         ++count;
     }
     printf("%d\n", count);
     m.n = count;
-    m.data = realloc(m.data, count*sizeof(char*));
+    m.data = (char**)realloc(m.data, count * sizeof(char*));
     return m;
 }
 
@@ -127,12 +127,12 @@ void train_go(char *cfgfile, char *weightfile)
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
-    char *backup_directory = "/home/pjreddie/backup/";
+    char* backup_directory = "backup/";
 
     char buff[256];
-    float *board = calloc(19*19*net.batch, sizeof(float));
-    float *move = calloc(19*19*net.batch, sizeof(float));
-    moves m = load_go_moves("/home/pjreddie/backup/go.train");
+    float* board = (float*)calloc(19 * 19 * net.batch, sizeof(float));
+    float* move = (float*)calloc(19 * 19 * net.batch, sizeof(float));
+    moves m = load_go_moves("backup/go.train");
     //moves m = load_go_moves("games.txt");
 
     int N = m.n;
@@ -144,7 +144,7 @@ void train_go(char *cfgfile, char *weightfile)
         float loss = train_network_datum(net, board, move) / net.batch;
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.95 + loss*.05;
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         if(*net.seen/N > epoch){
             epoch = *net.seen/N;
             char buff[256];
@@ -187,7 +187,7 @@ void propagate_liberty(float *board, int *lib, int *visited, int row, int col, i
 
 int *calculate_liberties(float *board)
 {
-    int *lib = calloc(19*19, sizeof(int));
+    int* lib = (int*)calloc(19 * 19, sizeof(int));
     int visited[361];
     int i, j;
     for(j = 0; j < 19; ++j){
@@ -222,7 +222,7 @@ void print_board(float *board, int swap, int *indexes)
             int index = j*19 + i;
             if(indexes){
                 int found = 0;
-                for(n = 0; n < nind; ++n){
+                for (n = 0; n < n_ind; ++n) {
                     if(index == indexes[n]){
                         found = 1;
                         /*
@@ -358,16 +358,16 @@ int generate_move(network net, int player, float *board, int multi, float thresh
     predict_move(net, board, move, multi);
     if (player < 0) flip_board(board);
 
-    
+
     for(i = 0; i < 19; ++i){
         for(j = 0; j < 19; ++j){
             if (!legal_go(board, ko, player, i, j)) move[i*19 + j] = 0;
         }
     }
 
-    int indexes[nind];
-    top_k(move, 19*19, nind, indexes);
-    if(thresh > move[indexes[0]]) thresh = move[indexes[nind-1]];
+    int indexes[n_ind];
+    top_k(move, 19*19, n_ind, indexes);
+    if(thresh > move[indexes[0]]) thresh = move[indexes[n_ind-1]];
 
     for(i = 0; i < 19; ++i){
         for(j = 0; j < 19; ++j){
@@ -382,18 +382,18 @@ int generate_move(network net, int player, float *board, int multi, float thresh
     int index = sample_array(move, 19*19);
 
     if(print){
-        top_k(move, 19*19, nind, indexes);
-        for(i = 0; i < nind; ++i){
+        top_k(move, 19*19, n_ind, indexes);
+        for(i = 0; i < n_ind; ++i){
             if (!move[indexes[i]]) indexes[i] = -1;
         }
         print_board(board, player, indexes);
-        for(i = 0; i < nind; ++i){
+        for(i = 0; i < n_ind; ++i){
             fprintf(stderr, "%d: %f\n", i+1, move[indexes[i]]);
         }
     }
 
     if(suicide_go(board, player, row, col)){
-        return -1; 
+        return -1;
     }
     if(suicide_go(board, player, index/19, index%19)) index = max;
     return index;
@@ -411,9 +411,9 @@ void valid_go(char *cfgfile, char *weightfile, int multi)
     set_batch_network(&net, 1);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
-    float *board = calloc(19*19, sizeof(float));
-    float *move = calloc(19*19, sizeof(float));
-    moves m = load_go_moves("/home/pjreddie/backup/go.test");
+    float* board = (float*)calloc(19 * 19, sizeof(float));
+    float* move = (float*)calloc(19 * 19, sizeof(float));
+    moves m = load_go_moves("backup/go.test");
 
     int N = m.n;
     int i;
@@ -439,9 +439,9 @@ void engine_go(char *filename, char *weightfile, int multi)
     }
     srand(time(0));
     set_batch_network(&net, 1);
-    float *board = calloc(19*19, sizeof(float));
-    char *one = calloc(91, sizeof(char));
-    char *two = calloc(91, sizeof(char));
+    float* board = (float*)calloc(19 * 19, sizeof(float));
+    char* one = (char*)calloc(91, sizeof(char));
+    char* two = (char*)calloc(91, sizeof(char));
     int passed = 0;
     while(1){
         char buff[256];
@@ -462,17 +462,17 @@ void engine_go(char *filename, char *weightfile, int multi)
         } else if (!strcmp(buff, "known_command")){
             char comm[256];
             scanf("%s", comm);
-            int known = (!strcmp(comm, "protocol_version") || 
-                    !strcmp(comm, "name") || 
-                    !strcmp(comm, "version") || 
-                    !strcmp(comm, "known_command") || 
-                    !strcmp(comm, "list_commands") || 
-                    !strcmp(comm, "quit") || 
-                    !strcmp(comm, "boardsize") || 
-                    !strcmp(comm, "clear_board") || 
-                    !strcmp(comm, "komi") || 
-                    !strcmp(comm, "final_status_list") || 
-                    !strcmp(comm, "play") || 
+            int known = (!strcmp(comm, "protocol_version") ||
+                    !strcmp(comm, "name") ||
+                    !strcmp(comm, "version") ||
+                    !strcmp(comm, "known_command") ||
+                    !strcmp(comm, "list_commands") ||
+                    !strcmp(comm, "quit") ||
+                    !strcmp(comm, "boardsize") ||
+                    !strcmp(comm, "clear_board") ||
+                    !strcmp(comm, "komi") ||
+                    !strcmp(comm, "final_status_list") ||
+                    !strcmp(comm, "play") ||
                     !strcmp(comm, "genmove"));
             if(known) printf("=%s true\n\n", ids);
             else printf("=%s false\n\n", ids);
@@ -576,7 +576,7 @@ void engine_go(char *filename, char *weightfile, int multi)
                     }
                 }
                 fprintf(f, "final_status_list dead\n");
-                fclose(f);                
+                fclose(f);
 #ifdef _WIN32
 				FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
 #else
@@ -612,8 +612,8 @@ void test_go(char *cfg, char *weights, int multi)
     }
     srand(time(0));
     set_batch_network(&net, 1);
-    float *board = calloc(19*19, sizeof(float));
-    float *move = calloc(19*19, sizeof(float));
+    float* board = (float*)calloc(19 * 19, sizeof(float));
+    float* move = (float*)calloc(19 * 19, sizeof(float));
     int color = 1;
     while(1){
         float *output = network_predict(net, board);
@@ -642,11 +642,11 @@ void test_go(char *cfg, char *weights, int multi)
             if(board[i]) move[i] = 0;
         }
 
-        int indexes[nind];
+        int indexes[n_ind];
         int row, col;
-        top_k(move, 19*19, nind, indexes);
+        top_k(move, 19 * 19, n_ind, indexes);
         print_board(board, color, indexes);
-        for(i = 0; i < nind; ++i){
+        for (i = 0; i < n_ind; ++i) {
             int index = indexes[i];
             row = index / 19;
             col = index % 19;
@@ -664,7 +664,7 @@ void test_go(char *cfg, char *weights, int multi)
         int cnum = sscanf(line, "%c", &c);
         if (strlen(line) == 0 || dnum) {
             --picked;
-            if (picked < nind){
+            if (picked < n_ind){
                 int index = indexes[picked];
                 row = index / 19;
                 col = index % 19;
@@ -717,7 +717,7 @@ float score_game(float *board)
         }
     }
     fprintf(f, "final_score\n");
-    fclose(f);  
+    fclose(f);
 #ifdef _WIN32
 	FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
 #else
@@ -764,9 +764,9 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
     int count = 0;
     set_batch_network(&net, 1);
     set_batch_network(&net2, 1);
-    float *board = calloc(19*19, sizeof(float));
-    char *one = calloc(91, sizeof(char));
-    char *two = calloc(91, sizeof(char));
+    float* board = (float*)calloc(19 * 19, sizeof(float));
+    char* one = (char*)calloc(91, sizeof(char));
+    char* two = (char*)calloc(91, sizeof(char));
     int done = 0;
     int player = 1;
     int p1 = 0;
@@ -842,5 +842,3 @@ void run_go(int argc, char **argv)
     else if(0==strcmp(argv[2], "test")) test_go(cfg, weights, multi);
     else if(0==strcmp(argv[2], "engine")) engine_go(cfg, weights, multi);
 }
-
-
