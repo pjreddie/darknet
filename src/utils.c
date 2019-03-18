@@ -254,6 +254,16 @@ void replace_image_to_label(const char* input_path, char* output_path)
     find_replace_extension(output_path, ".PPM", ".txt", output_path);
     find_replace_extension(output_path, ".tiff", ".txt", output_path);
     find_replace_extension(output_path, ".TIFF", ".txt", output_path);
+    
+    // Check file ends with txt:
+    if(strlen(output_path) > 4) {
+        char *output_path_ext = output_path + strlen(output_path) - 4;
+        if( strcmp(".txt", output_path_ext) != 0){
+            fprintf(stderr, "Failed to infer label file name (check image extension is supported): %s \n", output_path);
+        }
+    }else{
+        fprintf(stderr, "Label file name is too short: %s \n", output_path);
+    }
 }
 
 float sec(clock_t clocks)
