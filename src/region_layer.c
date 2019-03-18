@@ -53,8 +53,10 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
 
 void resize_region_layer(layer *l, int w, int h)
 {
+#ifdef GPU
     int old_w = l->w;
     int old_h = l->h;
+#endif
     l->w = w;
     l->h = h;
 

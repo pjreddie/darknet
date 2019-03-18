@@ -51,6 +51,7 @@ image get_convolutional_image(convolutional_layer layer);
 image get_convolutional_delta(convolutional_layer layer);
 image get_convolutional_weight(convolutional_layer layer, int i);
 
+
 int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
 void rescale_weights(convolutional_layer l, float scale, float trans);
