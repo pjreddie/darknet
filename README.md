@@ -278,7 +278,7 @@ Then add to your created project:
 
 (**Note:** To disable Loss-Window use flag `-dont_show`. If you are using CPU, try `darknet_no_gpu.exe` instead of `darknet.exe`.)
 
-If required change pathes in the file `build\darknet\x64\data\voc.data`
+If required change pathes in the file `build\darknet\cfg\voc.data`
 
 More information about training by the link: http://pjreddie.com/darknet/yolo/#train-voc
 
