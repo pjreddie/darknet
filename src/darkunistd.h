@@ -21,7 +21,7 @@
 These may be OR'd together.  */
 #define R_OK    4       /* Test for read permission.  */
 #define W_OK    2       /* Test for write permission.  */
-#define X_OK R_OK /* execute permission - unsupported in Windows, \
+#define X_OK R_OK       /* execute permission - unsupported in Windows, */
 #define F_OK    0       /* Test for existence.  */
 
 #define access _access

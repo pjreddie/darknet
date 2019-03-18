@@ -321,7 +321,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 // is not used
 void transpose_32x32_bits_my(uint32_t *A, uint32_t *B, int lda, int ldb)
 {
-    unsigned x, y, t;
+    unsigned int x, y;
     for (y = 0; y < 32; ++y) {
         for (x = 0; x < 32; ++x) {
             if (A[y * lda] & (1 << x)) B[x * ldb] |= (uint32_t)1 << y;
@@ -400,7 +400,7 @@ void transpose_32x32_bits_reversed_diagonale(uint32_t *A, uint32_t *B, int m, in
 
 void transpose_8x8_bits_my(unsigned char *A, unsigned char *B, int lda, int ldb)
 {
-    unsigned x, y, t;
+    unsigned x, y;
     for (y = 0; y < 8; ++y) {
         for (x = 0; x < 8; ++x) {
             if (A[y * lda] & (1 << x)) B[x * ldb] |= 1 << y;
@@ -755,7 +755,7 @@ void gemm_nn_fast(int M, int N, int K, float ALPHA,
     for (i = 0; i < (M / TILE_M)*TILE_M; i += TILE_M)
     {
         int j, k;
-        int i_d, j_d, k_d;
+        int i_d, k_d;
 
         for (k = 0; k < (K / TILE_K)*TILE_K; k += TILE_K)
         {
@@ -768,8 +768,8 @@ void gemm_nn_fast(int M, int N, int K, float ALPHA,
                 __m256 result256;
                 __m256 a256_0, b256_0;    // AVX
                 __m256 a256_1, b256_1;    // AVX
-                __m256 a256_2, b256_2;    // AVX
-                __m256 a256_3, b256_3;    // AVX
+                __m256 a256_2;// , b256_2;    // AVX
+                __m256 a256_3;// , b256_3;    // AVX
                 __m256 c256_0, c256_1, c256_2, c256_3;
                 __m256 c256_4, c256_5, c256_6, c256_7;
 
@@ -943,8 +943,8 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
 void convolution_2d_old(int w, int h, int ksize, int n, int c, int pad, int stride,
     float *weights, float *input, float *output)
 {
-    const int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
-    const int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
+    //const int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
+    //const int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
 
     int fil;
     // filter index
@@ -991,8 +991,8 @@ void convolution_2d_old(int w, int h, int ksize, int n, int c, int pad, int stri
 void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
     float *weights, float *input, float *output, float *mean)
 {
-    const int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
-    const int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
+    //const int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
+    //const int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
     int i;
 
 #if defined(_OPENMP)
@@ -1203,7 +1203,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
         float mean_val_0 = mean_arr[i + 0];
         float mean_val_1 = mean_arr[i + 1];
         int j, k;
-        __m256i all_1 = _mm256_set1_epi8(255);
+        //__m256i all_1 = _mm256_set1_epi8(255);
 
         //for (j = 0; j < N; ++j)
         for (j = 0; j < (N/2)*2; j += 2)
@@ -1770,7 +1770,7 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
     memset(dst, 0, dst_size);
 
     size_t i;
-    __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
+    //__m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
     __m256 float_zero256 = _mm256_set1_ps(0.0);
 
     for (i = 0; i < size; i+=8)
@@ -1881,8 +1881,8 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
                 else if (size == 2 && stride == 2 && is_avx() == 1) {
                     for (j = 0; j < out_w - 4; j += 4) {
                         int out_index = j + out_w*(i + out_h*(k + c*b));
-                        float max = -FLT_MAX;
-                        int max_i = -1;
+                        //float max = -FLT_MAX;
+                        //int max_i = -1;
                         __m128 max128 = _mm_set1_ps(-FLT_MAX);
 
                         for (n = 0; n < size; ++n) {
@@ -2513,7 +2513,7 @@ void convolution_repacked(uint32_t *packed_input, uint32_t *packed_weights, floa
     #pragma omp parallel for
     for (fil = 0; fil < n; ++fil) {
         float mean_val = mean_arr[fil];
-        int chan, c_pack, y, x, f_y, f_x;
+        int chan, y, x, f_y, f_x;   // c_pack
         // channel index
         for (chan = 0; chan < c / 32; ++chan)
             //for (chan = 0; chan < l.c; chan += 32)

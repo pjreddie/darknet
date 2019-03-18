@@ -181,7 +181,7 @@ public:
         if (::select(maxfd + 1, &rread, NULL, NULL, &select_timeout) <= 0)
             return true; // nothing broken, there's just noone listening
 
-        size_t outlen = strlen(outputbuf);
+        int outlen = static_cast<int>(strlen(outputbuf));
 
 #ifdef _WIN32
         for (unsigned i = 0; i<rread.fd_count; i++)

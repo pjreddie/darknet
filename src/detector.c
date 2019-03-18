@@ -326,7 +326,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
-            sprintf(buff, "%s/%s_last.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_last.weights", backup_directory, base);
             save_weights(net, buff);
         }
         free_data(train);
@@ -594,7 +594,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
     list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net.layers[net.n - 1];
+    //layer l = net.layers[net.n - 1];
 
     int j, k;
 
@@ -681,16 +681,16 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     char *difficult_valid_images = option_find_str(options, "difficult", NULL);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
-    char *mapf = option_find_str(options, "map", 0);
-    int *map = 0;
-    if (mapf) map = read_map(mapf);
+    //char *mapf = option_find_str(options, "map", 0);
+    //int *map = 0;
+    //if (mapf) map = read_map(mapf);
     FILE* reinforcement_fd = NULL;
 
     network net;
-    int initial_batch;
+    //int initial_batch;
     if (existing_net) {
         char *train_images = option_find_str(options, "train", "data/train.txt");
-        char *valid_images = option_find_str(options, "valid", train_images);
+        valid_images = option_find_str(options, "valid", train_images);
         net = *existing_net;
     }
     else {
@@ -1131,8 +1131,8 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 
     printf("\n");
     for (i = 0; i < number_of_boxes; ++i) {
-        float w = boxes_data.vals[i][0] = rel_width_height_array[i * 2];
-        float h = boxes_data.vals[i][1] = rel_width_height_array[i * 2 + 1];
+        boxes_data.vals[i][0] = rel_width_height_array[i * 2];
+        boxes_data.vals[i][1] = rel_width_height_array[i * 2 + 1];
         //if (w > 410 || h > 410) printf("i:%d,  w = %f, h = %f \n", i, w, h);
     }
 
@@ -1170,7 +1170,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
         float anchor_w = anchors_data.centers.vals[cluster_idx][0]; //centers->data.fl[cluster_idx * 2];
         float anchor_h = anchors_data.centers.vals[cluster_idx][1]; //centers->data.fl[cluster_idx * 2 + 1];
         if (best_iou > 1 || best_iou < 0) { // || box_w > width || box_h > height) {
-            printf(" Wrong label: i = %d, box_w = %d, box_h = %d, anchor_w = %d, anchor_h = %d, iou = %f \n",
+            printf(" Wrong label: i = %d, box_w = %f, box_h = %f, anchor_w = %f, anchor_h = %f, iou = %f \n",
                 i, box_w, box_h, anchor_w, anchor_h, best_iou);
         }
         else avg_iou += best_iou;
@@ -1287,7 +1287,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (net.layers[net.n - 1].classes > names_size) getchar();
     }
     srand(2222222);
-    double time;
     char buff[256];
     char *input = buff;
     char *json_buf = NULL;

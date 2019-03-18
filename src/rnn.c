@@ -163,7 +163,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
     int i = (*net.seen)/net.batch;
 
     int streams = batch/steps;
-    printf("\n batch = %d, steps = %d, streams = %d, subdivisions = %d, text_size = %d \n", batch, steps, streams, net.subdivisions, size);
+    printf("\n batch = %d, steps = %d, streams = %d, subdivisions = %d, text_size = %ld \n", batch, steps, streams, net.subdivisions, size);
     printf(" global_batch = %d \n", batch*net.subdivisions);
     size_t* offsets = (size_t*)calloc(streams, sizeof(size_t));
     int j;

@@ -790,8 +790,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*c;
 
-    float r1, r2, r3, r4;
-    float dhue, dsat, dexp, flip;
+    float r1 = 0, r2 = 0, r3 = 0, r4 = 0;
+    float dhue = 0, dsat = 0, dexp = 0, flip = 0;
     int augmentation_calculated = 0;
 
     d.y = make_matrix(n, 5*boxes);
@@ -890,8 +890,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*c;
 
-    float r1, r2, r3, r4;
-    float dhue, dsat, dexp, flip;
+    float r1 = 0, r2 = 0, r3 = 0, r4 = 0;
+    float dhue = 0, dsat = 0, dexp = 0, flip = 0;
     int augmentation_calculated = 0;
 
     d.y = make_matrix(n, 5 * boxes);

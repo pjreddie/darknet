@@ -104,8 +104,8 @@ struct detector_gpu_t {
 LIB_API Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id) : cur_gpu_id(gpu_id)
 {
     wait_stream = 0;
-    int old_gpu_index;
 #ifdef GPU
+    int old_gpu_index;
     check_cuda( cudaGetDevice(&old_gpu_index) );
 #endif
 
@@ -151,7 +151,7 @@ LIB_API Detector::Detector(std::string cfg_filename, std::string weight_filename
 LIB_API Detector::~Detector()
 {
     detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
-    layer l = detector_gpu.net.layers[detector_gpu.net.n - 1];
+    //layer l = detector_gpu.net.layers[detector_gpu.net.n - 1];
 
     free(detector_gpu.track_id);
 
@@ -159,8 +159,8 @@ LIB_API Detector::~Detector()
     for (int j = 0; j < NFRAMES; ++j) free(detector_gpu.predictions[j]);
     for (int j = 0; j < NFRAMES; ++j) if (detector_gpu.images[j].data) free(detector_gpu.images[j].data);
 
-    int old_gpu_index;
 #ifdef GPU
+    int old_gpu_index;
     cudaGetDevice(&old_gpu_index);
     cuda_set_device(detector_gpu.net.gpu_index);
 #endif
@@ -241,8 +241,8 @@ LIB_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use
 {
     detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
     network &net = detector_gpu.net;
-    int old_gpu_index;
 #ifdef GPU
+    int old_gpu_index;
     cudaGetDevice(&old_gpu_index);
     if(cur_gpu_id != old_gpu_index)
         cudaSetDevice(net.gpu_index);
@@ -289,7 +289,7 @@ LIB_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use
 
     std::vector<bbox_t> bbox_vec;
 
-    for (size_t i = 0; i < nboxes; ++i) {
+    for (int i = 0; i < nboxes; ++i) {
         box b = dets[i].bbox;
         int const obj_id = max_index(dets[i].prob, l.classes);
         float const prob = dets[i].prob[obj_id];
