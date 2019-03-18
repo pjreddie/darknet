@@ -640,7 +640,7 @@ void parse_net_options(list *options, network *net)
     net->learning_rate = option_find_float(options, "learning_rate", .001);
     net->learning_rate_min = option_find_float_quiet(options, "learning_rate_min", .00001);
     net->learning_rate_max = option_find_float_quiet(options, "learning_rate_max", .001);
-    net->batches_per_cycle = option_find_int(options, "sgdr_cycle", 500);
+    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", 500);
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
     int subdivs = option_find_int(options, "subdivisions",1);
