@@ -84,7 +84,7 @@ public:
     LIB_API void *get_cuda_context();
 
     LIB_API bool send_json_http(std::vector<bbox_t> cur_bbox_vec, std::vector<std::string> obj_names, int frame_id, 
-        std::string filename = "", int timeout = 400000, int port = 8070);
+        std::string filename = std::string(), int timeout = 400000, int port = 8070);
 
     std::vector<bbox_t> detect_resized(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false)
     {
