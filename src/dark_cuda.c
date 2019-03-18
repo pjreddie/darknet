@@ -8,13 +8,14 @@ int gpu_index = 0;
 
 #ifdef GPU
 
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "utils.h"
 #include "blas.h"
 #include "assert.h"
 #include <stdlib.h>
 #include <time.h>
 #include <cuda.h>
+#include <stdio.h>
 
 #pragma comment(lib, "cuda.lib")
 

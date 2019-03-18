@@ -393,7 +393,7 @@ LIB_API bool Detector::send_json_http(std::vector<bbox_t> cur_bbox_vec, std::vec
 
     char *tmp_buf = (char *)calloc(1024, sizeof(char));
     if (!filename.empty()) {
-        sprintf(tmp_buf, "{\n \"frame_id\":%d, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename);
+        sprintf(tmp_buf, "{\n \"frame_id\":%d, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename.c_str());
     }
     else {
         sprintf(tmp_buf, "{\n \"frame_id\":%d, \n \"objects\": [ \n", frame_id);
@@ -405,7 +405,7 @@ LIB_API bool Detector::send_json_http(std::vector<bbox_t> cur_bbox_vec, std::vec
         char *buf = (char *)calloc(2048, sizeof(char));
 
         sprintf(buf, "  {\"class_id\":%d, \"name\":\"%s\", \"absolute_coordinates\":{\"center_x\":%d, \"center_y\":%d, \"width\":%d, \"height\":%d}, \"confidence\":%f",
-            i.obj_id, obj_names[i.obj_id], i.x, i.y, i.w, i.h, i.prob);
+            i.obj_id, obj_names[i.obj_id].c_str(), i.x, i.y, i.w, i.h, i.prob);
 
         //sprintf(buf, "  {\"class_id\":%d, \"name\":\"%s\", \"relative_coordinates\":{\"center_x\":%f, \"center_y\":%f, \"width\":%f, \"height\":%f}, \"confidence\":%f",
         //    i.obj_id, obj_names[i.obj_id], i.x, i.y, i.w, i.h, i.prob);
@@ -414,7 +414,7 @@ LIB_API bool Detector::send_json_http(std::vector<bbox_t> cur_bbox_vec, std::vec
 
         if (!std::isnan(i.z_3d)) {
             sprintf(buf, "\n    , \"coordinates_in_meters\":{\"x_3d\":%.2f, \"y_3d\":%.2f, \"z_3d\":%.2f}",
-                i.x_3d*100, i.y_3d, i.z_3d);
+                i.x_3d, i.y_3d, i.z_3d);
             send_str += buf;
         }
 
