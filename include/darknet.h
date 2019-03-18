@@ -518,7 +518,7 @@ struct layer {
 
 // network.h
 typedef enum {
-    CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
+    CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM, SGDR
 } learning_rate_policy;
 
 // network.h
@@ -534,6 +534,9 @@ typedef struct network {
     learning_rate_policy policy;
 
     float learning_rate;
+    float learning_rate_min;
+    float learning_rate_max;
+    int batches_per_cycle;
     float momentum;
     float decay;
     float gamma;
