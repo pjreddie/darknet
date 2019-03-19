@@ -40,7 +40,7 @@
 typedef struct{
     char *type;
     dn_list *options;
-}section;
+}dn_section;
 
 dn_list *read_cfg(const char *filename);
 
@@ -86,7 +86,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     return BLANK;
 }
 
-void free_section(section *s)
+void free_section(dn_section *s)
 {
     free(s->type);
     dn_node *n = s->options->front;
@@ -118,7 +118,7 @@ void parse_data(char *data, float *a, int n)
     }
 }
 
-typedef struct size_params{
+typedef struct dn_size_params{
     int batch;
     int inputs;
     int h;
@@ -127,9 +127,9 @@ typedef struct size_params{
     int index;
     int time_steps;
     dn_network *net;
-} size_params;
+} dn_size_params;
 
-local_layer parse_local(dn_list *options, size_params params)
+local_layer parse_local(dn_list *options, dn_size_params params)
 {
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
@@ -150,7 +150,7 @@ local_layer parse_local(dn_list *options, size_params params)
     return layer;
 }
 
-dn_layer parse_deconvolutional(dn_list *options, size_params params)
+dn_layer parse_deconvolutional(dn_list *options, dn_size_params params)
 {
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
@@ -176,7 +176,7 @@ dn_layer parse_deconvolutional(dn_list *options, size_params params)
 }
 
 
-convolutional_layer parse_convolutional(dn_list *options, size_params params)
+convolutional_layer parse_convolutional(dn_list *options, dn_size_params params)
 {
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
@@ -206,7 +206,7 @@ convolutional_layer parse_convolutional(dn_list *options, size_params params)
     return layer;
 }
 
-dn_layer parse_crnn(dn_list *options, size_params params)
+dn_layer parse_crnn(dn_list *options, dn_size_params params)
 {
     int output_filters = option_find_int(options, "output_filters",1);
     int hidden_filters = option_find_int(options, "hidden_filters",1);
@@ -221,7 +221,7 @@ dn_layer parse_crnn(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_rnn(dn_list *options, size_params params)
+dn_layer parse_rnn(dn_list *options, dn_size_params params)
 {
     int output = option_find_int(options, "output",1);
     char *activation_s = option_find_str(options, "activation", "logistic");
@@ -235,7 +235,7 @@ dn_layer parse_rnn(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_gru(dn_list *options, size_params params)
+dn_layer parse_gru(dn_list *options, dn_size_params params)
 {
     int output = option_find_int(options, "output",1);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
@@ -246,7 +246,7 @@ dn_layer parse_gru(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_lstm(dn_list *options, size_params params)
+dn_layer parse_lstm(dn_list *options, dn_size_params params)
 {
     int output = option_find_int(options, "output", 1);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
@@ -256,7 +256,7 @@ dn_layer parse_lstm(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_connected(dn_list *options, size_params params)
+dn_layer parse_connected(dn_list *options, dn_size_params params)
 {
     int output = option_find_int(options, "output",1);
     char *activation_s = option_find_str(options, "activation", "logistic");
@@ -267,7 +267,7 @@ dn_layer parse_connected(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_softmax(dn_list *options, size_params params)
+dn_layer parse_softmax(dn_list *options, dn_size_params params)
 {
     int groups = option_find_int_quiet(options, "groups",1);
     dn_layer l = make_softmax_layer(params.batch, params.inputs, groups);
@@ -303,7 +303,7 @@ int *parse_yolo_mask(char *a, int *num)
     return mask;
 }
 
-dn_layer parse_yolo(dn_list *options, size_params params)
+dn_layer parse_yolo(dn_list *options, dn_size_params params)
 {
     int classes = option_find_int(options, "classes", 20);
     int total = option_find_int(options, "num", 1);
@@ -341,7 +341,7 @@ dn_layer parse_yolo(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_iseg(dn_list *options, size_params params)
+dn_layer parse_iseg(dn_list *options, dn_size_params params)
 {
     int classes = option_find_int(options, "classes", 20);
     int ids = option_find_int(options, "ids", 32);
@@ -350,7 +350,7 @@ dn_layer parse_iseg(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_region(dn_list *options, size_params params)
+dn_layer parse_region(dn_list *options, dn_size_params params)
 {
     int coords = option_find_int(options, "coords", 4);
     int classes = option_find_int(options, "classes", 20);
@@ -402,7 +402,7 @@ dn_layer parse_region(dn_list *options, size_params params)
     return l;
 }
 
-detection_layer parse_detection(dn_list *options, size_params params)
+detection_layer parse_detection(dn_list *options, dn_size_params params)
 {
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
@@ -426,7 +426,7 @@ detection_layer parse_detection(dn_list *options, size_params params)
     return layer;
 }
 
-cost_layer parse_cost(dn_list *options, size_params params)
+cost_layer parse_cost(dn_list *options, dn_size_params params)
 {
     char *type_s = option_find_str(options, "type", "sse");
     COST_TYPE type = get_cost_type(type_s);
@@ -438,7 +438,7 @@ cost_layer parse_cost(dn_list *options, size_params params)
     return layer;
 }
 
-crop_layer parse_crop(dn_list *options, size_params params)
+crop_layer parse_crop(dn_list *options, dn_size_params params)
 {
     int crop_height = option_find_int(options, "crop_height",1);
     int crop_width = option_find_int(options, "crop_width",1);
@@ -462,7 +462,7 @@ crop_layer parse_crop(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_reorg(dn_list *options, size_params params)
+dn_layer parse_reorg(dn_list *options, dn_size_params params)
 {
     int stride = option_find_int(options, "stride",1);
     int reverse = option_find_int_quiet(options, "reverse",0);
@@ -480,7 +480,7 @@ dn_layer parse_reorg(dn_list *options, size_params params)
     return layer;
 }
 
-maxpool_layer parse_maxpool(dn_list *options, size_params params)
+maxpool_layer parse_maxpool(dn_list *options, dn_size_params params)
 {
     int stride = option_find_int(options, "stride",1);
     int size = option_find_int(options, "size",stride);
@@ -497,7 +497,7 @@ maxpool_layer parse_maxpool(dn_list *options, size_params params)
     return layer;
 }
 
-avgpool_layer parse_avgpool(dn_list *options, size_params params)
+avgpool_layer parse_avgpool(dn_list *options, dn_size_params params)
 {
     int batch,w,h,c;
     w = params.w;
@@ -510,7 +510,7 @@ avgpool_layer parse_avgpool(dn_list *options, size_params params)
     return layer;
 }
 
-dropout_layer parse_dropout(dn_list *options, size_params params)
+dropout_layer parse_dropout(dn_list *options, dn_size_params params)
 {
     float probability = option_find_float(options, "probability", .5);
     dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability);
@@ -520,7 +520,7 @@ dropout_layer parse_dropout(dn_list *options, size_params params)
     return layer;
 }
 
-dn_layer parse_normalization(dn_list *options, size_params params)
+dn_layer parse_normalization(dn_list *options, dn_size_params params)
 {
     float alpha = option_find_float(options, "alpha", .0001);
     float beta =  option_find_float(options, "beta" , .75);
@@ -530,13 +530,13 @@ dn_layer parse_normalization(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_batchnorm(dn_list *options, size_params params)
+dn_layer parse_batchnorm(dn_list *options, dn_size_params params)
 {
     dn_layer l = make_batchnorm_layer(params.batch, params.w, params.h, params.c);
     return l;
 }
 
-dn_layer parse_shortcut(dn_list *options, size_params params, dn_network *net)
+dn_layer parse_shortcut(dn_list *options, dn_size_params params, dn_network *net)
 {
     char *l = option_find(options, "from");
     int index = atoi(l);
@@ -556,7 +556,7 @@ dn_layer parse_shortcut(dn_list *options, size_params params, dn_network *net)
 }
 
 
-dn_layer parse_l2norm(dn_list *options, size_params params)
+dn_layer parse_l2norm(dn_list *options, dn_size_params params)
 {
     dn_layer l = make_l2norm_layer(params.batch, params.inputs);
     l.h = l.out_h = params.h;
@@ -566,7 +566,7 @@ dn_layer parse_l2norm(dn_list *options, size_params params)
 }
 
 
-dn_layer parse_logistic(dn_list *options, size_params params)
+dn_layer parse_logistic(dn_list *options, dn_size_params params)
 {
     dn_layer l = make_logistic_layer(params.batch, params.inputs);
     l.h = l.out_h = params.h;
@@ -575,7 +575,7 @@ dn_layer parse_logistic(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_activation(dn_list *options, size_params params)
+dn_layer parse_activation(dn_list *options, dn_size_params params)
 {
     char *activation_s = option_find_str(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
@@ -589,7 +589,7 @@ dn_layer parse_activation(dn_list *options, size_params params)
     return l;
 }
 
-dn_layer parse_upsample(dn_list *options, size_params params, dn_network *net)
+dn_layer parse_upsample(dn_list *options, dn_size_params params, dn_network *net)
 {
 
     int stride = option_find_int(options, "stride",2);
@@ -598,7 +598,7 @@ dn_layer parse_upsample(dn_list *options, size_params params, dn_network *net)
     return l;
 }
 
-route_layer parse_route(dn_list *options, size_params params, dn_network *net)
+route_layer parse_route(dn_list *options, dn_size_params params, dn_network *net)
 {
     char *l = option_find(options, "layers");
     int len = strlen(l);
@@ -733,7 +733,7 @@ void parse_net_options(dn_list *options, dn_network *net)
     net->max_batches = option_find_int(options, "max_batches", 0);
 }
 
-int is_network(section *s)
+int is_network(dn_section *s)
 {
     return (strcmp(s->type, "[net]")==0
             || strcmp(s->type, "[network]")==0);
@@ -746,9 +746,9 @@ dn_network* parse_network_cfg(const char *filename)
     if(!n) error("Config file has no sections");
     dn_network *net = make_network(sections->size - 1);
     net->gpu_index = gpu_index;
-    size_params params;
+    dn_size_params params;
 
-    section *s = (section *)n->val;
+    dn_section *s = (dn_section *)n->val;
     dn_list *options = s->options;
     if(!is_network(s)) error("First section must be [net] or [network]");
     parse_net_options(options, net);
@@ -769,7 +769,7 @@ dn_network* parse_network_cfg(const char *filename)
     while(n){
         params.index = count;
         fprintf(stderr, "%5d ", count);
-        s = (section *)n->val;
+        s = (dn_section *)n->val;
         options = s->options;
         dn_layer l = {0};
         LAYER_TYPE lt = string_to_layer_type(s->type);
@@ -895,13 +895,13 @@ dn_list *read_cfg(const char *filename)
     char *line;
     int nu = 0;
     dn_list *options = make_list();
-    section *current = 0;
+    dn_section *current = 0;
     while((line=fgetl(file)) != 0){
         ++ nu;
         strip(line);
         switch(line[0]){
             case '[':
-                current = malloc(sizeof(section));
+                current = malloc(sizeof(dn_section));
                 list_insert(options, current);
                 current->options = make_list();
                 current->type = line;

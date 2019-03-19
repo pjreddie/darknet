@@ -32,9 +32,9 @@
 #include "parser.h"
 #include "data.h"
 
-load_args get_base_args(dn_network *net)
+dn_load_args get_base_args(dn_network *net)
 {
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.size = net->w;

@@ -136,7 +136,7 @@ dn_matrix load_image_augment_paths(char **paths, int n, int min, int max, int si
 }
 
 
-box_label *read_boxes(const char *filename, int *n)
+dn_box_label *read_boxes(const char *filename, int *n)
 {
     FILE *file = fopen(filename, "r");
     if(!file) file_error(filename);
@@ -144,11 +144,11 @@ box_label *read_boxes(const char *filename, int *n)
     int id;
     int count = 0;
     int size = 64;
-    box_label *boxes = calloc(size, sizeof(box_label));
+    dn_box_label *boxes = calloc(size, sizeof(dn_box_label));
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
         if(count == size) {
             size = size * 2;
-            boxes = realloc(boxes, size*sizeof(box_label));
+            boxes = realloc(boxes, size*sizeof(dn_box_label));
         }
         boxes[count].id = id;
         boxes[count].x = x;
@@ -166,18 +166,18 @@ box_label *read_boxes(const char *filename, int *n)
     return boxes;
 }
 
-void randomize_boxes(box_label *b, int n)
+void randomize_boxes(dn_box_label *b, int n)
 {
     int i;
     for(i = 0; i < n; ++i){
-        box_label swap = b[i];
+        dn_box_label swap = b[i];
         int index = rand()%n;
         b[i] = b[index];
         b[index] = swap;
     }
 }
 
-void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
+void correct_boxes(dn_box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
 {
     int i;
     for(i = 0; i < n; ++i){
@@ -224,7 +224,7 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
     int count = 0;
-    box_label *boxes = read_boxes(labelpath, &count);
+    dn_box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     float x,y,w,h;
@@ -263,7 +263,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
     int count = 0;
-    box_label *boxes = read_boxes(labelpath, &count);
+    dn_box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     float x,y,w,h;
@@ -456,7 +456,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
     int count = 0;
-    box_label *boxes = read_boxes(labelpath, &count);
+    dn_box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     if(count > num_boxes) count = num_boxes;
@@ -1090,7 +1090,7 @@ dn_data load_data_detection(int n, char **paths, int m, int w, int h, int boxes,
 void *load_thread(void *ptr)
 {
     //printf("Loading data: %d\n", rand());
-    load_args a = *(struct load_args*)ptr;
+    dn_load_args a = *(struct dn_load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
     if(a.saturation == 0) a.saturation = 1;
     if(a.aspect == 0) a.aspect = 1;
@@ -1132,10 +1132,10 @@ void *load_thread(void *ptr)
     return 0;
 }
 
-pthread_t load_data_in_thread(load_args args)
+pthread_t load_data_in_thread(dn_load_args args)
 {
     pthread_t thread;
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct dn_load_args *ptr = calloc(1, sizeof(struct dn_load_args));
     *ptr = args;
     if(pthread_create(&thread, 0, load_thread, ptr)) error("Thread creation failed");
     return thread;
@@ -1144,7 +1144,7 @@ pthread_t load_data_in_thread(load_args args)
 void *load_threads(void *ptr)
 {
     int i;
-    load_args args = *(load_args *)ptr;
+    dn_load_args args = *(dn_load_args *)ptr;
     if (args.threads == 0) args.threads = 1;
     dn_data *out = args.d;
     int total = args.n;
@@ -1170,17 +1170,17 @@ void *load_threads(void *ptr)
     return 0;
 }
 
-void load_data_blocking(load_args args)
+void load_data_blocking(dn_load_args args)
 {
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct dn_load_args *ptr = calloc(1, sizeof(struct dn_load_args));
     *ptr = args;
     load_thread(ptr);
 }
 
-pthread_t load_data(load_args args)
+pthread_t load_data(dn_load_args args)
 {
     pthread_t thread;
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct dn_load_args *ptr = calloc(1, sizeof(struct dn_load_args));
     *ptr = args;
     if(pthread_create(&thread, 0, load_threads, ptr)) error("Thread creation failed");
     return thread;

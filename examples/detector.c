@@ -42,7 +42,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = get_base_args(net);
+    dn_load_args args = get_base_args(net);
     args.coords = l.coords;
     args.paths = paths;
     args.n = imgs;
@@ -297,7 +297,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
 
     dn_image input = make_image(net->w, net->h, net->c*2);
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     //args.type = IMAGE_DATA;
@@ -426,7 +426,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     dn_image *buf_resized = calloc(nthreads, sizeof(dn_image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     //args.type = IMAGE_DATA;
@@ -529,7 +529,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
         find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
         int num_labels = 0;
-        box_label *truth = read_boxes(labelpath, &num_labels);
+        dn_box_label *truth = read_boxes(labelpath, &num_labels);
         for(k = 0; k < nboxes; ++k){
             if(dets[k].objectness > thresh){
                 ++proposals;

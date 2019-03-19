@@ -542,9 +542,9 @@ typedef struct{
 
 typedef enum {
     CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA, SEGMENTATION_DATA, INSTANCE_DATA, ISEG_DATA
-} data_type;
+} dn_data_type;
 
-typedef struct load_args{
+typedef struct dn_load_args{
     int threads;
     char **paths;
     char *path;
@@ -573,19 +573,19 @@ typedef struct load_args{
     dn_data *d;
     dn_image *im;
     dn_image *resized;
-    data_type type;
+    dn_data_type type;
     dn_tree *hierarchy;
-} load_args;
+} dn_load_args;
 
 typedef struct{
     int id;
     float x,y,w,h;
     float left, right, top, bottom;
-} box_label;
+} dn_box_label;
 
 
 dn_network *load_network(const char *cfg, const char *weights, int clear);
-load_args get_base_args(dn_network *net);
+dn_load_args get_base_args(dn_network *net);
 
 void free_data(dn_data d);
 
@@ -601,7 +601,7 @@ typedef struct dn_list{
     dn_node *back;
 } dn_list;
 
-pthread_t load_data(load_args args);
+pthread_t load_data(dn_load_args args);
 dn_list *read_data_cfg(const char *filename);
 dn_list *read_cfg(const char *filename);
 unsigned char *read_file(const char *filename);
@@ -730,7 +730,7 @@ dn_image rotate_image(dn_image m, float rad);
 void visualize_network(dn_network *net);
 float box_iou(dn_box a, dn_box b);
 dn_data load_all_cifar10();
-box_label *read_boxes(const char *filename, int *n);
+dn_box_label *read_boxes(const char *filename, int *n);
 dn_box float_to_box(float *f, int stride);
 void draw_detections(dn_image im, detection *dets, int num, float thresh, char **names, dn_image **alphabet, int classes);
 
@@ -762,8 +762,8 @@ void make_window(char *name, int w, int h, int fullscreen);
 
 void free_image(dn_image m);
 float train_network(dn_network *net, dn_data d);
-pthread_t load_data_in_thread(load_args args);
-void load_data_blocking(load_args args);
+pthread_t load_data_in_thread(dn_load_args args);
+void load_data_blocking(dn_load_args args);
 dn_list *get_paths(const char *filename);
 void hierarchy_predictions(float *predictions, int n, dn_tree *hier, int only_leaves, int stride);
 void change_leaves(dn_tree *t, char *leaf_list);

@@ -15,17 +15,11 @@
     <list default="true" id="3bfbf356-8fb4-42b7-9cf0-3c2abcc5c096" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/examples/attention.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/attention.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/captcha.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/captcha.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/cifar.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/cifar.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/classifier.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/classifier.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/coco.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/coco.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/darknet.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/darknet.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/detector.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/detector.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/go.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/go.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/instance-segmenter.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/instance-segmenter.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/lsd.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/lsd.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/nightmare.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/nightmare.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/regressor.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/regressor.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/rnn.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/rnn.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/segmenter.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/segmenter.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/super.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/super.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/swag.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/swag.c" afterDir="false" />
@@ -34,72 +28,10 @@
       <change beforePath="$PROJECT_DIR$/examples/writing.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/writing.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/yolo.c" beforeDir="false" afterPath="$PROJECT_DIR$/examples/yolo.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/include/darknet.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/darknet.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/src/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/activation_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/activation_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/activation_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/activation_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/avgpool_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/avgpool_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/avgpool_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/avgpool_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/batchnorm_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/batchnorm_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/batchnorm_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/batchnorm_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/connected_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/connected_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/connected_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/connected_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/convolutional_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/convolutional_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/convolutional_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/convolutional_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cost_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/cost_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cost_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/cost_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crnn_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/crnn_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crnn_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/crnn_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crop_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/crop_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crop_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/crop_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cuda/avgpool_layer_kernels.cu" beforeDir="false" afterPath="$PROJECT_DIR$/src/cuda/avgpool_layer_kernels.cu" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cuda/convolutional_kernels.cu" beforeDir="false" afterPath="$PROJECT_DIR$/src/cuda/convolutional_kernels.cu" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cuda/crop_layer_kernels.cu" beforeDir="false" afterPath="$PROJECT_DIR$/src/cuda/crop_layer_kernels.cu" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cuda/deconvolutional_kernels.cu" beforeDir="false" afterPath="$PROJECT_DIR$/src/cuda/deconvolutional_kernels.cu" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cuda/dropout_layer_kernels.cu" beforeDir="false" afterPath="$PROJECT_DIR$/src/cuda/dropout_layer_kernels.cu" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cuda/maxpool_layer_kernels.cu" beforeDir="false" afterPath="$PROJECT_DIR$/src/cuda/maxpool_layer_kernels.cu" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/deconvolutional_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/deconvolutional_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/deconvolutional_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/deconvolutional_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/detection_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/detection_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/detection_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/detection_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dropout_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/dropout_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dropout_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/dropout_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/gru_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/gru_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/gru_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/gru_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/iseg_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/iseg_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/iseg_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/iseg_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/l2norm_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/l2norm_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/l2norm_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/l2norm_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/local_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/local_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/local_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/local_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/logistic_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/logistic_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/logistic_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/logistic_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lstm_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/lstm_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lstm_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/lstm_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/maxpool_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/maxpool_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/maxpool_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/maxpool_layer.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/data.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/data.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/network.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/network.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/normalization_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/normalization_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/normalization_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/normalization_layer.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/parser.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/parser.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/parser.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/parser.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/region_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/region_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/region_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/region_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/reorg_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/reorg_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/reorg_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/reorg_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/rnn_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/rnn_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/rnn_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/rnn_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/route_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/route_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/route_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/route_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/shortcut_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/shortcut_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/shortcut_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/shortcut_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/softmax_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/softmax_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/softmax_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/softmax_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/upsample_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/upsample_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/upsample_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/upsample_layer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/yolo_layer.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/yolo_layer.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/yolo_layer.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/yolo_layer.h" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <ignored path="$PROJECT_DIR$/build/" />
@@ -126,18 +58,18 @@
         <counts>
           <entry key="HIDE" value="18" />
           <entry key="Makefile" value="1" />
-          <entry key="c" value="170" />
+          <entry key="c" value="179" />
           <entry key="cu" value="4" />
           <entry key="gitignore" value="16" />
-          <entry key="h" value="82" />
-          <entry key="txt" value="910" />
+          <entry key="h" value="102" />
+          <entry key="txt" value="1011" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="CMakeLists.txt" value="910" />
-          <entry key="ObjectiveC" value="274" />
-          <entry key="PLAIN_TEXT" value="17" />
+          <entry key="ObjectiveC" value="303" />
+          <entry key="PLAIN_TEXT" value="118" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -145,21 +77,23 @@
           <entry key="HIDE" value="1" />
           <entry key="Makefile" value="8" />
           <entry key="OLD" value="2" />
-          <entry key="c" value="43" />
-          <entry key="cfg" value="1" />
+          <entry key="c" value="46" />
+          <entry key="cfg" value="4" />
           <entry key="cpp" value="1" />
           <entry key="cu" value="3" />
+          <entry key="darknet (disassembly)" value="1" />
           <entry key="gitignore" value="1" />
-          <entry key="h" value="18" />
+          <entry key="h" value="20" />
           <entry key="mit" value="1" />
-          <entry key="txt" value="11" />
+          <entry key="txt" value="13" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="CMakeLists.txt" value="11" />
-          <entry key="ObjectiveC" value="66" />
-          <entry key="PLAIN_TEXT" value="13" />
+          <entry key="Disassembly" value="1" />
+          <entry key="ObjectiveC" value="71" />
+          <entry key="PLAIN_TEXT" value="18" />
         </counts>
       </usages-collector>
     </session>
@@ -168,29 +102,27 @@
     <splitter split-orientation="horizontal" split-proportion="0.5">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file pinned="false" current-in-tab="true">
+          <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/examples/CMakeLists.txt">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="45">
-                  <caret line="3" column="58" selection-start-line="3" selection-start-column="58" selection-end-line="3" selection-end-column="58" />
+                <state relative-caret-position="90">
+                  <caret line="6" selection-start-line="6" selection-end-line="6" />
                 </state>
               </provider>
             </entry>
           </file>
           <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/include/darknet.h">
+            <entry file="file://$PROJECT_DIR$/examples/darknet.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="210">
-                  <caret line="586" column="20" selection-start-line="586" selection-start-column="12" selection-end-line="586" selection-end-column="23" />
-                </state>
+                <state relative-caret-position="-360" />
               </provider>
             </entry>
           </file>
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/src/parser.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="266">
-                  <caret line="893" column="23" selection-start-line="893" selection-start-column="23" selection-end-line="893" selection-end-column="23" />
+                <state relative-caret-position="868">
+                  <caret line="1309" column="16" lean-forward="true" selection-start-line="1309" selection-start-column="16" selection-end-line="1309" selection-end-column="16" />
                 </state>
               </provider>
             </entry>
@@ -198,8 +130,8 @@
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/src/network.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="206">
-                  <caret line="51" selection-start-line="51" selection-end-line="51" />
+                <state relative-caret-position="579">
+                  <caret line="219" column="6" lean-forward="true" selection-start-line="219" selection-start-column="6" selection-end-line="219" selection-end-column="6" />
                 </state>
               </provider>
             </entry>
@@ -207,8 +139,35 @@
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/src/utils.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="347">
-                  <caret line="280" column="22" selection-start-line="280" selection-start-column="22" selection-end-line="280" selection-end-column="22" />
+                <state relative-caret-position="707">
+                  <caret line="304" selection-start-line="304" selection-end-line="304" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/src/convolutional_layer.h">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="165">
+                  <caret line="11" column="10" lean-forward="true" selection-start-line="11" selection-start-column="10" selection-end-line="11" selection-end-column="10" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/src/list.c">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="810">
+                  <caret line="54" selection-start-line="54" selection-end-line="54" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/src/option_list.c">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="221">
+                  <caret line="54" selection-start-line="54" selection-end-line="54" />
                 </state>
               </provider>
             </entry>
@@ -226,38 +185,20 @@
               </provider>
             </entry>
           </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/convolutional_layer.c">
+          <file pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/include/darknet.h">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="221">
-                  <caret line="176" selection-start-line="176" selection-end-line="176" />
+                <state relative-caret-position="654">
+                  <caret line="130" column="16" lean-forward="true" selection-start-line="130" selection-start-column="16" selection-end-line="130" selection-end-column="16" />
                 </state>
               </provider>
             </entry>
           </file>
-          <file pinned="false" current-in-tab="true">
+          <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/src/CMakeLists.txt">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="180">
-                  <caret line="12" column="35" selection-start-line="12" selection-start-column="35" selection-end-line="12" selection-end-column="35" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/connected_layer.c">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="221">
-                  <caret line="40" selection-start-line="40" selection-end-line="40" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/convolutional_layer.h">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="90">
-                  <caret line="9" column="16" selection-start-line="9" selection-start-column="16" selection-end-line="9" selection-end-column="16" />
+                <state relative-caret-position="225">
+                  <caret line="15" selection-start-line="15" selection-end-line="15" />
                 </state>
               </provider>
             </entry>
@@ -290,12 +231,31 @@
             </entry>
           </file>
           <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/dropout_layer.c">
+            <entry file="file://$PROJECT_DIR$/trace.txt">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="221">
-                  <caret line="16" column="38" selection-start-line="16" selection-start-column="38" selection-end-line="16" selection-end-column="38" />
+                <state relative-caret-position="90">
+                  <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
                 </state>
               </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/cfg/yolov2-tiny-voc.cfg">
+              <provider selected="true" editor-type-id="text-editor" />
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/cfg/yolov2-tiny.cfg">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="165">
+                  <caret line="11" column="12" selection-start-line="11" selection-start-column="12" selection-end-line="11" selection-end-column="12" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/cfg/yolov2-voc.cfg">
+              <provider selected="true" editor-type-id="text-editor" />
             </entry>
           </file>
         </leaf>
@@ -357,11 +317,12 @@
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/examples/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/.gitignore" />
-        <option value="$PROJECT_DIR$/src/parser.c" />
         <option value="$PROJECT_DIR$/src/utils.c" />
         <option value="$PROJECT_DIR$/src/utils.h" />
-        <option value="$PROJECT_DIR$/include/darknet.h" />
         <option value="$PROJECT_DIR$/src/CMakeLists.txt" />
+        <option value="$PROJECT_DIR$/src/parser.c" />
+        <option value="$PROJECT_DIR$/include/darknet.h" />
+        <option value="$PROJECT_DIR$/trace.txt" />
       </list>
     </option>
   </component>
@@ -372,7 +333,7 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="49" />
     <option name="y" value="-4" />
     <option name="width" value="1871" />
@@ -391,11 +352,6 @@
             <path>
               <item name="darknet" type="b2602c69:ProjectViewProjectNode" />
               <item name="darknet" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="darknet" type="b2602c69:ProjectViewProjectNode" />
-              <item name="darknet" type="462c0819:PsiDirectoryNode" />
-              <item name="examples" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="darknet" type="b2602c69:ProjectViewProjectNode" />
@@ -474,13 +430,13 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="42347000" />
+    <option name="totallyTimeSpent" value="46858000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="49" y="-4" width="1871" height="1204" extended-state="7" />
+    <frame x="49" y="-4" width="1871" height="1204" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.18082191" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.18082191" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -491,12 +447,12 @@
       <window_info anchor="bottom" id="TODO" order="5" />
       <window_info anchor="bottom" id="Docker" order="6" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
-      <window_info active="true" anchor="bottom" x="2171" y="348" width="1129" height="523" id="Messages" order="8" type="FLOATING" visible="true" weight="0.2811918" />
+      <window_info anchor="bottom" x="2179" y="294" width="1129" height="523" id="Messages" order="8" type="FLOATING" weight="0.2811918" />
       <window_info anchor="bottom" id="Terminal" order="9" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="11" show_stripe_button="false" />
-      <window_info anchor="bottom" x="72" y="421" width="1825" height="353" id="CMake" order="12" visible="true" weight="0.32867783" />
-      <window_info anchor="bottom" x="49" y="120" width="1871" height="1025" id="Debug" order="13" type="WINDOWED" weight="0.39851025" />
+      <window_info anchor="bottom" x="72" y="421" width="1825" height="353" id="CMake" order="12" weight="0.32867783" />
+      <window_info anchor="bottom" x="1244" y="148" width="1871" height="997" id="Debug" order="13" type="WINDOWED" visible="true" weight="0.39851025" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -544,46 +500,14 @@
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/network.c</url>
-          <line>54</line>
-          <option name="timeStamp" value="4" />
+          <url>file://$PROJECT_DIR$/src/parser.c</url>
+          <line>921</line>
+          <option name="timeStamp" value="5" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/examples/coco.c">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/convolutional_kernels.cu" />
-    <entry file="file://$PROJECT_DIR$/examples/attention.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4500">
-          <caret line="300" column="38" selection-start-line="300" selection-start-column="38" selection-end-line="300" selection-end-column="38" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/compare.c.HIDE">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="915">
-          <caret line="61" column="36" selection-start-line="61" selection-start-column="36" selection-end-line="61" selection-end-column="36" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/examples/swag.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="218">
-          <caret line="17" column="13" selection-start-line="17" selection-start-column="13" selection-end-line="17" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/examples/writing.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="233">
-          <caret line="117" column="32" selection-start-line="117" selection-start-column="32" selection-end-line="117" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/examples/voxel.c">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="83">
@@ -636,13 +560,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/local_layer.c">
       <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cfg/yolov2-tiny.cfg">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="11" column="12" lean-forward="true" selection-start-line="11" selection-start-column="12" selection-end-line="11" selection-end-column="12" />
-        </state>
-      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/gemm.h">
       <provider selected="true" editor-type-id="text-editor" />
@@ -710,13 +627,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/convolutional_layer.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="9" column="16" selection-start-line="9" selection-start-column="16" selection-end-line="9" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/l2norm_layer.h">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -740,13 +650,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/option_list.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="221">
-          <caret line="51" column="4" selection-start-line="51" selection-start-column="4" selection-end-line="51" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/examples/detector.c">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="8520">
@@ -761,27 +664,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/examples/darknet.c">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="285">
           <caret line="19" column="6" selection-start-line="19" selection-start-column="6" selection-end-line="19" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/parser.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="266">
-          <caret line="893" column="23" selection-start-line="893" selection-start-column="23" selection-end-line="893" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/utils.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="347">
-          <caret line="280" column="22" selection-start-line="280" selection-start-column="22" selection-end-line="280" selection-end-column="22" />
         </state>
       </provider>
     </entry>
@@ -799,13 +685,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/include/darknet.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="586" column="20" selection-start-line="586" selection-start-column="12" selection-end-line="586" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/utils.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="298">
@@ -820,24 +699,105 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/network.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="206">
-          <caret line="51" selection-start-line="51" selection-end-line="51" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/examples/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" column="58" selection-start-line="3" selection-start-column="58" selection-end-line="3" selection-end-column="58" />
+        <state relative-caret-position="90">
+          <caret line="6" selection-start-line="6" selection-end-line="6" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="12" column="35" selection-start-line="12" selection-start-column="35" selection-end-line="12" selection-end-column="35" />
+        <state relative-caret-position="225">
+          <caret line="15" selection-start-line="15" selection-end-line="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/examples/darknet.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-360" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/connected_layer.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="221">
+          <caret line="40" selection-start-line="40" selection-end-line="40" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/utils.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="707">
+          <caret line="304" selection-start-line="304" selection-end-line="304" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/list.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="810">
+          <caret line="54" selection-start-line="54" selection-end-line="54" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/option_list.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="221">
+          <caret line="54" selection-start-line="54" selection-end-line="54" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/dropout_layer.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="221">
+          <caret line="16" column="38" selection-start-line="16" selection-start-column="38" selection-end-line="16" selection-end-column="38" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cfg/yolov2-voc.cfg">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cfg/yolov2-tiny-voc.cfg">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cfg/yolov2-tiny.cfg">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" column="12" selection-start-line="11" selection-start-column="12" selection-end-line="11" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/parser.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="868">
+          <caret line="1309" column="16" lean-forward="true" selection-start-line="1309" selection-start-column="16" selection-end-line="1309" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/trace.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/darknet.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="654">
+          <caret line="130" column="16" lean-forward="true" selection-start-line="130" selection-start-column="16" selection-end-line="130" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/network.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="579">
+          <caret line="219" column="6" lean-forward="true" selection-start-line="219" selection-start-column="6" selection-end-line="219" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/convolutional_layer.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" column="10" lean-forward="true" selection-start-line="11" selection-start-column="10" selection-end-line="11" selection-end-column="10" />
         </state>
       </provider>
     </entry>

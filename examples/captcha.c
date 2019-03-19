@@ -49,7 +49,7 @@ void train_captcha(char *cfgfile, char *weightfile)
     dn_data train;
     dn_data buffer;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.paths = paths;

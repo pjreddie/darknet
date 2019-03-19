@@ -58,7 +58,7 @@ void train_voxel(char *cfgfile, char *weightfile)
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.scale = 4;

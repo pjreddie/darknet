@@ -95,7 +95,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     int divs=3;
     int size=2;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = divs*net->w/size;
     args.h = divs*net->h/size;
     args.size = divs*net->w/size;

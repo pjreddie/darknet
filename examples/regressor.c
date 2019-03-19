@@ -40,7 +40,7 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     int N = plist->size;
     clock_t time;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.threads = 32;

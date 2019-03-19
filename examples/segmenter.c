@@ -43,7 +43,7 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     printf("%d\n", plist->size);
     int N = plist->size;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.threads = 32;

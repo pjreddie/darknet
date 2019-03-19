@@ -27,7 +27,7 @@ void train_yolo(char *cfgfile, char *weightfile)
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.paths = paths;
@@ -134,7 +134,7 @@ void validate_yolo(char *cfg, char *weights)
     dn_image *buf_resized = calloc(nthreads, sizeof(dn_image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.type = IMAGE_DATA;
@@ -232,7 +232,7 @@ void validate_yolo_recall(char *cfg, char *weights)
         find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
         int num_labels = 0;
-        box_label *truth = read_boxes(labelpath, &num_labels);
+        dn_box_label *truth = read_boxes(labelpath, &num_labels);
         for(k = 0; k < side*side*l.n; ++k){
             if(dets[k].objectness > thresh){
                 ++proposals;

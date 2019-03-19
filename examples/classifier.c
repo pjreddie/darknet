@@ -61,7 +61,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     int N = plist->size;
     double time;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.threads = 32;
@@ -195,7 +195,7 @@ void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
 
     dn_data val, buffer;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
 
@@ -707,7 +707,7 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_
 
     dn_data val, buffer;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.paths = paths;
