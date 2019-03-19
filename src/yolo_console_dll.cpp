@@ -39,12 +39,14 @@ std::vector<bbox_t> get_3d_coordinates(std::vector<bbox_t> bbox_vect, cv::Mat xy
 {
     bool valid_measure;
     int i, j;
-    const int R_max = 4;
+    const unsigned int R_max_global = 10;
 
     std::vector<bbox_t> bbox3d_vect;
 
     for (auto &cur_box : bbox_vect) {
 
+        const unsigned int obj_size = std::min(cur_box.w, cur_box.h);
+        const unsigned int R_max = std::min(R_max_global, obj_size / 2);
         int center_i = cur_box.x + cur_box.w * 0.5f, center_j = cur_box.y + cur_box.h * 0.5f;
 
         std::vector<float> x_vect, y_vect, z_vect;
@@ -183,6 +185,8 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
             if (i.track_id > 0) obj_name += " - " + std::to_string(i.track_id);
             cv::Size const text_size = getTextSize(obj_name, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, 2, 0);
             int max_width = (text_size.width > i.w + 2) ? text_size.width : (i.w + 2);
+            max_width = std::max(max_width, (int)i.w + 2);
+            //max_width = std::max(max_width, 283);
             std::string coords_3d;
             if (!std::isnan(i.z_3d)) {
                 std::stringstream ss;
@@ -326,6 +330,8 @@ int main(int argc, char *argv[])
 
 #ifdef ZED_STEREO
                 sl::InitParameters init_params;
+                init_params.depth_minimum_distance = 0.5;
+                init_params.depth_mode = sl::DEPTH_MODE_ULTRA;
                 init_params.camera_resolution = sl::RESOLUTION_HD720;
                 init_params.coordinate_units = sl::UNIT_METER;
                 //init_params.sdk_cuda_ctx = (CUcontext)detector.get_cuda_context();

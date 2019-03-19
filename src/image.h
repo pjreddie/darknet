@@ -96,6 +96,7 @@ image **load_alphabet();
 image get_image_from_stream(CvCapture* cap);
 image get_image_from_stream_cpp(CvCapture* cap);
 image ipl_to_image(IplImage* src);
+void save_cv_png(IplImage *img, const char *name);
 #endif
 //float get_pixel(image m, int x, int y, int c);
 //float get_pixel_extend(image m, int x, int y, int c);

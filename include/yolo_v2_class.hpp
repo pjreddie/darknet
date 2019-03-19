@@ -776,8 +776,8 @@ public:
             kf.processNoiseCov.at<float>(7) = 1e-2;
             kf.processNoiseCov.at<float>(14) = 1e-2;// 5.0f;
             kf.processNoiseCov.at<float>(21) = 1e-2;// 5.0f;
-            kf.processNoiseCov.at<float>(28) = 1e-2;
-            kf.processNoiseCov.at<float>(35) = 1e-2;
+            kf.processNoiseCov.at<float>(28) = 5e-3;
+            kf.processNoiseCov.at<float>(35) = 5e-3;
 
             // Measures Noise Covariance Matrix R - result smoother with higher values (1e-1)
             cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-1));
