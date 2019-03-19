@@ -183,9 +183,9 @@ PS \>                  cd $env:VCPKG_ROOT
 PS Code\vcpkg>         .\vcpkg install pthreads opencv #replace with opencv[cuda] in case you want to use cuda-accelerated openCV
 ```
 
-8. [necessary only with CUDA] Customize the CMakeLists.txt with the preferred compute capability
+8. [necessary only with CUDA] Customize the `build.ps1` script enabling the appropriate `my_cuda_compute_model` line. If not manually defined, CMake toolchain will automatically use the very low 3.0 CUDA compute model
 
-9. Build with the Powershell script `build.ps1` or use the "Open Folder" functionality of Visual Studio 2017. In the first option, if you want to use Visual Studio, you will find a custom solution created for you by CMake after the build containing all the appropriate config flags for your system.
+9.  Build with the Powershell script `build.ps1`. If you want to use Visual Studio, you will find a custom solution created for you by CMake after the build containing all the appropriate config flags for your system.
 
 ### How to compile on Windows (legacy way)
 
