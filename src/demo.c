@@ -75,7 +75,8 @@ void *fetch_in_thread(void *ptr)
         //error("Stream closed.");
         printf("Stream closed.\n");
         flag_exit = 1;
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return 0;
     }
     //in_s = resize_image(in, net.w, net.h);
 
