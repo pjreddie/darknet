@@ -1,7 +1,7 @@
 #ifndef BLAS_H
 #define BLAS_H
 #ifdef GPU
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "tree.h"
 #endif
 #ifdef __cplusplus

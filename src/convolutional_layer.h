@@ -1,7 +1,7 @@
 #ifndef CONVOLUTIONAL_LAYER_H
 #define CONVOLUTIONAL_LAYER_H
 
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "image.h"
 #include "activations.h"
 #include "layer.h"
@@ -50,6 +50,7 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
 image get_convolutional_image(convolutional_layer layer);
 image get_convolutional_delta(convolutional_layer layer);
 image get_convolutional_weight(convolutional_layer layer, int i);
+
 
 int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);

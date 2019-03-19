@@ -31,12 +31,16 @@ if ($vcpkg_triplet -Match "x86") {
 if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
   $vstype = "Professional"
   if (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2017\${vstype}\Common7\Tools") {
-    Write-Host "Found VS 2017 Professional"
   }
   else {
-    $vstype = "Community"
-    Write-Host "Found VS 2017 Community"
+    $vstype = "Enterprise"
+    if (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2017\${vstype}\Common7\Tools") {
+    }
+    else {
+      $vstype = "Community"
+    }
   }
+  Write-Host "Found VS 2017 ${vstype}"
   Push-Location "C:\Program Files (x86)\Microsoft Visual Studio\2017\${vstype}\Common7\Tools"
   cmd /c "VsDevCmd.bat -arch=x64 & set" |
     ForEach-Object {

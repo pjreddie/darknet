@@ -1,5 +1,5 @@
 #include "avgpool_layer.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include <stdio.h>
 
 avgpool_layer make_avgpool_layer(int batch, int w, int h, int c)

@@ -1,6 +1,6 @@
 #include "cost_layer.h"
 #include "utils.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "blas.h"
 #include <math.h>
 #include <string.h>
@@ -25,8 +25,9 @@ char *get_cost_string(COST_TYPE a)
             return "masked";
         case SMOOTH:
             return "smooth";
+		default:
+			return "sse";
     }
-    return "sse";
 }
 
 cost_layer make_cost_layer(int batch, int inputs, COST_TYPE cost_type, float scale)

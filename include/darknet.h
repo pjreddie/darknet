@@ -792,10 +792,11 @@ LIB_API void free_data(data d);
 LIB_API pthread_t load_data(load_args args);
 LIB_API pthread_t load_data_in_thread(load_args args);
 
-// cuda.h
+// dark_cuda.h
 LIB_API void cuda_pull_array(float *x_gpu, float *x, size_t n);
 LIB_API void cuda_pull_array_async(float *x_gpu, float *x, size_t n);
 LIB_API void cuda_set_device(int n);
+LIB_API void *cuda_get_context();
 
 // utils.h
 LIB_API void free_ptrs(void **ptrs, int n);
@@ -809,6 +810,8 @@ LIB_API metadata get_metadata(char *file);
 
 
 // http_stream.h
+LIB_API void delete_json_sender();
+LIB_API void send_json_custom(char const* send_buf, int port, int timeout);
 LIB_API double get_time_point();
 void start_timer();
 void stop_timer();

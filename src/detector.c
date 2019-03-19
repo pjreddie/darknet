@@ -326,7 +326,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
-            sprintf(buff, "%s/%s_last.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_last.weights", backup_directory, base);
             save_weights(net, buff);
         }
         free_data(train);
@@ -594,7 +594,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
     list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net.layers[net.n - 1];
+    //layer l = net.layers[net.n - 1];
 
     int j, k;
 
@@ -681,16 +681,16 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     char *difficult_valid_images = option_find_str(options, "difficult", NULL);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
-    char *mapf = option_find_str(options, "map", 0);
-    int *map = 0;
-    if (mapf) map = read_map(mapf);
+    //char *mapf = option_find_str(options, "map", 0);
+    //int *map = 0;
+    //if (mapf) map = read_map(mapf);
     FILE* reinforcement_fd = NULL;
 
     network net;
-    int initial_batch;
+    //int initial_batch;
     if (existing_net) {
         char *train_images = option_find_str(options, "train", "data/train.txt");
-        char *valid_images = option_find_str(options, "valid", train_images);
+        valid_images = option_find_str(options, "valid", train_images);
         net = *existing_net;
     }
     else {
@@ -923,6 +923,11 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     printf("\n detections_count = %d, unique_truth_count = %d  \n", detections_count, unique_truth_count);
 
 
+    int* detection_per_class_count = (int*)calloc(classes, sizeof(int));
+    for (j = 0; j < detections_count; ++j) {
+        detection_per_class_count[detections[j].class_id]++;
+    }
+
     int* truth_flags = (int*)calloc(unique_truth_count, sizeof(int));
 
     int rank;
@@ -945,7 +950,8 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             {
                 truth_flags[d.unique_truth_index] = 1;
                 pr[d.class_id][rank].tp++;    // true-positive
-            }
+            } else
+                pr[d.class_id][rank].fp++;
         }
         else {
             pr[d.class_id][rank].fp++;    // false-positive
@@ -963,6 +969,10 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
 
             if ((tp + fn) > 0) pr[i][rank].recall = (double)tp / (double)(tp + fn);
             else pr[i][rank].recall = 0;
+
+            if (rank == (detections_count - 1) && detection_per_class_count[i] != (tp + fp)) {    // check for last rank
+                    printf(" class_id: %d - detections = %d, tp+fp = %d, tp = %d, fp = %d \n", i, detection_per_class_count[i], tp+fp, tp, fp);
+            }
         }
     }
 
@@ -1014,6 +1024,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     free(pr);
     free(detections);
     free(truth_classes_count);
+    free(detection_per_class_count);
 
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
     if (reinforcement_fd != NULL) fclose(reinforcement_fd);
@@ -1033,7 +1044,6 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     return mean_average_precision;
 }
 
-//#ifdef OPENCV
 typedef struct {
     float w, h;
 } anchors_t;
@@ -1120,8 +1130,8 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 
     printf("\n");
     for (i = 0; i < number_of_boxes; ++i) {
-        float w = boxes_data.vals[i][0] = rel_width_height_array[i * 2];
-        float h = boxes_data.vals[i][1] = rel_width_height_array[i * 2 + 1];
+        boxes_data.vals[i][0] = rel_width_height_array[i * 2];
+        boxes_data.vals[i][1] = rel_width_height_array[i * 2 + 1];
         //if (w > 410 || h > 410) printf("i:%d,  w = %f, h = %f \n", i, w, h);
     }
 
@@ -1159,7 +1169,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
         float anchor_w = anchors_data.centers.vals[cluster_idx][0]; //centers->data.fl[cluster_idx * 2];
         float anchor_h = anchors_data.centers.vals[cluster_idx][1]; //centers->data.fl[cluster_idx * 2 + 1];
         if (best_iou > 1 || best_iou < 0) { // || box_w > width || box_h > height) {
-            printf(" Wrong label: i = %d, box_w = %d, box_h = %d, anchor_w = %d, anchor_h = %d, iou = %f \n",
+            printf(" Wrong label: i = %d, box_w = %f, box_h = %f, anchor_w = %f, anchor_h = %f, iou = %f \n",
                 i, box_w, box_h, anchor_w, anchor_h, best_iou);
         }
         else avg_iou += best_iou;
@@ -1235,6 +1245,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
             cvCircle(img, pt, 1, CV_RGB(red_id, green_id, blue_id), CV_FILLED, 8, 0);
             //if(pt.x > img_size || pt.y > img_size) printf("\n pt.x = %d, pt.y = %d \n", pt.x, pt.y);
         }
+        save_cv_png(img, "cloud.png");
         cvShowImage("clusters", img);
         cvWaitKey(0);
         cvReleaseImage(&img);
@@ -1248,11 +1259,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 
     getchar();
 }
-//#else
-//void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int show) {
-//    printf(" k-means++ can't be used without OpenCV, because there is used cvKMeans2 implementation \n");
-//}
-//#endif // OPENCV
+
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
     float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile)
@@ -1276,7 +1283,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (net.layers[net.n - 1].classes > names_size) getchar();
     }
     srand(2222222);
-    double time;
     char buff[256];
     char *input = buff;
     char *json_buf = NULL;

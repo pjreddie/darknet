@@ -252,6 +252,18 @@ void replace_image_to_label(const char* input_path, char* output_path)
     find_replace_extension(output_path, ".BMP", ".txt", output_path);
     find_replace_extension(output_path, ".ppm", ".txt", output_path);
     find_replace_extension(output_path, ".PPM", ".txt", output_path);
+    find_replace_extension(output_path, ".tiff", ".txt", output_path);
+    find_replace_extension(output_path, ".TIFF", ".txt", output_path);
+
+    // Check file ends with txt:
+    if(strlen(output_path) > 4) {
+        char *output_path_ext = output_path + strlen(output_path) - 4;
+        if( strcmp(".txt", output_path_ext) != 0){
+            fprintf(stderr, "Failed to infer label file name (check image extension is supported): %s \n", output_path);
+        }
+    }else{
+        fprintf(stderr, "Label file name is too short: %s \n", output_path);
+    }
 }
 
 float sec(clock_t clocks)
@@ -756,13 +768,12 @@ float rand_uniform(float min, float max)
         max = swap;
     }
 
-    if (RAND_MAX < 65536) {
+#if (RAND_MAX < 65536)
         int rnd = rand()*(RAND_MAX + 1) + rand();
         return ((float)rnd / (RAND_MAX*RAND_MAX) * (max - min)) + min;
-    }
-    else {
+#else
         return ((float)rand() / RAND_MAX * (max - min)) + min;
-    }
+#endif
     //return (random_float() * (max - min)) + min;
 }
 
@@ -790,12 +801,12 @@ unsigned int random_gen()
     unsigned int rnd = 0;
 #ifdef WIN32
     rand_s(&rnd);
-#else
+#else   // WIN32
     rnd = rand();
-    if (RAND_MAX < 65536) {
+#if (RAND_MAX < 65536)
         rnd = rand()*(RAND_MAX + 1) + rnd;
-    }
-#endif
+#endif  //(RAND_MAX < 65536)
+#endif  // WIN32
     return rnd;
 }
 

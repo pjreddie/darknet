@@ -9,7 +9,7 @@
 #include "im2col.h"
 #include "col2im.h"
 #include "utils.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 
 extern "C" void forward_deconvolutional_layer_gpu(deconvolutional_layer layer, network_state state)
 {

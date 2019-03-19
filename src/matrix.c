@@ -257,7 +257,7 @@ void kmeans_maximization(matrix data, int *assignments, matrix centers)
 
 
 void random_centers(matrix data, matrix centers) {
-    int i, j;
+    int i;
     int *s = sample(data.rows);
     for (i = 0; i < centers.rows; ++i) {
         copy(data.vals[s[i]], centers.vals[i], data.cols);
@@ -281,7 +281,6 @@ int *sample(int n)
 
 float dist(float *x, float *y, int n)
 {
-    int i;
     //printf(" x0 = %f, x1 = %f, y0 = %f, y1 = %f \n", x[0], x[1], y[0], y[1]);
     float mw = (x[0] < y[0]) ? x[0] : y[0];
     float mh = (x[1] < y[1]) ? x[1] : y[1];
