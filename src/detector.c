@@ -1044,7 +1044,6 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     return mean_average_precision;
 }
 
-//#ifdef OPENCV
 typedef struct {
     float w, h;
 } anchors_t;
@@ -1246,6 +1245,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
             cvCircle(img, pt, 1, CV_RGB(red_id, green_id, blue_id), CV_FILLED, 8, 0);
             //if(pt.x > img_size || pt.y > img_size) printf("\n pt.x = %d, pt.y = %d \n", pt.x, pt.y);
         }
+        save_cv_png(img, "cloud.png");
         cvShowImage("clusters", img);
         cvWaitKey(0);
         cvReleaseImage(&img);
@@ -1259,11 +1259,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 
     getchar();
 }
-//#else
-//void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int show) {
-//    printf(" k-means++ can't be used without OpenCV, because there is used cvKMeans2 implementation \n");
-//}
-//#endif // OPENCV
+
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
     float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile)
