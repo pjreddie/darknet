@@ -410,7 +410,7 @@ dn_image random_unit_vector_image(int w, int h, int c)
 
 void inter_dcgan(char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -468,7 +468,7 @@ void inter_dcgan(char *cfgfile, char *weightfile)
 
 void test_dcgan(char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -502,7 +502,7 @@ void test_dcgan(char *cfgfile, char *weightfile)
     }
 }
 
-void set_network_alpha_beta(network *net, float alpha, float beta)
+void set_network_alpha_beta(dn_network *net, float alpha, float beta)
 {
     int i;
     for(i = 0; i < net->n; ++i){
@@ -1293,7 +1293,7 @@ save_weights(net, buff);
 
 void test_lsd(char *cfg, char *weights, char *filename, int gray)
 {
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     srand(2222222);
 

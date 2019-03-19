@@ -4,9 +4,9 @@
 
 #include <stdio.h>
 
-layer make_upsample_layer(int batch, int w, int h, int c, int stride)
+dn_layer make_upsample_layer(int batch, int w, int h, int c, int stride)
 {
-    layer l = {0};
+    dn_layer l = {0};
     l.type = UPSAMPLE;
     l.batch = batch;
     l.w = w;
@@ -41,7 +41,7 @@ layer make_upsample_layer(int batch, int w, int h, int c, int stride)
     return l;
 }
 
-void resize_upsample_layer(layer *l, int w, int h)
+void resize_upsample_layer(dn_layer *l, int w, int h)
 {
     l->w = w;
     l->h = h;
@@ -65,7 +65,7 @@ void resize_upsample_layer(layer *l, int w, int h)
     
 }
 
-void forward_upsample_layer(const layer l, network net)
+void forward_upsample_layer(const dn_layer l, dn_network net)
 {
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
     if(l.reverse){
@@ -75,7 +75,7 @@ void forward_upsample_layer(const layer l, network net)
     }
 }
 
-void backward_upsample_layer(const layer l, network net)
+void backward_upsample_layer(const dn_layer l, dn_network net)
 {
     if(l.reverse){
         upsample_cpu(l.delta, l.out_w, l.out_h, l.c, l.batch, l.stride, 1, l.scale, net.delta);

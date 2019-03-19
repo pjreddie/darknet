@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
+dn_layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
 {
-    layer l = {0};
+    dn_layer l = {0};
     l.type = ACTIVE;
 
     l.inputs = inputs;
@@ -35,13 +35,13 @@ layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
     return l;
 }
 
-void forward_activation_layer(layer l, network net)
+void forward_activation_layer(dn_layer l, dn_network net)
 {
     copy_cpu(l.outputs*l.batch, net.input, 1, l.output, 1);
     activate_array(l.output, l.outputs*l.batch, l.activation);
 }
 
-void backward_activation_layer(layer l, network net)
+void backward_activation_layer(dn_layer l, dn_network net)
 {
     gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
     copy_cpu(l.outputs*l.batch, l.delta, 1, net.delta, 1);

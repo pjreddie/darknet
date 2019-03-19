@@ -83,7 +83,7 @@ dn_image get_convolutional_delta(convolutional_layer l)
    return float_to_image(l.out_w,l.out_h,l.out_c,l.delta);
 }
 
-static size_t get_workspace_size(layer l){
+static size_t get_workspace_size(dn_layer l){
 #ifdef CUDNN
    if(gpu_index >= 0){
         size_t most = 0;
@@ -445,7 +445,7 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
    }
 }
 
-void forward_convolutional_layer(convolutional_layer l, network net)
+void forward_convolutional_layer(convolutional_layer l, dn_network net)
 {
    int i, j;
 
@@ -487,7 +487,7 @@ void forward_convolutional_layer(convolutional_layer l, network net)
    if(l.binary || l.xnor) swap_binary(&l);
 }
 
-void backward_convolutional_layer(convolutional_layer l, network net)
+void backward_convolutional_layer(convolutional_layer l, dn_network net)
 {
    int i, j;
    int m = l.n/l.groups;

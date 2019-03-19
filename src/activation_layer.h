@@ -5,10 +5,10 @@
 #include "layer.h"
 #include "network.h"
 
-layer make_activation_layer(int batch, int inputs, ACTIVATION activation);
+dn_layer make_activation_layer(int batch, int inputs, ACTIVATION activation);
 
-void forward_activation_layer(layer l, network net);
-void backward_activation_layer(layer l, network net);
+void forward_activation_layer(dn_layer l, dn_network net);
+void backward_activation_layer(dn_layer l, dn_network net);
 
 #ifdef GPU
 void forward_activation_layer_gpu(layer l, network net);

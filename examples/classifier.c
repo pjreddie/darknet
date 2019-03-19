@@ -23,7 +23,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network*));
 
     srand(time(0));
     int seed = rand();
@@ -36,7 +36,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network *net = nets[0];
+    dn_network *net = nets[0];
 
     int imgs = net->batch * net->subdivisions * ngpus;
 
@@ -170,7 +170,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
 {
     int i = 0;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     srand(time(0));
 
     dn_list *options = read_data_cfg(datacfg);
@@ -234,7 +234,7 @@ void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
 void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
@@ -303,7 +303,7 @@ void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
 void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
@@ -361,7 +361,7 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
 void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
@@ -420,7 +420,7 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
 void validate_classifier_multi(char *datacfg, char *cfg, char *weights)
 {
     int i, j;
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
@@ -481,7 +481,7 @@ void validate_classifier_multi(char *datacfg, char *cfg, char *weights)
 
 void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int layer_num)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -523,7 +523,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
         time=clock();
         float *predictions = network_predict(net, X);
 
-        layer l = net->layers[layer_num];
+        dn_layer l = net->layers[layer_num];
         for(i = 0; i < l.c; ++i){
             if(l.rolling_mean) printf("%f %f %f\n", l.rolling_mean[i], l.rolling_variance[i], l.scales[i]);
         }
@@ -559,7 +559,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
 
 void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -614,7 +614,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
 void label_classifier(char *datacfg, char *filename, char *weightfile)
 {
     int i;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
@@ -649,7 +649,7 @@ void label_classifier(char *datacfg, char *filename, char *weightfile)
 void csv_classifier(char *datacfg, char *cfgfile, char *weightfile)
 {
     int i,j;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     srand(time(0));
 
     dn_list *options = read_data_cfg(datacfg);
@@ -689,7 +689,7 @@ void csv_classifier(char *datacfg, char *cfgfile, char *weightfile)
 void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_layer)
 {
     int curr = 0;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     srand(time(0));
 
     dn_list *options = read_data_cfg(datacfg);
@@ -758,7 +758,7 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_
 void file_output_classifier(char *datacfg, char *filename, char *weightfile, char *listfile)
 {
     int i,j;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 

@@ -5,9 +5,9 @@
 #include <stdio.h>
 
 
-layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse, int flatten, int extra)
+dn_layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse, int flatten, int extra)
 {
-    layer l = {0};
+    dn_layer l = {0};
     l.type = REORG;
     l.batch = batch;
     l.stride = stride;
@@ -55,7 +55,7 @@ layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse, 
     return l;
 }
 
-void resize_reorg_layer(layer *l, int w, int h)
+void resize_reorg_layer(dn_layer *l, int w, int h)
 {
     int stride = l->stride;
     int c = l->c;
@@ -88,7 +88,7 @@ void resize_reorg_layer(layer *l, int w, int h)
 #endif
 }
 
-void forward_reorg_layer(const layer l, network net)
+void forward_reorg_layer(const dn_layer l, dn_network net)
 {
     int i;
     if(l.flatten){
@@ -109,7 +109,7 @@ void forward_reorg_layer(const layer l, network net)
     }
 }
 
-void backward_reorg_layer(const layer l, network net)
+void backward_reorg_layer(const dn_layer l, dn_network net)
 {
     int i;
     if(l.flatten){

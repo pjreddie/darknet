@@ -30,7 +30,7 @@ void train_captcha(char *cfgfile, char *weightfile)
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = 1024;
     int i = *net->seen/imgs;
@@ -92,7 +92,7 @@ void train_captcha(char *cfgfile, char *weightfile)
 
 void test_captcha(char *cfgfile, char *weightfile, char *filename)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
     int i = 0;
@@ -130,7 +130,7 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
 void valid_captcha(char *cfgfile, char *weightfile, char *filename)
 {
     char **labels = get_labels("/data/captcha/reimgs.labels.list");
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     dn_list *plist = get_paths("/data/captcha/reimgs.fg.list");
     char **paths = (char **)list_to_array(plist);
     int N = plist->size;

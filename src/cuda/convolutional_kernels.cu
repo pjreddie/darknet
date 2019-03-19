@@ -70,7 +70,7 @@ void binarize_weights_gpu(float *weights, int n, int size, float *binary)
     check_error(cudaPeekAtLastError());
 }
 
-void forward_convolutional_layer_gpu(convolutional_layer l, network net)
+void forward_convolutional_layer_gpu(convolutional_layer l, dn_network net)
 {
     fill_gpu(l.outputs*l.batch, 0, l.output_gpu, 1);
     if(l.binary){
@@ -164,7 +164,7 @@ __global__ void smooth_kernel(float *x, int n, int w, int h, int c, int size, fl
     }
 }
 
-extern "C" void smooth_layer(layer l, int size, float rate)
+extern "C" void smooth_layer(dn_layer l, int size, float rate)
 {
     int h = l.out_h;
     int w = l.out_w;
@@ -176,7 +176,7 @@ extern "C" void smooth_layer(layer l, int size, float rate)
     check_error(cudaPeekAtLastError());
 }
 
-void backward_convolutional_layer_gpu(convolutional_layer l, network net)
+void backward_convolutional_layer_gpu(convolutional_layer l, dn_network net)
 {
     if(l.smooth){
         smooth_layer(l, 5, l.smooth);
@@ -270,7 +270,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 #endif
 }
 
-void pull_convolutional_layer(layer l)
+void pull_convolutional_layer(dn_layer l)
 {
     cuda_pull_array(l.weights_gpu, l.weights, l.nweights);
     cuda_pull_array(l.biases_gpu, l.biases, l.n);
@@ -283,7 +283,7 @@ void pull_convolutional_layer(layer l)
     }
 }
 
-void push_convolutional_layer(layer l)
+void push_convolutional_layer(dn_layer l)
 {
     cuda_push_array(l.weights_gpu, l.weights, l.nweights);
     cuda_push_array(l.biases_gpu, l.biases, l.n);
@@ -296,7 +296,7 @@ void push_convolutional_layer(layer l)
     }
 }
 
-void update_convolutional_layer_gpu(layer l, update_args a)
+void update_convolutional_layer_gpu(dn_layer l, update_args a)
 {
     float learning_rate = a.learning_rate*l.learning_rate_scale;
     float momentum = a.momentum;

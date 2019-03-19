@@ -25,7 +25,7 @@ void calculate_loss(float *output, float *delta, int n, float thresh)
     }
 }
 
-void optimize_picture(network *net, dn_image orig, int max_layer, float scale, float rate, float thresh, int norm)
+void optimize_picture(dn_network *net, dn_image orig, int max_layer, float scale, float rate, float thresh, int norm)
 {
     //scale_image(orig, 2);
     //translate_image(orig, -1);
@@ -40,7 +40,7 @@ void optimize_picture(network *net, dn_image orig, int max_layer, float scale, f
     if(flip) flip_image(im);
 
     resize_network(net, im.w, im.h);
-    layer last = net->layers[net->n-1];
+    dn_layer last = net->layers[net->n-1];
     //net->layers[net->n - 1].activation = LINEAR;
 
     dn_image delta = make_image(im.w, im.h, im.c);
@@ -132,7 +132,7 @@ void smooth(dn_image recon, dn_image update, float lambda, int num)
     }
 }
 
-void reconstruct_picture(network *net, float *features, dn_image recon, dn_image update, float rate, float momentum, float lambda, int smooth_size, int iters)
+void reconstruct_picture(dn_network *net, float *features, dn_image recon, dn_image update, float rate, float momentum, float lambda, int smooth_size, int iters)
 {
     int iter = 0;
     for (iter = 0; iter < iters; ++iter) {
@@ -313,7 +313,7 @@ void run_nightmare(int argc, char **argv)
     int reconstruct = find_arg(argc, argv, "-reconstruct");
     int smooth_size = find_int_arg(argc, argv, "-smooth", 1);
 
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     char *cfgbase = basecfg(cfg);
     char *imbase = basecfg(input);
 

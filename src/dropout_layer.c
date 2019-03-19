@@ -35,7 +35,7 @@ void resize_dropout_layer(dropout_layer *l, int inputs)
     #endif
 }
 
-void forward_dropout_layer(dropout_layer l, network net)
+void forward_dropout_layer(dropout_layer l, dn_network net)
 {
     int i;
     if (!net.train) return;
@@ -47,7 +47,7 @@ void forward_dropout_layer(dropout_layer l, network net)
     }
 }
 
-void backward_dropout_layer(dropout_layer l, network net)
+void backward_dropout_layer(dropout_layer l, dn_network net)
 {
     int i;
     if(!net.delta) return;

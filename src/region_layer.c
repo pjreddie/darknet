@@ -10,9 +10,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
+dn_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 {
-    layer l = {0};
+    dn_layer l = {0};
     l.type = REGION;
 
     l.n = n;
@@ -53,7 +53,7 @@ layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
     return l;
 }
 
-void resize_region_layer(layer *l, int w, int h)
+void resize_region_layer(dn_layer *l, int w, int h)
 {
     l->w = w;
     l->h = h;
@@ -148,14 +148,14 @@ float tisnan(float x)
     return (x != x);
 }
 
-int entry_index(layer l, int batch, int location, int entry)
+int entry_index(dn_layer l, int batch, int location, int entry)
 {
     int n =   location / (l.w*l.h);
     int loc = location % (l.w*l.h);
     return batch*l.outputs + n*l.w*l.h*(l.coords+l.classes+1) + entry*l.w*l.h + loc;
 }
 
-void forward_region_layer(const layer l, network net)
+void forward_region_layer(const dn_layer l, dn_network net)
 {
     int i,j,b,t,n;
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
@@ -320,7 +320,7 @@ void forward_region_layer(const layer l, network net)
     printf("Region Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, Avg Recall: %f,  count: %d\n", avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, count);
 }
 
-void backward_region_layer(const layer l, network net)
+void backward_region_layer(const dn_layer l, dn_network net)
 {
     /*
        int b;
@@ -361,7 +361,7 @@ void correct_region_boxes(detection *dets, int n, int w, int h, int netw, int ne
     }
 }
 
-void get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets)
+void get_region_detections(dn_layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets)
 {
     int i,j,n,z;
     float *predictions = l.output;
@@ -494,7 +494,7 @@ void backward_region_layer_gpu(const layer l, network net)
 }
 #endif
 
-void zero_objectness(layer l)
+void zero_objectness(dn_layer l)
 {
     int i, n;
     for (i = 0; i < l.w*l.h; ++i){

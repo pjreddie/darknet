@@ -10,7 +10,7 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network*));
 
     srand(time(0));
     int seed = rand();
@@ -23,7 +23,7 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network *net = nets[0];
+    dn_network *net = nets[0];
 
     int imgs = net->batch * net->subdivisions * ngpus;
 
@@ -115,7 +115,7 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 
 void predict_regressor(char *cfgfile, char *weightfile, char *filename)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 

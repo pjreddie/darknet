@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void increment_layer(layer *l, int steps)
+static void increment_layer(dn_layer *l, int steps)
 {
     int num = l->outputs*l->batch*steps;
     l->output += num;
@@ -26,11 +26,11 @@ static void increment_layer(layer *l, int steps)
 #endif
 }
 
-layer make_rnn_layer(int batch, int inputs, int outputs, int steps, ACTIVATION activation, int batch_normalize, int adam)
+dn_layer make_rnn_layer(int batch, int inputs, int outputs, int steps, ACTIVATION activation, int batch_normalize, int adam)
 {
     fprintf(stderr, "RNN Layer: %d inputs, %d outputs\n", inputs, outputs);
     batch = batch / steps;
-    layer l = {0};
+    dn_layer l = {0};
     l.batch = batch;
     l.type = RNN;
     l.steps = steps;
@@ -39,17 +39,17 @@ layer make_rnn_layer(int batch, int inputs, int outputs, int steps, ACTIVATION a
     l.state = calloc(batch*outputs, sizeof(float));
     l.prev_state = calloc(batch*outputs, sizeof(float));
 
-    l.input_layer = malloc(sizeof(layer));
+    l.input_layer = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.input_layer) = make_connected_layer(batch*steps, inputs, outputs, activation, batch_normalize, adam);
     l.input_layer->batch = batch;
 
-    l.self_layer = malloc(sizeof(layer));
+    l.self_layer = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.self_layer) = make_connected_layer(batch*steps, outputs, outputs, activation, batch_normalize, adam);
     l.self_layer->batch = batch;
 
-    l.output_layer = malloc(sizeof(layer));
+    l.output_layer = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.output_layer) = make_connected_layer(batch*steps, outputs, outputs, activation, batch_normalize, adam);
     l.output_layer->batch = batch;
@@ -79,21 +79,21 @@ layer make_rnn_layer(int batch, int inputs, int outputs, int steps, ACTIVATION a
     return l;
 }
 
-void update_rnn_layer(layer l, update_args a)
+void update_rnn_layer(dn_layer l, update_args a)
 {
     update_connected_layer(*(l.input_layer),  a);
     update_connected_layer(*(l.self_layer),   a);
     update_connected_layer(*(l.output_layer), a);
 }
 
-void forward_rnn_layer(layer l, network net)
+void forward_rnn_layer(dn_layer l, dn_network net)
 {
-    network s = net;
+    dn_network s = net;
     s.train = net.train;
     int i;
-    layer input_layer = *(l.input_layer);
-    layer self_layer = *(l.self_layer);
-    layer output_layer = *(l.output_layer);
+    dn_layer input_layer = *(l.input_layer);
+    dn_layer self_layer = *(l.self_layer);
+    dn_layer output_layer = *(l.output_layer);
 
     fill_cpu(l.outputs * l.batch * l.steps, 0, output_layer.delta, 1);
     fill_cpu(l.outputs * l.batch * l.steps, 0, self_layer.delta, 1);
@@ -127,14 +127,14 @@ void forward_rnn_layer(layer l, network net)
     }
 }
 
-void backward_rnn_layer(layer l, network net)
+void backward_rnn_layer(dn_layer l, dn_network net)
 {
-    network s = net;
+    dn_network s = net;
     s.train = net.train;
     int i;
-    layer input_layer = *(l.input_layer);
-    layer self_layer = *(l.self_layer);
-    layer output_layer = *(l.output_layer);
+    dn_layer input_layer = *(l.input_layer);
+    dn_layer self_layer = *(l.self_layer);
+    dn_layer output_layer = *(l.output_layer);
 
     increment_layer(&input_layer, l.steps-1);
     increment_layer(&self_layer, l.steps-1);

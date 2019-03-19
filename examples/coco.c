@@ -17,14 +17,14 @@ void train_coco(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = net->batch*net->subdivisions;
     int i = *net->seen/imgs;
     dn_data train, buffer;
 
 
-    layer l = net->layers[net->n - 1];
+    dn_layer l = net->layers[net->n - 1];
 
     int side = l.side;
     int classes = l.classes;
@@ -127,7 +127,7 @@ int get_coco_image_id(char *filename)
 
 void validate_coco(char *cfg, char *weights)
 {
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
@@ -138,7 +138,7 @@ void validate_coco(char *cfg, char *weights)
     //list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     char buff[1024];
@@ -211,7 +211,7 @@ void validate_coco(char *cfg, char *weights)
 
 void validate_coco_recall(char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
@@ -220,7 +220,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
     dn_list *plist = get_paths("/home/pjreddie/data/voc/test/2007_test.txt");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
     int classes = l.classes;
     int side = l.side;
 
@@ -294,8 +294,8 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
 void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
 {
     dn_image **alphabet = load_alphabet();
-    network *net = load_network(cfgfile, weightfile, 0);
-    layer l = net->layers[net->n-1];
+    dn_network *net = load_network(cfgfile, weightfile, 0);
+    dn_layer l = net->layers[net->n-1];
     set_batch_network(net, 1);
     srand(2222222);
     float nms = .4;

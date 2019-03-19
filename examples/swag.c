@@ -9,7 +9,7 @@ void train_swag(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network* net = parse_network_cfg(cfgfile);
+    dn_network* net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(net, weightfile);
     }
@@ -18,7 +18,7 @@ void train_swag(char *cfgfile, char *weightfile)
     int i = *net->seen/imgs;
     dn_data train, buffer;
 
-    layer l = net->layers[net->n - 1];
+    dn_layer l = net->layers[net->n - 1];
 
     int side = l.side;
     int classes = l.classes;

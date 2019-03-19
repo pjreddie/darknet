@@ -7,7 +7,7 @@ void train_writing(char *cfgfile, char *weightfile)
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
-    network* net = parse_network_cfg(cfgfile);
+    dn_network* net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(net, weightfile);
     }
@@ -81,7 +81,7 @@ void train_writing(char *cfgfile, char *weightfile)
 
 void test_writing(char *cfgfile, char *weightfile, char *filename)
 {
-    network* net = parse_network_cfg(cfgfile);
+    dn_network* net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(net, weightfile);
     }

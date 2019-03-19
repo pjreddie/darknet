@@ -7,7 +7,7 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     char *base = basecfg(cfgfile);
     char *backup_directory = "/home/pjreddie/backup/";
     printf("%s\n", base);
-    network *net = load_network(cfgfile, weightfile, clear);
+    dn_network *net = load_network(cfgfile, weightfile, clear);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = 1024;
     dn_list *plist = get_paths("/home/pjreddie/tag/train.list");
@@ -82,7 +82,7 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
 
 void test_tag(char *cfgfile, char *weightfile, char *filename)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
     int i = 0;

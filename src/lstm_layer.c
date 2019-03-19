@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void increment_layer(layer *l, int steps)
+static void increment_layer(dn_layer *l, int steps)
 {
     int num = l->outputs*l->batch*steps;
     l->output += num;
@@ -26,52 +26,52 @@ static void increment_layer(layer *l, int steps)
 #endif
 }
 
-layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_normalize, int adam)
+dn_layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_normalize, int adam)
 {
     fprintf(stderr, "LSTM Layer: %d inputs, %d outputs\n", inputs, outputs);
     batch = batch / steps;
-    layer l = { 0 };
+    dn_layer l = { 0 };
     l.batch = batch;
     l.type = LSTM;
     l.steps = steps;
     l.inputs = inputs;
 
-    l.uf = malloc(sizeof(layer));
+    l.uf = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.uf) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.uf->batch = batch;
 
-    l.ui = malloc(sizeof(layer));
+    l.ui = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.ui) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.ui->batch = batch;
 
-    l.ug = malloc(sizeof(layer));
+    l.ug = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.ug) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.ug->batch = batch;
 
-    l.uo = malloc(sizeof(layer));
+    l.uo = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.uo) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
     l.uo->batch = batch;
 
-    l.wf = malloc(sizeof(layer));
+    l.wf = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.wf) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wf->batch = batch;
 
-    l.wi = malloc(sizeof(layer));
+    l.wi = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.wi) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wi->batch = batch;
 
-    l.wg = malloc(sizeof(layer));
+    l.wg = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.wg) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wg->batch = batch;
 
-    l.wo = malloc(sizeof(layer));
+    l.wo = malloc(sizeof(dn_layer));
     fprintf(stderr, "\t\t");
     *(l.wo) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
     l.wo->batch = batch;
@@ -141,7 +141,7 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
     return l;
 }
 
-void update_lstm_layer(layer l, update_args a)
+void update_lstm_layer(dn_layer l, update_args a)
 {
     update_connected_layer(*(l.wf), a);
     update_connected_layer(*(l.wi), a);
@@ -153,20 +153,20 @@ void update_lstm_layer(layer l, update_args a)
     update_connected_layer(*(l.uo), a);
 }
 
-void forward_lstm_layer(layer l, network state)
+void forward_lstm_layer(dn_layer l, dn_network state)
 {
-    network s = { 0 };
+    dn_network s = { 0 };
     s.train = state.train;
     int i;
-    layer wf = *(l.wf);
-    layer wi = *(l.wi);
-    layer wg = *(l.wg);
-    layer wo = *(l.wo);
+    dn_layer wf = *(l.wf);
+    dn_layer wi = *(l.wi);
+    dn_layer wg = *(l.wg);
+    dn_layer wo = *(l.wo);
 
-    layer uf = *(l.uf);
-    layer ui = *(l.ui);
-    layer ug = *(l.ug);
-    layer uo = *(l.uo);
+    dn_layer uf = *(l.uf);
+    dn_layer ui = *(l.ui);
+    dn_layer ug = *(l.ug);
+    dn_layer uo = *(l.uo);
 
     fill_cpu(l.outputs * l.batch * l.steps, 0, wf.delta, 1);
     fill_cpu(l.outputs * l.batch * l.steps, 0, wi.delta, 1);
@@ -239,20 +239,20 @@ void forward_lstm_layer(layer l, network state)
     }
 }
 
-void backward_lstm_layer(layer l, network state)
+void backward_lstm_layer(dn_layer l, dn_network state)
 {
-    network s = { 0 };
+    dn_network s = { 0 };
     s.train = state.train;
     int i;
-    layer wf = *(l.wf);
-    layer wi = *(l.wi);
-    layer wg = *(l.wg);
-    layer wo = *(l.wo);
+    dn_layer wf = *(l.wf);
+    dn_layer wi = *(l.wi);
+    dn_layer wg = *(l.wg);
+    dn_layer wo = *(l.wo);
 
-    layer uf = *(l.uf);
-    layer ui = *(l.ui);
-    layer ug = *(l.ug);
-    layer uo = *(l.uo);
+    dn_layer uf = *(l.uf);
+    dn_layer ui = *(l.ui);
+    dn_layer ug = *(l.ug);
+    dn_layer uo = *(l.uo);
 
     increment_layer(&wf, l.steps - 1);
     increment_layer(&wi, l.steps - 1);

@@ -11,10 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, int batch_normalize, int adam)
+dn_layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, int batch_normalize, int adam)
 {
     int i;
-    layer l = {0};
+    dn_layer l = {0};
     l.learning_rate_scale = 1;
     l.type = CONNECTED;
 
@@ -129,7 +129,7 @@ layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activa
     return l;
 }
 
-void update_connected_layer(layer l, update_args a)
+void update_connected_layer(dn_layer l, update_args a)
 {
     float learning_rate = a.learning_rate*l.learning_rate_scale;
     float momentum = a.momentum;
@@ -148,7 +148,7 @@ void update_connected_layer(layer l, update_args a)
     scal_cpu(l.inputs*l.outputs, momentum, l.weight_updates, 1);
 }
 
-void forward_connected_layer(layer l, network net)
+void forward_connected_layer(dn_layer l, dn_network net)
 {
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
     int m = l.batch;
@@ -166,7 +166,7 @@ void forward_connected_layer(layer l, network net)
     activate_array(l.output, l.outputs*l.batch, l.activation);
 }
 
-void backward_connected_layer(layer l, network net)
+void backward_connected_layer(dn_layer l, dn_network net)
 {
     gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
 
@@ -196,7 +196,7 @@ void backward_connected_layer(layer l, network net)
 }
 
 
-void denormalize_connected_layer(layer l)
+void denormalize_connected_layer(dn_layer l)
 {
     int i, j;
     for(i = 0; i < l.outputs; ++i){
@@ -212,7 +212,7 @@ void denormalize_connected_layer(layer l)
 }
 
 
-void statistics_connected_layer(layer l)
+void statistics_connected_layer(dn_layer l)
 {
     if(l.batch_normalize){
         printf("Scales ");

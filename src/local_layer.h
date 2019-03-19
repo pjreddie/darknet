@@ -7,7 +7,7 @@
 #include "layer.h"
 #include "network.h"
 
-typedef layer local_layer;
+typedef dn_layer local_layer;
 
 #ifdef GPU
 void forward_local_layer_gpu(local_layer layer, network net);
@@ -20,8 +20,8 @@ void pull_local_layer(local_layer layer);
 
 local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation);
 
-void forward_local_layer(const local_layer layer, network net);
-void backward_local_layer(local_layer layer, network net);
+void forward_local_layer(const local_layer layer, dn_network net);
+void backward_local_layer(local_layer layer, dn_network net);
 void update_local_layer(local_layer layer, update_args a);
 
 void bias_output(float *output, float *biases, int batch, int n, int size);

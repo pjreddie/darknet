@@ -3,10 +3,10 @@
 #include "blas.h"
 #include <stdio.h>
 
-layer make_batchnorm_layer(int batch, int w, int h, int c)
+dn_layer make_batchnorm_layer(int batch, int w, int h, int c)
 {
     fprintf(stderr, "Batch Normalization Layer: %d x %d x %d image\n", w,h,c);
-    layer l = {0};
+    dn_layer l = {0};
     l.type = BATCHNORM;
     l.batch = batch;
     l.h = l.out_h = h;
@@ -127,12 +127,12 @@ void normalize_delta_cpu(float *x, float *mean, float *variance, float *mean_del
     }
 }
 
-void resize_batchnorm_layer(layer *layer, int w, int h)
+void resize_batchnorm_layer(dn_layer *layer, int w, int h)
 {
     fprintf(stderr, "Not implemented\n");
 }
 
-void forward_batchnorm_layer(layer l, network net)
+void forward_batchnorm_layer(dn_layer l, dn_network net)
 {
     if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, net.input, 1, l.output, 1);
     copy_cpu(l.outputs*l.batch, l.output, 1, l.x, 1);
@@ -154,7 +154,7 @@ void forward_batchnorm_layer(layer l, network net)
     add_bias(l.output, l.biases, l.batch, l.out_c, l.out_h*l.out_w);
 }
 
-void backward_batchnorm_layer(layer l, network net)
+void backward_batchnorm_layer(dn_layer l, dn_network net)
 {
     if(!net.train){
         l.mean = l.rolling_mean;

@@ -88,7 +88,7 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
     return l;
 }
 
-void forward_local_layer(const local_layer l, network net)
+void forward_local_layer(const local_layer l, dn_network net)
 {
     int out_h = local_out_height(l);
     int out_w = local_out_width(l);
@@ -119,7 +119,7 @@ void forward_local_layer(const local_layer l, network net)
     activate_array(l.output, l.outputs*l.batch, l.activation);
 }
 
-void backward_local_layer(local_layer l, network net)
+void backward_local_layer(local_layer l, dn_network net)
 {
     int i, j;
     int locations = l.out_w*l.out_h;

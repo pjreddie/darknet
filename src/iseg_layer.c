@@ -10,9 +10,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-layer make_iseg_layer(int batch, int w, int h, int classes, int ids)
+dn_layer make_iseg_layer(int batch, int w, int h, int classes, int ids)
 {
-    layer l = {0};
+    dn_layer l = {0};
     l.type = ISEG;
 
     l.h = h;
@@ -55,7 +55,7 @@ layer make_iseg_layer(int batch, int w, int h, int classes, int ids)
     return l;
 }
 
-void resize_iseg_layer(layer *l, int w, int h)
+void resize_iseg_layer(dn_layer *l, int w, int h)
 {
     l->w = w;
     l->h = h;
@@ -75,7 +75,7 @@ void resize_iseg_layer(layer *l, int w, int h)
 #endif
 }
 
-void forward_iseg_layer(const layer l, network net)
+void forward_iseg_layer(const dn_layer l, dn_network net)
 {
 
     double time = what_time_is_it_now();
@@ -192,7 +192,7 @@ void forward_iseg_layer(const layer l, network net)
     printf("took %lf sec\n", what_time_is_it_now() - time);
 }
 
-void backward_iseg_layer(const layer l, network net)
+void backward_iseg_layer(const dn_layer l, dn_network net)
 {
     axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, net.delta, 1);
 }

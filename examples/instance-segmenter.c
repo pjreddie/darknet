@@ -11,7 +11,7 @@ void train_isegmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network*));
 
     srand(time(0));
     int seed = rand();
@@ -24,7 +24,7 @@ void train_isegmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network *net = nets[0];
+    dn_network *net = nets[0];
     dn_image pred = get_network_image(net);
 
     dn_image embed = pred;
@@ -142,7 +142,7 @@ void train_isegmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
 void predict_isegmenter(char *datafile, char *cfg, char *weights, char *filename)
 {
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     srand(2222222);
 

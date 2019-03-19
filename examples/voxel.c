@@ -44,7 +44,7 @@ void train_voxel(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network* net = parse_network_cfg(cfgfile);
+    dn_network* net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(net, weightfile);
     }
@@ -105,7 +105,7 @@ void train_voxel(char *cfgfile, char *weightfile)
 
 void test_voxel(char *cfgfile, char *weightfile, char *filename)
 {
-    network* net = parse_network_cfg(cfgfile);
+    dn_network* net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(net, weightfile);
     }

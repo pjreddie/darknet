@@ -15,7 +15,7 @@ void extend_data_truth(dn_data *d, int n, float val)
     d->y.cols += n;
 }
 
-dn_matrix network_loss_data(network *net, dn_data test)
+dn_matrix network_loss_data(dn_network *net, dn_data test)
 {
     int i,b;
     int k = 1;
@@ -29,7 +29,7 @@ dn_matrix network_loss_data(network *net, dn_data test)
             memcpy(y+b*test.y.cols, test.y.vals[i+b], test.y.cols*sizeof(float));
         }
 
-        network orig = *net;
+        dn_network orig = *net;
         net->input = X;
         net->truth = y;
         net->train = 0;
@@ -60,7 +60,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network*));
 
     srand(time(0));
     int seed = rand();
@@ -73,7 +73,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network *net = nets[0];
+    dn_network *net = nets[0];
 
     int imgs = net->batch * net->subdivisions * ngpus;
 
@@ -233,7 +233,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 void validate_attention_single(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
@@ -321,7 +321,7 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
 void validate_attention_multi(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
@@ -381,7 +381,7 @@ void validate_attention_multi(char *datacfg, char *filename, char *weightfile)
 
 void predict_attention(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 

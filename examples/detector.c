@@ -13,7 +13,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network **nets = calloc(ngpus, sizeof(network));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network));
 
     srand(time(0));
     int seed = rand();
@@ -27,13 +27,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network *net = nets[0];
+    dn_network *net = nets[0];
 
     int imgs = net->batch * net->subdivisions * ngpus;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     dn_data train, buffer;
 
-    layer l = net->layers[net->n - 1];
+    dn_layer l = net->layers[net->n - 1];
 
     int classes = l.classes;
     float jitter = l.jitter;
@@ -243,7 +243,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 2);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
@@ -251,7 +251,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     dn_list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     char buff[1024];
@@ -373,7 +373,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
@@ -381,7 +381,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     dn_list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     char buff[1024];
@@ -488,7 +488,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
 void validate_detector_recall(char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
@@ -496,7 +496,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     dn_list *plist = get_paths("data/coco_val_5k.list");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
 
     int j, k;
 
@@ -566,7 +566,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels(name_list);
 
     dn_image **alphabet = load_alphabet();
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
     double time;
@@ -589,7 +589,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //image sized2 = resize_max(im, net->w);
         //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
         //resize_network(net, sized.w, sized.h);
-        layer l = net->layers[net->n-1];
+        dn_layer l = net->layers[net->n-1];
 
 
         float *X = sized.data;

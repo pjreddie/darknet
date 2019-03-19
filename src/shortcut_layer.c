@@ -6,10 +6,10 @@
 #include <stdio.h>
 #include <assert.h>
 
-layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2)
+dn_layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2)
 {
     fprintf(stderr, "res  %3d                %4d x%4d x%4d   ->  %4d x%4d x%4d\n",index, w2,h2,c2, w,h,c);
-    layer l = {0};
+    dn_layer l = {0};
     l.type = SHORTCUT;
     l.batch = batch;
     l.w = w2;
@@ -38,7 +38,7 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
     return l;
 }
 
-void resize_shortcut_layer(layer *l, int w, int h)
+void resize_shortcut_layer(dn_layer *l, int w, int h)
 {
     assert(l->w == l->out_w);
     assert(l->h == l->out_h);
@@ -59,14 +59,14 @@ void resize_shortcut_layer(layer *l, int w, int h)
 }
 
 
-void forward_shortcut_layer(const layer l, network net)
+void forward_shortcut_layer(const dn_layer l, dn_network net)
 {
     copy_cpu(l.outputs*l.batch, net.input, 1, l.output, 1);
     shortcut_cpu(l.batch, l.w, l.h, l.c, net.layers[l.index].output, l.out_w, l.out_h, l.out_c, l.alpha, l.beta, l.output);
     activate_array(l.output, l.outputs*l.batch, l.activation);
 }
 
-void backward_shortcut_layer(const layer l, network net)
+void backward_shortcut_layer(const dn_layer l, dn_network net)
 {
     gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
     axpy_cpu(l.outputs*l.batch, l.alpha, l.delta, 1, net.delta, 1);
