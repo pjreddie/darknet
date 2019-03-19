@@ -120,7 +120,7 @@ void speed(char *cfgfile, int tics)
     set_batch_network(net, 1);
     int i;
     double time=what_time_is_it_now();
-    image im = make_image(net->w, net->h, net->c*net->batch);
+    dn_image im = make_image(net->w, net->h, net->c*net->batch);
     for(i = 0; i < tics; ++i){
         network_predict(net, im.data);
     }
@@ -368,15 +368,15 @@ void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
 void mkimg(char *cfgfile, char *weightfile, int h, int w, int num, char *prefix)
 {
     network *net = load_network(cfgfile, weightfile, 0);
-    image *ims = get_weights(net->layers[0]);
+    dn_image *ims = get_weights(net->layers[0]);
     int n = net->layers[0].n;
     int z;
     for(z = 0; z < num; ++z){
-        image im = make_image(h, w, 3);
+        dn_image im = make_image(h, w, 3);
         fill_image(im, .5);
         int i;
         for(i = 0; i < 100; ++i){
-            image r = copy_image(ims[rand()%n]);
+            dn_image r = copy_image(ims[rand()%n]);
             rotate_image_cw(r, rand()%4);
             random_distort_image(r, 1, 1.5, 1.5);
             int dx = rand()%(w-r.w);

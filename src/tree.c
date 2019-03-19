@@ -4,9 +4,9 @@
 #include "utils.h"
 #include "data.h"
 
-void change_leaves(tree *t, char *leaf_list)
+void change_leaves(dn_tree *t, char *leaf_list)
 {
-    list *llist = get_paths(leaf_list);
+    dn_list *llist = get_paths(leaf_list);
     char **leaves = (char **)list_to_array(llist);
     int n = llist->size;
     int i,j;
@@ -24,7 +24,7 @@ void change_leaves(tree *t, char *leaf_list)
     fprintf(stderr, "Found %d leaves.\n", found);
 }
 
-float get_hierarchy_probability(float *x, tree *hier, int c, int stride)
+float get_hierarchy_probability(float *x, dn_tree *hier, int c, int stride)
 {
     float p = 1;
     while(c >= 0){
@@ -34,7 +34,7 @@ float get_hierarchy_probability(float *x, tree *hier, int c, int stride)
     return p;
 }
 
-void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves, int stride)
+void hierarchy_predictions(float *predictions, int n, dn_tree *hier, int only_leaves, int stride)
 {
     int j;
     for(j = 0; j < n; ++j){
@@ -50,7 +50,7 @@ void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leave
     }
 }
 
-int hierarchy_top_prediction(float *predictions, tree *hier, float thresh, int stride)
+int hierarchy_top_prediction(float *predictions, dn_tree *hier, float thresh, int stride)
 {
     float p = 1;
     int group = 0;
@@ -80,9 +80,9 @@ int hierarchy_top_prediction(float *predictions, tree *hier, float thresh, int s
     return 0;
 }
 
-tree *read_tree(char *filename)
+dn_tree *read_tree(const char *filename)
 {
-    tree t = {0};
+    dn_tree t = {0};
     FILE *fp = fopen(filename, "r");
 
     char *line;
@@ -132,7 +132,7 @@ tree *read_tree(char *filename)
     for(i = 0; i < n; ++i) if(t.parent[i] >= 0) t.leaf[t.parent[i]] = 0;
 
     fclose(fp);
-    tree *tree_ptr = calloc(1, sizeof(tree));
+    dn_tree *tree_ptr = calloc(1, sizeof(dn_tree));
     *tree_ptr = t;
     //error(0);
     return tree_ptr;

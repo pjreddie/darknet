@@ -40,10 +40,10 @@ void do_nms_obj(detection *dets, int total, int classes, float thresh)
     qsort(dets, total, sizeof(detection), nms_comparator);
     for(i = 0; i < total; ++i){
         if(dets[i].objectness == 0) continue;
-        box a = dets[i].bbox;
+        dn_box a = dets[i].bbox;
         for(j = i+1; j < total; ++j){
             if(dets[j].objectness == 0) continue;
-            box b = dets[j].bbox;
+            dn_box b = dets[j].bbox;
             if (box_iou(a, b) > thresh){
                 dets[j].objectness = 0;
                 for(k = 0; k < classes; ++k){
@@ -77,9 +77,9 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
         qsort(dets, total, sizeof(detection), nms_comparator);
         for(i = 0; i < total; ++i){
             if(dets[i].prob[k] == 0) continue;
-            box a = dets[i].bbox;
+            dn_box a = dets[i].bbox;
             for(j = i+1; j < total; ++j){
-                box b = dets[j].bbox;
+                dn_box b = dets[j].bbox;
                 if (box_iou(a, b) > thresh){
                     dets[j].prob[k] = 0;
                 }
@@ -88,9 +88,9 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
     }
 }
 
-box float_to_box(float *f, int stride)
+dn_box float_to_box(float *f, int stride)
 {
-    box b = {0};
+    dn_box b = {0};
     b.x = f[0];
     b.y = f[1*stride];
     b.w = f[2*stride];
@@ -98,7 +98,7 @@ box float_to_box(float *f, int stride)
     return b;
 }
 
-dbox derivative(box a, box b)
+dbox derivative(dn_box a, dn_box b)
 {
     dbox d;
     d.dx = 0;
@@ -160,7 +160,7 @@ float overlap(float x1, float w1, float x2, float w2)
     return right - left;
 }
 
-float box_intersection(box a, box b)
+float box_intersection(dn_box a, dn_box b)
 {
     float w = overlap(a.x, a.w, b.x, b.w);
     float h = overlap(a.y, a.h, b.y, b.h);
@@ -169,19 +169,19 @@ float box_intersection(box a, box b)
     return area;
 }
 
-float box_union(box a, box b)
+float box_union(dn_box a, dn_box b)
 {
     float i = box_intersection(a, b);
     float u = a.w*a.h + b.w*b.h - i;
     return u;
 }
 
-float box_iou(box a, box b)
+float box_iou(dn_box a, dn_box b)
 {
     return box_intersection(a, b)/box_union(a, b);
 }
 
-float box_rmse(box a, box b)
+float box_rmse(dn_box a, dn_box b)
 {
     return sqrt(pow(a.x-b.x, 2) + 
                 pow(a.y-b.y, 2) + 
@@ -189,7 +189,7 @@ float box_rmse(box a, box b)
                 pow(a.h-b.h, 2));
 }
 
-dbox dintersect(box a, box b)
+dbox dintersect(dn_box a, dn_box b)
 {
     float w = overlap(a.x, a.w, b.x, b.w);
     float h = overlap(a.y, a.h, b.y, b.h);
@@ -204,7 +204,7 @@ dbox dintersect(box a, box b)
     return di;
 }
 
-dbox dunion(box a, box b)
+dbox dunion(dn_box a, dn_box b)
 {
     dbox du;
 
@@ -220,13 +220,13 @@ dbox dunion(box a, box b)
 
 void test_dunion()
 {
-    box a = {0, 0, 1, 1};
-    box dxa= {0+.0001, 0, 1, 1};
-    box dya= {0, 0+.0001, 1, 1};
-    box dwa= {0, 0, 1+.0001, 1};
-    box dha= {0, 0, 1, 1+.0001};
+    dn_box a = {0, 0, 1, 1};
+    dn_box dxa= {0+.0001, 0, 1, 1};
+    dn_box dya= {0, 0+.0001, 1, 1};
+    dn_box dwa= {0, 0, 1+.0001, 1};
+    dn_box dha= {0, 0, 1, 1+.0001};
 
-    box b = {.5, .5, .2, .2};
+    dn_box b = {.5, .5, .2, .2};
     dbox di = dunion(a,b);
     printf("Union: %f %f %f %f\n", di.dx, di.dy, di.dw, di.dh);
     float inter =  box_union(a, b);
@@ -242,13 +242,13 @@ void test_dunion()
 }
 void test_dintersect()
 {
-    box a = {0, 0, 1, 1};
-    box dxa= {0+.0001, 0, 1, 1};
-    box dya= {0, 0+.0001, 1, 1};
-    box dwa= {0, 0, 1+.0001, 1};
-    box dha= {0, 0, 1, 1+.0001};
+    dn_box a = {0, 0, 1, 1};
+    dn_box dxa= {0+.0001, 0, 1, 1};
+    dn_box dya= {0, 0+.0001, 1, 1};
+    dn_box dwa= {0, 0, 1+.0001, 1};
+    dn_box dha= {0, 0, 1, 1+.0001};
 
-    box b = {.5, .5, .2, .2};
+    dn_box b = {.5, .5, .2, .2};
     dbox di = dintersect(a,b);
     printf("Inter: %f %f %f %f\n", di.dx, di.dy, di.dw, di.dh);
     float inter =  box_intersection(a, b);
@@ -267,13 +267,13 @@ void test_box()
 {
     test_dintersect();
     test_dunion();
-    box a = {0, 0, 1, 1};
-    box dxa= {0+.00001, 0, 1, 1};
-    box dya= {0, 0+.00001, 1, 1};
-    box dwa= {0, 0, 1+.00001, 1};
-    box dha= {0, 0, 1, 1+.00001};
+    dn_box a = {0, 0, 1, 1};
+    dn_box dxa= {0+.00001, 0, 1, 1};
+    dn_box dya= {0, 0+.00001, 1, 1};
+    dn_box dwa= {0, 0, 1+.00001, 1};
+    dn_box dha= {0, 0, 1, 1+.00001};
 
-    box b = {.5, 0, .2, .2};
+    dn_box b = {.5, 0, .2, .2};
 
     float iou = box_iou(a,b);
     iou = (1-iou)*(1-iou);
@@ -292,7 +292,7 @@ void test_box()
     printf("manual %f %f %f %f\n", xiou, yiou, wiou, hiou);
 }
 
-dbox diou(box a, box b)
+dbox diou(dn_box a, dn_box b)
 {
     float u = box_union(a,b);
     float i = box_intersection(a,b);
@@ -316,7 +316,7 @@ dbox diou(box a, box b)
 }
 
 
-void do_nms(box *boxes, float **probs, int total, int classes, float thresh)
+void do_nms(dn_box *boxes, float **probs, int total, int classes, float thresh)
 {
     int i, j, k;
     for(i = 0; i < total; ++i){
@@ -336,9 +336,9 @@ void do_nms(box *boxes, float **probs, int total, int classes, float thresh)
     }
 }
 
-box encode_box(box b, box anchor)
+dn_box encode_box(dn_box b, dn_box anchor)
 {
-    box encode;
+    dn_box encode;
     encode.x = (b.x - anchor.x) / anchor.w;
     encode.y = (b.y - anchor.y) / anchor.h;
     encode.w = log2(b.w / anchor.w);
@@ -346,9 +346,9 @@ box encode_box(box b, box anchor)
     return encode;
 }
 
-box decode_box(box b, box anchor)
+dn_box decode_box(dn_box b, dn_box anchor)
 {
-    box decode;
+    dn_box decode;
     decode.x = b.x * anchor.w + anchor.x;
     decode.y = b.y * anchor.h + anchor.y;
     decode.w = pow(2., b.w) * anchor.w;

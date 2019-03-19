@@ -13,14 +13,14 @@ void train_writing(char *cfgfile, char *weightfile)
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = net->batch*net->subdivisions;
-    list *plist = get_paths("figures.list");
+    dn_list *plist = get_paths("figures.list");
     char **paths = (char **)list_to_array(plist);
     clock_t time;
     int N = plist->size;
     printf("N: %d\n", N);
-    image out = get_network_image(net);
+    dn_image out = get_network_image(net);
 
-    data train, buffer;
+    dn_data train, buffer;
 
     load_args args = {0};
     args.w = net->w;
@@ -101,17 +101,17 @@ void test_writing(char *cfgfile, char *weightfile, char *filename)
             strtok(input, "\n");
         }
 
-        image im = load_image_color(input, 0, 0);
+        dn_image im = load_image_color(input, 0, 0);
         resize_network(net, im.w, im.h);
         printf("%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        image pred = get_network_image(net);
+        dn_image pred = get_network_image(net);
 
-        image upsampled = resize_image(pred, im.w, im.h);
-        image thresh = threshold_image(upsampled, .5);
+        dn_image upsampled = resize_image(pred, im.w, im.h);
+        dn_image thresh = threshold_image(upsampled, .5);
         pred = thresh;
 
         show_image(pred, "prediction", 0);

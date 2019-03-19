@@ -9,11 +9,11 @@ typedef struct {
 
 unsigned char **load_files(char *filename, int *n)
 {
-    list *paths = get_paths(filename);
+    dn_list *paths = get_paths(filename);
     *n = paths->size;
     unsigned char **contents = calloc(*n, sizeof(char *));
     int i;
-    node *x = paths->front;
+    dn_node *x = paths->front;
     for(i = 0; i < *n; ++i){
         contents[i] = read_file((char *)x->val);
         x = x->next;

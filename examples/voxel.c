@@ -51,10 +51,10 @@ void train_voxel(char *cfgfile, char *weightfile)
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = net->batch*net->subdivisions;
     int i = *(net->seen)/imgs;
-    data train, buffer;
+    dn_data train, buffer;
 
 
-    list *plist = get_paths(train_images);
+    dn_list *plist = get_paths(train_images);
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
@@ -125,14 +125,14 @@ void test_voxel(char *cfgfile, char *weightfile, char *filename)
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, 0, 0);
+        dn_image im = load_image_color(input, 0, 0);
         resize_network(net, im.w, im.h);
         printf("%d %d\n", im.w, im.h);
 
         float *X = im.data;
         time=clock();
         network_predict(net, X);
-        image out = get_network_image(net);
+        dn_image out = get_network_image(net);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         save_image(out, "out");
 

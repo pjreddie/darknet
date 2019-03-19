@@ -78,7 +78,7 @@ void train_compare(char *cfgfile, char *weightfile)
     free(base);
 }
 
-void validate_compare(char *filename, char *weightfile)
+void validate_compare(const char *filename, char *weightfile)
 {
     int i = 0;
     network net = parse_network_cfg(filename);
@@ -224,7 +224,7 @@ void bbox_fight(network net, sortable_bbox *a, sortable_bbox *b, int classes, in
     free(X);
 }
 
-void SortMaster3000(char *filename, char *weightfile)
+void SortMaster3000(const char *filename, char *weightfile)
 {
     int i = 0;
     network net = parse_network_cfg(filename);
@@ -255,7 +255,7 @@ void SortMaster3000(char *filename, char *weightfile)
     printf("Sorted in %d compares, %f secs\n", total_compares, sec(clock()-time));
 }
 
-void BattleRoyaleWithCheese(char *filename, char *weightfile)
+void BattleRoyaleWithCheese(const char *filename, char *weightfile)
 {
     int classes = 20;
     int i,j;

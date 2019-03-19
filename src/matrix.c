@@ -7,14 +7,14 @@
 #include <assert.h>
 #include <math.h>
 
-void free_matrix(matrix m)
+void free_matrix(dn_matrix m)
 {
     int i;
     for(i = 0; i < m.rows; ++i) free(m.vals[i]);
     free(m.vals);
 }
 
-float matrix_topk_accuracy(matrix truth, matrix guess, int k)
+float matrix_topk_accuracy(dn_matrix truth, dn_matrix guess, int k)
 {
     int *indexes = calloc(k, sizeof(int));
     int n = truth.cols;
@@ -34,7 +34,7 @@ float matrix_topk_accuracy(matrix truth, matrix guess, int k)
     return (float)correct/truth.rows;
 }
 
-void scale_matrix(matrix m, float scale)
+void scale_matrix(dn_matrix m, float scale)
 {
     int i,j;
     for(i = 0; i < m.rows; ++i){
@@ -44,7 +44,7 @@ void scale_matrix(matrix m, float scale)
     }
 }
 
-matrix resize_matrix(matrix m, int size)
+dn_matrix resize_matrix(dn_matrix m, int size)
 {
     int i;
     if (m.rows == size) return m;
@@ -63,7 +63,7 @@ matrix resize_matrix(matrix m, int size)
     return m;
 }
 
-void matrix_add_matrix(matrix from, matrix to)
+void matrix_add_matrix(dn_matrix from, dn_matrix to)
 {
     assert(from.rows == to.rows && from.cols == to.cols);
     int i,j;
@@ -74,9 +74,9 @@ void matrix_add_matrix(matrix from, matrix to)
     }
 }
 
-matrix copy_matrix(matrix m)
+dn_matrix copy_matrix(dn_matrix m)
 {
-    matrix c = {0};
+    dn_matrix c = {0};
     c.rows = m.rows;
     c.cols = m.cols;
     c.vals = calloc(c.rows, sizeof(float *));
@@ -88,10 +88,10 @@ matrix copy_matrix(matrix m)
     return c;
 }
 
-matrix make_matrix(int rows, int cols)
+dn_matrix make_matrix(int rows, int cols)
 {
     int i;
-    matrix m;
+    dn_matrix m;
     m.rows = rows;
     m.cols = cols;
     m.vals = calloc(m.rows, sizeof(float *));
@@ -101,10 +101,10 @@ matrix make_matrix(int rows, int cols)
     return m;
 }
 
-matrix hold_out_matrix(matrix *m, int n)
+dn_matrix hold_out_matrix(dn_matrix *m, int n)
 {
     int i;
-    matrix h;
+    dn_matrix h;
     h.rows = n;
     h.cols = m->cols;
     h.vals = calloc(h.rows, sizeof(float *));
@@ -116,7 +116,7 @@ matrix hold_out_matrix(matrix *m, int n)
     return h;
 }
 
-float *pop_column(matrix *m, int c)
+float *pop_column(dn_matrix *m, int c)
 {
     float *col = calloc(m->rows, sizeof(float));
     int i, j;
@@ -130,12 +130,12 @@ float *pop_column(matrix *m, int c)
     return col;
 }
 
-matrix csv_to_matrix(char *filename)
+dn_matrix csv_to_matrix(const char *filename)
 {
     FILE *fp = fopen(filename, "r");
     if(!fp) file_error(filename);
 
-    matrix m;
+    dn_matrix m;
     m.cols = -1;
 
     char *line;
@@ -158,7 +158,7 @@ matrix csv_to_matrix(char *filename)
     return m;
 }
 
-void matrix_to_csv(matrix m)
+void matrix_to_csv(dn_matrix m)
 {
     int i, j;
 
@@ -171,7 +171,7 @@ void matrix_to_csv(matrix m)
     }
 }
 
-void print_matrix(matrix m)
+void print_matrix(dn_matrix m)
 {
     int i, j;
     printf("%d X %d Matrix:\n",m.rows, m.cols);

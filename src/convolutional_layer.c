@@ -73,12 +73,12 @@ int convolutional_out_width(convolutional_layer l)
    return (l.w + 2*l.pad - l.size) / l.stride + 1;
 }
 
-image get_convolutional_image(convolutional_layer l)
+dn_image get_convolutional_image(convolutional_layer l)
 {
    return float_to_image(l.out_w,l.out_h,l.out_c,l.output);
 }
 
-image get_convolutional_delta(convolutional_layer l)
+dn_image get_convolutional_delta(convolutional_layer l)
 {
    return float_to_image(l.out_w,l.out_h,l.out_c,l.delta);
 }
@@ -559,7 +559,7 @@ void update_convolutional_layer(convolutional_layer l, update_args a)
 }
 
 
-image get_convolutional_weight(convolutional_layer l, int i)
+dn_image get_convolutional_weight(convolutional_layer l, int i)
 {
    int h = l.size;
    int w = l.size;
@@ -571,7 +571,7 @@ void rgbgr_weights(convolutional_layer l)
 {
    int i;
    for(i = 0; i < l.n; ++i){
-      image im = get_convolutional_weight(l, i);
+      dn_image im = get_convolutional_weight(l, i);
       if (im.c == 3) {
          rgbgr_image(im);
       }
@@ -582,7 +582,7 @@ void rescale_weights(convolutional_layer l, float scale, float trans)
 {
    int i;
    for(i = 0; i < l.n; ++i){
-      image im = get_convolutional_weight(l, i);
+      dn_image im = get_convolutional_weight(l, i);
       if (im.c == 3) {
          scale_image(im, scale);
          float sum = sum_array(im.data, im.w*im.h*im.c);
@@ -591,9 +591,9 @@ void rescale_weights(convolutional_layer l, float scale, float trans)
    }
 }
 
-image *get_weights(convolutional_layer l)
+dn_image *get_weights(convolutional_layer l)
 {
-   image *weights = calloc(l.n, sizeof(image));
+   dn_image *weights = calloc(l.n, sizeof(dn_image));
    int i;
    for(i = 0; i < l.n; ++i){
       weights[i] = copy_image(get_convolutional_weight(l, i));
@@ -608,13 +608,13 @@ image *get_weights(convolutional_layer l)
    return weights;
 }
 
-image *visualize_convolutional_layer(convolutional_layer l, char *window, image *prev_weights)
+dn_image *visualize_convolutional_layer(convolutional_layer l, char *window, dn_image *prev_weights)
 {
-   image *single_weights = get_weights(l);
+   dn_image *single_weights = get_weights(l);
    show_images(single_weights, l.n, window);
 
-   image delta = get_convolutional_image(l);
-   image dc = collapse_image_layers(delta, 1);
+   dn_image delta = get_convolutional_image(l);
+   dn_image dc = collapse_image_layers(delta, 1);
    char buff[256];
    sprintf(buff, "%s: Output", window);
    //show_image(dc, buff);

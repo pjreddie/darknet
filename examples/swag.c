@@ -16,7 +16,7 @@ void train_swag(char *cfgfile, char *weightfile)
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = net->batch*net->subdivisions;
     int i = *net->seen/imgs;
-    data train, buffer;
+    dn_data train, buffer;
 
     layer l = net->layers[net->n - 1];
 
@@ -24,7 +24,7 @@ void train_swag(char *cfgfile, char *weightfile)
     int classes = l.classes;
     float jitter = l.jitter;
 
-    list *plist = get_paths(train_images);
+    dn_list *plist = get_paths(train_images);
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 

@@ -2,7 +2,7 @@
 #include "cuda.h"
 #include <stdio.h>
 
-image get_crop_image(crop_layer l)
+dn_image get_crop_image(crop_layer l)
 {
     int h = l.out_h;
     int w = l.out_w;

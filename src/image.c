@@ -25,10 +25,10 @@ float get_color(int c, int x, int max)
     return r;
 }
 
-image mask_to_rgb(image mask)
+dn_image mask_to_rgb(dn_image mask)
 {
     int n = mask.c;
-    image im = make_image(mask.w, mask.h, 3);
+    dn_image im = make_image(mask.w, mask.h, 3);
     int i, j;
     for(j = 0; j < n; ++j){
         int offset = j*123457 % n;
@@ -44,12 +44,12 @@ image mask_to_rgb(image mask)
     return im;
 }
 
-static float get_pixel(image m, int x, int y, int c)
+static float get_pixel(dn_image m, int x, int y, int c)
 {
     assert(x < m.w && y < m.h && c < m.c);
     return m.data[c*m.h*m.w + y*m.w + x];
 }
-static float get_pixel_extend(image m, int x, int y, int c)
+static float get_pixel_extend(dn_image m, int x, int y, int c)
 {
     if(x < 0 || x >= m.w || y < 0 || y >= m.h) return 0;
     /*
@@ -61,19 +61,19 @@ static float get_pixel_extend(image m, int x, int y, int c)
     if(c < 0 || c >= m.c) return 0;
     return get_pixel(m, x, y, c);
 }
-static void set_pixel(image m, int x, int y, int c, float val)
+static void set_pixel(dn_image m, int x, int y, int c, float val)
 {
     if (x < 0 || y < 0 || c < 0 || x >= m.w || y >= m.h || c >= m.c) return;
     assert(x < m.w && y < m.h && c < m.c);
     m.data[c*m.h*m.w + y*m.w + x] = val;
 }
-static void add_pixel(image m, int x, int y, int c, float val)
+static void add_pixel(dn_image m, int x, int y, int c, float val)
 {
     assert(x < m.w && y < m.h && c < m.c);
     m.data[c*m.h*m.w + y*m.w + x] += val;
 }
 
-static float bilinear_interpolate(image im, float x, float y, int c)
+static float bilinear_interpolate(dn_image im, float x, float y, int c)
 {
     int ix = (int) floorf(x);
     int iy = (int) floorf(y);
@@ -89,7 +89,7 @@ static float bilinear_interpolate(image im, float x, float y, int c)
 }
 
 
-void composite_image(image source, image dest, int dx, int dy)
+void composite_image(dn_image source, dn_image dest, int dx, int dy)
 {
     int x,y,k;
     for(k = 0; k < source.c; ++k){
@@ -103,9 +103,9 @@ void composite_image(image source, image dest, int dx, int dy)
     }
 }
 
-image border_image(image a, int border)
+dn_image border_image(dn_image a, int border)
 {
-    image b = make_image(a.w + 2*border, a.h + 2*border, a.c);
+    dn_image b = make_image(a.w + 2*border, a.h + 2*border, a.c);
     int x,y,k;
     for(k = 0; k < b.c; ++k){
         for(y = 0; y < b.h; ++y){
@@ -119,34 +119,34 @@ image border_image(image a, int border)
     return b;
 }
 
-image tile_images(image a, image b, int dx)
+dn_image tile_images(dn_image a, dn_image b, int dx)
 {
     if(a.w == 0) return copy_image(b);
-    image c = make_image(a.w + b.w + dx, (a.h > b.h) ? a.h : b.h, (a.c > b.c) ? a.c : b.c);
+    dn_image c = make_image(a.w + b.w + dx, (a.h > b.h) ? a.h : b.h, (a.c > b.c) ? a.c : b.c);
     fill_cpu(c.w*c.h*c.c, 1, c.data, 1);
     embed_image(a, c, 0, 0); 
     composite_image(b, c, a.w + dx, 0);
     return c;
 }
 
-image get_label(image **characters, char *string, int size)
+dn_image get_label(dn_image **characters, char *string, int size)
 {
     size = size/10;
     if(size > 7) size = 7;
-    image label = make_empty_image(0,0,0);
+    dn_image label = make_empty_image(0,0,0);
     while(*string){
-        image l = characters[size][(int)*string];
-        image n = tile_images(label, l, -size - 1 + (size+1)/2);
+        dn_image l = characters[size][(int)*string];
+        dn_image n = tile_images(label, l, -size - 1 + (size+1)/2);
         free_image(label);
         label = n;
         ++string;
     }
-    image b = border_image(label, label.h*.25);
+    dn_image b = border_image(label, label.h*.25);
     free_image(label);
     return b;
 }
 
-void draw_label(image a, int r, int c, image label, const float *rgb)
+void draw_label(dn_image a, int r, int c, dn_image label, const float *rgb)
 {
     int w = label.w;
     int h = label.h;
@@ -163,7 +163,7 @@ void draw_label(image a, int r, int c, image label, const float *rgb)
     }
 }
 
-void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b)
+void draw_box(dn_image a, int x1, int y1, int x2, int y2, float r, float g, float b)
 {
     //normalize_image(a);
     int i;
@@ -199,7 +199,7 @@ void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b
     }
 }
 
-void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b)
+void draw_box_width(dn_image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b)
 {
     int i;
     for(i = 0; i < w; ++i){
@@ -207,7 +207,7 @@ void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, flo
     }
 }
 
-void draw_bbox(image a, box bbox, int w, float r, float g, float b)
+void draw_bbox(dn_image a, dn_box bbox, int w, float r, float g, float b)
 {
     int left  = (bbox.x-bbox.w/2)*a.w;
     int right = (bbox.x+bbox.w/2)*a.w;
@@ -220,13 +220,13 @@ void draw_bbox(image a, box bbox, int w, float r, float g, float b)
     }
 }
 
-image **load_alphabet()
+dn_image **load_alphabet()
 {
     int i, j;
     const int nsize = 8;
-    image **alphabets = calloc(nsize, sizeof(image));
+    dn_image **alphabets = calloc(nsize, sizeof(dn_image));
     for(j = 0; j < nsize; ++j){
-        alphabets[j] = calloc(128, sizeof(image));
+        alphabets[j] = calloc(128, sizeof(dn_image));
         for(i = 32; i < 127; ++i){
             char buff[256];
             sprintf(buff, "data/labels/%d_%d.png", i, j);
@@ -236,7 +236,7 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
+void draw_detections(dn_image im, detection *dets, int num, float thresh, char **names, dn_image **alphabet, int classes)
 {
     int i,j;
 
@@ -277,7 +277,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             rgb[0] = red;
             rgb[1] = green;
             rgb[2] = blue;
-            box b = dets[i].bbox;
+            dn_box b = dets[i].bbox;
             //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
             int left  = (b.x-b.w/2.)*im.w;
@@ -292,14 +292,14 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, labelstr, (im.h*.03));
+                dn_image label = get_label(alphabet, labelstr, (im.h*.03));
                 draw_label(im, top + width, left, label, rgb);
                 free_image(label);
             }
             if (dets[i].mask){
-                image mask = float_to_image(14, 14, 1, dets[i].mask);
-                image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
-                image tmask = threshold_image(resized_mask, .5);
+                dn_image mask = float_to_image(14, 14, 1, dets[i].mask);
+                dn_image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                dn_image tmask = threshold_image(resized_mask, .5);
                 embed_image(tmask, im, left, top);
                 free_image(mask);
                 free_image(resized_mask);
@@ -309,7 +309,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
     }
 }
 
-void transpose_image(image im)
+void transpose_image(dn_image im)
 {
     assert(im.w == im.h);
     int n, m;
@@ -325,7 +325,7 @@ void transpose_image(image im)
     }
 }
 
-void rotate_image_cw(image im, int times)
+void rotate_image_cw(dn_image im, int times)
 {
     assert(im.w == im.h);
     times = (times + 400) % 4;
@@ -346,7 +346,7 @@ void rotate_image_cw(image im, int times)
     }
 }
 
-void flip_image(image a)
+void flip_image(dn_image a)
 {
     int i,j,k;
     for(k = 0; k < a.c; ++k){
@@ -362,10 +362,10 @@ void flip_image(image a)
     }
 }
 
-image image_distance(image a, image b)
+dn_image image_distance(dn_image a, dn_image b)
 {
     int i,j;
-    image dist = make_image(a.w, a.h, 1);
+    dn_image dist = make_image(a.w, a.h, 1);
     for(i = 0; i < a.c; ++i){
         for(j = 0; j < a.h*a.w; ++j){
             dist.data[j] += pow(a.data[i*a.h*a.w+j]-b.data[i*a.h*a.w+j],2);
@@ -377,7 +377,7 @@ image image_distance(image a, image b)
     return dist;
 }
 
-void ghost_image(image source, image dest, int dx, int dy)
+void ghost_image(dn_image source, dn_image dest, int dx, int dy)
 {
     int x,y,k;
     float max_dist = sqrt((-source.w/2. + .5)*(-source.w/2. + .5));
@@ -396,7 +396,7 @@ void ghost_image(image source, image dest, int dx, int dy)
     }
 }
 
-void blocky_image(image im, int s)
+void blocky_image(dn_image im, int s)
 {
     int i,j,k;
     for(k = 0; k < im.c; ++k){
@@ -408,7 +408,7 @@ void blocky_image(image im, int s)
     }
 }
 
-void censor_image(image im, int dx, int dy, int w, int h)
+void censor_image(dn_image im, int dx, int dy, int w, int h)
 {
     int i,j,k;
     int s = 32;
@@ -425,7 +425,7 @@ void censor_image(image im, int dx, int dy, int w, int h)
     }
 }
 
-void embed_image(image source, image dest, int dx, int dy)
+void embed_image(dn_image source, dn_image dest, int dx, int dy)
 {
     int x,y,k;
     for(k = 0; k < source.c; ++k){
@@ -438,14 +438,14 @@ void embed_image(image source, image dest, int dx, int dy)
     }
 }
 
-image collapse_image_layers(image source, int border)
+dn_image collapse_image_layers(dn_image source, int border)
 {
     int h = source.h;
     h = (h+border)*source.c - border;
-    image dest = make_image(source.w, h, 1);
+    dn_image dest = make_image(source.w, h, 1);
     int i;
     for(i = 0; i < source.c; ++i){
-        image layer = get_image_layer(source, i);
+        dn_image layer = get_image_layer(source, i);
         int h_offset = i*(source.h+border);
         embed_image(layer, dest, 0, h_offset);
         free_image(layer);
@@ -453,7 +453,7 @@ image collapse_image_layers(image source, int border)
     return dest;
 }
 
-void constrain_image(image im)
+void constrain_image(dn_image im)
 {
     int i;
     for(i = 0; i < im.w*im.h*im.c; ++i){
@@ -462,7 +462,7 @@ void constrain_image(image im)
     }
 }
 
-void normalize_image(image p)
+void normalize_image(dn_image p)
 {
     int i;
     float min = 9999999;
@@ -482,7 +482,7 @@ void normalize_image(image p)
     }
 }
 
-void normalize_image2(image p)
+void normalize_image2(dn_image p)
 {
     float *min = calloc(p.c, sizeof(float));
     float *max = calloc(p.c, sizeof(float));
@@ -511,20 +511,20 @@ void normalize_image2(image p)
     free(max);
 }
 
-void copy_image_into(image src, image dest)
+void copy_image_into(dn_image src, dn_image dest)
 {
     memcpy(dest.data, src.data, src.h*src.w*src.c*sizeof(float));
 }
 
-image copy_image(image p)
+dn_image copy_image(dn_image p)
 {
-    image copy = p;
+    dn_image copy = p;
     copy.data = calloc(p.h*p.w*p.c, sizeof(float));
     memcpy(copy.data, p.data, p.h*p.w*p.c*sizeof(float));
     return copy;
 }
 
-void rgbgr_image(image im)
+void rgbgr_image(dn_image im)
 {
     int i;
     for(i = 0; i < im.w*im.h; ++i){
@@ -534,7 +534,7 @@ void rgbgr_image(image im)
     }
 }
 
-int show_image(image p, const char *name, int ms)
+int show_image(dn_image p, const char *name, int ms)
 {
 #ifdef OPENCV
     int c = show_image_cv(p, name, ms);
@@ -546,7 +546,7 @@ int show_image(image p, const char *name, int ms)
 #endif
 }
 
-void save_image_options(image im, const char *name, IMTYPE f, int quality)
+void save_image_options(dn_image im, const char *name, IMTYPE f, int quality)
 {
     char buff[256];
     //sprintf(buff, "%s (%d)", name, windows);
@@ -571,33 +571,33 @@ void save_image_options(image im, const char *name, IMTYPE f, int quality)
     if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
 }
 
-void save_image(image im, const char *name)
+void save_image(dn_image im, const char *name)
 {
     save_image_options(im, name, JPG, 80);
 }
 
-void show_image_layers(image p, char *name)
+void show_image_layers(dn_image p, char *name)
 {
     int i;
     char buff[256];
     for(i = 0; i < p.c; ++i){
         sprintf(buff, "%s - Layer %d", name, i);
-        image layer = get_image_layer(p, i);
+        dn_image layer = get_image_layer(p, i);
         show_image(layer, buff, 1);
         free_image(layer);
     }
 }
 
-void show_image_collapsed(image p, char *name)
+void show_image_collapsed(dn_image p, char *name)
 {
-    image c = collapse_image_layers(p, 1);
+    dn_image c = collapse_image_layers(p, 1);
     show_image(c, name, 1);
     free_image(c);
 }
 
-image make_empty_image(int w, int h, int c)
+dn_image make_empty_image(int w, int h, int c)
 {
-    image out;
+    dn_image out;
     out.data = 0;
     out.h = h;
     out.w = w;
@@ -605,16 +605,16 @@ image make_empty_image(int w, int h, int c)
     return out;
 }
 
-image make_image(int w, int h, int c)
+dn_image make_image(int w, int h, int c)
 {
-    image out = make_empty_image(w,h,c);
+    dn_image out = make_empty_image(w,h,c);
     out.data = calloc(h*w*c, sizeof(float));
     return out;
 }
 
-image make_random_image(int w, int h, int c)
+dn_image make_random_image(int w, int h, int c)
 {
-    image out = make_empty_image(w,h,c);
+    dn_image out = make_empty_image(w,h,c);
     out.data = calloc(h*w*c, sizeof(float));
     int i;
     for(i = 0; i < w*h*c; ++i){
@@ -623,14 +623,14 @@ image make_random_image(int w, int h, int c)
     return out;
 }
 
-image float_to_image(int w, int h, int c, float *data)
+dn_image float_to_image(int w, int h, int c, float *data)
 {
-    image out = make_empty_image(w,h,c);
+    dn_image out = make_empty_image(w,h,c);
     out.data = data;
     return out;
 }
 
-void place_image(image im, int w, int h, int dx, int dy, image canvas)
+void place_image(dn_image im, int w, int h, int dx, int dy, dn_image canvas)
 {
     int x, y, c;
     for(c = 0; c < im.c; ++c){
@@ -645,21 +645,21 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)
     }
 }
 
-image center_crop_image(image im, int w, int h)
+dn_image center_crop_image(dn_image im, int w, int h)
 {
     int m = (im.w < im.h) ? im.w : im.h;   
-    image c = crop_image(im, (im.w - m) / 2, (im.h - m)/2, m, m);
-    image r = resize_image(c, w, h);
+    dn_image c = crop_image(im, (im.w - m) / 2, (im.h - m)/2, m, m);
+    dn_image r = resize_image(c, w, h);
     free_image(c);
     return r;
 }
 
-image rotate_crop_image(image im, float rad, float s, int w, int h, float dx, float dy, float aspect)
+dn_image rotate_crop_image(dn_image im, float rad, float s, int w, int h, float dx, float dy, float aspect)
 {
     int x, y, c;
     float cx = im.w/2.;
     float cy = im.h/2.;
-    image rot = make_image(w, h, im.c);
+    dn_image rot = make_image(w, h, im.c);
     for(c = 0; c < im.c; ++c){
         for(y = 0; y < h; ++y){
             for(x = 0; x < w; ++x){
@@ -673,12 +673,12 @@ image rotate_crop_image(image im, float rad, float s, int w, int h, float dx, fl
     return rot;
 }
 
-image rotate_image(image im, float rad)
+dn_image rotate_image(dn_image im, float rad)
 {
     int x, y, c;
     float cx = im.w/2.;
     float cy = im.h/2.;
-    image rot = make_image(im.w, im.h, im.c);
+    dn_image rot = make_image(im.w, im.h, im.c);
     for(c = 0; c < im.c; ++c){
         for(y = 0; y < im.h; ++y){
             for(x = 0; x < im.w; ++x){
@@ -692,27 +692,27 @@ image rotate_image(image im, float rad)
     return rot;
 }
 
-void fill_image(image m, float s)
+void fill_image(dn_image m, float s)
 {
     int i;
     for(i = 0; i < m.h*m.w*m.c; ++i) m.data[i] = s;
 }
 
-void translate_image(image m, float s)
+void translate_image(dn_image m, float s)
 {
     int i;
     for(i = 0; i < m.h*m.w*m.c; ++i) m.data[i] += s;
 }
 
-void scale_image(image m, float s)
+void scale_image(dn_image m, float s)
 {
     int i;
     for(i = 0; i < m.h*m.w*m.c; ++i) m.data[i] *= s;
 }
 
-image crop_image(image im, int dx, int dy, int w, int h)
+dn_image crop_image(dn_image im, int dx, int dy, int w, int h)
 {
-    image cropped = make_image(w, h, im.c);
+    dn_image cropped = make_image(w, h, im.c);
     int i, j, k;
     for(k = 0; k < im.c; ++k){
         for(j = 0; j < h; ++j){
@@ -730,12 +730,12 @@ image crop_image(image im, int dx, int dy, int w, int h)
     return cropped;
 }
 
-int best_3d_shift_r(image a, image b, int min, int max)
+int best_3d_shift_r(dn_image a, dn_image b, int min, int max)
 {
     if(min == max) return min;
     int mid = floor((min + max) / 2.);
-    image c1 = crop_image(b, 0, mid, b.w, b.h);
-    image c2 = crop_image(b, 0, mid+1, b.w, b.h);
+    dn_image c1 = crop_image(b, 0, mid, b.w, b.h);
+    dn_image c2 = crop_image(b, 0, mid+1, b.w, b.h);
     float d1 = dist_array(c1.data, a.data, a.w*a.h*a.c, 10);
     float d2 = dist_array(c2.data, a.data, a.w*a.h*a.c, 10);
     free_image(c1);
@@ -744,13 +744,13 @@ int best_3d_shift_r(image a, image b, int min, int max)
     else return best_3d_shift_r(a, b, mid+1, max);
 }
 
-int best_3d_shift(image a, image b, int min, int max)
+int best_3d_shift(dn_image a, dn_image b, int min, int max)
 {
     int i;
     int best = 0;
     float best_distance = FLT_MAX;
     for(i = min; i <= max; i += 2){
-        image c = crop_image(b, 0, i, b.w, b.h);
+        dn_image c = crop_image(b, 0, i, b.w, b.h);
         float d = dist_array(c.data, a.data, a.w*a.h*a.c, 100);
         if(d < best_distance){
             best_distance = d;
@@ -765,17 +765,17 @@ int best_3d_shift(image a, image b, int min, int max)
 void composite_3d(char *f1, char *f2, char *out, int delta)
 {
     if(!out) out = "out";
-    image a = load_image(f1, 0,0,0);
-    image b = load_image(f2, 0,0,0);
+    dn_image a = load_image(f1, 0,0,0);
+    dn_image b = load_image(f2, 0,0,0);
     int shift = best_3d_shift_r(a, b, -a.h/100, a.h/100);
 
-    image c1 = crop_image(b, 10, shift, b.w, b.h);
+    dn_image c1 = crop_image(b, 10, shift, b.w, b.h);
     float d1 = dist_array(c1.data, a.data, a.w*a.h*a.c, 100);
-    image c2 = crop_image(b, -10, shift, b.w, b.h);
+    dn_image c2 = crop_image(b, -10, shift, b.w, b.h);
     float d2 = dist_array(c2.data, a.data, a.w*a.h*a.c, 100);
 
     if(d2 < d1 && 0){
-        image swap = a;
+        dn_image swap = a;
         a = b;
         b = swap;
         shift = -shift;
@@ -785,7 +785,7 @@ void composite_3d(char *f1, char *f2, char *out, int delta)
         printf("%d\n", shift);
     }
 
-    image c = crop_image(b, delta, shift, a.w, a.h);
+    dn_image c = crop_image(b, delta, shift, a.w, a.h);
     int i;
     for(i = 0; i < c.w*c.h; ++i){
         c.data[i] = a.data[i];
@@ -793,7 +793,7 @@ void composite_3d(char *f1, char *f2, char *out, int delta)
     save_image(c, out);
 }
 
-void letterbox_image_into(image im, int w, int h, image boxed)
+void letterbox_image_into(dn_image im, int w, int h, dn_image boxed)
 {
     int new_w = im.w;
     int new_h = im.h;
@@ -804,12 +804,12 @@ void letterbox_image_into(image im, int w, int h, image boxed)
         new_h = h;
         new_w = (im.w * h)/im.h;
     }
-    image resized = resize_image(im, new_w, new_h);
+    dn_image resized = resize_image(im, new_w, new_h);
     embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2); 
     free_image(resized);
 }
 
-image letterbox_image(image im, int w, int h)
+dn_image letterbox_image(dn_image im, int w, int h)
 {
     int new_w = im.w;
     int new_h = im.h;
@@ -820,8 +820,8 @@ image letterbox_image(image im, int w, int h)
         new_h = h;
         new_w = (im.w * h)/im.h;
     }
-    image resized = resize_image(im, new_w, new_h);
-    image boxed = make_image(w, h, im.c);
+    dn_image resized = resize_image(im, new_w, new_h);
+    dn_image boxed = make_image(w, h, im.c);
     fill_image(boxed, .5);
     //int i;
     //for(i = 0; i < boxed.w*boxed.h*boxed.c; ++i) boxed.data[i] = 0;
@@ -830,7 +830,7 @@ image letterbox_image(image im, int w, int h)
     return boxed;
 }
 
-image resize_max(image im, int max)
+dn_image resize_max(dn_image im, int max)
 {
     int w = im.w;
     int h = im.h;
@@ -842,11 +842,11 @@ image resize_max(image im, int max)
         h = max;
     }
     if(w == im.w && h == im.h) return im;
-    image resized = resize_image(im, w, h);
+    dn_image resized = resize_image(im, w, h);
     return resized;
 }
 
-image resize_min(image im, int min)
+dn_image resize_min(dn_image im, int min)
 {
     int w = im.w;
     int h = im.h;
@@ -858,19 +858,19 @@ image resize_min(image im, int min)
         h = min;
     }
     if(w == im.w && h == im.h) return im;
-    image resized = resize_image(im, w, h);
+    dn_image resized = resize_image(im, w, h);
     return resized;
 }
 
-image random_crop_image(image im, int w, int h)
+dn_image random_crop_image(dn_image im, int w, int h)
 {
     int dx = rand_int(0, im.w - w);
     int dy = rand_int(0, im.h - h);
-    image crop = crop_image(im, dx, dy, w, h);
+    dn_image crop = crop_image(im, dx, dy, w, h);
     return crop;
 }
 
-augment_args random_augment_args(image im, float angle, float aspect, int low, int high, int w, int h)
+augment_args random_augment_args(dn_image im, float angle, float aspect, int low, int high, int w, int h)
 {
     augment_args a = {0};
     aspect = rand_scale(aspect);
@@ -897,10 +897,10 @@ augment_args random_augment_args(image im, float angle, float aspect, int low, i
     return a;
 }
 
-image random_augment_image(image im, float angle, float aspect, int low, int high, int w, int h)
+dn_image random_augment_image(dn_image im, float angle, float aspect, int low, int high, int w, int h)
 {
     augment_args a = random_augment_args(im, angle, aspect, low, high, w, h);
-    image crop = rotate_crop_image(im, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+    dn_image crop = rotate_crop_image(im, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
     return crop;
 }
 
@@ -914,7 +914,7 @@ float three_way_min(float a, float b, float c)
     return (a < b) ? ( (a < c) ? a : c) : ( (b < c) ? b : c) ;
 }
 
-void yuv_to_rgb(image im)
+void yuv_to_rgb(dn_image im)
 {
     assert(im.c == 3);
     int i, j;
@@ -937,7 +937,7 @@ void yuv_to_rgb(image im)
     }
 }
 
-void rgb_to_yuv(image im)
+void rgb_to_yuv(dn_image im)
 {
     assert(im.c == 3);
     int i, j;
@@ -961,7 +961,7 @@ void rgb_to_yuv(image im)
 }
 
 // http://www.cs.rit.edu/~ncs/color/t_convert.html
-void rgb_to_hsv(image im)
+void rgb_to_hsv(dn_image im)
 {
     assert(im.c == 3);
     int i, j;
@@ -998,7 +998,7 @@ void rgb_to_hsv(image im)
     }
 }
 
-void hsv_to_rgb(image im)
+void hsv_to_rgb(dn_image im)
 {
     assert(im.c == 3);
     int i, j;
@@ -1039,7 +1039,7 @@ void hsv_to_rgb(image im)
     }
 }
 
-void grayscale_image_3c(image im)
+void grayscale_image_3c(dn_image im)
 {
     assert(im.c == 3);
     int i, j, k;
@@ -1057,11 +1057,11 @@ void grayscale_image_3c(image im)
     }
 }
 
-image grayscale_image(image im)
+dn_image grayscale_image(dn_image im)
 {
     assert(im.c == 3);
     int i, j, k;
-    image gray = make_image(im.w, im.h, 1);
+    dn_image gray = make_image(im.w, im.h, 1);
     float scale[] = {0.299, 0.587, 0.114};
     for(k = 0; k < im.c; ++k){
         for(j = 0; j < im.h; ++j){
@@ -1073,20 +1073,20 @@ image grayscale_image(image im)
     return gray;
 }
 
-image threshold_image(image im, float thresh)
+dn_image threshold_image(dn_image im, float thresh)
 {
     int i;
-    image t = make_image(im.w, im.h, im.c);
+    dn_image t = make_image(im.w, im.h, im.c);
     for(i = 0; i < im.w*im.h*im.c; ++i){
         t.data[i] = im.data[i]>thresh ? 1 : 0;
     }
     return t;
 }
 
-image blend_image(image fore, image back, float alpha)
+dn_image blend_image(dn_image fore, dn_image back, float alpha)
 {
     assert(fore.w == back.w && fore.h == back.h && fore.c == back.c);
-    image blend = make_image(fore.w, fore.h, fore.c);
+    dn_image blend = make_image(fore.w, fore.h, fore.c);
     int i, j, k;
     for(k = 0; k < fore.c; ++k){
         for(j = 0; j < fore.h; ++j){
@@ -1100,7 +1100,7 @@ image blend_image(image fore, image back, float alpha)
     return blend;
 }
 
-void scale_image_channel(image im, int c, float v)
+void scale_image_channel(dn_image im, int c, float v)
 {
     int i, j;
     for(j = 0; j < im.h; ++j){
@@ -1112,7 +1112,7 @@ void scale_image_channel(image im, int c, float v)
     }
 }
 
-void translate_image_channel(image im, int c, float v)
+void translate_image_channel(dn_image im, int c, float v)
 {
     int i, j;
     for(j = 0; j < im.h; ++j){
@@ -1124,9 +1124,9 @@ void translate_image_channel(image im, int c, float v)
     }
 }
 
-image binarize_image(image im)
+dn_image binarize_image(dn_image im)
 {
-    image c = copy_image(im);
+    dn_image c = copy_image(im);
     int i;
     for(i = 0; i < im.w * im.h * im.c; ++i){
         if(c.data[i] > .5) c.data[i] = 1;
@@ -1135,7 +1135,7 @@ image binarize_image(image im)
     return c;
 }
 
-void saturate_image(image im, float sat)
+void saturate_image(dn_image im, float sat)
 {
     rgb_to_hsv(im);
     scale_image_channel(im, 1, sat);
@@ -1143,7 +1143,7 @@ void saturate_image(image im, float sat)
     constrain_image(im);
 }
 
-void hue_image(image im, float hue)
+void hue_image(dn_image im, float hue)
 {
     rgb_to_hsv(im);
     int i;
@@ -1156,7 +1156,7 @@ void hue_image(image im, float hue)
     constrain_image(im);
 }
 
-void exposure_image(image im, float sat)
+void exposure_image(dn_image im, float sat)
 {
     rgb_to_hsv(im);
     scale_image_channel(im, 2, sat);
@@ -1164,7 +1164,7 @@ void exposure_image(image im, float sat)
     constrain_image(im);
 }
 
-void distort_image(image im, float hue, float sat, float val)
+void distort_image(dn_image im, float hue, float sat, float val)
 {
     rgb_to_hsv(im);
     scale_image_channel(im, 1, sat);
@@ -1179,7 +1179,7 @@ void distort_image(image im, float hue, float sat, float val)
     constrain_image(im);
 }
 
-void random_distort_image(image im, float hue, float saturation, float exposure)
+void random_distort_image(dn_image im, float hue, float saturation, float exposure)
 {
     float dhue = rand_uniform(-hue, hue);
     float dsat = rand_scale(saturation);
@@ -1187,7 +1187,7 @@ void random_distort_image(image im, float hue, float saturation, float exposure)
     distort_image(im, dhue, dsat, dexp);
 }
 
-void saturate_exposure_image(image im, float sat, float exposure)
+void saturate_exposure_image(dn_image im, float sat, float exposure)
 {
     rgb_to_hsv(im);
     scale_image_channel(im, 1, sat);
@@ -1196,10 +1196,10 @@ void saturate_exposure_image(image im, float sat, float exposure)
     constrain_image(im);
 }
 
-image resize_image(image im, int w, int h)
+dn_image resize_image(dn_image im, int w, int h)
 {
-    image resized = make_image(w, h, im.c);   
-    image part = make_image(w, im.h, im.c);
+    dn_image resized = make_image(w, h, im.c);
+    dn_image part = make_image(w, im.h, im.c);
     int r, c, k;
     float w_scale = (float)(im.w - 1) / (w - 1);
     float h_scale = (float)(im.h - 1) / (h - 1);
@@ -1241,17 +1241,17 @@ image resize_image(image im, int w, int h)
 }
 
 
-void test_resize(char *filename)
+void test_resize(const char *filename)
 {
-    image im = load_image(filename, 0,0, 3);
+    dn_image im = load_image(filename, 0,0, 3);
     float mag = mag_array(im.data, im.w*im.h*im.c);
     printf("L2 Norm: %f\n", mag);
-    image gray = grayscale_image(im);
+    dn_image gray = grayscale_image(im);
 
-    image c1 = copy_image(im);
-    image c2 = copy_image(im);
-    image c3 = copy_image(im);
-    image c4 = copy_image(im);
+    dn_image c1 = copy_image(im);
+    dn_image c2 = copy_image(im);
+    dn_image c3 = copy_image(im);
+    dn_image c4 = copy_image(im);
     distort_image(c1, .1, 1.5, 1.5);
     distort_image(c2, -.1, .66666, .66666);
     distort_image(c3, .1, 1.5, .66666);
@@ -1290,7 +1290,7 @@ void test_resize(char *filename)
 }
 
 
-image load_image_stb(char *filename, int channels)
+dn_image load_image_stb(const char *filename, int channels)
 {
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
@@ -1300,7 +1300,7 @@ image load_image_stb(char *filename, int channels)
     }
     if(channels) c = channels;
     int i,j,k;
-    image im = make_image(w, h, c);
+    dn_image im = make_image(w, h, c);
     for(k = 0; k < c; ++k){
         for(j = 0; j < h; ++j){
             for(i = 0; i < w; ++i){
@@ -1314,37 +1314,37 @@ image load_image_stb(char *filename, int channels)
     return im;
 }
 
-image load_image(char *filename, int w, int h, int c)
+dn_image load_image(const char *filename, int w, int h, int c)
 {
 #ifdef OPENCV
     image out = load_image_cv(filename, c);
 #else
-    image out = load_image_stb(filename, c);
+    dn_image out = load_image_stb(filename, c);
 #endif
 
     if((h && w) && (h != out.h || w != out.w)){
-        image resized = resize_image(out, w, h);
+        dn_image resized = resize_image(out, w, h);
         free_image(out);
         out = resized;
     }
     return out;
 }
 
-image load_image_color(char *filename, int w, int h)
+dn_image load_image_color(const char *filename, int w, int h)
 {
     return load_image(filename, w, h, 3);
 }
 
-image get_image_layer(image m, int l)
+dn_image get_image_layer(dn_image m, int l)
 {
-    image out = make_image(m.w, m.h, 1);
+    dn_image out = make_image(m.w, m.h, 1);
     int i;
     for(i = 0; i < m.h*m.w; ++i){
         out.data[i] = m.data[i+l*m.h*m.w];
     }
     return out;
 }
-void print_image(image m)
+void print_image(dn_image m)
 {
     int i, j, k;
     for(i =0 ; i < m.c; ++i){
@@ -1361,7 +1361,7 @@ void print_image(image m)
     printf("\n");
 }
 
-image collapse_images_vert(image *ims, int n)
+dn_image collapse_images_vert(dn_image *ims, int n)
 {
     int color = 1;
     int border = 1;
@@ -1374,11 +1374,11 @@ image collapse_images_vert(image *ims, int n)
         c = 1;
     }
 
-    image filters = make_image(w, h, c);
+    dn_image filters = make_image(w, h, c);
     int i,j;
     for(i = 0; i < n; ++i){
         int h_offset = i*(ims[0].h+border);
-        image copy = copy_image(ims[i]);
+        dn_image copy = copy_image(ims[i]);
         //normalize_image(copy);
         if(c == 3 && color){
             embed_image(copy, filters, 0, h_offset);
@@ -1386,7 +1386,7 @@ image collapse_images_vert(image *ims, int n)
         else{
             for(j = 0; j < copy.c; ++j){
                 int w_offset = j*(ims[0].w+border);
-                image layer = get_image_layer(copy, j);
+                dn_image layer = get_image_layer(copy, j);
                 embed_image(layer, filters, w_offset, h_offset);
                 free_image(layer);
             }
@@ -1396,7 +1396,7 @@ image collapse_images_vert(image *ims, int n)
     return filters;
 } 
 
-image collapse_images_horz(image *ims, int n)
+dn_image collapse_images_horz(dn_image *ims, int n)
 {
     int color = 1;
     int border = 1;
@@ -1410,11 +1410,11 @@ image collapse_images_horz(image *ims, int n)
         c = 1;
     }
 
-    image filters = make_image(w, h, c);
+    dn_image filters = make_image(w, h, c);
     int i,j;
     for(i = 0; i < n; ++i){
         int w_offset = i*(size+border);
-        image copy = copy_image(ims[i]);
+        dn_image copy = copy_image(ims[i]);
         //normalize_image(copy);
         if(c == 3 && color){
             embed_image(copy, filters, w_offset, 0);
@@ -1422,7 +1422,7 @@ image collapse_images_horz(image *ims, int n)
         else{
             for(j = 0; j < copy.c; ++j){
                 int h_offset = j*(size+border);
-                image layer = get_image_layer(copy, j);
+                dn_image layer = get_image_layer(copy, j);
                 embed_image(layer, filters, w_offset, h_offset);
                 free_image(layer);
             }
@@ -1432,17 +1432,17 @@ image collapse_images_horz(image *ims, int n)
     return filters;
 } 
 
-void show_image_normalized(image im, const char *name)
+void show_image_normalized(dn_image im, const char *name)
 {
-    image c = copy_image(im);
+    dn_image c = copy_image(im);
     normalize_image(c);
     show_image(c, name, 1);
     free_image(c);
 }
 
-void show_images(image *ims, int n, char *window)
+void show_images(dn_image *ims, int n, char *window)
 {
-    image m = collapse_images_vert(ims, n);
+    dn_image m = collapse_images_vert(ims, n);
     /*
        int w = 448;
        int h = ((float)m.h/m.w) * 448;
@@ -1458,7 +1458,7 @@ void show_images(image *ims, int n, char *window)
     free_image(m);
 }
 
-void free_image(image m)
+void free_image(dn_image m)
 {
     if(m.data){
         free(m.data);

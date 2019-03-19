@@ -2,7 +2,7 @@
 #include "cuda.h"
 #include <stdio.h>
 
-image get_maxpool_image(maxpool_layer l)
+dn_image get_maxpool_image(maxpool_layer l)
 {
     int h = l.out_h;
     int w = l.out_w;
@@ -10,7 +10,7 @@ image get_maxpool_image(maxpool_layer l)
     return float_to_image(w,h,c,l.output);
 }
 
-image get_maxpool_delta(maxpool_layer l)
+dn_image get_maxpool_delta(maxpool_layer l)
 {
     int h = l.out_h;
     int w = l.out_w;

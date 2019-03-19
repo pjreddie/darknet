@@ -92,9 +92,9 @@ static int occupied(float *b, int i)
     return 0;
 }
 
-data random_go_moves(moves m, int n)
+dn_data random_go_moves(moves m, int n)
 {
-    data d = {0};
+    dn_data d = {0};
     d.X = make_matrix(n, 19*19*3);
     d.y = make_matrix(n, 19*19+2);
     int i, j;
@@ -118,8 +118,8 @@ data random_go_moves(moves m, int n)
 
         int flip = rand()%2;
         int rotate = rand()%4;
-        image in = float_to_image(19, 19, 3, board);
-        image out = float_to_image(19, 19, 1, label);
+        dn_image in = float_to_image(19, 19, 3, board);
+        dn_image out = float_to_image(19, 19, 1, label);
         if(flip){
             flip_image(in);
             flip_image(out);
@@ -165,7 +165,7 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
     while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
         double time=what_time_is_it_now();
 
-        data train = random_go_moves(m, net->batch*net->subdivisions*ngpus);
+        dn_data train = random_go_moves(m, net->batch*net->subdivisions*ngpus);
         printf("Loaded: %lf seconds\n", what_time_is_it_now() - time);
         time=what_time_is_it_now();
 
@@ -301,13 +301,13 @@ float predict_move2(network *net, float *board, float *move, int multi)
     float result = output[19*19 + 1];
     int i;
     if(multi){
-        image bim = float_to_image(19, 19, 3, board);
+        dn_image bim = float_to_image(19, 19, 3, board);
         for(i = 1; i < 8; ++i){
             rotate_image_cw(bim, i);
             if(i >= 4) flip_image(bim);
 
             float *output = network_predict(net, board);
-            image oim = float_to_image(19, 19, 1, output);
+            dn_image oim = float_to_image(19, 19, 1, output);
             result += output[19*19 + 1];
 
             if(i >= 4) flip_image(oim);
@@ -394,7 +394,7 @@ float *network_predict_rotations(network *net, float *next)
 {
     int n = net->batch;
     float *in = calloc(19*19*3*n, sizeof(float));
-    image im = float_to_image(19, 19, 3, next);
+    dn_image im = float_to_image(19, 19, 3, next);
     int i,j;
     int *inds = random_index_order(0, 8);
     for(j = 0; j < n; ++j){
@@ -408,7 +408,7 @@ float *network_predict_rotations(network *net, float *next)
     float *pred = network_predict(net, in);
     for(j = 0; j < n; ++j){
         i = inds[j];
-        image im = float_to_image(19, 19, 1, pred + j*(19*19 + 2));
+        dn_image im = float_to_image(19, 19, 1, pred + j*(19*19 + 2));
         if(i >= 4) flip_image(im);
         rotate_image_cw(im, -i);
         if(j > 0){
