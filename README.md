@@ -1,3 +1,6 @@
+This fork is to support YOLO implementation on FPGA
+Contact: Oscar Kramer, oscar.kramer@radiantsolutions.com, 321-821-1150
+
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
 # Darknet #
