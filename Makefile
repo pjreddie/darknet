@@ -33,7 +33,7 @@ OS := $(shell uname)
 # GTX 1080, GTX 1070, GTX 1060, GTX 1050, GTX 1030, Titan Xp, Tesla P40, Tesla P4
 # ARCH= -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61
 
-# GP100/Tesla P100 – DGX-1
+# GP100/Tesla P100 DGX-1
 # ARCH= -gencode arch=compute_60,code=sm_60
 
 # For Jetson TX1, Tegra X1, DRIVE CX, DRIVE PX - uncomment:
@@ -113,7 +113,7 @@ ARCH+= -gencode arch=compute_70,code=[sm_70,compute_70]
 endif
 
 ifeq ($(ZED_CAMERA), 1)
-CFLAGS+= -DZED_CAMERA -I/usr/local/zed/include
+CFLAGS+= -DZED_STEREO -I/usr/local/zed/include
 LDFLAGS+= -L/usr/local/zed/lib -lsl_core -lsl_input -lsl_zed
 #-lstdc++ -D_GLIBCXX_USE_CXX11_ABI=0 
 endif
