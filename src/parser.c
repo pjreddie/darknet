@@ -739,7 +739,7 @@ int is_network(section *s)
             || strcmp(s->type, "[network]")==0);
 }
 
-network *parse_network_cfg(char *filename)
+network* parse_network_cfg(char *filename)
 {
     list *sections = read_cfg(filename);
     node *n = sections->front;
