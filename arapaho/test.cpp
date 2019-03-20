@@ -36,7 +36,7 @@ using namespace cv;
 static char INPUT_DATA_FILE[]    = "input.data"; 
 static char INPUT_CFG_FILE[]     = "input.cfg";
 static char INPUT_WEIGHTS_FILE[] = "input.weights";
-static char INPUT_AV_FILE[] = "input.jpg"; // "input.jpg"; //"input.jpg"; //// Can take in either Video or Image file
+static char INPUT_IMAGE_FILE[] = "input.jpg"; //// Can take in Image file
 #define MAX_OBJECTS_PER_FRAME (100)
 
 #define TARGET_SHOW_FPS (10)
@@ -111,31 +111,14 @@ int main()
     // Setup show window
     namedWindow ( "Arapaho" , CV_WINDOW_AUTOSIZE );
     
-    // open a video or image file
-    VideoCapture cap ( INPUT_AV_FILE );
-    if( ! cap.isOpened () )  
-    {
-        EPRINTF("Could not load the AV file %s\n", INPUT_AV_FILE);
-        if(p) delete p;
-        p = 0;
-        return -1;
-    }
-    // Detection loop
-    while(1)
+	image = cv::imread(INPUT_IMAGE_FILE);
+
+    // Detection step, only for image
     {
         int imageWidthPixels = 0, imageHeightPixels = 0;
-        bool success = cap.read(image); 
-        if(!success)
-        {
-            EPRINTF("cap.read failed/EoF - AV file %s\n", INPUT_AV_FILE);
-            if(p) delete p;
-            p = 0;
-            waitKey();
-            return 0;
-        }    
         if( image.empty() ) 
         {
-            EPRINTF("image.empty error - AV file %s\n", INPUT_AV_FILE);
+            EPRINTF("image.empty error - file %s\n", INPUT_IMAGE_FILE);
             if(p) delete p;
             p = 0;
             waitKey();
