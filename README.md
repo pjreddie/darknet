@@ -221,7 +221,7 @@ Information required for filing an issue:
 
 # Darknet-cpp for Windows
 
-Currently tested with VS2015, CUDA8.0 on Win10 upto RS5. 
+Currently tested with VS2017, CUDA10.1 on Win10 upto RS5. 
 
 The solution file requires the below repository.
 
