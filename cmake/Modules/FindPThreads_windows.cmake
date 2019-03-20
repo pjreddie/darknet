@@ -26,13 +26,13 @@ include(${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake)
 include(${CMAKE_ROOT}/Modules/SelectLibraryConfigurations.cmake)
 
 if(NOT PThreads_windows_INCLUDE_DIR)
-  find_path(PThreads_windows_INCLUDE_DIR NAMES pthread.h)
+  find_path(PThreads_windows_INCLUDE_DIR NAMES pthread.h PATHS ${PThreads_windows_DIR} PATH_SUFFIXES include)
 endif()
 
 # Allow libraries to be set manually
 if(NOT PThreads_windows_LIBRARY)
-  find_library(PThreads_windows_LIBRARY_RELEASE NAMES pthreadsVC2 pthreadVC2)
-  find_library(PThreads_windows_LIBRARY_DEBUG NAMES pthreadsVC2d pthreadVC2d)
+  find_library(PThreads_windows_LIBRARY_RELEASE NAMES pthreadsVC2 pthreadVC2 PATHS ${PThreads_windows_DIR} PATH_SUFFIXES lib)
+  find_library(PThreads_windows_LIBRARY_DEBUG NAMES pthreadsVC2d pthreadVC2d PATHS ${PThreads_windows_DIR} PATH_SUFFIXES lib)
   select_library_configurations(PThreads_windows)
 endif()
 
@@ -70,7 +70,7 @@ if( PThreads_windows_FOUND AND NOT TARGET PThreads_windows::PThreads_windows )
   else()
     add_library( PThreads_windows::PThreads_windows      UNKNOWN IMPORTED )
     set_target_properties( PThreads_windows::PThreads_windows PROPERTIES
-      IMPORTED_LOCATION_RELEASE         "${PThreads_windows_LIBRARY}"
+      IMPORTED_LOCATION_RELEASE         "${PThreads_windows_LIBRARY_RELEASE}"
       INTERFACE_INCLUDE_DIRECTORIES     "${PThreads_windows_INCLUDE_DIR}"
       IMPORTED_CONFIGURATIONS           Release
       IMPORTED_LINK_INTERFACE_LANGUAGES "C" )

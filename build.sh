@@ -18,11 +18,10 @@ cd build_release
 cmake .. -DCMAKE_BUILD_TYPE=Release ${additional_defines}
 cmake --build . --target install -- -j${number_of_build_workers}
 #cmake --build . --target install --parallel ${number_of_build_workers}  #valid only for CMake 3.12+
-rm DarknetConfig.cmake
-rm DarknetConfigVersion.cmake
+rm -f DarknetConfig.cmake
+rm -f DarknetConfigVersion.cmake
 cd ..
-rm DarknetConfig.cmake
-rm DarknetConfigVersion.cmake
+cp cmake/Modules/*.cmake share/darknet
 
 # DEBUG
 mkdir -p build_debug
@@ -30,8 +29,7 @@ cd build_debug
 cmake .. -DCMAKE_BUILD_TYPE=Debug ${additional_defines}
 cmake --build . --target install -- -j${number_of_build_workers}
 #cmake --build . --target install --parallel ${number_of_build_workers}  #valid only for CMake 3.12+
-rm DarknetConfig.cmake
-rm DarknetConfigVersion.cmake
+rm -f DarknetConfig.cmake
+rm -f DarknetConfigVersion.cmake
 cd ..
-rm DarknetConfig.cmake
-rm DarknetConfigVersion.cmake
+cp cmake/Modules/*.cmake share/darknet
