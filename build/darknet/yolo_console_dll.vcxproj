@@ -87,12 +87,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\..\include;C:\opencv_3.0\opencv\build\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\include;$(OpenCV_ROOT_DIR)\include;C:\opencv_3.0\opencv\build\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\opencv_3.0\opencv\build\x64\vc14\lib;C:\opencv_2.4.13\opencv\build\x64\vc12\lib;$(CUDA_PATH)\lib\x64\;$(ZED_SDK_ROOT_DIR)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OpenCV_ROOT_DIR)\x64\vc15\lib;$(OpenCV_ROOT_DIR)\x64\vc14\lib;C:\opencv_3.0\opencv\build\x64\vc14\lib;C:\opencv_2.4.13\opencv\build\x64\vc12\lib;$(CUDA_PATH)\lib\x64\;$(ZED_SDK_ROOT_DIR)\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -116,7 +116,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\..\include;C:\opencv_source\opencv\bin\install\include;$(CUDA_PATH)\include;$(ZED_SDK_ROOT_DIR)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\include;$(OpenCV_ROOT_DIR)\include;C:\opencv_source\opencv\bin\install\include;$(CUDA_PATH)\include;$(ZED_SDK_ROOT_DIR)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>OPENCV;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <OpenMPSupport>true</OpenMPSupport>
@@ -124,7 +124,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\opencv_source\opencv\bin\install\x64\vc14\lib;C:\opencv_3.0\opencv\build\x64\vc14\lib;C:\opencv_2.4.13\opencv\build\x64\vc12\lib;$(CUDA_PATH)\lib\x64\;$(ZED_SDK_ROOT_DIR)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OpenCV_ROOT_DIR)\x64\vc15\lib;$(OpenCV_ROOT_DIR)\x64\vc14\lib;C:\opencv_source\opencv\bin\install\x64\vc14\lib;C:\opencv_3.0\opencv\build\x64\vc14\lib;C:\opencv_2.4.13\opencv\build\x64\vc12\lib;$(CUDA_PATH)\lib\x64\;$(ZED_SDK_ROOT_DIR)\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
