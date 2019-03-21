@@ -28,7 +28,7 @@ Darknet-cpp project is a bug-fixed and C++ compilable version of darknet (includ
 
 * C++ API - arapaho, that works in conjunction with libdarknet-cpp-shared.so, and a test wrapper that can read images or video files, and show detected regions in a complete C++ application.
 
-* darknet-cpp supports OpenCV3. Tested on Ubuntu 16.04 and windows, with CUDA 8.x
+* darknet-cpp supports OpenCV3. Tested on Ubuntu 16.04 and windows, with CUDA 8.x to 10.x
 
 * Note: darknet-cpp requires a C++11 compiler for darknet-cpp, and arapaho builds.
 
