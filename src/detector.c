@@ -285,6 +285,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
                 args.w = init_w;
                 args.h = init_h;
                 pthread_join(load_thread, 0);
+                free_data(train);
                 train = buffer;
                 load_thread = load_data(args);
                 int k;

@@ -777,6 +777,9 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     set_batch_network(&net, 1);
     srand(2222222);
 
+    fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
+
     list *options = read_data_cfg(datacfg);
 
     char *name_list = option_find_str(options, "names", 0);
@@ -873,6 +876,8 @@ void test_classifier(char *datacfg, char *cfgfile, char *weightfile, int target_
         load_weights(&net, weightfile);
     }
     srand(time(0));
+    fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
 
     list *options = read_data_cfg(datacfg);
 
@@ -1174,6 +1179,9 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     }
     set_batch_network(&net, 1);
     list *options = read_data_cfg(datacfg);
+
+    fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
 
     srand(2222222);
     CvCapture * cap;
