@@ -575,7 +575,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     char **names = get_labels(name_list);
     clock_t time;
     int *indexes = calloc(top, sizeof(int));
-    char buff[256];
+    char buff[1024];
     char *input = buff;
 
     if (folder) {
@@ -611,7 +611,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
                 strcpy(abs_filename, folder);
                 strcat(abs_filename, dir->d_name);
 
-                strncpy(input, abs_filename, 256);
+                strncpy(input, abs_filename, 1024);
                 image im = load_image_color(input, 0, 0);
                 image r = letterbox_image(im, net->w, net->h);
 
@@ -622,23 +622,23 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
                 top_k(predictions, net->outputs, top, indexes);
                 fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
 
-                t_predictions.vals[j] = (char *) malloc(256);
+                t_predictions.vals[j] = (char *) malloc(1024);
                 strcpy(t_predictions.vals[j], abs_filename + 1);
 
-                t_classes.vals[j] = (char *) malloc(256);
+                t_classes.vals[j] = (char *) malloc(1024);
                 strcpy(t_classes.vals[j], abs_filename + 1);
 
-                char bf[512];
+                char bf[1024];
                 for (i = 0; i < top; ++i) {
                     int index = indexes[i];
                     printf("%5.2f%%: %s\n", predictions[index]*100, names[index]);
 
-                    int pos = (i + 1)*t_predictions.rows + j;
-                    t_predictions.vals[pos] = (char *) malloc(256);
+                    int pos = (i + 1)*t_predictions.cols + j;
+                    t_predictions.vals[pos] = (char *) malloc(1024);
                     sprintf(bf, "%.50f", predictions[index]);
                     strcpy(t_predictions.vals[pos], bf);
 
-                    t_classes.vals[pos] = (char *) malloc(256);
+                    t_classes.vals[pos] = (char *) malloc(1024);
                     sprintf(bf, "%s", names[index]);
                     strcpy(t_classes.vals[pos], bf);
                 }

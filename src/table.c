@@ -10,7 +10,7 @@ table make_table(int rows, int cols)
     table t;
     t.rows = rows;
     t.cols = cols;
-    t.vals = malloc(t.rows * t.cols * sizeof(char *) * 512);
+    t.vals = malloc(t.rows * t.cols * sizeof(char *) * 1024);
     return t;
 }
 
@@ -19,7 +19,7 @@ table copy_table(table t)
     table c = {0};
     c.rows = t.rows;
     c.cols = t.cols;
-    c.vals = malloc(t.rows * t.cols * sizeof(char *) * 512);
+    c.vals = malloc(t.rows * t.cols * sizeof(char *) * 1024);
     int i, j, p;
     for (i = 0; i < c.rows; ++i) {
         for (j = 0; j < c.cols; ++j) {
@@ -82,7 +82,7 @@ void save_csv(table t, char *filename)
     for (i = 0; i < t.rows; ++i) {
         for (j = 0; j < t.cols; ++j) {
             if (j > 0) fprintf(fp, ",");
-            fprintf(fp, "%s", t.vals[ i*t.rows + j ]);
+            fprintf(fp, "%s", t.vals[ i*t.cols + j ]);
         }
         fprintf(fp, "\n");
     }
@@ -96,7 +96,7 @@ void print_table(table t)
     int i, j;
     for (i = 0; i < t.rows; ++i){
         for (j = 0; j < t.cols; ++j) {
-            printf(" %s", t.vals[ i*t.rows + j ]);
+            printf(" %s", t.vals[ i*t.cols + j ]);
         }
         printf("\n");
     }
