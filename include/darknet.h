@@ -767,7 +767,7 @@ LIB_API layer* get_network_layer(network* net, int i);
 LIB_API detection *make_network_boxes(network *net, float thresh, int *num);
 LIB_API void reset_rnn(network *net);
 LIB_API float *network_predict_image(network *net, image im);
-LIB_API float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, const float iou_thresh, const int map_11_points, network *existing_net);
+LIB_API float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, const float iou_thresh, const int map_points, network *existing_net);
 LIB_API void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, int mjpeg_port);
 LIB_API void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
     float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile);
