@@ -247,7 +247,7 @@ endif()
 
 set_source_files_properties(${sources} PROPERTIES LANGUAGE CXX)
 
-add_library(darklib ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
+add_library(darklib SHARED ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
 set_target_properties(darklib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(ENABLE_CUDA)
   set_target_properties(darklib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

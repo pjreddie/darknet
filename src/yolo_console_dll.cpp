@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
                 sl::InitParameters init_params;
                 init_params.depth_minimum_distance = 0.5;
                 init_params.depth_mode = sl::DEPTH_MODE_ULTRA;
-                init_params.camera_resolution = sl::RESOLUTION_HD720;
+                init_params.camera_resolution = sl::RESOLUTION_HD720;// sl::RESOLUTION_HD1080, sl::RESOLUTION_HD720
                 init_params.coordinate_units = sl::UNIT_METER;
                 //init_params.sdk_cuda_ctx = (CUcontext)detector.get_cuda_context();
                 init_params.sdk_gpu_id = detector.cur_gpu_id;
