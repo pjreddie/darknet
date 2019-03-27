@@ -754,7 +754,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     int* truth_classes_count = (int*)calloc(classes, sizeof(int));
 
     // For multi-class precision and recall computation
-    float *avg_iou_per_class = (int*)calloc(classes, sizeof(int));
+    float *avg_iou_per_class = (float*)calloc(classes, sizeof(float));
     int *tp_for_thresh_per_class = (int*)calloc(classes, sizeof(int));
     int *fp_for_thresh_per_class = (int*)calloc(classes, sizeof(int));
 
@@ -1083,10 +1083,10 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     free(fp_for_thresh_per_class);
 
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
-    printf("\nSet -map_points flag:\n");
-    printf(" `-map_points 101` for MS COCO \n");
-    printf(" `-map_points 11` for PascalVOC 2007 (uncomment `difficult` in voc.data) \n");
-    printf(" `-map_points 0` (AUC) for ImageNet, PascalVOC 2010-2012, your custom dataset\n");
+    printf("\nSet -points flag:\n");
+    printf(" `-points 101` for MS COCO \n");
+    printf(" `-points 11` for PascalVOC 2007 (uncomment `difficult` in voc.data) \n");
+    printf(" `-points 0` (AUC) for ImageNet, PascalVOC 2010-2012, your custom dataset\n");
     if (reinforcement_fd != NULL) fclose(reinforcement_fd);
 
     // free memory
