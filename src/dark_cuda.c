@@ -25,6 +25,10 @@ int gpu_index = 0;
 #endif  // USE_CMAKE_LIBS
 #endif  // CUDNN
 
+#if defined(CUDNN_HALF) && !defined(CUDNN)
+#error "If you set CUDNN_HALF=1 then you must set CUDNN=1"
+#endif
+
 void cuda_set_device(int n)
 {
     gpu_index = n;

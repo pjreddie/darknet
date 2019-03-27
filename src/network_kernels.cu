@@ -156,7 +156,7 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     state.delta = 0;
     state.truth = *net.truth_gpu;
     state.train = 1;
-#ifdef CUDNN_HALF
+#if defined(CUDNN_HALF) && defined(CUDNN)
     int i;
     for (i = 0; i < net.n; ++i) {
         layer l = net.layers[i];
