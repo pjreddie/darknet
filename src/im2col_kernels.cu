@@ -228,8 +228,8 @@ __global__ void im2col_align_bin_gpu_kernel(const int n, const float* data_im,
     const int height_col, const int width_col,
     float *data_col, const int bit_align)
 {
-    __shared__ float tmp_s[1];
-    __shared__ ulonglong4 tmp256_s[1];
+    //__shared__ float tmp_s[1];
+    //__shared__ ulonglong4 tmp256_s[1];
 
 
     //#define SHRED_VALS ((BLOCK / 169) * )
@@ -414,7 +414,7 @@ __global__ void float_to_bit_gpu_kernel(float *src, unsigned char *dst, size_t s
         if ((index + i * 1024) < size) src_val = src[index + i*1024];
         else src_val = 0;
         //unsigned int bit_mask = __ballot_sync(0xffffffff, src_val > 0);
-        const int num_of_warps = blockDim.x / WARP_SIZE;
+        //const int num_of_warps = blockDim.x / WARP_SIZE;
         const int warp_id = threadIdx.x / WARP_SIZE;
         const int lane_id = threadIdx.x % WARP_SIZE;
 
@@ -436,7 +436,7 @@ void float_to_bit_gpu(float *src, unsigned char *dst, size_t size)
 }
 // --------------------------------
 
-
+/*
 __device__ __host__ static inline void remove_bit(unsigned char *const dst, size_t index) {
     size_t dst_i = index / 8;
     int dst_shift = index % 8;
@@ -449,6 +449,7 @@ __device__ __host__ static inline void set_bit(unsigned char *const dst, size_t 
     dst[dst_i] |= 1 << dst_shift;
     //dst[dst_i] |= 1 << (8 - dst_shift);
 }
+*/
 
 __device__ __host__ static inline unsigned char get_bit(unsigned char const*const src, size_t index) {
     size_t src_i = index / 8;
@@ -643,9 +644,9 @@ __global__ void transpose_bin_gpu_kernel_32(uint32_t *A, uint32_t *B, const int 
 void transpose_bin_gpu(unsigned char *A, unsigned char *B, const int n, const int m,
     const int lda, const int ldb, const int block_size)
 {
-    int size = n*m/ (8*8) + 1;
+    //int size = n*m/ (8*8) + 1;
     int size32 = n*m / (32*32) + 1;
-    const int num_blocks = size / BLOCK + 1;
+    //const int num_blocks = size / BLOCK + 1;
     const int num_blocks32 = size32 / BLOCK_TRANSPOSE32 + 1;
     transpose_bin_gpu_kernel_32 << <num_blocks32, BLOCK_TRANSPOSE32, 0, get_cuda_stream() >> >((uint32_t *)A, (uint32_t *)B, n, m, lda, ldb, block_size);
     //transpose_bin_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(A, B, n, m, lda, ldb, block_size);
@@ -692,10 +693,10 @@ __global__ void transpose_uint32_kernel_2(uint32_t *src, uint32_t *dst, int src_
     //new_ldb - aligned (k) by 256
 
     const int src_w_align = src_w + (32 - src_w % 32);
-    const int src_h_align = src_h + (32 - src_h % 32);
+    //const int src_h_align = src_h + (32 - src_h % 32);
 
     const int warps_in_width = src_w_align / 32;
-    const int warps_in_height = src_h_align / 32;
+    //const int warps_in_height = src_h_align / 32;
 
 
 
@@ -789,7 +790,7 @@ void repack_input_gpu(float *input, float *re_packed_input, int w, int h, int c)
 // 256 channels -> 8 channels (with 32 floats)
 __global__ void repack_input_kernel_2(float *input, float *re_packed_input, int w, int h, int c)
 {
-    __shared__ uint32_t tmp[33 * 32];  // 33x32 is misaligned 32 x 32 to avoid bank conflicts
+    //__shared__ uint32_t tmp[33 * 32];  // 33x32 is misaligned 32 x 32 to avoid bank conflicts
 
     int index = blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -943,15 +944,15 @@ void fill_int8_gpu(unsigned char *src, unsigned char val, size_t size) {
 //typedef unsigned int uint32_t;
 //typedef unsigned char uint8_t;
 //typedef char int8_t;
-
+/*
 __device__ __host__ static inline uint64_t broadcast_bit_1_to_64(uint8_t src) {
     return (src > 0) ? 0xFFFFFFFFFFFFFFFF : 0;
 }
-
+*/
 __device__ __host__ static inline uint8_t xnor_bit1(uint8_t a, uint8_t b) {
     return ~(a^b) & 0b1;
 }
-
+/*
 __device__ __host__ static inline uint32_t xnor_int32(uint32_t a, uint32_t b) {
     return ~(a^b);
 }
@@ -977,13 +978,13 @@ __device__ __host__ static inline ulonglong4 xnor_int256(ulonglong4 a, ulonglong
     res.z = ~(a.z^b.z);
     return res;
 }
-
+*/
 //-------
-
+/*
 __device__ __host__ static inline uint8_t xor_bit1(uint8_t a, uint8_t b) {
     return (a^b) & 0b1;
 }
-
+*/
 __device__ __host__ static inline uint32_t xor_int32(uint32_t a, uint32_t b) {
     return (a^b);
 }
@@ -991,7 +992,7 @@ __device__ __host__ static inline uint32_t xor_int32(uint32_t a, uint32_t b) {
 __device__ __host__ static inline uint64_t xor_int64(uint64_t a, uint64_t b) {
     return (a^b);
 }
-
+/*
 __device__ __host__ static inline uint4 xor_int128(uint4 a, uint4 b) {
     uint4 res;
     res.w = (a.w^b.w);
@@ -1000,7 +1001,7 @@ __device__ __host__ static inline uint4 xor_int128(uint4 a, uint4 b) {
     res.z = (a.z^b.z);
     return res;
 }
-
+*/
 __device__ __host__ static inline ulonglong4 xor_int256(ulonglong4 a, ulonglong4 b) {
     ulonglong4 res;
     res.w = (a.w^b.w);
@@ -1010,12 +1011,11 @@ __device__ __host__ static inline ulonglong4 xor_int256(ulonglong4 a, ulonglong4
     return res;
 }
 
-
+/*
 __device__ static inline int popcnt_256(ulonglong4 a) {
     return __popcll(a.w) + __popcll(a.x) + __popcll(a.y) + __popcll(a.z);
 }
 
-/*
 __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int K,
     unsigned char *A, int lda,
     unsigned char *B, int ldb,
@@ -1269,7 +1269,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
     */
 
 
-    int i, j, k, h;
+    int i, j, k;//, h;
     // 47% = 29 + 10 + 8
     j = global_warp_id % (N_aligned / WMMA_Nx2);
     j = j * WMMA_Nx2;
@@ -1277,7 +1277,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
         i = global_warp_id / (N_aligned / WMMA_Nx2);
         i = i * WMMA_M;
 
-        int count = 0;
+        //int count = 0;
         k = 0;
 
         if (i < M)  //if (i < M)  // l.n - filters [16 - 55 - 1024]
@@ -1323,7 +1323,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
             // Custom XOR-GEMM
             int k_d = lane_id % 4;
             int i_d = lane_id / 4;
-            int j_d = lane_id / 4;
+            //int j_d = lane_id / 4;
 
             int32_t accum_c_val[8*2]; // wmma::fill_fragment(c_frag, 0);
             for (int local_j = 0; local_j < 8*2; ++local_j) {
@@ -1333,9 +1333,9 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
             // 8 x 8 x 4 (uint32_t, 4 * 32 = 128 bit)
             for (; k < K; k += 128)  // l.size*l.size*l.c - one filter size [27 - 144 - 9216]
             {
-                int64_t A_cur_index = (i*lda + k) / 8;
+                //int64_t A_cur_index = (i*lda + k) / 8;
                 //int64_t A_cur_index = (local_i*lda + k) / 8;
-                int64_t B_cur_index = (j*ldb + k) / 8;
+                //int64_t B_cur_index = (j*ldb + k) / 8;
 
                 // lda, ldb - are in bits
                 // 8*4 = 32
@@ -1593,7 +1593,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
     }
     __syncthreads();
 
-    int i, j, k, h;
+    int i, j, k; //, h;
     // 47% = 29 + 10 + 8
     j = index % N;
     {    // out_h*out_w - one channel output size [169 - 173056]
@@ -2115,7 +2115,7 @@ __global__ void convolve_bin_gpu_kernel(float *input, float *weights, float *out
         for (chan = 0; chan < in_c; ++chan)
         {
             //int const weights_pre_index = fil*in_c*size*size + chan*size*size;
-            int const weights_pre_index = fil*new_lda + chan*size*size;
+            //int const weights_pre_index = fil*new_lda + chan*size*size;
             int const input_pre_index = chan*in_w*in_h;
 
             __shared__ uint32_t input_shared[416*416/32 + 1];   // 21.2 KB bytes (for input size 832x832)
@@ -2139,8 +2139,8 @@ __global__ void convolve_bin_gpu_kernel(float *input, float *weights, float *out
             }
             __syncthreads();
             */
-            int src_index = -1;
-            uint32_t input_byte;
+            //int src_index = -1;
+            //uint32_t input_byte;
 
             if (fil < n)    // (1-6 for one BLOCK)
             {
@@ -2154,8 +2154,8 @@ __global__ void convolve_bin_gpu_kernel(float *input, float *weights, float *out
                         int input_x = x + f_x - pad;
                         if (input_y < 0 || input_x < 0 || input_y >= in_h || input_x >= in_w) continue;
 
-                        int input_index = input_pre_index + input_y*in_w + input_x;
-                        int weights_index = weights_pre_index + f_y*size + f_x;
+                        //int input_index = input_pre_index + input_y*in_w + input_x;
+                        //int weights_index = weights_pre_index + f_y*size + f_x;
                         //int weights_index = fil*in_c*size*size + chan*size*size + f_y*size + f_x;
                         //int weights_index = fil*new_lda + chan*size*size + f_y*size + f_x;
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.8)
 
 set(Darknet_MAJOR_VERSION 1)
 set(Darknet_MINOR_VERSION 0)
@@ -174,14 +174,14 @@ if(ENABLE_CUDA)
       include_directories(${ZED_INCLUDE_DIRS})
       link_directories(${ZED_LIBRARY_DIR})
       add_definitions(-DZED_STEREO)
-      message("ZED Camera support enabled")
+      message(STATUS "ZED SDK enabled")
     else()
-      message("ZED SDK not found !")
+      message(STATUS "ZED SDK not found")
       set(ENABLE_ZED_CAMERA "FALSE" CACHE BOOL "Enable ZED Camera support" FORCE)
     endif()
   endif()
 else()
-  message(WARNING "ZED SDK requires CUDA !")
+  message(STATUS "ZED SDK not enabled, since it requires CUDA")
   set(ENABLE_ZED_CAMERA "FALSE" CACHE BOOL "Enable ZED Camera support" FORCE)
 endif()
 
@@ -247,7 +247,7 @@ endif()
 
 set_source_files_properties(${sources} PROPERTIES LANGUAGE CXX)
 
-add_library(darklib SHARED ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
+add_library(darklib ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
 set_target_properties(darklib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(ENABLE_CUDA)
   set_target_properties(darklib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -323,21 +323,19 @@ endif()
 
 set_target_properties(darklib PROPERTIES PUBLIC_HEADER "${exported_headers};${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp")
 
-install(TARGETS darklib uselib darknet EXPORT DarknetTargets
+install(TARGETS darklib EXPORT DarknetTargets
   RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
   COMPONENT dev
 )
+install(TARGETS uselib darknet
+  DESTINATION "${INSTALL_BIN_DIR}"
+)
 if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   install(TARGETS uselib_track
-    EXPORT DarknetTargets
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
-    PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
-    COMPONENT dev
+    DESTINATION "${INSTALL_BIN_DIR}"
   )
 endif()
 

@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 
 number_of_build_workers=8
+create_shared_lib="-DBUILD_SHARED_LIBS:BOOL=ON"
+
+#my_cuda_compute_model=75    #Compute capability for Tesla T4, RTX 2080
+#my_cuda_compute_model=72    #Compute capability for Jetson Xavier
+#my_cuda_compute_model=70    #Compute capability for Tesla V100
+#my_cuda_compute_model=62    #Compute capability for Jetson TX2
+#my_cuda_compute_model=61    #Compute capability for Tesla P40
+#my_cuda_compute_model=60    #Compute capability for Tesla P100
+#my_cuda_compute_model=53    #Compute capability for Jetson TX1
+#my_cuda_compute_model=52    #Compute capability for Tesla M40/M60
+#my_cuda_compute_model=37    #Compute capability for Tesla K80
+#my_cuda_compute_model=35    #Compute capability for Tesla K20/K40
+#my_cuda_compute_model=30    #Compute capability for Tesla K10, Quadro K4000
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   OpenCV_DIR="/usr/local/Cellar/opencv@3/3.4.5"
@@ -11,11 +24,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   fi
 fi
 
+if [[ ! -z "$my_cuda_compute_model" ]]; then
+  additional_build_setup="-DCUDA_COMPUTE_MODEL=${my_cuda_compute_model}"
+fi
 
 # RELEASE
 mkdir -p build_release
 cd build_release
-cmake .. -DCMAKE_BUILD_TYPE=Release ${additional_defines}
+cmake .. -DCMAKE_BUILD_TYPE=Release ${additional_defines} ${create_shared_lib} ${additional_build_setup}
 cmake --build . --target install -- -j${number_of_build_workers}
 #cmake --build . --target install --parallel ${number_of_build_workers}  #valid only for CMake 3.12+
 rm -f DarknetConfig.cmake
@@ -26,7 +42,7 @@ cp cmake/Modules/*.cmake share/darknet
 # DEBUG
 mkdir -p build_debug
 cd build_debug
-cmake .. -DCMAKE_BUILD_TYPE=Debug ${additional_defines}
+cmake .. -DCMAKE_BUILD_TYPE=Debug ${additional_defines} ${create_shared_lib} ${additional_build_setup}
 cmake --build . --target install -- -j${number_of_build_workers}
 #cmake --build . --target install --parallel ${number_of_build_workers}  #valid only for CMake 3.12+
 rm -f DarknetConfig.cmake

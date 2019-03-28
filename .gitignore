@@ -1,10 +1,12 @@
 *.o
+*.a
 *.dSYM
 *.csv
 *.out
 *.png
 *.so
 *.exe
+*.dll
 mnist/
 data/
 caffe/
@@ -28,7 +30,10 @@ Icon?
 Thumbs.db
 *.swp
 
+# IDE generated #
+.vs/
+.vscode/
+
 lib/
 include/
 share/
-
