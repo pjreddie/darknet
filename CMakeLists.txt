@@ -9,7 +9,9 @@ set(CMAKE_VERBOSE_MAKEFILE "FALSE" CACHE BOOL "Create verbose makefile")
 set(BUILD_SHARED_LIBS "TRUE" CACHE BOOL "Create darklib as a shared library")
 
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+  message(STATUS "VCPKG found: $ENV{VCPKG_ROOT}")
+  message(STATUS "Using VCPKG integration")
 endif()
 
 project(Darknet VERSION ${Darknet_VERSION})
