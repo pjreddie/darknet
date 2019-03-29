@@ -54,7 +54,7 @@ install:
   - cd %WORKSPACE%\
   - mkdir cygwin-downloads
   - ps: if($env:COMPILER -eq "cygwin") { Invoke-WebRequest https://cygwin.com/setup-x86_64.exe -OutFile $env:WORKSPACE\cygwin-setup.exe }
-  - if [%COMPILER%]==[cygwin] %WORKSPACE%\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --root C:\cygwin64 --local-package-dir %WORKSPACE%\cygwin-downloads --packages gcc-g++,cmake,libopencv-devel
+  - if [%COMPILER%]==[cygwin] %WORKSPACE%\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --root C:\cygwin64 --local-package-dir %WORKSPACE%\cygwin-downloads --packages gcc-g++,cmake,libopencv-devel,libncurses-devel
   - ps: if($env:COMPILER -eq "cygwin") { Invoke-WebRequest https://github.com/Kitware/CMake/releases/download/v3.14.0/cmake-3.14.0.tar.gz -OutFile $env:WORKSPACE\cmake-3.14.0.tar.gz }
   - if [%COMPILER%]==[cygwin] %CYGSH% 'tar zxvf cmake-3.14.0.tar.gz'
   - if [%COMPILER%]==[cygwin] cd %WORKSPACE%\cmake-3.14.0
