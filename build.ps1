@@ -1,7 +1,6 @@
 #!/usr/bin/env pwsh
 
 $number_of_build_workers=8
-$create_shared_lib="-DBUILD_SHARED_LIBS:BOOL=ON"
 $force_using_include_libs=$false
 
 #$my_cuda_compute_model=75    #Compute capability for Tesla T4, RTX 2080
@@ -88,7 +87,7 @@ if ($vcpkg_path) {
   # DEBUG
   New-Item -Path .\build_win_debug -ItemType directory -Force
   Set-Location build_win_debug
-  cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Debug" $create_shared_lib $additional_build_setup ..
+  cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Debug" $additional_build_setup ..
   cmake --build . --config Debug --target install
   #cmake --build . --config Debug --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
   Remove-Item DarknetConfig.cmake
@@ -99,7 +98,7 @@ if ($vcpkg_path) {
   # RELEASE
   New-Item -Path .\build_win_release -ItemType directory -Force
   Set-Location build_win_release
-  cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $create_shared_lib $additional_build_setup ..
+  cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
   cmake --build . --config Release --target install
   #cmake --build . --config Release --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
   Remove-Item DarknetConfig.cmake
@@ -113,7 +112,7 @@ else {
   # if you want to manually force this case, remove VCPKG_ROOT env variable and remember to use "vcpkg integrate remove" in case you had enabled user-wide vcpkg integration
   New-Item -Path .\build_win_release_novcpkg -ItemType directory -Force
   Set-Location build_win_release_novcpkg
-  cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" $create_shared_lib $additional_build_setup ..
+  cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" $additional_build_setup ..
   cmake --build . --config Release --target install
   #cmake --build . --config Release --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
   Remove-Item DarknetConfig.cmake

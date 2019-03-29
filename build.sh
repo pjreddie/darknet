@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-number_of_build_workers=8
-create_shared_lib="-DBUILD_SHARED_LIBS:BOOL=ON"
-
+## by default darknet is built with CC 3.0 if cuda is found. Uncomment another CC (only one!) if you prefer a different choice
 #my_cuda_compute_model=75    #Compute capability for Tesla T4, RTX 2080
 #my_cuda_compute_model=72    #Compute capability for Jetson Xavier
 #my_cuda_compute_model=70    #Compute capability for Tesla V100
@@ -14,6 +12,8 @@ create_shared_lib="-DBUILD_SHARED_LIBS:BOOL=ON"
 #my_cuda_compute_model=37    #Compute capability for Tesla K80
 #my_cuda_compute_model=35    #Compute capability for Tesla K20/K40
 #my_cuda_compute_model=30    #Compute capability for Tesla K10, Quadro K4000
+
+number_of_build_workers=8
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   OpenCV_DIR="/usr/local/Cellar/opencv@3/3.4.5"
@@ -31,7 +31,7 @@ fi
 # RELEASE
 mkdir -p build_release
 cd build_release
-cmake .. -DCMAKE_BUILD_TYPE=Release ${additional_defines} ${create_shared_lib} ${additional_build_setup}
+cmake .. -DCMAKE_BUILD_TYPE=Release ${additional_defines} ${additional_build_setup}
 cmake --build . --target install -- -j${number_of_build_workers}
 #cmake --build . --target install --parallel ${number_of_build_workers}  #valid only for CMake 3.12+
 rm -f DarknetConfig.cmake
@@ -42,7 +42,7 @@ cp cmake/Modules/*.cmake share/darknet
 # DEBUG
 mkdir -p build_debug
 cd build_debug
-cmake .. -DCMAKE_BUILD_TYPE=Debug ${additional_defines} ${create_shared_lib} ${additional_build_setup}
+cmake .. -DCMAKE_BUILD_TYPE=Debug ${additional_defines} ${additional_build_setup}
 cmake --build . --target install -- -j${number_of_build_workers}
 #cmake --build . --target install --parallel ${number_of_build_workers}  #valid only for CMake 3.12+
 rm -f DarknetConfig.cmake
