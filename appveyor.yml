@@ -4,10 +4,10 @@ clone_folder: c:\projects\darknet
 environment:
     WORKSPACE: C:\projects
     matrix:
-    - platform: Cygwin64
-      COMPILER: cygwin
-      CYGWIN_NOWINPATH: yes
-      CYGSH: C:\cygwin64\bin\bash -c
+    #- platform: Cygwin64   # removed because it is missing CMake 3.8 (minimum version required)  ## todo: download and build from source!
+    #  COMPILER: cygwin
+    #  CYGWIN_NOWINPATH: yes
+    #  CYGSH: C:\cygwin64\bin\bash -c
     - platform: Win64
       COMPILER: vs
       configuration: Release
