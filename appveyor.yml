@@ -41,7 +41,7 @@ install:
   - if [%COMPILER%]==[vs] cinst cmake ninja
   - if [%COMPILER%]==[vs] SET "PATH=C:\Program Files\CMake\bin;%PATH%"
   - if [%COMPILER%]==[vs] call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
-  - if [%COMPILER%]==[cygwin] SET "PATH=C:\cygwin64\bin;C:\cygwin64\usr\bin;%PATH%"
+  - if [%COMPILER%]==[cygwin] SET "PATH=C:\cygwin64\usr\local\bin;C:\cygwin64\bin;C:\cygwin64\usr\bin;%PATH%"
   - if [%COMPILER%]==[cygwin] SET PATH=%PATH:C:\Program Files\Git\usr\bin;=%
   - git submodule -q update --init --recursive
   - cd %WORKSPACE%\
@@ -54,13 +54,20 @@ install:
   - cd %WORKSPACE%\
   - mkdir cygwin-downloads
   - ps: if($env:COMPILER -eq "cygwin") { Invoke-WebRequest https://cygwin.com/setup-x86_64.exe -OutFile $env:WORKSPACE\cygwin-setup.exe }
-  - if [%COMPILER%]==[cygwin] %WORKSPACE%\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --root C:\cygwin64 --local-package-dir %WORKSPACE%\cygwin-downloads --packages gcc-g++,cmake,libopencv-devel
+  - if [%COMPILER%]==[cygwin] %WORKSPACE%\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --root C:\cygwin64 --local-package-dir %WORKSPACE%\cygwin-downloads --packages gcc-g++,cmake,libopencv-devel,libncurses-devel
+  - ps: if($env:COMPILER -eq "cygwin") { Invoke-WebRequest https://github.com/Kitware/CMake/releases/download/v3.14.0/cmake-3.14.0.tar.gz -OutFile $env:WORKSPACE\cmake-3.14.0.tar.gz }
+  - if [%COMPILER%]==[cygwin] %CYGSH% 'tar zxvf cmake-3.14.0.tar.gz'
+  - if [%COMPILER%]==[cygwin] cd %WORKSPACE%\cmake-3.14.0
+  - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .'
+  - if [%COMPILER%]==[cygwin] %CYGSH% 'make -j8'
+  - if [%COMPILER%]==[cygwin] %CYGSH% 'make install'
+  - if [%COMPILER%]==[cygwin] cd %WORKSPACE%
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] git clone https://github.com/Microsoft/vcpkg
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd %VCPKG_ROOT%
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] bootstrap-vcpkg.bat
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg integrate install
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%USE_CUDA%]==[yes] vcpkg install cuda
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv pthreads   ## opencv[cuda] is too big to build, timing out (>1h). We use plain openCV also for CUDA builds (toolchain can manage this strange situation anyway)
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv[ffmpeg] pthreads   ## opencv[ffmpeg,cuda] is too big to build, timing out (>1h). We use plain openCV also for CUDA builds (toolchain can manage this strange situation anyway)
   - cd %WORKSPACE%\darknet\
   - mkdir build_debug && cd build_debug
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Debug"'

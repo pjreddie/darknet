@@ -900,7 +900,7 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
             {
                 __m256i b256 = *((__m256i*)&B[s*ldb + j]);
                 __m256i xor256 = _mm256_xor_si256(a256, b256);  // xnor = xor(a,b)
-                __m256i all_1 = _mm256_set1_epi8(255);
+                __m256i all_1 = _mm256_set1_epi8((char)255);
                 __m256i xnor256 = _mm256_andnot_si256(xor256, all_1); // xnor = not(xor(a,b))
 
                 // waiting for - CPUID Flags: AVX512VPOPCNTDQ: __m512i _mm512_popcnt_epi32(__m512i a)
@@ -1162,7 +1162,7 @@ static inline int popcnt256_custom(__m256i n) {
 }
 
 static inline void xnor_avx2_popcnt(__m256i a_bit256, __m256i b_bit256, __m256i *count_sum) {
-    __m256i c_bit256 = _mm256_set1_epi8(255);
+    __m256i c_bit256 = _mm256_set1_epi8((char)255);
 
     __m256i xor256 = _mm256_xor_si256(a_bit256, b_bit256);  // xnor = not(xor(a,b))
     c_bit256 = _mm256_andnot_si256(xor256, c_bit256);  // can be optimized - we can do other NOT for wegihts once and do not do this NOT

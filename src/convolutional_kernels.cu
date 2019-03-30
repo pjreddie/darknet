@@ -184,18 +184,18 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         if (l.align_bit_weights_gpu && !state.train && l.c >= 32)
         {
             //return;
-            cudaError_t status = cudaSuccess;
-            int input_size = l.c*l.h*l.w*l.batch;
+            //cudaError_t status = cudaSuccess;
+            //int input_size = l.c*l.h*l.w*l.batch;
 
             int m = l.n;
             int k = l.size*l.size*l.c;
             int n = l.out_w*l.out_h;
-            float * a = l.weights_gpu;
+            //float * a = l.weights_gpu;
 
             int ldb_align = l.lda_align;
             size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
-            size_t t_intput_size = new_ldb * n;
-            size_t t_bit_input_size = t_intput_size / 8;// +1;
+            //size_t t_intput_size = new_ldb * n;
+            //size_t t_bit_input_size = t_intput_size / 8;// +1;
 
             if (l.c % 32 == 0)
             {
@@ -208,8 +208,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
                 int ldb_align = l.lda_align;
                 size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
-                size_t t_intput_size = new_ldb * l.bit_align;// n;
-                size_t t_bit_input_size = t_intput_size / 8;// +1;
+                //size_t t_intput_size = new_ldb * l.bit_align;// n;
+                //size_t t_bit_input_size = t_intput_size / 8;// +1;
 
                 const int new_c = l.c / 32;
 
@@ -408,7 +408,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     //fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
 
 #ifdef CUDNN
-    float one = 1;    // alpha[0], beta[0] is float for HALF and FLOAT
+    //float one = 1;    // alpha[0], beta[0] is float for HALF and FLOAT
     float alpha = 1, beta = 0;
 
 //#ifdef CUDNN_HALF
@@ -609,7 +609,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
     if(l.xnor) state.input = l.binary_input_gpu;
 #ifdef CUDNN
-    float one = 1;
+    float one = 1.f;
     float alpha = 1, beta = 0;
 
 //#ifdef CUDNN_HALF
