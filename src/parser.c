@@ -629,6 +629,7 @@ learning_rate_policy get_policy(char *s)
     if (strcmp(s, "exp")==0) return EXP;
     if (strcmp(s, "sigmoid")==0) return SIG;
     if (strcmp(s, "steps")==0) return STEPS;
+    if (strcmp(s, "sgdr")==0) return SGDR;
     fprintf(stderr, "Couldn't find policy %s, going with constant\n", s);
     return CONSTANT;
 }
@@ -637,6 +638,8 @@ void parse_net_options(list *options, network *net)
 {
     net->batch = option_find_int(options, "batch",1);
     net->learning_rate = option_find_float(options, "learning_rate", .001);
+    net->learning_rate_min = option_find_float_quiet(options, "learning_rate_min", .00001);
+    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", 500);
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
     int subdivs = option_find_int(options, "subdivisions",1);
