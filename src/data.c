@@ -766,13 +766,6 @@ static box float_to_box_stride(float *f, int stride)
 }
 
 #ifdef OPENCV
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/core/version.hpp>
-#ifndef CV_VERSION_EPOCH
-#include <opencv2/videoio/videoio_c.h>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
-#endif
 
 #include "http_stream.h"
 
@@ -799,8 +792,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
         const char *filename = random_paths[i];
 
         int flag = (c >= 3);
-        IplImage *src;
-        if ((src = cvLoadImage(filename, flag)) == 0)
+        mat_cv *src;
+        if ((src = load_image_mat_cv(filename, flag)) == 0)
         {
             fprintf(stderr, "Cannot load image \"%s\"\n", filename);
             char buff[256];
@@ -811,8 +804,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             //exit(0);
         }
 
-        int oh = src->height;
-        int ow = src->width;
+        int oh = get_height_cv(src);
+        int ow = get_width_cv(src);
 
         int dw = (ow*jitter);
         int dh = (oh*jitter);
@@ -851,7 +844,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
         fill_truth_detection(filename, boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy, w, h);
 
-        /*
+        const int show_augmented_images = 0;
+        if(show_augmented_images)
         {
             char buff[10];
             sprintf(buff, "aug_%s_%d", random_paths[i], random_gen());
@@ -867,10 +861,11 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             }
 
             show_image(ai, buff);
-            cvWaitKey(0);
-        }*/
+            wait_until_press_key_cv();
+        }
 
-        cvReleaseImage(&src);
+
+        release_ipl(&src);
     }
     free(random_paths);
     return d;
@@ -959,7 +954,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             }
 
             show_image(sized, buff);
-            cvWaitKey(0);
+            wait_until_press_key_cv();
         }*/
 
         free_image(orig);

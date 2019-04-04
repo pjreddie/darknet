@@ -7,16 +7,9 @@
 #include <float.h>
 #include <string.h>
 #include <math.h>
-#ifdef OPENCV
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/core/types_c.h>
-#include <opencv2/core/version.hpp>
-#ifndef CV_VERSION_EPOCH
-#include <opencv2/videoio/videoio_c.h>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
-#endif
-#endif
+
+#include "image_opencv.h"
+
 #include "box.h"
 #ifdef __cplusplus
 extern "C" {
@@ -92,12 +85,6 @@ image load_image(char *filename, int w, int h, int c);
 //LIB_API image load_image_color(char *filename, int w, int h);
 image **load_alphabet();
 
-#ifdef OPENCV
-image get_image_from_stream(CvCapture* cap);
-image get_image_from_stream_cpp(CvCapture* cap);
-image ipl_to_image(IplImage* src);
-void save_cv_png(IplImage *img, const char *name);
-#endif
 //float get_pixel(image m, int x, int y, int c);
 //float get_pixel_extend(image m, int x, int y, int c);
 //void set_pixel(image m, int x, int y, int c, float val);

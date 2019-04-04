@@ -10,6 +10,8 @@ ImageNet: http://imagenet.stanford.edu/download.php
 
 ImageNet (ILSVRC2012): http://www.image-net.org/challenges/LSVRC/2012/nonpub-downloads
 
+ImageNet (ILSVRC2015): http://image-net.org/small/download.php
+
 Open Images: https://storage.googleapis.com/openimages/web/download.html
 
 Cityscapes: https://www.cityscapes-dataset.com/

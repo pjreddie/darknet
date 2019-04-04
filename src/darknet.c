@@ -12,9 +12,6 @@
 #include "blas.h"
 #include "connected_layer.h"
 
-#ifdef OPENCV
-#include <opencv2/highgui/highgui_c.h>
-#endif
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void run_voxel(int argc, char **argv);
@@ -426,7 +423,7 @@ void visualize(char *cfgfile, char *weightfile)
     }
     visualize_network(net);
 #ifdef OPENCV
-    cvWaitKey(0);
+    wait_until_press_key_cv();
 #endif
 }
 

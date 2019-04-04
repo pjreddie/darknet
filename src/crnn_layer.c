@@ -263,13 +263,13 @@ void forward_crnn_layer_gpu(layer l, network_state state)
     s.train = state.train;
     s.workspace = state.workspace;
     s.net = state.net;
-    //if(!state.train) s.index = state.index;  // don't use TC at all (especially without cuda_convert_f32_to_f16() )
+    if(!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
     int i;
     layer input_layer = *(l.input_layer);
     layer self_layer = *(l.self_layer);
     layer output_layer = *(l.output_layer);
 
-
+/*
 #ifdef CUDNN_HALF   // slow and bad for training
     if (!state.train && state.net.cudnn_half) {
         s.index = state.index;
@@ -278,7 +278,7 @@ void forward_crnn_layer_gpu(layer l, network_state state)
         cuda_convert_f32_to_f16(output_layer.weights_gpu, output_layer.c*output_layer.n*output_layer.size*output_layer.size, output_layer.weights_gpu16);
     }
 #endif  //CUDNN_HALF
-
+*/
 
     if (state.train) {
         fill_ongpu(l.outputs * l.batch * l.steps, 0, output_layer.delta_gpu, 1);

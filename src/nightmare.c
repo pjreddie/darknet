@@ -4,10 +4,6 @@
 #include "blas.h"
 #include "utils.h"
 
-#ifdef OPENCV
-#include <opencv2/highgui/highgui_c.h>
-#endif
-
 // ./darknet nightmare cfg/extractor.recon.cfg ~/trained/yolo-coco.conv frame6.png -reconstruct -iters 500 -i 3 -lambda .1 -rate .01 -smooth 2
 
 float abs_mean(float *x, int n)
@@ -268,7 +264,7 @@ void run_nightmare(int argc, char **argv)
                 //if ((n+1)%30 == 0) rate *= .5;
                 show_image(im, "reconstruction");
 #ifdef OPENCV
-                cvWaitKey(10);
+                wait_key_cv(10);
 #endif
             }else{
                 int layer = max_layer + rand()%range - range/2;
@@ -291,7 +287,7 @@ void run_nightmare(int argc, char **argv)
         printf("%d %s\n", e, buff);
         save_image(im, buff);
         //show_image(im, buff);
-        //cvWaitKey(0);
+        //wait_key_cv(0);
 
         if(rotate){
             image rot = rotate_image(im, rotate);

@@ -16,14 +16,8 @@
 
 
 #ifdef OPENCV
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/core/version.hpp>
-#ifndef CV_VERSION_EPOCH
-#include <opencv2/videoio/videoio_c.h>
-#endif
+
 #include "http_stream.h"
-image get_image_from_stream(CvCapture *cap);
 
 static char **demo_names;
 static image **demo_alphabet;
@@ -35,7 +29,8 @@ static detection *dets = NULL;
 static network net;
 static image in_s ;
 static image det_s;
-static CvCapture * cap;
+
+static cap_cv *cap;
 static int cpp_video_capture = 0;
 static float fps = 0;
 static float demo_thresh = 0;
@@ -46,33 +41,24 @@ static int demo_json_port = -1;
 static float* predictions[NFRAMES];
 static int demo_index = 0;
 static image images[NFRAMES];
-static IplImage* ipl_images[NFRAMES];
+static mat_cv* cv_images[NFRAMES];
 static float *avg;
 
-void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
-void show_image_cv_ipl(IplImage *disp, const char *name);
-void save_cv_png(IplImage *img, const char *name);
-void save_cv_jpg(IplImage *img, const char *name);
-image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
-image get_image_from_stream_letterbox(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
-int get_stream_fps(CvCapture *cap, int cpp_video_capture);
-IplImage* in_img;
-IplImage* det_img;
-IplImage* show_img;
+mat_cv* in_img;
+mat_cv* det_img;
+mat_cv* show_img;
 
-static int flag_exit;
-static int letter_box = 0;
+static volatile int flag_exit;
+static volatile int letter_box = 0;
 
 void *fetch_in_thread(void *ptr)
 {
-    //in = get_image_from_stream(cap);
     int dont_close_stream = 0;    // set 1 if your IP-camera periodically turns off and turns on video-stream
     if(letter_box)
         in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
     else
         in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
     if(!in_s.data){
-        //error("Stream closed.");
         printf("Stream closed.\n");
         flag_exit = 1;
         //exit(EXIT_FAILURE);
@@ -95,12 +81,12 @@ void *detect_in_thread(void *ptr)
 
     free_image(det_s);
 
-    ipl_images[demo_index] = det_img;
-    det_img = ipl_images[(demo_index + NFRAMES / 2 + 1) % NFRAMES];
+    cv_images[demo_index] = det_img;
+    det_img = cv_images[(demo_index + NFRAMES / 2 + 1) % NFRAMES];
     demo_index = (demo_index + 1) % NFRAMES;
 
     if (letter_box)
-        dets = get_network_boxes(&net, in_img->width, in_img->height, demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
+        dets = get_network_boxes(&net, get_width_cv(in_img), get_height_cv(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
     else
         dets = get_network_boxes(&net, net.w, net.h, demo_thresh, demo_thresh, 0, 1, &nboxes, 0); // resized
 
@@ -134,7 +120,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    //set_batch_network(&net, 1);
     fuse_conv_batchnorm(net);
     calculate_binary_weights(net);
     srand(2222222);
@@ -193,27 +178,26 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     int count = 0;
     if(!prefix && !dont_show){
-        cvNamedWindow("Demo", CV_WINDOW_NORMAL);
-        cvMoveWindow("Demo", 0, 0);
-        cvResizeWindow("Demo", 1352, 1013);
+        int full_screen = 0;
+        create_window_cv("Demo", full_screen, 1352, 1013);
     }
 
-    CvVideoWriter* output_video_writer = NULL;    // cv::VideoWriter output_video;
+
+    write_cv* output_video_writer = NULL;
     if (out_filename && !flag_exit)
     {
-        CvSize size;
-        size.width = det_img->width, size.height = det_img->height;
         int src_fps = 25;
         src_fps = get_stream_fps(cap, cpp_video_capture);
+        output_video_writer =
+            create_video_writer(out_filename, 'D', 'I', 'V', 'X', src_fps, get_width_cv(det_img), get_height_cv(det_img), 1);
 
-        //const char* output_name = "test_dnn_out.avi";
-        //output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('H', '2', '6', '4'), src_fps, size, 1);
-        output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('D', 'I', 'V', 'X'), src_fps, size, 1);
-        //output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'J', 'P', 'G'), src_fps, size, 1);
-        //output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', 'V'), src_fps, size, 1);
-        //output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', '2'), src_fps, size, 1);
-        //output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('X', 'V', 'I', 'D'), src_fps, size, 1);
-        //output_video_writer = cvCreateVideoWriter(out_filename, CV_FOURCC('W', 'M', 'V', '2'), src_fps, size, 1);
+        //'H', '2', '6', '4'
+        //'D', 'I', 'V', 'X'
+        //'M', 'J', 'P', 'G'
+        //'M', 'P', '4', 'V'
+        //'M', 'P', '4', '2'
+        //'X', 'V', 'I', 'D'
+        //'W', 'M', 'V', '2'
     }
 
     double before = get_wall_time();
@@ -231,9 +215,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             //if (nms) do_nms_obj(local_dets, local_nboxes, l.classes, nms);    // bad results
             if (nms) do_nms_sort(local_dets, local_nboxes, l.classes, nms);
 
-            printf("\033[2J");
-            printf("\033[1;1H");
-            printf("\nFPS:%.1f\n", fps);
+            //printf("\033[2J");
+            //printf("\033[1;1H");
+            //printf("\nFPS:%.1f\n", fps);
             printf("Objects:\n\n");
 
             ++frame_id;
@@ -245,10 +229,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
             free_detections(local_dets, local_nboxes);
 
+            printf("\nFPS:%.1f\n", fps);
+
             if(!prefix){
                 if (!dont_show) {
                     show_image_cv_ipl(show_img, "Demo");
-                    int c = cvWaitKey(1);
+                    int c = wait_key_cv(1);
                     if (c == 10) {
                         if (frame_skip == 0) frame_skip = 60;
                         else if (frame_skip == 4) frame_skip = 0;
@@ -276,11 +262,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
             // save video file
             if (output_video_writer && show_img) {
-                cvWriteFrame(output_video_writer, show_img);
+                write_frame_cv(output_video_writer, show_img);
                 printf("\n cvWriteFrame \n");
             }
 
-            cvReleaseImage(&show_img);
+            release_ipl(&show_img);
 
             pthread_join(fetch_thread, 0);
             pthread_join(detect_thread, 0);
@@ -307,13 +293,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     }
     printf("input video stream closed. \n");
     if (output_video_writer) {
-        cvReleaseVideoWriter(&output_video_writer);
+        release_video_writer(&output_video_writer);
         printf("output_video_writer closed. \n");
     }
 
     // free memory
-    cvReleaseImage(&show_img);
-    cvReleaseImage(&in_img);
+    release_ipl(&show_img);
+    release_ipl(&in_img);
     free_image(in_s);
 
     free(avg);

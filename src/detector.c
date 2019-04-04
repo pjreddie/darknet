@@ -16,37 +16,6 @@ typedef __compar_fn_t comparison_fn_t;
 #endif
 #endif
 
-#ifdef OPENCV
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/core/core_c.h>
-//#include "opencv2/core/core.hpp"
-#include <opencv2/core/version.hpp>
-#include <opencv2/imgproc/imgproc_c.h>
-
-#ifndef CV_VERSION_EPOCH
-#include <opencv2/videoio/videoio_c.h>
-#define OPENCV_VERSION CVAUX_STR(CV_VERSION_MAJOR)"" CVAUX_STR(CV_VERSION_MINOR)"" CVAUX_STR(CV_VERSION_REVISION)
-#ifndef USE_CMAKE_LIBS
-#pragma comment(lib, "opencv_world" OPENCV_VERSION ".lib")
-#endif    // USE_CMAKE_LIBS
-#else
-#define OPENCV_VERSION CVAUX_STR(CV_VERSION_EPOCH)"" CVAUX_STR(CV_VERSION_MAJOR)"" CVAUX_STR(CV_VERSION_MINOR)
-#ifndef USE_CMAKE_LIBS
-#pragma comment(lib, "opencv_core" OPENCV_VERSION ".lib")
-#pragma comment(lib, "opencv_imgproc" OPENCV_VERSION ".lib")
-#pragma comment(lib, "opencv_highgui" OPENCV_VERSION ".lib")
-#endif    // USE_CMAKE_LIBS
-#endif
-IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show);
-
-void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
-    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port);
-#endif // OPENCV
-
-#ifndef CV_RGB
-#define CV_RGB(r, g, b) cvScalar( (b), (g), (r), 0 )
-#endif    // OPENCV
-
 #include "http_stream.h"
 
 int check_mistakes;
@@ -83,16 +52,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         for (k = 0; k < net_map.n; ++k) {
                 free_layer(net_map.layers[k]);
         }
-        /*
-#ifdef GPU
-        cuda_free(net_map.workspace);
-        cuda_free(net_map.input_state_gpu);
-        if (*net_map.input16_gpu) cuda_free(*net_map.input16_gpu);
-        if (*net_map.output16_gpu) cuda_free(*net_map.output16_gpu);
-#else
-        free(net_map.workspace);
-#endif
-        */
     }
 
     srand(time(0));
@@ -172,7 +131,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #ifdef OPENCV
     args.threads = 3 * ngpus;   // Amazon EC2 Tesla V100: p3.2xlarge (8 logical cores) - p3.16xlarge
     //args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores)
-    IplImage* img = NULL;
+    mat_cv* img = NULL;
     float max_img_loss = 5;
     int number_of_lines = 100;
     int img_size = 1000;
@@ -249,7 +208,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         float loss = 0;
 #ifdef GPU
         if (ngpus == 1) {
-            loss = train_network(net, train);
+            loss = train_network_waitkey(net, train, 1);
         }
         else {
             loss = train_networks(nets, ngpus, train, 4);
@@ -340,8 +299,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     save_weights(net, buff);
 
 #ifdef OPENCV
-    cvReleaseImage(&img);
-    cvDestroyAllWindows();
+    release_ipl(&img);
+    destroy_all_windows_cv();
 #endif
 
     // free memory
@@ -1263,56 +1222,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 
     if (show) {
 #ifdef OPENCV
-        CvMat* labels = cvCreateMat(number_of_boxes, 1, CV_32SC1);
-        CvMat* points = cvCreateMat(number_of_boxes, 2, CV_32FC1);
-        CvMat* centers = cvCreateMat(num_of_clusters, 2, CV_32FC1);
-
-        for (i = 0; i < number_of_boxes; ++i) {
-            points->data.fl[i * 2] = rel_width_height_array[i * 2];
-            points->data.fl[i * 2 + 1] = rel_width_height_array[i * 2 + 1];
-            //cvSet1D(points, i * 2, cvScalar(rel_width_height_array[i * 2], 0, 0, 0));
-            //cvSet1D(points, i * 2 + 1, cvScalar(rel_width_height_array[i * 2 + 1], 0, 0, 0));
-        }
-
-        for (i = 0; i < num_of_clusters; ++i) {
-            centers->data.fl[i * 2] = anchors_data.centers.vals[i][0];
-            centers->data.fl[i * 2 + 1] = anchors_data.centers.vals[i][1];
-        }
-
-        for (i = 0; i < number_of_boxes; ++i) {
-            labels->data.i[i] = anchors_data.assignments[i];
-        }
-
-        size_t img_size = 700;
-        IplImage* img = cvCreateImage(cvSize(img_size, img_size), 8, 3);
-        cvZero(img);
-        for (j = 0; j < num_of_clusters; ++j) {
-            CvPoint pt1, pt2;
-            pt1.x = pt1.y = 0;
-            pt2.x = centers->data.fl[j * 2] * img_size / width;
-            pt2.y = centers->data.fl[j * 2 + 1] * img_size / height;
-            cvRectangle(img, pt1, pt2, CV_RGB(255, 255, 255), 1, 8, 0);
-        }
-
-        for (i = 0; i < number_of_boxes; ++i) {
-            CvPoint pt;
-            pt.x = points->data.fl[i * 2] * img_size / width;
-            pt.y = points->data.fl[i * 2 + 1] * img_size / height;
-            int cluster_idx = labels->data.i[i];
-            int red_id = (cluster_idx * (uint64_t)123 + 55) % 255;
-            int green_id = (cluster_idx * (uint64_t)321 + 33) % 255;
-            int blue_id = (cluster_idx * (uint64_t)11 + 99) % 255;
-            cvCircle(img, pt, 1, CV_RGB(red_id, green_id, blue_id), CV_FILLED, 8, 0);
-            //if(pt.x > img_size || pt.y > img_size) printf("\n pt.x = %d, pt.y = %d \n", pt.x, pt.y);
-        }
-        save_cv_png(img, "cloud.png");
-        cvShowImage("clusters", img);
-        cvWaitKey(0);
-        cvReleaseImage(&img);
-        cvDestroyAllWindows();
-        cvReleaseMat(&labels);
-        cvReleaseMat(&points);
-        cvReleaseMat(&centers);
+        show_acnhors(number_of_boxes, num_of_clusters, rel_width_height_array, anchors_data, width, height);
 #endif // OPENCV
     }
     free(rel_width_height_array);
@@ -1334,7 +1244,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     if (weightfile) {
         load_weights(&net, weightfile);
     }
-    //set_batch_network(&net, 1);
     fuse_conv_batchnorm(net);
     calculate_binary_weights(net);
     if (net.layers[net.n - 1].classes != names_size) {
@@ -1439,14 +1348,12 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
-        //free(boxes);
-        //free_ptrs((void **)probs, l.w*l.h*l.n);
-#ifdef OPENCV
+
         if (!dont_show) {
-            cvWaitKey(0);
-            cvDestroyAllWindows();
+            wait_until_press_key_cv();
+            destroy_all_windows_cv();
         }
-#endif
+
         if (filename) break;
     }
 

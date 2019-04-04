@@ -116,6 +116,7 @@ void backward_network(network net, network_state state);
 void update_network(network net);
 
 float train_network(network net, data d);
+float train_network_waitkey(network net, data d, int is_main_thread);
 float train_network_batch(network net, data d, int n);
 float train_network_sgd(network net, data d, int n);
 float train_network_datum(network net, float *x, float *y);
