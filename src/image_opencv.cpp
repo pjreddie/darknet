@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <opencv2/world.hpp>
+//#include <opencv2/world.hpp>
 #include <opencv2/core/version.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/opencv_modules.hpp>
