@@ -7,15 +7,18 @@
 #include <stdlib.h>
 #include <math.h>
 
-//#include <opencv2/world.hpp>
 #include <opencv2/core/version.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/opencv_modules.hpp>
 
-#include <opencv2/highgui.hpp>
-#include <opencv2/video.hpp>
-#include <opencv2/videoio.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/video/video.hpp>
+#ifndef CV_VERSION_EPOCH
+#include <opencv2/core/types.hpp>
+#include <opencv2/videoio/videoio.hpp>
+#include <opencv2/imgcodecs/imgcodecs.hpp>
+#endif
 
 using namespace cv;
 
@@ -239,7 +242,7 @@ image mat_to_image(Mat m)
 void create_window_cv(char const* window_name, int full_screen, int width, int height)
 {
     int window_type = WINDOW_NORMAL;
-    if (full_screen) window_type = WINDOW_FULLSCREEN;
+    if (full_screen) window_type = CV_WINDOW_FULLSCREEN;
 
     cv::namedWindow(window_name, window_type);
     cv::moveWindow(window_name, 0, 0);
@@ -269,7 +272,7 @@ void make_window(char *name, int w, int h, int fullscreen)
 {
     cv::namedWindow(name, WINDOW_NORMAL);
     if (fullscreen) {
-        cv::setWindowProperty(name, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+        cv::setWindowProperty(name, WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
     }
     else {
         cv::resizeWindow(name, w, h);
