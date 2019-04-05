@@ -15,19 +15,28 @@ typedef struct mat_cv mat_cv;
 typedef struct cap_cv cap_cv;
 typedef struct write_cv write_cv;
 
-// cv::Mat / IplImage
-image load_image_cv(char *filename, int channels);
+// cv::Mat
 mat_cv *load_image_mat_cv(const char *filename, int flag);
+image load_image_cv(char *filename, int channels);
 image load_image_resize(char *filename, int w, int h, int c, image *im);
+int get_width_mat(mat_cv *mat);
+int get_height_mat(mat_cv *mat);
+void release_mat(mat_cv **mat);
+
+// IplImage
 int get_width_cv(mat_cv *ipl);
 int get_height_cv(mat_cv *ipl);
 void release_ipl(mat_cv **ipl);
 
-// image-to-ipl, ipl-to-image
+// image-to-ipl, ipl-to-image, image_to_mat, mat_to_image
 mat_cv *image_to_ipl(image im);
-image ipl_to_image_custom(mat_cv* src);
-// Mat image_to_mat(image im);
-// image mat_to_image(Mat m)
+image ipl_to_image(mat_cv* src_ptr);
+// mat_cv *image_to_ipl(image im)
+// image ipl_to_image(mat_cv* src_ptr)
+// cv::Mat ipl_to_mat(IplImage *ipl)
+// IplImage *mat_to_ipl(cv::Mat mat)
+// Mat image_to_mat(image img)
+// image mat_to_image(cv::Mat mat)
 
 // Window
 void create_window_cv(char const* window_name, int full_screen, int width, int height);
@@ -37,6 +46,7 @@ int wait_until_press_key_cv();
 void make_window(char *name, int w, int h, int fullscreen);
 void show_image_cv(image p, const char *name);
 void show_image_cv_ipl(mat_cv *disp, const char *name);
+void show_image_mat(mat_cv *mat_ptr, const char *name);
 
 // Video Writer
 write_cv *create_video_writer(char *out_filename, char c1, char c2, char c3, char c4, int fps, int width, int height, int is_color);
@@ -80,7 +90,7 @@ void draw_train_loss(mat_cv* img, int img_size, float avg_loss, float max_img_lo
     float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port);
 
 // Data augmentation
-image image_data_augmentation(mat_cv* ipl, int w, int h,
+image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
     float jitter, float dhue, float dsat, float dexp);
 

@@ -3,9 +3,13 @@
 #ifdef OPENCV
 #include "utils.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <string>
+#include <vector>
+#include <iostream>
+#include <fstream>
 
 #include <opencv2/core/version.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -63,82 +67,138 @@ extern "C" {
     struct write_cv : cv::VideoWriter { int a[0]; };
 
 // ====================================================================
-// cv::Mat / IplImage
+// cv::Mat
 // ====================================================================
-image ipl_to_image(IplImage* src);
+    image mat_to_image(cv::Mat mat);
+    cv::Mat image_to_mat(image img);
+    image ipl_to_image(mat_cv* src);
+    mat_cv *image_to_ipl(image img);
+    cv::Mat ipl_to_mat(IplImage *ipl);
+    IplImage *mat_to_ipl(cv::Mat mat);
 
-image load_image_cv(char *filename, int channels)
-{
-    IplImage* src = 0;
-    int flag = -1;
-    if (channels == 0) flag = 1;
-    else if (channels == 1) flag = 0;
-    else if (channels == 3) flag = 1;
-    else {
-        fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
-    }
-
-    if ((src = cvLoadImage(filename, flag)) == 0)
-    {
-        char shrinked_filename[1024];
-        if (strlen(filename) >= 1024) sprintf(shrinked_filename, "name is too long");
-        else sprintf(shrinked_filename, "%s", filename);
-        fprintf(stderr, "Cannot load image \"%s\"\n", shrinked_filename);
-        FILE* fw = fopen("bad.list", "a");
-        fwrite(shrinked_filename, sizeof(char), strlen(shrinked_filename), fw);
-        char *new_line = "\n";
-        fwrite(new_line, sizeof(char), strlen(new_line), fw);
-        fclose(fw);
-        //if (check_mistakes) getchar();
-        return make_image(10, 10, 3);
-        //exit(EXIT_FAILURE);
-    }
-    image out = ipl_to_image(src);
-    cvReleaseImage(&src);
-    if (out.c > 1)
-        rgbgr_image(out);
-    return out;
-}
-// ----------------------------------------
 
 mat_cv *load_image_mat_cv(const char *filename, int flag)
 {
-    return (mat_cv *)cvLoadImage(filename, flag);
+    try {
+        cv::Mat *mat_ptr = new cv::Mat();
+        cv::Mat &mat = *mat_ptr;
+        mat = cv::imread(filename, flag);
+        if (mat.empty())
+        {
+            delete mat_ptr;
+            std::string shrinked_filename = filename;
+            if (shrinked_filename.length() > 1024) {
+                shrinked_filename += "name is too long: ";
+                shrinked_filename.resize(1024);
+            }
+            cerr << "Cannot load image " << shrinked_filename << std::endl;
+            std::ofstream bad_list("bad.list", std::ios::out | std::ios::app);
+            bad_list << shrinked_filename << std::endl;
+            //if (check_mistakes) getchar();
+            delete mat_ptr;
+            return NULL;
+        }
+        cv::cvtColor(mat, mat, CV_RGB2BGR);
+
+        return (mat_cv *)mat_ptr;
+    }
+    catch (...) {
+        cerr << "OpenCV exception: load_image_mat_cv \n";
+    }
+    return NULL;
 }
 // ----------------------------------------
 
+cv::Mat load_image_mat(char *filename, int channels)
+{
+    int flag = IMREAD_UNCHANGED;
+    if (channels == 0) flag = IMREAD_COLOR;
+    else if (channels == 1) flag = IMREAD_GRAYSCALE;
+    else if (channels == 3) flag = IMREAD_COLOR;
+    else {
+        fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
+    }
+    //flag |= IMREAD_IGNORE_ORIENTATION;    // un-comment it if you want
+
+    cv::Mat *mat_ptr = (cv::Mat *)load_image_mat_cv(filename, flag);
+
+    if (mat_ptr == NULL) {
+        return cv::Mat();
+    }
+    cv::Mat mat = *mat_ptr;
+    delete mat_ptr;
+
+    return mat;
+}
+// ----------------------------------------
+
+image load_image_cv(char *filename, int channels)
+{
+    cv::Mat mat = load_image_mat(filename, channels);
+
+    if (mat.empty()) {
+        return make_image(10, 10, 3);
+    }
+    return mat_to_image(mat);
+}
+// ----------------------------------------
 
 image load_image_resize(char *filename, int w, int h, int c, image *im)
 {
     image out;
-    cv::Mat img(h, w, CV_8UC3);
     try {
-        int flag = -1;
-        if (c == 0) flag = 1;
-        else if (c == 1) { flag = 0; img = cv::Mat(h, w, CV_8UC1); }
-        else if (c == 3) { flag = 1; img = cv::Mat(h, w, CV_8UC3); }
-        else {
-            cerr << "OpenCV can't force load with " << c << " channels\n";
-        }
-        //throw std::runtime_error("runtime_error");
-        cv::Mat loaded_image = cv::imread(filename, flag);
-        cv::cvtColor(loaded_image, loaded_image, cv::COLOR_RGB2BGR);
-        IplImage tmp1 = loaded_image;
-        *im = ipl_to_image(&tmp1);
+        cv::Mat loaded_image = load_image_mat(filename, c);
 
-        cv::resize(loaded_image, img, cv::Size(w, h), 0, 0, CV_INTER_LINEAR);
+        *im = mat_to_image(loaded_image);
 
-        IplImage tmp2 = img;
-        out = ipl_to_image(&tmp2);
+        cv::Mat resized(h, w, CV_8UC3);
+        cv::resize(loaded_image, resized, cv::Size(w, h), 0, 0, CV_INTER_LINEAR);
+        out = mat_to_image(resized);
     }
     catch (...) {
-        cerr << "OpenCV can't load image %s " << filename << " \n";
+        cerr << " OpenCV exception: load_image_resize() can't load image %s " << filename << " \n";
         out = make_image(w, h, c);
         *im = make_image(w, h, c);
     }
     return out;
 }
 // ----------------------------------------
+
+int get_width_mat(mat_cv *mat)
+{
+    if (mat == NULL) {
+        cerr << " Pointer is NULL in get_width_mat() \n";
+        return 0;
+    }
+    return ((cv::Mat *)mat)->cols;
+}
+// ----------------------------------------
+
+int get_height_mat(mat_cv *mat)
+{
+    if (mat == NULL) {
+        cerr << " Pointer is NULL in get_height_mat() \n";
+        return 0;
+    }
+    return ((cv::Mat *)mat)->rows;
+}
+// ----------------------------------------
+
+void release_mat(mat_cv **mat)
+{
+    try {
+        cv::Mat **mat_ptr = (cv::Mat **)mat;
+        if (*mat_ptr) delete *mat_ptr;
+        *mat_ptr = NULL;
+    }
+    catch (...) {
+        cerr << "OpenCV exception: release_mat \n";
+    }
+}
+
+// ====================================================================
+// IplImage
+// ====================================================================
 
 int get_width_cv(mat_cv *ipl_src)
 {
@@ -149,7 +209,6 @@ int get_width_cv(mat_cv *ipl_src)
 
 int get_height_cv(mat_cv *ipl)
 {
-    //IplImage *ipl = (IplImage *)ipl_src;
     return ipl->height;
 }
 // ----------------------------------------
@@ -160,9 +219,10 @@ void release_ipl(mat_cv **ipl)
     if (*ipl_img) cvReleaseImage(ipl_img);
     *ipl_img = NULL;
 }
+// ----------------------------------------
 
 // ====================================================================
-// image-to-ipl, ipl-to-image
+// image-to-ipl, ipl-to-image, image_to_mat, mat_to_image
 // ====================================================================
 mat_cv *image_to_ipl(image im)
 {
@@ -181,8 +241,9 @@ mat_cv *image_to_ipl(image im)
 }
 // ----------------------------------------
 
-image ipl_to_image(IplImage* src)
+image ipl_to_image(mat_cv* src_ptr)
 {
+    IplImage* src = (IplImage*)src_ptr;
     int h = src->height;
     int w = src->width;
     int c = src->nChannels;
@@ -202,17 +263,12 @@ image ipl_to_image(IplImage* src)
 }
 // ----------------------------------------
 
-image ipl_to_image_custom(mat_cv* src)
-{
-    return ipl_to_image(src);
-}
-// ----------------------------------------
-
 cv::Mat ipl_to_mat(IplImage *ipl)
 {
     Mat m = cvarrToMat(ipl, true);
     return m;
 }
+// ----------------------------------------
 
 IplImage *mat_to_ipl(cv::Mat mat)
 {
@@ -220,26 +276,47 @@ IplImage *mat_to_ipl(cv::Mat mat)
     *ipl = mat;
     return ipl;
 }
+// ----------------------------------------
 
-Mat image_to_mat(image im)
+Mat image_to_mat(image img)
 {
-    image copy = copy_image(im);
-    constrain_image(copy);
-    if (im.c == 3) rgbgr_image(copy);
+    int channels = img.c;
+    int width = img.w;
+    int height = img.h;
+    cv::Mat mat = cv::Mat(height, width, CV_8UC(channels));
+    int step = mat.step;
 
-    IplImage *ipl = image_to_ipl(copy);
-    Mat m = cvarrToMat(ipl, true);
-    cvReleaseImage(&ipl);
-    free_image(copy);
-    return m;
+    for (int y = 0; y < img.h; ++y) {
+        for (int x = 0; x < img.w; ++x) {
+            for (int c = 0; c < img.c; ++c) {
+                float val = img.data[c*img.h*img.w + y*img.w + x];
+                mat.data[y*step + x*img.c + c] = (unsigned char)(val * 255);
+            }
+        }
+    }
+    return mat;
 }
 // ----------------------------------------
 
-image mat_to_image(Mat m)
+image mat_to_image(cv::Mat mat)
 {
-    IplImage ipl = m;
-    image im = ipl_to_image((mat_cv *)&ipl);
-    rgbgr_image(im);
+    int w = mat.cols;
+    int h = mat.rows;
+    int c = mat.channels();
+    image im = make_image(w, h, c);
+    unsigned char *data = (unsigned char *)mat.data;
+    int step = mat.step;
+    for (int y = 0; y < h; ++y) {
+        for (int k = 0; k < c; ++k) {
+            for (int x = 0; x < w; ++x) {
+                //uint8_t val = mat.ptr<uint8_t>(y)[c * x + k];
+                //uint8_t val = mat.at<Vec3b>(y, x).val[k];
+                //im.data[k*w*h + y*w + x] = val / 255.0f;
+
+                im.data[k*w*h + y*w + x] = data[y*step + x*c + k] / 255.0f;
+            }
+        }
+    }
     return im;
 }
 
@@ -248,24 +325,40 @@ image mat_to_image(Mat m)
 // ====================================================================
 void create_window_cv(char const* window_name, int full_screen, int width, int height)
 {
-    int window_type = WINDOW_NORMAL;
-    if (full_screen) window_type = CV_WINDOW_FULLSCREEN;
+    try {
+        int window_type = WINDOW_NORMAL;
+        if (full_screen) window_type = CV_WINDOW_FULLSCREEN;
 
-    cv::namedWindow(window_name, window_type);
-    cv::moveWindow(window_name, 0, 0);
-    cv::resizeWindow(window_name, width, height);
+        cv::namedWindow(window_name, window_type);
+        cv::moveWindow(window_name, 0, 0);
+        cv::resizeWindow(window_name, width, height);
+    }
+    catch (...) {
+        cerr << "OpenCV exception: create_window_cv \n";
+    }
 }
 // ----------------------------------------
 
 void destroy_all_windows_cv()
 {
-    cv::destroyAllWindows();
+    try {
+        cv::destroyAllWindows();
+    }
+    catch (...) {
+        cerr << "OpenCV exception: destroy_all_windows_cv \n";
+    }
 }
 // ----------------------------------------
 
 int wait_key_cv(int delay)
 {
-    return cv::waitKey(delay);
+    try {
+        return cv::waitKey(delay);
+    }
+    catch (...) {
+        cerr << "OpenCV exception: wait_key_cv \n";
+    }
+    return -1;
 }
 // ----------------------------------------
 
@@ -277,13 +370,18 @@ int wait_until_press_key_cv()
 
 void make_window(char *name, int w, int h, int fullscreen)
 {
-    cv::namedWindow(name, WINDOW_NORMAL);
-    if (fullscreen) {
-        cv::setWindowProperty(name, WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+    try {
+        cv::namedWindow(name, WINDOW_NORMAL);
+        if (fullscreen) {
+            cv::setWindowProperty(name, WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+        }
+        else {
+            cv::resizeWindow(name, w, h);
+            if (strcmp(name, "Demo") == 0) cv::moveWindow(name, 0, 0);
+        }
     }
-    else {
-        cv::resizeWindow(name, w, h);
-        if (strcmp(name, "Demo") == 0) cv::moveWindow(name, 0, 0);
+    catch (...) {
+        cerr << "OpenCV exception: make_window \n";
     }
 }
 // ----------------------------------------
@@ -297,44 +395,19 @@ static float get_pixel(image m, int x, int y, int c)
 
 void show_image_cv(image p, const char *name)
 {
-    int x, y, k;
-    image copy = copy_image(p);
-    constrain_image(copy);
-    if (p.c == 3) rgbgr_image(copy);
-    //normalize_image(copy);
+    try {
+        image copy = copy_image(p);
+        constrain_image(copy);
 
-    char buff[256];
-    //sprintf(buff, "%s (%d)", name, windows);
-    sprintf(buff, "%s", name);
-
-    IplImage *disp = cvCreateImage(cvSize(p.w, p.h), IPL_DEPTH_8U, p.c);
-    int step = disp->widthStep;
-    cvNamedWindow(buff, CV_WINDOW_NORMAL);
-    //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
-    //++windows;
-    for (y = 0; y < p.h; ++y) {
-        for (x = 0; x < p.w; ++x) {
-            for (k = 0; k < p.c; ++k) {
-                disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy, x, y, k) * 255);
-            }
-        }
+        cv::Mat mat = image_to_mat(copy);
+        cv::cvtColor(mat, mat, CV_RGB2BGR);
+        cv::namedWindow(name, WINDOW_NORMAL);
+        cv::imshow(name, mat);
+        free_image(copy);
     }
-    free_image(copy);
-    if (0) {
-        int w = 448;
-        int h = w*p.h / p.w;
-        if (h > 1000) {
-            h = 1000;
-            w = h*p.w / p.h;
-        }
-        IplImage *buffer = disp;
-        disp = cvCreateImage(cvSize(w, h), buffer->depth, buffer->nChannels);
-        cvResize(buffer, disp, CV_INTER_LINEAR);
-        cvReleaseImage(&buffer);
+    catch (...) {
+        cerr << "OpenCV exception: show_image_cv \n";
     }
-    cvShowImage(buff, disp);
-
-    cvReleaseImage(&disp);
 }
 // ----------------------------------------
 
@@ -346,7 +419,20 @@ void show_image_cv_ipl(mat_cv *disp, const char *name)
     cv::namedWindow(buff, WINDOW_NORMAL);
     cvShowImage(buff, disp);
 }
+// ----------------------------------------
 
+void show_image_mat(mat_cv *mat_ptr, const char *name)
+{
+    try {
+        if (mat_ptr == NULL) return;
+        cv::Mat &mat = *(cv::Mat *)mat_ptr;
+        cv::namedWindow(name, WINDOW_NORMAL);
+        cv::imshow(name, mat);
+    }
+    catch (...) {
+        cerr << "OpenCV exception: show_image_mat \n";
+    }
+}
 
 // ====================================================================
 // Video Writer
@@ -598,7 +684,7 @@ image get_image_from_stream_cpp(cap_cv *cap)
         src = get_capture_frame_cv(cap);
 
     if (!src) return make_empty_image(0, 0, 0);
-    image im = ipl_to_image(src);
+    image im = ipl_to_image((mat_cv*)src);
     rgbgr_image(im);
     return im;
 }
@@ -648,7 +734,7 @@ image get_image_from_stream_resize(cap_cv *cap, int w, int h, int c, mat_cv** in
     *in_img = (mat_cv *)cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, c);
     cvResize(src, *in_img, CV_INTER_LINEAR);
     cvResize(src, new_img, CV_INTER_LINEAR);
-    image im = ipl_to_image(new_img);
+    image im = ipl_to_image((mat_cv*)new_img);
     cvReleaseImage(&new_img);
     cvReleaseImage(&src);
     if (c>1)
@@ -676,7 +762,7 @@ image get_image_from_stream_letterbox(cap_cv *cap, int w, int h, int c, mat_cv**
     if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);
     *in_img = (mat_cv *)cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, c);
     cvResize(src, *in_img, CV_INTER_LINEAR);
-    image tmp = ipl_to_image(src);
+    image tmp = ipl_to_image((mat_cv*)src);
     image im = letterbox_image(tmp, w, h);
     free_image(tmp);
     cvReleaseImage(&src);
@@ -975,13 +1061,13 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
 // ====================================================================
 // Data augmentation
 // ====================================================================
-image image_data_augmentation(mat_cv* ipl, int w, int h,
+image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
     float jitter, float dhue, float dsat, float dexp)
 {
     image out;
     try {
-        cv::Mat img = cv::cvarrToMat(ipl);
+        cv::Mat img = *(cv::Mat *)mat;
 
         // crop
         cv::Rect src_rect(pleft, ptop, swidth, sheight);
@@ -1007,10 +1093,10 @@ image image_data_augmentation(mat_cv* ipl, int w, int h,
 
         // HSV augmentation
         // CV_BGR2HSV, CV_RGB2HSV, CV_HSV2BGR, CV_HSV2RGB
-        if (ipl->nChannels >= 3)
+        if(img.channels() >= 3)
         {
             cv::Mat hsv_src;
-            cvtColor(sized, hsv_src, CV_BGR2HSV);    // also BGR -> RGB
+            cvtColor(sized, hsv_src, CV_RGB2HSV);    // RGB to HSV
 
             std::vector<cv::Mat> hsv;
             cv::split(hsv_src, hsv);
@@ -1021,7 +1107,7 @@ image image_data_augmentation(mat_cv* ipl, int w, int h,
 
             cv::merge(hsv, hsv_src);
 
-            cvtColor(hsv_src, sized, CV_HSV2RGB);    // now RGB instead of BGR
+            cvtColor(hsv_src, sized, CV_HSV2RGB);    // HSV to RGB (the same as previous)
         }
         else
         {
@@ -1033,13 +1119,12 @@ image image_data_augmentation(mat_cv* ipl, int w, int h,
         //cv::imshow(window_name.str(), sized);
         //cv::waitKey(0);
 
-        // Mat -> IplImage -> image
-        IplImage src = sized;
-        out = ipl_to_image(&src);
+        // Mat -> image
+        out = mat_to_image(sized);
     }
     catch (...) {
         cerr << "OpenCV can't augment image: " << w << " x " << h << " \n";
-        out = ipl_to_image(ipl);
+        out = mat_to_image(*(cv::Mat*)mat);
     }
     return out;
 }

@@ -794,19 +794,14 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
         int flag = (c >= 3);
         mat_cv *src;
-        if ((src = load_image_mat_cv(filename, flag)) == 0)
-        {
-            fprintf(stderr, "Cannot load image \"%s\"\n", filename);
-            char buff[256];
-            sprintf(buff, "echo %s >> bad.list", filename);
-            system(buff);
+        src = load_image_mat_cv(filename, flag);
+        if (src == NULL) {
             if (check_mistakes) getchar();
             continue;
-            //exit(0);
         }
 
-        int oh = get_height_cv(src);
-        int ow = get_width_cv(src);
+        int oh = get_height_mat(src);
+        int ow = get_width_mat(src);
 
         int dw = (ow*jitter);
         int dh = (oh*jitter);
@@ -848,7 +843,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
         if(show_imgs)
         {
             char buff[1000];
-            sprintf(buff, "aug_%s_%d", random_paths[i], random_gen());
+            sprintf(buff, "aug_%s_%d", basecfg(random_paths[i]), random_gen());
             int t;
             for (t = 0; t < boxes; ++t) {
                 box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);
@@ -866,7 +861,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             printf("\nYou use flag -show_imgs, so will be saved aug_...jpg images. Click on window and press ESC button \n");
         }
 
-        release_ipl(&src);
+        release_mat(&src);
     }
     free(random_paths);
     return d;
