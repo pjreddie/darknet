@@ -1,13 +1,21 @@
-#ifdef OPENCV
-
 #include "image_opencv.h"
+
+#ifdef OPENCV
 #include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-#include "opencv2/opencv.hpp"
+#include <opencv2/world.hpp>
+#include <opencv2/core/version.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/opencv_modules.hpp>
+
+#include <opencv2/highgui.hpp>
+#include <opencv2/video.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 using namespace cv;
 
@@ -37,8 +45,8 @@ using std::endl;
 #ifndef CV_VERSION_EPOCH
 #include <opencv2/videoio/videoio_c.h>
 #include <opencv2/imgcodecs/imgcodecs_c.h>
-#include "http_stream.h"
 #endif
+
 #include "http_stream.h"
 
 #ifndef CV_RGB
@@ -48,8 +56,8 @@ using std::endl;
 extern "C" {
 
     struct mat_cv :IplImage { int a[0]; };
-    //struct cap_cv : CvCapture { int a[0]; };
-    //struct write_cv : CvVideoWriter { int a[0]; };
+    struct cap_cv : cv::VideoCapture { int a[0]; };
+    struct write_cv : cv::VideoWriter { int a[0]; };
 
 // ====================================================================
 // cv::Mat / IplImage
@@ -197,6 +205,12 @@ image ipl_to_image_custom(mat_cv* src)
 }
 // ----------------------------------------
 
+cv::Mat ipl_to_mat(IplImage *ipl)
+{
+    Mat m = cvarrToMat(ipl, true);
+    return m;
+}
+
 Mat image_to_mat(image im)
 {
     image copy = copy_image(im);
@@ -224,24 +238,24 @@ image mat_to_image(Mat m)
 // ====================================================================
 void create_window_cv(char const* window_name, int full_screen, int width, int height)
 {
-    int window_type = CV_WINDOW_NORMAL;
-    if (full_screen) window_type = CV_WINDOW_FULLSCREEN;
+    int window_type = WINDOW_NORMAL;
+    if (full_screen) window_type = WINDOW_FULLSCREEN;
 
-    cvNamedWindow(window_name, window_type);
-    cvMoveWindow(window_name, 0, 0);
-    cvResizeWindow(window_name, width, height);
+    cv::namedWindow(window_name, window_type);
+    cv::moveWindow(window_name, 0, 0);
+    cv::resizeWindow(window_name, width, height);
 }
 // ----------------------------------------
 
 void destroy_all_windows_cv()
 {
-    cvDestroyAllWindows();
+    cv::destroyAllWindows();
 }
 // ----------------------------------------
 
 int wait_key_cv(int delay)
 {
-    return cvWaitKey(delay);
+    return cv::waitKey(delay);
 }
 // ----------------------------------------
 
@@ -253,13 +267,13 @@ int wait_until_press_key_cv()
 
 void make_window(char *name, int w, int h, int fullscreen)
 {
-    namedWindow(name, WINDOW_NORMAL);
+    cv::namedWindow(name, WINDOW_NORMAL);
     if (fullscreen) {
-        setWindowProperty(name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+        cv::setWindowProperty(name, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
     }
     else {
-        resizeWindow(name, w, h);
-        if (strcmp(name, "Demo") == 0) moveWindow(name, 0, 0);
+        cv::resizeWindow(name, w, h);
+        if (strcmp(name, "Demo") == 0) cv::moveWindow(name, 0, 0);
     }
 }
 // ----------------------------------------
@@ -320,7 +334,7 @@ void show_image_cv_ipl(mat_cv *disp, const char *name)
     char buff[256];
     //sprintf(buff, "%s (%d)", name, windows);
     sprintf(buff, "%s", name);
-    cvNamedWindow(buff, CV_WINDOW_NORMAL);
+    cv::namedWindow(buff, WINDOW_NORMAL);
     //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
     //++windows;
     cvShowImage(buff, disp);
@@ -333,20 +347,47 @@ void show_image_cv_ipl(mat_cv *disp, const char *name)
 // ====================================================================
 write_cv *create_video_writer(char *out_filename, char c1, char c2, char c3, char c4, int fps, int width, int height, int is_color)
 {
-    CvVideoWriter * output_video_writer =
-        cvCreateVideoWriter(out_filename, CV_FOURCC(c1, c2, c3, c4), fps, cvSize(width, height), is_color);
+    try {
+    cv::VideoWriter * output_video_writer =
+        new cv::VideoWriter(out_filename, CV_FOURCC(c1, c2, c3, c4), fps, cv::Size(width, height), is_color);
 
     return (write_cv *)output_video_writer;
+    }
+    catch (...) {
+        cerr << "OpenCV exception: create_video_writer \n";
+    }
+    return NULL;
 }
 
-int write_frame_cv(write_cv *output_video_writer, mat_cv *show_img)
+void write_frame_cv(write_cv *output_video_writer, mat_cv *show_img)
 {
-    return cvWriteFrame((CvVideoWriter *)output_video_writer, show_img);
+    try {
+        cv::VideoWriter *out = (cv::VideoWriter *)output_video_writer;
+        out->write(ipl_to_mat(show_img));
+    }
+    catch (...) {
+        cerr << "OpenCV exception: write_frame_cv \n";
+    }
 }
 
 void release_video_writer(write_cv **output_video_writer)
 {
-    cvReleaseVideoWriter((CvVideoWriter **)output_video_writer);
+    try {
+        if (output_video_writer) {
+            std::cout << " closing...";
+            cv::VideoWriter *out = *(cv::VideoWriter **)output_video_writer;
+            out->release();
+            delete out;
+            output_video_writer = NULL;
+            std::cout << " closed!";
+        }
+        else {
+            cerr << "OpenCV exception: output_video_writer isn't created \n";
+        }
+    }
+    catch (...) {
+        cerr << "OpenCV exception: release_video_writer \n";
+    }
 }
 
 /*
@@ -390,12 +431,12 @@ int show_image_cv(image im, const char* name, int ms)
 // ====================================================================
 
 cap_cv* get_capture_video_stream(const char *path) {
-    CvCapture* cap = NULL;
+    cv::VideoCapture* cap = NULL;
     try {
-        cap = (CvCapture*)new cv::VideoCapture(path);
+        cap = new cv::VideoCapture(path);
     }
     catch (...) {
-        cerr << " Error: video-stream " << path << " can't be opened! \n";
+        cerr << " OpenCV exception: video-stream " << path << " can't be opened! \n";
     }
     return (cap_cv*)cap;
 }
@@ -403,14 +444,14 @@ cap_cv* get_capture_video_stream(const char *path) {
 
 cap_cv* get_capture_webcam(int index)
 {
-    CvCapture* cap = NULL;
+    cv::VideoCapture* cap = NULL;
     try {
-        cap = (CvCapture*)new cv::VideoCapture(index);
-        //((cv::VideoCapture*)cap)->set(CV_CAP_PROP_FRAME_WIDTH, 1280);
-        //((cv::VideoCapture*)cap)->set(CV_CAP_PROP_FRAME_HEIGHT, 960);
+        cap = new cv::VideoCapture(index);
+        //cap->set(CV_CAP_PROP_FRAME_WIDTH, 1280);
+        //cap->set(CV_CAP_PROP_FRAME_HEIGHT, 960);
     }
     catch (...) {
-        cerr << " Error: Web-camera " << index << " can't be opened! \n";
+        cerr << " OpenCV exception: Web-camera " << index << " can't be opened! \n";
     }
     return (cap_cv*)cap;
 }
@@ -423,7 +464,7 @@ void release_capture(cap_cv* cap)
         delete cpp_cap;
     }
     catch (...) {
-        cerr << " Error: cv::VideoCapture " << cap << " can't be released! \n";
+        cerr << " OpenCV exception: cv::VideoCapture " << cap << " can't be released! \n";
     }
 }
 // ----------------------------------------
@@ -431,20 +472,21 @@ void release_capture(cap_cv* cap)
 mat_cv* get_capture_frame_cv(cap_cv *cap) {
     IplImage* src = NULL;
     try {
-        cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
-        cv::Mat frame;
-        if (cpp_cap.isOpened())
-        {
-            cpp_cap >> frame;
-            IplImage tmp = frame;
-            src = cvCloneImage(&tmp);
+        if (cap) {
+            cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
+            cv::Mat frame;
+            if (cpp_cap.isOpened())
+            {
+                cpp_cap >> frame;
+                IplImage tmp = frame;
+                src = cvCloneImage(&tmp);
+            }
+            else std::cout << " Video-stream stopped! \n";
         }
-        else {
-            std::cout << " Video-stream stopped! \n";
-        }
+        else cerr << " cv::VideoCapture isn't created \n";
     }
     catch (...) {
-        std::cout << " Video-stream stoped! \n";
+        std::cout << " OpenCV exception: Video-stream stoped! \n";
     }
     return (mat_cv *)src;
 }
@@ -475,7 +517,7 @@ double get_capture_property_cv(cap_cv *cap, int property_id)
         return cpp_cap.get(property_id);
     }
     catch (...) {
-        cerr << " Can't get property of source video-stream. \n";
+        cerr << " OpenCV exception: Can't get property of source video-stream. \n";
     }
     return 0;
 }
@@ -492,7 +534,7 @@ double get_capture_frame_count_cv(cap_cv *cap)
 #endif
     }
     catch (...) {
-        cerr << " Can't get CAP_PROP_FRAME_COUNT of source videofile. \n";
+        cerr << " OpenCV exception: Can't get CAP_PROP_FRAME_COUNT of source videofile. \n";
     }
     return 0;
 }
@@ -528,50 +570,26 @@ int set_capture_position_frame_cv(cap_cv *cap, int index)
 }
 // ----------------------------------------
 
-// only for using in image_opencv.cpp
-mat_cv* get_capture_frame(CvCapture *cap)
-{
-    return get_capture_frame_cv((cap_cv *)cap);
-}
-// ----------------------------------------
-
-// only for using in image_opencv.cpp
-int get_stream_fps_cpp(CvCapture *cap)
-{
-    return get_stream_fps_cpp_cv((cap_cv *)cap);
-}
 
 
 // ====================================================================
 // ... Video Capture
 // ====================================================================
-image get_image_from_stream(cap_cv *cap_src)
-{
-    CvCapture *cap = (CvCapture *)cap_src;
-    IplImage* src = cvQueryFrame(cap);
-    if (!src) return make_empty_image(0, 0, 0);
-    image im = ipl_to_image(src);
-    rgbgr_image(im);
-    return im;
-}
-// ----------------------------------------
 
-image get_image_from_stream_cpp(cap_cv *cap_src)
+image get_image_from_stream_cpp(cap_cv *cap)
 {
-    CvCapture *cap = (CvCapture *)cap_src;
-    //IplImage* src = cvQueryFrame(cap);
     IplImage* src;
     static int once = 1;
     if (once) {
         once = 0;
         do {
-            src = get_capture_frame(cap);
+            src = get_capture_frame_cv(cap);
             if (!src) return make_empty_image(0, 0, 0);
         } while (src->width < 1 || src->height < 1 || src->nChannels < 1);
         printf("Video stream: %d x %d \n", src->width, src->height);
     }
     else
-        src = get_capture_frame(cap);
+        src = get_capture_frame_cv(cap);
 
     if (!src) return make_empty_image(0, 0, 0);
     image im = ipl_to_image(src);
@@ -580,7 +598,7 @@ image get_image_from_stream_cpp(cap_cv *cap_src)
 }
 // ----------------------------------------
 
-int wait_for_stream(CvCapture *cap, IplImage* src, int dont_close)
+int wait_for_stream(cap_cv *cap, IplImage* src, int dont_close)
 {
     if (!src) {
         if (dont_close) src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, 3);
@@ -591,7 +609,7 @@ int wait_for_stream(CvCapture *cap, IplImage* src, int dont_close)
             cvReleaseImage(&src);
             int z = 0;
             for (z = 0; z < 20; ++z) {
-                get_capture_frame(cap);
+                get_capture_frame_cv(cap);
                 cvReleaseImage(&src);
             }
             src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, 3);
@@ -602,88 +620,64 @@ int wait_for_stream(CvCapture *cap, IplImage* src, int dont_close)
 }
 // ----------------------------------------
 
-image get_image_from_stream_resize(cap_cv *cap_src, int w, int h, int c, mat_cv** in_img, int cpp_video_capture, int dont_close)
+image get_image_from_stream_resize(cap_cv *cap, int w, int h, int c, mat_cv** in_img, int dont_close)
 {
-    CvCapture *cap = (CvCapture *)cap_src;
     c = c ? c : 3;
     IplImage* src;
-    if (cpp_video_capture) {
-        static int once = 1;
-        if (once) {
-            once = 0;
-            do {
-                src = get_capture_frame(cap);
-                if (!src) return make_empty_image(0, 0, 0);
-            } while (src->width < 1 || src->height < 1 || src->nChannels < 1);
-            printf("Video stream: %d x %d \n", src->width, src->height);
-        }
-        else
-            src = get_capture_frame(cap);
-    }
-    else src = cvQueryFrame(cap);
 
-    if (cpp_video_capture)
-        if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);
+    static int once = 1;
+    if (once) {
+        once = 0;
+        do {
+            src = get_capture_frame_cv(cap);
+            if (!src) return make_empty_image(0, 0, 0);
+        } while (src->width < 1 || src->height < 1 || src->nChannels < 1);
+        printf("Video stream: %d x %d \n", src->width, src->height);
+    }
+    else
+        src = get_capture_frame_cv(cap);
+
+    if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);
     IplImage* new_img = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, c);
     *in_img = (mat_cv *)cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, c);
     cvResize(src, *in_img, CV_INTER_LINEAR);
     cvResize(src, new_img, CV_INTER_LINEAR);
     image im = ipl_to_image(new_img);
     cvReleaseImage(&new_img);
-    if (cpp_video_capture) cvReleaseImage(&src);
+    cvReleaseImage(&src);
     if (c>1)
         rgbgr_image(im);
     return im;
 }
 // ----------------------------------------
 
-image get_image_from_stream_letterbox(cap_cv *cap_src, int w, int h, int c, mat_cv** in_img, int cpp_video_capture, int dont_close)
+image get_image_from_stream_letterbox(cap_cv *cap, int w, int h, int c, mat_cv** in_img, int dont_close)
 {
-    CvCapture *cap = (CvCapture *)cap_src;
     c = c ? c : 3;
     IplImage* src;
-    if (cpp_video_capture) {
-        static int once = 1;
-        if (once) {
-            once = 0;
-            do {
-                src = get_capture_frame(cap);
-                if (!src) return make_empty_image(0, 0, 0);
-            } while (src->width < 1 || src->height < 1 || src->nChannels < 1);
-            printf("Video stream: %d x %d \n", src->width, src->height);
-        }
-        else
-            src = get_capture_frame(cap);
+    static int once = 1;
+    if (once) {
+        once = 0;
+        do {
+            src = get_capture_frame_cv(cap);
+            if (!src) return make_empty_image(0, 0, 0);
+        } while (src->width < 1 || src->height < 1 || src->nChannels < 1);
+        printf("Video stream: %d x %d \n", src->width, src->height);
     }
-    else src = cvQueryFrame(cap);
+    else
+        src = get_capture_frame_cv(cap);
 
-    if (cpp_video_capture)
-        if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);
+    if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);
     *in_img = (mat_cv *)cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, c);
     cvResize(src, *in_img, CV_INTER_LINEAR);
     image tmp = ipl_to_image(src);
     image im = letterbox_image(tmp, w, h);
     free_image(tmp);
-    if (cpp_video_capture) cvReleaseImage(&src);
+    cvReleaseImage(&src);
     if (c>1) rgbgr_image(im);
     return im;
 }
 // ----------------------------------------
-
-int get_stream_fps(cap_cv *cap_src, int cpp_video_capture)
-{
-    CvCapture *cap = (CvCapture *)cap_src;
-    int fps = 25;
-    if (cpp_video_capture) {
-        fps = get_stream_fps_cpp(cap);
-    }
-    else {
-        fps = cvGetCaptureProperty(cap, CV_CAP_PROP_FPS);
-    }
-    return fps;
-}
-// ----------------------------------------
-
 
 // ====================================================================
 // Image Saving
@@ -836,76 +830,6 @@ void draw_detections_cv_v3(mat_cv* show_img, detection *dets, int num, float thr
     }
 }
 // ----------------------------------------
-
-void draw_detections_cv(mat_cv* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
-{
-    int i;
-
-    for (i = 0; i < num; ++i) {
-        int class_id = max_index(probs[i], classes);
-        float prob = probs[i][class_id];
-        if (prob > thresh) {
-
-            int width = show_img->height * .012;
-
-            if (0) {
-                width = pow(prob, 1. / 2.) * 10 + 1;
-                alphabet = 0;
-            }
-
-            printf("%s: %.0f%%\n", names[class_id], prob * 100);
-            int offset = class_id * 123457 % classes;
-            float red = get_color(2, offset, classes);
-            float green = get_color(1, offset, classes);
-            float blue = get_color(0, offset, classes);
-            float rgb[3];
-
-            //width = prob*20+2;
-
-            rgb[0] = red;
-            rgb[1] = green;
-            rgb[2] = blue;
-            box b = boxes[i];
-
-            int left = (b.x - b.w / 2.)*show_img->width;
-            int right = (b.x + b.w / 2.)*show_img->width;
-            int top = (b.y - b.h / 2.)*show_img->height;
-            int bot = (b.y + b.h / 2.)*show_img->height;
-
-            if (left < 0) left = 0;
-            if (right > show_img->width - 1) right = show_img->width - 1;
-            if (top < 0) top = 0;
-            if (bot > show_img->height - 1) bot = show_img->height - 1;
-
-            float const font_size = show_img->height / 1000.F;
-            CvPoint pt1, pt2, pt_text, pt_text_bg1, pt_text_bg2;
-            pt1.x = left;
-            pt1.y = top;
-            pt2.x = right;
-            pt2.y = bot;
-            pt_text.x = left;
-            pt_text.y = top - 12;
-            pt_text_bg1.x = left;
-            pt_text_bg1.y = top - (10 + 25 * font_size);
-            pt_text_bg2.x = right;
-            pt_text_bg2.y = top;
-            CvScalar color;
-            color.val[0] = red * 256;
-            color.val[1] = green * 256;
-            color.val[2] = blue * 256;
-
-            cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
-            //printf("left=%d, right=%d, top=%d, bottom=%d, obj_id=%d, obj=%s \n", left, right, top, bot, class_id, names[class_id]);
-            cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
-            cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);    // filled
-            CvScalar black_color;
-            black_color.val[0] = 0;
-            CvFont font;
-            cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, font_size, font_size, 0, font_size * 3, 8);
-            cvPutText(show_img, names[class_id], pt_text, &font, black_color);
-        }
-    }
-}
 
 // ====================================================================
 // Draw Loss & Accuracy chart
@@ -1162,4 +1086,9 @@ void show_acnhors(int number_of_boxes, int num_of_clusters, float *rel_width_hei
 
 }   // extern "C"
 
+
+#else  // OPENCV
+int wait_key_cv(int delay) { return 0; }
+int wait_until_press_key_cv() { return 0; }
+void destroy_all_windows_cv() {}
 #endif // OPENCV

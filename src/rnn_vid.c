@@ -163,7 +163,7 @@ void generate_vid_rnn(char *cfgfile, char *weightfile)
 	next = NULL;
     image last;
     for(i = 0; i < 25; ++i){
-        image im = get_image_from_stream(cap);
+        image im = get_image_from_stream_cpp(cap);
         image re = resize_image(im, extractor.w, extractor.h);
         feat = network_predict(extractor, re.data);
         if(i > 0){

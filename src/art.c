@@ -34,7 +34,7 @@ void demo_art(char *cfgfile, char *weightfile, int cam_index)
     int n = sizeof(idx)/sizeof(idx[0]);
 
     while(1){
-        image in = get_image_from_stream(cap);
+        image in = get_image_from_stream_cpp(cap);
         image in_s = resize_image(in, net.w, net.h);
         show_image(in, window);
 

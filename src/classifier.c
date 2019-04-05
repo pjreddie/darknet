@@ -1171,10 +1171,8 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     cap_cv * cap;
 
     if(filename){
-        //cap = cvCaptureFromFile(filename);
         cap = get_capture_video_stream(filename);
     }else{
-        //cap = cvCaptureFromCAM(cam_index);
         cap = get_capture_webcam(cam_index);
     }
 

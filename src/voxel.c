@@ -13,8 +13,8 @@ void extract_voxel(char *lfile, char *rfile, char *prefix)
     cap_cv *lcap = get_capture_video_stream(lfile);
     cap_cv *rcap = get_capture_video_stream(rfile);
     while(1){
-        image l = get_image_from_stream(lcap);
-        image r = get_image_from_stream(rcap);
+        image l = get_image_from_stream_cpp(lcap);
+        image r = get_image_from_stream_cpp(rcap);
         if(!l.w || !r.w) break;
         if(count%100 == 0) {
             shift = best_3d_shift_r(l, r, -l.h/100, l.h/100);

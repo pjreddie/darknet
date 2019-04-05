@@ -31,7 +31,6 @@ static image in_s ;
 static image det_s;
 
 static cap_cv *cap;
-static int cpp_video_capture = 0;
 static float fps = 0;
 static float demo_thresh = 0;
 static int demo_ext_output = 0;
@@ -55,9 +54,9 @@ void *fetch_in_thread(void *ptr)
 {
     int dont_close_stream = 0;    // set 1 if your IP-camera periodically turns off and turns on video-stream
     if(letter_box)
-        in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
+        in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
     else
-        in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
+        in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
     if(!in_s.data){
         printf("Stream closed.\n");
         flag_exit = 1;
@@ -126,11 +125,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     if(filename){
         printf("video file: %s\n", filename);
-        cpp_video_capture = 1;
         cap = get_capture_video_stream(filename);
     }else{
         printf("Webcam index: %d\n", cam_index);
-        cpp_video_capture = 1;
         cap = get_capture_webcam(cam_index);
     }
 
@@ -187,7 +184,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     if (out_filename && !flag_exit)
     {
         int src_fps = 25;
-        src_fps = get_stream_fps(cap, cpp_video_capture);
+        src_fps = get_stream_fps_cpp_cv(cap);
         output_video_writer =
             create_video_writer(out_filename, 'D', 'I', 'V', 'X', src_fps, get_width_cv(det_img), get_height_cv(det_img), 1);
 
