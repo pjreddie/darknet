@@ -326,7 +326,7 @@ float train_network(network net, data d)
     return train_network_waitkey(net, d, 0);
 }
 
-float train_network_waitkey(network net, data d, int is_main_thread)
+float train_network_waitkey(network net, data d, int wait_key)
 {
     assert(d.X.rows % net.batch == 0);
     int batch = net.batch;
@@ -340,7 +340,7 @@ float train_network_waitkey(network net, data d, int is_main_thread)
         get_next_batch(d, batch, i*batch, X, y);
         float err = train_network_datum(net, X, y);
         sum += err;
-        wait_key_cv(5);
+        if(wait_key) wait_key_cv(5);
     }
     free(X);
     free(y);

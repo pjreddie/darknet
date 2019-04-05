@@ -209,7 +209,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         float loss = 0;
 #ifdef GPU
         if (ngpus == 1) {
-            loss = train_network_waitkey(net, train, 1);
+            int wait_key = (dont_show) ? 0 : 1;
+            loss = train_network_waitkey(net, train, wait_key);
         }
         else {
             loss = train_networks(nets, ngpus, train, 4);
