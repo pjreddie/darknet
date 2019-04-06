@@ -161,11 +161,12 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     for (i = 0; i < net.n; ++i) {
         layer l = net.layers[i];
         if (net.cudnn_half){
-            assert((l.c*l.n*l.size*l.size) > 0);
             if (l.type == CONVOLUTIONAL && l.weights_gpu && l.weights_gpu16) {
+                assert((l.c*l.n*l.size*l.size) > 0);
                 cuda_convert_f32_to_f16(l.weights_gpu, l.c*l.n*l.size*l.size, l.weights_gpu16);
             }
             else if (l.type == CRNN && l.input_layer->weights_gpu && l.input_layer->weights_gpu16) {
+                assert((l.input_layer->c*l.input_layer->n*l.input_layer->size*l.input_layer->size) > 0);
                 cuda_convert_f32_to_f16(l.input_layer->weights_gpu, l.input_layer->nweights, l.input_layer->weights_gpu16);
                 cuda_convert_f32_to_f16(l.self_layer->weights_gpu, l.self_layer->nweights, l.self_layer->weights_gpu16);
                 cuda_convert_f32_to_f16(l.output_layer->weights_gpu, l.output_layer->nweights, l.output_layer->weights_gpu16);
