@@ -127,6 +127,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.exposure = net.exposure;
     args.saturation = net.saturation;
     args.hue = net.hue;
+    if (dont_show && show_imgs) show_imgs = 2;
     args.show_imgs = show_imgs;
 
 #ifdef OPENCV
