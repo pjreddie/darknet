@@ -95,7 +95,6 @@ mat_cv *load_image_mat_cv(const char *filename, int flag)
             std::ofstream bad_list("bad.list", std::ios::out | std::ios::app);
             bad_list << shrinked_filename << std::endl;
             //if (check_mistakes) getchar();
-            delete mat_ptr;
             return NULL;
         }
         cv::cvtColor(mat, mat, CV_RGB2BGR);
