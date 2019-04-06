@@ -23,20 +23,23 @@ int get_width_mat(mat_cv *mat);
 int get_height_mat(mat_cv *mat);
 void release_mat(mat_cv **mat);
 
-// IplImage
-int get_width_cv(mat_cv *ipl);
-int get_height_cv(mat_cv *ipl);
-void release_ipl(mat_cv **ipl);
+// IplImage - to delete
+//int get_width_cv(mat_cv *ipl);
+//int get_height_cv(mat_cv *ipl);
+//void release_ipl(mat_cv **ipl);
 
 // image-to-ipl, ipl-to-image, image_to_mat, mat_to_image
-mat_cv *image_to_ipl(image im);
-image ipl_to_image(mat_cv* src_ptr);
+//mat_cv *image_to_ipl(image im);           // to delete
+//image ipl_to_image(mat_cv* src_ptr);    // to delete
+
+
 // mat_cv *image_to_ipl(image im)
 // image ipl_to_image(mat_cv* src_ptr)
 // cv::Mat ipl_to_mat(IplImage *ipl)
 // IplImage *mat_to_ipl(cv::Mat mat)
 // Mat image_to_mat(image img)
 // image mat_to_image(cv::Mat mat)
+image mat_to_image_cv(mat_cv *mat);
 
 // Window
 void create_window_cv(char const* window_name, int full_screen, int width, int height);
@@ -50,7 +53,7 @@ void show_image_mat(mat_cv *mat_ptr, const char *name);
 
 // Video Writer
 write_cv *create_video_writer(char *out_filename, char c1, char c2, char c3, char c4, int fps, int width, int height, int is_color);
-void write_frame_cv(write_cv *output_video_writer, mat_cv *show_img);
+void write_frame_cv(write_cv *output_video_writer, mat_cv *mat);
 void release_video_writer(write_cv **output_video_writer);
 
 

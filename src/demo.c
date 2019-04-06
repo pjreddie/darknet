@@ -48,7 +48,7 @@ mat_cv* det_img;
 mat_cv* show_img;
 
 static volatile int flag_exit;
-static volatile int letter_box = 0;
+static const int letter_box = 0;
 
 void *fetch_in_thread(void *ptr)
 {
@@ -85,7 +85,7 @@ void *detect_in_thread(void *ptr)
     demo_index = (demo_index + 1) % NFRAMES;
 
     if (letter_box)
-        dets = get_network_boxes(&net, get_width_cv(in_img), get_height_cv(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
+        dets = get_network_boxes(&net, get_width_mat(in_img), get_height_mat(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
     else
         dets = get_network_boxes(&net, net.w, net.h, demo_thresh, demo_thresh, 0, 1, &nboxes, 0); // resized
 
@@ -186,7 +186,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         int src_fps = 25;
         src_fps = get_stream_fps_cpp_cv(cap);
         output_video_writer =
-            create_video_writer(out_filename, 'D', 'I', 'V', 'X', src_fps, get_width_cv(det_img), get_height_cv(det_img), 1);
+            create_video_writer(out_filename, 'D', 'I', 'V', 'X', src_fps, get_width_mat(det_img), get_height_mat(det_img), 1);
 
         //'H', '2', '6', '4'
         //'D', 'I', 'V', 'X'
@@ -230,7 +230,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
             if(!prefix){
                 if (!dont_show) {
-                    show_image_cv_ipl(show_img, "Demo");
+                    show_image_mat(show_img, "Demo");
                     int c = wait_key_cv(1);
                     if (c == 10) {
                         if (frame_skip == 0) frame_skip = 60;
@@ -263,7 +263,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 printf("\n cvWriteFrame \n");
             }
 
-            release_ipl(&show_img);
+            release_mat(&show_img);
 
             pthread_join(fetch_thread, 0);
             pthread_join(detect_thread, 0);
@@ -295,8 +295,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     }
 
     // free memory
-    release_ipl(&show_img);
-    release_ipl(&in_img);
+    release_mat(&show_img);
+    release_mat(&in_img);
     free_image(in_s);
 
     free(avg);

@@ -489,14 +489,14 @@ public:
 };
 // ----------------------------------------
 
-struct mat_cv :IplImage { int a[0]; };
+struct mat_cv : cv::Mat { int a[0]; };
 
-void send_mjpeg(mat_cv* ipl, int port, int timeout, int quality)
+void send_mjpeg(mat_cv* mat, int port, int timeout, int quality)
 {
     try {
         static MJPG_sender wri(port, timeout, quality);
-        cv::Mat mat = cv::cvarrToMat(ipl);
-        wri.write(mat);
+        //cv::Mat mat = cv::cvarrToMat(ipl);
+        wri.write(*mat);
         std::cout << " MJPEG-stream sent. \n";
     }
     catch (...) {

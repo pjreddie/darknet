@@ -196,7 +196,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     save_weights(net, buff);
 
 #ifdef OPENCV
-    release_ipl(&img);
+    release_mat(&img);
     destroy_all_windows_cv();
 #endif
 
