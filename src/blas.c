@@ -234,7 +234,7 @@ void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
         }
         else {
             error[i] = 2*abs_val - 1;
-            delta[i] = (diff < 0) ? 1 : -1;
+            delta[i] = (diff > 0) ? 1 : -1;
         }
     }
 }

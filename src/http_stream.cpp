@@ -489,11 +489,14 @@ public:
 };
 // ----------------------------------------
 
+static std::mutex mtx_mjpeg;
+
 struct mat_cv : cv::Mat { int a[0]; };
 
 void send_mjpeg(mat_cv* mat, int port, int timeout, int quality)
 {
     try {
+        std::lock_guard<std::mutex> lock(mtx_mjpeg);
         static MJPG_sender wri(port, timeout, quality);
         //cv::Mat mat = cv::cvarrToMat(ipl);
         wri.write(*mat);
