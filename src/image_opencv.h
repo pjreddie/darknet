@@ -48,7 +48,7 @@ int wait_key_cv(int delay);
 int wait_until_press_key_cv();
 void make_window(char *name, int w, int h, int fullscreen);
 void show_image_cv(image p, const char *name);
-void show_image_cv_ipl(mat_cv *disp, const char *name);
+//void show_image_cv_ipl(mat_cv *disp, const char *name);
 void show_image_mat(mat_cv *mat_ptr, const char *name);
 
 // Video Writer
