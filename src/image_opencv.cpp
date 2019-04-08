@@ -18,10 +18,20 @@
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/video/video.hpp>
+
+// includes for OpenCV >= 3.x
 #ifndef CV_VERSION_EPOCH
 #include <opencv2/core/types.hpp>
 #include <opencv2/videoio/videoio.hpp>
 #include <opencv2/imgcodecs/imgcodecs.hpp>
+#endif
+
+// OpenCV includes for OpenCV 2.x
+#ifdef CV_VERSION_EPOCH
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/core/types_c.h>
+#include <opencv2/core/version.hpp>
 #endif
 
 using namespace cv;
@@ -44,15 +54,7 @@ using std::endl;
 #endif    // USE_CMAKE_LIBS
 #endif    // CV_VERSION_EPOCH
 
-// OpenCV includes
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/core/types_c.h>
-#include <opencv2/core/version.hpp>
-#ifndef CV_VERSION_EPOCH
-//#include <opencv2/videoio/videoio_c.h>
-//#include <opencv2/imgcodecs/imgcodecs_c.h>
-#endif
+
 
 #include "http_stream.h"
 
@@ -447,7 +449,11 @@ write_cv *create_video_writer(char *out_filename, char c1, char c2, char c3, cha
 {
     try {
     cv::VideoWriter * output_video_writer =
+#ifdef CV_VERSION_EPOCH
         new cv::VideoWriter(out_filename, CV_FOURCC(c1, c2, c3, c4), fps, cv::Size(width, height), is_color);
+#else
+        new cv::VideoWriter(out_filename, cv::VideoWriter::fourcc(c1, c2, c3, c4), fps, cv::Size(width, height), is_color);
+#endif
 
     return (write_cv *)output_video_writer;
     }
