@@ -76,6 +76,8 @@ unsigned int uint_rand(unsigned int less_than);
 int check_array_is_nan(float *arr, int size);
 int check_array_is_inf(float *arr, int size);
 int int_index(int *a, int val, int n);
+int *random_index_order(int min, int max);
+int max_int_index(int *a, int n);
 
 #ifdef __cplusplus
 }

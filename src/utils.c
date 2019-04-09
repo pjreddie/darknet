@@ -872,3 +872,33 @@ int check_array_is_inf(float *arr, int size)
     }
     return 0;
 }
+
+int *random_index_order(int min, int max)
+{
+    int *inds = calloc(max - min, sizeof(int));
+    int i;
+    for (i = min; i < max; ++i) {
+        inds[i - min] = i;
+    }
+    for (i = min; i < max - 1; ++i) {
+        int swap = inds[i - min];
+        int index = i + rand() % (max - i);
+        inds[i - min] = inds[index - min];
+        inds[index - min] = swap;
+    }
+    return inds;
+}
+
+int max_int_index(int *a, int n)
+{
+    if (n <= 0) return -1;
+    int i, max_i = 0;
+    int max = a[0];
+    for (i = 1; i < n; ++i) {
+        if (a[i] > max) {
+            max = a[i];
+            max_i = i;
+        }
+    }
+    return max_i;
+}
