@@ -875,7 +875,7 @@ int check_array_is_inf(float *arr, int size)
 
 int *random_index_order(int min, int max)
 {
-    int *inds = calloc(max - min, sizeof(int));
+    int *inds = (int *)calloc(max - min, sizeof(int));
     int i;
     for (i = min; i < max; ++i) {
         inds[i - min] = i;
