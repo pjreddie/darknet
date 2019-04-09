@@ -262,7 +262,7 @@ endif()
 target_compile_definitions(darklib PRIVATE LIB_EXPORTS=1)
 set_target_properties(darklib PROPERTIES LINKER_LANGUAGE CXX)
 
-if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
+if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
   target_compile_definitions(uselib_track PRIVATE TRACK_OPTFLOW=1)
   set_target_properties(uselib_track PROPERTIES LINKER_LANGUAGE CXX)
@@ -324,7 +324,7 @@ if(ENABLE_CUDA)
 endif()
 
 target_link_libraries(uselib PRIVATE darklib)
-if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
+if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   target_link_libraries(uselib_track PRIVATE darklib)
 endif()
 
@@ -340,7 +340,7 @@ install(TARGETS darklib EXPORT DarknetTargets
 install(TARGETS uselib darknet
   DESTINATION "${INSTALL_BIN_DIR}"
 )
-if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
+if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   install(TARGETS uselib_track
     DESTINATION "${INSTALL_BIN_DIR}"
   )
