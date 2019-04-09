@@ -102,7 +102,7 @@ int *random_index_order(int min, int max)
         inds[i-min] = i;
     }
     for(i = min; i < max-1; ++i){
-        int swap = inds[i];
+        int swap = inds[i-min];
         int index = i + rand()%(max-i);
         inds[i-min] = inds[index-min];
         inds[index-min] = swap;
