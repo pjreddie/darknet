@@ -16,18 +16,16 @@ Mat image_to_mat(image im)
     image copy = copy_image(im);
     constrain_image(copy);
     if(im.c == 3) rgbgr_image(copy);
-    unsigned char *data = (unsigned char *)malloc(im.w * im.h * im.c);
+    Mat m(im.h, im.w, CV_MAKETYPE(CV_8U, im.c));
     for(y = 0; y < im.h; ++y){
         for(x = 0; x < im.w; ++x){
             for(c= 0; c < im.c; ++c){
                 float val = copy.data[c*im.h*im.w + y*im.w + x];
-                data[y*im.w*im.c + x*im.c + c] = (unsigned char)(val*255);
+                m.data[y*im.w*im.c + x*im.c + c] = (unsigned char)(val*255);
             }
         }
     }
-    Mat m(im.h, im.w, CV_MAKETYPE(CV_8U, im.c), data);
     free_image(copy);
-    free(data);
     return m;
 }
 
