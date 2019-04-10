@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 
-set(Darknet_MAJOR_VERSION 1)
-set(Darknet_MINOR_VERSION 0)
-set(Darknet_PATCH_VERSION 0)
+set(Darknet_MAJOR_VERSION 0)
+set(Darknet_MINOR_VERSION 2)
+set(Darknet_PATCH_VERSION 5)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION})
 
 set(CMAKE_VERBOSE_MAKEFILE "FALSE" CACHE BOOL "Create verbose makefile")
@@ -40,6 +40,11 @@ foreach(p LIB BIN INCLUDE CMAKE)
     set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
   endif()
 endforeach()
+
+configure_file(
+  "${CMAKE_CURRENT_LIST_DIR}/src/version.h.in"
+  "${CMAKE_CURRENT_LIST_DIR}/src/version.h"
+)
 
 set(ENABLE_CUDA "TRUE" CACHE BOOL "Enable CUDA build")
 if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
