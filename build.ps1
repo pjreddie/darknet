@@ -164,16 +164,16 @@ if (Test-Path env:CUDA_PATH) {
 
 
 if ($vcpkg_path) {
-  # DEBUG
-  New-Item -Path .\build_win_debug -ItemType directory -Force
-  Set-Location build_win_debug
-  cmake -G "$generator" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Debug" $additional_build_setup ..
-  cmake --build . --config Debug --target install
-  #cmake --build . --config Debug --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
-  Remove-Item DarknetConfig.cmake
-  Remove-Item DarknetConfigVersion.cmake
-  Set-Location ..
-  Copy-Item cmake\Modules\*.cmake share\darknet\
+  ## DEBUG
+  #New-Item -Path .\build_win_debug -ItemType directory -Force
+  #Set-Location build_win_debug
+  #cmake -G "$generator" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" #"-DCMAKE_BUILD_TYPE=Debug" $additional_build_setup ..
+  #cmake --build . --config Debug --target install
+  ##cmake --build . --config Debug --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
+  #Remove-Item DarknetConfig.cmake
+  #Remove-Item DarknetConfigVersion.cmake
+  #Set-Location ..
+  #Copy-Item cmake\Modules\*.cmake share\darknet\
 
   # RELEASE
   New-Item -Path .\build_win_release -ItemType directory -Force
