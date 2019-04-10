@@ -6,9 +6,18 @@ void free_layer(layer l)
 {
     // free layers: input_layer, self_layer, output_layer, ...
     if (l.type == CRNN) {
-        if (l.input_layer) free_layer(*l.input_layer);
-        if (l.self_layer) free_layer(*l.self_layer);
-        if (l.output_layer) free_layer(*l.output_layer);
+        if (l.input_layer) {
+            free_layer(*l.input_layer);
+            free(l.input_layer);
+        }
+        if (l.self_layer) {
+            free_layer(*l.self_layer);
+            free(l.self_layer);
+        }
+        if (l.output_layer) {
+            free_layer(*l.output_layer);
+            free(l.output_layer);
+        }
         l.output = NULL;
         l.delta = NULL;
 #ifdef GPU

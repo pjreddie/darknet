@@ -34,19 +34,26 @@
 #include <opencv2/core/version.hpp>
 #endif
 
-using namespace cv;
+//using namespace cv;
 
 using std::cerr;
 using std::endl;
 
+#ifdef DEBUG
+#define OCV_D "d"
+#else
+#define OCV_D
+#endif//DEBUG
+
+
 // OpenCV libraries
 #ifndef CV_VERSION_EPOCH
-#define OPENCV_VERSION CVAUX_STR(CV_VERSION_MAJOR)"" CVAUX_STR(CV_VERSION_MINOR)"" CVAUX_STR(CV_VERSION_REVISION)
+#define OPENCV_VERSION CVAUX_STR(CV_VERSION_MAJOR)"" CVAUX_STR(CV_VERSION_MINOR)"" CVAUX_STR(CV_VERSION_REVISION) OCV_D
 #ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "opencv_world" OPENCV_VERSION ".lib")
 #endif    // USE_CMAKE_LIBS
 #else   // CV_VERSION_EPOCH
-#define OPENCV_VERSION CVAUX_STR(CV_VERSION_EPOCH)"" CVAUX_STR(CV_VERSION_MAJOR)"" CVAUX_STR(CV_VERSION_MINOR)
+#define OPENCV_VERSION CVAUX_STR(CV_VERSION_EPOCH)"" CVAUX_STR(CV_VERSION_MAJOR)"" CVAUX_STR(CV_VERSION_MINOR) OCV_D
 #ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "opencv_core" OPENCV_VERSION ".lib")
 #pragma comment(lib, "opencv_imgproc" OPENCV_VERSION ".lib")
@@ -118,10 +125,10 @@ mat_cv *load_image_mat_cv(const char *filename, int flag)
 
 cv::Mat load_image_mat(char *filename, int channels)
 {
-    int flag = IMREAD_UNCHANGED;
-    if (channels == 0) flag = IMREAD_COLOR;
-    else if (channels == 1) flag = IMREAD_GRAYSCALE;
-    else if (channels == 3) flag = IMREAD_COLOR;
+    int flag = cv::IMREAD_UNCHANGED;
+    if (channels == 0) flag = cv::IMREAD_COLOR;
+    else if (channels == 1) flag = cv::IMREAD_GRAYSCALE;
+    else if (channels == 3) flag = cv::IMREAD_COLOR;
     else {
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
@@ -288,7 +295,7 @@ IplImage *mat_to_ipl(cv::Mat mat)
 // ----------------------------------------
 */
 
-Mat image_to_mat(image img)
+cv::Mat image_to_mat(image img)
 {
     int channels = img.c;
     int width = img.w;
@@ -389,12 +396,12 @@ int wait_until_press_key_cv()
 void make_window(char *name, int w, int h, int fullscreen)
 {
     try {
-        cv::namedWindow(name, WINDOW_NORMAL);
+        cv::namedWindow(name, cv::WINDOW_NORMAL);
         if (fullscreen) {
 #ifdef CV_VERSION_EPOCH // OpenCV 2.x
-            cv::setWindowProperty(name, WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+            cv::setWindowProperty(name, cv::WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 #else
-            cv::setWindowProperty(name, WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+            cv::setWindowProperty(name, cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
 #endif
         }
         else {
@@ -423,7 +430,7 @@ void show_image_cv(image p, const char *name)
 
         cv::Mat mat = image_to_mat(copy);
         cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-        cv::namedWindow(name, WINDOW_NORMAL);
+        cv::namedWindow(name, cv::WINDOW_NORMAL);
         cv::imshow(name, mat);
         free_image(copy);
     }
@@ -450,7 +457,7 @@ void show_image_mat(mat_cv *mat_ptr, const char *name)
     try {
         if (mat_ptr == NULL) return;
         cv::Mat &mat = *(cv::Mat *)mat_ptr;
-        cv::namedWindow(name, WINDOW_NORMAL);
+        cv::namedWindow(name, cv::WINDOW_NORMAL);
         cv::imshow(name, mat);
     }
     catch (...) {
@@ -483,9 +490,7 @@ void write_frame_cv(write_cv *output_video_writer, mat_cv *mat)
 {
     try {
         cv::VideoWriter *out = (cv::VideoWriter *)output_video_writer;
-        //out->write(ipl_to_mat(show_img));
         out->write(*mat);
-        show_image_mat(mat, "mat");
     }
     catch (...) {
         cerr << "OpenCV exception: write_frame_cv \n";
@@ -615,7 +620,7 @@ int get_stream_fps_cpp_cv(cap_cv *cap)
     try {
         cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
 #ifndef CV_VERSION_EPOCH    // OpenCV 3.x
-        fps = cpp_cap.get(CAP_PROP_FPS);
+        fps = cpp_cap.get(cv::CAP_PROP_FPS);
 #else                        // OpenCV 2.x
         fps = cpp_cap.get(CV_CAP_PROP_FPS);
 #endif
@@ -645,7 +650,7 @@ double get_capture_frame_count_cv(cap_cv *cap)
     try {
         cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
 #ifndef CV_VERSION_EPOCH    // OpenCV 3.x
-        return cpp_cap.get(CAP_PROP_FRAME_COUNT);
+        return cpp_cap.get(cv::CAP_PROP_FRAME_COUNT);
 #else                        // OpenCV 2.x
         return cpp_cap.get(CV_CAP_PROP_FRAME_COUNT);
 #endif
@@ -675,7 +680,7 @@ int set_capture_position_frame_cv(cap_cv *cap, int index)
     try {
         cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
 #ifndef CV_VERSION_EPOCH    // OpenCV 3.x
-        return cpp_cap.set(CAP_PROP_POS_FRAMES, index);
+        return cpp_cap.set(cv::CAP_PROP_POS_FRAMES, index);
 #else                        // OpenCV 2.x
         return cpp_cap.set(CV_CAP_PROP_POS_FRAMES, index);
 #endif

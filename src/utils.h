@@ -1,10 +1,11 @@
 #ifndef UTILS_H
 #define UTILS_H
-#include <stdio.h>
-#include <time.h>
+#include "darknet.h"
 #include "list.h"
 
-#include "darknet.h"
+#include <stdio.h>
+#include <time.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

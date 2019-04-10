@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -5,7 +6,6 @@
 #include <crtdbg.h>
 #endif
 
-#include "darknet.h"
 #include "parser.h"
 #include "utils.h"
 #include "dark_cuda.h"

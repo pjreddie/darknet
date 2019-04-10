@@ -5,6 +5,10 @@
 #define inline __inline
 #endif
 
+#if defined(DEBUG) && !defined(_CRTDBG_MAP_ALLOC)
+#define _CRTDBG_MAP_ALLOC
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

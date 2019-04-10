@@ -1,7 +1,9 @@
+#include "darknet.h"
+
 #include <stdio.h>
 #include <time.h>
 #include <assert.h>
-#include "darknet.h"
+
 #include "network.h"
 #include "image.h"
 #include "data.h"

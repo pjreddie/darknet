@@ -29,7 +29,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *valid_images = option_find_str(options, "valid", train_images);
     char *backup_directory = option_find_str(options, "backup", "/backup/");
 
-    int train_images_num = 0;
     network net_map;
     if (calc_map) {
         FILE* valid_file = fopen(valid_images, "r");
@@ -39,18 +38,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             exit(-1);
         }
         else fclose(valid_file);
-        list *plist = get_paths(train_images);
-        train_images_num = plist->size;
-        free_list(plist);
 
         cuda_set_device(gpus[0]);
         printf(" Prepare additional network for mAP calculation...\n");
         net_map = parse_network_cfg_custom(cfgfile, 1, 1);
 
-
         int k;  // free memory unnecessary arrays
         for (k = 0; k < net_map.n; ++k) {
-                free_layer(net_map.layers[k]);
+            free_layer(net_map.layers[k]);
         }
     }
 
@@ -97,7 +92,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
-    //int N = plist->size;
+    int train_images_num = plist->size;
     char **paths = (char **)list_to_array(plist);
 
     int init_w = net.w;
@@ -1225,7 +1220,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 
     if (show) {
 #ifdef OPENCV
-        show_acnhors(number_of_boxes, num_of_clusters, rel_width_height_array, anchors_data, width, height);
+        //show_acnhors(number_of_boxes, num_of_clusters, rel_width_height_array, anchors_data, width, height);
 #endif // OPENCV
     }
     free(rel_width_height_array);

@@ -57,3 +57,5 @@ Another list of datasets: http://homepages.inf.ed.ac.uk/rbf/CVonline/Imagedbase.
 Pedestrian DATASETs for Vision based Detection and Tracking: https://hemprasad.wordpress.com/2014/11/08/pedestrian-datasets-for-vision-based-detection-and-tracking/
 
 TrackingNet: https://tracking-net.org/
+
+RGB, RGBD, Texture-mapped 3D mesh models: http://www.ycbbenchmarks.com/

@@ -68,7 +68,7 @@ char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augm
             if (strlen(sequentia_paths[i]) <= 4) printf(" Very small path to the image: %s \n", sequentia_paths[i]);
         } while (strlen(sequentia_paths[i]) == 0);
     }
-    //free(start_time_indexes);
+    free(start_time_indexes);
     pthread_mutex_unlock(&mutex);
     return sequentia_paths;
 }
