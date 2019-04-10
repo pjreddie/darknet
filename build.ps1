@@ -32,15 +32,25 @@ function getLatestVisualStudioWithDesktopWorkloadPath() {
   $programFiles = getProgramFiles32bit
   $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
   if (Test-Path $vswhereExe) {
-    $output = & $vswhereExe -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop -format xml
+    $output = & $vswhereExe -products * -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop -format xml
     [xml]$asXml = $output
-    foreach ($instance in $asXml.instances.instance)
-    {
+    foreach ($instance in $asXml.instances.instance) {
+      $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
+    }
+    if (!$installationPath) {
+      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
+      $output = & $vswhereExe -products * -latest -format xml
+      [xml]$asXml = $output
+      foreach ($instance in $asXml.instances.instance) {
         $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
+      }
+    }
+    if (!$installationPath) {
+      Throw "Could not locate any installation of Visual Studio"
     }
   }
   else {
-    Write-Verbose "Could not locate vswhere at $vswhereExe"
+    Throw "Could not locate vswhere at $vswhereExe"
   }
   return $installationPath
 }
@@ -50,15 +60,25 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
   $programFiles = getProgramFiles32bit
   $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
   if (Test-Path $vswhereExe) {
-    $output = & $vswhereExe -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop -format xml
+    $output = & $vswhereExe -products * -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop -format xml
     [xml]$asXml = $output
-    foreach ($instance in $asXml.instances.instance)
-    {
-        $installationVersion = $instance.InstallationVersion
+    foreach ($instance in $asXml.instances.instance) {
+      $installationVersion = $instance.InstallationVersion
+    }
+    if (!$installationVersion) {
+      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
+      $output = & $vswhereExe -products * -latest -format xml
+      [xml]$asXml = $output
+      foreach ($instance in $asXml.instances.instance) {
+        $installationVersion = $instance.installationVersion
+      }
+    }
+    if (!$installationVersion) {
+      Throw "Could not locate any installation of Visual Studio"
     }
   }
   else {
-    Write-Verbose "Could not locate vswhere at $vswhereExe"
+    Throw "Could not locate vswhere at $vswhereExe"
   }
   return $installationVersion
 }
@@ -77,7 +97,7 @@ else {
 }
 
 if ($null -eq $env:VCPKG_DEFAULT_TRIPLET) {
-  Write-Host "No default triplet has been set-up for vcpkg. Defaulting to x64-windows`n" -ForegroundColor Yellow
+  Write-Host "No default triplet has been set-up for vcpkg. Defaulting to x64-windows" -ForegroundColor Yellow
   $vcpkg_triplet = "x64-windows"
 }
 else {
@@ -89,17 +109,17 @@ if ($vcpkg_triplet -Match "x86") {
 }
 
 if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
-  $vsfound=getLatestVisualStudioWithDesktopWorkloadPath
+  $vsfound = getLatestVisualStudioWithDesktopWorkloadPath
   Write-Host "Found VS in ${vsfound}"
   Push-Location "${vsfound}\Common7\Tools"
-  cmd /c "VsDevCmd.bat -arch=x64 & set" |
-    ForEach-Object {
+  cmd.exe /c "VsDevCmd.bat -arch=x64 & set" |
+  ForEach-Object {
     if ($_ -match "=") {
-      $v = $_.split("="); set-item -force -path "ENV:\$($v[0])"  -value "$($v[1])"
+      $v = $_.split("="); Set-Item -force -path "ENV:\$($v[0])"  -value "$($v[1])"
     }
   }
   Pop-Location
-  Write-Host "Visual Studio Command Prompt variables set`n" -ForegroundColor Yellow
+  Write-Host "Visual Studio Command Prompt variables set" -ForegroundColor Yellow
 }
 
 $tokens = getLatestVisualStudioWithDesktopWorkloadVersion
@@ -116,29 +136,29 @@ elseif ($tokens[0] -eq "16") {
 else {
   throw "Unknown Visual Studio version, unsupported configuration"
 }
-Write-Host "Setting up environment to use CMake generator: $generator`n" -ForegroundColor Yellow
+Write-Host "Setting up environment to use CMake generator: $generator" -ForegroundColor Yellow
 
 if ($null -eq (Get-Command "nvcc.exe" -ErrorAction SilentlyContinue)) {
   if (Test-Path env:CUDA_PATH) {
     $env:PATH += ";${env:CUDA_PATH}\bin"
-    Write-Host "Found cuda in ${env:CUDA_PATH}`n" -ForegroundColor Yellow
+    Write-Host "Found cuda in ${env:CUDA_PATH}" -ForegroundColor Yellow
   }
   else {
-    Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder`n" -ForegroundColor Yellow
+    Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder" -ForegroundColor Yellow
   }
 }
 
 if (Test-Path env:CUDA_PATH) {
   if (-Not(Test-Path env:CUDA_TOOLKIT_ROOT_DIR)) {
     $env:CUDA_TOOLKIT_ROOT_DIR = "${env:CUDA_PATH}"
-    Write-Host "Added missing env variable CUDA_TOOLKIT_ROOT_DIR`n" -ForegroundColor Yellow
+    Write-Host "Added missing env variable CUDA_TOOLKIT_ROOT_DIR" -ForegroundColor Yellow
   }
   if ($my_cuda_compute_model) {
     $additional_build_setup = "-DCUDA_COMPUTE_MODEL=${my_cuda_compute_model}"
-    Write-Host "Using compute capability ${my_cuda_compute_model}`n" -ForegroundColor Yellow
+    Write-Host "Using compute capability ${my_cuda_compute_model}" -ForegroundColor Yellow
   }
   else {
-    Write-Host "Using default compute capability`n" -ForegroundColor Yellow
+    Write-Host "Using default compute capability" -ForegroundColor Yellow
   }
 }
 

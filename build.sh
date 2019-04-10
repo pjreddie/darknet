@@ -56,7 +56,7 @@ cmake --build . --target install -- -j${number_of_build_workers}
 rm -f DarknetConfig.cmake
 rm -f DarknetConfigVersion.cmake
 cd ..
-cp cmake/Modules/*.cmake share/darknet
+cp cmake/Modules/*.cmake share/darknet/
 
 # DEBUG
 mkdir -p build_debug
@@ -67,4 +67,4 @@ cmake --build . --target install -- -j${number_of_build_workers}
 rm -f DarknetConfig.cmake
 rm -f DarknetConfigVersion.cmake
 cd ..
-cp cmake/Modules/*.cmake share/darknet
+cp cmake/Modules/*.cmake share/darknet/
