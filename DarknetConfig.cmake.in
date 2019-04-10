@@ -12,12 +12,21 @@ include(CMakeFindDependencyMacro)
 
 if(@ENABLE_OPENCV@)
   find_dependency(OpenCV REQUIRED)
+  add_definitions(-DOPENCV)
 endif()
 
-find_dependency(Stb REQUIRED HINTS "@Stb_DIR@")
+find_dependency(Stb REQUIRED)
 
 if(@ENABLE_CUDA@)
   find_dependency(CUDNN)
+  add_definitions(-DGPU)
+  if(CUDNN_FOUND)
+    add_definitions(-DCUDNN)
+    if(@CUDA_COMPUTE_MODEL@ VERSION_GREATER_EQUAL @CUDA_COMPUTE_MODEL_70@)
+      add_definitions(-DCUDNN_HALF)
+      message(STATUS "Enabled CUDNN_HALF")
+    endif()
+  endif()
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD ON)

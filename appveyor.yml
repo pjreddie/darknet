@@ -1,5 +1,6 @@
 image: Visual Studio 2017
 clone_folder: c:\projects\darknet
+cache: C:\Tools\vcpkg\installed\
 
 environment:
     WORKSPACE: C:\projects
@@ -11,25 +12,25 @@ environment:
     - platform: Win64
       COMPILER: vs
       configuration: Release
-      VCPKG_ROOT: C:\projects\vcpkg
+      VCPKG_ROOT: C:\Tools\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
       USE_CUDA: yes
     - platform: Win64
       COMPILER: vs
       configuration: Debug
-      VCPKG_ROOT: C:\projects\vcpkg
+      VCPKG_ROOT: C:\Tools\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
       USE_CUDA: yes
     - platform: Win64
       COMPILER: vs
       configuration: Release
-      VCPKG_ROOT: C:\projects\vcpkg
+      VCPKG_ROOT: C:\Tools\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
       USE_CUDA: no
     - platform: Win64
       COMPILER: vs
       configuration: Debug
-      VCPKG_ROOT: C:\projects\vcpkg
+      VCPKG_ROOT: C:\Tools\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
       USE_CUDA: no
     - platform: Win64
@@ -62,10 +63,9 @@ install:
   - if [%COMPILER%]==[cygwin] %CYGSH% 'make -j8'
   - if [%COMPILER%]==[cygwin] %CYGSH% 'make install'
   - if [%COMPILER%]==[cygwin] cd %WORKSPACE%
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] git clone https://github.com/Microsoft/vcpkg
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd %VCPKG_ROOT%
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] bootstrap-vcpkg.bat
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg integrate install
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] git pull
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] .\bootstrap-vcpkg.bat
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%USE_CUDA%]==[yes] vcpkg install cuda
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv[ffmpeg] pthreads   ## opencv[ffmpeg,cuda] is too big to build, timing out (>1h). We use plain openCV also for CUDA builds (toolchain can manage this strange situation anyway)
   - cd %WORKSPACE%\darknet\

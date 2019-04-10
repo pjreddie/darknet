@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "activation_layer.h"
 #include "activations.h"
@@ -32,8 +33,8 @@
 #include "softmax_layer.h"
 #include "utils.h"
 #include "upsample_layer.h"
+#include "version.h"
 #include "yolo_layer.h"
-#include <stdint.h>
 
 typedef struct{
     char *type;
@@ -1038,9 +1039,9 @@ void save_weights_upto(network net, char *filename, int cutoff)
     FILE *fp = fopen(filename, "wb");
     if(!fp) file_error(filename);
 
-    int major = 0;
-    int minor = 2;
-    int revision = 5;
+    int major = MAJOR_VERSION;
+    int minor = MINOR_VERSION;
+    int revision = PATCH_VERSION;
     fwrite(&major, sizeof(int), 1, fp);
     fwrite(&minor, sizeof(int), 1, fp);
     fwrite(&revision, sizeof(int), 1, fp);

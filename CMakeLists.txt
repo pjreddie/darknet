@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 
-set(Darknet_MAJOR_VERSION 1)
-set(Darknet_MINOR_VERSION 0)
-set(Darknet_PATCH_VERSION 0)
+set(Darknet_MAJOR_VERSION 0)
+set(Darknet_MINOR_VERSION 2)
+set(Darknet_PATCH_VERSION 5)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION})
 
 set(CMAKE_VERBOSE_MAKEFILE "FALSE" CACHE BOOL "Create verbose makefile")
@@ -29,7 +29,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Install prefix" FORCE)
-set(INSTALL_BIN_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where exe and dll will be installed" FORCE)
+set(INSTALL_BIN_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where exe and dll will be installed")
 set(INSTALL_LIB_DIR      "lib"                       CACHE PATH "Path where lib will be installed")
 set(INSTALL_INCLUDE_DIR  "include"                   CACHE PATH "Path where headers will be installed")
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
@@ -40,6 +40,11 @@ foreach(p LIB BIN INCLUDE CMAKE)
     set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
   endif()
 endforeach()
+
+configure_file(
+  "${CMAKE_CURRENT_LIST_DIR}/src/version.h.in"
+  "${CMAKE_CURRENT_LIST_DIR}/src/version.h"
+)
 
 set(ENABLE_CUDA "TRUE" CACHE BOOL "Enable CUDA build")
 if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
@@ -73,6 +78,10 @@ if(ENABLE_CUDA AND NOT CUDA_COMPUTE_MODEL)
   set(CUDA_COMPUTE_MODEL "${default_cuda_compute_model}" CACHE
       STRING "Choose the best compute model supported by your GPU" FORCE)
   set_property(CACHE CUDA_COMPUTE_MODEL PROPERTY STRINGS ${CUDA_COMPUTE_MODEL_75} ${CUDA_COMPUTE_MODEL_72} ${CUDA_COMPUTE_MODEL_70} ${CUDA_COMPUTE_MODEL_62} ${CUDA_COMPUTE_MODEL_61} ${CUDA_COMPUTE_MODEL_60} ${CUDA_COMPUTE_MODEL_53} ${CUDA_COMPUTE_MODEL_52} ${CUDA_COMPUTE_MODEL_37} ${CUDA_COMPUTE_MODEL_35} ${CUDA_COMPUTE_MODEL_30})
+endif()
+
+if(NOT ENABLE_CUDA)
+  set(CUDA_COMPUTE_MODEL "0" CACHE STRING "CUDA Compute Model set to 0 because CUDA is missing" FORCE)
 endif()
 
 if(USE_INTEGRATED_LIBS)
@@ -118,7 +127,8 @@ set(SKIP_USELIB_TRACK "FALSE" CACHE BOOL "Skip building uselib_track" FORCE)
 if(OpenCV_FOUND)
   if(ENABLE_CUDA AND NOT OpenCV_CUDA_VERSION)
     set(SKIP_USELIB_TRACK "TRUE" CACHE BOOL "Skip building uselib_track" FORCE)
-    message(WARNING "The build of OpenCV does not have CUDA support, so some tools have been disabled! Please rebuild OpenCV with CUDA support to build them!")
+    message(STATUS "  ->  darknet is fine for now, but uselib_track has been disabled!")
+    message(STATUS "  ->  Please rebuild OpenCV from sources with CUDA support to enable it")
   endif()
   add_definitions(-DOPENCV)
 endif()
@@ -262,7 +272,7 @@ endif()
 target_compile_definitions(darklib PRIVATE LIB_EXPORTS=1)
 set_target_properties(darklib PROPERTIES LINKER_LANGUAGE CXX)
 
-if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
+if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
   target_compile_definitions(uselib_track PRIVATE TRACK_OPTFLOW=1)
   set_target_properties(uselib_track PROPERTIES LINKER_LANGUAGE CXX)
@@ -324,7 +334,7 @@ if(ENABLE_CUDA)
 endif()
 
 target_link_libraries(uselib PRIVATE darklib)
-if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
+if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   target_link_libraries(uselib_track PRIVATE darklib)
 endif()
 
@@ -340,7 +350,7 @@ install(TARGETS darklib EXPORT DarknetTargets
 install(TARGETS uselib darknet
   DESTINATION "${INSTALL_BIN_DIR}"
 )
-if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
+if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   install(TARGETS uselib_track
     DESTINATION "${INSTALL_BIN_DIR}"
   )
