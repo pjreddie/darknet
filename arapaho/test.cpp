@@ -226,7 +226,7 @@ int main()
                 
             }// If objects were detected
             imshow("Arapaho", image);
-            waitKey((1000 / TARGET_SHOW_FPS));
+            waitKey(0);
          
         } //If a frame was read
     }// Detection loop

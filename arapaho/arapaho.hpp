@@ -23,6 +23,7 @@
 #include "cost_layer.h"
 #include "utils.h"
 #include "parser.h"
+#include "image.h"
 #include "box.h"
 #include "region_layer.h"
 #include "option_list.h"
@@ -35,7 +36,7 @@
 #define DPRINTF printf
 #define EPRINTF printf
 #else
-#define DPRINTF
+#define DPRINTF printf
 #define EPRINTF printf
 #endif
 

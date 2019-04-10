@@ -11,8 +11,6 @@
 
 #include "arapaho.hpp"
 
-image ipl_to_image(IplImage* src);
-
 ArapahoV2::ArapahoV2()
 {
     classNames = 0;
