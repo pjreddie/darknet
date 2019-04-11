@@ -60,6 +60,7 @@ int main()
     bool ret = false;
     int expectedW = 0, expectedH = 0;
     box* boxes = 0;
+    float* probs = 0;
     std::string* labels;
     
     // Early exits
@@ -163,6 +164,7 @@ int main()
             if(numObjects > 0 && numObjects < MAX_OBJECTS_PER_FRAME) // Realistic maximum
             {    
                 boxes = new box[numObjects];
+                probs = new float[numObjects];
                 labels = new std::string[numObjects];
                 if(!boxes)
                 {
@@ -179,6 +181,11 @@ int main()
                         delete[] boxes;
                         boxes = NULL;                        
                     }
+                    if (probs)
+                    {
+                        delete[] probs;
+                        probs = NULL;
+                    }
                     return -1;
                 }
                 
@@ -186,6 +193,7 @@ int main()
                 p->GetBoxes(
                     boxes,
                     labels,
+                    probs,
                     numObjects
                     );
                 
@@ -207,8 +215,10 @@ int main()
                     // Show labels
                     if (labels[objId].c_str())
                     {
-                        DPRINTF("Label:%s\n\n", labels[objId].c_str());
-                        putText(image, labels[objId].c_str(), cvPoint(leftTopX, leftTopY),
+                        char probAsString[200];
+                        snprintf(probAsString, 200, "%s: %f", labels[objId].c_str(), probs[objId]);
+                        DPRINTF("Label:%s, Probabilty: %s\n\n", labels[objId].c_str(), probAsString);
+                        putText(image, probAsString, cvPoint(leftTopX, leftTopY),
                             FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200, 200, 250), 1, CV_AA);
                     }
                 }
@@ -223,6 +233,11 @@ int main()
                     delete[] labels;
                     labels = NULL;
                 }   
+                if (probs)
+                {
+                    delete[] probs;
+                    probs = NULL;
+                }
                 
             }// If objects were detected
             imshow("Arapaho", image);
