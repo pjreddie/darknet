@@ -132,33 +132,28 @@ public:
         else if (img_src.channels() == 1) cv::cvtColor(img_src, img, cv::COLOR_GRAY2BGR);
         else std::cerr << " Warning: img_src.channels() is not 1, 3 or 4. It is = " << img_src.channels() << std::endl;
         std::shared_ptr<image_t> image_ptr(new image_t, [](image_t *img) { free_image(*img); delete img; });
-        std::shared_ptr<IplImage> ipl_small = std::make_shared<IplImage>(img);
-        *image_ptr = ipl_to_image(ipl_small.get());
+        *image_ptr = mat_to_image_custom(img);
         return image_ptr;
     }
 
 private:
 
-    static image_t ipl_to_image(IplImage* src)
+    static image_t mat_to_image_custom(cv::Mat mat)
     {
-        unsigned char *data = (unsigned char *)src->imageData;
-        int h = src->height;
-        int w = src->width;
-        int c = src->nChannels;
-        int step = src->widthStep;
-        image_t out = make_image_custom(w, h, c);
-        int count = 0;
-
-        for (int k = 0; k < c; ++k) {
-            for (int i = 0; i < h; ++i) {
-                int i_step = i*step;
-                for (int j = 0; j < w; ++j) {
-                    out.data[count++] = data[i_step + j*c + k] / 255.;
+        int w = mat.cols;
+        int h = mat.rows;
+        int c = mat.channels();
+        image_t im = make_image_custom(w, h, c);
+        unsigned char *data = (unsigned char *)mat.data;
+        int step = mat.step;
+        for (int y = 0; y < h; ++y) {
+            for (int k = 0; k < c; ++k) {
+                for (int x = 0; x < w; ++x) {
+                    im.data[k*w*h + y*w + x] = data[y*step + x*c + k] / 255.0f;
                 }
             }
         }
-
-        return out;
+        return im;
     }
 
     static image_t make_empty_image(int w, int h, int c)

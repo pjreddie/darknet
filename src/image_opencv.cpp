@@ -86,8 +86,8 @@ extern "C" {
 // ====================================================================
     image mat_to_image(cv::Mat mat);
     cv::Mat image_to_mat(image img);
-    image ipl_to_image(mat_cv* src);
-    mat_cv *image_to_ipl(image img);
+//    image ipl_to_image(mat_cv* src);
+//    mat_cv *image_to_ipl(image img);
 //    cv::Mat ipl_to_mat(IplImage *ipl);
 //    IplImage *mat_to_ipl(cv::Mat mat);
 
@@ -850,131 +850,136 @@ void save_cv_jpg(mat_cv *img_src, const char *name)
 // ====================================================================
 void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
-    cv::Mat *show_img = mat;
-    int i, j;
-    if (!show_img) return;
-    static int frame_id = 0;
-    frame_id++;
+    try {
+        cv::Mat *show_img = mat;
+        int i, j;
+        if (!show_img) return;
+        static int frame_id = 0;
+        frame_id++;
 
-    for (i = 0; i < num; ++i) {
-        char labelstr[4096] = { 0 };
-        int class_id = -1;
-        for (j = 0; j < classes; ++j) {
-            int show = strncmp(names[j], "dont_show", 9);
-            if (dets[i].prob[j] > thresh && show) {
-                if (class_id < 0) {
-                    strcat(labelstr, names[j]);
-                    class_id = j;
-                    char buff[10];
-                    sprintf(buff, " (%2.0f%%)", dets[i].prob[j]*100);
-                    strcat(labelstr, buff);
+        for (i = 0; i < num; ++i) {
+            char labelstr[4096] = { 0 };
+            int class_id = -1;
+            for (j = 0; j < classes; ++j) {
+                int show = strncmp(names[j], "dont_show", 9);
+                if (dets[i].prob[j] > thresh && show) {
+                    if (class_id < 0) {
+                        strcat(labelstr, names[j]);
+                        class_id = j;
+                        char buff[10];
+                        sprintf(buff, " (%2.0f%%)", dets[i].prob[j] * 100);
+                        strcat(labelstr, buff);
+                    }
+                    else {
+                        strcat(labelstr, ", ");
+                        strcat(labelstr, names[j]);
+                    }
+                    printf("%s: %.0f%% ", names[j], dets[i].prob[j] * 100);
                 }
-                else {
-                    strcat(labelstr, ", ");
-                    strcat(labelstr, names[j]);
-                }
-                printf("%s: %.0f%% ", names[j], dets[i].prob[j] * 100);
+            }
+            if (class_id >= 0) {
+                int width = std::max(1.0f, show_img->rows * .002f);
+
+                //if(0){
+                //width = pow(prob, 1./2.)*10+1;
+                //alphabet = 0;
+                //}
+
+                //printf("%d %s: %.0f%%\n", i, names[class_id], prob*100);
+                int offset = class_id * 123457 % classes;
+                float red = get_color(2, offset, classes);
+                float green = get_color(1, offset, classes);
+                float blue = get_color(0, offset, classes);
+                float rgb[3];
+
+                //width = prob*20+2;
+
+                rgb[0] = red;
+                rgb[1] = green;
+                rgb[2] = blue;
+                box b = dets[i].bbox;
+                if (std::isnan(b.w) || std::isinf(b.w)) b.w = 0.5;
+                if (std::isnan(b.h) || std::isinf(b.h)) b.h = 0.5;
+                if (std::isnan(b.x) || std::isinf(b.x)) b.x = 0.5;
+                if (std::isnan(b.y) || std::isinf(b.y)) b.y = 0.5;
+                b.w = (b.w < 1) ? b.w : 1;
+                b.h = (b.h < 1) ? b.h : 1;
+                b.x = (b.x < 1) ? b.x : 1;
+                b.y = (b.y < 1) ? b.y : 1;
+                //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+
+                int left = (b.x - b.w / 2.)*show_img->cols;
+                int right = (b.x + b.w / 2.)*show_img->cols;
+                int top = (b.y - b.h / 2.)*show_img->rows;
+                int bot = (b.y + b.h / 2.)*show_img->rows;
+
+                if (left < 0) left = 0;
+                if (right > show_img->cols - 1) right = show_img->cols - 1;
+                if (top < 0) top = 0;
+                if (bot > show_img->rows - 1) bot = show_img->rows - 1;
+
+                //int b_x_center = (left + right) / 2;
+                //int b_y_center = (top + bot) / 2;
+                //int b_width = right - left;
+                //int b_height = bot - top;
+                //sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
+
+                float const font_size = show_img->rows / 1000.F;
+                cv::Size const text_size = cv::getTextSize(labelstr, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, 1, 0);
+                cv::Point pt1, pt2, pt_text, pt_text_bg1, pt_text_bg2;
+                pt1.x = left;
+                pt1.y = top;
+                pt2.x = right;
+                pt2.y = bot;
+                pt_text.x = left;
+                pt_text.y = top - 4;// 12;
+                pt_text_bg1.x = left;
+                pt_text_bg1.y = top - (3 + 18 * font_size);
+                pt_text_bg2.x = right;
+                if ((right - left) < text_size.width) pt_text_bg2.x = left + text_size.width;
+                pt_text_bg2.y = top;
+                cv::Scalar color;
+                color.val[0] = red * 256;
+                color.val[1] = green * 256;
+                color.val[2] = blue * 256;
+
+                // you should create directory: result_img
+                //static int copied_frame_id = -1;
+                //static IplImage* copy_img = NULL;
+                //if (copied_frame_id != frame_id) {
+                //    copied_frame_id = frame_id;
+                //    if(copy_img == NULL) copy_img = cvCreateImage(cvSize(show_img->width, show_img->height), show_img->depth, show_img->nChannels);
+                //    cvCopy(show_img, copy_img, 0);
+                //}
+                //static int img_id = 0;
+                //img_id++;
+                //char image_name[1024];
+                //sprintf(image_name, "result_img/img_%d_%d_%d_%s.jpg", frame_id, img_id, class_id, names[class_id]);
+                //CvRect rect = cvRect(pt1.x, pt1.y, pt2.x - pt1.x, pt2.y - pt1.y);
+                //cvSetImageROI(copy_img, rect);
+                //cvSaveImage(image_name, copy_img, 0);
+                //cvResetImageROI(copy_img);
+
+                cv::rectangle(*show_img, pt1, pt2, color, width, 8, 0);
+                if (ext_output)
+                    printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
+                    (float)left, (float)top, b.w*show_img->cols, b.h*show_img->rows);
+                else
+                    printf("\n");
+
+                cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
+                cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);    // filled
+                cv::Scalar black_color = CV_RGB(0, 0, 0);
+                cv::putText(*show_img, labelstr, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2 * font_size, CV_AA);
+                // cv::FONT_HERSHEY_COMPLEX_SMALL, cv::FONT_HERSHEY_SIMPLEX
             }
         }
-        if (class_id >= 0) {
-            int width = std::max(1.0f, show_img->rows * .002f);
-
-            //if(0){
-            //width = pow(prob, 1./2.)*10+1;
-            //alphabet = 0;
-            //}
-
-            //printf("%d %s: %.0f%%\n", i, names[class_id], prob*100);
-            int offset = class_id * 123457 % classes;
-            float red = get_color(2, offset, classes);
-            float green = get_color(1, offset, classes);
-            float blue = get_color(0, offset, classes);
-            float rgb[3];
-
-            //width = prob*20+2;
-
-            rgb[0] = red;
-            rgb[1] = green;
-            rgb[2] = blue;
-            box b = dets[i].bbox;
-            if (std::isnan(b.w) || std::isinf(b.w)) b.w = 0.5;
-            if (std::isnan(b.h) || std::isinf(b.h)) b.h = 0.5;
-            if (std::isnan(b.x) || std::isinf(b.x)) b.x = 0.5;
-            if (std::isnan(b.y) || std::isinf(b.y)) b.y = 0.5;
-            b.w = (b.w < 1) ? b.w : 1;
-            b.h = (b.h < 1) ? b.h : 1;
-            b.x = (b.x < 1) ? b.x : 1;
-            b.y = (b.y < 1) ? b.y : 1;
-            //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
-
-            int left = (b.x - b.w / 2.)*show_img->cols;
-            int right = (b.x + b.w / 2.)*show_img->cols;
-            int top = (b.y - b.h / 2.)*show_img->rows;
-            int bot = (b.y + b.h / 2.)*show_img->rows;
-
-            if (left < 0) left = 0;
-            if (right > show_img->cols - 1) right = show_img->cols - 1;
-            if (top < 0) top = 0;
-            if (bot > show_img->rows - 1) bot = show_img->rows - 1;
-
-            //int b_x_center = (left + right) / 2;
-            //int b_y_center = (top + bot) / 2;
-            //int b_width = right - left;
-            //int b_height = bot - top;
-            //sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
-
-            float const font_size = show_img->rows / 1000.F;
-            cv::Size const text_size = cv::getTextSize(labelstr, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, 1, 0);
-            cv::Point pt1, pt2, pt_text, pt_text_bg1, pt_text_bg2;
-            pt1.x = left;
-            pt1.y = top;
-            pt2.x = right;
-            pt2.y = bot;
-            pt_text.x = left;
-            pt_text.y = top - 4;// 12;
-            pt_text_bg1.x = left;
-            pt_text_bg1.y = top - (1 + 18 * font_size);
-            pt_text_bg2.x = right;
-            if ((right - left) < text_size.width) pt_text_bg2.x = left + text_size.width;
-            pt_text_bg2.y = top;
-            cv::Scalar color;
-            color.val[0] = red * 256;
-            color.val[1] = green * 256;
-            color.val[2] = blue * 256;
-
-            // you should create directory: result_img
-            //static int copied_frame_id = -1;
-            //static IplImage* copy_img = NULL;
-            //if (copied_frame_id != frame_id) {
-            //    copied_frame_id = frame_id;
-            //    if(copy_img == NULL) copy_img = cvCreateImage(cvSize(show_img->width, show_img->height), show_img->depth, show_img->nChannels);
-            //    cvCopy(show_img, copy_img, 0);
-            //}
-            //static int img_id = 0;
-            //img_id++;
-            //char image_name[1024];
-            //sprintf(image_name, "result_img/img_%d_%d_%d_%s.jpg", frame_id, img_id, class_id, names[class_id]);
-            //CvRect rect = cvRect(pt1.x, pt1.y, pt2.x - pt1.x, pt2.y - pt1.y);
-            //cvSetImageROI(copy_img, rect);
-            //cvSaveImage(image_name, copy_img, 0);
-            //cvResetImageROI(copy_img);
-
-            cv::rectangle(*show_img, pt1, pt2, color, width, 8, 0);
-            if (ext_output)
-                printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
-                (float)left, (float)top, b.w*show_img->cols, b.h*show_img->rows);
-            else
-                printf("\n");
-
-            cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
-            cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);    // filled
-            cv::Scalar black_color = CV_RGB(0,0,0);
-            cv::putText(*show_img, labelstr, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2*font_size, CV_AA);
-            // cv::FONT_HERSHEY_COMPLEX_SMALL, cv::FONT_HERSHEY_SIMPLEX
+        if (ext_output) {
+            fflush(stdout);
         }
     }
-    if (ext_output) {
-        fflush(stdout);
+    catch (...) {
+        cerr << "OpenCV exception: draw_detections_cv_v3() \n";
     }
 }
 // ----------------------------------------
@@ -984,53 +989,58 @@ void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, float thresh, 
 // ====================================================================
 mat_cv* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show)
 {
-    int img_offset = 50;
+    int img_offset = 60;
     int draw_size = img_size - img_offset;
     cv::Mat *img_ptr = new cv::Mat(img_size, img_size, CV_8UC3, CV_RGB(255, 255, 255));
     cv::Mat &img = *img_ptr;
     cv::Point pt1, pt2, pt_text;
 
-    char char_buff[100];
-    int i;
-    // vertical lines
-    pt1.x = img_offset; pt2.x = img_size, pt_text.x = 10;
-    for (i = 1; i <= number_of_lines; ++i) {
-        pt1.y = pt2.y = (float)i * draw_size / number_of_lines;
-        cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
-        if (i % 10 == 0) {
-            sprintf(char_buff, "%2.1f", max_img_loss*(number_of_lines - i) / number_of_lines);
-            pt_text.y = pt1.y + 5;
+    try {
+        char char_buff[100];
+        int i;
+        // vertical lines
+        pt1.x = img_offset; pt2.x = img_size, pt_text.x = 30;
+        for (i = 1; i <= number_of_lines; ++i) {
+            pt1.y = pt2.y = (float)i * draw_size / number_of_lines;
+            cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
+            if (i % 10 == 0) {
+                sprintf(char_buff, "%2.1f", max_img_loss*(number_of_lines - i) / number_of_lines);
+                pt_text.y = pt1.y + 3;
 
-            cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-            cv::line(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
+                cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+                cv::line(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
+            }
+        }
+        // horizontal lines
+        pt1.y = draw_size; pt2.y = 0, pt_text.y = draw_size + 15;
+        for (i = 0; i <= number_of_lines; ++i) {
+            pt1.x = pt2.x = img_offset + (float)i * draw_size / number_of_lines;
+            cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
+            if (i % 10 == 0) {
+                sprintf(char_buff, "%d", max_batches * i / number_of_lines);
+                pt_text.x = pt1.x - 20;
+                cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+                cv::line(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
+            }
+        }
+
+        cv::putText(img, "Loss", cv::Point(10, 55), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 255), 1, CV_AA);
+        cv::putText(img, "Iteration number", cv::Point(draw_size / 2, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+        char max_batches_buff[100];
+        sprintf(max_batches_buff, "in cfg max_batches=%d", max_batches);
+        cv::putText(img, max_batches_buff, cv::Point(draw_size - 195, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+        cv::putText(img, "Press 's' to save : chart.png", cv::Point(5, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+        if (!dont_show) {
+            printf(" If error occurs - run training with flag: -dont_show \n");
+            cv::namedWindow("average loss", cv::WINDOW_NORMAL);
+            cv::moveWindow("average loss", 0, 0);
+            cv::resizeWindow("average loss", img_size, img_size);
+            cv::imshow("average loss", img);
+            cv::waitKey(20);
         }
     }
-    // horizontal lines
-    pt1.y = draw_size; pt2.y = 0, pt_text.y = draw_size + 15;
-    for (i = 0; i <= number_of_lines; ++i) {
-        pt1.x = pt2.x = img_offset + (float)i * draw_size / number_of_lines;
-        cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
-        if (i % 10 == 0) {
-            sprintf(char_buff, "%d", max_batches * i / number_of_lines);
-            pt_text.x = pt1.x - 20;
-            cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-            cv::line(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
-        }
-    }
-
-    cv::putText(img, "Loss", cv::Point(0, 35), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-    cv::putText(img, "Iteration number", cv::Point(draw_size / 2, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-    char max_batches_buff[100];
-    sprintf(max_batches_buff, "in cfg max_batches=%d", max_batches);
-    cv::putText(img, max_batches_buff, cv::Point(draw_size - 195, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-    cv::putText(img, "Press 's' to save : chart.png", cv::Point(5, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-    if (!dont_show) {
-        printf(" If error occurs - run training with flag: -dont_show \n");
-        cv::namedWindow("average loss", cv::WINDOW_NORMAL);
-        cv::moveWindow("average loss", 0, 0);
-        cv::resizeWindow("average loss", img_size, img_size);
-        cv::imshow("average loss", img);
-        cv::waitKey(20);
+    catch (...) {
+        cerr << "OpenCV exception: draw_train_chart() \n";
     }
     return (mat_cv*)img_ptr;
 }
@@ -1039,60 +1049,67 @@ mat_cv* draw_train_chart(float max_img_loss, int max_batches, int number_of_line
 void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
     float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port)
 {
-    cv::Mat &img = *(cv::Mat*)img_src;
-    int img_offset = 50;
-    int draw_size = img_size - img_offset;
-    char char_buff[100];
-    cv::Point pt1, pt2;
-    pt1.x = img_offset + draw_size * (float)current_batch / max_batches;
-    pt1.y = draw_size * (1 - avg_loss / max_img_loss);
-    if (pt1.y < 0) pt1.y = 1;
-    cv::circle(img, pt1, 1, CV_RGB(0, 0, 255), CV_FILLED, 8, 0);
+    try {
+        cv::Mat &img = *(cv::Mat*)img_src;
+        int img_offset = 60;
+        int draw_size = img_size - img_offset;
+        char char_buff[100];
+        cv::Point pt1, pt2;
+        pt1.x = img_offset + draw_size * (float)current_batch / max_batches;
+        pt1.y = draw_size * (1 - avg_loss / max_img_loss);
+        if (pt1.y < 0) pt1.y = 1;
+        cv::circle(img, pt1, 1, CV_RGB(0, 0, 255), CV_FILLED, 8, 0);
 
-    // precision
-    if (draw_precision) {
-        static float old_precision = 0;
-        static int iteration_old = 0;
-        static int text_iteration_old = 0;
-        if (iteration_old == 0)
-            cv::putText(img, accuracy_name, cv::Point(0, 12), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
+        // precision
+        if (draw_precision) {
+            static float old_precision = 0;
+            static int iteration_old = 0;
+            static int text_iteration_old = 0;
+            if (iteration_old == 0)
+                cv::putText(img, accuracy_name, cv::Point(10, 12), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
 
-        cv::line(img,
-            cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
-            cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
-            CV_RGB(255, 0, 0), 1, 8, 0);
+            cv::line(img,
+                cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
+                cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
+                CV_RGB(255, 0, 0), 1, 8, 0);
 
-        if (((int)(old_precision * 10) != (int)(precision * 10)) || (current_batch - text_iteration_old) >= max_batches / 10) {
-            text_iteration_old = current_batch;
             sprintf(char_buff, "%2.0f%% ", precision * 100);
-            cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
+            cv::putText(img, char_buff, cv::Point(10, 28), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
+            cv::putText(img, char_buff, cv::Point(10, 28), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(200, 0, 0), 1, CV_AA);
 
-            cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(200, 0, 0), 1, CV_AA);
+            if (((int)(old_precision * 10) != (int)(precision * 10)) || (current_batch - text_iteration_old) >= max_batches / 10) {
+                text_iteration_old = current_batch;
+                cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
+                cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(200, 0, 0), 1, CV_AA);
+            }
+            old_precision = precision;
+            iteration_old = current_batch;
         }
-        old_precision = precision;
-        iteration_old = current_batch;
-    }
 
-    sprintf(char_buff, "current avg loss = %2.4f    iteration = %d", avg_loss, current_batch);
-    pt1.x = 55, pt1.y = 10;
-    pt2.x = pt1.x + 460, pt2.y = pt1.y + 20;
-    cv::rectangle(img, pt1, pt2, CV_RGB(255, 255, 255), CV_FILLED, 8, 0);
-    pt1.y += 15;
-    cv::putText(img, char_buff, pt1, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+        sprintf(char_buff, "current avg loss = %2.4f    iteration = %d", avg_loss, current_batch);
+        pt1.x = 15, pt1.y = draw_size + 18;
+        pt2.x = pt1.x + 460, pt2.y = pt1.y + 20;
+        cv::rectangle(img, pt1, pt2, CV_RGB(255, 255, 255), CV_FILLED, 8, 0);
+        pt1.y += 15;
+        cv::putText(img, char_buff, pt1, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 100), 1, CV_AA);
 
-    int k = 0;
-    if (!dont_show) {
-        cv::imshow("average loss", img);
-        k = cv::waitKey(20);
-    }
-    if (k == 's' || current_batch == (max_batches - 1) || current_batch % 100 == 0) {
-        save_mat_png(img, "chart.png");
-        cv::putText(img, "- Saved", cv::Point(260, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
-    }
-    else
-        cv::putText(img, "- Saved", cv::Point(260, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 1, CV_AA);
+        int k = 0;
+        if (!dont_show) {
+            cv::imshow("average loss", img);
+            k = cv::waitKey(20);
+        }
+        if (k == 's' || current_batch == (max_batches - 1) || current_batch % 100 == 0) {
+            save_mat_png(img, "chart.png");
+            cv::putText(img, "- Saved", cv::Point(260, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
+        }
+        else
+            cv::putText(img, "- Saved", cv::Point(260, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 1, CV_AA);
 
-    if (mjpeg_port > 0) send_mjpeg((mat_cv *)&img, mjpeg_port, 500000, 100);
+        if (mjpeg_port > 0) send_mjpeg((mat_cv *)&img, mjpeg_port, 500000, 100);
+    }
+    catch (...) {
+        cerr << "OpenCV exception: draw_train_loss() \n";
+    }
 }
 // ----------------------------------------
 
