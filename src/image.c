@@ -235,11 +235,11 @@ image **load_alphabet()
     }
     return alphabets;
 }
-
+// detection 실직적 점수를 매기는 함수 가장 중요한 함수
 void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
     int i,j;
-
+    int count = 0;
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
         int class = -1;
@@ -253,6 +253,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                     strcat(labelstr, names[j]);
                 }
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+		count++;//객체를 검출할때마다 count++ 여기서 classes가 1이기 때문에 검출을 하면 무조건 사람이기 때문에 무조건 증가시켜도 됨.
             }
         }
         if(class >= 0){
@@ -307,6 +308,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             }
         }
     }
+    printf("Total Person Count = %d\n",count);
 }
 
 void transpose_image(image im)
