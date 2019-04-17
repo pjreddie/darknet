@@ -21,7 +21,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     export CC="/usr/local/bin/gcc-8"
     export CXX="/usr/local/bin/g++-8"
   fi
-  vcpkg_triplet="x64-darwin"
+  vcpkg_triplet="x64-osx"
 else
   vcpkg_triplet="x64-linux"
 fi
