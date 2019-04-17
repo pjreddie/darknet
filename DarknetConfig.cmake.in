@@ -1,26 +1,21 @@
 # Config file for the Darknet package
-# It defines the following variables
-#  Darknet_INCLUDE_DIRS - include directories for Darknet
-#  Darknet_LIBRARIES    - libraries to link against
 
-# Compute paths
 get_filename_component(Darknet_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-set(Darknet_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 list(APPEND CMAKE_MODULE_PATH "${Darknet_CMAKE_DIR}")
 
 include(CMakeFindDependencyMacro)
 
 if(@ENABLE_OPENCV@)
-  find_dependency(OpenCV REQUIRED)
+  find_dependency(OpenCV)
   add_definitions(-DOPENCV)
 endif()
 
-find_dependency(Stb REQUIRED)
+find_dependency(Stb)
 
 if(@ENABLE_CUDA@)
-  find_dependency(CUDNN)
   add_definitions(-DGPU)
-  if(CUDNN_FOUND)
+  if(@ENABLE_CUDNN@)
+    find_dependency(CUDNN)
     add_definitions(-DCUDNN)
     if(@CUDA_COMPUTE_MODEL@ VERSION_GREATER_EQUAL @CUDA_COMPUTE_MODEL_70@)
       add_definitions(-DCUDNN_HALF)
@@ -36,12 +31,10 @@ if(MSVC)
   find_dependency(PThreads_windows)
 endif()
 
-if("${CMAKE_VERSION}" VERSION_GREATER "3.9.0")
+if(@ENABLE_OPENMP@)
   find_dependency(OpenMP)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
 # Our library dependencies (contains definitions for IMPORTED targets)
 include("${Darknet_CMAKE_DIR}/DarknetTargets.cmake")
-
-# These are IMPORTED targets created by DarknetTargets.cmake
-set(Darknet_LIBRARIES darklib)
