@@ -35,5 +35,4 @@ Thumbs.db
 .vscode/
 
 lib/
-include/darknet/
 share/

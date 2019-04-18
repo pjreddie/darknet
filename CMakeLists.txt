@@ -6,7 +6,7 @@ set(Darknet_PATCH_VERSION 5)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION})
 
 set(CMAKE_VERBOSE_MAKEFILE "FALSE" CACHE BOOL "Create verbose makefile")
-set(BUILD_SHARED_LIBS "TRUE" CACHE BOOL "Create darklib as a shared library")
+set(BUILD_SHARED_LIBS "TRUE" CACHE BOOL "Create dark as a shared library")
 
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
@@ -232,7 +232,7 @@ list(REMOVE_ITEM headers
   ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.h
   ${CMAKE_CURRENT_LIST_DIR}/src/getopt.h
 )
-set(exported_headers ${headers})
+#set(exported_headers ${headers})
 
 #look for all *.c files in src folder
 file(GLOB sources "${CMAKE_CURRENT_LIST_DIR}/src/*.c")
@@ -269,19 +269,21 @@ endif()
 
 set_source_files_properties(${sources} PROPERTIES LANGUAGE CXX)
 
-add_library(darklib ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
-set_target_properties(darklib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(dark ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
+set_target_properties(dark PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(ENABLE_CUDA)
-  set_target_properties(darklib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties(dark PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif()
-target_compile_definitions(darklib PRIVATE LIB_EXPORTS=1)
-set_target_properties(darklib PROPERTIES LINKER_LANGUAGE CXX)
+if(BUILD_SHARED_LIBS)
+  target_compile_definitions(dark PRIVATE LIB_EXPORTS=1)
+endif()
+set_target_properties(dark PROPERTIES LINKER_LANGUAGE CXX)
 
 if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
   target_compile_definitions(uselib_track PRIVATE TRACK_OPTFLOW=1)
   set_target_properties(uselib_track PROPERTIES LINKER_LANGUAGE CXX)
-  target_include_directories(uselib_track PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include/darknet> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+  target_include_directories(uselib_track PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
   target_link_libraries(uselib_track PRIVATE ${OpenCV_LIBS})
 endif()
 
@@ -292,40 +294,40 @@ add_executable(darknet ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c ${sources} ${head
 set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/src/darknet.c PROPERTIES LANGUAGE CXX)
 set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
 
-target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include/darknet> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
-target_include_directories(darklib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include/darknet> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
-target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include/darknet> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+target_include_directories(dark PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 
 if(CUDNN_FOUND)
   target_link_libraries(darknet PRIVATE CuDNN::CuDNN)
-  target_link_libraries(darklib PRIVATE CuDNN::CuDNN)
+  target_link_libraries(dark PRIVATE CuDNN::CuDNN)
 endif()
 
 if(OpenCV_FOUND)
   target_link_libraries(darknet PRIVATE ${OpenCV_LIBS})
   target_link_libraries(uselib PRIVATE ${OpenCV_LIBS})
-  target_link_libraries(darklib PRIVATE ${OpenCV_LIBS})
+  target_link_libraries(dark PRIVATE ${OpenCV_LIBS})
 endif()
 
 if(OPENMP_FOUND)
   target_link_libraries(darknet PRIVATE OpenMP::OpenMP_CXX)
-  target_link_libraries(darklib PRIVATE OpenMP::OpenMP_CXX)
+  target_link_libraries(dark PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
   target_link_libraries(darknet PRIVATE m)
-  target_link_libraries(darklib PRIVATE m)
+  target_link_libraries(dark PRIVATE m)
 endif()
 
 if(MSVC)
   target_link_libraries(darknet PRIVATE PThreads_windows::PThreads_windows)
   target_link_libraries(darknet PRIVATE wsock32 ws2_32)
-  target_link_libraries(darklib PRIVATE PThreads_windows::PThreads_windows)
-  target_link_libraries(darklib PRIVATE wsock32 ws2_32)
+  target_link_libraries(dark PRIVATE PThreads_windows::PThreads_windows)
+  target_link_libraries(dark PRIVATE wsock32 ws2_32)
 endif()
 
 target_link_libraries(darknet PRIVATE Threads::Threads)
-target_link_libraries(darklib PRIVATE Threads::Threads)
+target_link_libraries(dark PRIVATE Threads::Threads)
 
 if(ENABLE_ZED_CAMERA)
   target_link_libraries(darknet PRIVATE ${ZED_LIBRARIES})
@@ -334,22 +336,25 @@ endif()
 
 if(ENABLE_CUDA)
   target_link_libraries(darknet PRIVATE curand cublas cuda)
-  target_link_libraries(darklib PRIVATE curand cublas cuda)
-  set_target_properties(darklib PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  target_link_libraries(dark PRIVATE curand cublas cuda)
+  set_target_properties(dark PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
 
-target_link_libraries(uselib PRIVATE darklib)
+target_link_libraries(uselib PRIVATE dark)
 if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
-  target_link_libraries(uselib_track PRIVATE darklib)
+  target_link_libraries(uselib_track PRIVATE dark)
 endif()
 
-set_target_properties(darklib PROPERTIES PUBLIC_HEADER "${exported_headers};${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp")
+#set_target_properties(dark PROPERTIES PUBLIC_HEADER "${exported_headers};${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp")
+set_target_properties(dark PROPERTIES PUBLIC_HEADER "${CMAKE_CURRENT_LIST_DIR}/include/darknet.h;${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp")
 
-install(TARGETS darklib EXPORT DarknetTargets
+set_target_properties(dark PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+install(TARGETS dark EXPORT DarknetTargets
   RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
-  PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}/darknet"
+  PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
   COMPONENT dev
 )
 install(TARGETS uselib darknet
