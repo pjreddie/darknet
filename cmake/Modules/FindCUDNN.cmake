@@ -60,8 +60,10 @@ endif()
 
 set(CUDNN_INCLUDE_DIRS ${CUDNN_INCLUDE_DIR})
 set(CUDNN_LIBRARIES ${CUDNN_LIBRARY})
-message(STATUS "Found cuDNN: v${CUDNN_VERSION}  (include: ${CUDNN_INCLUDE_DIR}, library: ${CUDNN_LIBRARY})")
-mark_as_advanced(CUDNN_ROOT_DIR CUDNN_LIBRARY CUDNN_INCLUDE_DIR)
+if(CUDNN_FOUND)
+  message(STATUS "Found cuDNN: v${CUDNN_VERSION}  (include: ${CUDNN_INCLUDE_DIR}, library: ${CUDNN_LIBRARY})")
+endif()
+mark_as_advanced(CUDNN_LIBRARY CUDNN_INCLUDE_DIR)
 
 # Register imported libraries:
 # 1. If we can find a Windows .dll file (or if we can find both Debug and
@@ -75,7 +77,7 @@ if(WIN32)
 endif()
 
 if( CUDNN_FOUND AND NOT TARGET CuDNN::CuDNN )
-  if( EXISTS "${CUDNN_LIBRARY_RELEASE_DLL}" )
+  if( EXISTS "${CUDNN_LIBRARY_DLL}" )
     add_library( CuDNN::CuDNN      SHARED IMPORTED )
     set_target_properties( CuDNN::CuDNN PROPERTIES
       IMPORTED_LOCATION                 "${CUDNN_LIBRARY_DLL}"
