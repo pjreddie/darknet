@@ -892,7 +892,7 @@ install:
   - if [ -d "$HOME/vcpkg/.git" ] ; then echo vcpkg cached ; else rm -rf vcpkg ; git clone https://github.com/Microsoft/vcpkg ; fi
   - cd vcpkg
   - git pull
-  - ./bootstrap-vcpkg.sh
+  - if [[ USE_VCPKG = true ]] ; then ./bootstrap-vcpkg.sh ; fi
   - if [[ USE_VCPKG = true ]] ; then travis_wait ./vcpkg install stb pthreads ; fi
   - if [[ USE_VCPKG = true ]] && [[ ! -z "${CUDACXX}" ]] ; then travis_wait ./vcpkg install opencv[ffmpeg,cuda] ; fi
   - if [[ USE_VCPKG = true ]] && [[ -z "${CUDACXX}" ]] ; then travis_wait ./vcpkg install opencv[ffmpeg] ; fi
