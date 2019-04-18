@@ -30,13 +30,13 @@ if [[ ! -z "$my_cuda_compute_model" ]]; then
   additional_build_setup="-DCUDA_COMPUTE_MODEL=${my_cuda_compute_model}"
 fi
 
-if [[ -d ${VCPKG_ROOT} ]] && [ ! "$bypass_vcpkg" = true ]
+if [[ ! -z "${VCPKG_ROOT}" ]] && [ -d ${VCPKG_ROOT} ] && [ ! "$bypass_vcpkg" = true ]
 then
   vcpkg_path="${VCPKG_ROOT}"
   vcpkg_define="-DCMAKE_TOOLCHAIN_FILE=${vcpkg_path}/scripts/buildsystems/vcpkg.cmake"
   vcpkg_triplet_define="-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet"
   echo "Found vcpkg in VCPKG_ROOT: ${vcpkg_path}"
-elif [ -d ${WORKSPACE}/vcpkg${vcpkg_fork} ] && [ ! "$bypass_vcpkg" = true ]
+elif [[ ! -z "${WORKSPACE}" ]] && [ -d ${WORKSPACE}/vcpkg ] && [ ! "$bypass_vcpkg" = true ]
 then
   vcpkg_path="${WORKSPACE}/vcpkg"
   vcpkg_define="-DCMAKE_TOOLCHAIN_FILE=${vcpkg_path}/scripts/buildsystems/vcpkg.cmake"
