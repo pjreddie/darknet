@@ -1,0 +1,11 @@
+classes=1
+#classes= 80
+train  = /home/kdy/darknet/cfg/train.txt
+#train  = /data/train.txt
+valid  = /home/kdy/darknet/cfg/test.txt 
+#valid  = /data/test.txt 
+#valid = data/coco_val_5k.list
+names = /home/kdy/darknet/data/obj.names
+#names = data/coco.names
+backup = /home/kdy/information/backup/ 
+
