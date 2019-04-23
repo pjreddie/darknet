@@ -29,6 +29,8 @@ find_dependency(Threads)
 
 if(MSVC)
   find_dependency(PThreads_windows)
+  #add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  #set(CMAKE_CXX_FLAGS "/wd4018 /wd4244 /wd4267 /wd4305 ${CMAKE_CXX_FLAGS}")
 endif()
 
 if(@ENABLE_OPENMP@)

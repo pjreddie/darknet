@@ -18,7 +18,7 @@ matrix:
       compiler: gcc
       name: macOS - native gcc (llvm backend) - opencv@2
       env:
-        - OpenCV_DIR="/usr/local/Cellar/opencv@2/2.4.13.7_2/"
+        - OpenCV_DIR="/usr/local/opt/opencv@2/"
         - additional_defines="-DOpenCV_DIR=${OpenCV_DIR}"
         - MATRIX_EVAL="brew install opencv@2"
 
@@ -26,7 +26,7 @@ matrix:
       compiler: gcc
       name: macOS - native gcc (llvm backend) - opencv@3
       env:
-        - OpenCV_DIR="/usr/local/Cellar/opencv@3/3.4.5/"
+        - OpenCV_DIR="/usr/local/opt/opencv@3/"
         - additional_defines="-DOpenCV_DIR=${OpenCV_DIR}"
         - MATRIX_EVAL="brew install opencv@3"
 
@@ -48,7 +48,7 @@ matrix:
       compiler: clang
       name: macOS - native clang - opencv@2
       env:
-        - OpenCV_DIR="/usr/local/Cellar/opencv@2/2.4.13.7_2/"
+        - OpenCV_DIR="/usr/local/opt/opencv@2/"
         - additional_defines="-DOpenCV_DIR=${OpenCV_DIR}"
         - MATRIX_EVAL="brew install opencv@2"
 
@@ -56,7 +56,7 @@ matrix:
       compiler: clang
       name: macOS - native clang - opencv@3
       env:
-        - OpenCV_DIR="/usr/local/Cellar/opencv@3/3.4.5/"
+        - OpenCV_DIR="/usr/local/opt/opencv@3/"
         - additional_defines="-DOpenCV_DIR=${OpenCV_DIR}"
         - MATRIX_EVAL="brew install opencv@3"
 
@@ -892,10 +892,10 @@ install:
   - if [ -d "$HOME/vcpkg/.git" ] ; then echo vcpkg cached ; else rm -rf vcpkg ; git clone https://github.com/Microsoft/vcpkg ; fi
   - cd vcpkg
   - git pull
-  - if [[ USE_VCPKG = true ]] ; then ./bootstrap-vcpkg.sh ; fi
-  - if [[ USE_VCPKG = true ]] ; then travis_wait ./vcpkg install stb pthreads ; fi
-  - if [[ USE_VCPKG = true ]] && [[ ! -z "${CUDACXX}" ]] ; then travis_wait ./vcpkg install opencv[ffmpeg,cuda] ; fi
-  - if [[ USE_VCPKG = true ]] && [[ -z "${CUDACXX}" ]] ; then travis_wait ./vcpkg install opencv[ffmpeg] ; fi
+  - if [ "${USE_VCPKG}" = true ] ; then ./bootstrap-vcpkg.sh ; fi
+  - if [ "${USE_VCPKG}" = true ] ; then travis_wait ./vcpkg install stb pthreads ; fi
+  - if [ "${USE_VCPKG}" = true ] && [[ ! -z "${CUDACXX}" ]] ; then travis_wait ./vcpkg install opencv[ffmpeg,cuda] ; fi
+  - if [ "${USE_VCPKG}" = true ] && [[ -z "${CUDACXX}" ]] ; then travis_wait ./vcpkg install opencv[ffmpeg] ; fi
   - popd
 
 before_script:
