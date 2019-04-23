@@ -10,6 +10,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include <opencv2/core/version.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -112,7 +113,8 @@ mat_cv *load_image_mat_cv(const char *filename, int flag)
             //if (check_mistakes) getchar();
             return NULL;
         }
-        cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
+        if (mat.channels() == 3) cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
+        else if (mat.channels() == 4) cv::cvtColor(mat, mat, cv::COLOR_RGBA2BGRA);
 
         return (mat_cv *)mat_ptr;
     }
@@ -429,7 +431,8 @@ void show_image_cv(image p, const char *name)
         constrain_image(copy);
 
         cv::Mat mat = image_to_mat(copy);
-        cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
+        if (mat.channels() == 3) cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
+        else if (mat.channels() == 4) cv::cvtColor(mat, mat, cv::COLOR_RGBA2BGR);
         cv::namedWindow(name, cv::WINDOW_NORMAL);
         cv::imshow(name, mat);
         free_image(copy);
@@ -816,7 +819,7 @@ extern int stbi_write_jpg(char const *filename, int x, int y, int comp, const vo
 void save_mat_png(cv::Mat img_src, const char *name)
 {
     cv::Mat img_rgb;
-    cv::cvtColor(img_src, img_rgb, cv::COLOR_RGB2BGR);
+    if (img_src.channels() >= 3) cv::cvtColor(img_src, img_rgb, cv::COLOR_RGB2BGR);
     stbi_write_png(name, img_rgb.cols, img_rgb.rows, 3, (char *)img_rgb.data, 0);
 }
 // ----------------------------------------
@@ -824,7 +827,7 @@ void save_mat_png(cv::Mat img_src, const char *name)
 void save_mat_jpg(cv::Mat img_src, const char *name)
 {
     cv::Mat img_rgb;
-    cv::cvtColor(img_src, img_rgb, cv::COLOR_RGB2BGR);
+    if (img_src.channels() >= 3) cv::cvtColor(img_src, img_rgb, cv::COLOR_RGB2BGR);
     stbi_write_jpg(name, img_rgb.cols, img_rgb.rows, 3, (char *)img_rgb.data, 80);
 }
 // ----------------------------------------
@@ -1063,6 +1066,7 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
         // precision
         if (draw_precision) {
             static float old_precision = 0;
+            static float max_precision = 0;
             static int iteration_old = 0;
             static int text_iteration_old = 0;
             if (iteration_old == 0)
@@ -1073,12 +1077,14 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
                 cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
                 CV_RGB(255, 0, 0), 1, 8, 0);
 
-            sprintf(char_buff, "%2.0f%% ", precision * 100);
+            sprintf(char_buff, "%2.1f%% ", precision * 100);
             cv::putText(img, char_buff, cv::Point(10, 28), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
             cv::putText(img, char_buff, cv::Point(10, 28), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(200, 0, 0), 1, CV_AA);
 
-            if (((int)(old_precision * 10) != (int)(precision * 10)) || (current_batch - text_iteration_old) >= max_batches / 10) {
+            if (((int)(old_precision * 10) != (int)(precision * 10)) || (max_precision < precision) || (current_batch - text_iteration_old) >= max_batches / 10) {
                 text_iteration_old = current_batch;
+                max_precision = std::max(max_precision, precision);
+                sprintf(char_buff, "%2.0f%% ", precision * 100);
                 cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
                 cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(200, 0, 0), 1, CV_AA);
             }
@@ -1098,7 +1104,9 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
             cv::imshow("average loss", img);
             k = cv::waitKey(20);
         }
-        if (k == 's' || current_batch == (max_batches - 1) || current_batch % 100 == 0) {
+        static int old_batch = 0;
+        if (k == 's' || current_batch == (max_batches - 1) || (current_batch / 100 > old_batch / 100)) {
+            old_batch = current_batch;
             save_mat_png(img, "chart.png");
             cv::putText(img, "- Saved", cv::Point(260, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
         }
@@ -1133,7 +1141,8 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
         cv::Rect dst_rect(cv::Point2i(std::max<int>(0, -pleft), std::max<int>(0, -ptop)), new_src_rect.size());
 
         cv::Mat cropped(cv::Size(src_rect.width, src_rect.height), img.type());
-        cropped.setTo(cv::Scalar::all(0));
+        //cropped.setTo(cv::Scalar::all(0));
+        cropped.setTo(cv::mean(img));
 
         img(new_src_rect).copyTo(cropped(dst_rect));
 
