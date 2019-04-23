@@ -1139,44 +1139,52 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
         cv::Rect new_src_rect = src_rect & img_rect;
 
         cv::Rect dst_rect(cv::Point2i(std::max<int>(0, -pleft), std::max<int>(0, -ptop)), new_src_rect.size());
-
-        cv::Mat cropped(cv::Size(src_rect.width, src_rect.height), img.type());
-        //cropped.setTo(cv::Scalar::all(0));
-        cropped.setTo(cv::mean(img));
-
-        img(new_src_rect).copyTo(cropped(dst_rect));
-
-        // resize
         cv::Mat sized;
-        cv::resize(cropped, sized, cv::Size(w, h), 0, 0, cv::INTER_LINEAR);
+
+        if (src_rect.x == 0 && src_rect.y == 0 && src_rect.size() == img.size()) {
+            cv::resize(img, sized, cv::Size(w, h), 0, 0, cv::INTER_LINEAR);
+        }
+        else {
+            cv::Mat cropped(src_rect.size(), img.type());
+            //cropped.setTo(cv::Scalar::all(0));
+            cropped.setTo(cv::mean(img));
+
+            img(new_src_rect).copyTo(cropped(dst_rect));
+
+            // resize
+            cv::resize(cropped, sized, cv::Size(w, h), 0, 0, cv::INTER_LINEAR);
+        }
 
         // flip
         if (flip) {
+            cv::Mat cropped;
             cv::flip(sized, cropped, 1);    // 0 - x-axis, 1 - y-axis, -1 - both axes (x & y)
             sized = cropped.clone();
         }
 
         // HSV augmentation
         // cv::COLOR_BGR2HSV, cv::COLOR_RGB2HSV, cv::COLOR_HSV2BGR, cv::COLOR_HSV2RGB
-        if(img.channels() >= 3)
-        {
-            cv::Mat hsv_src;
-            cvtColor(sized, hsv_src, cv::COLOR_RGB2HSV);    // RGB to HSV
+        if (dsat != 1 || dexp != 1 || dhue != 0) {
+            if (img.channels() >= 3)
+            {
+                cv::Mat hsv_src;
+                cvtColor(sized, hsv_src, cv::COLOR_RGB2HSV);    // RGB to HSV
 
-            std::vector<cv::Mat> hsv;
-            cv::split(hsv_src, hsv);
+                std::vector<cv::Mat> hsv;
+                cv::split(hsv_src, hsv);
 
-            hsv[1] *= dsat;
-            hsv[2] *= dexp;
-            hsv[0] += 179 * dhue;
+                hsv[1] *= dsat;
+                hsv[2] *= dexp;
+                hsv[0] += 179 * dhue;
 
-            cv::merge(hsv, hsv_src);
+                cv::merge(hsv, hsv_src);
 
-            cvtColor(hsv_src, sized, cv::COLOR_HSV2RGB);    // HSV to RGB (the same as previous)
-        }
-        else
-        {
-            sized *= dexp;
+                cvtColor(hsv_src, sized, cv::COLOR_HSV2RGB);    // HSV to RGB (the same as previous)
+            }
+            else
+            {
+                sized *= dexp;
+            }
         }
 
         //std::stringstream window_name;
