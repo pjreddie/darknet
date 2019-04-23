@@ -31,7 +31,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/" ${CMAKE_MODULE_
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Install prefix" FORCE)
 set(INSTALL_BIN_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where exe and dll will be installed")
 set(INSTALL_LIB_DIR      "lib"                       CACHE PATH "Path where lib will be installed")
-set(INSTALL_INCLUDE_DIR  "include"                   CACHE PATH "Path where headers will be installed")
+set(INSTALL_INCLUDE_DIR  "include/darknet"           CACHE PATH "Path where headers will be installed")
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
 # Make relative paths absolute (needed later on)
 foreach(p LIB BIN INCLUDE CMAKE)
@@ -283,7 +283,7 @@ if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRA
   add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
   target_compile_definitions(uselib_track PRIVATE TRACK_OPTFLOW=1)
   set_target_properties(uselib_track PROPERTIES LINKER_LANGUAGE CXX)
-  target_include_directories(uselib_track PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+  target_include_directories(uselib_track PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include/darknet> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
   target_link_libraries(uselib_track PRIVATE ${OpenCV_LIBS})
 endif()
 
@@ -294,9 +294,9 @@ add_executable(darknet ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c ${sources} ${head
 set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/src/darknet.c PROPERTIES LANGUAGE CXX)
 set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
 
-target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
-target_include_directories(dark PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
-target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include/darknet> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+target_include_directories(dark PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include/darknet> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include/darknet> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 
 if(CUDNN_FOUND)
   target_link_libraries(darknet PRIVATE CuDNN::CuDNN)
