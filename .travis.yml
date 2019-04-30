@@ -893,6 +893,8 @@ matrix:
  #do not consider known failing builds for the whole build status
   allow_failures:
     - name: macOS - vcpkg
+    - name: ubuntu 14.04 - gcc@8.0 - vcpkg
+    - name: ubuntu 14.04 - gcc@8.0 - CUDA 10 - vcpkg
 
 before_install:
   - travis_retry eval "${MATRIX_EVAL}"
@@ -908,9 +910,8 @@ install:
   - git pull
   - if [ "${USE_VCPKG}" = true ] ; then ./bootstrap-vcpkg.sh ; fi
   - if [ "${USE_VCPKG}" = true ] ; then travis_wait ./vcpkg install stb pthreads ; fi
-  #- if [ "${USE_VCPKG}" = true ] && [[ ! -z "${CUDACXX}" ]] ; then travis_wait ./vcpkg install opencv[ffmpeg,cuda] ; fi
-  #- if [ "${USE_VCPKG}" = true ] && [[ -z "${CUDACXX}" ]] ; then travis_wait ./vcpkg install opencv[ffmpeg] ; fi
-  - if [ "${USE_VCPKG}" = true ] ; then travis_wait ./vcpkg install opencv[ffmpeg] ; fi
+  - if [ "${USE_VCPKG}" = true ] && [[ ! -z "${CUDACXX}" ]] ; then travis_wait 45 ./vcpkg install opencv[ffmpeg,cuda] ; fi
+  - if [ "${USE_VCPKG}" = true ] && [[ -z "${CUDACXX}" ]] ; then travis_wait 45 ./vcpkg install opencv[ffmpeg] ; fi
   - popd
 
 before_script:
