@@ -7,7 +7,7 @@
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen);
 extern void run_yolo(int argc, char **argv);
-extern void run_detector(int argc, char **argv);
+extern void run_detector(int argc, char **argv); // darknet.h 확인
 extern void run_coco(int argc, char **argv);
 extern void run_nightmare(int argc, char **argv);
 extern void run_classifier(int argc, char **argv);
@@ -397,6 +397,7 @@ void visualize(char *cfgfile, char *weightfile)
     visualize_network(net);
 }
 
+//main 위치 
 int main(int argc, char **argv)
 {
     //test_resize("data/bad.jpg");
@@ -427,8 +428,8 @@ int main(int argc, char **argv)
         run_super(argc, argv);
     } else if (0 == strcmp(argv[1], "lsd")){
         run_lsd(argc, argv);
-    } else if (0 == strcmp(argv[1], "detector")){
-        run_detector(argc, argv);
+    } else if (0 == strcmp(argv[1], "detector")){ 
+        run_detector(argc, argv); // argv[1] == detector
     } else if (0 == strcmp(argv[1], "detect")){
         float thresh = find_float_arg(argc, argv, "-thresh", .5);
         char *filename = (argc > 4) ? argv[4]: 0;

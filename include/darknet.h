@@ -427,7 +427,7 @@ typedef enum {
     CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
 } learning_rate_policy;
 
-typedef struct network{
+typedef struct network{ // network struct
     int n;
     int batch;
     size_t *seen;
@@ -544,7 +544,7 @@ typedef enum {
     CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA, SEGMENTATION_DATA, INSTANCE_DATA, ISEG_DATA
 } data_type;
 
-typedef struct load_args{
+typedef struct load_args{ // load_args struct
     int threads;
     char **paths;
     char *path;
@@ -595,7 +595,7 @@ typedef struct node{
     struct node *prev;
 } node;
 
-typedef struct list{
+typedef struct list{ // list struct if you wanna use list you must make this struct in C language
     int size;
     node *front;
     node *back;

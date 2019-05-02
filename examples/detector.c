@@ -3,17 +3,18 @@
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 
-void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
-{
-    list *options = read_data_cfg(datacfg);
-    char *train_images = option_find_str(options, "train", "data/train.list");
-    char *backup_directory = option_find_str(options, "backup", "/backup/");
+void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)// 학습 함수
+{ // we must add validation data set training while train the training data set.
+    list *options = read_data_cfg(datacfg);// obj.data
+    char *train_images = option_find_str(options, "train", "data/train.list"); // default == data/train.list
+    char *backup_directory = option_find_str(options, "backup", "/backup/"); // default == /backup/
 
     srand(time(0));
-    char *base = basecfg(cfgfile);
+    char *base = basecfg(cfgfile); // obj.cfg 
     printf("%s\n", base);
     float avg_loss = -1;
-    network **nets = calloc(ngpus, sizeof(network));
+    network **nets = calloc(ngpus, sizeof(network)); // network struct 
+    // network크기의 변수를 ngpus개 저장할 수 있는 공간 할당 
 
     srand(time(0));
     int seed = rand();
@@ -23,13 +24,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #ifdef GPU
         cuda_set_device(gpus[i]);
 #endif
-        nets[i] = load_network(cfgfile, weightfile, clear);
-        nets[i]->learning_rate *= ngpus;
+        nets[i] = load_network(cfgfile, weightfile, clear);// each layers information add in nets[] index.
+        nets[i]->learning_rate *= ngpus; 
     }
     srand(time(0));
     network *net = nets[0];
 
-    int imgs = net->batch * net->subdivisions * ngpus;
+    int imgs = net->batch * net->subdivisions * ngpus; // training image numbers
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     data train, buffer;
 
@@ -45,7 +46,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     load_args args = get_base_args(net);
     args.coords = l.coords;
     args.paths = paths;
-    args.n = imgs;
+    args.n = imgs; // args.n = imgs;
     args.m = plist->size;
     args.classes = classes;
     args.jitter = jitter;
@@ -55,35 +56,35 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //args.type = INSTANCE_DATA;
     args.threads = 64;
 
-    pthread_t load_thread = load_data(args);
+    pthread_t load_thread = load_data(args); // load_data()'s return type is pthread_t
     double time;
     int count = 0;
     //while(i*imgs < N*120){
-    while(get_current_batch(net) < net->max_batches){
+    while(get_current_batch(net) < net->max_batches){ // net_max_batches = 500200
         if(l.random && count++%10 == 0){
             printf("Resizing\n");
-            int dim = (rand() % 10 + 10) * 32;
+            int dim = (rand() % 10 + 10) * 32; // ((0 ~ 9)+10)*32 ==> 320 ~ 608 resize
             if (get_current_batch(net)+200 > net->max_batches) dim = 608;
             //int dim = (rand() % 4 + 16) * 32;
-            printf("%d\n", dim);
-            args.w = dim;
-            args.h = dim;
-
-            pthread_join(load_thread, 0);
+            printf("%d\n", dim); // current size print
+            args.w = dim; // net's width = dim
+            args.h = dim; // net's height = dim
+			  // dix * dim resolution
+            pthread_join(load_thread, 0); // waiting load_thread
             train = buffer;
             free_data(train);
-            load_thread = load_data(args);
+            load_thread = load_data(args); // reuse thread
 
             #pragma omp parallel for
             for(i = 0; i < ngpus; ++i){
-                resize_network(nets[i], dim, dim);
+                resize_network(nets[i], dim, dim); // network resize 
             }
             net = nets[0];
         }
         time=what_time_is_it_now();
-        pthread_join(load_thread, 0);
+        pthread_join(load_thread, 0); // waiting load_thread
         train = buffer;
-        load_thread = load_data(args);
+        load_thread = load_data(args);// reuse thread this thread not waiting. doesn't use pthread_join
 
         /*
            int k;
@@ -135,25 +136,26 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             sprintf(buff, "%s/%s.backup", backup_directory, base);
             save_weights(net, buff);
         }
-	if(i%1000 == 0 || (i < 1000 && i%100 == 0)){
+	//if(i%1000 == 0 || (i < 1000 && i%100 == 0)){
 	//if(i%10000==0 || (i < 1000 && i%100 == 0)){
+	if(i%10000==0 || (i%1000==0 && i <10000)){
 #ifdef GPU
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
-            save_weights(net, buff);
+            save_weights(net, buff); // save weight
         }
         free_data(train);
-    }
+    } // while end
 #ifdef GPU
     if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
     char buff[256];
     sprintf(buff, "%s/%s_final.weights", backup_directory, base);
-    save_weights(net, buff);
+    save_weights(net, buff); // save final weight
 }
-
+//end train_detector
 
 static int get_coco_image_id(char *filename)
 {
@@ -787,7 +789,7 @@ void network_detect(network *net, image im, float thresh, float hier_thresh, flo
 }
 */
 
-void run_detector(int argc, char **argv)
+void run_detector(int argc, char **argv) // argv[1] == detector 일 경우 
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .5);
@@ -835,11 +837,11 @@ void run_detector(int argc, char **argv)
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
-    else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
+    else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);// 학습
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) {
+    else if(0==strcmp(argv[2], "demo")) { // detect
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");

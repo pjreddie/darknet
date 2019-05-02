@@ -49,9 +49,9 @@ static float get_pixel(image m, int x, int y, int c)
     assert(x < m.w && y < m.h && c < m.c);
     return m.data[c*m.h*m.w + y*m.w + x];
 }
-static float get_pixel_extend(image m, int x, int y, int c)
+static float get_pixel_extend(image m, int x, int y, int c) // get_pixel_extend() function
 {
-    if(x < 0 || x >= m.w || y < 0 || y >= m.h) return 0;
+    if(x < 0 || x >= m.w || y < 0 || y >= m.h) return 0; // if over or under the resolution pixel 
     /*
     if(x < 0) x = 0;
     if(x >= m.w) x = m.w-1;
@@ -61,11 +61,11 @@ static float get_pixel_extend(image m, int x, int y, int c)
     if(c < 0 || c >= m.c) return 0;
     return get_pixel(m, x, y, c);
 }
-static void set_pixel(image m, int x, int y, int c, float val)
+static void set_pixel(image m, int x, int y, int c, float val)// set_pixel() function
 {
     if (x < 0 || y < 0 || c < 0 || x >= m.w || y >= m.h || c >= m.c) return;
     assert(x < m.w && y < m.h && c < m.c);
-    m.data[c*m.h*m.w + y*m.w + x] = val;
+    m.data[c*m.h*m.w + y*m.w + x] = val; // What is it means??
 }
 static void add_pixel(image m, int x, int y, int c, float val)
 {
@@ -73,14 +73,17 @@ static void add_pixel(image m, int x, int y, int c, float val)
     m.data[c*m.h*m.w + y*m.w + x] += val;
 }
 
-static float bilinear_interpolate(image im, float x, float y, int c)
+static float bilinear_interpolate(image im, float x, float y, int c) // bilinear_interpolate() fucntion
 {
     int ix = (int) floorf(x);
     int iy = (int) floorf(y);
 
     float dx = x - ix;
     float dy = y - iy;
-
+	/*What is it mean that float val???
+	 * get_pixel_extend() is check the resolution over or under.
+	 * if pixel over the x or y or under the x or y then return 0.
+	 * */
     float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
         dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
         (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
@@ -243,7 +246,8 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
         int class = -1;
-        for(j = 0; j < classes; ++j){
+        for(j = 0; j < 1; ++j){ // classes ->1
+	
             if (dets[i].prob[j] > thresh){
                 if (class < 0) {
                     strcat(labelstr, names[j]);
@@ -597,7 +601,7 @@ void show_image_collapsed(image p, char *name)
     free_image(c);
 }
 
-image make_empty_image(int w, int h, int c)
+image make_empty_image(int w, int h, int c) // make empty_image sturct 
 {
     image out;
     out.data = 0;
@@ -607,10 +611,10 @@ image make_empty_image(int w, int h, int c)
     return out;
 }
 
-image make_image(int w, int h, int c)
+image make_image(int w, int h, int c) // make_image() function
 {
-    image out = make_empty_image(w,h,c);
-    out.data = calloc(h*w*c, sizeof(float));
+    image out = make_empty_image(w,h,c); // call make_empty_image() function
+    out.data = calloc(h*w*c, sizeof(float)); 
     return out;
 }
 
@@ -632,7 +636,7 @@ image float_to_image(int w, int h, int c, float *data)
     return out;
 }
 
-void place_image(image im, int w, int h, int dx, int dy, image canvas)
+void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_image() function
 {
     int x, y, c;
     for(c = 0; c < im.c; ++c){
@@ -640,7 +644,7 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)
             for(x = 0; x < w; ++x){
                 float rx = ((float)x / w) * im.w;
                 float ry = ((float)y / h) * im.h;
-                float val = bilinear_interpolate(im, rx, ry, c);
+                float val = bilinear_interpolate(im, rx, ry, c); // call bilinear_interpolate() fucntion
                 set_pixel(canvas, x + dx, y + dy, c, val);
             }
         }
@@ -694,7 +698,7 @@ image rotate_image(image im, float rad)
     return rot;
 }
 
-void fill_image(image m, float s)
+void fill_image(image m, float s) // fill_image() function
 {
     int i;
     for(i = 0; i < m.h*m.w*m.c; ++i) m.data[i] = s;
@@ -1166,7 +1170,7 @@ void exposure_image(image im, float sat)
     constrain_image(im);
 }
 
-void distort_image(image im, float hue, float sat, float val)
+void distort_image(image im, float hue, float sat, float val)// distort_image() function
 {
     rgb_to_hsv(im);
     scale_image_channel(im, 1, sat);
@@ -1181,7 +1185,7 @@ void distort_image(image im, float hue, float sat, float val)
     constrain_image(im);
 }
 
-void random_distort_image(image im, float hue, float saturation, float exposure)
+void random_distort_image(image im, float hue, float saturation, float exposure) // random_distort_image() function
 {
     float dhue = rand_uniform(-hue, hue);
     float dsat = rand_scale(saturation);
@@ -1292,7 +1296,7 @@ void test_resize(char *filename)
 }
 
 
-image load_image_stb(char *filename, int channels)
+image load_image_stb(char *filename, int channels)// load_image_stb() function
 {
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
@@ -1316,15 +1320,17 @@ image load_image_stb(char *filename, int channels)
     return im;
 }
 
-image load_image(char *filename, int w, int h, int c)
+image load_image(char *filename, int w, int h, int c) // load_image() function
 {
 #ifdef OPENCV
-    image out = load_image_cv(filename, c);
+    image out = load_image_cv(filename, c); //if can use opencv opensource
+    //printf("it can use OpenCV\n"); // we can use opencv so coming this ifdef OPENCV
 #else
-    image out = load_image_stb(filename, c);
+    image out = load_image_stb(filename, c); // else
+    //printf("it can't use OpenCV\n");
 #endif
 
-    if((h && w) && (h != out.h || w != out.w)){
+    if((h && w) && (h != out.h || w != out.w)){ // resize image
         image resized = resize_image(out, w, h);
         free_image(out);
         out = resized;
@@ -1332,9 +1338,9 @@ image load_image(char *filename, int w, int h, int c)
     return out;
 }
 
-image load_image_color(char *filename, int w, int h)
+image load_image_color(char *filename, int w, int h) // load_image_color() function
 {
-    return load_image(filename, w, h, 3);
+    return load_image(filename, w, h, 3);// calling load_image() function
 }
 
 image get_image_layer(image m, int l)

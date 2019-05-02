@@ -15,7 +15,7 @@
 
 static char **demo_names;
 static image **demo_alphabet;
-static int demo_classes;
+static int demo_classes; // draw_detection 매개변수 obj.data의 classes 값
 
 static network *net;
 static image buff [3];
@@ -126,16 +126,16 @@ void *detect_in_thread(void *ptr)
 
     printf("\033[2J");
     printf("\033[1;1H");
-    printf("\nFPS:%.1f\n",fps);
-    printf("Objects:\n\n");
+    printf("\nFPS:%.1f\n",fps); // print FPS
+    printf("Objects:\n\n"); // print what kind of Object
     image display = buff[(buff_index+2) % 3];
-    draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
+    draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes); // draw in image bounding box
     free_detections(dets, nboxes);
 
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
     return 0;
-}
+} // end detect_in_thread()
 
 void *fetch_in_thread(void *ptr)
 {
@@ -211,12 +211,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     if(filename){
         printf("video file: %s\n", filename);
-        cap = open_video_stream(filename, 0, 0, 0, 0);
+        cap = open_video_stream(filename, 0, 0, 0, 0); // video stream
     }else{
         cap = open_video_stream(0, cam_index, w, h, frames);
     }
 
-    if(!cap) error("Couldn't connect to webcam.\n");
+    if(!cap) error("Couldn't connect to webcam.\n"); // can't connect web cam
 
     buff[0] = get_image_from_stream(cap);
     buff[1] = copy_image(buff[0]);
@@ -232,10 +232,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     demo_time = what_time_is_it_now();
 
-    while(!demo_done){
+    while(!demo_done){ // running demo programming
         buff_index = (buff_index + 1) %3;
-        if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-        if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+        if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed"); // create fetch_thread failed
+        if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed"); // create detect_thread failed
         if(!prefix){
             fps = 1./(what_time_is_it_now() - demo_time);
             demo_time = what_time_is_it_now();
@@ -245,11 +245,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             sprintf(name, "%s_%08d", prefix, count);
             save_image(buff[(buff_index + 1)%3], name);
         }
-        pthread_join(fetch_thread, 0);
-        pthread_join(detect_thread, 0);
+        pthread_join(fetch_thread, 0); // thread waiting
+        pthread_join(detect_thread, 0); // thread waiting
         ++count;
     }
-}
+} // end demo() function
 
 /*
    void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)

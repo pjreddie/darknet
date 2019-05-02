@@ -88,24 +88,24 @@ void option_unused(list *l)
     }
 }
 
-char *option_find(list *l, char *key)
+char *option_find(list *l, char *key) // find key in option
 {
-    node *n = l->front;
+    node *n = l->front; // 
     while(n){
-        kvp *p = (kvp *)n->val;
-        if(strcmp(p->key, key) == 0){
-            p->used = 1;
-            return p->val;
+        kvp *p = (kvp *)n->val; // this struct can find in option_list.h file. 
+        if(strcmp(p->key, key) == 0){ // find str
+            p->used = 1; // find
+            return p->val; // return value
         }
-        n = n->next;
+        n = n->next; // if doesn't find str still find
     }
     return 0;
 }
-char *option_find_str(list *l, char *key, char *def)
+char *option_find_str(list *l, char *key, char *def) // option_find_str() function
 {
-    char *v = option_find(l, key);
-    if(v) return v;
-    if(def) fprintf(stderr, "%s: Using default '%s'\n", key, def);
+    char *v = option_find(l, key); // l = list *option , key = str
+    if(v) return v; // find backup str
+    if(def) fprintf(stderr, "%s: Using default '%s'\n", key, def); // def = default
     return def;
 }
 

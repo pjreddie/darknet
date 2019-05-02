@@ -32,7 +32,7 @@
 #include "parser.h"
 #include "data.h"
 
-load_args get_base_args(network *net)
+load_args get_base_args(network *net)//get_base_args() function
 {
     load_args args = {0};
     args.w = net->w;
@@ -50,9 +50,9 @@ load_args get_base_args(network *net)
     return args;
 }
 
-network *load_network(char *cfg, char *weights, int clear)
+network *load_network(char *cfg, char *weights, int clear)// load network function
 {
-    network *net = parse_network_cfg(cfg);
+    network *net = parse_network_cfg(cfg); // where is parse_network_cfg
     if(weights && weights[0] != 0){
         load_weights(net, weights);
     }
@@ -355,7 +355,7 @@ void set_batch_network(network *net, int b)
     }
 }
 
-int resize_network(network *net, int w, int h)
+int resize_network(network *net, int w, int h)// resize network function
 {
 #ifdef GPU
     cuda_set_device(net->gpu_index);

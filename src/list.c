@@ -2,10 +2,10 @@
 #include <string.h>
 #include "list.h"
 
-list *make_list()
+list *make_list() // make list function
 {
-	list *l = malloc(sizeof(list));
-	l->size = 0;
+	list *l = malloc(sizeof(list)); // list 동적 할당 
+	l->size = 0; 
 	l->front = 0;
 	l->back = 0;
 	return l;

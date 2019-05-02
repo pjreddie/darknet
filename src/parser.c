@@ -739,10 +739,10 @@ int is_network(section *s)
             || strcmp(s->type, "[network]")==0);
 }
 
-network *parse_network_cfg(char *filename)
+network *parse_network_cfg(char *filename) // parse_network_cfg function
 {
-    list *sections = read_cfg(filename);
-    node *n = sections->front;
+    list *sections = read_cfg(filename); // filename = cfg filename
+    node *n = sections->front; 
     if(!n) error("Config file has no sections");
     network *net = make_network(sections->size - 1);
     net->gpu_index = gpu_index;
@@ -886,17 +886,18 @@ network *parse_network_cfg(char *filename)
 #endif
     }
     return net;
-}
+} // end parse_network_cfg() function
 
-list *read_cfg(char *filename)
+list *read_cfg(char *filename)// read_cfg function
 {
-    FILE *file = fopen(filename, "r");
-    if(file == 0) file_error(filename);
-    char *line;
+    FILE *file = fopen(filename, "r"); // cfg file read
+    if(file == 0) file_error(filename); // can't open file
+    char *line; 
     int nu = 0;
-    list *options = make_list();
-    section *current = 0;
-    while((line=fgetl(file)) != 0){
+    list *options = make_list(); // make_list가 무엇인지 확인하기 
+    //list 생성 및 동적할당 
+    section *current = 0; // section 구조체 확인하기 
+    while((line=fgetl(file)) != 0){ // 파일 끝까지 읽기
         ++ nu;
         strip(line);
         switch(line[0]){

@@ -39,16 +39,17 @@ char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
 }
 */
 
-char **get_random_paths(char **paths, int n, int m)
+char **get_random_paths(char **paths, int n, int m) // get_random_paths() function
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&mutex);// lock thread
     for(i = 0; i < n; ++i){
         int index = rand()%m;
         random_paths[i] = paths[index];
         //if(i == 0) printf("%s\n", paths[index]);
     }
+    //printf("%s\n",random_paths[i]);//printf random_paths[]
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
@@ -444,8 +445,8 @@ void fill_truth_mask(char *path, int num_boxes, float *truth, int classes, int w
 }
 
 
-void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
-{
+void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy) // fill_truth_detection() function
+{//this function check the bounding box in txt file 
     char labelpath[4096];
     find_replace(path, "images", "labels", labelpath);
     find_replace(labelpath, "JPEGImages", "labels", labelpath);
@@ -477,11 +478,11 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
             continue;
         }
 
-        truth[(i-sub)*5+0] = x;
-        truth[(i-sub)*5+1] = y;
-        truth[(i-sub)*5+2] = w;
-        truth[(i-sub)*5+3] = h;
-        truth[(i-sub)*5+4] = id;
+        truth[(i-sub)*5+0] = x; // x
+        truth[(i-sub)*5+1] = y; // y
+        truth[(i-sub)*5+2] = w; // width
+        truth[(i-sub)*5+3] = h; // height
+        truth[(i-sub)*5+4] = id; // object
     }
     free(boxes);
 }
@@ -1033,9 +1034,10 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     return d;
 }
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter, float hue, float saturation, float exposure)
+data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter, float hue, float saturation, float exposure) // fifth function()
 {
     char **random_paths = get_random_paths(paths, n, m);
+
     int i;
     data d = {0};
     d.shallow = 0;
@@ -1046,8 +1048,11 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
-        image sized = make_image(w, h, orig.c);
+    	//printf("%s\n",random_paths[i]);//printf random_paths[]
+	//take a image in random_paths[i] images
+        image orig = load_image_color(random_paths[i], 0, 0); // load_image_color in image.c 
+							      // when you train the dataset it have to random image train.
+        image sized = make_image(w, h, orig.c); // make_image in image.c
         fill_image(sized, .5);
 
         float dw = jitter * orig.w;
@@ -1079,69 +1084,83 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         d.X.vals[i] = sized.data;
 
 
-        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h);
+        fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h); // take a information in txt file ( x , y , width , height , id )
 
         free_image(orig);
     }
     free(random_paths);
     return d;
-}
+} // end load_data_detection() function
 
-void *load_thread(void *ptr)
+void *load_thread(void *ptr) // firth function equals ~~
 {
     //printf("Loading data: %d\n", rand());
     load_args a = *(struct load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
     if(a.saturation == 0) a.saturation = 1;
     if(a.aspect == 0) a.aspect = 1;
-
     if (a.type == OLD_CLASSIFICATION_DATA){
+	    //printf("This is Old_classiciation_data\n");
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == REGRESSION_DATA){
+	    //printf("This is Regression_data\n");
         *a.d = load_data_regression(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == CLASSIFICATION_DATA){
+	    //printf("This is Classification_data\n");
         *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.center);
     } else if (a.type == SUPER_DATA){
+	    //printf("This is Super_data\n");
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
+	    //printf("This is Writing_data\n");
         *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.out_w, a.out_h);
     } else if (a.type == ISEG_DATA){
+	    //printf("This is Iseg_data\n");
         *a.d = load_data_iseg(a.n, a.paths, a.m, a.w, a.h, a.classes, a.num_boxes, a.scale, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == INSTANCE_DATA){
+	    //printf("This is Instance_data\n");
         *a.d = load_data_mask(a.n, a.paths, a.m, a.w, a.h, a.classes, a.num_boxes, a.coords, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == SEGMENTATION_DATA){
+	    //printf("This is Segmentation_data\n");
         *a.d = load_data_seg(a.n, a.paths, a.m, a.w, a.h, a.classes, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.scale);
     } else if (a.type == REGION_DATA){
+	   // printf("This is Region_data\n");
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
-    } else if (a.type == DETECTION_DATA){
+    } else if (a.type == DETECTION_DATA){ // if you run detector train pthread data is Detection image
+	    //printf("This is Detection_data\n");
         *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == SWAG_DATA){
+	    //printf("This is Swag_data\n");
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
     } else if (a.type == COMPARE_DATA){
+	    //printf("This is Compare_data\n");
         *a.d = load_data_compare(a.n, a.paths, a.m, a.classes, a.w, a.h);
-    } else if (a.type == IMAGE_DATA){
-        *(a.im) = load_image_color(a.path, 0, 0);
-        *(a.resized) = resize_image(*(a.im), a.w, a.h);
+    } else if (a.type == IMAGE_DATA){ // image.c
+	    //printf("This is Image_data\n");
+        *(a.im) = load_image_color(a.path, 0, 0); // load image
+        *(a.resized) = resize_image(*(a.im), a.w, a.h); // resize image
     } else if (a.type == LETTERBOX_DATA){
+	    //printf("This is Letterbox_data\n");
         *(a.im) = load_image_color(a.path, 0, 0);
         *(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
+	    //printf("This is Tag_data\n");
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     }
     free(ptr);
     return 0;
 }
 
-pthread_t load_data_in_thread(load_args args)
+pthread_t load_data_in_thread(load_args args) // third function when you use pthread in detector.c train_detector() function
 {
     pthread_t thread;
     struct load_args *ptr = calloc(1, sizeof(struct load_args));
     *ptr = args;
-    if(pthread_create(&thread, 0, load_thread, ptr)) error("Thread creation failed");
+    if(pthread_create(&thread, 0, load_thread, ptr)) error("Thread creation failed"); // call load_thread() function
     return thread;
 }
 
-void *load_threads(void *ptr)
+void *load_threads(void *ptr) // second function when you use pthread in detector.c train_detector() function
 {
     int i;
     load_args args = *(load_args *)ptr;
@@ -1154,7 +1173,7 @@ void *load_threads(void *ptr)
     for(i = 0; i < args.threads; ++i){
         args.d = buffers + i;
         args.n = (i+1) * total/args.threads - i * total/args.threads;
-        threads[i] = load_data_in_thread(args);
+        threads[i] = load_data_in_thread(args); // call load_data_in_thraed() function
     }
     for(i = 0; i < args.threads; ++i){
         pthread_join(threads[i], 0);
@@ -1177,12 +1196,12 @@ void load_data_blocking(load_args args)
     load_thread(ptr);
 }
 
-pthread_t load_data(load_args args)
+pthread_t load_data(load_args args) // load_data() funtion
 {
     pthread_t thread;
     struct load_args *ptr = calloc(1, sizeof(struct load_args));
     *ptr = args;
-    if(pthread_create(&thread, 0, load_threads, ptr)) error("Thread creation failed");
+    if(pthread_create(&thread, 0, load_threads, ptr)) error("Thread creation failed");// pthread_create() 
     return thread;
 }
 

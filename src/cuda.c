@@ -1,5 +1,5 @@
 int gpu_index = 0;
-
+// ifdef GPU시 해당 클래스를 확인하여야 한다. 
 #ifdef GPU
 
 #include "cuda.h"
