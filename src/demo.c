@@ -37,6 +37,8 @@ static int demo_ext_output = 0;
 static long long int frame_id = 0;
 static int demo_json_port = -1;
 
+#define NFRAMES 3
+
 static float* predictions[NFRAMES];
 static int demo_index = 0;
 static image images[NFRAMES];

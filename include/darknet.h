@@ -32,7 +32,6 @@
 #endif
 #endif
 
-#define NFRAMES 3
 #define SECRET_NUM -1234
 
 #ifdef GPU
@@ -136,6 +135,7 @@ typedef enum {
     RNN,
     GRU,
     LSTM,
+    CONV_LSTM,
     CRNN,
     BATCHNORM,
     NETWORK,
@@ -208,6 +208,7 @@ struct layer {
     int index;
     int binary;
     int xnor;
+    int peephole;
     int use_bin_output;
     int steps;
     int hidden;
@@ -354,6 +355,7 @@ struct layer {
     float *z_cpu;
     float *r_cpu;
     float *h_cpu;
+    float *stored_h_cpu;
     float * prev_state_cpu;
 
     float *temp_cpu;
@@ -369,6 +371,7 @@ struct layer {
     float *g_cpu;
     float *o_cpu;
     float *c_cpu;
+    float *stored_c_cpu;
     float *dc_cpu;
 
     float *binary_input;
@@ -407,10 +410,13 @@ struct layer {
     struct layer *uh;
     struct layer *uo;
     struct layer *wo;
+    struct layer *vo;
     struct layer *uf;
     struct layer *wf;
+    struct layer *vf;
     struct layer *ui;
     struct layer *wi;
+    struct layer *vi;
     struct layer *ug;
     struct layer *wg;
 
@@ -424,6 +430,7 @@ struct layer {
     float *z_gpu;
     float *r_gpu;
     float *h_gpu;
+    float *stored_h_gpu;
 
     float *temp_gpu;
     float *temp2_gpu;
@@ -432,12 +439,16 @@ struct layer {
     float *dh_gpu;
     float *hh_gpu;
     float *prev_cell_gpu;
+    float *prev_state_gpu;
+    float *last_prev_state_gpu;
+    float *last_prev_cell_gpu;
     float *cell_gpu;
     float *f_gpu;
     float *i_gpu;
     float *g_gpu;
     float *o_gpu;
     float *c_gpu;
+    float *stored_c_gpu;
     float *dc_gpu;
 
     // adam
@@ -451,7 +462,6 @@ struct layer {
     float * combine_gpu;
     float * combine_delta_gpu;
 
-    float * prev_state_gpu;
     float * forgot_state_gpu;
     float * forgot_delta_gpu;
     float * state_gpu;
@@ -571,6 +581,7 @@ typedef struct network {
     float min_ratio;
     int center;
     int flip; // horizontal flip 50% probability augmentaiont for classifier training (default = 1)
+    int blur;
     float angle;
     float aspect;
     float exposure;
@@ -579,6 +590,8 @@ typedef struct network {
     int random;
     int track;
     int augment_speed;
+    int sequential_subdivisions;
+    int current_subdivision;
     int try_fix_nan;
 
     int gpu_index;
@@ -713,6 +726,7 @@ typedef struct load_args {
     int show_imgs;
     float jitter;
     int flip;
+    int blur;
     float angle;
     float aspect;
     float saturation;

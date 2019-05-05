@@ -15,6 +15,7 @@
 #include "gru_layer.h"
 #include "rnn_layer.h"
 #include "crnn_layer.h"
+#include "conv_lstm_layer.h"
 #include "local_layer.h"
 #include "convolutional_layer.h"
 #include "activation_layer.h"
@@ -315,6 +316,7 @@ float train_network_sgd(network net, data d, int n)
     float sum = 0;
     for(i = 0; i < n; ++i){
         get_random_batch(d, batch, X, y);
+        net.current_subdivision = i;
         float err = train_network_datum(net, X, y);
         sum += err;
     }
@@ -340,6 +342,7 @@ float train_network_waitkey(network net, data d, int wait_key)
     float sum = 0;
     for(i = 0; i < n; ++i){
         get_next_batch(d, batch, i*batch, X, y);
+        net.current_subdivision = i;
         float err = train_network_datum(net, X, y);
         sum += err;
         if(wait_key) wait_key_cv(5);
@@ -1110,4 +1113,32 @@ network combine_train_valid_networks(network net_train, network net_map)
         }
     }
     return net_combined;
+}
+
+void free_network_recurrent_state(network net)
+{
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        if (net.layers[k].type == CONV_LSTM) free_state_conv_lstm(net.layers[k]);
+        if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
+    }
+}
+
+
+void remember_network_recurrent_state(network net)
+{
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        if (net.layers[k].type == CONV_LSTM) remember_state_conv_lstm(net.layers[k]);
+        //if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
+    }
+}
+
+void restore_network_recurrent_state(network net)
+{
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        if (net.layers[k].type == CONV_LSTM) restore_state_conv_lstm(net.layers[k]);
+        if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
+    }
 }

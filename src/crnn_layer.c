@@ -85,6 +85,8 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
     l.delta_gpu = l.output_layer->delta_gpu;
 #endif
 
+    l.bflops = l.input_layer->bflops + l.self_layer->bflops + l.output_layer->bflops;
+
     return l;
 }
 
@@ -126,6 +128,16 @@ void resize_crnn_layer(layer *l, int w, int h)
     l->output_gpu = l->output_layer->output_gpu;
     l->delta_gpu = l->output_layer->delta_gpu;
 #endif
+}
+
+void free_state_crnn(layer l)
+{
+    int i;
+    for (i = 0; i < l.outputs * l.batch; ++i) l.self_layer->output[i] = rand_uniform(-1, 1);
+
+#ifdef GPU
+    cuda_push_array(l.self_layer->output_gpu, l.self_layer->output, l.outputs * l.batch);
+#endif  // GPU
 }
 
 void update_crnn_layer(layer l, int batch, float learning_rate, float momentum, float decay)

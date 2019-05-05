@@ -20,6 +20,7 @@
 #include "list.h"
 #include "local_layer.h"
 #include "lstm_layer.h"
+#include "conv_lstm_layer.h"
 #include "maxpool_layer.h"
 #include "normalization_layer.h"
 #include "option_list.h"
@@ -61,6 +62,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[crnn]")==0) return CRNN;
     if (strcmp(type, "[gru]")==0) return GRU;
     if (strcmp(type, "[lstm]")==0) return LSTM;
+    if (strcmp(type, "[conv_lstm]") == 0) return CONV_LSTM;
     if (strcmp(type, "[rnn]")==0) return RNN;
     if (strcmp(type, "[conn]")==0
             || strcmp(type, "[connected]")==0) return CONNECTED;
@@ -235,6 +237,29 @@ layer parse_lstm(list *options, size_params params)
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
 
     layer l = make_lstm_layer(params.batch, params.inputs, output, params.time_steps, batch_normalize);
+
+    return l;
+}
+
+layer parse_conv_lstm(list *options, size_params params)
+{
+    // a ConvLSTM with a larger transitional kernel should be able to capture faster motions
+    int size = option_find_int_quiet(options, "size", 3);
+    int stride = option_find_int_quiet(options, "stride", 1);
+    int pad = option_find_int_quiet(options, "pad", 0);
+    int padding = option_find_int_quiet(options, "padding", 0);
+    if (pad) padding = size / 2;
+
+    int output_filters = option_find_int(options, "output", 1);
+    char *activation_s = option_find_str(options, "activation", "LINEAR");
+    ACTIVATION activation = get_activation(activation_s);
+    int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+    int xnor = option_find_int_quiet(options, "xnor", 0);
+    int peephole = option_find_int_quiet(options, "peephole", 1);
+
+    layer l = make_conv_lstm_layer(params.batch, params.w, params.h, params.c, output_filters, params.time_steps, size, stride, padding, activation, batch_normalize, peephole, xnor);
+
+    l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
     return l;
 }
@@ -647,6 +672,7 @@ void parse_net_options(list *options, network *net)
     net->time_steps = option_find_int_quiet(options, "time_steps",1);
     net->track = option_find_int_quiet(options, "track", 0);
     net->augment_speed = option_find_int_quiet(options, "augment_speed", 2);
+    net->sequential_subdivisions = option_find_int_quiet(options, "sequential_subdivisions", 0);
     net->try_fix_nan = option_find_int_quiet(options, "try_fix_nan", 0);
     net->batch /= subdivs;
     net->batch *= net->time_steps;
@@ -666,6 +692,7 @@ void parse_net_options(list *options, network *net)
     net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
     net->flip = option_find_int_quiet(options, "flip", 1);
+    net->blur = option_find_int_quiet(options, "blur", 0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);
@@ -789,6 +816,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             l = parse_gru(options, params);
         }else if(lt == LSTM){
             l = parse_lstm(options, params);
+        }else if (lt == CONV_LSTM) {
+            l = parse_conv_lstm(options, params);
         }else if(lt == CRNN){
             l = parse_crnn(options, params);
         }else if(lt == CONNECTED){
@@ -1076,6 +1105,20 @@ void save_weights_upto(network net, char *filename, int cutoff)
             save_connected_weights(*(l.ui), fp);
             save_connected_weights(*(l.ug), fp);
             save_connected_weights(*(l.uo), fp);
+        } if (l.type == CONV_LSTM) {
+            if (l.peephole) {
+                save_convolutional_weights(*(l.vf), fp);
+                save_convolutional_weights(*(l.vi), fp);
+                save_convolutional_weights(*(l.vo), fp);
+            }
+            save_convolutional_weights(*(l.wf), fp);
+            save_convolutional_weights(*(l.wi), fp);
+            save_convolutional_weights(*(l.wg), fp);
+            save_convolutional_weights(*(l.wo), fp);
+            save_convolutional_weights(*(l.uf), fp);
+            save_convolutional_weights(*(l.ui), fp);
+            save_convolutional_weights(*(l.ug), fp);
+            save_convolutional_weights(*(l.uo), fp);
         } if(l.type == CRNN){
             save_convolutional_weights(*(l.input_layer), fp);
             save_convolutional_weights(*(l.self_layer), fp);
@@ -1297,6 +1340,21 @@ void load_weights_upto(network *net, char *filename, int cutoff)
             load_connected_weights(*(l.ui), fp, transpose);
             load_connected_weights(*(l.ug), fp, transpose);
             load_connected_weights(*(l.uo), fp, transpose);
+        }
+        if (l.type == CONV_LSTM) {
+            if (l.peephole) {
+                load_convolutional_weights(*(l.vf), fp);
+                load_convolutional_weights(*(l.vi), fp);
+                load_convolutional_weights(*(l.vo), fp);
+            }
+            load_convolutional_weights(*(l.wf), fp);
+            load_convolutional_weights(*(l.wi), fp);
+            load_convolutional_weights(*(l.wg), fp);
+            load_convolutional_weights(*(l.wo), fp);
+            load_convolutional_weights(*(l.uf), fp);
+            load_convolutional_weights(*(l.ui), fp);
+            load_convolutional_weights(*(l.ug), fp);
+            load_convolutional_weights(*(l.uo), fp);
         }
         if(l.type == LOCAL){
             int locations = l.out_w*l.out_h;

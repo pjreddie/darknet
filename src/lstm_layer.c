@@ -95,6 +95,7 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
 
     l.forward = forward_lstm_layer;
     l.update = update_lstm_layer;
+    l.backward = backward_lstm_layer;
 
     l.prev_state_cpu =  (float*)calloc(batch*outputs, sizeof(float));
     l.prev_cell_cpu =   (float*)calloc(batch*outputs, sizeof(float));

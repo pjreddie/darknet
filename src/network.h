@@ -163,6 +163,9 @@ int get_network_background(network net);
 //LIB_API void calculate_binary_weights(network net);
 network combine_train_valid_networks(network net_train, network net_map);
 void copy_weights_net(network net_train, network *net_map);
+void free_network_recurrent_state(network net);
+void remember_network_recurrent_state(network net);
+void restore_network_recurrent_state(network net);
 
 #ifdef __cplusplus
 }

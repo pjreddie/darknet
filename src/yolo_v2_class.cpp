@@ -22,6 +22,7 @@ extern "C" {
 #include <algorithm>
 #include <cmath>
 
+#define NFRAMES 3
 
 //static Detector* detector = NULL;
 static std::unique_ptr<Detector> detector;

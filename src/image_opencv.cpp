@@ -1125,9 +1125,20 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
 // ====================================================================
 // Data augmentation
 // ====================================================================
+static box float_to_box_stride(float *f, int stride)
+{
+    box b = { 0 };
+    b.x = f[0];
+    b.y = f[1 * stride];
+    b.w = f[2 * stride];
+    b.h = f[3 * stride];
+    return b;
+}
+
 image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
-    float jitter, float dhue, float dsat, float dexp)
+    float jitter, float dhue, float dsat, float dexp,
+    int blur, int num_boxes, float *truth)
 {
     image out;
     try {
@@ -1191,6 +1202,31 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
         //window_name << "augmentation - " << ipl;
         //cv::imshow(window_name.str(), sized);
         //cv::waitKey(0);
+
+        if (blur) {
+            cv::Mat dst(sized.size(), sized.type());
+            if(blur == 1) cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
+            else cv::GaussianBlur(sized, dst, cv::Size((blur / 2) * 2 + 1, (blur / 2) * 2 + 1), 0);
+            cv::Rect img_rect(0, 0, sized.cols, sized.rows);
+            //std::cout << " blur num_boxes = " << num_boxes << std::endl;
+
+            if (blur == 1) {
+                int t;
+                for (t = 0; t < num_boxes; ++t) {
+                    box b = float_to_box_stride(truth + t*(4 + 1), 1);
+                    if (!b.x) break;
+                    int left = (b.x - b.w / 2.)*sized.cols;
+                    int width = b.w*sized.cols;
+                    int top = (b.y - b.h / 2.)*sized.rows;
+                    int height = b.h*sized.rows;
+                    cv::Rect roi(left, top, width, height);
+                    roi = roi & img_rect;
+
+                    sized(roi).copyTo(dst(roi));
+                }
+            }
+            dst.copyTo(sized);
+        }
 
         // Mat -> image
         out = mat_to_image(sized);
