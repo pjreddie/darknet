@@ -60,9 +60,9 @@ network *load_network(char *cfg, char *weights, int clear)// load network functi
     return net;
 }
 
-size_t get_current_batch(network *net)
+size_t get_current_batch(network *net)// get_current_batch() function
 {
-    size_t batch_num = (*net->seen)/(net->batch*net->subdivisions);
+    size_t batch_num = (*net->seen)/(net->batch*net->subdivisions); // /(batch = 64 *subdivisions = 16
     return batch_num;
 }
 
@@ -260,11 +260,11 @@ int get_predicted_class_network(network *net)
     return max_index(net->output, net->outputs);
 }
 
-void backward_network(network *netp)
+void backward_network(network *netp) // backward_network() function
 {
 #ifdef GPU
     if(netp->gpu_index >= 0){
-        backward_network_gpu(netp);   
+        backward_network_gpu(netp); // if you can use a GPU call backward_network_gpu() function   
         return;
     }
 #endif
@@ -286,15 +286,15 @@ void backward_network(network *netp)
     }
 }
 
-float train_network_datum(network *net)
+float train_network_datum(network *net) // train_network_datum() function
 {
     *net->seen += net->batch;
     net->train = 1;
     forward_network(net);
-    backward_network(net);
+    backward_network(net); // call backward_network() function
     float error = *net->cost;
     if(((*net->seen)/net->batch)%net->subdivisions == 0) update_network(net);
-    return error;
+    return error; // return error various
 }
 
 float train_network_sgd(network *net, data d, int n)
@@ -311,8 +311,8 @@ float train_network_sgd(network *net, data d, int n)
     return (float)sum/(n*batch);
 }
 
-float train_network(network *net, data d)
-{
+float train_network(network *net, data d) // train_network() function
+{ // d == train (data structure )
     assert(d.X.rows % net->batch == 0);
     int batch = net->batch;
     int n = d.X.rows / batch;
@@ -787,7 +787,7 @@ void forward_network_gpu(network *netp)
     calc_network_cost(netp);
 }
 
-void backward_network_gpu(network *netp)
+void backward_network_gpu(network *netp) // backward_network_gpu() function
 {
     int i;
     network net = *netp;

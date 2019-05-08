@@ -62,13 +62,21 @@ void binarize_input(float *input, int n, int size, float *binary)
         }
     }
 }
-
+/* this is out_height and width circul function */
 int convolutional_out_height(convolutional_layer l)
 {
-    return (l.h + 2*l.pad - l.size) / l.stride + 1;
+    return (l.h + 2*l.pad - l.size) / l.stride + 1;// (input.h+2*padding - size) / stride + 1
+    // maybe input image is 608 then first convolutional layer meet first output height is 
+    // filter is 32 size is 3 stride is 1 so pad(padding) is size/2 = 3/2 = 1
+    // so this function return (608 + 2 - 3)/1 + 1 = 608 ( it is not changing )
+    // when we have done down sampling size = 3 , stride = 2 , pad = 1
+    // so this function return (608 + 2 - 3)/2 + 1 =  (607)/2+1 = 304
+    // so this down sampling is given half output height in this situation.
+    // this mean when you use a convolutional layer if this convolutional layer's stride is not 1
+    // that means this convolutional layer is down sampling convolutional layers
 }
 
-int convolutional_out_width(convolutional_layer l)
+int convolutional_out_width(convolutional_layer l) // this is same 
 {
     return (l.w + 2*l.pad - l.size) / l.stride + 1;
 }
@@ -173,36 +181,39 @@ void cudnn_convolutional_setup(layer *l)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int groups, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam)
+convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int groups, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam)// make_convolutional_layer() function
 {
     int i;
-    convolutional_layer l = {0};
-    l.type = CONVOLUTIONAL;
+    convolutional_layer l = {0}; // reset convolutional_layer struct
+    l.type = CONVOLUTIONAL; // layer's name(type) is CONVOLUTIONAL
 
-    l.groups = groups;
-    l.h = h;
-    l.w = w;
-    l.c = c;
-    l.n = n;
-    l.binary = binary;
-    l.xnor = xnor;
-    l.batch = batch;
-    l.stride = stride;
-    l.size = size;
-    l.pad = padding;
-    l.batch_normalize = batch_normalize;
+    l.groups = groups; // default 1
+    l.h = h; // params.h ( height )
+    l.w = w; // params.w ( width )
+    l.c = c; // params.c ( channel )
+    l.n = n; // filters
+    l.binary = binary; // default 0
+    l.xnor = xnor; // default 0
+    l.batch = batch; // params.batch yolov3 batch is 64 
+    l.stride = stride; // convolutional layer's stride 
+    l.size = size; // convolutional layer's size
+    l.pad = padding; // we can circul this padding value in parse_convolutional() function in parser.c
+    l.batch_normalize = batch_normalize; // almost batch_normalize is 1
 
-    l.weights = calloc(c/groups*n*size*size, sizeof(float));
-    l.weight_updates = calloc(c/groups*n*size*size, sizeof(float));
+    l.weights = calloc(c/groups*n*size*size, sizeof(float));// (channel * n(filters) * size * size) / groups( maybe default 1 )
+    l.weight_updates = calloc(c/groups*n*size*size, sizeof(float)); // 
 
-    l.biases = calloc(n, sizeof(float));
-    l.bias_updates = calloc(n, sizeof(float));
+    l.biases = calloc(n, sizeof(float));// it is same like malloc(sizeof(float)*n) this is dynamic allocation
+    l.bias_updates = calloc(n, sizeof(float)); 
 
     l.nweights = c/groups*n*size*size;
     l.nbiases = n;
 
     // float scale = 1./sqrt(size*size*c);
-    float scale = sqrt(2./(size*size*c/l.groups));
+    float scale = sqrt(2./(size*size*c/l.groups)); // root(2/(size*size*c(channel)/l.groups))
+    // this scale use when batch_normalization is not 1
+    // but when we use convolutional layers all of layer's batch_normalization is 1 so we didn't use this scale in this convolutional layer.
+    
     //printf("convscale %f\n", scale);
     //scale = .02;
     //for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1, 1);
@@ -211,7 +222,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     int out_h = convolutional_out_height(l);
     l.out_h = out_h;
     l.out_w = out_w;
-    l.out_c = n;
+    l.out_c = n; // filters
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = l.w * l.h * l.c;
 
@@ -231,11 +242,11 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.binary_input = calloc(l.inputs*l.batch, sizeof(float));
     }
 
-    if(batch_normalize){
+    if(batch_normalize){ // if batch_normalize is 1 ( this is activated all of convolutional layer )
         l.scales = calloc(n, sizeof(float));
         l.scale_updates = calloc(n, sizeof(float));
-        for(i = 0; i < n; ++i){
-            l.scales[i] = 1;
+        for(i = 0; i < n; ++i){ // repeat filter's number
+            l.scales[i] = 1; // all of width and height are normalizated to 1
         }
 
         l.mean = calloc(n, sizeof(float));
@@ -290,7 +301,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
             l.binary_input_gpu = cuda_make_array(0, l.inputs*l.batch);
         }
 
-        if(batch_normalize){
+        if(batch_normalize){ // we use GPU so this if function decide scale.
             l.mean_gpu = cuda_make_array(l.mean, n);
             l.variance_gpu = cuda_make_array(l.variance, n);
 

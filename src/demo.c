@@ -137,7 +137,7 @@ void *detect_in_thread(void *ptr)
     return 0;
 } // end detect_in_thread()
 
-void *fetch_in_thread(void *ptr)
+void *fetch_in_thread(void *ptr) // fetch_in_thread() function
 {
     free_image(buff[buff_index]);
     buff[buff_index] = get_image_from_stream(cap);
@@ -185,7 +185,7 @@ void *detect_loop(void *ptr)
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
-{
+{ // demo() function
     //demo_frame = avg_frames;
     image **alphabet = load_alphabet();
     demo_names = names;

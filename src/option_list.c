@@ -4,7 +4,7 @@
 #include "option_list.h"
 #include "utils.h"
 
-list *read_data_cfg(char *filename)
+list *read_data_cfg(char *filename) // read_data_cfg() function
 {
     FILE *file = fopen(filename, "r");
     if(file == 0) file_error(filename);

@@ -61,6 +61,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int count = 0;
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net->max_batches){ // net_max_batches = 500200
+	printf("get_current_batch : %d , net->max_batches : %d\n",get_current_batch(net),net->max_batches);
         if(l.random && count++%10 == 0){
             printf("Resizing\n");
             int dim = (rand() % 10 + 10) * 32; // ((0 ~ 9)+10)*32 ==> 320 ~ 608 resize
@@ -71,7 +72,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             args.h = dim; // net's height = dim
 			  // dix * dim resolution
             pthread_join(load_thread, 0); // waiting load_thread
-            train = buffer;
+            train = buffer; // what is a buffer ? data = train ( train_network() )
             free_data(train);
             load_thread = load_data(args); // reuse thread
 
@@ -113,12 +114,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         printf("Loaded: %lf seconds\n", what_time_is_it_now()-time);
 
         time=what_time_is_it_now();
-        float loss = 0;
+        float loss = 0; // this is mean the loss
 #ifdef GPU
         if(ngpus == 1){
-            loss = train_network(net, train);
+            loss = train_network(net, train); // call train_network() function if you can use a GPU
         } else {
-            loss = train_networks(nets, ngpus, train, 4);
+            loss = train_networks(nets, ngpus, train, 4); 
         }
 #else
         loss = train_network(net, train);
@@ -143,7 +144,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);// current training weight print
             save_weights(net, buff); // save weight
         }
         free_data(train);
@@ -365,7 +366,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
 
 
 void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *outfile)
-{
+{ // arg is valid
     int j;
     list *options = read_data_cfg(datacfg);
     char *valid_images = option_find_str(options, "valid", "data/train.list");
@@ -487,7 +488,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         fclose(fp);
     }
     fprintf(stderr, "Total Detection Time: %f Seconds\n", what_time_is_it_now() - start);
-}
+} // end validate_detector() function
 
 void validate_detector_recall(char *cfgfile, char *weightfile)
 {

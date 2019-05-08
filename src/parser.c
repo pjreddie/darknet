@@ -178,13 +178,13 @@ layer parse_deconvolutional(list *options, size_params params)
 
 convolutional_layer parse_convolutional(list *options, size_params params)
 {
-    int n = option_find_int(options, "filters",1);
-    int size = option_find_int(options, "size",1);
-    int stride = option_find_int(options, "stride",1);
-    int pad = option_find_int_quiet(options, "pad",0);
-    int padding = option_find_int_quiet(options, "padding",0);
-    int groups = option_find_int_quiet(options, "groups", 1);
-    if(pad) padding = size/2;
+    int n = option_find_int(options, "filters",1); // n = filters
+    int size = option_find_int(options, "size",1); // size = size
+    int stride = option_find_int(options, "stride",1); // stride = stride
+    int pad = option_find_int_quiet(options, "pad",0); // pad = pad
+    int padding = option_find_int_quiet(options, "padding",0); // padding = padding( but yolov3.cfg doesn't have this str so this model's padding is default 0 )
+    int groups = option_find_int_quiet(options, "groups", 1); // groups = groups ( but yolov3.cfg doesn't have this str so this model's groups is default 1 )
+    if(pad) padding = size/2;//if pad == 1 padding = size/2 ( if size = 3 padding is (int)3/2 = 1 )
 
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
@@ -199,7 +199,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int binary = option_find_int_quiet(options, "binary", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,groups,size,stride,padding,activation, batch_normalize, binary, xnor, params.net->adam);
+    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,groups,size,stride,padding,activation, batch_normalize, binary, xnor, params.net->adam);//make_convolutaion_layer->convolutional_layer.c  & convolutional_layer struct is same the layer in darknet.h
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -215,7 +215,7 @@ layer parse_crnn(list *options, size_params params)
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
 
     layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, params.time_steps, activation, batch_normalize);
-
+    
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
     return l;

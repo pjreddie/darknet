@@ -1475,7 +1475,7 @@ void get_random_batch(data d, int n, float *X, float *y)
     }
 }
 
-void get_next_batch(data d, int n, int offset, float *X, float *y)
+void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_batch() function
 {
     int j;
     for(j = 0; j < n; ++j){
