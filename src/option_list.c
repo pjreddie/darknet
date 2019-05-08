@@ -6,12 +6,12 @@
 
 list *read_data_cfg(char *filename) // read_data_cfg() function
 {
-    FILE *file = fopen(filename, "r");
-    if(file == 0) file_error(filename);
+    FILE *file = fopen(filename, "r"); // yolov3.cfg file open
+    if(file == 0) file_error(filename); // if can't open filename file
     char *line;
     int nu = 0;
     list *options = make_list();
-    while((line=fgetl(file)) != 0){
+    while((line=fgetl(file)) != 0){ // getline
         ++ nu;
         strip(line);
         switch(line[0]){
@@ -49,9 +49,9 @@ metadata get_metadata(char *file)
     return m;
 }
 
-int read_option(char *s, list *options)
+int read_option(char *s, list *options) // read_option() function
 {
-    size_t i;
+    size_t i; // size_t = 객체의 크기
     size_t len = strlen(s);
     char *val = 0;
     for(i = 0; i < len; ++i){
