@@ -67,7 +67,7 @@ int read_option(char *s, list *options) // read_option() function
     return 1;
 }
 
-void option_insert(list *l, char *key, char *val)
+void option_insert(list *l, char *key, char *val) // option_insert() function 
 {
     kvp *p = malloc(sizeof(kvp));
     p->key = key;
@@ -76,7 +76,7 @@ void option_insert(list *l, char *key, char *val)
     list_insert(l, p);
 }
 
-void option_unused(list *l)
+void option_unused(list *l) 
 {
     node *n = l->front;
     while(n){

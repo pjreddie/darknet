@@ -37,9 +37,9 @@ void *list_pop(list *l){
     return val;
 }
 
-void list_insert(list *l, void *val)
+void list_insert(list *l, void *val) // list_insert() function
 {
-	node *new = malloc(sizeof(node));
+	node *new = malloc(sizeof(node)); // node struct can find in include/darknet.h
 	new->val = val;
 	new->next = 0;
 
