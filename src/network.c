@@ -53,8 +53,8 @@ load_args get_base_args(network *net)//get_base_args() function
 network *load_network(char *cfg, char *weights, int clear)// load network function
 {
     network *net = parse_network_cfg(cfg); // where is parse_network_cfg
-    if(weights && weights[0] != 0){
-        load_weights(net, weights);
+    if(weights && weights[0] != 0){ // weights is weights file
+        load_weights(net, weights); // call load_weights() function
     }
     if(clear) (*net->seen) = 0;
     return net;
@@ -185,7 +185,7 @@ network *make_network(int n) // make_network() function this function is called 
     return net;
 }
 
-void forward_network(network *netp)
+void forward_network(network *netp) // forward_network() function
 {
 #ifdef GPU
     if(netp->gpu_index >= 0){
@@ -240,7 +240,7 @@ void update_network(network *netp)
     }
 }
 
-void calc_network_cost(network *netp)
+void calc_network_cost(network *netp) // calc_network_cost() function 
 {
     network net = *netp;
     int i;
@@ -252,6 +252,7 @@ void calc_network_cost(network *netp)
             ++count;
         }
     }
+    printf("calc_network_cost's count = %d\n",count);
     *net.cost = sum/count;
 }
 
@@ -313,7 +314,7 @@ float train_network_sgd(network *net, data d, int n)
 
 float train_network(network *net, data d) // train_network() function
 { // d == train (data structure )
-    assert(d.X.rows % net->batch == 0);
+    assert(d.X.rows % net->batch == 0); // assert = 조건 확인 
     int batch = net->batch;
     int n = d.X.rows / batch;
 
@@ -759,8 +760,8 @@ float *network_output(network *net)
 
 #ifdef GPU
 
-void forward_network_gpu(network *netp)
-{
+void forward_network_gpu(network *netp) // forward_network_gpu() function
+{ // we have used gpu so we use this function.
     network net = *netp;
     cuda_set_device(net.gpu_index);
     cuda_push_array(net.input_gpu, net.input, net.inputs*net.batch);
@@ -775,7 +776,7 @@ void forward_network_gpu(network *netp)
         if(l.delta_gpu){
             fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
-        l.forward_gpu(l, net);
+        l.forward_gpu(l, net); // void (*forward_gpu)   (struct layer, struct network);
         net.input_gpu = l.output_gpu;
         net.input = l.output;
         if(l.truth) {
@@ -1120,7 +1121,7 @@ float train_networks(network **nets, int n, data d, int interval)
     return (float)sum/(n);
 }
 
-void pull_network_output(network *net)
+void pull_network_output(network *net) // pull_network_output() function
 {
     layer l = get_network_output_layer(net);
     cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);

@@ -129,7 +129,7 @@ static int entry_index(layer l, int batch, int location, int entry)
     return batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc;
 }
 
-void forward_yolo_layer(const layer l, network net)
+void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() function
 {
     int i,j,b,t,n;
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
@@ -237,7 +237,7 @@ void forward_yolo_layer(const layer l, network net)
     }
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
     printf("(Yolo)Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", net.index, avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, recall75/count, count);
-}
+}//end forward_yolo_layer() function
 
 void backward_yolo_layer(const layer l, network net)
 {
