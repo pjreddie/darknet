@@ -174,8 +174,8 @@ char *get_layer_string(LAYER_TYPE a)
     return "none";
 }
 
-network *make_network(int n)
-{
+network *make_network(int n) // make_network() function this function is called in parse_network_cfg() of parser.c 
+{ // this function do dynamic allocation.
     network *net = calloc(1, sizeof(network));
     net->n = n;
     net->layers = calloc(net->n, sizeof(layer));

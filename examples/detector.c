@@ -3,9 +3,9 @@
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 
-void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)// 학습 함수
+void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)// ?��?�� ?��?��
 { // we must add validation data set training while train the training data set.
-    list *options = read_data_cfg(datacfg);// obj.data
+    list *options = read_data_cfg(datacfg);// read_data_cfg() function can find in option_list.c
     char *train_images = option_find_str(options, "train", "data/train.list"); // default == data/train.list
     char *backup_directory = option_find_str(options, "backup", "/backup/"); // default == /backup/
 
@@ -14,7 +14,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     printf("%s\n", base);
     float avg_loss = -1;
     network **nets = calloc(ngpus, sizeof(network)); // network struct 
-    // network크기의 변수를 ngpus개 저장할 수 있는 공간 할당 
+    // network?��기의 �??���? ngpus�? ????��?�� ?�� ?��?�� 공간 ?��?�� 
 
     srand(time(0));
     int seed = rand();
@@ -61,7 +61,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int count = 0;
     //while(i*imgs < N*120){
     while(get_current_batch(net) < net->max_batches){ // net_max_batches = 500200
-	printf("get_current_batch : %ld , net->max_batches : %d\n",get_current_batch(net),net->max_batches);
+	printf("get_current_batch : %d , net->max_batches : %d\n",get_current_batch(net),net->max_batches);
         if(l.random && count++%10 == 0){
             printf("Resizing\n");
             int dim = (rand() % 10 + 10) * 32; // ((0 ~ 9)+10)*32 ==> 320 ~ 608 resize
@@ -790,7 +790,7 @@ void network_detect(network *net, image im, float thresh, float hier_thresh, flo
 }
 */
 
-void run_detector(int argc, char **argv) // argv[1] == detector 일 경우 
+void run_detector(int argc, char **argv) // argv[1] == detector ?�� 경우 
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .5);
@@ -838,7 +838,7 @@ void run_detector(int argc, char **argv) // argv[1] == detector 일 경우
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
-    else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);// 학습
+    else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);// ?��?��
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);

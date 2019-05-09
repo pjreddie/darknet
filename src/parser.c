@@ -894,14 +894,14 @@ list *read_cfg(char *filename)// read_cfg function
     if(file == 0) file_error(filename); // can't open file
     char *line; 
     int nu = 0;
-    list *options = make_list(); // make_listê°€ ë¬´ì—‡ì¸ì§€ í™•ì¸í•˜ê¸° 
-    //list ìƒì„± ë° ë™ì í• ë‹¹ 
-    section *current = 0; // section êµ¬ì¡°ì²´ í™•ì¸í•˜ê¸° 
-    while((line=fgetl(file)) != 0){ // íŒŒì¼ ëê¹Œì§€ ì½ê¸°
+    list *options = make_list(); // make_listê°? ë¬´ì—‡?¸ì§? ?™•?¸?•˜ê¸? 
+    //list ?ƒ?„± ë°? ?™? ?• ?‹¹ 
+    section *current = 0; // section êµ¬ì¡°ì²? ?™•?¸?•˜ê¸? 
+    while((line=fgetl(file)) != 0){ // ?ŒŒ?¼ ?ê¹Œì?? ?½ê¸?
         ++ nu;
         strip(line);
         switch(line[0]){
-            case '[':
+            case '[': // this is layer's name
                 current = malloc(sizeof(section));
                 list_insert(options, current);
                 current->options = make_list();
@@ -912,7 +912,7 @@ list *read_cfg(char *filename)// read_cfg function
             case ';':
                 free(line);
                 break;
-            default:
+            default: // read_option() and take a str
                 if(!read_option(line, current->options)){
                     fprintf(stderr, "Config file error line %d, could parse: %s\n", nu, line);
                     free(line);

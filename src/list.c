@@ -38,19 +38,11 @@ void *list_pop(list *l){
 }
 
 void list_insert(list *l, void *val) // list_insert() function
-<<<<<<< HEAD
 { // val is kvp struct type this type can find in option_list.h file.
 	node *new = malloc(sizeof(node));
 	new->val = val;// new->val have 3 various two char * and one int type various
 	new->next = 0; //if this is first new->next is 0 but it is not first 
 				   // new->next will be changed.
-=======
-{
-	node *new = malloc(sizeof(node)); // node struct can find in include/darknet.h
-	new->val = val;
-	new->next = 0;
->>>>>>> 3aa2b618e5fcb3cd169a581cb2b8c8ccb208fc56
-
 	if(!l->back){// if this node insert first
 		l->front = new; // this is first list
 		new->prev = 0; // haven't prev
