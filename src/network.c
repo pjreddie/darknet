@@ -252,7 +252,7 @@ void calc_network_cost(network *netp) // calc_network_cost() function
             ++count;
         }
     }
-    printf("calc_network_cost's count = %d\n",count);
+    //printf("calc_network_cost's count = %d\n",count);
     *net.cost = sum/count;
 }
 
