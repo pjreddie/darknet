@@ -332,25 +332,25 @@ void free_ptrs(void **ptrs, int n)
     free(ptrs);
 }
 
-char *fgetl(FILE *fp)
+char *fgetl(FILE *fp) // fgetl() function
 {
     if(feof(fp)) return 0;
     size_t size = 512;
-    char *line = malloc(size*sizeof(char));
-    if(!fgets(line, size, fp)){
-        free(line);
+    char *line = malloc(size*sizeof(char)); 
+    if(!fgets(line, size, fp)){ // can't read file 
+        free(line); // free 
         return 0;
     }
 
     size_t curr = strlen(line);
 
-    while((line[curr-1] != '\n') && !feof(fp)){
-        if(curr == size-1){
-            size *= 2;
-            line = realloc(line, size*sizeof(char));
-            if(!line) {
+    while((line[curr-1] != '\n') && !feof(fp)){ // feof() == 파일 끝에 도달했는가
+        if(curr == size-1){ // if memory is lack  
+            size *= 2; // current memory * 2 
+            line = realloc(line, size*sizeof(char)); // realloc() 재할당 
+            if(!line) { // can't expand size
                 printf("%ld\n", size);
-                malloc_error();
+                malloc_error(); // malloc_error()
             }
         }
         size_t readsize = size-curr;
@@ -358,8 +358,8 @@ char *fgetl(FILE *fp)
         fgets(&line[curr], readsize, fp);
         curr = strlen(line);
     }
-    if(line[curr-1] == '\n') line[curr-1] = '\0';
-
+    if(line[curr-1] == '\n') line[curr-1] = '\0';// if char meet a '\n' change character to '\0' and return str
+    // this means that removing '\n' character.
     return line;
 }
 
