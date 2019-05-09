@@ -4,7 +4,7 @@
 
 list *make_list() // make list function
 {
-	list *l = malloc(sizeof(list)); // list ë™ì  í• ë‹¹ 
+	list *l = malloc(sizeof(list)); // list ?™?  ?• ?‹¹ 
 	l->size = 0; 
 	l->front = 0;
 	l->back = 0;
@@ -37,18 +37,19 @@ void *list_pop(list *l){
     return val;
 }
 
-void list_insert(list *l, void *val)
-{
+void list_insert(list *l, void *val) // list_insert() function
+{ // val is kvp struct type this type can find in option_list.h file.
 	node *new = malloc(sizeof(node));
-	new->val = val;
-	new->next = 0;
+	new->val = val;// new->val have 3 various two char * and one int type various
+	new->next = 0; //if this is first new->next is 0 but it is not first 
+				   // new->next will be changed.
 
-	if(!l->back){
-		l->front = new;
-		new->prev = 0;
-	}else{
-		l->back->next = new;
-		new->prev = l->back;
+	if(!l->back){// if this node insert first
+		l->front = new; // this is first list
+		new->prev = 0; // haven't prev
+	}else{ // it is now first node in list
+		l->back->next = new; // next node is new
+		new->prev = l->back; // new node's prev is list's back
 	}
 	l->back = new;
 	++l->size;
