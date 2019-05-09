@@ -672,7 +672,7 @@ void parse_net_options(list *options, network *net)
     net->time_steps = option_find_int_quiet(options, "time_steps",1);
     net->track = option_find_int_quiet(options, "track", 0);
     net->augment_speed = option_find_int_quiet(options, "augment_speed", 2);
-    net->sequential_subdivisions = option_find_int_quiet(options, "sequential_subdivisions", 0);
+    net->init_sequential_subdivisions = net->sequential_subdivisions = option_find_int_quiet(options, "sequential_subdivisions", subdivs);
     net->try_fix_nan = option_find_int_quiet(options, "try_fix_nan", 0);
     net->batch /= subdivs;
     net->batch *= net->time_steps;
@@ -721,6 +721,7 @@ void parse_net_options(list *options, network *net)
     } else if (net->policy == STEPS){
         char *l = option_find(options, "steps");
         char *p = option_find(options, "scales");
+        char *s = option_find(options, "seq_scales");
         if(!l || !p) error("STEPS policy must have steps and scales in cfg file");
 
         int len = strlen(l);
@@ -731,6 +732,14 @@ void parse_net_options(list *options, network *net)
         }
         int* steps = (int*)calloc(n, sizeof(int));
         float* scales = (float*)calloc(n, sizeof(float));
+        float* seq_scales = (float*)calloc(n, sizeof(float));
+        for (i = 0; i < n; ++i) {
+            if (s) {
+                seq_scales[i] = atof(s);
+                s = strchr(s, ',') + 1;
+            } else
+                seq_scales[i] = 1;
+        }
         for(i = 0; i < n; ++i){
             int step    = atoi(l);
             float scale = atof(p);
@@ -741,6 +750,7 @@ void parse_net_options(list *options, network *net)
         }
         net->scales = scales;
         net->steps = steps;
+        net->seq_scales = seq_scales;
         net->num_steps = n;
     } else if (net->policy == EXP){
         net->gamma = option_find_float(options, "gamma", 1);

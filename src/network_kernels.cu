@@ -126,7 +126,7 @@ void update_network_gpu(network net)
 {
     cuda_set_device(net.gpu_index);
     int i;
-    int update_batch = net.batch*net.subdivisions;
+    int update_batch = net.batch*net.subdivisions * get_sequence_value(net);
     float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
@@ -200,7 +200,9 @@ float train_network_datum_gpu(network net, float *x, float *y)
     *net.seen += net.batch;
     forward_backward_network_gpu(net, x, y);
     float error = get_network_cost(net);
-    if (((*net.seen) / net.batch) % net.subdivisions == 0) update_network_gpu(net);
+    //if (((*net.seen) / net.batch) % net.subdivisions == 0) update_network_gpu(net);
+    const int sequence = get_sequence_value(net);
+    if (((*net.seen) / net.batch) % (net.subdivisions*sequence) == 0) update_network_gpu(net);
 
     return error;
 }

@@ -559,6 +559,7 @@ typedef struct network {
     int time_steps;
     int step;
     int max_batches;
+    float *seq_scales;
     float *scales;
     int   *steps;
     int num_steps;
@@ -591,6 +592,7 @@ typedef struct network {
     int track;
     int augment_speed;
     int sequential_subdivisions;
+    int init_sequential_subdivisions;
     int current_subdivision;
     int try_fix_nan;
 

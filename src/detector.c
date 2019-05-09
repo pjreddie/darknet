@@ -191,6 +191,11 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         time = what_time_is_it_now();
         pthread_join(load_thread, 0);
         train = buffer;
+        if (net.track) {
+            net.sequential_subdivisions = get_current_seq_subdivisions(net);
+            args.threads = net.sequential_subdivisions * ngpus;
+            printf(" sequential_subdivisions = %d \n", net.sequential_subdivisions);
+        }
         load_thread = load_data(args);
 
         /*
@@ -662,7 +667,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         char *train_images = option_find_str(options, "train", "data/train.txt");
         valid_images = option_find_str(options, "valid", train_images);
         net = *existing_net;
-        remember_network_recurrent_state(*existing_net);
+        //remember_network_recurrent_state(*existing_net);
         free_network_recurrent_state(*existing_net);
     }
     else {
@@ -1073,7 +1078,8 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     if (existing_net) {
         //set_batch_network(&net, initial_batch);
         //free_network_recurrent_state(*existing_net);
-        restore_network_recurrent_state(*existing_net);
+        //restore_network_recurrent_state(*existing_net);
+        randomize_network_recurrent_state(*existing_net);
     }
     else {
         free_network(net);

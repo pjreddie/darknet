@@ -91,6 +91,30 @@ void reset_rnn(network *net)
     reset_network_state(net, 0);
 }
 
+float get_current_seq_subdivisions(network net)
+{
+    int sequence_subdivisions = net.init_sequential_subdivisions;
+
+    if (net.policy)
+    {
+        int batch_num = get_current_batch(net);
+        int i;
+        for (i = 0; i < net.num_steps; ++i) {
+            if (net.steps[i] > batch_num) break;
+            sequence_subdivisions *= net.seq_scales[i];
+        }
+    }
+    return sequence_subdivisions;
+}
+
+int get_sequence_value(network net)
+{
+    int sequence = 1;
+    if (net.sequential_subdivisions != 0) sequence = net.subdivisions / net.sequential_subdivisions;
+    if (sequence < 1) sequence = 1;
+    return sequence;
+}
+
 float get_current_rate(network net)
 {
     int batch_num = get_current_batch(net);
@@ -928,6 +952,7 @@ void free_network(network net)
     }
     free(net.layers);
 
+    free(net.seq_scales);
     free(net.scales);
     free(net.steps);
     free(net.seen);
@@ -1120,6 +1145,15 @@ void free_network_recurrent_state(network net)
     int k;
     for (k = 0; k < net.n; ++k) {
         if (net.layers[k].type == CONV_LSTM) free_state_conv_lstm(net.layers[k]);
+        if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
+    }
+}
+
+void randomize_network_recurrent_state(network net)
+{
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        if (net.layers[k].type == CONV_LSTM) randomize_state_conv_lstm(net.layers[k]);
         if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
     }
 }
