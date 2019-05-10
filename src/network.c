@@ -317,7 +317,7 @@ float train_network(network *net, data d) // train_network() function
     assert(d.X.rows % net->batch == 0); // if d.X.rows % net->batch == 0 close this function
     int batch = net->batch; // net = nets[0]
     int n = d.X.rows / batch;// d.X type is matrix matrix sturct have rows(int type).
-    //printf("n = %d / %d = %d\n",d.X.rows,batch,n );
+    printf("n = %d / %d = %d\n",d.X.rows,batch,n );
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i){
