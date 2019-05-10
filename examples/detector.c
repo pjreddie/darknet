@@ -120,11 +120,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             printf("11111\n");
             loss = train_network(net, train); // call train_network() function if you can use a GPU
         } else {
-            printf("22222\n");
             loss = train_networks(nets, ngpus, train, 4); 
         }
 #else
-        printf("333333\n");
         loss = train_network(net, train);
 #endif
         if (avg_loss < 0) avg_loss = loss;
