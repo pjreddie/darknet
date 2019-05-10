@@ -42,19 +42,18 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         cuda_set_device(gpus[0]);
         printf(" Prepare additional network for mAP calculation...\n");
         net_map = parse_network_cfg_custom(cfgfile, 1, 1);
+        const int net_classes = net_map.layers[net_map.n - 1].classes;
 
         int k;  // free memory unnecessary arrays
-        for (k = 0; k < net_map.n; ++k) {
-            free_layer(net_map.layers[k]);
-        }
+        for (k = 0; k < net_map.n - 1; ++k) free_layer(net_map.layers[k]);
 
         char *name_list = option_find_str(options, "names", "data/names.list");
         int names_size = 0;
         char **names = get_labels_custom(name_list, &names_size);
-        if (net_map.layers[net_map.n - 1].classes != names_size) {
+        if (net_classes != names_size) {
             printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
-                name_list, names_size, net_map.layers[net_map.n - 1].classes, cfgfile);
-            if (net_map.layers[net_map.n - 1].classes > names_size) getchar();
+                name_list, names_size, net_classes, cfgfile);
+            if (net_classes > names_size) getchar();
         }
     }
 

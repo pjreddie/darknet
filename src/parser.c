@@ -150,6 +150,7 @@ local_layer parse_local(list *options, size_params params)
 convolutional_layer parse_convolutional(list *options, size_params params)
 {
     int n = option_find_int(options, "filters",1);
+    int groups = option_find_int_quiet(options, "groups", 1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
     int pad = option_find_int_quiet(options, "pad",0);
@@ -170,7 +171,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
+    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -193,12 +194,13 @@ layer parse_crnn(list *options, size_params params)
 
     int output_filters = option_find_int(options, "output",1);
     int hidden_filters = option_find_int(options, "hidden",1);
+    int groups = option_find_int_quiet(options, "groups", 1);
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, params.time_steps, size, stride, padding, activation, batch_normalize, xnor);
+    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, xnor);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
@@ -251,13 +253,14 @@ layer parse_conv_lstm(list *options, size_params params)
     if (pad) padding = size / 2;
 
     int output_filters = option_find_int(options, "output", 1);
+    int groups = option_find_int_quiet(options, "groups", 1);
     char *activation_s = option_find_str(options, "activation", "LINEAR");
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int peephole = option_find_int_quiet(options, "peephole", 1);
 
-    layer l = make_conv_lstm_layer(params.batch, params.w, params.h, params.c, output_filters, params.time_steps, size, stride, padding, activation, batch_normalize, peephole, xnor);
+    layer l = make_conv_lstm_layer(params.batch, params.w, params.h, params.c, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, peephole, xnor);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
@@ -989,8 +992,8 @@ void save_convolutional_weights_binary(layer l, FILE *fp)
         pull_convolutional_layer(l);
     }
 #endif
-    binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.binary_weights);
-    int size = l.c*l.size*l.size;
+    int size = (l.c/l.groups)*l.size*l.size;
+    binarize_weights(l.weights, l.n, size, l.binary_weights);
     int i, j, k;
     fwrite(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize){
@@ -1025,7 +1028,7 @@ void save_convolutional_weights(layer l, FILE *fp)
         pull_convolutional_layer(l);
     }
 #endif
-    int num = l.n*l.c*l.size*l.size;
+    int num = l.nweights;
     fwrite(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize){
         fwrite(l.scales, sizeof(float), l.n, fp);
@@ -1209,7 +1212,7 @@ void load_convolutional_weights_binary(layer l, FILE *fp)
         fread(l.rolling_mean, sizeof(float), l.n, fp);
         fread(l.rolling_variance, sizeof(float), l.n, fp);
     }
-    int size = l.c*l.size*l.size;
+    int size = (l.c / l.groups)*l.size*l.size;
     int i, j, k;
     for(i = 0; i < l.n; ++i){
         float mean = 0;
@@ -1237,7 +1240,7 @@ void load_convolutional_weights(layer l, FILE *fp)
         //load_convolutional_weights_binary(l, fp);
         //return;
     }
-    int num = l.n*l.c*l.size*l.size;
+    int num = l.nweights;
     fread(l.biases, sizeof(float), l.n, fp);
     //fread(l.weights, sizeof(float), num, fp); // as in connected layer
     if (l.batch_normalize && (!l.dontloadscales)){
@@ -1267,9 +1270,9 @@ void load_convolutional_weights(layer l, FILE *fp)
     //}
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {
-        transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
+        transpose_matrix(l.weights, (l.c/l.groups)*l.size*l.size, l.n);
     }
-    //if (l.binary) binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.weights);
+    //if (l.binary) binarize_weights(l.weights, l.n, (l.c/l.groups)*l.size*l.size, l.weights);
 #ifdef GPU
     if(gpu_index >= 0){
         push_convolutional_layer(l);
