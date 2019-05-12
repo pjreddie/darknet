@@ -35,7 +35,6 @@ endif()
 
 if(@ENABLE_OPENMP@)
   find_dependency(OpenMP)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
 # Our library dependencies (contains definitions for IMPORTED targets)
