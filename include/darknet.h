@@ -135,7 +135,7 @@ struct layer{
     int truths;
     int h,w,c;
     int out_h, out_w, out_c;
-    int n;
+    int n; // filters
     int max_boxes;
     int groups;
     int size;
@@ -428,7 +428,7 @@ typedef enum {
 } learning_rate_policy;
 
 typedef struct network{ // network struct
-    int n;
+    int n; // what is it n ??
     int batch;
     size_t *seen;
     int *t;
@@ -478,8 +478,8 @@ typedef struct network{ // network struct
     tree *hierarchy;
 
     float *input;
-    float *truth;
-    float *delta;
+    float *truth; // what is it?
+    float *delta; // what is it?
     float *workspace;
     int train;
     int index;

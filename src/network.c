@@ -189,7 +189,7 @@ void forward_network(network *netp) // forward_network() function
 {
 #ifdef GPU
     if(netp->gpu_index >= 0){
-        forward_network_gpu(netp);   
+        forward_network_gpu(netp);   // we use GPU so we use this function.
         return;
     }
 #endif
@@ -291,10 +291,10 @@ float train_network_datum(network *net) // train_network_datum() function
 {
     *net->seen += net->batch;
     net->train = 1;
-    forward_network(net);
+    forward_network(net); // call forward_network() function
     backward_network(net); // call backward_network() function
     float error = *net->cost;
-    if(((*net->seen)/net->batch)%net->subdivisions == 0) update_network(net);
+    if(((*net->seen)/net->batch)%net->subdivisions == 0) update_network(net); // call update_network() function
     return error; // return error various
 }
 
@@ -317,15 +317,17 @@ float train_network(network *net, data d) // train_network() function
     assert(d.X.rows % net->batch == 0); // if d.X.rows % net->batch == 0 close this function
     int batch = net->batch; // net = nets[0]
     int n = d.X.rows / batch;// d.X type is matrix matrix sturct have rows(int type).
-    printf("n = %d / %d = %d\n",d.X.rows,batch,n );
     int i;
     float sum = 0;
+    printf("n = d.X.rows(%d) / batch(%d) = %d\n",d.X.rows,batch,n);
     for(i = 0; i < n; ++i){
         get_next_batch(d, batch, i*batch, net->input, net->truth);
-        float err = train_network_datum(net);
+        float err = train_network_datum(net); 
         sum += err;
+        //check something
+        printf("err[%d] = %d\n",i,err); // print sum
     }
-    return (float)sum/(n*batch);
+    return (float)sum/(n*batch); // this is loss value
 }
 
 void set_temp_network(network *net, float t)
@@ -697,10 +699,10 @@ float *network_accuracies(network *net, data d, int n)
     return acc;
 }
 
-layer get_network_output_layer(network *net)
+layer get_network_output_layer(network *net) // get_network_output_layer() function
 {
     int i;
-    for(i = net->n - 1; i >= 0; --i){
+    for(i = net->n - 1; i >= 0; --i){ // n = filters 
         if(net->layers[i].type != COST) break;
     }
     return net->layers[i];
@@ -762,18 +764,20 @@ float *network_output(network *net)
 
 void forward_network_gpu(network *netp) // forward_network_gpu() function
 { // we have used gpu so we use this function.
+    printf("Here is forward_network_gpu start\n");
     network net = *netp;
-    cuda_set_device(net.gpu_index);
+    cuda_set_device(net.gpu_index); // gpu setting
     cuda_push_array(net.input_gpu, net.input, net.inputs*net.batch);
     if(net.truth){
         cuda_push_array(net.truth_gpu, net.truth, net.truths*net.batch);
     }
 
     int i;
-    for(i = 0; i < net.n; ++i){
+    printf("net.n = %d",net.n);
+    for(i = 0; i < net.n; ++i){ // net.layers[i]'s all layer train
         net.index = i;
         layer l = net.layers[i];
-        if(l.delta_gpu){
+        if(l.delta_gpu){ // what is delta_gpu
             fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
         l.forward_gpu(l, net); // void (*forward_gpu)   (struct layer, struct network);
@@ -786,10 +790,11 @@ void forward_network_gpu(network *netp) // forward_network_gpu() function
     }
     pull_network_output(netp);
     calc_network_cost(netp);
-}
+} // end forward_network_gpu() function
 
 void backward_network_gpu(network *netp) // backward_network_gpu() function
 {
+    printf("Here is baclward_network_gpu start\n");
     int i;
     network net = *netp;
     network orig = net;
@@ -809,7 +814,7 @@ void backward_network_gpu(network *netp) // backward_network_gpu() function
         net.index = i;
         l.backward_gpu(l, net);
     }
-}
+}// end backward_network_gpu() function
 
 void update_network_gpu(network *netp)
 {
