@@ -1174,7 +1174,7 @@ void *load_threads(void *ptr) // second function when you use pthread in detecto
     for(i = 0; i < args.threads; ++i){
         args.d = buffers + i;
         args.n = (i+1) * total/args.threads - i * total/args.threads;
-        printf("args.n = %d\n",n);
+        printf("args.n = %d\n",args.n);
         threads[i] = load_data_in_thread(args); // call load_data_in_thraed() function
     }
     for(i = 0; i < args.threads; ++i){
