@@ -51,7 +51,7 @@ metadata get_metadata(char *file)
 
 int read_option(char *s, list *options) // read_option() function
 {
-    size_t i; // size_t = ê°ì²´ì˜ í¬ê¸°
+    size_t i; // size_t = ê°ì²´?˜ ?¬ê¸?
     size_t len = strlen(s);
     char *val = 0;
     for(i = 0; i < len; ++i){
@@ -73,6 +73,7 @@ void option_insert(list *l, char *key, char *val) // option_insert() function
     p->key = key;
     p->val = val;
     p->used = 0;
+    printf("Key = %s / value = %s\n",key,value);
     list_insert(l, p);
 }
 

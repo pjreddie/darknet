@@ -360,7 +360,7 @@ char *fgetl(FILE *fp) // fgetl() function get string and remove '\n' and revise 
     }
     if(line[curr-1] == '\n') line[curr-1] = '\0';// char '\n' revise to '\0'
                                                  
-    puts(line);
+    //puts(line);
     return line;
 }
 
