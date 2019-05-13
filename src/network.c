@@ -703,9 +703,11 @@ float *network_accuracies(network *net, data d, int n)
 layer get_network_output_layer(network *net) // get_network_output_layer() function
 {
     int i;
+    printf("get_network_output_layer's net->n = %d\n",net->n);
     for(i = net->n - 1; i >= 0; --i){ // n = filters 
         if(net->layers[i].type != COST) break;
     }
+    printf("return net->layers.type = %d\n",net->layers[i].tpye);
     return net->layers[i];
 }
 
