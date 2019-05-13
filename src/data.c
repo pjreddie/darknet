@@ -49,7 +49,8 @@ char **get_random_paths(char **paths, int n, int m) // get_random_paths() functi
         random_paths[i] = paths[index];
         //if(i == 0) printf("%s\n", paths[index]);
     }
-    //printf("%s\n",random_paths[i]);//printf random_paths[]
+
+    printf("n = %d , m = %d , this image = %s\n",n,m,random_paths[i]);//printf random_paths[]
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
@@ -1048,7 +1049,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
-    	//printf("%s\n",random_paths[i]);//printf random_paths[]
+    	printf("%s\n",random_paths[i]);//printf random_paths[]
 	//take a image in random_paths[i] images
         image orig = load_image_color(random_paths[i], 0, 0); // load_image_color in image.c 
 							      // when you train the dataset it have to random image train.
@@ -1061,7 +1062,6 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         float new_ar = (orig.w + rand_uniform(-dw, dw)) / (orig.h + rand_uniform(-dh, dh));
         //float scale = rand_uniform(.25, 2);
         float scale = 1;
-
         float nw, nh;
 
         if(new_ar < 1){
@@ -1072,11 +1072,15 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
             nh = nw / new_ar;
         }
 
+        printf("dw = %f / dh = %f / new_ar = %f\n",dw,dh,new_ar);
+
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
 
+        printf("dx = %f / dy = %f\n",dx,dy);
         place_image(orig, nw, nh, dx, dy, sized);
-
+        // image have 3 dimension so we want to change by 1 dimension.
+        // so we use place_image function.
         random_distort_image(sized, hue, saturation, exposure);
 
         int flip = rand()%2;
@@ -1168,12 +1172,14 @@ void *load_threads(void *ptr) // second function when you use pthread in detecto
     data *out = args.d;
     int total = args.n;
     free(ptr);
-    printf("args.threads = %d // tatal = %d \n",args.threads,total);
+    //printf("args.threads = %d // tatal = %d \n",args.threads,total);
     data *buffers = calloc(args.threads, sizeof(data));
     pthread_t *threads = calloc(args.threads, sizeof(pthread_t));
     for(i = 0; i < args.threads; ++i){
         args.d = buffers + i;
         args.n = (i+1) * total/args.threads - i * total/args.threads;
+        // args.n = [(i+1) * total(64)/args.threads(64)](i+1) - i = 1;
+        // args.n = 1 
         //printf("args.n = %d\n",args.n);
         threads[i] = load_data_in_thread(args); // call load_data_in_thraed() function
     }

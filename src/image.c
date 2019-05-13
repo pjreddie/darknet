@@ -64,6 +64,7 @@ static float get_pixel_extend(image m, int x, int y, int c) // get_pixel_extend(
 static void set_pixel(image m, int x, int y, int c, float val)// set_pixel() function
 {
     if (x < 0 || y < 0 || c < 0 || x >= m.w || y >= m.h || c >= m.c) return;
+    //if image size over or under
     assert(x < m.w && y < m.h && c < m.c);
     m.data[c*m.h*m.w + y*m.w + x] = val; // What is it means??
 }
@@ -238,7 +239,7 @@ image **load_alphabet()
     }
     return alphabets;
 }
-// detection ì‹¤ì§ì  ì ìˆ˜ë¥¼ ë§¤ê¸°ëŠ” í•¨ìˆ˜ ê°€ìž¥ ì¤‘ìš”í•œ í•¨ìˆ˜
+// detection ?‹¤ì§ì  ? ?ˆ˜ë¥? ë§¤ê¸°?Š” ?•¨?ˆ˜ ê°??ž¥ ì¤‘ìš”?•œ ?•¨?ˆ˜
 void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
     int i,j;
@@ -257,7 +258,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                     strcat(labelstr, names[j]);
                 }
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
-		count++;//ê°ì²´ë¥¼ ê²€ì¶œí• ë•Œë§ˆë‹¤ count++ ì—¬ê¸°ì„œ classesê°€ 1ì´ê¸° ë•Œë¬¸ì— ê²€ì¶œì„ í•˜ë©´ ë¬´ì¡°ê±´ ì‚¬ëžŒì´ê¸° ë•Œë¬¸ì— ë¬´ì¡°ê±´ ì¦ê°€ì‹œì¼œë„ ë¨.
+		count++;//ê°ì²´ë¥? ê²?ì¶œí• ?•Œë§ˆë‹¤ count++ ?—¬ê¸°ì„œ classesê°? 1?´ê¸? ?•Œë¬¸ì— ê²?ì¶œì„ ?•˜ë©? ë¬´ì¡°ê±? ?‚¬?žŒ?´ê¸? ?•Œë¬¸ì— ë¬´ì¡°ê±? ì¦ê???‹œì¼œë„ ?¨.
             }
         }
         if(class >= 0){
@@ -459,7 +460,7 @@ image collapse_image_layers(image source, int border)
     return dest;
 }
 
-void constrain_image(image im)
+void constrain_image(image im) // constrain_image() function
 {
     int i;
     for(i = 0; i < im.w*im.h*im.c; ++i){
@@ -639,9 +640,9 @@ image float_to_image(int w, int h, int c, float *data)
 void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_image() function
 {
     int x, y, c;
-    for(c = 0; c < im.c; ++c){
-        for(y = 0; y < h; ++y){
-            for(x = 0; x < w; ++x){
+    for(c = 0; c < im.c; ++c){ // rgb
+        for(y = 0; y < h; ++y){ // height
+            for(x = 0; x < w; ++x){ // width
                 float rx = ((float)x / w) * im.w;
                 float ry = ((float)y / h) * im.h;
                 float val = bilinear_interpolate(im, rx, ry, c); // call bilinear_interpolate() fucntion
@@ -1172,7 +1173,7 @@ void exposure_image(image im, float sat)
 
 void distort_image(image im, float hue, float sat, float val)// distort_image() function
 {
-    rgb_to_hsv(im);
+    rgb_to_hsv(im);// rgb - > hsv
     scale_image_channel(im, 1, sat);
     scale_image_channel(im, 2, val);
     int i;
@@ -1181,7 +1182,7 @@ void distort_image(image im, float hue, float sat, float val)// distort_image() 
         if (im.data[i] > 1) im.data[i] -= 1;
         if (im.data[i] < 0) im.data[i] += 1;
     }
-    hsv_to_rgb(im);
+    hsv_to_rgb(im); // hsv -> rgb
     constrain_image(im);
 }
 
