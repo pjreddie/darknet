@@ -1164,13 +1164,14 @@ void load_convolutional_weights_binary(layer l, FILE *fp)
 
 void load_convolutional_weights(layer l, FILE *fp) // load_convolutional_weights() function
 {
-    printf("(load_convolutional_weights function)");
+    //printf("(load_convolutional_weights function)");
     if(l.binary){
         //load_convolutional_weights_binary(l, fp);
         //return;
     }
     if(l.numload) l.n = l.numload;
-    int num = l.c/l.groups*l.n*l.size*l.size;
+    int num = l.c/l.groups*l.n*l.size*l.size; 
+    printf("l.c = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d\n",l.c,l.groups,l.n,l.size,num);
     fread(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.n, fp);
@@ -1246,7 +1247,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff) // l
     int transpose = (major > 1000) || (minor > 1000);
 
     int i;
-    for(i = start; i < net->n && i < cutoff; ++i){
+    for(i = start; i < net->n && i < cutoff; ++i){// each layer commit 
         layer l = net->layers[i];
         if (l.dontload) continue;
         if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){// use
@@ -1304,7 +1305,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff) // l
 #endif
         }
     }
-    fprintf(stderr, "Done!(end load_weights_upto() function\n");
+    fprintf(stderr, "Done!(end load_weights_upto() function)\n");
     fclose(fp);
 }
 
