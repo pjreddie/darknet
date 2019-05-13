@@ -36,7 +36,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     data train, buffer;
 
     layer l = net->layers[net->n - 1];
-
+    printf("net->n = %d\n",net->n);
     int classes = l.classes;
     float jitter = l.jitter;
 
@@ -48,7 +48,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.coords = l.coords;
     args.paths = paths;
     args.n = imgs; // args.n = imgs; same with original batch(64) size
-    //if we use my obj.cfg  args.n = 64 * 16 * ngpus(1)
+    //if we use my obj.cfg  args.n = 4 * 16 * ngpus(1)
     args.m = plist->size; // total image count
     args.classes = classes;
     args.jitter = jitter;
