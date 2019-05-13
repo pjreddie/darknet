@@ -50,7 +50,7 @@ char **get_random_paths(char **paths, int n, int m) // get_random_paths() functi
         //if(i == 0) printf("%s\n", paths[index]);
     }
 
-    printf("n = %d , m = %d , this image = %s\n",n,m,random_paths[i]);//printf random_paths[]
+    //printf("n = %d , m = %d , this image = %s\n",n,m,random_paths[i]);//printf random_paths[]
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
@@ -1072,12 +1072,11 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
             nh = nw / new_ar;
         }
 
-        printf("dw = %f / dh = %f / new_ar = %f\n",dw,dh,new_ar);
+        printf("--%s\n--dw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\n",random_paths[i],dw,dh,new_ar,dx,dy);
 
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
 
-        printf("dx = %f / dy = %f\n",dx,dy);
         place_image(orig, nw, nh, dx, dy, sized);
         // image have 3 dimension so we want to change by 1 dimension.
         // so we use place_image function.

@@ -49,14 +49,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.paths = paths;
     args.n = imgs; // args.n = imgs; same with original batch(64) size
     //if we use my obj.cfg  args.n = 64 * 16 * ngpus(1)
-    args.m = plist->size;
+    args.m = plist->size; // total image count
     args.classes = classes;
     args.jitter = jitter;
     args.num_boxes = l.max_boxes;
     args.d = &buffer;
     args.type = DETECTION_DATA;
     //args.type = INSTANCE_DATA;
-    args.threads = 64;
+    args.threads = 64; // why threads is 64??
 
     pthread_t load_thread = load_data(args); // load_data()'s return type is pthread_t
     double time;
