@@ -707,7 +707,7 @@ layer get_network_output_layer(network *net) // get_network_output_layer() funct
     for(i = net->n - 1; i >= 0; --i){ // n = filters 
         if(net->layers[i].type != COST) break;
     }
-    printf("return net->layers.type = %d\n",net->layers[i].tpye);
+    printf("return net->layers.type = %d\n",net->layers[i].type);
     return net->layers[i];
 }
 
