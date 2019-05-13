@@ -1049,7 +1049,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
-    	printf("%s\n",random_paths[i]);//printf random_paths[]
+    	//printf("%s\n",random_paths[i]);//printf random_paths[]
 	//take a image in random_paths[i] images
         image orig = load_image_color(random_paths[i], 0, 0); // load_image_color in image.c 
 							      // when you train the dataset it have to random image train.
@@ -1080,7 +1080,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         // so we use place_image function.
         random_distort_image(sized, hue, saturation, exposure);
 
-        printf("--%s\n--dw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\n",random_paths[i],dw,dh,new_ar,dx,dy);
+        printf("--%s--\ndw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\n",random_paths[i],dw,dh,new_ar,dx,dy);
 
         int flip = rand()%2;
         if(flip) flip_image(sized);
