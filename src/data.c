@@ -1072,8 +1072,6 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
             nh = nw / new_ar;
         }
 
-        printf("--%s\n--dw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\n",random_paths[i],dw,dh,new_ar,dx,dy);
-
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
 
@@ -1081,6 +1079,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         // image have 3 dimension so we want to change by 1 dimension.
         // so we use place_image function.
         random_distort_image(sized, hue, saturation, exposure);
+
+        printf("--%s\n--dw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\n",random_paths[i],dw,dh,new_ar,dx,dy);
 
         int flip = rand()%2;
         if(flip) flip_image(sized);
