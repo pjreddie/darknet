@@ -703,11 +703,11 @@ float *network_accuracies(network *net, data d, int n)
 layer get_network_output_layer(network *net) // get_network_output_layer() function
 {
     int i;
-    printf("get_network_output_layer's net->n = %d\n",net->n);
+    //printf("get_network_output_layer's net->n = %d\n",net->n);
     for(i = net->n - 1; i >= 0; --i){ // n = filters 
         if(net->layers[i].type != COST) break;
     }
-    printf("return net->layers.type = %d\n",net->layers[i].type);
+    //printf("return net->layers.type = %d\n",net->layers[i].type);
     return net->layers[i];
 }
 
@@ -767,7 +767,7 @@ float *network_output(network *net)
 
 void forward_network_gpu(network *netp) // forward_network_gpu() function
 { // we have used gpu so we use this function.
-    printf("Here is forward_network_gpu start\n");
+    //printf("Here is forward_network_gpu start\n");
     network net = *netp;
     cuda_set_device(net.gpu_index); // gpu setting
     cuda_push_array(net.input_gpu, net.input, net.inputs*net.batch);
@@ -797,7 +797,7 @@ void forward_network_gpu(network *netp) // forward_network_gpu() function
 
 void backward_network_gpu(network *netp) // backward_network_gpu() function
 {
-    printf("Here is baclward_network_gpu start\n");
+    //printf("Here is baclward_network_gpu start\n");
     int i;
     network net = *netp;
     network orig = net;
