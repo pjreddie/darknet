@@ -307,6 +307,8 @@ if(ENABLE_ZED_CAMERA)
 endif()
 
 if(ENABLE_CUDA)
+  target_include_directories(darknet PRIVATE $<BUILD_INTERFACE:${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+  target_include_directories(dark PRIVATE $<BUILD_INTERFACE:${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
   target_link_libraries(darknet PRIVATE curand cublas cuda)
   target_link_libraries(dark PRIVATE curand cublas cuda)
   set_target_properties(dark PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)

@@ -1,6 +1,6 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#include <cuda_runtime.h>
+#include <curand.h>
+#include <cublas_v2.h>
 
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"

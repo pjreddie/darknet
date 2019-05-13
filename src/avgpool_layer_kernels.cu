@@ -1,6 +1,6 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#include <cuda_runtime.h>
+#include <curand.h>
+#include <cublas_v2.h>
 
 #include "avgpool_layer.h"
 #include "dark_cuda.h"
