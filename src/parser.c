@@ -1205,7 +1205,8 @@ void load_convolutional_weights(layer l, FILE *fp) // load_convolutional_weights
         }
     }
     fread(l.weights, sizeof(float), num, fp);
-    printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d / l.weights = %f\n",l.w,l.h,l.c,l.groups,l.n,l.size,num,l.weights);
+    //fp = darknet53.conv.74
+    printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d / l.weights = %f\n",l.w,l.h,l.c,l.groups,l.n,l.size,num,*l.weights);
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
