@@ -73,7 +73,7 @@ void option_insert(list *l, char *key, char *val) // option_insert() function
     p->key = key;
     p->val = val;
     p->used = 0;
-    printf("Key = %s / value = %s\n",key,value);
+    printf("Key = %s / value = %s\n",key,val);
     list_insert(l, p);
 }
 
