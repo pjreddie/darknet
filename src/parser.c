@@ -1248,7 +1248,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff) // l
     for(i = start; i < net->n && i < cutoff; ++i){
         layer l = net->layers[i];
         if (l.dontload) continue;
-        if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){
+        if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){// use
             load_convolutional_weights(l, fp);
         }
         if(l.type == CONNECTED){
@@ -1303,7 +1303,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff) // l
 #endif
         }
     }
-    fprintf(stderr, "Done!\n");
+    fprintf(stderr, "Done!(end load_weights_upto() function\n");
     fclose(fp);
 }
 

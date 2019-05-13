@@ -29,7 +29,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     }
     srand(time(0));
     network *net = nets[0];
-
+    printf("nets[0]->batch = %d\n",nets[0]->batch);
     int imgs = net->batch * net->subdivisions * ngpus; // training image numbers
     // net->batch(64) * net->subdivisions(16) * ngpus(1) = 64 * 16 = imgs
     printf("imgs[%d] = net->batch[%d] * net->subdivisions[%d] * ngpus[%d]\n",imgs,net->batch,net->subdivisions,ngpus);
