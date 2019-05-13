@@ -894,10 +894,10 @@ list *read_cfg(char *filename)// read_cfg function
     if(file == 0) file_error(filename); // can't open file
     char *line; 
     int nu = 0;
-    list *options = make_list(); // make_listê°? ë¬´ì—‡?¸ì§? ?™•?¸?•˜ê¸? 
-    //list ?ƒ?„± ë°? ?™? ?• ?‹¹ 
-    section *current = 0; // section êµ¬ì¡°ì²? ?™•?¸?•˜ê¸? 
-    while((line=fgetl(file)) != 0){ // ?ŒŒ?¼ ?ê¹Œì?? ?½ê¸?
+    list *options = make_list(); // make_listï¿½? ë¬´ì—‡?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½? 
+    //list ?ï¿½ï¿½?ï¿½ï¿½ ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ 
+    section *current = 0; // section êµ¬ì¡°ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½? 
+    while((line=fgetl(file)) != 0){ // ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ê¹Œï¿½?? ?ï¿½ï¿½ï¿½?
         ++ nu;
         strip(line);
         switch(line[0]){
@@ -956,7 +956,7 @@ void save_convolutional_weights_binary(layer l, FILE *fp)
     }
 }
 
-void save_convolutional_weights(layer l, FILE *fp)
+void save_convolutional_weights(layer l, FILE *fp) // save_convolutional_weights() function
 {
     if(l.binary){
         //save_convolutional_weights_binary(l, fp);
@@ -967,14 +967,14 @@ void save_convolutional_weights(layer l, FILE *fp)
         pull_convolutional_layer(l);
     }
 #endif
-    int num = l.nweights;
-    fwrite(l.biases, sizeof(float), l.n, fp);
+    int num = l.nweights; // what is it nweights??
+    fwrite(l.biases, sizeof(float), l.n, fp); // biases write
     if (l.batch_normalize){
         fwrite(l.scales, sizeof(float), l.n, fp);
         fwrite(l.rolling_mean, sizeof(float), l.n, fp);
         fwrite(l.rolling_variance, sizeof(float), l.n, fp);
     }
-    fwrite(l.weights, sizeof(float), num, fp);
+    fwrite(l.weights, sizeof(float), num, fp); // weights write
 }
 
 void save_batchnorm_weights(layer l, FILE *fp)
@@ -1005,7 +1005,7 @@ void save_connected_weights(layer l, FILE *fp)
     }
 }
 
-void save_weights_upto(network *net, char *filename, int cutoff)
+void save_weights_upto(network *net, char *filename, int cutoff) // save_weights_upto() function
 {
 #ifdef GPU
     if(net->gpu_index >= 0){
@@ -1023,12 +1023,12 @@ void save_weights_upto(network *net, char *filename, int cutoff)
     fwrite(&minor, sizeof(int), 1, fp);
     fwrite(&revision, sizeof(int), 1, fp);
     fwrite(net->seen, sizeof(size_t), 1, fp);
-
+    /*what is it means that major , minor and revision */
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){
         layer l = net->layers[i];
         if (l.dontsave) continue;
-        if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){
+        if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){ // we use only convloutional layer
             save_convolutional_weights(l, fp);
         } if(l.type == CONNECTED){
             save_connected_weights(l, fp);
@@ -1078,7 +1078,7 @@ void save_weights_upto(network *net, char *filename, int cutoff)
     }
     fclose(fp);
 }
-void save_weights(network *net, char *filename)
+void save_weights(network *net, char *filename) // save_weights() function
 {
     save_weights_upto(net, filename, net->n);
 }

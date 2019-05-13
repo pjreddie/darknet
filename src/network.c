@@ -62,7 +62,7 @@ network *load_network(char *cfg, char *weights, int clear)// load network functi
 
 size_t get_current_batch(network *net)// get_current_batch() function
 {
-    size_t batch_num = (*net->seen)/(net->batch*net->subdivisions); // /(batch = 64 *subdivisions = 16
+    size_t batch_num = (*net->seen)/(net->batch*net->subdivisions); // /(batch = 4 *subdivisions = 16
     return batch_num;
 }
 
@@ -1078,8 +1078,8 @@ pthread_t sync_layer_in_thread(network **nets, int n, int j)
     return thread;
 }
 
-void sync_nets(network **nets, int n, int interval)
-{
+void sync_nets(network **nets, int n, int interval) 
+{ 
     int j;
     int layers = nets[0]->n;
     pthread_t *threads = (pthread_t *) calloc(layers, sizeof(pthread_t));

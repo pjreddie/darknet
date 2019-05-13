@@ -29,14 +29,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     }
     srand(time(0));
     network *net = nets[0];
+
     int imgs = net->batch * net->subdivisions * ngpus; // training image numbers
-    // net->batch(64) * net->subdivisions(16) * ngpus(1) = 64 * 16 = imgs
-    //printf("imgs[%d] = net->batch[%d] * net->subdivisions[%d] * ngpus[%d]\n",imgs,net->batch,net->subdivisions,ngpus);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     data train, buffer;
 
     layer l = net->layers[net->n - 1];
-    printf("net->n = %d\n",net->n);
+
     int classes = l.classes;
     float jitter = l.jitter;
 
@@ -47,16 +46,15 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     load_args args = get_base_args(net);
     args.coords = l.coords;
     args.paths = paths;
-    args.n = imgs; // args.n = imgs; same with original batch(64) size
-    //if we use my obj.cfg  args.n = 4 * 16 * ngpus(1)
-    args.m = plist->size; // total image count
+    args.n = imgs; // args.n = imgs;
+    args.m = plist->size;
     args.classes = classes;
     args.jitter = jitter;
     args.num_boxes = l.max_boxes;
-    args.d = &buffer;
+    args.d = &buffer; // net's d
     args.type = DETECTION_DATA;
     //args.type = INSTANCE_DATA;
-    args.threads = 64; // why threads is 64??
+    args.threads = 64;
 
     pthread_t load_thread = load_data(args); // load_data()'s return type is pthread_t
     double time;
@@ -119,16 +117,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         float loss = 0; // this is mean the loss
 #ifdef GPU
         if(ngpus == 1){ 
-            printf("ngpus==1\n");
             loss = train_network(net, train); // call train_network() function if you can use a GPU
-            printf("current loss = %lf\n",loss);
         } else {
             loss = train_networks(nets, ngpus, train, 4); 
         }
 #else
         loss = train_network(net, train);
 #endif
-        if (avg_loss < 0) avg_loss = loss; // first avg_loss = first loss.
+        if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
         i = get_current_batch(net);
@@ -139,7 +135,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #endif
             char buff[256];
             sprintf(buff, "%s/%s.backup", backup_directory, base);
-            save_weights(net, buff);
+            save_weights(net, buff); // save weights file 
         }
 	//if(i%1000 == 0 || (i < 1000 && i%100 == 0)){
 	//if(i%10000==0 || (i < 1000 && i%100 == 0)){
@@ -149,7 +145,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #endif
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);// current training weight print
-            save_weights(net, buff); // save weight
+            save_weights(net, buff); // save weights file
         }
         free_data(train);
     } // while end
