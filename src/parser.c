@@ -1172,7 +1172,7 @@ void load_convolutional_weights(layer l, FILE *fp) // load_convolutional_weights
     if(l.numload) l.n = l.numload;
     int num = l.c/l.groups*l.n*l.size*l.size; 
     // c = channel / groups = defualt(1) / n = layer's filters / size = layer's size
-    printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d\n",l.w,l.h,l.c,l.groups,l.n,l.size,num);
+    printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d / l.weights = %d\n",l.w,l.h,l.c,l.groups,l.n,l.size,num,l.weights);
     fread(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.n, fp);
