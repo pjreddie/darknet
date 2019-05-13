@@ -1171,8 +1171,8 @@ void load_convolutional_weights(layer l, FILE *fp) // load_convolutional_weights
     }
     if(l.numload) l.n = l.numload;
     int num = l.c/l.groups*l.n*l.size*l.size; 
-    // c = filters / groups = defualt(1) / n = layer's filters / size = layer's size
-    printf("l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d\n",l.c,l.groups,l.n,l.size,num);
+    // c = channel / groups = defualt(1) / n = layer's filters / size = layer's size
+    printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d\n",l.w,l.h,l.c,l.groups,l.n,l.size,num);
     fread(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.n, fp);
@@ -1227,7 +1227,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff) // l
         cuda_set_device(net->gpu_index);
     }
 #endif
-    fprintf(stderr, "Loading weights from %s...\n", filename);
+    fprintf(stderr, "Loading weights from %s...", filename);
     fflush(stdout);
     FILE *fp = fopen(filename, "rb");
     if(!fp) file_error(filename);
