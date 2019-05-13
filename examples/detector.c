@@ -117,14 +117,16 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         float loss = 0; // this is mean the loss
 #ifdef GPU
         if(ngpus == 1){ 
+            printf("ngpus==1\n");
             loss = train_network(net, train); // call train_network() function if you can use a GPU
+            printf("current loss = %lf\n",loss);
         } else {
             loss = train_networks(nets, ngpus, train, 4); 
         }
 #else
         loss = train_network(net, train);
 #endif
-        if (avg_loss < 0) avg_loss = loss;
+        if (avg_loss < 0) avg_loss = loss; // first avg_loss = first loss.
         avg_loss = avg_loss*.9 + loss*.1;
 
         i = get_current_batch(net);

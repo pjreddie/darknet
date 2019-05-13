@@ -309,6 +309,7 @@ float train_network_sgd(network *net, data d, int n)
         float err = train_network_datum(net);
         sum += err;
     }
+    printf("sum[%lf]/(n[%d]/batch[%d] = %lf\n",sum,n,batch,sum/(n*batch));
     return (float)sum/(n*batch);
 }
 
