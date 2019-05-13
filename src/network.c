@@ -252,7 +252,7 @@ void calc_network_cost(network *netp) // calc_network_cost() function
             ++count;
         }
     }
-    printf("calc_network_cost's count = %d\n",count);
+    //printf("calc_network_cost's count = %d\n",count);
     *net.cost = sum/count;
 }
 
@@ -704,7 +704,7 @@ layer get_network_output_layer(network *net) // get_network_output_layer() funct
 {
     int i;
     //printf("get_network_output_layer's net->n = %d\n",net->n);
-    for(i = net->n - 1; i >= 0; --i){ // n = filters 
+    for(i = net->n - 1; i >= 0; --i){ // n = layers number
         if(net->layers[i].type != COST) break;
     }
     //printf("return net->layers.type = %d\n",net->layers[i].type);
@@ -781,7 +781,7 @@ void forward_network_gpu(network *netp) // forward_network_gpu() function
         net.index = i;
         layer l = net.layers[i];
         if(l.delta_gpu){ // what is delta_gpu
-            fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
+            fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);// fill_gpu() can find in blas_kernels.cu file
         }
         l.forward_gpu(l, net); // void (*forward_gpu)   (struct layer, struct network);
         net.input_gpu = l.output_gpu;
