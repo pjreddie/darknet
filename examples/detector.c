@@ -117,7 +117,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         float loss = 0; // this is mean the loss
 #ifdef GPU
         if(ngpus == 1){ 
-            printf("11111\n");
             loss = train_network(net, train); // call train_network() function if you can use a GPU
         } else {
             loss = train_networks(nets, ngpus, train, 4); 

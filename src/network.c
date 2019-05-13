@@ -773,7 +773,7 @@ void forward_network_gpu(network *netp) // forward_network_gpu() function
     }
 
     int i;
-    printf("net.n = %d",net.n);
+    printf("net.n = %d\n",net.n);
     for(i = 0; i < net.n; ++i){ // net.layers[i]'s all layer train
         net.index = i;
         layer l = net.layers[i];
