@@ -332,25 +332,25 @@ void free_ptrs(void **ptrs, int n)
     free(ptrs);
 }
 
-char *fgetl(FILE *fp) // fgetl() function
+char *fgetl(FILE *fp) // fgetl() function get string and remove '\n' and revise to '\0'
 {
     if(feof(fp)) return 0;
     size_t size = 512;
-    char *line = malloc(size*sizeof(char)); 
-    if(!fgets(line, size, fp)){ // can't read file 
-        free(line); // free 
+    char *line = malloc(size*sizeof(char));
+    if(!fgets(line, size, fp)){
+        free(line);
         return 0;
     }
 
     size_t curr = strlen(line);
 
-    while((line[curr-1] != '\n') && !feof(fp)){ // feof() == 파일 끝에 도달했는가
-        if(curr == size-1){ // if memory is lack  
-            size *= 2; // current memory * 2 
-            line = realloc(line, size*sizeof(char)); // realloc() 재할당 
-            if(!line) { // can't expand size
+    while((line[curr-1] != '\n') && !feof(fp)){
+        if(curr == size-1){
+            size *= 2;
+            line = realloc(line, size*sizeof(char));
+            if(!line) {
                 printf("%ld\n", size);
-                malloc_error(); // malloc_error()
+                malloc_error();
             }
         }
         size_t readsize = size-curr;
@@ -358,8 +358,9 @@ char *fgetl(FILE *fp) // fgetl() function
         fgets(&line[curr], readsize, fp);
         curr = strlen(line);
     }
-    if(line[curr-1] == '\n') line[curr-1] = '\0';// if char meet a '\n' change character to '\0' and return str
-    // this means that removing '\n' character.
+    if(line[curr-1] == '\n') line[curr-1] = '\0';// char '\n' revise to '\0'
+                                                 
+    puts(line);
     return line;
 }
 
@@ -571,8 +572,9 @@ void translate_array(float *a, int n, float s)
     }
 }
 
-float mag_array(float *a, int n)
-{
+float mag_array(float *a, int n) // mag_array() function
+{ // we use this function when we circul about cost.
+// a == l.delta, n == l.outputs * l.batch
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i){
