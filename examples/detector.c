@@ -29,10 +29,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     }
     srand(time(0));
     network *net = nets[0];
-    printf("nets[0]->batch = %d\n",nets[0]->batch);
     int imgs = net->batch * net->subdivisions * ngpus; // training image numbers
     // net->batch(64) * net->subdivisions(16) * ngpus(1) = 64 * 16 = imgs
-    printf("imgs[%d] = net->batch[%d] * net->subdivisions[%d] * ngpus[%d]\n",imgs,net->batch,net->subdivisions,ngpus);
+    //printf("imgs[%d] = net->batch[%d] * net->subdivisions[%d] * ngpus[%d]\n",imgs,net->batch,net->subdivisions,ngpus);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     data train, buffer;
 
@@ -48,7 +47,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     load_args args = get_base_args(net);
     args.coords = l.coords;
     args.paths = paths;
-    args.n = imgs; // args.n = imgs;
+    args.n = imgs; // args.n = imgs; same with original batch(64) size
     //if we use my obj.cfg  args.n = 64 * 16 * ngpus(1)
     args.m = plist->size;
     args.classes = classes;
