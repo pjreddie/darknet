@@ -661,7 +661,7 @@ void parse_net_options(list *options, network *net)
     int subdivs = option_find_int(options, "subdivisions",1);
     net->time_steps = option_find_int_quiet(options, "time_steps",1);
     net->notruth = option_find_int_quiet(options, "notruth",0);
-    net->batch /= subdivs;
+    net->batch /= subdivs; // why our batch is not same in cfg file.
     net->batch *= net->time_steps;
     net->subdivisions = subdivs;
     net->random = option_find_int_quiet(options, "random", 0);
@@ -1162,8 +1162,9 @@ void load_convolutional_weights_binary(layer l, FILE *fp)
 #endif
 }
 
-void load_convolutional_weights(layer l, FILE *fp)
+void load_convolutional_weights(layer l, FILE *fp) // load_convolutional_weights() function
 {
+    printf("(load_convolutional_weights function)");
     if(l.binary){
         //load_convolutional_weights_binary(l, fp);
         //return;
