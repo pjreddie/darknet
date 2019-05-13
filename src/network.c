@@ -309,7 +309,6 @@ float train_network_sgd(network *net, data d, int n)
         float err = train_network_datum(net);
         sum += err;
     }
-    printf("sum[%lf]/(n[%d]/batch[%d] = %lf\n",sum,n,batch,sum/(n*batch));
     return (float)sum/(n*batch);
 }
 
@@ -320,14 +319,15 @@ float train_network(network *net, data d) // train_network() function
     int n = d.X.rows / batch;// d.X type is matrix matrix sturct have rows(int type).
     int i;
     float sum = 0;
-    printf("n = d.X.rows(%d) / batch(%d) = %d\n",d.X.rows,batch,n);
+    printf("n = d.X.rows(%d) / batch(%d) = %d\n",d.X.rows,net->batch,n);
     for(i = 0; i < n; ++i){
         get_next_batch(d, batch, i*batch, net->input, net->truth);
         float err = train_network_datum(net); 
         sum += err;
         //check something
-        printf("err[%d] = %d\n",i,err); // print sum
+        //rintf("err[%d] = %d\n",i,err); // print sum
     }
+    printf("sum[%lf]/(n[%d]/batch[%d] = %lf\n",sum,n,batch,sum/(n*batch));
     return (float)sum/(n*batch); // this is loss value
 }
 
