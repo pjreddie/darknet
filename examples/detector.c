@@ -37,7 +37,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     layer l = net->layers[net->n - 1]; // net -> n = layer's total number
     int classes = l.classes; // our cfg file's classes is 1
     float jitter = l.jitter; // our cfg file's jitter is 0.3
-    layer l = net->layers[net->n - 1];
+
 
     int classes = l.classes;
     float jitter = l.jitter;
