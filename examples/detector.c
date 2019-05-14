@@ -39,8 +39,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     float jitter = l.jitter; // our cfg file's jitter is 0.3
 
 
-    int classes = l.classes;
-    float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
     //int N = plist->size;
