@@ -421,7 +421,7 @@ void write_all(int fd, char *buffer, size_t bytes)
 }
 
 
-char *copy_string(char *s)
+char *copy_string(char *s) // strncpy using function
 {
     char *copy = malloc(strlen(s)+1);
     strncpy(copy, s, strlen(s)+1);

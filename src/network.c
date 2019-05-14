@@ -359,7 +359,7 @@ void set_batch_network(network *net, int b)
     }
 }
 
-int resize_network(network *net, int w, int h)// resize network function
+int resize_network(network *net, int w, int h)// resize_network() function
 {
 #ifdef GPU
     cuda_set_device(net->gpu_index);
@@ -439,7 +439,7 @@ int resize_network(network *net, int w, int h)// resize network function
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;
-}
+} // end resize_network() function
 
 layer get_network_detection_layer(network *net)
 {

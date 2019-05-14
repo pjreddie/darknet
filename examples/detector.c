@@ -11,7 +11,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
     srand(time(0));
     char *base = basecfg(cfgfile); // obj.cfg 
-    printf("%s\n", base);
+    //printf("%s\n", base);
     float avg_loss = -1;
     network **nets = calloc(ngpus, sizeof(network)); // network struct 
     // network?��기의 �??���? ngpus�? ????��?�� ?�� ?��?�� 공간 ?��?�� 
@@ -95,7 +95,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             #pragma omp parallel for
             for(i = 0; i < ngpus; ++i){
                 resize_network(nets[i], dim, dim); // network resize 
-            }
+            } // resize_network() [network.c] -> resize each type layer
             net = nets[0];
         }
         time=what_time_is_it_now();
