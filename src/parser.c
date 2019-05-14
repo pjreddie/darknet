@@ -258,7 +258,7 @@ layer parse_conv_lstm(list *options, size_params params)
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
-    int peephole = option_find_int_quiet(options, "peephole", 1);
+    int peephole = option_find_int_quiet(options, "peephole", 0);
 
     layer l = make_conv_lstm_layer(params.batch, params.h, params.w, params.c, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, peephole, xnor);
 

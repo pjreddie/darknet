@@ -64,65 +64,65 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
     l.peephole = peephole;
 
     // U
-    l.uf = (layer*)malloc(sizeof(layer));
+    l.uf = (layer*)calloc(1, sizeof(layer));
     *(l.uf) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.uf->batch = batch;
     if (l.workspace_size < l.uf->workspace_size) l.workspace_size = l.uf->workspace_size;
 
-    l.ui = (layer*)malloc(sizeof(layer));
+    l.ui = (layer*)calloc(1, sizeof(layer));
     *(l.ui) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.ui->batch = batch;
     if (l.workspace_size < l.ui->workspace_size) l.workspace_size = l.ui->workspace_size;
 
-    l.ug = (layer*)malloc(sizeof(layer));
+    l.ug = (layer*)calloc(1, sizeof(layer));
     *(l.ug) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.ug->batch = batch;
     if (l.workspace_size < l.ug->workspace_size) l.workspace_size = l.ug->workspace_size;
 
-    l.uo = (layer*)malloc(sizeof(layer));
+    l.uo = (layer*)calloc(1, sizeof(layer));
     *(l.uo) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.uo->batch = batch;
     if (l.workspace_size < l.uo->workspace_size) l.workspace_size = l.uo->workspace_size;
 
 
     // W
-    l.wf = (layer*)malloc(sizeof(layer));
+    l.wf = (layer*)calloc(1, sizeof(layer));
     *(l.wf) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.wf->batch = batch;
     if (l.workspace_size < l.wf->workspace_size) l.workspace_size = l.wf->workspace_size;
 
-    l.wi = (layer*)malloc(sizeof(layer));
+    l.wi = (layer*)calloc(1, sizeof(layer));
     *(l.wi) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.wi->batch = batch;
     if (l.workspace_size < l.wi->workspace_size) l.workspace_size = l.wi->workspace_size;
 
-    l.wg = (layer*)malloc(sizeof(layer));
+    l.wg = (layer*)calloc(1, sizeof(layer));
     *(l.wg) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.wg->batch = batch;
     if (l.workspace_size < l.wg->workspace_size) l.workspace_size = l.wg->workspace_size;
 
-    l.wo = (layer*)malloc(sizeof(layer));
+    l.wo = (layer*)calloc(1, sizeof(layer));
     *(l.wo) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.wo->batch = batch;
     if (l.workspace_size < l.wo->workspace_size) l.workspace_size = l.wo->workspace_size;
 
 
     // V
-    l.vf = (layer*)malloc(sizeof(layer));
+    l.vf = (layer*)calloc(1, sizeof(layer));
     if (l.peephole) {
         *(l.vf) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
         l.vf->batch = batch;
         if (l.workspace_size < l.vf->workspace_size) l.workspace_size = l.vf->workspace_size;
     }
 
-    l.vi = (layer*)malloc(sizeof(layer));
+    l.vi = (layer*)calloc(1, sizeof(layer));
     if (l.peephole) {
         *(l.vi) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
         l.vi->batch = batch;
         if (l.workspace_size < l.vi->workspace_size) l.workspace_size = l.vi->workspace_size;
     }
 
-    l.vo = (layer*)malloc(sizeof(layer));
+    l.vo = (layer*)calloc(1, sizeof(layer));
     if (l.peephole) {
         *(l.vo) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
         l.vo->batch = batch;
@@ -909,7 +909,7 @@ void forward_conv_lstm_layer_gpu(layer l, network_state state)
         fix_nan_and_inf(l.h_gpu, l.outputs*l.batch);
 
         copy_ongpu(l.outputs*l.batch, l.c_gpu, 1, l.cell_gpu, 1);
-        copy_ongpu(l.outputs*l.batch, l.h_gpu, 1, l.output_gpu, 1); // required for both Detection and Training
+        copy_ongpu(l.outputs*l.batch, l.h_gpu, 1, l.output_gpu, 1); // is required for both Detection and Training
 
         state.input += l.inputs*l.batch;
         l.output_gpu    += l.outputs*l.batch;
