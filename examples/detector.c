@@ -58,11 +58,21 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.threads = 64;
 
     pthread_t load_thread = load_data(args); // load_data()'s return type is pthread_t
-    //load_data() -> load_threads() -> load_data_in_thread() -> load_thread() ->
-    // -> { load_data_detection() -> get_random_paths() take a random path -> make_matrix() [matrix.c] ->
-    // -> load_image_color() [image.c] -> load_image() = take a image -> load_image_cv() [image_opencv.cpp] this function use imread() and call mat_to_image() function  if can't read file add to the bad.list->
-    // -> mat_to_image() -> ipl_to_image() image data is ( im.data[k*w*h + i*w + j] = data[i*step + j*c + k]/255.; ) i < h = height , k < c = nChannels , j < w = width
-    // -> rgbgr_image() [image.c] swap data[i] , data[i+w*h*2] end load_image } ->  
+    /*load_data() -> load_threads() -> load_data_in_thread() -> load_thread() ->
+    * -> { load_data_detection() -> get_random_paths() take a random path -> make_matrix() [matrix.c] ->
+    * -> load_image_color() [image.c] -> load_image() = take a image -> load_image_cv() [image_opencv.cpp] this function use imread() and call mat_to_image() function  if can't read file add to the bad.list->
+    * -> mat_to_image() -> ipl_to_image() image data is ( im.data[k*w*h + i*w + j] = data[i*step + j*c + k]/255.; ) i < h = height , k < c = nChannels , j < w = width
+    * -> rgbgr_image() [image.c] swap data[i] , data[i+w*h*2] end load_image  ->  place_image() there use 3 for iteration -> bilinear_interpolate() -> 
+    *  val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
+        dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
+        (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
+        dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
+        there are in the bilinear_interpolate() function what is it means?? 
+        -> set_pixel() [image.c] ->  random_distort_image() [image.c] -> distort_image() -> fill_truth_detection() -> return data d end load_data_detection() fucntion }
+        load_args a = 매개변수들과 주소를 공유하기 때문에 결과론 적으로 맨 처음에 준 매개변수인 args에 저장
+
+    */
+
     double time;
     int count = 0;
     //while(i*imgs < N*120){

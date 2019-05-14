@@ -239,7 +239,7 @@ image **load_alphabet()
     }
     return alphabets;
 }
-// detection ?‹¤ì§ì  ? ?ˆ˜ë¥? ë§¤ê¸°?Š” ?•¨?ˆ˜ ê°??ž¥ ì¤‘ìš”?•œ ?•¨?ˆ˜
+// detection ?ï¿½ï¿½ì§ì  ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ë§¤ê¸°?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½ ï¿½??ï¿½ï¿½ ì¤‘ìš”?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½
 void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
     int i,j;
@@ -258,7 +258,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                     strcat(labelstr, names[j]);
                 }
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
-		count++;//ê°ì²´ë¥? ê²?ì¶œí• ?•Œë§ˆë‹¤ count++ ?—¬ê¸°ì„œ classesê°? 1?´ê¸? ?•Œë¬¸ì— ê²?ì¶œì„ ?•˜ë©? ë¬´ì¡°ê±? ?‚¬?žŒ?´ê¸? ?•Œë¬¸ì— ë¬´ì¡°ê±? ì¦ê???‹œì¼œë„ ?¨.
+		count++;//ê°ì²´ï¿½? ï¿½?ì¶œí• ?ï¿½ï¿½ë§ˆë‹¤ count++ ?ï¿½ï¿½ê¸°ì„œ classesï¿½? 1?ï¿½ï¿½ï¿½? ?ï¿½ï¿½ë¬¸ì— ï¿½?ì¶œì„ ?ï¿½ï¿½ï¿½? ë¬´ì¡°ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½ë¬¸ì— ë¬´ì¡°ï¿½? ì¦ï¿½???ï¿½ï¿½ì¼œë„ ?ï¿½ï¿½.
             }
         }
         if(class >= 0){
@@ -640,13 +640,14 @@ image float_to_image(int w, int h, int c, float *data)
 void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_image() function
 {
     int x, y, c;
-    for(c = 0; c < im.c; ++c){ // rgb
+    for(c = 0; c < im.c; ++c){ // rgb nChannel
         for(y = 0; y < h; ++y){ // height
             for(x = 0; x < w; ++x){ // width
                 float rx = ((float)x / w) * im.w;
                 float ry = ((float)y / h) * im.h;
                 float val = bilinear_interpolate(im, rx, ry, c); // call bilinear_interpolate() fucntion
-                set_pixel(canvas, x + dx, y + dy, c, val);
+                // redefined the each pixel's val
+                set_pixel(canvas, x + dx, y + dy, c, val); // save the val in the each pixel ( 1 dimemsion)
             }
         }
     }
