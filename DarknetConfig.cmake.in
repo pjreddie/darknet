@@ -5,14 +5,14 @@ list(APPEND CMAKE_MODULE_PATH "${Darknet_CMAKE_DIR}")
 
 include(CMakeFindDependencyMacro)
 
-if(@ENABLE_OPENCV@)
+if(@OpenCV_FOUND@)
   find_dependency(OpenCV)
 endif()
 
 find_dependency(Stb)
 
 if(@ENABLE_CUDA@)
-  if(@ENABLE_CUDNN@)
+  if(@CUDNN_FOUND@)
     find_dependency(CUDNN)
   endif()
 endif()
@@ -24,7 +24,7 @@ if(@MSVC@)
   find_dependency(PThreads_windows)
 endif()
 
-if(@ENABLE_OPENMP@)
+if(@OPENMP_FOUND@)
   find_dependency(OpenMP)
 endif()
 
