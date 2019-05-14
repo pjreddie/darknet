@@ -1175,7 +1175,7 @@ void *load_threads(void *ptr) // second function when you use pthread in detecto
     data *buffers = calloc(args.threads, sizeof(data));
     pthread_t *threads = calloc(args.threads, sizeof(pthread_t));
     for(i = 0; i < args.threads; ++i){
-        printf("i = %d\n",i);
+        //printf("i = %d\n",i);
         args.d = buffers + i;
         args.n = (i+1) * total/args.threads - i * total/args.threads;
         // args.n = [(i+1) * total(64)/args.threads(64)](i+1) - i = 1;
