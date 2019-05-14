@@ -35,10 +35,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     data train, buffer;
 
-    layer l = net->layers[net->n - 1];
-    printf("net->n = %d\n",net->n);
-    int classes = l.classes;
-    float jitter = l.jitter;
+    layer l = net->layers[net->n - 1]; // net -> n = layer's total number
+    int classes = l.classes; // our cfg file's classes is 1
+    float jitter = l.jitter; // our cfg file's jitter is 0.3
 
     list *plist = get_paths(train_images);
     //int N = plist->size;
