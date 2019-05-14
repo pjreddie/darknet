@@ -211,6 +211,7 @@ struct layer {
     int peephole;
     int use_bin_output;
     int steps;
+    int state_constrain;
     int hidden;
     int truth;
     float smooth;
@@ -551,6 +552,7 @@ typedef struct network {
     float learning_rate_min;
     float learning_rate_max;
     int batches_per_cycle;
+    int batches_cycle_mult;
     float momentum;
     float decay;
     float gamma;

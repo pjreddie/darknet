@@ -95,7 +95,7 @@ float get_current_seq_subdivisions(network net)
 {
     int sequence_subdivisions = net.init_sequential_subdivisions;
 
-    if (net.policy)
+    if (net.num_steps > 0)
     {
         int batch_num = get_current_batch(net);
         int i;
@@ -145,11 +145,20 @@ float get_current_rate(network net)
         case SIG:
             return net.learning_rate * (1./(1.+exp(net.gamma*(batch_num - net.step))));
         case SGDR:
+        {
+            int last_iteration_start = 0;
+            int cycle_size = net.batches_per_cycle;
+            while ((last_iteration_start + cycle_size) < batch_num)
+            {
+                last_iteration_start += cycle_size;
+                cycle_size *= net.batches_cycle_mult;
+            }
             rate = net.learning_rate_min +
-                        0.5*(net.learning_rate-net.learning_rate_min)
-                        * (1. + cos( (float) (batch_num % net.batches_per_cycle)*3.14159265 / net.batches_per_cycle));
+                0.5*(net.learning_rate - net.learning_rate_min)
+                * (1. + cos((float)(batch_num - last_iteration_start)*3.14159265 / cycle_size));
 
             return rate;
+        }
         default:
             fprintf(stderr, "Policy is weird!\n");
             return net.learning_rate;

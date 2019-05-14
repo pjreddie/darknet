@@ -666,7 +666,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         char *train_images = option_find_str(options, "train", "data/train.txt");
         valid_images = option_find_str(options, "valid", train_images);
         net = *existing_net;
-        //remember_network_recurrent_state(*existing_net);
+        remember_network_recurrent_state(*existing_net);
         free_network_recurrent_state(*existing_net);
     }
     else {
@@ -1077,8 +1077,8 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     if (existing_net) {
         //set_batch_network(&net, initial_batch);
         //free_network_recurrent_state(*existing_net);
-        //restore_network_recurrent_state(*existing_net);
-        randomize_network_recurrent_state(*existing_net);
+        restore_network_recurrent_state(*existing_net);
+        //randomize_network_recurrent_state(*existing_net);
     }
     else {
         free_network(net);

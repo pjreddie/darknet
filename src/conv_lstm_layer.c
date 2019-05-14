@@ -902,13 +902,14 @@ void forward_conv_lstm_layer_gpu(layer l, network_state state)
         activate_array_ongpu(l.h_gpu, l.outputs*l.batch, TANH);
         mul_ongpu(l.outputs*l.batch, l.o_gpu, 1, l.h_gpu, 1);
 
+        if(l.state_constrain) constrain_ongpu(l.outputs*l.batch, l.state_constrain, l.c_gpu, 1);
         //constrain_ongpu(l.outputs*l.batch, 1, l.c_gpu, 1);
         //constrain_ongpu(l.outputs*l.batch, 1, l.h_gpu, 1);
         fix_nan_and_inf(l.c_gpu, l.outputs*l.batch);
         fix_nan_and_inf(l.h_gpu, l.outputs*l.batch);
 
         copy_ongpu(l.outputs*l.batch, l.c_gpu, 1, l.cell_gpu, 1);
-        copy_ongpu(l.outputs*l.batch, l.h_gpu, 1, l.output_gpu, 1);
+        copy_ongpu(l.outputs*l.batch, l.h_gpu, 1, l.output_gpu, 1); // required for both Detection and Training
 
         state.input += l.inputs*l.batch;
         l.output_gpu    += l.outputs*l.batch;
@@ -1159,5 +1160,8 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
 
     copy_ongpu(l.outputs*l.batch, last_output, 1, l.last_prev_state_gpu, 1);
     copy_ongpu(l.outputs*l.batch, last_cell, 1, l.last_prev_cell_gpu, 1);
+
+    // free state after each 100 iterations
+    //if (get_current_batch(state.net) % 100) free_state_conv_lstm(l);  // dont use
 }
 #endif

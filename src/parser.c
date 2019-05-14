@@ -200,7 +200,7 @@ layer parse_crnn(list *options, size_params params)
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, xnor);
+    layer l = make_crnn_layer(params.batch, params.h, params.w, params.c, hidden_filters, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, xnor);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
@@ -260,8 +260,9 @@ layer parse_conv_lstm(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int peephole = option_find_int_quiet(options, "peephole", 1);
 
-    layer l = make_conv_lstm_layer(params.batch, params.w, params.h, params.c, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, peephole, xnor);
+    layer l = make_conv_lstm_layer(params.batch, params.h, params.w, params.c, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, peephole, xnor);
 
+    l.state_constrain = option_find_int_quiet(options, "state_constrain", params.time_steps * 32);
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
     return l;
@@ -668,7 +669,8 @@ void parse_net_options(list *options, network *net)
     net->batch = option_find_int(options, "batch",1);
     net->learning_rate = option_find_float(options, "learning_rate", .001);
     net->learning_rate_min = option_find_float_quiet(options, "learning_rate_min", .00001);
-    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", 500);
+    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", 1000);
+    net->batches_cycle_mult = option_find_int_quiet(options, "sgdr_mult", 2);
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
     int subdivs = option_find_int(options, "subdivisions",1);
@@ -721,40 +723,44 @@ void parse_net_options(list *options, network *net)
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
         net->scale = option_find_float(options, "scale", 1);
-    } else if (net->policy == STEPS){
+    } else if (net->policy == STEPS || net->policy == SGDR){
         char *l = option_find(options, "steps");
         char *p = option_find(options, "scales");
         char *s = option_find(options, "seq_scales");
-        if(!l || !p) error("STEPS policy must have steps and scales in cfg file");
+        if(net->policy == STEPS && (!l || !p)) error("STEPS policy must have steps and scales in cfg file");
 
-        int len = strlen(l);
-        int n = 1;
-        int i;
-        for(i = 0; i < len; ++i){
-            if (l[i] == ',') ++n;
+        if (l) {
+            int len = strlen(l);
+            int n = 1;
+            int i;
+            for (i = 0; i < len; ++i) {
+                if (l[i] == ',') ++n;
+            }
+            int* steps = (int*)calloc(n, sizeof(int));
+            float* scales = (float*)calloc(n, sizeof(float));
+            float* seq_scales = (float*)calloc(n, sizeof(float));
+            for (i = 0; i < n; ++i) {
+                float scale = 1.0;
+                if (p) {
+                    scale = atof(p);
+                    p = strchr(p, ',') + 1;
+                }
+                float sequence_scale = 1.0;
+                if (s) {
+                    sequence_scale = atof(s);
+                    s = strchr(s, ',') + 1;
+                }
+                int step = atoi(l);
+                l = strchr(l, ',') + 1;
+                steps[i] = step;
+                scales[i] = scale;
+                seq_scales[i] = sequence_scale;
+            }
+            net->scales = scales;
+            net->steps = steps;
+            net->seq_scales = seq_scales;
+            net->num_steps = n;
         }
-        int* steps = (int*)calloc(n, sizeof(int));
-        float* scales = (float*)calloc(n, sizeof(float));
-        float* seq_scales = (float*)calloc(n, sizeof(float));
-        for (i = 0; i < n; ++i) {
-            if (s) {
-                seq_scales[i] = atof(s);
-                s = strchr(s, ',') + 1;
-            } else
-                seq_scales[i] = 1;
-        }
-        for(i = 0; i < n; ++i){
-            int step    = atoi(l);
-            float scale = atof(p);
-            l = strchr(l, ',')+1;
-            p = strchr(p, ',')+1;
-            steps[i] = step;
-            scales[i] = scale;
-        }
-        net->scales = scales;
-        net->steps = steps;
-        net->seq_scales = seq_scales;
-        net->num_steps = n;
     } else if (net->policy == EXP){
         net->gamma = option_find_float(options, "gamma", 1);
     } else if (net->policy == SIG){
