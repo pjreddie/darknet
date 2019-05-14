@@ -702,7 +702,7 @@ extern "C" void supp_gpu(int N, float ALPHA, float * X, int INCX)
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void fill_gpu(int N, float ALPHA, float * X, int INCX)
+extern "C" void fill_gpu(int N, float ALPHA, float * X, int INCX) 
 {
     fill_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
     check_error(cudaPeekAtLastError());

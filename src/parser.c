@@ -652,7 +652,7 @@ learning_rate_policy get_policy(char *s)
     return CONSTANT;
 }
 
-void parse_net_options(list *options, network *net)
+void parse_net_options(list *options, network *net) // parse_net_opption() function
 {
     net->batch = option_find_int(options, "batch",1);
     net->learning_rate = option_find_float(options, "learning_rate", .001);
@@ -894,10 +894,10 @@ list *read_cfg(char *filename)// read_cfg function
     if(file == 0) file_error(filename); // can't open file
     char *line; 
     int nu = 0;
-    list *options = make_list(); // make_listï¿½? ë¬´ì—‡?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½? 
-    //list ?ï¿½ï¿½?ï¿½ï¿½ ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ 
-    section *current = 0; // section êµ¬ì¡°ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½? 
-    while((line=fgetl(file)) != 0){ // ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ê¹Œï¿½?? ?ï¿½ï¿½ï¿½?
+    list *options = make_list(); // make_listï¿?? ë¬´ì—‡?ï¿½ï¿½ï¿?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿?? 
+    //list ?ï¿½ï¿½?ï¿½ï¿½ ï¿?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ 
+    section *current = 0; // section êµ¬ì¡°ï¿?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿?? 
+    while((line=fgetl(file)) != 0){ // ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ê¹Œï¿½?? ?ï¿½ï¿½ï¿??
         ++ nu;
         strip(line);
         switch(line[0]){

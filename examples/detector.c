@@ -27,6 +27,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         nets[i] = load_network(cfgfile, weightfile, clear);// each layers information add in nets[] index.
         nets[i]->learning_rate *= ngpus; 
     }
+    /*
+        load_network() function -> parse_network_cfg() function -> read_cfg() function ->
+        fgetl() function = get line in file  / strip() function = if line have a ' ' or '\t' or '\n' change to '\0'
+        -> meet '[] list_insert() function[list.c] ->  make_network() -> parse_net_option() function ->
+        -> insert information in the struct -> each parse_networklayer 
+    */
     srand(time(0));
     network *net = nets[0];
 

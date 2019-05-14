@@ -58,7 +58,7 @@ typedef enum{
 } BINARY_ACTIVATION;
 
 typedef enum {
-    CONVOLUTIONAL,
+    CONVOLUTIONAL, // type number = 0
     DECONVOLUTIONAL,
     CONNECTED,
     MAXPOOL,
@@ -81,7 +81,7 @@ typedef enum {
     NETWORK,
     XNOR,
     REGION,
-    YOLO,
+    YOLO, // type number = 23
     ISEG,
     REORG,
     UPSAMPLE,
@@ -135,7 +135,7 @@ struct layer{
     int truths;
     int h,w,c;
     int out_h, out_w, out_c;
-    int n; // filters
+    int n;
     int max_boxes;
     int groups;
     int size;
@@ -428,7 +428,7 @@ typedef enum {
 } learning_rate_policy;
 
 typedef struct network{ // network struct
-    int n; // what is it n ??
+    int n;
     int batch;
     size_t *seen;
     int *t;
@@ -478,8 +478,8 @@ typedef struct network{ // network struct
     tree *hierarchy;
 
     float *input;
-    float *truth; // what is it?
-    float *delta; // what is it?
+    float *truth;
+    float *delta;
     float *workspace;
     int train;
     int index;
@@ -531,7 +531,7 @@ typedef struct matrix{
 } matrix;
 
 
-typedef struct{
+typedef struct{ // struct of data 
     int w, h;
     matrix X;
     matrix y;
@@ -544,7 +544,7 @@ typedef enum {
     CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA, SEGMENTATION_DATA, INSTANCE_DATA, ISEG_DATA
 } data_type;
 
-typedef struct load_args{ // load_args struct
+typedef struct load_args{ // struct of load_args
     int threads;
     char **paths;
     char *path;
