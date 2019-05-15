@@ -202,7 +202,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     l.weights = calloc(c/groups*n*size*size, sizeof(float));// (channel * n(filters) * size * size) / groups( maybe default 1 )
     l.weight_updates = calloc(c/groups*n*size*size, sizeof(float)); // 
-
+    printf("weights %f / ",l.weights);
     l.biases = calloc(n, sizeof(float));// it is same like malloc(sizeof(float)*n) this is dynamic allocation
     l.bias_updates = calloc(n, sizeof(float)); 
 
@@ -459,18 +459,18 @@ void forward_convolutional_layer(convolutional_layer l, network net)
 
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
 
-    if(l.xnor){
+    if(l.xnor){ // don't use this if
         binarize_weights(l.weights, l.n, l.c/l.groups*l.size*l.size, l.binary_weights);
         swap_binary(&l);
         binarize_cpu(net.input, l.c*l.h*l.w*l.batch, l.binary_input);
         net.input = l.binary_input;
     }
 
-    int m = l.n/l.groups;
-    int k = l.size*l.size*l.c/l.groups;
+    int m = l.n/l.groups; // filters
+    int k = l.size*l.size*l.c/l.groups; // 
     int n = l.out_w*l.out_h;
-    for(i = 0; i < l.batch; ++i){
-        for(j = 0; j < l.groups; ++j){
+    for(i = 0; i < l.batch; ++i){ // batch = 4
+        for(j = 0; j < l.groups; ++j){ // groups = 1
             float *a = l.weights + j*l.nweights/l.groups;
             float *b = net.workspace;
             float *c = l.output + (i*l.groups + j)*n*m;
