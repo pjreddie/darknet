@@ -472,7 +472,6 @@ void forward_convolutional_layer(convolutional_layer l, network net)
     for(i = 0; i < l.batch; ++i){ // batch = 4
         for(j = 0; j < l.groups; ++j){ // groups = 1
             float *a = l.weights + j*l.nweights/l.groups;
-            printf("a = %lf /  ", *a);
             float *b = net.workspace;
             float *c = l.output + (i*l.groups + j)*n*m;
             float *im =  net.input + (i*l.groups + j)*l.c/l.groups*l.h*l.w;

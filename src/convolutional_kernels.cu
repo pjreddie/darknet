@@ -109,6 +109,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
     for(i = 0; i < l.batch; ++i){
         for(j = 0; j < l.groups; ++j){
             float *a = l.weights_gpu + j*l.nweights/l.groups;
+            printf("a = %lf /  ", *a);
             float *b = net.workspace;
             float *c = l.output_gpu + (i*l.groups + j)*n*m;
             float *im = net.input_gpu + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
