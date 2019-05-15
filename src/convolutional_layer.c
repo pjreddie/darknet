@@ -456,7 +456,7 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
 void forward_convolutional_layer(convolutional_layer l, network net)
 {
     int i, j;
-
+    printf("11111");
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
 
     if(l.xnor){ // don't use this if
