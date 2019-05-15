@@ -1206,7 +1206,7 @@ void load_convolutional_weights(layer l, FILE *fp) // load_convolutional_weights
     }
     fread(l.weights, sizeof(float), num, fp);
     //fp = darknet53.conv.74
-    //printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d / l.weights = %f\n",l.w,l.h,l.c,l.groups,l.n,l.size,num,*l.weights);
+    printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d / l.weights = %f\n",l.w,l.h,l.c,l.groups,l.n,l.size,num,*l.weights);
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) { // default 0
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
@@ -1228,7 +1228,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff) // l
         cuda_set_device(net->gpu_index);
     }
 #endif
-    fprintf(stderr, "Loading weights from %s...", filename);
+    fprintf(stderr, "Loading weights from %s...\n", filename);
     fflush(stdout);
     FILE *fp = fopen(filename, "rb");
     if(!fp) file_error(filename);

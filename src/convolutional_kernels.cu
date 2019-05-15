@@ -72,7 +72,7 @@ void binarize_weights_gpu(float *weights, int n, int size, float *binary)
 
 void forward_convolutional_layer_gpu(convolutional_layer l, network net)
 {
-    printf("forward_convolutional_layer_gpu\n");
+    //printf("forward_convolutional_layer_gpu\n");
     fill_gpu(l.outputs*l.batch, 0, l.output_gpu, 1);
     if(l.binary){
         binarize_weights_gpu(l.weights_gpu, l.n, l.c/l.groups*l.size*l.size, l.binary_weights_gpu);
