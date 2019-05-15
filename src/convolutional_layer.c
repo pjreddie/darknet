@@ -202,7 +202,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     l.weights = calloc(c/groups*n*size*size, sizeof(float));// (channel * n(filters) * size * size) / groups( maybe default 1 )
     l.weight_updates = calloc(c/groups*n*size*size, sizeof(float)); // 
-    printf("weights %f / ",l.weights);
+    printf("weights %lf / ", *l.weights);
     l.biases = calloc(n, sizeof(float));// it is same like malloc(sizeof(float)*n) this is dynamic allocation
     l.bias_updates = calloc(n, sizeof(float)); 
 
