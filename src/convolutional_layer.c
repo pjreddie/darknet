@@ -244,8 +244,8 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     }
 
     if(batch_normalize){ // if batch_normalize is 1 ( this is activated all of convolutional layer )
-        l.scales = calloc(n, sizeof(float));
-        l.scale_updates = calloc(n, sizeof(float));
+        l.scales = calloc(n, sizeof(float)); // filters size
+        l.scale_updates = calloc(n, sizeof(float)); // 
         for(i = 0; i < n; ++i){ // repeat filter's number
             l.scales[i] = 1; // all of width and height are normalizated to 1
         }
@@ -261,7 +261,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.x = calloc(l.batch*l.outputs, sizeof(float));
         l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
     }
-    if(adam){ // default 0
+    if(adam){ // default 0s
         l.m = calloc(l.nweights, sizeof(float));
         l.v = calloc(l.nweights, sizeof(float));
         l.bias_m = calloc(n, sizeof(float));

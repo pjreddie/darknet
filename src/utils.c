@@ -667,9 +667,10 @@ float rand_normal() // rand_normal() function
     haveSpare = 1;
 
     rand1 = rand() / ((double) RAND_MAX); // RAND_MAX = 0x7fff
-    if(rand1 < 1e-100) rand1 = 1e-100;
-    rand1 = -2 * log(rand1);
-    rand2 = (rand() / ((double) RAND_MAX)) * TWO_PI;
+    // 0 ~ 1 value
+    if(rand1 < 1e-100) rand1 = 1e-100; // min value ( not use 0 )
+    rand1 = -2 * log(rand1); // log(rand)는 음수값이므로 해당과 같은 식을 사용
+    rand2 = (rand() / ((double) RAND_MAX)) * TWO_PI; 
 
     return sqrt(rand1) * cos(rand2);
 }

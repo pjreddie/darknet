@@ -50,7 +50,7 @@ char **get_random_paths(char **paths, int n, int m) // get_random_paths() functi
         //if(i == 0) printf("%s\n", paths[index]);
     }
 
-    //printf("n = %d , m = %d , this image = %s\n",n,m,random_paths[i]);//printf random_paths[]
+    printf("n = %d , m = %d , this image = %s\n",n,m,random_paths[i]);//printf random_paths[]
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
