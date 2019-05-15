@@ -214,16 +214,16 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     // this scale use when batch_normalization is not 1
     // but when we use convolutional layers all of layer's batch_normalization is 1 so we didn't use this scale in this convolutional layer.
     
-    //printf("convscale %f\n", scale);
+    printf("convscale %f\n", scale);
     //scale = .02;
     //for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1, 1);
     for(i = 0; i < l.nweights; ++i) l.weights[i] = scale*rand_normal();
     int out_w = convolutional_out_width(l);
     int out_h = convolutional_out_height(l);
-    l.out_h = out_h;
-    l.out_w = out_w;
-    l.out_c = n; // filters
-    l.outputs = l.out_h * l.out_w * l.out_c;
+    l.out_h = out_h; // output_h
+    l.out_w = out_w; // ouput_w
+    l.out_c = n; // output_c = current.filters
+    l.outputs = l.out_h * l.out_w * l.out_c; 
     l.inputs = l.w * l.h * l.c;
 
     l.output = calloc(l.batch*l.outputs, sizeof(float));
@@ -336,7 +336,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d  %5.3f BFLOPs\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c, (2.0 * l.n * l.size*l.size*l.c/l.groups * l.out_h*l.out_w)/1000000000.);
 
     return l;
-}
+} // end make_convolutional_layer() function 
 
 void denormalize_convolutional_layer(convolutional_layer l)
 {
