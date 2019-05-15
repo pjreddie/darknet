@@ -97,8 +97,8 @@ image load_image_cv(char *filename, int channels)
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
     Mat m;
-    m = imread(filename, flag);
-    if(!m.data){
+    m = imread(filename, flag); // read image
+    if(!m.data){ // can't load image
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
         char buff[256];
         sprintf(buff, "echo %s >> bad.list", filename);
