@@ -615,7 +615,7 @@ image *get_weights(convolutional_layer l)
     //error("hey");
     return weights;
 }
-
+//
 image *visualize_convolutional_layer(convolutional_layer l, char *window, image *prev_weights)
 {
     image *single_weights = get_weights(l);

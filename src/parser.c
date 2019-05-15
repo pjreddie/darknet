@@ -651,7 +651,7 @@ learning_rate_policy get_policy(char *s)
     fprintf(stderr, "Couldn't find policy %s, going with constant\n", s);
     return CONSTANT;
 }
-
+//
 void parse_net_options(list *options, network *net) // parse_net_opption() function
 {
     net->batch = option_find_int(options, "batch",1);
