@@ -244,6 +244,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     }
 
     if(batch_normalize){ // if batch_normalize is 1 ( this is activated all of convolutional layer )
+        printf("11111\n");
         l.scales = calloc(n, sizeof(float)); // filters size
         l.scale_updates = calloc(n, sizeof(float)); // 
         for(i = 0; i < n; ++i){ // repeat filter's number
@@ -271,6 +272,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     }
 
 #ifdef GPU
+    /*해당 cu파일을 통하여 함수 3개 공부하기*/
     l.forward_gpu = forward_convolutional_layer_gpu;
     l.backward_gpu = backward_convolutional_layer_gpu;
     l.update_gpu = update_convolutional_layer_gpu;
@@ -303,6 +305,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         }
 
         if(batch_normalize){ // we use GPU so this if function decide scale.
+            printf("222222\n");
             l.mean_gpu = cuda_make_array(l.mean, n);
             l.variance_gpu = cuda_make_array(l.variance, n);
 
