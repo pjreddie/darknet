@@ -653,7 +653,7 @@ int rand_int(int min, int max)
 }
 
 // From http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-float rand_normal()
+float rand_normal() // rand_normal() function
 {
     static int haveSpare = 0;
     static double rand1, rand2;
@@ -666,7 +666,7 @@ float rand_normal()
 
     haveSpare = 1;
 
-    rand1 = rand() / ((double) RAND_MAX);
+    rand1 = rand() / ((double) RAND_MAX); // RAND_MAX = 0x7fff
     if(rand1 < 1e-100) rand1 = 1e-100;
     rand1 = -2 * log(rand1);
     rand2 = (rand() / ((double) RAND_MAX)) * TWO_PI;
