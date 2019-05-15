@@ -229,6 +229,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.output = calloc(l.batch*l.outputs, sizeof(float));
     l.delta  = calloc(l.batch*l.outputs, sizeof(float));
 
+    /*해당 함수 동작 X*/
     l.forward = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
     l.update = update_convolutional_layer;
@@ -260,7 +261,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.x = calloc(l.batch*l.outputs, sizeof(float));
         l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
     }
-    if(adam){
+    if(adam){ // default 0
         l.m = calloc(l.nweights, sizeof(float));
         l.v = calloc(l.nweights, sizeof(float));
         l.bias_m = calloc(n, sizeof(float));
@@ -456,7 +457,6 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
 void forward_convolutional_layer(convolutional_layer l, network net)
 {
     int i, j;
-    printf("11111");
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
 
     if(l.xnor){ // don't use this if

@@ -874,7 +874,7 @@ network *parse_network_cfg(char *filename) // parse_network_cfg function
     net->truth_gpu = cuda_make_array(net->truth, net->truths*net->batch);
 #endif
     if(workspace_size){
-        //printf("%ld\n", workspace_size);
+        printf("%ld\n", workspace_size);
 #ifdef GPU
         if(gpu_index >= 0){
             net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
@@ -1208,7 +1208,7 @@ void load_convolutional_weights(layer l, FILE *fp) // load_convolutional_weights
     //fp = darknet53.conv.74
     printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d / l.weights = %f\n",l.w,l.h,l.c,l.groups,l.n,l.size,num,*l.weights);
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
-    if (l.flipped) {
+    if (l.flipped) { // default 0
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
     }
     //if (l.binary) binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.weights);
