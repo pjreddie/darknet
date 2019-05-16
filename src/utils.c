@@ -698,14 +698,14 @@ size_t rand_size_t()
         ((size_t)(rand()&0xff) << 0);
 }
 
-float rand_uniform(float min, float max)
+float rand_uniform(float min, float max) // -dw , dw
 {
     if(max < min){
         float swap = min;
         min = max;
         max = swap;
     }
-    return ((float)rand()/RAND_MAX * (max - min)) + min;
+    return ((float)rand()/RAND_MAX * (max - min)) + min; // min ~ max 사이의 랜덤 실수값을 반환
 }
 
 float rand_scale(float s)

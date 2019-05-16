@@ -2,7 +2,7 @@
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
-
+//train_detector-1 start
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)// ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½
 { // we must add validation data set training while train the training data set.
     list *options = read_data_cfg(datacfg);// read_data_cfg() function can find in option_list.c
@@ -14,8 +14,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //printf("%s\n", base);
     float avg_loss = -1;
     network **nets = calloc(ngpus, sizeof(network)); // network struct 
-    // network?ï¿½ï¿½ê¸°ì˜ ï¿½??ï¿½ï¿½ï¿½? ngpusï¿½? ????ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½ ê³µê°„ ?ï¿½ï¿½?ï¿½ï¿½ 
-
+    // network?ï¿½ï¿½ê¸°ì˜ ï¿???ï¿½ï¿½ï¿?? ngpusï¿?? ????ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½ ê³µê°„ ?ï¿½ï¿½?ï¿½ï¿½ 
+    //train_detector-1 end
     srand(time(0));
     int seed = rand();
     int i;
@@ -44,15 +44,15 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int classes = l.classes; // our cfg file's classes is 1
     float jitter = l.jitter; // our cfg file's jitter is 0.3
 
-
-
-    list *plist = get_paths(train_images);
+    //load_args ÃÊ±âÈ­ ÀÛ¾÷
+    list *plist = get_paths(train_images); // ÇØ´ç ÇÔ¼ö·Î °¡Á®¿À¸é list¿¡ °¢ node·Î ÀúÀåÀÌµÊ
     //int N = plist->size;
-    char **paths = (char **)list_to_array(plist);
+    char **paths = (char **)list_to_array(plist); // load_argsÀÇ paths°¡ 2Â÷¿ø Æ÷ÀÎÅÍÀÌ±â ¶§¹®¿¡ list -> char**·Î º¯È¯
 
     load_args args = get_base_args(net);
+    
     args.coords = l.coords;
-    args.paths = paths;
+    args.paths = paths; 
     args.n = imgs; // args.n = imgs;
     args.m = plist->size;
     args.classes = classes;
@@ -62,7 +62,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.type = DETECTION_DATA;
     //args.type = INSTANCE_DATA;
     args.threads = 64;
-
+    // train_detecot-2 start
     pthread_t load_thread = load_data(args); // load_data()'s return type is pthread_t
     /*load_data() -> load_threads() -> load_data_in_thread() -> load_thread() ->
     * -> { load_data_detection() -> get_random_paths() take a random path -> make_matrix() [matrix.c] ->
@@ -75,9 +75,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
         there are in the bilinear_interpolate() function what is it means?? 
         -> set_pixel() [image.c] ->  random_distort_image() [image.c] -> distort_image() -> fill_truth_detection() -> return data d end load_data_detection() fucntion }
-        load_args a = ë§¤ê°œë³€ìˆ˜ë“¤ê³¼ ì£¼ì†Œë¥¼ ê³µìœ í•˜ê¸° ë•Œë¬¸ì— ê²°ê³¼ë¡  ì ìœ¼ë¡œ ë§¨ ì²˜ìŒì— ì¤€ ë§¤ê°œë³€ìˆ˜ì¸ argsì— ì €ì¥
+        load_args a = ë§¤ê°œë³??ˆ˜?“¤ê³? ì£¼ì†Œë¥? ê³µìœ ?•˜ê¸? ?•Œë¬¸ì— ê²°ê³¼ë¡? ? ?œ¼ë¡? ë§? ì²˜ìŒ?— ì¤? ë§¤ê°œë³??ˆ˜?¸ args?— ????¥
 
     */
+    // train_detector-2 end
 
     double time;
     int count = 0;

@@ -239,7 +239,7 @@ image **load_alphabet()
     }
     return alphabets;
 }
-// detection ?ï¿½ï¿½ì§ì  ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ë§¤ê¸°?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½ ï¿½??ï¿½ï¿½ ì¤‘ìš”?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½
+// detection ?ï¿½ï¿½ì§ì  ?ï¿½ï¿½?ï¿½ï¿½ï¿?? ë§¤ê¸°?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½ ï¿???ï¿½ï¿½ ì¤‘ìš”?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½
 void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
     int i,j;
@@ -258,7 +258,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                     strcat(labelstr, names[j]);
                 }
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
-		count++;//ê°ì²´ï¿½? ï¿½?ì¶œí• ?ï¿½ï¿½ë§ˆë‹¤ count++ ?ï¿½ï¿½ê¸°ì„œ classesï¿½? 1?ï¿½ï¿½ï¿½? ?ï¿½ï¿½ë¬¸ì— ï¿½?ì¶œì„ ?ï¿½ï¿½ï¿½? ë¬´ì¡°ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½ë¬¸ì— ë¬´ì¡°ï¿½? ì¦ï¿½???ï¿½ï¿½ì¼œë„ ?ï¿½ï¿½.
+		count++;//ê°ì²´ï¿?? ï¿??ì¶œí• ?ï¿½ï¿½ë§ˆë‹¤ count++ ?ï¿½ï¿½ê¸°ì„œ classesï¿?? 1?ï¿½ï¿½ï¿?? ?ï¿½ï¿½ë¬¸ì— ï¿??ì¶œì„ ?ï¿½ï¿½ï¿?? ë¬´ì¡°ï¿?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿?? ?ï¿½ï¿½ë¬¸ì— ë¬´ì¡°ï¿?? ì¦ï¿½???ï¿½ï¿½ì¼œë„ ?ï¿½ï¿½.
             }
         }
         if(class >= 0){
@@ -531,7 +531,7 @@ image copy_image(image p)
     return copy;
 }
 
-void rgbgr_image(image im)
+void rgbgr_image(image im) // IplImage = BGR ¼ø¼­ÀÓ ÀÌ¸¦ RGB·Î º¯°æÇØÁÖ´Â ÀÛ¾÷
 {
     int i;
     for(i = 0; i < im.w*im.h; ++i){

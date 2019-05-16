@@ -1055,16 +1055,16 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         image orig = load_image_color(random_paths[i], 0, 0); // load_image_color in image.c 
 							      // when you train the dataset it have to random image train.
         image sized = make_image(w, h, orig.c); // make_image in image.c
-        fill_image(sized, .5);
-
-        float dw = jitter * orig.w;
-        float dh = jitter * orig.h;
+        fill_image(sized, .5); 
+        float dw = jitter * orig.w; // jitter is 0.3 default
+        float dh = jitter * orig.h; // jitter is 0.3 default
 
         float new_ar = (orig.w + rand_uniform(-dw, dw)) / (orig.h + rand_uniform(-dh, dh));
         //float scale = rand_uniform(.25, 2);
         float scale = 1;
         float nw, nh;
 
+        //¹«½¼ ÀÇ¹Ì?
         if(new_ar < 1){
             nh = scale * h;
             nw = nh * new_ar;
@@ -1081,7 +1081,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         // so we use place_image function.
         random_distort_image(sized, hue, saturation, exposure);
 
-        //printf("--%s--\ndw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\n",random_paths[i],dw,dh,new_ar,dx,dy);
+        printf("--%s--\ndw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\nnew_ar = %f / nw = %f / nh = %f\n",random_paths[i],dw,dh,new_ar,dx,dy,new_ar,nw,nh);
 
         int flip = rand()%2;
         if(flip) flip_image(sized);

@@ -30,9 +30,9 @@ image ipl_to_image(IplImage* src)
     int h = src->height;
     int w = src->width;
     int c = src->nChannels;
-    image im = make_image(w, h, c);
+    image im = make_image(w, h, c); // ÃÊ±âÈ­
     unsigned char *data = (unsigned char *)src->imageData;
-    int step = src->widthStep;
+    int step = src->widthStep; // image width * channel
     int i, j, k;
 
     for(i = 0; i < h; ++i){
