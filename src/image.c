@@ -645,7 +645,7 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_i
         for(y = 0; y < h; ++y){ // height
             for(x = 0; x < w; ++x){ // width
                 float rx = ((float)x / w) * im.w; // normalize x
-                printf("rx = %f\n",rx);
+                //printf("rx = %f\n",rx);
                 float ry = ((float)y / h) * im.h; // normalize y
                 float val = bilinear_interpolate(im, rx, ry, c); // call bilinear_interpolate() fucntion
                 // redefined the each pixel's val
