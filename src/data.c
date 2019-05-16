@@ -1081,8 +1081,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         // so we use place_image function.
         random_distort_image(sized, hue, saturation, exposure);
 
-        printf("--%s--\ndw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\nnew_ar = %f / nw = %f / nh = %f\n",random_paths[i],dw,dh,new_ar,dx,dy,new_ar,nw,nh);
-
+        printf("==%s==\n,origin_w = %f / origin_h = %f\ndw = %f / dh = %f / dx = %f / dy = %f\nnew_ar = %f / nw = %f / nh = %f",random_paths[i],orig.w,orig.h,dw,dh,dx,dy,new_ar,nw,nh);
         int flip = rand()%2;
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
