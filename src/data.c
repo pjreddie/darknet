@@ -1058,8 +1058,10 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         fill_image(sized, .5); 
         float dw = jitter * orig.w; // jitter is 0.3 default
         float dh = jitter * orig.h; // jitter is 0.3 default
-
-        float new_ar = (orig.w + rand_uniform(-dw, dw)) / (orig.h + rand_uniform(-dh, dh));
+        float a,b;
+        rand_dw = rand_uniform(-dw, dw);
+        rand_dh = rand_uniform(-dh, dh);
+        float new_ar = (orig.w + rand_dw) / (orig.h + rand_dh);
         //float scale = rand_uniform(.25, 2);
         float scale = 1;
         float nw, nh;
@@ -1075,13 +1077,14 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
-
+        printf("\n==%s==\norigin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nnew_ar = %f / nw = %f / nh = %f\n",random_paths[i],orig.w,orig.h,dw,dh,dx,dy,new_ar,nw,nh);
+        
         place_image(orig, nw, nh, dx, dy, sized);
         // image have 3 dimension so we want to change by 1 dimension.
         // so we use place_image function.
         random_distort_image(sized, hue, saturation, exposure);
 
-        printf("\n==%s==\n,origin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nnew_ar = %f / nw = %f / nh = %f\n",random_paths[i],orig.w,orig.h,dw,dh,dx,dy,new_ar,nw,nh);
+        printf("\n==%s==\norigin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nnew_ar = %f / nw = %f / nh = %f\n",random_paths[i],orig.w,orig.h,dw,dh,dx,dy,new_ar,nw,nh);
         int flip = rand()%2;
         if(flip) flip_image(sized);
         d.X.vals[i] = sized.data;
