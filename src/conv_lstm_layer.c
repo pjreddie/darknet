@@ -799,7 +799,7 @@ void forward_conv_lstm_layer_gpu(layer l, network_state state)
     s.train = state.train;
     s.workspace = state.workspace;
     s.net = state.net;
-    //if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
+    if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
     int i;
     layer vf = *(l.vf);
     layer vi = *(l.vi);
