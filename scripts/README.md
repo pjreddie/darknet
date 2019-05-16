@@ -12,6 +12,8 @@ ImageNet (ILSVRC2012): http://www.image-net.org/challenges/LSVRC/2012/nonpub-dow
 
 ImageNet (ILSVRC2015): http://image-net.org/small/download.php
 
+ImageNet VID: http://bvisionweb1.cs.unc.edu/ilsvrc2015/download-videos-3j16.php
+
 Open Images: https://storage.googleapis.com/openimages/web/download.html
 
 Cityscapes: https://www.cityscapes-dataset.com/
