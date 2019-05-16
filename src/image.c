@@ -640,7 +640,7 @@ image float_to_image(int w, int h, int c, float *data)
 void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_image() function
 {
     int x, y, c;
-    printf("im.w = %d / im.h = %d / nw = %d / nh = %d\n",im.w,im.h,w,h);
+    //printf("im.w = %d / im.h = %d / nw = %d / nh = %d\n",im.w,im.h,w,h);
     for(c = 0; c < im.c; ++c){ // rgb nChannel
         for(y = 0; y < h; ++y){ // height
             for(x = 0; x < w; ++x){ // width
@@ -649,7 +649,7 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_i
                 float ry = ((float)y / h) * im.h; // normalize y
                 float val = bilinear_interpolate(im, rx, ry, c); // call bilinear_interpolate() fucntion
                 // redefined the each pixel's val
-                set_pixel(canvas, x + dx, y + dy, c, val); //해당 좌표 좌,우,상,하의 픽셀들의 합을 저장
+                set_pixel(canvas, x + dx, y + dy, c, val); 
             }
         }
     }
@@ -1186,14 +1186,14 @@ void distort_image(image im, float hue, float sat, float val)// distort_image() 
         if (im.data[i] < 0) im.data[i] += 1;
     }
     hsv_to_rgb(im); // hsv -> rgb
-    constrain_image(im);
+    constrain_image(im); //  0 <= value <= 1 
 }
 
 void random_distort_image(image im, float hue, float saturation, float exposure) // random_distort_image() function
-{
-    float dhue = rand_uniform(-hue, hue);
-    float dsat = rand_scale(saturation);
-    float dexp = rand_scale(exposure);
+{ // saturation = 1.5 , exposure = 1.5
+    float dhue = rand_uniform(-hue, hue); //  -0.1 ~ 0.1
+    float dsat = rand_scale(saturation); // 0.666666 ~ 1.5
+    float dexp = rand_scale(exposure); // 0.666666 ~ 1.5
     distort_image(im, dhue, dsat, dexp);
 }
 

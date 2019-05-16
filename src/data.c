@@ -196,7 +196,7 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
         boxes[i].top    = boxes[i].top   * sy - dy;
         boxes[i].bottom = boxes[i].bottom* sy - dy;
 
-        if(flip){
+        if(flip){ // if flip == 1 right left flip
             float swap = boxes[i].left;
             boxes[i].left = 1. - boxes[i].right;
             boxes[i].right = 1. - swap;
@@ -1081,11 +1081,13 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         place_image(orig, nw, nh, dx, dy, sized); // model input w, h에 일치하도록 image크기 변경
         // image have 3 dimension so we want to change by 1 dimension.
         // so we use place_image function.
-        random_distort_image(sized, hue, saturation, exposure);
-
-        //printf("\n==%s==\nargs.w = %d / args.h = %d / origin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nrand_dw = %f / rand_dh = %f /new_ar = %f / nw = %f / nh = %f\n",random_paths[i],w,h,orig.w,orig.h,dw,dh,dx,dy,rand_dw,rand_dh,new_ar,nw,nh);
-        int flip = rand()%2;
-        if(flip) flip_image(sized);
+        random_distort_image(sized, hue, saturation, exposure); // 임의로 이미지의 HSV값을 변경함
+        // hue = 색상
+        // saturation = 채도
+        // exposure = 명도 
+        printf("\n==%s==\nargs.w = %d / args.h = %d / origin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nrand_dw = %f / rand_dh = %f /new_ar = %f / nw = %f / nh = %f\n",random_paths[i],w,h,orig.w,orig.h,dw,dh,dx,dy,rand_dw,rand_dh,new_ar,nw,nh);
+        int flip = rand()%2; // flip = 0 ~ 1
+        if(flip) flip_image(sized); // flip image
         d.X.vals[i] = sized.data;
 
 

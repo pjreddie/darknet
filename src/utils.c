@@ -710,9 +710,9 @@ float rand_uniform(float min, float max) // -dw , dw
 
 float rand_scale(float s)
 {
-    float scale = rand_uniform(1, s);
-    if(rand()%2) return scale;
-    return 1./scale;
+    float scale = rand_uniform(1, s); // random scale = 1.0 ~ 1.5
+    if(rand()%2) return scale; // if rand num == 1 return scale
+    return 1./scale; // else 1 / scale max = 1.0 , min = 2/3 = 0.66666666
 }
 
 float **one_hot_encode(float *a, int n, int k)
