@@ -640,7 +640,7 @@ image float_to_image(int w, int h, int c, float *data)
 void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_image() function
 {
     int x, y, c;
-    printf("im.w = %d / im.h = %d / nw = %f / nh = %f\n",im.w,im.h,w,h);
+    printf("im.w = %d / im.h = %d / nw = %d / nh = %d\n",im.w,im.h,w,h);
     for(c = 0; c < im.c; ++c){ // rgb nChannel
         for(y = 0; y < h; ++y){ // height
             for(x = 0; x < w; ++x){ // width
