@@ -76,10 +76,10 @@ static void add_pixel(image m, int x, int y, int c, float val)
 
 static float bilinear_interpolate(image im, float x, float y, int c) // bilinear_interpolate() fucntion
 {
-    int ix = (int) floorf(x);
+    int ix = (int) floorf(x); // floorf() = 내림 함수
     int iy = (int) floorf(y);
 
-    float dx = x - ix;
+    float dx = x - ix; // 0.소수점값
     float dy = y - iy;
 	/*What is it mean that float val???
 	 * get_pixel_extend() is check the resolution over or under.
@@ -640,14 +640,15 @@ image float_to_image(int w, int h, int c, float *data)
 void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_image() function
 {
     int x, y, c;
+    printf("im.w = %d / im.h = %d\n",im.w,im.h);
     for(c = 0; c < im.c; ++c){ // rgb nChannel
         for(y = 0; y < h; ++y){ // height
             for(x = 0; x < w; ++x){ // width
-                float rx = ((float)x / w) * im.w;
-                float ry = ((float)y / h) * im.h;
+                float rx = ((float)x / w) * im.w; // normalize x
+                float ry = ((float)y / h) * im.h; // normalize y
                 float val = bilinear_interpolate(im, rx, ry, c); // call bilinear_interpolate() fucntion
                 // redefined the each pixel's val
-                set_pixel(canvas, x + dx, y + dy, c, val); // save the val in the each pixel ( 1 dimemsion)
+                set_pixel(canvas, x + dx, y + dy, c, val); //해당 좌표 좌,우,상,하의 픽셀들의 합을 저장
             }
         }
     }
