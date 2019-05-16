@@ -1058,7 +1058,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         fill_image(sized, .5); 
         float dw = jitter * orig.w; // jitter is 0.3 default
         float dh = jitter * orig.h; // jitter is 0.3 default
-        float a,b;
+        float rand_dw,rand_dh;
         rand_dw = rand_uniform(-dw, dw);
         rand_dh = rand_uniform(-dh, dh);
         float new_ar = (orig.w + rand_dw) / (orig.h + rand_dh);
