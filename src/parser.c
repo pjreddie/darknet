@@ -68,8 +68,8 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[connected]")==0) return CONNECTED;
     if (strcmp(type, "[max]")==0
             || strcmp(type, "[maxpool]")==0) return MAXPOOL;
-    if (strcmp(type, "[reorg]")==0) return REORG;
-    if (strcmp(type, "[reorg_old]") == 0) return REORG_OLD;
+    if (strcmp(type, "[reorg3d]")==0) return REORG;
+    if (strcmp(type, "[reorg]") == 0) return REORG_OLD;
     if (strcmp(type, "[avg]")==0
             || strcmp(type, "[avgpool]")==0) return AVGPOOL;
     if (strcmp(type, "[dropout]")==0) return DROPOUT;
