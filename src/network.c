@@ -319,8 +319,8 @@ float train_network(network *net, data d) // train_network() function
     int n = d.X.rows / batch;// d.X type is matrix matrix sturct have rows(int type).
     int i;
     float sum = 0;
-    printf("n = d.X.rows(%d) / batch(%d) = %d\n",d.X.rows,net->batch,n);
-    for(i = 0; i < n; ++i){
+    printf("n = d.X.rows(%d) / batch(%d) = %d\n",d.X.rows,net->batch,n); // 64 , 4
+    for(i = 0; i < n; ++i){ // this n is 16(subdivision)
         get_next_batch(d, batch, i*batch, net->input, net->truth);
         float err = train_network_datum(net); 
         sum += err;

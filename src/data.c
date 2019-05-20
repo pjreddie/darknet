@@ -1492,16 +1492,16 @@ void get_random_batch(data d, int n, float *X, float *y)
 void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_batch() function
 {// X = input , y = truth
     int j;
-    printf("Here is get_next_batch() function\n");
-    printf("n = %d , offset = %d\n",n,offset);
+    //printf("Here is get_next_batch() function\n");
+    //printf("n = %d , offset = %d\n",n,offset); // n(batch(4)) , offset ( i(0~64)*batch(4) ) 
     for(j = 0; j < n; ++j){
         int index = offset + j;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
-         printf("X+j*d.X.cols = %f,  d.X.vals[index] = %f",*(X), *d.X.vals[index]);
-         printf("this size = %ld\n",d.X.cols*sizeof(float));
+         printf("X+j*d.X.cols = %f,  d.X.vals[index] = %f",*(X+j*d.X.cols), *d.X.vals[index]);
+         //printf("this size = %ld\n",d.X.cols*sizeof(float));
         if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
-         printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",*y, *d.y.vals[index]);
-         printf("this size = %ld\n",d.y.cols*sizeof(float));
+         //printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",*y, *d.y.vals[index]);
+         //printf("this size = %ld\n",d.y.cols*sizeof(float));
     }
 }
 
