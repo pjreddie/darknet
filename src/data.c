@@ -181,7 +181,7 @@ void randomize_boxes(box_label *b, int n)
 }
 
 void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
-{
+{ // 여기서 dx와 dy가 정확히 무엇을 의미하는지를 파악하는 것이 중요
     printf("correct_boxes function : dx = %f, dy = %f, sx = %f, sy = %f\n",dx,dy,sx,sy);
     int i;
     for(i = 0; i < n; ++i){
@@ -192,8 +192,9 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             boxes[i].h = 999999;
             continue;
         }
+        // 바뀐 해상도에 대해서 boxes[i]의 값들을 마춘
         boxes[i].left   = boxes[i].left  * sx - dx; // 임의의 좌표 dx의 값을 boxes.left*sx(새로운width/input레이어width)에서 뺀값
-        boxes[i].right  = boxes[i].right * sx - dx;
+        boxes[i].right  = boxes[i].right * sx - dx; 
         boxes[i].top    = boxes[i].top   * sy - dy;
         boxes[i].bottom = boxes[i].bottom* sy - dy;
 
@@ -1489,18 +1490,18 @@ void get_random_batch(data d, int n, float *X, float *y)
 }
 
 void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_batch() function
-{
+{// X = input , y = truth
     int j;
-    //printf("Here is get_next_batch() function\n");
-    //printf("n = %d , offset = %d\n",n,offset);
+    printf("Here is get_next_batch() function\n");
+    printf("n = %d , offset = %d\n",n,offset);
     for(j = 0; j < n; ++j){
         int index = offset + j;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
-        // printf("X+j*d.X.cols = %f,  d.X.vals[index] = %f",X+j*d.X.cols, d.X.vals[index]);
-        // printf("this size = %ld\n",d.X.cols*sizeof(float));
+         printf("X+j*d.X.cols = %f,  d.X.vals[index] = %f",X+j*d.X.cols, d.X.vals[index]);
+         printf("this size = %ld\n",d.X.cols*sizeof(float));
         if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
-        // printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",X+j*d.y.cols, d.y.vals[index]);
-        // printf("this size = %ld\n",d.y.cols*sizeof(float));
+         printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",X+j*d.y.cols, d.y.vals[index]);
+         printf("this size = %ld\n",d.y.cols*sizeof(float));
     }
 }
 
