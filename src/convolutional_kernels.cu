@@ -132,7 +132,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
     } else {
         add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
     }
-    print("Activate function\n");
+    printf("Activate function\n");
     activate_array_gpu(l.output_gpu, l.outputs*l.batch, l.activation);
     //if(l.dot > 0) dot_error_gpu(l);
     if(l.binary || l.xnor) swap_binary(&l);
