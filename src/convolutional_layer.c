@@ -228,7 +228,6 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     l.output = calloc(l.batch*l.outputs, sizeof(float));
     l.delta  = calloc(l.batch*l.outputs, sizeof(float)); // default 0
-    printf("delta = %f\n",*l.delta);
     /*함수 포인터 연결*/
     l.forward = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
