@@ -443,7 +443,7 @@ __global__ void scal_kernel(int N, float ALPHA, float *X, int INCX)
     if(i < N) X[i*INCX] *= ALPHA;
 }
 
-__global__ void fill_kernel(int N, float ALPHA, float *X, int INCX)
+__global__ void fill_kernel(int N, float ALPHA, float *X, int INCX) // fill_kerenl function
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(i < N) X[i*INCX] = ALPHA;

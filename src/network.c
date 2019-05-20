@@ -783,11 +783,11 @@ void forward_network_gpu(network *netp) // forward_network_gpu() function
         net.index = i;
         layer l = net.layers[i];
         //printf("l.delta_gpu = %f",*l.delta_gpu);
-        if(l.delta_gpu){ // what is delta_gpu
-            printf("l.delta_gpu = 1");
+        if(l.delta_gpu){ // l.delta_gpu = 1
             fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);// fill_gpu() can find in blas_kernels.cu file
         }
         l.forward_gpu(l, net); // void (*forward_gpu)   (struct layer, struct network);
+        //call to convolutional_kernels.cu file function
         net.input_gpu = l.output_gpu;
         net.input = l.output;
         if(l.truth) {
