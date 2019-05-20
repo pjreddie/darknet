@@ -1497,10 +1497,10 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_ba
     for(j = 0; j < n; ++j){
         int index = offset + j;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
-         printf("X+j*d.X.cols = %f,  d.X.vals[index] = %f",X+j*d.X.cols, d.X.vals[index]);
+         printf("X+j*d.X.cols = %f,  d.X.vals[index] = %f",*(X), *d.X.vals[index]);
          printf("this size = %ld\n",d.X.cols*sizeof(float));
         if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
-         printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",X+j*d.y.cols, d.y.vals[index]);
+         printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",*y, *d.y.vals[index]);
          printf("this size = %ld\n",d.y.cols*sizeof(float));
     }
 }
