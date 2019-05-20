@@ -314,7 +314,7 @@ layer parse_yolo(list *options, size_params params)
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
     assert(l.outputs == params.inputs);
 
-    l.max_boxes = option_find_int_quiet(options, "max",90);
+    l.max_boxes = option_find_int_quiet(options, "max",90); //default 90
     l.jitter = option_find_float(options, "jitter", .2);
 
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);

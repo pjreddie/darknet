@@ -533,8 +533,8 @@ typedef struct matrix{
 
 typedef struct{ // struct of data 
     int w, h;
-    matrix X;
-    matrix y;
+    matrix X; // X.cols = total pixel , rows = batch(64) , vals = each pixel's value (we can find information in data.c's load_data_detection) 
+    matrix y; // y.cols = 5*boxes( boxes default 90 ) , y.rows = batch(64) , 
     int shallow;
     int *num_boxes;
     box **boxes;

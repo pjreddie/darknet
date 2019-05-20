@@ -289,8 +289,10 @@ void backward_network(network *netp) // backward_network() function
 
 float train_network_datum(network *net) // train_network_datum() function
 {
+    printf("net->seen = %d\n",*net->seen);
     *net->seen += net->batch;
     net->train = 1;
+    /* mostly important functions */
     forward_network(net); // call forward_network() function
     backward_network(net); // call backward_network() function
     float error = *net->cost;

@@ -450,7 +450,7 @@ void fill_truth_mask(char *path, int num_boxes, float *truth, int classes, int w
 
 
 void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy) // fill_truth_detection() function
-{//this function check the bounding box in txt file 
+{//this function check the bounding box in txt file  truth is **data.y.vals
     char labelpath[4096];
     find_replace(path, "images", "labels", labelpath);
     find_replace(labelpath, "JPEGImages", "labels", labelpath);
@@ -1048,7 +1048,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.X.rows = n;
     d.X.vals = calloc(d.X.rows, sizeof(float*));
-    d.X.cols = h*w*3;
+    d.X.cols = h*w*3; // (resize)height * (resize)width * channel
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
@@ -1090,7 +1090,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         printf("\n==%s==\nargs.w = %d / args.h = %d / origin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nrand_dw = %f / rand_dh = %f /new_ar = %f / nw = %f / nh = %f\n",random_paths[i],w,h,orig.w,orig.h,dw,dh,dx,dy,rand_dw,rand_dh,new_ar,nw,nh);
         int flip = rand()%2; // flip = 0 ~ 1
         if(flip) flip_image(sized); // flip image
-        d.X.vals[i] = sized.data;
+        d.X.vals[i] = sized.data; //new data input to d.X.vals[i]
+        //total 64 image's value save (this program)
 
 
         fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h); // take a information in txt file ( x , y , width , height , id )
@@ -1498,11 +1499,11 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_ba
     printf("d.X.cols = %d ,d.X.rows = %d , d.y.cols = %d, d.y.rows = %d\n",d.X.cols,d.X.rows,d.y.cols,d.y.rows);
     for(j = 0; j < n; ++j){
         int index = offset + j;
-        memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
+        memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float)); // 실제 이미지를 축소한 값을 input값에 순서대로 복사
 
-         printf("X+j*d.X.cols = %f,  d.X.vals[%d] = %f\n",*(X+j*d.X.cols), index,*d.X.vals[index]);
+         //printf("X+j*d.X.cols = %f,  d.X.vals[%d] = %f\n",*(X+j*d.X.cols), index,*d.X.vals[index]);
          //printf("this size = %ld\n",d.X.cols*sizeof(float));
-        if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
+        if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));// truth에서 id를 제외한 값을 저장
          //printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",*y, *d.y.vals[index]);
          //printf("this size = %ld\n",d.y.cols*sizeof(float));
     }
