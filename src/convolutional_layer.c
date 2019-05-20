@@ -227,9 +227,9 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.inputs = l.w * l.h * l.c;
 
     l.output = calloc(l.batch*l.outputs, sizeof(float));
-    l.delta  = calloc(l.batch*l.outputs, sizeof(float));
-
-    /*해당 함수 동작 X*/
+    l.delta  = calloc(l.batch*l.outputs, sizeof(float)); // default 0
+    printf("delta = %f\n",*l.delta);
+    /*함수 포인터 연결*/
     l.forward = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
     l.update = update_convolutional_layer;
@@ -254,7 +254,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.mean = calloc(n, sizeof(float));
         l.variance = calloc(n, sizeof(float));
 
-        l.mean_delta = calloc(n, sizeof(float));
+        l.mean_delta = calloc(n, sizeof(float)); 
         l.variance_delta = calloc(n, sizeof(float));
 
         l.rolling_mean = calloc(n, sizeof(float));
