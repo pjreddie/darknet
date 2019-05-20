@@ -182,6 +182,7 @@ void randomize_boxes(box_label *b, int n)
 
 void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
 {
+    printf("correct_boxes function : dx = %f, dy = %f, sx = %f, sy = %f\n",dx,dy,sx,sy);
     int i;
     for(i = 0; i < n; ++i){
         if(boxes[i].x == 0 && boxes[i].y == 0) {
@@ -191,7 +192,7 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             boxes[i].h = 999999;
             continue;
         }
-        boxes[i].left   = boxes[i].left  * sx - dx;
+        boxes[i].left   = boxes[i].left  * sx - dx; // 임의의 좌표 dx의 값을 boxes.left*sx(새로운width/input레이어width)에서 뺀값
         boxes[i].right  = boxes[i].right * sx - dx;
         boxes[i].top    = boxes[i].top   * sy - dy;
         boxes[i].bottom = boxes[i].bottom* sy - dy;
@@ -475,7 +476,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         h =  boxes[i].h;
         id = boxes[i].id;
 
-        if ((w < .001 || h < .001)) {
+        if ((w < .001 || h < .001)) { // If box's width and height size is too small, don't add to truth array.
             ++sub;
             continue;
         }
@@ -1185,7 +1186,7 @@ void *load_threads(void *ptr) // second function when you use pthread in detecto
         // args.n = [(i+1) * total(64)/args.threads(64)](i+1) - i = 1;
         // args.n = 1 
         //printf("args.n = %d\n",args.n);
-        threads[i] = load_data_in_thread(args); // call load_data_in_thraed() function
+        threads[i] = load_data_in_thread(args); // call load_data_in_thread() function
     }
     for(i = 0; i < args.threads; ++i){
         pthread_join(threads[i], 0);

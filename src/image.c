@@ -74,17 +74,15 @@ static void add_pixel(image m, int x, int y, int c, float val)
     m.data[c*m.h*m.w + y*m.w + x] += val;
 }
 
-static float bilinear_interpolate(image im, float x, float y, int c) // bilinear_interpolate() fucntion
-{
+static float bilinear_interpolate(image im, float x, float y, int c) // bilinear_interpolate() fucntion 
+{ // when resizing your model your image also resizes. original image is smaller than resizing model size, new pixel must fill something value.
+  // this function can do that.
     int ix = (int) floorf(x); // floorf() = 내림 함수
     int iy = (int) floorf(y);
 
     float dx = x - ix; // 0.소수점값
     float dy = y - iy;
-	/*What is it mean that float val???
-	 * get_pixel_extend() is check the resolution over or under.
-	 * if pixel over the x or y or under the x or y then return 0.
-	 * */
+
     float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
         dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
         (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
