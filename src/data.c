@@ -781,6 +781,7 @@ static box float_to_box_stride(float *f, int stride)
 data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, float jitter,
     float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int show_imgs)
 {
+    const int random_index = random_gen();
     c = c ? c : 3;
     char **random_paths;
     if (track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
@@ -855,7 +856,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
         if(show_imgs)
         {
             char buff[1000];
-            sprintf(buff, "aug_%s_%d", basecfg(random_paths[i]), random_gen());
+            sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg(random_paths[i]), random_gen());
             int t;
             for (t = 0; t < boxes; ++t) {
                 box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);

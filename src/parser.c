@@ -678,6 +678,7 @@ void parse_net_options(list *options, network *net)
     net->track = option_find_int_quiet(options, "track", 0);
     net->augment_speed = option_find_int_quiet(options, "augment_speed", 2);
     net->init_sequential_subdivisions = net->sequential_subdivisions = option_find_int_quiet(options, "sequential_subdivisions", subdivs);
+    if (net->sequential_subdivisions > subdivs) net->init_sequential_subdivisions = net->sequential_subdivisions = subdivs;
     net->try_fix_nan = option_find_int_quiet(options, "try_fix_nan", 0);
     net->batch /= subdivs;
     net->batch *= net->time_steps;

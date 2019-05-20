@@ -147,7 +147,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         args.track = net.track;
         args.augment_speed = net.augment_speed;
         if (net.sequential_subdivisions) args.threads = net.sequential_subdivisions * ngpus;
-        else args.threads = net.subdivisions * ngpus;    // 2 * ngpus;
+        else args.threads = net.subdivisions * ngpus;
         args.mini_batch = net.batch / net.time_steps;
         printf("\n Tracking! batch = %d, subdiv = %d, time_steps = %d, mini_batch = %d \n", net.batch, net.subdivisions, net.time_steps, args.mini_batch);
     }
@@ -193,7 +193,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         if (net.track) {
             net.sequential_subdivisions = get_current_seq_subdivisions(net);
             args.threads = net.sequential_subdivisions * ngpus;
-            printf(" sequential_subdivisions = %d \n", net.sequential_subdivisions);
+            printf(" sequential_subdivisions = %d, sequence = %d \n", net.sequential_subdivisions, get_sequence_value(net));
         }
         load_thread = load_data(args);
 

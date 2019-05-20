@@ -484,14 +484,14 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                     l.normDstTensorDescF16,
                     output16,            // output
                     l.normTensorDesc,
-                    l.scales_gpu,
-                    l.biases_gpu,
+                    l.scales_gpu,       // input
+                    l.biases_gpu,       // input
                     .01,
-                    l.rolling_mean_gpu,        // output (should be FP32)
-                    l.rolling_variance_gpu,    // output (should be FP32)
+                    l.rolling_mean_gpu,        // input/output (should be FP32)
+                    l.rolling_variance_gpu,    // input/output (should be FP32)
                     .00001,
-                    l.mean_gpu,            // output (should be FP32)
-                    l.variance_gpu));    // output (should be FP32)
+                    l.mean_gpu,            // output (should be FP32) - optional cache to speedup cudnnBatchNormalizationBackward()
+                    l.variance_gpu));    // output (should be FP32) - optional cache to speedup cudnnBatchNormalizationBackward()
 
                 cuda_convert_f16_to_f32(output16, output16_size, l.output_gpu);
                 //forward_batchnorm_layer_gpu(l, state);
@@ -658,13 +658,13 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 &one,
                 &one,
                 l.normDstTensorDescF16,
-                l.x_gpu,                // input
+                l.x_gpu,                // input (input in BN-forward-inference)
                 l.normDstTensorDescF16,
                 delta16,                // input
                 l.normDstTensorDescF16,
-                l.x_norm_gpu,            // output
+                l.x_norm_gpu,            // output (new delta)
                 l.normTensorDesc,
-                l.scales_gpu,            // output (should be FP32)
+                l.scales_gpu,            // input (should be FP32)
                 l.scale_updates_gpu,    // output (should be FP32)
                 l.bias_updates_gpu,        // output (should be FP32)
                 .00001,
