@@ -289,8 +289,8 @@ void backward_network(network *netp) // backward_network() function
 
 float train_network_datum(network *net) // train_network_datum() function
 {
-    printf("net->seen = %d\n",*net->seen);
-    *net->seen += net->batch;
+    //printf("net->seen = %d\n",*net->seen); // 
+    *net->seen += net->batch;//한번에 4개의 이미지씩 보기 때문에 4씩 증가
     net->train = 1;
     /* mostly important functions */
     forward_network(net); // call forward_network() function

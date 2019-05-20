@@ -182,7 +182,7 @@ void randomize_boxes(box_label *b, int n)
 
 void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
 { // 여기서 dx와 dy가 정확히 무엇을 의미하는지를 파악하는 것이 중요
-    printf("correct_boxes function : dx = %f, dy = %f, sx = %f, sy = %f\n",dx,dy,sx,sy);
+    //printf("correct_boxes function : dx = %f, dy = %f, sx = %f, sy = %f\n",dx,dy,sx,sy);
     int i;
     for(i = 0; i < n; ++i){
         if(boxes[i].x == 0 && boxes[i].y == 0) {
@@ -1087,7 +1087,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         // hue = 색상
         // saturation = 채도
         // exposure = 명도 
-        printf("\n==%s==\nargs.w = %d / args.h = %d / origin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nrand_dw = %f / rand_dh = %f /new_ar = %f / nw = %f / nh = %f\n",random_paths[i],w,h,orig.w,orig.h,dw,dh,dx,dy,rand_dw,rand_dh,new_ar,nw,nh);
+        //printf("\n==%s==\nargs.w = %d / args.h = %d / origin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nrand_dw = %f / rand_dh = %f /new_ar = %f / nw = %f / nh = %f\n",random_paths[i],w,h,orig.w,orig.h,dw,dh,dx,dy,rand_dw,rand_dh,new_ar,nw,nh);
         int flip = rand()%2; // flip = 0 ~ 1
         if(flip) flip_image(sized); // flip image
         d.X.vals[i] = sized.data; //new data input to d.X.vals[i]
@@ -1495,8 +1495,8 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_ba
     int j;
     //printf("Here is get_next_batch() function\n");
     //printf("n = %d , offset = %d\n",n,offset); // n(batch(4)) , offset ( i(0~64)*batch(4) ) 
-    printf("\n");
-    printf("d.X.cols = %d ,d.X.rows = %d , d.y.cols = %d, d.y.rows = %d\n",d.X.cols,d.X.rows,d.y.cols,d.y.rows);
+    //printf("\n");
+    //printf("d.X.cols = %d ,d.X.rows = %d , d.y.cols = %d, d.y.rows = %d\n",d.X.cols,d.X.rows,d.y.cols,d.y.rows);
     for(j = 0; j < n; ++j){
         int index = offset + j;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float)); // 실제 이미지를 축소한 값을 input값에 순서대로 복사
