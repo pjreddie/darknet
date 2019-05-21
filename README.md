@@ -43,6 +43,10 @@ Training on Darknet is never fun. There are about a million different tutorials 
 
 Note: This tutorial is not meant to be general 'how to'. It is how __I__ managed to train YOLO.
 
+I trained the ``yolov3-tiny`` with ``2 classes`` on:
+* Ubuntu 16.04 with Standard Darknet Setup (GPU, OPENCV, CUDNN)
+* GTX 1050 Ti (4GB RAM)
+
 ### Setting up files
 1. Download the 3 training zip files ``CrowdHuman_train0*.zip`` from the CrowdHuman website.
 2. Extract all the files into the folder provided ``/darknet/crowdhuman_train``. You should have about __15000__ files in the folder.
@@ -82,3 +86,22 @@ Darknet also needs another textfile which contains the paths to all the training
 * ``generate_val_txt.py``
 
 This generates two files ``train.txt`` and ``val.txt`` in the main ``/darknet/`` directory.
+
+### Actually Training Darknet
+
+Just run the command:
+
+```
+./darknet detector train cfg/yolo_crowdhuman.data cfg/yolov3-tiny-crowdhuman.cfg darknet53.conv.74
+```
+
+Where ``darknet53.conv.74`` is the initial weights which one can get from:
+
+```
+wget https://pjreddie.com/media/files/darknet53.conv.74
+```
+
+#### Training Tips & Tricks
+* No GUI to save GPU Memory
+    * Might run out of memory on your GPU, so a good hack is to just run the training without any GUI. I used the virtual terminals ``tty1``. (Or pressing CTRL + ALT + F1)
+    * I killed the GUI by running ``sudo service lightdm stop``. This left me with just a terminal and I trained the network there.
