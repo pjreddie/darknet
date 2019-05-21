@@ -130,7 +130,7 @@ static int entry_index(layer l, int batch, int location, int entry)
 }
 
 void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() function
-{
+{ // 공부하기
     int i,j,b,t,n;
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
 
@@ -156,10 +156,10 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
     int count = 0;
     int class_count = 0;
     *(l.cost) = 0;
-    for (b = 0; b < l.batch; ++b) {
-        for (j = 0; j < l.h; ++j) {
-            for (i = 0; i < l.w; ++i) {
-                for (n = 0; n < l.n; ++n) {
+    for (b = 0; b < l.batch; ++b) { // batch(4)
+        for (j = 0; j < l.h; ++j) { // height
+            for (i = 0; i < l.w; ++i) { // width
+                for (n = 0; n < l.n; ++n) { // filter
                     int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
                     box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.w*l.h);
                     float best_iou = 0;
