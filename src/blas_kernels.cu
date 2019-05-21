@@ -1022,3 +1022,67 @@ extern "C" int is_nan_or_inf(float *input, size_t size)
     CHECK_CUDA(cudaFreeHost(pinned_return));
     return ret_val;
 }
+
+
+__global__ void add_3_arrays_activate_kernel(float *a1, float *a2, float *a3, size_t size, ACTIVATION a, float *dst)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        float val = 0;
+        val += a1[index];
+        val += a2[index];
+        if (a3) val += a3[index];
+        if (a == LOGISTIC) val = 1.f / (1.f + expf(-val));
+        else if(a == TANH) val = (2 / (1 + expf(-2 * val)) - 1);
+        dst[index] = val;
+    }
+}
+
+extern "C" void add_3_arrays_activate(float *a1, float *a2, float *a3, size_t size, ACTIVATION a, float *dst)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    if (a != LOGISTIC && a != TANH) {
+        printf(" add_3_arrays_activate() doesn't support activation %d, it supports only LOGISTIC and TANH \n", a);
+        exit(EXIT_FAILURE);
+    }
+    add_3_arrays_activate_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(a1, a2, a3, size, a, dst);
+}
+
+
+__global__ void sum_of_mults_kernel(float *a1, float *a2, float *b1, float *b2, size_t size, float *dst)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        dst[index] = a1[index] * a2[index] + b1[index] * b2[index];
+    }
+}
+
+extern "C" void sum_of_mults(float *a1, float *a2, float *b1, float *b2,  size_t size, float *dst)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    sum_of_mults_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(a1, a2, b1, b2, size, dst);
+}
+
+
+__global__ void activate_and_mult_kernel(float *a1, float *a2, size_t size, ACTIVATION a, float *dst)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        float val = a1[index];
+        if (a == TANH) val = (2 / (1 + expf(-2 * val)) - 1);
+        dst[index] = val * a2[index];
+    }
+}
+
+extern "C" void activate_and_mult(float *a1, float *a2, size_t size, ACTIVATION a, float *dst)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    if (a != TANH) {
+        printf(" activat_and_mult() doesn't support activation %d, it supports only TANH \n", a);
+        exit(EXIT_FAILURE);
+    }
+    activate_and_mult_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(a1, a2, size, a, dst);
+}

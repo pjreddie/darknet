@@ -46,6 +46,8 @@ void softmax(float *input, int n, float temp, float *output, int stride);
 void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
 void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
 void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void constrain_cpu(int size, float ALPHA, float *X);
+void fix_nan_and_inf_cpu(float *input, size_t size);
 
 #ifdef GPU
 
@@ -104,6 +106,10 @@ void softmax_tree_gpu(float *input, int spatial, int batch, int stride, float te
 
 void fix_nan_and_inf(float *input, size_t size);
 int is_nan_or_inf(float *input, size_t size);
+
+void add_3_arrays_activate(float *a1, float *a2, float *a3, size_t size, ACTIVATION a, float *dst);
+void sum_of_mults(float *a1, float *a2, float *b1, float *b2, size_t size, float *dst);
+void activate_and_mult(float *a1, float *a2, size_t size, ACTIVATION a, float *dst);
 
 #endif
 #ifdef __cplusplus
