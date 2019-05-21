@@ -1,15 +1,18 @@
+
+
+# Darknet CrowdHuman
+
+As part of my Final Year Project, I have trained the Yolo object detector on the Crowdhuman dataset. The goal was to be able to achieve fast detections on people and faces in crowds.
+
+## Darknet
+
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
-# Darknet #
 Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
 
 For more information see the [Darknet project website](http://pjreddie.com/darknet).
 
 For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
-
-# Darknet CrowdHuman
-
-As part of my Final Year Project, I have trained the Yolo object detector on the Crowdhuman dataset. The goal was to be able to achieve fast detections on people and faces in crowds.
 
 ## CrowdHuman Dataset
 
@@ -105,3 +108,9 @@ wget https://pjreddie.com/media/files/darknet53.conv.74
 * No GUI to save GPU Memory
     * Might run out of memory on your GPU, so a good hack is to just run the training without any GUI. I used the virtual terminals ``tty1``. (Or pressing CTRL + ALT + F1)
     * I killed the GUI by running ``sudo service lightdm stop``. This left me with just a terminal and I trained the network there.
+
+## Results
+View Results:
+```
+ ./darknet detector test cfg/yolo_crowdhuman.data  cfg/yolov3-tiny-crowdhuman.cfg backup/yolov3-tiny-crowdhuman_30000.weights Image
+ ```
