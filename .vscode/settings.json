@@ -1,0 +1,9 @@
+{
+    "python.pythonPath": "/usr/bin/python",
+    "ros.distro": "kinetic",
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/kinetic/lib/python2.7/dist-packages"
+    ],
+    "python.jediEnabled": false,
+    "python.linting.enabled": true
+}
