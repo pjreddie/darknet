@@ -1,5 +1,5 @@
 classes = 2
 train = train.txt
 valid = valid.txt
-names = data/crowdhuman.names
+names = /home/aufar/fyp_yolo/src/fyp_yolo/src/darknet-crowdhuman/data/crowdhuman.names
 backup = backup
