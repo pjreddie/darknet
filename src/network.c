@@ -293,10 +293,12 @@ float train_network_datum(network *net) // train_network_datum() function
     *net->seen += net->batch;//한번에 4개의 이미지씩 보기 때문에 4씩 증가
     net->train = 1;
     /* mostly important functions */
+    /*해당 부분은 cuda를 이해해야 이해 할 수 있는 함수 명령어들 추후 공부할 것*/
     forward_network(net); // call forward_network() function
     backward_network(net); // call backward_network() function
     float error = *net->cost;
     if(((*net->seen)/net->batch)%net->subdivisions == 0) update_network(net); // call update_network() function
+    //4개의 배수의 이미지를 forward, backward했을 때 마다 update_network()를 통해 업데이트 해줌
     return error; // return error various
 }
 

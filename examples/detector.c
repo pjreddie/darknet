@@ -97,7 +97,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             pthread_join(load_thread, 0); // waiting load_thread
             train = buffer; // what is a buffer ? data = train ( train_network() )
             free_data(train);
-            load_thread = load_data(args); // reuse thread
+            load_thread = load_data(args); // ngpus가 1개가 아닌 경우에 사용될  thread
 
             #pragma omp parallel for
             for(i = 0; i < ngpus; ++i){
@@ -108,8 +108,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         time=what_time_is_it_now();
         pthread_join(load_thread, 0); // waiting load_thread
         train = buffer;
-        load_thread = load_data(args);// reuse thread this thread not waiting. doesn't use pthread_join
-
+        load_thread = load_data(args);// 다음 반복문에서 사용할 이미지를 가져오는 thread
+        
         /*
            int k;
            for(k = 0; k < l.max_boxes; ++k){

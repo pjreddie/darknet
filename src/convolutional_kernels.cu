@@ -87,10 +87,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
     }
 
 #ifdef CUDNN
-    printf("CUDNN");
+    //printf("CUDNN");
     float one = 1;
     cudnnConvolutionForward(cudnn_handle(),
-                &one,
+                &one, // 1개의 convolutional Forward
                 l.srcTensorDesc,
                 net.input_gpu,
                 l.weightDesc,
@@ -101,10 +101,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
                 l.workspace_size,
                 &one,
                 l.dstTensorDesc,
-                l.output_gpu);
+                l.output_gpu);//해당 gpu에 convolutional Forward 작업 수행
 
 #else
-    printf("Didn't CUDNN");
+    //printf("Didn't CUDNN");
     int i, j;
     int m = l.n/l.groups;
     int k = l.size*l.size*l.c/l.groups;
@@ -127,12 +127,12 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
 #endif
 
     if (l.batch_normalize) {
-        printf("Batch normalize");
+       // printf("Batch normalize");
         forward_batchnorm_layer_gpu(l, net);
     } else {
         add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
     }
-    printf("Activate function\n");
+    //printf("Activate function\n");
     activate_array_gpu(l.output_gpu, l.outputs*l.batch, l.activation);
     //if(l.dot > 0) dot_error_gpu(l);
     if(l.binary || l.xnor) swap_binary(&l);
@@ -300,7 +300,7 @@ void push_convolutional_layer(layer l)
     }
 }
 
-void update_convolutional_layer_gpu(layer l, update_args a)
+void update_convolutional_layer_gpu(layer l, update_args a) // update function
 {
     float learning_rate = a.learning_rate*l.learning_rate_scale;
     float momentum = a.momentum;

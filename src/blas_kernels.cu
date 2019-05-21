@@ -444,7 +444,7 @@ __global__ void scal_kernel(int N, float ALPHA, float *X, int INCX)
 }
 
 __global__ void fill_kernel(int N, float ALPHA, float *X, int INCX) // fill_kerenl function
-{
+{ // BLOCK>>>(N, ALPHA, X, INCX)
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(i < N) X[i*INCX] = ALPHA;
 }
@@ -464,7 +464,7 @@ __global__ void mul_kernel(int N, float *X, int INCX, float *Y, int INCY)
 
 extern "C" void normalize_gpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
 {
-    size_t N = batch*filters*spatial;
+    size_t N = batch*filters*spatial; // image output (w * h * c) * 4 = fill_kernel size¿Í ÀÏÄ¡
     normalize_kernel<<<cuda_gridsize(N), BLOCK>>>(N, x, mean, variance, batch, filters, spatial);
     check_error(cudaPeekAtLastError());
 }
