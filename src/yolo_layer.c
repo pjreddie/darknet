@@ -81,11 +81,11 @@ void resize_yolo_layer(layer *l, int w, int h)
 }
 
 box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, int stride)
-{ // x = l.output (l.outw*l.outh*l.outn), index = box_index(°¢ ¹èÄ¡ÀÇ °¢ ÇÈ¼¿ÀÇ Á¤º¸)
+{ // x = l.output (l.outw*l.outh*l.outn), index = box_index(ê° ë°°ì¹˜ì˜ ê° í”½ì…€ì˜ ì •ë³´)
     box b;
     b.x = (i + x[index + 0*stride]) / lw; // stirde = l.w*l.h
     b.y = (j + x[index + 1*stride]) / lh;
-    b.w = exp(x[index + 2*stride]) * biases[2*n]   / w; // exp() = Áö¼ö Á¦°ö
+    b.w = exp(x[index + 2*stride]) * biases[2*n]   / w; // exp() = ì§€ìˆ˜ ì œê³±
     b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
     return b;
 }
@@ -130,7 +130,7 @@ static int entry_index(layer l, int batch, int location, int entry) // what is i
 }
 
 void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() function
-{ // °øºÎÇÏ±â
+{ // ê³µë¶€í•˜ê¸°
     int i,j,b,t,n;
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
 
@@ -161,16 +161,16 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             for (i = 0; i < l.w; ++i) { // width
                 for (n = 0; n < l.n; ++n) { // filter
                     int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
-                    // ÇĞ½ÀÇÏ´Â ÀÌ¹ÌÁöÀÇ °¢°¢ÀÇ ÀÌ¹ÌÁö¸¦ µû·Î °¡Á®¿È. ÇÑ¹ø¿¡ 4°³ÀÇ ÀÌ¹ÌÁö¸¦ ÀĞ±â ¶§¹®¿¡ batch¶ÇÇÑ 0¹øºÎÅÍ 3¹ø±îÁö ³ª´²¼­ Á¤º¸¸¦ °¡Á®¿È
-                    // n*l.w*l.h + j*l.w + i == ÀÌ¹ÌÁö RGBÀÇ ¸ğµç °ªÀ» °¡Áö´Â 1Â÷¿ø ¹è¿­ Á¤º¸
+                    // í•™ìŠµí•˜ëŠ” ì´ë¯¸ì§€ì˜ ê°ê°ì˜ ì´ë¯¸ì§€ë¥¼ ë”°ë¡œ ê°€ì ¸ì˜´. í•œë²ˆì— 4ê°œì˜ ì´ë¯¸ì§€ë¥¼ ì½ê¸° ë•Œë¬¸ì— batchë˜í•œ 0ë²ˆë¶€í„° 3ë²ˆê¹Œì§€ ë‚˜ëˆ ì„œ ì •ë³´ë¥¼ ê°€ì ¸ì˜´
+                    // n*l.w*l.h + j*l.w + i == ì´ë¯¸ì§€ RGBì˜ ëª¨ë“  ê°’ì„ ê°€ì§€ëŠ” 1ì°¨ì› ë°°ì—´ ì •ë³´
                     box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.w*l.h);
                     float best_iou = 0;
                     int best_t = 0;
                     for(t = 0; t < l.max_boxes; ++t){ // l.max_boxes = 90
                         box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1); //  b = 4
                         if(!truth.x) break;
-                        float iou = box_iou(pred, truth); // ¿¹Ãø°ú ½ÇÃø¿¡ ´ëÇÑ iou°ª °è»ê
-                        if (iou > best_iou) { // ÃÖ´ëÀÇ iou°ª¸¸ ³²±ä´Ù
+                        float iou = box_iou(pred, truth); // ì˜ˆì¸¡ê³¼ ì‹¤ì¸¡ì— ëŒ€í•œ iouê°’ ê³„ì‚°
+                        if (iou > best_iou) { // ìµœëŒ€ì˜ iouê°’ë§Œ ë‚¨ê¸´ë‹¤
                             best_iou = iou;
                             best_t = t;
                         }
@@ -237,7 +237,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             }
         }
     }
-    *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2); // Áß¿ä
+    *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2); // ì¤‘ìš”
     printf("(Yolo)Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", net.index, avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, recall75/count, count);
 }//end forward_yolo_layer() function
 
