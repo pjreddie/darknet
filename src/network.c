@@ -201,7 +201,8 @@ void forward_network(network *netp) // forward_network() function
         if(l.delta){
             fill_cpu(l.outputs * l.batch, 0, l.delta, 1);
         }
-        l.forward(l, net);
+        l.forward(l, net); // each layer's forward function call
+        // function pointer
         net.input = l.output;
         if(l.truth) {
             net.truth = l.output;

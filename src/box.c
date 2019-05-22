@@ -88,7 +88,7 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
     }
 }
 
-box float_to_box(float *f, int stride)
+box float_to_box(float *f, int stride) // float_to_box function
 {
     box b = {0};
     b.x = f[0];
@@ -149,7 +149,7 @@ dbox derivative(box a, box b)
     return d;
 }
 
-float overlap(float x1, float w1, float x2, float w2)
+float overlap(float x1, float w1, float x2, float w2) // overlap function 
 {
     float l1 = x1 - w1/2;
     float l2 = x2 - w2/2;
@@ -157,10 +157,10 @@ float overlap(float x1, float w1, float x2, float w2)
     float r1 = x1 + w1/2;
     float r2 = x2 + w2/2;
     float right = r1 < r2 ? r1 : r2;
-    return right - left;
+    return right - left; // return length( r - l )
 }
 
-float box_intersection(box a, box b)
+float box_intersection(box a, box b) // intersection
 {
     float w = overlap(a.x, a.w, b.x, b.w);
     float h = overlap(a.y, a.h, b.y, b.h);
@@ -169,14 +169,14 @@ float box_intersection(box a, box b)
     return area;
 }
 
-float box_union(box a, box b)
+float box_union(box a, box b) // union
 {
     float i = box_intersection(a, b);
     float u = a.w*a.h + b.w*b.h - i;
     return u;
 }
 
-float box_iou(box a, box b)
+float box_iou(box a, box b) // calcul iou
 {
     return box_intersection(a, b)/box_union(a, b);
 }

@@ -81,11 +81,11 @@ void resize_yolo_layer(layer *l, int w, int h)
 }
 
 box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, int stride)
-{
+{ // x = l.output (l.outw*l.outh*l.outn), index = box_index(각 배치의 각 픽셀의 정보)
     box b;
-    b.x = (i + x[index + 0*stride]) / lw;
+    b.x = (i + x[index + 0*stride]) / lw; // stirde = l.w*l.h
     b.y = (j + x[index + 1*stride]) / lh;
-    b.w = exp(x[index + 2*stride]) * biases[2*n]   / w;
+    b.w = exp(x[index + 2*stride]) * biases[2*n]   / w; // exp() = 지수 제곱
     b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
     return b;
 }
@@ -122,7 +122,7 @@ void delta_yolo_class(float *output, float *delta, int index, int class, int cla
     }
 }
 
-static int entry_index(layer l, int batch, int location, int entry)
+static int entry_index(layer l, int batch, int location, int entry) // what is it??
 {
     int n =   location / (l.w*l.h);
     int loc = location % (l.w*l.h);
@@ -161,14 +161,16 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             for (i = 0; i < l.w; ++i) { // width
                 for (n = 0; n < l.n; ++n) { // filter
                     int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
+                    // 학습하는 이미지의 각각의 이미지를 따로 가져옴. 한번에 4개의 이미지를 읽기 때문에 batch또한 0번부터 3번까지 나눠서 정보를 가져옴
+                    // n*l.w*l.h + j*l.w + i == 이미지 RGB의 모든 값을 가지는 1차원 배열 정보
                     box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.w*l.h);
                     float best_iou = 0;
                     int best_t = 0;
-                    for(t = 0; t < l.max_boxes; ++t){
-                        box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1);
+                    for(t = 0; t < l.max_boxes; ++t){ // l.max_boxes = 90
+                        box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1); //  b = 4
                         if(!truth.x) break;
-                        float iou = box_iou(pred, truth);
-                        if (iou > best_iou) {
+                        float iou = box_iou(pred, truth); // 예측과 실측에 대한 iou값 계산
+                        if (iou > best_iou) { // 최대의 iou값만 남긴다
                             best_iou = iou;
                             best_t = t;
                         }
@@ -235,7 +237,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             }
         }
     }
-    *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
+    *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2); // 중요
     printf("(Yolo)Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", net.index, avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, recall75/count, count);
 }//end forward_yolo_layer() function
 
