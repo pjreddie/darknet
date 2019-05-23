@@ -44,6 +44,12 @@ strindex() {
   [[ "$x" = "$1" ]] && echo -1 || echo "${#x}"
 }
 
+# get the image topic
+topic_str=`rosbag info $orig_file_name | grep topics | grep sensor_msgs/Image`
+strindex() { 
+# TODO
+}
+
 # Find the time in minutes
 search_char=':'
 search_index=`strindex "$duration_str" "$search_char"`+2
@@ -71,7 +77,7 @@ export_path=`pwd`/images/$file_name_root
 ./scripts/loading_bar.py $bag_file_seconds &
 
 # export images to a specific path
-roslaunch launch/export.launch bag_file:=$file_path image_dir:=$export_path &> tmp.txt
+roslaunch launch/export.launch bag_file:=$file_path image_dir:=$export_path image_topic:=$image_topic &> tmp.txt
 
 # make sure everything's killed
 rm tmp.txt

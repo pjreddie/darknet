@@ -1,10 +1,11 @@
 <launch>
 	<arg name="bag_file" />
 	<arg name="image_dir" />
+	<arg name="image_topic" />
 	<node pkg="rosbag" type="play" name="rosbag" args="--clock $(arg bag_file)" required="true"/>
 	
      <node name="extract" pkg="image_view" type="extract_images" respawn="false" required="true" cwd="ROS_HOME">
-        <remap from="image" to="/occam/image0"/>
+        <remap from="image" to="$(arg image_topic)"/>
 	<param name="filename_format" value="$(arg image_dir)-image0_%04d.jpg" />
       </node> 
     </launch>
