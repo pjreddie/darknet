@@ -44,12 +44,6 @@ strindex() {
   [[ "$x" = "$1" ]] && echo -1 || echo "${#x}"
 }
 
-# get the image topic
-topic_str=`rosbag info $orig_file_name | grep topics | grep sensor_msgs/Image`
-strindex() { 
-# TODO
-}
-
 # Find the time in minutes
 search_char=':'
 search_index=`strindex "$duration_str" "$search_char"`+2
@@ -64,6 +58,10 @@ search_index=`strindex "$duration_str" "$search_char"`+1
 new_str=${duration_str: $search_index}
 bag_file_seconds=${new_str%??}
 echo "Bag file duration "$dur_mins"s"
+
+# get the image topic
+topic_str=`rosbag info $orig_file_name | grep topics | grep sensor_msgs/Image`
+image_topic=(`echo $topic_str | sed -r 's/topics: //g'`)
 
 # Save the bag file as jpegs
 echo "---------------------"
