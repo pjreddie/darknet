@@ -153,7 +153,7 @@ image load_image_cv(char *filename, int channels)
     cv::Mat mat = load_image_mat(filename, channels);
 
     if (mat.empty()) {
-        return make_image(10, 10, 3);
+        return make_image(10, 10, channels);
     }
     return mat_to_image(mat);
 }
