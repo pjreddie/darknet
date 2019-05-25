@@ -231,6 +231,15 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             boxes[i].h = 999999;
             continue;
         }
+        if ((boxes[i].x + boxes[i].w / 2) < 0 || (boxes[i].y + boxes[i].h / 2) < 0 ||
+            (boxes[i].x - boxes[i].w / 2) > 1 || (boxes[i].y - boxes[i].h / 2) > 1)
+        {
+            boxes[i].x = 999999;
+            boxes[i].y = 999999;
+            boxes[i].w = 999999;
+            boxes[i].h = 999999;
+            continue;
+        }
         boxes[i].left   = boxes[i].left  * sx - dx;
         boxes[i].right  = boxes[i].right * sx - dx;
         boxes[i].top    = boxes[i].top   * sy - dy;
@@ -378,7 +387,7 @@ void fill_truth_detection(const char *path, int num_boxes, float *truth, int cla
             continue;
         }
         if (x == 999999 || y == 999999) {
-            printf("\n Wrong annotation: x = 0, y = 0 \n");
+            printf("\n Wrong annotation: x = 0, y = 0, < 0 or > 1 \n");
             sprintf(buff, "echo %s \"Wrong annotation: x = 0 or y = 0\" >> bad_label.list", labelpath);
             system(buff);
             ++sub;
@@ -769,9 +778,10 @@ static box float_to_box_stride(float *f, int stride)
 
 #include "http_stream.h"
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, float jitter,
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, float jitter,
     float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int show_imgs)
 {
+    const int random_index = random_gen();
     c = c ? c : 3;
     char **random_paths;
     if (track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
@@ -785,7 +795,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.cols = h*w*c;
 
     float r1 = 0, r2 = 0, r3 = 0, r4 = 0;
-    float dhue = 0, dsat = 0, dexp = 0, flip = 0;
+    float dhue = 0, dsat = 0, dexp = 0, flip = 0, blur = 0;
     int augmentation_calculated = 0;
 
     d.y = make_matrix(n, 5*boxes);
@@ -819,6 +829,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             dexp = rand_scale(exposure);
 
             flip = use_flip ? random_gen() % 2 : 0;
+            blur = rand_int(0, 1) ? (use_blur) : 0;
         }
 
         int pleft  = rand_precalc_random(-dw, dw, r1);
@@ -835,15 +846,17 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
         float dx = ((float)pleft/ow)/sx;
         float dy = ((float)ptop /oh)/sy;
 
-        image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, jitter, dhue, dsat, dexp);
-        d.X.vals[i] = ai.data;
+        fill_truth_detection(filename, boxes, d.y.vals[i], classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
 
-        fill_truth_detection(filename, boxes, d.y.vals[i], classes, flip, dx, dy, 1./sx, 1./sy, w, h);
+        image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, jitter, dhue, dsat, dexp,
+            blur, boxes, d.y.vals[i]);
+
+        d.X.vals[i] = ai.data;
 
         if(show_imgs)
         {
             char buff[1000];
-            sprintf(buff, "aug_%s_%d", basecfg(random_paths[i]), random_gen());
+            sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg(random_paths[i]), random_gen());
             int t;
             for (t = 0; t < boxes; ++t) {
                 box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);
@@ -869,7 +882,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     return d;
 }
 #else    // OPENCV
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, float jitter,
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, float jitter,
     float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int show_imgs)
 {
     c = c ? c : 3;
@@ -989,7 +1002,7 @@ void *load_thread(void *ptr)
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){
-        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.jitter,
+        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.blur, a.jitter,
             a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.show_imgs);
     } else if (a.type == SWAG_DATA){
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);

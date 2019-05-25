@@ -9,8 +9,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int output_filters, int steps, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int xnor);
+layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int output_filters, int groups, int steps, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int xnor);
 void resize_crnn_layer(layer *l, int w, int h);
+void free_state_crnn(layer l);
 
 void forward_crnn_layer(layer l, network_state state);
 void backward_crnn_layer(layer l, network_state state);

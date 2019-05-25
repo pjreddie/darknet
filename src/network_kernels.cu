@@ -126,7 +126,7 @@ void update_network_gpu(network net)
 {
     cuda_set_device(net.gpu_index);
     int i;
-    int update_batch = net.batch*net.subdivisions;
+    int update_batch = net.batch*net.subdivisions * get_sequence_value(net);
     float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
@@ -171,6 +171,22 @@ void forward_backward_network_gpu(network net, float *x, float *y)
                 cuda_convert_f32_to_f16(l.self_layer->weights_gpu, l.self_layer->nweights, l.self_layer->weights_gpu16);
                 cuda_convert_f32_to_f16(l.output_layer->weights_gpu, l.output_layer->nweights, l.output_layer->weights_gpu16);
             }
+            else if (l.type == CONV_LSTM && l.wf->weights_gpu && l.wf->weights_gpu16) {
+                assert((l.wf->c * l.wf->n * l.wf->size * l.wf->size) > 0);
+                if (l.peephole) {
+                    cuda_convert_f32_to_f16(l.vf->weights_gpu, l.vf->nweights, l.vf->weights_gpu16);
+                    cuda_convert_f32_to_f16(l.vi->weights_gpu, l.vi->nweights, l.vi->weights_gpu16);
+                    cuda_convert_f32_to_f16(l.vo->weights_gpu, l.vo->nweights, l.vo->weights_gpu16);
+                }
+                cuda_convert_f32_to_f16(l.wf->weights_gpu, l.wf->nweights, l.wf->weights_gpu16);
+                cuda_convert_f32_to_f16(l.wi->weights_gpu, l.wi->nweights, l.wi->weights_gpu16);
+                cuda_convert_f32_to_f16(l.wg->weights_gpu, l.wg->nweights, l.wg->weights_gpu16);
+                cuda_convert_f32_to_f16(l.wo->weights_gpu, l.wo->nweights, l.wo->weights_gpu16);
+                cuda_convert_f32_to_f16(l.uf->weights_gpu, l.uf->nweights, l.uf->weights_gpu16);
+                cuda_convert_f32_to_f16(l.ui->weights_gpu, l.ui->nweights, l.ui->weights_gpu16);
+                cuda_convert_f32_to_f16(l.ug->weights_gpu, l.ug->nweights, l.ug->weights_gpu16);
+                cuda_convert_f32_to_f16(l.uo->weights_gpu, l.uo->nweights, l.uo->weights_gpu16);
+            }
         }
     }
 #endif
@@ -184,7 +200,9 @@ float train_network_datum_gpu(network net, float *x, float *y)
     *net.seen += net.batch;
     forward_backward_network_gpu(net, x, y);
     float error = get_network_cost(net);
-    if (((*net.seen) / net.batch) % net.subdivisions == 0) update_network_gpu(net);
+    //if (((*net.seen) / net.batch) % net.subdivisions == 0) update_network_gpu(net);
+    const int sequence = get_sequence_value(net);
+    if (((*net.seen) / net.batch) % (net.subdivisions*sequence) == 0) update_network_gpu(net);
 
     return error;
 }
@@ -219,7 +237,7 @@ void pull_updates(layer l)
 {
     if(l.type == CONVOLUTIONAL){
         cuda_pull_array(l.bias_updates_gpu, l.bias_updates, l.n);
-        cuda_pull_array(l.weight_updates_gpu, l.weight_updates, l.n*l.size*l.size*l.c);
+        cuda_pull_array(l.weight_updates_gpu, l.weight_updates, l.nweights);
         if(l.scale_updates) cuda_pull_array(l.scale_updates_gpu, l.scale_updates, l.n);
     } else if(l.type == CONNECTED){
         cuda_pull_array(l.bias_updates_gpu, l.bias_updates, l.outputs);
@@ -231,7 +249,7 @@ void push_updates(layer l)
 {
     if(l.type == CONVOLUTIONAL){
         cuda_push_array(l.bias_updates_gpu, l.bias_updates, l.n);
-        cuda_push_array(l.weight_updates_gpu, l.weight_updates, l.n*l.size*l.size*l.c);
+        cuda_push_array(l.weight_updates_gpu, l.weight_updates, l.nweights);
         if(l.scale_updates) cuda_push_array(l.scale_updates_gpu, l.scale_updates, l.n);
     } else if(l.type == CONNECTED){
         cuda_push_array(l.bias_updates_gpu, l.bias_updates, l.outputs);
@@ -253,7 +271,7 @@ void merge_weights(layer l, layer base)
 {
     if (l.type == CONVOLUTIONAL) {
         axpy_cpu(l.n, 1, l.biases, 1, base.biases, 1);
-        axpy_cpu(l.n*l.size*l.size*l.c, 1, l.weights, 1, base.weights, 1);
+        axpy_cpu(l.nweights, 1, l.weights, 1, base.weights, 1);
         if (l.scales) {
             axpy_cpu(l.n, 1, l.scales, 1, base.scales, 1);
         }
@@ -267,7 +285,7 @@ void scale_weights(layer l, float s)
 {
     if (l.type == CONVOLUTIONAL) {
         scal_cpu(l.n, s, l.biases, 1);
-        scal_cpu(l.n*l.size*l.size*l.c, s, l.weights, 1);
+        scal_cpu(l.nweights, s, l.weights, 1);
         if (l.scales) {
             scal_cpu(l.n, s, l.scales, 1);
         }
@@ -282,7 +300,7 @@ void pull_weights(layer l)
 {
     if(l.type == CONVOLUTIONAL){
         cuda_pull_array(l.biases_gpu, l.biases, l.n);
-        cuda_pull_array(l.weights_gpu, l.weights, l.n*l.size*l.size*l.c);
+        cuda_pull_array(l.weights_gpu, l.weights, l.nweights);
         if(l.scales) cuda_pull_array(l.scales_gpu, l.scales, l.n);
     } else if(l.type == CONNECTED){
         cuda_pull_array(l.biases_gpu, l.biases, l.outputs);
@@ -294,7 +312,7 @@ void push_weights(layer l)
 {
     if(l.type == CONVOLUTIONAL){
         cuda_push_array(l.biases_gpu, l.biases, l.n);
-        cuda_push_array(l.weights_gpu, l.weights, l.n*l.size*l.size*l.c);
+        cuda_push_array(l.weights_gpu, l.weights, l.nweights);
         if(l.scales) cuda_push_array(l.scales_gpu, l.scales, l.n);
     } else if(l.type == CONNECTED){
         cuda_push_array(l.biases_gpu, l.biases, l.outputs);
@@ -306,7 +324,7 @@ void distribute_weights(layer l, layer base)
 {
     if(l.type == CONVOLUTIONAL){
         cuda_push_array(l.biases_gpu, base.biases, l.n);
-        cuda_push_array(l.weights_gpu, base.weights, l.n*l.size*l.size*l.c);
+        cuda_push_array(l.weights_gpu, base.weights, l.nweights);
         if(base.scales) cuda_push_array(l.scales_gpu, base.scales, l.n);
     } else if(l.type == CONNECTED){
         cuda_push_array(l.biases_gpu, base.biases, l.outputs);
@@ -319,7 +337,7 @@ void merge_updates(layer l, layer base)
 {
     if (l.type == CONVOLUTIONAL) {
         axpy_cpu(l.n, 1, l.bias_updates, 1, base.bias_updates, 1);
-        axpy_cpu(l.n*l.size*l.size*l.c, 1, l.weight_updates, 1, base.weight_updates, 1);
+        axpy_cpu(l.nweights, 1, l.weight_updates, 1, base.weight_updates, 1);
         if (l.scale_updates) {
             axpy_cpu(l.n, 1, l.scale_updates, 1, base.scale_updates, 1);
         }
@@ -333,7 +351,7 @@ void distribute_updates(layer l, layer base)
 {
     if(l.type == CONVOLUTIONAL){
         cuda_push_array(l.bias_updates_gpu, base.bias_updates, l.n);
-        cuda_push_array(l.weight_updates_gpu, base.weight_updates, l.n*l.size*l.size*l.c);
+        cuda_push_array(l.weight_updates_gpu, base.weight_updates, l.nweights);
         if(base.scale_updates) cuda_push_array(l.scale_updates_gpu, base.scale_updates, l.n);
     } else if(l.type == CONNECTED){
         cuda_push_array(l.bias_updates_gpu, base.bias_updates, l.outputs);

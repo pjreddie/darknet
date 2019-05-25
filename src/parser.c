@@ -20,6 +20,7 @@
 #include "list.h"
 #include "local_layer.h"
 #include "lstm_layer.h"
+#include "conv_lstm_layer.h"
 #include "maxpool_layer.h"
 #include "normalization_layer.h"
 #include "option_list.h"
@@ -61,13 +62,14 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[crnn]")==0) return CRNN;
     if (strcmp(type, "[gru]")==0) return GRU;
     if (strcmp(type, "[lstm]")==0) return LSTM;
+    if (strcmp(type, "[conv_lstm]") == 0) return CONV_LSTM;
     if (strcmp(type, "[rnn]")==0) return RNN;
     if (strcmp(type, "[conn]")==0
             || strcmp(type, "[connected]")==0) return CONNECTED;
     if (strcmp(type, "[max]")==0
             || strcmp(type, "[maxpool]")==0) return MAXPOOL;
-    if (strcmp(type, "[reorg]")==0) return REORG;
-    if (strcmp(type, "[reorg_old]") == 0) return REORG_OLD;
+    if (strcmp(type, "[reorg3d]")==0) return REORG;
+    if (strcmp(type, "[reorg]") == 0) return REORG_OLD;
     if (strcmp(type, "[avg]")==0
             || strcmp(type, "[avgpool]")==0) return AVGPOOL;
     if (strcmp(type, "[dropout]")==0) return DROPOUT;
@@ -148,6 +150,7 @@ local_layer parse_local(list *options, size_params params)
 convolutional_layer parse_convolutional(list *options, size_params params)
 {
     int n = option_find_int(options, "filters",1);
+    int groups = option_find_int_quiet(options, "groups", 1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
     int pad = option_find_int_quiet(options, "pad",0);
@@ -168,7 +171,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
+    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -191,12 +194,13 @@ layer parse_crnn(list *options, size_params params)
 
     int output_filters = option_find_int(options, "output",1);
     int hidden_filters = option_find_int(options, "hidden",1);
+    int groups = option_find_int_quiet(options, "groups", 1);
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    layer l = make_crnn_layer(params.batch, params.w, params.h, params.c, hidden_filters, output_filters, params.time_steps, size, stride, padding, activation, batch_normalize, xnor);
+    layer l = make_crnn_layer(params.batch, params.h, params.w, params.c, hidden_filters, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, xnor);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
@@ -235,6 +239,31 @@ layer parse_lstm(list *options, size_params params)
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
 
     layer l = make_lstm_layer(params.batch, params.inputs, output, params.time_steps, batch_normalize);
+
+    return l;
+}
+
+layer parse_conv_lstm(list *options, size_params params)
+{
+    // a ConvLSTM with a larger transitional kernel should be able to capture faster motions
+    int size = option_find_int_quiet(options, "size", 3);
+    int stride = option_find_int_quiet(options, "stride", 1);
+    int pad = option_find_int_quiet(options, "pad", 0);
+    int padding = option_find_int_quiet(options, "padding", 0);
+    if (pad) padding = size / 2;
+
+    int output_filters = option_find_int(options, "output", 1);
+    int groups = option_find_int_quiet(options, "groups", 1);
+    char *activation_s = option_find_str(options, "activation", "LINEAR");
+    ACTIVATION activation = get_activation(activation_s);
+    int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+    int xnor = option_find_int_quiet(options, "xnor", 0);
+    int peephole = option_find_int_quiet(options, "peephole", 0);
+
+    layer l = make_conv_lstm_layer(params.batch, params.h, params.w, params.c, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, peephole, xnor);
+
+    l.state_constrain = option_find_int_quiet(options, "state_constrain", params.time_steps * 32);
+    l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
     return l;
 }
@@ -640,13 +669,16 @@ void parse_net_options(list *options, network *net)
     net->batch = option_find_int(options, "batch",1);
     net->learning_rate = option_find_float(options, "learning_rate", .001);
     net->learning_rate_min = option_find_float_quiet(options, "learning_rate_min", .00001);
-    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", 500);
+    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", 1000);
+    net->batches_cycle_mult = option_find_int_quiet(options, "sgdr_mult", 2);
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
     int subdivs = option_find_int(options, "subdivisions",1);
     net->time_steps = option_find_int_quiet(options, "time_steps",1);
     net->track = option_find_int_quiet(options, "track", 0);
     net->augment_speed = option_find_int_quiet(options, "augment_speed", 2);
+    net->init_sequential_subdivisions = net->sequential_subdivisions = option_find_int_quiet(options, "sequential_subdivisions", subdivs);
+    if (net->sequential_subdivisions > subdivs) net->init_sequential_subdivisions = net->sequential_subdivisions = subdivs;
     net->try_fix_nan = option_find_int_quiet(options, "try_fix_nan", 0);
     net->batch /= subdivs;
     net->batch *= net->time_steps;
@@ -666,6 +698,7 @@ void parse_net_options(list *options, network *net)
     net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
     net->flip = option_find_int_quiet(options, "flip", 1);
+    net->blur = option_find_int_quiet(options, "blur", 0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);
@@ -691,30 +724,44 @@ void parse_net_options(list *options, network *net)
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
         net->scale = option_find_float(options, "scale", 1);
-    } else if (net->policy == STEPS){
+    } else if (net->policy == STEPS || net->policy == SGDR){
         char *l = option_find(options, "steps");
         char *p = option_find(options, "scales");
-        if(!l || !p) error("STEPS policy must have steps and scales in cfg file");
+        char *s = option_find(options, "seq_scales");
+        if(net->policy == STEPS && (!l || !p)) error("STEPS policy must have steps and scales in cfg file");
 
-        int len = strlen(l);
-        int n = 1;
-        int i;
-        for(i = 0; i < len; ++i){
-            if (l[i] == ',') ++n;
+        if (l) {
+            int len = strlen(l);
+            int n = 1;
+            int i;
+            for (i = 0; i < len; ++i) {
+                if (l[i] == ',') ++n;
+            }
+            int* steps = (int*)calloc(n, sizeof(int));
+            float* scales = (float*)calloc(n, sizeof(float));
+            float* seq_scales = (float*)calloc(n, sizeof(float));
+            for (i = 0; i < n; ++i) {
+                float scale = 1.0;
+                if (p) {
+                    scale = atof(p);
+                    p = strchr(p, ',') + 1;
+                }
+                float sequence_scale = 1.0;
+                if (s) {
+                    sequence_scale = atof(s);
+                    s = strchr(s, ',') + 1;
+                }
+                int step = atoi(l);
+                l = strchr(l, ',') + 1;
+                steps[i] = step;
+                scales[i] = scale;
+                seq_scales[i] = sequence_scale;
+            }
+            net->scales = scales;
+            net->steps = steps;
+            net->seq_scales = seq_scales;
+            net->num_steps = n;
         }
-        int* steps = (int*)calloc(n, sizeof(int));
-        float* scales = (float*)calloc(n, sizeof(float));
-        for(i = 0; i < n; ++i){
-            int step    = atoi(l);
-            float scale = atof(p);
-            l = strchr(l, ',')+1;
-            p = strchr(p, ',')+1;
-            steps[i] = step;
-            scales[i] = scale;
-        }
-        net->scales = scales;
-        net->steps = steps;
-        net->num_steps = n;
     } else if (net->policy == EXP){
         net->gamma = option_find_float(options, "gamma", 1);
     } else if (net->policy == SIG){
@@ -789,6 +836,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             l = parse_gru(options, params);
         }else if(lt == LSTM){
             l = parse_lstm(options, params);
+        }else if (lt == CONV_LSTM) {
+            l = parse_conv_lstm(options, params);
         }else if(lt == CRNN){
             l = parse_crnn(options, params);
         }else if(lt == CONNECTED){
@@ -950,8 +999,8 @@ void save_convolutional_weights_binary(layer l, FILE *fp)
         pull_convolutional_layer(l);
     }
 #endif
-    binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.binary_weights);
-    int size = l.c*l.size*l.size;
+    int size = (l.c/l.groups)*l.size*l.size;
+    binarize_weights(l.weights, l.n, size, l.binary_weights);
     int i, j, k;
     fwrite(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize){
@@ -986,7 +1035,7 @@ void save_convolutional_weights(layer l, FILE *fp)
         pull_convolutional_layer(l);
     }
 #endif
-    int num = l.n*l.c*l.size*l.size;
+    int num = l.nweights;
     fwrite(l.biases, sizeof(float), l.n, fp);
     if (l.batch_normalize){
         fwrite(l.scales, sizeof(float), l.n, fp);
@@ -1076,6 +1125,20 @@ void save_weights_upto(network net, char *filename, int cutoff)
             save_connected_weights(*(l.ui), fp);
             save_connected_weights(*(l.ug), fp);
             save_connected_weights(*(l.uo), fp);
+        } if (l.type == CONV_LSTM) {
+            if (l.peephole) {
+                save_convolutional_weights(*(l.vf), fp);
+                save_convolutional_weights(*(l.vi), fp);
+                save_convolutional_weights(*(l.vo), fp);
+            }
+            save_convolutional_weights(*(l.wf), fp);
+            save_convolutional_weights(*(l.wi), fp);
+            save_convolutional_weights(*(l.wg), fp);
+            save_convolutional_weights(*(l.wo), fp);
+            save_convolutional_weights(*(l.uf), fp);
+            save_convolutional_weights(*(l.ui), fp);
+            save_convolutional_weights(*(l.ug), fp);
+            save_convolutional_weights(*(l.uo), fp);
         } if(l.type == CRNN){
             save_convolutional_weights(*(l.input_layer), fp);
             save_convolutional_weights(*(l.self_layer), fp);
@@ -1156,7 +1219,7 @@ void load_convolutional_weights_binary(layer l, FILE *fp)
         fread(l.rolling_mean, sizeof(float), l.n, fp);
         fread(l.rolling_variance, sizeof(float), l.n, fp);
     }
-    int size = l.c*l.size*l.size;
+    int size = (l.c / l.groups)*l.size*l.size;
     int i, j, k;
     for(i = 0; i < l.n; ++i){
         float mean = 0;
@@ -1184,7 +1247,7 @@ void load_convolutional_weights(layer l, FILE *fp)
         //load_convolutional_weights_binary(l, fp);
         //return;
     }
-    int num = l.n*l.c*l.size*l.size;
+    int num = l.nweights;
     fread(l.biases, sizeof(float), l.n, fp);
     //fread(l.weights, sizeof(float), num, fp); // as in connected layer
     if (l.batch_normalize && (!l.dontloadscales)){
@@ -1214,9 +1277,9 @@ void load_convolutional_weights(layer l, FILE *fp)
     //}
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {
-        transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
+        transpose_matrix(l.weights, (l.c/l.groups)*l.size*l.size, l.n);
     }
-    //if (l.binary) binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.weights);
+    //if (l.binary) binarize_weights(l.weights, l.n, (l.c/l.groups)*l.size*l.size, l.weights);
 #ifdef GPU
     if(gpu_index >= 0){
         push_convolutional_layer(l);
@@ -1297,6 +1360,21 @@ void load_weights_upto(network *net, char *filename, int cutoff)
             load_connected_weights(*(l.ui), fp, transpose);
             load_connected_weights(*(l.ug), fp, transpose);
             load_connected_weights(*(l.uo), fp, transpose);
+        }
+        if (l.type == CONV_LSTM) {
+            if (l.peephole) {
+                load_convolutional_weights(*(l.vf), fp);
+                load_convolutional_weights(*(l.vi), fp);
+                load_convolutional_weights(*(l.vo), fp);
+            }
+            load_convolutional_weights(*(l.wf), fp);
+            load_convolutional_weights(*(l.wi), fp);
+            load_convolutional_weights(*(l.wg), fp);
+            load_convolutional_weights(*(l.wo), fp);
+            load_convolutional_weights(*(l.uf), fp);
+            load_convolutional_weights(*(l.ui), fp);
+            load_convolutional_weights(*(l.ug), fp);
+            load_convolutional_weights(*(l.uo), fp);
         }
         if(l.type == LOCAL){
             int locations = l.out_w*l.out_h;

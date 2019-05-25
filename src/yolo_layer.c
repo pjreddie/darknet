@@ -240,6 +240,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
                         if (class_id >= l.classes) {
                             printf(" Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes - 1);
+                            printf(" truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f, class_id = %d \n", truth.x, truth.y, truth.w, truth.h, class_id);
                             getchar();
                             continue; // if label contains class_id more than number of classes in the cfg-file
                         }
@@ -271,6 +272,9 @@ void forward_yolo_layer(const layer l, network_state state)
         }
         for(t = 0; t < l.max_boxes; ++t){
             box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
+            if (truth.x < 0 || truth.y < 0 || truth.x > 1 || truth.y > 1 || truth.w < 0 || truth.h < 0) {
+                printf(" Wrong label: truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f \n", truth.x, truth.y, truth.w, truth.h);
+            }
             int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
             if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
 

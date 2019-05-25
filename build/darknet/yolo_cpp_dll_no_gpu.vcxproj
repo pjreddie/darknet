@@ -173,6 +173,7 @@
     <ClCompile Include="..\..\src\compare.c" />
     <ClCompile Include="..\..\src\connected_layer.c" />
     <ClCompile Include="..\..\src\convolutional_layer.c" />
+    <ClCompile Include="..\..\src\conv_lstm_layer.c" />
     <ClCompile Include="..\..\src\cost_layer.c" />
     <ClCompile Include="..\..\src\cpu_gemm.c" />
     <ClCompile Include="..\..\src\crnn_layer.c" />
@@ -240,6 +241,7 @@
     <ClInclude Include="..\..\src\col2im.h" />
     <ClInclude Include="..\..\src\connected_layer.h" />
     <ClInclude Include="..\..\src\convolutional_layer.h" />
+    <ClInclude Include="..\..\src\conv_lstm_layer.h" />
     <ClInclude Include="..\..\src\cost_layer.h" />
     <ClInclude Include="..\..\src\crnn_layer.h" />
     <ClInclude Include="..\..\src\crop_layer.h" />

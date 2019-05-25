@@ -26,7 +26,7 @@ static void increment_layer(layer *l, int steps)
 #endif
 }
 
-layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int output_filters, int steps, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int xnor)
+layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int output_filters, int groups, int steps, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int xnor)
 {
     fprintf(stderr, "CRNN Layer: %d x %d x %d image, %d filters\n", h,w,c,output_filters);
     batch = batch / steps;
@@ -40,6 +40,7 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
     l.h = h;
     l.w = w;
     l.c = c;
+    l.groups = groups;
     l.out_c = output_filters;
     l.inputs = h * w * c;
     l.hidden = h * w * hidden_filters;
@@ -47,18 +48,18 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
 
     l.state = (float*)calloc(l.hidden * l.batch * (l.steps + 1), sizeof(float));
 
-    l.input_layer = (layer*)malloc(sizeof(layer));
-    *(l.input_layer) = make_convolutional_layer(batch, steps, h, w, c, hidden_filters, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    l.input_layer = (layer*)calloc(1, sizeof(layer));
+    *(l.input_layer) = make_convolutional_layer(batch, steps, h, w, c, hidden_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.input_layer->batch = batch;
     if (l.workspace_size < l.input_layer->workspace_size) l.workspace_size = l.input_layer->workspace_size;
 
-    l.self_layer = (layer*)malloc(sizeof(layer));
-    *(l.self_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, hidden_filters, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    l.self_layer = (layer*)calloc(1, sizeof(layer));
+    *(l.self_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, hidden_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.self_layer->batch = batch;
     if (l.workspace_size < l.self_layer->workspace_size) l.workspace_size = l.self_layer->workspace_size;
 
-    l.output_layer = (layer*)malloc(sizeof(layer));
-    *(l.output_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, output_filters, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    l.output_layer = (layer*)calloc(1, sizeof(layer));
+    *(l.output_layer) = make_convolutional_layer(batch, steps, h, w, hidden_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
     l.output_layer->batch = batch;
     if (l.workspace_size < l.output_layer->workspace_size) l.workspace_size = l.output_layer->workspace_size;
 
@@ -84,6 +85,8 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
     l.output_gpu = l.output_layer->output_gpu;
     l.delta_gpu = l.output_layer->delta_gpu;
 #endif
+
+    l.bflops = l.input_layer->bflops + l.self_layer->bflops + l.output_layer->bflops;
 
     return l;
 }
@@ -126,6 +129,16 @@ void resize_crnn_layer(layer *l, int w, int h)
     l->output_gpu = l->output_layer->output_gpu;
     l->delta_gpu = l->output_layer->delta_gpu;
 #endif
+}
+
+void free_state_crnn(layer l)
+{
+    int i;
+    for (i = 0; i < l.outputs * l.batch; ++i) l.self_layer->output[i] = rand_uniform(-1, 1);
+
+#ifdef GPU
+    cuda_push_array(l.self_layer->output_gpu, l.self_layer->output, l.outputs * l.batch);
+#endif  // GPU
 }
 
 void update_crnn_layer(layer l, int batch, float learning_rate, float momentum, float decay)

@@ -104,6 +104,8 @@ void backward_network_gpu(network net, network_state state);
 void update_network_gpu(network net);
 #endif
 
+float get_current_seq_subdivisions(network net);
+int get_sequence_value(network net);
 float get_current_rate(network net);
 int get_current_batch(network net);
 void free_network(network net);
@@ -163,6 +165,10 @@ int get_network_background(network net);
 //LIB_API void calculate_binary_weights(network net);
 network combine_train_valid_networks(network net_train, network net_map);
 void copy_weights_net(network net_train, network *net_map);
+void free_network_recurrent_state(network net);
+void randomize_network_recurrent_state(network net);
+void remember_network_recurrent_state(network net);
+void restore_network_recurrent_state(network net);
 
 #ifdef __cplusplus
 }
