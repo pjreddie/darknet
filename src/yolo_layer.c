@@ -174,7 +174,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     int best_t = 0;
                     for(t = 0; t < l.max_boxes; ++t){ // l.max_boxes = 90
                         box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1); //  b = 4
-                        if(!truth.x) break;
+                        if(!truth.x) break;// net.truth + t*(4 + 1) + b*l.truths 이것이 의미하는 것은?
                         float iou = box_iou(pred, truth); // 예측과 실측에 대한 iou값 계산
                         if (iou > best_iou) { // 최대의 iou값만 남긴다
                             best_iou = iou;
