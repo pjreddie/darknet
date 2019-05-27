@@ -162,11 +162,11 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
     int class_count = 0;
     *(l.cost) = 0;
     //
-    printf("out.height = %d , out.width = %d , out.n = %d\n",l.h,l.w,l.n);
+    printf("l.height = %d , l.width = %d , l.n = %d , l.filters = %d ",l.h,l.w,l.n,l.c);
     for (b = 0; b < l.batch; ++b) { // batch(4) grid접근 방식
         for (j = 0; j < l.h; ++j) { // height
             for (i = 0; i < l.w; ++i) { // width
-                for (n = 0; n < l.n; ++n) { // filter
+                for (n = 0; n < l.n; ++n) { // channel
                     int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
                     // 학습하는 이미지의 각각의 이미지를 따로 가져옴. 한번에 4개의 이미지를 읽기 때문에 batch또한 0번부터 3번까지 나눠서 정보를 가져옴
                     // n*l.w*l.h + j*l.w + i == 이미지 RGB의 모든 값을 가지는 1차원 배열 정보
