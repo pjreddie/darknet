@@ -82,7 +82,12 @@ void resize_yolo_layer(layer *l, int w, int h)
 
 box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, int stride)
 { // x = l.output (l.outw*l.outh*l.outn), index = box_index(각 배치의 각 픽셀의 정보)
+//(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.w*l.h);
+// i = 0 ~ width , j = 0 ~ height
     box b;
+    /*x[index+0*stride] = tx / x[index+1*stride] = ty
+      x[index+2*stride] = tw / x[index+3*stride] = th
+    */
     b.x = (i + x[index + 0*stride]) / lw; // stirde = l.w*l.h
     b.y = (j + x[index + 1*stride]) / lh;
     b.w = exp(x[index + 2*stride]) * biases[2*n]   / w; // exp() = 지수 제곱
@@ -156,7 +161,8 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
     int count = 0;
     int class_count = 0;
     *(l.cost) = 0;
-    for (b = 0; b < l.batch; ++b) { // batch(4)
+    printf("out.height = %d , out.width = %d , out.n = %d\n",l.h,l.w,l.n);
+    for (b = 0; b < l.batch; ++b) { // batch(4) grid접근 방식
         for (j = 0; j < l.h; ++j) { // height
             for (i = 0; i < l.w; ++i) { // width
                 for (n = 0; n < l.n; ++n) { // filter
