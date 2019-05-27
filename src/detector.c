@@ -110,6 +110,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     iter_save_last = get_current_batch(net);
     iter_map = get_current_batch(net);
     float mean_average_precision = -1;
+    float best_map = mean_average_precision;
 
     load_args args = { 0 };
     args.w = net.w;
@@ -241,7 +242,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         next_map_calc = fmax(next_map_calc, 400);
         if (calc_map) {
             printf("\n (next mAP calculation at %d iterations) ", next_map_calc);
-            if (mean_average_precision > 0) printf("\n Last accuracy mAP@0.5 = %2.2f %% ", mean_average_precision * 100);
+            if (mean_average_precision > 0) printf("\n Last accuracy mAP@0.5 = %2.2f %%, best = %2.2f %% ", mean_average_precision * 100, best_map * 100);
         }
 
         if (net.cudnn_half) {
@@ -275,6 +276,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             iter_map = i;
             mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, 0, &net_map);// &net_combined);
             printf("\n mean_average_precision (mAP@0.5) = %f \n", mean_average_precision);
+            if (mean_average_precision > best_map) {
+                best_map = mean_average_precision;
+                printf("New best mAP!\n");
+                char buff[256];
+                sprintf(buff, "%s/%s_best.weights", backup_directory, base);
+                save_weights(net, buff);
+            }
+
             draw_precision = 1;
         }
 #ifdef OPENCV
