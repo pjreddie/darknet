@@ -523,6 +523,8 @@ int resize_network(network *net, int w, int h)
             resize_upsample_layer(&l, w, h);
         }else if(l.type == REORG){
             resize_reorg_layer(&l, w, h);
+        } else if (l.type == REORG_OLD) {
+            resize_reorg_old_layer(&l, w, h);
         }else if(l.type == AVGPOOL){
             resize_avgpool_layer(&l, w, h);
         }else if(l.type == NORMALIZATION){
