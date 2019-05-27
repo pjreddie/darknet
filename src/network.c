@@ -25,6 +25,7 @@
 #include "batchnorm_layer.h"
 #include "maxpool_layer.h"
 #include "reorg_layer.h"
+#include "reorg_old_layer.h"
 #include "avgpool_layer.h"
 #include "cost_layer.h"
 #include "softmax_layer.h"
