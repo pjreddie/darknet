@@ -93,6 +93,7 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     b.y = (j + x[index + 1*stride]) / lh;
     b.w = exp(x[index + 2*stride]) * biases[2*n]   / w; // exp() = 지수 제곱 biases have anchor's width and height
     b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
+    printf("biases.w = %d , biases.h = %d\n",biases[2*n] ,biases[2*n+1] );
     return b;
 }
 
@@ -169,7 +170,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             for (i = 0; i < l.w; ++i) { // width
                 for (n = 0; n < l.n; ++n) { // anchor's number = 3
                     int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
-                    printf(" gox_index = %d ",box_index);
+                    //printf(" box_index = %d ",box_index);
                     // 학습하는 이미지의 각각의 이미지를 따로 가져옴. 한번에 4개의 이미지를 읽기 때문에 batch또한 0번부터 3번까지 나눠서 정보를 가져옴
                     // n*l.w*l.h + j*l.w + i == 이미지 RGB의 모든 값을 가지는 1차원 배열 정보
                     box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.w*l.h);
