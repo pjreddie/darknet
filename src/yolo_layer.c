@@ -21,11 +21,12 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.batch = batch;
     l.h = h;
     l.w = w;
-    l.c = n*(classes + 4 + 1);
+    l.c = n*(classes + 4 + 1); // anchor box num * ( classes + 4(box offsets) + 1 (objectness predict)))
     l.out_w = l.w;
     l.out_h = l.h;
     l.out_c = l.c;
     l.classes = classes;
+    printf("l.n = %d , l.c = %d",l.n,l.c);
     l.cost = calloc(1, sizeof(float));
     l.biases = calloc(total*2, sizeof(float));
     if(mask) l.mask = mask;
