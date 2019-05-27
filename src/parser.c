@@ -306,7 +306,8 @@ int *parse_yolo_mask(char *a, int *num)
 layer parse_yolo(list *options, size_params params)
 {
     int classes = option_find_int(options, "classes", 20);
-    int total = option_find_int(options, "num", 1);
+    int total = option_find_int(options, "num", 1); // 9
+    printf("total  = %d",total);
     int num = total;
 
     char *a = option_find_str(options, "mask", 0);
