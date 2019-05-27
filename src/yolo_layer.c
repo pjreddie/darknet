@@ -93,7 +93,7 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     b.y = (j + x[index + 1*stride]) / lh;
     b.w = exp(x[index + 2*stride]) * biases[2*n]   / w; // exp() = 지수 제곱 biases have anchor's width and height
     b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
-    printf("biases.w = %d , biases.h = %d\n",biases[2*n] ,biases[2*n+1] );
+    printf("biases.w = %f , biases.h = %f\n",biases[2*n] ,biases[2*n+1] );
     return b;
 }
 
