@@ -112,14 +112,6 @@ image load_image_cv(char *filename, int channels)
     if(checkblur == 1)
     {
         GaussianBlur(m,dst,Size(3,3),0);// blur
-        imshow("original image",m);
-        imshow("blur image",dst);
-        while(1)
-        {
-        int key = waitKey(0);
-            if(key == 27)
-                break;
-        }//printf("Done GaussianBlur\n");
         im = mat_to_image(dst); // blur image send to function
         checkblur = 0;
     }
