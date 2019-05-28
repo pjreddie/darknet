@@ -83,7 +83,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     double time;
     int count = 0;
     //while(i*imgs < N*120){
-    while(get_current_batch(net) < 20000){
+    while(get_current_batch(net) < 10000){
     //while(get_current_batch(net) < net->max_batches){ // net_max_batches = 500200
 	printf("get_current_batch : %ld , net->max_batches : %d\n",get_current_batch(net),net->max_batches);
         if(l.random && count++%10 == 0){
