@@ -98,7 +98,7 @@ image load_image_cv(char *filename, int channels)
     }
     Mat m;
     //Mat dst; // blur image
-    image im;
+    //image im;
     m = imread(filename, flag); // read image
     if(!m.data){ // can't load image
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
