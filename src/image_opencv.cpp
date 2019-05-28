@@ -97,7 +97,7 @@ image load_image_cv(char *filename, int channels)
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
     Mat m;
-    Mat dst; // blur image
+    //Mat dst; // blur image
     image im;
     m = imread(filename, flag); // read image
     if(!m.data){ // can't load image
@@ -108,7 +108,7 @@ image load_image_cv(char *filename, int channels)
         return make_image(10,10,3);
         //exit(0);
     }
-
+/*
     if(checkblur == 1)
     {
         GaussianBlur(m,dst,Size(5,5),0);// blur
@@ -121,8 +121,8 @@ image load_image_cv(char *filename, int channels)
         im = mat_to_image(m);
         checkblur = 1;
     }
-    
-    //image im = mat_to_image(m);
+  */  
+    image im = mat_to_image(m);
     return im;
 }
 
