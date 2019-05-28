@@ -7,5 +7,11 @@ valid  = /home/kdy/darknet/cfg/test.txt
 #valid = data/coco_val_5k.list
 names = /home/kdy/darknet/data/obj.names
 #names = data/coco.names
+<<<<<<< HEAD
 backup = /home/kdy/information/backup_blur/ 
 #backup = /home/kdy/information/backup
+=======
+backup = /home/kdy/information/backup_blur/
+#backup = /home/kdy/information/backup/
+
+>>>>>>> 8e61229b7b42179a1d7c637af907dade901812c9
