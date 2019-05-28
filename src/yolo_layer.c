@@ -131,12 +131,12 @@ void delta_yolo_class(float *output, float *delta, int index, int class, int cla
 
 static int entry_index(layer l, int batch, int location, int entry) // what is it??
 { // location = n * l.w * l.h = 3 * width * height
-    int n =   location / (l.w*l.h); // 3 ( always )
+    int n =   location / (l.w*l.h); // 0 ~ 2 ( always )
     int loc = location % (l.w*l.h); // 0 ( always )
-    printf(" %d ",(batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc)/(l.w*l.h));
+    //printf(" %d ",(batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc)/(l.w*l.h));
     return batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc;
-    // 4 * width * height * filters(18) + 3 * width * height *(5+classes(1)) + 0
-    // (width * hegiht)(22+18) = 40*(width * height)
+    // 4 * width * height * filters(18) + n(0~2) * width * height *(5+classes(1)) + 0
+    // (width*height)(72+(0~2))
 }
 
 void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() function

@@ -6,7 +6,7 @@
 #include "image.h"
 
 using namespace cv;
-
+static int checkblur = 1;
 extern "C" {
 
 IplImage *image_to_ipl(image im)
@@ -97,6 +97,7 @@ image load_image_cv(char *filename, int channels)
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
     Mat m;
+    Mat dst; // blur image
     m = imread(filename, flag); // read image
     if(!m.data){ // can't load image
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
@@ -106,7 +107,21 @@ image load_image_cv(char *filename, int channels)
         return make_image(10,10,3);
         //exit(0);
     }
-    image im = mat_to_image(m);
+    if(checkblur == 1)
+    {
+        GaussianBlur(m,dst,Size(3,3),0);// blur
+        printf("Done GaussianBlur\n");
+        image im = mat_to_image(dst); // blur image send to function
+        checkblur = 0;
+    }
+    else
+    {
+        printf("None GaussianBlur\n");
+        image im = mat_to_image(m);
+        checkblur = 1;
+    }
+    
+    //image im = mat_to_image(m);
     return im;
 }
 

@@ -150,14 +150,14 @@ dbox derivative(box a, box b)
 }
 
 float overlap(float x1, float w1, float x2, float w2) // overlap function 
-{
-    float l1 = x1 - w1/2;
+{// x = location(x,y) , w = width(height)
+    float l1 = x1 - w1/2; // x - w/2 = 
     float l2 = x2 - w2/2;
-    float left = l1 > l2 ? l1 : l2;
+    float left = l1 > l2 ? l1 : l2; // left인 경우는 좌표값이 큰값을
     float r1 = x1 + w1/2;
     float r2 = x2 + w2/2;
-    float right = r1 < r2 ? r1 : r2;
-    return right - left; // return length( r - l )
+    float right = r1 < r2 ? r1 : r2; // right의 경우에는 좌표값이 작은값을
+    return right - left; // return length( r - l ) 교차하는 길이를 반환
 }
 
 float box_intersection(box a, box b) // intersection

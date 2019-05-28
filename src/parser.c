@@ -282,25 +282,25 @@ layer parse_softmax(list *options, size_params params)
     return l;
 }
 
-int *parse_yolo_mask(char *a, int *num)
+int *parse_yolo_mask(char *a, int *num)// a = {'0',',',1',',',2'} , num = 9
 {
     int *mask = 0;
     if(a){
-        int len = strlen(a);
+        int len = strlen(a); // 5
         int n = 1;
         int i;
-        for(i = 0; i < len; ++i){
-            if (a[i] == ',') ++n;
+        for(i = 0; i < len; ++i){// 3번 반복
+            if (a[i] == ',') ++n; //
         }
-        mask = calloc(n, sizeof(int));
+        mask = calloc(n, sizeof(int)); // n = 3 '\0'을 포함한 값
         for(i = 0; i < n; ++i){
-            int val = atoi(a);
+            int val = atoi(a);// string to int
             mask[i] = val;
             a = strchr(a, ',')+1;
         }
-        *num = n;
+        *num = n; // num = 3
     }
-    return mask;
+    return mask;// mask = {0,1,2}
 }
 
 layer parse_yolo(list *options, size_params params)
@@ -309,7 +309,7 @@ layer parse_yolo(list *options, size_params params)
     int total = option_find_int(options, "num", 1); // 9
     int num = total;
 
-    char *a = option_find_str(options, "mask", 0);
+    char *a = option_find_str(options, "mask", 0);//0,1,2
     int *mask = parse_yolo_mask(a, &num);
     printf("total  = %d, num = %d ",total,num);
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
