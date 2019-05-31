@@ -58,6 +58,7 @@ float mean_array(float *a, int n);
 void mean_arrays(float **a, int n, int els, float *avg);
 float variance_array(float *a, int n);
 float mag_array(float *a, int n);
+float mag_array_skip(float *a, int n, int * indices_to_skip);
 float dist_array(float *a, float *b, int n, int sub);
 float **one_hot_encode(float *a, int n, int k);
 float sec(clock_t clocks);

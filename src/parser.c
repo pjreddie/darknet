@@ -333,7 +333,15 @@ layer parse_yolo(list *options, size_params params)
     }
     //assert(l.outputs == params.inputs);
 
-    //l.max_boxes = option_find_int_quiet(options, "max", 90);
+    l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
+    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
+
+    if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
+    else if (strcmp(iou_loss, "giou") == 0) l.iou_loss = GIOU;
+    else l.iou_loss = IOU;
+    fprintf(stderr, "Yolo layer params: iou loss: %s, iou_normalizer: %f, cls_normalizer: %f\n", (l.iou_loss == MSE ? "mse" : (l.iou_loss == GIOU ? "giou" : "iou")), l.iou_normalizer, l.cls_normalizer);
+
     l.jitter = option_find_float(options, "jitter", .2);
     l.focal_loss = option_find_int_quiet(options, "focal_loss", 0);
 

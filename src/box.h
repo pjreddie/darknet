@@ -33,7 +33,10 @@ extern "C" {
 box float_to_box(float *f);
 float box_iou(box a, box b);
 float box_rmse(box a, box b);
+dxrep dx_box_iou(box a, box b, IOU_LOSS iou_loss);
+float box_giou(box a, box b);
 dbox diou(box a, box b);
+boxabs to_tblr(box a);
 void do_nms(box *boxes, float **probs, int total, int classes, float thresh);
 void do_nms_sort_v2(box *boxes, float **probs, int total, int classes, float thresh);
 //LIB_API void do_nms_sort(detection *dets, int total, int classes, float thresh);

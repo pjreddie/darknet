@@ -105,6 +105,11 @@ typedef enum {
     LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
 }ACTIVATION;
 
+// parser.h
+typedef enum {
+    IOU, GIOU, MSE
+} IOU_LOSS;
+
 // image.h
 typedef enum{
     PNG, BMP, TGA, JPG
@@ -308,6 +313,10 @@ struct layer {
 
     float *weights;
     float *weight_updates;
+
+    float iou_normalizer;
+    float cls_normalizer;
+    int iou_loss;
 
     char *align_bit_weights_gpu;
     float *mean_arr_gpu;
@@ -670,6 +679,24 @@ typedef struct image {
 typedef struct box {
     float x, y, w, h;
 } box;
+
+// box.h
+typedef struct boxabs {
+    float left, right, top, bot;
+} boxabs;
+
+// box.h
+typedef struct dxrep {
+    float dt, db, dl, dr;
+} dxrep;
+
+// box.h
+typedef struct ious {
+    float iou, giou;
+    dxrep dx_iou;
+    dxrep dx_giou;
+} ious;
+
 
 // box.h
 typedef struct detection{
