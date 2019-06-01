@@ -21,8 +21,10 @@ model_gen/darknet
 
 # Data Gen
 # data_gen/bag_file/*
-# data_gen/images/*
-# data_gen/OpenLabeling/main/input/
+data_gen/images/*
+dada_gen/zipped_images/
+data_gen/OpenLabeling/main/input/
+data_gen/OpenLabeling/main/output/
 # data_gen/OpenLabeling/main/class_lists.txt
 
 # emacs
