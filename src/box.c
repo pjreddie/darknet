@@ -89,7 +89,7 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
 }
 
 box float_to_box(float *f, int stride) // float_to_box function
-{
+{// (net.truth + t*(4 + 1) + b*l.truths, 1);
     box b = {0};
     b.x = f[0];
     b.y = f[1*stride];
