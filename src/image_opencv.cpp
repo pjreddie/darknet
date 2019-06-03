@@ -141,7 +141,7 @@ image load_image_cv(char *filename, int channels)
         }
         else if(min < 1000)
         {
-            GaussianBlur(m,dst,Size(12,12),0);// blur
+            GaussianBlur(m,dst,Size(11,11),0);// blur
         }
         else
         {
