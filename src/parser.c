@@ -333,6 +333,7 @@ layer parse_yolo(list *options, size_params params)
     }
     //assert(l.outputs == params.inputs);
 
+    l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
     l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
     char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
@@ -340,7 +341,7 @@ layer parse_yolo(list *options, size_params params)
     if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
     else if (strcmp(iou_loss, "giou") == 0) l.iou_loss = GIOU;
     else l.iou_loss = IOU;
-    fprintf(stderr, "Yolo layer params: iou loss: %s, iou_normalizer: %f, cls_normalizer: %f\n", (l.iou_loss == MSE ? "mse" : (l.iou_loss == GIOU ? "giou" : "iou")), l.iou_normalizer, l.cls_normalizer);
+    fprintf(stderr, "[yolo] params: iou loss: %s, iou_norm: %2.2f, cls_norm: %2.2f, scale_x_y: %2.2f\n", (l.iou_loss == MSE ? "mse" : (l.iou_loss == GIOU ? "giou" : "iou")), l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
 
     l.jitter = option_find_float(options, "jitter", .2);
     l.focal_loss = option_find_int_quiet(options, "focal_loss", 0);

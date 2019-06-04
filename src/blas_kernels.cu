@@ -414,6 +414,12 @@ __global__ void scal_kernel(int N, float ALPHA, float *X, int INCX)
     if(i < N) X[i*INCX] *= ALPHA;
 }
 
+__global__ void scal_add_kernel(int N, float ALPHA, float BETA, float *X, int INCX)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i < N) X[i*INCX] = X[i*INCX] * ALPHA + BETA;
+}
+
 __global__ void fill_kernel(int N, float ALPHA, float *X, int INCX)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -641,6 +647,12 @@ extern "C" void constrain_ongpu(int N, float ALPHA, float * X, int INCX)
 extern "C" void scal_ongpu(int N, float ALPHA, float * X, int INCX)
 {
     scal_kernel<<<cuda_gridsize(N), BLOCK, 0, get_cuda_stream()>>>(N, ALPHA, X, INCX);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+extern "C" void scal_add_ongpu(int N, float ALPHA, float BETA, float * X, int INCX)
+{
+    scal_add_kernel << <cuda_gridsize(N), BLOCK, 0, get_cuda_stream() >> >(N, ALPHA, BETA, X, INCX);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 

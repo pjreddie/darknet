@@ -259,7 +259,8 @@ void forward_yolo_layer(const layer l, network_state state)
     for (b = 0; b < l.batch; ++b) {
         for (n = 0; n < l.n; ++n) {
             int index = entry_index(l, b, n*l.w*l.h, 0);
-            activate_array(l.output + index, 2 * l.w*l.h, LOGISTIC);
+            activate_array(l.output + index, 2 * l.w*l.h, LOGISTIC);        // x,y,
+            scal_add_cpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output + index, 1);    // scale x,y
             index = entry_index(l, b, n*l.w*l.h, 4);
             activate_array(l.output + index, (1 + l.classes)*l.w*l.h, LOGISTIC);
         }
@@ -553,6 +554,7 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
             // if(y->1) x -> inf
             // if(y->0) x -> -inf
             activate_array_ongpu(l.output_gpu + index, 2*l.w*l.h, LOGISTIC);    // x,y
+            scal_add_ongpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output_gpu + index, 1);      // scale x,y
             index = entry_index(l, b, n*l.w*l.h, 4);
             activate_array_ongpu(l.output_gpu + index, (1+l.classes)*l.w*l.h, LOGISTIC); // classes and objectness
         }
