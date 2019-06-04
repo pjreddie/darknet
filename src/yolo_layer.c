@@ -182,8 +182,8 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     //3개의 anchor box 확인
                     float best_iou = 0;
                     int best_t = 0;
-                    for(t = 0 ; t < 1 ; ++t){
-                    //for(t = 0; t < l.max_boxes; ++t){ // 모든 객체들에 대해서 iou값을 확인
+                    //for(t = 0 ; t < 1 ; ++t){
+                    for(t = 0; t < l.max_boxes; ++t){ // 모든 객체들에 대해서 iou값을 확인
                         box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1); //  b = 4
                         if(!truth.x) break;// net.truth + t*(4 + 1) + b*l.truths 이것이 의미하는 것은?
                         float iou = box_iou(pred, truth); // 예측과 실측에 대한 iou값 계산
@@ -213,8 +213,9 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 } // end firth iteration
             }//end third iteration
         }//end second iteration
-        for(t = 0 ; t < 1 ; ++t){
-        //for(t = 0; t < l.max_boxes; ++t){
+        printf("l.max_boxes = %d",l.max_boxes);
+        //for(t = 0 ; t < 1 ; ++t){
+        for(t = 0; t < l.max_boxes; ++t){
             box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1);
 
             if(!truth.x) break;
