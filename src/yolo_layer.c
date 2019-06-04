@@ -197,6 +197,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     avg_anyobj += l.output[obj_index];
                     l.delta[obj_index] = 0 - l.output[obj_index];
                     printf("best_iou = %f , best_t = %d ",best_iou,best_t);
+                    system("pause");
                     if (best_iou > l.ignore_thresh) { // best_iou > 0.7
                         l.delta[obj_index] = 0;
                     }
