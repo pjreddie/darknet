@@ -15,7 +15,7 @@
 
 static char **demo_names;
 static image **demo_alphabet;
-static int demo_classes; // draw_detection ë§¤ê°œë³€ìˆ˜ obj.dataì˜ classes ê°’
+static int demo_classes; // draw_detection ë§¤ê°œë³??ˆ˜ obj.data?˜ classes ê°?
 
 static network *net;
 static image buff [3];
@@ -34,6 +34,8 @@ static float *avg;
 static int demo_done = 0;
 static int demo_total = 0;
 double demo_time;
+
+static int time = 0;
 
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num);
 
