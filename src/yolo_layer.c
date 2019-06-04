@@ -16,9 +16,9 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     layer l = {0};
     l.type = YOLO;
 
-    l.n = n;
-    l.total = total;
-    l.batch = batch;
+    l.n = n;// mask's number
+    l.total = total;// total anchor box number
+    l.batch = batch; // batch size ( 4 )
     l.h = h;
     l.w = w;
     l.c = n*(classes + 4 + 1); // anchor box num * ( classes + 4(box offsets) + 1 (objectness predict)))
@@ -26,7 +26,6 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.out_h = l.h;
     l.out_c = l.c;
     l.classes = classes;
-    printf("l.n = %d , l.c = %d\n",l.n,l.c);
     l.cost = calloc(1, sizeof(float));
     l.biases = calloc(total*2, sizeof(float));
     if(mask) l.mask = mask;
@@ -55,7 +54,8 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 #endif
 
-    fprintf(stderr, "yolo\n");
+    fprintf(stderr, "yolo");
+    printf("l.n = %d , l.c = %d\n",l.n,l.c);
     srand(0);
 
     return l;
@@ -94,11 +94,13 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     b.w = exp(x[index + 2*stride]) * biases[2*n]   / w; // exp() = 지수 제곱 biases have anchor's width and height
     b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
     //printf("biases.w = %f , biases.h = %f\n",biases[2*n] ,biases[2*n+1] );
+    // biases[2*n] = anchor box's width , biases[2*n+1] = anchor box's height
     return b;
 }
 
 float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride)
 {
+    //(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
     box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
     float iou = box_iou(pred, truth);
 
@@ -106,7 +108,7 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
     float ty = (truth.y*lh - j);
     float tw = log(truth.w*w / biases[2*n]);
     float th = log(truth.h*h / biases[2*n + 1]);
-
+    // x = output
     delta[index + 0*stride] = scale * (tx - x[index + 0*stride]);
     delta[index + 1*stride] = scale * (ty - x[index + 1*stride]);
     delta[index + 2*stride] = scale * (tw - x[index + 2*stride]);
@@ -167,7 +169,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
     int class_count = 0;
     *(l.cost) = 0;
     //
-    printf("l.height = %d , l.width = %d , l.n = %d , l.filters = %d ",l.h,l.w,l.n,l.c);
+    //printf("l.height = %d , l.width = %d , l.n = %d , l.filters = %d ",l.h,l.w,l.n,l.c);
     for (b = 0; b < l.batch; ++b) { // batch(4) grid접근 방식
         for (j = 0; j < l.h; ++j) { // height
             for (i = 0; i < l.w; ++i) { // width
@@ -180,23 +182,24 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     //3개의 anchor box 확인
                     float best_iou = 0;
                     int best_t = 0;
-                    for(t = 0; t < l.max_boxes; ++t){ // l.max_boxes = 90
+                    for(t = 0; t < l.max_boxes; ++t){ // 모든 객체들에 대해서 iou값을 확인
                         box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1); //  b = 4
                         if(!truth.x) break;// net.truth + t*(4 + 1) + b*l.truths 이것이 의미하는 것은?
                         float iou = box_iou(pred, truth); // 예측과 실측에 대한 iou값 계산
                         if (iou > best_iou) { // 최대의 iou값만 남긴다
-                            best_iou = iou;
-                            best_t = t;
+                            best_iou = iou; // 가장 높은 iou값을 가진 객체의 값을 저장
+                            best_t = t; // test_t = 무슨 객체인지를 알려줌 여기서 t = 0 이면
+                            // person을 뜻함
                         }
                     }
                     int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
                     avg_anyobj += l.output[obj_index];
                     l.delta[obj_index] = 0 - l.output[obj_index];
-                    if (best_iou > l.ignore_thresh) {
+                    if (best_iou > l.ignore_thresh) { // best_iou > 0.7
                         l.delta[obj_index] = 0;
                     }
-                    if (best_iou > l.truth_thresh) {
-                        l.delta[obj_index] = 1 - l.output[obj_index];
+                    if (best_iou > l.truth_thresh) { // best_iou > 1
+                        l.delta[obj_index] = 1 - l.output[obj_index]; // make l.delta = 0 ~ 1
 
                         int class = net.truth[best_t*(4 + 1) + b*l.truths + 4];
                         if (l.map) class = l.map[class];
@@ -228,7 +231,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     best_n = n;
                 }
             }
-
+            printf("mask_n = %d\n",mask_n);
             int mask_n = int_index(l.mask, best_n, l.n);
             if(mask_n >= 0){
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
@@ -251,6 +254,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             }
         }//end t iteration
     }//end first iteration
+    printf("l.outputs = %d , l.batch = %d\n",l.outputs,l.batch);
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2); // 중요
     printf("(Yolo)Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", net.index, avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, recall75/count, count);
 }//end forward_yolo_layer() function
