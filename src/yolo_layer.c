@@ -213,7 +213,6 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 } // end firth iteration
             }//end third iteration
         }//end second iteration
-        printf("l.max_boxes = %d",l.max_boxes);
         //for(t = 0 ; t < 1 ; ++t){
         for(t = 0; t < l.max_boxes; ++t){
             box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1);
