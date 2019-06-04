@@ -127,24 +127,6 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
     return b;
 }
-/*
-float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride)
-{
-    box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
-    float iou = box_iou(pred, truth);
-
-    float tx = (truth.x*lw - i);
-    float ty = (truth.y*lh - j);
-    float tw = log(truth.w*w / biases[2*n]);
-    float th = log(truth.h*h / biases[2*n + 1]);
-
-    delta[index + 0*stride] = scale * (tx - x[index + 0*stride]);
-    delta[index + 1*stride] = scale * (ty - x[index + 1*stride]);
-    delta[index + 2*stride] = scale * (tw - x[index + 2*stride]);
-    delta[index + 3*stride] = scale * (th - x[index + 3*stride]);
-    return iou;
-}
-*/
 
 ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss)
 {
@@ -354,7 +336,6 @@ void forward_yolo_layer(const layer l, network_state state)
             int mask_n = int_index(l.mask, best_n, l.n);
             if (mask_n >= 0) {
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
-                //float iou =
                 ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss);
 
                 // range is 0 <= 1
@@ -396,7 +377,7 @@ void forward_yolo_layer(const layer l, network_state state)
         // TODO: remove IOU loss fields before computing MSE on class
         //   probably split into two arrays
         int stride = l.w*l.h;
-        float* no_iou_loss_delta = calloc(l.batch * l.outputs, sizeof(float));
+        float* no_iou_loss_delta = (float *)calloc(l.batch * l.outputs, sizeof(float));
         memcpy(no_iou_loss_delta, l.delta, l.batch * l.outputs * sizeof(float));
         for (b = 0; b < l.batch; ++b) {
             for (j = 0; j < l.h; ++j) {

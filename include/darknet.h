@@ -317,7 +317,7 @@ struct layer {
     float scale_x_y;
     float iou_normalizer;
     float cls_normalizer;
-    int iou_loss;
+    IOU_LOSS iou_loss;
 
     char *align_bit_weights_gpu;
     float *mean_arr_gpu;
