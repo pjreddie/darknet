@@ -1238,6 +1238,14 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
     return out;
 }
 
+// blend two images with (alpha and beta)
+void blend_images_cv(image new_img, float alpha, image old_img, float beta)
+{
+    cv::Mat new_mat(cv::Size(new_img.w, new_img.h), CV_32FC(new_img.c), new_img.data);// , size_t step = AUTO_STEP)
+    cv::Mat old_mat(cv::Size(old_img.w, old_img.h), CV_32FC(old_img.c), old_img.data);
+    cv::addWeighted(new_mat, alpha, old_mat, beta, 0.0, new_mat);
+}
+
 // ====================================================================
 // Show Anchors
 // ====================================================================

@@ -708,6 +708,7 @@ void parse_net_options(list *options, network *net)
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
     net->flip = option_find_int_quiet(options, "flip", 1);
     net->blur = option_find_int_quiet(options, "blur", 0);
+    net->mixup = option_find_int_quiet(options, "mixup", 0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);

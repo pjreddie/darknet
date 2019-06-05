@@ -595,6 +595,7 @@ typedef struct network {
     int center;
     int flip; // horizontal flip 50% probability augmentaiont for classifier training (default = 1)
     int blur;
+    int mixup;
     float angle;
     float aspect;
     float exposure;
@@ -759,6 +760,7 @@ typedef struct load_args {
     float jitter;
     int flip;
     int blur;
+    int mixup;
     float angle;
     float aspect;
     float saturation;
