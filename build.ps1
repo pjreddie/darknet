@@ -3,18 +3,6 @@
 $number_of_build_workers=8
 $force_using_include_libs=$false
 
-#$my_cuda_compute_model=75    #Compute capability for Tesla T4, RTX 2080
-#$my_cuda_compute_model=72    #Compute capability for Jetson Xavier
-#$my_cuda_compute_model=70    #Compute capability for Tesla V100
-#$my_cuda_compute_model=62    #Compute capability for Jetson TX2
-#$my_cuda_compute_model=61    #Compute capability for Tesla P40
-#$my_cuda_compute_model=60    #Compute capability for Tesla P100
-#$my_cuda_compute_model=53    #Compute capability for Jetson TX1
-#$my_cuda_compute_model=52    #Compute capability for Tesla M40/M60
-#$my_cuda_compute_model=37    #Compute capability for Tesla K80
-#$my_cuda_compute_model=35    #Compute capability for Tesla K20/K40
-#$my_cuda_compute_model=30    #Compute capability for Tesla K10, Quadro K4000
-
 function getProgramFiles32bit() {
   $out = ${env:PROGRAMFILES(X86)}
   if ($null -eq $out) {
@@ -152,13 +140,6 @@ if (Test-Path env:CUDA_PATH) {
   if (-Not(Test-Path env:CUDA_TOOLKIT_ROOT_DIR)) {
     $env:CUDA_TOOLKIT_ROOT_DIR = "${env:CUDA_PATH}"
     Write-Host "Added missing env variable CUDA_TOOLKIT_ROOT_DIR" -ForegroundColor Yellow
-  }
-  if ($my_cuda_compute_model) {
-    $additional_build_setup = "-DCUDA_COMPUTE_MODEL=${my_cuda_compute_model}"
-    Write-Host "Using compute capability ${my_cuda_compute_model}" -ForegroundColor Yellow
-  }
-  else {
-    Write-Host "Using default compute capability" -ForegroundColor Yellow
   }
 }
 

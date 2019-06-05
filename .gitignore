@@ -7,6 +7,7 @@
 *.so
 *.exe
 *.dll
+*.lib
 mnist/
 data/
 caffe/
@@ -34,6 +35,10 @@ Thumbs.db
 .vs/
 .vscode/
 
+# Managed by CMake
+src/version.h
+
+# Build artifacts
 lib/
-include/
 share/
+include/darknet/

@@ -1,6 +1,6 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#include <cuda_runtime.h>
+#include <curand.h>
+#include <cublas_v2.h>
 #include <assert.h>
 
 #include "blas.h"
@@ -1034,7 +1034,6 @@ extern "C" int is_nan_or_inf(float *input, size_t size)
     CHECK_CUDA(cudaFreeHost(pinned_return));
     return ret_val;
 }
-
 
 __global__ void add_3_arrays_activate_kernel(float *a1, float *a2, float *a3, size_t size, ACTIVATION a, float *dst)
 {
