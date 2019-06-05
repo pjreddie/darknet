@@ -508,6 +508,8 @@ int resize_network(network *net, int w, int h)
         }
         else if (l.type == CRNN) {
             resize_crnn_layer(&l, w, h);
+        }else if (l.type == CONV_LSTM) {
+            resize_conv_lstm_layer(&l, w, h);
         }else if(l.type == CROP){
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
