@@ -897,6 +897,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 //wait_until_press_key_cv();
                 blend_images_cv(ai, 0.5, old_img, 0.5);
                 blend_truth(truth, boxes, d.y.vals[i]);
+                free_image(old_img);
             }
 
             d.X.vals[i] = ai.data;
@@ -1036,6 +1037,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 //wait_until_press_key_cv();
                 blend_images(sized, 0.5, old_img, 0.5);
                 blend_truth(truth, boxes, d.y.vals[i]);
+                free_image(old_img);
             }
 
             d.X.vals[i] = sized.data;
