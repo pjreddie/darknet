@@ -214,7 +214,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             }//end third iteration
         }//end second iteration
         //for(t = 0 ; t < 1 ; ++t){
-        for(t = 0; t < l.max_boxes; ++t){
+        for(t = 0; t < l.max_boxes; ++t){ // 해당 반복문 공부
             box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1);
 
             if(!truth.x) break;
@@ -231,12 +231,12 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 float iou = box_iou(pred, truth_shift);
                 if (iou > best_iou){
                     best_iou = iou;
-                    best_n = n;
+                    best_n = n;// 제일 잘 맞는 anchor박스를 검출
                 }
             }
             int mask_n = int_index(l.mask, best_n, l.n);
             //printf("mask_n = %d, best_n = %d, l.n = %d ",mask_n,best_n,l.n);
-            if(mask_n >= 0){ // mask_n == -1 ??
+            if(mask_n >= 0){ // find something
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                 float iou = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
 

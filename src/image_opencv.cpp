@@ -109,11 +109,10 @@ image load_image_cv(char *filename, int channels)
         return make_image(10,10,3);
         //exit(0);
     }
-
     if(checkblur == 1)
     {
-        //GaussianBlur(m,dst,Size(7,7),0);// blur
-        
+        GaussianBlur(m,dst,Size(3,3),0);// blur
+        /*   
         if(m.size().width<m.size().height)
         {
             min = m.size().width;
@@ -147,7 +146,7 @@ image load_image_cv(char *filename, int channels)
         {
             GaussianBlur(m,dst,Size(15,15),0);// blur
         }
-        
+       */  
         im = mat_to_image(dst); // blur image send to function
         checkblur = 0;
     }
