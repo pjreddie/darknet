@@ -275,9 +275,9 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
     CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->normDstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w));
 
 #if(CUDNN_MAJOR >= 6)
-    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));    // cudnn >= 6.0
+    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));    // cudnn >= 6.0
 #else
-    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION));    // cudnn 5.1
+    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION));    // cudnn 5.1
 #endif
     int forward_algo = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
     int backward_algo = CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST;
@@ -331,7 +331,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index)
+convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index)
 {
     int total_batch = batch*steps;
     int i;
@@ -353,6 +353,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.batch = batch;
     l.steps = steps;
     l.stride = stride;
+    l.dilation = dilation;
     l.size = size;
     l.pad = padding;
     l.batch_normalize = batch_normalize;
@@ -525,7 +526,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 
 void test_convolutional_layer()
 {
-    convolutional_layer l = make_convolutional_layer(1, 1, 5, 5, 3, 2, 1, 5, 2, 1, LEAKY, 1, 0, 0, 0, 0, 0);
+    convolutional_layer l = make_convolutional_layer(1, 1, 5, 5, 3, 2, 1, 5, 2, 1, 1, LEAKY, 1, 0, 0, 0, 0, 0);
     l.batch_normalize = 1;
     float data[] = {1,1,1,1,1,
         1,1,1,1,1,
@@ -981,8 +982,17 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             }
             else {
                 //printf(" l.index = %d - FP32 \n", l.index);
-                im2col_cpu(state.input + (i*l.groups + j)*l.c / l.groups*l.h*l.w,
-                    l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
+                float *im = state.input + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
+                //im2col_cpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
+
+                im2col_cpu_ext(im,   // input
+                    l.c / l.groups,     // input channels
+                    l.h, l.w,           // input size (h, w)
+                    l.size, l.size,     // kernel size (h, w)
+                    l.pad, l.pad,       // padding (h, w)
+                    l.stride, l.stride, // stride (h, w)
+                    l.dilation, l.dilation, // dilation (h, w)
+                    b);                 // output
 
                 gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
                 // bit-count to float
@@ -1028,8 +1038,17 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
 
             float *im = state.input + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
 
-            im2col_cpu(im, l.c / l.groups, l.h, l.w,
-                l.size, l.stride, l.pad, b);
+            //im2col_cpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
+            im2col_cpu_ext(
+                im,                 // input
+                l.c / l.groups,     // input channels
+                l.h, l.w,           // input size (h, w)
+                l.size, l.size,     // kernel size (h, w)
+                l.pad, l.pad,       // padding (h, w)
+                l.stride, l.stride, // stride (h, w)
+                l.dilation, l.dilation, // dilation (h, w)
+                b);                 // output
+
             gemm(0, 1, m, n, k, 1, a, k, b, k, 1, c, n);
 
             if (state.delta) {
@@ -1039,8 +1058,18 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
 
                 gemm(1, 0, n, k, m, 1, a, n, b, k, 0, c, k);
 
-                col2im_cpu(state.workspace, l.c / l.groups, l.h, l.w, l.size, l.stride,
-                    l.pad, state.delta + (i*l.groups + j)*l.c / l.groups*l.h*l.w);
+                //col2im_cpu(state.workspace, l.c / l.groups, l.h, l.w, l.size, l.stride,
+                //     l.pad, state.delta + (i*l.groups + j)*l.c / l.groups*l.h*l.w);
+
+                col2im_cpu_ext(
+                    state.workspace,        // input
+                    l.c / l.groups,         // input channels (h, w)
+                    l.h, l.w,               // input size (h, w)
+                    l.size, l.size,         // kernel size (h, w)
+                    l.pad, l.pad,           // padding (h, w)
+                    l.stride, l.stride,     // stride (h, w)
+                    l.dilation, l.dilation, // dilation (h, w)
+                    state.delta + (i*l.groups + j)*l.c / l.groups*l.h*l.w); // output (delta)
             }
         }
     }

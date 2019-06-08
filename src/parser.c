@@ -153,6 +153,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int groups = option_find_int_quiet(options, "groups", 1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
+    int dilation = option_find_int_quiet(options, "dilation", 1);
     int pad = option_find_int_quiet(options, "pad",0);
     int padding = option_find_int_quiet(options, "padding",0);
     if(pad) padding = size/2;
@@ -171,7 +172,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
+    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -188,6 +189,7 @@ layer parse_crnn(list *options, size_params params)
 {
     int size = option_find_int_quiet(options, "size", 3);
     int stride = option_find_int_quiet(options, "stride", 1);
+    int dilation = option_find_int_quiet(options, "dilation", 1);
     int pad = option_find_int_quiet(options, "pad", 0);
     int padding = option_find_int_quiet(options, "padding", 0);
     if (pad) padding = size / 2;
@@ -200,7 +202,7 @@ layer parse_crnn(list *options, size_params params)
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
 
-    layer l = make_crnn_layer(params.batch, params.h, params.w, params.c, hidden_filters, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, xnor);
+    layer l = make_crnn_layer(params.batch, params.h, params.w, params.c, hidden_filters, output_filters, groups, params.time_steps, size, stride, dilation, padding, activation, batch_normalize, xnor);
 
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
 
@@ -248,6 +250,7 @@ layer parse_conv_lstm(list *options, size_params params)
     // a ConvLSTM with a larger transitional kernel should be able to capture faster motions
     int size = option_find_int_quiet(options, "size", 3);
     int stride = option_find_int_quiet(options, "stride", 1);
+    int dilation = option_find_int_quiet(options, "dilation", 1);
     int pad = option_find_int_quiet(options, "pad", 0);
     int padding = option_find_int_quiet(options, "padding", 0);
     if (pad) padding = size / 2;
@@ -260,7 +263,7 @@ layer parse_conv_lstm(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int peephole = option_find_int_quiet(options, "peephole", 0);
 
-    layer l = make_conv_lstm_layer(params.batch, params.h, params.w, params.c, output_filters, groups, params.time_steps, size, stride, padding, activation, batch_normalize, peephole, xnor);
+    layer l = make_conv_lstm_layer(params.batch, params.h, params.w, params.c, output_filters, groups, params.time_steps, size, stride, dilation, padding, activation, batch_normalize, peephole, xnor);
 
     l.state_constrain = option_find_int_quiet(options, "state_constrain", params.time_steps * 32);
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);

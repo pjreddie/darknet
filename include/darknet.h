@@ -204,6 +204,7 @@ struct layer {
     int size;
     int side;
     int stride;
+    int dilation;
     int reverse;
     int flatten;
     int spatial;

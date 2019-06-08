@@ -566,7 +566,17 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 b = im;
             }
             else {
-                im2col_ongpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, state.workspace);
+                //im2col_ongpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, state.workspace);
+
+                im2col_gpu_ext(im,          // input
+                    l.c / l.groups,         // input channels
+                    l.h, l.w,               // input size (h, w)
+                    l.size, l.size,         // kernel size (h, w)
+                    l.pad, l.pad,           // padding (h, w)
+                    l.stride, l.stride,     // stride (h, w)
+                    l.dilation, l.dilation, // dilation (h, w)
+                    state.workspace);       // output
+
             }
             gemm_ongpu(0, 0, m, n, k, 1., a, k, b, n, 1., c + i*m*n, n);
         }
@@ -798,7 +808,15 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
             float *im = state.input + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
 
-            im2col_ongpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, state.workspace);
+            //im2col_ongpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, state.workspace);
+            im2col_gpu_ext(im,          // input
+                l.c / l.groups,         // input channels
+                l.h, l.w,               // input size (h, w)
+                l.size, l.size,         // kernel size (h, w)
+                l.pad, l.pad,           // padding (h, w)
+                l.stride, l.stride,     // stride (h, w)
+                l.dilation, l.dilation, // dilation (h, w)
+                state.workspace);       // output
             gemm_ongpu(0, 1, m, n, k, 1, a + i*m*k, k, b, k, 1, c, n);
 
             if (state.delta) {
@@ -811,7 +829,17 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
                 float *delta = state.delta + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
 
-                col2im_ongpu(state.workspace, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, delta);
+                //col2im_ongpu(state.workspace, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, delta);
+                col2im_gpu_ext(
+                    state.workspace,        // input
+                    l.c / l.groups,         // input channels
+                    l.h, l.w,               // input size (h, w)
+                    l.size, l.size,         // kernel size (h, w)
+                    l.pad, l.pad,           // padding size (h, w)
+                    l.stride, l.stride,     // stride size (h, w)
+                    l.dilation, l.dilation, // dilation size (h, w)
+                    delta);                 // output (delta)
+
                 if (l.binary || l.xnor) {
                     swap_binary(&l);
                 }
