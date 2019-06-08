@@ -45,7 +45,7 @@ void im2col_cpu(float* data_im,
 // therefore its value is always lower than 0x800... where casting
 // negative value of a parameter converts it to value higher than 0x800...
 // The casting allows to use one condition instead of two.
-inline int is_a_ge_zero_and_a_lt_b(int a, int b) {
+inline static int is_a_ge_zero_and_a_lt_b(int a, int b) {
     return (unsigned)(a) < (unsigned)(b);
 }
 

@@ -48,7 +48,7 @@ void caffe_set(const int N, const float alpha, float* Y) {
     }
 }
 
-inline int is_a_ge_zero_and_a_lt_b(int a, int b) {
+inline static int is_a_ge_zero_and_a_lt_b(int a, int b) {
     return (unsigned)(a) < (unsigned)(b);
 }
 
