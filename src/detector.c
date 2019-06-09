@@ -554,7 +554,11 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         if (fps) fclose(fps[j]);
     }
     if (coco) {
+#ifdef WIN32
+        fseek(fp, -3, SEEK_CUR);
+#else
         fseek(fp, -2, SEEK_CUR);
+#endif
         fprintf(fp, "\n]\n");
         fclose(fp);
     }
