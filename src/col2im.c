@@ -30,7 +30,7 @@ void col2im_cpu(float* data_col,
                 int im_row = h_offset + h * stride;
                 int im_col = w_offset + w * stride;
                 int col_index = (c * height_col + h) * width_col + w;
-                double val = data_col[col_index];
+                float val = data_col[col_index];
                 col2im_add_pixel(data_im, height, width, channels,
                         im_row, im_col, c_im, pad, val);
             }
@@ -43,7 +43,8 @@ void caffe_set(const int N, const float alpha, float* Y) {
         memset(Y, 0, sizeof(float) * N);  // NOLINT(caffe/alt_fn)
         return;
     }
-    for (int i = 0; i < N; ++i) {
+    int i;
+    for (i = 0; i < N; ++i) {
         Y[i] = alpha;
     }
 }
