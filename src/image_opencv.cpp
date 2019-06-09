@@ -111,7 +111,7 @@ image load_image_cv(char *filename, int channels)
     }
     if(checkblur == 1)
     {
-        GaussianBlur(m,dst,Size(3,3),0);// blur
+        GaussianBlur(m,dst,Size(7,7),0);// blur
         /*   
         if(m.size().width<m.size().height)
         {
