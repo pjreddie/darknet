@@ -18,7 +18,7 @@ typedef __compar_fn_t comparison_fn_t;
 
 #include "http_stream.h"
 
-int check_mistakes;
+int check_mistakes = 0;
 
 static int coco_ids[] = { 1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90 };
 
@@ -996,7 +996,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
 
         // MS COCO - uses 101-Recall-points on PR-chart.
         // PascalVOC2007 - uses 11-Recall-points on PR-chart.
-        // PascalVOC2010–2012 - uses Area-Under-Curve on PR-chart.
+        // PascalVOC2010-2012 - uses Area-Under-Curve on PR-chart.
         // ImageNet - uses Area-Under-Curve on PR-chart.
 
         // correct mAP calculation: ImageNet, PascalVOC 2010-2012
