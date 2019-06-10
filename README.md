@@ -23,7 +23,7 @@ More details: http://pjreddie.com/darknet/yolo/
     * [Using make](#how-to-compile-on-linux-using-make)
 3.  How to compile on Windows
     * [Using vcpkg](#how-to-compile-on-windows-using-vcpkg)
-    * [Using Cmake-GUI](#how-to-compile-on-windows-using-Cmake-GUI)
+    * [Using Cmake-GUI](#how-to-compile-on-windows-using-cmake-gui)
     * [Legacy way](#how-to-compile-on-windows-legacy-way)
 4.  [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
 5.  [How to train with multi-GPU:](#how-to-train-with-multi-gpu)
