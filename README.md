@@ -18,9 +18,12 @@ More details: http://pjreddie.com/darknet/yolo/
 
 0.  [Improvements in this repository](#improvements-in-this-repository)
 1.  [How to use](#how-to-use-on-the-command-line)
-2.  [How to compile on Linux](#how-to-compile-on-linux)
+2.  How to compile on Linux
+    * [Using cmake](#how-to-compile-on-linux-using-cmake)
+    * [Using make](#how-to-compile-on-linux-using-make)
 3.  How to compile on Windows
     * [Using vcpkg](#how-to-compile-on-windows-using-vcpkg)
+    * [Using Cmake-GUI](#how-to-compile-on-windows-using-Cmake-GUI)
     * [Legacy way](#how-to-compile-on-windows-legacy-way)
 4.  [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
 5.  [How to train with multi-GPU:](#how-to-train-with-multi-gpu)
@@ -49,10 +52,6 @@ More details: http://pjreddie.com/darknet/yolo/
 * **cuDNN >= 7.0 for CUDA 10.0** https://developer.nvidia.com/rdp/cudnn-archive (on **Linux** copy `cudnn.h`,`libcudnn.so`... as desribed here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installlinux-tar , on **Windows** copy `cudnn.h`,`cudnn64_7.dll`, `cudnn64_7.lib` as desribed here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installwindows )
 * **GPU with CC >= 3.0**: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
 * on Linux **GCC or Clang**, on Windows **MSVC 2015/2017/2019** https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community
-
-Compiling on **Windows** by using `Cmake-GUI` as on this [**IMAGE**](https://user-images.githubusercontent.com/4096485/55107892-6becf380-50e3-11e9-9a0a-556a943c429a.png): Configure -> Optional platform for generator (Set: x64) -> Finish -> Generate -> Open Project -> x64 & Release -> Build -> Build solution
-
-Compiling on **Linux** by using command `make` (or alternative way by using command: `cmake . && make` )
 
 #### Pre-trained models
 
@@ -154,7 +153,23 @@ On Linux find executable file `./darknet` in the root directory, while on Window
 
 * Yolo v3 COCO-model: `darknet.exe detector demo data/coco.data yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
 
-### How to compile on Linux
+### How to compile on Linux (using `cmake`)
+
+The `CMakeLists.txt` will attempt to find installed optional dependencies like
+CUDA, cudnn, ZED and build against those. It will also create a shared object
+library file to use `darknet` for code development.
+
+Inside the cloned repository:
+
+```
+mkdir build-release
+cd build-release
+cmake ..
+make
+make install
+```
+
+### How to compile on Linux (using `make`)
 
 Just do `make` in the darknet directory.
 Before make, you can set such options in the `Makefile`: [link](https://github.com/AlexeyAB/darknet/blob/9c1b9a2cf6363546c152251be578a21f3c3caec6/Makefile#L1)
@@ -200,6 +215,19 @@ PS Code\vcpkg>         .\vcpkg install pthreads opencv[ffmpeg] #replace with ope
 8. [necessary only with CUDA] Customize the `build.ps1` script enabling the appropriate `my_cuda_compute_model` line. If not manually defined, CMake toolchain will automatically use the very low 3.0 CUDA compute model
 
 9.  Open Powershell, go to the `darknet` folder and build with the command `.\build.ps1`. If you want to use Visual Studio, you will find two custom solutions created for you by CMake after the build, one in `build_win_debug` and the other in `build_win_release`, containing all the appropriate config flags for your system.
+
+### How to compile on Windows (using `Cmake-GUI`)
+
+Using `Cmake-GUI` as shown here on this [**IMAGE**](https://user-images.githubusercontent.com/4096485/55107892-6becf380-50e3-11e9-9a0a-556a943c429a.png):
+
+1. Configure
+2. Optional platform for generator (Set: x64)
+3. Finish
+4. Generate
+5. Open Project
+6. x64 & Release
+7. Build
+8. Build solution
 
 ### How to compile on Windows (legacy way)
 
@@ -596,8 +624,12 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
 
 ## How to use Yolo as DLL and SO libraries
 
-* on Linux - set `LIBSO=1` in the `Makefile` and do `make`
-* on Windows - compile `build\darknet\yolo_cpp_dll.sln` or `build\darknet\yolo_cpp_dll_no_gpu.sln` solution
+* on Linux
+    * build `darknet` using `cmake` or
+    * set `LIBSO=1` in the `Makefile` and do `make`
+* on Windows
+    * compile `build\darknet\yolo_cpp_dll.sln` solution or
+    * compile `build\darknet\yolo_cpp_dll_no_gpu.sln` solution
 
 There are 2 APIs:
 * C API: https://github.com/AlexeyAB/darknet/blob/master/include/darknet.h
