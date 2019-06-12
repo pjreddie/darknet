@@ -302,8 +302,8 @@ if(MSVC)
   target_compile_definitions(uselib PRIVATE -D_CRT_RAND_S -DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-target_link_libraries(darknet PRIVATE Threads::Threads)
-target_link_libraries(dark PRIVATE Threads::Threads)
+target_link_libraries(darknet PUBLIC Threads::Threads)
+target_link_libraries(dark PUBLIC Threads::Threads)
 
 if(ENABLE_ZED_CAMERA)
   target_link_libraries(darknet PRIVATE ${ZED_LIBRARIES})
