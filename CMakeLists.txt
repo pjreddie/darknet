@@ -280,7 +280,7 @@ if(OpenCV_FOUND)
   target_compile_definitions(dark PUBLIC -DOPENCV)
 endif()
 
-if(OPENMP_FOUND)
+if(WIN32 AND OPENMP_FOUND)
   target_link_libraries(darknet PUBLIC OpenMP::OpenMP_CXX)
   target_link_libraries(darknet PUBLIC OpenMP::OpenMP_C)
   target_link_libraries(dark PUBLIC OpenMP::OpenMP_CXX)
@@ -304,6 +304,7 @@ endif()
 
 target_link_libraries(darknet PRIVATE Threads::Threads)
 target_link_libraries(dark PRIVATE Threads::Threads)
+target_link_libraries(uselib PRIVATE Threads::Threads)
 
 if(ENABLE_ZED_CAMERA)
   target_link_libraries(darknet PRIVATE ${ZED_LIBRARIES})
