@@ -625,11 +625,13 @@ With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`
 ## How to use Yolo as DLL and SO libraries
 
 * on Linux
+    * using `build.sh` or
     * build `darknet` using `cmake` or
     * set `LIBSO=1` in the `Makefile` and do `make`
 * on Windows
-    * compile `build\darknet\yolo_cpp_dll.sln` solution or
-    * compile `build\darknet\yolo_cpp_dll_no_gpu.sln` solution
+    * using `build.ps1` or
+    * build `darknet` using `cmake` or
+    * compile `build\darknet\yolo_cpp_dll.sln` solution or `build\darknet\yolo_cpp_dll_no_gpu.sln` solution
 
 There are 2 APIs:
 * C API: https://github.com/AlexeyAB/darknet/blob/master/include/darknet.h
