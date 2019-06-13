@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 
 $number_of_build_workers=8
-$force_using_include_libs=$false
+$use_vcpkg=$true
 
 function getProgramFiles32bit() {
   $out = ${env:PROGRAMFILES(X86)}
@@ -72,27 +72,27 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
 }
 
 
-if ((Test-Path env:VCPKG_ROOT) -and -not $force_using_include_libs) {
+if ((Test-Path env:VCPKG_ROOT) -and $use_vcpkg) {
   $vcpkg_path = "$env:VCPKG_ROOT"
   Write-Host "Found vcpkg in VCPKG_ROOT: $vcpkg_path"
 }
-elseif ((Test-Path "${env:WORKSPACE}\vcpkg") -and -not $force_using_include_libs) {
+elseif ((Test-Path "${env:WORKSPACE}\vcpkg") -and $use_vcpkg) {
   $vcpkg_path = "${env:WORKSPACE}\vcpkg"
   Write-Host "Found vcpkg in WORKSPACE\vcpkg: $vcpkg_path"
 }
 else {
-  Write-Host "Skipping vcpkg-enabled builds because the VCPKG_ROOT environment variable is not defined, using self-distributed libs`n" -ForegroundColor Yellow
+  Write-Host "Skipping vcpkg-enabled builds because the VCPKG_ROOT environment variable is not defined or you requested to avoid VCPKG, using self-distributed libs`n" -ForegroundColor Yellow
 }
 
-if ($null -eq $env:VCPKG_DEFAULT_TRIPLET) {
+if ($null -eq $env:VCPKG_DEFAULT_TRIPLET -and $use_vcpkg) {
   Write-Host "No default triplet has been set-up for vcpkg. Defaulting to x64-windows" -ForegroundColor Yellow
   $vcpkg_triplet = "x64-windows"
 }
-else {
+elseif ($use_vcpkg) {
   $vcpkg_triplet = $env:VCPKG_DEFAULT_TRIPLET
 }
 
-if ($vcpkg_triplet -Match "x86") {
+if ($vcpkg_triplet -Match "x86" -and $use_vcpkg) {
   Throw "darknet is supported only in x64 builds!"
 }
 
@@ -144,7 +144,7 @@ if (Test-Path env:CUDA_PATH) {
 }
 
 
-if ($vcpkg_path) {
+if ($use_vcpkg) {
   ## DEBUG
   #New-Item -Path .\build_win_debug -ItemType directory -Force
   #Set-Location build_win_debug
@@ -153,6 +153,7 @@ if ($vcpkg_path) {
   ##cmake --build . --config Debug --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
   #Remove-Item DarknetConfig.cmake
   #Remove-Item DarknetConfigVersion.cmake
+  #Copy-Item Debug\*.dll ..
   #Set-Location ..
   #Copy-Item cmake\Modules\*.cmake share\darknet\
 
@@ -164,7 +165,7 @@ if ($vcpkg_path) {
   #cmake --build . --config Release --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
   Remove-Item DarknetConfig.cmake
   Remove-Item DarknetConfigVersion.cmake
-  Copy-Item *.dll ..
+  Copy-Item Release\*.dll ..
   Set-Location ..
   Copy-Item cmake\Modules\*.cmake share\darknet\
 }
