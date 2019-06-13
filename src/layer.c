@@ -66,12 +66,12 @@ void free_layer(layer l)
     if (l.concat)             free(l.concat);
     if (l.concat_delta)       free(l.concat_delta);
     if (l.binary_weights)     free(l.binary_weights);
-    if (l.biases)             free(l.biases);
-    if (l.bias_updates)       free(l.bias_updates);
-    if (l.scales)             free(l.scales);
-    if (l.scale_updates)      free(l.scale_updates);
-    if (l.weights)            free(l.weights);
-    if (l.weight_updates)     free(l.weight_updates);
+    if (l.biases)             free(l.biases), l.biases = NULL;
+    if (l.bias_updates)       free(l.bias_updates), l.bias_updates = NULL;
+    if (l.scales)             free(l.scales), l.scales = NULL;
+    if (l.scale_updates)      free(l.scale_updates), l.scale_updates = NULL;
+    if (l.weights)            free(l.weights), l.weights = NULL;
+    if (l.weight_updates)     free(l.weight_updates), l.weight_updates = NULL;
     if (l.align_bit_weights)  free(l.align_bit_weights);
     if (l.mean_arr)           free(l.mean_arr);
 #ifdef GPU
@@ -89,12 +89,12 @@ void free_layer(layer l)
     if (l.squared)            free(l.squared);
     if (l.norms)              free(l.norms);
     if (l.spatial_mean)       free(l.spatial_mean);
-    if (l.mean)               free(l.mean);
-    if (l.variance)           free(l.variance);
-    if (l.mean_delta)         free(l.mean_delta);
-    if (l.variance_delta)     free(l.variance_delta);
-    if (l.rolling_mean)       free(l.rolling_mean);
-    if (l.rolling_variance)   free(l.rolling_variance);
+    if (l.mean)               free(l.mean), l.mean = NULL;
+    if (l.variance)           free(l.variance), l.variance = NULL;
+    if (l.mean_delta)         free(l.mean_delta), l.mean_delta = NULL;
+    if (l.variance_delta)     free(l.variance_delta), l.variance_delta = NULL;
+    if (l.rolling_mean)       free(l.rolling_mean), l.rolling_mean = NULL;
+    if (l.rolling_variance)   free(l.rolling_variance), l.rolling_variance = NULL;
     if (l.x)                  free(l.x);
     if (l.x_norm)             free(l.x_norm);
     if (l.m)                  free(l.m);
@@ -143,12 +143,12 @@ void free_layer(layer l)
     if (l.concat_delta_gpu)        cuda_free(l.concat_delta_gpu);
     if (l.binary_input_gpu)        cuda_free(l.binary_input_gpu);
     if (l.binary_weights_gpu)      cuda_free(l.binary_weights_gpu);
-    if (l.mean_gpu)                cuda_free(l.mean_gpu);
-    if (l.variance_gpu)            cuda_free(l.variance_gpu);
-    if (l.rolling_mean_gpu)        cuda_free(l.rolling_mean_gpu);
-    if (l.rolling_variance_gpu)    cuda_free(l.rolling_variance_gpu);
-    if (l.variance_delta_gpu)      cuda_free(l.variance_delta_gpu);
-    if (l.mean_delta_gpu)          cuda_free(l.mean_delta_gpu);
+    if (l.mean_gpu)                cuda_free(l.mean_gpu), l.mean_gpu = NULL;
+    if (l.variance_gpu)            cuda_free(l.variance_gpu), l.variance_gpu = NULL;
+    if (l.rolling_mean_gpu)        cuda_free(l.rolling_mean_gpu), l.rolling_mean_gpu = NULL;
+    if (l.rolling_variance_gpu)    cuda_free(l.rolling_variance_gpu), l.rolling_variance_gpu = NULL;
+    if (l.variance_delta_gpu)      cuda_free(l.variance_delta_gpu), l.variance_delta_gpu = NULL;
+    if (l.mean_delta_gpu)          cuda_free(l.mean_delta_gpu), l.mean_delta_gpu = NULL;
     if (l.x_gpu)                   cuda_free(l.x_gpu);  // dont free
     if (l.x_norm_gpu)              cuda_free(l.x_norm_gpu);
 
@@ -157,14 +157,14 @@ void free_layer(layer l)
     if (l.align_workspace_gpu)     cuda_free(l.align_workspace_gpu);
     if (l.transposed_align_workspace_gpu) cuda_free(l.transposed_align_workspace_gpu);
 
-    if (l.weights_gpu)             cuda_free(l.weights_gpu);
-    if (l.weight_updates_gpu)      cuda_free(l.weight_updates_gpu);
-    if (l.weights_gpu16)           cuda_free(l.weights_gpu16);
-    if (l.weight_updates_gpu16)    cuda_free(l.weight_updates_gpu16);
-    if (l.biases_gpu)              cuda_free(l.biases_gpu);
-    if (l.bias_updates_gpu)        cuda_free(l.bias_updates_gpu);
-    if (l.scales_gpu)              cuda_free(l.scales_gpu);
-    if (l.scale_updates_gpu)       cuda_free(l.scale_updates_gpu);
+    if (l.weights_gpu)             cuda_free(l.weights_gpu), l.weights_gpu = NULL;
+    if (l.weight_updates_gpu)      cuda_free(l.weight_updates_gpu), l.weight_updates_gpu = NULL;
+    if (l.weights_gpu16)           cuda_free(l.weights_gpu16), l.weights_gpu16 = NULL;
+    if (l.weight_updates_gpu16)    cuda_free(l.weight_updates_gpu16), l.weight_updates_gpu16 = NULL;
+    if (l.biases_gpu)              cuda_free(l.biases_gpu), l.biases_gpu = NULL;
+    if (l.bias_updates_gpu)        cuda_free(l.bias_updates_gpu), l.bias_updates_gpu = NULL;
+    if (l.scales_gpu)              cuda_free(l.scales_gpu), l.scales_gpu = NULL;
+    if (l.scale_updates_gpu)       cuda_free(l.scale_updates_gpu), l.scale_updates_gpu = NULL;
     if (l.output_gpu)              cuda_free(l.output_gpu);
     if (l.delta_gpu)               cuda_free(l.delta_gpu);
     if (l.rand_gpu)                cuda_free(l.rand_gpu);

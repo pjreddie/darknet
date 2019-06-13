@@ -147,19 +147,24 @@ local_layer parse_local(list *options, size_params params)
     return layer;
 }
 
-convolutional_layer parse_convolutional(list *options, size_params params)
+convolutional_layer parse_convolutional(list *options, size_params params, network net)
 {
     int n = option_find_int(options, "filters",1);
     int groups = option_find_int_quiet(options, "groups", 1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
     int dilation = option_find_int_quiet(options, "dilation", 1);
+    if (size == 1) dilation = 1;
     int pad = option_find_int_quiet(options, "pad",0);
     int padding = option_find_int_quiet(options, "padding",0);
     if(pad) padding = size/2;
 
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
+
+    int share_index = option_find_int_quiet(options, "share_index", -1);
+    convolutional_layer *share_layer = NULL;
+    if(share_layer > -1) share_layer = &net.layers[share_index];
 
     int batch,h,w,c;
     h = params.h;
@@ -172,7 +177,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
+    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, share_layer);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -838,7 +843,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         layer l = { (LAYER_TYPE)0 };
         LAYER_TYPE lt = string_to_layer_type(s->type);
         if(lt == CONVOLUTIONAL){
-            l = parse_convolutional(options, params);
+            l = parse_convolutional(options, params, net);
         }else if(lt == LOCAL){
             l = parse_local(options, params);
         }else if(lt == ACTIVE){
@@ -1112,7 +1117,7 @@ void save_weights_upto(network net, char *filename, int cutoff)
     int i;
     for(i = 0; i < net.n && i < cutoff; ++i){
         layer l = net.layers[i];
-        if(l.type == CONVOLUTIONAL){
+        if(l.type == CONVOLUTIONAL && l.share_layer == NULL){
             save_convolutional_weights(l, fp);
         } if(l.type == CONNECTED){
             save_connected_weights(l, fp);
@@ -1337,7 +1342,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     for(i = 0; i < net->n && i < cutoff; ++i){
         layer l = net->layers[i];
         if (l.dontload) continue;
-        if(l.type == CONVOLUTIONAL){
+        if(l.type == CONVOLUTIONAL && l.share_layer == NULL){
             load_convolutional_weights(l, fp);
         }
         if(l.type == CONNECTED){
