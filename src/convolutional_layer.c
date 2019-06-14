@@ -547,7 +547,16 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     if (l.xnor && l.use_bin_output) fprintf(stderr, "convXB");
     else if (l.xnor) fprintf(stderr, "convX ");
     else fprintf(stderr, "conv  ");
-    fprintf(stderr, "%5d %2d x%2d /%2d(%d)%4d x%4d x%4d   ->  %4d x%4d x%4d %5.3f BF\n", n, size, size, stride, dilation, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+
+    if(groups > 1) fprintf(stderr, "%5d/%3d ", n, groups);
+    else           fprintf(stderr, "%5d     ", n);
+
+    if(dilation > 1) fprintf(stderr, "%2d x%2d/%2d(%1d)", size, size, stride, dilation);
+    else             fprintf(stderr, "%2d x%2d/%2d   ", size, size, stride);
+
+    fprintf(stderr, "%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+
+    //fprintf(stderr, "%5d/%2d %2d x%2d /%2d(%d)%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", n, groups, size, size, stride, dilation, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
     return l;
 }
@@ -897,12 +906,13 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     static int u = 0;
     u++;
 
-    for(i = 0; i < l.batch; ++i){
-        for (j = 0; j < l.groups; ++j) {
-
-            float *a = l.weights + j*l.nweights / l.groups;
+    for(i = 0; i < l.batch; ++i)
+    {
+        for (j = 0; j < l.groups; ++j)
+        {
+            float *a = l.weights +j*l.nweights / l.groups;
             float *b = state.workspace;
-            float *c = l.output + (i*l.groups + j)*n*m;
+            float *c = l.output +(i*l.groups + j)*n*m;
 
             //gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
             //gemm_nn_custom(m, n, k, 1, a, k, b, n, c, n);
@@ -1025,23 +1035,29 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             }
             else {
                 //printf(" l.index = %d - FP32 \n", l.index);
-                float *im = state.input + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
-                //im2col_cpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
+                float *im = state.input + (i*l.groups + j)*(l.c / l.groups)*l.h*l.w;
+                if (l.size == 1) {
+                    b = im;
+                }
+                else {
+                    //im2col_cpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
 
-                im2col_cpu_ext(im,   // input
-                    l.c / l.groups,     // input channels
-                    l.h, l.w,           // input size (h, w)
-                    l.size, l.size,     // kernel size (h, w)
-                    l.pad, l.pad,       // padding (h, w)
-                    l.stride, l.stride, // stride (h, w)
-                    l.dilation, l.dilation, // dilation (h, w)
-                    b);                 // output
+                    im2col_cpu_ext(im,   // input
+                        l.c / l.groups,     // input channels
+                        l.h, l.w,           // input size (h, w)
+                        l.size, l.size,     // kernel size (h, w)
+                        l.pad, l.pad,       // padding (h, w)
+                        l.stride, l.stride, // stride (h, w)
+                        l.dilation, l.dilation, // dilation (h, w)
+                        b);                 // output
+
+                }
 
                 gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
                 // bit-count to float
             }
-            c += n*m;
-            state.input += l.c*l.h*l.w;
+            //c += n*m;
+            //state.input += l.c*l.h*l.w;
         }
     }
 
@@ -1079,7 +1095,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
             float *b = state.workspace;
             float *c = l.weight_updates + j*l.nweights / l.groups;
 
-            float *im = state.input + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
+            float *im = state.input + (i*l.groups + j)* (l.c / l.groups)*l.h*l.w;
 
             //im2col_cpu(im, l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, b);
             im2col_cpu_ext(
@@ -1112,7 +1128,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
                     l.pad, l.pad,           // padding (h, w)
                     l.stride, l.stride,     // stride (h, w)
                     l.dilation, l.dilation, // dilation (h, w)
-                    state.delta + (i*l.groups + j)*l.c / l.groups*l.h*l.w); // output (delta)
+                    state.delta + (i*l.groups + j)* (l.c / l.groups)*l.h*l.w); // output (delta)
             }
         }
     }

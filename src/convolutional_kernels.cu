@@ -578,7 +578,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                     state.workspace);       // output
 
             }
-            gemm_ongpu(0, 0, m, n, k, 1., a, k, b, n, 1., c + i*m*n, n);
+            //gemm_ongpu(0, 0, m, n, k, 1., a, k, b, n, 1., c + i*m*n, n);
+            gemm_ongpu(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
         }
     }
 
@@ -817,7 +818,8 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 l.stride, l.stride,     // stride (h, w)
                 l.dilation, l.dilation, // dilation (h, w)
                 state.workspace);       // output
-            gemm_ongpu(0, 1, m, n, k, 1, a + i*m*k, k, b, k, 1, c, n);
+            //gemm_ongpu(0, 1, m, n, k, 1, a + i*m*k, k, b, k, 1, c, n);
+            gemm_ongpu(0, 1, m, n, k, 1, a, k, b, k, 1, c, n);
 
             if (state.delta) {
                 if (l.binary || l.xnor) swap_binary(&l);
@@ -825,7 +827,9 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 float * b = l.delta_gpu + (i*l.groups + j)*m*k;
                 float * c = state.workspace;
 
-                gemm_ongpu(1, 0, n, k, m, 1, a, n, b + i*k*m, k, 0, c, k);
+                //gemm_ongpu(1, 0, n, k, m, 1, a, n, b + i*k*m, k, 0, c, k);
+                gemm_ongpu(1, 0, n, k, m, 1, a, n, b, k, 0, c, k);
+
 
                 float *delta = state.delta + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
 
