@@ -1001,7 +1001,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     //size_t bit_input_size = intput_size / 8 + 1;
                     //char *bit_input = calloc(bit_input_size, sizeof(char));
 
-                    //size_t weights_size = k * m; //l.size*l.size*l.c*l.n;
+                    //size_t weights_size = k * m; //l.size*l.size*l.c*l.n; // l.nweights
                     //size_t bit_weights_size = weights_size / 8 + 1;
 
                     //char *bit_weights = calloc(bit_weights_size, sizeof(char));
@@ -1136,7 +1136,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
 
 void update_convolutional_layer(convolutional_layer l, int batch, float learning_rate, float momentum, float decay)
 {
-    //int size = l.size*l.size*l.c*l.n;
+    //int size = l.nweights;
     axpy_cpu(l.n, learning_rate / batch, l.bias_updates, 1, l.biases, 1);
     scal_cpu(l.n, momentum, l.bias_updates, 1);
 

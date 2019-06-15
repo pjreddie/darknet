@@ -518,7 +518,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         printf("\n is_nan_or_inf(state.input) = %d \n", input_nan_inf);
         if (input_nan_inf) getchar();
 
-        int weights_nan_inf = is_nan_or_inf(l.weights_gpu, l.size * l.size * l.c * l.n);
+        int weights_nan_inf = is_nan_or_inf(l.weights_gpu, l.nweights);
         printf("\n is_nan_or_inf(l.weights_gpu) = %d \n", weights_nan_inf);
         if (weights_nan_inf) getchar();
         */
@@ -697,8 +697,8 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         // calculate conv weight updates
         // Already: l.weight_updates_gpu = (l.weight_updates_gpu - l.weight*decay*batch*subdivision)*momentum
         //   so we should copy f32 to f16, or compute: f16=(w_up - w*d*b*s)*m
-        assert((l.c*l.n*l.size*l.size) > 0);
-        cuda_convert_f32_to_f16(l.weight_updates_gpu, l.c*l.n*l.size*l.size, l.weight_updates_gpu16);
+        assert((l.nweights) > 0);
+        cuda_convert_f32_to_f16(l.weight_updates_gpu, l.nweights, l.weight_updates_gpu16);
 
         CHECK_CUDNN(cudnnConvolutionBackwardFilter(cudnn_handle(),
             &one,
@@ -714,7 +714,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             l.dweightDesc16,
             l.weight_updates_gpu16));    // l.weight_updates_gpu);
 
-        cuda_convert_f16_to_f32(l.weight_updates_gpu16, l.c*l.n*l.size*l.size, l.weight_updates_gpu);
+        cuda_convert_f16_to_f32(l.weight_updates_gpu16, l.nweights, l.weight_updates_gpu);
 
         if (state.delta) {
             if (l.binary || l.xnor) swap_binary(&l);
@@ -856,7 +856,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         if (state.delta) {
             fix_nan_and_inf(state.delta, l.inputs * l.batch);
         }
-        int size = l.size * l.size * l.c * l.n;
+        int size = l.nweights;
         fix_nan_and_inf(l.weight_updates_gpu, size);
         fix_nan_and_inf(l.weights_gpu, size);
     }
