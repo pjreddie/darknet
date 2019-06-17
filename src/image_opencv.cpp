@@ -7,7 +7,7 @@
 #include "darknet.h"
 using namespace cv;
 static int checkblur = 1;
-extern static int cando;
+extern int cando;
 extern "C" {
 
 IplImage *image_to_ipl(image im)
