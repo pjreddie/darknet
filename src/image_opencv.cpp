@@ -1,3 +1,5 @@
+ 
+
 #ifdef OPENCV
 
 #include "stdio.h"
@@ -6,11 +8,9 @@
 #include "image.h"
 #include "darknet.h"
 #include "detector.h"
-
 using namespace cv;
 static int checkblur = 1;
-extern int cando; 
-
+extern int cando;
 extern "C" {
 
 IplImage *image_to_ipl(image im)
@@ -103,7 +103,7 @@ image load_image_cv(char *filename, int channels)
     Mat m;
     Mat dst; // blur image
     image im;
-    //int min;
+    int min;
     m = imread(filename, flag); // read image
     if(!m.data){ // can't load image
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
