@@ -170,6 +170,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
     *(l.cost) = 0;
     //
     printf("l.height = %d , l.width = %d , l.n = %d , l.filters = %d\n",l.h,l.w,l.n,l.c);
+    printf("net.truth = %d, net.truths = %d\n",net.truth,nnet.truths);
     for (b = 0; b < l.batch; ++b) { // batch(4) grid접근 방식
         for (j = 0; j < l.h; ++j) { // height
             for (i = 0; i < l.w; ++i) { // width
@@ -196,7 +197,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
                     avg_anyobj += l.output[obj_index];
                     l.delta[obj_index] = 0 - l.output[obj_index];
-                    printf("best_iou = %f , best_t = %d, l.ignore_thresh = %f, l.truth_thresh = %f\n",best_iou,best_t,l.ignore_thresh,l.truth_thresh);
+                    //printf("best_iou = %f , best_t = %d, l.ignore_thresh = %f, l.truth_thresh = %f\n",best_iou,best_t,l.ignore_thresh,l.truth_thresh);
                     if (best_iou > l.ignore_thresh) { // best_iou > 0.7
                         l.delta[obj_index] = 0;
                     }
