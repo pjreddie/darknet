@@ -884,7 +884,7 @@ void run_detector(int argc, char **argv) // argv[1] == detector ?? ?™?˜™ å¯ƒìŽ
 
 void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
-    list *options = read_data_cfg(datacfg);
+list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
 
@@ -897,11 +897,15 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     char *input = buff;
     float nms=.45;
     while(1){
-        printf("Enter Image Path: ");
-        fflush(stdout);
-        input = fgets(input, 256, stdin);
-        if(!input) return;
-        strtok(input, "\n");
+        if(filename){
+            strncpy(input, filename, 256);
+        } else {
+            printf("Enter Image Path: ");
+            fflush(stdout);
+            input = fgets(input, 256, stdin);
+            if(!input) return;
+            strtok(input, "\n");
+        }
         image im = load_image_color(input,0,0);
         image sized = letterbox_image(im, net->w, net->h);
         //image sized = resize_image(im, net->w, net->h);
@@ -935,5 +939,6 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
 
         free_image(im);
         free_image(sized);
+        if (filename) break;
     }
 }
