@@ -848,7 +848,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
         image sized;
         for(j = 1 ; j <= 10 ; j++){
         sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
-        im =  = load_image_color(input,0,0);
+        im = load_image_color(input,0,0);
         sized = letterbox_image(im, net->w, net->h);
         //image sized = resize_image(im, net->w, net->h);
         //image sized2 = resize_max(im, net->w);
