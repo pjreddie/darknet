@@ -170,6 +170,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
     *(l.cost) = 0;
     //
     //printf("l.height = %d , l.width = %d , l.n = %d , l.filters = %d ",l.h,l.w,l.n,l.c);
+    printf("YOLO's channel = %d\n",l.c);
     for (b = 0; b < l.batch; ++b) { // batch(4) grid접근 방식
         for (j = 0; j < l.h; ++j) { // height
             for (i = 0; i < l.w; ++i) { // width
@@ -216,7 +217,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
         //for(t = 0 ; t < 1 ; ++t){
         for(t = 0; t < l.max_boxes; ++t){ // 해당 반복문 공부
             box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1);
-
+            //net->truth = net->truths*net->batch
             if(!truth.x) break;
             float best_iou = 0;
             int best_n = 0;
@@ -234,7 +235,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     best_n = n;// 제일 잘 맞는 anchor박스를 검출
                 }
             }
-            int mask_n = int_index(l.mask, best_n, l.n);
+            int mask_n = int_index(l.mask, best_n, l.n); // best_n = 0 ~ 8
             //printf("mask_n = %d, best_n = %d, l.n = %d ",mask_n,best_n,l.n);
             if(mask_n >= 0){ // find something
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
