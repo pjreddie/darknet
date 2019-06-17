@@ -830,6 +830,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     char *input = buff;
     float nms=.45;
     while(1){
+        int i = 0;
+        /*
         if(filename){
             strncpy(input, filename, 256);
         } else {
@@ -839,6 +841,9 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             if(!input) return;
             strtok(input, "\n");
         }
+        */
+        for(i = 1 ; i <= 10 ; i++){
+            sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",i);
         image im = load_image_color(input,0,0);
         image sized = letterbox_image(im, net->w, net->h);
         //image sized = resize_image(im, net->w, net->h);
@@ -862,6 +867,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
         draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
         free_detections(dets, nboxes);
         }
+        }// end for function
+        Sleep(5000);
         if(outfile){
             save_image(im, outfile);
         }
