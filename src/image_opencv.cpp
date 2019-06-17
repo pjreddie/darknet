@@ -4,6 +4,7 @@
 #include "stdlib.h"
 #include "opencv2/opencv.hpp"
 #include "image.h"
+#include "darknet.h"
 
 using namespace cv;
 static int checkblur = 1;
@@ -103,12 +104,18 @@ image load_image_cv(char *filename, int channels)
     m = imread(filename, flag); // read image
     if(!m.data){ // can't load image
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
+        cando = 0;
         char buff[256];
         sprintf(buff, "echo %s >> bad.list", filename);
         system(buff);
         return make_image(10,10,3);
         //exit(0);
     }
+    else
+    {
+        cando = 1;
+    }
+    
     if(checkblur == 1)
     {
         GaussianBlur(m,dst,Size(7,7),0);// blur

@@ -917,6 +917,8 @@ list *options = read_data_cfg(datacfg);
 
         float *X = sized.data;
         time=what_time_is_it_now();
+        if(cando == 1)
+        {
         network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
         int nboxes = 0;
@@ -926,14 +928,15 @@ list *options = read_data_cfg(datacfg);
         if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
         draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
         free_detections(dets, nboxes);
+        }
         if(outfile){
             save_image(im, outfile);
         }
         else{
             save_image(im, "predictions");
 #ifdef OPENCV
-            make_window("predictions", 512, 512, 0);
-            show_image(im, "predictions", 0);
+            //make_window("predictions", 512, 512, 0);
+            //show_image(im, "predictions", 0);
 #endif
         }
 

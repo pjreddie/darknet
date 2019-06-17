@@ -5,6 +5,8 @@
 #include <string.h>
 #include <pthread.h>
 
+static int cando = 0;
+
 #ifdef GPU
     #define BLOCK 512
 
