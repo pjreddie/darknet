@@ -5,7 +5,6 @@
 #include "opencv2/opencv.hpp"
 #include "image.h"
 #include "darknet.h"
-#include "detector.h"
 using namespace cv;
 static int checkblur = 1;
 extern int cando;
