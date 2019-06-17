@@ -6,8 +6,9 @@
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen);
+extern void void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen);
 extern void run_yolo(int argc, char **argv);
-extern void run_detector(int argc, char **argv); // darknet.h ÌôïÏù∏
+extern void run_detector(int argc, char **argv); // darknet.h ?ôï?ù∏
 extern void run_coco(int argc, char **argv);
 extern void run_nightmare(int argc, char **argv);
 extern void run_classifier(int argc, char **argv);
@@ -397,7 +398,7 @@ void visualize(char *cfgfile, char *weightfile)
     visualize_network(net);
 }
 
-//main ÏúÑÏπò 
+//main ?úÑÏπ? 
 int main(int argc, char **argv)
 {
     //test_resize("data/bad.jpg");
