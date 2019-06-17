@@ -6,7 +6,7 @@
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen);
-extern void void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen);
+extern void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen);
 extern void run_yolo(int argc, char **argv);
 extern void run_detector(int argc, char **argv); // darknet.h ?ôï?ù∏
 extern void run_coco(int argc, char **argv);
