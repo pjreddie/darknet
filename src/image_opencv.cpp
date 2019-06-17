@@ -1,3 +1,5 @@
+extern int cando; 
+
 #ifdef OPENCV
 
 #include "stdio.h"
