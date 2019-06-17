@@ -169,8 +169,8 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
     int class_count = 0;
     *(l.cost) = 0;
     //
-    printf("l.height = %d , l.width = %d , l.n = %d , l.filters = %d\n",l.h,l.w,l.n,l.c);
-    printf("net.truth = %d, net.truths = %d\n",net.truth,net.truths);
+    //printf("l.height = %d , l.width = %d , l.n = %d , l.filters = %d\n",l.h,l.w,l.n,l.c);
+    //printf("net.truth = %d, net.truths = %d\n",net.truth,net.truths);
     for (b = 0; b < l.batch; ++b) { // batch(4) grid접근 방식
         for (j = 0; j < l.h; ++j) { // height
             for (i = 0; i < l.w; ++i) { // width
