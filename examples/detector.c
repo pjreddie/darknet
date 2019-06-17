@@ -875,14 +875,14 @@ void run_detector(int argc, char **argv) // argv[1] == detector ??ç†?èô?òô ÂØÉÏé
     }
     else if(0==strcmp(argv[2],"run"))
     {
-        run(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen)
+        detector_run(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
     }
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
 }
 
 
-void run(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
+void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
