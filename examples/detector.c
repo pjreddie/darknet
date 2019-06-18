@@ -872,7 +872,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
         free_detections(dets, nboxes);
         }
         }// end for function
-        sleep(5000);
+        sleep(5);
         if(outfile){
             save_image(im, outfile);
         }
