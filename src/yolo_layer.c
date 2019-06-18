@@ -118,7 +118,7 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
 
 
 void delta_yolo_class(float *output, float *delta, int index, int class, int classes, int stride, float *avg_cat)
-{
+{//(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
     int n;
     if (delta[index]){
         delta[index + stride*class] = 1 - output[index + stride*class];
@@ -133,11 +133,13 @@ void delta_yolo_class(float *output, float *delta, int index, int class, int cla
 
 static int entry_index(layer l, int batch, int location, int entry) // what is it??
 { // location = n * l.w * l.h = 3 * width * height
+//(l, b, n*l.w*l.h + j*l.w + i, 4)
     int n =   location / (l.w*l.h); // 0 ~ 2 ( always )
     int loc = location % (l.w*l.h); // 0 ( always )
     //printf(" %d ",(batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc)/(l.w*l.h));
     return batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc;
     // 4 * width * height * filters(18) + n(0~2) * width * height *(5+classes(1)) + 0
+    //n = anchor box number
     // (width*height)(72+(0~2))
 }
 
@@ -175,7 +177,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
         for (j = 0; j < l.h; ++j) { // height
             for (i = 0; i < l.w; ++i) { // width
                 for (n = 0; n < l.n; ++n) { // anchor's number = 3
-                    int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
+                    int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0); // 몇번째 grid cell인가
                     //printf(" box_index = %d ",box_index);
                     // 학습하는 이미지의 각각의 이미지를 따로 가져옴. 한번에 4개의 이미지를 읽기 때문에 batch또한 0번부터 3번까지 나눠서 정보를 가져옴
                     // n*l.w*l.h + j*l.w + i == 이미지 RGB의 모든 값을 가지는 1차원 배열 정보
@@ -194,9 +196,13 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                             // person을 뜻함
                         }
                     }
-                    int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
+                    //하나의 cell에 대해서 모든 객체 점수들을 종합하여 최대의 값을 파악
+                    int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4); // 해당 grid cell 위치
+                    // objectness score정보를 가져오기 위한 obj_index
                     avg_anyobj += l.output[obj_index];
+                    // 전체 평균값에 obj_index값을 증감
                     l.delta[obj_index] = 0 - l.output[obj_index];
+                    printf("delta[obj_index] = %lf\n",*l.delta[obj_index]);
                     //printf("best_iou = %f , best_t = %d, l.ignore_thresh = %f, l.truth_thresh = %f\n",best_iou,best_t,l.ignore_thresh,l.truth_thresh);
                     if (best_iou > l.ignore_thresh) { // best_iou > 0.7
                         l.delta[obj_index] = 0;
@@ -215,7 +221,8 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             }//end third iteration
         }//end second iteration
         //for(t = 0 ; t < 1 ; ++t){
-        for(t = 0; t < l.max_boxes; ++t){ // 해당 반복문 공부
+        for(t = 0; t < l.max_boxes; ++t)
+        { // 해당 반복문 공부
             box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1);
             //net->truth = net->truths*net->batch
             if(!truth.x) break;
