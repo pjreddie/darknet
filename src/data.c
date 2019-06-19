@@ -1492,19 +1492,20 @@ void get_random_batch(data d, int n, float *X, float *y)
 
 void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_batch() function
 {// X = input , y = truth
+//(d, batch, i*batch, net->input, net->truth);
     int j;
     //printf("Here is get_next_batch() function\n");
     //printf("n = %d , offset = %d\n",n,offset); // n(batch(4)) , offset ( i(0~64)*batch(4) ) 
     //printf("\n");
     //printf("d.X.cols = %d ,d.X.rows = %d , d.y.cols = %d, d.y.rows = %d\n",d.X.cols,d.X.rows,d.y.cols,d.y.rows);
-    for(j = 0; j < n; ++j){
+    for(j = 0; j < n; ++j){//j = 0 ~ 3 4개의 이미지의 정보를 복사하는 작업
         int index = offset + j;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float)); // 실제 이미지를 축소한 값을 input값에 순서대로 복사
 
          //printf("X+j*d.X.cols = %f,  d.X.vals[%d] = %f\n",*(X+j*d.X.cols), index,*d.X.vals[index]);
          //printf("this size = %ld\n",d.X.cols*sizeof(float));
         if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));// truth에서 id를 제외한 값을 저장
-         //printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",*y, *d.y.vals[index]);
+         printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",*y, *d.y.vals[index]);
          //printf("this size = %ld\n",d.y.cols*sizeof(float));
     }
 }
