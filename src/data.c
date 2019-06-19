@@ -465,6 +465,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
+    printf("dx = %lf, dy = %lf\n",dx,dy);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     if(count > num_boxes) count = num_boxes;
     float x,y,w,h;
@@ -1091,7 +1092,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         //printf("nw = %lf, nh = %lf\n",nw,nh);
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
-        printf("dx = %lf, dy = %lf\n",dx,dy);
+        //printf("dx = %lf, dy = %lf\n",dx,dy);
+        //resizing크기와 일치하는 dx,dy는 0을 반환 그 외의경우에는 차이값에서 랜덤하게 나옴
         place_image(orig, nw, nh, dx, dy, sized); // model input w, h에 일치하도록 image크기 변경
         // image have 3 dimension so we want to change by 1 dimension.
         // so we use place_image function.
