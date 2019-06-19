@@ -108,7 +108,9 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
     float ty = (truth.y*lh - j); // j =
     float tw = log(truth.w*w / biases[2*n]);
     float th = log(truth.h*h / biases[2*n + 1]);
+    printf("tx = %lf, ty = %lf, tw = %lf, th = %lf\n",tx,ty,tw,th);
     // x = output
+    //stride = l.w*l.h
     delta[index + 0*stride] = scale * (tx - x[index + 0*stride]);
     delta[index + 1*stride] = scale * (ty - x[index + 1*stride]);
     delta[index + 2*stride] = scale * (tw - x[index + 2*stride]);
@@ -234,7 +236,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             if(!truth.x) break;
             float best_iou = 0;
             int best_n = 0;
-            printf("truth.x = %lf, truth.y = %lf, l.w = %d , l.h = %d\n",truth.x,truth.y,l.w,l.h);
+            //printf("truth.x = %lf, truth.y = %lf, l.w = %d , l.h = %d\n",truth.x,truth.y,l.w,l.h);
             i = (truth.x * l.w);
             j = (truth.y * l.h);
             //i,j = 실측값 중심점 좌표 학습 이미지를 resizing 시켰기 때문에 위치 재조정
@@ -255,6 +257,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     best_n = n;// 제일 잘 맞는 anchor박스를 검출
                 }
             }
+            //
             int mask_n = int_index(l.mask, best_n, l.n); // best_n = 0 ~ 8
             //모든 anchor박스에 하는 이유는 다른 yolo에서도 똑같이 해당 함수를 사용하지만
             //해당 l.mask의 값에 따라서 사용할 수 있는 anchor박스는 제한적
