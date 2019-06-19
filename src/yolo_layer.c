@@ -205,11 +205,11 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     //printf("best_iou = %lf, l.ignore_thresh = %lf, l.truth_thresh = %lf,delta[obj_index] = %lf\n",best_iou,l.ignore_thresh,l.truth_thresh,l.delta[obj_index]);
                     //printf("best_iou = %f , best_t = %d, l.ignore_thresh = %f, l.truth_thresh = %f\n",best_iou,best_t,l.ignore_thresh,l.truth_thresh);
                     if (best_iou > l.ignore_thresh) { // best_iou > 0.7
-                        printf("111\n");
+                        //printf("111\n");
                         l.delta[obj_index] = 0;
                     }
                     if (best_iou > l.truth_thresh) { // best_iou > 1
-                        printf("222\n");
+                        //printf("222\n");
                         l.delta[obj_index] = 1 - l.output[obj_index]; // make l.delta = 0 ~ 1
 
                         int class = net.truth[best_t*(4 + 1) + b*l.truths + 4];
@@ -226,6 +226,10 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
         for(t = 0; t < l.max_boxes; ++t)
         { // 해당 반복문 공부
             box truth = float_to_box(net.truth + t*(4 + 1) + b*l.truths, 1);
+            //net->truth의 값은 train부분에서 get_next_batch()함수 [이미지에 대한 정보를 가져오는 작업]에서
+            //실측값(ground truth)를 다음 구조체 변수에 저장한다.
+            //해당 작업은 if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
+            //와 같은 if문에서 처리
             //net->truth = net->truths*net->batch
             if(!truth.x) break;
             float best_iou = 0;
