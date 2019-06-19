@@ -19,6 +19,8 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
     l.outputs = w*h*c;
     l.inputs = l.outputs;
 
+    if(w != w2 || h != h2 || c != c) fprintf(stderr, " w = %d, w2 = %d, h = %d, h2 = %d, c = %d, c2 = %d \n", w, w2, h, h2, c, c2);
+
     l.index = index;
 
     l.delta = (float*)calloc(l.outputs * batch, sizeof(float));

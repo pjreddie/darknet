@@ -106,6 +106,7 @@ void backward_network_gpu(network net, network_state state)
             state.input = prev.output_gpu;
             state.delta = prev.delta_gpu;
         }
+        if (l.onlyforward) continue;
         l.backward_gpu(l, state);
 
         /*

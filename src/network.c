@@ -318,6 +318,7 @@ void backward_network(network net, network_state state)
         }
         layer l = net.layers[i];
         if (l.stopbackward) break;
+        if (l.onlyforward) continue;
         l.backward(l, state);
     }
 }

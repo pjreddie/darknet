@@ -415,7 +415,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     //if (state.use_mixed_precision) {
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
     if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
-        l.c % 8 == 0 && l.n % 8 == 0)
+        (l.c / l.groups) % 8 == 0 && l.n % 8 == 0 && !state.train)
     {
         //printf("\n CUDNN_HALF!!! state.index = %d \n", state.index);
 
@@ -629,7 +629,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 //#ifdef CUDNN_HALF
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
     if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
-        l.c % 8 == 0 && l.n % 8 == 0)
+        (l.c / l.groups) % 8 == 0 && l.n % 8 == 0 && !state.train)
     {
         const size_t input16_size = l.batch*l.c*l.w*l.h;
         const size_t delta16_size = l.batch*l.n*l.out_w*l.out_h;
@@ -909,6 +909,9 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
     //float momentum = a.momentum;
     //float decay = a.decay;
     //int batch = a.batch;
+
+    fix_nan_and_inf(l.weight_updates_gpu, l.nweights);
+    fix_nan_and_inf(l.weights_gpu, l.nweights);
 
     if (l.adam) {
         //adam_update_gpu(l.weights_gpu, l.weight_updates_gpu, l.m_gpu, l.v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.nweights, batch, a.t);

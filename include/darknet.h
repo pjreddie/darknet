@@ -136,6 +136,7 @@ typedef enum {
     AVGPOOL,
     LOCAL,
     SHORTCUT,
+    SCALE_CHANNELS,
     ACTIVE,
     RNN,
     GRU,
@@ -153,6 +154,7 @@ typedef enum {
     UPSAMPLE,
     LOGXENT,
     L2NORM,
+    EMPTY,
     BLANK
 } LAYER_TYPE;
 

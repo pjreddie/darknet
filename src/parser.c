@@ -31,6 +31,7 @@
 #include "rnn_layer.h"
 #include "route_layer.h"
 #include "shortcut_layer.h"
+#include "scale_channels_layer.h"
 #include "softmax_layer.h"
 #include "utils.h"
 #include "upsample_layer.h"
@@ -48,6 +49,7 @@ LAYER_TYPE string_to_layer_type(char * type)
 {
 
     if (strcmp(type, "[shortcut]")==0) return SHORTCUT;
+    if (strcmp(type, "[scale_channels]") == 0) return SCALE_CHANNELS;
     if (strcmp(type, "[crop]")==0) return CROP;
     if (strcmp(type, "[cost]")==0) return COST;
     if (strcmp(type, "[detection]")==0) return DETECTION;
@@ -80,6 +82,7 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[softmax]")==0) return SOFTMAX;
     if (strcmp(type, "[route]")==0) return ROUTE;
     if (strcmp(type, "[upsample]") == 0) return UPSAMPLE;
+    if (strcmp(type, "[empty]") == 0) return EMPTY;
     return BLANK;
 }
 
@@ -600,6 +603,24 @@ layer parse_shortcut(list *options, size_params params, network net)
 }
 
 
+layer parse_scale_channels(list *options, size_params params, network net)
+{
+    char *l = option_find(options, "from");
+    int index = atoi(l);
+    if (index < 0) index = params.index + index;
+
+    int batch = params.batch;
+    layer from = net.layers[index];
+
+    layer s = make_scale_channels_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
+
+    char *activation_s = option_find_str_quiet(options, "activation", "linear");
+    ACTIVATION activation = get_activation(activation_s);
+    s.activation = activation;
+    return s;
+}
+
+
 layer parse_activation(list *options, size_params params)
 {
     char *activation_s = option_find_str(options, "activation", "linear");
@@ -895,6 +916,10 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             l = parse_shortcut(options, params, net);
             net.layers[count - 1].use_bin_output = 0;
             net.layers[l.index].use_bin_output = 0;
+        }else if (lt == SCALE_CHANNELS) {
+            l = parse_scale_channels(options, params, net);
+            net.layers[count - 1].use_bin_output = 0;
+            net.layers[l.index].use_bin_output = 0;
         }else if(lt == DROPOUT){
             l = parse_dropout(options, params);
             l.output = net.layers[count-1].output;
@@ -902,6 +927,19 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 #ifdef GPU
             l.output_gpu = net.layers[count-1].output_gpu;
             l.delta_gpu = net.layers[count-1].delta_gpu;
+#endif
+        }
+        else if (lt == EMPTY) {
+            layer empty_layer;
+            empty_layer.out_w = params.w;
+            empty_layer.out_h = params.h;
+            empty_layer.out_c = params.c;
+            l = empty_layer;
+            l.output = net.layers[count - 1].output;
+            l.delta = net.layers[count - 1].delta;
+#ifdef GPU
+            l.output_gpu = net.layers[count - 1].output_gpu;
+            l.delta_gpu = net.layers[count - 1].delta_gpu;
 #endif
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
