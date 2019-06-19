@@ -219,7 +219,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                         box truth = float_to_box(net.truth + best_t*(4 + 1) + b*l.truths, 1);
                         delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
-                    printf("l.delta[obj_index = %lf\n",l.delta[obj_index]);
+                    printf("obj_index = %d , l.delta[obj_index] = %lf\n",obj_index,l.delta[obj_index]);
                 } // end firth iteration
             }//end third iteration
         }//end second iteration
