@@ -219,7 +219,6 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                         box truth = float_to_box(net.truth + best_t*(4 + 1) + b*l.truths, 1);
                         delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
-                    printf("obj_index = %d , l.delta[obj_index] = %lf\n",obj_index,l.delta[obj_index]);
                 } // end firth iteration
             }//end third iteration
         }//end second iteration
@@ -237,13 +236,19 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             int best_n = 0;
             i = (truth.x * l.w);
             j = (truth.y * l.h);
+            //i,j = 실측값 중심점 좌표 학습 이미지를 resizing 시켰기 때문에 위치 재조정
             box truth_shift = truth;
             truth_shift.x = truth_shift.y = 0;
             for(n = 0; n < l.total; ++n){
                 box pred = {0};
                 pred.w = l.biases[2*n]/net.w;
                 pred.h = l.biases[2*n+1]/net.h;
+                //pred.w,h = anchor box's w,h
+                printf("pred.w = %lf, pred.h = %lf, pred.x = %lf, pred.y = %lf\n",pred.w,pred.h,pred.x,pred.y);
+                printf("truth_shift.w = %lf, truth_shift.h = %lf, truth_shift.x = %lf, truth_shift.y = %lf\n",truth_shift.w,truth_shift.h,truth_shift.x,truth_shift.y);
                 float iou = box_iou(pred, truth_shift);
+                //truth_shift는 x,y는 0 w,h는 실측값에서 가져온다
+                //실측값과 anchor box의 iou
                 if (iou > best_iou){
                     best_iou = iou;
                     best_n = n;// 제일 잘 맞는 anchor박스를 검출
