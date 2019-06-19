@@ -139,7 +139,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
 }
 
 
-box_label *read_boxes(char *filename, int *n)
+box_label *read_boxes(char *filename, int *n) // boxes관련 파일 읽기
 {
     FILE *file = fopen(filename, "r");
     if(!file) file_error(filename);
@@ -153,6 +153,7 @@ box_label *read_boxes(char *filename, int *n)
             size = size * 2;
             boxes = realloc(boxes, size*sizeof(box_label));
         }
+        //실측값 정보를 boxes 구조체에 저장
         boxes[count].id = id;
         boxes[count].x = x;
         boxes[count].y = y;
@@ -451,6 +452,7 @@ void fill_truth_mask(char *path, int num_boxes, float *truth, int classes, int w
 
 void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy) // fill_truth_detection() function
 {//this function check the bounding box in txt file  truth is **data.y.vals
+//(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h);
     char labelpath[4096];
     find_replace(path, "images", "labels", labelpath);
     find_replace(labelpath, "JPEGImages", "labels", labelpath);
@@ -481,7 +483,8 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
             ++sub;
             continue;
         }
-
+        //d.y.vals[i] = truth[]
+        //truth[0] = x , truth[1] = y , truth[2] = w , truth[3] = w , truth[4] = h , truth[5] = id
         truth[(i-sub)*5+0] = x; // x
         truth[(i-sub)*5+1] = y; // y
         truth[(i-sub)*5+2] = w; // width
@@ -1058,11 +1061,13 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 							      // when you train the dataset it have to random image train.
         image sized = make_image(w, h, orig.c); // make_image in image.c
         fill_image(sized, .5); 
+        printf("orig.w = %d , orig.h = %d\n",orig.w,orig.h);
         float dw = jitter * orig.w; // jitter is 0.3 default
         float dh = jitter * orig.h; // jitter is 0.3 default
         float rand_dw,rand_dh;
         rand_dw = rand_uniform(-dw, dw);
         rand_dh = rand_uniform(-dh, dh);
+        printf("rand_dw = %lf, rand_dh = %lf\n",rand_dw,rand_dh);
         float new_ar = (orig.w + rand_dw) / (orig.h + rand_dh);
         //float scale = rand_uniform(.25, 2);
         float scale = 1;
@@ -1095,7 +1100,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
 
         fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h); // take a information in txt file ( x , y , width , height , id )
-
+        //실측정보 가져오기
         free_image(orig);
     }
     free(random_paths);
