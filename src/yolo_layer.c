@@ -201,7 +201,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     }
                     //하나의 cell에 대해서 모든 객체 점수들을 종합하여 최대의 값을 파악
                     int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4); // 해당 grid cell 위치에서 objectness값 확인
-                    printf("obj_index = %d\n",obj_index);
+                    //printf("obj_index = %d\n",obj_index);
                     // objectness score정보를 가져오기 위한 obj_index
                     avg_anyobj += l.output[obj_index];
                     // 전체 평균값에 obj_index값을 증감
