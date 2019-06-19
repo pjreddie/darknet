@@ -99,19 +99,21 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
 }
 
 float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride)
-{
+{ // delta의 의미
     //(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
     box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
+    //anchor box와 output을 사용하여 iou값 유추
     float iou = box_iou(pred, truth);
 
     float tx = (truth.x*lw - i); // i = width
-    float ty = (truth.y*lh - j); // j =
+    float ty = (truth.y*lh - j); // j = height
     float tw = log(truth.w*w / biases[2*n]);
     float th = log(truth.h*h / biases[2*n + 1]);
     //printf("tx = %lf, ty = %lf, tw = %lf, th = %lf\n",tx,ty,tw,th);
     // x = output
     //stride = l.w*l.h
-    printf("scale = %lf\n",scale);
+    //printf("scale = %lf\n",scale);
+    //(2-truth.w*truth.h) = scale
     delta[index + 0*stride] = scale * (tx - x[index + 0*stride]);
     delta[index + 1*stride] = scale * (ty - x[index + 1*stride]);
     delta[index + 2*stride] = scale * (tw - x[index + 2*stride]);
