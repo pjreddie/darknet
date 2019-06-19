@@ -1505,7 +1505,7 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_ba
          //printf("X+j*d.X.cols = %f,  d.X.vals[%d] = %f\n",*(X+j*d.X.cols), index,*d.X.vals[index]);
          //printf("this size = %ld\n",d.X.cols*sizeof(float));
         if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));// truth에서 id를 제외한 값을 저장
-         printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f\n",*y, *d.y.vals[index]);
+         printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f\n",*(y+j.d.y.cols), *d.y.vals[index]);
          //printf("this size = %ld\n",d.y.cols*sizeof(float));
     }
 }
