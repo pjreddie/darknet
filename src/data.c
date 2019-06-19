@@ -1075,7 +1075,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         float scale = 1;
         float nw, nh;
 
-        printf("random_path[i] = %s, w = %d, h = %d, new_ar = %lf,",random_paths[i],w,h,new_ar);
+        //printf("random_path[i] = %s, w = %d, h = %d, new_ar = %lf,",random_paths[i],w,h,new_ar);
         //new_ar < 1 ==> nw < nh
         if(new_ar < 1){
             nh = scale * h;
@@ -1084,12 +1084,14 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
             nw = scale * w;
             nh = nw / new_ar;
         }
-        //해당 if문 (new_ar)는 해당 이미지를 input이미지의 크기로 변경시킬 때
+        //해당 if문 (new_ar)는 해당 이미지를 resizing한 이미지의 크기로 변경시킬 때
         //w,h의 비율을 어떻게 조절할 것인지에 대한 if문이다.
-        printf("nw = %lf, nh = %lf\n",nw,nh);
+        //처음에 416이 나오는 이유는 처음에 무조건 이미지를 한번 읽어올때 input layer의 크기만큼으로 읽어오기때문
+
+        //printf("nw = %lf, nh = %lf\n",nw,nh);
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
-
+        printf("dx = %lf, dy = %lf\n",dw,dy);
         place_image(orig, nw, nh, dx, dy, sized); // model input w, h에 일치하도록 image크기 변경
         // image have 3 dimension so we want to change by 1 dimension.
         // so we use place_image function.
