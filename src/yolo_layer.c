@@ -104,8 +104,8 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
     box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
     float iou = box_iou(pred, truth);
 
-    float tx = (truth.x*lw - i);
-    float ty = (truth.y*lh - j);
+    float tx = (truth.x*lw - i); // i = width
+    float ty = (truth.y*lh - j); // j =
     float tw = log(truth.w*w / biases[2*n]);
     float th = log(truth.h*h / biases[2*n + 1]);
     // x = output
@@ -255,11 +255,31 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 }
             }
             int mask_n = int_index(l.mask, best_n, l.n); // best_n = 0 ~ 8
+            //모든 anchor박스에 하는 이유는 다른 yolo에서도 똑같이 해당 함수를 사용하지만
+            //해당 l.mask의 값에 따라서 사용할 수 있는 anchor박스는 제한적
+            //따라서 첫번째 yolo 레이어에서는 6,7,8 anchor box에 대해서만 사용 가능
             //printf("mask_n = %d, best_n = %d, l.n = %d\n",mask_n,best_n,l.n);
             //mask_n = 0 ~ 2 
+            /* 결과 예시
+            utils.c 635 line
+                mask_n = -1, best_n = 5, l.n = 3
+                mask_n = -1, best_n = 5, l.n = 3
+                mask_n = -1, best_n = 5, l.n = 3
+                mask_n = -1, best_n = 3, l.n = 3
+                mask_n = -1, best_n = 3, l.n = 3
+                mask_n = -1, best_n = 7, l.n = 3
+                mask_n = 1, best_n = 1, l.n = 3
+                mask_n = -1, best_n = 5, l.n = 3
+                mask_n = 1, best_n = 1, l.n = 3
+                mask_n = -1, best_n = 5, l.n = 3
+                mask_n = -1, best_n = 4, l.n = 3
+              */
+            printf("i = %d , j = %d\n",i,j);
             if(mask_n >= 0){ // find something
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
+                //b = batch 사진 한장
                 float iou = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
+                //(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride)
 
                 int obj_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4);
                 avg_obj += l.output[obj_index];
