@@ -280,7 +280,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 mask_n = -1, best_n = 5, l.n = 3
                 mask_n = -1, best_n = 4, l.n = 3
               */
-            printf("i = %d , j = %d\n",i,j); // 실측값의 x,y좌표
+            //printf("i = %d , j = %d\n",i,j); // 실측값의 x,y좌표
             if(mask_n >= 0){ // find something
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                 //b = batch 사진 한장
