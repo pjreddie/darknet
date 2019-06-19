@@ -1075,7 +1075,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         float scale = 1;
         float nw, nh;
 
-        printf("w = %d, h = %d, new_ar = %lf,",w,h,new_ar);
+        printf("random_path[i] = %s, w = %d, h = %d, new_ar = %lf,",random_path[i],w,h,new_ar);
         //new_ar < 1 ==> nw < nh
         if(new_ar < 1){
             nh = scale * h;
@@ -1084,6 +1084,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
             nw = scale * w;
             nh = nw / new_ar;
         }
+        //해당 if문 (new_ar)는 해당 이미지를 input이미지의 크기로 변경시킬 때
+        //w,h의 비율을 어떻게 조절할 것인지에 대한 if문이다.
         printf("nw = %lf, nh = %lf\n",nw,nh);
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
