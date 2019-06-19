@@ -194,7 +194,8 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             continue;
         }
         // 바뀐 해상도에 대해서 boxes[i]의 값들을 마춘
-        boxes[i].left   = boxes[i].left  * sx - dx; // 임의의 좌표 dx의 값을 boxes.left*sx(새로운width/input레이어width)에서 뺀값
+        boxes[i].left   = boxes[i].left  * sx - dx; 
+        // 임의의 좌표 dx의 값을 boxes.left*sx(새로운width/input레이어width)에서 뺀값
         boxes[i].right  = boxes[i].right * sx - dx; 
         boxes[i].top    = boxes[i].top   * sy - dy;
         boxes[i].bottom = boxes[i].bottom* sy - dy;
@@ -453,6 +454,7 @@ void fill_truth_mask(char *path, int num_boxes, float *truth, int classes, int w
 void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy) // fill_truth_detection() function
 {//this function check the bounding box in txt file  truth is **data.y.vals
 //(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h);
+//sx , sy = resizing(w,h)/training size(w,h)
     char labelpath[4096];
     find_replace(path, "images", "labels", labelpath);
     find_replace(labelpath, "JPEGImages", "labels", labelpath);
@@ -465,7 +467,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
-    printf("dx = %lf, dy = %lf\n",dx,dy);
+    printf("sx = %lf, sy = %lf, dx = %lf, dy = %lf\n",sx,sy,dx,dy);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     if(count > num_boxes) count = num_boxes;
     float x,y,w,h;
