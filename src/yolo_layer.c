@@ -244,8 +244,8 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 pred.w = l.biases[2*n]/net.w;
                 pred.h = l.biases[2*n+1]/net.h;
                 //pred.w,h = anchor box's w,h
-                printf("pred.w = %lf, pred.h = %lf, pred.x = %lf, pred.y = %lf\n",pred.w,pred.h,pred.x,pred.y);
-                printf("truth_shift.w = %lf, truth_shift.h = %lf, truth_shift.x = %lf, truth_shift.y = %lf\n",truth_shift.w,truth_shift.h,truth_shift.x,truth_shift.y);
+                //printf("pred.w = %lf, pred.h = %lf, pred.x = %lf, pred.y = %lf\n",pred.w,pred.h,pred.x,pred.y);
+                //printf("truth_shift.w = %lf, truth_shift.h = %lf, truth_shift.x = %lf, truth_shift.y = %lf\n",truth_shift.w,truth_shift.h,truth_shift.x,truth_shift.y);
                 float iou = box_iou(pred, truth_shift);
                 //truth_shift는 x,y는 0 w,h는 실측값에서 가져온다
                 //실측값과 anchor box의 iou
@@ -255,7 +255,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 }
             }
             int mask_n = int_index(l.mask, best_n, l.n); // best_n = 0 ~ 8
-            //printf("mask_n = %d, best_n = %d, l.n = %d ",mask_n,best_n,l.n);
+            printf("mask_n = %d, best_n = %d, l.n = %d ",mask_n,best_n,l.n);
             if(mask_n >= 0){ // find something
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                 float iou = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
