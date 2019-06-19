@@ -1091,7 +1091,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         //printf("nw = %lf, nh = %lf\n",nw,nh);
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
-        printf("dx = %lf, dy = %lf\n",dw,dy);
+        printf("dx = %lf, dy = %lf\n",dx,dy);
         place_image(orig, nw, nh, dx, dy, sized); // model input w, h에 일치하도록 image크기 변경
         // image have 3 dimension so we want to change by 1 dimension.
         // so we use place_image function.
