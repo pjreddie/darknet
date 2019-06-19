@@ -195,7 +195,7 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
         }
         // 바뀐 해상도에 대해서 boxes[i]의 값들을 마춘
         boxes[i].left   = boxes[i].left  * sx - dx; 
-        // 임의의 좌표 dx의 값을 boxes.left*sx(새로운width/input레이어width)에서 뺀값
+        // 임의의 좌표 dx의 값을 boxes.left*sx(resizing width/input layer's width)에서 뺀값
         boxes[i].right  = boxes[i].right * sx - dx; 
         boxes[i].top    = boxes[i].top   * sy - dy;
         boxes[i].bottom = boxes[i].bottom* sy - dy;
@@ -467,7 +467,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
-    printf("sx = %lf, sy = %lf, dx = %lf, dy = %lf\n",sx,sy,dx,dy);
+    //printf("sx = %lf, sy = %lf, dx = %lf, dy = %lf\n",sx,sy,dx,dy);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     if(count > num_boxes) count = num_boxes;
     float x,y,w,h;
@@ -1521,7 +1521,7 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_ba
          //printf("X+j*d.X.cols = %f,  d.X.vals[%d] = %f\n",*(X+j*d.X.cols), index,*d.X.vals[index]);
          //printf("this size = %ld\n",d.X.cols*sizeof(float));
         if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));// truth에서 id를 제외한 값을 저장
-         printf("y+j*d.y.cols = %d,  d.y.vals[index] = %f\n",*(y+j*d.y.cols), *d.y.vals[index]);
+         //printf("y+j*d.y.cols = %d,  d.y.vals[index] = %f\n",*(y+j*d.y.cols), *d.y.vals[index]);
          //printf("this size = %ld\n",d.y.cols*sizeof(float));
     }
 }

@@ -197,7 +197,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                         }
                     }
                     //하나의 cell에 대해서 모든 객체 점수들을 종합하여 최대의 값을 파악
-                    int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4); // 해당 grid cell 위치
+                    int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4); // 해당 grid cell 위치에서 objectness값 확인
                     // objectness score정보를 가져오기 위한 obj_index
                     avg_anyobj += l.output[obj_index];
                     // 전체 평균값에 obj_index값을 증감
@@ -219,6 +219,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                         box truth = float_to_box(net.truth + best_t*(4 + 1) + b*l.truths, 1);
                         delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
+                    printf("l.delta[obj_index = %lf\n",l.delta[obj_index]);
                 } // end firth iteration
             }//end third iteration
         }//end second iteration
