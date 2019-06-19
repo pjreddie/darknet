@@ -1061,18 +1061,21 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 							      // when you train the dataset it have to random image train.
         image sized = make_image(w, h, orig.c); // make_image in image.c
         fill_image(sized, .5); 
-        printf("orig.w = %d , orig.h = %d\n",orig.w,orig.h);
+        //printf("orig.w = %d , orig.h = %d\n",orig.w,orig.h);
+        //orig.h,w = 학습하는 이미지의 원래의 크기
         float dw = jitter * orig.w; // jitter is 0.3 default
         float dh = jitter * orig.h; // jitter is 0.3 default
         float rand_dw,rand_dh;
         rand_dw = rand_uniform(-dw, dw);
         rand_dh = rand_uniform(-dh, dh);
-        printf("rand_dw = %lf, rand_dh = %lf\n",rand_dw,rand_dh);
+        // -dw(dh) ~ dw(dh) 랜덤한 값 설정
+        //printf("rand_dw = %lf, rand_dh = %lf\n",rand_dw,rand_dh);
         float new_ar = (orig.w + rand_dw) / (orig.h + rand_dh);
         //float scale = rand_uniform(.25, 2);
         float scale = 1;
         float nw, nh;
 
+        printf("new_ar = %lf ",new_ar);
         //new_ar < 1 ==> nw < nh
         if(new_ar < 1){
             nh = scale * h;
@@ -1081,7 +1084,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
             nw = scale * w;
             nh = nw / new_ar;
         }
-
+        printf("nw = %lf, nh = %lf\n",nw,nh);
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
 
