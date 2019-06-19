@@ -234,6 +234,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
             if(!truth.x) break;
             float best_iou = 0;
             int best_n = 0;
+            printf("truth.x = %lf, truth.y = %lf, l.w = %d , l.h = %d\n",truth.x,truth.y,l.w,l.h);
             i = (truth.x * l.w);
             j = (truth.y * l.h);
             //i,j = 실측값 중심점 좌표 학습 이미지를 resizing 시켰기 때문에 위치 재조정
@@ -274,7 +275,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 mask_n = -1, best_n = 5, l.n = 3
                 mask_n = -1, best_n = 4, l.n = 3
               */
-            printf("i = %d , j = %d\n",i,j);
+            printf("i = %d , j = %d\n",i,j); // 실측값의 x,y좌표
             if(mask_n >= 0){ // find something
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                 //b = batch 사진 한장
