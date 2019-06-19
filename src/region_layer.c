@@ -152,6 +152,7 @@ int entry_index(layer l, int batch, int location, int entry)
 {
     int n =   location / (l.w*l.h);
     int loc = location % (l.w*l.h);
+   // printf("n = %d , loc = %d, l.w = %d, l.h = %d, location = %d\n",n,loc,l.w,l.h,location);
     return batch*l.outputs + n*l.w*l.h*(l.coords+l.classes+1) + entry*l.w*l.h + loc;
 }
 

@@ -104,7 +104,7 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
     box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
     //anchor box와 output을 사용하여 iou값 유추
     float iou = box_iou(pred, truth);
-
+    //식확인하기 anchor box 와 bounding box 관련 식
     float tx = (truth.x*lw - i); // i = width
     float ty = (truth.y*lh - j); // j = height
     float tw = log(truth.w*w / biases[2*n]);
@@ -203,6 +203,8 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     }
                     //하나의 cell에 대해서 모든 객체 점수들을 종합하여 최대의 값을 파악
                     int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4); // 해당 grid cell 위치에서 objectness값 확인
+                    //printf("l.w = %d , l.h = %d, n = %d , loc = %d\n",l.w,l.h,(n*l.w*l.h + j*l.w + i)/(l.w*l.h),(n*l.w*l.h + j*l.w + i)%(l.w*l.h));
+                    //printf("obj_index = %d\n",obj_index);
                     // objectness score정보를 가져오기 위한 obj_index
                     avg_anyobj += l.output[obj_index];
                     // 전체 평균값에 obj_index값을 증감
@@ -213,7 +215,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                         //printf("111\n");
                         l.delta[obj_index] = 0;
                     }
-                    if (best_iou > l.truth_thresh) { // best_iou > 1
+                    if (best_iou > l.truth_thresh){ // best_iou > 1
                         //printf("222\n");
                         l.delta[obj_index] = 1 - l.output[obj_index]; // make l.delta = 0 ~ 1
 
@@ -281,7 +283,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 mask_n = -1, best_n = 5, l.n = 3
                 mask_n = -1, best_n = 4, l.n = 3
               */
-            printf("i = %d , j = %d\n",i,j); // 실측값의 x,y좌표
+            //printf("i = %d , j = %d\n",i,j); // 실측값의 x,y좌표
             if(mask_n >= 0){ // find something
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                 //b = batch 사진 한장
@@ -291,7 +293,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                 int obj_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4);
                 avg_obj += l.output[obj_index];
                 l.delta[obj_index] = 1 - l.output[obj_index];
-
+                // 1 = 정답 - l.output[] = 예측한 값, truth의 확률
                 int class = net.truth[t*(4 + 1) + b*l.truths + 4];
                 if (l.map) class = l.map[class];
                 int class_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4 + 1);
