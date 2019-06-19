@@ -1075,7 +1075,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         float scale = 1;
         float nw, nh;
 
-        printf("random_path[i] = %s, w = %d, h = %d, new_ar = %lf,",random_path[i],w,h,new_ar);
+        printf("random_path[i] = %s, w = %d, h = %d, new_ar = %lf,",random_paths[i],w,h,new_ar);
         //new_ar < 1 ==> nw < nh
         if(new_ar < 1){
             nh = scale * h;
