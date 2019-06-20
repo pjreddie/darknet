@@ -77,7 +77,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         if(l.random && count++%10 == 0){
             printf("Resizing\n");
             int dim = (rand() % 10 + 10) * 32; // ((0 ~ 9)+10)*32 ==> 320 ~ 608 resize
-            if (get_current_batch(net)+200 > net->max_batches) dim = 608;
+            //if (get_current_batch(net)+200 > net->max_batches) dim = 608;
             //int dim = (rand() % 4 + 16) * 32;
             printf("%d\n", dim); // current size print
             args.w = dim; // net's width = dim
@@ -150,7 +150,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         }
 	//if(i%1000 == 0 || (i < 1000 && i%100 == 0)){
 	//if(i%10000==0 || (i < 1000 && i%100 == 0)){
-	if(i%10000==0 || (i%1000==0 && i <10000)){
+	if(i%1000==0){
 #ifdef GPU
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
