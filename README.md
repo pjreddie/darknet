@@ -15,6 +15,7 @@ More details: http://pjreddie.com/darknet/yolo/
 * [Pre-trained models](#pre-trained-models)
 * [Explanations in issues](https://github.com/AlexeyAB/darknet/issues?q=is%3Aopen+is%3Aissue+label%3AExplanations)
 * [Yolo v3 in other frameworks (TensorRT, TensorFlow, PyTorch, OpenVINO, OpenCV-dnn,...)](#yolo-v3-in-other-frameworks)
+* [Datasets](#datasets)
 
 0.  [Improvements in this repository](#improvements-in-this-repository)
 1.  [How to use](#how-to-use-on-the-command-line)
@@ -79,6 +80,16 @@ You can get cfg-files by path: `darknet/cfg/`
 * **OpenCV-dnn** is a very fast DNN implementation on CPU (x86/ARM-Android), use `yolov3.weights`/`cfg` with: [C++ example](https://github.com/opencv/opencv/blob/8c25a8eb7b10fb50cda323ee6bec68aa1a9ce43c/samples/dnn/object_detection.cpp#L192-L221), [Python example](https://github.com/opencv/opencv/blob/8c25a8eb7b10fb50cda323ee6bec68aa1a9ce43c/samples/dnn/object_detection.py#L129-L150)
 * **PyTorch > ONNX > CoreML > iOS** how to convert cfg/weights-files to pt-file: [ultralytics/yolov3](https://github.com/ultralytics/yolov3#darknet-conversion) and [iOS App](https://itunes.apple.com/app/id1452689527)
 * **TensorRT** for YOLOv3 (-70% faster inference): [TensorRT & DeepStream](https://github.com/NVIDIA-AI-IOT/deepstream_reference_apps)
+* **TVM** - compilation of deep learning models (Keras, MXNet, PyTorch, Tensorflow, CoreML, DarkNet) into minimum deployable modules on diverse hardware backends (CPUs, GPUs, FPGA, and specialized accelerators): https://tvm.ai/about
+
+#### Datasets
+
+* MS COCO: use `./scripts/get_coco_dataset.sh` to get labeled MS COCO detection dataset
+* OpenImages: use `python ./scripts/get_openimages_dataset.py` for labeling train detection dataset
+* Pascal VOC: use `python ./scripts/voc_label.py` for labeling Train/Test/Val detection datasets
+* ILSVRC2012 (ImageNet classification): use `./scripts/get_imagenet_train.sh` (also `imagenet_label.sh` for labeling valid set)
+* German/Belgium/Russian/LISA/MASTIF Traffic Sign Datasets for Detection - use this parsers: https://github.com/angeligareta/Datasets2Darknet#detection-task
+* List of other datasets: https://github.com/AlexeyAB/darknet/tree/master/scripts#datasets
 
 ##### Examples of results
 
