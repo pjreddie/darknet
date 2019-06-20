@@ -153,7 +153,7 @@ image load_image_cv(char *filename, int channels)
         {
             GaussianBlur(m,dst,Size(15,15),0);// blur
         }
-       */  
+         
         im = mat_to_image(dst); // blur image send to function
         checkblur = 0;
     }
