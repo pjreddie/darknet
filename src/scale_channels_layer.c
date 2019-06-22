@@ -86,9 +86,9 @@ void backward_scale_channels_layer(const layer l, network_state state)
     int i;
     #pragma omp parallel for
     for (i = 0; i < size; ++i) {
-        state.delta[i / channel_size] += l.delta[i] * from_output[i]; // l.delta * from  (should be divided by channel_size?)
+        state.delta[i / channel_size] += l.delta[i] * from_output[i] / channel_size; // l.delta * from  (should be divided by channel_size?)
 
-        from_delta[i] = state.input[i / channel_size] * l.delta[i]; // input * l.delta
+        from_delta[i] += state.input[i / channel_size] * l.delta[i]; // input * l.delta
     }
 }
 
@@ -111,7 +111,6 @@ void backward_scale_channels_layer_gpu(const layer l, network_state state)
     int channel_size = l.out_w * l.out_h;
     float *from_output = state.net.layers[l.index].output_gpu;
     float *from_delta = state.net.layers[l.index].delta_gpu;
-
 
     backward_scale_channels_gpu(l.delta_gpu, size, channel_size, state.input, from_delta, from_output, state.delta);
 }
