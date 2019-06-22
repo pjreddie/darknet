@@ -95,7 +95,7 @@ void draw_train_loss(mat_cv* img, int img_size, float avg_loss, float max_img_lo
 // Data augmentation
 image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
-    float jitter, float dhue, float dsat, float dexp,
+    float dhue, float dsat, float dexp,
     int blur, int num_boxes, float *truth);
 
 // blend two images with (alpha and beta)

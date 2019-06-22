@@ -1137,7 +1137,7 @@ static box float_to_box_stride(float *f, int stride)
 
 image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
-    float jitter, float dhue, float dsat, float dexp,
+    float dhue, float dsat, float dexp,
     int blur, int num_boxes, float *truth)
 {
     image out;

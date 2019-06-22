@@ -804,8 +804,8 @@ void blend_truth(float *new_truth, int boxes, float *old_truth)
 
 #include "http_stream.h"
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup, float jitter,
-    float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int show_imgs)
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup,
+    float jitter, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -828,7 +828,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*c;
 
-    float r1 = 0, r2 = 0, r3 = 0, r4 = 0;
+    float r1 = 0, r2 = 0, r3 = 0, r4 = 0, r_scale = 0;
     float dhue = 0, dsat = 0, dexp = 0, flip = 0, blur = 0;
     int augmentation_calculated = 0;
 
@@ -862,6 +862,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 r3 = random_float();
                 r4 = random_float();
 
+                r_scale = random_float();
+
                 dhue = rand_uniform_strong(-hue, hue);
                 dsat = rand_scale(saturation);
                 dexp = rand_scale(exposure);
@@ -874,6 +876,33 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int pright = rand_precalc_random(-dw, dw, r2);
             int ptop = rand_precalc_random(-dh, dh, r3);
             int pbot = rand_precalc_random(-dh, dh, r4);
+            //printf("\n pleft = %d, pright = %d, ptop = %d, pbot = %d, ow = %d, oh = %d \n", pleft, pright, ptop, pbot, ow, oh);
+
+            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
+
+            if (letter_box)
+            {
+                float img_ar = (float)ow / (float)oh;
+                float net_ar = (float)w / (float)h;
+                float result_ar = img_ar / net_ar;
+                //printf(" ow = %d, oh = %d, w = %d, h = %d, img_ar = %f, net_ar = %f, result_ar = %f \n", ow, oh, w, h, img_ar, net_ar, result_ar);
+                if (result_ar > 1)  // sheight - should be increased
+                {
+                    float oh_tmp = ow / net_ar;
+                    float delta_h = (oh_tmp - oh)/2;
+                    ptop = ptop - delta_h;
+                    pbot = pbot - delta_h;
+                    //printf(" result_ar = %f, oh_tmp = %f, delta_h = %d, ptop = %f, pbot = %f \n", result_ar, oh_tmp, delta_h, ptop, pbot);
+                }
+                else  // swidth - should be increased
+                {
+                    float ow_tmp = oh * net_ar;
+                    float delta_w = (ow_tmp - ow)/2;
+                    pleft = pleft - delta_w;
+                    pright = pright - delta_w;
+                    //printf(" result_ar = %f, ow_tmp = %f, delta_w = %d, pleft = %f, pright = %f \n", result_ar, ow_tmp, delta_w, pleft, pright);
+                }
+            }
 
             int swidth = ow - pleft - pright;
             int sheight = oh - ptop - pbot;
@@ -884,9 +913,10 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             float dx = ((float)pleft / ow) / sx;
             float dy = ((float)ptop / oh) / sy;
 
+
             fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
 
-            image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, jitter, dhue, dsat, dexp,
+            image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
                 blur, boxes, d.y.vals[i]);
 
             if (i_mixup) {
@@ -947,7 +977,7 @@ void blend_images(image new_img, float alpha, image old_img, float beta)
 }
 
 data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup, float jitter,
-    float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int show_imgs)
+    float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -971,7 +1001,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*c;
 
-    float r1 = 0, r2 = 0, r3 = 0, r4 = 0;
+    float r1 = 0, r2 = 0, r3 = 0, r4 = 0, r_scale;
     float dhue = 0, dsat = 0, dexp = 0, flip = 0;
     int augmentation_calculated = 0;
 
@@ -999,6 +1029,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 r3 = random_float();
                 r4 = random_float();
 
+                r_scale = random_float();
+
                 dhue = rand_uniform_strong(-hue, hue);
                 dsat = rand_scale(saturation);
                 dexp = rand_scale(exposure);
@@ -1010,6 +1042,32 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int pright = rand_precalc_random(-dw, dw, r2);
             int ptop = rand_precalc_random(-dh, dh, r3);
             int pbot = rand_precalc_random(-dh, dh, r4);
+
+            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
+
+            if (letter_box)
+            {
+                float img_ar = (float)ow / (float)oh;
+                float net_ar = (float)w / (float)h;
+                float result_ar = img_ar / net_ar;
+                //printf(" ow = %d, oh = %d, w = %d, h = %d, img_ar = %f, net_ar = %f, result_ar = %f \n", ow, oh, w, h, img_ar, net_ar, result_ar);
+                if (result_ar > 1)  // sheight - should be increased
+                {
+                    float oh_tmp = ow / net_ar;
+                    float delta_h = (oh_tmp - oh) / 2;
+                    ptop = ptop - delta_h;
+                    pbot = pbot - delta_h;
+                    //printf(" result_ar = %f, oh_tmp = %f, delta_h = %d, ptop = %f, pbot = %f \n", result_ar, oh_tmp, delta_h, ptop, pbot);
+                }
+                else  // swidth - should be increased
+                {
+                    float ow_tmp = oh * net_ar;
+                    float delta_w = (ow_tmp - ow) / 2;
+                    pleft = pleft - delta_w;
+                    pright = pright - delta_w;
+                    //printf(" result_ar = %f, ow_tmp = %f, delta_w = %d, pleft = %f, pright = %f \n", result_ar, ow_tmp, delta_w, pleft, pright);
+                }
+            }
 
             int swidth = ow - pleft - pright;
             int sheight = oh - ptop - pbot;
@@ -1100,7 +1158,7 @@ void *load_thread(void *ptr)
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){
         *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.blur, a.mixup, a.jitter,
-            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.show_imgs);
+            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.letter_box, a.show_imgs);
     } else if (a.type == SWAG_DATA){
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
     } else if (a.type == COMPARE_DATA){
