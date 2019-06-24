@@ -105,8 +105,8 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
     //anchor box와 output을 사용하여 iou값 유추
     float iou = box_iou(pred, truth);
     //식확인하기 anchor box 와 bounding box 관련 식
-    float tx = (truth.x*lw - i); // i = width
-    float ty = (truth.y*lh - j); // j = height
+    float tx = (truth.x*lw - i); // tx = truth.x - i(cx)
+    float ty = (truth.y*lh - j); // ty = truth.y - j(cy)
     float tw = log(truth.w*w / biases[2*n]);
     float th = log(truth.h*h / biases[2*n + 1]);
     //printf("tx = %lf, ty = %lf, tw = %lf, th = %lf\n",tx,ty,tw,th);
@@ -125,19 +125,21 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
 void delta_yolo_class(float *output, float *delta, int index, int class, int classes, int stride, float *avg_cat)
 {//(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
     int n;
-    if (delta[index]){
+    if (delta[index]){ // objectscore이 있을 경우
         delta[index + stride*class] = 1 - output[index + stride*class];
-        if(avg_cat) *avg_cat += output[index + stride*class];
+        if(avg_cat) *avg_cat += output[index + stride*class]; // What
         return;
     }
-    for(n = 0; n < classes; ++n){
+    for(n = 0; n < classes; ++n){ // if delta[index] == 0 object score이 없는 경우에는
+    // detection부분에 있어서는 없을경우에는 무시하지만 현재 학습 단계에서는 없을 경우에도 모든 객체 점수를 파악하여 
+    //loss함수 계산하는데 사용하여야 하기 때문에 해당 반복문을 통해서 delta값을 저장함
         delta[index + stride*n] = ((n == class)?1 : 0) - output[index + stride*n];
         if(n == class && avg_cat) *avg_cat += output[index + stride*n];
     }
 }
-
+// 0.4 0.6 -> 0.16 , 0.36 --> 값이 0에 가까울수록 좋은 것?
 static int entry_index(layer l, int batch, int location, int entry) // what is it??
-{ // location = n * l.w * l.h = 3 * width * height
+{ // location = n*l.w*l.h + j*l.w + i = 해당 이미지의 위치
 //(l, b, n*l.w*l.h + j*l.w + i, 4)
     int n =   location / (l.w*l.h); // 0 ~ 2 ( always )
     int loc = location % (l.w*l.h); // 0 ( always )
@@ -209,13 +211,15 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                     avg_anyobj += l.output[obj_index];
                     // 전체 평균값에 obj_index값을 증감
                     l.delta[obj_index] = 0 - l.output[obj_index];
+                    //best_iou가 0.7보다 작은 경우 l.output[obj_index]는 0에 가까운 값이기에 0 - 로 시작
+                    //하지만 1보다 큰 경우에는 l.output이 1에 근사한 값이기 때문에 1- 로 시작함
                     //printf("best_iou = %lf, l.ignore_thresh = %lf, l.truth_thresh = %lf,delta[obj_index] = %lf\n",best_iou,l.ignore_thresh,l.truth_thresh,l.delta[obj_index]);
                     //printf("best_iou = %f , best_t = %d, l.ignore_thresh = %f, l.truth_thresh = %f\n",best_iou,best_t,l.ignore_thresh,l.truth_thresh);
                     if (best_iou > l.ignore_thresh) { // best_iou > 0.7
                         //printf("111\n");
                         l.delta[obj_index] = 0;
                     }
-                    if (best_iou > l.truth_thresh){ // best_iou > 1
+                    if (best_iou > l.truth_thresh){ // best_iou > 1 예외처리 느낌으로 사용
                         //printf("222\n");
                         l.delta[obj_index] = 1 - l.output[obj_index]; // make l.delta = 0 ~ 1
 
@@ -223,6 +227,7 @@ void forward_yolo_layer(const layer l, network net)// forward_yolo_layer() funct
                         if (l.map) class = l.map[class];
                         int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
                         delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
+                        //현재 cell에서 가장 알맞은 anchor박스를 통하여 
                         box truth = float_to_box(net.truth + best_t*(4 + 1) + b*l.truths, 1);
                         delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
@@ -322,7 +327,7 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
     int i;
     int new_w=0;
     int new_h=0;
-    if (((float)netw/w) < ((float)neth/h)) {
+    if (((float)netw/w) < ((float)neth/h)) { // image 크기 조정
         new_w = netw;
         new_h = (h * netw)/w;
     } else {
@@ -335,7 +340,7 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
         b.y =  (b.y - (neth - new_h)/2./neth) / ((float)new_h/neth); 
         b.w *= (float)netw/new_w;
         b.h *= (float)neth/new_h;
-        if(!relative){
+        if(!relative){ // relative = 1 따라서 다음 if문 사용 x 
             b.x *= w;
             b.w *= w;
             b.y *= h;
@@ -346,21 +351,22 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
 }
 
 int yolo_num_detections(layer l, float thresh)
-{
+{//yolo_num_detection
     int i, n;
     int count = 0;
-    for (i = 0; i < l.w*l.h; ++i){
-        for(n = 0; n < l.n; ++n){
-            int obj_index  = entry_index(l, 0, n*l.w*l.h + i, 4);
-            if(l.output[obj_index] > thresh){
-                ++count;
+    for (i = 0; i < l.w*l.h; ++i){ // gird cell 접근
+        for(n = 0; n < l.n; ++n){//anchor box접근
+            int obj_index  = entry_index(l, 0, n*l.w*l.h + i, 4); // objectness값 추출
+            if(l.output[obj_index] > thresh){ // 임계값보다 큰 경우 객체를 찾음
+            //무슨 객체인지는 신경 x
+                ++count; // 찾은 객체수를 증가
             }
         }
     }
     return count;
 }
 
-void avg_flipped_yolo(layer l)
+void avg_flipped_yolo(layer l) // 왜 flipped를 하는가 detection 단계에서 
 {
     int i,j,n,z;
     float *flip = l.output + l.outputs;
@@ -387,26 +393,28 @@ void avg_flipped_yolo(layer l)
 }
 
 int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets)
-{
+{ // detection시 yolo layer
     int i,j,n;
     float *predictions = l.output;
     if (l.batch == 2) avg_flipped_yolo(l);
     int count = 0;
-    for (i = 0; i < l.w*l.h; ++i){
-        int row = i / l.w;
-        int col = i % l.w;
-        for(n = 0; n < l.n; ++n){
+    for (i = 0; i < l.w*l.h; ++i){ // 모든 grid cell에 대한 접근 
+        int row = i / l.w; // 행에 대한 접근
+        int col = i % l.w; // 열에 대한 접근
+        //2중 for문이 아닌 1중 for문으로 처리하기 때문에 row,col이 다음과 같이 접근 가능 
+        for(n = 0; n < l.n; ++n){ // anchor box접근
             int obj_index  = entry_index(l, 0, n*l.w*l.h + i, 4);
-            float objectness = predictions[obj_index];
-            if(objectness <= thresh) continue;
-            int box_index  = entry_index(l, 0, n*l.w*l.h + i, 0);
+            float objectness = predictions[obj_index]; 
+            if(objectness <= thresh) continue; // 실제 모델을 거쳐 나온 l.output을 통한 objectness가 임계점보다 작으면 무시
+            int box_index  = entry_index(l, 0, n*l.w*l.h + i, 0); // 임계점보다 큰 경우에는 
+            //해당 anchor box와 유사하기 때문에 해당 정보를 저장
             dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
             dets[count].objectness = objectness;
             dets[count].classes = l.classes;
-            for(j = 0; j < l.classes; ++j){
+            for(j = 0; j < l.classes; ++j){ // 무슨 객체 점수가 가장 높은지를 확인(추후 1classes에 대한 학습 방법 고안)
                 int class_index = entry_index(l, 0, n*l.w*l.h + i, 4 + 1 + j);
                 float prob = objectness*predictions[class_index];
-                dets[count].prob[j] = (prob > thresh) ? prob : 0;
+                dets[count].prob[j] = (prob > thresh) ? prob : 0; // 해당 값이 thresh값을 못 넘길 경우 0으로
             }
             ++count;
         }

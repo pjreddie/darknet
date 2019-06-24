@@ -247,7 +247,7 @@ void calc_network_cost(network *netp) // calc_network_cost() function
     int i;
     float sum = 0;
     int count = 0;
-    for(i = 0; i < net.n; ++i){
+    for(i = 0; i < net.n; ++i){ 
         if(net.layers[i].cost){
             sum += net.layers[i].cost[0];
             ++count;
@@ -273,15 +273,15 @@ void backward_network(network *netp) // backward_network() function
     network net = *netp;
     int i;
     network orig = net;
-    for(i = net.n-1; i >= 0; --i){
+    for(i = net.n-1; i >= 0; --i){ // forward는 model 정방향이지만 backward는 model 역방향으로 학습
         layer l = net.layers[i];
         if(l.stopbackward) break;
-        if(i == 0){
+        if(i == 0){ // input layer 도착
             net = orig;
-        }else{
+        }else{ // 
             layer prev = net.layers[i-1];
-            net.input = prev.output;
-            net.delta = prev.delta;
+            net.input = prev.output; // 현재 input은 이전 레이어의 output
+            net.delta = prev.delta; // 위와 동일
         }
         net.index = i;
         l.backward(l, net);
@@ -327,7 +327,7 @@ float train_network(network *net, data d) // train_network() function
     printf("n = d.X.rows(%d) / batch(%d) = %d\n",d.X.rows,net->batch,n); // 64 , 4
     for(i = 0; i < n; ++i){ // this n is 16(subdivision)
         get_next_batch(d, batch, i*batch, net->input, net->truth);
-        float err = train_network_datum(net); 
+        float err = train_network_datum(net);  // err = l.cost 
         sum += err;
         //check something
         //rintf("err[%d] = %d\n",i,err); // print sum
@@ -523,37 +523,37 @@ int num_detections(network *net, float thresh)
     for(i = 0; i < net->n; ++i){
         layer l = net->layers[i];
         if(l.type == YOLO){
-            s += yolo_num_detections(l, thresh);
+            s += yolo_num_detections(l, thresh); // 객체 찾은 수 만큼 s값을 증가
         }
         if(l.type == DETECTION || l.type == REGION){
             s += l.w*l.h*l.n;
         }
     }
-    return s;
+    return s; // 찾은 객체의 수를 반환
 }
 
-detection *make_network_boxes(network *net, float thresh, int *num)
+detection *make_network_boxes(network *net, float thresh, int *num) // make_network_boxes
 {
     layer l = net->layers[net->n - 1];
     int i;
-    int nboxes = num_detections(net, thresh);
-    if(num) *num = nboxes;
-    detection *dets = calloc(nboxes, sizeof(detection));
-    for(i = 0; i < nboxes; ++i){
+    int nboxes = num_detections(net, thresh); // nboxes = input이미지에서 찾은 객체 총 수
+    if(num) *num = nboxes; // 값을 net으로 전달하기 위한 포인터 변수
+    detection *dets = calloc(nboxes, sizeof(detection)); // 초기화
+    for(i = 0; i < nboxes; ++i){ // 찾은 모든 box에 대한 접근 반복문
         dets[i].prob = calloc(l.classes, sizeof(float));
-        if(l.coords > 4){
-            dets[i].mask = calloc(l.coords-4, sizeof(float));
+        if(l.coords > 4){ // YOLO에서는 0이 default
+            dets[i].mask = calloc(l.coords-4, sizeof(float));//무슨의미?
         }
     }
-    return dets;
+    return dets; // 찾은 객체 수 만큼 초기화하여 반환
 }
 
 void fill_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets)
 {
     int j;
-    for(j = 0; j < net->n; ++j){
+    for(j = 0; j < net->n; ++j){ // 모든 layer에 대한 접근
         layer l = net->layers[j];
-        if(l.type == YOLO){
+        if(l.type == YOLO){ // YOLO layer일 경우 detection
             int count = get_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets);
             dets += count;
         }
@@ -569,8 +569,9 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
 }
 
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num)
-{
-    detection *dets = make_network_boxes(net, thresh, num);
+{ // get_network_boxes 
+//net에는 검출하려는 이미지에 대한 정보를 model에 넣어서 각 레이어에 해당하는 값들이 저장됨
+    detection *dets = make_network_boxes(net, thresh, num);//dets구조체에 찾은 객체 수만큼 초기화
     fill_network_boxes(net, w, h, thresh, hier, map, relative, dets);
     return dets;
 }

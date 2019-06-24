@@ -134,10 +134,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             loss = train_networks(nets, ngpus, train, 4); 
         }
 #else
-        loss = train_network(net, train);
+        loss = train_network(net, train); // yolo layer에서 구한 cost를 통하여 평균을 loss로 파악
 #endif
-        if (avg_loss < 0) avg_loss = loss;
-        avg_loss = avg_loss*.9 + loss*.1;
+        if (avg_loss < 0) avg_loss = loss; // loss계산이 처음일 경우
+        avg_loss = avg_loss*.9 + loss*.1; // 이전까지 구한 loss의 크기를 0.9로 현재의 loss는 0.1로 계산
         i = get_current_batch(net);
         printf("%ld: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, i*imgs);
         if(i%100==0){
