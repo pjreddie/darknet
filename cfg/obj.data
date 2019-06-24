@@ -11,4 +11,4 @@ names = /home/kdy/darknet/data/obj.names
 #backup = /home/kdy/information/backup_blur3x3/
 #backup = /home/kdy/information/backup_blur/ 
 #backup = /home/kdy/information/backup
-backup = /home/kdy/information/pretrain/
+backup = /home/kdy/information/pretrain_withCOCO/
