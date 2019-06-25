@@ -38,13 +38,13 @@ void do_nms_obj(detection *dets, int total, int classes, float thresh)
     }
 
     qsort(dets, total, sizeof(detection), nms_comparator);
-    for(i = 0; i < total; ++i){
+    for(i = 0; i < total; ++i){ // ê²¹ì¹˜ëŠ” ë¶€ë¶„ì´ ë§ì„ ê²½ìš° ì œê±°í•˜ëŠ” ë¶€ë¶„ 
         if(dets[i].objectness == 0) continue;
         box a = dets[i].bbox;
         for(j = i+1; j < total; ++j){
             if(dets[j].objectness == 0) continue;
             box b = dets[j].bbox;
-            if (box_iou(a, b) > thresh){
+            if (box_iou(a, b) > thresh){ // 0.4ì´ìƒì¼ ê²½ìš° 
                 dets[j].objectness = 0;
                 for(k = 0; k < classes; ++k){
                     dets[j].prob[k] = 0;
@@ -153,11 +153,11 @@ float overlap(float x1, float w1, float x2, float w2) // overlap function
 {// x = location(x,y) , w = width(height)
     float l1 = x1 - w1/2; // x - w/2 = 
     float l2 = x2 - w2/2;
-    float left = l1 > l2 ? l1 : l2; // leftÀÎ °æ¿ì´Â ÁÂÇ¥°ªÀÌ Å«°ªÀ»
+    float left = l1 > l2 ? l1 : l2; // leftï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ï¿½ï¿½ Å«ï¿½ï¿½ï¿½ï¿½
     float r1 = x1 + w1/2;
     float r2 = x2 + w2/2;
-    float right = r1 < r2 ? r1 : r2; // rightÀÇ °æ¿ì¿¡´Â ÁÂÇ¥°ªÀÌ ÀÛÀº°ªÀ»
-    return right - left; // return length( r - l ) ±³Â÷ÇÏ´Â ±æÀÌ¸¦ ¹İÈ¯
+    float right = r1 < r2 ? r1 : r2; // rightï¿½ï¿½ ï¿½ï¿½ì¿¡ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    return right - left; // return length( r - l ) ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½È¯
 }
 
 float box_intersection(box a, box b) // intersection

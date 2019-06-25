@@ -15,7 +15,7 @@
 
 static char **demo_names;
 static image **demo_alphabet;
-static int demo_classes; // draw_detection ë§¤ê°œë³??ˆ˜ obj.data?˜ classes ê°?
+static int demo_classes; // draw_detection ë§¤ê°œï¿½??ï¿½ï¿½ obj.data?ï¿½ï¿½ classes ï¿½?
 
 static network *net;
 static image buff [3];
@@ -123,7 +123,7 @@ void *detect_in_thread(void *ptr)
     }
      */
 
-    if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
+    if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms); // nms ë¶€ë¶„ í™•ì¸í•˜ê¸° 
 
     printf("\033[2J");
     printf("\033[1;1H");

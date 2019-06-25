@@ -5,7 +5,7 @@ static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,2
 int cando = 0;
 
 //train_detector-1 start
-void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)// ?? ?™?˜™?? ?™?˜™ ?? ?™?˜™?? ?™?˜™
+void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)// ??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
 { // we must add validation data set training while train the training data set.
     list *options = read_data_cfg(datacfg);// read_data_cfg() function can find in option_list.c
     char *train_images = option_find_str(options, "train", "data/train.list"); // default == data/train.list
@@ -16,7 +16,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //printf("%s\n", base);
     float avg_loss = -1;
     network **nets = calloc(ngpus, sizeof(network)); // network struct 
-    // network?? ?™?˜™æ¹²ê³—?“½ ? ???? ?™?˜™? ?? ngpus? ?? ????? ?™?˜™?? ?™?˜™ ?? ?™?˜™ ?? ?™?˜™?? ?™?˜™ ??¨ë“¦ì»? ?? ?™?˜™?? ?™?˜™ 
+    // network??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½æ¹²ê³—?ï¿½ï¿½ ?ï¿½ï¿½????ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?? ngpus?ï¿½ï¿½?? ?????ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ??ï¿½ë“¦ï¿½? ??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ 
     //train_detector-1 end
     srand(time(0));
     int seed = rand();
@@ -46,10 +46,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int classes = l.classes; // our cfg file's classes is 1
     float jitter = l.jitter; // our cfg file's jitter is 0.3
 
-    //load_args ì´ˆê¸°?™” ?‘?—…
-    list *plist = get_paths(train_images); // ?•´?‹¹ ?•¨?ˆ˜ë¡? ê°?? ¸?˜¤ë©? list?— ê°? nodeë¡? ????¥?´?¨
+    //load_args ì´ˆê¸°?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½
+    list *plist = get_paths(train_images); // ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ï¿½??ï¿½ï¿½?ï¿½ï¿½ï¿½? list?ï¿½ï¿½ ï¿½? nodeï¿½? ????ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
     //int N = plist->size;
-    char **paths = (char **)list_to_array(plist); // load_args?˜ pathsê°? 2ì°¨ì› ?¬?¸?„°?´ê¸? ?•Œë¬¸ì— list -> char**ë¡? ë³??™˜
+    char **paths = (char **)list_to_array(plist); // load_args?ï¿½ï¿½ pathsï¿½? 2ì°¨ì› ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½ë¬¸ì— list -> char**ï¿½? ï¿½??ï¿½ï¿½
 
     load_args args = get_base_args(net);
     
@@ -86,7 +86,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             pthread_join(load_thread, 0); // waiting load_thread
             train = buffer; // what is a buffer ? data = train ( train_network() )
             free_data(train);
-            load_thread = load_data(args); // ngpusê°? 1ê°œê?? ?•„?‹Œ ê²½ìš°?— ?‚¬?š©?   thread
+            load_thread = load_data(args); // ngpusï¿½? 1ê°œï¿½?? ?ï¿½ï¿½?ï¿½ï¿½ ê²½ìš°?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½  thread
 
             #pragma omp parallel for
             for(i = 0; i < ngpus; ++i){
@@ -97,7 +97,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         time=what_time_is_it_now();
         pthread_join(load_thread, 0); // waiting load_thread
         train = buffer;
-        load_thread = load_data(args);// ?‹¤?Œ ë°˜ë³µë¬¸ì—?„œ ?‚¬?š©?•  ?´ë¯¸ì??ë¥? ê°?? ¸?˜¤?Š” thread
+        load_thread = load_data(args);// ?ï¿½ï¿½?ï¿½ï¿½ ë°˜ë³µë¬¸ì—?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ë¯¸ï¿½??ï¿½? ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ thread
         
         /*
            int k;
@@ -134,10 +134,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             loss = train_networks(nets, ngpus, train, 4); 
         }
 #else
-        loss = train_network(net, train); // yolo layer¿¡¼­ ±¸ÇÑ cost¸¦ ÅëÇÏ¿© Æò±ÕÀ» loss·Î ÆÄ¾Ç
+        loss = train_network(net, train); // yolo layerï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ costï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ lossï¿½ï¿½ ï¿½Ä¾ï¿½
 #endif
-        if (avg_loss < 0) avg_loss = loss; // loss°è»êÀÌ Ã³À½ÀÏ °æ¿ì
-        avg_loss = avg_loss*.9 + loss*.1; // ÀÌÀü±îÁö ±¸ÇÑ lossÀÇ Å©±â¸¦ 0.9·Î ÇöÀçÀÇ loss´Â 0.1·Î °è»ê
+        if (avg_loss < 0) avg_loss = loss; // lossï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+        avg_loss = avg_loss*.9 + loss*.1; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ lossï¿½ï¿½ Å©ï¿½â¸¦ 0.9ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ lossï¿½ï¿½ 0.1ï¿½ï¿½ ï¿½ï¿½ï¿½
         i = get_current_batch(net);
         printf("%ld: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, i*imgs);
         if(i%100==0){
@@ -802,7 +802,7 @@ void network_detect(network *net, image im, float thresh, float hier_thresh, flo
 }
 */
 
-//Ãß°¡ ÇÔ¼ö ( »çÁøÀ» ¸ğµ¨À» ÀĞÀº ÈÄ »çÁø ÀĞ±â¸¦ ´ë±âÇÏ´Â ÇÔ¼ö )
+//ìƒˆë¡œ ì¶”ê°€í•œ í•¨ìˆ˜
 void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
@@ -876,7 +876,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     }
 }
 
-void run_detector(int argc, char **argv) // argv[1] == detector ?? ?™?˜™ å¯ƒìŒ?Š¦ 
+void run_detector(int argc, char **argv) // argv[1] == detector ??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ å¯ƒìŒ?ï¿½ï¿½ 
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .5);
@@ -924,7 +924,7 @@ void run_detector(int argc, char **argv) // argv[1] == detector ?? ?™?˜™ å¯ƒì
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
-    else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);// ?? ?™?˜™?? ?™?˜™
+    else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);// ??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
