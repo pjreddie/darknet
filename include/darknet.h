@@ -102,7 +102,7 @@ typedef struct tree {
 
 // activations.h
 typedef enum {
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH
 }ACTIVATION;
 
 // parser.h
@@ -339,6 +339,7 @@ struct layer {
     float *col_image;
     float * delta;
     float * output;
+    float * output_sigmoid;
     int delta_pinned;
     int output_pinned;
     float * loss;
@@ -522,6 +523,7 @@ struct layer {
     float * scale_change_gpu;
 
     float * output_gpu;
+    float * output_sigmoid_gpu;
     float * loss_gpu;
     float * delta_gpu;
     float * rand_gpu;

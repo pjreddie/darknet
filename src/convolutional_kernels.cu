@@ -391,7 +391,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             */
 
             //add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.n, l.out_w*l.out_h);
-            if (l.activation != LINEAR && l.activation != LEAKY) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
+            if (l.activation == SWISH) activate_array_swish_ongpu(l.output_gpu, l.outputs*l.batch, l.output_sigmoid_gpu, l.output_gpu);
+            else if (l.activation != LINEAR && l.activation != LEAKY) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
             //if(l.activation != LINEAR && l.activation != LEAKY) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
             //if (l.binary || l.xnor) swap_binary(&l);
             //cudaDeviceSynchronize();
@@ -594,7 +595,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 //#ifndef CUDNN_HALF
 //#endif // no CUDNN_HALF
 
-    if (l.activation != LINEAR) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
+    if (l.activation == SWISH) activate_array_swish_ongpu(l.output_gpu, l.outputs*l.batch, l.output_sigmoid_gpu, l.output_gpu);
+    else if (l.activation != LINEAR) activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
     //if(l.dot > 0) dot_error_gpu(l);
     if(l.binary || l.xnor) swap_binary(&l);
     //cudaDeviceSynchronize();    // for correct profiling of performance
@@ -607,7 +609,9 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
     if(state.net.try_fix_nan) constrain_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
-    gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
+
+    if (l.activation == SWISH) gradient_array_swish_ongpu(l.output_gpu, l.outputs*l.batch, l.output_sigmoid_gpu, l.delta_gpu);
+    else gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
 
     if (!l.batch_normalize)
         backward_bias_gpu(l.bias_updates_gpu, l.delta_gpu, l.batch, l.n, l.out_w*l.out_h);
