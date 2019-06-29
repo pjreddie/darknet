@@ -552,13 +552,13 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     else if (l.xnor) fprintf(stderr, "convX ");
     else fprintf(stderr, "conv  ");
 
-    if(groups > 1) fprintf(stderr, "%5d/%3d ", n, groups);
-    else           fprintf(stderr, "%5d     ", n);
+    if(groups > 1) fprintf(stderr, "%5d/%4d ", n, groups);
+    else           fprintf(stderr, "%5d      ", n);
 
     if(dilation > 1) fprintf(stderr, "%2d x%2d/%2d(%1d)", size, size, stride, dilation);
     else             fprintf(stderr, "%2d x%2d/%2d   ", size, size, stride);
 
-    fprintf(stderr, "%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+    fprintf(stderr, "%4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
     //fprintf(stderr, "%5d/%2d %2d x%2d /%2d(%d)%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", n, groups, size, size, stride, dilation, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
