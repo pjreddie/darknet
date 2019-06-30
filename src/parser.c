@@ -534,6 +534,8 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     int stride = option_find_int(options, "stride",1);
     int size = option_find_int(options, "size",stride);
     int padding = option_find_int_quiet(options, "padding", size-1);
+    int maxpool_depth = option_find_int_quiet(options, "maxpool_depth", 0);
+    int out_channels = option_find_int_quiet(options, "out_channels", 1);
 
     int batch,h,w,c;
     h = params.h;
@@ -542,7 +544,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     batch=params.batch;
     if(!(h && w && c)) error("Layer before maxpool layer must output image.");
 
-    maxpool_layer layer = make_maxpool_layer(batch,h,w,c,size,stride,padding);
+    maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride, padding, maxpool_depth, out_channels);
     return layer;
 }
 
