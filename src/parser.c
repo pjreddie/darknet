@@ -289,10 +289,10 @@ int *parse_yolo_mask(char *a, int *num)// a = {'0',',',1',',',2'} , num = 9
         int len = strlen(a); // 5
         int n = 1;
         int i;
-        for(i = 0; i < len; ++i){// 3¹ø ¹İº¹
+        for(i = 0; i < len; ++i){// 3ï¿½ï¿½ ï¿½İºï¿½
             if (a[i] == ',') ++n; //
         }
-        mask = calloc(n, sizeof(int)); // n = 3 '\0'À» Æ÷ÇÔÇÑ °ª
+        mask = calloc(n, sizeof(int)); // n = 3 '\0'ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
         for(i = 0; i < n; ++i){
             int val = atoi(a);// string to int
             mask[i] = val;
@@ -895,10 +895,10 @@ list *read_cfg(char *filename)// read_cfg function
     if(file == 0) file_error(filename); // can't open file
     char *line; 
     int nu = 0;
-    list *options = make_list(); // make_listï¿?? ë¬´ì—‡?ï¿½ï¿½ï¿?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿?? 
-    //list ?ï¿½ï¿½?ï¿½ï¿½ ï¿?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ 
-    section *current = 0; // section êµ¬ì¡°ï¿?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿?? 
-    while((line=fgetl(file)) != 0){ // ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ê¹Œï¿½?? ?ï¿½ï¿½ï¿??
+    list *options = make_list(); // make_listï¿½?? ë¬´ì—‡?ï¿½ï¿½ï¿½?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½?? 
+    //list ?ï¿½ï¿½?ï¿½ï¿½ ï¿½?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ 
+    section *current = 0; // section êµ¬ì¡°ï¿½?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½?? 
+    while((line=fgetl(file)) != 0){ // ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ê¹Œï¿½?? ?ï¿½ï¿½ï¿½??
         ++ nu;
         strip(line);
         switch(line[0]){
@@ -956,7 +956,7 @@ void save_convolutional_weights_binary(layer l, FILE *fp)
         }
     }
 }
-
+//í•´ë‹¹ ë¶€ë¶„ transfer trainì‹œì— ì‚¬ìš©í•˜ì§€ ì•Šê³  í•™ìŠµì‹œì¼œë³´ê¸°.
 void save_convolutional_weights(layer l, FILE *fp) // save_convolutional_weights() function
 {
     if(l.binary){
