@@ -31,7 +31,7 @@ image ipl_to_image(IplImage* src)
     int h = src->height;
     int w = src->width;
     int c = src->nChannels;
-    image im = make_image(w, h, c); // �ʱ�ȭ
+    image im = make_image(w, h, c); // �ʱ�ȭ
     unsigned char *data = (unsigned char *)src->imageData;
     int step = src->widthStep; // image width * channel
     int i, j, k;
