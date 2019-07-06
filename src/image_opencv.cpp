@@ -6,7 +6,7 @@
 #include "image.h"
 #include "darknet.h"
 using namespace cv;
-static int checkblur = 1;
+static int checkblur = 0;
 extern int cando;
 extern "C" {
 
@@ -115,7 +115,7 @@ image load_image_cv(char *filename, int channels)
     {
         cando = 1;
     }
-    
+    /*
     if(checkblur == 1)
     {
         //GaussianBlur(m,dst,Size(7,7),0);// blur
@@ -159,12 +159,13 @@ image load_image_cv(char *filename, int channels)
     }
     else
     {
+        
         //printf("None GaussianBlur\n");
         im = mat_to_image(m);
         checkblur = 1;
     }
-  
-    //im = mat_to_image(m);
+    */
+    im = mat_to_image(m);
     return im;
 }
 
