@@ -165,7 +165,7 @@ image load_image_cv(char *filename, int channels)
         checkblur = 1;
     }
     
-    im = mat_to_image(m);
+    //im = mat_to_image(m);
     return im;
 }
 
