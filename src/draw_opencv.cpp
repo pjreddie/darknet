@@ -22,7 +22,7 @@ void checkIn(Mat* im,int x , int y);
 
 pointList* lists;
 
-char *file_url;
+char file_url[512];
 
 void load_mat_image_point(char *input)
 {
