@@ -27,6 +27,7 @@ char *file_url;
 void load_mat_image_point(char *input)
 {
     strcpy(file_url,input);
+    puts(file_url);
 	Mat image;
 	int wait = 10;
 	int c;
