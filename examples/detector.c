@@ -1,5 +1,49 @@
 #include "darknet.h"
 #include <unistd.h>
+#include <termio.h> 
+#include <fcntl.h>
+
+int kbhit(void)
+{
+  struct termios oldt, newt;
+  int ch;
+  int oldf;
+
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+  ch = getchar();
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+  if(ch != EOF)
+  {
+    ungetc(ch, stdin);
+    return 1;
+  }
+
+  return 0;
+}
+
+int getch(void) 
+{ 
+    int ch;
+    struct termios old;
+    struct termios new; 
+    tcgetattr(0, &old); 
+    new = old; 
+    new.c_lflag &= ~(ICANON|ECHO); 
+    new.c_cc[VMIN] = 1; 
+    new.c_cc[VTIME] = 0; 
+    tcsetattr(0, TCSAFLUSH, &new); 
+    ch = getchar(); 
+    tcsetattr(0, TCSAFLUSH, &old); return ch; 
+}
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 int cando = 0;
@@ -59,25 +103,39 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.m = plist->size;
     args.classes = classes;
     args.jitter = jitter;
-    args.num_boxes = l.max_boxes; // 90
+    args.num_boxes = l.max_boxes;
     args.d = &buffer; // net's d
     args.type = DETECTION_DATA;
     //args.type = INSTANCE_DATA;
     args.threads = 64;
     // train_detecot-2 start
     pthread_t load_thread = load_data(args); // load_data()'s return type is pthread_t
+    /*load_data() -> load_threads() -> load_data_in_thread() -> load_thread() ->
+    * -> { load_data_detection() -> get_random_paths() take a random path -> make_matrix() [matrix.c] ->
+    * -> load_image_color() [image.c] -> load_image() = take a image -> load_image_cv() [image_opencv.cpp] this function use imread() and call mat_to_image() function  if can't read file add to the bad.list->
+    * -> mat_to_image() -> ipl_to_image() image data is ( im.data[k*w*h + i*w + j] = data[i*step + j*c + k]/255.; ) i < h = height , k < c = nChannels , j < w = width
+    * -> rgbgr_image() [image.c] swap data[i] , data[i+w*h*2] end load_image  ->  place_image() there use 3 for iteration -> bilinear_interpolate() -> 
+    *  val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
+        dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
+        (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
+        dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
+        there are in the bilinear_interpolate() function what is it means?? 
+        -> set_pixel() [image.c] ->  random_distort_image() [image.c] -> distort_image() -> fill_truth_detection() -> return data d end load_data_detection() fucntion }
+        load_args a = 留ㅺ컻蹂???��?뱾�??? 二쇱?��?��? ??�듭????�?�?? ?븣臾몄뿉 寃곌?���?? ??��??���?? �?? 泥섏?��?�? �?? 留ㅺ컻蹂???��??�� args?�? ?????��
+
+    */
     // train_detector-2 end
 
     double time;
     int count = 0;
     //while(i*imgs < N*120){
-    while(get_current_batch(net) < 100000){
+    while(get_current_batch(net) < 10000){
     //while(get_current_batch(net) < net->max_batches){ // net_max_batches = 500200
 	printf("get_current_batch : %ld , net->max_batches : %d\n",get_current_batch(net),net->max_batches);
         if(l.random && count++%10 == 0){
             printf("Resizing\n");
             int dim = (rand() % 10 + 10) * 32; // ((0 ~ 9)+10)*32 ==> 320 ~ 608 resize
-            //if (get_current_batch(net)+200 > net->max_batches) dim = 608;
+            if (get_current_batch(net)+200 > net->max_batches) dim = 608;
             //int dim = (rand() % 4 + 16) * 32;
             printf("%d\n", dim); // current size print
             args.w = dim; // net's width = dim
@@ -134,10 +192,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             loss = train_networks(nets, ngpus, train, 4); 
         }
 #else
-        loss = train_network(net, train); // yolo layer���� ���� cost�� ���Ͽ� ����� loss�� �ľ�
+        loss = train_network(net, train);
 #endif
-        if (avg_loss < 0) avg_loss = loss; // loss����� ó���� ���
-        avg_loss = avg_loss*.9 + loss*.1; // �������� ���� loss�� ũ�⸦ 0.9�� ������ loss�� 0.1�� ���
+        if (avg_loss < 0) avg_loss = loss;
+        avg_loss = avg_loss*.9 + loss*.1;
         i = get_current_batch(net);
         printf("%ld: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, i*imgs);
         if(i%100==0){
@@ -150,7 +208,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         }
 	//if(i%1000 == 0 || (i < 1000 && i%100 == 0)){
 	//if(i%10000==0 || (i < 1000 && i%100 == 0)){
-	if(i%1000==0){
+	if(i%10000==0 || (i%1000==0 && i <10000)){
 #ifdef GPU
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
@@ -802,7 +860,7 @@ void network_detect(network *net, image im, float thresh, float hier_thresh, flo
 }
 */
 
-//새로 추가한 함수
+//�߰� �Լ� ( ������ ���� ���� �� ���� �б⸦ ����ϴ� �Լ� )
 void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
@@ -817,8 +875,46 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     char buff[256];
     char *input = buff;
     float nms=.45;
+    int wait = 50;
     while(1){
         int j = 0;
+        if(kbhit()==1)
+        {
+            int key = getch();
+            switch(key){
+                case '1':
+                    printf("change 1 picture\n");
+                    break;
+                case '2':
+                    printf("change 2 picture\n");
+                    break;
+                case '3':
+                    printf("change 3 picture\n");
+                    break;
+                case '4':
+                    printf("change 4 picture\n");
+                    break;
+                case '5':
+                    printf("change 5 picture\n");
+                    break;
+                case '6':
+                    printf("change 6 picture\n");
+                    break;
+                case '7':
+                    printf("change 7 picture\n");
+                    break;
+                case '8':
+                    printf("change 8 picture\n");
+                    break;
+                case '9':
+                    printf("change 9 picture\n");
+                    break;
+                case '10':
+                    printf("change 10 picture\n");
+                    break;
+                }
+        }
+
         /*
         if(filename){
             strncpy(input, filename, 256);
@@ -832,33 +928,38 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
         */
         image im;
         image sized;
-        for(j = 1 ; j <= 10 ; j++){
-        sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
-        im = load_image_color(input,0,0);
-        sized = letterbox_image(im, net->w, net->h);
-        //image sized = resize_image(im, net->w, net->h);
-        //image sized2 = resize_max(im, net->w);
-        //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
-        //resize_network(net, sized.w, sized.h);
-        layer l = net->layers[net->n-1];
-
-
-        float *X = sized.data;
-        time=what_time_is_it_now();
-        if(cando == 1)
+        if(wait == 0 )
         {
-        network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
-        int nboxes = 0;
-        detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
-        //printf("%d\n", nboxes);
-        //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
-        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
-        free_detections(dets, nboxes);
+            for(j = 1 ; j <= 10 ; j++){
+                sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+                im = load_image_color(input,0,0);
+                sized = letterbox_image(im, net->w, net->h);
+                //image sized = resize_image(im, net->w, net->h);
+                //image sized2 = resize_max(im, net->w);
+                //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
+                //resize_network(net, sized.w, sized.h);
+                layer l = net->layers[net->n-1];
+
+
+                float *X = sized.data;
+                time=what_time_is_it_now();
+                if(cando == 1)
+                {
+                network_predict(net, X);
+                printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+                int nboxes = 0;
+                detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+                //printf("%d\n", nboxes);
+                //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+                if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+                    draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+                    free_detections(dets, nboxes);
+                }
+            }// end for function
+            wait = 50;
         }
-        }// end for function
-        sleep(5);
+        usleep(100);
+        wait -= 1;
         if(outfile){
             save_image(im, outfile);
         }
