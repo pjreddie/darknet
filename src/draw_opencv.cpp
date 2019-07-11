@@ -48,7 +48,7 @@ void load_mat_image_point(char *input)
 	{
 		return;
 	}
-    DestroyWindow("Original");
+    destroyWindow("Original");
 }
 void onMouseCheck(int event, int x, int y, int flags, void* param)
 {
