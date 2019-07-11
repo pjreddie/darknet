@@ -876,10 +876,11 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     char *input = buff;
     float nms=.45;
     int wait = 50;
+    int pointArray[10][10];//좌표 정보 저장
     while(1){
         int j = 0;
         
-        if(kbhit()==1)
+        if(kbhit()==1) // 키 입력 확인
         {
             int key = getch();
             switch(key){
@@ -913,6 +914,18 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 case '0':
                     printf("change 0 picture\n");
                     break;
+                case 's','S':
+                    printf("check Area\n");
+                    for(j = 1 ; j <= 10 ; j++){
+                        sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+                        load_mat_image_point(input);
+                        if(cando == 1)
+                        {
+
+                        }
+                    }// end for function
+                    break;
+
                 }
         }
         
