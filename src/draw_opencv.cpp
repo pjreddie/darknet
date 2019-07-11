@@ -10,7 +10,7 @@
 using namespace cv;
 using namespace std;
 
-
+extern "C" {
 void onMouse(int event, int x, int y, int flags, void* param,char* input);
 void onMouseCheck(int event, int x, int y, int flags, void* param);
 void draw_line(Mat* im,char* input);
@@ -229,5 +229,5 @@ void delay(clock_t sec)
 	clock_t start = clock();
 	while (clock() - start < sec);
 }
-
+}
 #endif
