@@ -163,7 +163,7 @@ void ListPrint(pointList* l)
 	free(cur);
 }
 
-void ListToArray1(pointList* l, Points* ary)
+void ListToArray1(pointList* l, Point* ary)
 {
 	int i = 0;
 	pointNode* cur = l->front;
@@ -182,7 +182,7 @@ void ListToArray1(pointList* l, Points* ary)
 	free(cur);
 }
 
-void ListToArray2(pointList* l , Points **ary)
+void ListToArray2(pointList* l , Point **ary)
 {
 	int i = 0;
 	pointNode* cur = l->front;
@@ -203,7 +203,7 @@ void ListToArray2(pointList* l , Points **ary)
 
 void draw_line(Mat *im)
 {
-	Points** points;
+	Point** points;
 	int i = 0;
 	int size = 0;
 	points = (Points * *)calloc(2, sizeof(pointList*));
@@ -217,11 +217,11 @@ void draw_line(Mat *im)
 	{
 		printf("points->x : %d , points->y : %d\n", points[0][i].x, points[0][i].y);
 	}
-	const Points* ppt[1] = { points[0] };
+	const Point* ppt[1] = { points[0] };
 	int nsize[1];
 	nsize[0] = size;
 	*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
-	polylines(*&im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
+	polylines(*im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
 	imshow("Original", *im);
 	
 }
