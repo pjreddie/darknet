@@ -1,6 +1,14 @@
 #ifdef OPENCV
-#include "draw_opencv.cpp"
 #include "darknet.h"
+#include "opencv2/opencv.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/core.hpp"
+#include <iostream>
+#include <cstdio>
+#include <time.h>
+
+using namespace cv;
+using namespace std;
 
 pointList* lists;
 
