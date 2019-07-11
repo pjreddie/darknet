@@ -16,6 +16,8 @@ void onMouseCheck(int event, int x, int y, int flags, void* param);
 void draw_line(Mat* im);
 void checkIn(Mat* im,int x , int y);
 void delay(clock_t sec);
+void ListToArray1(pointList* l, Point* ary);
+void ListToArray2(pointList* l, Point **ary);
 
 
 pointList* lists;
