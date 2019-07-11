@@ -9,8 +9,6 @@ if(@OpenCV_FOUND@)
   find_dependency(OpenCV)
 endif()
 
-find_dependency(Stb)
-
 if(@ENABLE_CUDA@)
   enable_language(CUDA)
   find_dependency(CUDA)
