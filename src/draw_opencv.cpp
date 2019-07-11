@@ -221,7 +221,7 @@ void draw_line(Mat *im)
 	int nsize[1];
 	nsize[0] = size;
 	*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
-	polylines(im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
+	polylines(*&im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
 	imshow("Original", *im);
 	
 }
