@@ -959,8 +959,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             }// end for function
             wait = 50;
         }
-        usleep(100);
-        wait -= 1;
+        sleep(1);
+        wait -= 10;
         if(outfile){
             //save_image(im, outfile);
         }
