@@ -46,8 +46,6 @@ void load_mat_image_point(char *input)
 		return 0;
 	}
 
-    ary = 
-	return 0;
 }
 void onMouseCheck(int event, int x, int y, int flags, void* param)
 {
