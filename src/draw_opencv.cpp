@@ -43,7 +43,7 @@ void load_mat_image_point(char *input)
 	}
 	else if (c == 27)
 	{
-		return 0;
+		return;
 	}
 
 }
