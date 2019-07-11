@@ -30,12 +30,12 @@ void load_mat_image_point(char *input)
     image = imread(input, CV_LOAD_IMAGE_COLOR);
 	imshow("Original", image);
 
-	setMouseCallback("Original", onMouse, &image);
+	setMouseCallback("Original", onMouse);
 
 	c = waitKey(0);
 	if (c == 'a')
 	{
-		setMouseCallback("Original", onMouseCheck, &image);
+		setMouseCallback("Original", onMouseCheck);
 		waitKey(0);
 	}
 	else if (c == 27)
