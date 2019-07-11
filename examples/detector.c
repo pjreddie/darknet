@@ -878,7 +878,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     int wait = 50;
     while(1){
         int j = 0;
-        /*
+        
         if(kbhit()==1)
         {
             int key = getch();
@@ -915,7 +915,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     break;
                 }
         }
-        */
+        
         /*
         if(filename){
             strncpy(input, filename, 256);
@@ -961,8 +961,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             free_image(sized);
             wait = 50;
         }
-        sleep(1);
-        wait -= 10;
+        usleep(100);
+        wait -= 1;
         if(outfile){
             //save_image(im, outfile);
         }
