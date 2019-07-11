@@ -208,10 +208,10 @@ void draw_line(Mat *im)
 	Point** points;
 	int i = 0;
 	int size = 0;
-	points = (Points * *)calloc(2, sizeof(pointList*));
+	points = (Point * *)calloc(2, sizeof(pointList*));
 	for (i = 0; i < 2; i++)
 	{
-		points[i] = (Points*)calloc(lists->size, sizeof(pointList));
+		points[i] = (Point*)calloc(lists->size, sizeof(pointList));
 	}
 	size = lists->size;
 	ListToArray2(lists, points);
