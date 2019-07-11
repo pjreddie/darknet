@@ -927,10 +927,10 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             strtok(input, "\n");
         }
         */
-        image im;
-        image sized;
         if(wait == 0 )
         {
+            image im;
+            image sized;
             for(j = 1 ; j <= 10 ; j++){
                 sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
                 im = load_image_color(input,0,0);
@@ -957,6 +957,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     free_detections(dets, nboxes);
                 }
             }// end for function
+            free_image(im);
+            free_image(sized);
             wait = 50;
         }
         sleep(1);
@@ -971,9 +973,6 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             //show_image(im, "predictions", 0);
 #endif
         }
-
-        free_image(im);
-        free_image(sized);
         if (filename) break;
     }
 }
