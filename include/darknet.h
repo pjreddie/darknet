@@ -800,16 +800,12 @@ size_t rand_size_t();
 float rand_normal();
 float rand_uniform(float min, float max);
 
-#ifdef __cplusplus
-}
-#endif
-#endif
+
 typedef struct Points
 {
     int x;
     int y;
 }Points;
-
 #ifdef OPENCV
 typedef struct pointNode{
 	int x;
@@ -831,6 +827,9 @@ int ListRemove(pointList* l,int x , int y); // 리스트 제거
 void ListPrint(pointList* l);
 void ListToArray1(pointList* l, Points* ary);
 void ListToArray2(pointList* l, Points **ary);
+#endif
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
