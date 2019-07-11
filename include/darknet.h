@@ -804,11 +804,11 @@ float rand_uniform(float min, float max);
 }
 #endif
 #endif
-typedef struct Point
+typedef struct Points
 {
     int x;
     int y;
-}Point;
+}Points;
 
 #ifdef OPENCV
 typedef struct pointNode{
