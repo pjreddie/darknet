@@ -50,7 +50,7 @@ void onMouseCheck(int event, int x, int y, int flags, void* param)
 		break;
 	}
 }
-void onMouse(int event, int x, int y, int flags, void* param)
+void onMouse(int event, int x, int y, int flags, void* param,char *input)
 {
 	Mat* im = reinterpret_cast<Mat*>(param);
 	int i = 0;
@@ -59,11 +59,11 @@ void onMouse(int event, int x, int y, int flags, void* param)
 	{
 		case CV_EVENT_LBUTTONDOWN:
 			ListAdd(lists, x, y);
-			draw_line(im);
+			draw_line(im,input);
 			break;
 		case CV_EVENT_RBUTTONDOWN:
 			ListRemove(lists, x, y);
-			draw_line(im);
+			draw_line(im,input);
 			break;
 	} 
 }
@@ -190,7 +190,7 @@ void ListToArray2(pointList* l , Point **ary)
 	free(cur);
 }
 
-void draw_line(Mat *im)
+void draw_line(Mat *im,char *input)
 {
 	Point** points;
 	int i = 0;
@@ -209,7 +209,7 @@ void draw_line(Mat *im)
 	const Point* ppt[1] = { points[0] };
 	int nsize[1];
 	nsize[0] = size;
-	*im = imread("./Image/person_259.jpg", CV_LOAD_IMAGE_COLOR);
+	*im = imread(input, CV_LOAD_IMAGE_COLOR);
 	polylines(*im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
 	imshow("Original", *im);
 	
