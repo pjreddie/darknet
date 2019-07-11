@@ -174,7 +174,8 @@ void ListToArray1(pointList* l, Points* ary)
 	}
 	while (cur != NULL)
 	{
-		ary[i++] = Points(cur->x, cur->y);
+		ary[i].x = cur->x;
+        ary[i++].y = cur->y;
 		cur = cur->next;
 	}
 	puts("");
@@ -192,7 +193,8 @@ void ListToArray2(pointList* l , Points **ary)
 	}
 	while (cur != NULL)
 	{
-		ary[0][i++] = Points(cur->x, cur->y);
+		ary[0][i] = cur->x;
+        ary[0][i++] = cur->y;
 		cur = cur->next;
 	}
 	puts("");
