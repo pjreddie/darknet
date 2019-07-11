@@ -209,7 +209,7 @@ void draw_line(Mat *im)
 	Point** points;
 	int i = 0;
 	int size = 0;
-	points = (Point * *)calloc(2, sizeof(pointList*));
+	points = (Point**)calloc(2, sizeof(pointList*));
 	for (i = 0; i < 2; i++)
 	{
 		points[i] = (Point*)calloc(lists->size, sizeof(pointList));
@@ -224,7 +224,7 @@ void draw_line(Mat *im)
 	int nsize[1];
 	nsize[0] = size;
 	//*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
-	polylines(*im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
+	//polylines(*im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
 	//imshow("Original", *im);
 	
 }
