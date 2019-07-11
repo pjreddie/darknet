@@ -24,7 +24,7 @@ pointList* lists;
 
 char file_url[512];
 
-void load_mat_image_point(char *input)
+void load_mat_image_point(char *input,int i)
 {
     strcpy(file_url,input);
     puts(file_url);
@@ -34,7 +34,6 @@ void load_mat_image_point(char *input)
 	lists = (pointList*)calloc(1, sizeof(pointList));
 	initList(lists);
     image = imread(input, CV_LOAD_IMAGE_COLOR);
-    namedWindow("Original",image.col,image.row);
 	imshow("Original", image);
 
 	setMouseCallback("Original", onMouse);
@@ -49,7 +48,10 @@ void load_mat_image_point(char *input)
 	{
 		return;
 	}
-    destroyWindow("Original");
+    if(i == 10)
+    {
+        destroyWindow("Original");
+    }
 }
 void onMouseCheck(int event, int x, int y, int flags, void* param)
 {

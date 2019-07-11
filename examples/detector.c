@@ -918,7 +918,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     printf("check Area\n");
                     for(j = 1 ; j <= 10 ; j++){
                         sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
-                        load_mat_image_point(input);
+                        load_mat_image_point(input,j);
                         if(cando == 1)
                         {
 

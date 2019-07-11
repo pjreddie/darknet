@@ -820,7 +820,7 @@ typedef struct pointList{
 	pointNode* back;
 }pointList;
 
-void load_mat_image_point(char *input);
+void load_mat_image_point(char *input,int i);
 void initList(pointList* l); // 리스트 초기화
 void ListAdd(pointList* l, int x, int y);// 리스트 추가
 int ListRemove(pointList* l,int x , int y); // 리스트 제거
