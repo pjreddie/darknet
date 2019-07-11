@@ -927,7 +927,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             strtok(input, "\n");
         }
         */
-        if(wait == 0 )
+        if(wait == 0)
         {
             image im;
             image sized;
@@ -961,7 +961,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             free_image(sized);
             wait = 50;
         }
-        usleep(100);
+        usleep(100*1000);
         wait -= 1;
         if(outfile){
             //save_image(im, outfile);
