@@ -909,7 +909,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 case '9':
                     printf("change 9 picture\n");
                     break;
-                case '10':
+                case '0':
                     printf("change 10 picture\n");
                     break;
                 }
