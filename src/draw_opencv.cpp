@@ -18,7 +18,7 @@ void checkIn(Mat* im,int x , int y);
 void delay(clock_t sec);
 void ListToArray1(pointList* l, Point* ary);
 void ListToArray2(pointList* l, Point **ary);
-
+void checkIn(Mat* im,int x , int y);
 
 pointList* lists;
 
@@ -234,5 +234,34 @@ void delay(clock_t sec)
 	clock_t start = clock();
 	while (clock() - start < sec);
 }
+
+void checkIn(Mat* im,int x , int y)
+{
+	int crosses = 0;
+	Point* points;
+	points = (Point*)calloc(lists->size, sizeof(pointList));
+	ListToArray1(lists, points);
+	int i, j;
+	for (i = 0; i < lists->size; i++)
+	{
+		j = (i + 1) % lists->size;
+		if ((points[i].y > y) != (points[j].y > y)) // 두 좌표(연결점)의 y좌표가 점의 좌표와 교차할 경우만 확인
+		{
+			double atX = (points[j].x - points[i].x) * (y - points[i].y) / (points[j].y - points[i].y) + points[i].x;
+			if (x <= atX)
+				crosses++;
+		}
+	}
+	if (crosses % 2 == 1)
+	{
+		printf("내부의점\n");
+	}
+	else
+	{
+		printf("외부의점\n");
+	}
+}
+
+
 }
 #endif
