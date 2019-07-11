@@ -833,9 +833,4 @@ void ListToArray1(pointList* l, Point* ary);
 void ListToArray2(pointList* l, Point **ary);
 
 
-void onMouse(int event, int x, int y, int flags, void* param,char* input);
-void onMouseCheck(int event, int x, int y, int flags, void* param);
-void draw_line(Mat* im,char* input);
-void checkIn(Mat* im,int x , int y);
-void delay(clock_t sec);
 #endif

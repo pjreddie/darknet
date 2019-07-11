@@ -10,6 +10,14 @@
 using namespace cv;
 using namespace std;
 
+
+void onMouse(int event, int x, int y, int flags, void* param,char* input);
+void onMouseCheck(int event, int x, int y, int flags, void* param);
+void draw_line(Mat* im,char* input);
+void checkIn(Mat* im,int x , int y);
+void delay(clock_t sec);
+
+
 pointList* lists;
 
 void load_mat_image_point(char *input)
