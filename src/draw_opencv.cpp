@@ -11,17 +11,20 @@ using namespace cv;
 using namespace std;
 
 extern "C" {
-void onMouse(int event, int x, int y, int flags, void* param,char* input);
+void onMouse(int event, int x, int y, int flags, void* param);
 void onMouseCheck(int event, int x, int y, int flags, void* param);
-void draw_line(Mat* im,char* input);
+void draw_line(Mat* im);
 void checkIn(Mat* im,int x , int y);
 void delay(clock_t sec);
 
 
 pointList* lists;
 
+char *file_url;
+
 void load_mat_image_point(char *input)
 {
+    strcpy(file_url,input);
 	Mat image;
 	int wait = 10;
 	int c;
@@ -58,7 +61,7 @@ void onMouseCheck(int event, int x, int y, int flags, void* param)
 		break;
 	}
 }
-void onMouse(int event, int x, int y, int flags, void* param,char *input)
+void onMouse(int event, int x, int y, int flags, void* param)
 {
 	Mat* im = reinterpret_cast<Mat*>(param);
 	int i = 0;
@@ -67,11 +70,11 @@ void onMouse(int event, int x, int y, int flags, void* param,char *input)
 	{
 		case CV_EVENT_LBUTTONDOWN:
 			ListAdd(lists, x, y);
-			draw_line(im,input);
+			draw_line(im);
 			break;
 		case CV_EVENT_RBUTTONDOWN:
 			ListRemove(lists, x, y);
-			draw_line(im,input);
+			draw_line(im);
 			break;
 	} 
 }
@@ -198,7 +201,7 @@ void ListToArray2(pointList* l , Points **ary)
 	free(cur);
 }
 
-void draw_line(Mat *im,char *input)
+void draw_line(Mat *im)
 {
 	Points** points;
 	int i = 0;
@@ -217,7 +220,7 @@ void draw_line(Mat *im,char *input)
 	const Points* ppt[1] = { points[0] };
 	int nsize[1];
 	nsize[0] = size;
-	*im = imread(input, CV_LOAD_IMAGE_COLOR);
+	*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
 	polylines(*im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
 	imshow("Original", *im);
 	
