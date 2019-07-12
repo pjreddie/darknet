@@ -829,7 +829,7 @@ void ListPrint(pointList* l);
 #endif
 void draw_detections_area(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary);
 int check_person_point(int px,int py,Points *ary);
-void destroy_image_cv(image im, const char* name, int ms)
+void destroy_image_cv(image im, const char* name, int ms);
 #ifdef __cplusplus
 }
 #endif
