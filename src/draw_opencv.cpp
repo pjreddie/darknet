@@ -297,7 +297,7 @@ int check_person_point(int px,int py,Points *ary)
 	for (i = 0; i < ary->size; i++)
 	{
 		j = (i + 1) % ary->size;
-		if ((ary->y[i] > y) != (ary->y[j] > y)) // 두 좌표(연결점)의 y좌표가 점의 좌표와 교차할 경우만 확인
+		if ((ary->y[i] > py) != (ary->y[j] > py)) // 두 좌표(연결점)의 y좌표가 점의 좌표와 교차할 경우만 확인
 		{
 			double atX = (ary->.x[j] - ary->x[i]) * (py - ary->y[i]) / (ary->y[j] - ary->.y[i]) + ary->x[i];
 			if (px <= atX)
