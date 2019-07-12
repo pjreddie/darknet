@@ -330,11 +330,7 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
                     strcat(labelstr, ", ");
                     strcat(labelstr, names[j]);
                 }
-                printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
-		count++;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
-            }
-        }
-        if(class >= 0){
+                if(class >= 0){
             int width = im.h * .006;
 
             /*
@@ -371,9 +367,13 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
 
             int person_point_x = (b.x)*im.w;
             int person_point_y = bot;
-
+            if(check_person_point(person_point_x,person_point_y,ary)==1)
+            {
+                printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+		        count++;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
+                draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            }
             //printf("person_point_x = %d,person_point_y = %d\n",person_point_x,person_point_y);
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
 
             if (alphabet) {
                 image label = get_label(alphabet, labelstr, (im.h*.03));
@@ -390,6 +390,9 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
                 free_image(tmask);
             }
         }
+            }
+        }
+        
     }
     printf("Total Person Count = %d\n",count);
 }
