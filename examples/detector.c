@@ -920,10 +920,6 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                         sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
                                               
                         load_mat_image_point(input,j,&pointArray[j-1]);
-                        for(i = 0 ; i < pointArray[j-1].size ; i++)
-                        {
-                            printf("pointArray[%d].X : %d , pointArray[%d].Y : %d\n",j,pointArray[j-1].x[i],j,pointArray[j-1].y[i]);
-                        }
                     }// end for function
                     break;
                 case 27 :
