@@ -970,7 +970,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 //printf("%d\n", nboxes);
                 //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
                 if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
-                if(pointArray[j-1]->size > 0)
+                if(pointArray[j-1].size >= 3)
                 {
                     draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,pointArray[j-1]);
                 }
