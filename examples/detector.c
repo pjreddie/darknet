@@ -955,6 +955,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     int nboxes = 0;
                     detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
                     if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+                    printf("pointArray[%d].size = %d\n",pointArray[j-1].size);
                     if(pointArray[j-1].size >= 3)
                     {
                         draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1]);
