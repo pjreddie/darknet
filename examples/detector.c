@@ -978,8 +978,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 {
                     draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
                 }
-                    free_detections(dets, nboxes);
-                }
+            free_detections(dets, nboxes);
             if(outfile){
             //save_image(im, outfile);
             }
