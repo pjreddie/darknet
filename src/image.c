@@ -331,65 +331,65 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
                     strcat(labelstr, names[j]);
                 }
                 if(class >= 0){
-            int width = im.h * .006;
+                    int width = im.h * .006;
 
-            /*
-               if(0){
-               width = pow(prob, 1./2.)*10+1;
-               alphabet = 0;
-               }
-             */
+                    /*
+                    if(0){
+                    width = pow(prob, 1./2.)*10+1;
+                    alphabet = 0;
+                    }
+                    */
 
-            //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
-            int offset = class*123457 % classes;
-            float red = get_color(2,offset,classes);
-            float green = get_color(1,offset,classes);
-            float blue = get_color(0,offset,classes);
-            float rgb[3];
+                    //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
+                    int offset = class*123457 % classes;
+                    float red = get_color(2,offset,classes);
+                    float green = get_color(1,offset,classes);
+                    float blue = get_color(0,offset,classes);
+                    float rgb[3];
 
-            //width = prob*20+2;
+                    //width = prob*20+2;
 
-            rgb[0] = red;
-            rgb[1] = green;
-            rgb[2] = blue;
-            box b = dets[i].bbox;
-            //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+                    rgb[0] = red;
+                    rgb[1] = green;
+                    rgb[2] = blue;
+                    box b = dets[i].bbox;
+                    //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
-            int left  = (b.x-b.w/2.)*im.w;
-            int right = (b.x+b.w/2.)*im.w;
-            int top   = (b.y-b.h/2.)*im.h;
-            int bot   = (b.y+b.h/2.)*im.h;
+                    int left  = (b.x-b.w/2.)*im.w;
+                    int right = (b.x+b.w/2.)*im.w;
+                    int top   = (b.y-b.h/2.)*im.h;
+                    int bot   = (b.y+b.h/2.)*im.h;
 
-            if(left < 0) left = 0;
-            if(right > im.w-1) right = im.w-1;
-            if(top < 0) top = 0;
-            if(bot > im.h-1) bot = im.h-1;
+                    if(left < 0) left = 0;
+                    if(right > im.w-1) right = im.w-1;
+                    if(top < 0) top = 0;
+                    if(bot > im.h-1) bot = im.h-1;
 
-            int person_point_x = (b.x)*im.w;
-            int person_point_y = bot;
-            if(check_person_point(person_point_x,person_point_y,ary)==1)
-            {
-                printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
-		        count++;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
-                draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            }
-            //printf("person_point_x = %d,person_point_y = %d\n",person_point_x,person_point_y);
+                    int person_point_x = (b.x)*im.w;
+                    int person_point_y = bot;
+                    if(check_person_point(person_point_x,person_point_y,ary)==1)
+                    {
+                        printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                        count++;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
+                        //draw_box_width(im, left, top, right, bot, width, red, green, blue);
+                    }
+                    //printf("person_point_x = %d,person_point_y = %d\n",person_point_x,person_point_y);
 
-            if (alphabet) {
-                image label = get_label(alphabet, labelstr, (im.h*.03));
-                draw_label(im, top + width, left, label, rgb);
-                free_image(label);
-            }
-            if (dets[i].mask){
-                image mask = float_to_image(14, 14, 1, dets[i].mask);
-                image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
-                image tmask = threshold_image(resized_mask, .5);
-                embed_image(tmask, im, left, top);
-                free_image(mask);
-                free_image(resized_mask);
-                free_image(tmask);
-            }
-        }
+                    if (alphabet) {
+                        image label = get_label(alphabet, labelstr, (im.h*.03));
+                        draw_label(im, top + width, left, label, rgb);
+                        free_image(label);
+                    }
+                    if (dets[i].mask){
+                        image mask = float_to_image(14, 14, 1, dets[i].mask);
+                        image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                        image tmask = threshold_image(resized_mask, .5);
+                        embed_image(tmask, im, left, top);
+                        free_image(mask);
+                        free_image(resized_mask);
+                        free_image(tmask);
+                    }
+                }
             }
         }
         
