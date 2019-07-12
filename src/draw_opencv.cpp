@@ -19,18 +19,20 @@ void delay(clock_t sec);
 void ListToArray1(pointList* l, Point* ary);
 void ListToArray2(pointList* l, Point **ary);
 void checkIn(Mat* im,int x , int y);
+void returnPoint(pointList* l,Points* ary);
 
 pointList* lists;
 
 char file_url[512];
 
-void load_mat_image_point(char *input,int i)
+void load_mat_image_point(char *input,int i,Points* ary)
 {
     strcpy(file_url,input);
     puts(file_url);
 	Mat image;
 	int wait = 10;
 	int c;
+    int i;
 	lists = (pointList*)calloc(1, sizeof(pointList));
 	initList(lists);
     image = imread(input, CV_LOAD_IMAGE_COLOR);
@@ -45,14 +47,11 @@ void load_mat_image_point(char *input,int i)
 		setMouseCallback("Original", onMouseCheck);
 		waitKey(0);
 	}
-	else if (c == 27)
-	{
-		return;
-	}
     if(i == 10)
     {
         destroyWindow("Original");
     }
+    returnPoint(lists,ary);
 }
 void onMouseCheck(int event, int x, int y, int flags, void* param)
 {
@@ -222,7 +221,7 @@ void draw_line(Mat *im)
     //*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
 	if(size >=3 )
     {
-        polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
+        //olylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
     }
 	//imshow("Original", *im);
 	free(points);
@@ -262,6 +261,25 @@ void checkIn(Mat* im,int x , int y)
 	}
 }
 
+void returnPoint(pointList* l,Points* ary)
+{
+    int i = 0;
+    pointNode* cur = l->front;
+	if (cur == NULL)
+	{
+		printf("List is Empty\n");
+		return;
+	}
+	while (cur != NULL)
+	{
+        ary->x[i] = cur->x;
+        ary->y[i++] = cur->y;
+        ary->size++;
+		cur = cur->next;
+	}
+	puts("");
+	//free(cur);
+}
 
 }
 #endif

@@ -876,10 +876,10 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     char *input = buff;
     float nms=.45;
     int wait = 50;
-    int pointArray[10][10];//좌표 정보 저장
+    Points pointArray[10];//좌표 정보 저장[]
     while(1){
         int j = 0;
-        
+        int i;
         if(kbhit()==1) // 키 입력 확인
         {
             int key = getch();
@@ -919,8 +919,11 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     for(j = 1 ; j <= 10 ; j++){
                         sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
                                               
-                        load_mat_image_point(input,j);
-                        
+                        load_mat_image_point(input,j,&pointArray[j-1]);
+                        for(i = 0 ; i < pointArray[j-1].size ; i++)
+                        {
+                            printf("pointArray[%d].X : %d , pointArray[%d].Y : %d\n",j,pointArray[j-1].x[i],j,pointArray[j-1].y[i]);
+                        }
                     }// end for function
                     break;
                 case 27 :
