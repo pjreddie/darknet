@@ -876,11 +876,11 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     char *input = buff;
     float nms=.45;
     int wait = 50;
+    int j = 0;
+    int i;
     Points pointArray[10];//좌표 정보 저장[]
     while(1)
     {
-        int j = 0;
-        int i;
         if(kbhit()==1) // 키 입력 확인
         {
             int key = getch();
@@ -955,7 +955,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     int nboxes = 0;
                     detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
                     if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
-                    printf("pointArray[%d].size = %d\n",pointArray[j-1].size);
+                    printf("pointArray[%d].size = %d\n",j-1,pointArray[j-1].size);
                     if(pointArray[j-1].size >= 3)
                     {
                         draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1]);
