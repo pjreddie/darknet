@@ -262,6 +262,7 @@ void checkIn(Mat* im,int x , int y)
 
 void returnPoint(pointList* l,Points* ary)
 {
+    ary->size = 0;
     int i = 0;
     pointNode* cur = l->front;
 	if (cur == NULL)
