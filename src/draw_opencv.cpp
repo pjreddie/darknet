@@ -224,13 +224,15 @@ void draw_line(Mat *im)
 	{
 		printf("points->x : %d , points->y : %d\n", points[0][i].x, points[0][i].y);
 	}
+    /*
 	const Point* ppt[1] = { points[0] };
 	int nsize[1];
 	nsize[0] = size;
-	//*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
+	*/
+    //*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
 	if(size >=3 )
     {
-        polylines(*im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
+        polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
     }
 	//imshow("Original", *im);
 	free(points);
