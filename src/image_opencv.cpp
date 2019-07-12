@@ -175,14 +175,10 @@ int show_image_cv(image im, const char* name, int ms)
     imshow(name, m);
     int c = waitKey(ms);
     if (c != -1) c = c%256;
+    destroyWindow(name);
     return c;
 }
 
-void destroy_image_cv(image im, const char* name, int ms)
-{
-    Mat m = image_to_mat(im);
-    destroyWindow(name);
-}
 
 void make_window(char *name, int w, int h, int fullscreen)
 {
