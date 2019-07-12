@@ -313,5 +313,12 @@ int check_person_point(int px,int py,Points *ary)
 		return 0;
 	}
 }
+
+void destroy_image_cv(image im, const char* name, int ms)
+{
+    Mat m = image_to_mat(im);
+    destroyAllWindows(name);
+}
+
 }
 #endif
