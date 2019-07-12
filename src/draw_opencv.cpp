@@ -35,6 +35,7 @@ void load_mat_image_point(char *input,int i)
 	initList(lists);
     image = imread(input, CV_LOAD_IMAGE_COLOR);
 	imshow("Original", image);
+    resizeWindow("Original",image.cols,image.rows);
 
 	setMouseCallback("Original", onMouse);
 
