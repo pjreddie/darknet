@@ -52,10 +52,7 @@ void load_mat_image_point(char *input,int i,Points* ary)
             break;
         }
     }
-    if(i == 10)
-    {
-        destroyWindow("Original");
-    }
+    destroyWindow("Original");
     returnPoint(lists,ary);
 }
 void onMouseCheck(int event, int x, int y, int flags, void* param)
