@@ -879,6 +879,10 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     int j = 0;
     int i;
     Points pointArray[10];//좌표 정보 저장[]
+    for(i = 0 ; i < 10 ; i++)
+    {
+        pointArray[i].size = 0;
+    }
     while(1)
     {
         if(kbhit()==1) // 키 입력 확인
