@@ -181,7 +181,7 @@ int show_image_cv(image im, const char* name, int ms)
 void destroy_image_cv(image im, const char* name, int ms)
 {
     Mat m = image_to_mat(im);
-    destroyWindow(name);
+    destroyAllWindows(name);
 }
 
 void make_window(char *name, int w, int h, int fullscreen)
