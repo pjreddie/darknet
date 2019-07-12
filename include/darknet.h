@@ -828,7 +828,7 @@ int ListRemove(pointList* l,int x , int y); // 리스트 제거
 void ListPrint(pointList* l);
 #endif
 void draw_detections_area(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary);
-void check_person_point(int px,int py,Point *ary);
+int check_person_point(int px,int py,Points *ary);
 #ifdef __cplusplus
 }
 #endif
