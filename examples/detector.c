@@ -915,7 +915,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     printf("change 0 picture\n");
                     break;
                 case 's': case 'S':
-                    printf("check Area\n");
+                    printf("\ncheck Area\n");
                     for(j = 1 ; j <= 10 ; j++){
                         sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
                                               

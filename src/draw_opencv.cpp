@@ -273,6 +273,8 @@ void returnPoint(pointList* l,Points* ary)
 	{
         ary->x[i] = cur->x;
         ary->y[i++] = cur->y;
+        printf("ary->x[%d] : %d , ary->y[%d] : %d\n",i,ary->x[i-1],i,ary->y[i-1]);
+        printf("ary->size : %d\n",ary->size);
         ary->size++;
 		cur = cur->next;
 	}
