@@ -979,9 +979,9 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 }
                 free_image(im);
                 free_image(sized);
+                destroy_image_cv(im,"predictions",0);
             }// end for function
             wait = 50;
-            destroy_image_cv(im,"predictions",0);
             usleep(100*1000);
         }//end if function
         
