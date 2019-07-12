@@ -925,7 +925,9 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                         }
                     }// end for function
                     break;
-
+                case 27 :
+                    printf("Program Exit\n");
+                    break;
                 }
         }
         
