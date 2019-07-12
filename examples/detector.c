@@ -952,59 +952,45 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
                 im = load_image_color(input,0,0);
                 sized = letterbox_image(im, net->w, net->h);
-                //image sized = resize_image(im, net->w, net->h);
-                //image sized2 = resize_max(im, net->w);
-                //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
-                //resize_network(net, sized.w, sized.h);
-                layer l = net->layers[net->n-1];
 
+                layer l = net->layers[net->n-1];
 
                 float *X = sized.data;
                 time=what_time_is_it_now();
                 if(cando == 1)
                 {
-                network_predict(net, X);
-                printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
-                int nboxes = 0;
-                detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
-                //printf("%d\n", nboxes);
-                //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-                if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
-                if(pointArray[j-1].size >= 3)
-                {
-                    draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1]);
+                    network_predict(net, X);
+                    printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+                    int nboxes = 0;
+                    detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+                    if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+                    if(pointArray[j-1].size >= 3)
+                    {
+                        draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1]);
+                    }
+                    else
+                    {
+                        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+                    }
                 }
-                else
-                {
-                    draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+                free_detections(dets, nboxes);
+                if(outfile){
+                save_image(im, outfile);
                 }
-            free_detections(dets, nboxes);
-            if(outfile){
-            //save_image(im, outfile);
-            }
-            else{
-            //save_image(im, "predictions");
-            #ifdef OPENCV
-            //make_window("predictions", 512, 512, 0);
-            //show_image(im, "predictions", 0);
-            #endif
-            free_image(im);
-            free_image(sized);
+                else{
+                save_image(im, "predictions");
+                #ifdef OPENCV
+                make_window("predictions", 512, 512, 0);
+                show_image(im, "predictions", 0);
+                #endif
+                free_image(im);
+                free_image(sized);
             }// end for function
             wait = 50;
         }
+        
         usleep(100*1000);
         wait -= 1;
-        if(outfile){
-            //save_image(im, outfile);
-        }
-        else{
-            //save_image(im, "predictions");
-#ifdef OPENCV
-            //make_window("predictions", 512, 512, 0);
-            //show_image(im, "predictions", 0);
-#endif
-        }
         if (filename) break;
     }
     free(pointArray);
