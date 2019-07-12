@@ -233,7 +233,7 @@ void draw_line(Mat *im)
         polylines(*im, ppt, nsize, 1, true, Scalar(0, 255, 0)); 
     }
 	//imshow("Original", *im);
-	
+	free(points);
 }
 
 
