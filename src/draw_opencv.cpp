@@ -32,7 +32,6 @@ void load_mat_image_point(char *input,int i,Points* ary)
 	Mat image;
 	int wait = 10;
 	int c;
-    int i;
 	lists = (pointList*)calloc(1, sizeof(pointList));
 	initList(lists);
     image = imread(input, CV_LOAD_IMAGE_COLOR);
