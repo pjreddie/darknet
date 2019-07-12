@@ -932,7 +932,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     return;
                     break;
                 }
-        }
+        }//end if function
         //non error
         if(wait == 0)
         {
@@ -968,12 +968,14 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 if(outfile){
                     save_image(im, outfile);
                 }
-                else{
-                    save_image(im, "predictions");
+                else
+                {
+                save_image(im, "predictions");
                 #ifdef OPENCV
                     make_window("predictions", 512, 512, 0);
                     show_image(im, "predictions", 0);
                 #endif
+                }
                 free_image(im);
                 free_image(sized);
             }// end for function
@@ -1053,4 +1055,3 @@ void run_detector(int argc, char **argv) // argv[1] == detector ??��?��?
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
 }
-
