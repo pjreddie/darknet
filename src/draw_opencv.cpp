@@ -216,7 +216,8 @@ void draw_line(Mat *im)
 	points = (Point*)calloc(lists->size, sizeof(pointList));
 	size = lists->size;
 	ListToArray1(lists, points);
-	printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
+    for(i = 0 ; i < size ; i++)
+	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 
     //*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
 	if(size >=3 )
