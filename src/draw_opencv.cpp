@@ -37,15 +37,21 @@ void load_mat_image_point(char *input,int i,Points* ary)
     image = imread(input, CV_LOAD_IMAGE_COLOR);
 	imshow("Original", image);
     resizeWindow("Original",image.cols,image.rows);
+    while(1)
+    {
+        setMouseCallback("Original", onMouse);
 
-	setMouseCallback("Original", onMouse);
-
-	c = waitKey(0);
-	if (c == 'a')
-	{
-		setMouseCallback("Original", onMouseCheck);
-		waitKey(0);
-	}
+        c = waitKey(0);
+        if (c == 'a')
+        {
+            setMouseCallback("Original", onMouseCheck);
+            waitKey(0);
+        }
+        if(c==32)
+        {
+            break;
+        }
+    }
     if(i == 10)
     {
         destroyWindow("Original");
