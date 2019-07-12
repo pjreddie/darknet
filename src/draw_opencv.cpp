@@ -220,12 +220,12 @@ void draw_line(Mat *im)
     for(i = 0 ; i < size ; i++)
 	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 
-    //*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
+    *im = imread(file_url, CV_LOAD_IMAGE_COLOR);
 	if(size >=3 )
     {
-        olylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
+        polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
     }
-	//imshow("Original", *im);
+	imshow("Original", *im);
 	free(points);
 }
 
