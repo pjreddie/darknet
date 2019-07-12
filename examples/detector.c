@@ -1076,6 +1076,7 @@ void run_detector(int argc, char **argv) // argv[1] == detector ??��?��?
 
 void load_one_image(char *input, Points* ary,int j)
 {
+    int i =0;
     sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
     load_mat_image_point(input,j,ary); // pointArray.size가 0일 경우 전체 화면에 대해서 검출하는 식으로 진행
     for(i = 0 ; i <ary->size ; i++)
