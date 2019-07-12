@@ -992,6 +992,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
         }
         if (filename) break;
     }
+    free(pointArray);
 }
 
 void run_detector(int argc, char **argv) // argv[1] == detector ??��?��?�� 寃쎌?�� 
