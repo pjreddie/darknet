@@ -877,7 +877,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     float nms=.45;
     int wait = 50;
     Points pointArray[10];//좌표 정보 저장[]
-    while(1){
+    while(1)
+    {
         int j = 0;
         int i;
         if(kbhit()==1) // 키 입력 확인
@@ -932,23 +933,13 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     break;
                 }
         }
-        
-        /*
-        if(filename){
-            strncpy(input, filename, 256);
-        } else {
-            printf("Enter Image Path: ");
-            fflush(stdout);
-            input = fgets(input, 256, stdin);
-            if(!input) return;
-            strtok(input, "\n");
-        }
-        */
+        //non error
         if(wait == 0)
         {
             image im;
             image sized;
-            for(j = 1 ; j <= 10 ; j++){
+            for(j = 1 ; j <= 10 ; j++)
+            {
                 sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
                 im = load_image_color(input,0,0);
                 sized = letterbox_image(im, net->w, net->h);
@@ -975,24 +966,24 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     free_detections(dets, nboxes);
                 }
                 if(outfile){
-                save_image(im, outfile);
+                    save_image(im, outfile);
                 }
                 else{
-                save_image(im, "predictions");
+                    save_image(im, "predictions");
                 #ifdef OPENCV
-                make_window("predictions", 512, 512, 0);
-                show_image(im, "predictions", 0);
+                    make_window("predictions", 512, 512, 0);
+                    show_image(im, "predictions", 0);
                 #endif
                 free_image(im);
                 free_image(sized);
             }// end for function
             wait = 50;
-        }
+        }//end if function
         
         usleep(100*1000);
         wait -= 1;
         if (filename) break;
-    }
+    }// end while function
     free(pointArray);
 }
 
