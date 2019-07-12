@@ -371,24 +371,25 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
                     {
                         printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
                         count++;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
-                        //draw_box_width(im, left, top, right, bot, width, red, green, blue);
+                        draw_box_width(im, left, top, right, bot, width, red, green, blue);//테두리
+                        if (alphabet) {
+                            image label = get_label(alphabet, labelstr, (im.h*.03));
+                            draw_label(im, top + width, left, label, rgb);
+                            free_image(label);
+                        }
+                        if (dets[i].mask){
+                            image mask = float_to_image(14, 14, 1, dets[i].mask);
+                            image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                            image tmask = threshold_image(resized_mask, .5);
+                            embed_image(tmask, im, left, top);
+                            free_image(mask);
+                            free_image(resized_mask);
+                            free_image(tmask);
+                        }
                     }
                     //printf("person_point_x = %d,person_point_y = %d\n",person_point_x,person_point_y);
 
-                    if (alphabet) {
-                        image label = get_label(alphabet, labelstr, (im.h*.03));
-                        draw_label(im, top + width, left, label, rgb);
-                        free_image(label);
-                    }
-                    if (dets[i].mask){
-                        image mask = float_to_image(14, 14, 1, dets[i].mask);
-                        image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
-                        image tmask = threshold_image(resized_mask, .5);
-                        embed_image(tmask, im, left, top);
-                        free_image(mask);
-                        free_image(resized_mask);
-                        free_image(tmask);
-                    }
+                    
                 }
             }
         }
