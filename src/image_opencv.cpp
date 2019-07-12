@@ -178,6 +178,12 @@ int show_image_cv(image im, const char* name, int ms)
     return c;
 }
 
+void destroy_image_cv(image im, const char* name, int ms)
+{
+    Mat m = image_to_mat(im);
+    destroyWindow(name);
+}
+
 void make_window(char *name, int w, int h, int fullscreen)
 {
     namedWindow(name, WINDOW_NORMAL); 

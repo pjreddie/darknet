@@ -974,12 +974,15 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 #ifdef OPENCV
                     make_window("predictions", 512, 512, 0);
                     show_image(im, "predictions", 0);
+
                 #endif
                 }
                 free_image(im);
                 free_image(sized);
             }// end for function
             wait = 50;
+            destroy_image_cv(im,"predictions",0);
+            usleep(100*1000);
         }//end if function
         
         usleep(100*1000);
