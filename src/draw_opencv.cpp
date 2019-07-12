@@ -210,25 +210,14 @@ void ListToArray2(pointList* l , Point **ary)
 
 void draw_line(Mat *im)
 {
-	Point** points;
+	Point* points;
 	int i = 0;
 	int size = 0;
-	points = (Point**)calloc(2, sizeof(pointList*));
-	for (i = 0; i < 2; i++)
-	{
-		points[i] = (Point*)calloc(lists->size, sizeof(pointList));
-	}
+	points = (Point*)calloc(lists->size, sizeof(pointList));
 	size = lists->size;
-	ListToArray2(lists, points);
-	for (i = 0; i < size; i++)
-	{
-		printf("points->x : %d , points->y : %d\n", points[0][i].x, points[0][i].y);
-	}
-    /*
-	const Point* ppt[1] = { points[0] };
-	int nsize[1];
-	nsize[0] = size;
-	*/
+	ListToArray1(lists, points);
+	printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
+
     //*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
 	if(size >=3 )
     {
