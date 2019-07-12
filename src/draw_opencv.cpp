@@ -223,7 +223,7 @@ void draw_line(Mat *im)
     //*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
 	if(size >=3 )
     {
-        //olylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
+        olylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
     }
 	//imshow("Original", *im);
 	free(points);
