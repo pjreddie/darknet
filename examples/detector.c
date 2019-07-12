@@ -891,33 +891,43 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             switch(key){
                 case '1':
                     printf("change 1 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '2':
                     printf("change 2 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '3':
                     printf("change 3 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '4':
                     printf("change 4 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '5':
                     printf("change 5 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '6':
                     printf("change 6 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '7':
                     printf("change 7 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '8':
                     printf("change 8 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '9':
                     printf("change 9 picture\n");
+                    load_one_image(input, &pointarray[key-'1'],key-'0');
                     break;
                 case '0':
                     printf("change 0 picture\n");
+                    load_one_image(input, &pointarray[9],10);
                     break;
                 case 's': case 'S':
                     printf("\ncheck Area\n");
@@ -1062,4 +1072,14 @@ void run_detector(int argc, char **argv) // argv[1] == detector ??��?��?
     }
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
+}
+
+void load_one_image(char *input, Points* ary,int j)
+{
+    sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+    load_mat_image_point(input,j,ary); // pointArray.size가 0일 경우 전체 화면에 대해서 검출하는 식으로 진행
+    for(i = 0 ; i <ary->size ; i++)
+    {
+        printf("pointArray[%d].X : %d , pointArray[%d].Y : %d\n",j,ary->x[i],j,ary->y[i]);
+    }
 }
