@@ -272,11 +272,20 @@ void returnPoint(pointList* l,Points* ary)
 	}
 	while (cur != NULL)
 	{
+        if(l->size>=3)
+        {
         ary->x[i] = cur->x;
         ary->y[i++] = cur->y;
-        printf("ary->x[%d] : %d , ary->y[%d] : %d\n",i,ary->x[i-1],i,ary->y[i-1]);
-        printf("ary->size : %d\n",ary->size);
+        //printf("ary->x[%d] : %d , ary->y[%d] : %d\n",i,ary->x[i-1],i,ary->y[i-1]);
+        //printf("ary->size : %d\n",ary->size);
         ary->size++;
+        }
+        else
+        {
+            printf("Point number is too low\n");
+            return;
+        }
+        
 		cur = cur->next;
 	}
 	puts("");
