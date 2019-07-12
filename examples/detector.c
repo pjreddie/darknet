@@ -919,7 +919,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     for(j = 1 ; j <= 10 ; j++){
                         sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
                                               
-                        load_mat_image_point(input,j,&pointArray[j-1]);
+                        load_mat_image_point(input,j,&pointArray[j-1]); // pointArray.size가 0일 경우 전체 화면에 대해서 검출하는 식으로 진행
                         for(i = 0 ; i < pointArray[j-1].size ; i++)
                         {
                             printf("pointArray[%d].X : %d , pointArray[%d].Y : %d\n",j,pointArray[j-1].x[i],j,pointArray[j-1].y[i]);
@@ -970,12 +970,28 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 //printf("%d\n", nboxes);
                 //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
                 if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+                if(pointArray[j-1]->size > 0)
+                {
+                    draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,pointArray[j-1]);
+                }
+                else
+                {
                     draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+                }
                     free_detections(dets, nboxes);
                 }
-            }// end for function
+            if(outfile){
+            //save_image(im, outfile);
+            }
+            else{
+            //save_image(im, "predictions");
+            #ifdef OPENCV
+            //make_window("predictions", 512, 512, 0);
+            //show_image(im, "predictions", 0);
+            #endif
             free_image(im);
             free_image(sized);
+            }// end for function
             wait = 50;
         }
         usleep(100*1000);

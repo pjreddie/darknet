@@ -285,12 +285,33 @@ void returnPoint(pointList* l,Points* ary)
             printf("Point number is too low\n");
             return;
         }
-        
 		cur = cur->next;
 	}
 	puts("");
 	//free(cur);
 }
-
+int check_person_point(int px,int py,Points *ary)
+{
+    int crosses = 0;
+	int i, j;
+	for (i = 0; i < ary->size; i++)
+	{
+		j = (i + 1) % ary->size;
+		if ((ary->y[i] > y) != (ary->y[j] > y)) // 두 좌표(연결점)의 y좌표가 점의 좌표와 교차할 경우만 확인
+		{
+			double atX = (ary->.x[j] - ary->x[i]) * (py - ary->y[i]) / (ary->y[j] - ary->.y[i]) + ary->x[i];
+			if (px <= atX)
+				crosses++;
+		}
+	}
+	if (crosses % 2 == 1)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
 }
 #endif
