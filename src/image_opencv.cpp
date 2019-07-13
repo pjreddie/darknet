@@ -192,7 +192,7 @@ void make_window(char *name, int w, int h, int fullscreen)
         if(strcmp(name, "Demo") == 0) moveWindow(name, 0, 0);
     }
 }
-void draw_polygonlines(image im,Points *ary);
+image draw_polygonlines(image im,Points *ary);
 {
     Mat image = image_to_mat(im);
     Point* points;
@@ -208,7 +208,7 @@ void draw_polygonlines(image im,Points *ary);
     {
         polylines(im, &points, &size, 1, true, Scalar(255, 0, 0)); 
     }
-
+    return im;
 }
 }
 
