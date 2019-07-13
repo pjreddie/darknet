@@ -206,8 +206,9 @@ image draw_polygonlines(image im,Points *ary)
     }
     if(size >=3 )
     {
-        polylines(&im, &points, &size, 1, true, Scalar(255, 0, 0)); 
+        polylines(image, &points, &size, 1, true, Scalar(255, 0, 0)); 
     }
+    im = mat_to_image(image);
     return im;
 }
 }
