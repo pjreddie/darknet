@@ -6,6 +6,9 @@
 #include <iostream>
 #include <cstdio>
 #include <time.h>
+#include <unistd.h>
+#include <termio.h> 
+#include <fcntl.h>
 
 using namespace cv;
 using namespace std;
