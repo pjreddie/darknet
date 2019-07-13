@@ -219,14 +219,14 @@ void draw_line(Mat *im)
 	ListToArray1(lists, points);
     for(i = 0 ; i < size ; i++)
 	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
-	/* // 해당 부분 해결 방법 강구하기
+	 // 해당 부분 해결 방법 강구하기
     if(size >=3 )
     {
         *im = imread(file_url, CV_LOAD_IMAGE_COLOR);
         polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
         imshow("Original", *im);
     }
-     */
+     
 	free(points);
 }
 
