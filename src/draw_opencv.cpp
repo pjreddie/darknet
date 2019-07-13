@@ -226,8 +226,11 @@ void draw_line(Mat *im)
     //puts(file_url);
     if(size >=3 )
     {
+        printf("111\n");
         *im = imread(file_url, CV_LOAD_IMAGE_COLOR);
+        printf("222\n");
         polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
+        printf("333\n");
         imshow("Original", *im);
     }
      
