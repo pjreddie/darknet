@@ -205,9 +205,10 @@ image draw_polygonlines(image im,Points *ary)
 	    points[i].x = ary->x[i];
         points[i].y = ary->y[i];
     }
+    Mat* pointImage = image;
     if(size >=3 )
     {
-        polylines(&image, &points, &size, 1, true, Scalar(255, 0, 0)); 
+        polylines(*pointImage, &points, &size, 1, true, Scalar(255, 0, 0)); 
     }
     im = mat_to_image(image);
     return im;
