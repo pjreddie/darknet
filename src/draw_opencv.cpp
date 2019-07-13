@@ -224,19 +224,17 @@ void draw_line(Mat *im)
 	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 	 // 해당 부분 해결 방법 강구하기
     //puts(file_url);
+    /*
     if(size >=3 )
     {
         printf("111\n");
-        usleep(1000*200);
         *im = imread(file_url, CV_LOAD_IMAGE_COLOR);
-        usleep(1000*200);
         printf("222\n");
         polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
-        usleep(1000*200);
         printf("333\n");
         imshow("Original", *im);
     }
-     
+     */ 
 	free(points);
 }
 
