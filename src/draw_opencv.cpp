@@ -220,7 +220,7 @@ void draw_line(Mat *im)
     for(i = 0 ; i < size ; i++)
 	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 	 // 해당 부분 해결 방법 강구하기
-    printf("%s\n",file_url);
+    puts(file_url);
     if(size >=3 )
     {
         *im = imread(file_url, CV_LOAD_IMAGE_COLOR);
