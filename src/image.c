@@ -397,6 +397,7 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
     }
     if(ary->size >= 3)
     {
+        printf("111\n");
         im = draw_polygonlines(im,ary);
     }
     printf("Total Person Count = %d\n",count);
