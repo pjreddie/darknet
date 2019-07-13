@@ -826,6 +826,7 @@ void initList(pointList* l); // 리스트 초기화
 void ListAdd(pointList* l, int x, int y);// 리스트 추가
 int ListRemove(pointList* l,int x , int y); // 리스트 제거
 void ListPrint(pointList* l);
+void draw_polygonlines(image im,Points *ary);
 #endif
 void draw_detections_area(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary);
 int check_person_point(int px,int py,Points *ary);

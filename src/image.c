@@ -372,6 +372,7 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
                         printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
                         count++;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
                         draw_box_width(im, left, top, right, bot, width, red, green, blue);//테두리
+                        im = draw_polygonlines(im,ary);
                         if (alphabet) {
                             image label = get_label(alphabet, labelstr, (im.h*.03));
                             draw_label(im, top + width, left, label, rgb);

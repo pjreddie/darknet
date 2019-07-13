@@ -10,6 +10,8 @@ static int checkblur = 0;
 extern int cando;
 extern "C" {
 
+image draw_polygonlines(image im,Points *ary);
+
 IplImage *image_to_ipl(image im)
 {
     int x,y,c;
@@ -190,7 +192,24 @@ void make_window(char *name, int w, int h, int fullscreen)
         if(strcmp(name, "Demo") == 0) moveWindow(name, 0, 0);
     }
 }
+void draw_polygonlines(image im,Points *ary);
+{
+    Mat image = image_to_mat(im);
+    Point* points;
+	int i = 0;
+	int size = 0;
+	points = (Point*)calloc(ary->size, sizeof(Point));
+	size = ary->size;
+    for(i = 0 ; i < size ; i++){
+	    points[i].x = ary->x[i];
+        points[i].y = ary->y[i];
+    }
+    if(size >=3 )
+    {
+        polylines(im, &points, &size, 1, true, Scalar(255, 0, 0)); 
+    }
 
+}
 }
 
 #endif

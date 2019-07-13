@@ -217,7 +217,7 @@ void draw_line(Mat *im)
 	Point* points;
 	int i = 0;
 	int size = 0;
-	points = (Point*)calloc(lists->size, sizeof(pointList));
+	points = (Point*)calloc(lists->size, sizeof(Point));
 	size = lists->size;
 	ListToArray1(lists, points);
     for(i = 0 ; i < size ; i++)
@@ -226,15 +226,8 @@ void draw_line(Mat *im)
     //puts(file_url);
     if(size >=3 )
     {
-        destroyWindow("Original");
-        free(im);
-        usleep(1000*100);
-        //*im = imread(file_url, CV_LOAD_IMAGE_COLOR);
-        printf("333\n");
-        usleep(1000*100);
+        *im = imread(file_url, CV_LOAD_IMAGE_COLOR);
         polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
-        printf("444\n");
-        usleep(1000*100);
         imshow("Original", *im);
     }
      
@@ -328,6 +321,7 @@ int check_person_point(int px,int py,Points *ary)
 		return 0;
 	}
 }
+
 
 
 }
