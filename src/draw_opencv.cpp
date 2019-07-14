@@ -227,12 +227,14 @@ void draw_line(Mat *im)
     if(size >=3 )
     {
 		free(im);
+		destroyWindow("Original");
         printf("111\n");
         *im = imread(file_url, 1);
         printf("222\n");
         polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
         printf("333\n");
         imshow("Original", *im);
+		resizeWindow("Original",image.cols,image.rows);
     }
      
 	free(points);
