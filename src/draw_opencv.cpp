@@ -234,7 +234,7 @@ void draw_line(Mat *im)
         polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
         printf("333\n");
         imshow("Original", *im);
-		resizeWindow("Original",im.cols,im.rows);
+		resizeWindow("Original",im->cols,im->rows);
     }
      
 	free(points);
