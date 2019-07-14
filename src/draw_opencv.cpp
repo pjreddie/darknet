@@ -224,7 +224,7 @@ void draw_line(Mat *im)
 	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 	 // 해당 부분 해결 방법 강구하기
     //puts(file_url);
-    
+    /*
     if(size >=3 )
     {
         printf("111\n");
@@ -234,7 +234,7 @@ void draw_line(Mat *im)
         printf("333\n");
         imshow("Original", *im);
     }
-    
+     */
 	free(points);
 }
 
