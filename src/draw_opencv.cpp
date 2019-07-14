@@ -224,21 +224,18 @@ void draw_line(Mat *im)
 	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 	// 해당 부분 해결 방법 강구하기
     //puts(file_url);
-    Mat image;
-	if(size >=3 )
+    if(size >=3 )
     {
 		free(im);
 		destroyWindow("Original");
         printf("111\n");
-		image = imread(file_url,1);
-		Mat *p = &image;
-        //*im = imread(file_url, 1);
+        Mat image = imread(file_url, 1);
+		im = &image;
         printf("222\n");
-		polylines(*p,&points,&size,1,true,Scalar(255,0,0));
-        //polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
+        polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
         printf("333\n");
-        imshow("Original", image);
-		resizeWindow("Original",image.cols,image.rows);
+        imshow("Original", *im);
+		resizeWindow("Original",im->cols,im->rows);
     }
      
 	free(points);
