@@ -399,6 +399,7 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
     {
         printf("111\n");
         im = draw_polygonlines(im,ary);
+        show_image(im,"prediction",0);
     }
     printf("Total Person Count = %d\n",count);
 }
