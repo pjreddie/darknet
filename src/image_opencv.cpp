@@ -210,6 +210,11 @@ image draw_polygonlines(image im,Points *ary)
     {
         polylines(*pointImage, &points, &size, 1, true, Scalar(255, 0, 0)); 
     }
+    //Mat m = image_to_mat(im);
+    imshow("Original", image);
+    int c = waitKey(ms);
+    if (c != -1) c = c%256;
+    destroyWindow("Original");
     im = mat_to_image(image);
     return im;
 }
