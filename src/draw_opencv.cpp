@@ -37,7 +37,7 @@ void load_mat_image_point(char *input,int i,Points* ary)
 	int c;
 	lists = (pointList*)calloc(1, sizeof(pointList));
 	initList(lists);
-    image = imread(input, CV_LOAD_IMAGE_COLOR);
+    image = imread(input, 1);
 	imshow("Original", image);
     resizeWindow("Original",image.cols,image.rows);
     while(1)
@@ -224,17 +224,17 @@ void draw_line(Mat *im)
 	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 	 // 해당 부분 해결 방법 강구하기
     //puts(file_url);
-    /*
     if(size >=3 )
     {
+		free(im);
         printf("111\n");
-        *im = imread(file_url, CV_LOAD_IMAGE_COLOR);
+        *im = imread(file_url, 1);
         printf("222\n");
         polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
         printf("333\n");
         imshow("Original", *im);
     }
-     */
+     
 	free(points);
 }
 
