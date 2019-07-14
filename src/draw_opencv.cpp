@@ -226,14 +226,9 @@ void draw_line(Mat *im)
     //puts(file_url);
     if(size >=3 )
     {
-		free(im);
-		destroyWindow("Original");
-        printf("111\n");
         Mat image = imread(file_url, 1);
 		im = &image;
-        printf("222\n");
         polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
-        printf("333\n");
         imshow("Original", *im);
 		resizeWindow("Original",im->cols,im->rows);
     }
