@@ -212,7 +212,7 @@ image draw_polygonlines(image im,Points *ary)
     }
     //Mat m = image_to_mat(im);
     imshow("Original", image);
-    int c = waitKey(ms);
+    int c = waitKey(0);
     if (c != -1) c = c%256;
     destroyWindow("Original");
     im = mat_to_image(image);
