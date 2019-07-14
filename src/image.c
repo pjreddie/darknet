@@ -313,7 +313,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
     printf("Total Person Count = %d\n",count);
 }
 
-void draw_detections_area(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary)
+image draw_detections_area(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary)
 {
     int i,j;
     int count = 0;
@@ -402,6 +402,7 @@ void draw_detections_area(image im, detection *dets, int num, float thresh, char
         //show_image(im,"prediction",0);
     }
     printf("Total Person Count = %d\n",count);
+    return im;
 }
 void transpose_image(image im)
 {

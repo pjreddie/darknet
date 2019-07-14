@@ -973,7 +973,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     if(pointArray[j-1].size >= 3)
                     {
                         printf("111\n");
-                        draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1]);
+                        im = draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1]);
                     }
                     else
                     {
