@@ -233,7 +233,7 @@ void draw_line(Mat *im)
 		image = imread(file_url,1);
         //*im = imread(file_url, 1);
         printf("222\n");
-		polylines(&image,&points,&size,1,true,Scalar(255,0,0));
+		polylines(image,&points,&size,1,true,Scalar(255,0,0));
         //polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
         printf("333\n");
         imshow("Original", image);
