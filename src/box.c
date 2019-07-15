@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-int nms_comparator(const void *pa, const void *pb)
+int nms_comparator(const void *pa, const void *pb) // 퀵정렬 함수 정의
 {
     detection a = *(detection *)pa;
     detection b = *(detection *)pb;
@@ -13,8 +13,8 @@ int nms_comparator(const void *pa, const void *pb)
     } else {
         diff = a.objectness - b.objectness;
     }
-    if(diff < 0) return 1;
-    else if(diff > 0) return -1;
+    if(diff < 0) return 1; // 작은 값을 뒤로
+    else if(diff > 0) return -1; // 큰 값을 앞으로
     return 0;
 }
 
@@ -60,7 +60,7 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
     int i, j, k;
     k = total-1;
     for(i = 0; i <= k; ++i){
-        if(dets[i].objectness == 0){
+        if(dets[i].objectness == 0){ 
             detection swap = dets[i];
             dets[i] = dets[k];
             dets[k] = swap;
@@ -74,13 +74,18 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
         for(i = 0; i < total; ++i){
             dets[i].sort_class = k;
         }
-        qsort(dets, total, sizeof(detection), nms_comparator);
+        qsort(dets, total, sizeof(detection), nms_comparator); // 퀵정렬 liberey 함수
+        // void qsort ( void *base , size_t nel , size_t width , int (*compare)(const void*,const void*))
+        // base = 정렬하고자 하는 배열의 포인터
+        // nel = 배열의 각 원소들의 총 수
+        // width = 배열에서 원소 하나의 크기
+        // (*compare)  = 비교를 수행할 함수 포인터. C언어에서는 함수를 선언하고 구현한 후에 다음처럼 포인터로 특정 함수를 지정 가능.
         for(i = 0; i < total; ++i){
             if(dets[i].prob[k] == 0) continue;
             box a = dets[i].bbox;
             for(j = i+1; j < total; ++j){
                 box b = dets[j].bbox;
-                if (box_iou(a, b) > thresh){
+                if (box_iou(a, b) > thresh){ // 두개의 box에 대해서 iou값이 일정 값 이상보다 높으면 낮은 prob을 가진 box를 제거 (겹쳐져있는 것을 제거하는 방법)
                     dets[j].prob[k] = 0;
                 }
             }
