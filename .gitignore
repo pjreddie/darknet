@@ -29,6 +29,8 @@ build/*.txt
 build/*.json
 build/CMakeFiles/
 build/detect_cuda_compute_capabilities.cu
+build/.ninja_deps
+build/.ninja_log
 
 # OS Generated #
 .DS_Store*

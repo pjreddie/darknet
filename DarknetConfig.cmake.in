@@ -21,8 +21,9 @@ endif()
 set(CMAKE_THREAD_PREFER_PTHREAD ON)
 find_dependency(Threads)
 
-if(@MSVC@)
+if(MSVC)
   find_dependency(PThreads_windows)
+  set(CMAKE_CXX_FLAGS "/wd4018 /wd4244 /wd4267 /wd4305 ${CMAKE_CXX_FLAGS}")
 endif()
 
 if(@OPENMP_FOUND@)
@@ -31,3 +32,10 @@ endif()
 
 # Our library dependencies (contains definitions for IMPORTED targets)
 include("${Darknet_CMAKE_DIR}/DarknetTargets.cmake")
+include("${Darknet_CMAKE_DIR}/DarknetConfigVersion.cmake")
+
+get_target_property(FULL_DARKNET_INCLUDE_DIRS Darknet::dark INTERFACE_INCLUDE_DIRECTORIES)
+list(GET FULL_DARKNET_INCLUDE_DIRS 0 Darknet_INCLUDE_DIR)
+get_filename_component(Darknet_INCLUDE_DIR "${Darknet_INCLUDE_DIR}" REALPATH)
+
+find_package_handle_standard_args(Darknet REQUIRED_VARS Darknet_INCLUDE_DIR VERSION_VAR PACKAGE_VERSION)

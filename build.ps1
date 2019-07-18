@@ -2,7 +2,7 @@
 
 $number_of_build_workers=8
 $use_vcpkg=$true
-$force_ninja=$true
+$use_ninja=$false
 
 function getProgramFiles32bit() {
   $out = ${env:PROGRAMFILES(X86)}
@@ -113,7 +113,7 @@ if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
 
 $tokens = getLatestVisualStudioWithDesktopWorkloadVersion
 $tokens = $tokens.split('.')
-if($force_ninja) {
+if($use_ninja) {
   $generator = "Ninja"
 }
 else {
@@ -154,7 +154,7 @@ if ($use_vcpkg) {
   ## DEBUG
   #New-Item -Path .\build_win_debug -ItemType directory -Force
   #Set-Location build_win_debug
-  #if ($force_ninja) {
+  #if ($use_ninja) {
     #cmake -G "$generator" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" #"-DCMAKE_BUILD_TYPE=Debug" $additional_build_setup ..
     #$dllfolder = "."
   #}
@@ -176,7 +176,7 @@ if ($use_vcpkg) {
   # RELEASE
   New-Item -Path .\build_win_release -ItemType directory -Force
   Set-Location build_win_release
-  if($force_ninja) {
+  if($use_ninja) {
     cmake -G "$generator" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
     $dllfolder = "."
   }
@@ -200,7 +200,7 @@ else {
   # if you want to manually force this case, remove VCPKG_ROOT env variable and remember to use "vcpkg integrate remove" in case you had enabled user-wide vcpkg integration
   New-Item -Path .\build_win_release_novcpkg -ItemType directory -Force
   Set-Location build_win_release_novcpkg
-  if($force_ninja) {
+  if($use_ninja) {
     cmake -G "$generator" $additional_build_setup ..
   }
   else {
