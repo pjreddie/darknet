@@ -62,6 +62,9 @@ extern "C" LIB_API int detect_mat(const uint8_t* data, const size_t data_length,
 extern "C" LIB_API int dispose();
 extern "C" LIB_API int get_device_count();
 extern "C" LIB_API int get_device_name(int gpu, char* deviceName);
+extern "C" LIB_API bool built_with_cuda();
+extern "C" LIB_API bool built_with_cudnn();
+extern "C" LIB_API bool built_with_opencv();
 extern "C" LIB_API void send_json_custom(char const* send_buf, int port, int timeout);
 
 class Detector {
@@ -88,7 +91,7 @@ public:
 
     LIB_API void *get_cuda_context();
 
-    //LIB_API bool send_json_http(std::vector<bbox_t> cur_bbox_vec, std::vector<std::string> obj_names, int frame_id, 
+    //LIB_API bool send_json_http(std::vector<bbox_t> cur_bbox_vec, std::vector<std::string> obj_names, int frame_id,
     //    std::string filename = std::string(), int timeout = 400000, int port = 8070);
 
     std::vector<bbox_t> detect_resized(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false)
@@ -477,7 +480,7 @@ public:
         else {
             std::cerr << " Warning: new_src_mat.channels() is not: 1, 3 or 4. It is = " << new_src_mat.channels() << " \n";
             return;
-        }        
+        }
         update_cur_bbox_vec(_cur_bbox_vec);
     }
 
@@ -691,7 +694,7 @@ public:
 };
 
 
-class track_kalman_t 
+class track_kalman_t
 {
     int track_id_counter;
     std::chrono::steady_clock::time_point global_last_time;
@@ -847,7 +850,7 @@ public:
 
 
     track_kalman_t(int _max_objects = 1000, int _min_frames = 3, float _max_dist = 40, cv::Size _img_size = cv::Size(10000, 10000)) :
-        max_objects(_max_objects), min_frames(_min_frames), max_dist(_max_dist), img_size(_img_size), 
+        max_objects(_max_objects), min_frames(_min_frames), max_dist(_max_dist), img_size(_img_size),
         track_id_counter(0)
     {
         kalman_vec.resize(max_objects);
@@ -917,7 +920,7 @@ public:
             busy_vec[tst.state_id] = true;
         }
         else {
-            //std::cerr << " Didn't find: obj_id = " << find_box.obj_id << ", x = " << find_box.x << ", y = " << find_box.y << 
+            //std::cerr << " Didn't find: obj_id = " << find_box.obj_id << ", x = " << find_box.x << ", y = " << find_box.y <<
             //    ", track_id_counter = " << track_id_counter << std::endl;
         }
 

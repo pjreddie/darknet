@@ -23,6 +23,12 @@ build_*/
 !build/darknet/YoloWrapper.cs
 .fuse*
 *.weights
+build/*.cmake
+build/*.ninja
+build/*.txt
+build/*.json
+build/CMakeFiles/
+build/detect_cuda_compute_capabilities.cu
 
 # OS Generated #
 .DS_Store*
