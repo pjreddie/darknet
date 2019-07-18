@@ -28,7 +28,7 @@ IplImage *image_to_ipl(image im)
     return disp;
 }
 
-image ipl_to_image(IplImage* src)
+image ipl_to_image(IplImage* src) // Ipl 구조체를 활용하여 image rgb 가져옴
 {
     int h = src->height;
     int w = src->width;
@@ -61,7 +61,7 @@ Mat image_to_mat(image im)
     return m;
 }
 
-image mat_to_image(Mat m)
+image mat_to_image(Mat m) // mat -> image struct 
 {
     IplImage ipl = m;
     image im = ipl_to_image(&ipl);
@@ -93,6 +93,7 @@ image get_image_from_stream(void *p)
 image load_image_cv(char *filename, int channels)
 {
     int flag = -1;
+    /*이미지 채널 확인 (gray , rgb ) */
     if (channels == 0) flag = -1;
     else if (channels == 1) flag = 0;
     else if (channels == 3) flag = 1;
@@ -117,7 +118,7 @@ image load_image_cv(char *filename, int channels)
     {
         cando = 1;
     }
-    
+    /* 
     if(checkblur == 1)
     {
        // GaussianBlur(m,dst,Size(7,7),0);// blur
@@ -166,8 +167,8 @@ image load_image_cv(char *filename, int channels)
         im = mat_to_image(m);
         checkblur = 1;
     }
-    
-    //im = mat_to_image(m);
+    */
+    im = mat_to_image(m);
     return im;
 }
 
