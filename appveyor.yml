@@ -37,6 +37,11 @@ environment:
       COMPILER: vs
       configuration: Release
       USE_INTEGRATED_LIBS: yes
+    - platform: Win64
+      COMPILER: vs
+      configuration: Release
+      USE_INTEGRATED_LIBS: yes
+      FORCE_CPP: yes
 
 install:
   - if [%COMPILER%]==[vs] cinst cmake ninja
@@ -77,7 +82,8 @@ install:
   - mkdir build_release && cd build_release
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release"'
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%configuration%]==[Release] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Release" ..
-  - if [%COMPILER%]==[vs] if     [%USE_INTEGRATED_LIBS%]==[yes] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" -DCMAKE_BUILD_TYPE="Release" ..
+  - if [%COMPILER%]==[vs] if     [%USE_INTEGRATED_LIBS%]==[yes] if [%FORCE_CPP%]==[yes]         cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" -DCMAKE_BUILD_TYPE="Release" "-DBUILD_AS_CPP:BOOL=TRUE" ..
+  - if [%COMPILER%]==[vs] if     [%USE_INTEGRATED_LIBS%]==[yes]                                 cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" -DCMAKE_BUILD_TYPE="Release" ..
   - cd ..
 
 build_script:

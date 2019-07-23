@@ -1120,8 +1120,10 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
 
 static inline int popcnt128(__m128i n) {
     const __m128i n_hi = _mm_unpackhi_epi64(n, n);
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
     return __popcnt64(_mm_cvtsi128_si64(n)) + __popcnt64(_mm_cvtsi128_si64(n_hi));
+#elif defined(__APPLE__) && defined(__clang__)
+    return _mm_popcnt_u64(_mm_cvtsi128_si64(n)) + _mm_popcnt_u64(_mm_cvtsi128_si64(n_hi));
 #else
     return __popcntq(_mm_cvtsi128_si64(n)) + __popcntq(_mm_cvtsi128_si64(n_hi));
 #endif

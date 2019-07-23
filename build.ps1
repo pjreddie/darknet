@@ -3,6 +3,7 @@
 $number_of_build_workers=8
 $use_vcpkg=$true
 $use_ninja=$false
+$force_cpp_build=$false
 
 function getProgramFiles32bit() {
   $out = ${env:PROGRAMFILES(X86)}
@@ -149,6 +150,9 @@ if (Test-Path env:CUDA_PATH) {
   }
 }
 
+if($force_cpp_build) {
+  $additional_build_setup="-DBUILD_AS_CPP:BOOL=TRUE"
+}
 
 if ($use_vcpkg) {
   ## DEBUG
