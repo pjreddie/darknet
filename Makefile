@@ -26,7 +26,7 @@ AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
-COMMON= -Iinclude/ -Isrc/
+COMMON= -Iinclude/ -Isrc/ -lcurl
 CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
 ifeq ($(OPENMP), 1) 
@@ -49,7 +49,7 @@ endif
 ifeq ($(GPU), 1) 
 COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
-LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
+LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand 
 endif
 
 ifeq ($(CUDNN), 1) 
