@@ -800,7 +800,8 @@ size_t rand_size_t();
 float rand_normal();
 float rand_uniform(float min, float max);
 
-
+image draw_detections_area_count(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary,int* count);
+image draw_detections_count(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary,int* count);
 typedef struct Points
 {
     int x[10];

@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <termio.h> 
 #include <fcntl.h>
+#include <curl/curl.h>
+
 
 int kbhit(void)
 {
@@ -952,9 +954,10 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
         {
             image im;
             image sized;
-            for(j = 1 ; j <= 10 ; j++)
+            int count;
+            for(j = 1 ; j <= 1 ; j++)
             {
-                sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+                sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
                 im = load_image_color(input,0,0);
                 sized = letterbox_image(im, net->w, net->h);
 
@@ -973,11 +976,11 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     if(pointArray[j-1].size >= 3)
                     {
                         printf("111\n");
-                        im = draw_detections_area(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1]);
+                        im = draw_detections_area_count(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1],&count);
                     }
                     else
                     {
-                        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+                        draw_detections_count(im, dets, nboxes, thresh, names, alphabet, l.classes,&count);
                     }
                     free_detections(dets, nboxes);
                 }
@@ -996,7 +999,26 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 }
                 free_image(im);
                 free_image(sized);
+                //Get
+                char url[512];
+                sprintf(url,"http://210.115.230.164:8080/People/Update?camera=%d&count=%d",j,count);
+                CURL *curl;
+                CURLcode res;
+                curl = curl_easy_init();
+                if(curl)
+                {
+                    curl_easy_setopt(curl,CURLOPT_URL,url)
+                    res = curl_easy_perform(curl);
+
+                    curl_easy_cleanup(curl);
+                    printf("GET success\n");
+                }
+                else
+                {
+                    printf("GET fault\n");
+                }
             }// end for function
+        
             wait = 50;
             usleep(100*1000);
         }//end if function
