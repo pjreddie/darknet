@@ -1295,8 +1295,9 @@ image load_image_stb(char *filename, int channels)
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     if (!data) {
-        fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
-        exit(0);
+        fprintf(stderr, "It seems that something is wrong about the image you are loading,you will get a image in size 0*0,you can use this to skip the bad image or do something else!");
+        image i;
+        return i;
     }
     if(channels) c = channels;
     int i,j,k;
