@@ -1007,11 +1007,13 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 curl = curl_easy_init();
                 if(curl)
                 {
-                    curl_easy_setopt(curl,CURLOPT_URL,url)
+                    curl_easy_setopt(curl,CURLOPT_URL,url);
                     res = curl_easy_perform(curl);
 
                     curl_easy_cleanup(curl);
-                    printf("GET success\n");
+                    
+                    printf("GET success = %s\n",url);
+
                 }
                 else
                 {
