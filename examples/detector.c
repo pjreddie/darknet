@@ -955,9 +955,10 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             image im;
             image sized;
             int count;
-            for(j = 1 ; j <= 1 ; j++)
+            for(j = 1 ; j <= 10 ; j++)
             {
-                sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
+                sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+                //sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
                 im = load_image_color(input,0,0);
                 sized = letterbox_image(im, net->w, net->h);
 
