@@ -46,6 +46,13 @@ matrix:
 
     - os: osx
       compiler: clang
+      name: macOS - native clang - C++ mode
+      env:
+        - additional_defines="-DBUILD_AS_CPP:BOOL=TRUE"
+        - MATRIX_EVAL=""
+
+    - os: osx
+      compiler: clang
       name: macOS - native clang - opencv@2
       env:
         - OpenCV_DIR="/usr/local/opt/opencv@2/"
@@ -177,6 +184,16 @@ matrix:
           update: true
       env:
         - additional_defines=""
+        - MATRIX_EVAL=""
+
+    - os: linux
+      compiler: gcc
+      name: ubuntu 14.04 - native gcc - C++ mode
+      addons:
+        apt:
+          update: true
+      env:
+        - additional_defines="-DBUILD_AS_CPP:BOOL=TRUE"
         - MATRIX_EVAL=""
 
     - os: linux
@@ -942,7 +959,6 @@ install:
   - popd
 
 before_script:
-  - echo ${additional_defines}
   - mkdir build_debug
   - cd build_debug
   - cmake .. -DCMAKE_BUILD_TYPE="Debug" ${VCPKG_DEFINES} ${additional_defines}

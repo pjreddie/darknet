@@ -167,7 +167,7 @@ convolutional_layer parse_convolutional(list *options, size_params params, netwo
 
     int share_index = option_find_int_quiet(options, "share_index", -1);
     convolutional_layer *share_layer = NULL;
-    if(share_layer > -1) share_layer = &net.layers[share_index];
+    if(share_index > -1) share_layer = &net.layers[share_index];
 
     int batch,h,w,c;
     h = params.h;

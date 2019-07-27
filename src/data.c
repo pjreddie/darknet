@@ -937,7 +937,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             {
                 image tmp_ai = copy_image(ai);
                 char buff[1000];
-                sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg(filename), random_gen());
+                sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg((char*)filename), random_gen());
                 int t;
                 for (t = 0; t < boxes; ++t) {
                     box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);

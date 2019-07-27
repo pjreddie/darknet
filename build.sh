@@ -2,12 +2,9 @@
 
 number_of_build_workers=8
 bypass_vcpkg=true
+force_cpp_build=false
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  if [[ "$1" == "gcc" ]]; then
-    export CC="/usr/local/bin/gcc-8"
-    export CXX="/usr/local/bin/g++-8"
-  fi
   vcpkg_triplet="x64-osx"
 else
   vcpkg_triplet="x64-linux"
@@ -28,6 +25,11 @@ then
 elif [ ! "$bypass_vcpkg" = true ]
 then
   (>&2 echo "darknet is unsupported without vcpkg, use at your own risk!")
+fi
+
+if [ "$force_cpp_build" = true ]
+then
+  additional_build_setup="-DBUILD_AS_CPP:BOOL=TRUE"
 fi
 
 ## DEBUG

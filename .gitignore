@@ -8,6 +8,7 @@
 *.exe
 *.dll
 *.lib
+*.dylib
 mnist/
 data/
 caffe/
@@ -23,6 +24,15 @@ build_*/
 !build/darknet/YoloWrapper.cs
 .fuse*
 *.weights
+build/*.cmake
+build/*.ninja
+build/*.txt
+build/*.json
+build/CMakeFiles/
+build/detect_cuda_compute_capabilities.cu
+build/.ninja_deps
+build/.ninja_log
+build/Makefile
 
 # OS Generated #
 .DS_Store*
