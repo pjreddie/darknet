@@ -6,7 +6,12 @@ set(Darknet_PATCH_VERSION 5)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION})
 
 set(CMAKE_VERBOSE_MAKEFILE "FALSE" CACHE BOOL "Create verbose makefile")
-set(BUILD_SHARED_LIBS "TRUE" CACHE BOOL "Create dark as a shared library")
+set(BUILD_SHARED_LIBS "FALSE" CACHE BOOL "Create dark as a shared library")
+if (WIN32)
+  set(SELECT_OPENCV_MODULES "TRUE" CACHE BOOL "Use only few selected OpenCV modules to circumvent some Ninja+CMake bugs on Windows")
+else()
+  set(SELECT_OPENCV_MODULES "FALSE" CACHE BOOL "Use only few selected OpenCV modules to circumvent some Ninja+CMake bugs on Windows")
+endif()
 set(BUILD_AS_CPP "FALSE" CACHE BOOL "Build Darknet using C++ compiler also for C files")
 
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -39,7 +44,6 @@ set(INSTALL_INCLUDE_DIR  "include/darknet"           CACHE PATH "Path where head
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
 
 set(ENABLE_OPENCV "TRUE" CACHE BOOL "Enable OpenCV integration")
-set(SELECT_OPENCV_MODULES "TRUE" CACHE BOOL "Use only few selected OpenCV modules to circumvent some Ninja+CMake bugs on Windows")
 set(ENABLE_CUDA "TRUE" CACHE BOOL "Enable CUDA support")
 set(ENABLE_CUDNN "FALSE" CACHE BOOL "Enable CUDNN")
 set(ENABLE_CUDNN_HALF "FALSE" CACHE BOOL "Enable CUDNN Half precision")
