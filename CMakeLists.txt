@@ -6,7 +6,7 @@ set(Darknet_PATCH_VERSION 5)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION})
 
 set(CMAKE_VERBOSE_MAKEFILE "FALSE" CACHE BOOL "Create verbose makefile")
-set(BUILD_SHARED_LIBS "FALSE" CACHE BOOL "Create dark as a shared library")
+set(BUILD_SHARED_LIBS "TRUE" CACHE BOOL "Create dark as a shared library")
 if (WIN32)
   set(SELECT_OPENCV_MODULES "TRUE" CACHE BOOL "Use only few selected OpenCV modules to circumvent some Ninja+CMake bugs on Windows")
 else()
