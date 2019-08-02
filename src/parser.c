@@ -32,6 +32,7 @@
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "scale_channels_layer.h"
+#include "sam_layer.h"
 #include "softmax_layer.h"
 #include "utils.h"
 #include "upsample_layer.h"
@@ -50,6 +51,7 @@ LAYER_TYPE string_to_layer_type(char * type)
 
     if (strcmp(type, "[shortcut]")==0) return SHORTCUT;
     if (strcmp(type, "[scale_channels]") == 0) return SCALE_CHANNELS;
+    if (strcmp(type, "[sam]") == 0) return SAM;
     if (strcmp(type, "[crop]")==0) return CROP;
     if (strcmp(type, "[cost]")==0) return COST;
     if (strcmp(type, "[detection]")==0) return DETECTION;
@@ -622,6 +624,23 @@ layer parse_scale_channels(list *options, size_params params, network net)
     return s;
 }
 
+layer parse_sam(list *options, size_params params, network net)
+{
+    char *l = option_find(options, "from");
+    int index = atoi(l);
+    if (index < 0) index = params.index + index;
+
+    int batch = params.batch;
+    layer from = net.layers[index];
+
+    layer s = make_scale_channels_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
+
+    char *activation_s = option_find_str_quiet(options, "activation", "linear");
+    ACTIVATION activation = get_activation(activation_s);
+    s.activation = activation;
+    return s;
+}
+
 
 layer parse_activation(list *options, size_params params)
 {
@@ -921,6 +940,11 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             net.layers[l.index].use_bin_output = 0;
         }else if (lt == SCALE_CHANNELS) {
             l = parse_scale_channels(options, params, net);
+            net.layers[count - 1].use_bin_output = 0;
+            net.layers[l.index].use_bin_output = 0;
+        }
+        else if (lt == SAM) {
+            l = parse_sam(options, params, net);
             net.layers[count - 1].use_bin_output = 0;
             net.layers[l.index].use_bin_output = 0;
         }else if(lt == DROPOUT){

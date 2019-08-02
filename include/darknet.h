@@ -137,6 +137,7 @@ typedef enum {
     LOCAL,
     SHORTCUT,
     SCALE_CHANNELS,
+    SAM,
     ACTIVE,
     RNN,
     GRU,
