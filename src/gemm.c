@@ -550,7 +550,26 @@ static inline float _castu32_f32(uint32_t a) {
 }
 
 static inline float _mm256_extract_float32(__m256 a, const int index) {
-    return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), index));
+    switch(index) {
+    case 0:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 0));
+    case 1:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 1));
+    case 2:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 2));
+    case 3:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 3));
+    case 4:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 4));
+    case 5:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 5));
+    case 6:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 6));
+    case 7:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 7));
+    default:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 0));
+    }
 }
 
 void asm_cpuid(uint32_t* abcd, uint32_t eax)
