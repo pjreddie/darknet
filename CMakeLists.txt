@@ -163,7 +163,7 @@ endif()
 
 if(OpenCV_FOUND)
   if(ENABLE_CUDA AND NOT OpenCV_CUDA_VERSION)
-    set(BUILD_USELIB_TRACK "FALSE" CACHE BOOL "Skip building uselib_track" FORCE)
+    set(BUILD_USELIB_TRACK "FALSE" CACHE BOOL "Build uselib_track" FORCE)
     message(STATUS "  ->  darknet is fine for now, but uselib_track has been disabled!")
     message(STATUS "  ->  Please rebuild OpenCV from sources with CUDA support to enable it")
   elseif(ENABLE_CUDA AND OpenCV_CUDA_VERSION)
