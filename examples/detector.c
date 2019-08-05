@@ -1015,7 +1015,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 //sprintf(url,"http://210.115.230.164:8080/People/Update?camera=%d&count=%d",j,count);
                 sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
 
-                CURL *curl
+                CURL *curl;
                 struct curl_slist *list = NULL;
                 curl = curl_easy_init();
                 if(curl)
