@@ -1173,3 +1173,48 @@ extern "C" void backward_scale_channels_gpu(float *in_w_h_c_delta, int size, int
 
     CHECK_CUDA(cudaPeekAtLastError());
 }
+
+
+__global__ void sam_kernel(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        out[index] = in_w_h_c[index] * scales_c[index];
+    }
+}
+
+extern "C" void sam_gpu(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    sam_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(in_w_h_c, size, channel_size, scales_c, out);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+__global__ void backward_sam_kernel(float *in_w_h_c_delta, int size, int channel_size,
+    float *in_scales_c, float *out_from_delta,
+    float *in_from_output, float *out_state_delta)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        out_state_delta[index] += in_w_h_c_delta[index] * in_from_output[index]; // l.delta * from  (should be divided by channel_size?)
+        out_from_delta[index] += in_scales_c[index] * in_w_h_c_delta[index]; // input * l.delta
+
+                                                                             //out_state_delta[index] += in_w_h_c_delta[index];
+                                                                             //out_from_delta[index] = in_w_h_c_delta[index];
+    }
+}
+
+extern "C" void backward_sam_gpu(float *in_w_h_c_delta, int size, int channel_size,
+    float *in_scales_c, float *out_from_delta,
+    float *in_from_output, float *out_state_delta)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    backward_sam_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (in_w_h_c_delta, size, channel_size,
+        in_scales_c, out_from_delta,
+        in_from_output, out_state_delta);
+
+    CHECK_CUDA(cudaPeekAtLastError());
+}

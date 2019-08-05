@@ -98,7 +98,7 @@ void forward_sam_layer_gpu(const layer l, network_state state)
     int size = l.batch * l.out_c * l.out_w * l.out_h;
     int channel_size = 1;
 
-    scale_channels_gpu(state.net.layers[l.index].output_gpu, size, channel_size, state.input, l.output_gpu);
+    sam_gpu(state.net.layers[l.index].output_gpu, size, channel_size, state.input, l.output_gpu);
 
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
 }
@@ -113,6 +113,6 @@ void backward_sam_layer_gpu(const layer l, network_state state)
     float *from_delta = state.net.layers[l.index].delta_gpu;
 
 
-    backward_scale_channels_gpu(l.delta_gpu, size, channel_size, state.input, from_delta, from_output, state.delta);
+    backward_sam_gpu(l.delta_gpu, size, channel_size, state.input, from_delta, from_output, state.delta);
 }
 #endif

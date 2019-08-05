@@ -122,6 +122,13 @@ void backward_scale_channels_gpu(float *in_w_h_c_delta, int size, int channel_si
     float *in_scales_c, float *out_from_delta,
     float *in_from_output, float *out_state_delta);
 
+
+void backward_sam_gpu(float *in_w_h_c_delta, int size, int channel_size,
+    float *in_scales_c, float *out_from_delta,
+    float *in_from_output, float *out_state_delta);
+
+void sam_gpu(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out);
+
 #endif
 #ifdef __cplusplus
 }
