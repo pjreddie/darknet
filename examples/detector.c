@@ -4,6 +4,10 @@
 #include <fcntl.h>
 #include <curl/curl.h>
 
+struct people{
+    int camera;
+    int number;
+}
 
 int kbhit(void)
 {
@@ -877,7 +881,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     char buff[256];
     char *input = buff;
     float nms=.45;
-    int wait = 50;
+    int wait = 100;
     int j = 0;
     int i;
     Points pointArray[10];//좌표 정보 저장[]
@@ -955,10 +959,13 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             image im;
             image sized;
             int count;
-            for(j = 1 ; j <= 10 ; j++)
+            for(j = 1 ; j <= 1 ; j++)
             {
-                sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
-                //sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
+                //sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+                sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
+                char sudoText[512];
+                sprintf(sudoText,"sudo chmod 777 %s",input);
+                system(sudoText);
                 im = load_image_color(input,0,0);
                 sized = letterbox_image(im, net->w, net->h);
 
@@ -1002,27 +1009,39 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 free_image(sized);
                 //Get
                 char url[512];
-                sprintf(url,"http://210.115.230.164:8080/People/Update?camera=%d&count=%d",j,count);
-                CURL *curl;
-                CURLcode res;
+                struct people pp;
+                pp.camera = j;
+                pp.count = count;
+                //sprintf(url,"http://210.115.230.164:8080/People/Update?camera=%d&count=%d",j,count);
+                sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
+
+                CURL *curl
+                struct curl_slist *list = NULL;
                 curl = curl_easy_init();
                 if(curl)
                 {
                     curl_easy_setopt(curl,CURLOPT_URL,url);
-                    res = curl_easy_perform(curl);
+                    list = curl_slist_append(list, "Content-Type: application/json");
+                    curl_easy_setopt(curl, CURLOPT_POST, 1L); //POST option
+                    curl_easy_setopt(curl,CURLOPT_READDATA,&pp);
 
-                    curl_easy_cleanup(curl);
+                    res = curl_easy_perform(curl);
+                    if(res == CURLE_OK)
+                        printf("POST success = %s\n",url);
+                    else
+                        printf("POST fault\n");
                     
-                    printf("GET success = %s\n",url);
+                    curl_easy_cleanup(curl);
+
 
                 }
                 else
                 {
-                    printf("GET fault\n");
+                    printf("CURL fault\n");
                 }
             }// end for function
         
-            wait = 50;
+            wait = 100;
             usleep(100*1000);
         }//end if function
         
@@ -1102,8 +1121,12 @@ void run_detector(int argc, char **argv) // argv[1] == detector ??��?��?
 
 void load_one_image(char *input, Points* ary,int j)
 {
-    int i =0;
-    sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+    int i =0;        
+    sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
+    char sudoText[512];
+    sprintf(sudoText,"sudo chmod 777 %s",input);
+    system(sudoText);
+    //sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
     load_mat_image_point(input,j,ary); // pointArray.size가 0일 경우 전체 화면에 대해서 검출하는 식으로 진행
     for(i = 0 ; i <ary->size ; i++)
     {
