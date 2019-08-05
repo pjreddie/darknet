@@ -7,7 +7,7 @@
 struct people{
     int camera;
     int number;
-}
+};
 
 int kbhit(void)
 {
