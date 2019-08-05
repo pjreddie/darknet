@@ -1023,8 +1023,9 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 {
                     curl_easy_setopt(curl,CURLOPT_URL,url);
                     list = curl_slist_append(list, "Content-Type: application/json");
+                    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list); // content-type 설정
                     curl_easy_setopt(curl, CURLOPT_POST, 1L); //POST option
-                    curl_easy_setopt(curl,CURLOPT_READDATA,&pp);
+                    curl_easy_setopt(curl,CURLOPT_POSTFIELDS,pp);
 
                     res = curl_easy_perform(curl);
                     if(res == CURLE_OK)
