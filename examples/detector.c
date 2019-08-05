@@ -1022,12 +1022,12 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 if(curl)
                 {
                     curl_easy_setopt(curl,CURLOPT_URL,url);
-                    list = curl_slist_append(list, "Content-Type:application/json");
+                    list = curl_slist_append(list, "Content-Type: application/json");
                     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list); // content-type 설정
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
                     curl_easy_setopt(curl, CURLOPT_POST, 1L); //POST option
-                    curl_easy_setopt(curl,CURLOPT_READDATA,&pp);
+                    curl_easy_setopt(curl,CURLOPT_WRITEDATA,&pp);
                     printf("pp.camera = %d,pp.count= %d\n",pp.camera,pp.count);
 
                     res = curl_easy_perform(curl);
