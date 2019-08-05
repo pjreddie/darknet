@@ -1028,6 +1028,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
                     curl_easy_setopt(curl, CURLOPT_POST, 1L); //POST option
                     curl_easy_setopt(curl,CURLOPT_READDATA,&pp);
+                    printf("pp.camera = %d,pp.count= %d\n",pp.camera,pp.count);
 
                     res = curl_easy_perform(curl);
                     if(res == CURLE_OK)
