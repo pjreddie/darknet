@@ -1048,8 +1048,9 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 {
                     printf("CURL fault\n");
                 }
+                */
             }// end for function
-            */
+            
             wait = 100;
             usleep(100*1000);
         }//end if function
