@@ -1016,9 +1016,10 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 //sprintf(url,"curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '{\"camera\": %d,\"count\": %d}' 'http://210.115.230.164:8080/People/UpdatePost'",j,count);
                 //system(url);
                 
-                sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
+                sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
+                //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
                 char data[512];
-                sprintf(data,"{\"camera\": %d,\"count\": %d}",j,count);
+                sprintf(data,"{\"fname\": \"Test\",\"poi\": \"x18\",\"su\":\"%d\"}",count);
                 CURL *curl;
                 CURLcode res;
                 struct curl_slist *list = NULL;
