@@ -1020,7 +1020,10 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 
                  // system()사용 
                 sprintf(url,"curl -X POST --header 'Content-Type: application/x-www-form-urlencoded' -d \"fname=테스트&poi=x18&su=%d\" 'http://121.187.239.177:8080/poipeoplesu'",z++);
-                
+                if(z>=100)
+                {
+                    z = 0;
+                }
                 system(url);
                 printf("%d\n",z);
                /* 
