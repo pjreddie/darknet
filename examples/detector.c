@@ -999,12 +999,14 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 else
                 {
                 save_image(im, "predictions");
+                /*
                 #ifdef OPENCV
                     usleep(1000*100);
                     make_window("predictions", 512, 512, 0);
                     show_image(im, "predictions", 0);
 
                 #endif
+                 */
                 }
                 free_image(im);
                 free_image(sized);
@@ -1020,7 +1022,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 sprintf(url,"curl -X POST --header 'Content-Type: application/x-www-form-urlencoded' -d \"fname=테스트&poi=x18&su=%d\" 'http://121.187.239.177:8080/poipeoplesu'",z++);
                 
                 system(url);
-                
+                printf("%d\n",z);
                /* 
                 sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
                 //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
