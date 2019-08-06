@@ -1018,7 +1018,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 //sprintf(url,"http://210.115.230.164:8080/People/Update?camera=%d&count=%d",j,count);
                 //sprintf(url,"curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '{\"camera\": %d,\"count\": %d}' 'http://210.115.230.164:8080/People/UpdatePost'",j,count);
                 
-                 // system()사용 
+                 /*// system()사용 
                 sprintf(url,"curl -X POST --header 'Content-Type: application/x-www-form-urlencoded' -d \"fname=테스트&poi=x18&su=%d\" 'http://121.187.239.177:8080/poipeoplesu'",z++);
                 if(z>=100)
                 {
@@ -1026,12 +1026,16 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 }
                 system(url);
                 printf("%d\n",z);
-               /* 
+                */
+                
                 sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
                 //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
                 char data[512];
-                sprintf(data,"\"fname=테스트&poi=x18&su=%d\"",count);
-                
+                sprintf(data,"fname=테스트&poi=x18&su=%d",z);
+                if(z>=100)
+                {
+                    z = 0;
+                }
                 CURL *curl;
                 CURLcode res;
                 struct curl_slist *list = NULL;
@@ -1062,10 +1066,10 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 {
                     printf("CURL fault\n");
                 }
-                 */
+                 
             }// end for function
             
-            wait = 100;
+            wait = 600;
             usleep(100*1000);
         }//end if function
         
