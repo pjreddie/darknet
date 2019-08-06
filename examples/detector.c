@@ -1014,12 +1014,15 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 pp.count = count;
                 //sprintf(url,"http://210.115.230.164:8080/People/Update?camera=%d&count=%d",j,count);
                 //sprintf(url,"curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '{\"camera\": %d,\"count\": %d}' 'http://210.115.230.164:8080/People/UpdatePost'",j,count);
+                sprintf(url,"curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '{\"fname\": \"Test\",\"poi\": \"x18\",\"su\":\"%d\"}' 'http://121.187.239.177:8080/poipeoplesu'",count);
+                
                 //system(url);
                 
-                sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
+                //sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
                 //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
                 char data[512];
-                sprintf(data,"{\"fname\": \"Test\",\"poi\": \"x18\",\"su\":\"%d\"}",count);
+                //sprintf(data,"{\"fname\": \"Test\",\"poi\": \"x18\",\"su\":\"%d\"}",count);
+                /*
                 CURL *curl;
                 CURLcode res;
                 struct curl_slist *list = NULL;
@@ -1049,7 +1052,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 {
                     printf("CURL fault\n");
                 }
-                
+                 */
             }// end for function
             
             wait = 100;
