@@ -1031,7 +1031,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
                 //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
                 char data[512];
-                sprintf(data,"fname=테스트&poi=x18&su=%d",z);
+                sprintf(data,"fname=테스트&poi=x18&su=%d",z++);
+                printf("%d\n",z);
                 if(z>=100)
                 {
                     z = 0;
