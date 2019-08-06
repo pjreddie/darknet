@@ -1014,15 +1014,17 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 pp.count = count;
                 //sprintf(url,"http://210.115.230.164:8080/People/Update?camera=%d&count=%d",j,count);
                 //sprintf(url,"curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '{\"camera\": %d,\"count\": %d}' 'http://210.115.230.164:8080/People/UpdatePost'",j,count);
+                
+                /* // system()사용 
                 sprintf(url,"curl -X POST --header 'Content-Type: application/x-www-form-urlencoded' -d \"fname=테스트&poi=x18&su=17\" 'http://121.187.239.177:8080/poipeoplesu'",count);
                 
                 system(url);
-                
-                //sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
+                */
+                sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
                 //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
                 char data[512];
-                //sprintf(data,"{\"fname\": \"Test\",\"poi\": \"x18\",\"su\":\"%d\"}",count);
-                /*
+                sprintf(data,"\"fname=테스트&poi=x18&su=%d\"",count);
+                
                 CURL *curl;
                 CURLcode res;
                 struct curl_slist *list = NULL;
@@ -1030,7 +1032,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 if(curl)
                 {
                     curl_easy_setopt(curl,CURLOPT_URL,url);
-                    list = curl_slist_append(list, "Content-Type: application/json");
+                    list = curl_slist_append(list, "Content-Type: application/x-www-form-urlencoded");
+                    //list = curl_slist_append(list, "Content-Type: application/json");
                     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list); // content-type 설정
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
@@ -1052,7 +1055,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 {
                     printf("CURL fault\n");
                 }
-                 */
+                 
             }// end for function
             
             wait = 100;
