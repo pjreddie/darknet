@@ -1018,7 +1018,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 
                 sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
                 char data[512];
-                sprintf(data,"{\"camera\": \"%d\",\"count: \"%d\"}",j,count);
+                sprintf(data,"{\"camera\": %d,\"count\": %d}",j,count);
                 CURL *curl;
                 CURLcode res;
                 struct curl_slist *list = NULL;
