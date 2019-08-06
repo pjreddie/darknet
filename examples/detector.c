@@ -1027,46 +1027,56 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 system(url);
                 printf("%d\n",z);
                 */
-                
-                sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
-                //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
-                char data[512];
-                sprintf(data,"fname=테스트&poi=x18&su=%d",z++);
-                printf("%d\n",z);
-                if(z>=100)
+                int k;
+                for(k = 1 ; k <=10 ; k++)
                 {
-                    z = 0;
-                }
-                CURL *curl;
-                CURLcode res;
-                struct curl_slist *list = NULL;
-                curl = curl_easy_init();
-                if(curl)
-                {
-                    curl_easy_setopt(curl,CURLOPT_URL,url);
-                    list = curl_slist_append(list, "Content-Type: application/x-www-form-urlencoded");
-                    //list = curl_slist_append(list, "Content-Type: application/json");
-                    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list); // content-type 설정
-                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
-                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
-                    curl_easy_setopt(curl, CURLOPT_POST, 1L); //POST option
-                    curl_easy_setopt(curl,CURLOPT_POSTFIELDS,data);
-                    
-
-                    res = curl_easy_perform(curl);
-                    if(res == CURLE_OK)
-                        printf("POST success = %s\n",url);
+                    sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
+                    //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
+                    char data[512];
+                    char poi[512];
+                    if(k < 10)
+                        sprintf(poi,"x0%d",k);
                     else
-                        printf("POST fault\n");
+                    {
+                        sprintf(poi,"x%d",k);
+                    }
                     
-                    curl_easy_cleanup(curl);
+                    sprintf(data,"fname=테스트&poi=%s&su=%d",poi,z++);
+                    printf("%s, %d\n",poi,z);
+                    if(z>=100)
+                    {
+                        z = 0;
+                    }
+                    CURL *curl;
+                    CURLcode res;
+                    struct curl_slist *list = NULL;
+                    curl = curl_easy_init();
+                    if(curl)
+                    {
+                        curl_easy_setopt(curl,CURLOPT_URL,url);
+                        list = curl_slist_append(list, "Content-Type: application/x-www-form-urlencoded");
+                        //list = curl_slist_append(list, "Content-Type: application/json");
+                        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list); // content-type 설정
+                        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
+                        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
+                        curl_easy_setopt(curl, CURLOPT_POST, 1L); //POST option
+                        curl_easy_setopt(curl,CURLOPT_POSTFIELDS,data);
+                        
 
-
+                        res = curl_easy_perform(curl);
+                        if(res == CURLE_OK)
+                            printf("POST success = %s\n",url);
+                        else
+                            printf("POST fault\n");
+                        
+                        curl_easy_cleanup(curl);
+                    }
+                    else
+                    {
+                        printf("CURL fault\n");
+                    }
                 }
-                else
-                {
-                    printf("CURL fault\n");
-                }
+                
                  
             }// end for function
             
