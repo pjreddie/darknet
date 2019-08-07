@@ -185,6 +185,7 @@ convolutional_layer parse_convolutional(list *options, size_params params, netwo
     convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, share_layer);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
+    layer.assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
 
     if(params.net.adam){
         layer.B1 = params.net.B1;

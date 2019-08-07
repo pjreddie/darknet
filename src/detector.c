@@ -123,6 +123,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.flip = net.flip;
     args.jitter = jitter;
     args.num_boxes = l.max_boxes;
+    net.num_boxes = args.num_boxes;
+    net.train_images_num = train_images_num;
     args.d = &buffer;
     args.type = DETECTION_DATA;
     args.threads = 64;    // 16 or 64

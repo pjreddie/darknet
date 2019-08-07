@@ -56,6 +56,7 @@ int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
 void rescale_weights(convolutional_layer l, float scale, float trans);
 void rgbgr_weights(convolutional_layer l);
+void assisted_excitation_forward(convolutional_layer l, network_state state);
 
 #ifdef __cplusplus
 }
