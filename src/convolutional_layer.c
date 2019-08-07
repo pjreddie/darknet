@@ -1173,6 +1173,7 @@ void assisted_excitation_forward(convolutional_layer l, network_state state)
 
     if(0)   // visualize ground truth
     {
+#ifdef OPENCV
         for (b = 0; b < l.batch; ++b)
         {
             image img = float_to_image(l.out_w, l.out_h, 1, &g[l.out_w*l.out_h*b]);
@@ -1187,6 +1188,7 @@ void assisted_excitation_forward(convolutional_layer l, network_state state)
             wait_key_cv(5);
         }
         wait_until_press_key_cv();
+#endif // OPENCV
     }
 
     free(g);
