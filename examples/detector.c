@@ -939,7 +939,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 case 's': case 'S':
                     printf("\ncheck Area\n");
                     for(j = 1 ; j <= 10 ; j++){
-                        sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+                        sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
                                               
                         load_mat_image_point(input,j,&pointArray[j-1]); // pointArray.size가 0일 경우 전체 화면에 대해서 검출하는 식으로 진행
                         for(i = 0 ; i < pointArray[j-1].size ; i++)
@@ -960,7 +960,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
             image im;
             image sized;
             int count;
-            for(j = 1 ; j <= 1 ; j++)
+            for(j = 1 ; j <= 10 ; j++)
             {
                 //sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
                 sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
@@ -1013,8 +1013,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 //Get
                 char url[512];
                 struct people pp;
-                pp.camera = j;
-                pp.count = count;
+                //pp.camera = j;
+                //pp.count = count;
                 //sprintf(url,"http://210.115.230.164:8080/People/Update?camera=%d&count=%d",j,count);
                 //sprintf(url,"curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '{\"camera\": %d,\"count\": %d}' 'http://210.115.230.164:8080/People/UpdatePost'",j,count);
                 
@@ -1027,57 +1027,52 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 system(url);
                 printf("%d\n",z);
                 */
-                int k;
-                for(k = 1 ; k <=10 ; k++)
-                {
-                    sprintf(url,"http://121.187.239.177:8080/poipeoplesu");
-                    //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
-                    char data[512];
-                    char poi[512];
-                    if(k < 10)
-                        sprintf(poi,"x0%d",k);
-                    else
-                    {
-                        sprintf(poi,"x%d",k);
-                    }
-                    
-                    sprintf(data,"fname=테스트&poi=%s&su=%d",poi,z++);
-                    printf("%s, %d\n",poi,z);
-                    if(z>=100)
-                    {
-                        z = 0;
-                    }
-                    CURL *curl;
-                    CURLcode res;
-                    struct curl_slist *list = NULL;
-                    curl = curl_easy_init();
-                    if(curl)
-                    {
-                        curl_easy_setopt(curl,CURLOPT_URL,url);
-                        list = curl_slist_append(list, "Content-Type: application/x-www-form-urlencoded");
-                        //list = curl_slist_append(list, "Content-Type: application/json");
-                        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list); // content-type 설정
-                        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
-                        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함 
-                        curl_easy_setopt(curl, CURLOPT_POST, 1L); //POST option
-                        curl_easy_setopt(curl,CURLOPT_POSTFIELDS,data);
-                        
 
-                        res = curl_easy_perform(curl);
-                        if(res == CURLE_OK)
-                            printf("POST success = %s\n",url);
-                        else
-                            printf("POST fault\n");
-                        
-                        curl_easy_cleanup(curl);
-                    }
-                    else
-                    {
-                        printf("CURL fault\n");
-                    }
+                sprintf(url, "http://121.187.239.177:8080/poipeoplesu");
+                //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
+                char data[512];
+                char poi[512];
+                if (j < 10)
+                    sprintf(poi, "x0%d", j);
+                else
+                {
+                    sprintf(poi, "x%d", j);
                 }
-                
-                 
+                printf("poi : %s, su : %d\n",poi,count);
+                sprintf(data, "fname=테스트&poi=%s&su=%d", poi, count);
+                printf("%s, %d\n", poi, z);
+                if (z >= 100)
+                {
+                    z = 0;
+                }
+                CURL *curl;
+                CURLcode res;
+                struct curl_slist *list = NULL;
+                curl = curl_easy_init();
+                if (curl)
+                {
+                    curl_easy_setopt(curl, CURLOPT_URL, url);
+                    list = curl_slist_append(list, "Content-Type: application/x-www-form-urlencoded");
+                    //list = curl_slist_append(list, "Content-Type: application/json");
+                    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);   // content-type 설정
+                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함
+                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함
+                    curl_easy_setopt(curl, CURLOPT_POST, 1L);           //POST option
+                    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+
+                    res = curl_easy_perform(curl);
+                    if (res == CURLE_OK)
+                        printf("POST success = %s\n", url);
+                    else
+                        printf("POST fault\n");
+
+                    curl_easy_cleanup(curl);
+                }
+                else
+                {
+                    printf("CURL fault\n");
+                }
+
             }// end for function
             
             wait = 600;

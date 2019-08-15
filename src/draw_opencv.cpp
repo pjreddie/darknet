@@ -38,25 +38,32 @@ void load_mat_image_point(char *input,int i,Points* ary)
 	lists = (pointList*)calloc(1, sizeof(pointList));
 	initList(lists);
     image = imread(input, 1);
-	imshow("Original", image);
-    resizeWindow("Original",image.cols,image.rows);
-    while(1)
-    {
-        setMouseCallback("Original", onMouse);
+	if(image.data){ // can load image
+		imshow("Original", image);
+		resizeWindow("Original",image.cols,image.rows);
+		while(1)
+		{
+			setMouseCallback("Original", onMouse);
 
-        c = waitKey(0);
-        if (c == 'a')
-        {
-            setMouseCallback("Original", onMouseCheck);
-            waitKey(0);
-        }
-        if(c==32)
-        {
-            break;
-        }
-    }
-    destroyWindow("Original");
-    returnPoint(lists,ary);
+			c = waitKey(0);
+			if (c == 'a')
+			{
+				setMouseCallback("Original", onMouseCheck);
+				waitKey(0);
+			}
+			if(c==32)
+			{
+				break;
+			}
+		}
+		destroyWindow("Original");
+		returnPoint(lists,ary);
+	}
+	else
+	{
+		fprintf(stderr, "Cannot load image \"%s\"\n", filename);
+	}
+	
 }
 void onMouseCheck(int event, int x, int y, int flags, void* param)
 {
