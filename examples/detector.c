@@ -1041,10 +1041,6 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 printf("poi : %s, su : %d\n",poi,count);
                 sprintf(data, "fname=테스트&poi=%s&su=%d", poi, count);
                 printf("%s, %d\n", poi, z);
-                if (z >= 100)
-                {
-                    z = 0;
-                }
                 CURL *curl;
                 CURLcode res;
                 struct curl_slist *list = NULL;
