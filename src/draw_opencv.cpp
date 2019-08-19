@@ -238,9 +238,9 @@ void draw_line(Mat *im)
 	{
 		for(z = points[j].y - 1 ; z <= points[i].y+1 ; z++)
 		{
-    		im->at<cv:Vec3b>(j,z)[0] = 0 // Blue
-			im->at<cv:Vec3b>(j,z)[1] = 0 // Green
-			im->at<cv:Vec3b>(j,z)[2] = 255 // Red
+    		im->at<Vec3b>(j,z)[0] = 0 // Blue
+			im->at<Vec3b>(j,z)[1] = 0 // Green
+			im->at<Vec3b>(j,z)[2] = 255 // Red
 		}
 	}
 	imshow("Original", *im);
