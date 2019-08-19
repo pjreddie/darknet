@@ -231,28 +231,10 @@ extern "C"
 		for (i = 0; i < size; i++)
 		{
 			printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
-			// 해당 부분 해결 방법 강구하기
-			//puts(file_url);
-			/*
-			int j, z;
-			for (j = points[i].x - 1; j <= points[i].x + 1; j++)
-			{
-				for (z = points[j].y - 1; z <= points[i].y + 1; z++)
-				{
-					im->at<Vec3b>(j, z)[0] = 0;   // Blue
-					im->at<Vec3b>(j, z)[1] = 0;   // Green
-					im->at<Vec3b>(j, z)[2] = 255; // Red
-				}
-			}
- 			*/
+			circle(*im,Point(points[i].x,points[i].y),5,Scalar(0,0,255),-1);
+		 	imshow("Original",*im)
 			free(points);
 		}
-	}
-	void delay(clock_t sec)
-	{
-		clock_t start = clock();
-		while (clock() - start < sec)
-			;
 	}
 
 	void checkIn(Mat *im, int x, int y)
