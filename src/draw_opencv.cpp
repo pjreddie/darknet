@@ -233,6 +233,7 @@ extern "C"
 			printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 			// 해당 부분 해결 방법 강구하기
 			//puts(file_url);
+			/*
 			int j, z;
 			for (j = points[i].x - 1; j <= points[i].x + 1; j++)
 			{
@@ -243,8 +244,7 @@ extern "C"
 					im->at<Vec3b>(j, z)[2] = 255; // Red
 				}
 			}
-			imshow("Original", *im);
-
+ 			*/
 			free(points);
 		}
 	}
