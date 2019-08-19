@@ -228,7 +228,6 @@ extern "C"
 		points = (Point *)calloc(lists->size, sizeof(Point));
 		size = lists->size;
 		ListToArray1(lists, points);
-		*im = imread(,CV_LOAD_IMAGE_COLOR);
 		for (i = 0; i < size; i++)
 		{
 			printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
