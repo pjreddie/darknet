@@ -40,7 +40,8 @@ void load_mat_image_point(char *input,int i,Points* ary)
     image = imread(input, 1);
 	if(image.data){ // can load image
 		imshow("Original", image);
-		resizeWindow("Original",image.cols,image.rows);
+		//resizeWindow("Original",image.cols,image.rows);
+		printf("image cols : %d, image rows : %d\n",image.cols,image.rows);
 		while(1)
 		{
 			setMouseCallback("Original", onMouse);
@@ -233,11 +234,11 @@ void draw_line(Mat *im)
     //puts(file_url);
     if(size >=3 )
     {
-        Mat image = imread(file_url, 1);
-		im = &image;
-        polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
-        imshow("Original", *im);
-		resizeWindow("Original",im->cols,im->rows);
+        //Mat image = imread(file_url, 1);
+		//im = &image;
+        //polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
+        //imshow("Original", *im);
+		//resizeWindow("Original",im->cols,im->rows);
     }
      
 	free(points);
