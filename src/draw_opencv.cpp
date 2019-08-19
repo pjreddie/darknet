@@ -219,7 +219,7 @@ extern "C"
 		puts("");
 		free(cur);
 	}
-
+	/* 수정 필요 */
 	void draw_line(Mat *im)
 	{
 		Point *points;
