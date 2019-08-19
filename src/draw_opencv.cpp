@@ -228,12 +228,13 @@ extern "C"
 		points = (Point *)calloc(lists->size, sizeof(Point));
 		size = lists->size;
 		ListToArray1(lists, points);
+		*im = imread(,CV_LOAD_IMAGE_COLOR);
 		for (i = 0; i < size; i++)
 		{
 			printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
-			//circle(*im,Point(points[i].x,points[i].y),5,Scalar(0,0,255),-1);
-		 	//imshow("Original",*im);
+			circle(*im,Point(points[i].x,points[i].y),5,Scalar(0,0,255),-1);
 		}
+		imshow("Original",*im);
 		free(points);
 	}
 
