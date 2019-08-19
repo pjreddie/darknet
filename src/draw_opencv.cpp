@@ -229,18 +229,22 @@ void draw_line(Mat *im)
 	size = lists->size;
 	ListToArray1(lists, points);
     for(i = 0 ; i < size ; i++)
+	{
 	    printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 	// 해당 부분 해결 방법 강구하기
     //puts(file_url);
-    if(size >=3 )
-    {
-        //Mat image = imread(file_url, 1);
-		//im = &image;
-        //polylines(*im, &points, &size, 1, true, Scalar(255, 0, 0)); 
-        //imshow("Original", *im);
-		//resizeWindow("Original",im->cols,im->rows);
-    }
-     
+	int j , z;
+	for(j = points[i].x - 1 ; j <= points[i].x+1 ; j++)
+	{
+		for(z = points[j].y - 1 ; z <= poitns[i].y+1 ; z++)
+		{
+    		im->at<cv:Vec3b>(j,z)[0] = 0 // Blue
+			im->at<cv:Vec3b>(j,z)[1] = 0 // Green
+			im->at<cv:Vec3b>(j,z)[2] = 255 // Red
+		}
+	}
+	imshow("Original", *im);
+	
 	free(points);
 }
 
