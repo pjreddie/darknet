@@ -61,7 +61,7 @@ void load_mat_image_point(char *input,int i,Points* ary)
 	}
 	else
 	{
-		fprintf(stderr, "Cannot load image \"%s\"\n", filename);
+		fprintf(stderr, "Cannot load image \"%s\"\n", file_url);
 	}
 	
 }
