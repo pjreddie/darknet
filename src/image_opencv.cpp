@@ -2,7 +2,7 @@
 
 #include "stdio.h"
 #include "stdlib.h"
-#include "opencv2/opencv.hpp"
+//#include "opencv2/opencv.hpp"
 #include "image.h"
 #include "darknet.h"
 using namespace cv;
