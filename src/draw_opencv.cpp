@@ -231,10 +231,10 @@ extern "C"
 		for (i = 0; i < size; i++)
 		{
 			printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
-			circle(*im,Point(points[i].x,points[i].y),5,Scalar(0,0,255),-1);
+			//circle(*im,Point(points[i].x,points[i].y),5,Scalar(0,0,255),-1);
 		 	//imshow("Original",*im);
-			free(points);
 		}
+		free(points);
 	}
 
 	void checkIn(Mat *im, int x, int y)
