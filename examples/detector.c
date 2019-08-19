@@ -1072,7 +1072,11 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
 
             }// end for function
             
+<<<<<<< HEAD
             wait = 50;
+=======
+            wait = 600; // 원하는 시간에 따라서 설정 변경 
+>>>>>>> 824bde3212c51921616fc108e3ad8e4f1f273132
             usleep(100*1000);
         }//end if function
         
