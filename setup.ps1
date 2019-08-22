@@ -12,11 +12,8 @@ Set-Location $temp_folder
 # Download and install Chocolatey
 Set-ExecutionPolicy unrestricted
 Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-choco.exe install -y cmake ninja powershell git
-
-# Download and install VS Build Tools
-Invoke-WebRequest https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16 -OutFile .\vs_buildtools.exe
-.\vs_buildtools.exe –quiet –add Microsoft.VisualStudio.Workload.VCTools –includeRecommended
+choco.exe install -y cmake ninja powershell git vscode
+choco-exe install -y visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.CoreBuildTools --includeRecommended --includeOptional --passive --locale en-US --lang en-US"
 
 if ($install_cuda) {
   # Download and install CUDA
@@ -28,10 +25,10 @@ if ($install_cuda) {
   $env:CUDA_TOOLKIT_ROOT_DIR = $env:CUDA_PATH
   $env:PATH += ";${env:CUDA_PATH}\bin;"
 
-  $feature = "opencv-cuda"
+  $features = "full"
 }
 else {
-  $feature = "opencv"
+  $features = "opencv-base,weights,weights-train"
 }
 
 Remove-Item -r $temp_folder
@@ -40,4 +37,4 @@ Set-Location $vcpkg_folder\
 git.exe clone https://github.com/Microsoft/vcpkg
 Set-Location vcpkg
 .\bootstrap-vcpkg.bat
-.\vcpkg.exe install darknet[$feature]
+.\vcpkg.exe install darknet[${features}]:x64-windows
