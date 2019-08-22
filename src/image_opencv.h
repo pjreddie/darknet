@@ -95,7 +95,11 @@ void draw_train_loss(mat_cv* img, int img_size, float avg_loss, float max_img_lo
 // Data augmentation
 image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
-    float jitter, float dhue, float dsat, float dexp);
+    float dhue, float dsat, float dexp,
+    int blur, int num_boxes, float *truth);
+
+// blend two images with (alpha and beta)
+void blend_images_cv(image new_img, float alpha, image old_img, float beta);
 
 // Show Anchors
 void show_acnhors(int number_of_boxes, int num_of_clusters, float *rel_width_height_array, model anchors_data, int width, int height);

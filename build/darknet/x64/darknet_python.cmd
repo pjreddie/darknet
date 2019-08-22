@@ -4,7 +4,7 @@ rem C:\Python27\Scripts\pip install scikit-image
 rem C:\Python27\Scripts\pip install scipy
 rem C:\Python27\Scripts\pip install opencv-python
 
-C:\Python27\python.exe darknet.py
+rem C:\Python27\python.exe darknet.py
 
 
 
@@ -14,6 +14,6 @@ rem C:\Users\Alex\AppData\Local\Programs\Python\Python36\Scripts\pip install sci
 rem C:\Users\Alex\AppData\Local\Programs\Python\Python36\Scripts\pip install scipy
 rem C:\Users\Alex\AppData\Local\Programs\Python\Python36\Scripts\pip install opencv-python
 
-rem C:\Users\Alex\AppData\Local\Programs\Python\Python36\python.exe darknet.py
+C:\Users\Alex\AppData\Local\Programs\Python\Python36\python.exe darknet.py
 
 pause

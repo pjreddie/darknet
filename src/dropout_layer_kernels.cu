@@ -1,6 +1,6 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#include <cuda_runtime.h>
+#include <curand.h>
+#include <cublas_v2.h>
 
 #include "dropout_layer.h"
 #include "dark_cuda.h"
@@ -15,6 +15,10 @@ __global__ void yoloswag420blazeit360noscope(float *input, int size, float *rand
 void forward_dropout_layer_gpu(dropout_layer layer, network_state state)
 {
     if (!state.train) return;
+    int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
+    //if (iteration_num < state.net.burn_in) return;
+
+
     int size = layer.inputs*layer.batch;
     cuda_random(layer.rand_gpu, size);
     /*
@@ -32,6 +36,9 @@ void forward_dropout_layer_gpu(dropout_layer layer, network_state state)
 void backward_dropout_layer_gpu(dropout_layer layer, network_state state)
 {
     if(!state.delta) return;
+    int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
+    //if (iteration_num < state.net.burn_in) return;
+
     int size = layer.inputs*layer.batch;
 
     yoloswag420blazeit360noscope<<<cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >>>(state.delta, size, layer.rand_gpu, layer.probability, layer.scale);

@@ -1,31 +1,24 @@
 # Config file for the Darknet package
-# It defines the following variables
-#  Darknet_INCLUDE_DIRS - include directories for Darknet
-#  Darknet_LIBRARIES    - libraries to link against
 
-# Compute paths
 get_filename_component(Darknet_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-set(Darknet_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 list(APPEND CMAKE_MODULE_PATH "${Darknet_CMAKE_DIR}")
 
 include(CMakeFindDependencyMacro)
 
-if(@ENABLE_OPENCV@)
-  find_dependency(OpenCV REQUIRED)
-  add_definitions(-DOPENCV)
+if(@OpenCV_FOUND@)
+  find_dependency(OpenCV)
 endif()
 
-find_dependency(Stb REQUIRED)
-
 if(@ENABLE_CUDA@)
-  find_dependency(CUDNN)
-  add_definitions(-DGPU)
-  if(CUDNN_FOUND)
-    add_definitions(-DCUDNN)
-    if(@CUDA_COMPUTE_MODEL@ VERSION_GREATER_EQUAL @CUDA_COMPUTE_MODEL_70@)
-      add_definitions(-DCUDNN_HALF)
-      message(STATUS "Enabled CUDNN_HALF")
-    endif()
+  include(CheckLanguage)
+  check_language(CUDA)
+  if(NOT CMAKE_CUDA_COMPILER)
+    message(STATUS " --> WARNING: Unable to find native CUDA integration!")
+  endif()
+  find_dependency(CUDA)
+  cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS ${CUDA_ARCHITECTURES})
+  if(@CUDNN_FOUND@)
+    find_dependency(CUDNN)
   endif()
 endif()
 
@@ -34,16 +27,19 @@ find_dependency(Threads)
 
 if(MSVC)
   find_dependency(PThreads_windows)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
   set(CMAKE_CXX_FLAGS "/wd4018 /wd4244 /wd4267 /wd4305 ${CMAKE_CXX_FLAGS}")
 endif()
 
-if("${CMAKE_VERSION}" VERSION_GREATER "3.9.0")
+if(@OPENMP_FOUND@)
   find_dependency(OpenMP)
 endif()
 
 # Our library dependencies (contains definitions for IMPORTED targets)
 include("${Darknet_CMAKE_DIR}/DarknetTargets.cmake")
+include("${Darknet_CMAKE_DIR}/DarknetConfigVersion.cmake")
 
-# These are IMPORTED targets created by DarknetTargets.cmake
-set(Darknet_LIBRARIES darklib)
+get_target_property(FULL_DARKNET_INCLUDE_DIRS Darknet::dark INTERFACE_INCLUDE_DIRECTORIES)
+list(GET FULL_DARKNET_INCLUDE_DIRS 0 Darknet_INCLUDE_DIR)
+get_filename_component(Darknet_INCLUDE_DIR "${Darknet_INCLUDE_DIR}" REALPATH)
+
+find_package_handle_standard_args(Darknet REQUIRED_VARS Darknet_INCLUDE_DIR VERSION_VAR PACKAGE_VERSION)

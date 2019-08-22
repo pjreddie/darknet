@@ -51,8 +51,8 @@ cost_layer make_cost_layer(int batch, int inputs, COST_TYPE cost_type, float sca
     l.forward_gpu = forward_cost_layer_gpu;
     l.backward_gpu = backward_cost_layer_gpu;
 
-    l.delta_gpu = cuda_make_array(l.output, inputs*batch);
-    l.output_gpu = cuda_make_array(l.delta, inputs*batch);
+    l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
+    l.output_gpu = cuda_make_array(l.output, inputs*batch);
     #endif
     return l;
 }

@@ -550,7 +550,26 @@ static inline float _castu32_f32(uint32_t a) {
 }
 
 static inline float _mm256_extract_float32(__m256 a, const int index) {
-    return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), index));
+    switch(index) {
+    case 0:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 0));
+    case 1:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 1));
+    case 2:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 2));
+    case 3:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 3));
+    case 4:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 4));
+    case 5:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 5));
+    case 6:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 6));
+    case 7:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 7));
+    default:
+      return _castu32_f32(_mm256_extract_epi32(_mm256_castps_si256(a), 0));
+    }
 }
 
 void asm_cpuid(uint32_t* abcd, uint32_t eax)
@@ -1120,8 +1139,10 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
 
 static inline int popcnt128(__m128i n) {
     const __m128i n_hi = _mm_unpackhi_epi64(n, n);
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
     return __popcnt64(_mm_cvtsi128_si64(n)) + __popcnt64(_mm_cvtsi128_si64(n_hi));
+#elif defined(__APPLE__) && defined(__clang__)
+    return _mm_popcnt_u64(_mm_cvtsi128_si64(n)) + _mm_popcnt_u64(_mm_cvtsi128_si64(n_hi));
 #else
     return __popcntq(_mm_cvtsi128_si64(n)) + __popcntq(_mm_cvtsi128_si64(n_hi));
 #endif

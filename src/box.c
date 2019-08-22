@@ -64,6 +64,30 @@ dbox derivative(box a, box b)
     return d;
 }
 
+// where c is the smallest box that fully encompases a and b
+boxabs box_c(box a, box b) {
+    boxabs ba = { 0 };
+    ba.top = fmin(a.y - a.h / 2, b.y - b.h / 2);
+    ba.bot = fmax(a.y + a.h / 2, b.y + b.h / 2);
+    ba.left = fmin(a.x - a.w / 2, b.x - b.w / 2);
+    ba.right = fmax(a.x + a.w / 2, b.x + b.w / 2);
+    return ba;
+}
+
+// representation from x, y, w, h to top, left, bottom, right
+boxabs to_tblr(box a) {
+    boxabs tblr = { 0 };
+    float t = a.y - (a.h / 2);
+    float b = a.y + (a.h / 2);
+    float l = a.x - (a.w / 2);
+    float r = a.x + (a.w / 2);
+    tblr.top = t;
+    tblr.bot = b;
+    tblr.left = l;
+    tblr.right = r;
+    return tblr;
+}
+
 float overlap(float x1, float w1, float x2, float w2)
 {
     float l1 = x1 - w1/2;
@@ -93,7 +117,113 @@ float box_union(box a, box b)
 
 float box_iou(box a, box b)
 {
-    return box_intersection(a, b)/box_union(a, b);
+    //return box_intersection(a, b)/box_union(a, b);
+
+    float I = box_intersection(a, b);
+    float U = box_union(a, b);
+    if (I == 0 || U == 0) {
+        return 0;
+    }
+    return I / U;
+}
+
+float box_giou(box a, box b)
+{
+    boxabs ba = box_c(a, b);
+    float w = ba.right - ba.left;
+    float h = ba.bot - ba.top;
+    float c = w*h;
+    float iou = box_iou(a, b);
+    if (c == 0) {
+        return iou;
+    }
+    float u = box_union(a, b);
+    float giou_term = (c - u) / c;
+#ifdef DEBUG_PRINTS
+    printf("  c: %f, u: %f, giou_term: %f\n", c, u, giou_term);
+#endif
+    return iou - giou_term;
+}
+
+dxrep dx_box_iou(box pred, box truth, IOU_LOSS iou_loss) {
+    boxabs pred_tblr = to_tblr(pred);
+    float pred_t = fmin(pred_tblr.top, pred_tblr.bot);
+    float pred_b = fmax(pred_tblr.top, pred_tblr.bot);
+    float pred_l = fmin(pred_tblr.left, pred_tblr.right);
+    float pred_r = fmax(pred_tblr.left, pred_tblr.right);
+
+    boxabs truth_tblr = to_tblr(truth);
+#ifdef DEBUG_PRINTS
+    printf("\niou: %f, giou: %f\n", box_iou(pred, truth), box_giou(pred, truth));
+    printf("pred: x,y,w,h: (%f, %f, %f, %f) -> t,b,l,r: (%f, %f, %f, %f)\n", pred.x, pred.y, pred.w, pred.h, pred_tblr.top, pred_tblr.bot, pred_tblr.left, pred_tblr.right);
+    printf("truth: x,y,w,h: (%f, %f, %f, %f) -> t,b,l,r: (%f, %f, %f, %f)\n", truth.x, truth.y, truth.w, truth.h, truth_tblr.top, truth_tblr.bot, truth_tblr.left, truth_tblr.right);
+#endif
+    //printf("pred (t,b,l,r): (%f, %f, %f, %f)\n", pred_t, pred_b, pred_l, pred_r);
+    //printf("trut (t,b,l,r): (%f, %f, %f, %f)\n", truth_tblr.top, truth_tblr.bot, truth_tblr.left, truth_tblr.right);
+    dxrep dx = { 0 };
+    float X = (pred_b - pred_t) * (pred_r - pred_l);
+    float Xhat = (truth_tblr.bot - truth_tblr.top) * (truth_tblr.right - truth_tblr.left);
+    float Ih = fmin(pred_b, truth_tblr.bot) - fmax(pred_t, truth_tblr.top);
+    float Iw = fmin(pred_r, truth_tblr.right) - fmax(pred_l, truth_tblr.left);
+    float I = Iw * Ih;
+    float U = X + Xhat - I;
+
+    float Cw = fmax(pred_r, truth_tblr.right) - fmin(pred_l, truth_tblr.left);
+    float Ch = fmax(pred_b, truth_tblr.bot) - fmin(pred_t, truth_tblr.top);
+    float C = Cw * Ch;
+
+    // float IoU = I / U;
+    // Partial Derivatives, derivatives
+    float dX_wrt_t = -1 * (pred_r - pred_l);
+    float dX_wrt_b = pred_r - pred_l;
+    float dX_wrt_l = -1 * (pred_b - pred_t);
+    float dX_wrt_r = pred_b - pred_t;
+
+    // gradient of I min/max in IoU calc (prediction)
+    float dI_wrt_t = pred_t > truth_tblr.top ? (-1 * Iw) : 0;
+    float dI_wrt_b = pred_b < truth_tblr.bot ? Iw : 0;
+    float dI_wrt_l = pred_l > truth_tblr.left ? (-1 * Ih) : 0;
+    float dI_wrt_r = pred_r < truth_tblr.right ? Ih : 0;
+    // derivative of U with regard to x
+    float dU_wrt_t = dX_wrt_t - dI_wrt_t;
+    float dU_wrt_b = dX_wrt_b - dI_wrt_b;
+    float dU_wrt_l = dX_wrt_l - dI_wrt_l;
+    float dU_wrt_r = dX_wrt_r - dI_wrt_r;
+    // gradient of C min/max in IoU calc (prediction)
+    float dC_wrt_t = pred_t < truth_tblr.top ? (-1 * Cw) : 0;
+    float dC_wrt_b = pred_b > truth_tblr.bot ? Cw : 0;
+    float dC_wrt_l = pred_l < truth_tblr.left ? (-1 * Ch) : 0;
+    float dC_wrt_r = pred_r > truth_tblr.right ? Ch : 0;
+
+    // Final IOU loss (prediction) (negative of IOU gradient, we want the negative loss)
+    float p_dt = 0;
+    float p_db = 0;
+    float p_dl = 0;
+    float p_dr = 0;
+    if (U > 0) {
+        p_dt = ((U * dI_wrt_t) - (I * dU_wrt_t)) / (U * U);
+        p_db = ((U * dI_wrt_b) - (I * dU_wrt_b)) / (U * U);
+        p_dl = ((U * dI_wrt_l) - (I * dU_wrt_l)) / (U * U);
+        p_dr = ((U * dI_wrt_r) - (I * dU_wrt_r)) / (U * U);
+    }
+
+    if (iou_loss == GIOU) {
+        if (C > 0) {
+            // apply "C" term from gIOU
+            p_dt += ((C * dU_wrt_t) - (U * dC_wrt_t)) / (C * C);
+            p_db += ((C * dU_wrt_b) - (U * dC_wrt_b)) / (C * C);
+            p_dl += ((C * dU_wrt_l) - (U * dC_wrt_l)) / (C * C);
+            p_dr += ((C * dU_wrt_r) - (U * dC_wrt_r)) / (C * C);
+        }
+    }
+
+    // apply grad from prediction min/max for correct corner selection
+    dx.dt = pred_tblr.top < pred_tblr.bot ? p_dt : p_db;
+    dx.db = pred_tblr.top < pred_tblr.bot ? p_db : p_dt;
+    dx.dl = pred_tblr.left < pred_tblr.right ? p_dl : p_dr;
+    dx.dr = pred_tblr.left < pred_tblr.right ? p_dr : p_dl;
+
+    return dx;
 }
 
 float box_rmse(box a, box b)

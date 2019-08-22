@@ -134,14 +134,14 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 #else
         loss = train_network(net, train);
 #endif
-        if(avg_loss == -1) avg_loss = loss;
+        if(avg_loss == -1 || isnan(avg_loss) || isinf(avg_loss)) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
         i = get_current_batch(net);
 
         int calc_topk_for_each = iter_topk + 2 * train_images_num / (net.batch * net.subdivisions);  // calculate TOPk for each 2 Epochs
         calc_topk_for_each = fmax(calc_topk_for_each, net.burn_in);
-        calc_topk_for_each = fmax(calc_topk_for_each, 1000);
+        calc_topk_for_each = fmax(calc_topk_for_each, 100);
         if (i % 10 == 0) {
             if (calc_topk) {
                 fprintf(stderr, "\n (next TOP5 calculation at %d iterations) ", calc_topk_for_each);
@@ -791,7 +791,8 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        image r = letterbox_image(im, net.w, net.h);
+        image resized = resize_min(im, net.w);
+        image r = crop_image(resized, (resized.w - net.w)/2, (resized.h - net.h)/2, net.w, net.h);
         //image r = resize_min(im, size);
         //resize_network(&net, r.w, r.h);
         printf("%d %d\n", r.w, r.h);

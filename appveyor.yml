@@ -37,6 +37,11 @@ environment:
       COMPILER: vs
       configuration: Release
       USE_INTEGRATED_LIBS: yes
+    - platform: Win64
+      COMPILER: vs
+      configuration: Release
+      USE_INTEGRATED_LIBS: yes
+      FORCE_CPP: yes
 
 install:
   - if [%COMPILER%]==[vs] cinst cmake ninja
@@ -67,7 +72,8 @@ install:
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] git pull
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] .\bootstrap-vcpkg.bat
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%USE_CUDA%]==[yes] vcpkg install cuda
-  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv[ffmpeg] pthreads   ## opencv[ffmpeg,cuda] is too big to build, timing out (>1h). We use plain openCV also for CUDA builds (toolchain can manage this strange situation anyway)
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install stb pthreads
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv[ffmpeg] ## opencv[ffmpeg,cuda] is too big to build, timing out (>1h). We use plain openCV also for CUDA builds (toolchain can manage this strange situation anyway)
   - cd %WORKSPACE%\darknet\
   - mkdir build_debug && cd build_debug
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Debug"'
@@ -76,7 +82,8 @@ install:
   - mkdir build_release && cd build_release
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release"'
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] if [%configuration%]==[Release] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET%" -DCMAKE_BUILD_TYPE="Release" ..
-  - if [%COMPILER%]==[vs] if     [%USE_INTEGRATED_LIBS%]==[yes] cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" -DCMAKE_BUILD_TYPE="Release" ..
+  - if [%COMPILER%]==[vs] if     [%USE_INTEGRATED_LIBS%]==[yes] if [%FORCE_CPP%]==[yes]         cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" -DCMAKE_BUILD_TYPE="Release" "-DBUILD_AS_CPP:BOOL=TRUE" ..
+  - if [%COMPILER%]==[vs] if     [%USE_INTEGRATED_LIBS%]==[yes]                                 cmake -G "Visual Studio 15 2017" -T "host=x64" -A "x64" -DCMAKE_BUILD_TYPE="Release" ..
   - cd ..
 
 build_script:

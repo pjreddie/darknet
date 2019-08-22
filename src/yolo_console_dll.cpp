@@ -129,7 +129,9 @@ cv::Mat slMat2cvMat(sl::Mat &input) {
 cv::Mat zed_capture_rgb(sl::Camera &zed) {
     sl::Mat left;
     zed.retrieveImage(left);
-    return slMat2cvMat(left).clone();
+    cv::Mat left_rgb;
+    cv::cvtColor(slMat2cvMat(left), left_rgb, CV_RGBA2RGB);
+    return left_rgb;
 }
 
 cv::Mat zed_capture_3d(sl::Camera &zed) {

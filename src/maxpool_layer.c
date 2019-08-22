@@ -45,7 +45,7 @@ void cudnn_maxpool_setup(layer *l)
 }
 
 
-maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride, int padding)
+maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride, int padding, int maxpool_depth, int out_channels)
 {
     maxpool_layer l = { (LAYER_TYPE)0 };
     l.type = MAXPOOL;
@@ -54,9 +54,18 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     l.w = w;
     l.c = c;
     l.pad = padding;
-    l.out_w = (w + padding - size) / stride + 1;
-    l.out_h = (h + padding - size) / stride + 1;
-    l.out_c = c;
+    l.maxpool_depth = maxpool_depth;
+    l.out_channels = out_channels;
+    if (maxpool_depth) {
+        l.out_c = out_channels;
+        l.out_w = l.w;
+        l.out_h = l.h;
+    }
+    else {
+        l.out_w = (w + padding - size) / stride + 1;
+        l.out_h = (h + padding - size) / stride + 1;
+        l.out_c = c;
+    }
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = h*w*c;
     l.size = size;
@@ -78,7 +87,7 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
 
     #endif  // GPU
 	l.bflops = (l.size*l.size*l.c * l.out_h*l.out_w) / 1000000000.;
-    fprintf(stderr, "max          %d x %d / %d  %4d x%4d x%4d   ->  %4d x%4d x%4d %5.3f BF\n", size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+    fprintf(stderr, "max               %d x %d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
     return l;
 }
 
@@ -90,7 +99,7 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 
     l->out_w = (w + l->pad - l->size) / l->stride + 1;
     l->out_h = (h + l->pad - l->size) / l->stride + 1;
-    l->outputs = l->out_w * l->out_h * l->c;
+    l->outputs = l->out_w * l->out_h * l->out_c;
     int output_size = l->outputs * l->batch;
 
     l->indexes = (int*)realloc(l->indexes, output_size * sizeof(int));
@@ -111,6 +120,37 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 
 void forward_maxpool_layer(const maxpool_layer l, network_state state)
 {
+    if (l.maxpool_depth)
+    {
+        int b, i, j, k, g;
+        for (b = 0; b < l.batch; ++b) {
+            #pragma omp parallel for
+            for (i = 0; i < l.h; ++i) {
+                for (j = 0; j < l.w; ++j) {
+                    for (g = 0; g < l.out_c; ++g)
+                    {
+                        int out_index = j + l.w*(i + l.h*(g + l.out_c*b));
+                        float max = -FLT_MAX;
+                        int max_i = -1;
+
+                        for (k = g; k < l.c; k += l.out_c)
+                        {
+                            int in_index = j + l.w*(i + l.h*(k + l.c*b));
+                            float val = state.input[in_index];
+
+                            max_i = (val > max) ? in_index : max_i;
+                            max = (val > max) ? val : max;
+                        }
+                        l.output[out_index] = max;
+                        l.indexes[out_index] = max_i;
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+
     if (!state.train) {
         forward_maxpool_layer_avx(state.input, l.output, l.indexes, l.size, l.w, l.h, l.out_w, l.out_h, l.c, l.pad, l.stride, l.batch);
         return;
@@ -156,7 +196,8 @@ void backward_maxpool_layer(const maxpool_layer l, network_state state)
     int i;
     int h = l.out_h;
     int w = l.out_w;
-    int c = l.c;
+    int c = l.out_c;
+    #pragma omp parallel for
     for(i = 0; i < h*w*c*l.batch; ++i){
         int index = l.indexes[i];
         state.delta[index] += l.delta[i];

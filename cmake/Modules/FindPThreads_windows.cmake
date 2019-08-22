@@ -39,18 +39,18 @@ endif()
 find_package_handle_standard_args(PThreads_windows DEFAULT_MSG PThreads_windows_LIBRARY PThreads_windows_INCLUDE_DIR)
 mark_as_advanced(PThreads_windows_INCLUDE_DIR PThreads_windows_LIBRARY)
 
+set(PThreads_windows_DLL_DIR ${PThreads_windows_INCLUDE_DIR})
+list(TRANSFORM PThreads_windows_DLL_DIR APPEND "/../bin")
+message(STATUS "PThreads_windows_DLL_DIR: ${PThreads_windows_DLL_DIR}")
+
+find_file(PThreads_windows_LIBRARY_RELEASE_DLL NAMES pthreadVC2.dll PATHS ${PThreads_windows_DLL_DIR})
+find_file(PThreads_windows_LIBRARY_DEBUG_DLL NAMES pthreadVC2d.dll PATHS ${PThreads_windows_DLL_DIR})
 
 # Register imported libraries:
 # 1. If we can find a Windows .dll file (or if we can find both Debug and
 #    Release libraries), we will set appropriate target properties for these.
 # 2. However, for most systems, we will only register the import location and
 #    include directory.
-
-# Look for dlls, for Release and Debug libraries.
-if(WIN32)
-  string( REPLACE ".lib" ".dll" PThreads_windows_LIBRARY_RELEASE_DLL "${PThreads_windows_LIBRARY_RELEASE}" )
-  string( REPLACE ".lib" ".dll" PThreads_windows_LIBRARY_DEBUG_DLL   "${PThreads_windows_LIBRARY_DEBUG}" )
-endif()
 
 if( PThreads_windows_FOUND AND NOT TARGET PThreads_windows::PThreads_windows )
   if( EXISTS "${PThreads_windows_LIBRARY_RELEASE_DLL}" )

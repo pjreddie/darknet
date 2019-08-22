@@ -15,6 +15,7 @@
 #include "gru_layer.h"
 #include "rnn_layer.h"
 #include "crnn_layer.h"
+#include "conv_lstm_layer.h"
 #include "local_layer.h"
 #include "convolutional_layer.h"
 #include "activation_layer.h"
@@ -24,12 +25,14 @@
 #include "batchnorm_layer.h"
 #include "maxpool_layer.h"
 #include "reorg_layer.h"
+#include "reorg_old_layer.h"
 #include "avgpool_layer.h"
 #include "cost_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "route_layer.h"
 #include "shortcut_layer.h"
+#include "scale_channels_layer.h"
 #include "yolo_layer.h"
 #include "upsample_layer.h"
 #include "parser.h"
@@ -90,6 +93,32 @@ void reset_rnn(network *net)
     reset_network_state(net, 0);
 }
 
+float get_current_seq_subdivisions(network net)
+{
+    int sequence_subdivisions = net.init_sequential_subdivisions;
+
+    if (net.num_steps > 0)
+    {
+        int batch_num = get_current_batch(net);
+        int i;
+        for (i = 0; i < net.num_steps; ++i) {
+            if (net.steps[i] > batch_num) break;
+            sequence_subdivisions *= net.seq_scales[i];
+        }
+    }
+    if (sequence_subdivisions < 1) sequence_subdivisions = 1;
+    if (sequence_subdivisions > net.subdivisions) sequence_subdivisions = net.subdivisions;
+    return sequence_subdivisions;
+}
+
+int get_sequence_value(network net)
+{
+    int sequence = 1;
+    if (net.sequential_subdivisions != 0) sequence = net.subdivisions / net.sequential_subdivisions;
+    if (sequence < 1) sequence = 1;
+    return sequence;
+}
+
 float get_current_rate(network net)
 {
     int batch_num = get_current_batch(net);
@@ -120,11 +149,20 @@ float get_current_rate(network net)
         case SIG:
             return net.learning_rate * (1./(1.+exp(net.gamma*(batch_num - net.step))));
         case SGDR:
+        {
+            int last_iteration_start = 0;
+            int cycle_size = net.batches_per_cycle;
+            while ((last_iteration_start + cycle_size) < batch_num)
+            {
+                last_iteration_start += cycle_size;
+                cycle_size *= net.batches_cycle_mult;
+            }
             rate = net.learning_rate_min +
-                        0.5*(net.learning_rate-net.learning_rate_min)
-                        * (1. + cos( (float) (batch_num % net.batches_per_cycle)*3.14159265 / net.batches_per_cycle));
+                0.5*(net.learning_rate - net.learning_rate_min)
+                * (1. + cos((float)(batch_num - last_iteration_start)*3.14159265 / cycle_size));
 
             return rate;
+        }
         default:
             fprintf(stderr, "Policy is weird!\n");
             return net.learning_rate;
@@ -174,6 +212,10 @@ char *get_layer_string(LAYER_TYPE a)
             return "route";
         case SHORTCUT:
             return "shortcut";
+        case SCALE_CHANNELS:
+            return "scale_channels";
+        case SAM:
+            return "sam";
         case NORMALIZATION:
             return "normalization";
         case BATCHNORM:
@@ -281,6 +323,7 @@ void backward_network(network net, network_state state)
         }
         layer l = net.layers[i];
         if (l.stopbackward) break;
+        if (l.onlyforward) continue;
         l.backward(l, state);
     }
 }
@@ -315,6 +358,7 @@ float train_network_sgd(network net, data d, int n)
     float sum = 0;
     for(i = 0; i < n; ++i){
         get_random_batch(d, batch, X, y);
+        net.current_subdivision = i;
         float err = train_network_datum(net, X, y);
         sum += err;
     }
@@ -340,6 +384,7 @@ float train_network_waitkey(network net, data d, int wait_key)
     float sum = 0;
     for(i = 0; i < n; ++i){
         get_next_batch(d, batch, i*batch, X, y);
+        net.current_subdivision = i;
         float err = train_network_datum(net, X, y);
         sum += err;
         if(wait_key) wait_key_cv(5);
@@ -469,6 +514,8 @@ int resize_network(network *net, int w, int h)
         }
         else if (l.type == CRNN) {
             resize_crnn_layer(&l, w, h);
+        }else if (l.type == CONV_LSTM) {
+            resize_conv_lstm_layer(&l, w, h);
         }else if(l.type == CROP){
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
@@ -481,10 +528,14 @@ int resize_network(network *net, int w, int h)
             resize_route_layer(&l, net);
         }else if (l.type == SHORTCUT) {
             resize_shortcut_layer(&l, w, h);
+        //}else if (l.type == SCALE_CHANNELS) {
+        //    resize_scale_channels_layer(&l, w, h);
         }else if (l.type == UPSAMPLE) {
             resize_upsample_layer(&l, w, h);
         }else if(l.type == REORG){
             resize_reorg_layer(&l, w, h);
+        } else if (l.type == REORG_OLD) {
+            resize_reorg_old_layer(&l, w, h);
         }else if(l.type == AVGPOOL){
             resize_avgpool_layer(&l, w, h);
         }else if(l.type == NORMALIZATION){
@@ -798,6 +849,24 @@ float *network_predict_image(network *net, image im)
     return p;
 }
 
+float *network_predict_image_letterbox(network *net, image im)
+{
+    //image imr = letterbox_image(im, net->w, net->h);
+    float *p;
+    if (net->batch != 1) set_batch_network(net, 1);
+    if (im.w == net->w && im.h == net->h) {
+        // Input image is the same size as our net, predict on that image
+        p = network_predict(*net, im.data);
+    }
+    else {
+        // Need to resize image to the desired size for the net
+        image imr = letterbox_image(im, net->w, net->h);
+        p = network_predict(*net, imr.data);
+        free_image(imr);
+    }
+    return p;
+}
+
 int network_width(network *net) { return net->w; }
 int network_height(network *net) { return net->h; }
 
@@ -925,6 +994,7 @@ void free_network(network net)
     }
     free(net.layers);
 
+    free(net.seq_scales);
     free(net.scales);
     free(net.steps);
     free(net.seen);
@@ -967,14 +1037,16 @@ void fuse_conv_batchnorm(network net)
                 int f;
                 for (f = 0; f < l->n; ++f)
                 {
-                    l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
+                    //l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
+                    l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f] + .000001));
 
-                    const size_t filter_size = l->size*l->size*l->c;
+                    const size_t filter_size = l->size*l->size*l->c / l->groups;
                     int i;
                     for (i = 0; i < filter_size; ++i) {
                         int w_index = f*filter_size + i;
 
-                        l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
+                        //l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
+                        l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f] + .000001));
                     }
                 }
 
@@ -1110,4 +1182,41 @@ network combine_train_valid_networks(network net_train, network net_map)
         }
     }
     return net_combined;
+}
+
+void free_network_recurrent_state(network net)
+{
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        if (net.layers[k].type == CONV_LSTM) free_state_conv_lstm(net.layers[k]);
+        if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
+    }
+}
+
+void randomize_network_recurrent_state(network net)
+{
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        if (net.layers[k].type == CONV_LSTM) randomize_state_conv_lstm(net.layers[k]);
+        if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
+    }
+}
+
+
+void remember_network_recurrent_state(network net)
+{
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        if (net.layers[k].type == CONV_LSTM) remember_state_conv_lstm(net.layers[k]);
+        //if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
+    }
+}
+
+void restore_network_recurrent_state(network net)
+{
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        if (net.layers[k].type == CONV_LSTM) restore_state_conv_lstm(net.layers[k]);
+        if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
+    }
 }

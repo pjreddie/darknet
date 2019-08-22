@@ -112,6 +112,13 @@ char *option_find_str(list *l, char *key, char *def)
     return def;
 }
 
+char *option_find_str_quiet(list *l, char *key, char *def)
+{
+    char *v = option_find(l, key);
+    if (v) return v;
+    return def;
+}
+
 int option_find_int(list *l, char *key, int def)
 {
     char *v = option_find(l, key);

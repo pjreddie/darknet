@@ -621,6 +621,19 @@ float mag_array(float *a, int n)
     return sqrt(sum);
 }
 
+// indicies to skip is a bit array
+float mag_array_skip(float *a, int n, int * indices_to_skip)
+{
+    int i;
+    float sum = 0;
+    for (i = 0; i < n; ++i) {
+        if (indices_to_skip[i] != 1) {
+            sum += a[i] * a[i];
+        }
+    }
+    return sqrt(sum);
+}
+
 void scale_array(float *a, int n, float s)
 {
     int i;

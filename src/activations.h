@@ -17,10 +17,14 @@ char *get_activation_string(ACTIVATION a);
 float activate(float x, ACTIVATION a);
 float gradient(float x, ACTIVATION a);
 void gradient_array(const float *x, const int n, const ACTIVATION a, float *delta);
+void gradient_array_swish(const float *x, const int n, const float * sigmoid, float * delta);
 void activate_array(float *x, const int n, const ACTIVATION a);
+void activate_array_swish(float *x, const int n, float * output_sigmoid, float * output);
 #ifdef GPU
 void activate_array_ongpu(float *x, int n, ACTIVATION a);
+void activate_array_swish_ongpu(float *x, int n, float *output_sigmoid_gpu, float *output_gpu);
 void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta);
+void gradient_array_swish_ongpu(float *x, int n, float *sigmoid_gpu, float *delta);
 #endif
 
 static inline float stair_activate(float x)

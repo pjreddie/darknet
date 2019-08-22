@@ -1,6 +1,6 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#include <cuda_runtime.h>
+#include <curand.h>
+#include <cublas_v2.h>
 #include <assert.h>
 
 #include "blas.h"
@@ -414,6 +414,12 @@ __global__ void scal_kernel(int N, float ALPHA, float *X, int INCX)
     if(i < N) X[i*INCX] *= ALPHA;
 }
 
+__global__ void scal_add_kernel(int N, float ALPHA, float BETA, float *X, int INCX)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i < N) X[i*INCX] = X[i*INCX] * ALPHA + BETA;
+}
+
 __global__ void fill_kernel(int N, float ALPHA, float *X, int INCX)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -644,6 +650,12 @@ extern "C" void scal_ongpu(int N, float ALPHA, float * X, int INCX)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
+extern "C" void scal_add_ongpu(int N, float ALPHA, float BETA, float * X, int INCX)
+{
+    scal_add_kernel << <cuda_gridsize(N), BLOCK, 0, get_cuda_stream() >> >(N, ALPHA, BETA, X, INCX);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
 extern "C" void supp_ongpu(int N, float ALPHA, float * X, int INCX)
 {
     supp_kernel<<<cuda_gridsize(N), BLOCK, 0, get_cuda_stream() >>>(N, ALPHA, X, INCX);
@@ -737,7 +749,9 @@ extern "C" void input_shortcut_gpu(float *in, int batch, int w1, int h1, int c1,
     if (sample < 1) sample = 1;
 
     int size = batch * minw * minh * minc;
-    input_shortcut_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> >(in, size, minw, minh, minc, stride, sample, batch, w1, h1, c1, add, w2, h2, c2, out);
+    //input_shortcut_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> >(in, size, minw, minh, minc, stride, sample, batch, w1, h1, c1, add, w2, h2, c2, out);
+    simple_copy_ongpu(w2 * h2 * c2 * batch, in, out);
+    shortcut_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> >(size, minw, minh, minc, stride, sample, batch, w1, h1, c1, add, w2, h2, c2, out);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -983,7 +997,7 @@ __global__ void fix_nan_and_inf_kernel(float *input, size_t size)
     if (index < size) {
         float val = input[index];
         if (isnan(val) || isinf(val))
-            input[index] = index;  // pseudo random value
+            input[index] = 1.0f / index;  // pseudo random value
     }
 }
 
@@ -1021,4 +1035,186 @@ extern "C" int is_nan_or_inf(float *input, size_t size)
 
     CHECK_CUDA(cudaFreeHost(pinned_return));
     return ret_val;
+}
+
+__global__ void add_3_arrays_activate_kernel(float *a1, float *a2, float *a3, size_t size, ACTIVATION a, float *dst)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        float val = 0;
+        val += a1[index];
+        val += a2[index];
+        if (a3) val += a3[index];
+        if (a == LOGISTIC) val = 1.f / (1.f + expf(-val));
+        else if(a == TANH) val = (2 / (1 + expf(-2 * val)) - 1);
+        dst[index] = val;
+    }
+}
+
+extern "C" void add_3_arrays_activate(float *a1, float *a2, float *a3, size_t size, ACTIVATION a, float *dst)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    if (a != LOGISTIC && a != TANH) {
+        printf(" add_3_arrays_activate() doesn't support activation %d, it supports only LOGISTIC and TANH \n", a);
+        exit(EXIT_FAILURE);
+    }
+    add_3_arrays_activate_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(a1, a2, a3, size, a, dst);
+}
+
+
+__global__ void sum_of_mults_kernel(float *a1, float *a2, float *b1, float *b2, size_t size, float *dst)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        dst[index] = a1[index] * a2[index] + b1[index] * b2[index];
+    }
+}
+
+extern "C" void sum_of_mults(float *a1, float *a2, float *b1, float *b2,  size_t size, float *dst)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    sum_of_mults_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(a1, a2, b1, b2, size, dst);
+}
+
+
+__global__ void activate_and_mult_kernel(float *a1, float *a2, size_t size, ACTIVATION a, float *dst)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        float val = a1[index];
+        if (a == TANH) val = (2 / (1 + expf(-2 * val)) - 1);
+        dst[index] = val * a2[index];
+    }
+}
+
+extern "C" void activate_and_mult(float *a1, float *a2, size_t size, ACTIVATION a, float *dst)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    if (a != TANH) {
+        printf(" activat_and_mult() doesn't support activation %d, it supports only TANH \n", a);
+        exit(EXIT_FAILURE);
+    }
+    activate_and_mult_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(a1, a2, size, a, dst);
+}
+
+
+
+__global__ void scale_channels_kernel(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        out[index] = in_w_h_c[index] * scales_c[index / channel_size];
+    }
+}
+
+extern "C" void scale_channels_gpu(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    scale_channels_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(in_w_h_c, size, channel_size, scales_c, out);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+__inline__ __device__
+float warpAllReduceSum(float val) {
+    for (int mask = WARP_SIZE / 2; mask > 0; mask /= 2)
+#if CUDART_VERSION >= 9000
+        val += __shfl_xor_sync(0xffffffff, val, mask);
+#else
+        val += __shfl_xor(val, mask);
+#endif
+    return val;
+}
+
+__global__ void backward_scale_channels_kernel(float *in_w_h_c_delta, int size, int channel_size,
+    float *in_scales_c, float *out_from_delta,
+    float *in_from_output, float *out_state_delta)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    int osd_index = index / channel_size;
+
+    if (index < size) {
+        //out_state_delta[osd_index] += in_w_h_c_delta[index] * in_from_output[index]; // l.delta * from  (should be divided by channel_size?)
+
+        int warp_id = index / 32;
+        int index_warp_start = warp_id * 32;
+        int osd_index_warp_start = index_warp_start / channel_size;
+        int osd_index_warp_end = (index_warp_start + 31) / channel_size;
+
+        if (osd_index_warp_start == osd_index_warp_end) // all thread in warp process the same channel
+        {
+            float sum = warpAllReduceSum(in_w_h_c_delta[index] * in_from_output[index]); // l.delta * from
+            if (threadIdx.x % 32 == 0) {
+                atomicAdd(&out_state_delta[osd_index], sum);
+                //out_state_delta[osd_index] += sum;
+            }
+        }
+        else {
+            atomicAdd(&out_state_delta[osd_index], in_w_h_c_delta[index] * in_from_output[index]); // l.delta * from
+        }
+
+        out_from_delta[index] += in_scales_c[osd_index] * in_w_h_c_delta[index]; // input * l.delta  // atomic isn't required here
+    }
+}
+
+extern "C" void backward_scale_channels_gpu(float *in_w_h_c_delta, int size, int channel_size,
+    float *in_scales_c, float *out_from_delta,
+    float *in_from_output, float *out_state_delta)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    backward_scale_channels_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (in_w_h_c_delta, size, channel_size,
+        in_scales_c, out_from_delta,
+        in_from_output, out_state_delta);
+
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+__global__ void sam_kernel(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        out[index] = in_w_h_c[index] * scales_c[index];
+    }
+}
+
+extern "C" void sam_gpu(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    sam_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(in_w_h_c, size, channel_size, scales_c, out);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+__global__ void backward_sam_kernel(float *in_w_h_c_delta, int size, int channel_size,
+    float *in_scales_c, float *out_from_delta,
+    float *in_from_output, float *out_state_delta)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        out_state_delta[index] += in_w_h_c_delta[index] * in_from_output[index]; // l.delta * from  (should be divided by channel_size?)
+        out_from_delta[index] += in_scales_c[index] * in_w_h_c_delta[index]; // input * l.delta
+
+                                                                             //out_state_delta[index] += in_w_h_c_delta[index];
+                                                                             //out_from_delta[index] = in_w_h_c_delta[index];
+    }
+}
+
+extern "C" void backward_sam_gpu(float *in_w_h_c_delta, int size, int channel_size,
+    float *in_scales_c, float *out_from_delta,
+    float *in_from_output, float *out_state_delta)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    backward_sam_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (in_w_h_c_delta, size, channel_size,
+        in_scales_c, out_from_delta,
+        in_from_output, out_state_delta);
+
+    CHECK_CUDA(cudaPeekAtLastError());
 }

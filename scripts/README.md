@@ -2,6 +2,8 @@
 
 ### Datasets:
 
+BDD100K - Diverse Driving Video: https://bair.berkeley.edu/blog/2018/05/30/bdd/
+
 Pascal VOC: http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html
 
 MS COCO: http://cocodataset.org/#download
@@ -11,6 +13,8 @@ ImageNet: http://imagenet.stanford.edu/download.php
 ImageNet (ILSVRC2012): http://www.image-net.org/challenges/LSVRC/2012/nonpub-downloads
 
 ImageNet (ILSVRC2015): http://image-net.org/small/download.php
+
+ImageNet VID: http://bvisionweb1.cs.unc.edu/ilsvrc2015/download-videos-3j16.php
 
 Open Images: https://storage.googleapis.com/openimages/web/download.html
 

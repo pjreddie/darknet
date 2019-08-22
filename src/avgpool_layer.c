@@ -4,7 +4,7 @@
 
 avgpool_layer make_avgpool_layer(int batch, int w, int h, int c)
 {
-    fprintf(stderr, "avg                     %4d x%4d x%4d   ->  %4d\n",  w, h, c, c);
+    fprintf(stderr, "avg                          %4d x%4d x%4d ->   %4d\n",  w, h, c, c);
     avgpool_layer l = { (LAYER_TYPE)0 };
     l.type = AVGPOOL;
     l.batch = batch;

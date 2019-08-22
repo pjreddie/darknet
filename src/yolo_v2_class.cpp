@@ -22,6 +22,7 @@ extern "C" {
 #include <algorithm>
 #include <cmath>
 
+#define NFRAMES 3
 
 //static Detector* detector = NULL;
 static std::unique_ptr<Detector> detector;
@@ -70,6 +71,31 @@ int get_device_count() {
     return -1;
 #endif	// GPU
 }
+
+bool built_with_cuda(){
+#ifdef GPU
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool built_with_cudnn(){
+#ifdef CUDNN
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool built_with_opencv(){
+#ifdef OPENCV
+    return true;
+#else
+    return false;
+#endif
+}
+
 
 int get_device_name(int gpu, char* deviceName) {
 #ifdef GPU

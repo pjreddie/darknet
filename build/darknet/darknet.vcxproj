@@ -140,6 +140,8 @@
       <CompileAs>Default</CompileAs>
       <UndefinePreprocessorDefinitions>NDEBUG</UndefinePreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalUsingDirectories>
+      </AdditionalUsingDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -183,6 +185,7 @@
     <ClCompile Include="..\..\src\compare.c" />
     <ClCompile Include="..\..\src\connected_layer.c" />
     <ClCompile Include="..\..\src\convolutional_layer.c" />
+    <ClCompile Include="..\..\src\conv_lstm_layer.c" />
     <ClCompile Include="..\..\src\cost_layer.c" />
     <ClCompile Include="..\..\src\cpu_gemm.c" />
     <ClCompile Include="..\..\src\crnn_layer.c" />
@@ -223,6 +226,8 @@
     <ClCompile Include="..\..\src\rnn_layer.c" />
     <ClCompile Include="..\..\src\rnn_vid.c" />
     <ClCompile Include="..\..\src\route_layer.c" />
+    <ClCompile Include="..\..\src\sam_layer.c" />
+    <ClCompile Include="..\..\src\scale_channels_layer.c" />
     <ClCompile Include="..\..\src\shortcut_layer.c" />
     <ClCompile Include="..\..\src\softmax_layer.c" />
     <ClCompile Include="..\..\src\super.c" />
@@ -248,6 +253,7 @@
     <ClInclude Include="..\..\src\col2im.h" />
     <ClInclude Include="..\..\src\connected_layer.h" />
     <ClInclude Include="..\..\src\convolutional_layer.h" />
+    <ClInclude Include="..\..\src\conv_lstm_layer.h" />
     <ClInclude Include="..\..\src\cost_layer.h" />
     <ClInclude Include="..\..\src\crnn_layer.h" />
     <ClInclude Include="..\..\src\crop_layer.h" />
@@ -280,6 +286,8 @@
     <ClInclude Include="..\..\src\reorg_old_layer.h" />
     <ClInclude Include="..\..\src\rnn_layer.h" />
     <ClInclude Include="..\..\src\route_layer.h" />
+    <ClInclude Include="..\..\src\sam_layer.h" />
+    <ClInclude Include="..\..\src\scale_channels_layer.h" />
     <ClInclude Include="..\..\src\shortcut_layer.h" />
     <ClInclude Include="..\..\src\softmax_layer.h" />
     <ClInclude Include="..\..\src\stb_image.h" />
