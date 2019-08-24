@@ -16,12 +16,14 @@ then
   vcpkg_define="-DCMAKE_TOOLCHAIN_FILE=${vcpkg_path}/scripts/buildsystems/vcpkg.cmake"
   vcpkg_triplet_define="-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet"
   echo "Found vcpkg in VCPKG_ROOT: ${vcpkg_path}"
+  additional_defines="-DBUILD_SHARED_LIBS=OFF"
 elif [[ ! -z "${WORKSPACE}" ]] && [ -d ${WORKSPACE}/vcpkg ] && [ ! "$bypass_vcpkg" = true ]
 then
   vcpkg_path="${WORKSPACE}/vcpkg"
   vcpkg_define="-DCMAKE_TOOLCHAIN_FILE=${vcpkg_path}/scripts/buildsystems/vcpkg.cmake"
   vcpkg_triplet_define="-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet"
   echo "Found vcpkg in WORKSPACE/vcpkg: ${vcpkg_path}"
+  additional_defines="-DBUILD_SHARED_LIBS=OFF"
 elif [ ! "$bypass_vcpkg" = true ]
 then
   (>&2 echo "darknet is unsupported without vcpkg, use at your own risk!")
