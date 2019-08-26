@@ -233,10 +233,7 @@ extern "C"
 		for (i = 0; i < size; i++)
 		{
 			printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
-			//circle(*im, Point(points[i].x,points[i].y), 5, Scalar(0,0,255), -1);
-			im->at<Vec3b>(points[i].y,points[i].x)[2] = 255;
-			im->at<Vec3b>(points[i].y,points[i].x)[1] = 255;
-			im->at<Vec3b>(points[i].y,points[i].x)[0] = 255;
+			circle(newImage, Point(points[i].x,points[i].y), 5, Scalar(0,0,255), -1);
 		}
 		imshow("Original",newImage);
 		free(points);
