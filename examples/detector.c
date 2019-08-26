@@ -1073,7 +1073,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     sprintf(sec,"0%d",t->tm_sec);
                 
                 sprintf(days,"%s%s%s%s%s%s",year,month,day,hour,min,sec);
-
+                printf("%s,%s,%s,%s,%s,%s\n",year,month,day,hour,min,sec);
                 unsigned int seqkey;
 
                 seqkey = atoi(days);
