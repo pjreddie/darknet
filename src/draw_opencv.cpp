@@ -229,7 +229,7 @@ extern "C"
 		size = lists->size;
 		ListToArray1(lists, points);
 		printf("path : %s\n",file_url);
-		*im = imread(file_url,CV_LOAD_IMAGE_COLOR);
+		newImage = imread(file_url,CV_LOAD_IMAGE_COLOR);
 		for (i = 0; i < size; i++)
 		{
 			printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
@@ -238,7 +238,7 @@ extern "C"
 			im->at<Vec3b>(points[i].y,points[i].x)[1] = 255;
 			im->at<Vec3b>(points[i].y,points[i].x)[0] = 255;
 		}
-		imshow("Original",*im);
+		imshow("Original",newImage);
 		free(points);
 	}
 
