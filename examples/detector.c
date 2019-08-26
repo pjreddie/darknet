@@ -1046,6 +1046,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 char day[10];
                 char hour[10];
                 char min[10];
+                char sec[10];
                 if(t->tm_year + 1900 - 2000 >= 10)
                     sprintf(year,"%d",t->tm_year + 1900 - 2000);
                 else
@@ -1066,8 +1067,12 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     sprintf(min,"%d",t->tm_min);
                 else
                     sprintf(min,"0%d",t->tm_min);
-                sprintf(days,"%s%s%s%s%s",year,month,day,hour,min);
-                printf("%s\n",days);
+                if(t->tm_sec >= 10)
+                    sprintf(sec,"%d",t->tm_sec);
+                else
+                    sprintf(sec,"0%d",t->tm_sec);
+                
+                sprintf(days,"%s%s%s%s%s%s",year,month,day,hour,min,sec);
 
                 unsigned int seqkey;
 
@@ -1081,7 +1086,6 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 }
                 printf("poi : %s, su : %d seqkey : %d\n",poi,count,seqkey);
                 sprintf(data, "fname=테스트&poi=%s&su=%d&seqkey=%d", poi, count,seqkey);
-                printf("%s, %d\n", poi, z);
                 CURL *curl;
                 CURLcode res;
                 struct curl_slist *list = NULL;
