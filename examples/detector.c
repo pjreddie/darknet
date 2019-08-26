@@ -3,11 +3,9 @@
 #include <termio.h> 
 #include <fcntl.h>
 #include <curl/curl.h>
-<<<<<<< HEAD
 #include <time.h>
-=======
 #include <dirent.h>
->>>>>>> 9be3548ab036bf6100388739b07d38c730a6473b
+
 
 struct people{
     int camera;
