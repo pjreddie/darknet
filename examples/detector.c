@@ -880,7 +880,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
-    double time;
+    double times;
     char buff[256];
     char *input = buff;
     float nms=.45;
@@ -976,11 +976,11 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 layer l = net->layers[net->n-1];
 
                 float *X = sized.data;
-                time=what_time_is_it_now();
+                times=what_time_is_it_now();
                 if(cando == 1)
                 {
                     network_predict(net, X);
-                    printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+                    printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-times);
                     int nboxes = 0;
                     detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
                     if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
