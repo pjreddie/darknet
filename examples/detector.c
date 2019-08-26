@@ -1035,16 +1035,42 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
                 char data[512];
                 char poi[512];
-                char days[512];
-                int seqkey;
                 time_t timer;
                 struct tm *t;
+                char days[512];
+                timer = time(NULL);
 
-                timer = time(NULL); // 현재 시각을 초 단위로 얻기
+                t = localtime(&timer);
+                char year[10];
+                char month[10];
+                char day[10];
+                char hour[10];
+                char min[10];
+                if(t->tm_year + 1900 - 2000 >= 10)
+                    sprintf(year,"%d",t->tm_year + 1900 - 2000);
+                else
+                    sprintf(year,"0%d",t->tm_year + 1900 - 2000);
+                if(t->tm_mon + 1 >= 10)
+                    sprintf(month,"%d",t->tm_mon + 1);
+                else
+                    sprintf(month,"0%d",t->tm_mon+1);
+                if(t->tm_mday >= 10)
+                    sprintf(day,"%d",t->tm_mday);
+                else
+                    sprintf(day,"0%d",t->tm_mday);
+                if(t->tm_hour >= 10)
+                    sprintf(hour,"%d",t->tm_hour);
+                else
+                    sprintf(hour,"0%d",t->tm_hour);
+                if(t->tm_min >= 10)
+                    sprintf(min,"%d",t->tm_min);
+                else
+                    sprintf(min,"0%d",t->tm_min);
+                sprintf(days,"%s%s%s%s%s",year,month,day,hour,min);
+                printf("%s\n",days);
 
-                t = localtime(&timer); // 초 단위의 시간을 분리하여 구분
-                memset(days,'\0',sizeof(days));
-                sprintf(days,"%d%d%d%d%d%d",t->tm_year + 1900, t->tm_mon + 1 , t->tm_mday, t->tm_hour, t->tm_min,t->tm_sec);
+                unsigned int seqkey;
+
                 seqkey = atoi(days);
 
                 if (j < 10)
