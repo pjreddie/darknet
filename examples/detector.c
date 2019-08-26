@@ -1047,10 +1047,12 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 char hour[10];
                 char min[10];
                 char sec[10];
+                /*
                 if(t->tm_year + 1900 - 2000 >= 10)
                     sprintf(year,"%d",t->tm_year + 1900 - 2000);
                 else
                     sprintf(year,"0%d",t->tm_year + 1900 - 2000);
+                */
                 if(t->tm_mon + 1 >= 10)
                     sprintf(month,"%d",t->tm_mon + 1);
                 else
@@ -1072,7 +1074,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 else
                     sprintf(sec,"0%d",t->tm_sec);
                 
-                sprintf(days,"%s%s%s%s%s%s",year,month,day,hour,min,sec);
+                sprintf(days,"%s%s%s%s%s",month,day,hour,min,sec);
                 printf("%s,%s,%s,%s,%s,%s\n",year,month,day,hour,min,sec);
                 unsigned int seqkey;
 
