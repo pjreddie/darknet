@@ -3,6 +3,7 @@
 #include <termio.h> 
 #include <fcntl.h>
 #include <curl/curl.h>
+#include <time.h>
 
 struct people{
     int camera;
@@ -1032,14 +1033,26 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 //sprintf(url,"http://210.115.230.164:8080/People/UpdatePost");
                 char data[512];
                 char poi[512];
+                char days[512];
+                int seqkey;
+                time_t timer;
+                struct tm *t;
+
+                timer = time(NULL); // 현재 시각을 초 단위로 얻기
+
+                t = localtime(&timer); // 초 단위의 시간을 분리하여 구분
+                memset(days,'\0',sizeof(days));
+                sprintf(days,"%d%d%d%d%d%d",t->tm_year + 1900, t->tm_mon + 1 , t->tm_mday, t->tm_hour, t->tm_min,t->tm_sec);
+                seqkey = atoi(days);
+
                 if (j < 10)
                     sprintf(poi, "x0%d", j);
                 else
                 {
                     sprintf(poi, "x%d", j);
                 }
-                printf("poi : %s, su : %d\n",poi,count);
-                sprintf(data, "fname=테스트&poi=%s&su=%d", poi, count);
+                printf("poi : %s, su : %d seqkey : %d\n",poi,count,seqkey);
+                sprintf(data, "fname=테스트&poi=%s&su=%d&seqkey=%d", poi, count,seqkey);
                 printf("%s, %d\n", poi, z);
                 CURL *curl;
                 CURLcode res;
