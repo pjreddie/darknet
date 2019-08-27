@@ -34,8 +34,8 @@ void cudnn_maxpool_setup(layer *l)
         l->size,
         l->pad/2, //0, //l.pad,
         l->pad/2, //0, //l.pad,
-        l->stride,
-        l->stride);
+        l->stride_x,
+        l->stride_y);
 
     cudnnCreateTensorDescriptor(&l->srcTensorDesc);
     cudnnCreateTensorDescriptor(&l->dstTensorDesc);
@@ -45,7 +45,7 @@ void cudnn_maxpool_setup(layer *l)
 }
 
 
-maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride, int padding, int maxpool_depth, int out_channels)
+maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride_x, int stride_y, int padding, int maxpool_depth, int out_channels)
 {
     maxpool_layer l = { (LAYER_TYPE)0 };
     l.type = MAXPOOL;
@@ -62,14 +62,16 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
         l.out_h = l.h;
     }
     else {
-        l.out_w = (w + padding - size) / stride + 1;
-        l.out_h = (h + padding - size) / stride + 1;
+        l.out_w = (w + padding - size) / stride_x + 1;
+        l.out_h = (h + padding - size) / stride_y + 1;
         l.out_c = c;
     }
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = h*w*c;
     l.size = size;
-    l.stride = stride;
+    l.stride = stride_x;
+    l.stride_x = stride_x;
+    l.stride_y = stride_y;
     int output_size = l.out_h * l.out_w * l.out_c * batch;
     l.indexes = (int*)calloc(output_size, sizeof(int));
     l.output = (float*)calloc(output_size, sizeof(float));
@@ -87,7 +89,11 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
 
     #endif  // GPU
 	l.bflops = (l.size*l.size*l.c * l.out_h*l.out_w) / 1000000000.;
-    fprintf(stderr, "max               %d x %d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+    if(stride_x == stride_y)
+        fprintf(stderr, "max               %d x %d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+    else
+        fprintf(stderr, "max             %d x %d/%2dx%2d %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, stride_y, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+
     return l;
 }
 
@@ -97,8 +103,8 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     l->w = w;
     l->inputs = h*w*l->c;
 
-    l->out_w = (w + l->pad - l->size) / l->stride + 1;
-    l->out_h = (h + l->pad - l->size) / l->stride + 1;
+    l->out_w = (w + l->pad - l->size) / l->stride_x + 1;
+    l->out_h = (h + l->pad - l->size) / l->stride_y + 1;
     l->outputs = l->out_w * l->out_h * l->out_c;
     int output_size = l->outputs * l->batch;
 
@@ -151,7 +157,7 @@ void forward_maxpool_layer(const maxpool_layer l, network_state state)
     }
 
 
-    if (!state.train) {
+    if (!state.train && l.stride_x == l.stride_y) {
         forward_maxpool_layer_avx(state.input, l.output, l.indexes, l.size, l.w, l.h, l.out_w, l.out_h, l.c, l.pad, l.stride, l.batch);
         return;
     }
@@ -173,8 +179,8 @@ void forward_maxpool_layer(const maxpool_layer l, network_state state)
                     int max_i = -1;
                     for(n = 0; n < l.size; ++n){
                         for(m = 0; m < l.size; ++m){
-                            int cur_h = h_offset + i*l.stride + n;
-                            int cur_w = w_offset + j*l.stride + m;
+                            int cur_h = h_offset + i*l.stride_y + n;
+                            int cur_w = w_offset + j*l.stride_x + m;
                             int index = cur_w + l.w*(cur_h + l.h*(k + b*l.c));
                             int valid = (cur_h >= 0 && cur_h < l.h &&
                                          cur_w >= 0 && cur_w < l.w);

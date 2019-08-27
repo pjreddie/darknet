@@ -49,10 +49,10 @@ __global__ void backward_maxpool_depth_layer_kernel(int n, int w, int h, int c, 
 }
 
 
-__global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, int pad, float *input, float *output, int *indexes)
+__global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride_x, int stride_y, int size, int pad, float *input, float *output, int *indexes)
 {
-    int h = (in_h + pad - size) / stride + 1;
-    int w = (in_w + pad - size) / stride + 1;
+    int h = (in_h + pad - size) / stride_y + 1;
+    int w = (in_w + pad - size) / stride_x + 1;
     int c = in_c;
 
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -75,8 +75,8 @@ __global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c
     int l, m;
     for(l = 0; l < size; ++l){
         for(m = 0; m < size; ++m){
-            int cur_h = h_offset + i*stride + l;
-            int cur_w = w_offset + j*stride + m;
+            int cur_h = h_offset + i*stride_y + l;
+            int cur_w = w_offset + j*stride_x + m;
             int index = cur_w + in_w*(cur_h + in_h*(k + b*in_c));
             int valid = (cur_h >= 0 && cur_h < in_h &&
                     cur_w >= 0 && cur_w < in_w);
@@ -89,12 +89,13 @@ __global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c
     indexes[out_index] = max_i;
 }
 
-__global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, int pad, float *delta, float *prev_delta, int *indexes)
+__global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride_x, int stride_y, int size, int pad, float *delta, float *prev_delta, int *indexes)
 {
-    int h = (in_h + pad - size) / stride + 1;
-    int w = (in_w + pad - size) / stride + 1;
+    int h = (in_h + pad - size) / stride_y + 1;
+    int w = (in_w + pad - size) / stride_x + 1;
     int c = in_c;
-    int area = (size-1)/stride;
+    int area_x = (size - 1) / stride_x;
+    int area_y = (size - 1) / stride_y;
 
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(id >= n) return;
@@ -113,10 +114,10 @@ __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_
 
     float d = 0;
     int l, m;
-    for(l = -area; l < area+1; ++l){
-        for(m = -area; m < area+1; ++m){
-            int out_w = (j-w_offset)/stride + m;
-            int out_h = (i-h_offset)/stride + l;
+    for(l = -area_y; l < area_y+1; ++l){
+        for(m = -area_x; m < area_x+1; ++m){
+            int out_w = (j-w_offset)/stride_x + m;
+            int out_h = (i-h_offset)/stride_y + l;
             int out_index = out_w + w*(out_h + h*(k + c*b));
             int valid = (out_w >= 0 && out_w < w &&
                      out_h >= 0 && out_h < h);
@@ -172,7 +173,7 @@ extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state sta
 
     size_t n = h*w*c*layer.batch;
 
-    forward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.pad, state.input, layer.output_gpu, layer.indexes_gpu);
+    forward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(n, layer.h, layer.w, layer.c, layer.stride_x, layer.stride_y, layer.size, layer.pad, state.input, layer.output_gpu, layer.indexes_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -192,6 +193,6 @@ extern "C" void backward_maxpool_layer_gpu(maxpool_layer layer, network_state st
 
     size_t n = layer.h*layer.w*layer.c*layer.batch;
 
-    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.pad, layer.delta_gpu, state.delta, layer.indexes_gpu);
+    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(n, layer.h, layer.w, layer.c, layer.stride_x, layer.stride_y, layer.size, layer.pad, layer.delta_gpu, state.delta, layer.indexes_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }

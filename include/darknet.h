@@ -208,6 +208,8 @@ struct layer {
     int size;
     int side;
     int stride;
+    int stride_x;
+    int stride_y;
     int dilation;
     int maxpool_depth;
     int out_channels;
