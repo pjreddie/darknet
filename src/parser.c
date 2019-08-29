@@ -1327,12 +1327,6 @@ void load_convolutional_weights_binary(layer l, FILE *fp)
 #endif
 }
 
-void check_read_size(size_t read_bytes, int required_bytes)
-{
-    if (read_bytes > 0 && read_bytes < required_bytes) return 0;
-    return 1;
-}
-
 void load_convolutional_weights(layer l, FILE *fp)
 {
     if(l.binary){
