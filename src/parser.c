@@ -1334,12 +1334,12 @@ void load_convolutional_weights(layer l, FILE *fp)
         //return;
     }
     int num = l.nweights;
-    if (fread(l.biases, sizeof(float), l.n, fp) < l.n) printf("\n Warning: Unexpected end of wights-file! \n");
+    if (fread(l.biases, sizeof(float), l.n, fp) < l.n) printf("\n Warning: Unexpected end of wights-file! l.biase - l.index = %d \n", l.index);
     //fread(l.weights, sizeof(float), num, fp); // as in connected layer
     if (l.batch_normalize && (!l.dontloadscales)){
-        if(fread(l.scales, sizeof(float), l.n, fp) < l.n) printf("\n Warning: Unexpected end of wights-file! \n");
-        if(fread(l.rolling_mean, sizeof(float), l.n, fp) < l.n) printf("\n Warning: Unexpected end of wights-file! \n");
-        if(fread(l.rolling_variance, sizeof(float), l.n, fp) < l.n) printf("\n Warning: Unexpected end of wights-file! \n");
+        if(fread(l.scales, sizeof(float), l.n, fp) < l.n) printf("\n Warning: Unexpected end of wights-file! l.scales - l.index = %d \n", l.index);
+        if(fread(l.rolling_mean, sizeof(float), l.n, fp) < l.n) printf("\n Warning: Unexpected end of wights-file! l.rolling_mean - l.index = %d \n", l.index);
+        if(fread(l.rolling_variance, sizeof(float), l.n, fp) < l.n) printf("\n Warning: Unexpected end of wights-file! l.rolling_variance - l.index = %d \n", l.index);
         if(0){
             int i;
             for(i = 0; i < l.n; ++i){
@@ -1356,7 +1356,7 @@ void load_convolutional_weights(layer l, FILE *fp)
             fill_cpu(l.n, 0, l.rolling_variance, 1);
         }
     }
-    if(fread(l.weights, sizeof(float), num, fp) < num) printf("\n Warning: Unexpected end of wights-file! \n");
+    if(fread(l.weights, sizeof(float), num, fp) < num) printf("\n Warning: Unexpected end of wights-file! l.weights - l.index = %d \n", l.index);
     //if(l.adam){
     //    fread(l.m, sizeof(float), num, fp);
     //    fread(l.v, sizeof(float), num, fp);
