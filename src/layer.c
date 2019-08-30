@@ -12,6 +12,7 @@ void free_sublayer(layer *l)
 
 void free_layer(layer l)
 {
+    if (l.share_layer != NULL) return;    // don't free shared layers
     if (l.type == CONV_LSTM) {
         if (l.peephole) {
             free_sublayer(l.vf);
