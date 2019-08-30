@@ -1082,7 +1082,6 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
 
                 seqkey = atoi(days);
                 */
-                seqkey += 1;
                 if (j < 10)
                     sprintf(poi, "x0%d", j);
                 else
@@ -1120,6 +1119,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 }
 
             }// end for function
+            seqkey+=1;
             wait = 50;
             usleep(100*1000);
         }//end if function
