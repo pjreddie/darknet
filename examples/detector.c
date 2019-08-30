@@ -889,6 +889,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     int i;
     int z= 0;
     Points pointArray[10];//좌표 정보 저장[]
+    unsigned int seqkey;
     for(i = 0 ; i < 10 ; i++)
     {
         pointArray[i].size = 0;
@@ -1053,6 +1054,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 else
                     sprintf(year,"0%d",t->tm_year + 1900 - 2000);
                 */
+               /*
                 if(t->tm_mon + 1 >= 10)
                     sprintf(month,"%d",t->tm_mon + 1);
                 else
@@ -1076,10 +1078,11 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 
                 sprintf(days,"%s%s%s%s%s",month,day,hour,min,sec);
                 printf("%s,%s,%s,%s,%s,%s\n",year,month,day,hour,min,sec);
-                unsigned int seqkey;
+                
 
                 seqkey = atoi(days);
-
+                */
+                seqkey += 1;
                 if (j < 10)
                     sprintf(poi, "x0%d", j);
                 else
