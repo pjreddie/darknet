@@ -550,6 +550,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.bflops = (2.0 * l.nweights * l.out_h*l.out_w) / 1000000000.;
     if (l.xnor && l.use_bin_output) fprintf(stderr, "convXB");
     else if (l.xnor) fprintf(stderr, "convX ");
+    else if(l.share_layer) fprintf(stderr, "convS ");
     else fprintf(stderr, "conv  ");
 
     if(groups > 1) fprintf(stderr, "%5d/%4d ", n, groups);

@@ -1033,6 +1033,10 @@ void fuse_conv_batchnorm(network net)
         if (l->type == CONVOLUTIONAL) {
             //printf(" Merges Convolutional-%d and batch_norm \n", j);
 
+            if (l->share_layer != NULL) {
+                l->batch_normalize = 0;
+            }
+
             if (l->batch_normalize) {
                 int f;
                 for (f = 0; f < l->n; ++f)
