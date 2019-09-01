@@ -332,7 +332,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, convolutional_layer *share_layer)
+convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, int antialiasing, convolutional_layer *share_layer)
 {
     int total_batch = batch*steps;
     int i;
@@ -341,6 +341,13 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     if (xnor) groups = 1;   // disable groups for XNOR-net
     if (groups < 1) groups = 1;
+
+    const int blur_stride_x = stride_x;
+    const int blur_stride_y = stride_y;
+    l.antialiasing = antialiasing;
+    if (antialiasing) {
+        stride_x = stride_y = l.stride = l.stride_x = l.stride_y = 1; // use stride=1 in host-layer
+    }
 
     l.share_layer = share_layer;
     l.index = index;
@@ -568,6 +575,47 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     //fprintf(stderr, "%5d/%2d %2d x%2d /%2d(%d)%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", n, groups, size, size, stride, dilation, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
+    if (l.antialiasing) {
+        printf("AA: ");
+        l.input_layer = (layer*)calloc(1, sizeof(layer));
+        const int blur_size = 3;
+        *(l.input_layer) = make_convolutional_layer(batch, steps, out_h, out_w, n, n, n, blur_size, blur_stride_x, blur_stride_y, 1, blur_size / 2, LINEAR, 0, 0, 0, 0, 0, index, 0, NULL);
+        const int blur_nweights = n * blur_size * blur_size;  // (n / n) * n * blur_size * blur_size;
+        int i;
+        for (i = 0; i < blur_nweights; i += (blur_size*blur_size)) {
+            /*
+            l.input_layer->weights[i + 0] = 0;
+            l.input_layer->weights[i + 1] = 0;
+            l.input_layer->weights[i + 2] = 0;
+
+            l.input_layer->weights[i + 3] = 0;
+            l.input_layer->weights[i + 4] = 1;
+            l.input_layer->weights[i + 5] = 0;
+
+            l.input_layer->weights[i + 6] = 0;
+            l.input_layer->weights[i + 7] = 0;
+            l.input_layer->weights[i + 8] = 0;
+            */
+            l.input_layer->weights[i + 0] = 1 / 16.f;
+            l.input_layer->weights[i + 1] = 2 / 16.f;
+            l.input_layer->weights[i + 2] = 1 / 16.f;
+
+            l.input_layer->weights[i + 3] = 2 / 16.f;
+            l.input_layer->weights[i + 4] = 4 / 16.f;
+            l.input_layer->weights[i + 5] = 2 / 16.f;
+
+            l.input_layer->weights[i + 6] = 1 / 16.f;
+            l.input_layer->weights[i + 7] = 2 / 16.f;
+            l.input_layer->weights[i + 8] = 1 / 16.f;
+
+        }
+        for (i = 0; i < n; ++i) l.input_layer->biases[i] = 0;
+#ifdef GPU
+        l.input_antialiasing_gpu = cuda_make_array(NULL, l.batch*l.outputs);
+        push_convolutional_layer(*(l.input_layer));
+#endif  // GPU
+    }
+
     return l;
 }
 
@@ -588,7 +636,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 
 void test_convolutional_layer()
 {
-    convolutional_layer l = make_convolutional_layer(1, 1, 5, 5, 3, 2, 1, 5, 2, 2, 1, 1, LEAKY, 1, 0, 0, 0, 0, 0, NULL);
+    convolutional_layer l = make_convolutional_layer(1, 1, 5, 5, 3, 2, 1, 5, 2, 2, 1, 1, LEAKY, 1, 0, 0, 0, 0, 0, 0, NULL);
     l.batch_normalize = 1;
     float data[] = {1,1,1,1,1,
         1,1,1,1,1,

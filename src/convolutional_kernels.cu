@@ -604,10 +604,34 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     if (state.net.try_fix_nan) {
         fix_nan_and_inf(l.output_gpu, l.outputs*l.batch);
     }
+
+    if (l.antialiasing) {
+        network_state s = { 0 };
+        s.train = state.train;
+        s.workspace = state.workspace;
+        s.net = state.net;
+        if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
+        s.input = l.output_gpu;
+        forward_convolutional_layer_gpu(*(l.input_layer), s);
+        simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.input_antialiasing_gpu);
+        simple_copy_ongpu(l.input_layer->outputs*l.input_layer->batch, l.input_layer->output_gpu, l.output_gpu);
+    }
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
+    if (l.antialiasing) {
+        network_state s = { 0 };
+        s.train = state.train;
+        s.workspace = state.workspace;
+        s.net = state.net;
+        s.delta = l.delta_gpu;
+        s.input = l.input_antialiasing_gpu;
+        //if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
+        simple_copy_ongpu(l.input_layer->outputs*l.input_layer->batch, l.delta_gpu, l.input_layer->delta_gpu);
+        backward_convolutional_layer_gpu(*(l.input_layer), s);
+    }
+
     if(state.net.try_fix_nan) constrain_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
 
     if (l.activation == SWISH) gradient_array_swish_ongpu(l.output_gpu, l.outputs*l.batch, l.output_sigmoid_gpu, l.delta_gpu);

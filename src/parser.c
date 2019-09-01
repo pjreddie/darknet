@@ -161,6 +161,7 @@ convolutional_layer parse_convolutional(list *options, size_params params, netwo
     int stride_x = option_find_int_quiet(options, "stride_x", stride);
     int stride_y = option_find_int_quiet(options, "stride_y", stride);
     int dilation = option_find_int_quiet(options, "dilation", 1);
+    int antialiasing = option_find_int_quiet(options, "antialiasing", 0);
     if (size == 1) dilation = 1;
     int pad = option_find_int_quiet(options, "pad",0);
     int padding = option_find_int_quiet(options, "padding",0);
@@ -185,7 +186,7 @@ convolutional_layer parse_convolutional(list *options, size_params params, netwo
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride_x,stride_y,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, share_layer);
+    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride_x,stride_y,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, antialiasing, share_layer);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
     layer.assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
@@ -991,10 +992,18 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         n = n->next;
         ++count;
         if(n){
-            params.h = l.out_h;
-            params.w = l.out_w;
-            params.c = l.out_c;
-            params.inputs = l.outputs;
+            if (l.antialiasing) {
+                params.h = l.input_layer->out_h;
+                params.w = l.input_layer->out_w;
+                params.c = l.input_layer->out_c;
+                params.inputs = l.input_layer->outputs;
+            }
+            else {
+                params.h = l.out_h;
+                params.w = l.out_w;
+                params.c = l.out_c;
+                params.inputs = l.outputs;
+            }
         }
         if (l.bflops > 0) bflops += l.bflops;
     }
