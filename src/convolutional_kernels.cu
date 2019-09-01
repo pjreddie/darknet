@@ -177,7 +177,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             fast_binarize_weights_gpu(l.weights_gpu, l.n, (l.c / l.groups)*l.size*l.size, l.binary_weights_gpu, l.mean_arr_gpu);
         }
 
-        if (l.align_bit_weights_gpu && !state.train && l.c >= 32)
+        if (l.align_bit_weights_gpu && !state.train && l.c >= 32 && l.stride_x == l.stride_y)
         {
             //return;
             //cudaError_t status = cudaSuccess;
@@ -574,7 +574,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                     l.h, l.w,               // input size (h, w)
                     l.size, l.size,         // kernel size (h, w)
                     l.pad, l.pad,           // padding (h, w)
-                    l.stride, l.stride,     // stride (h, w)
+                    l.stride_y, l.stride_x,     // stride (h, w)
                     l.dilation, l.dilation, // dilation (h, w)
                     state.workspace);       // output
 
@@ -819,7 +819,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 l.h, l.w,               // input size (h, w)
                 l.size, l.size,         // kernel size (h, w)
                 l.pad, l.pad,           // padding (h, w)
-                l.stride, l.stride,     // stride (h, w)
+                l.stride_y, l.stride_x,     // stride (h, w)
                 l.dilation, l.dilation, // dilation (h, w)
                 state.workspace);       // output
             //gemm_ongpu(0, 1, m, n, k, 1, a + i*m*k, k, b, k, 1, c, n);
@@ -844,7 +844,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                     l.h, l.w,               // input size (h, w)
                     l.size, l.size,         // kernel size (h, w)
                     l.pad, l.pad,           // padding size (h, w)
-                    l.stride, l.stride,     // stride size (h, w)
+                    l.stride_y, l.stride_x,     // stride size (h, w)
                     l.dilation, l.dilation, // dilation size (h, w)
                     delta);                 // output (delta)
 
