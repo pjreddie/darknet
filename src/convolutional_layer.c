@@ -1135,6 +1135,18 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     //wait_until_press_key_cv();
 
     if(l.assisted_excitation && state.train) assisted_excitation_forward(l, state);
+
+    if (l.antialiasing) {
+        network_state s = { 0 };
+        s.train = state.train;
+        s.workspace = state.workspace;
+        s.net = state.net;
+        if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
+        s.input = l.output;
+        forward_convolutional_layer(*(l.input_layer), s);
+        //simple_copy_ongpu(l.outputs*l.batch, l.output, l.input_antialiasing);
+        memcpy(l.output, l.input_layer->output, l.input_layer->outputs * l.input_layer->batch * sizeof(float));
+    }
 }
 
 static box float_to_box_stride(float *f, int stride)
