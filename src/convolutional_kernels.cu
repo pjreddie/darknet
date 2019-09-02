@@ -605,6 +605,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         fix_nan_and_inf(l.output_gpu, l.outputs*l.batch);
     }
 
+    if(l.assisted_excitation && state.train) assisted_excitation_forward_gpu(l, state);
+
     if (l.antialiasing) {
         network_state s = { 0 };
         s.train = state.train;
@@ -888,6 +890,195 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         fix_nan_and_inf(l.weight_updates_gpu, size);
         fix_nan_and_inf(l.weights_gpu, size);
     }
+}
+
+static box float_to_box_stride(float *f, int stride)
+{
+    box b = { 0 };
+    b.x = f[0];
+    b.y = f[1 * stride];
+    b.w = f[2 * stride];
+    b.h = f[3 * stride];
+    return b;
+}
+
+__global__ void calc_avg_activation_kernel(float *src, float *dst, int size, int channels, int batches)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int xy = i % size;
+    int b = i / size;
+
+    if (i < size*batches) {
+        dst[i] = 0;
+        for (int c = 0; c < channels; ++c) {
+            dst[i] += src[xy + size*(c + channels*b)];
+        }
+        dst[i] = dst[i] / channels;
+    }
+}
+
+#include <iostream>
+
+void calc_avg_activation_gpu(float *src, float *dst, int size, int channels, int batches)
+{
+    const int num_blocks = get_number_of_blocks(size*batches, BLOCK);
+
+    std::cout << " size = " << size << ",  channels = " << channels << ", batches = " << batches << std::endl;
+    calc_avg_activation_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (src, dst, size, channels, batches);
+}
+
+
+__global__ void assisted_activation_kernel(float alpha, float *output, float *gt_gpu, float *a_avg_gpu, int size, int channels, int batches)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int xy = i % size;
+    int b = i / size;
+
+    if (b < batches) {
+        for (int c = 0; c < channels; ++c) {
+            output[xy + size*(c + channels*b)] += alpha * gt_gpu[i] * a_avg_gpu[i];
+        }
+    }
+}
+
+void assisted_activation_gpu(float alpha, float *output, float *gt_gpu, float *a_avg_gpu, int size, int channels, int batches)
+{
+    const int num_blocks = get_number_of_blocks(size*batches, BLOCK);
+
+    assisted_activation_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (alpha, output, gt_gpu, a_avg_gpu, size, channels, batches);
+}
+
+void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
+{
+    const int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
+
+    // epoch
+    const float epoch = (float)(*state.net.seen) / state.net.train_images_num;
+
+    // calculate alpha
+    //const float alpha = (1 + cos(3.141592 * iteration_num)) / (2 * state.net.max_batches);
+    //const float alpha = (1 + cos(3.141592 * epoch)) / (2 * state.net.max_batches);
+    const float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches)) / 2;
+
+    //printf("\n epoch = %f, alpha = %f, seen = %d, max_batches = %d, train_images_num = %d \n",
+    //    epoch, alpha, (*state.net.seen), state.net.max_batches, state.net.train_images_num);
+
+    //const int size = l.outputs * l.batch;
+
+    float *a_avg = (float *)calloc(l.out_w * l.out_h * l.batch, sizeof(float));
+    float *gt = (float *)calloc(l.out_w * l.out_h * l.batch, sizeof(float));
+
+    int b;
+    int w, h, c;
+
+    l.max_boxes = state.net.num_boxes;
+    l.truths = l.max_boxes*(4 + 1);
+
+    int num_truth = l.batch*l.truths;
+    float *truth_cpu = (float *)calloc(num_truth, sizeof(float));
+    cuda_pull_array(state.truth, truth_cpu, num_truth);
+    //cudaStreamSynchronize(get_cuda_stream());
+    //CHECK_CUDA(cudaPeekAtLastError());
+
+    for (b = 0; b < l.batch; ++b)
+    {
+        // calculate G
+        int t;
+        for (t = 0; t < state.net.num_boxes; ++t) {
+            box truth = float_to_box_stride(truth_cpu + t*(4 + 1) + b*l.truths, 1);
+            if (!truth.x) break;  // continue;
+
+            int left = floor((truth.x - truth.w / 2) * l.out_w);
+            int right = ceil((truth.x + truth.w / 2) * l.out_w);
+            int top = floor((truth.y - truth.h / 2) * l.out_h);
+            int bottom = ceil((truth.y + truth.h / 2) * l.out_h);
+
+            for (w = left; w <= right; w++) {
+                for (h = top; h < bottom; h++) {
+                    gt[w + l.out_w * h + l.out_w*l.out_h*b] = 1;
+                }
+            }
+        }
+    }
+
+    cuda_push_array(l.gt_gpu, gt, l.out_w * l.out_h * l.batch);
+    //cudaStreamSynchronize(get_cuda_stream());
+    //CHECK_CUDA(cudaPeekAtLastError());
+
+    // calc avg_output on GPU - for whole batch
+    calc_avg_activation_gpu(l.output_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);
+    //cudaStreamSynchronize(get_cuda_stream());
+    //CHECK_CUDA(cudaPeekAtLastError());
+
+    // calc new output
+    assisted_activation_gpu(alpha, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);
+    //cudaStreamSynchronize(get_cuda_stream());
+    //CHECK_CUDA(cudaPeekAtLastError());
+
+
+
+    /*
+    for (b = 0; b < l.batch; ++b)
+    {
+        // calculate average A
+        for (w = 0; w < l.out_w; w++) {
+            for (h = 0; h < l.out_h; h++) {
+                for (c = 0; c < l.out_c; c++) {
+                    a_avg[w + l.out_w*(h + l.out_h*b)] += l.output[w + l.out_w*(h + l.out_h*(c + l.out_c*b))];
+                }
+                a_avg[w + l.out_w*(h + l.out_h*b)] /= l.out_c;  // a_avg / d
+            }
+        }
+    }
+
+    // change activation
+    for (b = 0; b < l.batch; ++b)
+    {
+        for (w = 0; w < l.out_w; w++) {
+            for (h = 0; h < l.out_h; h++) {
+                for (c = 0; c < l.out_c; c++)
+                {
+                    // a = a + alpha(t) + e(c,i,j) = a + alpha(t) + g(i,j) * avg_a(i,j) / channels
+                    l.output[w + l.out_w*(h + l.out_h*(c + l.out_c*b))] +=
+                        alpha *
+                        g[w + l.out_w*(h + l.out_h*b)] *
+                        a_avg[w + l.out_w*(h + l.out_h*b)];
+
+                    //l.output[w + l.out_w*(h + l.out_h*(c + l.out_c*b))] =
+                    //    alpha * g[w + l.out_w*(h + l.out_h*b)] * a_avg[w + l.out_w*(h + l.out_h*b)];
+                }
+            }
+        }
+    }
+    */
+
+    if (0)   // visualize ground truth
+    {
+#ifdef OPENCV
+        cuda_pull_array(l.output_gpu, l.output, l.outputs * l.batch);
+        cudaStreamSynchronize(get_cuda_stream());
+        CHECK_CUDA(cudaPeekAtLastError());
+
+        for (b = 0; b < l.batch; ++b)
+        {
+            image img = float_to_image(l.out_w, l.out_h, 1, &gt[l.out_w*l.out_h*b]);
+            char buff[100];
+            sprintf(buff, "a_excitation_%d", b);
+            show_image_cv(img, buff);
+
+            image img2 = float_to_image(l.out_w, l.out_h, 1, &l.output[l.out_w*l.out_h*l.out_c*b]);
+            char buff2[100];
+            sprintf(buff2, "a_excitation_act_%d", b);
+            show_image_cv(img2, buff2);
+            wait_key_cv(5);
+        }
+        wait_until_press_key_cv();
+#endif // OPENCV
+    }
+
+    free(truth_cpu);
+    free(gt);
+    free(a_avg);
 }
 
 void pull_convolutional_layer(convolutional_layer l)

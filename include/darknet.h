@@ -537,6 +537,9 @@ struct layer {
     float * rand_gpu;
     float * squared_gpu;
     float * norms_gpu;
+
+    float *gt_gpu;
+    float *a_avg_gpu;
 #ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
     cudnnTensorDescriptor_t srcTensorDesc16, dstTensorDesc16;

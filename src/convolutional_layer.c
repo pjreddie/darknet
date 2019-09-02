@@ -332,7 +332,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, int antialiasing, convolutional_layer *share_layer)
+convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, int antialiasing, convolutional_layer *share_layer, int assisted_excitation)
 {
     int total_batch = batch*steps;
     int i;
@@ -349,6 +349,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         stride_x = stride_y = l.stride = l.stride_x = l.stride_y = 1; // use stride=1 in host-layer
     }
 
+    l.assisted_excitation = assisted_excitation;
     l.share_layer = share_layer;
     l.index = index;
     l.h = h;
@@ -503,7 +504,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 #ifdef CUDNN_HALF
             l.weights_gpu16 = cuda_make_array(NULL, l.nweights / 2 + 1);
             l.weight_updates_gpu16 = cuda_make_array(NULL, l.nweights / 2 + 1);
-#endif
+#endif  // CUDNN_HALF
             l.biases_gpu = cuda_make_array(l.biases, n);
             l.bias_updates_gpu = cuda_make_array(l.bias_updates, n);
         }
@@ -547,19 +548,27 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
             l.x_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
             l.x_norm_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
         }
+
+        if (l.assisted_excitation)
+        {
+            const int size = l.out_w * l.out_h * l.batch;
+            l.gt_gpu = cuda_make_array(NULL, size);
+            l.a_avg_gpu = cuda_make_array(NULL, size);
+        }
 #ifdef CUDNN
         create_convolutional_cudnn_tensors(&l);
         cudnn_convolutional_setup(&l, cudnn_fastest);
-#endif
+#endif  // CUDNN
     }
-#endif
+#endif  // GPU
     l.workspace_size = get_convolutional_workspace_size(l);
 
     //fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c);
     l.bflops = (2.0 * l.nweights * l.out_h*l.out_w) / 1000000000.;
     if (l.xnor && l.use_bin_output) fprintf(stderr, "convXB");
     else if (l.xnor) fprintf(stderr, "convX ");
-    else if(l.share_layer) fprintf(stderr, "convS ");
+    else if (l.share_layer) fprintf(stderr, "convS ");
+    else if (l.assisted_excitation) fprintf(stderr, "convAE");
     else fprintf(stderr, "conv  ");
 
     if (groups > 1) fprintf(stderr, "%5d/%4d ", n, groups);
@@ -579,7 +588,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         printf("AA:  ");
         l.input_layer = (layer*)calloc(1, sizeof(layer));
         const int blur_size = 3;
-        *(l.input_layer) = make_convolutional_layer(batch, steps, out_h, out_w, n, n, n, blur_size, blur_stride_x, blur_stride_y, 1, blur_size / 2, LINEAR, 0, 0, 0, 0, 0, index, 0, NULL);
+        *(l.input_layer) = make_convolutional_layer(batch, steps, out_h, out_w, n, n, n, blur_size, blur_stride_x, blur_stride_y, 1, blur_size / 2, LINEAR, 0, 0, 0, 0, 0, index, 0, NULL, 0);
         const int blur_nweights = n * blur_size * blur_size;  // (n / n) * n * blur_size * blur_size;
         int i;
         for (i = 0; i < blur_nweights; i += (blur_size*blur_size)) {
@@ -636,7 +645,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 
 void test_convolutional_layer()
 {
-    convolutional_layer l = make_convolutional_layer(1, 1, 5, 5, 3, 2, 1, 5, 2, 2, 1, 1, LEAKY, 1, 0, 0, 0, 0, 0, 0, NULL);
+    convolutional_layer l = make_convolutional_layer(1, 1, 5, 5, 3, 2, 1, 5, 2, 2, 1, 1, LEAKY, 1, 0, 0, 0, 0, 0, 0, NULL, 0);
     l.batch_normalize = 1;
     float data[] = {1,1,1,1,1,
         1,1,1,1,1,
@@ -1236,7 +1245,7 @@ void assisted_excitation_forward(convolutional_layer l, network_state state)
         }
     }
 
-    if(0)   // visualize ground truth
+    if(1)   // visualize ground truth
     {
 #ifdef OPENCV
         for (b = 0; b < l.batch; ++b)

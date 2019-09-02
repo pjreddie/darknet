@@ -107,7 +107,7 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
         printf("AA:  ");
         l.input_layer = (layer*)calloc(1, sizeof(layer));
         const int blur_size = 3;
-        *(l.input_layer) = make_convolutional_layer(batch, 1, l.out_h, l.out_w, l.out_c, l.out_c, l.out_c, blur_size, blur_stride_x, blur_stride_y, 1, blur_size / 2, LINEAR, 0, 0, 0, 0, 0, 1, 0, NULL);
+        *(l.input_layer) = make_convolutional_layer(batch, 1, l.out_h, l.out_w, l.out_c, l.out_c, l.out_c, blur_size, blur_stride_x, blur_stride_y, 1, blur_size / 2, LINEAR, 0, 0, 0, 0, 0, 1, 0, NULL, 0);
         const int blur_nweights = l.out_c * blur_size * blur_size;  // (n / n) * n * blur_size * blur_size;
         int i;
         for (i = 0; i < blur_nweights; i += (blur_size*blur_size)) {
