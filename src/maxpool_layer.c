@@ -1,4 +1,5 @@
 #include "maxpool_layer.h"
+#include "convolutional_layer.h"
 #include "dark_cuda.h"
 #include "gemm.h"
 #include <stdio.h>
@@ -45,10 +46,18 @@ void cudnn_maxpool_setup(layer *l)
 }
 
 
-maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride_x, int stride_y, int padding, int maxpool_depth, int out_channels)
+maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride_x, int stride_y, int padding, int maxpool_depth, int out_channels, int antialiasing)
 {
     maxpool_layer l = { (LAYER_TYPE)0 };
     l.type = MAXPOOL;
+
+    const int blur_stride_x = stride_x;
+    const int blur_stride_y = stride_y;
+    l.antialiasing = antialiasing;
+    if (antialiasing) {
+        stride_x = stride_y = l.stride = l.stride_x = l.stride_y = 1; // use stride=1 in host-layer
+    }
+
     l.batch = batch;
     l.h = h;
     l.w = w;
@@ -93,6 +102,46 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
         fprintf(stderr, "max               %d x %d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
     else
         fprintf(stderr, "max             %d x %d/%2dx%2d %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, stride_y, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+
+    if (l.antialiasing) {
+        printf("AA:  ");
+        l.input_layer = (layer*)calloc(1, sizeof(layer));
+        const int blur_size = 3;
+        *(l.input_layer) = make_convolutional_layer(batch, 1, l.out_h, l.out_w, l.out_c, l.out_c, l.out_c, blur_size, blur_stride_x, blur_stride_y, 1, blur_size / 2, LINEAR, 0, 0, 0, 0, 0, 1, 0, NULL);
+        const int blur_nweights = l.out_c * blur_size * blur_size;  // (n / n) * n * blur_size * blur_size;
+        int i;
+        for (i = 0; i < blur_nweights; i += (blur_size*blur_size)) {
+            /*
+            l.input_layer->weights[i + 0] = 0;
+            l.input_layer->weights[i + 1] = 0;
+            l.input_layer->weights[i + 2] = 0;
+
+            l.input_layer->weights[i + 3] = 0;
+            l.input_layer->weights[i + 4] = 1;
+            l.input_layer->weights[i + 5] = 0;
+
+            l.input_layer->weights[i + 6] = 0;
+            l.input_layer->weights[i + 7] = 0;
+            l.input_layer->weights[i + 8] = 0;
+            */
+            l.input_layer->weights[i + 0] = 1 / 16.f;
+            l.input_layer->weights[i + 1] = 2 / 16.f;
+            l.input_layer->weights[i + 2] = 1 / 16.f;
+
+            l.input_layer->weights[i + 3] = 2 / 16.f;
+            l.input_layer->weights[i + 4] = 4 / 16.f;
+            l.input_layer->weights[i + 5] = 2 / 16.f;
+
+            l.input_layer->weights[i + 6] = 1 / 16.f;
+            l.input_layer->weights[i + 7] = 2 / 16.f;
+            l.input_layer->weights[i + 8] = 1 / 16.f;
+        }
+        for (i = 0; i < l.out_c; ++i) l.input_layer->biases[i] = 0;
+#ifdef GPU
+        l.input_antialiasing_gpu = cuda_make_array(NULL, l.batch*l.outputs);
+        push_convolutional_layer(*(l.input_layer));
+#endif  // GPU
+    }
 
     return l;
 }
@@ -159,41 +208,53 @@ void forward_maxpool_layer(const maxpool_layer l, network_state state)
 
     if (!state.train && l.stride_x == l.stride_y) {
         forward_maxpool_layer_avx(state.input, l.output, l.indexes, l.size, l.w, l.h, l.out_w, l.out_h, l.c, l.pad, l.stride, l.batch);
-        return;
     }
+    else {
 
-    int b,i,j,k,m,n;
-    int w_offset = -l.pad / 2;
-    int h_offset = -l.pad / 2;
+        int b, i, j, k, m, n;
+        int w_offset = -l.pad / 2;
+        int h_offset = -l.pad / 2;
 
-    int h = l.out_h;
-    int w = l.out_w;
-    int c = l.c;
+        int h = l.out_h;
+        int w = l.out_w;
+        int c = l.c;
 
-    for(b = 0; b < l.batch; ++b){
-        for(k = 0; k < c; ++k){
-            for(i = 0; i < h; ++i){
-                for(j = 0; j < w; ++j){
-                    int out_index = j + w*(i + h*(k + c*b));
-                    float max = -FLT_MAX;
-                    int max_i = -1;
-                    for(n = 0; n < l.size; ++n){
-                        for(m = 0; m < l.size; ++m){
-                            int cur_h = h_offset + i*l.stride_y + n;
-                            int cur_w = w_offset + j*l.stride_x + m;
-                            int index = cur_w + l.w*(cur_h + l.h*(k + b*l.c));
-                            int valid = (cur_h >= 0 && cur_h < l.h &&
-                                         cur_w >= 0 && cur_w < l.w);
-                            float val = (valid != 0) ? state.input[index] : -FLT_MAX;
-                            max_i = (val > max) ? index : max_i;
-                            max   = (val > max) ? val   : max;
+        for (b = 0; b < l.batch; ++b) {
+            for (k = 0; k < c; ++k) {
+                for (i = 0; i < h; ++i) {
+                    for (j = 0; j < w; ++j) {
+                        int out_index = j + w*(i + h*(k + c*b));
+                        float max = -FLT_MAX;
+                        int max_i = -1;
+                        for (n = 0; n < l.size; ++n) {
+                            for (m = 0; m < l.size; ++m) {
+                                int cur_h = h_offset + i*l.stride_y + n;
+                                int cur_w = w_offset + j*l.stride_x + m;
+                                int index = cur_w + l.w*(cur_h + l.h*(k + b*l.c));
+                                int valid = (cur_h >= 0 && cur_h < l.h &&
+                                    cur_w >= 0 && cur_w < l.w);
+                                float val = (valid != 0) ? state.input[index] : -FLT_MAX;
+                                max_i = (val > max) ? index : max_i;
+                                max = (val > max) ? val : max;
+                            }
                         }
+                        l.output[out_index] = max;
+                        l.indexes[out_index] = max_i;
                     }
-                    l.output[out_index] = max;
-                    l.indexes[out_index] = max_i;
                 }
             }
         }
+    }
+
+    if (l.antialiasing) {
+        network_state s = { 0 };
+        s.train = state.train;
+        s.workspace = state.workspace;
+        s.net = state.net;
+        s.input = l.output;
+        forward_convolutional_layer(*(l.input_layer), s);
+        //simple_copy_ongpu(l.outputs*l.batch, l.output, l.input_antialiasing);
+        memcpy(l.output, l.input_layer->output, l.input_layer->outputs * l.input_layer->batch * sizeof(float));
     }
 }
 

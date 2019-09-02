@@ -3,6 +3,8 @@
 #include <cublas_v2.h>
 
 #include "maxpool_layer.h"
+#include "convolutional_layer.h"
+#include "blas.h"
 #include "dark_cuda.h"
 
 __global__ void forward_maxpool_depth_layer_kernel(int n, int w, int h, int c, int out_c, int batch, float *input, float *output, int *indexes)
@@ -163,22 +165,47 @@ extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state sta
         //cudnnDestroyTensorDescriptor(layer.srcTensorDesc);
         //cudnnDestroyTensorDescriptor(layer.dstTensorDesc);
 
-        return;
     }
+    else
 #endif
+    {
+        int h = layer.out_h;
+        int w = layer.out_w;
+        int c = layer.out_c;
 
-    int h = layer.out_h;
-    int w = layer.out_w;
-    int c = layer.out_c;
+        size_t n = h*w*c*layer.batch;
 
-    size_t n = h*w*c*layer.batch;
+        forward_maxpool_layer_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, layer.h, layer.w, layer.c, layer.stride_x, layer.stride_y, layer.size, layer.pad, state.input, layer.output_gpu, layer.indexes_gpu);
+        CHECK_CUDA(cudaPeekAtLastError());
+    }
 
-    forward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(n, layer.h, layer.w, layer.c, layer.stride_x, layer.stride_y, layer.size, layer.pad, state.input, layer.output_gpu, layer.indexes_gpu);
-    CHECK_CUDA(cudaPeekAtLastError());
+    if (layer.antialiasing) {
+        network_state s = { 0 };
+        s.train = state.train;
+        s.workspace = state.workspace;
+        s.net = state.net;
+        if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
+        s.input = layer.output_gpu;
+        forward_convolutional_layer_gpu(*(layer.input_layer), s);
+        simple_copy_ongpu(layer.outputs*layer.batch, layer.output_gpu, layer.input_antialiasing_gpu);
+        simple_copy_ongpu(layer.input_layer->outputs*layer.input_layer->batch, layer.input_layer->output_gpu, layer.output_gpu);
+    }
 }
 
 extern "C" void backward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
+    if (layer.antialiasing) {
+        network_state s = { 0 };
+        s.train = state.train;
+        s.workspace = state.workspace;
+        s.net = state.net;
+        s.delta = layer.delta_gpu;
+        s.input = layer.input_antialiasing_gpu;
+        //if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
+        simple_copy_ongpu(layer.input_layer->outputs*layer.input_layer->batch, layer.delta_gpu, layer.input_layer->delta_gpu);
+        backward_convolutional_layer_gpu(*(layer.input_layer), s);
+    }
+
     if (layer.maxpool_depth) {
         int h = layer.out_h;
         int w = layer.out_w;

@@ -576,7 +576,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     //fprintf(stderr, "%5d/%2d %2d x%2d /%2d(%d)%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", n, groups, size, size, stride, dilation, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
     if (l.antialiasing) {
-        printf("AA: ");
+        printf("AA:  ");
         l.input_layer = (layer*)calloc(1, sizeof(layer));
         const int blur_size = 3;
         *(l.input_layer) = make_convolutional_layer(batch, steps, out_h, out_w, n, n, n, blur_size, blur_stride_x, blur_stride_y, 1, blur_size / 2, LINEAR, 0, 0, 0, 0, 0, index, 0, NULL);
@@ -1141,7 +1141,6 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         s.train = state.train;
         s.workspace = state.workspace;
         s.net = state.net;
-        if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
         s.input = l.output;
         forward_convolutional_layer(*(l.input_layer), s);
         //simple_copy_ongpu(l.outputs*l.batch, l.output, l.input_antialiasing);
