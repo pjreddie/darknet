@@ -1,4 +1,5 @@
 #include "shortcut_layer.h"
+#include "convolutional_layer.h"
 #include "dark_cuda.h"
 #include "blas.h"
 #include <stdio.h>
