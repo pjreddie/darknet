@@ -601,6 +601,7 @@ layer parse_batchnorm(list *options, size_params params)
 
 layer parse_shortcut(list *options, size_params params, network net)
 {
+    int assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
     char *l = option_find(options, "from");
     int index = atoi(l);
     if(index < 0) index = params.index + index;
@@ -608,7 +609,7 @@ layer parse_shortcut(list *options, size_params params, network net)
     int batch = params.batch;
     layer from = net.layers[index];
 
-    layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
+    layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c, assisted_excitation);
 
     char *activation_s = option_find_str(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);

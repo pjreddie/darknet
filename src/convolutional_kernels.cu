@@ -917,13 +917,10 @@ __global__ void calc_avg_activation_kernel(float *src, float *dst, int size, int
     }
 }
 
-#include <iostream>
-
 void calc_avg_activation_gpu(float *src, float *dst, int size, int channels, int batches)
 {
     const int num_blocks = get_number_of_blocks(size*batches, BLOCK);
 
-    std::cout << " size = " << size << ",  channels = " << channels << ", batches = " << batches << std::endl;
     calc_avg_activation_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (src, dst, size, channels, batches);
 }
 
@@ -937,6 +934,9 @@ __global__ void assisted_activation_kernel(float alpha, float *output, float *gt
     if (b < batches) {
         for (int c = 0; c < channels; ++c) {
             output[xy + size*(c + channels*b)] += alpha * gt_gpu[i] * a_avg_gpu[i];
+            //output[xy + size*(c + channels*b)] += gt_gpu[i] * a_avg_gpu[i];
+            //output[xy + size*(c + channels*b)] += gt_gpu[i] * output[xy + size*(c + channels*b)];
+            //output[xy + size*(c + channels*b)] = a_avg_gpu[i];
         }
     }
 }
@@ -953,12 +953,18 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
     const int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
 
     // epoch
-    const float epoch = (float)(*state.net.seen) / state.net.train_images_num;
+    //const float epoch = (float)(*state.net.seen) / state.net.train_images_num;
 
     // calculate alpha
     //const float alpha = (1 + cos(3.141592 * iteration_num)) / (2 * state.net.max_batches);
     //const float alpha = (1 + cos(3.141592 * epoch)) / (2 * state.net.max_batches);
-    const float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches)) / 2;
+    //const float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches)) / 2;
+    float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches));
+
+    if (l.assisted_excitation > 1) {
+        if (iteration_num > l.assisted_excitation) alpha = 0;
+        else alpha = (1 + cos(3.141592 * iteration_num / l.assisted_excitation));
+    }
 
     //printf("\n epoch = %f, alpha = %f, seen = %d, max_batches = %d, train_images_num = %d \n",
     //    epoch, alpha, (*state.net.seen), state.net.max_batches, state.net.train_images_num);
@@ -969,7 +975,7 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
     float *gt = (float *)calloc(l.out_w * l.out_h * l.batch, sizeof(float));
 
     int b;
-    int w, h, c;
+    int w, h;
 
     l.max_boxes = state.net.num_boxes;
     l.truths = l.max_boxes*(4 + 1);
@@ -1061,15 +1067,28 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
 
         for (b = 0; b < l.batch; ++b)
         {
+            printf(" Assisted Excitation alpha = %f \n", alpha);
             image img = float_to_image(l.out_w, l.out_h, 1, &gt[l.out_w*l.out_h*b]);
             char buff[100];
             sprintf(buff, "a_excitation_%d", b);
             show_image_cv(img, buff);
 
-            image img2 = float_to_image(l.out_w, l.out_h, 1, &l.output[l.out_w*l.out_h*l.out_c*b]);
+            //image img2 = float_to_image(l.out_w, l.out_h, 1, &l.output[l.out_w*l.out_h*l.out_c*b]);
+            image img2 = float_to_image_scaled(l.out_w, l.out_h, 1, &l.output[l.out_w*l.out_h*l.out_c*b]);
             char buff2[100];
             sprintf(buff2, "a_excitation_act_%d", b);
             show_image_cv(img2, buff2);
+
+            /*
+            int c = l.out_c;
+            if (c > 4) c = 4;
+            image img3 = float_to_image(l.out_w, l.out_h, c, &l.output[l.out_w*l.out_h*l.out_c*b]);
+            image dc = collapse_image_layers(img3, 1);
+            char buff3[100];
+            sprintf(buff3, "a_excitation_act_collapsed_%d", b);
+            show_image_cv(dc, buff3);
+            */
+
             wait_key_cv(5);
         }
         wait_until_press_key_cv();

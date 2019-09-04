@@ -79,6 +79,7 @@ void print_image(image m);
 //LIB_API image make_image(int w, int h, int c);
 image make_random_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);
+image float_to_image_scaled(int w, int h, int c, float *data);
 image float_to_image(int w, int h, int c, float *data);
 image copy_image(image p);
 image load_image(char *filename, int w, int h, int c);

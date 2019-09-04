@@ -157,6 +157,10 @@ void free_layer(layer l)
     if (l.x_gpu)                   cuda_free(l.x_gpu);  // dont free
     if (l.x_norm_gpu)              cuda_free(l.x_norm_gpu);
 
+    // assisted excitation
+    if (l.gt_gpu)                  cuda_free(l.gt_gpu);
+    if (l.a_avg_gpu)               cuda_free(l.a_avg_gpu);
+
     if (l.align_bit_weights_gpu)   cuda_free((float *)l.align_bit_weights_gpu);
     if (l.mean_arr_gpu)            cuda_free(l.mean_arr_gpu);
     if (l.align_workspace_gpu)     cuda_free(l.align_workspace_gpu);
