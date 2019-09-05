@@ -223,7 +223,7 @@ void copy(double *x, double *y, int n)
 
 void error(char *s){
     fprintf(stderr, "Error: %s\n", s);
-    exit(0);
+    exit(-1);
 }
 
 char *fgetl(FILE *fp)
