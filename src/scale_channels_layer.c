@@ -13,7 +13,7 @@ layer make_scale_channels_layer(int batch, int index, int w, int h, int c, int w
     l.w = w;
     l.h = h;
     l.c = c;
-    assert(w == 1 & h == 1);
+    assert(w == 1 && h == 1);
 
     l.out_w = w2;
     l.out_h = h2;

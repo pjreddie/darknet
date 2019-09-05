@@ -18,7 +18,7 @@ layer make_sam_layer(int batch, int index, int w, int h, int c, int w2, int h2, 
     l.out_h = h2;
     l.out_c = c2;
     assert(l.out_c == l.c);
-    assert(l.w == l.out_w & l.h == l.out_h);
+    assert(l.w == l.out_w && l.h == l.out_h);
 
     l.outputs = l.out_w*l.out_h*l.out_c;
     l.inputs = l.outputs;

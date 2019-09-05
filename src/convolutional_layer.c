@@ -574,7 +574,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     if (groups > 1) fprintf(stderr, "%5d/%4d ", n, groups);
     else           fprintf(stderr, "%5d      ", n);
 
-    if (stride_x != stride_y) fprintf(stderr, "%2d x%2d/%2dx%2d ", size, size, stride_x, stride_y);
+    if (stride_x != stride_y) fprintf(stderr, "%2dx%2d/%2dx%2d ", size, size, stride_x, stride_y);
     else {
         if (dilation > 1) fprintf(stderr, "%2d x%2d/%2d(%1d)", size, size, stride_x, dilation);
         else             fprintf(stderr, "%2d x%2d/%2d   ", size, size, stride_x);

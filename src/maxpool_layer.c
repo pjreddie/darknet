@@ -98,10 +98,12 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
 
     #endif  // GPU
 	l.bflops = (l.size*l.size*l.c * l.out_h*l.out_w) / 1000000000.;
-    if(stride_x == stride_y)
-        fprintf(stderr, "max               %d x %d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+    if (maxpool_depth)
+        fprintf(stderr, "max-depth         %2dx%2d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+    else if(stride_x == stride_y)
+        fprintf(stderr, "max               %2dx%2d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
     else
-        fprintf(stderr, "max             %d x %d/%2dx%2d %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, stride_y, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+        fprintf(stderr, "max              %2dx%2d/%2dx%2d %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, stride_y, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
     if (l.antialiasing) {
         printf("AA:  ");
