@@ -117,7 +117,6 @@ cudaStream_t get_cuda_stream() {
         if (status != cudaSuccess) {
             printf(" cudaStreamCreate error: %d \n", status);
             const char *s = cudaGetErrorString(status);
-            char buffer[256];
             printf("CUDA Error: %s\n", s);
             status = cudaStreamCreateWithFlags(&streamsArray[i], cudaStreamDefault);
             CHECK_CUDA(status);
@@ -138,7 +137,6 @@ cudaStream_t get_cuda_memcpy_stream() {
         if (status != cudaSuccess) {
             printf(" cudaStreamCreate-Memcpy error: %d \n", status);
             const char *s = cudaGetErrorString(status);
-            char buffer[256];
             printf("CUDA Error: %s\n", s);
             status = cudaStreamCreateWithFlags(&streamsArray2[i], cudaStreamDefault);
             CHECK_CUDA(status);
@@ -159,6 +157,7 @@ cudnnHandle_t cudnn_handle()
         cudnnCreate(&handle[i]);
         init[i] = 1;
         cudnnStatus_t status = cudnnSetStream(handle[i], get_cuda_stream());
+        CHECK_CUDA(status);
     }
     return handle[i];
 }
@@ -287,7 +286,7 @@ int *cuda_make_int_array_new_api(int *x, size_t n)
     CHECK_CUDA(status);
 	if (x) {
 		//status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
-        cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
+        status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
         CHECK_CUDA(status);
 	}
 	if (!x_gpu) error("Cuda malloc failed\n");
