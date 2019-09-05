@@ -1040,7 +1040,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 struct tm *t;
                 char days[512];
                 timer = time(NULL);
-
+                /*
                 t = localtime(&timer);
                 char year[10];
                 char month[10];
@@ -1048,6 +1048,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                 char hour[10];
                 char min[10];
                 char sec[10];
+                */
                 /*
                 if(t->tm_year + 1900 - 2000 >= 10)
                     sprintf(year,"%d",t->tm_year + 1900 - 2000);
@@ -1120,7 +1121,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
 
             }// end for function
             seqkey+=1;
-            wait = 50;
+            wait = 600;
+            //wait = 50; // 5초
             usleep(100*1000);
         }//end if function
         
