@@ -1,3 +1,6 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,8 +42,13 @@ int *read_map(char *filename)
     while((str=fgetl(file))){
         ++n;
         map = (int*)realloc(map, n * sizeof(int));
+        if(!map) {
+          error("realloc failed");
+        }
         map[n-1] = atoi(str);
+        free(str);
     }
+    fclose(file);
     return map;
 }
 
@@ -173,13 +181,15 @@ void pm(int M, int N, float *A)
 
 void find_replace(const char* str, char* orig, char* rep, char* output)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
+    char* buffer = strdup(str);
+    if(!buffer) {
+        error("strdup failed");
+    }
     char *p;
-
-    sprintf(buffer, "%s", str);
     if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
-        sprintf(output, "%s", str);
-        free(buffer);
+        if(str!=output) {
+            strcpy(output,str);
+        }
         return;
     }
 
@@ -191,8 +201,10 @@ void find_replace(const char* str, char* orig, char* rep, char* output)
 
 void trim(char *str)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
-    sprintf(buffer, "%s", str);
+    char* buffer = strdup(str);
+    if(!buffer) {
+        error("strdup failed");
+    }
 
     char *p = buffer;
     while (*p == ' ' || *p == '\t') ++p;
@@ -202,27 +214,23 @@ void trim(char *str)
         *end = '\0';
         --end;
     }
-    sprintf(str, "%s", p);
-
+    strcpy(str,p);
     free(buffer);
 }
 
 void find_replace_extension(char *str, char *orig, char *rep, char *output)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
-
-    sprintf(buffer, "%s", str);
-    char *p = strstr(buffer, orig);
-    int offset = (p - buffer);
-    int chars_from_end = strlen(buffer) - offset;
-    if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
-        sprintf(output, "%s", str);
-        free(buffer);
-        return;
+    char* buffer = strdup(str);
+    if(!buffer) {
+        error("strdup failed");
     }
-
-    *p = '\0';
-    sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
+    char *p = strstr(buffer, orig);
+    if (p && *(p+strlen(orig)) == '\0') {
+        *p = '\0';
+        sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
+    } else if(str!=output) {
+        strcpy(output,str);
+    }
     free(buffer);
 }
 
@@ -685,9 +693,9 @@ int max_index(float *a, int n)
 
 int top_max_index(float *a, int n, int k)
 {
+    if (n <= 0) return -1;
     float *values = (float*)calloc(k, sizeof(float));
     int *indexes = (int*)calloc(k, sizeof(int));
-    if (n <= 0) return -1;
     int i, j;
     for (i = 0; i < n; ++i) {
         for (j = 0; j < k; ++j) {

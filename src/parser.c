@@ -672,8 +672,8 @@ layer parse_upsample(list *options, size_params params, network net)
 route_layer parse_route(list *options, size_params params, network net)
 {
     char *l = option_find(options, "layers");
-    int len = strlen(l);
     if(!l) error("Route Layer must specify input layers");
+    int len = strlen(l);
     int n = 1;
     int i;
     for(i = 0; i < len; ++i){
@@ -958,7 +958,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 #endif
         }
         else if (lt == EMPTY) {
-            layer empty_layer;
+            layer empty_layer={0};
             empty_layer.out_w = params.w;
             empty_layer.out_h = params.h;
             empty_layer.out_c = params.c;
@@ -1484,10 +1484,11 @@ void load_weights(network *net, char *filename)
 // load network & force - set batch size
 network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 {
-    printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
+    printf(" Try to load cfg: %s, clear = %d \n", cfg, clear);
     network* net = (network*)calloc(1, sizeof(network));
     *net = parse_network_cfg_custom(cfg, batch, 0);
     if (weights && weights[0] != 0) {
+        printf(" Try to load weights: %s \n", weights);
         load_weights(net, weights);
     }
     if (clear) (*net->seen) = 0;
@@ -1497,10 +1498,11 @@ network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 // load network & get batch size from cfg-file
 network *load_network(char *cfg, char *weights, int clear)
 {
-    printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
+    printf(" Try to load cfg: %s, clear = %d \n", cfg, clear);
     network* net = (network*)calloc(1, sizeof(network));
     *net = parse_network_cfg(cfg);
     if (weights && weights[0] != 0) {
+        printf(" Try to load weights: %s \n", weights);
         load_weights(net, weights);
     }
     if (clear) (*net->seen) = 0;

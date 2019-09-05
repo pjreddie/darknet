@@ -203,7 +203,7 @@ void delta_yolo_class(float *output, float *delta, int index, int class_id, int 
 
             delta[index + stride*n] *= alpha*grad;
 
-            if (n == class_id) *avg_cat += output[index + stride*n];
+            if (n == class_id && avg_cat) *avg_cat += output[index + stride*n];
         }
     }
     else {

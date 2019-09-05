@@ -15,6 +15,9 @@ int *read_tokenized_data(char *filename, size_t *read)
     size_t count = 0;
     FILE *fp = fopen(filename, "r");
     int* d = (int*)calloc(size, sizeof(int));
+    if(!d) {
+      error("calloc failed");
+    }
     int n, one;
     one = fscanf(fp, "%d", &n);
     while(one == 1){
@@ -22,12 +25,18 @@ int *read_tokenized_data(char *filename, size_t *read)
         if(count > size){
             size = size*2;
             d = (int*)realloc(d, size * sizeof(int));
+            if(!d) {
+              error("realloc failed");
+            }
         }
         d[count-1] = n;
         one = fscanf(fp, "%d", &n);
     }
     fclose(fp);
     d = (int*)realloc(d, count * sizeof(int));
+    if(!d) {
+      error("realloc failed");
+    }
     *read = count;
     return d;
 }
@@ -44,11 +53,17 @@ char **read_tokens(char *filename, size_t *read)
         if(count > size){
             size = size*2;
             d = (char**)realloc(d, size * sizeof(char*));
+            if(!d) {
+              error("realloc failed");
+            }
         }
         d[count-1] = line;
     }
     fclose(fp);
     d = (char**)realloc(d, count * sizeof(char*));
+    if(!d) {
+      error("realloc failed");
+    }
     *read = count;
     return d;
 }
