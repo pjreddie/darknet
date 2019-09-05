@@ -251,6 +251,7 @@ void kmeans_maximization(matrix data, int *assignments, matrix centers)
             if(centers.vals[i][j] == 0) centers.vals[i][j] = old_centers.vals[i][j];
         }
     }
+    free(counts);
     free_matrix(old_centers);
 }
 

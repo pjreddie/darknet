@@ -193,6 +193,9 @@ box_label *read_boxes(char *filename, int *n)
     int count = 0;
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
         boxes = (box_label*)realloc(boxes, (count + 1) * sizeof(box_label));
+        if(!boxes) {
+          error("realloc failed");
+        }
         boxes[count].id = id;
         boxes[count].x = x;
         boxes[count].y = y;
@@ -878,7 +881,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int pbot = rand_precalc_random(-dh, dh, r4);
             //printf("\n pleft = %d, pright = %d, ptop = %d, pbot = %d, ow = %d, oh = %d \n", pleft, pright, ptop, pbot, ow, oh);
 
-            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
+            //float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
 
             if (letter_box)
             {
@@ -969,10 +972,9 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 #else    // OPENCV
 void blend_images(image new_img, float alpha, image old_img, float beta)
 {
-    int i;
     int data_size = new_img.w * new_img.h * new_img.c;
     #pragma omp parallel for
-    for (i = 0; i < data_size; ++i)
+    for (int i = 0; i < data_size; ++i)
         new_img.data[i] = new_img.data[i] * alpha + old_img.data[i] * beta;
 }
 
@@ -1594,8 +1596,8 @@ data *split_data(data d, int part, int total)
     int i;
     int start = part*d.X.rows/total;
     int end = (part+1)*d.X.rows/total;
-    data train;
-    data test;
+    data train ={0};
+    data test ={0};
     train.shallow = test.shallow = 1;
 
     test.X.rows = test.y.rows = end-start;

@@ -204,6 +204,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     free_ptrs((void**)labels, classes);
     free_ptrs((void**)paths, plist->size);
     free_list(plist);
+    free(nets);
     free(base);
 }
 
@@ -458,6 +459,7 @@ void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
 
         printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
+    free(indexes);
 }
 
 void validate_classifier_full(char *datacfg, char *filename, char *weightfile)

@@ -49,7 +49,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         char *name_list = option_find_str(options, "names", "data/names.list");
         int names_size = 0;
-        char **names = get_labels_custom(name_list, &names_size);
         if (net_classes != names_size) {
             printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
                 name_list, names_size, net_classes, cfgfile);
@@ -159,13 +158,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //printf(" imgs = %d \n", imgs);
 
     pthread_t load_thread = load_data(args);
-    double time;
     int count = 0;
     //while(i*imgs < N*120){
     while (get_current_batch(net) < net.max_batches) {
         if (l.random && count++ % 10 == 0) {
             printf("Resizing\n");
-            float random_val = rand_scale(1.4);    // *x or /x
+            float random_val = rand_scale(1.4f);    // *x or /x
             int dim_w = roundl(random_val*init_w / 32 + 1) * 32;
             int dim_h = roundl(random_val*init_h / 32 + 1) * 32;
 
@@ -192,7 +190,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             }
             net = nets[0];
         }
-        time = what_time_is_it_now();
+        double time = what_time_is_it_now();
         pthread_join(load_thread, 0);
         train = buffer;
         if (net.track) {
@@ -381,7 +379,7 @@ static void print_cocos(FILE *fp, char *image_path, detection *dets, int num_box
         float bh = ymax - ymin;
 
         for (j = 0; j < classes; ++j) {
-            if (dets[i].prob[j]) fprintf(fp, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, dets[i].prob[j]);
+            if (dets[i].prob[j] > 0) fprintf(fp, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, dets[i].prob[j]);
         }
     }
 }
@@ -423,7 +421,7 @@ void print_imagenet_detections(FILE *fp, int id, detection *dets, int total, int
 
         for (j = 0; j < classes; ++j) {
             int myclass = j;
-            if (dets[i].prob[myclass]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j + 1, dets[i].prob[myclass],
+            if (dets[i].prob[myclass] > 0) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j + 1, dets[i].prob[myclass],
                 xmin, ymin, xmax, ymax);
         }
     }
@@ -537,7 +535,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             int nboxes = 0;
             int letterbox = (args.type == LETTERBOX_DATA);
             detection *dets = get_network_boxes(&net, w, h, thresh, .5, map, 0, &nboxes, letterbox);
-            if (nms) do_nms_sort(dets, nboxes, classes, nms);
+            if (nms > 0) do_nms_sort(dets, nboxes, classes, nms);
             if (coco) {
                 print_cocos(fp, path, dets, nboxes, classes, w, h);
             }
@@ -553,9 +551,20 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             free_image(val_resized[t]);
         }
     }
+    free(buf);
+    free(buf_resized);
+    free(val);
+    free(val_resized);
     for (j = 0; j < classes; ++j) {
         if (fps) fclose(fps[j]);
     }
+    if(fps) {
+      free(fps);
+    }
+    for (t = 0; t < nthreads; ++t) {
+        pthread_join(thr[t], 0);
+    }
+    free(thr);
     if (coco) {
 #ifdef WIN32
         fseek(fp, -3, SEEK_CUR);
@@ -565,7 +574,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         fprintf(fp, "\n]\n");
         fclose(fp);
     }
-    fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)time(0) - start);
+    fprintf(stderr, "Total Detection Time: %ld Seconds\n", time(0) - start);
 }
 
 void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
@@ -655,8 +664,8 @@ typedef struct {
 
 int detections_comparator(const void *pa, const void *pb)
 {
-    box_prob a = *(box_prob *)pa;
-    box_prob b = *(box_prob *)pb;
+    box_prob a = *(const box_prob *)pa;
+    box_prob b = *(const box_prob *)pb;
     float diff = a.p - b.p;
     if (diff < 0) return 1;
     else if (diff > 0) return -1;
@@ -826,6 +835,9 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
                     if (prob > 0) {
                         detections_count++;
                         detections = (box_prob*)realloc(detections, detections_count * sizeof(box_prob));
+                        if (!detections) {
+                          error("realloc failed");
+                        }
                         detections[detections_count - 1].b = dets[i].bbox;
                         detections[detections_count - 1].p = prob;
                         detections[detections_count - 1].image_index = image_index;
@@ -907,6 +919,12 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             free_image(val_resized[t]);
         }
     }
+    free(val);
+    free(val_resized);
+    for (t = 0; t < nthreads; ++t) {
+        pthread_join(thr[t], 0);
+    }
+    free(thr);
 
     if ((tp_for_thresh + fp_for_thresh) > 0)
         avg_iou = avg_iou / (tp_for_thresh + fp_for_thresh);
@@ -1077,7 +1095,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     free(tp_for_thresh_per_class);
     free(fp_for_thresh_per_class);
 
-    fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
+    fprintf(stderr, "Total Detection Time: %ld Seconds\n", time(0) - start);
     printf("\nSet -points flag:\n");
     printf(" `-points 101` for MS COCO \n");
     printf(" `-points 11` for PascalVOC 2007 (uncomment `difficult` in voc.data) \n");
@@ -1108,8 +1126,8 @@ typedef struct {
 
 int anchors_comparator(const void *pa, const void *pb)
 {
-    anchors_t a = *(anchors_t *)pa;
-    anchors_t b = *(anchors_t *)pb;
+    anchors_t a = *(const anchors_t *)pa;
+    anchors_t b = *(const anchors_t *)pb;
     float diff = b.w*b.h - a.w*a.h;
     if (diff < 0) return 1;
     else if (diff > 0) return -1;
@@ -1174,6 +1192,9 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
             }
             number_of_boxes++;
             rel_width_height_array = (float*)realloc(rel_width_height_array, 2 * number_of_boxes * sizeof(float));
+            if (!rel_width_height_array) {
+              error("realloc failed");
+            }
             rel_width_height_array[number_of_boxes * 2 - 2] = truth[j].w * width;
             rel_width_height_array[number_of_boxes * 2 - 1] = truth[j].h * height;
             printf("\r loaded \t image: %d \t box: %d", i + 1, number_of_boxes);
@@ -1221,7 +1242,11 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
             float box_union = box_w*box_h + anchor_w*anchor_h - box_intersect;
             float iou = box_intersect / box_union;
             float distance = 1 - iou;
-            if (distance < min_dist) min_dist = distance, cluster_idx = j, best_iou = iou;
+            if (distance < min_dist) {
+              min_dist = distance;
+              cluster_idx = j;
+              best_iou = iou;
+            }
         }
 
         float anchor_w = anchors_data.centers.vals[cluster_idx][0]; //centers->data.fl[cluster_idx * 2];
@@ -1298,6 +1323,9 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     FILE* json_file = NULL;
     if (outfile) {
         json_file = fopen(outfile, "wb");
+        if(!json_file) {
+          error("fopen failed");
+        }
         char *tmp = "[\n";
         fwrite(tmp, sizeof(char), strlen(tmp), json_file);
     }
@@ -1339,14 +1367,14 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         int nboxes = 0;
         detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letter_box);
-        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+        if (nms > 0) do_nms_sort(dets, nboxes, l.classes, nms);
         draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, ext_output);
         save_image(im, "predictions");
         if (!dont_show) {
             show_image(im, "predictions");
         }
 
-        if (outfile) {
+        if (json_file) {
             if (json_buf) {
                 char *tmp = ", \n";
                 fwrite(tmp, sizeof(char), strlen(tmp), json_file);
@@ -1396,7 +1424,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (filename) break;
     }
 
-    if (outfile) {
+    if (json_file) {
         char *tmp = "\n]";
         fwrite(tmp, sizeof(char), strlen(tmp), json_file);
         fclose(json_file);
@@ -1456,9 +1484,9 @@ void run_detector(int argc, char **argv)
     int ngpus = 0;
     if (gpu_list) {
         printf("%s\n", gpu_list);
-        int len = strlen(gpu_list);
+        size_t len = strlen(gpu_list);
         ngpus = 1;
-        int i;
+        size_t i;
         for (i = 0; i < len; ++i) {
             if (gpu_list[i] == ',') ++ngpus;
         }
