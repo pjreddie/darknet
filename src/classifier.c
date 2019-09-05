@@ -521,6 +521,7 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
 
         printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
+    free(indexes);
 }
 
 
@@ -600,6 +601,7 @@ float validate_classifier_single(char *datacfg, char *filename, char *weightfile
         else printf("\n");
         printf("%d: top 1: %f, top %d: %f", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
+    free(indexes);
     if (existing_net) {
         set_batch_network(&net, old_batch);
     }
@@ -670,6 +672,7 @@ void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
 
         printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
+    free(indexes);
 }
 
 void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int layer_num)
@@ -689,7 +692,6 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
     int top = option_find_int(options, "top", 1);
     if (top > classes) top = classes;
 
-    int i = 0;
     char **names = get_labels(name_list);
     clock_t time;
     int* indexes = (int*)calloc(top, sizeof(int));
@@ -753,6 +755,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
         free_image(im);
         if (filename) break;
     }
+    free(indexes);
 }
 
 void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top)
@@ -814,6 +817,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         free_image(im);
         if (filename) break;
     }
+    free(indexes);
 }
 
 
