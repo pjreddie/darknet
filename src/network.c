@@ -1150,6 +1150,13 @@ void copy_weights_net(network net_train, network *net_map)
             copy_cudnn_descriptors(tmp_self_layer, net_map->layers[k].self_layer);
             copy_cudnn_descriptors(tmp_output_layer, net_map->layers[k].output_layer);
         }
+        else if(l->input_layer) // for AntiAliasing
+        {
+            layer tmp_input_layer;
+            copy_cudnn_descriptors(*net_map->layers[k].input_layer, &tmp_input_layer);
+            net_map->layers[k].input_layer = net_train.layers[k].input_layer;
+            copy_cudnn_descriptors(tmp_input_layer, net_map->layers[k].input_layer);
+        }
         net_map->layers[k].batch = 1;
         net_map->layers[k].steps = 1;
     }

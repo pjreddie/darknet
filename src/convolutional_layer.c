@@ -363,8 +363,8 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.batch = batch;
     l.steps = steps;
     l.stride = stride_x;
-    l.stride_y = stride_x;
-    l.stride_x = stride_y;
+    l.stride_x = stride_x;
+    l.stride_y = stride_y;
     l.dilation = dilation;
     l.size = size;
     l.pad = padding;

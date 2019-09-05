@@ -60,7 +60,7 @@ void resize_sam_layer(layer *l, int w, int h)
 void forward_sam_layer(const layer l, network_state state)
 {
     int size = l.batch * l.out_c * l.out_w * l.out_h;
-    int channel_size = 1;
+    //int channel_size = 1;
     float *from_output = state.net.layers[l.index].output;
 
     int i;
@@ -79,7 +79,7 @@ void backward_sam_layer(const layer l, network_state state)
     //scale_cpu(l.batch, l.out_w, l.out_h, l.out_c, l.delta, l.w, l.h, l.c, state.net.layers[l.index].delta);
 
     int size = l.batch * l.out_c * l.out_w * l.out_h;
-    int channel_size = 1;
+    //int channel_size = 1;
     float *from_output = state.net.layers[l.index].output;
     float *from_delta = state.net.layers[l.index].delta;
 
