@@ -61,6 +61,7 @@ int get_current_batch(network net)
     return batch_num;
 }
 
+/*
 void reset_momentum(network net)
 {
     if (net.momentum == 0) return;
@@ -71,6 +72,7 @@ void reset_momentum(network net)
         //if(net.gpu_index >= 0) update_network_gpu(net);
     #endif
 }
+*/
 
 void reset_network_state(network *net, int b)
 {
@@ -333,7 +335,7 @@ float train_network_datum(network net, float *x, float *y)
 #ifdef GPU
     if(gpu_index >= 0) return train_network_datum_gpu(net, x, y);
 #endif
-    network_state state;
+    network_state state={0};
     *net.seen += net.batch;
     state.index = 0;
     state.net = net;
@@ -398,7 +400,7 @@ float train_network_waitkey(network net, data d, int wait_key)
 float train_network_batch(network net, data d, int n)
 {
     int i,j;
-    network_state state;
+    network_state state={0};
     state.index = 0;
     state.net = net;
     state.train = 1;
@@ -666,7 +668,7 @@ float *network_predict(network net, float *input)
     if(gpu_index >= 0)  return network_predict_gpu(net, input);
 #endif
 
-    network_state state;
+    network_state state = {0};
     state.net = net;
     state.index = 0;
     state.input = input;
@@ -819,13 +821,14 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
                 int buf_len = strlen(buf);
                 int total_len = send_buf_len + buf_len + 100;
                 send_buf = (char *)realloc(send_buf, total_len * sizeof(char));
-                if (!send_buf) return 0;// exit(-1);
+                if (!send_buf) {
+                  error("realloc failed");
+                }
                 strcat(send_buf, buf);
                 free(buf);
             }
         }
     }
-    //strcat(send_buf, "\n ] \n}, \n");
     strcat(send_buf, "\n ] \n}");
     return send_buf;
 }
