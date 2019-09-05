@@ -958,7 +958,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 #endif
         }
         else if (lt == EMPTY) {
-            layer empty_layer={0};
+            layer empty_layer = {(LAYER_TYPE)0};
             empty_layer.out_w = params.w;
             empty_layer.out_h = params.h;
             empty_layer.out_c = params.c;
