@@ -1121,7 +1121,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
 
             }// end for function
             seqkey+=1;
-            wait = 600;
+            wait = 300;
             //wait = 50; // 5초
             usleep(100*1000);
         }//end if function
