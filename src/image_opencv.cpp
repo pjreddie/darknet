@@ -1207,8 +1207,11 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
             cv::Mat dst(sized.size(), sized.type());
             if(blur == 1) cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
             else {
-                cv::Size kernel_size = cv::Size((blur / 2) * 2 + 1, (blur / 2) * 2 + 1);
-                cv::GaussianBlur(sized, dst, kernel_size, 0);
+                int ksize = (blur / 2) * 2 + 1;
+                cv::Size kernel_size = cv::Size(ksize, ksize);
+                //cv::GaussianBlur(sized, dst, kernel_size, 0);
+                //cv::medianBlur(sized, dst, ksize);
+                cv::bilateralFilter(sized, dst, ksize, 75, 75);
 
                 // sharpen
                 //cv::Mat img_tmp;

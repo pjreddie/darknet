@@ -959,6 +959,9 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 save_image(tmp_ai, buff);
                 if (show_imgs == 1) {
+                    //char buff_src[1000];
+                    //sprintf(buff_src, "src_%d_%d_%s_%d", random_index, i, basecfg((char*)filename), random_gen());
+                    //show_image_mat(src, buff_src);
                     show_image(tmp_ai, buff);
                     wait_until_press_key_cv();
                 }

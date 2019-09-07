@@ -608,6 +608,7 @@ layer parse_shortcut(list *options, size_params params, network net)
 
     int batch = params.batch;
     layer from = net.layers[index];
+    if (from.antialiasing) from = *from.input_layer;
 
     layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c, assisted_excitation);
 
