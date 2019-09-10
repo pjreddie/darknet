@@ -607,8 +607,6 @@ void test_convolutional_layer()
 void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 {
     int total_batch = l->batch*l->steps;
-    int old_w = l->w;
-    int old_h = l->h;
     l->w = w;
     l->h = h;
     int out_w = convolutional_out_width(*l);
@@ -632,6 +630,8 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     }
 
 #ifdef GPU
+    int old_w = l->w;
+    int old_h = l->h;
     if (old_w < w || old_h < h) {
         cuda_free(l->delta_gpu);
         cuda_free(l->output_gpu);
