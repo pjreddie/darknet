@@ -23,6 +23,21 @@
 #pragma warning(disable: 4996)
 #endif
 
+void *xcalloc(size_t nmemb, size_t size) {
+    void *ptr=calloc(nmemb,size);
+    if(!ptr) {
+        calloc_error();
+    }
+    return ptr;
+}
+void *xrealloc(void *ptr, size_t size) {
+    ptr=realloc(ptr,size);
+    if(!ptr) {
+        realloc_error();
+    }
+    return ptr;
+}
+
 double what_time_is_it_now()
 {
     struct timeval time;
@@ -305,6 +320,18 @@ void error(const char *s)
 void malloc_error()
 {
     fprintf(stderr, "Malloc error\n");
+    exit(EXIT_FAILURE);
+}
+
+void calloc_error()
+{
+    fprintf(stderr, "Calloc error\n");
+    exit(EXIT_FAILURE);
+}
+
+void realloc_error()
+{
+    fprintf(stderr, "Realloc error\n");
     exit(EXIT_FAILURE);
 }
 
