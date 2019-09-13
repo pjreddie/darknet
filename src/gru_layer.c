@@ -36,36 +36,36 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
     l.steps = steps;
     l.inputs = inputs;
 
-    l.input_z_layer = (layer*)malloc(sizeof(layer));
+    l.input_z_layer = (layer*)xcalloc(1,sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.input_z_layer) = make_connected_layer(batch, steps, inputs, outputs, LINEAR, batch_normalize);
     l.input_z_layer->batch = batch;
 
-    l.state_z_layer = (layer*)malloc(sizeof(layer));
+    l.state_z_layer = (layer*)xcalloc(1,sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.state_z_layer) = make_connected_layer(batch, steps, outputs, outputs, LINEAR, batch_normalize);
     l.state_z_layer->batch = batch;
 
 
 
-    l.input_r_layer = (layer*)malloc(sizeof(layer));
+    l.input_r_layer = (layer*)xcalloc(1,sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.input_r_layer) = make_connected_layer(batch, steps, inputs, outputs, LINEAR, batch_normalize);
     l.input_r_layer->batch = batch;
 
-    l.state_r_layer = (layer*)malloc(sizeof(layer));
+    l.state_r_layer = (layer*)xcalloc(1,sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.state_r_layer) = make_connected_layer(batch, steps, outputs, outputs, LINEAR, batch_normalize);
     l.state_r_layer->batch = batch;
 
 
 
-    l.input_h_layer = (layer*)malloc(sizeof(layer));
+    l.input_h_layer = (layer*)xcalloc(1,sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.input_h_layer) = make_connected_layer(batch, steps, inputs, outputs, LINEAR, batch_normalize);
     l.input_h_layer->batch = batch;
 
-    l.state_h_layer = (layer*)malloc(sizeof(layer));
+    l.state_h_layer = (layer*)xcalloc(1,sizeof(layer));
     fprintf(stderr, "\t\t");
     *(l.state_h_layer) = make_connected_layer(batch, steps, outputs, outputs, LINEAR, batch_normalize);
     l.state_h_layer->batch = batch;

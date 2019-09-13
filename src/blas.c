@@ -1,4 +1,5 @@
 #include "blas.h"
+#include "utils.h"
 
 #include <math.h>
 #include <assert.h>
