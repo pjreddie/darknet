@@ -23,8 +23,8 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
 
     l.index = index;
 
-    l.delta = (float*)calloc(l.outputs * batch, sizeof(float));
-    l.output = (float*)calloc(l.outputs * batch, sizeof(float));
+    l.delta = (float*)xcalloc(l.outputs * batch, sizeof(float));
+    l.output = (float*)xcalloc(l.outputs * batch, sizeof(float));
 
     l.forward = forward_shortcut_layer;
     l.backward = backward_shortcut_layer;
@@ -46,8 +46,8 @@ void resize_shortcut_layer(layer *l, int w, int h)
     l->h = l->out_h = h;
     l->outputs = w*h*l->out_c;
     l->inputs = l->outputs;
-    l->delta = (float*)realloc(l->delta, l->outputs * l->batch * sizeof(float));
-    l->output = (float*)realloc(l->output, l->outputs * l->batch * sizeof(float));
+    l->delta = (float*)xrealloc(l->delta, l->outputs * l->batch * sizeof(float));
+    l->output = (float*)xrealloc(l->output, l->outputs * l->batch * sizeof(float));
 
 #ifdef GPU
     cuda_free(l->output_gpu);

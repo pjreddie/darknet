@@ -14,6 +14,7 @@ LIB_API void free_ptrs(void **ptrs, int n);
 LIB_API void top_k(float *a, int n, int k, int *index);
 
 void *xcalloc(size_t nmemb, size_t size);
+void *xrealloc(void *ptr, size_t size);
 double what_time_is_it_now();
 int *read_map(char *filename);
 void shuffle(void *arr, size_t n, size_t size);

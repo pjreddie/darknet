@@ -258,12 +258,12 @@ layer normalize_layer(layer l, int n)
 {
     int j;
     l.batch_normalize=1;
-    l.scales = (float*)calloc(n, sizeof(float));
+    l.scales = (float*)xcalloc(n, sizeof(float));
     for(j = 0; j < n; ++j){
         l.scales[j] = 1;
     }
-    l.rolling_mean = (float*)calloc(n, sizeof(float));
-    l.rolling_variance = (float*)calloc(n, sizeof(float));
+    l.rolling_mean = (float*)xcalloc(n, sizeof(float));
+    l.rolling_variance = (float*)xcalloc(n, sizeof(float));
     return l;
 }
 

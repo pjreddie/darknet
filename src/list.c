@@ -93,7 +93,7 @@ void free_list_contents_kvp(list *l)
 
 void **list_to_array(list *l)
 {
-    void** a = (void**)calloc(l->size, sizeof(void*));
+    void** a = (void**)xcalloc(l->size, sizeof(void*));
     int count = 0;
     node *n = l->front;
     while(n){

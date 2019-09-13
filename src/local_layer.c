@@ -47,19 +47,19 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
     l.outputs = l.out_h * l.out_w * l.out_c;
     l.inputs = l.w * l.h * l.c;
 
-    l.weights = (float*)calloc(c * n * size * size * locations, sizeof(float));
-    l.weight_updates = (float*)calloc(c * n * size * size * locations, sizeof(float));
+    l.weights = (float*)xcalloc(c * n * size * size * locations, sizeof(float));
+    l.weight_updates = (float*)xcalloc(c * n * size * size * locations, sizeof(float));
 
-    l.biases = (float*)calloc(l.outputs, sizeof(float));
-    l.bias_updates = (float*)calloc(l.outputs, sizeof(float));
+    l.biases = (float*)xcalloc(l.outputs, sizeof(float));
+    l.bias_updates = (float*)xcalloc(l.outputs, sizeof(float));
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c));
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1,1);
 
-    l.col_image = (float*)calloc(out_h * out_w * size * size * c, sizeof(float));
-    l.output = (float*)calloc(l.batch * out_h * out_w * n, sizeof(float));
-    l.delta = (float*)calloc(l.batch * out_h * out_w * n, sizeof(float));
+    l.col_image = (float*)xcalloc(out_h * out_w * size * size * c, sizeof(float));
+    l.output = (float*)xcalloc(l.batch * out_h * out_w * n, sizeof(float));
+    l.delta = (float*)xcalloc(l.batch * out_h * out_w * n, sizeof(float));
 
     l.forward = forward_local_layer;
     l.backward = backward_local_layer;

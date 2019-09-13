@@ -71,9 +71,9 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     l.size = size;
     l.stride = stride;
     int output_size = l.out_h * l.out_w * l.out_c * batch;
-    l.indexes = (int*)calloc(output_size, sizeof(int));
-    l.output = (float*)calloc(output_size, sizeof(float));
-    l.delta = (float*)calloc(output_size, sizeof(float));
+    l.indexes = (int*)xcalloc(output_size, sizeof(int));
+    l.output = (float*)xcalloc(output_size, sizeof(float));
+    l.delta = (float*)xcalloc(output_size, sizeof(float));
     l.forward = forward_maxpool_layer;
     l.backward = backward_maxpool_layer;
     #ifdef GPU
@@ -102,9 +102,9 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     l->outputs = l->out_w * l->out_h * l->out_c;
     int output_size = l->outputs * l->batch;
 
-    l->indexes = (int*)realloc(l->indexes, output_size * sizeof(int));
-    l->output = (float*)realloc(l->output, output_size * sizeof(float));
-    l->delta = (float*)realloc(l->delta, output_size * sizeof(float));
+    l->indexes = (int*)xrealloc(l->indexes, output_size * sizeof(int));
+    l->output = (float*)xrealloc(l->output, output_size * sizeof(float));
+    l->delta = (float*)xrealloc(l->delta, output_size * sizeof(float));
 
 #ifdef GPU
     CHECK_CUDA(cudaFree((float *)l->indexes_gpu));

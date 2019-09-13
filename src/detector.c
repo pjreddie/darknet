@@ -60,7 +60,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network* nets = (network*)calloc(ngpus, sizeof(network));
+    network* nets = (network*)xcalloc(ngpus, sizeof(network));
 
     srand(time(0));
     int seed = rand();
@@ -475,7 +475,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     }
     else {
         if (!outfile) outfile = "comp4_det_test_";
-        fps = (FILE**)calloc(classes, sizeof(FILE*));
+        fps = (FILE**)xcalloc(classes, sizeof(FILE*));
         for (j = 0; j < classes; ++j) {
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
             fps[j] = fopen(buff, "w");
@@ -492,11 +492,11 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
     int nthreads = 4;
     if (m < 4) nthreads = m;
-    image* val = (image*)calloc(nthreads, sizeof(image));
-    image* val_resized = (image*)calloc(nthreads, sizeof(image));
-    image* buf = (image*)calloc(nthreads, sizeof(image));
-    image* buf_resized = (image*)calloc(nthreads, sizeof(image));
-    pthread_t* thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
+    image* val = (image*)xcalloc(nthreads, sizeof(image));
+    image* val_resized = (image*)xcalloc(nthreads, sizeof(image));
+    image* buf = (image*)xcalloc(nthreads, sizeof(image));
+    image* buf_resized = (image*)xcalloc(nthreads, sizeof(image));
+    pthread_t* thr = (pthread_t*)xcalloc(nthreads, sizeof(pthread_t));
 
     load_args args = { 0 };
     args.w = net.w;
@@ -735,11 +735,11 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
 
     int nthreads = 4;
     if (m < 4) nthreads = m;
-    image* val = (image*)calloc(nthreads, sizeof(image));
-    image* val_resized = (image*)calloc(nthreads, sizeof(image));
-    image* buf = (image*)calloc(nthreads, sizeof(image));
-    image* buf_resized = (image*)calloc(nthreads, sizeof(image));
-    pthread_t* thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
+    image* val = (image*)xcalloc(nthreads, sizeof(image));
+    image* val_resized = (image*)xcalloc(nthreads, sizeof(image));
+    image* buf = (image*)xcalloc(nthreads, sizeof(image));
+    image* buf_resized = (image*)xcalloc(nthreads, sizeof(image));
+    pthread_t* thr = (pthread_t*)xcalloc(nthreads, sizeof(pthread_t));
 
     load_args args = { 0 };
     args.w = net.w;
@@ -753,16 +753,16 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     int tp_for_thresh = 0;
     int fp_for_thresh = 0;
 
-    box_prob* detections = (box_prob*)calloc(1, sizeof(box_prob));
+    box_prob* detections = (box_prob*)xcalloc(1, sizeof(box_prob));
     int detections_count = 0;
     int unique_truth_count = 0;
 
-    int* truth_classes_count = (int*)calloc(classes, sizeof(int));
+    int* truth_classes_count = (int*)xcalloc(classes, sizeof(int));
 
     // For multi-class precision and recall computation
-    float *avg_iou_per_class = (float*)calloc(classes, sizeof(float));
-    int *tp_for_thresh_per_class = (int*)calloc(classes, sizeof(int));
-    int *fp_for_thresh_per_class = (int*)calloc(classes, sizeof(int));
+    float *avg_iou_per_class = (float*)xcalloc(classes, sizeof(float));
+    int *tp_for_thresh_per_class = (int*)xcalloc(classes, sizeof(int));
+    int *fp_for_thresh_per_class = (int*)xcalloc(classes, sizeof(int));
 
     for (t = 0; t < nthreads; ++t) {
         args.path = paths[i + t];
@@ -834,7 +834,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
                     float prob = dets[i].prob[class_id];
                     if (prob > 0) {
                         detections_count++;
-                        detections = (box_prob*)realloc(detections, detections_count * sizeof(box_prob));
+                        detections = (box_prob*)xrealloc(detections, detections_count * sizeof(box_prob));
                         if (!detections) {
                           error("realloc failed");
                         }
@@ -945,19 +945,19 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     } pr_t;
 
     // for PR-curve
-    pr_t** pr = (pr_t**)calloc(classes, sizeof(pr_t*));
+    pr_t** pr = (pr_t**)xcalloc(classes, sizeof(pr_t*));
     for (i = 0; i < classes; ++i) {
-        pr[i] = (pr_t*)calloc(detections_count, sizeof(pr_t));
+        pr[i] = (pr_t*)xcalloc(detections_count, sizeof(pr_t));
     }
     printf("\n detections_count = %d, unique_truth_count = %d  \n", detections_count, unique_truth_count);
 
 
-    int* detection_per_class_count = (int*)calloc(classes, sizeof(int));
+    int* detection_per_class_count = (int*)xcalloc(classes, sizeof(int));
     for (j = 0; j < detections_count; ++j) {
         detection_per_class_count[detections[j].class_id]++;
     }
 
-    int* truth_flags = (int*)calloc(unique_truth_count, sizeof(int));
+    int* truth_flags = (int*)xcalloc(unique_truth_count, sizeof(int));
 
     int rank;
     for (rank = 0; rank < detections_count; ++rank) {
@@ -1155,7 +1155,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
     }
 
     //float pointsdata[] = { 1,1, 2,2, 6,6, 5,5, 10,10 };
-    float* rel_width_height_array = (float*)calloc(1000, sizeof(float));
+    float* rel_width_height_array = (float*)xcalloc(1000, sizeof(float));
 
 
     list *options = read_data_cfg(datacfg);
@@ -1191,7 +1191,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
                 if (check_mistakes) getchar();
             }
             number_of_boxes++;
-            rel_width_height_array = (float*)realloc(rel_width_height_array, 2 * number_of_boxes * sizeof(float));
+            rel_width_height_array = (float*)xrealloc(rel_width_height_array, 2 * number_of_boxes * sizeof(float));
             if (!rel_width_height_array) {
               error("realloc failed");
             }
@@ -1354,7 +1354,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         //box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
         //float **probs = calloc(l.w*l.h*l.n, sizeof(float*));
-        //for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(l.classes, sizeof(float));
+        //for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)xcalloc(l.classes, sizeof(float));
 
         float *X = sized.data;
 
@@ -1490,7 +1490,7 @@ void run_detector(int argc, char **argv)
         for (i = 0; i < len; ++i) {
             if (gpu_list[i] == ',') ++ngpus;
         }
-        gpus = (int*)calloc(ngpus, sizeof(int));
+        gpus = (int*)xcalloc(ngpus, sizeof(int));
         for (i = 0; i < ngpus; ++i) {
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',') + 1;

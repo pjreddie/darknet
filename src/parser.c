@@ -319,7 +319,7 @@ int *parse_yolo_mask(char *a, int *num)
         for (i = 0; i < len; ++i) {
             if (a[i] == ',') ++n;
         }
-        mask = (int*)calloc(n, sizeof(int));
+        mask = (int*)xcalloc(n, sizeof(int));
         for (i = 0; i < n; ++i) {
             int val = atoi(a);
             mask[i] = val;
@@ -680,8 +680,8 @@ route_layer parse_route(list *options, size_params params, network net)
         if (l[i] == ',') ++n;
     }
 
-    int* layers = (int*)calloc(n, sizeof(int));
-    int* sizes = (int*)calloc(n, sizeof(int));
+    int* layers = (int*)xcalloc(n, sizeof(int));
+    int* sizes = (int*)xcalloc(n, sizeof(int));
     for(i = 0; i < n; ++i){
         int index = atoi(l);
         l = strchr(l, ',')+1;
@@ -799,9 +799,9 @@ void parse_net_options(list *options, network *net)
             for (i = 0; i < len; ++i) {
                 if (l[i] == ',') ++n;
             }
-            int* steps = (int*)calloc(n, sizeof(int));
-            float* scales = (float*)calloc(n, sizeof(float));
-            float* seq_scales = (float*)calloc(n, sizeof(float));
+            int* steps = (int*)xcalloc(n, sizeof(int));
+            float* scales = (float*)xcalloc(n, sizeof(float));
+            float* seq_scales = (float*)xcalloc(n, sizeof(float));
             for (i = 0; i < n; ++i) {
                 float scale = 1.0;
                 if (p) {
@@ -1007,7 +1007,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         if (cudaSuccess == cudaHostAlloc(&net.input_pinned_cpu, size * sizeof(float), cudaHostRegisterMapped)) net.input_pinned_cpu_flag = 1;
         else {
             cudaGetLastError(); // reset CUDA-error
-            net.input_pinned_cpu = (float*)calloc(size, sizeof(float));
+            net.input_pinned_cpu = (float*)xcalloc(size, sizeof(float));
         }
 
         // pre-allocate memory for inference on Tensor Cores (fp16)
@@ -1022,12 +1022,12 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
         }
         else {
-            net.workspace = (float*)calloc(1, workspace_size);
+            net.workspace = (float*)xcalloc(1, workspace_size);
         }
     }
 #else
         if (workspace_size) {
-            net.workspace = (float*)calloc(1, workspace_size);
+            net.workspace = (float*)xcalloc(1, workspace_size);
         }
 #endif
 
@@ -1248,7 +1248,7 @@ void save_weights(network net, char *filename)
 
 void transpose_matrix(float *a, int rows, int cols)
 {
-    float* transpose = (float*)calloc(rows * cols, sizeof(float));
+    float* transpose = (float*)xcalloc(rows * cols, sizeof(float));
     int x, y;
     for(x = 0; x < rows; ++x){
         for(y = 0; y < cols; ++y){
@@ -1485,7 +1485,7 @@ void load_weights(network *net, char *filename)
 network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 {
     printf(" Try to load cfg: %s, clear = %d \n", cfg, clear);
-    network* net = (network*)calloc(1, sizeof(network));
+    network* net = (network*)xcalloc(1, sizeof(network));
     *net = parse_network_cfg_custom(cfg, batch, 0);
     if (weights && weights[0] != 0) {
         printf(" Try to load weights: %s \n", weights);
@@ -1499,7 +1499,7 @@ network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 network *load_network(char *cfg, char *weights, int clear)
 {
     printf(" Try to load cfg: %s, clear = %d \n", cfg, clear);
-    network* net = (network*)calloc(1, sizeof(network));
+    network* net = (network*)xcalloc(1, sizeof(network));
     *net = parse_network_cfg(cfg);
     if (weights && weights[0] != 0) {
         printf(" Try to load weights: %s \n", weights);

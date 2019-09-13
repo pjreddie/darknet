@@ -32,21 +32,21 @@ moves load_go_moves(char *filename)
 {
     moves m;
     m.n = 128;
-    m.data = (char**)calloc(128, sizeof(char*));
+    m.data = (char**)xcalloc(128, sizeof(char*));
     FILE *fp = fopen(filename, "rb");
     int count = 0;
     char *line = 0;
     while((line = fgetgo(fp))){
         if(count >= m.n){
             m.n *= 2;
-            m.data = (char**)realloc(m.data, m.n * sizeof(char*));
+            m.data = (char**)xrealloc(m.data, m.n * sizeof(char*));
         }
         m.data[count] = line;
         ++count;
     }
     printf("%d\n", count);
     m.n = count;
-    m.data = (char**)realloc(m.data, count * sizeof(char*));
+    m.data = (char**)xrealloc(m.data, count * sizeof(char*));
     return m;
 }
 
@@ -127,11 +127,11 @@ void train_go(char *cfgfile, char *weightfile)
     char* backup_directory = "backup/";
 
     char buff[256];
-    float* board = (float*)calloc(19 * 19 * net.batch, sizeof(float));
+    float* board = (float*)xcalloc(19 * 19 * net.batch, sizeof(float));
     if(!board) {
         error("calloc failed");
     }
-    float* move = (float*)calloc(19 * 19 * net.batch, sizeof(float));
+    float* move = (float*)xcalloc(19 * 19 * net.batch, sizeof(float));
     if(!move) {
         error("calloc failed");
     }
@@ -192,7 +192,7 @@ void propagate_liberty(float *board, int *lib, int *visited, int row, int col, i
 
 int *calculate_liberties(float *board)
 {
-    int* lib = (int*)calloc(19 * 19, sizeof(int));
+    int* lib = (int*)xcalloc(19 * 19, sizeof(int));
     int visited[361];
     int i, j;
     for(j = 0; j < 19; ++j){
@@ -416,11 +416,11 @@ void valid_go(char *cfgfile, char *weightfile, int multi)
     set_batch_network(&net, 1);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
-    float* board = (float*)calloc(19 * 19, sizeof(float));
+    float* board = (float*)xcalloc(19 * 19, sizeof(float));
     if(!board) {
         error("calloc failed");
     }
-    float* move = (float*)calloc(19 * 19, sizeof(float));
+    float* move = (float*)xcalloc(19 * 19, sizeof(float));
     if(!move) {
         error("calloc failed");
     }
@@ -452,9 +452,9 @@ void engine_go(char *filename, char *weightfile, int multi)
     }
     srand(time(0));
     set_batch_network(&net, 1);
-    float* board = (float*)calloc(19 * 19, sizeof(float));
-    char* one = (char*)calloc(91, sizeof(char));
-    char* two = (char*)calloc(91, sizeof(char));
+    float* board = (float*)xcalloc(19 * 19, sizeof(float));
+    char* one = (char*)xcalloc(91, sizeof(char));
+    char* two = (char*)xcalloc(91, sizeof(char));
     int passed = 0;
     while(1){
         char buff[256];
@@ -625,8 +625,8 @@ void test_go(char *cfg, char *weights, int multi)
     }
     srand(time(0));
     set_batch_network(&net, 1);
-    float* board = (float*)calloc(19 * 19, sizeof(float));
-    float* move = (float*)calloc(19 * 19, sizeof(float));
+    float* board = (float*)xcalloc(19 * 19, sizeof(float));
+    float* move = (float*)xcalloc(19 * 19, sizeof(float));
     int color = 1;
     while(1){
         float *output = network_predict(net, board);
@@ -777,15 +777,15 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
     int count = 0;
     set_batch_network(&net, 1);
     set_batch_network(&net2, 1);
-    float* board = (float*)calloc(19 * 19, sizeof(float));
+    float* board = (float*)xcalloc(19 * 19, sizeof(float));
     if(!board) {
         error("calloc failed");
     }
-    char* one = (char*)calloc(91, sizeof(char));
+    char* one = (char*)xcalloc(91, sizeof(char));
     if(!one) {
         error("calloc failed");
     }
-    char* two = (char*)calloc(91, sizeof(char));
+    char* two = (char*)xcalloc(91, sizeof(char));
     if(!two) {
         error("calloc failed");
     }

@@ -49,7 +49,7 @@ void gemm_bin(int M, int N, int K, float ALPHA,
 float *random_matrix(int rows, int cols)
 {
     int i;
-    float* m = (float*)calloc(rows * cols, sizeof(float));
+    float* m = (float*)xcalloc(rows * cols, sizeof(float));
     for(i = 0; i < rows*cols; ++i){
         m[i] = (float)rand()/RAND_MAX;
     }
@@ -2370,7 +2370,7 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
     memset(dst, 0, dst_size);
 
     size_t i;
-    char* byte_arr = (char*)calloc(size, sizeof(char));
+    char* byte_arr = (char*)xcalloc(size, sizeof(char));
     for (i = 0; i < size; ++i) {
         if (src[i] > 0) byte_arr[i] = 1;
     }

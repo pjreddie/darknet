@@ -160,9 +160,9 @@ void validate_coco(char *cfgfile, char *weightfile)
     FILE *fp = fopen(buff, "w");
     fprintf(fp, "[\n");
 
-    box* boxes = (box*)calloc(side * side * l.n, sizeof(box));
-    float** probs = (float**)calloc(side * side * l.n, sizeof(float*));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = (float*)calloc(classes, sizeof(float));
+    box* boxes = (box*)xcalloc(side * side * l.n, sizeof(box));
+    float** probs = (float**)xcalloc(side * side * l.n, sizeof(float*));
+    for(j = 0; j < side*side*l.n; ++j) probs[j] = (float*)xcalloc(classes, sizeof(float));
 
     int m = plist->size;
     int i=0;
@@ -173,11 +173,11 @@ void validate_coco(char *cfgfile, char *weightfile)
     float iou_thresh = .5;
 
     int nthreads = 8;
-    image* val = (image*)calloc(nthreads, sizeof(image));
-    image* val_resized = (image*)calloc(nthreads, sizeof(image));
-    image* buf = (image*)calloc(nthreads, sizeof(image));
-    image* buf_resized = (image*)calloc(nthreads, sizeof(image));
-    pthread_t* thr = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
+    image* val = (image*)xcalloc(nthreads, sizeof(image));
+    image* val_resized = (image*)xcalloc(nthreads, sizeof(image));
+    image* buf = (image*)xcalloc(nthreads, sizeof(image));
+    image* buf_resized = (image*)xcalloc(nthreads, sizeof(image));
+    pthread_t* thr = (pthread_t*)xcalloc(nthreads, sizeof(pthread_t));
 
     load_args args = {0};
     args.w = net.w;
@@ -249,29 +249,17 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
 
     int j, k;
     /* unused code,why?
-    FILE** fps = (FILE**)calloc(classes, sizeof(FILE*));
-    if(!fps) {
-        error("calloc failed");
-    }
+    FILE** fps = (FILE**)xcalloc(classes, sizeof(FILE*));
     for(j = 0; j < classes; ++j){
         char buff[1024];
         snprintf(buff, 1024, "%s%s.txt", base, coco_classes[j]);
         fps[j] = fopen(buff, "w");
     }
     */
-    box* boxes = (box*)calloc(side * side * l.n, sizeof(box));
-    if(!boxes) {
-        error("calloc failed");
-    }
-    float** probs = (float**)calloc(side * side * l.n, sizeof(float*));
-    if(!probs) {
-        error("calloc failed");
-    }
+    box* boxes = (box*)xcalloc(side * side * l.n, sizeof(box));
+    float** probs = (float**)xcalloc(side * side * l.n, sizeof(float*));
     for(j = 0; j < side*side*l.n; ++j) {
-      probs[j] = (float*)calloc(classes, sizeof(float));
-      if(!probs[j]) {
-          error("calloc failed");
-      }
+      probs[j] = (float*)xcalloc(classes, sizeof(float));
     }
 
     int m = plist->size;
@@ -349,19 +337,10 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
     char buff[256];
     char *input = buff;
     int j;
-    box* boxes = (box*)calloc(l.side * l.side * l.n, sizeof(box));
-    if(!boxes) {
-        error("calloc failed");
-    }
-    float** probs = (float**)calloc(l.side * l.side * l.n, sizeof(float*));
-    if(!probs) {
-        error("calloc failed");
-    }
+    box* boxes = (box*)xcalloc(l.side * l.side * l.n, sizeof(box));
+    float** probs = (float**)xcalloc(l.side * l.side * l.n, sizeof(float*));
     for(j = 0; j < l.side*l.side*l.n; ++j) {
-      probs[j] = (float*)calloc(l.classes, sizeof(float));
-      if(!probs[j]) {
-          error("calloc failed");
-      }
+      probs[j] = (float*)xcalloc(l.classes, sizeof(float));
     }
     while(1){
         if(filename){

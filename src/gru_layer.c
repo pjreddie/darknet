@@ -74,16 +74,16 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
 
 
     l.outputs = outputs;
-    l.output = (float*)calloc(outputs * batch * steps, sizeof(float));
-    l.delta = (float*)calloc(outputs * batch * steps, sizeof(float));
-    l.state = (float*)calloc(outputs * batch, sizeof(float));
-    l.prev_state = (float*)calloc(outputs * batch, sizeof(float));
-    l.forgot_state = (float*)calloc(outputs * batch, sizeof(float));
-    l.forgot_delta = (float*)calloc(outputs * batch, sizeof(float));
+    l.output = (float*)xcalloc(outputs * batch * steps, sizeof(float));
+    l.delta = (float*)xcalloc(outputs * batch * steps, sizeof(float));
+    l.state = (float*)xcalloc(outputs * batch, sizeof(float));
+    l.prev_state = (float*)xcalloc(outputs * batch, sizeof(float));
+    l.forgot_state = (float*)xcalloc(outputs * batch, sizeof(float));
+    l.forgot_delta = (float*)xcalloc(outputs * batch, sizeof(float));
 
-    l.r_cpu = (float*)calloc(outputs * batch, sizeof(float));
-    l.z_cpu = (float*)calloc(outputs * batch, sizeof(float));
-    l.h_cpu = (float*)calloc(outputs * batch, sizeof(float));
+    l.r_cpu = (float*)xcalloc(outputs * batch, sizeof(float));
+    l.z_cpu = (float*)xcalloc(outputs * batch, sizeof(float));
+    l.h_cpu = (float*)xcalloc(outputs * batch, sizeof(float));
 
     l.forward = forward_gru_layer;
     l.backward = backward_gru_layer;

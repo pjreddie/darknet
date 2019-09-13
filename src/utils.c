@@ -56,7 +56,7 @@ int *read_map(char *filename)
     if(!file) file_error(filename);
     while((str=fgetl(file))){
         ++n;
-        map = (int*)realloc(map, n * sizeof(int));
+        map = (int*)xrealloc(map, n * sizeof(int));
         if(!map) {
           error("realloc failed");
         }
@@ -81,7 +81,7 @@ void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections)
 void shuffle(void *arr, size_t n, size_t size)
 {
     size_t i;
-    void* swp = (void*)calloc(1, size);
+    void* swp = (void*)xcalloc(1, size);
     for(i = 0; i < n-1; ++i){
         size_t j = i + random_gen()/(RAND_MAX / (n-i)+1);
         memcpy(swp,            (char*)arr+(j*size), size);
@@ -418,7 +418,7 @@ char *fgetl(FILE *fp)
     while((line[curr-1] != '\n') && !feof(fp)){
         if(curr == size-1){
             size *= 2;
-            line = (char*)realloc(line, size * sizeof(char));
+            line = (char*)xrealloc(line, size * sizeof(char));
             if(!line) {
                 printf("%ld\n", size);
                 malloc_error();
@@ -497,6 +497,9 @@ void write_all(int fd, char *buffer, size_t bytes)
 
 char *copy_string(char *s)
 {
+    if(!s) {
+        return NULL;
+    }
     char* copy = (char*)malloc(strlen(s) + 1);
     strncpy(copy, s, strlen(s)+1);
     return copy;
@@ -533,7 +536,7 @@ int count_fields(char *line)
 
 float *parse_fields(char *line, int n)
 {
-    float* field = (float*)calloc(n, sizeof(float));
+    float* field = (float*)xcalloc(n, sizeof(float));
     char *c, *p, *end;
     int count = 0;
     int done = 0;
@@ -721,8 +724,8 @@ int max_index(float *a, int n)
 int top_max_index(float *a, int n, int k)
 {
     if (n <= 0) return -1;
-    float *values = (float*)calloc(k, sizeof(float));
-    int *indexes = (int*)calloc(k, sizeof(int));
+    float *values = (float*)xcalloc(k, sizeof(float));
+    int *indexes = (int*)xcalloc(k, sizeof(int));
     int i, j;
     for (i = 0; i < n; ++i) {
         for (j = 0; j < k; ++j) {
@@ -835,9 +838,9 @@ float rand_scale(float s)
 float **one_hot_encode(float *a, int n, int k)
 {
     int i;
-    float** t = (float**)calloc(n, sizeof(float*));
+    float** t = (float**)xcalloc(n, sizeof(float*));
     for(i = 0; i < n; ++i){
-        t[i] = (float*)calloc(k, sizeof(float));
+        t[i] = (float*)xcalloc(k, sizeof(float));
         int index = (int)a[i];
         t[i][index] = 1;
     }
@@ -923,7 +926,7 @@ int check_array_is_inf(float *arr, int size)
 
 int *random_index_order(int min, int max)
 {
-    int *inds = (int *)calloc(max - min, sizeof(int));
+    int *inds = (int *)xcalloc(max - min, sizeof(int));
     int i;
     for (i = min; i < max; ++i) {
         inds[i - min] = i;

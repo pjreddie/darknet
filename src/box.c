@@ -1,4 +1,5 @@
 #include "box.h"
+#include "utils.h"
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -379,7 +380,7 @@ int nms_comparator(const void *pa, const void *pb)
 void do_nms_sort_v2(box *boxes, float **probs, int total, int classes, float thresh)
 {
     int i, j, k;
-    sortable_bbox* s = (sortable_bbox*)calloc(total, sizeof(sortable_bbox));
+    sortable_bbox* s = (sortable_bbox*)xcalloc(total, sizeof(sortable_bbox));
 
     for(i = 0; i < total; ++i){
         s[i].index = i;
