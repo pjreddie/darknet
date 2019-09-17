@@ -11,7 +11,7 @@ list *read_data_cfg(char *filename) // read_data_cfg() function
     char *line;
     int nu = 0;
     list *options = make_list();
-    while((line=fgetl(file)) != 0){ // getline
+    while((line=fgetl(file)) != 0){ // fgetl() function can find in src/utils.c
         ++ nu;
         strip(line);
         switch(line[0]){
@@ -51,7 +51,7 @@ metadata get_metadata(char *file)
 
 int read_option(char *s, list *options) // read_option() function
 {
-    size_t i; // size_t = ê°ì²´?˜ ?¬ê¸?
+    size_t i; // size_t = ê°ì²´ì˜ í¬ê¸°
     size_t len = strlen(s);
     char *val = 0;
     for(i = 0; i < len; ++i){
@@ -73,7 +73,6 @@ void option_insert(list *l, char *key, char *val) // option_insert() function
     p->key = key;
     p->val = val;
     p->used = 0;
-    //printf("%s / %s\n",key,val);
     list_insert(l, p);
 }
 

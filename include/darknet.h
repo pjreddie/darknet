@@ -5,6 +5,7 @@
 #include <string.h>
 #include <pthread.h>
 
+
 #ifdef GPU
     #define BLOCK 512
 
@@ -58,7 +59,7 @@ typedef enum{
 } BINARY_ACTIVATION;
 
 typedef enum {
-    CONVOLUTIONAL,
+    CONVOLUTIONAL, // type number = 0
     DECONVOLUTIONAL,
     CONNECTED,
     MAXPOOL,
@@ -81,7 +82,7 @@ typedef enum {
     NETWORK,
     XNOR,
     REGION,
-    YOLO,
+    YOLO, // type number = 23
     ISEG,
     REORG,
     UPSAMPLE,
@@ -135,7 +136,7 @@ struct layer{
     int truths;
     int h,w,c;
     int out_h, out_w, out_c;
-    int n; // filters
+    int n;
     int max_boxes;
     int groups;
     int size;
@@ -428,7 +429,7 @@ typedef enum {
 } learning_rate_policy;
 
 typedef struct network{ // network struct
-    int n; // what is it n ??
+    int n;
     int batch;
     size_t *seen;
     int *t;
@@ -478,8 +479,8 @@ typedef struct network{ // network struct
     tree *hierarchy;
 
     float *input;
-    float *truth; // what is it?
-    float *delta; // what is it?
+    float *truth;
+    float *delta;
     float *workspace;
     int train;
     int index;
@@ -531,10 +532,10 @@ typedef struct matrix{
 } matrix;
 
 
-typedef struct{
+typedef struct{ // struct of data 
     int w, h;
-    matrix X;
-    matrix y;
+    matrix X; // X.cols = total pixel , rows = batch(64) , vals = each pixel's value (we can find information in data.c's load_data_detection) 
+    matrix y; // y.cols = 5*boxes( boxes default 90 ) , y.rows = batch(64) , 
     int shallow;
     int *num_boxes;
     box **boxes;
@@ -544,7 +545,7 @@ typedef enum {
     CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA, SEGMENTATION_DATA, INSTANCE_DATA, ISEG_DATA
 } data_type;
 
-typedef struct load_args{ // load_args struct
+typedef struct load_args{ // struct of load_args
     int threads;
     char **paths;
     char *path;
@@ -799,6 +800,38 @@ size_t rand_size_t();
 float rand_normal();
 float rand_uniform(float min, float max);
 
+
+typedef struct Points
+{
+    int x[10];
+    int y[10];
+    int size;
+}Points;
+#ifdef OPENCV
+typedef struct pointNode{
+	int x;
+	int y;
+	struct pointNode* prev;
+	struct pointNode* next;
+}pointNode;
+
+typedef struct pointList{
+	int size;
+	pointNode* front;
+	pointNode* back;
+}pointList;
+
+void load_mat_image_point(char *input,int i,Points * ary);
+void initList(pointList* l); // 리스트 초기화
+void ListAdd(pointList* l, int x, int y);// 리스트 추가
+int ListRemove(pointList* l,int x , int y); // 리스트 제거
+void ListPrint(pointList* l);
+image draw_polygonlines(image im,Points *ary);
+#endif
+void draw_detections_count(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,int* count);
+image draw_detections_area(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary);
+image draw_detections_area_count(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary,int* count);
+int check_person_point(int px,int py,Points *ary);
 #ifdef __cplusplus
 }
 #endif

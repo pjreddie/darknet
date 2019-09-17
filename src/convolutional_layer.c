@@ -202,7 +202,6 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     l.weights = calloc(c/groups*n*size*size, sizeof(float));// (channel * n(filters) * size * size) / groups( maybe default 1 )
     l.weight_updates = calloc(c/groups*n*size*size, sizeof(float)); // 
-
     l.biases = calloc(n, sizeof(float));// it is same like malloc(sizeof(float)*n) this is dynamic allocation
     l.bias_updates = calloc(n, sizeof(float)); 
 
@@ -214,21 +213,22 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     // this scale use when batch_normalization is not 1
     // but when we use convolutional layers all of layer's batch_normalization is 1 so we didn't use this scale in this convolutional layer.
     
-    //printf("convscale %f\n", scale);
+    printf("convscale %f\n", scale);
     //scale = .02;
     //for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1, 1);
     for(i = 0; i < l.nweights; ++i) l.weights[i] = scale*rand_normal();
+    //weights initalize using rand_normal() function
     int out_w = convolutional_out_width(l);
     int out_h = convolutional_out_height(l);
-    l.out_h = out_h;
-    l.out_w = out_w;
-    l.out_c = n; // filters
-    l.outputs = l.out_h * l.out_w * l.out_c;
+    l.out_h = out_h; // output_h
+    l.out_w = out_w; // ouput_w
+    l.out_c = n; // output_c = current.filters
+    l.outputs = l.out_h * l.out_w * l.out_c; 
     l.inputs = l.w * l.h * l.c;
 
     l.output = calloc(l.batch*l.outputs, sizeof(float));
-    l.delta  = calloc(l.batch*l.outputs, sizeof(float));
-
+    l.delta  = calloc(l.batch*l.outputs, sizeof(float)); // default 0
+    /*함수 포인터 연결*/
     l.forward = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
     l.update = update_convolutional_layer;
@@ -243,8 +243,9 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     }
 
     if(batch_normalize){ // if batch_normalize is 1 ( this is activated all of convolutional layer )
-        l.scales = calloc(n, sizeof(float));
-        l.scale_updates = calloc(n, sizeof(float));
+        //printf("11111\n");
+        l.scales = calloc(n, sizeof(float)); // filters size
+        l.scale_updates = calloc(n, sizeof(float)); // 
         for(i = 0; i < n; ++i){ // repeat filter's number
             l.scales[i] = 1; // all of width and height are normalizated to 1
         }
@@ -252,7 +253,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.mean = calloc(n, sizeof(float));
         l.variance = calloc(n, sizeof(float));
 
-        l.mean_delta = calloc(n, sizeof(float));
+        l.mean_delta = calloc(n, sizeof(float)); 
         l.variance_delta = calloc(n, sizeof(float));
 
         l.rolling_mean = calloc(n, sizeof(float));
@@ -260,7 +261,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         l.x = calloc(l.batch*l.outputs, sizeof(float));
         l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
     }
-    if(adam){
+    if(adam){ // default 0s
         l.m = calloc(l.nweights, sizeof(float));
         l.v = calloc(l.nweights, sizeof(float));
         l.bias_m = calloc(n, sizeof(float));
@@ -270,6 +271,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     }
 
 #ifdef GPU
+    /*해당 cu파일을 통하여 함수 3개 공부하기*/
     l.forward_gpu = forward_convolutional_layer_gpu;
     l.backward_gpu = backward_convolutional_layer_gpu;
     l.update_gpu = update_convolutional_layer_gpu;
@@ -302,6 +304,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         }
 
         if(batch_normalize){ // we use GPU so this if function decide scale.
+            //printf("222222\n");
             l.mean_gpu = cuda_make_array(l.mean, n);
             l.variance_gpu = cuda_make_array(l.variance, n);
 
@@ -336,7 +339,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d  %5.3f BFLOPs\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c, (2.0 * l.n * l.size*l.size*l.c/l.groups * l.out_h*l.out_w)/1000000000.);
 
     return l;
-}
+} // end make_convolutional_layer() function 
 
 void denormalize_convolutional_layer(convolutional_layer l)
 {
@@ -456,21 +459,20 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
 void forward_convolutional_layer(convolutional_layer l, network net)
 {
     int i, j;
-
     fill_cpu(l.outputs*l.batch, 0, l.output, 1);
 
-    if(l.xnor){
+    if(l.xnor){ // don't use this if
         binarize_weights(l.weights, l.n, l.c/l.groups*l.size*l.size, l.binary_weights);
         swap_binary(&l);
         binarize_cpu(net.input, l.c*l.h*l.w*l.batch, l.binary_input);
         net.input = l.binary_input;
     }
 
-    int m = l.n/l.groups;
-    int k = l.size*l.size*l.c/l.groups;
+    int m = l.n/l.groups; // filters
+    int k = l.size*l.size*l.c/l.groups; // 
     int n = l.out_w*l.out_h;
-    for(i = 0; i < l.batch; ++i){
-        for(j = 0; j < l.groups; ++j){
+    for(i = 0; i < l.batch; ++i){ // batch = 4
+        for(j = 0; j < l.groups; ++j){ // groups = 1
             float *a = l.weights + j*l.nweights/l.groups;
             float *b = net.workspace;
             float *c = l.output + (i*l.groups + j)*n*m;
@@ -493,6 +495,7 @@ void forward_convolutional_layer(convolutional_layer l, network net)
 
     activate_array(l.output, l.outputs*l.batch, l.activation);
     if(l.binary || l.xnor) swap_binary(&l);
+    //printf("Here is Convolutional layer forward\n");
 }
 
 void backward_convolutional_layer(convolutional_layer l, network net)
@@ -615,7 +618,7 @@ image *get_weights(convolutional_layer l)
     //error("hey");
     return weights;
 }
-
+//
 image *visualize_convolutional_layer(convolutional_layer l, char *window, image *prev_weights)
 {
     image *single_weights = get_weights(l);

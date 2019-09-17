@@ -47,10 +47,11 @@ char **get_random_paths(char **paths, int n, int m) // get_random_paths() functi
     for(i = 0; i < n; ++i){
         int index = rand()%m;
         random_paths[i] = paths[index];
+        //printf("paths[index] = %s\n",paths[index]);
         //if(i == 0) printf("%s\n", paths[index]);
     }
 
-    //printf("n = %d , m = %d , this image = %s\n",n,m,random_paths[i]);//printf random_paths[]
+    //printf("n = %d , m = %d , this image = %s\n",n,m,random_paths[0]);//printf random_paths[]
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
@@ -138,7 +139,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
 }
 
 
-box_label *read_boxes(char *filename, int *n)
+box_label *read_boxes(char *filename, int *n) // boxes관련 파일 읽기
 {
     FILE *file = fopen(filename, "r");
     if(!file) file_error(filename);
@@ -152,6 +153,7 @@ box_label *read_boxes(char *filename, int *n)
             size = size * 2;
             boxes = realloc(boxes, size*sizeof(box_label));
         }
+        //실측값 정보를 boxes 구조체에 저장
         boxes[count].id = id;
         boxes[count].x = x;
         boxes[count].y = y;
@@ -180,7 +182,8 @@ void randomize_boxes(box_label *b, int n)
 }
 
 void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
-{
+{ // 여기서 dx와 dy가 정확히 무엇을 의미하는지를 파악하는 것이 중요
+    //printf("correct_boxes function : dx = %f, dy = %f, sx = %f, sy = %f\n",dx,dy,sx,sy);
     int i;
     for(i = 0; i < n; ++i){
         if(boxes[i].x == 0 && boxes[i].y == 0) {
@@ -190,12 +193,14 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             boxes[i].h = 999999;
             continue;
         }
-        boxes[i].left   = boxes[i].left  * sx - dx;
-        boxes[i].right  = boxes[i].right * sx - dx;
+        // 바뀐 해상도에 대해서 boxes[i]의 값들을 마춘
+        boxes[i].left   = boxes[i].left  * sx - dx; 
+        // 임의의 좌표 dx의 값을 boxes.left*sx(resizing width/input layer's width)에서 뺀값
+        boxes[i].right  = boxes[i].right * sx - dx; 
         boxes[i].top    = boxes[i].top   * sy - dy;
         boxes[i].bottom = boxes[i].bottom* sy - dy;
 
-        if(flip){
+        if(flip){ // if flip == 1 right left flip
             float swap = boxes[i].left;
             boxes[i].left = 1. - boxes[i].right;
             boxes[i].right = 1. - swap;
@@ -447,7 +452,9 @@ void fill_truth_mask(char *path, int num_boxes, float *truth, int classes, int w
 
 
 void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy) // fill_truth_detection() function
-{//this function check the bounding box in txt file 
+{//this function check the bounding box in txt file  truth is **data.y.vals
+//(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h);
+//sx , sy = resizing(w,h)/training size(w,h)
     char labelpath[4096];
     find_replace(path, "images", "labels", labelpath);
     find_replace(labelpath, "JPEGImages", "labels", labelpath);
@@ -460,6 +467,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
+    //printf("sx = %lf, sy = %lf, dx = %lf, dy = %lf\n",sx,sy,dx,dy);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     if(count > num_boxes) count = num_boxes;
     float x,y,w,h;
@@ -474,11 +482,12 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         h =  boxes[i].h;
         id = boxes[i].id;
 
-        if ((w < .001 || h < .001)) {
+        if ((w < .001 || h < .001)) { // If box's width and height size is too small, don't add to truth array.
             ++sub;
             continue;
         }
-
+        //d.y.vals[i] = truth[]
+        //truth[0] = x , truth[1] = y , truth[2] = w , truth[3] = w , truth[4] = h , truth[5] = id
         truth[(i-sub)*5+0] = x; // x
         truth[(i-sub)*5+1] = y; // y
         truth[(i-sub)*5+2] = w; // width
@@ -1045,7 +1054,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.X.rows = n;
     d.X.vals = calloc(d.X.rows, sizeof(float*));
-    d.X.cols = h*w*3;
+    d.X.cols = h*w*3; // (resize)height * (resize)width * channel
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
@@ -1054,41 +1063,55 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
         image orig = load_image_color(random_paths[i], 0, 0); // load_image_color in image.c 
 							      // when you train the dataset it have to random image train.
         image sized = make_image(w, h, orig.c); // make_image in image.c
-        fill_image(sized, .5);
-
-        float dw = jitter * orig.w;
-        float dh = jitter * orig.h;
-
-        float new_ar = (orig.w + rand_uniform(-dw, dw)) / (orig.h + rand_uniform(-dh, dh));
+        fill_image(sized, .5); 
+        //printf("orig.w = %d , orig.h = %d\n",orig.w,orig.h);
+        //orig.h,w = 학습하는 이미지의 원래의 크기
+        float dw = jitter * orig.w; // jitter is 0.3 default
+        float dh = jitter * orig.h; // jitter is 0.3 default
+        float rand_dw,rand_dh;
+        rand_dw = rand_uniform(-dw, dw);
+        rand_dh = rand_uniform(-dh, dh);
+        // -dw(dh) ~ dw(dh) 랜덤한 값 설정
+        //printf("rand_dw = %lf, rand_dh = %lf\n",rand_dw,rand_dh);
+        float new_ar = (orig.w + rand_dw) / (orig.h + rand_dh);
         //float scale = rand_uniform(.25, 2);
         float scale = 1;
         float nw, nh;
 
+        //printf("random_path[i] = %s, w = %d, h = %d, new_ar = %lf,",random_paths[i],w,h,new_ar);
+        //new_ar < 1 ==> nw < nh
         if(new_ar < 1){
             nh = scale * h;
             nw = nh * new_ar;
-        } else {
+        } else { // new_ar > 1 ==> nw > nh
             nw = scale * w;
             nh = nw / new_ar;
         }
+        //해당 if문 (new_ar)는 해당 이미지를 resizing한 이미지의 크기로 변경시킬 때
+        //w,h의 비율을 어떻게 조절할 것인지에 대한 if문이다.
+        //처음에 416이 나오는 이유는 처음에 무조건 이미지를 한번 읽어올때 input layer의 크기만큼으로 읽어오기때문
 
+        //printf("nw = %lf, nh = %lf\n",nw,nh);
         float dx = rand_uniform(0, w - nw);
         float dy = rand_uniform(0, h - nh);
-
-        place_image(orig, nw, nh, dx, dy, sized);
+        //printf("dx = %lf, dy = %lf\n",dx,dy);
+        //resizing크기와 일치하는 dx,dy는 0을 반환 그 외의경우에는 차이값에서 랜덤하게 나옴
+        place_image(orig, nw, nh, dx, dy, sized); // model input w, h에 일치하도록 image크기 변경
         // image have 3 dimension so we want to change by 1 dimension.
         // so we use place_image function.
-        random_distort_image(sized, hue, saturation, exposure);
-
-        //printf("--%s--\ndw = %f / dh = %f / new_ar = %f\ndx = %f / dy = %f\n",random_paths[i],dw,dh,new_ar,dx,dy);
-
-        int flip = rand()%2;
-        if(flip) flip_image(sized);
-        d.X.vals[i] = sized.data;
+        random_distort_image(sized, hue, saturation, exposure); // 임의로 이미지의 HSV값을 변경함
+        // hue = 색상
+        // saturation = 채도
+        // exposure = 명도 
+        //printf("\n==%s==\nargs.w = %d / args.h = %d / origin_w = %d / origin_h = %d\ndw = %f / dh = %f / dx = %f / dy = %f\nrand_dw = %f / rand_dh = %f /new_ar = %f / nw = %f / nh = %f\n",random_paths[i],w,h,orig.w,orig.h,dw,dh,dx,dy,rand_dw,rand_dh,new_ar,nw,nh);
+        int flip = rand()%2; // flip = 0 ~ 1
+        if(flip) flip_image(sized); // flip image
+        d.X.vals[i] = sized.data; //new data input to d.X.vals[i]
+        //total 64 image's value save (this program)
 
 
         fill_truth_detection(random_paths[i], boxes, d.y.vals[i], classes, flip, -dx/w, -dy/h, nw/w, nh/h); // take a information in txt file ( x , y , width , height , id )
-
+        //실측정보 가져오기
         free_image(orig);
     }
     free(random_paths);
@@ -1181,7 +1204,7 @@ void *load_threads(void *ptr) // second function when you use pthread in detecto
         // args.n = [(i+1) * total(64)/args.threads(64)](i+1) - i = 1;
         // args.n = 1 
         //printf("args.n = %d\n",args.n);
-        threads[i] = load_data_in_thread(args); // call load_data_in_thraed() function
+        threads[i] = load_data_in_thread(args); // call load_data_in_thread() function
     }
     for(i = 0; i < args.threads; ++i){
         pthread_join(threads[i], 0);
@@ -1484,18 +1507,22 @@ void get_random_batch(data d, int n, float *X, float *y)
 }
 
 void get_next_batch(data d, int n, int offset, float *X, float *y)// get_next_batch() function
-{
+{// X = input , y = truth
+//(d, batch, i*batch, net->input, net->truth);
     int j;
     //printf("Here is get_next_batch() function\n");
-    //printf("n = %d , offset = %d\n",n,offset);
-    for(j = 0; j < n; ++j){
+    //printf("n = %d , offset = %d\n",n,offset); // n(batch(4)) , offset ( i(0~64)*batch(4) ) 
+    //printf("\n");
+    //printf("d.X.cols = %d ,d.X.rows = %d , d.y.cols = %d, d.y.rows = %d\n",d.X.cols,d.X.rows,d.y.cols,d.y.rows);
+    for(j = 0; j < n; ++j){//j = 0 ~ 3 4개의 이미지의 정보를 복사하는 작업
         int index = offset + j;
-        memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));
-        // printf("X+j*d.X.cols = %f,  d.X.vals[index] = %f",X+j*d.X.cols, d.X.vals[index]);
-        // printf("this size = %ld\n",d.X.cols*sizeof(float));
-        if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));
-        // printf("y+j*d.y.cols = %f,  d.y.vals[index] = %f",X+j*d.y.cols, d.y.vals[index]);
-        // printf("this size = %ld\n",d.y.cols*sizeof(float));
+        memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float)); // 실제 이미지를 축소한 값을 input값에 순서대로 복사
+
+         //printf("X+j*d.X.cols = %f,  d.X.vals[%d] = %f\n",*(X+j*d.X.cols), index,*d.X.vals[index]);
+         //printf("this size = %ld\n",d.X.cols*sizeof(float));
+        if(y) memcpy(y+j*d.y.cols, d.y.vals[index], d.y.cols*sizeof(float));// truth에서 id를 제외한 값을 저장
+         //printf("y+j*d.y.cols = %d,  d.y.vals[index] = %f\n",*(y+j*d.y.cols), *d.y.vals[index]);
+         //printf("this size = %ld\n",d.y.cols*sizeof(float));
     }
 }
 

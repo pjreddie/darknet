@@ -421,7 +421,7 @@ void write_all(int fd, char *buffer, size_t bytes)
 }
 
 
-char *copy_string(char *s)
+char *copy_string(char *s) // strncpy using function
 {
     char *copy = malloc(strlen(s)+1);
     strncpy(copy, s, strlen(s)+1);
@@ -653,7 +653,7 @@ int rand_int(int min, int max)
 }
 
 // From http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-float rand_normal()
+float rand_normal() // rand_normal() function
 {
     static int haveSpare = 0;
     static double rand1, rand2;
@@ -666,10 +666,11 @@ float rand_normal()
 
     haveSpare = 1;
 
-    rand1 = rand() / ((double) RAND_MAX);
-    if(rand1 < 1e-100) rand1 = 1e-100;
-    rand1 = -2 * log(rand1);
-    rand2 = (rand() / ((double) RAND_MAX)) * TWO_PI;
+    rand1 = rand() / ((double) RAND_MAX); // RAND_MAX = 0x7fff
+    // 0 ~ 1 value
+    if(rand1 < 1e-100) rand1 = 1e-100; // min value ( not use 0 )
+    rand1 = -2 * log(rand1); // log(rand)는 음수값이므로 해당과 같은 식을 사용
+    rand2 = (rand() / ((double) RAND_MAX)) * TWO_PI; 
 
     return sqrt(rand1) * cos(rand2);
 }
@@ -697,21 +698,21 @@ size_t rand_size_t()
         ((size_t)(rand()&0xff) << 0);
 }
 
-float rand_uniform(float min, float max)
+float rand_uniform(float min, float max) // -dw , dw
 {
     if(max < min){
         float swap = min;
         min = max;
         max = swap;
     }
-    return ((float)rand()/RAND_MAX * (max - min)) + min;
+    return ((float)rand()/RAND_MAX * (max - min)) + min; // min ~ max 사이의 랜덤 실수값을 반환
 }
 
 float rand_scale(float s)
 {
-    float scale = rand_uniform(1, s);
-    if(rand()%2) return scale;
-    return 1./scale;
+    float scale = rand_uniform(1, s); // random scale = 1.0 ~ 1.5
+    if(rand()%2) return scale; // if rand num == 1 return scale
+    return 1./scale; // else 1 / scale max = 1.0 , min = 2/3 = 0.66666666
 }
 
 float **one_hot_encode(float *a, int n, int k)

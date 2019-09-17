@@ -15,7 +15,7 @@
 
 static char **demo_names;
 static image **demo_alphabet;
-static int demo_classes; // draw_detection 매개변수 obj.data의 classes 값
+static int demo_classes; // draw_detection 매개�??�� obj.data?�� classes �?
 
 static network *net;
 static image buff [3];
@@ -34,6 +34,7 @@ static float *avg;
 static int demo_done = 0;
 static int demo_total = 0;
 double demo_time;
+
 
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num);
 
@@ -122,7 +123,7 @@ void *detect_in_thread(void *ptr)
     }
      */
 
-    if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
+    if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms); // nms 부분 확인하기 
 
     printf("\033[2J");
     printf("\033[1;1H");

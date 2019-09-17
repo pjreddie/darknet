@@ -74,17 +74,15 @@ static void add_pixel(image m, int x, int y, int c, float val)
     m.data[c*m.h*m.w + y*m.w + x] += val;
 }
 
-static float bilinear_interpolate(image im, float x, float y, int c) // bilinear_interpolate() fucntion
-{
-    int ix = (int) floorf(x);
+static float bilinear_interpolate(image im, float x, float y, int c) // bilinear_interpolate() fucntion 
+{ // when resizing your model your image also resizes. original image is smaller than resizing model size, new pixel must fill something value.
+  // this function can do that.
+    int ix = (int) floorf(x); // floorf() = ���� �Լ�
     int iy = (int) floorf(y);
 
-    float dx = x - ix;
+    float dx = x - ix; // 0.�Ҽ�����
     float dy = y - iy;
-	/*What is it mean that float val???
-	 * get_pixel_extend() is check the resolution over or under.
-	 * if pixel over the x or y or under the x or y then return 0.
-	 * */
+
     float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
         dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
         (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
@@ -239,11 +237,12 @@ image **load_alphabet()
     }
     return alphabets;
 }
-// detection ?��직적 ?��?���? 매기?�� ?��?�� �??�� 중요?�� ?��?��
+// detection 그림 그리는 구간
 void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
     int i,j;
     int count = 0;
+    //printf("im.h = %d , im.w = %d\n",im.h,im.w);
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
         int class = -1;
@@ -258,7 +257,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                     strcat(labelstr, names[j]);
                 }
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
-		count++;//객체�? �?출할?��마다 count++ ?��기서 classes�? 1?���? ?��문에 �?출을 ?���? 무조�? ?��?��?���? ?��문에 무조�? 증�???��켜도 ?��.
+		count++;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
             }
         }
         if(class >= 0){
@@ -290,12 +289,10 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             int right = (b.x+b.w/2.)*im.w;
             int top   = (b.y-b.h/2.)*im.h;
             int bot   = (b.y+b.h/2.)*im.h;
-
             if(left < 0) left = 0;
             if(right > im.w-1) right = im.w-1;
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
-
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
                 image label = get_label(alphabet, labelstr, (im.h*.03));
@@ -314,6 +311,190 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
         }
     }
     printf("Total Person Count = %d\n",count);
+}
+
+image draw_detections_area(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary)
+{
+    int i,j;
+    int count = 0;
+    for(i = 0; i < num; ++i){
+        char labelstr[4096] = {0};
+        int class = -1;
+        for(j = 0; j < 1; ++j){ // classes ->1
+	
+            if (dets[i].prob[j] > thresh){
+                if (class < 0) {
+                    strcat(labelstr, names[j]);
+                    class = j;
+                } else {
+                    strcat(labelstr, ", ");
+                    strcat(labelstr, names[j]);
+                }
+                if(class >= 0){
+                    int width = im.h * .006;
+
+                    /*
+                    if(0){
+                    width = pow(prob, 1./2.)*10+1;
+                    alphabet = 0;
+                    }
+                    */
+
+                    //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
+                    int offset = class*123457 % classes;
+                    float red = get_color(2,offset,classes);
+                    float green = get_color(1,offset,classes);
+                    float blue = get_color(0,offset,classes);
+                    float rgb[3];
+
+                    //width = prob*20+2;
+
+                    rgb[0] = red;
+                    rgb[1] = green;
+                    rgb[2] = blue;
+                    box b = dets[i].bbox;
+                    //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+
+                    int left  = (b.x-b.w/2.)*im.w;
+                    int right = (b.x+b.w/2.)*im.w;
+                    int top   = (b.y-b.h/2.)*im.h;
+                    int bot   = (b.y+b.h/2.)*im.h;
+
+                    if(left < 0) left = 0;
+                    if(right > im.w-1) right = im.w-1;
+                    if(top < 0) top = 0;
+                    if(bot > im.h-1) bot = im.h-1;
+
+                    int person_point_x = (b.x)*im.w;
+                    int person_point_y = bot;
+                    if(check_person_point(person_point_x,person_point_y,ary)==1)
+                    {
+                        printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                        count++;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
+                        draw_box_width(im, left, top, right, bot, width, red, green, blue);//테두리
+                        if (alphabet) {
+                            image label = get_label(alphabet, labelstr, (im.h*.03));
+                            draw_label(im, top + width, left, label, rgb);
+                            free_image(label);
+                        }
+                        if (dets[i].mask){
+                            image mask = float_to_image(14, 14, 1, dets[i].mask);
+                            image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                            image tmask = threshold_image(resized_mask, .5);
+                            embed_image(tmask, im, left, top);
+                            free_image(mask);
+                            free_image(resized_mask);
+                            free_image(tmask);
+                        }
+                    }
+                    //printf("person_point_x = %d,person_point_y = %d\n",person_point_x,person_point_y);
+
+                    
+                }
+            }
+        }
+        
+    }
+    if(ary->size >= 3)
+    {
+        //printf("111\n");
+        im = draw_polygonlines(im,ary);
+        //show_image(im,"prediction",0);
+    }
+    printf("Total Person Count = %d\n",count);
+    return im;
+}
+
+image draw_detections_area_count(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, Points* ary,int* count)
+{
+    int i,j;
+    *count = 0;
+    for(i = 0; i < num; ++i){
+        char labelstr[4096] = {0};
+        int class = -1;
+        for(j = 0; j < 1; ++j){ // classes ->1
+	
+            if (dets[i].prob[j] > thresh){
+                if (class < 0) {
+                    strcat(labelstr, names[j]);
+                    class = j;
+                } else {
+                    strcat(labelstr, ", ");
+                    strcat(labelstr, names[j]);
+                }
+                if(class >= 0){
+                    int width = im.h * .006;
+
+                    /*
+                    if(0){
+                    width = pow(prob, 1./2.)*10+1;
+                    alphabet = 0;
+                    }
+                    */
+
+                    //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
+                    int offset = class*123457 % classes;
+                    float red = get_color(2,offset,classes);
+                    float green = get_color(1,offset,classes);
+                    float blue = get_color(0,offset,classes);
+                    float rgb[3];
+
+                    //width = prob*20+2;
+
+                    rgb[0] = red;
+                    rgb[1] = green;
+                    rgb[2] = blue;
+                    box b = dets[i].bbox;
+                    //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+
+                    int left  = (b.x-b.w/2.)*im.w;
+                    int right = (b.x+b.w/2.)*im.w;
+                    int top   = (b.y-b.h/2.)*im.h;
+                    int bot   = (b.y+b.h/2.)*im.h;
+
+                    if(left < 0) left = 0;
+                    if(right > im.w-1) right = im.w-1;
+                    if(top < 0) top = 0;
+                    if(bot > im.h-1) bot = im.h-1;
+
+                    int person_point_x = (b.x)*im.w;
+                    int person_point_y = bot;
+                    if(check_person_point(person_point_x,person_point_y,ary)==1)
+                    {
+                        printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                        *count += 1;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
+                        draw_box_width(im, left, top, right, bot, width, red, green, blue);//테두리
+                        if (alphabet) {
+                            image label = get_label(alphabet, labelstr, (im.h*.03));
+                            draw_label(im, top + width, left, label, rgb);
+                            free_image(label);
+                        }
+                        if (dets[i].mask){
+                            image mask = float_to_image(14, 14, 1, dets[i].mask);
+                            image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                            image tmask = threshold_image(resized_mask, .5);
+                            embed_image(tmask, im, left, top);
+                            free_image(mask);
+                            free_image(resized_mask);
+                            free_image(tmask);
+                        }
+                    }
+                    //printf("person_point_x = %d,person_point_y = %d\n",person_point_x,person_point_y);
+
+                    
+                }
+            }
+        }
+        
+    }
+    if(ary->size >= 3)
+    {
+        //printf("111\n");
+        im = draw_polygonlines(im,ary);
+        //show_image(im,"prediction",0);
+    }
+    printf("Total Person Count = %d\n",*count);
+    return im;
 }
 
 void transpose_image(image im)
@@ -531,12 +712,12 @@ image copy_image(image p)
     return copy;
 }
 
-void rgbgr_image(image im)
+void rgbgr_image(image im) // image.data가 BGR순이기 대문에 RGB순으로 바꾸기 위해서 swap
 {
     int i;
     for(i = 0; i < im.w*im.h; ++i){
         float swap = im.data[i];
-        im.data[i] = im.data[i+im.w*im.h*2];
+        im.data[i] = im.data[i+im.w*im.h*2];//im.data[i+im.w*im.h*2]; = R 
         im.data[i+im.w*im.h*2] = swap;
     }
 }
@@ -640,14 +821,16 @@ image float_to_image(int w, int h, int c, float *data)
 void place_image(image im, int w, int h, int dx, int dy, image canvas)// place_image() function
 {
     int x, y, c;
+    //printf("im.w = %d / im.h = %d / nw = %d / nh = %d\n",im.w,im.h,w,h);
     for(c = 0; c < im.c; ++c){ // rgb nChannel
         for(y = 0; y < h; ++y){ // height
             for(x = 0; x < w; ++x){ // width
-                float rx = ((float)x / w) * im.w;
-                float ry = ((float)y / h) * im.h;
+                float rx = ((float)x / w) * im.w; // normalize x
+                //printf("rx = %f\n",rx);
+                float ry = ((float)y / h) * im.h; // normalize y
                 float val = bilinear_interpolate(im, rx, ry, c); // call bilinear_interpolate() fucntion
                 // redefined the each pixel's val
-                set_pixel(canvas, x + dx, y + dy, c, val); // save the val in the each pixel ( 1 dimemsion)
+                set_pixel(canvas, x + dx, y + dy, c, val); 
             }
         }
     }
@@ -1184,14 +1367,14 @@ void distort_image(image im, float hue, float sat, float val)// distort_image() 
         if (im.data[i] < 0) im.data[i] += 1;
     }
     hsv_to_rgb(im); // hsv -> rgb
-    constrain_image(im);
+    constrain_image(im); //  0 <= value <= 1 
 }
 
 void random_distort_image(image im, float hue, float saturation, float exposure) // random_distort_image() function
-{
-    float dhue = rand_uniform(-hue, hue);
-    float dsat = rand_scale(saturation);
-    float dexp = rand_scale(exposure);
+{ // saturation = 1.5 , exposure = 1.5
+    float dhue = rand_uniform(-hue, hue); //  -0.1 ~ 0.1
+    float dsat = rand_scale(saturation); // 0.666666 ~ 1.5
+    float dexp = rand_scale(exposure); // 0.666666 ~ 1.5
     distort_image(im, dhue, dsat, dexp);
 }
 
@@ -1474,3 +1657,79 @@ void free_image(image m)
         free(m.data);
     }
 }
+
+void draw_detections_count(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,int* count)
+{
+    int i,j;
+    *count = 0;
+    //printf("im.h = %d , im.w = %d\n",im.h,im.w);
+    for(i = 0; i < num; ++i){
+        char labelstr[4096] = {0};
+        int class = -1;
+        for(j = 0; j < 1; ++j){ // classes ->1
+	
+            if (dets[i].prob[j] > thresh){
+                if (class < 0) {
+                    strcat(labelstr, names[j]);
+                    class = j;
+                } else {
+                    strcat(labelstr, ", ");
+                    strcat(labelstr, names[j]);
+                }
+                printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+		*count +=1;//객체�?? �??출할?��마다 count++ ?��기서 classes�?? 1?���?? ?��문에 �??출을 ?���?? 무조�?? ?��?��?���?? ?��문에 무조�?? 증�???��켜도 ?��.
+            }
+        }
+        if(class >= 0){
+            int width = im.h * .006;
+
+            /*
+               if(0){
+               width = pow(prob, 1./2.)*10+1;
+               alphabet = 0;
+               }
+             */
+
+            //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
+            int offset = class*123457 % classes;
+            float red = get_color(2,offset,classes);
+            float green = get_color(1,offset,classes);
+            float blue = get_color(0,offset,classes);
+            float rgb[3];
+
+            //width = prob*20+2;
+
+            rgb[0] = red;
+            rgb[1] = green;
+            rgb[2] = blue;
+            box b = dets[i].bbox;
+            //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+
+            int left  = (b.x-b.w/2.)*im.w;
+            int right = (b.x+b.w/2.)*im.w;
+            int top   = (b.y-b.h/2.)*im.h;
+            int bot   = (b.y+b.h/2.)*im.h;
+            if(left < 0) left = 0;
+            if(right > im.w-1) right = im.w-1;
+            if(top < 0) top = 0;
+            if(bot > im.h-1) bot = im.h-1;
+            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            if (alphabet) {
+                image label = get_label(alphabet, labelstr, (im.h*.03));
+                draw_label(im, top + width, left, label, rgb);
+                free_image(label);
+            }
+            if (dets[i].mask){
+                image mask = float_to_image(14, 14, 1, dets[i].mask);
+                image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                image tmask = threshold_image(resized_mask, .5);
+                embed_image(tmask, im, left, top);
+                free_image(mask);
+                free_image(resized_mask);
+                free_image(tmask);
+            }
+        }
+    }
+    printf("Total Person Count = %d\n",*count);
+}
+

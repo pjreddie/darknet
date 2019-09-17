@@ -282,39 +282,40 @@ layer parse_softmax(list *options, size_params params)
     return l;
 }
 
-int *parse_yolo_mask(char *a, int *num)
+int *parse_yolo_mask(char *a, int *num)// a = {'0',',',1',',',2'} , num = 9
 {
     int *mask = 0;
     if(a){
-        int len = strlen(a);
+        int len = strlen(a); // 5
         int n = 1;
         int i;
-        for(i = 0; i < len; ++i){
-            if (a[i] == ',') ++n;
+        for(i = 0; i < len; ++i){// 3�� �ݺ�
+            if (a[i] == ',') ++n; //
         }
-        mask = calloc(n, sizeof(int));
+        mask = calloc(n, sizeof(int)); // n = 3 '\0'�� ������ ��
         for(i = 0; i < n; ++i){
-            int val = atoi(a);
+            int val = atoi(a);// string to int
             mask[i] = val;
             a = strchr(a, ',')+1;
         }
-        *num = n;
+        *num = n; // num = 3
     }
-    return mask;
+    return mask;// mask = {0,1,2}
 }
 
 layer parse_yolo(list *options, size_params params)
 {
     int classes = option_find_int(options, "classes", 20);
-    int total = option_find_int(options, "num", 1);
+    int total = option_find_int(options, "num", 1); // 9
     int num = total;
 
-    char *a = option_find_str(options, "mask", 0);
+    char *a = option_find_str(options, "mask", 0);//0,1,2
     int *mask = parse_yolo_mask(a, &num);
+    printf("total  = %d, num = %d ",total,num);
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
     assert(l.outputs == params.inputs);
 
-    l.max_boxes = option_find_int_quiet(options, "max",90);
+    l.max_boxes = option_find_int_quiet(options, "max",90); //default 90
     l.jitter = option_find_float(options, "jitter", .2);
 
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
@@ -651,8 +652,8 @@ learning_rate_policy get_policy(char *s)
     fprintf(stderr, "Couldn't find policy %s, going with constant\n", s);
     return CONSTANT;
 }
-
-void parse_net_options(list *options, network *net)
+//
+void parse_net_options(list *options, network *net) // parse_net_opption() function
 {
     net->batch = option_find_int(options, "batch",1);
     net->learning_rate = option_find_float(options, "learning_rate", .001);
@@ -874,7 +875,7 @@ network *parse_network_cfg(char *filename) // parse_network_cfg function
     net->truth_gpu = cuda_make_array(net->truth, net->truths*net->batch);
 #endif
     if(workspace_size){
-        //printf("%ld\n", workspace_size);
+        printf("%ld\n", workspace_size);
 #ifdef GPU
         if(gpu_index >= 0){
             net->workspace = cuda_make_array(0, (workspace_size-1)/sizeof(float)+1);
@@ -894,10 +895,10 @@ list *read_cfg(char *filename)// read_cfg function
     if(file == 0) file_error(filename); // can't open file
     char *line; 
     int nu = 0;
-    list *options = make_list(); // make_list�? 무엇?���? ?��?��?���? 
-    //list ?��?�� �? ?��?��?��?�� 
-    section *current = 0; // section 구조�? ?��?��?���? 
-    while((line=fgetl(file)) != 0){ // ?��?�� ?��까�?? ?���?
+    list *options = make_list(); // make_list�?? 무엇?���?? ?��?��?���?? 
+    //list ?��?�� �?? ?��?��?��?�� 
+    section *current = 0; // section 구조�?? ?��?��?���?? 
+    while((line=fgetl(file)) != 0){ // ?��?�� ?��까�?? ?���??
         ++ nu;
         strip(line);
         switch(line[0]){
@@ -955,7 +956,7 @@ void save_convolutional_weights_binary(layer l, FILE *fp)
         }
     }
 }
-
+//해당 부분 transfer train시에 사용하지 않고 학습시켜보기.
 void save_convolutional_weights(layer l, FILE *fp) // save_convolutional_weights() function
 {
     if(l.binary){
@@ -1206,9 +1207,9 @@ void load_convolutional_weights(layer l, FILE *fp) // load_convolutional_weights
     }
     fread(l.weights, sizeof(float), num, fp);
     //fp = darknet53.conv.74
-    printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d / l.weights = %f\n",l.w,l.h,l.c,l.groups,l.n,l.size,num,*l.weights);
+    //printf("l.width = %d / l.height = %d / l.channel = %d / l.groups = %d / l.n = %d / l.size = %d / num = %d / l.weights = %f\n",l.w,l.h,l.c,l.groups,l.n,l.size,num,*l.weights);
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
-    if (l.flipped) {
+    if (l.flipped) { // default 0
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
     }
     //if (l.binary) binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.weights);
@@ -1228,7 +1229,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff) // l
         cuda_set_device(net->gpu_index);
     }
 #endif
-    fprintf(stderr, "Loading weights from %s...", filename);
+    fprintf(stderr, "Loading weights from %s...\n", filename);
     fflush(stdout);
     FILE *fp = fopen(filename, "rb");
     if(!fp) file_error(filename);

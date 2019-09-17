@@ -1,13 +1,16 @@
-#ifdef OPENCV
+ #ifdef OPENCV
 
 #include "stdio.h"
 #include "stdlib.h"
 #include "opencv2/opencv.hpp"
 #include "image.h"
-
+#include "darknet.h"
 using namespace cv;
-
+static int checkblur = 0;
+extern int cando;
 extern "C" {
+
+image draw_polygonlines(image im,Points *ary);
 
 IplImage *image_to_ipl(image im)
 {
@@ -25,14 +28,14 @@ IplImage *image_to_ipl(image im)
     return disp;
 }
 
-image ipl_to_image(IplImage* src)
+image ipl_to_image(IplImage* src) // Ipl 구조체를 활용하여 image rgb 가져옴
 {
     int h = src->height;
     int w = src->width;
     int c = src->nChannels;
-    image im = make_image(w, h, c);
+    image im = make_image(w, h, c); // �ʱ�ȭ
     unsigned char *data = (unsigned char *)src->imageData;
-    int step = src->widthStep;
+    int step = src->widthStep; // image width * channel
     int i, j, k;
 
     for(i = 0; i < h; ++i){
@@ -58,7 +61,7 @@ Mat image_to_mat(image im)
     return m;
 }
 
-image mat_to_image(Mat m)
+image mat_to_image(Mat m) // mat -> image struct 
 {
     IplImage ipl = m;
     image im = ipl_to_image(&ipl);
@@ -90,6 +93,7 @@ image get_image_from_stream(void *p)
 image load_image_cv(char *filename, int channels)
 {
     int flag = -1;
+    /*이미지 채널 확인 (gray , rgb ) */
     if (channels == 0) flag = -1;
     else if (channels == 1) flag = 0;
     else if (channels == 3) flag = 1;
@@ -97,16 +101,74 @@ image load_image_cv(char *filename, int channels)
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
     Mat m;
-    m = imread(filename, flag);
-    if(!m.data){
+    Mat dst; // blur image
+    image im;
+    int min;
+    m = imread(filename, flag); // read image
+    if(!m.data){ // can't load image
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
+        cando = 0;
         char buff[256];
         sprintf(buff, "echo %s >> bad.list", filename);
         system(buff);
         return make_image(10,10,3);
         //exit(0);
     }
-    image im = mat_to_image(m);
+    else
+    {
+        cando = 1;
+    }
+    /* 
+    if(checkblur == 1)
+    {
+       // GaussianBlur(m,dst,Size(7,7),0);// blur
+         
+        if(m.size().width<m.size().height)
+        {
+            min = m.size().width;
+        }
+        else
+        {
+            min = m.size().height;
+        }
+
+        if(min < 50)
+        {
+            GaussianBlur(m,dst,Size(3,3),0);// blur
+        }
+        else if(min < 100)
+        {
+            GaussianBlur(m,dst,Size(5,5),0);// blur
+        }
+        else if(min <300)
+        {
+            GaussianBlur(m,dst,Size(7,7),0);// blur
+        }
+        else if(min <500)
+        {
+            GaussianBlur(m,dst,Size(9,9),0);// blur
+        }
+        else if(min < 1000)
+        {
+            GaussianBlur(m,dst,Size(11,11),0);// blur
+        }
+        else
+        {
+            GaussianBlur(m,dst,Size(15,15),0);// blur
+        }
+        
+        im = mat_to_image(dst); // blur image send to function
+        checkblur = 0;
+    }
+    else
+    {
+        
+        //printf("None GaussianBlur\n");
+        im = mat_to_image(m);
+        checkblur = 1;
+    }
+    */
+    im = mat_to_image(m);
     return im;
 }
 
@@ -116,8 +178,10 @@ int show_image_cv(image im, const char* name, int ms)
     imshow(name, m);
     int c = waitKey(ms);
     if (c != -1) c = c%256;
+    destroyWindow(name);
     return c;
 }
+
 
 void make_window(char *name, int w, int h, int fullscreen)
 {
@@ -130,6 +194,26 @@ void make_window(char *name, int w, int h, int fullscreen)
     }
 }
 
+image draw_polygonlines(image im,Points *ary)
+{
+    Mat image = image_to_mat(im);
+    Point* points;
+	int i = 0;
+	int size = 0;
+	points = (Point*)calloc(ary->size, sizeof(Point));
+	size = ary->size;
+    for(i = 0 ; i < size ; i++){
+	    points[i].x = ary->x[i];
+        points[i].y = ary->y[i];
+    }
+    Mat* pointImage = &image;
+    if(size >=3 )
+    {
+        polylines(*pointImage, &points, &size, 1, true, Scalar(255, 0, 0)); 
+    }
+    im = mat_to_image(image);
+    return im;
+}
 }
 
 #endif

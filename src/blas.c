@@ -66,7 +66,7 @@ void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, floa
 }
 
 void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float s1, float s2, float *out)
-{
+{ // shortcut_cpu(l.batch, l.w, l.h, l.c, net.layers[l.index].output, l.out_w, l.out_h, l.out_c, l.alpha, l.beta, l.output);
     int stride = w1/w2;
     int sample = w2/w1;
     assert(stride == h1/h2);
