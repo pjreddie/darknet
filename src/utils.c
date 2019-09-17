@@ -11,7 +11,7 @@
 
 #include "utils.h"
 
-
+//asdfasdfasdf
 /*
 // old timing. is it better? who knows!!
 double get_wall_time()
@@ -669,7 +669,7 @@ float rand_normal() // rand_normal() function
     rand1 = rand() / ((double) RAND_MAX); // RAND_MAX = 0x7fff
     // 0 ~ 1 value
     if(rand1 < 1e-100) rand1 = 1e-100; // min value ( not use 0 )
-    rand1 = -2 * log(rand1); // log(rand)´Â À½¼ö°ªÀÌ¹Ç·Î ÇØ´ç°ú °°Àº ½ÄÀ» »ç¿ë
+    rand1 = -2 * log(rand1); // log(rand)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¹Ç·ï¿½ ï¿½Ø´ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     rand2 = (rand() / ((double) RAND_MAX)) * TWO_PI; 
 
     return sqrt(rand1) * cos(rand2);
@@ -705,7 +705,7 @@ float rand_uniform(float min, float max) // -dw , dw
         min = max;
         max = swap;
     }
-    return ((float)rand()/RAND_MAX * (max - min)) + min; // min ~ max »çÀÌÀÇ ·£´ý ½Ç¼ö°ªÀ» ¹ÝÈ¯
+    return ((float)rand()/RAND_MAX * (max - min)) + min; // min ~ max ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ç¼ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
 }
 
 float rand_scale(float s)
