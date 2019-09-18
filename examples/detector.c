@@ -888,7 +888,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     int j = 0;
     int i;
     int z= 0;
-    Points pointArray[10];//좌표 정보 저장[]
+    Points pointArray[10];//좌표 정보 저장[] 2차원 배열을 사용하여 해결하는 방법 생각해보기
     unsigned int seqkey;
     /*기존의 경우에는 Points 구조체 배열을 10개의 크기를 만들어서
     각 인덱스마다 카메라의 배열 리스트를 가지고 있는 변수를 만들었다.
