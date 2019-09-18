@@ -890,6 +890,17 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     int z= 0;
     Points pointArray[10];//좌표 정보 저장[]
     unsigned int seqkey;
+    /*기존의 경우에는 Points 구조체 배열을 10개의 크기를 만들어서
+    각 인덱스마다 카메라의 배열 리스트를 가지고 있는 변수를 만들었다.
+    
+    수정해야되는 부분은 각 카메라 마다 다중 구역을 검출해야되기 때문에
+    방법을 수정할 필요가 있다.
+    1. Points 배열을 10개 만들어서 각 카메라마다 각각의 배열을 매칭시켜 ArrayList를 저장하도록 할 것
+    2. Points 구조체를 배열로 가지는 구조체를 추가적으로 만들어서 이를 사용할 것
+
+    둘 중 하나의 방법을 활용하여 해결할 것
+
+    */
     for(i = 0 ; i < 10 ; i++)
     {
         pointArray[i].size = 0;
@@ -1119,7 +1130,7 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
                     printf("CURL fault\n");
                 }
 
-            }// end for function
+            }// end for functionls
             seqkey+=1;
             wait = 300;
             //wait = 50; // 5초
