@@ -11,7 +11,6 @@
 
 #include "utils.h"
 
-//asdfasdfasdf
 /*
 // old timing. is it better? who knows!!
 double get_wall_time()
