@@ -74,7 +74,7 @@ extern "C"
 					if(c <= '9' && c >= '1'){
 						Point *points;
 						ListToArray1(lists[c-'1'], points);
-						for (i = 0; i < size; i++)
+						for (i = 0; i < lists[c-'1'].size; i++)
 						{
 							printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
 							circle(newImage, Point(points[i].x,points[i].y), 5, Scalar(0,0,255), -1);
