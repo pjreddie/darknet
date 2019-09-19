@@ -31,18 +31,20 @@ extern "C"
 	int c;
 	char file_url[512];
 
-	void load_mat_image_points(char *input, int i, NumPoints *ary)
+	void load_mat_image_points(char *input, int j, NumPoints *ary)
 	{
 		strcpy(file_url, input);
 		puts(file_url);
 		Mat image;
 		int wait = 10;
 		int i = 0;
-		for( i = 0 ; i < 10 ; i++)
+
+		for(i = 0 ; i < 10 ; i++)
 		{
 			lists[i] = (pointList *)calloc(1, sizeof(pointList));
 			initList(lists[i]);
 		}
+
 		image = imread(input, 1);
 		if (image.data)
 		{ // can load image
