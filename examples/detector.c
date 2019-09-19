@@ -1541,11 +1541,11 @@ void load_one_image(char *input, Points* ary,int j)
     }
 }
 
-void load_one_image_Array(char *input, NumPoints *ary,int k)
+void load_one_image_Array(char *input, NumPoints *ary,int j)
 {
     int i = 0;        
-    int j = 0;
-    sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",k/10,k%10);
+    int k = 0;
+    sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
     char sudoText[512];
     sprintf(sudoText,"sudo chmod 777 %s",input);
     system(sudoText);
@@ -1553,7 +1553,7 @@ void load_one_image_Array(char *input, NumPoints *ary,int k)
     load_mat_image_points(input,j,ary); // pointArray.size가 0일 경우 전체 화면에 대해서 검출하는 식으로 진행
     for(i = 0 ; i <ary->size ; i++)
     {
-        for(j = 0 ; j < ary->P[i].size ; j++)
-        printf("pointArray[%d][%d].X : %d , pointArray[%d][%d].Y : %d\n",i,j,ary->P[i].x[j],i,j,ary->P[i].y[j]);
+        for(k = 0 ; k < ary->P[i].size ; k++)
+        printf("pointArray[%d][%d].X : %d , pointArray[%d][%d].Y : %d\n",i,k,ary->P[i].x[k],i,k,ary->P[i].y[k]);
     }
 }
