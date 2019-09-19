@@ -1251,6 +1251,7 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                 }
         }//end if function
         //non error
+        /*
         if(wait == 0)
         {
             image im;
@@ -1350,7 +1351,7 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             //wait = 50; // 5초
             usleep(100*1000);
         }//end if function
-        
+        */
         usleep(100*1000);
         wait -= 1;
         if (filename) break;
