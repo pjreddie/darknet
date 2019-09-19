@@ -1356,7 +1356,7 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         wait -= 1;
         if (filename) break;
     }// end while function
-    free(pointArray);
+    free(pointArrays);
 }
 
 void detector_directory(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
