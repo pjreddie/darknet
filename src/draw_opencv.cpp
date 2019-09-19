@@ -25,7 +25,8 @@ extern "C"
 	void ListToArray2(pointList *l, Point **ary);
 	void checkIn(Mat *im, int x, int y);
 	void returnPoint(pointList *l, Points *ary);
-	pointList *list;
+
+	pointList *listone;
 	pointList *lists[10];
 	int c;
 	char file_url[512];
@@ -89,8 +90,8 @@ extern "C"
 		puts(file_url);
 		Mat image;
 		int wait = 10;
-		list = (pointList *)calloc(1, sizeof(pointList));
-		initList(list);
+		listone = (pointList *)calloc(1, sizeof(pointList));
+		initList(listone);
 		image = imread(input, 1);
 		if (image.data)
 		{ // can load image
@@ -113,7 +114,7 @@ extern "C"
 				}
 			}
 			destroyWindow("Original");
-			returnPoint(list, ary);
+			returnPoint(listone, ary);
 		}
 		else
 		{
@@ -140,11 +141,11 @@ extern "C"
 		switch (event)
 		{
 		case CV_EVENT_LBUTTONDOWN:
-			ListAdd(list, x, y);
+			ListAdd(listone, x, y);
 			draw_line(im);
 			break;
 		case CV_EVENT_RBUTTONDOWN:
-			ListRemove(list, x, y);
+			ListRemove(listone, x, y);
 			draw_line(im);
 			break;
 		}
@@ -303,8 +304,8 @@ extern "C"
 		int i = 0;
 		int size = 0;
 		points = (Point *)calloc(list->size, sizeof(Point));
-		size = list->size;
-		ListToArray1(list, points);
+		size = listone->size;
+		ListToArray1(listone, points);
 		printf("path : %s\n",file_url);
 		Mat newImage = imread(file_url,CV_LOAD_IMAGE_COLOR);
 		for (i = 0; i < size; i++)
@@ -321,11 +322,11 @@ extern "C"
 		int crosses = 0;
 		Point *points;
 		points = (Point *)calloc(list->size, sizeof(pointList));
-		ListToArray1(list, points);
+		ListToArray1(listone, points);
 		int i, j;
-		for (i = 0; i < list->size; i++)
+		for (i = 0; i < listone->size; i++)
 		{
-			j = (i + 1) % list->size;
+			j = (i + 1) % listone->size;
 			if ((points[i].y > y) != (points[j].y > y)) // 두 좌표(연결점)의 y좌표가 점의 좌표와 교차할 경우만 확인
 			{
 				double atX = (points[j].x - points[i].x) * (y - points[i].y) / (points[j].y - points[i].y) + points[i].x;
