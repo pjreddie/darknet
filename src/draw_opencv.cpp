@@ -25,6 +25,7 @@ extern "C"
 	void ListToArray2(pointList *l, Point **ary);
 	void checkIn(Mat *im, int x, int y);
 	void returnPoint(pointList *l, Points *ary);
+	void returnPoints(pointList *l[10], NumPoints *ary);
 
 	pointList *listone;
 	pointList *lists[10];
@@ -70,11 +71,11 @@ extern "C"
 					setMouseCallback("Original", onMouseMakeList);
 					waitKey(0);
 					if(c <= '9' && c >= '1'){
-						returnPoint(lists, ary->P[c-'1']);
+						returnPoints(lists, ary->P[c-'1']);
 					}
 					else if(c == '0')
 					{
-						returnPoint(lists, ary->P[9]);
+						returnPoints(lists, ary->P[9]);
 					}
 				}
 			}
@@ -376,6 +377,49 @@ extern "C"
 		puts("");
 		//free(cur);
 	}
+
+	void returnPoints(pointList *l[10], NumPoints *ary)
+	{
+		
+		ary->size = 0;
+		int i = 0;
+		int j = 0;
+		for( j = 0 ; j < 10 ; j++){
+			i = 0;
+			pointNode *cur = l[j]->front;
+			if (cur == NULL)
+			{
+				printf("List is Empty\n");
+				return;
+			}
+			while (cur != NULL)
+			{
+				if (l->size >= 3)
+				{
+					if(c <= '9' && c >= '1'){
+						ary->P[c-'1'].x[i] = cur->x;
+						ary->P[c-'1'].y[i++] = cur->y;
+						ary->P[c-'1'].size++;
+					}
+					else if(c == '0')
+					{
+						ary->P[9].x[i] = cur->x;
+						ary->P[9].y[i++] = cur->y;
+						ary->P[9].size++;
+					}
+				}
+				else
+				{
+					printf("Point number is too low\n");
+					return;
+				}
+				cur = cur->next;
+			}
+		}
+		puts("");
+		//free(cur);
+	}
+
 	int check_person_point(int px, int py, Points *ary)
 	{
 		int crosses = 0;
