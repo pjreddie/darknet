@@ -73,6 +73,7 @@ extern "C"
 					
 					if(c <= '9' && c >= '1'){
 						Point *points;
+						points = (Point *)calloc(listone->size, sizeof(Point));
 						printf("1111\n");
 						ListToArray1(lists[c-'1'], points);
 						printf("2222\n");
