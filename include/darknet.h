@@ -800,13 +800,19 @@ size_t rand_size_t();
 float rand_normal();
 float rand_uniform(float min, float max);
 
-
 typedef struct Points
 {
     int x[10];
     int y[10];
     int size;
 }Points;
+
+typedef struct NumPoints
+{
+    Points P[10];
+    int size;
+}NumPoints;
+
 #ifdef OPENCV
 typedef struct pointNode{
 	int x;
@@ -822,6 +828,7 @@ typedef struct pointList{
 }pointList;
 
 void load_mat_image_point(char *input,int i,Points * ary);
+void load_mat_image_points(char *input,int i,NumPoints * ary);
 void initList(pointList* l); // 리스트 초기화
 void ListAdd(pointList* l, int x, int y);// 리스트 추가
 int ListRemove(pointList* l,int x , int y); // 리스트 제거
