@@ -68,7 +68,7 @@ extern "C"
 				}
 				if(c >= '0' && c <= '9')
 				{
-					(c <= '9' && c >= '1')
+					if(c <= '9' && c >= '1')
 						initList(lists[c-'1']);
 					else
 						initList(lists[9]);
