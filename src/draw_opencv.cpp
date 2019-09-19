@@ -68,15 +68,17 @@ extern "C"
 				}
 				if(c >= '0' && c <= '9')
 				{
+					(c <= '9' && c >= '1')
+						initList(lists[c-'1']);
+					else
+						initList(lists[9]);
 					setMouseCallback("Original", onMouseMakeList);
 					waitKey(0);
 					
 					if(c <= '9' && c >= '1'){
 						Point *points;
 						points = (Point *)calloc(lists[c-'1']->size, sizeof(Point));
-						printf("1111\n");
 						ListToArray1(lists[c-'1'], points);
-						printf("2222\n");
 						for (i = 0; i < lists[c-'1']->size; i++)
 						{
 							printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
