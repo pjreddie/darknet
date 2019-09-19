@@ -430,10 +430,9 @@ extern "C"
 			}
 			cur = cur->next;
 		}
+		puts("");
+		//free(cur);
 	}
-	puts("");
-	//free(cur);
-}
 
 int check_person_point(int px, int py, Points *ary)
 {
