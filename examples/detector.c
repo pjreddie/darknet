@@ -1188,7 +1188,8 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             switch(key){
                 case '1':
                     printf("change 1 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],1);
+                    printf("int z = %d\n",key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     for(i = 0 ; i < pointArrays[key-'1'].size ; i++)
                     {
                         for(j = 0 ; j < pointArrays[key-'1'].P[i].size ; j++)
@@ -1197,35 +1198,35 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                     break;
                 case '2':
                     printf("change 2 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],2);
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     break;
                 case '3':
                     printf("change 3 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],3);
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     break;
                 case '4':
                     printf("change 4 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],4);
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     break;
                 case '5':
                     printf("change 5 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],5);
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     break;
                 case '6':
                     printf("change 6 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],6);
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     break;
                 case '7':
                     printf("change 7 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],7);
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     break;
                 case '8':
                     printf("change 8 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],8);
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     break;
                 case '9':
                     printf("change 9 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],9);
+                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
                     break;
                 case '0':
                     printf("change 0 picture\n");
@@ -1544,7 +1545,6 @@ void load_one_image_Array(char *input, NumPoints *ary,int z)
 {
     int i = 0;        
     int j = 0;
-    printf("z = %d\n",z);
     sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",z/10,z%10);
     char sudoText[512];
     sprintf(sudoText,"sudo chmod 777 %s",input);
