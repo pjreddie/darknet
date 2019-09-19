@@ -910,8 +910,8 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
         if(kbhit()==1) // 키 입력 확인
         {
             int key = getch();
+            printf("ddddddddddddd\n");
             switch(key){
-                printf("ddddddddddddd\n");
                 case '1':
                     printf("change 1 picture\n");
                     load_one_image(input, &pointArray[key-'1'],key-'0');
