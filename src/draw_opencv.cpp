@@ -15,9 +15,10 @@ using namespace std;
 
 extern "C"
 {
-	void load_mat_image_points(char *input, int i, Points **ary);
+	void load_mat_image_points(char *input, int i, NumPoints **ary);
 	void onMouse(int event, int x, int y, int flags, void *param);
 	void onMouseCheck(int event, int x, int y, int flags, void *param);
+	void onMouseMakeList(int event, int x, int y, int flags, void *param);
 	void draw_line(Mat *im);
 	void checkIn(Mat *im, int x, int y);
 	void delay(clock_t sec);
