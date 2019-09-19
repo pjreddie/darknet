@@ -99,7 +99,7 @@ extern "C"
 			ary->size = 0;
 			for(i = 0 ; i < 10; i++)
 			{
-				if(lists[i - '1']->size > 3)
+				if(lists[i]->size > 3)
 				{
 					ary->size += 1;
 				}
