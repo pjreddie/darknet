@@ -1191,7 +1191,7 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                     for(i = 0 ; i < pointArrays[key-'1'].size ; i++)
                     {
                         for(j = 0 ; j < pointArrays[key-'1'].P[i].size ; j++)
-                        printf("pointArrays[0]->x[%d] = %d, pointArrays[0]->y[%d] = %d\n",i,pointArrays[key-'1'].P[i].x[j],i,pointArrays[key-'1'].P[i].y[j])
+                        printf("pointArrays[0]->x[%d] = %d, pointArrays[0]->y[%d] = %d\n",i,pointArrays[key-'1'].P[i].x[j],i,pointArrays[key-'1'].P[i].y[j]);
                     }
                     break;
                 case '2':
