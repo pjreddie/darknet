@@ -1544,6 +1544,7 @@ void load_one_image_Array(char *input, NumPoints *ary,int z)
 {
     int i = 0;        
     int j = 0;
+    printf("z = %d\n",z);
     sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",z/10,z%10);
     char sudoText[512];
     sprintf(sudoText,"sudo chmod 777 %s",input);
