@@ -279,18 +279,18 @@ extern "C"
 	void ListToArray1(pointList *l, Point *ary)
 	{
 		int i = 0;
-		print("zzzz\n");
+		printf("zzzz\n");
 		pointNode *cur = l->front;
-		print("zzzz\n");
+		printf("zzzz\n");
 		if (cur == NULL)
 		{
 			printf("List is Empty\n");
 			return;
 		}
-		print("zzzz\n");
+		printf("zzzz\n");
 		while (cur != NULL)
 		{
-			print("aaaa\n");
+			printf("aaaa\n");
 			ary[i].x = cur->x;
 			ary[i++].y = cur->y;
 			cur = cur->next;
