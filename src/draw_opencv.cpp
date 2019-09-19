@@ -70,7 +70,12 @@ extern "C"
 				{
 					setMouseCallback("Original", onMouseMakeList);
 					waitKey(0);
+					
 					if(c <= '9' && c >= '1'){
+						for(i = 0 ; i < lists[c-'1'].size ; i++)
+						{
+							printf("points->x : %d , points->y : %d\n", lists[c-'1'].x[i], lists[c-'1'].y[i]);
+						}
 						returnPoints(lists, ary);
 					}
 					else if(c == '0')
