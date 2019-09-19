@@ -403,6 +403,7 @@ extern "C"
 		for( j = 0 ; j < 10 ; j++){
 			i = 0;
 			pointNode *cur = l[j]->front;
+			printf("l[%d]->front start!!\n",j);
 			if (cur == NULL)
 			{
 				printf("List is Empty\n");
