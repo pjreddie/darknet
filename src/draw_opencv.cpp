@@ -196,11 +196,13 @@ extern "C"
 		news->prev = l->back;
 		if (l->front == NULL) // empty
 		{
+			printf("Add First!!\n");
 			l->front = news;
 			l->back = news;
 		}
 		else
 		{
+			printf("Add Not First!!\n");
 			//printf("news.x = %d , news.y = %d\n", news->x, news->y);
 			l->back->next = news;
 			l->back = news;
