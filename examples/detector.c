@@ -1185,6 +1185,7 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         {
             int key = getch();
             switch(key){
+                printf("Key = %d\n",key-'0');
                 case '1':
                     printf("change 1 picture\n");
                     load_one_image_Array(input, pointArrays[key-'1'],key-'0');
