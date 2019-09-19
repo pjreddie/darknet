@@ -394,7 +394,7 @@ extern "C"
 			}
 			while (cur != NULL)
 			{
-				if (l->size >= 3)
+				if (l[j]->size >= 3)
 				{
 					if(c <= '9' && c >= '1'){
 						ary->P[c-'1'].x[i] = cur->x;
