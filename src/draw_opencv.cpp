@@ -292,8 +292,11 @@ extern "C"
 		{
 			printf("aaaa\n");
 			ary[i].x = cur->x;
+			printf("bbbb\n");
 			ary[i++].y = cur->y;
+			printf("cccc\n");
 			cur = cur->next;
+			printf("dddd\n");	
 		}
 		puts("");
 		free(cur);
