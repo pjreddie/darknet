@@ -87,7 +87,7 @@ extern "C"
 						returnPoints(lists[c - '1'], ary);
 						for(i = 0 ; i < lists[c - '1']->size; i++)
 						{
-							printf("lists[%d]->x[%d] : %d , lists[%d]->y[%d] : %d\n", c - '1', i, ary->P[c-'1'].x[i], c - '1', i, ary->P[c-'1'].y[i]);
+							printf("ary->P.[%d]->x[%d] : %d , ary->P.[%d]->y[%d] : %d\n", c - '1', i, ary->P[c-'1'].x[i], c - '1', i, ary->P[c-'1'].y[i]);
 						}
 					}
 					else if (c == '0')
@@ -96,6 +96,15 @@ extern "C"
 					}
 				}
 			}
+			ary->size = 0;
+			for(i = 0 ; i < 10; i++)
+			{
+				if(lists[i - '1']->size > 3)
+				{
+					ary->size += 1;
+				}
+			}
+			printf("ary->size = %d\n",ary->size);
 			destroyWindow("Original");
 		}
 		else
@@ -401,7 +410,7 @@ extern "C"
 	void returnPoints(pointList *l, NumPoints *ary)
 	{
 		printf("Here is returnPoints() function!!!\n");
-		ary->size = 0;
+		ary->P[c-'1'].size = 0;
 		int i = 0;
 		int j = 0;
 		pointNode *cur = l->front;
