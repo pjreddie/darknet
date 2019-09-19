@@ -191,6 +191,7 @@ extern "C"
 		pointNode *news = (pointNode *)calloc(1, sizeof(pointNode));
 		news->x = x;
 		news->y = y;
+		printf("Check x : %d , y : %d\n",news->x,news->y);
 		news->next = NULL;
 		news->prev = l->back;
 		if (l->front == NULL) // empty
