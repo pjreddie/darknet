@@ -306,7 +306,7 @@ extern "C"
 		Point *points;
 		int i = 0;
 		int size = 0;
-		points = (Point *)calloc(list->size, sizeof(Point));
+		points = (Point *)calloc(listone->size, sizeof(Point));
 		size = listone->size;
 		ListToArray1(listone, points);
 		printf("path : %s\n",file_url);
@@ -324,7 +324,7 @@ extern "C"
 	{
 		int crosses = 0;
 		Point *points;
-		points = (Point *)calloc(list->size, sizeof(pointList));
+		points = (Point *)calloc(listone->size, sizeof(pointList));
 		ListToArray1(listone, points);
 		int i, j;
 		for (i = 0; i < listone->size; i++)
