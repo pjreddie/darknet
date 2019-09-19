@@ -25,7 +25,7 @@ extern "C"
 	void ListToArray2(pointList *l, Point **ary);
 	void checkIn(Mat *im, int x, int y);
 	void returnPoint(pointList *l, Points *ary);
-	void returnPoints(pointList *l[10], NumPoints *ary);
+	void returnPoints(pointList *l NumPoints *ary);
 
 	pointList *listone;
 	pointList *lists[10];
