@@ -54,7 +54,7 @@ extern "C"
 			printf("image cols : %d, image rows : %d\n", image.cols, image.rows);
 			while (1)
 			{
-				setMouseCallback("Original", onMouse);
+				//setMouseCallback("Original", onMouse);
 
 				c = waitKey(0);
 				if (c == 'a')
@@ -162,6 +162,7 @@ extern "C"
 		switch (event)
 		{
 		case CV_EVENT_LBUTTONDOWN:
+			printf("C : %d\n",c-'1');
 			if( c >= '1' && c <= '9')
 				ListAdd(lists[c-'1'], x, y);
 			else
