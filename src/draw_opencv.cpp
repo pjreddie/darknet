@@ -32,7 +32,7 @@ extern "C"
 	int c;
 	char file_url[512];
 
-	void load_mat_image_points(char *input, int j, NumPoints *ary) 
+	void load_mat_image_points(char *input, int j, NumPoints *ary)
 	{
 		strcpy(file_url, input);
 		puts(file_url);
@@ -40,7 +40,7 @@ extern "C"
 		int wait = 10;
 		int i = 0;
 
-		for(i = 0 ; i < 10 ; i++)
+		for (i = 0; i < 10; i++)
 		{
 			lists[i] = (pointList *)calloc(1, sizeof(pointList));
 			initList(lists[i]);
@@ -66,28 +66,29 @@ extern "C"
 				{
 					break;
 				}
-				if(c >= '0' && c <= '9')
+				if (c >= '0' && c <= '9')
 				{
-					if(c <= '9' && c >= '1') /* 새로 영역 지정할 때 마다 리스트 초기화 */
-						initList(lists[c-'1']);
+					if (c <= '9' && c >= '1') /* 새로 영역 지정할 때 마다 리스트 초기화 */
+						initList(lists[c - '1']);
 					else
 						initList(lists[9]);
 					setMouseCallback("Original", onMouseMakeList);
 					waitKey(0);
-					
-					if(c <= '9' && c >= '1'){ /* 영역 지정 완료 후 지정 부분 영역 표시*/
+
+					if (c <= '9' && c >= '1')
+					{ /* 영역 지정 완료 후 지정 부분 영역 표시*/
 						Point *points;
-						points = (Point *)calloc(lists[c-'1']->size, sizeof(Point));
-						ListToArray1(lists[c-'1'], points);
-						for (i = 0; i < lists[c-'1']->size; i++)
+						points = (Point *)calloc(lists[c - '1']->size, sizeof(Point));
+						ListToArray1(lists[c - '1'], points);
+						for (i = 0; i < lists[c - '1']->size; i++)
 						{
-							printf("lists[%d]->x[%d] : %d , lists[%d]->y[%d] : %d\n",c-'1',i, points[i].x,c-'1',i ,points[i].y);
+							printf("lists[%d]->x[%d] : %d , lists[%d]->y[%d] : %d\n", c - '1', i, points[i].x, c - '1', i, points[i].y);
 						}
-						returnPoints(lists, ary);
+						returnPoints(lists[c - '1'], ary);
 					}
-					else if(c == '0')
+					else if (c == '0')
 					{
-						returnPoints(lists, ary);
+						returnPoints(lists[c - '1'], ary);
 					}
 				}
 			}
@@ -174,22 +175,21 @@ extern "C"
 		switch (event)
 		{
 		case CV_EVENT_LBUTTONDOWN:
-			printf("C : %d\n",c-'1');
-			if( c >= '1' && c <= '9')
-				ListAdd(lists[c-'1'], x, y);
+			printf("C : %d\n", c - '1');
+			if (c >= '1' && c <= '9')
+				ListAdd(lists[c - '1'], x, y);
 			else
-				ListAdd(lists[9],x,y);
+				ListAdd(lists[9], x, y);
 			//draw_line(im);
 			break;
 		case CV_EVENT_RBUTTONDOWN:
-			if( c >= '1' && c <= '9')
-				ListRemove(lists[c-'1'], x, y);
+			if (c >= '1' && c <= '9')
+				ListRemove(lists[c - '1'], x, y);
 			else
-				ListRemove(lists[9],x,y);
+				ListRemove(lists[9], x, y);
 			///draw_line(im);
 			break;
 		}
-		
 	}
 	void initList(pointList *l) // 리스트 초기화
 	{
@@ -203,7 +203,7 @@ extern "C"
 		pointNode *news = (pointNode *)calloc(1, sizeof(pointNode));
 		news->x = x;
 		news->y = y;
-		printf("Check x : %d , y : %d\n",news->x,news->y);
+		printf("Check x : %d , y : %d\n", news->x, news->y);
 		news->next = NULL;
 		news->prev = l->back;
 		if (l->front == NULL) // empty
@@ -325,14 +325,14 @@ extern "C"
 		points = (Point *)calloc(listone->size, sizeof(Point));
 		size = listone->size;
 		ListToArray1(listone, points);
-		printf("path : %s\n",file_url);
-		Mat newImage = imread(file_url,CV_LOAD_IMAGE_COLOR);
+		printf("path : %s\n", file_url);
+		Mat newImage = imread(file_url, CV_LOAD_IMAGE_COLOR);
 		for (i = 0; i < size; i++)
 		{
 			printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
-			circle(newImage, Point(points[i].x,points[i].y), 5, Scalar(0,0,255), -1);
+			circle(newImage, Point(points[i].x, points[i].y), 5, Scalar(0, 0, 255), -1);
 		}
-		imshow("Original",newImage);
+		imshow("Original", newImage);
 		free(points);
 	}
 
@@ -394,71 +394,69 @@ extern "C"
 		//free(cur);
 	}
 
-	void returnPoints(pointList *l[10], NumPoints *ary)
+	void returnPoints(pointList *l, NumPoints *ary)
 	{
 		printf("Here is returnPoints() function!!!\n");
 		ary->size = 0;
 		int i = 0;
 		int j = 0;
-		for( j = 0 ; j < 10 ; j++){
-			i = 0;
-			pointNode *cur = l[j]->front;
-			printf("l[%d]->front start!!\n",j);
-			if (cur == NULL)
+		pointNode *cur = l->front;
+		if (cur == NULL)
+		{
+			printf("List is Empty\n");
+			return;
+		}
+		while (cur != NULL)
+		{
+			if (l[j]->size >= 3)
 			{
-				printf("List is Empty\n");
+				if (c <= '9' && c >= '1')
+				{
+					ary->P[c - '1'].x[i] = cur->x;
+					ary->P[c - '1'].y[i++] = cur->y;
+					ary->P[c - '1'].size++;
+				}
+				else if (c == '0')
+				{
+					ary->P[9].x[i] = cur->x;
+					ary->P[9].y[i++] = cur->y;
+					ary->P[9].size++;
+				}
+			}
+			else
+			{
+				printf("Point number is too low\n");
 				return;
 			}
-			while (cur != NULL)
-			{
-				if (l[j]->size >= 3)
-				{
-					if(c <= '9' && c >= '1'){
-						ary->P[c-'1'].x[i] = cur->x;
-						ary->P[c-'1'].y[i++] = cur->y;
-						ary->P[c-'1'].size++;
-					}
-					else if(c == '0')
-					{
-						ary->P[9].x[i] = cur->x;
-						ary->P[9].y[i++] = cur->y;
-						ary->P[9].size++;
-					}
-				}
-				else
-				{
-					printf("Point number is too low\n");
-					return;
-				}
-				cur = cur->next;
-			}
+			cur = cur->next;
 		}
-		puts("");
-		//free(cur);
 	}
+	puts("");
+	//free(cur);
+}
 
-	int check_person_point(int px, int py, Points *ary)
+int check_person_point(int px, int py, Points *ary)
+{
+	int crosses = 0;
+	int i, j;
+	for (i = 0; i < ary->size; i++)
 	{
-		int crosses = 0;
-		int i, j;
-		for (i = 0; i < ary->size; i++)
+		j = (i + 1) % ary->size;
+		if ((ary->y[i] > py) != (ary->y[j] > py)) // 두 좌표(연결점)의 y좌표가 점의 좌표와 교차할 경우만 확인
 		{
-			j = (i + 1) % ary->size;
-			if ((ary->y[i] > py) != (ary->y[j] > py)) // 두 좌표(연결점)의 y좌표가 점의 좌표와 교차할 경우만 확인
-			{
-				double atX = (ary->x[j] - ary->x[i]) * (py - ary->y[i]) / (ary->y[j] - ary->y[i]) + ary->x[i];
-				if (px <= atX)
-					crosses++;
-			}
-		}
-		if (crosses % 2 == 1)
-		{
-			return 1;
-		}
-		else
-		{
-			return 0;
+			double atX = (ary->x[j] - ary->x[i]) * (py - ary->y[i]) / (ary->y[j] - ary->y[i]) + ary->x[i];
+			if (px <= atX)
+				crosses++;
 		}
 	}
+	if (crosses % 2 == 1)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
 }
 #endif
