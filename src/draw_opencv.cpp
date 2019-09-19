@@ -81,7 +81,7 @@ extern "C"
 						ListToArray1(lists[c-'1'], points);
 						for (i = 0; i < lists[c-'1']->size; i++)
 						{
-							printf("points->x : %d , points->y : %d\n", points[i].x, points[i].y);
+							printf("lists[%d]->x[%d] : %d , lists[%d]->y[%d] : %d\n",c-'1',i, points[i].x,c-'1',i ,points[i].y);
 						}
 						returnPoints(lists, ary);
 					}
@@ -282,24 +282,17 @@ extern "C"
 	void ListToArray1(pointList *l, Point *ary)
 	{
 		int i = 0;
-		printf("zzzz\n");
 		pointNode *cur = l->front;
-		printf("zzzz\n");
 		if (cur == NULL)
 		{
 			printf("List is Empty\n");
 			return;
 		}
-		printf("zzzz\n");
 		while (cur != NULL)
 		{
-			printf("aaaa\n");
 			ary[i].x = cur->x;
-			printf("bbbb\n");
 			ary[i++].y = cur->y;
-			printf("cccc\n");
 			cur = cur->next;
-			printf("dddd\n");	
 		}
 		puts("");
 		free(cur);
