@@ -25,8 +25,8 @@ extern "C"
 	void ListToArray2(pointList *l, Point **ary);
 	void checkIn(Mat *im, int x, int y);
 	void returnPoint(pointList *l, Points *ary);
-
-	pointList *lists;
+	pointList *list;
+	pointList *lists[10];
 	int c;
 	char file_url[512];
 
@@ -36,8 +36,12 @@ extern "C"
 		puts(file_url);
 		Mat image;
 		int wait = 10;
-		lists = (pointList *)calloc(1, sizeof(pointList));
-		initList(lists);
+		int i = 0;
+		for( i = 0 ; i < 10 ; i++)
+		{
+			lists[i] = (pointList *)calloc(1, sizeof(pointList));
+			initList(lists[i]);
+		}
 		image = imread(input, 1);
 		if (image.data)
 		{ // can load image
@@ -62,6 +66,13 @@ extern "C"
 				{
 					setMouseCallback("Original", onMouseMakeList);
 					waitKey(0);
+					if(c <= '9' && c >= '1'){
+						returnPoint(lists, ary->P[c-'1']);
+					}
+					else if(c == '0')
+					{
+						returnPoint(lists, ary->P[9]);
+					}
 				}
 			}
 			destroyWindow("Original");
@@ -78,8 +89,8 @@ extern "C"
 		puts(file_url);
 		Mat image;
 		int wait = 10;
-		lists = (pointList *)calloc(1, sizeof(pointList));
-		initList(lists);
+		list = (pointList *)calloc(1, sizeof(pointList));
+		initList(list);
 		image = imread(input, 1);
 		if (image.data)
 		{ // can load image
@@ -102,7 +113,7 @@ extern "C"
 				}
 			}
 			destroyWindow("Original");
-			returnPoint(lists, ary);
+			returnPoint(list, ary);
 		}
 		else
 		{
@@ -129,11 +140,11 @@ extern "C"
 		switch (event)
 		{
 		case CV_EVENT_LBUTTONDOWN:
-			ListAdd(lists, x, y);
+			ListAdd(list, x, y);
 			draw_line(im);
 			break;
 		case CV_EVENT_RBUTTONDOWN:
-			ListRemove(lists, x, y);
+			ListRemove(list, x, y);
 			draw_line(im);
 			break;
 		}
@@ -147,19 +158,19 @@ extern "C"
 		switch (event)
 		{
 		case CV_EVENT_LBUTTONDOWN:
-			ListAdd(lists, x, y);
-			draw_line(im);
+			if( c >= '1' && c <= '9')
+				ListAdd(lists[c-'1'], x, y);
+			else
+				ListAdd(lists[9],x,y);
+			//draw_line(im);
 			break;
 		case CV_EVENT_RBUTTONDOWN:
-			ListRemove(lists, x, y);
-			draw_line(im);
+			if( c >= '1' && c <= '9')
+				ListRemove(lists[c-'1'], x, y);
+			else
+				ListRemove(lists[9],x,y);
+			///draw_line(im);
 			break;
-		}
-		if(c <= '9' && c >= '1')
-			returnPoint(lists, ary->P[c-'1']);
-		else if(c == '0')
-		{
-			returnPoint(lists, ary->P[10]);
 		}
 		
 	}
@@ -291,9 +302,9 @@ extern "C"
 		Point *points;
 		int i = 0;
 		int size = 0;
-		points = (Point *)calloc(lists->size, sizeof(Point));
-		size = lists->size;
-		ListToArray1(lists, points);
+		points = (Point *)calloc(list->size, sizeof(Point));
+		size = list->size;
+		ListToArray1(list, points);
 		printf("path : %s\n",file_url);
 		Mat newImage = imread(file_url,CV_LOAD_IMAGE_COLOR);
 		for (i = 0; i < size; i++)
@@ -309,12 +320,12 @@ extern "C"
 	{
 		int crosses = 0;
 		Point *points;
-		points = (Point *)calloc(lists->size, sizeof(pointList));
-		ListToArray1(lists, points);
+		points = (Point *)calloc(list->size, sizeof(pointList));
+		ListToArray1(list, points);
 		int i, j;
-		for (i = 0; i < lists->size; i++)
+		for (i = 0; i < list->size; i++)
 		{
-			j = (i + 1) % lists->size;
+			j = (i + 1) % list->size;
 			if ((points[i].y > y) != (points[j].y > y)) // 두 좌표(연결점)의 y좌표가 점의 좌표와 교차할 경우만 확인
 			{
 				double atX = (points[j].x - points[i].x) * (y - points[i].y) / (points[j].y - points[i].y) + points[i].x;
