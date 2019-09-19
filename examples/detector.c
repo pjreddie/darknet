@@ -1541,11 +1541,11 @@ void load_one_image(char *input, Points* ary,int j)
     }
 }
 
-void load_one_image_Array(char *input, NumPoints *ary,int z)
+void load_one_image_Array(char *input, NumPoints *ary,int k)
 {
     int i = 0;        
     int j = 0;
-    sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",z/10,z%10);
+    sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",k/10,k%10);
     char sudoText[512];
     sprintf(sudoText,"sudo chmod 777 %s",input);
     system(sudoText);
