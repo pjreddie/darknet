@@ -32,7 +32,7 @@ extern "C"
 	int c;
 	char file_url[512];
 
-	void load_mat_image_points(char *input, int j, NumPoints *ary)
+	void load_mat_image_points(char *input, int j, NumPoints *ary) 
 	{
 		strcpy(file_url, input);
 		puts(file_url);
@@ -68,14 +68,14 @@ extern "C"
 				}
 				if(c >= '0' && c <= '9')
 				{
-					if(c <= '9' && c >= '1')
+					if(c <= '9' && c >= '1') /* 새로 영역 지정할 때 마다 리스트 초기화 */
 						initList(lists[c-'1']);
 					else
 						initList(lists[9]);
 					setMouseCallback("Original", onMouseMakeList);
 					waitKey(0);
 					
-					if(c <= '9' && c >= '1'){
+					if(c <= '9' && c >= '1'){ /* 영역 지정 완료 후 지정 부분 영역 표시*/
 						Point *points;
 						points = (Point *)calloc(lists[c-'1']->size, sizeof(Point));
 						ListToArray1(lists[c-'1'], points);
@@ -396,7 +396,7 @@ extern "C"
 
 	void returnPoints(pointList *l[10], NumPoints *ary)
 	{
-		
+		printf("Here is returnPoints() function!!!\n");
 		ary->size = 0;
 		int i = 0;
 		int j = 0;
