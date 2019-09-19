@@ -1230,6 +1230,7 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                     printf("change 0 picture\n");
                     load_one_image_Array(input, &pointArrays[9],10);
                     break;
+                    /*
                 case 's': case 'S':
                     printf("\ncheck Area\n");
                     for(j = 1 ; j <= 10 ; j++){
@@ -1242,6 +1243,7 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                         }
                     }// end for function
                     break;
+                */
                 case 27 :
                     printf("Program Exit\n");
                     return;
