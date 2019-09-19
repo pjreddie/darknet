@@ -71,11 +71,11 @@ extern "C"
 					setMouseCallback("Original", onMouseMakeList);
 					waitKey(0);
 					if(c <= '9' && c >= '1'){
-						returnPoints(lists, ary->P[c-'1']);
+						returnPoints(lists, ary);
 					}
 					else if(c == '0')
 					{
-						returnPoints(lists, ary->P[9]);
+						returnPoints(lists, ary);
 					}
 				}
 			}
