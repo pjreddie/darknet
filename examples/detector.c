@@ -1188,7 +1188,7 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             switch(key){
                 case '1':
                     printf("change 1 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],1);
                     for(i = 0 ; i < pointArrays[key-'1'].size ; i++)
                     {
                         for(j = 0 ; j < pointArrays[key-'1'].P[i].size ; j++)
@@ -1197,35 +1197,35 @@ void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                     break;
                 case '2':
                     printf("change 2 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],2);
                     break;
                 case '3':
                     printf("change 3 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],3);
                     break;
                 case '4':
                     printf("change 4 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],4);
                     break;
                 case '5':
                     printf("change 5 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],5);
                     break;
                 case '6':
                     printf("change 6 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],6);
                     break;
                 case '7':
                     printf("change 7 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],7);
                     break;
                 case '8':
                     printf("change 8 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],8);
                     break;
                 case '9':
                     printf("change 9 picture\n");
-                    load_one_image_Array(input, pointArrays[key-'1'],key-'0');
+                    load_one_image_Array(input, pointArrays[key-'1'],9);
                     break;
                 case '0':
                     printf("change 0 picture\n");
