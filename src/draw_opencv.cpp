@@ -408,7 +408,7 @@ extern "C"
 		}
 		while (cur != NULL)
 		{
-			if (l[j]->size >= 3)
+			if (l->size >= 3)
 			{
 				if (c <= '9' && c >= '1')
 				{
