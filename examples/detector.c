@@ -1144,6 +1144,216 @@ void detector_run(char *datacfg, char *cfgfile, char *weightfile, char *filename
     free(pointArray);
 }
 
+void detector_runs(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
+{
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    char **names = get_labels(name_list);
+
+    image **alphabet = load_alphabet();
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    srand(2222222);
+    double times;
+    char buff[256];
+    char *input = buff;
+    float nms=.45;
+    int wait = 100;
+    int j = 0;
+    int i;
+    int z= 0;
+    Points pointArrays[10][10];
+    unsigned int seqkey;
+    /*기존의 경우에는 Points 구조체 배열을 10개의 크기를 만들어서
+    각 인덱스마다 카메라의 배열 리스트를 가지고 있는 변수를 만들었다.
+    
+    수정해야되는 부분은 각 카메라 마다 다중 구역을 검출해야되기 때문에
+    방법을 수정할 필요가 있다.
+    1. Points 배열을 10개 만들어서 각 카메라마다 각각의 배열을 매칭시켜 ArrayList를 저장하도록 할 것
+    2. Points 구조체를 배열로 가지는 구조체를 추가적으로 만들어서 이를 사용할 것
+
+    둘 중 하나의 방법을 활용하여 해결할 것
+
+    */
+    for(i = 0 ; i < 10 ; i++)
+    {
+        for(j= 0 ; j < 10 ; j++)
+        {
+            pointArray[i][j].size = 0;
+        }
+    }
+    while(1)
+    {
+        if(kbhit()==1) // 키 입력 확인
+        {
+            int key = getch();
+            switch(key){
+                case '1':
+                    printf("change 1 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '2':
+                    printf("change 2 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '3':
+                    printf("change 3 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '4':
+                    printf("change 4 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '5':
+                    printf("change 5 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '6':
+                    printf("change 6 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '7':
+                    printf("change 7 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '8':
+                    printf("change 8 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '9':
+                    printf("change 9 picture\n");
+                    load_one_image(input, pointArray[key-'1'],key-'0');
+                    break;
+                case '0':
+                    printf("change 0 picture\n");
+                    load_one_image(input, &pointArray[9],10);
+                    break;
+                case 's': case 'S':
+                    printf("\ncheck Area\n");
+                    for(j = 1 ; j <= 10 ; j++){
+                        sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
+                                              
+                        load_mat_image_point(input,j,&pointArray[j-1]); // pointArray.size가 0일 경우 전체 화면에 대해서 검출하는 식으로 진행
+                        for(i = 0 ; i < pointArray[j-1].size ; i++)
+                        {
+                            printf("pointArray[%d].X : %d , pointArray[%d].Y : %d\n",j,pointArray[j-1].x[i],j,pointArray[j-1].y[i]);
+                        }
+                    }// end for function
+                    break;
+                case 27 :
+                    printf("Program Exit\n");
+                    return;
+                    break;
+                }
+        }//end if function
+        //non error
+        if(wait == 0)
+        {
+            image im;
+            image sized;
+            int count;
+            for(j = 1 ; j <= 10 ; j++)
+            {
+                sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",j/10,j%10);
+                char sudoText[512];
+                sprintf(sudoText,"sudo chmod 777 %s",input);
+                system(sudoText);
+                im = load_image_color(input,0,0);
+                sized = letterbox_image(im, net->w, net->h);
+
+                layer l = net->layers[net->n-1];
+
+                float *X = sized.data;
+                times=what_time_is_it_now();
+                if(cando == 1)
+                {
+                    network_predict(net, X);
+                    printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-times);
+                    int nboxes = 0;
+                    detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+                    if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+                    printf("pointArray[%d].size = %d\n",j-1,pointArray[j-1].size);
+                    if(pointArray[j-1].size >= 3)
+                    {
+                        printf("111\n");
+                        im = draw_detections_area_count(im, dets, nboxes, thresh, names, alphabet, l.classes,&pointArray[j-1],&count);
+                    }
+                    else
+                    {
+                        draw_detections_count(im, dets, nboxes, thresh, names, alphabet, l.classes,&count);
+                    }
+                    free_detections(dets, nboxes);
+                }
+                if(outfile){
+                    save_image(im, outfile);
+                }
+                else
+                {
+                save_image(im, "predictions");
+                }
+                free_image(im);
+                free_image(sized);
+                //Get
+                char url[512];
+                struct people pp;
+
+                sprintf(url, "http://121.187.239.177:8080/poipeoplesu");
+                char data[512];
+                char poi[512];
+                time_t timer;
+                struct tm *t;
+                char days[512];
+                timer = time(NULL);
+                if (j < 10)
+                    sprintf(poi, "x0%d", j);
+                else
+                {
+                    sprintf(poi, "x%d", j);
+                }
+                printf("poi : %s, su : %d seqkey : %d\n",poi,count,seqkey);
+                sprintf(data, "fname=테스트&poi=%s&su=%d&seqkey=%d", poi, count,seqkey);
+                CURL *curl;
+                CURLcode res;
+                struct curl_slist *list = NULL;
+                curl = curl_easy_init();
+                if (curl)
+                {
+                    curl_easy_setopt(curl, CURLOPT_URL, url);
+                    list = curl_slist_append(list, "Content-Type: application/x-www-form-urlencoded");
+                    //list = curl_slist_append(list, "Content-Type: application/json");
+                    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);   // content-type 설정
+                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함
+                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L); // 값을 false 하면 에러가 떠서 공식 문서 참고함
+                    curl_easy_setopt(curl, CURLOPT_POST, 1L);           //POST option
+                    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+
+                    res = curl_easy_perform(curl);
+                    if (res == CURLE_OK)
+                        printf("POST success = %s\n", url);
+                    else
+                        printf("POST fault\n");
+
+                    curl_easy_cleanup(curl);
+                }
+                else
+                {
+                    printf("CURL fault\n");
+                }
+
+            }// end for functionls
+            seqkey+=1;
+            wait = 300;
+            //wait = 50; // 5초
+            usleep(100*1000);
+        }//end if function
+        
+        usleep(100*1000);
+        wait -= 1;
+        if (filename) break;
+    }// end while function
+    free(pointArray);
+}
+
 void detector_directory(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
@@ -1301,6 +1511,10 @@ void run_detector(int argc, char **argv) // argv[1] == detector ??��?��?
     {
         detector_run(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
     }
+    else if(0==strcmp(argv[2],"runs"))
+    {
+        detector_runs(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
+    }
     //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
     //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
 }
@@ -1317,5 +1531,22 @@ void load_one_image(char *input, Points* ary,int j)
     for(i = 0 ; i <ary->size ; i++)
     {
         printf("pointArray[%d].X : %d , pointArray[%d].Y : %d\n",j,ary->x[i],j,ary->y[i]);
+    }
+}
+
+void load_one_image_Array(char *input, NumPoints *ary,int z)
+{
+    int i = 0;        
+    int j = 0;
+    sprintf(input,"/var/lib/tomcat8/webapps/UploadServer/resources/upload/img%d%d.jpg",z/10,z%10);
+    char sudoText[512];
+    sprintf(sudoText,"sudo chmod 777 %s",input);
+    system(sudoText);
+    //sprintf(input,"/home/kdy/information/TestImage/Test_%d.jpg",j);
+    load_mat_image_points(input,j,ary); // pointArray.size가 0일 경우 전체 화면에 대해서 검출하는 식으로 진행
+    for(i = 0 ; i <ary->size ; i++)
+    {
+        for(j = 0 ; j < ary->P[i].size ; j++)
+        printf("pointArray[%d][%d].X : %d , pointArray[%d][%d].Y : %d\n",i,j,ary->P[i].x[j],i,j,ary->P[i].y[j]);
     }
 }

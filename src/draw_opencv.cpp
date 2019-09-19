@@ -15,6 +15,7 @@ using namespace std;
 
 extern "C"
 {
+	void load_mat_image_points(char *input, int i, Points **ary)
 	void onMouse(int event, int x, int y, int flags, void *param);
 	void onMouseCheck(int event, int x, int y, int flags, void *param);
 	void draw_line(Mat *im);
@@ -26,8 +27,50 @@ extern "C"
 	void returnPoint(pointList *l, Points *ary);
 
 	pointList *lists;
-
+	int c;
 	char file_url[512];
+
+	void load_mat_image_points(char *input, int i, NumPoints *ary)
+	{
+		strcpy(file_url, input);
+		puts(file_url);
+		Mat image;
+		int wait = 10;
+		lists = (pointList *)calloc(1, sizeof(pointList));
+		initList(lists);
+		image = imread(input, 1);
+		if (image.data)
+		{ // can load image
+			imshow("Original", image);
+			//resizeWindow("Original",image.cols,image.rows);
+			printf("image cols : %d, image rows : %d\n", image.cols, image.rows);
+			while (1)
+			{
+				setMouseCallback("Original", onMouse);
+
+				c = waitKey(0);
+				if (c == 'a')
+				{
+					setMouseCallback("Original", onMouseCheck);
+					waitKey(0);
+				}
+				if (c == 32)
+				{
+					break;
+				}
+				if(c >= '0' && c <= '9')
+				{
+					setMouseCallback("Original", onMouseMakeList);
+					waitKey(0);
+				}
+			}
+			destroyWindow("Original");
+		}
+		else
+		{
+			fprintf(stderr, "Cannot load image \"%s\"\n", file_url);
+		}
+	}
 
 	void load_mat_image_point(char *input, int i, Points *ary)
 	{
@@ -35,7 +78,6 @@ extern "C"
 		puts(file_url);
 		Mat image;
 		int wait = 10;
-		int c;
 		lists = (pointList *)calloc(1, sizeof(pointList));
 		initList(lists);
 		image = imread(input, 1);
@@ -97,6 +139,30 @@ extern "C"
 		}
 	}
 
+	void onMouseMakeList(int event, int x, int y, int flags, void *param)
+	{
+		Mat *im = reinterpret_cast<Mat *>(param);
+		int i = 0;
+		int size;
+		switch (event)
+		{
+		case CV_EVENT_LBUTTONDOWN:
+			ListAdd(lists, x, y);
+			draw_line(im);
+			break;
+		case CV_EVENT_RBUTTONDOWN:
+			ListRemove(lists, x, y);
+			draw_line(im);
+			break;
+		}
+		if(c <= '9' && c >= '1')
+			returnPoint(lists, ary->P[c-'1']);
+		else if(c == '0')
+		{
+			returnPoint(lists, ary->P[10]);
+		}
+		
+	}
 	void initList(pointList *l) // 리스트 초기화
 	{
 		l->size = 0;
