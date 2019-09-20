@@ -193,9 +193,6 @@ box_label *read_boxes(char *filename, int *n)
     int count = 0;
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
         boxes = (box_label*)xrealloc(boxes, (count + 1) * sizeof(box_label));
-        if(!boxes) {
-          error("realloc failed");
-        }
         boxes[count].id = id;
         boxes[count].x = x;
         boxes[count].y = y;

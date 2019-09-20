@@ -154,7 +154,7 @@ void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr)
 {
-    int *count_arr = calloc(M*N, sizeof(int));
+    int *count_arr = xcalloc(M*N, sizeof(int));
 
     int i, j, k;
     for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
@@ -184,7 +184,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr)
 {
-    int *count_arr = calloc(M*N, sizeof(int));
+    int *count_arr = xcalloc(M*N, sizeof(int));
 
     int i, j, k;
     for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
@@ -213,7 +213,7 @@ void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr)
 {
-    int *count_arr = calloc(M*N, sizeof(int));
+    int *count_arr = xcalloc(M*N, sizeof(int));
 
     int i;
 

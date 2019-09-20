@@ -821,9 +821,6 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
                 int buf_len = strlen(buf);
                 int total_len = send_buf_len + buf_len + 100;
                 send_buf = (char *)xrealloc(send_buf, total_len * sizeof(char));
-                if (!send_buf) {
-                  error("realloc failed");
-                }
                 strcat(send_buf, buf);
                 free(buf);
             }

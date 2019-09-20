@@ -1,6 +1,7 @@
 #include "reorg_layer.h"
 #include "dark_cuda.h"
 #include "blas.h"
+#include "utils.h"
 #include <stdio.h>
 
 

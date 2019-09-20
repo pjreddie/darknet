@@ -1,5 +1,6 @@
 #include "maxpool_layer.h"
 #include "dark_cuda.h"
+#include "utils.h"
 #include "gemm.h"
 #include <stdio.h>
 

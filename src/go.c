@@ -19,7 +19,7 @@ char *fgetgo(FILE *fp)
 {
     if(feof(fp)) return 0;
     size_t size = 94;
-    char* line = (char*)malloc(size * sizeof(char));
+    char* line = (char*)xmalloc(size * sizeof(char));
     if(size != fread(line, sizeof(char), size, fp)){
         free(line);
         return 0;
@@ -128,13 +128,7 @@ void train_go(char *cfgfile, char *weightfile)
 
     char buff[256];
     float* board = (float*)xcalloc(19 * 19 * net.batch, sizeof(float));
-    if(!board) {
-        error("calloc failed");
-    }
     float* move = (float*)xcalloc(19 * 19 * net.batch, sizeof(float));
-    if(!move) {
-        error("calloc failed");
-    }
     moves m = load_go_moves("backup/go.train");
     //moves m = load_go_moves("games.txt");
 
@@ -417,13 +411,7 @@ void valid_go(char *cfgfile, char *weightfile, int multi)
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
     float* board = (float*)xcalloc(19 * 19, sizeof(float));
-    if(!board) {
-        error("calloc failed");
-    }
     float* move = (float*)xcalloc(19 * 19, sizeof(float));
-    if(!move) {
-        error("calloc failed");
-    }
     moves m = load_go_moves("backup/go.test");
 
     int N = m.n;
@@ -778,17 +766,8 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
     set_batch_network(&net, 1);
     set_batch_network(&net2, 1);
     float* board = (float*)xcalloc(19 * 19, sizeof(float));
-    if(!board) {
-        error("calloc failed");
-    }
     char* one = (char*)xcalloc(91, sizeof(char));
-    if(!one) {
-        error("calloc failed");
-    }
     char* two = (char*)xcalloc(91, sizeof(char));
-    if(!two) {
-        error("calloc failed");
-    }
     int done = 0;
     int player = 1;
     int p1 = 0;

@@ -1,4 +1,5 @@
 #include "route_layer.h"
+#include "utils.h"
 #include "dark_cuda.h"
 #include "blas.h"
 #include <stdio.h>

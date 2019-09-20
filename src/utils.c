@@ -23,6 +23,13 @@
 #pragma warning(disable: 4996)
 #endif
 
+void *xmalloc(size_t size) {
+    void *ptr=malloc(size);
+    if(!ptr) {
+        malloc_error();
+    }
+    return ptr;
+}
 void *xcalloc(size_t nmemb, size_t size) {
     void *ptr=calloc(nmemb,size);
     if(!ptr) {
@@ -319,7 +326,7 @@ void error(const char *s)
 
 void malloc_error()
 {
-    fprintf(stderr, "Malloc error\n");
+    fprintf(stderr, "xMalloc error\n");
     exit(EXIT_FAILURE);
 }
 
@@ -407,7 +414,7 @@ char *fgetl(FILE *fp)
 {
     if(feof(fp)) return 0;
     size_t size = 512;
-    char* line = (char*)malloc(size * sizeof(char));
+    char* line = (char*)xmalloc(size * sizeof(char));
     if(!fgets(line, size, fp)){
         free(line);
         return 0;
@@ -419,10 +426,6 @@ char *fgetl(FILE *fp)
         if(curr == size-1){
             size *= 2;
             line = (char*)xrealloc(line, size * sizeof(char));
-            if(!line) {
-                printf("%ld\n", size);
-                malloc_error();
-            }
         }
         size_t readsize = size-curr;
         if(readsize > INT_MAX) readsize = INT_MAX-1;
@@ -500,7 +503,7 @@ char *copy_string(char *s)
     if(!s) {
         return NULL;
     }
-    char* copy = (char*)malloc(strlen(s) + 1);
+    char* copy = (char*)xmalloc(strlen(s) + 1);
     strncpy(copy, s, strlen(s)+1);
     return copy;
 }

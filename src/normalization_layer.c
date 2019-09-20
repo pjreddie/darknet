@@ -1,5 +1,6 @@
 #include "normalization_layer.h"
 #include "blas.h"
+#include "utils.h"
 #include <stdio.h>
 
 layer make_normalization_layer(int batch, int w, int h, int c, int size, float alpha, float beta, float kappa)

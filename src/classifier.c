@@ -782,9 +782,6 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     char **names = get_labels(name_list);
     clock_t time;
     int* indexes = (int*)xcalloc(top, sizeof(int));
-    if(!indexes) {
-        error("calloc failed");
-    }
     char buff[256];
     char *input = buff;
     //int size = net.w;

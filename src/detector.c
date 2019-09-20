@@ -835,9 +835,6 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
                     if (prob > 0) {
                         detections_count++;
                         detections = (box_prob*)xrealloc(detections, detections_count * sizeof(box_prob));
-                        if (!detections) {
-                          error("realloc failed");
-                        }
                         detections[detections_count - 1].b = dets[i].bbox;
                         detections[detections_count - 1].p = prob;
                         detections[detections_count - 1].image_index = image_index;

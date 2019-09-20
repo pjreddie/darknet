@@ -1,5 +1,6 @@
 #include "upsample_layer.h"
 #include "dark_cuda.h"
+#include "utils.h"
 #include "blas.h"
 
 #include <stdio.h>
