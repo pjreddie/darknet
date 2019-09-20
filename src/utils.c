@@ -212,6 +212,7 @@ void find_replace(const char* str, char* orig, char* rep, char* output)
         if(str!=output) {
             strcpy(output,str);
         }
+        free(buffer);
         return;
     }
 
