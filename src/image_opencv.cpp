@@ -168,7 +168,8 @@ image load_image_cv(char *filename, int channels)
         checkblur = 1;
     }
     */
-    im = mat_to_image(m);
+   GaussianBlur(m,dst,Size(5,5),0);// blur
+    im = mat_to_image(dst);
     return im;
 }
 
