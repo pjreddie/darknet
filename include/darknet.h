@@ -636,6 +636,10 @@ void cuda_pull_array(float *x_gpu, float *x, size_t n);
 float cuda_mag_array(float *x_gpu, size_t n);
 void cuda_push_array(float *x_gpu, float *x, size_t n);
 
+float *network_predict_letterbox_gpu_device_image(network *net, image im_gpu);
+float *network_predict_gpu_device_input(network *net, float *input_gpu);
+void forward_network_gpu_device_input(network *netp);
+
 void forward_network_gpu(network *net);
 void backward_network_gpu(network *net);
 void update_network_gpu(network *net);
@@ -742,6 +746,7 @@ float *network_predict(network *net, float *input);
 int network_width(network *net);
 int network_height(network *net);
 float *network_predict_image(network *net, image im);
+float *network_predict_letterbox_image(network *net, image im);
 void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, detection *dets);
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num);
 void free_detections(detection *dets, int n);
