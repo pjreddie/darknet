@@ -1403,9 +1403,6 @@ void detector_directory(char *datacfg, char *cfgfile, char *weightfile, char *fi
             printf("%s\n",dir->d_name);
             sprintf(buf,"%s/%s",input,dir->d_name);
             printf("%s\n",buf);
-            char sudoText[512];
-            sprintf(sudoText,"sudo chmod 777 %s",buf);
-            system(sudoText);
             im = load_image_color(buf,0,0);
             sized = letterbox_image(im, net->w, net->h);
 
@@ -1497,9 +1494,6 @@ void detector_blur_directory(char *datacfg, char *cfgfile, char *weightfile, cha
             printf("%s\n",dir->d_name);
             sprintf(buf,"%s/%s",input,dir->d_name);
             printf("%s\n",buf);
-            char sudoText[512];
-            sprintf(sudoText,"sudo chmod 777 %s",buf);
-            system(sudoText);
             im = load_image_color_blur(buf,0,0);
             sized = letterbox_image(im, net->w, net->h);
 
