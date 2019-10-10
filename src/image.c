@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include "image.h"
 #include "utils.h"
 #include "blas.h"
