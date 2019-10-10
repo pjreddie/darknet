@@ -5,6 +5,8 @@
         "xstring": "cpp",
         "xutility": "cpp",
         "system_error": "cpp",
-        "xlocale": "cpp"
+        "xlocale": "cpp",
+        "blas.h": "c",
+        "math.h": "c"
     }
 }
