@@ -698,7 +698,6 @@ image load_image_blur(char *filename, int w, int h, int c);
 image load_image_color_blur(char *filename, int w, int h);
 image make_image(int w, int h, int c);
 image resize_image(image im, int w, int h);
-image blur_image(image im);
 void censor_image(image im, int dx, int dy, int w, int h);
 image letterbox_image(image im, int w, int h);
 image crop_image(image im, int dx, int dy, int w, int h);
@@ -837,6 +836,7 @@ void ListAdd(pointList* l, int x, int y);// 리스트 추가
 int ListRemove(pointList* l,int x , int y); // 리스트 제거
 void ListPrint(pointList* l);
 image draw_polygonlines(image im,Points *ary);
+image blur_image(image im);
 #endif
 void draw_detections_count(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,int* count);
 image draw_detections_area(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,Points* ary);
