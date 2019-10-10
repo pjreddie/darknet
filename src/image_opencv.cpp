@@ -69,6 +69,48 @@ image mat_to_image(Mat m) // mat -> image struct
     return im;
 }
 
+image blur_image(image im)
+{
+    Mat m = image_to_mat(im);
+         
+        if(m.size().width<m.size().height)
+        {
+            min = m.size().width;
+        }
+        else
+        {
+            min = m.size().height;
+        }
+
+        if(min < 50)
+        {
+            GaussianBlur(m,dst,Size(3,3),0);// blur
+        }
+        else if(min < 100)
+        {
+            GaussianBlur(m,dst,Size(5,5),0);// blur
+        }
+        else if(min <300)
+        {
+            GaussianBlur(m,dst,Size(7,7),0);// blur
+        }
+        else if(min <500)
+        {
+            GaussianBlur(m,dst,Size(9,9),0);// blur
+        }
+        else if(min < 1000)
+        {
+            GaussianBlur(m,dst,Size(11,11),0);// blur
+        }
+        else
+        {
+            GaussianBlur(m,dst,Size(15,15),0);// blur
+        }
+        
+        im = mat_to_image(dst); // blur image send to function
+    return im;
+}
+
 void *open_video_stream(const char *f, int c, int w, int h, int fps)
 {
     VideoCapture *cap;
