@@ -4,7 +4,6 @@
 #include "cuda.h"
 #include <stdio.h>
 #include <math.h>
-#include "darknet.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
