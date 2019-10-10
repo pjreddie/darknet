@@ -1541,9 +1541,13 @@ image load_image_blur(char *filename, int w, int h, int c) // load_image() funct
 
     if((h && w) && (h != out.h || w != out.w)){ // resize image
         image resized = resize_image(out, w, h);
-        image blured = blur_image(resized);
-        free_image(out);
-        out = blured;
+        #ifdef OPENCV
+            image blured = blur_image(resized);
+            free_image(out);
+            out = blured;
+        #else
+            out = resized;
+        #endif
     }
     return out;
 }
