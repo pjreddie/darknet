@@ -1368,7 +1368,7 @@ void detector_directory(char *datacfg, char *cfgfile, char *weightfile, char *fi
     char *input = buff;
     DIR *d;
     struct dirent *dir;
-    printf("Enter Image Path: ");
+    printf("Enter Directory path: ");
     fflush(stdout);
     input = fgets(input, 256, stdin);
     if(!input) return;
@@ -1452,6 +1452,101 @@ void detector_directory(char *datacfg, char *cfgfile, char *weightfile, char *fi
     }
     closedir(d);
 }
+
+void detector_blur_directory(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
+{
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    char **names = get_labels(name_list);
+    char buff[256];
+    char *input = buff;
+    DIR *d;
+    struct dirent *dir;
+    printf("Enter Directory path: ");
+    fflush(stdout);
+    input = fgets(input, 256, stdin);
+    if(!input) return;
+    strtok(input, "\n");
+    d = opendir(input);
+    
+
+    image **alphabet = load_alphabet();
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    srand(2222222);
+    double time;
+    float nms=.45;
+    int wait = 100;
+    int j = 0;
+    int i;
+    int z= 0;
+
+    if(d)
+    {
+        while((dir = readdir(d)) != NULL)
+        {
+            
+            image im;
+            image sized;
+            char buf[512];
+            int count;
+            int a;
+            if((a = strstr(dir->d_name,".jpg")) >= 0 )
+            {
+            printf("%d\n",a);
+            printf("%s\n",dir->d_name);
+            sprintf(buf,"%s/%s",input,dir->d_name);
+            printf("%s\n",buf);
+            char sudoText[512];
+            sprintf(sudoText,"sudo chmod 777 %s",buf);
+            system(sudoText);
+            im = load_image_color_blur(buf,0,0);
+            sized = letterbox_image(im, net->w, net->h);
+
+            layer l = net->layers[net->n-1];
+
+            float *X = sized.data;
+            time=what_time_is_it_now();
+            if(cando == 1)
+            {
+                network_predict(net, X);
+                printf("%s: Predicted in %f seconds.\n", buf, what_time_is_it_now()-time);
+                int nboxes = 0;
+                detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+                if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+                draw_detections_count(im, dets, nboxes, thresh, names, alphabet, l.classes,&count);
+                free_detections(dets, nboxes);
+            }
+            if(outfile){
+                save_image(im, outfile);
+            }
+            else
+            {
+            save_image(im, "predictions");
+
+            #ifdef OPENCV
+                usleep(1000*100);
+                make_window("predictions", 512, 512, 0);
+                show_image(im, "predictions", 0);
+
+            #endif
+
+            }
+            free_image(im);
+            free_image(sized);
+            }
+            else{
+
+            }
+        }//end if function
+    }
+    else
+    {
+        printf("Can't open directory\n");
+    }
+    closedir(d);
+}
+
 void run_detector(int argc, char **argv) // argv[1] == detector ??��?��?�� 寃쎌?�� 
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
@@ -1505,6 +1600,7 @@ void run_detector(int argc, char **argv) // argv[1] == detector ??��?��?
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
     else if(0==strcmp(argv[2], "directory")) detector_directory(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
+    else if(0==strcmp(argv[2], "directory2")) detector_blur_directory(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
     else if(0==strcmp(argv[2], "demo")) { // detect
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);

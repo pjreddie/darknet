@@ -1528,6 +1528,30 @@ image load_image_color(char *filename, int w, int h) // load_image_color() funct
     return load_image(filename, w, h, 3);// calling load_image() function
 }
 
+image load_image_blur(char *filename, int w, int h, int c) // load_image() function
+{
+#ifdef OPENCV
+    image out = load_image_cv(filename, c); //if can use opencv opensource
+    //printf("it can use OpenCV\n"); // we can use opencv so coming this ifdef OPENCV
+#else
+    image out = load_image_stb(filename, c); // else
+    //printf("it can't use OpenCV\n");
+#endif
+
+    if((h && w) && (h != out.h || w != out.w)){ // resize image
+        image resized = resize_image(out, w, h);
+        image blured = blur_image(resized);
+        free_image(out);
+        out = blured;
+    }
+    return out;
+}
+
+image load_image_color_blur(char *filename, int w, int h) // load_image_color() function
+{
+    return load_image_blur(filename, w, h, 3);// calling load_image() function
+}
+
 image get_image_layer(image m, int l)
 {
     image out = make_image(m.w, m.h, 1);
