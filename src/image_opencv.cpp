@@ -71,8 +71,9 @@ image mat_to_image(Mat m) // mat -> image struct
 
 image blur_image(image im)
 {
+    int min;
     Mat m = image_to_mat(im);
-         
+    Mat dst;
         if(m.size().width<m.size().height)
         {
             min = m.size().width;
@@ -107,7 +108,7 @@ image blur_image(image im)
             GaussianBlur(m,dst,Size(15,15),0);// blur
         }
         
-        im = mat_to_image(dst); // blur image send to function
+    im = mat_to_image(dst); // blur image send to function
     return im;
 }
 
