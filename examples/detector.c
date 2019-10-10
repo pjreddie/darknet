@@ -1491,7 +1491,7 @@ void detector_blur_directory(char *datacfg, char *cfgfile, char *weightfile, cha
             char buf[512];
             int count;
             int a;
-            if((a = strstr(dir->d_name,".jpg")) >= 0 )
+            if((a = strstr(dir->d_name,".jpg")) > 0 )
             {
             printf("%d\n",a);
             printf("%s\n",dir->d_name);
