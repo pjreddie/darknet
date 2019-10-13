@@ -27,7 +27,7 @@ void forward_dropout_layer_gpu(dropout_layer layer, network net)
     cuda_push_array(layer.rand_gpu, layer.rand, size);
     */
 
-    yoloswag420blazeit360noscope<<<cuda_gridsize(size), BLOCK>>>(net.input_gpu, size, layer.rand_gpu, layer.probability, layer.scale);
+    yoloswag420blazeit360noscope<<<cuda_gridsize(size), BLOCK, 0, get_darknet_stream()>>>(net.input_gpu, size, layer.rand_gpu, layer.probability, layer.scale);
     check_error(cudaPeekAtLastError());
 }
 
@@ -36,6 +36,6 @@ void backward_dropout_layer_gpu(dropout_layer layer, network net)
     if(!net.delta_gpu) return;
     int size = layer.inputs*layer.batch;
 
-    yoloswag420blazeit360noscope<<<cuda_gridsize(size), BLOCK>>>(net.delta_gpu, size, layer.rand_gpu, layer.probability, layer.scale);
+    yoloswag420blazeit360noscope<<<cuda_gridsize(size), BLOCK, 0, get_darknet_stream()>>>(net.delta_gpu, size, layer.rand_gpu, layer.probability, layer.scale);
     check_error(cudaPeekAtLastError());
 }
