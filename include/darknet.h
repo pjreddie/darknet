@@ -730,6 +730,12 @@ typedef struct detection{
     int sort_class;
 } detection;
 
+// network.c -batch inference
+typedef struct detNumPair {
+    int num;
+    detection *dets;
+} detNumPair, *pdetNumPair;
+
 // matrix.h
 typedef struct matrix {
     int rows, cols;
