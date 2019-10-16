@@ -919,7 +919,7 @@ detNumPair* network_predict_custom(network *net, image im, int batch, int w, int
 {
     set_batch_network(net, batch);
     network_predict(*net, im.data);
-    detNumPair *pdets = malloc(batch*sizeof(detNumPair));
+    detNumPair *pdets = ( struct detNumPair * )malloc(batch*sizeof(detNumPair));
     int num;
     for(int b=0;b<batch;b++){
         detection *dets = make_network_boxes_custom(net, thresh, &num, b);
