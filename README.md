@@ -22,8 +22,8 @@ More details: http://pjreddie.com/darknet/yolo/
     * [Using cmake](#how-to-compile-on-linux-using-cmake)
     * [Using make](#how-to-compile-on-linux-using-make)
 3.  How to compile on Windows
+    * [Using CMake-GUI](#how-to-compile-on-windows-using-cmake-gui)
     * [Using vcpkg](#how-to-compile-on-windows-using-vcpkg)
-    * [Using Cmake-GUI](#how-to-compile-on-windows-using-cmake-gui)
     * [Legacy way](#how-to-compile-on-windows-legacy-way)
 4.  [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
 5.  [How to train with multi-GPU:](#how-to-train-with-multi-gpu)
@@ -159,7 +159,7 @@ The `CMakeLists.txt` will attempt to find installed optional dependencies like
 CUDA, cudnn, ZED and build against those. It will also create a shared object
 library file to use `darknet` for code development.
 
-Inside the cloned repository:
+Do inside the cloned repository:
 
 ```
 mkdir build-release
@@ -187,9 +187,28 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 
 To run Darknet on Linux use examples from this article, just use `./darknet` instead of `darknet.exe`, i.e. use this command: `./darknet detector test ./cfg/coco.data ./cfg/yolov3.cfg ./yolov3.weights`
 
+### How to compile on Windows (using `CMake-GUI`)
+
+This is the recommended approach to build Darknet on Windows if you have already
+installed Visual Studio 2015/2017/2019, CUDA > 10.0, cuDNN > 7.0, and
+OpenCV > 2.4.
+
+Use `CMake-GUI` as shown here on this [**IMAGE**](https://user-images.githubusercontent.com/4096485/55107892-6becf380-50e3-11e9-9a0a-556a943c429a.png):
+
+1. Configure
+2. Optional platform for generator (Set: x64)
+3. Finish
+4. Generate
+5. Open Project
+6. Set: x64 & Release
+7. Build
+8. Build solution
+
 ### How to compile on Windows (using `vcpkg`)
 
-If you have already installed Visual Studio 2015/2017/2019, CUDA > 10.0, cuDNN > 7.0, OpenCV > 2.4, then compile Darknet by using `C:\Program Files\CMake\bin\cmake-gui.exe` as on this [**IMAGE**](https://user-images.githubusercontent.com/4096485/55107892-6becf380-50e3-11e9-9a0a-556a943c429a.png): Configure -> Optional platform for generator (Set: x64) -> Finish -> Generate -> Open Project -> x64 & Release -> Build -> Build solution
+If you have already installed Visual Studio 2015/2017/2019, CUDA > 10.0,
+cuDNN > 7.0, OpenCV > 2.4, then to compile Darknet it is recommended to use
+[CMake-GUI](#how-to-compile-on-windows-using-cmake-gui).
 
 Otherwise, follow these steps:
 
@@ -215,19 +234,6 @@ PS Code\vcpkg>         .\vcpkg install pthreads opencv[ffmpeg] #replace with ope
 8. [necessary only with CUDA] Customize the `build.ps1` script enabling the appropriate `my_cuda_compute_model` line. If not manually defined, CMake toolchain will automatically use the very low 3.0 CUDA compute model
 
 9.  Open Powershell, go to the `darknet` folder and build with the command `.\build.ps1`. If you want to use Visual Studio, you will find two custom solutions created for you by CMake after the build, one in `build_win_debug` and the other in `build_win_release`, containing all the appropriate config flags for your system.
-
-### How to compile on Windows (using `Cmake-GUI`)
-
-Using `Cmake-GUI` as shown here on this [**IMAGE**](https://user-images.githubusercontent.com/4096485/55107892-6becf380-50e3-11e9-9a0a-556a943c429a.png):
-
-1. Configure
-2. Optional platform for generator (Set: x64)
-3. Finish
-4. Generate
-5. Open Project
-6. x64 & Release
-7. Build
-8. Build solution
 
 ### How to compile on Windows (legacy way)
 
