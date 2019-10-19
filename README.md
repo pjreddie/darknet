@@ -625,6 +625,13 @@ Here you can find repository with GUI-software for marking bounded boxes of obje
 
 With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`.txt`, `bird`1-4`.txt` for 2 classes of objects (air, bird) and `train_obj.cmd` with example how to train this image-set with Yolo v2 & v3
 
+Different tools for marking objects in images:
+1. in C++: https://github.com/AlexeyAB/Yolo_mark 
+2. in Python: https://github.com/tzutalin/labelImg
+3. in Python: https://github.com/Cartucho/OpenLabeling
+4. in C++: https://www.ccoderun.ca/darkmark/
+
+
 ## Using Yolo9000
 
  Simultaneous detection and classification of 9000 objects: `darknet.exe detector test cfg/combine9k.data cfg/yolo9000.cfg yolo9000.weights data/dog.jpg`
