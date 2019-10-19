@@ -461,7 +461,7 @@ int yolo_num_detections(layer l, float thresh)
     return count;
 }
 
-int yolo_num_detections_custom(layer l, float thresh, int batch)
+int yolo_num_detections_batch(layer l, float thresh, int batch)
 {
     int i, n;
     int count = 0;
@@ -537,9 +537,8 @@ int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh,
     return count;
 }
 
-int get_yolo_detections_custom(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets, int letter,int batch)
+int get_yolo_detections_batch(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets, int letter, int batch)
 {
-    //printf("\n l.batch = %d, l.w = %d, l.h = %d, l.n = %d \n", l.batch, l.w, l.h, l.n);
     int i,j,n;
     float *predictions = l.output;
     //if (l.batch == 2) avg_flipped_yolo(l);
