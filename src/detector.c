@@ -798,7 +798,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             replace_image_to_label(path, labelpath);
             int num_labels = 0;
             box_label *truth = read_boxes(labelpath, &num_labels);
-            int i, j;
+            int j;
             for (j = 0; j < num_labels; ++j) {
                 truth_classes_count[truth[j].id]++;
             }
@@ -818,6 +818,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
 
             const int checkpoint_detections_count = detections_count;
 
+            int i;
             for (i = 0; i < nboxes; ++i) {
 
                 int class_id;

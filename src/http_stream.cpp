@@ -48,7 +48,7 @@ static int close_socket(SOCKET s) {
     cerr << "Close socket: out = " << close_output << ", in = " << close_input << " \n";
     return result;
 }
-#else   // nix
+#else   // _WIN32 - else: nix
 #include "darkunistd.h"
 #include <sys/time.h>
 #include <sys/types.h>
