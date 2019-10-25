@@ -34,6 +34,7 @@
 #include "shortcut_layer.h"
 #include "scale_channels_layer.h"
 #include "yolo_layer.h"
+#include "gaussian_yolo_layer.h"
 #include "upsample_layer.h"
 #include "parser.h"
 
@@ -202,6 +203,10 @@ char *get_layer_string(LAYER_TYPE a)
             return "detection";
         case REGION:
             return "region";
+        case YOLO:
+            return "yolo";
+        case GAUSSIAN_YOLO:
+            return "Gaussian_yolo";
         case DROPOUT:
             return "dropout";
         case CROP:
@@ -524,6 +529,8 @@ int resize_network(network *net, int w, int h)
             resize_region_layer(&l, w, h);
         }else if (l.type == YOLO) {
             resize_yolo_layer(&l, w, h);
+        }else if (l.type == GAUSSIAN_YOLO) {
+            resize_gaussian_yolo_layer(&l, w, h);
         }else if(l.type == ROUTE){
             resize_route_layer(&l, net);
         }else if (l.type == SHORTCUT) {
@@ -687,6 +694,9 @@ int num_detections(network *net, float thresh)
         if (l.type == YOLO) {
             s += yolo_num_detections(l, thresh);
         }
+        if (l.type == GAUSSIAN_YOLO) {
+            s += gaussian_yolo_num_detections(l, thresh);
+        }
         if (l.type == DETECTION || l.type == REGION) {
             s += l.w*l.h*l.n;
         }
@@ -703,6 +713,8 @@ detection *make_network_boxes(network *net, float thresh, int *num)
     detection* dets = (detection*)calloc(nboxes, sizeof(detection));
     for (i = 0; i < nboxes; ++i) {
         dets[i].prob = (float*)calloc(l.classes, sizeof(float));
+        // tx,ty,tw,th uncertainty
+        dets[i].uc = calloc(4, sizeof(float)); // Gaussian_YOLOv3
         if (l.coords > 4) {
             dets[i].mask = (float*)calloc(l.coords - 4, sizeof(float));
         }
@@ -748,6 +760,10 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
                 printf(" Error: Different [yolo] layers have different number of classes = %d and %d - check your cfg-file! \n",
                     prev_classes, l.classes);
             }
+        }
+        if (l.type == GAUSSIAN_YOLO) {
+            int count = get_gaussian_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets);
+            dets += count;
         }
         if (l.type == REGION) {
             custom_get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets, letter);

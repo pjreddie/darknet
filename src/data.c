@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "image.h"
 #include "dark_cuda.h"
+#include "box.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -777,16 +778,6 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     free_image(cropped);
 
     return d;
-}
-
-static box float_to_box_stride(float *f, int stride)
-{
-    box b = { 0 };
-    b.x = f[0];
-    b.y = f[1 * stride];
-    b.w = f[2 * stride];
-    b.h = f[3 * stride];
-    return b;
 }
 
 void blend_truth(float *new_truth, int boxes, float *old_truth)

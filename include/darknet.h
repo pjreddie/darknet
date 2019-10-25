@@ -149,6 +149,7 @@ typedef enum {
     XNOR,
     REGION,
     YOLO,
+    GAUSSIAN_YOLO,
     ISEG,
     REORG,
     REORG_OLD,
@@ -728,6 +729,7 @@ typedef struct detection{
     float *mask;
     float objectness;
     int sort_class;
+    float *uc; // Gaussian_YOLOv3 - tx,ty,tw,th uncertainty
 } detection;
 
 // matrix.h

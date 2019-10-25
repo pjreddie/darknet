@@ -31,6 +31,7 @@ typedef struct detection_with_class {
 extern "C" {
 #endif
 box float_to_box(float *f);
+box float_to_box_stride(float *f, int stride);
 float box_iou(box a, box b);
 float box_rmse(box a, box b);
 dxrep dx_box_iou(box a, box b, IOU_LOSS iou_loss);

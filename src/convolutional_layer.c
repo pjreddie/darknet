@@ -5,6 +5,7 @@
 #include "col2im.h"
 #include "blas.h"
 #include "gemm.h"
+#include "box.h"
 #include <stdio.h>
 #include <time.h>
 
@@ -1169,16 +1170,6 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         //simple_copy_ongpu(l.outputs*l.batch, l.output, l.input_antialiasing);
         memcpy(l.output, l.input_layer->output, l.input_layer->outputs * l.input_layer->batch * sizeof(float));
     }
-}
-
-static box float_to_box_stride(float *f, int stride)
-{
-    box b = { 0 };
-    b.x = f[0];
-    b.y = f[1 * stride];
-    b.w = f[2 * stride];
-    b.h = f[3 * stride];
-    return b;
 }
 
 void assisted_excitation_forward(convolutional_layer l, network_state state)

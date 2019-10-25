@@ -10,6 +10,7 @@
 #include "col2im.h"
 #include "utils.h"
 #include "dark_cuda.h"
+#include "box.h"
 
 
 __global__ void binarize_kernel(float *x, int n, float *binary)
@@ -890,16 +891,6 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         fix_nan_and_inf(l.weight_updates_gpu, size);
         fix_nan_and_inf(l.weights_gpu, size);
     }
-}
-
-static box float_to_box_stride(float *f, int stride)
-{
-    box b = { 0 };
-    b.x = f[0];
-    b.y = f[1 * stride];
-    b.w = f[2 * stride];
-    b.h = f[3 * stride];
-    return b;
 }
 
 __global__ void calc_avg_activation_kernel(float *src, float *dst, int size, int channels, int batches)

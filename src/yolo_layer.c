@@ -242,16 +242,6 @@ static int entry_index(layer l, int batch, int location, int entry)
     return batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc;
 }
 
-static box float_to_box_stride(float *f, int stride)
-{
-    box b = { 0 };
-    b.x = f[0];
-    b.y = f[1 * stride];
-    b.w = f[2 * stride];
-    b.h = f[3 * stride];
-    return b;
-}
-
 void forward_yolo_layer(const layer l, network_state state)
 {
     int i, j, b, t, n;
