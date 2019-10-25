@@ -424,12 +424,13 @@ int *parse_gaussian_yolo_mask(char *a, int *num) // Gaussian_YOLOv3
 layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
 {
     int classes = option_find_int(options, "classes", 20);
+    int max_boxes = option_find_int_quiet(options, "max", 90);
     int total = option_find_int(options, "num", 1);
     int num = total;
 
     char *a = option_find_str(options, "mask", 0);
     int *mask = parse_gaussian_yolo_mask(a, &num);
-    layer l = make_gaussian_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
+    layer l = make_gaussian_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
     assert(l.outputs == params.inputs);
 
     l.max_boxes = option_find_int_quiet(options, "max", 90);

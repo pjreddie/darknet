@@ -714,7 +714,7 @@ detection *make_network_boxes(network *net, float thresh, int *num)
     for (i = 0; i < nboxes; ++i) {
         dets[i].prob = (float*)calloc(l.classes, sizeof(float));
         // tx,ty,tw,th uncertainty
-        dets[i].uc = calloc(4, sizeof(float)); // Gaussian_YOLOv3
+        dets[i].uc = (float*)calloc(4, sizeof(float)); // Gaussian_YOLOv3
         if (l.coords > 4) {
             dets[i].mask = (float*)calloc(l.coords - 4, sizeof(float));
         }
@@ -762,7 +762,7 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
             }
         }
         if (l.type == GAUSSIAN_YOLO) {
-            int count = get_gaussian_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets);
+            int count = get_gaussian_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets, letter);
             dets += count;
         }
         if (l.type == REGION) {
@@ -789,6 +789,7 @@ void free_detections(detection *dets, int n)
     int i;
     for (i = 0; i < n; ++i) {
         free(dets[i].prob);
+        if (dets[i].uc) free(dets[i].uc);
         if (dets[i].mask) free(dets[i].mask);
     }
     free(dets);

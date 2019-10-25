@@ -20,7 +20,7 @@
 #define M_PI 3.141592
 #endif
 
-layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes)
+layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes, int max_boxes)
 {
     int i;
     layer l = { (LAYER_TYPE)0 };
@@ -36,21 +36,22 @@ layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *m
     l.out_h = l.h;
     l.out_c = l.c;
     l.classes = classes;
-    l.cost = calloc(1, sizeof(float));
-    l.biases = calloc(total*2, sizeof(float));
+    l.cost = (float*)calloc(1, sizeof(float));
+    l.biases = (float*)calloc(total*2, sizeof(float));
     if(mask) l.mask = mask;
     else{
-        l.mask = calloc(n, sizeof(int));
+        l.mask = (int*)calloc(n, sizeof(int));
         for(i = 0; i < n; ++i){
             l.mask[i] = i;
         }
     }
-    l.bias_updates = calloc(n*2, sizeof(float));
+    l.bias_updates = (float*)calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + 8 + 1);
     l.inputs = l.outputs;
-    l.truths = 90*(4 + 1);
-    l.delta = calloc(batch*l.outputs, sizeof(float));
-    l.output = calloc(batch*l.outputs, sizeof(float));
+    l.max_boxes = max_boxes;
+    l.truths = l.max_boxes*(4 + 1);
+    l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
+    l.output = (float*)calloc(batch*l.outputs, sizeof(float));
     for(i = 0; i < total*2; ++i){
         l.biases[i] = .5;
     }
@@ -62,10 +63,26 @@ layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *m
     l.backward_gpu = backward_gaussian_yolo_layer_gpu;
     l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
+
+    /*
+    free(l.output);
+    if (cudaSuccess == cudaHostAlloc(&l.output, batch*l.outputs * sizeof(float), cudaHostRegisterMapped)) l.output_pinned = 1;
+    else {
+        cudaGetLastError(); // reset CUDA-error
+        l.output = (float*)calloc(batch * l.outputs, sizeof(float));
+    }
+
+    free(l.delta);
+    if (cudaSuccess == cudaHostAlloc(&l.delta, batch*l.outputs * sizeof(float), cudaHostRegisterMapped)) l.delta_pinned = 1;
+    else {
+        cudaGetLastError(); // reset CUDA-error
+        l.delta = (float*)calloc(batch * l.outputs, sizeof(float));
+    }
+    */
 #endif
 
     fprintf(stderr, "Gaussian_yolo\n");
-    srand(0);
+    srand(time(0));
 
     return l;
 }
@@ -78,10 +95,33 @@ void resize_gaussian_yolo_layer(layer *l, int w, int h)
     l->outputs = h*w*l->n*(l->classes + 8 + 1);
     l->inputs = l->outputs;
 
-    l->output = realloc(l->output, l->batch*l->outputs*sizeof(float));
-    l->delta = realloc(l->delta, l->batch*l->outputs*sizeof(float));
+    l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
+    l->delta = realloc(l->delta, l->batch*l->outputs * sizeof(float));
+
+    //if (!l->output_pinned) l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
+    //if (!l->delta_pinned) l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 
 #ifdef GPU
+    /*
+    if (l->output_pinned) {
+        cudaFreeHost(l->output);
+        if (cudaSuccess != cudaHostAlloc(&l->output, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
+            cudaGetLastError(); // reset CUDA-error
+            l->output = (float*)realloc(l->output, l->batch * l->outputs * sizeof(float));
+            l->output_pinned = 0;
+        }
+    }
+
+    if (l->delta_pinned) {
+        cudaFreeHost(l->delta);
+        if (cudaSuccess != cudaHostAlloc(&l->delta, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
+            cudaGetLastError(); // reset CUDA-error
+            l->delta = (float*)realloc(l->delta, l->batch * l->outputs * sizeof(float));
+            l->delta_pinned = 0;
+        }
+    }
+    */
+
     cuda_free(l->delta_gpu);
     cuda_free(l->output_gpu);
 
@@ -168,10 +208,10 @@ static int entry_gaussian_index(layer l, int batch, int location, int entry)
     return batch*l.outputs + n*l.w*l.h*(8+l.classes+1) + entry*l.w*l.h + loc;
 }
 
-void forward_gaussian_yolo_layer(const layer l, network net)
+void forward_gaussian_yolo_layer(const layer l, network_state state)
 {
     int i,j,b,t,n;
-    memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
+    memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
 
 #ifndef GPU
     for (b = 0; b < l.batch; ++b){
@@ -196,7 +236,7 @@ void forward_gaussian_yolo_layer(const layer l, network net)
 #endif
 
     memset(l.delta, 0, l.outputs * l.batch * sizeof(float));
-    if(!net.train) return;
+    if (!state.train) return;
     float avg_iou = 0;
     float recall = 0;
     float recall75 = 0;
@@ -211,11 +251,11 @@ void forward_gaussian_yolo_layer(const layer l, network net)
             for (i = 0; i < l.w; ++i) {
                 for (n = 0; n < l.n; ++n) {
                     int box_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 0);
-                    box pred = get_gaussian_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.w*l.h);
+                    box pred = get_gaussian_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.w*l.h);
                     float best_iou = 0;
                     int best_t = 0;
                     for(t = 0; t < l.max_boxes; ++t){
-                        box truth = float_to_box_stride(net.truth + t*(4 + 1) + b*l.truths, 1);
+                        box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
                         if(!truth.x) break;
                         float iou = box_iou(pred, truth);
                         if (iou > best_iou) {
@@ -232,18 +272,18 @@ void forward_gaussian_yolo_layer(const layer l, network net)
                     if (best_iou > l.truth_thresh) {
                         l.delta[obj_index] = 1 - l.output[obj_index];
 
-                        int class = net.truth[best_t*(4 + 1) + b*l.truths + 4];
+                        int class = state.truth[best_t*(4 + 1) + b*l.truths + 4];
                         if (l.map) class = l.map[class];
                         int class_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 9);
                         delta_gaussian_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
-                        box truth = float_to_box_stride(net.truth + best_t*(4 + 1) + b*l.truths, 1);
-                        delta_gaussian_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
+                        box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
+                        delta_gaussian_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
                 }
             }
         }
         for(t = 0; t < l.max_boxes; ++t){
-            box truth = float_to_box_stride(net.truth + t*(4 + 1) + b*l.truths, 1);
+            box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
 
             if(!truth.x) break;
             float best_iou = 0;
@@ -254,8 +294,8 @@ void forward_gaussian_yolo_layer(const layer l, network net)
             truth_shift.x = truth_shift.y = 0;
             for(n = 0; n < l.total; ++n){
                 box pred = {0};
-                pred.w = l.biases[2*n]/net.w;
-                pred.h = l.biases[2*n+1]/net.h;
+                pred.w = l.biases[2*n]/ state.net.w;
+                pred.h = l.biases[2*n+1]/ state.net.h;
                 float iou = box_iou(pred, truth_shift);
                 if (iou > best_iou){
                     best_iou = iou;
@@ -266,13 +306,13 @@ void forward_gaussian_yolo_layer(const layer l, network net)
             int mask_n = int_index(l.mask, best_n, l.n);
             if(mask_n >= 0){
                 int box_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
-                float iou = delta_gaussian_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
+                float iou = delta_gaussian_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
 
                 int obj_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 8);
                 avg_obj += l.output[obj_index];
                 l.delta[obj_index] = 1 - l.output[obj_index];
 
-                int class = net.truth[t*(4 + 1) + b*l.truths + 4];
+                int class = state.truth[t*(4 + 1) + b*l.truths + 4];
                 if (l.map) class = l.map[class];
                 int class_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 9);
                 delta_gaussian_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, &avg_cat);
@@ -286,19 +326,34 @@ void forward_gaussian_yolo_layer(const layer l, network net)
         }
     }
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
-    printf("Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", net.index, avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, recall75/count, count);
+    printf("Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", state.index, avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, recall75/count, count);
 }
 
-void backward_gaussian_yolo_layer(const layer l, network net)
+void backward_gaussian_yolo_layer(const layer l, network_state state)
 {
-   axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, net.delta, 1);
+   axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
 }
 
-void correct_gaussian_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth, int relative)
+void correct_gaussian_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth, int relative, int letter)
 {
     int i;
     int new_w=0;
     int new_h=0;
+    if (letter) {
+        if (((float)netw / w) < ((float)neth / h)) {
+            new_w = netw;
+            new_h = (h * netw) / w;
+        }
+        else {
+            new_h = neth;
+            new_w = (w * neth) / h;
+        }
+    }
+    else {
+        new_w = netw;
+        new_h = neth;
+    }
+    /*
     if (((float)netw/w) < ((float)neth/h)) {
         new_w = netw;
         new_h = (h * netw)/w;
@@ -306,6 +361,7 @@ void correct_gaussian_yolo_boxes(detection *dets, int n, int w, int h, int netw,
         new_h = neth;
         new_w = (w * neth)/h;
     }
+    */
     for (i = 0; i < n; ++i){
         box b = dets[i].bbox;
         b.x =  (b.x - (netw - new_w)/2./netw) / ((float)new_w/netw);
@@ -365,7 +421,7 @@ void avg_flipped_gaussian_yolo(layer l)
 }
 */
 
-int get_gaussian_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets)
+int get_gaussian_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets, int letter)
 {
     int i,j,n;
     float *predictions = l.output;
@@ -390,22 +446,22 @@ int get_gaussian_yolo_detections(layer l, int w, int h, int netw, int neth, floa
 
             for(j = 0; j < l.classes; ++j){
                 int class_index = entry_gaussian_index(l, 0, n*l.w*l.h + i, 9 + j);
-                float uc_aver = (dets[count].uc[0] + dets[count].uc[1] + dets[count].uc[2] + dets[count].uc[3])/4.0;
+                float uc_aver = (dets[count].uc[0] + dets[count].uc[1] + dets[count].uc[2] + dets[count].uc[3]) / 4.0;
                 float prob = objectness*predictions[class_index]*(1.0-uc_aver);
                 dets[count].prob[j] = (prob > thresh) ? prob : 0;
             }
             ++count;
         }
     }
-    correct_gaussian_yolo_boxes(dets, count, w, h, netw, neth, relative);
+    correct_gaussian_yolo_boxes(dets, count, w, h, netw, neth, relative, letter);
     return count;
 }
 
 #ifdef GPU
 
-void forward_gaussian_yolo_layer_gpu(const layer l, network net)
+void forward_gaussian_yolo_layer_gpu(const layer l, network_state state)
 {
-    copy_ongpu(l.batch*l.inputs, net.input_gpu, 1, l.output_gpu, 1);
+    copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
     int b, n;
     for (b = 0; b < l.batch; ++b)
     {
@@ -428,18 +484,38 @@ void forward_gaussian_yolo_layer_gpu(const layer l, network net)
             activate_array_ongpu(l.output_gpu + index, (1+l.classes)*l.w*l.h, LOGISTIC);
         }
     }
-    if(!net.train || l.onlyforward){
-        cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+
+    if (!state.train || l.onlyforward) {
+        //cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+        cuda_pull_array_async(l.output_gpu, l.output, l.batch*l.outputs);
+        CHECK_CUDA(cudaPeekAtLastError());
         return;
     }
 
-    cuda_pull_array(l.output_gpu, net.input, l.batch*l.inputs);
-    forward_gaussian_yolo_layer(l, net);
+    float *in_cpu = (float *)calloc(l.batch*l.inputs, sizeof(float));
+    cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+    memcpy(in_cpu, l.output, l.batch*l.outputs * sizeof(float));
+    float *truth_cpu = 0;
+    if (state.truth) {
+        int num_truth = l.batch*l.truths;
+        truth_cpu = (float *)calloc(num_truth, sizeof(float));
+        cuda_pull_array(state.truth, truth_cpu, num_truth);
+    }
+    network_state cpu_state = state;
+    cpu_state.net = state.net;
+    cpu_state.index = state.index;
+    cpu_state.train = state.train;
+    cpu_state.truth = truth_cpu;
+    cpu_state.input = in_cpu;
+    forward_gaussian_yolo_layer(l, cpu_state);
+    //forward_yolo_layer(l, state);
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
+    free(in_cpu);
+    if (cpu_state.truth) free(cpu_state.truth);
 }
 
-void backward_gaussian_yolo_layer_gpu(const layer l, network net)
+void backward_gaussian_yolo_layer_gpu(const layer l, network_state state)
 {
-    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, net.delta_gpu, 1);
+    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
 }
 #endif
