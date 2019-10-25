@@ -1125,15 +1125,6 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
 // ====================================================================
 // Data augmentation
 // ====================================================================
-static box float_to_box_stride(float *f, int stride)
-{
-    box b = { 0 };
-    b.x = f[0];
-    b.y = f[1 * stride];
-    b.w = f[2 * stride];
-    b.h = f[3 * stride];
-    return b;
-}
 
 image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
