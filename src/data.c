@@ -922,7 +922,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
             int min_w_h = fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
 
-            if (min_w_h < blur*4) blur = 0;   // disable blur if one of the objects is too small
+            if (min_w_h/4 < blur) blur = min_w_h / 4;   // disable blur if one of the objects is too small
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
                 blur, boxes, d.y.vals[i]);
