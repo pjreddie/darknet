@@ -628,11 +628,13 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         s.train = state.train;
         s.workspace = state.workspace;
         s.net = state.net;
-        s.delta = l.delta_gpu;
+        s.delta = l.delta_gpu;  // s.delta will be returned to l.delta_gpu
         s.input = l.input_antialiasing_gpu;
         //if (!state.train) s.index = state.index;  // don't use TC for training (especially without cuda_convert_f32_to_f16() )
         simple_copy_ongpu(l.input_layer->outputs*l.input_layer->batch, l.delta_gpu, l.input_layer->delta_gpu);
         backward_convolutional_layer_gpu(*(l.input_layer), s);
+
+        simple_copy_ongpu(l.outputs*l.batch, l.input_antialiasing_gpu, l.output_gpu);
     }
 
     if(state.net.try_fix_nan) constrain_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
