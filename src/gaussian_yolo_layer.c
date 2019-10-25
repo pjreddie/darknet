@@ -23,7 +23,7 @@
 layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes)
 {
     int i;
-    layer l = {0};
+    layer l = { (LAYER_TYPE)0 };
     l.type = GAUSSIAN_YOLO;
 
     l.n = n;

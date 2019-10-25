@@ -159,9 +159,15 @@ convolutional_layer parse_convolutional(list *options, size_params params, netwo
     int n = option_find_int(options, "filters",1);
     int groups = option_find_int_quiet(options, "groups", 1);
     int size = option_find_int(options, "size",1);
-    int stride = option_find_int(options, "stride",1);
-    int stride_x = option_find_int_quiet(options, "stride_x", stride);
-    int stride_y = option_find_int_quiet(options, "stride_y", stride);
+    int stride = -1;
+    //int stride = option_find_int(options, "stride",1);
+    int stride_x = option_find_int_quiet(options, "stride_x", -1);
+    int stride_y = option_find_int_quiet(options, "stride_y", -1);
+    if (stride_x < 1 || stride_y < 1) {
+        stride = option_find_int(options, "stride", 1);
+        if (stride_x < 1) stride_x = stride;
+        if (stride_y < 1) stride_y = stride;
+    }
     int dilation = option_find_int_quiet(options, "dilation", 1);
     int antialiasing = option_find_int_quiet(options, "antialiasing", 0);
     if (size == 1) dilation = 1;
