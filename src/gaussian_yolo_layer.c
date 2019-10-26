@@ -95,8 +95,8 @@ void resize_gaussian_yolo_layer(layer *l, int w, int h)
     l->outputs = h*w*l->n*(l->classes + 8 + 1);
     l->inputs = l->outputs;
 
-    l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
-    l->delta = realloc(l->delta, l->batch*l->outputs * sizeof(float));
+    l->output = (float *)realloc(l->output, l->batch*l->outputs * sizeof(float));
+    l->delta = (float *)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 
     //if (!l->output_pinned) l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
     //if (!l->delta_pinned) l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
@@ -187,17 +187,17 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
 }
 
 
-void delta_gaussian_yolo_class(float *output, float *delta, int index, int class, int classes, int stride, float *avg_cat)
+void delta_gaussian_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat)
 {
     int n;
     if (delta[index]){
-        delta[index + stride*class] = 1 - output[index + stride*class];
-        if(avg_cat) *avg_cat += output[index + stride*class];
+        delta[index + stride*class_id] = 1 - output[index + stride*class_id];
+        if(avg_cat) *avg_cat += output[index + stride*class_id];
         return;
     }
     for(n = 0; n < classes; ++n){
-        delta[index + stride*n] = ((n == class)?1 : 0) - output[index + stride*n];
-        if(n == class && avg_cat) *avg_cat += output[index + stride*n];
+        delta[index + stride*n] = ((n == class_id)?1 : 0) - output[index + stride*n];
+        if(n == class_id && avg_cat) *avg_cat += output[index + stride*n];
     }
 }
 
@@ -219,9 +219,11 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
             // x : mu, sigma
             int index = entry_gaussian_index(l, b, n*l.w*l.h, 0);
             activate_array(l.output + index, 2*l.w*l.h, LOGISTIC);
+            scal_add_cpu(l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output + index, 1);    // scale x
             // y : mu, sigma
             index = entry_gaussian_index(l, b, n*l.w*l.h, 2);
             activate_array(l.output + index, 2*l.w*l.h, LOGISTIC);
+            scal_add_cpu(l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output + index, 1);    // scale y
             // w : sigma
             index = entry_gaussian_index(l, b, n*l.w*l.h, 5);
             activate_array(l.output + index, l.w*l.h, LOGISTIC);
@@ -272,10 +274,10 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                     if (best_iou > l.truth_thresh) {
                         l.delta[obj_index] = 1 - l.output[obj_index];
 
-                        int class = state.truth[best_t*(4 + 1) + b*l.truths + 4];
-                        if (l.map) class = l.map[class];
+                        int class_id = state.truth[best_t*(4 + 1) + b*l.truths + 4];
+                        if (l.map) class_id = l.map[class_id];
                         int class_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 9);
-                        delta_gaussian_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
+                        delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0);
                         box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
                         delta_gaussian_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
@@ -312,10 +314,10 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                 avg_obj += l.output[obj_index];
                 l.delta[obj_index] = 1 - l.output[obj_index];
 
-                int class = state.truth[t*(4 + 1) + b*l.truths + 4];
-                if (l.map) class = l.map[class];
+                int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+                if (l.map) class_id = l.map[class_id];
                 int class_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 9);
-                delta_gaussian_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, &avg_cat);
+                delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat);
 
                 ++count;
                 ++class_count;
@@ -433,24 +435,27 @@ int get_gaussian_yolo_detections(layer l, int w, int h, int netw, int neth, floa
         for(n = 0; n < l.n; ++n){
             int obj_index  = entry_gaussian_index(l, 0, n*l.w*l.h + i, 8);
             float objectness = predictions[obj_index];
-            if(objectness <= thresh) continue;
-            int box_index  = entry_gaussian_index(l, 0, n*l.w*l.h + i, 0);
-            dets[count].bbox = get_gaussian_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
-            dets[count].objectness = objectness;
-            dets[count].classes = l.classes;
+            if (objectness <= thresh) continue;    // incorrect behavior for Nan values
 
-            dets[count].uc[0] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 1)]; // tx uncertainty
-            dets[count].uc[1] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 3)]; // ty uncertainty
-            dets[count].uc[2] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 5)]; // tw uncertainty
-            dets[count].uc[3] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 7)]; // th uncertainty
+            if (objectness > thresh) {
+                int box_index = entry_gaussian_index(l, 0, n*l.w*l.h + i, 0);
+                dets[count].bbox = get_gaussian_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
+                dets[count].objectness = objectness;
+                dets[count].classes = l.classes;
 
-            for(j = 0; j < l.classes; ++j){
-                int class_index = entry_gaussian_index(l, 0, n*l.w*l.h + i, 9 + j);
-                float uc_aver = (dets[count].uc[0] + dets[count].uc[1] + dets[count].uc[2] + dets[count].uc[3]) / 4.0;
-                float prob = objectness*predictions[class_index]*(1.0-uc_aver);
-                dets[count].prob[j] = (prob > thresh) ? prob : 0;
+                dets[count].uc[0] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 1)]; // tx uncertainty
+                dets[count].uc[1] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 3)]; // ty uncertainty
+                dets[count].uc[2] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 5)]; // tw uncertainty
+                dets[count].uc[3] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 7)]; // th uncertainty
+
+                for (j = 0; j < l.classes; ++j) {
+                    int class_index = entry_gaussian_index(l, 0, n*l.w*l.h + i, 9 + j);
+                    float uc_aver = (dets[count].uc[0] + dets[count].uc[1] + dets[count].uc[2] + dets[count].uc[3]) / 4.0;
+                    float prob = objectness*predictions[class_index] * (1.0 - uc_aver);
+                    dets[count].prob[j] = (prob > thresh) ? prob : 0;
+                }
+                ++count;
             }
-            ++count;
         }
     }
     correct_gaussian_yolo_boxes(dets, count, w, h, netw, neth, relative, letter);
@@ -470,9 +475,11 @@ void forward_gaussian_yolo_layer_gpu(const layer l, network_state state)
             // x : mu, sigma
             int index = entry_gaussian_index(l, b, n*l.w*l.h, 0);
             activate_array_ongpu(l.output_gpu + index, 2*l.w*l.h, LOGISTIC);
+            scal_add_ongpu(l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output_gpu + index, 1);      // scale x
             // y : mu, sigma
             index = entry_gaussian_index(l, b, n*l.w*l.h, 2);
             activate_array_ongpu(l.output_gpu + index, 2*l.w*l.h, LOGISTIC);
+            scal_add_ongpu(l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output_gpu + index, 1);      // scale y
             // w : sigma
             index = entry_gaussian_index(l, b, n*l.w*l.h, 5);
             activate_array_ongpu(l.output_gpu + index, l.w*l.h, LOGISTIC);

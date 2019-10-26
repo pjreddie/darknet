@@ -433,6 +433,7 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     layer l = make_gaussian_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
     assert(l.outputs == params.inputs);
 
+    l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.max_boxes = option_find_int_quiet(options, "max", 90);
     l.jitter = option_find_float(options, "jitter", .2);
 

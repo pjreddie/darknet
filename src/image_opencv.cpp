@@ -1196,7 +1196,10 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
 
         if (blur) {
             cv::Mat dst(sized.size(), sized.type());
-            if(blur == 1) cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
+            if (blur == 1) {
+                //cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
+                cv::bilateralFilter(sized, dst, 31, 75, 75);
+            }
             else {
                 int ksize = (blur / 2) * 2 + 1;
                 cv::Size kernel_size = cv::Size(ksize, ksize);
