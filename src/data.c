@@ -841,7 +841,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.y = make_matrix(n, 5*boxes);
     int i_mixup = 0;
     for (i_mixup = 0; i_mixup <= mixup; i_mixup++) {
-        if (i_mixup) augmentation_calculated = 0;
+        if (i_mixup) augmentation_calculated = 0;   // recalculate augmentation for the 2nd sequence if(track==1)
+
         for (i = 0; i < n; ++i) {
             float *truth = (float*)calloc(5 * boxes, sizeof(float));
             const char *filename = (i_mixup) ? mixup_random_paths[i] : random_paths[i];

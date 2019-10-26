@@ -409,7 +409,7 @@ int *parse_gaussian_yolo_mask(char *a, int *num) // Gaussian_YOLOv3
         for (i = 0; i < len; ++i) {
             if (a[i] == ',') ++n;
         }
-        mask = calloc(n, sizeof(int));
+        mask = (int *)calloc(n, sizeof(int));
         for (i = 0; i < n; ++i) {
             int val = atoi(a);
             mask[i] = val;
