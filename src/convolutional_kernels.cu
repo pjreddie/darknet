@@ -978,10 +978,14 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
     float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches)) / 2;
     //float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches));
 
-    if (l.assisted_excitation > 1) {
-        if (iteration_num < state.net.burn_in) alpha = 0;
-        else if (iteration_num > l.assisted_excitation) alpha = 0;
-        else alpha = (1 + cos(3.141592 * iteration_num / l.assisted_excitation)) / 2;
+    if (l.assisted_excitation == 1) {
+        if (iteration_num > state.net.max_batches / 2) return;
+    }
+    else {
+        if (iteration_num < state.net.burn_in) return;
+        else if (iteration_num > l.assisted_excitation) return;
+        else
+            alpha = (1 + cos(3.141592 * iteration_num / (state.net.burn_in + l.assisted_excitation))) / 2; // from 1 to 0
     }
 
     //printf("\n epoch = %f, alpha = %f, seen = %d, max_batches = %d, train_images_num = %d \n",
@@ -1011,11 +1015,19 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
         for (t = 0; t < state.net.num_boxes; ++t) {
             box truth = float_to_box_stride(truth_cpu + t*(4 + 1) + b*l.truths, 1);
             if (!truth.x) break;  // continue;
+            float beta = 1 - alpha; // from 0 to 1
+            float dw = (1 - truth.w) * beta;
+            float dh = (1 - truth.h) * beta;
+            //printf(" alpha = %f, beta = %f, truth.w = %f, dw = %f, tw+dw = %f, l.out_w = %d \n", alpha, beta, truth.w, dw, truth.w+dw, l.out_w);
 
-            int left = floor((truth.x - truth.w / 2) * l.out_w);
-            int right = ceil((truth.x + truth.w / 2) * l.out_w);
-            int top = floor((truth.y - truth.h / 2) * l.out_h);
-            int bottom = ceil((truth.y + truth.h / 2) * l.out_h);
+            int left = floor((truth.x - (dw + truth.w) / 2) * l.out_w);
+            int right = ceil((truth.x + (dw + truth.w) / 2) * l.out_w);
+            int top = floor((truth.y - (dh + truth.h) / 2) * l.out_h);
+            int bottom = ceil((truth.y + (dh + truth.h) / 2) * l.out_h);
+            if (left < 0) left = 0;
+            if (top < 0) top = 0;
+            if (right > l.out_w) right = l.out_w;
+            if (bottom > l.out_h) bottom = l.out_h;
 
             for (w = left; w <= right; w++) {
                 for (h = top; h < bottom; h++) {
@@ -1035,7 +1047,8 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
     //CHECK_CUDA(cudaPeekAtLastError());
 
     // calc new output
-    assisted_activation2_gpu(alpha, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);
+    assisted_activation2_gpu(1, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);  // AE3: gt increases (beta = 1 - alpha = 0)
+    //assisted_activation2_gpu(alpha, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);
     //assisted_activation_gpu(alpha, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);
     //cudaStreamSynchronize(get_cuda_stream());
     //CHECK_CUDA(cudaPeekAtLastError());
