@@ -187,6 +187,7 @@
     <ClCompile Include="..\..\src\detector.c" />
     <ClCompile Include="..\..\src\dice.c" />
     <ClCompile Include="..\..\src\dropout_layer.c" />
+    <ClCompile Include="..\..\src\gaussian_yolo_layer.c" />
     <ClCompile Include="..\..\src\gemm.c" />
     <ClCompile Include="..\..\src\getopt.c" />
     <ClCompile Include="..\..\src\gettimeofday.c" />
@@ -253,6 +254,7 @@
     <ClInclude Include="..\..\src\demo.h" />
     <ClInclude Include="..\..\src\detection_layer.h" />
     <ClInclude Include="..\..\src\dropout_layer.h" />
+    <ClInclude Include="..\..\src\gaussian_yolo_layer.h" />
     <ClInclude Include="..\..\src\gemm.h" />
     <ClInclude Include="..\..\src\getopt.h" />
     <ClInclude Include="..\..\src\gettimeofday.h" />
