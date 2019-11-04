@@ -50,6 +50,7 @@ static int close_socket(SOCKET s) {
 }
 #else   // _WIN32 - else: nix
 #include "darkunistd.h"
+#include <fcntl.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
