@@ -70,6 +70,7 @@ extern "C" LIB_API void send_json_custom(char const* send_buf, int port, int tim
 class Detector {
     std::shared_ptr<void> detector_gpu_ptr;
     std::deque<std::vector<bbox_t>> prev_bbox_vec_deque;
+    std::string _cfg_filename, _weight_filename;
 public:
     const int cur_gpu_id;
     float nms = .4;

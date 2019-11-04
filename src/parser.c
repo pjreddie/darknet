@@ -168,6 +168,9 @@ convolutional_layer parse_convolutional(list *options, size_params params, netwo
         if (stride_x < 1) stride_x = stride;
         if (stride_y < 1) stride_y = stride;
     }
+    else {
+        stride = option_find_int_quiet(options, "stride", 1);
+    }
     int dilation = option_find_int_quiet(options, "dilation", 1);
     int antialiasing = option_find_int_quiet(options, "antialiasing", 0);
     if (size == 1) dilation = 1;
