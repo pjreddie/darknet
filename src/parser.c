@@ -951,6 +951,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     params.inputs = net.inputs;
     if (batch > 0) net.batch = batch;
     if (time_steps > 0) net.time_steps = time_steps;
+    if (net.batch < 1) net.batch = 1;
+    if (net.time_steps < 1) net.time_steps = 1;
     if (net.batch < net.time_steps) net.batch = net.time_steps;
     params.batch = net.batch;
     params.time_steps = net.time_steps;

@@ -607,19 +607,6 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         }
         else {
             for (i = 0; i < blur_nweights; i += (blur_size*blur_size)) {
-                /*
-                l.input_layer->weights[i + 0] = 0;
-                l.input_layer->weights[i + 1] = 0;
-                l.input_layer->weights[i + 2] = 0;
-
-                l.input_layer->weights[i + 3] = 0;
-                l.input_layer->weights[i + 4] = 1;
-                l.input_layer->weights[i + 5] = 0;
-
-                l.input_layer->weights[i + 6] = 0;
-                l.input_layer->weights[i + 7] = 0;
-                l.input_layer->weights[i + 8] = 0;
-                */
                 l.input_layer->weights[i + 0] = 1 / 16.f;
                 l.input_layer->weights[i + 1] = 2 / 16.f;
                 l.input_layer->weights[i + 2] = 1 / 16.f;
@@ -635,8 +622,10 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         }
         for (i = 0; i < n; ++i) l.input_layer->biases[i] = 0;
 #ifdef GPU
-        l.input_antialiasing_gpu = cuda_make_array(NULL, l.batch*l.outputs);
-        push_convolutional_layer(*(l.input_layer));
+        if (gpu_index >= 0) {
+            l.input_antialiasing_gpu = cuda_make_array(NULL, l.batch*l.outputs);
+            push_convolutional_layer(*(l.input_layer));
+        }
 #endif  // GPU
     }
 
