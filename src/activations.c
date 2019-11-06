@@ -134,6 +134,7 @@ void activate_array_swish(float *x, const int n, float * output_sigmoid, float *
     }
 }
 
+// https://github.com/digantamisra98/Mish
 void activate_array_mish(float *x, const int n, float * activation_input, float * output)
 {
     int i;
@@ -200,6 +201,7 @@ void gradient_array_swish(const float *x, const int n, const float * sigmoid, fl
     }
 }
 
+// https://github.com/digantamisra98/Mish
 void gradient_array_mish(const int n, const float * activation_input, float * delta)
 {
     int i;

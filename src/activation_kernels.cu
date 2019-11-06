@@ -199,6 +199,7 @@ __global__ void activate_array_swish_kernel(float *x, int n, float *output_sigmo
     }
 }
 
+// https://github.com/digantamisra98/Mish
 __global__ void activate_array_mish_kernel(float *x, int n, float *activation_input, float *output_gpu)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -273,6 +274,7 @@ __global__ void gradient_array_swish_kernel(float *x, int n, float *sigmoid_gpu,
     }
 }
 
+// https://github.com/digantamisra98/Mish
 __global__ void gradient_array_mish_kernel(int n, float *activation_input, float *delta)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
