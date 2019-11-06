@@ -90,7 +90,7 @@ void free_layer(layer l)
 #endif  // GPU
     if (l.delta)              free(l.delta), l.delta = NULL;
     if (l.output)             free(l.output), l.output = NULL;
-    if (l.output_sigmoid)     free(l.output_sigmoid), l.output_sigmoid = NULL;
+    if (l.activation_input)   free(l.activation_input), l.activation_input = NULL;
     if (l.squared)            free(l.squared);
     if (l.norms)              free(l.norms);
     if (l.spatial_mean)       free(l.spatial_mean);
@@ -176,7 +176,7 @@ void free_layer(layer l)
     if (l.scale_updates_gpu)       cuda_free(l.scale_updates_gpu), l.scale_updates_gpu = NULL;
     if (l.input_antialiasing_gpu)  cuda_free(l.input_antialiasing_gpu), l.input_antialiasing_gpu = NULL;
     if (l.output_gpu)              cuda_free(l.output_gpu), l.output_gpu = NULL;
-    if (l.output_sigmoid_gpu)      cuda_free(l.output_sigmoid_gpu), l.output_sigmoid_gpu = NULL;
+    if (l.activation_input_gpu)    cuda_free(l.activation_input_gpu), l.activation_input_gpu = NULL;
     if (l.delta_gpu)               cuda_free(l.delta_gpu), l.delta_gpu = NULL;
     if (l.rand_gpu)                cuda_free(l.rand_gpu);
     if (l.squared_gpu)             cuda_free(l.squared_gpu);

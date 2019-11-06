@@ -5,7 +5,7 @@
 #include "math.h"
 
 //typedef enum{
-//    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
+//    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH, MISH
 //}ACTIVATION;
 
 #ifdef __cplusplus
@@ -18,13 +18,17 @@ float activate(float x, ACTIVATION a);
 float gradient(float x, ACTIVATION a);
 void gradient_array(const float *x, const int n, const ACTIVATION a, float *delta);
 void gradient_array_swish(const float *x, const int n, const float * sigmoid, float * delta);
+void gradient_array_mish(const int n, const float * activation_input, float * delta);
 void activate_array(float *x, const int n, const ACTIVATION a);
 void activate_array_swish(float *x, const int n, float * output_sigmoid, float * output);
+void activate_array_mish(float *x, const int n, float * activation_input, float * output);
 #ifdef GPU
 void activate_array_ongpu(float *x, int n, ACTIVATION a);
 void activate_array_swish_ongpu(float *x, int n, float *output_sigmoid_gpu, float *output_gpu);
+void activate_array_mish_ongpu(float *x, int n, float *activation_input_gpu, float *output_gpu);
 void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta);
 void gradient_array_swish_ongpu(float *x, int n, float *sigmoid_gpu, float *delta);
+void gradient_array_mish_ongpu(int n, float *activation_input_gpu, float *delta);
 #endif
 
 static inline float stair_activate(float x)

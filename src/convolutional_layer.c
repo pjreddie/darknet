@@ -473,10 +473,10 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         l.scale_v = (float*)calloc(n, sizeof(float));
     }
 
-    if(l.activation == SWISH) l.output_sigmoid = (float*)calloc(total_batch*l.outputs, sizeof(float));
+    if (l.activation == SWISH || l.activation == MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
 
 #ifdef GPU
-    if (l.activation == SWISH) l.output_sigmoid_gpu = cuda_make_array(l.output_sigmoid, total_batch*out_h*out_w*n);
+    if (l.activation == SWISH || l.activation == MISH) l.activation_input_gpu = cuda_make_array(l.activation_input, total_batch*out_h*out_w*n);
 
     l.forward_gpu = forward_convolutional_layer_gpu;
     l.backward_gpu = backward_convolutional_layer_gpu;
@@ -1100,7 +1100,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 
                 //activate_array(l.output, m*n*l.batch, l.activation);
-                if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.output_sigmoid, l.output);
+                if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.output);
+                else if (l.activation == MISH) activate_array_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
                 else activate_array_cpu_custom(l.output, m*n*l.batch, l.activation);
                 return;
 
@@ -1139,7 +1140,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 
     //activate_array(l.output, m*n*l.batch, l.activation);
-    if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.output_sigmoid, l.output);
+    if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.output);
+    else if (l.activation == MISH) activate_array_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
     else activate_array_cpu_custom(l.output, l.outputs*l.batch, l.activation);
 
     if(l.binary || l.xnor) swap_binary(&l);
@@ -1276,7 +1278,8 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
     int n = l.size*l.size*l.c / l.groups;
     int k = l.out_w*l.out_h;
 
-    if (l.activation == SWISH) gradient_array_swish(l.output, l.outputs*l.batch, l.output_sigmoid, l.delta);
+    if (l.activation == SWISH) gradient_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.delta);
+    else if (l.activation == MISH) gradient_array_mish(l.outputs*l.batch, l.activation_input, l.delta);
     else gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
 
     if (l.batch_normalize) {
