@@ -154,7 +154,7 @@ local_layer parse_local(list *options, size_params params)
     return layer;
 }
 
-convolutional_layer parse_convolutional(list *options, size_params params, network net)
+convolutional_layer parse_convolutional(list *options, size_params params)
 {
     int n = option_find_int(options, "filters",1);
     int groups = option_find_int_quiet(options, "groups", 1);
@@ -185,8 +185,8 @@ convolutional_layer parse_convolutional(list *options, size_params params, netwo
 
     int share_index = option_find_int_quiet(options, "share_index", -1000000000);
     convolutional_layer *share_layer = NULL;
-    if(share_index >= 0) share_layer = &net.layers[share_index];
-    else if(share_index != -1000000000) share_layer = &net.layers[params.index + share_index];
+    if(share_index >= 0) share_layer = &params.net.layers[share_index];
+    else if(share_index != -1000000000) share_layer = &params.net.layers[params.index + share_index];
 
     int batch,h,w,c;
     h = params.h;
@@ -754,7 +754,7 @@ layer parse_upsample(list *options, size_params params, network net)
     return l;
 }
 
-route_layer parse_route(list *options, size_params params, network net)
+route_layer parse_route(list *options, size_params params)
 {
     char *l = option_find(options, "layers");
     int len = strlen(l);
@@ -772,19 +772,19 @@ route_layer parse_route(list *options, size_params params, network net)
         l = strchr(l, ',')+1;
         if(index < 0) index = params.index + index;
         layers[i] = index;
-        sizes[i] = net.layers[index].outputs;
+        sizes[i] = params.net.layers[index].outputs;
     }
     int batch = params.batch;
 
     route_layer layer = make_route_layer(batch, n, layers, sizes);
 
-    convolutional_layer first = net.layers[layers[0]];
+    convolutional_layer first = params.net.layers[layers[0]];
     layer.out_w = first.out_w;
     layer.out_h = first.out_h;
     layer.out_c = first.out_c;
     for(i = 1; i < n; ++i){
         int index = layers[i];
-        convolutional_layer next = net.layers[index];
+        convolutional_layer next = params.net.layers[index];
         if(next.out_w == first.out_w && next.out_h == first.out_h){
             layer.out_c += next.out_c;
         }else{
@@ -974,7 +974,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         layer l = { (LAYER_TYPE)0 };
         LAYER_TYPE lt = string_to_layer_type(s->type);
         if(lt == CONVOLUTIONAL){
-            l = parse_convolutional(options, params, net);
+            l = parse_convolutional(options, params);
         }else if(lt == LOCAL){
             l = parse_local(options, params);
         }else if(lt == ACTIVE){
@@ -1019,7 +1019,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }else if(lt == AVGPOOL){
             l = parse_avgpool(options, params);
         }else if(lt == ROUTE){
-            l = parse_route(options, params, net);
+            l = parse_route(options, params);
             int k;
             for (k = 0; k < l.n; ++k) net.layers[l.input_layers[k]].use_bin_output = 0;
         }else if (lt == UPSAMPLE) {
