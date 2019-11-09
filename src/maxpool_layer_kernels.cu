@@ -36,7 +36,7 @@ __global__ void forward_maxpool_depth_layer_kernel(int n, int w, int h, int c, i
             max = (val > max) ? val : max;
         }
         output[out_index] = max;
-        indexes[out_index] = max_i;
+        if (indexes) indexes[out_index] = max_i;
     }
 }
 
@@ -88,7 +88,7 @@ __global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c
         }
     }
     output[out_index] = max;
-    indexes[out_index] = max_i;
+    if (indexes) indexes[out_index] = max_i;
 }
 
 __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride_x, int stride_y, int size, int pad, float *delta, float *prev_delta, int *indexes)

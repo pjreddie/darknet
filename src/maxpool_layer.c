@@ -46,10 +46,11 @@ void cudnn_maxpool_setup(layer *l)
 }
 
 
-maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride_x, int stride_y, int padding, int maxpool_depth, int out_channels, int antialiasing)
+maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride_x, int stride_y, int padding, int maxpool_depth, int out_channels, int antialiasing, int train)
 {
     maxpool_layer l = { (LAYER_TYPE)0 };
     l.type = MAXPOOL;
+    l.train = train;
 
     const int blur_stride_x = stride_x;
     const int blur_stride_y = stride_y;
@@ -82,21 +83,25 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     l.stride_x = stride_x;
     l.stride_y = stride_y;
     int output_size = l.out_h * l.out_w * l.out_c * batch;
-    l.indexes = (int*)calloc(output_size, sizeof(int));
+
+    if (train) {
+        l.indexes = (int*)calloc(output_size, sizeof(int));
+        l.delta = (float*)calloc(output_size, sizeof(float));
+    }
     l.output = (float*)calloc(output_size, sizeof(float));
-    l.delta = (float*)calloc(output_size, sizeof(float));
     l.forward = forward_maxpool_layer;
     l.backward = backward_maxpool_layer;
-    #ifdef GPU
+#ifdef GPU
     l.forward_gpu = forward_maxpool_layer_gpu;
     l.backward_gpu = backward_maxpool_layer_gpu;
-    l.indexes_gpu = cuda_make_int_array(output_size);
+    if (train) {
+        l.indexes_gpu = cuda_make_int_array(output_size);
+        l.delta_gpu = cuda_make_array(l.delta, output_size);
+    }
     l.output_gpu  = cuda_make_array(l.output, output_size);
-    l.delta_gpu   = cuda_make_array(l.delta, output_size);
-
     cudnn_maxpool_setup(&l);
 
-    #endif  // GPU
+#endif  // GPU
 	l.bflops = (l.size*l.size*l.c * l.out_h*l.out_w) / 1000000000.;
     if (maxpool_depth)
         fprintf(stderr, "max-depth         %2dx%2d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
@@ -114,7 +119,7 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
             blur_size = 2;
             blur_pad = 0;
         }
-        *(l.input_layer) = make_convolutional_layer(batch, 1, l.out_h, l.out_w, l.out_c, l.out_c, l.out_c, blur_size, blur_stride_x, blur_stride_y, 1, blur_pad, LINEAR, 0, 0, 0, 0, 0, 1, 0, NULL, 0);
+        *(l.input_layer) = make_convolutional_layer(batch, 1, l.out_h, l.out_w, l.out_c, l.out_c, l.out_c, blur_size, blur_stride_x, blur_stride_y, 1, blur_pad, LINEAR, 0, 0, 0, 0, 0, 1, 0, NULL, 0, train);
         const int blur_nweights = l.out_c * blur_size * blur_size;  // (n / n) * n * blur_size * blur_size;
         int i;
         if (blur_size == 2) {
@@ -163,17 +168,22 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     l->outputs = l->out_w * l->out_h * l->out_c;
     int output_size = l->outputs * l->batch;
 
-    l->indexes = (int*)realloc(l->indexes, output_size * sizeof(int));
+    if (l->train) {
+        l->indexes = (int*)realloc(l->indexes, output_size * sizeof(int));
+        l->delta = (float*)realloc(l->delta, output_size * sizeof(float));
+    }
     l->output = (float*)realloc(l->output, output_size * sizeof(float));
-    l->delta = (float*)realloc(l->delta, output_size * sizeof(float));
 
 #ifdef GPU
-    CHECK_CUDA(cudaFree((float *)l->indexes_gpu));
     CHECK_CUDA(cudaFree(l->output_gpu));
-    CHECK_CUDA(cudaFree(l->delta_gpu));
-    l->indexes_gpu = cuda_make_int_array(output_size);
     l->output_gpu  = cuda_make_array(l->output, output_size);
-    l->delta_gpu   = cuda_make_array(l->delta,  output_size);
+
+    if (l->train) {
+        CHECK_CUDA(cudaFree((float *)l->indexes_gpu));
+        CHECK_CUDA(cudaFree(l->delta_gpu));
+        l->indexes_gpu = cuda_make_int_array(output_size);
+        l->delta_gpu = cuda_make_array(l->delta, output_size);
+    }
 
     cudnn_maxpool_setup(l);
 #endif
@@ -203,7 +213,7 @@ void forward_maxpool_layer(const maxpool_layer l, network_state state)
                             max = (val > max) ? val : max;
                         }
                         l.output[out_index] = max;
-                        l.indexes[out_index] = max_i;
+                        if (l.indexes) l.indexes[out_index] = max_i;
                     }
                 }
             }
@@ -245,7 +255,7 @@ void forward_maxpool_layer(const maxpool_layer l, network_state state)
                             }
                         }
                         l.output[out_index] = max;
-                        l.indexes[out_index] = max_i;
+                        if (l.indexes) l.indexes[out_index] = max_i;
                     }
                 }
             }

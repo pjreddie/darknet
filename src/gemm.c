@@ -1949,7 +1949,7 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
                         }
                     }
                     dst[out_index] = max;
-                    indexes[out_index] = max_i;
+                    if (indexes) indexes[out_index] = max_i;
                 }
             }
         }
@@ -2452,7 +2452,7 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
                         }
                     }
                     dst[out_index] = max;
-                    indexes[out_index] = max_i;
+                    if (indexes) indexes[out_index] = max_i;
                 }
             }
         }

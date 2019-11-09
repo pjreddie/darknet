@@ -282,7 +282,6 @@ void forward_yolo_layer(const layer l, network_state state)
                     box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.w*l.h);
                     float best_iou = 0;
                     int best_t = 0;
-                    int class_id_match = 0;
                     for (t = 0; t < l.max_boxes; ++t) {
                         box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
                         int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
@@ -298,6 +297,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
                         float objectness = l.output[obj_index];
                         int pred_class_id = get_yolo_class(l.output, l.classes, class_index, l.w*l.h, objectness);
+                        int class_id_match = 0;
                         if (class_id == pred_class_id) class_id_match = 1;
                         else class_id_match = 0;
 

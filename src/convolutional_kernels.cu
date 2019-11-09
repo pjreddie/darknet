@@ -986,7 +986,8 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
     }
     else {
         if (iteration_num < state.net.burn_in) return;
-        else if (iteration_num > l.assisted_excitation) return;
+        else
+            if (iteration_num > l.assisted_excitation) return;
         else
             alpha = (1 + cos(3.141592 * iteration_num / (state.net.burn_in + l.assisted_excitation))) / 2; // from 1 to 0
     }
@@ -1018,6 +1019,7 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
         for (t = 0; t < state.net.num_boxes; ++t) {
             box truth = float_to_box_stride(truth_cpu + t*(4 + 1) + b*l.truths, 1);
             if (!truth.x) break;  // continue;
+            //float beta = 0;
             float beta = 1 - alpha; // from 0 to 1
             float dw = (1 - truth.w) * beta;
             float dh = (1 - truth.h) * beta;
@@ -1162,8 +1164,10 @@ void push_convolutional_layer(convolutional_layer l)
     cuda_convert_f32_to_f16(l.weights_gpu, l.nweights, l.weights_gpu16);
 #endif
     cuda_push_array(l.biases_gpu, l.biases, l.n);
-    cuda_push_array(l.weight_updates_gpu, l.weight_updates, l.nweights);
-    cuda_push_array(l.bias_updates_gpu, l.bias_updates, l.n);
+    if (l.train) {
+        cuda_push_array(l.weight_updates_gpu, l.weight_updates, l.nweights);
+        cuda_push_array(l.bias_updates_gpu, l.bias_updates, l.n);
+    }
     if (l.batch_normalize){
         cuda_push_array(l.scales_gpu, l.scales, l.n);
         cuda_push_array(l.rolling_mean_gpu, l.rolling_mean, l.n);

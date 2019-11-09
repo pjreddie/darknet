@@ -5,11 +5,12 @@
 #include <stdio.h>
 #include <assert.h>
 
-layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2, int assisted_excitation)
+layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2, int assisted_excitation, int train)
 {
     if(assisted_excitation) fprintf(stderr, "Shortcut Layer - AE: %d\n", index);
     else fprintf(stderr,"Shortcut Layer: %d\n", index);
     layer l = { (LAYER_TYPE)0 };
+    l.train = train;
     l.type = SHORTCUT;
     l.batch = batch;
     l.w = w2;
@@ -27,7 +28,7 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
 
     l.index = index;
 
-    l.delta = (float*)calloc(l.outputs * batch, sizeof(float));
+    if (train) l.delta = (float*)calloc(l.outputs * batch, sizeof(float));
     l.output = (float*)calloc(l.outputs * batch, sizeof(float));
 
     l.forward = forward_shortcut_layer;
@@ -36,7 +37,7 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
     l.forward_gpu = forward_shortcut_layer_gpu;
     l.backward_gpu = backward_shortcut_layer_gpu;
 
-    l.delta_gpu =  cuda_make_array(l.delta, l.outputs*batch);
+    if (train) l.delta_gpu =  cuda_make_array(l.delta, l.outputs*batch);
     l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
     if (l.assisted_excitation)
     {
@@ -56,14 +57,17 @@ void resize_shortcut_layer(layer *l, int w, int h)
     l->h = l->out_h = h;
     l->outputs = w*h*l->out_c;
     l->inputs = l->outputs;
-    l->delta = (float*)realloc(l->delta, l->outputs * l->batch * sizeof(float));
+    if (l->train) l->delta = (float*)realloc(l->delta, l->outputs * l->batch * sizeof(float));
     l->output = (float*)realloc(l->output, l->outputs * l->batch * sizeof(float));
 
 #ifdef GPU
     cuda_free(l->output_gpu);
-    cuda_free(l->delta_gpu);
     l->output_gpu = cuda_make_array(l->output, l->outputs*l->batch);
-    l->delta_gpu = cuda_make_array(l->delta, l->outputs*l->batch);
+
+    if (l->train) {
+        cuda_free(l->delta_gpu);
+        l->delta_gpu = cuda_make_array(l->delta, l->outputs*l->batch);
+    }
 #endif
 
 }
