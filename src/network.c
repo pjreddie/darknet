@@ -206,6 +206,9 @@ void forward_network(network *netp)
         if(l.truth) {
             net.truth = l.output;
         }
+        if(net.sleep_between_layers_forward_us > 0){
+            usleep(net.sleep_between_layers_forward_us);
+        }
     }
     calc_network_cost(netp);
 }
@@ -788,6 +791,9 @@ void forward_network_gpu(network *netp)
             net.truth_gpu = l.output_gpu;
             net.truth = l.output;
         }
+        if(net.sleep_between_layers_forward_us > 0){
+            usleep(net.sleep_between_layers_forward_us);
+        }
     }
     pull_network_output(netp);
     calc_network_cost(netp);
@@ -831,6 +837,9 @@ void forward_network_gpu_device_input(network *netp)
         net.input_gpu = l.output_gpu;
         if(l.truth) {
             net.truth_gpu = l.output_gpu;
+        }
+        if(net.sleep_between_layers_forward_us > 0){
+            usleep(net.sleep_between_layers_forward_us);
         }
     }
     pull_network_output(netp);

@@ -486,6 +486,8 @@ typedef struct network{
     float *cost;
     float clip;
 
+    int sleep_between_layers_forward_us;
+
 #ifdef GPU
     float *input_gpu;
     float *truth_gpu;
