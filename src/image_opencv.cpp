@@ -734,7 +734,7 @@ int wait_for_stream(cap_cv *cap, cv::Mat* src, int dont_close)
             delete src;// cvReleaseImage(&src);
             int z = 0;
             for (z = 0; z < 20; ++z) {
-                get_capture_frame_cv(cap);
+                src = get_capture_frame_cv(cap);
                 delete src;// cvReleaseImage(&src);
             }
             src = new cv::Mat(416, 416, CV_8UC(3)); // cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, 3);
