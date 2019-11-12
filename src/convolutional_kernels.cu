@@ -1019,8 +1019,8 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
         for (t = 0; t < state.net.num_boxes; ++t) {
             box truth = float_to_box_stride(truth_cpu + t*(4 + 1) + b*l.truths, 1);
             if (!truth.x) break;  // continue;
-            //float beta = 0;
-            float beta = 1 - alpha; // from 0 to 1
+            float beta = 0;
+            //float beta = 1 - alpha; // from 0 to 1
             float dw = (1 - truth.w) * beta;
             float dh = (1 - truth.h) * beta;
             //printf(" alpha = %f, beta = %f, truth.w = %f, dw = %f, tw+dw = %f, l.out_w = %d \n", alpha, beta, truth.w, dw, truth.w+dw, l.out_w);
@@ -1052,9 +1052,9 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
     //CHECK_CUDA(cudaPeekAtLastError());
 
     // calc new output
-    assisted_activation2_gpu(1, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);  // AE3: gt increases (beta = 1 - alpha = 0)
+    //assisted_activation2_gpu(1, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);  // AE3: gt increases (beta = 1 - alpha = 0)
     //assisted_activation2_gpu(alpha, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);
-    //assisted_activation_gpu(alpha, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);
+    assisted_activation_gpu(alpha, l.output_gpu, l.gt_gpu, l.a_avg_gpu, l.out_w * l.out_h, l.out_c, l.batch);
     //cudaStreamSynchronize(get_cuda_stream());
     //CHECK_CUDA(cudaPeekAtLastError());
 

@@ -797,6 +797,16 @@ route_layer parse_route(list *options, size_params params)
     }
     layer.out_c = layer.out_c / layer.groups;
 
+    layer.w = first.w;
+    layer.h = first.h;
+    layer.c = layer.out_c;
+
+    if (n > 3) fprintf(stderr, " \t  ");
+    else if (n > 1) fprintf(stderr, " \t          ");
+    else fprintf(stderr, " \t\t          ");
+
+    fprintf(stderr, "                 -> %4d x%4d x%4d \n", layer.w, layer.h, layer.c, layer.out_w, layer.out_h, layer.out_c);
+
     return layer;
 }
 

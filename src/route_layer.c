@@ -20,10 +20,10 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
         fprintf(stderr," %d", input_layers[i]);
         outputs += input_sizes[i];
     }
-    fprintf(stderr, "\n");
     outputs = outputs / groups;
     l.outputs = outputs;
     l.inputs = outputs;
+    //fprintf(stderr, " inputs = %d \t outputs = %d, groups = %d, group_id = %d \n", l.inputs, l.outputs, l.groups, l.group_id);
     l.delta = (float*)calloc(outputs * batch, sizeof(float));
     l.output = (float*)calloc(outputs * batch, sizeof(float));
 
