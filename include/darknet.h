@@ -873,6 +873,7 @@ LIB_API void free_layer(layer);
 LIB_API void free_data(data d);
 LIB_API pthread_t load_data(load_args args);
 LIB_API pthread_t load_data_in_thread(load_args args);
+LIB_API void *load_thread(void *ptr);
 
 // dark_cuda.h
 LIB_API void cuda_pull_array(float *x_gpu, float *x, size_t n);
