@@ -801,11 +801,14 @@ route_layer parse_route(list *options, size_params params)
     layer.h = first.h;
     layer.c = layer.out_c;
 
-    if (n > 3) fprintf(stderr, " \t  ");
-    else if (n > 1) fprintf(stderr, " \t          ");
-    else fprintf(stderr, " \t\t          ");
+    if (n > 3) fprintf(stderr, " \t    ");
+    else if (n > 1) fprintf(stderr, " \t            ");
+    else fprintf(stderr, " \t\t            ");
 
-    fprintf(stderr, "                 -> %4d x%4d x%4d \n", layer.w, layer.h, layer.c, layer.out_w, layer.out_h, layer.out_c);
+    fprintf(stderr, "           ");
+    if (layer.groups > 1) fprintf(stderr, "%d/%d", layer.group_id, layer.groups);
+    else fprintf(stderr, "   ");
+    fprintf(stderr, " -> %4d x%4d x%4d \n", layer.out_w, layer.out_h, layer.out_c);
 
     return layer;
 }
