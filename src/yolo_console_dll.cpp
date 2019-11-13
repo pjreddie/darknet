@@ -650,10 +650,12 @@ int main(int argc, char *argv[])
 
             }
             else {    // image file
+                // to achive high performance for multiple images do these 2 lines in another thread
                 cv::Mat mat_img = cv::imread(filename);
+                auto det_image = detector.mat_to_image_resize(mat_img);
 
                 auto start = std::chrono::steady_clock::now();
-                std::vector<bbox_t> result_vec = detector.detect(mat_img);
+                std::vector<bbox_t> result_vec = detector.detect_resized(*det_image, mat_img.size().width, mat_img.size().height);
                 auto end = std::chrono::steady_clock::now();
                 std::chrono::duration<double> spent = end - start;
                 std::cout << " Time: " << spent.count() << " sec \n";
