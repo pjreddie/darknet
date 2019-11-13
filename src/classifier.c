@@ -77,6 +77,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
+    args.c = net.c;
     args.threads = 32;
     args.hierarchy = net.hierarchy;
 

@@ -142,7 +142,7 @@ matrix load_image_paths(char **paths, int n, int w, int h)
     return X;
 }
 
-matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure)
 {
     int i;
     matrix X;
@@ -151,6 +151,7 @@ matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int 
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
+        int size = w > h ? w : h;
         image im = load_image_color(paths[i], 0, 0);
         image crop = random_augment_image(im, angle, aspect, min, max, size);
         int flip = use_flip ? random_gen() % 2 : 0;
@@ -158,14 +159,17 @@ matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int 
             flip_image(crop);
         random_distort_image(crop, hue, saturation, exposure);
 
-        /*
-        show_image(im, "orig");
-        show_image(crop, "crop");
-        cvWaitKey(0);
-        */
+        image sized = resize_image(crop, w, h);
+
+        //show_image(im, "orig");
+        //show_image(sized, "sized");
+        //show_image(sized, paths[i]);
+        //wait_until_press_key_cv();
+        //printf("w = %d, h = %d \n", sized.w, sized.h);
+
         free_image(im);
-        X.vals[i] = crop.data;
-        X.cols = crop.h*crop.w*crop.c;
+        X.vals[i] = sized.data;
+        X.cols = sized.h*sized.w*sized.c;
     }
     return X;
 }
@@ -1165,7 +1169,7 @@ void *load_thread(void *ptr)
     if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == CLASSIFICATION_DATA){
-        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == SUPER_DATA){
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
@@ -1186,7 +1190,7 @@ void *load_thread(void *ptr)
         *(a.im) = load_image(a.path, 0, 0, a.c);
         *(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
-        *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.flip, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+        *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     }
     free(ptr);
     return 0;
@@ -1310,25 +1314,25 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     return d;
 }
 
-data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
     d.shallow = 0;
-    d.X = load_image_augment_paths(paths, n, use_flip, min, max, size, angle, aspect, hue, saturation, exposure);
+    d.X = load_image_augment_paths(paths, n, use_flip, min, max, w, h, angle, aspect, hue, saturation, exposure);
     d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);
     return d;
 }
 
-data load_data_tag(char **paths, int n, int m, int k, int use_flip, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+data load_data_tag(char **paths, int n, int m, int k, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
-    d.w = size;
-    d.h = size;
+    d.w = w;
+    d.h = h;
     d.shallow = 0;
-    d.X = load_image_augment_paths(paths, n, use_flip, min, max, size, angle, aspect, hue, saturation, exposure);
+    d.X = load_image_augment_paths(paths, n, use_flip, min, max, w, h, angle, aspect, hue, saturation, exposure);
     d.y = load_tags_paths(paths, n, k);
     if(m) free(paths);
     return d;
