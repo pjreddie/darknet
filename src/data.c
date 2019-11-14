@@ -168,6 +168,7 @@ matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int 
         //printf("w = %d, h = %d \n", sized.w, sized.h);
 
         free_image(im);
+        free_image(crop);
         X.vals[i] = sized.data;
         X.cols = sized.h*sized.w*sized.c;
     }
