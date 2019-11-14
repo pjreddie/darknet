@@ -535,8 +535,16 @@ int resize_network(network *net, int w, int h)
             resize_route_layer(&l, net);
         }else if (l.type == SHORTCUT) {
             resize_shortcut_layer(&l, w, h);
-        //}else if (l.type == SCALE_CHANNELS) {
-        //    resize_scale_channels_layer(&l, w, h);
+        }else if (l.type == SCALE_CHANNELS) {
+            resize_scale_channels_layer(&l, net);
+        }else if (l.type == DROPOUT) {
+            resize_dropout_layer(&l, inputs);
+            l.output = net->layers[i - 1].output;
+            l.delta = net->layers[i - 1].delta;
+#ifdef GPU
+            l.output_gpu = net->layers[i-1].output_gpu;
+            l.delta_gpu = net->layers[i-1].delta_gpu;
+#endif  
         }else if (l.type == UPSAMPLE) {
             resize_upsample_layer(&l, w, h);
         }else if(l.type == REORG){
@@ -556,9 +564,12 @@ int resize_network(network *net, int w, int h)
         if(l.workspace_size > workspace_size) workspace_size = l.workspace_size;
         inputs = l.outputs;
         net->layers[i] = l;
-        w = l.out_w;
-        h = l.out_h;
-        if(l.type == AVGPOOL) break;
+        if(l.type != DROPOUT)
+        {
+            w = l.out_w;
+            h = l.out_h;
+        }
+        //if(l.type == AVGPOOL) break;
     }
 #ifdef GPU
     const int size = get_network_input_size(*net) * net->batch;
