@@ -280,6 +280,7 @@ struct layer {
     int random;
     float ignore_thresh;
     float truth_thresh;
+    float iou_thresh;
     float thresh;
     float focus;
     int classfix;
