@@ -182,9 +182,9 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
     if (l.type == BATCHNORM) simple_copy_ongpu(l.outputs*l.batch, state.input, l.output_gpu);
         //copy_ongpu(l.outputs*l.batch, state.input, 1, l.output_gpu, 1);
 
-    simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.x_gpu);
-    //copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
     if (state.train) {
+        simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.x_gpu);
+        //copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
 #ifdef CUDNN
         float one = 1;
         float zero = 0;

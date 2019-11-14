@@ -978,6 +978,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     params.batch = net.batch;
     params.time_steps = net.time_steps;
     params.net = net;
+    printf("batch = %d, time_steps = %d, train = %d \n", net.batch, net.time_steps, params.train);
 
     float bflops = 0;
     size_t workspace_size = 0;
