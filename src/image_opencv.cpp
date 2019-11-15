@@ -703,11 +703,12 @@ int set_capture_position_frame_cv(cap_cv *cap, int index)
 
 image get_image_from_stream_cpp(cap_cv *cap)
 {
-    cv::Mat *src = new cv::Mat();
+    cv::Mat *src = NULL;
     static int once = 1;
     if (once) {
         once = 0;
         do {
+            if (src) delete src;
             src = get_capture_frame_cv(cap);
             if (!src) return make_empty_image(0, 0, 0);
         } while (src->cols < 1 || src->rows < 1 || src->channels() < 1);
@@ -719,6 +720,7 @@ image get_image_from_stream_cpp(cap_cv *cap)
     if (!src) return make_empty_image(0, 0, 0);
     image im = mat_to_image(*src);
     rgbgr_image(im);
+    if (src) delete src;
     return im;
 }
 // ----------------------------------------

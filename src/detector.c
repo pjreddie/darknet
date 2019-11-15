@@ -556,6 +556,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     for (j = 0; j < classes; ++j) {
         if (fps) fclose(fps[j]);
     }
+    if (fps) free(fps);
     if (coco) {
 #ifdef WIN32
         fseek(fp, -3, SEEK_CUR);
@@ -563,8 +564,15 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         fseek(fp, -2, SEEK_CUR);
 #endif
         fprintf(fp, "\n]\n");
-        fclose(fp);
     }
+    if (fp) fclose(fp);
+
+    if (val) free(val);
+    if (val_resized) free(val_resized);
+    if (thr) free(thr);
+    if (buf) free(buf);
+    if (buf_resized) free(buf_resized);
+
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)time(0) - start);
 }
 
@@ -1099,6 +1107,11 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     else {
         free_network(net);
     }
+    if (val) free(val);
+    if (val_resized) free(val_resized);
+    if (thr) free(thr);
+    if (buf) free(buf);
+    if (buf_resized) free(buf_resized);
 
     return mean_average_precision;
 }
@@ -1505,4 +1518,6 @@ void run_detector(int argc, char **argv)
         free_list(options);
     }
     else printf(" There isn't such command: %s", argv[2]);
+
+    if (gpus && gpu_list && ngpus > 1) free(gpus);
 }

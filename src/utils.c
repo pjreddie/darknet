@@ -41,6 +41,7 @@ int *read_map(char *filename)
         map = (int*)realloc(map, n * sizeof(int));
         map[n-1] = atoi(str);
     }
+    if (file) fclose(file);
     return map;
 }
 
@@ -65,6 +66,7 @@ void shuffle(void *arr, size_t n, size_t size)
         memcpy((char*)arr+(j*size), (char*)arr+(i*size), size);
         memcpy((char*)arr+(i*size), swp,          size);
     }
+    free(swp);
 }
 
 void del_arg(int argc, char **argv, int index)
@@ -685,9 +687,9 @@ int max_index(float *a, int n)
 
 int top_max_index(float *a, int n, int k)
 {
+    if (n <= 0) return -1;
     float *values = (float*)calloc(k, sizeof(float));
     int *indexes = (int*)calloc(k, sizeof(int));
-    if (n <= 0) return -1;
     int i, j;
     for (i = 0; i < n; ++i) {
         for (j = 0; j < k; ++j) {
