@@ -374,7 +374,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                         int class_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 9);
                         int obj_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 8);
                         float objectness = l.output[obj_index];
-                        int class_id_match = compare_yolo_class(l.output, l.classes, class_index, l.w*l.h, objectness, class_id, 0.25f);
+                        int class_id_match = compare_gaussian_yolo_class(l.output, l.classes, class_index, l.w*l.h, objectness, class_id, 0.25f);
 
                         float iou = box_iou(pred, truth);
                         if (iou > best_match_iou && class_id_match == 1) {
