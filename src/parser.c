@@ -444,8 +444,9 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     //assert(l.outputs == params.inputs);
 
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
+    l.uc_normalizer = option_find_float_quiet(options, "uc_normalizer", 1.0);
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
-    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1.0);
     char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
 
     if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
