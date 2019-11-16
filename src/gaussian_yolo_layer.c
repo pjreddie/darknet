@@ -140,7 +140,7 @@ box get_gaussian_yolo_box(float *x, float *biases, int n, int index, int i, int 
     return b;
 }
 
-float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate)
+float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, float uc_normalizer, int accumulate)
 {
     box pred = get_gaussian_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
 
@@ -157,6 +157,7 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
     float dx, dy, dw, dh;
 
     if (iou_loss == MSE) {
+        // MSE
         iou = all_ious.iou;
 
         float tx = (truth.x*lw - i);
@@ -171,6 +172,7 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
     }
     else
     {
+        // GIoU
         iou = all_ious.giou;
 
         // https://github.com/generalized-iou/g-darknet
@@ -183,14 +185,9 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
         dy = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
         dw = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
         dh = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
-
-        // normalize iou weight
-        dx *= iou_normalizer;
-        dy *= iou_normalizer;
-        dw *= iou_normalizer;
-        dh *= iou_normalizer;
     }
 
+    // Gaussian
     float in_exp_x = dx / x[index+1*stride];
     float in_exp_x_2 = pow(in_exp_x, 2);
     float normal_dist_x = exp(in_exp_x_2*(-1./2.))/(sqrt(M_PI * 2.0)*(x[index+1*stride]+sigma_const));
@@ -223,15 +220,39 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
         delta[index + 7 * stride] = 0;
     }
 
-    delta[index + 0*stride] += temp_x * in_exp_x  * (1./x[index+1*stride]);
-    delta[index + 2*stride] += temp_y * in_exp_y  * (1./x[index+3*stride]);
-    delta[index + 4*stride] += temp_w * in_exp_w  * (1./x[index+5*stride]);
-    delta[index + 6*stride] += temp_h * in_exp_h  * (1./x[index+7*stride]);
+    float delta_x = temp_x * in_exp_x  * (1. / x[index + 1 * stride]);
+    float delta_y = temp_y * in_exp_y  * (1. / x[index + 3 * stride]);
+    float delta_w = temp_w * in_exp_w  * (1. / x[index + 5 * stride]);
+    float delta_h = temp_h * in_exp_h  * (1. / x[index + 7 * stride]);
 
-    delta[index + 1*stride] += temp_x * (in_exp_x_2/x[index+1*stride] - 1./(x[index+1*stride]+sigma_const));
-    delta[index + 3*stride] += temp_y * (in_exp_y_2/x[index+3*stride] - 1./(x[index+3*stride]+sigma_const));
-    delta[index + 5*stride] += temp_w * (in_exp_w_2/x[index+5*stride] - 1./(x[index+5*stride]+sigma_const));
-    delta[index + 7*stride] += temp_h * (in_exp_h_2/x[index+7*stride] - 1./(x[index+7*stride]+sigma_const));
+    float delta_ux = temp_x * (in_exp_x_2 / x[index + 1 * stride] - 1. / (x[index + 1 * stride] + sigma_const));
+    float delta_uy = temp_y * (in_exp_y_2 / x[index + 3 * stride] - 1. / (x[index + 3 * stride] + sigma_const));
+    float delta_uw = temp_w * (in_exp_w_2 / x[index + 5 * stride] - 1. / (x[index + 5 * stride] + sigma_const));
+    float delta_uh = temp_h * (in_exp_h_2 / x[index + 7 * stride] - 1. / (x[index + 7 * stride] + sigma_const));
+
+    if (iou_loss != MSE) {
+        // normalize iou weight, for GIoU
+        delta_x *= iou_normalizer;
+        delta_y *= iou_normalizer;
+        delta_w *= iou_normalizer;
+        delta_h *= iou_normalizer;
+    }
+    // normalize Uncertainty weight
+    delta_ux *= uc_normalizer;
+    delta_uy *= uc_normalizer;
+    delta_uw *= uc_normalizer;
+    delta_uh *= uc_normalizer;
+
+
+    delta[index + 0 * stride] += delta_x;
+    delta[index + 2 * stride] += delta_y;
+    delta[index + 4 * stride] += delta_w;
+    delta[index + 6 * stride] += delta_h;
+
+    delta[index + 1 * stride] += delta_ux;
+    delta[index + 3 * stride] += delta_uy;
+    delta[index + 5 * stride] += delta_uw;
+    delta[index + 7 * stride] += delta_uh;
     return iou;
 }
 
@@ -359,7 +380,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                         int class_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 9);
                         delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0);
                         box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
-                        delta_gaussian_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, 1);
+                        delta_gaussian_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, l.uc_normalizer, 1);
                     }
                 }
             }
@@ -388,7 +409,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
             int mask_n = int_index(l.mask, best_n, l.n);
             if(mask_n >= 0){
                 int box_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
-                float iou = delta_gaussian_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, 1);
+                float iou = delta_gaussian_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, l.uc_normalizer, 1);
 
                 int obj_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 8);
                 avg_obj += l.output[obj_index];
@@ -419,7 +440,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
 
                     if (iou > l.iou_thresh) {
                         int box_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
-                        float iou = delta_gaussian_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, 1);
+                        float iou = delta_gaussian_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, l.uc_normalizer, 1);
 
                         int obj_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 8);
                         avg_obj += l.output[obj_index];
