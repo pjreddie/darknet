@@ -256,6 +256,26 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
     return iou;
 }
 
+void averages_gaussian_yolo_deltas(int class_index, int box_index, int stride, int classes, float *delta)
+{
+
+    int classes_in_one_box = 0;
+    int c;
+    for (c = 0; c < classes; ++c) {
+        if (delta[class_index + stride*c] > 0) classes_in_one_box++;
+    }
+
+    if (classes_in_one_box > 0) {
+        delta[box_index + 0 * stride] /= classes_in_one_box;
+        delta[box_index + 1 * stride] /= classes_in_one_box;
+        delta[box_index + 2 * stride] /= classes_in_one_box;
+        delta[box_index + 3 * stride] /= classes_in_one_box;
+        delta[box_index + 4 * stride] /= classes_in_one_box;
+        delta[box_index + 5 * stride] /= classes_in_one_box;
+        delta[box_index + 6 * stride] /= classes_in_one_box;
+        delta[box_index + 7 * stride] /= classes_in_one_box;
+    }
+}
 
 void delta_gaussian_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat)
 {
@@ -469,25 +489,73 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                     int class_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 9);
                     const int stride = l.w*l.h;
 
-                    int classes_in_one_box = 0;
-                    for (n = 0; n < l.classes; ++n) {
-                        if (l.delta[class_index + stride*n] > 0) classes_in_one_box++;
-                    }
-
-                    l.delta[box_index + 0 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 1 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 2 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 3 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 4 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 5 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 6 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 7 * stride] /= classes_in_one_box;
+                    averages_gaussian_yolo_deltas(class_index, box_index, stride, l.classes, l.delta);
                 }
             }
         }
     }
+
+
+    // calculate: Classification-loss, IoU-loss and Uncertainty-loss
+    const int stride = l.w*l.h;
+    float* classification_lost = (float *)calloc(l.batch * l.outputs, sizeof(float));
+    memcpy(classification_lost, l.delta, l.batch * l.outputs * sizeof(float));
+
+
+    for (b = 0; b < l.batch; ++b) {
+        for (j = 0; j < l.h; ++j) {
+            for (i = 0; i < l.w; ++i) {
+                for (n = 0; n < l.n; ++n) {
+                    int box_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 0);
+
+                    classification_lost[box_index + 0 * stride] = 0;
+                    classification_lost[box_index + 1 * stride] = 0;
+                    classification_lost[box_index + 2 * stride] = 0;
+                    classification_lost[box_index + 3 * stride] = 0;
+                    classification_lost[box_index + 4 * stride] = 0;
+                    classification_lost[box_index + 5 * stride] = 0;
+                    classification_lost[box_index + 6 * stride] = 0;
+                    classification_lost[box_index + 7 * stride] = 0;
+                }
+            }
+        }
+    }
+    float class_loss = pow(mag_array(classification_lost, l.outputs * l.batch), 2);
+    free(classification_lost);
+
+
+    float* except_uncertainty_lost = (float *)calloc(l.batch * l.outputs, sizeof(float));
+    memcpy(except_uncertainty_lost, l.delta, l.batch * l.outputs * sizeof(float));
+    for (b = 0; b < l.batch; ++b) {
+        for (j = 0; j < l.h; ++j) {
+            for (i = 0; i < l.w; ++i) {
+                for (n = 0; n < l.n; ++n) {
+                    int box_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 0);
+                    except_uncertainty_lost[box_index + 4 * stride] = 0;
+                    except_uncertainty_lost[box_index + 5 * stride] = 0;
+                    except_uncertainty_lost[box_index + 6 * stride] = 0;
+                    except_uncertainty_lost[box_index + 7 * stride] = 0;
+                }
+            }
+        }
+    }
+    float except_uc_loss = pow(mag_array(except_uncertainty_lost, l.outputs * l.batch), 2);
+    free(except_uncertainty_lost);
+
     *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
-    printf("Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", state.index, avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, recall75/count, count);
+
+    float loss = pow(mag_array(l.delta, l.outputs * l.batch), 2);
+    float uc_loss = loss - except_uc_loss;
+    float iou_loss = except_uc_loss - class_loss;
+
+    loss /= l.batch;
+    class_loss /= l.batch;
+    uc_loss /= l.batch;
+    iou_loss /= l.batch;
+
+    printf("Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d, loss = %.2f, class_loss = %.2f, iou_loss = %.2f, uc_loss = %.2f \n",
+        state.index, avg_iou/count, avg_cat/class_count, avg_obj/count, avg_anyobj/(l.w*l.h*l.n*l.batch), recall/count, recall75/count, count,
+        loss, class_loss, iou_loss, uc_loss);
 }
 
 void backward_gaussian_yolo_layer(const layer l, network_state state)

@@ -192,6 +192,23 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
     return all_ious;
 }
 
+void averages_yolo_deltas(int class_index, int box_index, int stride, int classes, float *delta)
+{
+
+    int classes_in_one_box = 0;
+    int c;
+    for (c = 0; c < classes; ++c) {
+        if (delta[class_index + stride*c] > 0) classes_in_one_box++;
+    }
+
+    if (classes_in_one_box > 0) {
+        delta[box_index + 0 * stride] /= classes_in_one_box;
+        delta[box_index + 1 * stride] /= classes_in_one_box;
+        delta[box_index + 2 * stride] /= classes_in_one_box;
+        delta[box_index + 3 * stride] /= classes_in_one_box;
+    }
+}
+
 void delta_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat, int focal_loss)
 {
     int n;
@@ -436,19 +453,12 @@ void forward_yolo_layer(const layer l, network_state state)
                     int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
                     const int stride = l.w*l.h;
 
-                    int classes_in_one_box = 0;
-                    for (n = 0; n < l.classes; ++n) {
-                        if (l.delta[class_index + stride*n] > 0) classes_in_one_box++;
-                    }
-
-                    l.delta[box_index + 0 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 1 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 2 * stride] /= classes_in_one_box;
-                    l.delta[box_index + 3 * stride] /= classes_in_one_box;
+                    averages_yolo_deltas(class_index, box_index, stride, l.classes, l.delta);
                 }
             }
         }
     }
+
     //*(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
     //printf("Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", state.index, avg_iou / count, avg_cat / class_count, avg_obj / count, avg_anyobj / (l.w*l.h*l.n*l.batch), recall / count, recall75 / count, count);
 

@@ -330,6 +330,7 @@ struct layer {
     float *weight_updates;
 
     float scale_x_y;
+    float uc_normalizer;
     float iou_normalizer;
     float cls_normalizer;
     IOU_LOSS iou_loss;
