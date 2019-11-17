@@ -405,6 +405,11 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.nweights = (c / groups) * n * size * size;
 
     if (l.share_layer) {
+        if (l.size != l.share_layer->size || l.nweights != l.share_layer->nweights || l.c != l.share_layer->c || l.n != l.share_layer->n) {
+            printf("Layer size, nweights, channels or filters don't match for the share_layer");
+            getchar();
+        }
+
         l.weights = l.share_layer->weights;
         l.weight_updates = l.share_layer->weight_updates;
 

@@ -236,10 +236,10 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
         dw *= iou_normalizer;
         dh *= iou_normalizer;
 
-        delta_x = (delta_x + dx) / 2;
-        delta_y = (delta_y + dy) / 2;
-        delta_w = (delta_w + dw) / 2;
-        delta_h = (delta_h + dh) / 2;
+        delta_x = dx;
+        delta_y = dy;
+        delta_w = dw;
+        delta_h = dh;
     }
 
     // normalize Uncertainty weight
@@ -299,7 +299,8 @@ int compare_gaussian_yolo_class(float *output, int classes, int class_index, int
 {
     int j;
     for (j = 0; j < classes; ++j) {
-        float prob = objectness * output[class_index + stride*j];
+        //float prob = objectness * output[class_index + stride*j];
+        float prob = output[class_index + stride*j];
         if (prob > conf_thresh) {
             return 1;
         }

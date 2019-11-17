@@ -250,7 +250,8 @@ int compare_yolo_class(float *output, int classes, int class_index, int stride, 
 {
     int j;
     for (j = 0; j < classes; ++j) {
-        float prob = objectness * output[class_index + stride*j];
+        //float prob = objectness * output[class_index + stride*j];
+        float prob = output[class_index + stride*j];
         if (prob > conf_thresh) {
             return 1;
         }
