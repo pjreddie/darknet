@@ -801,6 +801,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             }
             //detection *dets = get_network_boxes(&net, val[t].w, val[t].h, thresh, hier_thresh, 0, 1, &nboxes, letter_box); // for letter_box=1
             if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+            //if (nms) do_nms_obj(dets, nboxes, l.classes, nms);
 
             char labelpath[4096];
             replace_image_to_label(path, labelpath);

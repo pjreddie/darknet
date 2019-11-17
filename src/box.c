@@ -425,6 +425,7 @@ int nms_comparator_v3(const void *pa, const void *pb)
     float diff = 0;
     if (b.sort_class >= 0) {
         diff = a.prob[b.sort_class] - b.prob[b.sort_class];
+        //diff = a.objectness*a.prob[b.sort_class] - b.objectness*b.prob[b.sort_class];
     }
     else {
         diff = a.objectness - b.objectness;

@@ -156,36 +156,17 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
 
     float dx, dy, dw, dh;
 
-    if (iou_loss == MSE) {
-        // MSE
-        iou = all_ious.iou;
+    iou = all_ious.iou;
 
-        float tx = (truth.x*lw - i);
-        float ty = (truth.y*lh - j);
-        float tw = log(truth.w*w / biases[2 * n]);
-        float th = log(truth.h*h / biases[2 * n + 1]);
+    float tx = (truth.x*lw - i);
+    float ty = (truth.y*lh - j);
+    float tw = log(truth.w*w / biases[2 * n]);
+    float th = log(truth.h*h / biases[2 * n + 1]);
 
-        dx = (tx - x[index + 0 * stride]);
-        dy = (ty - x[index + 2 * stride]);
-        dw = (tw - x[index + 4 * stride]);
-        dh = (th - x[index + 6 * stride]);
-    }
-    else
-    {
-        // GIoU
-        iou = all_ious.giou;
-
-        // https://github.com/generalized-iou/g-darknet
-        // https://arxiv.org/abs/1902.09630v2
-        // https://giou.stanford.edu/
-        all_ious.dx_iou = dx_box_iou(pred, truth, iou_loss);
-
-        // jacobian^t (transpose)
-        dx = (all_ious.dx_iou.dl + all_ious.dx_iou.dr);
-        dy = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
-        dw = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
-        dh = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
-    }
+    dx = (tx - x[index + 0 * stride]);
+    dy = (ty - x[index + 2 * stride]);
+    dw = (tw - x[index + 4 * stride]);
+    dh = (th - x[index + 6 * stride]);
 
     // Gaussian
     float in_exp_x = dx / x[index+1*stride];
@@ -231,18 +212,41 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
     float delta_uh = temp_h * (in_exp_h_2 / x[index + 7 * stride] - 1. / (x[index + 7 * stride] + sigma_const));
 
     if (iou_loss != MSE) {
+        // GIoU
+        iou = all_ious.giou;
+
+        // https://github.com/generalized-iou/g-darknet
+        // https://arxiv.org/abs/1902.09630v2
+        // https://giou.stanford.edu/
+        all_ious.dx_iou = dx_box_iou(pred, truth, iou_loss);
+
+        // jacobian^t (transpose)
+        float dx = (all_ious.dx_iou.dl + all_ious.dx_iou.dr);
+        float dy = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
+        float dw = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
+        float dh = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
+
+        // predict exponential, apply gradient of e^delta_t ONLY for w,h
+        dw *= exp(x[index + 4 * stride]);
+        dh *= exp(x[index + 6 * stride]);
+
         // normalize iou weight, for GIoU
-        delta_x *= iou_normalizer;
-        delta_y *= iou_normalizer;
-        delta_w *= iou_normalizer;
-        delta_h *= iou_normalizer;
+        dx *= iou_normalizer;
+        dy *= iou_normalizer;
+        dw *= iou_normalizer;
+        dh *= iou_normalizer;
+
+        delta_x = (delta_x + dx) / 2;
+        delta_y = (delta_y + dy) / 2;
+        delta_w = (delta_w + dw) / 2;
+        delta_h = (delta_h + dh) / 2;
     }
+
     // normalize Uncertainty weight
     delta_ux *= uc_normalizer;
     delta_uy *= uc_normalizer;
     delta_uw *= uc_normalizer;
     delta_uh *= uc_normalizer;
-
 
     delta[index + 0 * stride] += delta_x;
     delta[index + 2 * stride] += delta_y;
