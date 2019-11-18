@@ -128,22 +128,7 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     return b;
 }
 
-
-int compare_yolo_class(float *output, int classes, int class_index, int stride, float objectness, int class_id)
-{
-    const float conf_thresh = 0.25;
-
-    int j;
-    for (j = 0; j < classes; ++j) {
-        float prob = objectness * output[class_index + stride*j];
-        if (prob > conf_thresh) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss)
+ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate)
 {
     ious all_ious = { 0 };
     // i - step in layer width
@@ -162,10 +147,11 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         float tw = log(truth.w*w / biases[2 * n]);
         float th = log(truth.h*h / biases[2 * n + 1]);
 
-        delta[index + 0 * stride] = scale * (tx - x[index + 0 * stride]);
-        delta[index + 1 * stride] = scale * (ty - x[index + 1 * stride]);
-        delta[index + 2 * stride] = scale * (tw - x[index + 2 * stride]);
-        delta[index + 3 * stride] = scale * (th - x[index + 3 * stride]);
+        // accumulate delta
+        delta[index + 0 * stride] += scale * (tx - x[index + 0 * stride]);
+        delta[index + 1 * stride] += scale * (ty - x[index + 1 * stride]);
+        delta[index + 2 * stride] += scale * (tw - x[index + 2 * stride]);
+        delta[index + 3 * stride] += scale * (th - x[index + 3 * stride]);
     }
     else {
         // https://github.com/generalized-iou/g-darknet
@@ -174,23 +160,53 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         all_ious.dx_iou = dx_box_iou(pred, truth, iou_loss);
 
         // jacobian^t (transpose)
-        delta[index + 0 * stride] = (all_ious.dx_iou.dl + all_ious.dx_iou.dr);
-        delta[index + 1 * stride] = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
-        delta[index + 2 * stride] = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
-        delta[index + 3 * stride] = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
+        float dx = (all_ious.dx_iou.dl + all_ious.dx_iou.dr);
+        float dy = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
+        float dw = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
+        float dh = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
 
         // predict exponential, apply gradient of e^delta_t ONLY for w,h
-        delta[index + 2 * stride] *= exp(x[index + 2 * stride]);
-        delta[index + 3 * stride] *= exp(x[index + 3 * stride]);
+        dw *= exp(x[index + 2 * stride]);
+        dh *= exp(x[index + 3 * stride]);
 
         // normalize iou weight
-        delta[index + 0 * stride] *= iou_normalizer;
-        delta[index + 1 * stride] *= iou_normalizer;
-        delta[index + 2 * stride] *= iou_normalizer;
-        delta[index + 3 * stride] *= iou_normalizer;
+        dx *= iou_normalizer;
+        dy *= iou_normalizer;
+        dw *= iou_normalizer;
+        dh *= iou_normalizer;
+
+        if (!accumulate) {
+            delta[index + 0 * stride] = 0;
+            delta[index + 1 * stride] = 0;
+            delta[index + 2 * stride] = 0;
+            delta[index + 3 * stride] = 0;
+        }
+
+        // accumulate delta
+        delta[index + 0 * stride] += dx;
+        delta[index + 1 * stride] += dy;
+        delta[index + 2 * stride] += dw;
+        delta[index + 3 * stride] += dh;
     }
 
     return all_ious;
+}
+
+void averages_yolo_deltas(int class_index, int box_index, int stride, int classes, float *delta)
+{
+
+    int classes_in_one_box = 0;
+    int c;
+    for (c = 0; c < classes; ++c) {
+        if (delta[class_index + stride*c] > 0) classes_in_one_box++;
+    }
+
+    if (classes_in_one_box > 0) {
+        delta[box_index + 0 * stride] /= classes_in_one_box;
+        delta[box_index + 1 * stride] /= classes_in_one_box;
+        delta[box_index + 2 * stride] /= classes_in_one_box;
+        delta[box_index + 3 * stride] /= classes_in_one_box;
+    }
 }
 
 void delta_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat, int focal_loss)
@@ -230,6 +246,19 @@ void delta_yolo_class(float *output, float *delta, int index, int class_id, int 
     }
 }
 
+int compare_yolo_class(float *output, int classes, int class_index, int stride, float objectness, int class_id, float conf_thresh)
+{
+    int j;
+    for (j = 0; j < classes; ++j) {
+        //float prob = objectness * output[class_index + stride*j];
+        float prob = output[class_index + stride*j];
+        if (prob > conf_thresh) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int entry_index(layer l, int batch, int location, int entry)
 {
     int n =   location / (l.w*l.h);
@@ -254,6 +283,7 @@ void forward_yolo_layer(const layer l, network_state state)
     }
 #endif
 
+    // delta is zeroed
     memset(l.delta, 0, l.outputs * l.batch * sizeof(float));
     if (!state.train) return;
     //float avg_iou = 0;
@@ -293,7 +323,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
                         int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
                         float objectness = l.output[obj_index];
-                        int class_id_match = compare_yolo_class(l.output, l.classes, class_index, l.w*l.h, objectness, class_id);
+                        int class_id_match = compare_yolo_class(l.output, l.classes, class_index, l.w*l.h, objectness, class_id, 0.25f);
 
                         float iou = box_iou(pred, truth);
                         if (iou > best_match_iou && class_id_match == 1) {
@@ -319,7 +349,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
                         delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.focal_loss);
                         box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
-                        delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss);
+                        delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, 1);
                     }
                 }
             }
@@ -353,7 +383,7 @@ void forward_yolo_layer(const layer l, network_state state)
             int mask_n = int_index(l.mask, best_n, l.n);
             if (mask_n >= 0) {
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
-                ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss);
+                ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, 1);
 
                 // range is 0 <= 1
                 tot_iou += all_ious.iou;
@@ -376,8 +406,60 @@ void forward_yolo_layer(const layer l, network_state state)
                 if (all_ious.iou > .5) recall += 1;
                 if (all_ious.iou > .75) recall75 += 1;
             }
+
+            // iou_thresh
+            for (n = 0; n < l.total; ++n) {
+                int mask_n = int_index(l.mask, n, l.n);
+                if (mask_n >= 0 && n != best_n && l.iou_thresh < 1.0f) {
+                    box pred = { 0 };
+                    pred.w = l.biases[2 * n] / state.net.w;
+                    pred.h = l.biases[2 * n + 1] / state.net.h;
+                    float iou = box_iou(pred, truth_shift);
+                    // iou, n
+
+                    if (iou > l.iou_thresh) {
+                        int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
+                        ious all_ious = delta_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer, l.iou_loss, 1);
+
+                        // range is 0 <= 1
+                        tot_iou += all_ious.iou;
+                        tot_iou_loss += 1 - all_ious.iou;
+                        // range is -1 <= giou <= 1
+                        tot_giou += all_ious.giou;
+                        tot_giou_loss += 1 - all_ious.giou;
+
+                        int obj_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4);
+                        avg_obj += l.output[obj_index];
+                        l.delta[obj_index] = l.cls_normalizer * (1 - l.output[obj_index]);
+
+                        int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+                        if (l.map) class_id = l.map[class_id];
+                        int class_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4 + 1);
+                        delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat, l.focal_loss);
+
+                        ++count;
+                        ++class_count;
+                        if (all_ious.iou > .5) recall += 1;
+                        if (all_ious.iou > .75) recall75 += 1;
+                    }
+                }
+            }
+        }
+
+        // averages the deltas obtained by the function: delta_yolo_box()_accumulate
+        for (j = 0; j < l.h; ++j) {
+            for (i = 0; i < l.w; ++i) {
+                for (n = 0; n < l.n; ++n) {
+                    int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
+                    int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
+                    const int stride = l.w*l.h;
+
+                    averages_yolo_deltas(class_index, box_index, stride, l.classes, l.delta);
+                }
+            }
         }
     }
+
     //*(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
     //printf("Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", state.index, avg_iou / count, avg_cat / class_count, avg_obj / count, avg_anyobj / (l.w*l.h*l.n*l.batch), recall / count, recall75 / count, count);
 

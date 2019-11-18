@@ -380,6 +380,7 @@ layer parse_yolo(list *options, size_params params)
 
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
+    l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
     l.random = option_find_int_quiet(options, "random", 0);
 
     char *map_file = option_find_str(options, "map", 0);
@@ -435,14 +436,29 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     char *a = option_find_str(options, "mask", 0);
     int *mask = parse_gaussian_yolo_mask(a, &num);
     layer l = make_gaussian_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
-    assert(l.outputs == params.inputs);
+    if (l.outputs != params.inputs) {
+        printf("Error: l.outputs == params.inputs \n");
+        printf("filters= in the [convolutional]-layer doesn't correspond to classes= or mask= in [Gaussian_yolo]-layer \n");
+        exit(EXIT_FAILURE);
+    }
+    //assert(l.outputs == params.inputs);
 
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
-    l.max_boxes = option_find_int_quiet(options, "max", 90);
+    l.uc_normalizer = option_find_float_quiet(options, "uc_normalizer", 1.0);
+    l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
+    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1.0);
+    char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
+
+    if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
+    else if (strcmp(iou_loss, "giou") == 0) l.iou_loss = GIOU;
+    else l.iou_loss = IOU;
+    fprintf(stderr, "[Gaussian_yolo] iou loss: %s, iou_norm: %2.2f, cls_norm: %2.2f, scale: %2.2f\n", (l.iou_loss == MSE ? "mse" : (l.iou_loss == GIOU ? "giou" : "iou")), l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
+
     l.jitter = option_find_float(options, "jitter", .2);
 
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
+    l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
     l.random = option_find_int_quiet(options, "random", 0);
 
     char *map_file = option_find_str(options, "map", 0);

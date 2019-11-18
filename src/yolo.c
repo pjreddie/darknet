@@ -189,6 +189,14 @@ void validate_yolo(char *cfgfile, char *weightfile)
             free_image(val_resized[t]);
         }
     }
+
+    if (fps) free(fps);
+    if (val) free(val);
+    if (val_resized) free(val_resized);
+    if (buf) free(buf);
+    if (buf_resized) free(buf_resized);
+    if (thr) free(thr);
+
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 

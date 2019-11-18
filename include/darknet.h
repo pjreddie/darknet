@@ -280,6 +280,7 @@ struct layer {
     int random;
     float ignore_thresh;
     float truth_thresh;
+    float iou_thresh;
     float thresh;
     float focus;
     int classfix;
@@ -329,6 +330,7 @@ struct layer {
     float *weight_updates;
 
     float scale_x_y;
+    float uc_normalizer;
     float iou_normalizer;
     float cls_normalizer;
     IOU_LOSS iou_loss;
