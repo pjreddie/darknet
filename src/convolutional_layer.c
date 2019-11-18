@@ -769,8 +769,10 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
             l->binary_input_gpu = cuda_make_array(0, l->inputs*l->batch);
         }
 
-        cuda_free(l->activation_input_gpu);
-        if (l->activation == SWISH || l->activation == MISH) l->activation_input_gpu = cuda_make_array(l->activation_input, total_batch*l->outputs);
+        if (l->activation == SWISH || l->activation == MISH) {
+            cuda_free(l->activation_input_gpu);
+            l->activation_input_gpu = cuda_make_array(l->activation_input, total_batch*l->outputs);
+        }
     }
 #ifdef CUDNN
     cudnn_convolutional_setup(l, cudnn_fastest);
