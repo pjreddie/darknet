@@ -137,12 +137,15 @@ void activate_array_swish(float *x, const int n, float * output_sigmoid, float *
 // https://github.com/digantamisra98/Mish
 void activate_array_mish(float *x, const int n, float * activation_input, float * output)
 {
+    const float MISH_THRESHOLD = 20;
     int i;
     #pragma omp parallel for
     for (i = 0; i < n; ++i) {
         float x_val = x[i];
         activation_input[i] = x_val;    // store value before activation
-        output[i] = x_val * tanh_activate(log(1 + expf(x_val)));
+        //output[i] = x_val * tanh_activate(log(1 + expf(x_val)));
+        if (x_val < MISH_THRESHOLD) output[i] = x_val * tanh_activate(log(expf(x_val)));
+        else output[i] = x_val * tanh_activate(x_val);
     }
 }
 
@@ -207,12 +210,12 @@ void gradient_array_mish(const int n, const float * activation_input, float * de
     int i;
     #pragma omp parallel for
     for (i = 0; i < n; ++i) {
-        const float THRESHOLD = 20.0f;
+        const float MISH_THRESHOLD = 20.0f;
 
         // implementation from TensorFlow: https://github.com/tensorflow/addons/commit/093cdfa85d334cbe19a37624c33198f3140109ed
         // implementation from Pytorch: https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h#L26-L31
         float inp = activation_input[i];
-        const float sp = (inp < THRESHOLD) ? log1p(exp(inp)) : inp;
+        const float sp = (inp < MISH_THRESHOLD) ? log1p(exp(inp)) : inp;
         const float grad_sp = 1 - exp(-sp);
         const float tsp = tanh(sp);
         const float grad_tsp = (1 - tsp*tsp) * grad_sp;

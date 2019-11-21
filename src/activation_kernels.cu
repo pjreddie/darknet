@@ -204,9 +204,14 @@ __global__ void activate_array_mish_kernel(float *x, int n, float *activation_in
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (i < n) {
+        const float MISH_THRESHOLD = 20;
         float x_val = x[i];
         activation_input[i] = x_val;    // store value before activation
-        output_gpu[i] = x_val * tanh_activate_kernel(log(1 + expf(x_val)));
+        //output_gpu[i] = x_val * tanh_activate_kernel(log(1 + expf(x_val)));
+
+        // https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h#L17-L20
+        if (x_val < MISH_THRESHOLD) output_gpu[i] = x_val * tanh_activate_kernel(log(expf(x_val)));
+        else output_gpu[i] = x_val * tanh_activate_kernel(x_val);
     }
 }
 
@@ -279,12 +284,12 @@ __global__ void gradient_array_mish_kernel(int n, float *activation_input_gpu, f
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (i < n) {
-        const float THRESHOLD = 20.0f;
+        const float MISH_THRESHOLD = 20.0f;
 
         // implementation from TensorFlow: https://github.com/tensorflow/addons/commit/093cdfa85d334cbe19a37624c33198f3140109ed
         // implementation from Pytorch: https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h#L26-L31
         float inp = activation_input_gpu[i];
-        const float sp = (inp < THRESHOLD) ? log1p(exp(inp)) : inp;
+        const float sp = (inp < MISH_THRESHOLD) ? log1p(exp(inp)) : inp;
         const float grad_sp = 1 - exp(-sp);
         const float tsp = tanh(sp);
         const float grad_tsp = (1 - tsp*tsp) * grad_sp;
