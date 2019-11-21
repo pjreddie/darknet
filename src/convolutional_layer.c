@@ -750,6 +750,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         //l->binary_input = realloc(l->inputs*l->batch, sizeof(float));
     }
 
+    if (l->activation == SWISH || l->activation == MISH) l->activation_input = (float*)realloc(l->activation_input, total_batch*l->outputs * sizeof(float));
 #ifdef GPU
     if (old_w < w || old_h < h) {
         if (l->train) {
@@ -771,6 +772,11 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         if (l->xnor) {
             cuda_free(l->binary_input_gpu);
             l->binary_input_gpu = cuda_make_array(0, l->inputs*l->batch);
+        }
+
+        if (l->activation == SWISH || l->activation == MISH) {
+            cuda_free(l->activation_input_gpu);
+            l->activation_input_gpu = cuda_make_array(l->activation_input, total_batch*l->outputs);
         }
     }
 #ifdef CUDNN
