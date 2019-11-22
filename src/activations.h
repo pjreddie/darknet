@@ -53,6 +53,11 @@ static inline float relie_activate(float x){return (x>0) ? x : .01f*x;}
 static inline float ramp_activate(float x){return x*(x>0)+.1f*x;}
 static inline float leaky_activate(float x){return (x>0) ? x : .1f*x;}
 static inline float tanh_activate(float x){return (expf(2*x)-1)/(expf(2*x)+1);}
+static inline float softplus_activate(float x, float threshold) {
+    if (x > threshold) return x;                // too large
+    else if (x < -threshold) return expf(x);    // too small
+    return logf(expf(x) + 1);
+}
 static inline float plse_activate(float x)
 {
     if(x < -4) return .01f * (x + 4);
