@@ -136,10 +136,10 @@ box get_gaussian_yolo_box(float *x, float *biases, int n, int index, int i, int 
 
     b.w = exp(x[index + 4 * stride]) * biases[2 * n] / w;
     b.h = exp(x[index + 6 * stride]) * biases[2 * n + 1] / h;
+    b.x = (i + x[index + 0 * stride]) / lw;
+    b.y = (j + x[index + 2 * stride]) / lh;
 
     if (yolo_point == YOLO_CENTER) {
-        b.x = (i + x[index + 0 * stride]) / lw;
-        b.y = (j + x[index + 2 * stride]) / lh;
     }
     else if (yolo_point == YOLO_LEFT_TOP) {
         b.x = (i + x[index + 0 * stride]) / lw + b.w / 2;
@@ -176,12 +176,12 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
 
     float tx, ty, tw, th;
 
+    tx = (truth.x*lw - i);
+    ty = (truth.y*lh - j);
     tw = log(truth.w*w / biases[2 * n]);
     th = log(truth.h*h / biases[2 * n + 1]);
 
     if (yolo_point == YOLO_CENTER) {
-        tx = (truth.x*lw - i);
-        ty = (truth.y*lh - j);
     }
     else if (yolo_point == YOLO_LEFT_TOP) {
         tx = ((truth.x - truth.w / 2)*lw - i);
