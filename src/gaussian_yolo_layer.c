@@ -742,6 +742,9 @@ int get_gaussian_yolo_detections(layer l, int w, int h, int netw, int neth, floa
                 dets[count].uc[2] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 5)]; // tw uncertainty
                 dets[count].uc[3] = predictions[entry_gaussian_index(l, 0, n*l.w*l.h + i, 7)]; // th uncertainty
 
+                dets[count].points = l.yolo_point;
+                //if (l.yolo_point != YOLO_CENTER) dets[count].objectness = objectness = 0;
+
                 for (j = 0; j < l.classes; ++j) {
                     int class_index = entry_gaussian_index(l, 0, n*l.w*l.h + i, 9 + j);
                     float uc_aver = (dets[count].uc[0] + dets[count].uc[1] + dets[count].uc[2] + dets[count].uc[3]) / 4.0;

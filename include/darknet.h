@@ -112,12 +112,12 @@ typedef enum {
 
 // parser.h
 typedef enum {
-    DEFAULT_NMS, GREEDY_NMS, DIOU_NMS
+    DEFAULT_NMS, GREEDY_NMS, DIOU_NMS, CORNERS_NMS
 } NMS_KIND;
 
 // parser.h
 typedef enum {
-    YOLO_CENTER, YOLO_LEFT_TOP, YOLO_RIGHT_BOTTOM
+    YOLO_CENTER = 1 << 0, YOLO_LEFT_TOP = 1 << 1, YOLO_RIGHT_BOTTOM = 1 << 2
 } YOLO_POINT;
 
 
@@ -748,6 +748,7 @@ typedef struct detection{
     float objectness;
     int sort_class;
     float *uc; // Gaussian_YOLOv3 - tx,ty,tw,th uncertainty
+    int points; // bit-0 - center, bit-1 - top-left-corner, bit-2 - bottom-right-corner
 } detection;
 
 // matrix.h
