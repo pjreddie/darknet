@@ -213,7 +213,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             detection *local_dets = dets;
 
             //if (nms) do_nms_obj(local_dets, local_nboxes, l.classes, nms);    // bad results
-            if (nms) do_nms_sort(local_dets, local_nboxes, l.classes, nms);
+            if (nms) {
+                if (l.nms_kind == DEFAULT_NMS) do_nms_sort(local_dets, local_nboxes, l.classes, nms);
+                else diounms_sort(local_dets, local_nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+            }
 
             //printf("\033[2J");
             //printf("\033[1;1H");

@@ -42,6 +42,7 @@ void do_nms(box *boxes, float **probs, int total, int classes, float thresh);
 void do_nms_sort_v2(box *boxes, float **probs, int total, int classes, float thresh);
 //LIB_API void do_nms_sort(detection *dets, int total, int classes, float thresh);
 //LIB_API void do_nms_obj(detection *dets, int total, int classes, float thresh);
+//LIB_API void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIND nms_kind, float beta1);
 box decode_box(box b, box anchor);
 box encode_box(box b, box anchor);
 

@@ -372,8 +372,21 @@ layer parse_yolo(list *options, size_params params)
 
     if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
     else if (strcmp(iou_loss, "giou") == 0) l.iou_loss = GIOU;
+    else if (strcmp(iou_loss, "diou") == 0) l.iou_loss = DIOU;
+    else if (strcmp(iou_loss, "ciou") == 0) l.iou_loss = CIOU;
     else l.iou_loss = IOU;
-    fprintf(stderr, "[yolo] params: iou loss: %s, iou_norm: %2.2f, cls_norm: %2.2f, scale_x_y: %2.2f\n", (l.iou_loss == MSE ? "mse" : (l.iou_loss == GIOU ? "giou" : "iou")), l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
+    fprintf(stderr, "[yolo] params: iou loss: %s (%d), iou_norm: %2.2f, cls_norm: %2.2f, scale_x_y: %2.2f\n",
+        iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
+
+    l.beta_nms = option_find_float_quiet(options, "beta_nms", 0.6);
+    char *nms_kind = option_find_str(options, "nms_kind", "default");
+    if (strcmp(nms_kind, "default") == 0) l.nms_kind = DEFAULT_NMS;
+    else {
+        if (strcmp(nms_kind, "greedynms") == 0) l.nms_kind = GREEDY_NMS;
+        else if (strcmp(nms_kind, "diounms") == 0) l.nms_kind = DIOU_NMS;
+        else l.nms_kind = DEFAULT_NMS;
+        printf("nms_kind: %s (%d), beta = %f \n", nms_kind, l.nms_kind, l.beta_nms);
+    }
 
     l.jitter = option_find_float(options, "jitter", .2);
     l.focal_loss = option_find_int_quiet(options, "focal_loss", 0);
@@ -451,8 +464,27 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
 
     if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
     else if (strcmp(iou_loss, "giou") == 0) l.iou_loss = GIOU;
+    else if (strcmp(iou_loss, "diou") == 0) l.iou_loss = DIOU;
+    else if (strcmp(iou_loss, "ciou") == 0) l.iou_loss = CIOU;
     else l.iou_loss = IOU;
-    fprintf(stderr, "[Gaussian_yolo] iou loss: %s, iou_norm: %2.2f, cls_norm: %2.2f, scale: %2.2f\n", (l.iou_loss == MSE ? "mse" : (l.iou_loss == GIOU ? "giou" : "iou")), l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
+
+    l.beta_nms = option_find_float_quiet(options, "beta_nms", 0.6);
+    char *nms_kind = option_find_str(options, "nms_kind", "default");
+    if (strcmp(nms_kind, "default") == 0) l.nms_kind = DEFAULT_NMS;
+    else {
+        if (strcmp(nms_kind, "greedynms") == 0) l.nms_kind = GREEDY_NMS;
+        else if (strcmp(nms_kind, "diounms") == 0) l.nms_kind = DIOU_NMS;
+        else l.nms_kind = DEFAULT_NMS;
+        printf("nms_kind: %s (%d), beta = %f \n", nms_kind, l.nms_kind, l.beta_nms);
+    }
+
+    char *yolo_point = option_find_str_quiet(options, "yolo_point", "center");
+    if (strcmp(yolo_point, "left_top") == 0) l.yolo_point = YOLO_LEFT_TOP;
+    else if (strcmp(yolo_point, "right_bottom") == 0) l.yolo_point = YOLO_RIGHT_BOTTOM;
+    else l.yolo_point = YOLO_CENTER;
+
+    fprintf(stderr, "[Gaussian_yolo] iou loss: %s (%d), iou_norm: %2.2f, cls_norm: %2.2f, scale: %2.2f, point: %d\n",
+        iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y, l.yolo_point);
 
     l.jitter = option_find_float(options, "jitter", .2);
 

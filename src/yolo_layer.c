@@ -137,6 +137,8 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
     box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
     all_ious.iou = box_iou(pred, truth);
     all_ious.giou = box_giou(pred, truth);
+    all_ious.diou = box_diou(pred, truth);
+    all_ious.ciou = box_ciou(pred, truth);
     // avoid nan in dx_box_iou
     if (pred.w == 0) { pred.w = 1.0; }
     if (pred.h == 0) { pred.h = 1.0; }
@@ -289,8 +291,12 @@ void forward_yolo_layer(const layer l, network_state state)
     //float avg_iou = 0;
     float tot_iou = 0;
     float tot_giou = 0;
+    float tot_diou = 0;
+    float tot_ciou = 0;
     float tot_iou_loss = 0;
     float tot_giou_loss = 0;
+    float tot_diou_loss = 0;
+    float tot_ciou_loss = 0;
     float recall = 0;
     float recall75 = 0;
     float avg_cat = 0;
@@ -392,6 +398,12 @@ void forward_yolo_layer(const layer l, network_state state)
                 tot_giou += all_ious.giou;
                 tot_giou_loss += 1 - all_ious.giou;
 
+                tot_diou += all_ious.diou;
+                tot_diou_loss += 1 - all_ious.diou;
+
+                tot_ciou += all_ious.ciou;
+                tot_ciou_loss += 1 - all_ious.ciou;
+
                 int obj_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4);
                 avg_obj += l.output[obj_index];
                 l.delta[obj_index] = l.cls_normalizer * (1 - l.output[obj_index]);
@@ -427,6 +439,12 @@ void forward_yolo_layer(const layer l, network_state state)
                         // range is -1 <= giou <= 1
                         tot_giou += all_ious.giou;
                         tot_giou_loss += 1 - all_ious.giou;
+
+                        tot_diou += all_ious.diou;
+                        tot_diou_loss += 1 - all_ious.diou;
+
+                        tot_ciou += all_ious.ciou;
+                        tot_ciou_loss += 1 - all_ious.ciou;
 
                         int obj_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4);
                         avg_obj += l.output[obj_index];
@@ -508,6 +526,60 @@ void backward_yolo_layer(const layer l, network_state state)
    axpy_cpu(l.batch*l.inputs, 1, l.delta, 1, state.delta, 1);
 }
 
+// Converts output of the network to detection boxes
+// w,h: image width,height
+// netw,neth: network width,height
+// relative: 1 (all callers seems to pass TRUE)
+void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth, int relative)
+{
+    int i;
+    // network height (or width)
+    int new_w = 0;
+    // network height (or width)
+    int new_h = 0;
+    // Compute scale given image w,h vs network w,h
+    // I think this "rotates" the image to match network to input image w/h ratio
+    // new_h and new_w are really just network width and height
+    if (((float)netw / w) < ((float)neth / h)) {
+        new_w = netw;
+        new_h = (h * netw) / w;
+    }
+    else {
+        new_h = neth;
+        new_w = (w * neth) / h;
+    }
+    // difference between network width and "rotated" width
+    float deltaw = netw - new_w;
+    // difference between network height and "rotated" height
+    float deltah = neth - new_h;
+    // ratio between rotated network width and network width
+    float ratiow = (float)new_w / netw;
+    // ratio between rotated network width and network width
+    float ratioh = (float)new_h / neth;
+    for (i = 0; i < n; ++i) {
+
+        box b = dets[i].bbox;
+        // x = ( x - (deltaw/2)/netw ) / ratiow;
+        //   x - [(1/2 the difference of the network width and rotated width) / (network width)]
+        b.x = (b.x - deltaw / 2. / netw) / ratiow;
+        b.y = (b.y - deltah / 2. / neth) / ratioh;
+        // scale to match rotation of incoming image
+        b.w *= 1 / ratiow;
+        b.h *= 1 / ratioh;
+
+        // relative seems to always be == 1, I don't think we hit this condition, ever.
+        if (!relative) {
+            b.x *= w;
+            b.w *= w;
+            b.y *= h;
+            b.h *= h;
+        }
+
+        dets[i].bbox = b;
+    }
+}
+
+/*
 void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth, int relative, int letter)
 {
     int i;
@@ -542,6 +614,7 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
         dets[i].bbox = b;
     }
 }
+*/
 
 int yolo_num_detections(layer l, float thresh)
 {
