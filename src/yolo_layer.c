@@ -530,7 +530,7 @@ void backward_yolo_layer(const layer l, network_state state)
 // w,h: image width,height
 // netw,neth: network width,height
 // relative: 1 (all callers seems to pass TRUE)
-void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth, int relative)
+void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth, int relative, int letter)
 {
     int i;
     // network height (or width)
@@ -540,13 +540,19 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
     // Compute scale given image w,h vs network w,h
     // I think this "rotates" the image to match network to input image w/h ratio
     // new_h and new_w are really just network width and height
-    if (((float)netw / w) < ((float)neth / h)) {
-        new_w = netw;
-        new_h = (h * netw) / w;
+    if (letter) {
+        if (((float)netw / w) < ((float)neth / h)) {
+            new_w = netw;
+            new_h = (h * netw) / w;
+        }
+        else {
+            new_h = neth;
+            new_w = (w * neth) / h;
+        }
     }
     else {
+        new_w = netw;
         new_h = neth;
-        new_w = (w * neth) / h;
     }
     // difference between network width and "rotated" width
     float deltaw = netw - new_w;
