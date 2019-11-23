@@ -36,6 +36,8 @@ float box_iou(box a, box b);
 float box_rmse(box a, box b);
 dxrep dx_box_iou(box a, box b, IOU_LOSS iou_loss);
 float box_giou(box a, box b);
+float box_diou(box a, box b);
+float box_ciou(box a, box b);
 dbox diou(box a, box b);
 boxabs to_tblr(box a);
 void do_nms(box *boxes, float **probs, int total, int classes, float thresh);

@@ -177,6 +177,8 @@ float box_giou(box a, box b)
     return iou - giou_term;
 }
 
+// https://github.com/Zzh-tju/DIoU-darknet
+// https://arxiv.org/abs/1911.08287
 float box_diou(box a, box b)
 {
     boxabs ba = box_c(a, b);
@@ -215,6 +217,8 @@ float box_diounms(box a, box b, float beta1)
     return iou - diou_term;
 }
 
+// https://github.com/Zzh-tju/DIoU-darknet
+// https://arxiv.org/abs/1911.08287
 float box_ciou(box a, box b)
 {
     boxabs ba = box_c(a, b);
@@ -391,6 +395,9 @@ dxrep dx_box_iou(box pred, box truth, IOU_LOSS iou_loss) {
     p_dy = p_dt + p_db;
     p_dw = (p_dr - p_dl);         //For dw and dh, we do not divided by 2.
     p_dh = (p_db - p_dt);
+
+    // https://github.com/Zzh-tju/DIoU-darknet
+    // https://arxiv.org/abs/1911.08287
     if (iou_loss == DIOU) {
         if (C > 0) {
             p_dx += (2*(truth.x-pred.x)*C-(2*Cw*dCw_dx+2*Ch*dCh_dx)*S) / (C * C);
@@ -843,6 +850,8 @@ void do_nms(box *boxes, float **probs, int total, int classes, float thresh)
     }
 }
 
+// https://github.com/Zzh-tju/DIoU-darknet
+// https://arxiv.org/abs/1911.08287
 void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIND nms_kind, float beta1)
 {
     int i, j, k;
