@@ -162,10 +162,16 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         all_ious.dx_iou = dx_box_iou(pred, truth, iou_loss);
 
         // jacobian^t (transpose)
-        float dx = (all_ious.dx_iou.dl + all_ious.dx_iou.dr);
-        float dy = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
-        float dw = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
-        float dh = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
+        //float dx = (all_ious.dx_iou.dl + all_ious.dx_iou.dr);
+        //float dy = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
+        //float dw = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
+        //float dh = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
+
+        // jacobian^t (transpose)
+        float dx = all_ious.dx_iou.dt;
+        float dy = all_ious.dx_iou.db;
+        float dw = all_ious.dx_iou.dl;
+        float dh = all_ious.dx_iou.dr;
 
         // predict exponential, apply gradient of e^delta_t ONLY for w,h
         dw *= exp(x[index + 2 * stride]);

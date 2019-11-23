@@ -134,21 +134,18 @@ box get_gaussian_yolo_box(float *x, float *biases, int n, int index, int i, int 
 {
     box b;
 
+    b.w = exp(x[index + 4 * stride]) * biases[2 * n] / w;
+    b.h = exp(x[index + 6 * stride]) * biases[2 * n + 1] / h;
+
     if (yolo_point == YOLO_CENTER) {
-        b.w = exp(x[index + 4 * stride]) * biases[2 * n] / w;
-        b.h = exp(x[index + 6 * stride]) * biases[2 * n + 1] / h;
         b.x = (i + x[index + 0 * stride]) / lw;
         b.y = (j + x[index + 2 * stride]) / lh;
     }
     else if (yolo_point == YOLO_LEFT_TOP) {
-        b.w = exp(x[index + 4 * stride]) * biases[2 * n] / w;
-        b.h = exp(x[index + 6 * stride]) * biases[2 * n + 1] / h;
-        b.x = (i + x[index + 0 * stride]) / lw + b.w/2;
-        b.y = (j + x[index + 2 * stride]) / lh + b.h/2;
+        b.x = (i + x[index + 0 * stride]) / lw + b.w / 2;
+        b.y = (j + x[index + 2 * stride]) / lh + b.h / 2;
     }
     else if (yolo_point == YOLO_RIGHT_BOTTOM) {
-        b.w = exp(x[index + 4 * stride]) * biases[2 * n] / w;
-        b.h = exp(x[index + 6 * stride]) * biases[2 * n + 1] / h;
         b.x = (i + x[index + 0 * stride]) / lw - b.w / 2;
         b.y = (j + x[index + 2 * stride]) / lh - b.h / 2;
     }
@@ -185,7 +182,6 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
     if (yolo_point == YOLO_CENTER) {
         tx = (truth.x*lw - i);
         ty = (truth.y*lh - j);
-
     }
     else if (yolo_point == YOLO_LEFT_TOP) {
         tx = ((truth.x - truth.w / 2)*lw - i);
@@ -251,28 +247,33 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
         // https://github.com/generalized-iou/g-darknet
         // https://arxiv.org/abs/1902.09630v2
         // https://giou.stanford.edu/
+        // https://arxiv.org/abs/1911.08287v1
+        // https://github.com/Zzh-tju/DIoU-darknet
         all_ious.dx_iou = dx_box_iou(pred, truth, iou_loss);
 
-        float dx, dy;
+        float dx, dy, dw, dh;
+
+        dx = all_ious.dx_iou.dt;
+        dy = all_ious.dx_iou.db;
+        dw = all_ious.dx_iou.dl;
+        dh = all_ious.dx_iou.dr;
 
         if (yolo_point == YOLO_CENTER) {
-            dx = (all_ious.dx_iou.dl + all_ious.dx_iou.dr);
-            dy = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
         }
         else if (yolo_point == YOLO_LEFT_TOP) {
-            dx = all_ious.dx_iou.dl;
-            dy = all_ious.dx_iou.dt;
+            dx = dx - dw/2;
+            dy = dy - dh/2;
         }
         else if (yolo_point == YOLO_RIGHT_BOTTOM) {
-            dx = all_ious.dx_iou.dr;
-            dy = all_ious.dx_iou.db;
+            dx = dx + dw / 2;
+            dy = dy + dh / 2;
         }
 
         // jacobian^t (transpose)
         //float dx = (all_ious.dx_iou.dl + all_ious.dx_iou.dr);
         //float dy = (all_ious.dx_iou.dt + all_ious.dx_iou.db);
-        float dw = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
-        float dh = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
+        //float dw = ((-0.5 * all_ious.dx_iou.dl) + (0.5 * all_ious.dx_iou.dr));
+        //float dh = ((-0.5 * all_ious.dx_iou.dt) + (0.5 * all_ious.dx_iou.db));
 
         // predict exponential, apply gradient of e^delta_t ONLY for w,h
         dw *= exp(x[index + 4 * stride]);
