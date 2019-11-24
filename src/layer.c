@@ -12,6 +12,10 @@ void free_sublayer(layer *l)
 
 void free_layer(layer l)
 {
+    if (l.share_layer != NULL) return;    // don't free shared layers
+    if (l.antialiasing) {
+        free_sublayer(l.input_layer);
+    }
     if (l.type == CONV_LSTM) {
         if (l.peephole) {
             free_sublayer(l.vf);
@@ -86,7 +90,7 @@ void free_layer(layer l)
 #endif  // GPU
     if (l.delta)              free(l.delta), l.delta = NULL;
     if (l.output)             free(l.output), l.output = NULL;
-    if (l.output_sigmoid)     free(l.output_sigmoid), l.output_sigmoid = NULL;
+    if (l.activation_input)   free(l.activation_input), l.activation_input = NULL;
     if (l.squared)            free(l.squared);
     if (l.norms)              free(l.norms);
     if (l.spatial_mean)       free(l.spatial_mean);
@@ -153,6 +157,10 @@ void free_layer(layer l)
     if (l.x_gpu)                   cuda_free(l.x_gpu);  // dont free
     if (l.x_norm_gpu)              cuda_free(l.x_norm_gpu);
 
+    // assisted excitation
+    if (l.gt_gpu)                  cuda_free(l.gt_gpu);
+    if (l.a_avg_gpu)               cuda_free(l.a_avg_gpu);
+
     if (l.align_bit_weights_gpu)   cuda_free((float *)l.align_bit_weights_gpu);
     if (l.mean_arr_gpu)            cuda_free(l.mean_arr_gpu);
     if (l.align_workspace_gpu)     cuda_free(l.align_workspace_gpu);
@@ -166,8 +174,9 @@ void free_layer(layer l)
     if (l.bias_updates_gpu)        cuda_free(l.bias_updates_gpu), l.bias_updates_gpu = NULL;
     if (l.scales_gpu)              cuda_free(l.scales_gpu), l.scales_gpu = NULL;
     if (l.scale_updates_gpu)       cuda_free(l.scale_updates_gpu), l.scale_updates_gpu = NULL;
+    if (l.input_antialiasing_gpu)  cuda_free(l.input_antialiasing_gpu), l.input_antialiasing_gpu = NULL;
     if (l.output_gpu)              cuda_free(l.output_gpu), l.output_gpu = NULL;
-    if (l.output_sigmoid_gpu)      cuda_free(l.output_sigmoid_gpu), l.output_sigmoid_gpu = NULL;
+    if (l.activation_input_gpu)    cuda_free(l.activation_input_gpu), l.activation_input_gpu = NULL;
     if (l.delta_gpu)               cuda_free(l.delta_gpu), l.delta_gpu = NULL;
     if (l.rand_gpu)                cuda_free(l.rand_gpu);
     if (l.squared_gpu)             cuda_free(l.squared_gpu);

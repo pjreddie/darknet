@@ -41,6 +41,7 @@ int *read_map(char *filename)
         map = (int*)realloc(map, n * sizeof(int));
         map[n-1] = atoi(str);
     }
+    if (file) fclose(file);
     return map;
 }
 
@@ -65,6 +66,7 @@ void shuffle(void *arr, size_t n, size_t size)
         memcpy((char*)arr+(j*size), (char*)arr+(i*size), size);
         memcpy((char*)arr+(i*size), swp,          size);
     }
+    free(swp);
 }
 
 void del_arg(int argc, char **argv, int index)
@@ -216,7 +218,7 @@ void find_replace_extension(char *str, char *orig, char *rep, char *output)
     int offset = (p - buffer);
     int chars_from_end = strlen(buffer) - offset;
     if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
-        sprintf(output, "%s", str);
+        sprintf(output, "%s", buffer);
         free(buffer);
         return;
     }
@@ -685,9 +687,9 @@ int max_index(float *a, int n)
 
 int top_max_index(float *a, int n, int k)
 {
+    if (n <= 0) return -1;
     float *values = (float*)calloc(k, sizeof(float));
     int *indexes = (int*)calloc(k, sizeof(int));
-    if (n <= 0) return -1;
     int i, j;
     for (i = 0; i < n; ++i) {
         for (j = 0; j < k; ++j) {
@@ -914,4 +916,23 @@ int max_int_index(int *a, int n)
         }
     }
     return max_i;
+}
+
+// Absolute box from relative coordinate bounding box and image size
+boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check)
+{
+    boxabs ba;
+    ba.left = (b->x - b->w / 2.)*img_w;
+    ba.right = (b->x + b->w / 2.)*img_w;
+    ba.top = (b->y - b->h / 2.)*img_h;
+    ba.bot = (b->y + b->h / 2.)*img_h;
+
+    if (bounds_check) {
+        if (ba.left < 0) ba.left = 0;
+        if (ba.right > img_w - 1) ba.right = img_w - 1;
+        if (ba.top < 0) ba.top = 0;
+        if (ba.bot > img_h - 1) ba.bot = img_h - 1;
+    }
+
+    return ba;
 }

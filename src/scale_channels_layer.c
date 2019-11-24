@@ -13,7 +13,7 @@ layer make_scale_channels_layer(int batch, int index, int w, int h, int c, int w
     l.w = w;
     l.h = h;
     l.c = c;
-    assert(w == 1 & h == 1);
+    assert(w == 1 && h == 1);
 
     l.out_w = w2;
     l.out_h = h2;
@@ -39,10 +39,11 @@ layer make_scale_channels_layer(int batch, int index, int w, int h, int c, int w
     return l;
 }
 
-void resize_scale_channels_layer(layer *l, int w, int h)
+void resize_scale_channels_layer(layer *l, network *net)
 {
-    l->out_w = w;
-    l->out_h = h;
+    layer first = net->layers[l->index];
+    l->out_w = first.out_w;
+    l->out_h = first.out_h;
     l->outputs = l->out_w*l->out_h*l->out_c;
     l->inputs = l->outputs;
     l->delta = (float*)realloc(l->delta, l->outputs * l->batch * sizeof(float));

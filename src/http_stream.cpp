@@ -48,8 +48,9 @@ static int close_socket(SOCKET s) {
     cerr << "Close socket: out = " << close_output << ", in = " << close_input << " \n";
     return result;
 }
-#else   // nix
+#else   // _WIN32 - else: nix
 #include "darkunistd.h"
+#include <fcntl.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -147,6 +148,20 @@ public:
         int reuse = 1;
         if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0)
             cerr << "setsockopt(SO_REUSEADDR) failed" << endl;
+
+        // Non-blocking sockets
+        // Windows: ioctlsocket() and FIONBIO
+        // Linux: fcntl() and O_NONBLOCK
+#ifdef WIN32
+        unsigned long i_mode = 1;
+        int result = ioctlsocket(sock, FIONBIO, &i_mode);
+        if (result != NO_ERROR) {
+            std::cerr << "ioctlsocket(FIONBIO) failed with error: " << result << std::endl;
+        }
+#else // WIN32
+        int flags = fcntl(sock, F_GETFL, 0);
+        fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+#endif // WIN32
 
 #ifdef SO_REUSEPORT
         if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuse, sizeof(reuse)) < 0)
@@ -374,6 +389,20 @@ public:
         int reuse = 1;
         if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0)
             cerr << "setsockopt(SO_REUSEADDR) failed" << endl;
+
+        // Non-blocking sockets
+        // Windows: ioctlsocket() and FIONBIO
+        // Linux: fcntl() and O_NONBLOCK
+#ifdef WIN32
+        unsigned long i_mode = 1;
+        int result = ioctlsocket(sock, FIONBIO, &i_mode);
+        if (result != NO_ERROR) {
+            std::cerr << "ioctlsocket(FIONBIO) failed with error: " << result << std::endl;
+        }
+#else // WIN32
+        int flags = fcntl(sock, F_GETFL, 0);
+        fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+#endif // WIN32
 
 #ifdef SO_REUSEPORT
         if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuse, sizeof(reuse)) < 0)

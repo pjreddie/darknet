@@ -703,11 +703,12 @@ int set_capture_position_frame_cv(cap_cv *cap, int index)
 
 image get_image_from_stream_cpp(cap_cv *cap)
 {
-    cv::Mat *src = new cv::Mat();
+    cv::Mat *src = NULL;
     static int once = 1;
     if (once) {
         once = 0;
         do {
+            if (src) delete src;
             src = get_capture_frame_cv(cap);
             if (!src) return make_empty_image(0, 0, 0);
         } while (src->cols < 1 || src->rows < 1 || src->channels() < 1);
@@ -719,6 +720,7 @@ image get_image_from_stream_cpp(cap_cv *cap)
     if (!src) return make_empty_image(0, 0, 0);
     image im = mat_to_image(*src);
     rgbgr_image(im);
+    if (src) delete src;
     return im;
 }
 // ----------------------------------------
@@ -734,7 +736,7 @@ int wait_for_stream(cap_cv *cap, cv::Mat* src, int dont_close)
             delete src;// cvReleaseImage(&src);
             int z = 0;
             for (z = 0; z < 20; ++z) {
-                get_capture_frame_cv(cap);
+                src = get_capture_frame_cv(cap);
                 delete src;// cvReleaseImage(&src);
             }
             src = new cv::Mat(416, 416, CV_8UC(3)); // cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, 3);
@@ -1125,15 +1127,6 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
 // ====================================================================
 // Data augmentation
 // ====================================================================
-static box float_to_box_stride(float *f, int stride)
-{
-    box b = { 0 };
-    b.x = f[0];
-    b.y = f[1 * stride];
-    b.w = f[2 * stride];
-    b.h = f[3 * stride];
-    return b;
-}
 
 image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
@@ -1205,12 +1198,27 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
 
         if (blur) {
             cv::Mat dst(sized.size(), sized.type());
-            if(blur == 1) cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
-            else cv::GaussianBlur(sized, dst, cv::Size((blur / 2) * 2 + 1, (blur / 2) * 2 + 1), 0);
-            cv::Rect img_rect(0, 0, sized.cols, sized.rows);
+            if (blur == 1) {
+                //cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
+                cv::bilateralFilter(sized, dst, 17, 75, 75);
+            }
+            else {
+                int ksize = (blur / 2) * 2 + 1;
+                cv::Size kernel_size = cv::Size(ksize, ksize);
+                //cv::GaussianBlur(sized, dst, kernel_size, 0);
+                //cv::medianBlur(sized, dst, ksize);
+                cv::bilateralFilter(sized, dst, ksize, 75, 75);
+
+                // sharpen
+                //cv::Mat img_tmp;
+                //cv::GaussianBlur(dst, img_tmp, cv::Size(), 3);
+                //cv::addWeighted(dst, 1.5, img_tmp, -0.5, 0, img_tmp);
+                //dst = img_tmp;
+            }
             //std::cout << " blur num_boxes = " << num_boxes << std::endl;
 
             if (blur == 1) {
+                cv::Rect img_rect(0, 0, sized.cols, sized.rows);
                 int t;
                 for (t = 0; t < num_boxes; ++t) {
                     box b = float_to_box_stride(truth + t*(4 + 1), 1);

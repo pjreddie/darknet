@@ -243,7 +243,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         calc_map_for_each = fmax(calc_map_for_each, 100);
         int next_map_calc = iter_map + calc_map_for_each;
         next_map_calc = fmax(next_map_calc, net.burn_in);
-        next_map_calc = fmax(next_map_calc, 400);
+        //next_map_calc = fmax(next_map_calc, 400);
         if (calc_map) {
             printf("\n (next mAP calculation at %d iterations) ", next_map_calc);
             if (mean_average_precision > 0) printf("\n Last accuracy mAP@0.5 = %2.2f %%, best = %2.2f %% ", mean_average_precision * 100, best_map * 100);
@@ -537,7 +537,10 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             int nboxes = 0;
             int letterbox = (args.type == LETTERBOX_DATA);
             detection *dets = get_network_boxes(&net, w, h, thresh, .5, map, 0, &nboxes, letterbox);
-            if (nms) do_nms_sort(dets, nboxes, classes, nms);
+            if (nms) {
+                if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
+                else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+            }
             if (coco) {
                 print_cocos(fp, path, dets, nboxes, classes, w, h);
             }
@@ -556,6 +559,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     for (j = 0; j < classes; ++j) {
         if (fps) fclose(fps[j]);
     }
+    if (fps) free(fps);
     if (coco) {
 #ifdef WIN32
         fseek(fp, -3, SEEK_CUR);
@@ -563,8 +567,15 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         fseek(fp, -2, SEEK_CUR);
 #endif
         fprintf(fp, "\n]\n");
-        fclose(fp);
     }
+    if (fp) fclose(fp);
+
+    if (val) free(val);
+    if (val_resized) free(val_resized);
+    if (thr) free(thr);
+    if (buf) free(buf);
+    if (buf_resized) free(buf_resized);
+
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)time(0) - start);
 }
 
@@ -792,13 +803,17 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
                 dets = get_network_boxes(&net, 1, 1, thresh, hier_thresh, 0, 0, &nboxes, letter_box);
             }
             //detection *dets = get_network_boxes(&net, val[t].w, val[t].h, thresh, hier_thresh, 0, 1, &nboxes, letter_box); // for letter_box=1
-            if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+            if (nms) {
+                if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
+                else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+            }
+            //if (nms) do_nms_obj(dets, nboxes, l.classes, nms);
 
             char labelpath[4096];
             replace_image_to_label(path, labelpath);
             int num_labels = 0;
             box_label *truth = read_boxes(labelpath, &num_labels);
-            int i, j;
+            int j;
             for (j = 0; j < num_labels; ++j) {
                 truth_classes_count[truth[j].id]++;
             }
@@ -818,6 +833,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
 
             const int checkpoint_detections_count = detections_count;
 
+            int i;
             for (i = 0; i < nboxes; ++i) {
 
                 int class_id;
@@ -1098,6 +1114,11 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     else {
         free_network(net);
     }
+    if (val) free(val);
+    if (val_resized) free(val_resized);
+    if (thr) free(thr);
+    if (buf) free(buf);
+    if (buf_resized) free(buf_resized);
 
     return mean_average_precision;
 }
@@ -1339,7 +1360,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         int nboxes = 0;
         detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letter_box);
-        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+        if (nms) {
+            if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
+            else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+        }
         draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, ext_output);
         save_image(im, "predictions");
         if (!dont_show) {
@@ -1504,4 +1528,6 @@ void run_detector(int argc, char **argv)
         free_list(options);
     }
     else printf(" There isn't such command: %s", argv[2]);
+
+    if (gpus && gpu_list && ngpus > 1) free(gpus);
 }

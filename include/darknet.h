@@ -102,13 +102,24 @@ typedef struct tree {
 
 // activations.h
 typedef enum {
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH, MISH
 }ACTIVATION;
 
 // parser.h
 typedef enum {
-    IOU, GIOU, MSE
+    IOU, GIOU, MSE, DIOU, CIOU
 } IOU_LOSS;
+
+// parser.h
+typedef enum {
+    DEFAULT_NMS, GREEDY_NMS, DIOU_NMS, CORNERS_NMS
+} NMS_KIND;
+
+// parser.h
+typedef enum {
+    YOLO_CENTER = 1 << 0, YOLO_LEFT_TOP = 1 << 1, YOLO_RIGHT_BOTTOM = 1 << 2
+} YOLO_POINT;
+
 
 // image.h
 typedef enum{
@@ -149,6 +160,7 @@ typedef enum {
     XNOR,
     REGION,
     YOLO,
+    GAUSSIAN_YOLO,
     ISEG,
     REORG,
     REORG_OLD,
@@ -189,6 +201,7 @@ struct layer {
     void(*backward_gpu)  (struct layer, struct network_state);
     void(*update_gpu)    (struct layer, int, float, float, float);
     layer *share_layer;
+    int train;
     int batch_normalize;
     int shortcut;
     int batch;
@@ -205,10 +218,14 @@ struct layer {
     int n;
     int max_boxes;
     int groups;
+    int group_id;
     int size;
     int side;
     int stride;
+    int stride_x;
+    int stride_y;
     int dilation;
+    int antialiasing;
     int maxpool_depth;
     int out_channels;
     int reverse;
@@ -274,6 +291,7 @@ struct layer {
     int random;
     float ignore_thresh;
     float truth_thresh;
+    float iou_thresh;
     float thresh;
     float focus;
     int classfix;
@@ -323,9 +341,13 @@ struct layer {
     float *weight_updates;
 
     float scale_x_y;
+    float uc_normalizer;
     float iou_normalizer;
     float cls_normalizer;
     IOU_LOSS iou_loss;
+    NMS_KIND nms_kind;
+    float beta_nms;
+    YOLO_POINT yolo_point;
 
     char *align_bit_weights_gpu;
     float *mean_arr_gpu;
@@ -343,7 +365,7 @@ struct layer {
     float *col_image;
     float * delta;
     float * output;
-    float * output_sigmoid;
+    float * activation_input;
     int delta_pinned;
     int output_pinned;
     float * loss;
@@ -526,13 +548,17 @@ struct layer {
     float * scale_updates_gpu;
     float * scale_change_gpu;
 
+    float * input_antialiasing_gpu;
     float * output_gpu;
-    float * output_sigmoid_gpu;
+    float * activation_input_gpu;
     float * loss_gpu;
     float * delta_gpu;
     float * rand_gpu;
     float * squared_gpu;
     float * norms_gpu;
+
+    float *gt_gpu;
+    float *a_avg_gpu;
 #ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
     cudnnTensorDescriptor_t srcTensorDesc16, dstTensorDesc16;
@@ -707,7 +733,7 @@ typedef struct dxrep {
 
 // box.h
 typedef struct ious {
-    float iou, giou;
+    float iou, giou, diou, ciou;
     dxrep dx_iou;
     dxrep dx_giou;
 } ious;
@@ -721,6 +747,8 @@ typedef struct detection{
     float *mask;
     float objectness;
     int sort_class;
+    float *uc; // Gaussian_YOLOv3 - tx,ty,tw,th uncertainty
+    int points; // bit-0 - center, bit-1 - top-left-corner, bit-2 - bottom-right-corner
 } detection;
 
 // matrix.h
@@ -822,6 +850,7 @@ LIB_API load_args get_base_args(network *net);
 // box.h
 LIB_API void do_nms_sort(detection *dets, int total, int classes, float thresh);
 LIB_API void do_nms_obj(detection *dets, int total, int classes, float thresh);
+LIB_API void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIND nms_kind, float beta1);
 
 // network.h
 LIB_API float *network_predict(network net, float *input);
@@ -862,6 +891,7 @@ LIB_API void free_layer(layer);
 LIB_API void free_data(data d);
 LIB_API pthread_t load_data(load_args args);
 LIB_API pthread_t load_data_in_thread(load_args args);
+LIB_API void *load_thread(void *ptr);
 
 // dark_cuda.h
 LIB_API void cuda_pull_array(float *x_gpu, float *x, size_t n);

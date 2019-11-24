@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "image.h"
 #include "dark_cuda.h"
+#include "box.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -141,7 +142,7 @@ matrix load_image_paths(char **paths, int n, int w, int h)
     return X;
 }
 
-matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure)
 {
     int i;
     matrix X;
@@ -150,6 +151,7 @@ matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int 
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
+        int size = w > h ? w : h;
         image im = load_image_color(paths[i], 0, 0);
         image crop = random_augment_image(im, angle, aspect, min, max, size);
         int flip = use_flip ? random_gen() % 2 : 0;
@@ -157,14 +159,18 @@ matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int 
             flip_image(crop);
         random_distort_image(crop, hue, saturation, exposure);
 
-        /*
-        show_image(im, "orig");
-        show_image(crop, "crop");
-        cvWaitKey(0);
-        */
+        image sized = resize_image(crop, w, h);
+
+        //show_image(im, "orig");
+        //show_image(sized, "sized");
+        //show_image(sized, paths[i]);
+        //wait_until_press_key_cv();
+        //printf("w = %d, h = %d \n", sized.w, sized.h);
+
         free_image(im);
-        X.vals[i] = crop.data;
-        X.cols = crop.h*crop.w*crop.c;
+        free_image(crop);
+        X.vals[i] = sized.data;
+        X.cols = sized.h*sized.w*sized.c;
     }
     return X;
 }
@@ -343,7 +349,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
-void fill_truth_detection(const char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
+int fill_truth_detection(const char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
     int net_w, int net_h)
 {
     char labelpath[4096];
@@ -352,6 +358,7 @@ void fill_truth_detection(const char *path, int num_boxes, float *truth, int cla
     int count = 0;
     int i;
     box_label *boxes = read_boxes(labelpath, &count);
+    int min_w_h = 0;
     float lowest_w = 1.F / net_w;
     float lowest_h = 1.F / net_h;
     randomize_boxes(boxes, count);
@@ -424,8 +431,13 @@ void fill_truth_detection(const char *path, int num_boxes, float *truth, int cla
         truth[(i-sub)*5+2] = w;
         truth[(i-sub)*5+3] = h;
         truth[(i-sub)*5+4] = id;
+
+        if (min_w_h == 0) min_w_h = w*net_w;
+        if (min_w_h > w*net_w) min_w_h = w*net_w;
+        if (min_w_h > h*net_h) min_w_h = h*net_h;
     }
     free(boxes);
+    return min_w_h;
 }
 
 
@@ -492,7 +504,16 @@ void fill_truth(char *path, char **labels, int k, float *truth)
             ++count;
         }
     }
-    if(count != 1) printf("Too many or too few labels: %d, %s\n", count, path);
+    if (count != 1) {
+        printf("Too many or too few labels: %d, %s\n", count, path);
+        count = 0;
+        for (i = 0; i < k; ++i) {
+            if (strstr(path, labels[i])) {
+                printf("\t label %d: %s  \n", count, labels[i]);
+                count++;
+            }
+        }
+    }
 }
 
 void fill_hierarchy(float *truth, int k, tree *hierarchy)
@@ -764,16 +785,6 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     return d;
 }
 
-static box float_to_box_stride(float *f, int stride)
-{
-    box b = { 0 };
-    b.x = f[0];
-    b.y = f[1 * stride];
-    b.w = f[2 * stride];
-    b.h = f[3 * stride];
-    return b;
-}
-
 void blend_truth(float *new_truth, int boxes, float *old_truth)
 {
     const int t_size = 4 + 1;
@@ -835,7 +846,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.y = make_matrix(n, 5*boxes);
     int i_mixup = 0;
     for (i_mixup = 0; i_mixup <= mixup; i_mixup++) {
-        if (i_mixup) augmentation_calculated = 0;
+        if (i_mixup) augmentation_calculated = 0;   // recalculate augmentation for the 2nd sequence if(track==1)
+
         for (i = 0; i < n; ++i) {
             float *truth = (float*)calloc(5 * boxes, sizeof(float));
             const char *filename = (i_mixup) ? mixup_random_paths[i] : random_paths[i];
@@ -869,7 +881,11 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 dexp = rand_scale(exposure);
 
                 flip = use_flip ? random_gen() % 2 : 0;
-                blur = rand_int(0, 1) ? (use_blur) : 0;
+
+                //blur = rand_int(0, 1) ? (use_blur) : 0;
+                int tmp_blur = rand_int(0, 2);  // 0 - disable, 1 - blur background, 2 - blur the whole image
+                if (tmp_blur == 2) blur = use_blur;
+                else blur = tmp_blur;
             }
 
             int pleft = rand_precalc_random(-dw, dw, r1);
@@ -914,7 +930,9 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             float dy = ((float)ptop / oh) / sy;
 
 
-            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
+            int min_w_h = fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
+
+            if (min_w_h / 8 < blur && blur > 1) blur = min_w_h / 8;   // disable blur if one of the objects is too small
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
                 blur, boxes, d.y.vals[i]);
@@ -951,6 +969,9 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 save_image(tmp_ai, buff);
                 if (show_imgs == 1) {
+                    //char buff_src[1000];
+                    //sprintf(buff_src, "src_%d_%d_%s_%d", random_index, i, basecfg((char*)filename), random_gen());
+                    //show_image_mat(src, buff_src);
                     show_image(tmp_ai, buff);
                     wait_until_press_key_cv();
                 }
@@ -1149,7 +1170,7 @@ void *load_thread(void *ptr)
     if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == CLASSIFICATION_DATA){
-        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     } else if (a.type == SUPER_DATA){
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
@@ -1170,7 +1191,7 @@ void *load_thread(void *ptr)
         *(a.im) = load_image(a.path, 0, 0, a.c);
         *(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
-        *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.flip, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+        *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     }
     free(ptr);
     return 0;
@@ -1294,25 +1315,25 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     return d;
 }
 
-data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
     d.shallow = 0;
-    d.X = load_image_augment_paths(paths, n, use_flip, min, max, size, angle, aspect, hue, saturation, exposure);
+    d.X = load_image_augment_paths(paths, n, use_flip, min, max, w, h, angle, aspect, hue, saturation, exposure);
     d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);
     return d;
 }
 
-data load_data_tag(char **paths, int n, int m, int k, int use_flip, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+data load_data_tag(char **paths, int n, int m, int k, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure)
 {
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
-    d.w = size;
-    d.h = size;
+    d.w = w;
+    d.h = h;
     d.shallow = 0;
-    d.X = load_image_augment_paths(paths, n, use_flip, min, max, size, angle, aspect, hue, saturation, exposure);
+    d.X = load_image_augment_paths(paths, n, use_flip, min, max, w, h, angle, aspect, hue, saturation, exposure);
     d.y = load_tags_paths(paths, n, k);
     if(m) free(paths);
     return d;
