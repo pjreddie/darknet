@@ -57,6 +57,7 @@ install:
   - if [%COMPILER%]==[cygwin] %CYGSH% 'make install'
   - if [%COMPILER%]==[cygwin] cd %WORKSPACE%
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] cd %VCPKG_ROOT%
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] git checkout .
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] git pull
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] .\bootstrap-vcpkg.bat
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] echo set(VCPKG_BUILD_TYPE release) >> triplets\%VCPKG_DEFAULT_TRIPLET%.cmake
@@ -64,6 +65,7 @@ install:
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install stb pthreads --recurse
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install ffmpeg --recurse
   - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] vcpkg install opencv[ffmpeg] --recurse ## opencv[ffmpeg,cuda] is too big to build, timing out (>1h). We use plain openCV also for CUDA builds (toolchain can manage this strange situation anyway)
+  - if [%COMPILER%]==[vs] if NOT [%USE_INTEGRATED_LIBS%]==[yes] rmdir "buildtrees" /S /Q
   - cd %WORKSPACE%\darknet\
   - if [%COMPILER%]==[cygwin] mkdir build_debug && cd build_debug
   - if [%COMPILER%]==[cygwin] %CYGSH% 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Debug"'
