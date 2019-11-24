@@ -1,9 +1,9 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <Winsock2.h>
+#include <windows.h>
+#include <winsock2.h>
 #include <stdint.h>
-#include < time.h >
+#include <time.h>
 #include "darknet.h"
 
 #define CLOCK_REALTIME (1)

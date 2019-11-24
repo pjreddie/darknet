@@ -73,6 +73,10 @@ endif
 
 CFLAGS+=$(OPTS)
 
+ifneq (,$(findstring MSYS_NT,$(OS)))
+LDFLAGS+=-lws2_32
+endif
+
 ifeq ($(OPENCV), 1)
 COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
