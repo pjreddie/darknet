@@ -379,7 +379,7 @@ layer parse_yolo(list *options, size_params params)
         iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
 
     l.beta_nms = option_find_float_quiet(options, "beta_nms", 0.6);
-    char *nms_kind = option_find_str(options, "nms_kind", "default");
+    char *nms_kind = option_find_str_quiet(options, "nms_kind", "default");
     if (strcmp(nms_kind, "default") == 0) l.nms_kind = DEFAULT_NMS;
     else {
         if (strcmp(nms_kind, "greedynms") == 0) l.nms_kind = GREEDY_NMS;
@@ -469,7 +469,7 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     else l.iou_loss = IOU;
 
     l.beta_nms = option_find_float_quiet(options, "beta_nms", 0.6);
-    char *nms_kind = option_find_str(options, "nms_kind", "default");
+    char *nms_kind = option_find_str_quiet(options, "nms_kind", "default");
     if (strcmp(nms_kind, "default") == 0) l.nms_kind = DEFAULT_NMS;
     else {
         if (strcmp(nms_kind, "greedynms") == 0) l.nms_kind = GREEDY_NMS;

@@ -2855,3 +2855,10 @@ int test_gpu_blas()
     return 0;
 }
 #endif
+
+
+
+void init_cpu() {
+    is_avx();
+    is_fma_avx2();
+}

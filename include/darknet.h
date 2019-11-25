@@ -921,6 +921,9 @@ void stop_timer_and_show();
 void stop_timer_and_show_name(char *name);
 void show_total_time();
 
+// gemm.h
+LIB_API void init_cpu();
+
 #ifdef __cplusplus
 }
 #endif  // __cplusplus
