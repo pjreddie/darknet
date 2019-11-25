@@ -778,6 +778,16 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
             cuda_free(l->activation_input_gpu);
             l->activation_input_gpu = cuda_make_array(l->activation_input, total_batch*l->outputs);
         }
+
+        if (l->assisted_excitation)
+        {
+            cuda_free(l->gt_gpu);
+            cuda_free(l->a_avg_gpu);
+
+            const int size = l->out_w * l->out_h * l->batch;
+            l->gt_gpu = cuda_make_array(NULL, size);
+            l->a_avg_gpu = cuda_make_array(NULL, size);
+        }
     }
 #ifdef CUDNN
     cudnn_convolutional_setup(l, cudnn_fastest);
