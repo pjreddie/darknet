@@ -472,7 +472,7 @@ void set_batch_network(network *net, int b)
 
 #ifdef CUDNN
         if(net->layers[i].type == CONVOLUTIONAL){
-            cudnn_convolutional_setup(net->layers + i, cudnn_fastest);
+            cudnn_convolutional_setup(net->layers + i, cudnn_fastest, 0);
         }
         else if (net->layers[i].type == MAXPOOL) {
             cudnn_maxpool_setup(net->layers + i);
