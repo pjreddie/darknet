@@ -57,6 +57,10 @@ extern "C" {
 #define CHECK_CUDA(X) check_error_extended(X, __FILE__ " : " __FUNCTION__, __LINE__,  __DATE__ " - " __TIME__ );
 
     cublasHandle_t blas_handle();
+    void free_pinned_memory();
+    void pre_allocate_pinned_memory(size_t size);
+    float *cuda_make_array_pinned_preallocated(float *x, size_t n);
+    float *cuda_make_array_pinned(float *x, size_t n);
     float *cuda_make_array(float *x, size_t n);
     int *cuda_make_int_array(size_t n);
 	int *cuda_make_int_array_new_api(int *x, size_t n);
@@ -64,6 +68,7 @@ extern "C" {
     //LIB_API void cuda_pull_array(float *x_gpu, float *x, size_t n);
     //LIB_API void cuda_set_device(int n);
     int cuda_get_device();
+    void cuda_free_host(float *x_cpu);
     void cuda_free(float *x_gpu);
     void cuda_random(float *x_gpu, size_t n);
     float cuda_compare(float *x_gpu, float *x, size_t n, char *s);
@@ -75,7 +80,7 @@ extern "C" {
 
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();
-enum {cudnn_fastest, cudnn_smallest};
+enum {cudnn_fastest, cudnn_smallest, cudnn_specify};
 
 void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line, const char *date_time);
 #define CHECK_CUDNN(X) cudnn_check_error_extended(X, __FILE__ " : " __FUNCTION__, __LINE__,  __DATE__ " - " __TIME__ );

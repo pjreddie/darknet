@@ -544,7 +544,7 @@ int resize_network(network *net, int w, int h)
 #ifdef GPU
             l.output_gpu = net->layers[i-1].output_gpu;
             l.delta_gpu = net->layers[i-1].delta_gpu;
-#endif  
+#endif
         }else if (l.type == UPSAMPLE) {
             resize_upsample_layer(&l, w, h);
         }else if(l.type == REORG){
@@ -1035,6 +1035,7 @@ void free_network(network net)
 #ifdef GPU
     if (gpu_index >= 0) cuda_free(net.workspace);
     else free(net.workspace);
+    free_pinned_memory();
     if (net.input_state_gpu) cuda_free(net.input_state_gpu);
     if (net.input_pinned_cpu) {   // CPU
         if (net.input_pinned_cpu_flag) cudaFreeHost(net.input_pinned_cpu);

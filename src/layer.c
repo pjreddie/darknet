@@ -154,7 +154,6 @@ void free_layer(layer l)
     if (l.rolling_variance_gpu)    cuda_free(l.rolling_variance_gpu), l.rolling_variance_gpu = NULL;
     if (l.variance_delta_gpu)      cuda_free(l.variance_delta_gpu), l.variance_delta_gpu = NULL;
     if (l.mean_delta_gpu)          cuda_free(l.mean_delta_gpu), l.mean_delta_gpu = NULL;
-    if (l.x_gpu)                   cuda_free(l.x_gpu);  // dont free
     if (l.x_norm_gpu)              cuda_free(l.x_norm_gpu);
 
     // assisted excitation
@@ -175,9 +174,12 @@ void free_layer(layer l)
     if (l.scales_gpu)              cuda_free(l.scales_gpu), l.scales_gpu = NULL;
     if (l.scale_updates_gpu)       cuda_free(l.scale_updates_gpu), l.scale_updates_gpu = NULL;
     if (l.input_antialiasing_gpu)  cuda_free(l.input_antialiasing_gpu), l.input_antialiasing_gpu = NULL;
-    if (l.output_gpu)              cuda_free(l.output_gpu), l.output_gpu = NULL;
-    if (l.activation_input_gpu)    cuda_free(l.activation_input_gpu), l.activation_input_gpu = NULL;
-    if (l.delta_gpu)               cuda_free(l.delta_gpu), l.delta_gpu = NULL;
+    if (l.optimized_memory < 2) {
+        if (l.x_gpu)                   cuda_free(l.x_gpu);  l.x_gpu = NULL;
+        if (l.output_gpu)              cuda_free(l.output_gpu), l.output_gpu = NULL;
+        if (l.activation_input_gpu)    cuda_free(l.activation_input_gpu), l.activation_input_gpu = NULL;
+    }
+    if (l.delta_gpu && l.keep_delta_gpu && l.optimized_memory < 3) cuda_free(l.delta_gpu), l.delta_gpu = NULL;
     if (l.rand_gpu)                cuda_free(l.rand_gpu);
     if (l.squared_gpu)             cuda_free(l.squared_gpu);
     if (l.norms_gpu)               cuda_free(l.norms_gpu);

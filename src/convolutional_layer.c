@@ -212,7 +212,7 @@ void create_convolutional_cudnn_tensors(layer *l)
     CHECK_CUDNN(cudnnCreateConvolutionDescriptor(&l->convDesc));
 }
 
-void cudnn_convolutional_setup(layer *l, int cudnn_preference)
+void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_size_specify)
 {
 
 // CUDNN_HALF
@@ -291,6 +291,13 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
         backward_filter = CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE;
         printf(" CUDNN-slow ");
     }
+    if (cudnn_preference == cudnn_specify)
+    {
+        forward_algo = CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT;
+        backward_algo = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
+        backward_filter = CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT;
+        //printf(" CUDNN-specified %zu ", workspace_size_specify);
+    }
 
     CHECK_CUDNN(cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
             l->srcTensorDesc,
@@ -298,7 +305,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
             l->convDesc,
             l->dstTensorDesc,
             (cudnnConvolutionFwdPreference_t)forward_algo,
-            0,
+            workspace_size_specify,
             &l->fw_algo));
     CHECK_CUDNN(cudnnGetConvolutionBackwardDataAlgorithm(cudnn_handle(),
             l->weightDesc,
@@ -306,7 +313,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
             l->convDesc,
             l->dsrcTensorDesc,
             (cudnnConvolutionBwdDataPreference_t)backward_algo,
-            0,
+            workspace_size_specify,
             &l->bd_algo));
     CHECK_CUDNN(cudnnGetConvolutionBackwardFilterAlgorithm(cudnn_handle(),
             l->srcTensorDesc,
@@ -314,7 +321,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
             l->convDesc,
             l->dweightDesc,
             (cudnnConvolutionBwdFilterPreference_t)backward_filter,
-            0,
+            workspace_size_specify,
             &l->bf_algo));
 
     //if (data_type == CUDNN_DATA_HALF)
@@ -439,7 +446,9 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.activation = activation;
 
     l.output = (float*)calloc(total_batch*l.outputs, sizeof(float));
+#ifndef GPU
     if (train) l.delta = (float*)calloc(total_batch*l.outputs, sizeof(float));
+#endif  // not GPU
 
     l.forward = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
@@ -500,10 +509,14 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
             l.rolling_variance = (float*)calloc(n, sizeof(float));
         }
 
+#ifndef GPU
         if (train) {
             l.x = (float*)calloc(total_batch * l.outputs, sizeof(float));
             l.x_norm = (float*)calloc(total_batch * l.outputs, sizeof(float));
         }
+
+        if (l.activation == SWISH || l.activation == MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
+#endif  // not GPU
     }
     if(adam){
         l.adam = 1;
@@ -515,10 +528,11 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         l.scale_v = (float*)calloc(n, sizeof(float));
     }
 
-    if (l.activation == SWISH || l.activation == MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
 
 #ifdef GPU
-    if (l.activation == SWISH || l.activation == MISH) l.activation_input_gpu = cuda_make_array(l.activation_input, total_batch*l.outputs);
+    if (l.activation == SWISH || l.activation == MISH) {
+        l.activation_input_gpu = cuda_make_array(l.activation_input, total_batch*l.outputs);
+    }
 
     l.forward_gpu = forward_convolutional_layer_gpu;
     l.backward_gpu = backward_convolutional_layer_gpu;
@@ -583,9 +597,10 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
                     l.mean_gpu = cuda_make_array(l.mean, n);
                     l.variance_gpu = cuda_make_array(l.variance, n);
-
+#ifndef CUDNN
                     l.mean_delta_gpu = cuda_make_array(l.mean, n);
                     l.variance_delta_gpu = cuda_make_array(l.variance, n);
+#endif  // CUDNN
                 }
 
                 l.rolling_mean_gpu = cuda_make_array(l.mean, n);
@@ -594,7 +609,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
             if (train) {
                 l.x_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
-                l.x_norm_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
+                //l.x_norm_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
             }
         }
 
@@ -606,7 +621,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         }
 #ifdef CUDNN
         create_convolutional_cudnn_tensors(&l);
-        cudnn_convolutional_setup(&l, cudnn_fastest);
+        cudnn_convolutional_setup(&l, cudnn_fastest, 0);
 #endif  // CUDNN
     }
 #endif  // GPU
@@ -790,7 +805,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         }
     }
 #ifdef CUDNN
-    cudnn_convolutional_setup(l, cudnn_fastest);
+    cudnn_convolutional_setup(l, cudnn_fastest, 0);
 #endif
 #endif
     l->workspace_size = get_convolutional_workspace_size(*l);
@@ -802,10 +817,22 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     CHECK_CUDA(cudaMemGetInfo(&free_byte, &total_byte));
     if (l->workspace_size > free_byte || l->workspace_size >= total_byte / 2) {
         printf(" used slow CUDNN algo without Workspace! Need memory: %zu, available: %zu\n", l->workspace_size, (free_byte < total_byte/2) ? free_byte : total_byte/2);
-        cudnn_convolutional_setup(l, cudnn_smallest);
+        cudnn_convolutional_setup(l, cudnn_smallest, 0);
         l->workspace_size = get_convolutional_workspace_size(*l);
     }
 #endif
+}
+
+void set_specified_workspace_limit(convolutional_layer *l, size_t workspace_size_limit)
+{
+#ifdef CUDNN
+    size_t free_byte;
+    size_t total_byte;
+    CHECK_CUDA(cudaMemGetInfo(&free_byte, &total_byte));
+    cudnn_convolutional_setup(l, cudnn_specify, workspace_size_limit);
+    l->workspace_size = get_convolutional_workspace_size(*l);
+    //printf("Set specified workspace limit for cuDNN: %zu, available: %zu, workspace = %zu \n", workspace_size_limit, free_byte, l->workspace_size);
+#endif  // CUDNN
 }
 
 void add_bias(float *output, float *biases, int batch, int n, int size)

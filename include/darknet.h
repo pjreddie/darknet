@@ -239,6 +239,8 @@ struct layer {
     int xnor;
     int peephole;
     int use_bin_output;
+    int keep_delta_gpu;
+    int optimized_memory;
     int steps;
     int state_constrain;
     int hidden;
@@ -677,7 +679,13 @@ typedef struct network {
     size_t *max_input16_size;
     size_t *max_output16_size;
     int wait_stream;
+
+    float *global_delta_gpu;
+    float *state_delta_gpu;
+    size_t max_delta_gpu_size;
 #endif
+    int optimized_memory;
+    size_t workspace_size_limit;
 } network;
 
 // network.h

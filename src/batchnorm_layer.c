@@ -184,7 +184,6 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
 
     if (state.train) {
         simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.x_gpu);
-        //copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
 #ifdef CUDNN
         float one = 1;
         float zero = 0;
@@ -259,16 +258,16 @@ void backward_batchnorm_layer_gpu(layer l, network_state state)
         l.normDstTensorDesc,
         l.delta_gpu,            // input
         l.normDstTensorDesc,
-        l.x_norm_gpu,            // output
+        l.output_gpu, //l.x_norm_gpu,            // output
         l.normTensorDesc,
-        l.scales_gpu,            // output (should be FP32)
+        l.scales_gpu,            // input (should be FP32)
         l.scale_updates_gpu,    // output (should be FP32)
         l.bias_updates_gpu,        // output (should be FP32)
         .00001,
         l.mean_gpu,                // input (should be FP32)
         l.variance_gpu);        // input (should be FP32)
-    simple_copy_ongpu(l.outputs*l.batch, l.x_norm_gpu, l.delta_gpu);
-    //copy_ongpu(l.outputs*l.batch, l.x_norm_gpu, 1, l.delta_gpu, 1);
+    simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.delta_gpu);
+    //simple_copy_ongpu(l.outputs*l.batch, l.x_norm_gpu, l.delta_gpu);
 #else
     backward_bias_gpu(l.bias_updates_gpu, l.delta_gpu, l.batch, l.out_c, l.out_w*l.out_h);
     backward_scale_gpu(l.x_norm_gpu, l.delta_gpu, l.batch, l.out_c, l.out_w*l.out_h, l.scale_updates_gpu);
