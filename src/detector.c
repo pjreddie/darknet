@@ -278,7 +278,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             //network net_combined = combine_train_valid_networks(net, net_map);
 
             iter_map = i;
-            //mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, 0, net.letter_box, &net_map);// &net_combined);
+            mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, 0, net.letter_box, &net_map);// &net_combined);
             printf("\n mean_average_precision (mAP@0.5) = %f \n", mean_average_precision);
             if (mean_average_precision > best_map) {
                 best_map = mean_average_precision;
