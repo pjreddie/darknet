@@ -254,7 +254,7 @@ void pre_allocate_pinned_memory(const size_t size)
 
     pthread_mutex_lock(&mutex_pinned);
     if (!pinned_ptr) {
-        pinned_ptr = (float *)calloc(num_of_blocks, sizeof(float *));
+        pinned_ptr = (float **)calloc(num_of_blocks, sizeof(float *));
         if(!pinned_ptr) error("calloc failed in pre_allocate() \n");
 
         printf("pre_allocate: size = %Iu MB, num_of_blocks = %Iu, block_size = %Iu MB \n",
@@ -313,7 +313,7 @@ float *cuda_make_array_pinned_preallocated(float *x, size_t n)
             pinned_num_of_blocks++;
             pinned_block_id = pinned_num_of_blocks - 1;
             pinned_index = 0;
-            pinned_ptr = (float *)realloc(pinned_ptr, pinned_num_of_blocks * sizeof(float *));
+            pinned_ptr = (float **)realloc(pinned_ptr, pinned_num_of_blocks * sizeof(float *));
             cudaError_t status = cudaHostAlloc((void **)&pinned_ptr[pinned_block_id], pinned_block_size, cudaHostRegisterMapped);
             if (status != cudaSuccess) fprintf(stderr, " Can't pre-allocate CUDA-pinned buffer on CPU-RAM \n");
             CHECK_CUDA(status);
