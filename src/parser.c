@@ -748,11 +748,12 @@ layer parse_scale_channels(list *options, size_params params, network net)
     char *l = option_find(options, "from");
     int index = atoi(l);
     if (index < 0) index = params.index + index;
+    int scale_wh = option_find_int_quiet(options, "scale_wh", 0);
 
     int batch = params.batch;
     layer from = net.layers[index];
 
-    layer s = make_scale_channels_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
+    layer s = make_scale_channels_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c, scale_wh);
 
     char *activation_s = option_find_str_quiet(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);

@@ -47,6 +47,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "logistic")==0) return LOGISTIC;
     if (strcmp(s, "swish") == 0) return SWISH;
     if (strcmp(s, "mish") == 0) return MISH;
+    if (strcmp(s, "normalize_channels") == 0) return NORM_CHAN;
     if (strcmp(s, "loggy")==0) return LOGGY;
     if (strcmp(s, "relu")==0) return RELU;
     if (strcmp(s, "elu")==0) return ELU;
@@ -144,6 +145,30 @@ void activate_array_mish(float *x, const int n, float * activation_input, float 
         float x_val = x[i];
         activation_input[i] = x_val;    // store value before activation
         output[i] = x_val * tanh_activate( softplus_activate(x_val, MISH_THRESHOLD) );
+    }
+}
+
+void activate_array_normalize_channels(float *x, const int n, int batch, int channels, int wh_step, float *output)
+{
+    int size = n / channels;
+
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < size; ++i) {
+        int wh_i = i % wh_step;
+        int b = i / wh_step;
+
+        const float eps = 0.0001;
+        if (i < size) {
+            float sum = eps;
+            int k;
+            for (k = 0; k < channels; ++k) {
+                sum += x[wh_i + k * wh_step + b*wh_step*channels];
+            }
+            for (k = 0; k < channels; ++k) {
+                output[wh_i + k * wh_step + b*wh_step*channels] = x[wh_i + k * wh_step + b*wh_step*channels] / sum;
+            }
+        }
     }
 }
 

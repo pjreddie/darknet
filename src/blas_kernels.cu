@@ -1102,19 +1102,26 @@ extern "C" void activate_and_mult(float *a1, float *a2, size_t size, ACTIVATION 
 
 
 
-__global__ void scale_channels_kernel(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out)
+__global__ void scale_channels_kernel(float *in_w_h_c, int size, int channel_size, int batch_size, int scale_wh, float *scales_c, float *out)
 {
     const int index = blockIdx.x*blockDim.x + threadIdx.x;
     if (index < size) {
-        out[index] = in_w_h_c[index] * scales_c[index / channel_size];
+        if (scale_wh) {
+            int osd_index = index % channel_size + (index / batch_size)*channel_size;
+
+            out[index] = in_w_h_c[index] * scales_c[osd_index];
+        }
+        else {
+            out[index] = in_w_h_c[index] * scales_c[index / channel_size];
+        }
     }
 }
 
-extern "C" void scale_channels_gpu(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out)
+extern "C" void scale_channels_gpu(float *in_w_h_c, int size, int channel_size, int batch_size, int scale_wh, float *scales_c, float *out)
 {
     const int block_size = BLOCK;
     const int num_blocks = get_number_of_blocks(size, block_size);
-    scale_channels_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(in_w_h_c, size, channel_size, scales_c, out);
+    scale_channels_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(in_w_h_c, size, channel_size, batch_size, scale_wh, scales_c, out);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -1130,44 +1137,57 @@ float warpAllReduceSum(float val) {
     return val;
 }
 
-__global__ void backward_scale_channels_kernel(float *in_w_h_c_delta, int size, int channel_size,
+__global__ void backward_scale_channels_kernel(float *in_w_h_c_delta, int size, int channel_size, int batch_size, int scale_wh,
     float *in_scales_c, float *out_from_delta,
     float *in_from_output, float *out_state_delta)
 {
     const int index = blockIdx.x*blockDim.x + threadIdx.x;
-    int osd_index = index / channel_size;
 
     if (index < size) {
-        //out_state_delta[osd_index] += in_w_h_c_delta[index] * in_from_output[index]; // l.delta * from  (should be divided by channel_size?)
 
-        int warp_id = index / 32;
-        int index_warp_start = warp_id * 32;
-        int osd_index_warp_start = index_warp_start / channel_size;
-        int osd_index_warp_end = (index_warp_start + 31) / channel_size;
-
-        if (osd_index_warp_start == osd_index_warp_end) // all thread in warp process the same channel
+        if (scale_wh)
         {
-            float sum = warpAllReduceSum(in_w_h_c_delta[index] * in_from_output[index]); // l.delta * from
-            if (threadIdx.x % 32 == 0) {
-                atomicAdd(&out_state_delta[osd_index], sum);
-                //out_state_delta[osd_index] += sum;
-            }
+            int osd_index = index % channel_size + (index / batch_size)*channel_size;
+
+            //out_state_delta[osd_index] += in_w_h_c_delta[index] * in_from_output[index]; // l.delta * from  (should be divided by channel_size?)
+            atomicAdd(&out_state_delta[osd_index], in_w_h_c_delta[index] * in_from_output[index]); // l.delta * from
+
+            out_from_delta[index] += in_scales_c[osd_index] * in_w_h_c_delta[index]; // input * l.delta  // atomic isn't required here
+
         }
         else {
-            atomicAdd(&out_state_delta[osd_index], in_w_h_c_delta[index] * in_from_output[index]); // l.delta * from
-        }
+            int osd_index = index / channel_size;
+            //out_state_delta[osd_index] += in_w_h_c_delta[index] * in_from_output[index]; // l.delta * from  (should be divided by channel_size?)
 
-        out_from_delta[index] += in_scales_c[osd_index] * in_w_h_c_delta[index]; // input * l.delta  // atomic isn't required here
+            int warp_id = index / 32;
+            int index_warp_start = warp_id * 32;
+            int osd_index_warp_start = index_warp_start / channel_size;
+            int osd_index_warp_end = (index_warp_start + 31) / channel_size;
+
+            if (osd_index_warp_start == osd_index_warp_end) // all thread in warp process the same channel
+            {
+                float sum = warpAllReduceSum(in_w_h_c_delta[index] * in_from_output[index]); // l.delta * from
+                if (threadIdx.x % 32 == 0) {
+                    atomicAdd(&out_state_delta[osd_index], sum);
+                    //out_state_delta[osd_index] += sum;
+                }
+            }
+            else {
+                atomicAdd(&out_state_delta[osd_index], in_w_h_c_delta[index] * in_from_output[index]); // l.delta * from
+            }
+
+            out_from_delta[index] += in_scales_c[osd_index] * in_w_h_c_delta[index]; // input * l.delta  // atomic isn't required here
+        }
     }
 }
 
-extern "C" void backward_scale_channels_gpu(float *in_w_h_c_delta, int size, int channel_size,
+extern "C" void backward_scale_channels_gpu(float *in_w_h_c_delta, int size, int channel_size, int batch_size, int scale_wh,
     float *in_scales_c, float *out_from_delta,
     float *in_from_output, float *out_state_delta)
 {
     const int block_size = BLOCK;
     const int num_blocks = get_number_of_blocks(size, block_size);
-    backward_scale_channels_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (in_w_h_c_delta, size, channel_size,
+    backward_scale_channels_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (in_w_h_c_delta, size, channel_size, batch_size, scale_wh,
         in_scales_c, out_from_delta,
         in_from_output, out_state_delta);
 
