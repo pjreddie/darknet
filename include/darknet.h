@@ -17,10 +17,6 @@
     #endif
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define SECRET_NUM -1234
 extern int gpu_index;
 
@@ -707,6 +703,7 @@ int resize_network(network *net, int w, int h);
 void free_matrix(matrix m);
 void test_resize(char *filename);
 int show_image(image p, const char *name, int ms);
+int show_image(image p, const char *name);
 image copy_image(image p);
 void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b);
 float get_current_rate(network *net);
@@ -799,7 +796,4 @@ size_t rand_size_t();
 float rand_normal();
 float rand_uniform(float min, float max);
 
-#ifdef __cplusplus
-}
-#endif
 #endif

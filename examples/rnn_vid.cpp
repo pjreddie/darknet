@@ -2,7 +2,6 @@
 
 #ifdef OPENCV
 image get_image_from_stream(CvCapture *cap);
-image ipl_to_image(IplImage* src);
 
 void reconstruct_picture(network net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size, int iters);
 
@@ -38,8 +37,8 @@ float_pair get_rnn_vid_data(network net, char **files, int n, int batch, int ste
 
         int i;
         for(i = 0; i < net.batch; ++i){
-            IplImage* src = cvQueryFrame(cap);
-            image im = ipl_to_image(src);
+            cv::Mat src = cvQueryFrame(cap);
+            image im = mat_to_image(src);
             rgbgr_image(im);
             image re = resize_image(im, net.w, net.h);
             //show_image(re, "loaded");

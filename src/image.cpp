@@ -241,13 +241,14 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
     int i,j;
 
     for(i = 0; i < num; ++i){
-        char labelstr[4096] = {0};
-        int class = -1;
+        char labelstr[4096];
+        memset(labelstr, 0, 4096 * sizeof(char));
+        int class_id = -1;
         for(j = 0; j < classes; ++j){
             if (dets[i].prob[j] > thresh){
-                if (class < 0) {
+                if (class_id < 0) {
                     strcat(labelstr, names[j]);
-                    class = j;
+                    class_id = j;
                 } else {
                     strcat(labelstr, ", ");
                     strcat(labelstr, names[j]);
@@ -255,7 +256,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
             }
         }
-        if(class >= 0){
+        if(class_id >= 0){
             int width = im.h * .006;
 
             /*
@@ -265,8 +266,8 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                }
              */
 
-            //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
-            int offset = class*123457 % classes;
+            //printf("%d %s: %.0f%%\n", i, names[class_id], prob*100);
+            int offset = class_id*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
             float blue = get_color(0,offset,classes);
@@ -544,6 +545,11 @@ int show_image(image p, const char *name, int ms)
     save_image(p, name);
     return -1;
 #endif
+}
+
+int show_image(image p, const char *name)
+{
+    return show_image(p, name, 1);
 }
 
 void save_image_options(image im, const char *name, IMTYPE f, int quality)

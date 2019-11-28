@@ -9,15 +9,15 @@
 #include "box.h"
 #include "darknet.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef OPENCV
+#include <opencv2/core.hpp>
 void *open_video_stream(const char *f, int c, int w, int h, int fps);
 image get_image_from_stream(void *p);
 image load_image_cv(char *filename, int channels);
 int show_image_cv(image im, const char* name, int ms);
+cv::Mat image_to_mat(image im);
+image mat_to_image(cv::Mat m);
+image* mat_to_image(cv::Mat m, image* im);
 #endif
 
 float get_color(int c, int x, int max);
@@ -49,6 +49,8 @@ image collapse_image_layers(image source, int border);
 image collapse_images_horz(image *ims, int n);
 image collapse_images_vert(image *ims, int n);
 
+int show_image(image im, const char* name, int ms);
+int show_image(image im, const char* name);
 void show_image_normalized(image im, const char *name);
 void show_images(image *ims, int n, char *window);
 void show_image_layers(image p, char *name);
@@ -60,10 +62,6 @@ image make_empty_image(int w, int h, int c);
 void copy_image_into(image src, image dest);
 
 image get_image_layer(image m, int l);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

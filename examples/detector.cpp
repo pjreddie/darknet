@@ -224,8 +224,8 @@ void print_imagenet_detections(FILE *fp, int id, detection *dets, int total, int
         if (ymax > h) ymax = h;
 
         for(j = 0; j < classes; ++j){
-            int class = j;
-            if (dets[i].prob[class]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, dets[i].prob[class],
+            int class_id = j;
+            if (dets[i].prob[class_id]) fprintf(fp, "%d %d %f %f %f %f %f\n", id, j+1, dets[i].prob[class_id],
                     xmin, ymin, xmax, ymax);
         }
     }
@@ -621,7 +621,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 }
 
 /*
-void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
+void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class_id, float thresh, int skip)
 {
 #ifdef OPENCV
     char *base = basecfg(cfgfile);
@@ -668,7 +668,7 @@ void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 
         for(i = 0; i < nboxes; ++i){
-            if(dets[i].prob[class] > thresh){
+            if(dets[i].prob[class_id] > thresh){
                 box b = dets[i].bbox;
                 int left  = b.x-b.w/2.;
                 int top   = b.y-b.h/2.;
@@ -694,7 +694,7 @@ void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     #endif
 }
 
-void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
+void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class_id, float thresh, int skip)
 {
 #ifdef OPENCV
     char *base = basecfg(cfgfile);
@@ -744,7 +744,7 @@ void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_in
         if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 
         for(i = 0; i < nboxes; ++i){
-            if(dets[i].prob[class] > thresh){
+            if(dets[i].prob[class_id] > thresh){
                 box b = dets[i].bbox;
                 int size = b.w*in.w > b.h*in.h ? b.w*in.w : b.h*in.h;
                 int dx  = b.x*in.w-size/2.;
@@ -827,7 +827,7 @@ void run_detector(int argc, char **argv)
     int width = find_int_arg(argc, argv, "-w", 0);
     int height = find_int_arg(argc, argv, "-h", 0);
     int fps = find_int_arg(argc, argv, "-fps", 0);
-    //int class = find_int_arg(argc, argv, "-class", 0);
+    //int class_id = find_int_arg(argc, argv, "-class", 0);
 
     char *datacfg = argv[3];
     char *cfg = argv[4];
@@ -845,6 +845,6 @@ void run_detector(int argc, char **argv)
         char **names = get_labels(name_list);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
     }
-    //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
-    //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class, thresh, frame_skip);
+    //else if(0==strcmp(argv[2], "extract")) extract_detector(datacfg, cfg, weights, cam_index, filename, class_id, thresh, frame_skip);
+    //else if(0==strcmp(argv[2], "censor")) censor_detector(datacfg, cfg, weights, cam_index, filename, class_id, thresh, frame_skip);
 }

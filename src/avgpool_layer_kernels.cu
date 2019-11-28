@@ -2,10 +2,8 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "avgpool_layer.h"
 #include "cuda.h"
-}
 
 __global__ void forward_avgpool_layer_kernel(int n, int w, int h, int c, float *input, float *output)
 {
@@ -43,7 +41,7 @@ __global__ void backward_avgpool_layer_kernel(int n, int w, int h, int c, float 
     }
 }
 
-extern "C" void forward_avgpool_layer_gpu(avgpool_layer layer, network net)
+void forward_avgpool_layer_gpu(avgpool_layer layer, network net)
 {
     size_t n = layer.c*layer.batch;
 
@@ -51,7 +49,7 @@ extern "C" void forward_avgpool_layer_gpu(avgpool_layer layer, network net)
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void backward_avgpool_layer_gpu(avgpool_layer layer, network net)
+void backward_avgpool_layer_gpu(avgpool_layer layer, network net)
 {
     size_t n = layer.c*layer.batch;
 
