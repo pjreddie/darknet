@@ -163,10 +163,14 @@ void activate_array_normalize_channels(float *x, const int n, int batch, int cha
             float sum = eps;
             int k;
             for (k = 0; k < channels; ++k) {
-                sum += x[wh_i + k * wh_step + b*wh_step*channels];
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                if (val > 0) sum += val;
             }
             for (k = 0; k < channels; ++k) {
-                output[wh_i + k * wh_step + b*wh_step*channels] = x[wh_i + k * wh_step + b*wh_step*channels] / sum;
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                if (val > 0) val = val / sum;
+                else val = 0;
+                output[wh_i + k * wh_step + b*wh_step*channels] = val;
             }
         }
     }

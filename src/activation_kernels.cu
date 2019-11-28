@@ -126,6 +126,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
         return loggy_gradient_kernel(x);
     case RELU:
         return relu_gradient_kernel(x);
+    case NORM_CHAN:
+        return relu_gradient_kernel(x);
     case ELU:
         return elu_gradient_kernel(x);
     case SELU:
@@ -397,6 +399,7 @@ extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta
     else if (a == TANH) gradient_array_tanh_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == HARDTAN) gradient_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == RELU) gradient_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == NORM_CHAN) gradient_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == SELU) gradient_array_selu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else
         gradient_array_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (x, n, a, delta);
@@ -431,10 +434,14 @@ __global__ void activate_array_normalize_channels_kernel(float *x, int size, int
         float sum = eps;
         int k;
         for (k = 0; k < channels; ++k) {
-            sum += x[wh_i + k * wh_step + b*wh_step*channels];
+            float val = x[wh_i + k * wh_step + b*wh_step*channels];
+            if (val > 0) sum += val;
         }
         for (k = 0; k < channels; ++k) {
-            output_gpu[wh_i + k * wh_step + b*wh_step*channels] = x[wh_i + k * wh_step + b*wh_step*channels] / sum;
+            float val = x[wh_i + k * wh_step + b*wh_step*channels];
+            if (val > 0) val = val / sum;
+            else val = 0;
+            output_gpu[wh_i + k * wh_step + b*wh_step*channels] = val;
         }
     }
 }
