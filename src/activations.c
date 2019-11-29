@@ -187,6 +187,8 @@ float gradient(float x, ACTIVATION a)
             return loggy_gradient(x);
         case RELU:
             return relu_gradient(x);
+        case NORM_CHAN:
+            return relu_gradient(x);
         case ELU:
             return elu_gradient(x);
         case SELU:
