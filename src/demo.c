@@ -7,6 +7,7 @@
 #include "box.h"
 #include "image.h"
 #include "demo.h"
+#include "darknet.h"
 #ifdef WIN32
 #include <time.h>
 #include "gettimeofday.h"
@@ -104,7 +105,7 @@ double get_wall_time()
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output, int letter_box_in)
+    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec)
 {
     letter_box = letter_box_in;
     in_img = det_img = show_img = NULL;
@@ -200,6 +201,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         //'W', 'M', 'V', '2'
     }
 
+    const double start_time_lim = get_time_point();
     double before = get_wall_time();
 
     while(1){
@@ -274,6 +276,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             pthread_join(fetch_thread, 0);
             pthread_join(detect_thread, 0);
 
+            if (time_limit_sec > 0 && (get_time_point() - start_time_lim)/1000000 > time_limit_sec) {
+                printf(" start_time_lim = %f, get_time_point() = %f, time spent = %f \n", start_time_lim, get_time_point(), get_time_point() - start_time_lim);
+                break;
+            }
+
             if (flag_exit == 1) break;
 
             if(delay == 0){
@@ -325,7 +332,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output, int letter_box_in)
+    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
