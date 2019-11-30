@@ -1170,7 +1170,7 @@ void *load_thread(void *ptr)
     if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == CLASSIFICATION_DATA){
-        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.mixup);
+        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.mixup, a.show_imgs);
     } else if (a.type == SUPER_DATA){
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
@@ -1315,7 +1315,7 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     return d;
 }
 
-data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure, int mixup)
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure, int mixup, int show_imgs)
 {
     char **paths_stored = paths;
     if(m) paths = get_random_paths(paths, n, m);
@@ -1331,24 +1331,96 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
         d2.shallow = 0;
         d2.X = load_image_augment_paths(paths_mix, n, use_flip, min, max, w, h, angle, aspect, hue, saturation, exposure);
         d2.y = load_labels_paths(paths_mix, n, labels, k, hierarchy);
-        free(paths_mix);
 
         // mix
         int i, j;
         for (i = 0; i < d2.X.rows; ++i) {
 
-            // mix images
-            for (j = 0; j < d2.X.cols; ++j) {
-                d.X.vals[i][j] = (d.X.vals[i][j] + d2.X.vals[i][j]) / 2.0f;
+            if (mixup == 3) mixup = rand_int(1, 2); // alternate MixUp and CutMix
+
+            // MixUp
+            if (mixup == 1) {
+                // mix images
+                for (j = 0; j < d2.X.cols; ++j) {
+                    d.X.vals[i][j] = (d.X.vals[i][j] + d2.X.vals[i][j]) / 2.0f;
+                }
+
+                // mix labels
+                for (j = 0; j < d2.y.cols; ++j) {
+                    d.y.vals[i][j] = (d.y.vals[i][j] + d2.y.vals[i][j]) / 2.0f;
+                }
+            }
+            // CutMix
+            else {
+                const float min_offset = 0.2; // 20%
+                const int cut_x = rand_int(w*min_offset, w*(1 - min_offset));
+                const int cut_y = rand_int(h*min_offset, h*(1 - min_offset));
+                int left, right, top, bot;
+                if (rand_int(0,1)) {
+                    left = cut_x;
+                    right = w;
+                }
+                else {
+                    left = 0;
+                    right = cut_x;
+                }
+
+                if (rand_int(0, 1)) {
+                    top = cut_y;
+                    bot = h;
+                }
+                else {
+                    top = 0;
+                    bot = cut_y;
+                }
+                const float alpha = (float)(right - left)*(bot - top) / (float)(w*h);
+                const float beta = 1 - alpha;
+
+                int c, x, y;
+                for (c = 0; c < 3; ++c) {
+                    for (y = top; y < bot; ++y) {
+                        for (x = left; x < right; ++x) {
+                            int j = x + y*w + c*w*h;
+                            d.X.vals[i][j] = d2.X.vals[i][j];
+                        }
+                    }
+                }
+
+                //printf("\n alpha = %f, beta = %f \n", alpha, beta);
+                // mix labels
+                for (j = 0; j < d.y.cols; ++j) {
+                    d.y.vals[i][j] = d.y.vals[i][j] * beta + d2.y.vals[i][j] * alpha;
+                }
             }
 
-            // mix labels
-            for (j = 0; j < d2.y.cols; ++j) {
-                if (d2.y.vals[i][k] > 0) d.y.vals[i][k] = 1;
+            if (show_imgs) {
+                image im = make_empty_image(w, h, 3);
+                im.data = d.X.vals[i];
+                char buff[1000];
+                sprintf(buff, "aug_%d_%s_%d", i, basecfg((char*)paths_mix[i]), random_gen());
+                save_image(im, buff);
+
+                char buff_string[1000];
+                sprintf(buff_string, "\n Classes: ");
+                for (j = 0; j < d.y.cols; ++j) {
+                    if (d.y.vals[i][j] > 0) {
+                        char buff_tmp[100];
+                        sprintf(buff_tmp, " %d (%f), ", j, d.y.vals[i][j]);
+                        strcat(buff_string, buff_tmp);
+                    }
+                }
+                printf("%s \n", buff_string);
+
+                if (show_imgs == 1) {
+                    show_image(im, buff);
+                    wait_until_press_key_cv();
+                }
+                printf("\nYou use flag -show_imgs, so will be saved aug_...jpg images. Click on window and press ESC button \n");
             }
         }
 
         free_data(d2);
+        free(paths_mix);
     }
 
     return d;

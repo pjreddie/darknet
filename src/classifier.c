@@ -27,7 +27,7 @@ float *get_regression_values(char **labels, int n)
     return v;
 }
 
-void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int mjpeg_port, int calc_topk)
+void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int mjpeg_port, int calc_topk, int show_imgs)
 {
     int i;
 
@@ -83,7 +83,6 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
     args.min = net.min_crop;
     args.max = net.max_crop;
-    args.mixup = net.mixup;
     args.flip = net.flip;
     args.angle = net.angle;
     args.aspect = net.aspect;
@@ -91,6 +90,10 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     args.saturation = net.saturation;
     args.hue = net.hue;
     args.size = net.w > net.h ? net.w : net.h;
+
+    args.mixup = net.mixup;
+    if (dont_show && show_imgs) show_imgs = 2;
+    args.show_imgs = show_imgs;
 
     args.paths = paths;
     args.classes = classes;
@@ -1266,6 +1269,7 @@ void run_classifier(int argc, char **argv)
     }
 
     int dont_show = find_arg(argc, argv, "-dont_show");
+    int show_imgs = find_arg(argc, argv, "-show_imgs");
     int calc_topk = find_arg(argc, argv, "-topk");
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int top = find_int_arg(argc, argv, "-t", 0);
@@ -1278,7 +1282,7 @@ void run_classifier(int argc, char **argv)
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
-    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show, mjpeg_port, calc_topk);
+    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show, mjpeg_port, calc_topk, show_imgs);
     else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "gun")) gun_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "threat")) threat_classifier(data, cfg, weights, cam_index, filename);
