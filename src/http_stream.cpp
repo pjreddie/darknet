@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
-#define __STDC_WANT_LIB_EXT1__ 1
 #include <ctime>
 using std::cerr;
 using std::endl;
@@ -545,10 +544,9 @@ void send_mjpeg(mat_cv* mat, int port, int timeout, int quality)
 std::string get_system_frame_time_string()
 {
     std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    struct tm tmp_buf;
-    localtime_s(&tmp_buf, &t);
+    struct tm *tmp_buf = localtime(&t);
     char buff[256];
-    std::strftime(buff, 256, "%A %F %T", &tmp_buf);
+    std::strftime(buff, 256, "%A %F %T", tmp_buf);
     std::string system_frame_time = buff;
     return system_frame_time;
 }
