@@ -1170,7 +1170,7 @@ void *load_thread(void *ptr)
     if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == CLASSIFICATION_DATA){
-        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.mixup);
     } else if (a.type == SUPER_DATA){
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
@@ -1315,14 +1315,42 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     return d;
 }
 
-data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure)
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure, int mixup)
 {
+    char **paths_stored = paths;
     if(m) paths = get_random_paths(paths, n, m);
     data d = {0};
     d.shallow = 0;
     d.X = load_image_augment_paths(paths, n, use_flip, min, max, w, h, angle, aspect, hue, saturation, exposure);
     d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);
+
+    if (mixup) {
+        char **paths_mix = get_random_paths(paths_stored, n, m);
+        data d2 = { 0 };
+        d2.shallow = 0;
+        d2.X = load_image_augment_paths(paths_mix, n, use_flip, min, max, w, h, angle, aspect, hue, saturation, exposure);
+        d2.y = load_labels_paths(paths_mix, n, labels, k, hierarchy);
+        free(paths_mix);
+
+        // mix
+        int i, j;
+        for (i = 0; i < d2.X.rows; ++i) {
+
+            // mix images
+            for (j = 0; j < d2.X.cols; ++j) {
+                d.X.vals[i][j] = (d.X.vals[i][j] + d2.X.vals[i][j]) / 2.0f;
+            }
+
+            // mix labels
+            for (j = 0; j < d2.y.cols; ++j) {
+                if (d2.y.vals[i][k] > 0) d.y.vals[i][k] = 1;
+            }
+        }
+
+        free_data(d2);
+    }
+
     return d;
 }
 
