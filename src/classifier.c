@@ -806,11 +806,14 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         printf("%d %d\n", r.w, r.h);
 
         float *X = r.data;
-        time=clock();
+
+        double time = get_time_point();
         float *predictions = network_predict(net, X);
+        printf("%s: Predicted in %lf milli-seconds.\n", input, ((double)get_time_point() - time) / 1000);
+
         if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 0);
         top_k(predictions, net.outputs, top, indexes);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+
         for(i = 0; i < top; ++i){
             int index = indexes[i];
             if(net.hierarchy) printf("%d, %s: %f, parent: %s \n",index, names[index], predictions[index], (net.hierarchy->parent[index] >= 0) ? names[net.hierarchy->parent[index]] : "Root");
@@ -1208,7 +1211,10 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         image in_s = resize_image(in, net.w, net.h);
         show_image(in, "Classifier");
 
+        double time = get_time_point();
         float *predictions = network_predict(net, in_s.data);
+        double frame_time_ms = (get_time_point() - time)/1000;
+
         if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 1);
         top_predictions(net, top, indexes);
 
@@ -1216,7 +1222,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         printf("\033[2J");
         printf("\033[1;1H");
 #endif
-        printf("\nFPS:%.0f\n",fps);
+        printf("\nFPS: %.2f \n", fps);
 
         for(i = 0; i < top; ++i){
             int index = indexes[i];
@@ -1228,10 +1234,12 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
 
         wait_key_cv(10);// cvWaitKey(10);
 
-        gettimeofday(&tval_after, NULL);
-        timersub(&tval_after, &tval_before, &tval_result);
-        float curr = 1000000.f/((long int)tval_result.tv_usec);
-        fps = .9*fps + .1*curr;
+        //gettimeofday(&tval_after, NULL);
+        //timersub(&tval_after, &tval_before, &tval_result);
+        //float curr = 1000000.f/((long int)tval_result.tv_usec);
+        float curr = 1000.f / frame_time_ms;
+        if (fps == 0) fps = curr;
+        else fps = .9*fps + .1*curr;
     }
 #endif
 }
