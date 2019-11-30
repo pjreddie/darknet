@@ -2,7 +2,6 @@
 #include "image.h"
 #include "http_stream.h"
 
-
 //
 // a single-threaded, multi client(using select), debug webserver - streaming out mjpg.
 //  on win, _WIN32 has to be defined, must link against ws2_32.lib (socks on linux are for free)
@@ -24,8 +23,13 @@ using std::endl;
 #ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "ws2_32.lib")
 #endif
-#include "gettimeofday.h"
+#define WIN32_LEAN_AND_MEAN
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <time.h>
+#include "gettimeofday.h"
 #define PORT        unsigned long
 #define ADDRPOINTER   int*
 struct _INIT_W32DATA
@@ -537,6 +541,77 @@ void send_mjpeg(mat_cv* mat, int port, int timeout, int quality)
 }
 // ----------------------------------------
 
+std::string get_system_frame_time_string()
+{
+    std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    struct tm tmp_buf;
+    localtime_s(&tmp_buf, &t);
+    char buff[256];
+    std::strftime(buff, 256, "%A %F %T", &tmp_buf);
+    std::string system_frame_time = buff;
+    return system_frame_time;
+}
+// ----------------------------------------
+
+//#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include "httplib.h"
+
+// https://webhook.site/
+// https://github.com/yhirose/cpp-httplib
+// sent POST http request
+int send_http_post_request(char *http_post_host, int server_port, char *videosource,
+    detection *dets, int nboxes, int classes, char **names, long long int frame_id, int ext_output, int timeout)
+{
+    const float thresh = 0.005; // function get_network_boxes() has already filtred dets by actual threshold
+
+    std::string message;
+
+    for (int i = 0; i < nboxes; ++i) {
+        char labelstr[4096] = { 0 };
+        int class_id = -1;
+        for (int j = 0; j < classes; ++j) {
+            int show = strncmp(names[j], "dont_show", 9);
+            if (dets[i].prob[j] > thresh && show) {
+                if (class_id < 0) {
+                    strcat(labelstr, names[j]);
+                    class_id = j;
+                    char buff[10];
+                    sprintf(buff, " (%2.0f%%)", dets[i].prob[j] * 100);
+                    strcat(labelstr, buff);
+                }
+                else {
+                    strcat(labelstr, ", ");
+                    strcat(labelstr, names[j]);
+                }
+                printf("%s: %.0f%% ", names[j], dets[i].prob[j] * 100);
+            }
+        }
+        if (class_id >= 0) {
+            message += std::string(names[class_id]) + std::string(", id: ") + std::to_string(class_id) + "\n";
+        }
+    }
+
+    if (!message.empty())
+    {
+        std::string time = get_system_frame_time_string();
+        message += "\ntime:\n" + time + "\n";
+        message += "videosource:\n" + std::string(videosource);
+
+        std::string http_post_host_str = http_post_host;
+        int slash_index = http_post_host_str.find("/");
+
+        std::string http_path = http_post_host_str.substr(slash_index, http_post_host_str.length() - slash_index);
+        http_post_host_str = http_post_host_str.substr(0, slash_index);
+
+        // send HTTP-Post request
+        httplib::Client cli(http_post_host_str.c_str(), server_port, timeout);
+        auto res = cli.Post(http_path.c_str(), message, "text/plain");
+
+        return 1;
+    }
+
+    return 0;
+}
 
 #endif      // OPENCV
 

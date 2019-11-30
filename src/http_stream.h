@@ -13,6 +13,9 @@ void send_json(detection *dets, int nboxes, int classes, char **names, long long
 #ifdef OPENCV
 void send_mjpeg(mat_cv* mat, int port, int timeout, int quality);
 
+int send_http_post_request(char *http_post_host, int server_port, char *videosource,
+    detection *dets, int nboxes, int classes, char **names, long long int frame_id, int ext_output, int timeout);
+
 #endif  // OPENCV
 
 #ifdef __cplusplus
