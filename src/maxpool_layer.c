@@ -20,14 +20,19 @@ image get_maxpool_delta(maxpool_layer l)
     return float_to_image(w,h,c,l.delta);
 }
 
+void create_maxpool_cudnn_tensors(layer *l)
+{
+#ifdef CUDNN
+    CHECK_CUDNN(cudnnCreatePoolingDescriptor(&l->poolingDesc));
+    CHECK_CUDNN(cudnnCreateTensorDescriptor(&l->srcTensorDesc));
+    CHECK_CUDNN(cudnnCreateTensorDescriptor(&l->dstTensorDesc));
+#endif // CUDNN
+}
 
 void cudnn_maxpool_setup(layer *l)
 {
 #ifdef CUDNN
-    cudnnStatus_t maxpool_status;
-    maxpool_status = cudnnCreatePoolingDescriptor(&l->poolingDesc);
-
-    maxpool_status = cudnnSetPooling2dDescriptor(
+    CHECK_CUDNN(cudnnSetPooling2dDescriptor(
         l->poolingDesc,
         CUDNN_POOLING_MAX,
         CUDNN_NOT_PROPAGATE_NAN,    // CUDNN_PROPAGATE_NAN, CUDNN_NOT_PROPAGATE_NAN
@@ -36,12 +41,10 @@ void cudnn_maxpool_setup(layer *l)
         l->pad/2, //0, //l.pad,
         l->pad/2, //0, //l.pad,
         l->stride_x,
-        l->stride_y);
+        l->stride_y));
 
-    cudnnCreateTensorDescriptor(&l->srcTensorDesc);
-    cudnnCreateTensorDescriptor(&l->dstTensorDesc);
-    cudnnSetTensor4dDescriptor(l->srcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w);
-    cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w);
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->srcTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->c, l->h, l->w));
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w));
 #endif // CUDNN
 }
 
@@ -99,6 +102,7 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
         l.delta_gpu = cuda_make_array(l.delta, output_size);
     }
     l.output_gpu  = cuda_make_array(l.output, output_size);
+    create_maxpool_cudnn_tensors(&l);
     cudnn_maxpool_setup(&l);
 
 #endif  // GPU

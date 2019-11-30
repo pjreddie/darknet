@@ -55,6 +55,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
                 name_list, names_size, net_classes, cfgfile);
             if (net_classes > names_size) getchar();
         }
+        free_ptrs((void**)names, net_map.layers[net_map.n - 1].classes);
     }
 
     srand(time(0));
