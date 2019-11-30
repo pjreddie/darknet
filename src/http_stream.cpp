@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#define __STDC_WANT_LIB_EXT1__ 1
 #include <ctime>
 using std::cerr;
 using std::endl;
