@@ -279,17 +279,17 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
         dw *= exp(x[index + 4 * stride]);
         dh *= exp(x[index + 6 * stride]);
 
-        // normalize iou weight, for GIoU
-        dx *= iou_normalizer;
-        dy *= iou_normalizer;
-        dw *= iou_normalizer;
-        dh *= iou_normalizer;
-
         delta_x = dx;
         delta_y = dy;
         delta_w = dw;
         delta_h = dh;
     }
+
+    // normalize iou weight, for GIoU
+    delta_x *= iou_normalizer;
+    delta_y *= iou_normalizer;
+    delta_w *= iou_normalizer;
+    delta_h *= iou_normalizer;
 
     // normalize Uncertainty weight
     delta_ux *= uc_normalizer;
