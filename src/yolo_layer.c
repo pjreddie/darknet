@@ -150,10 +150,10 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         float th = log(truth.h*h / biases[2 * n + 1]);
 
         // accumulate delta
-        delta[index + 0 * stride] += scale * (tx - x[index + 0 * stride]);
-        delta[index + 1 * stride] += scale * (ty - x[index + 1 * stride]);
-        delta[index + 2 * stride] += scale * (tw - x[index + 2 * stride]);
-        delta[index + 3 * stride] += scale * (th - x[index + 3 * stride]);
+        delta[index + 0 * stride] += scale * (tx - x[index + 0 * stride]) * iou_normalizer;
+        delta[index + 1 * stride] += scale * (ty - x[index + 1 * stride]) * iou_normalizer;
+        delta[index + 2 * stride] += scale * (tw - x[index + 2 * stride]) * iou_normalizer;
+        delta[index + 3 * stride] += scale * (th - x[index + 3 * stride]) * iou_normalizer;
     }
     else {
         // https://github.com/generalized-iou/g-darknet
@@ -487,6 +487,27 @@ void forward_yolo_layer(const layer l, network_state state)
     //*(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
     //printf("Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", state.index, avg_iou / count, avg_cat / class_count, avg_obj / count, avg_anyobj / (l.w*l.h*l.n*l.batch), recall / count, recall75 / count, count);
 
+    int stride = l.w*l.h;
+    float* no_iou_loss_delta = (float *)calloc(l.batch * l.outputs, sizeof(float));
+    memcpy(no_iou_loss_delta, l.delta, l.batch * l.outputs * sizeof(float));
+    for (b = 0; b < l.batch; ++b) {
+        for (j = 0; j < l.h; ++j) {
+            for (i = 0; i < l.w; ++i) {
+                for (n = 0; n < l.n; ++n) {
+                    int index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
+                    no_iou_loss_delta[index + 0 * stride] = 0;
+                    no_iou_loss_delta[index + 1 * stride] = 0;
+                    no_iou_loss_delta[index + 2 * stride] = 0;
+                    no_iou_loss_delta[index + 3 * stride] = 0;
+                }
+            }
+        }
+    }
+    float classification_loss = l.cls_normalizer * pow(mag_array(no_iou_loss_delta, l.outputs * l.batch), 2);
+    free(no_iou_loss_delta);
+    float loss = pow(mag_array(l.delta, l.outputs * l.batch), 2);
+    float iou_loss = loss - classification_loss;
+
     float avg_iou_loss = 0;
     // gIOU loss + MSE (objectness) loss
     if (l.iou_loss == MSE) {
@@ -496,24 +517,6 @@ void forward_yolo_layer(const layer l, network_state state)
         // Always compute classification loss both for iou + cls loss and for logging with mse loss
         // TODO: remove IOU loss fields before computing MSE on class
         //   probably split into two arrays
-        int stride = l.w*l.h;
-        float* no_iou_loss_delta = (float *)calloc(l.batch * l.outputs, sizeof(float));
-        memcpy(no_iou_loss_delta, l.delta, l.batch * l.outputs * sizeof(float));
-        for (b = 0; b < l.batch; ++b) {
-            for (j = 0; j < l.h; ++j) {
-                for (i = 0; i < l.w; ++i) {
-                    for (n = 0; n < l.n; ++n) {
-                        int index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
-                        no_iou_loss_delta[index + 0 * stride] = 0;
-                        no_iou_loss_delta[index + 1 * stride] = 0;
-                        no_iou_loss_delta[index + 2 * stride] = 0;
-                        no_iou_loss_delta[index + 3 * stride] = 0;
-                    }
-                }
-            }
-        }
-        float classification_loss = l.cls_normalizer * pow(mag_array(no_iou_loss_delta, l.outputs * l.batch), 2);
-        free(no_iou_loss_delta);
 
         if (l.iou_loss == GIOU) {
             avg_iou_loss = count > 0 ? l.iou_normalizer * (tot_giou_loss / count) : 0;
@@ -523,8 +526,14 @@ void forward_yolo_layer(const layer l, network_state state)
         }
         *(l.cost) = avg_iou_loss + classification_loss;
     }
-    printf("v3 (%s loss, Normalizer: (iou: %f, cls: %f) Region %d Avg (IOU: %f, GIOU: %f), Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f, count: %d\n",
-        (l.iou_loss == MSE ? "mse" : (l.iou_loss == GIOU ? "giou" : "iou")), l.iou_normalizer, l.cls_normalizer, state.index, tot_iou / count, tot_giou / count, avg_cat / class_count, avg_obj / count, avg_anyobj / (l.w*l.h*l.n*l.batch), recall / count, recall75 / count, count);
+
+    loss /= l.batch;
+    classification_loss /= l.batch;
+    iou_loss /= l.batch;
+
+    printf("v3 (%s loss, Normalizer: (iou: %f, cls: %f) Region %d Avg (IOU: %f, GIOU: %f), Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f, count: %d, loss = %f, class_loss = %f, iou_loss = %f\n",
+        (l.iou_loss == MSE ? "mse" : (l.iou_loss == GIOU ? "giou" : "iou")), l.iou_normalizer, l.cls_normalizer, state.index, tot_iou / count, tot_giou / count, avg_cat / class_count, avg_obj / count, avg_anyobj / (l.w*l.h*l.n*l.batch), recall / count, recall75 / count, count,
+        loss, classification_loss, iou_loss);
 }
 
 void backward_yolo_layer(const layer l, network_state state)

@@ -94,6 +94,9 @@ static int close_socket(SOCKET s) {
 }
 #endif // _WIN32
 
+#ifndef   NI_MAXHOST
+#define   NI_MAXHOST 1025
+#endif
 
 class JSON_sender
 {
