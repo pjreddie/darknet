@@ -1353,26 +1353,15 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
             // CutMix
             else {
                 const float min_offset = 0.2; // 20%
-                const int cut_x = rand_int(w*min_offset, w*(1 - min_offset));
-                const int cut_y = rand_int(h*min_offset, h*(1 - min_offset));
-                int left, right, top, bot;
-                if (rand_int(0,1)) {
-                    left = cut_x;
-                    right = w;
-                }
-                else {
-                    left = 0;
-                    right = cut_x;
-                }
+                const int cut_w = rand_int(w*min_offset, w*(1 - min_offset));
+                const int cut_h = rand_int(h*min_offset, h*(1 - min_offset));
+                const int cut_x = rand_int(0, w - cut_w - 1);
+                const int cut_y = rand_int(0, h - cut_h - 1);
+                const int left = cut_x;
+                const int right = cut_x + cut_w;
+                const int top = cut_y;
+                const int bot = cut_y + cut_h;
 
-                if (rand_int(0, 1)) {
-                    top = cut_y;
-                    bot = h;
-                }
-                else {
-                    top = 0;
-                    bot = cut_y;
-                }
                 const float alpha = (float)(right - left)*(bot - top) / (float)(w*h);
                 const float beta = 1 - alpha;
 
