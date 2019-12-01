@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2, int assisted_excitation, int train)
+layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2, int assisted_excitation, ACTIVATION activation, int train)
 {
     if(assisted_excitation) fprintf(stderr, "Shortcut Layer - AE: %d\n", index);
     else fprintf(stderr,"Shortcut Layer: %d\n", index);
@@ -14,6 +14,7 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
     l.train = train;
     l.type = SHORTCUT;
     l.batch = batch;
+    l.activation = activation;
     l.w = w2;
     l.h = h2;
     l.c = c2;
@@ -34,8 +35,10 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
 
     l.forward = forward_shortcut_layer;
     l.backward = backward_shortcut_layer;
-
+#ifndef GPU
     if (l.activation == SWISH || l.activation == MISH) l.activation_input = (float*)calloc(l.batch*l.outputs, sizeof(float));
+#endif // GPU
+
 #ifdef GPU
     if (l.activation == SWISH || l.activation == MISH) l.activation_input_gpu = cuda_make_array(l.activation_input, l.batch*l.outputs);
 

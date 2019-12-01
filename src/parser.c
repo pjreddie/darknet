@@ -725,6 +725,9 @@ layer parse_batchnorm(list *options, size_params params)
 
 layer parse_shortcut(list *options, size_params params, network net)
 {
+    char *activation_s = option_find_str(options, "activation", "logistic");
+    ACTIVATION activation = get_activation(activation_s);
+
     int assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
     char *l = option_find(options, "from");
     int index = atoi(l);
@@ -734,11 +737,8 @@ layer parse_shortcut(list *options, size_params params, network net)
     layer from = net.layers[index];
     if (from.antialiasing) from = *from.input_layer;
 
-    layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c, assisted_excitation, params.train);
+    layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c, assisted_excitation, activation, params.train);
 
-    char *activation_s = option_find_str(options, "activation", "linear");
-    ACTIVATION activation = get_activation(activation_s);
-    s.activation = activation;
     return s;
 }
 
@@ -758,6 +758,9 @@ layer parse_scale_channels(list *options, size_params params, network net)
     char *activation_s = option_find_str_quiet(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
     s.activation = activation;
+    if (activation == SWISH || activation == MISH) {
+        printf(" [scale_channels] layer doesn't support SWISH or MISH activations \n");
+    }
     return s;
 }
 
@@ -775,6 +778,9 @@ layer parse_sam(list *options, size_params params, network net)
     char *activation_s = option_find_str_quiet(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
     s.activation = activation;
+    if (activation == SWISH || activation == MISH) {
+        printf(" [sam] layer doesn't support SWISH or MISH activations \n");
+    }
     return s;
 }
 
