@@ -94,9 +94,6 @@ static int close_socket(SOCKET s) {
 }
 #endif // _WIN32
 
-#ifndef   NI_MAXHOST
-#define   NI_MAXHOST 1025
-#endif
 
 class JSON_sender
 {
@@ -554,6 +551,15 @@ std::string get_system_frame_time_string()
     return system_frame_time;
 }
 // ----------------------------------------
+
+
+#ifndef   NI_MAXHOST
+#define   NI_MAXHOST 1025
+#endif
+
+#ifndef   NI_NUMERICHOST
+#define NI_NUMERICHOST  0x02
+#endif
 
 //#define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"

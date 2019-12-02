@@ -1325,7 +1325,7 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
     d.y = load_labels_paths(paths, n, labels, k, hierarchy);
     if(m) free(paths);
 
-    if (mixup) {
+    if (mixup && rand_int(0, 1)) {
         char **paths_mix = get_random_paths(paths_stored, n, m);
         data d2 = { 0 };
         d2.shallow = 0;
@@ -1352,9 +1352,10 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
             }
             // CutMix
             else {
-                const float min_offset = 0.2; // 20%
-                const int cut_w = rand_int(w*min_offset, w*(1 - min_offset));
-                const int cut_h = rand_int(h*min_offset, h*(1 - min_offset));
+                const float min = 0.3;  // 0.3*0.3 = 9%
+                const float max = 0.8;  // 0.8*0.8 = 64%
+                const int cut_w = rand_int(w*min, w*max);
+                const int cut_h = rand_int(h*min, h*max);
                 const int cut_x = rand_int(0, w - cut_w - 1);
                 const int cut_y = rand_int(0, h - cut_h - 1);
                 const int left = cut_x;
@@ -1381,35 +1382,38 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
                     d.y.vals[i][j] = d.y.vals[i][j] * beta + d2.y.vals[i][j] * alpha;
                 }
             }
-
-            if (show_imgs) {
-                image im = make_empty_image(w, h, 3);
-                im.data = d.X.vals[i];
-                char buff[1000];
-                sprintf(buff, "aug_%d_%s_%d", i, basecfg((char*)paths_mix[i]), random_gen());
-                save_image(im, buff);
-
-                char buff_string[1000];
-                sprintf(buff_string, "\n Classes: ");
-                for (j = 0; j < d.y.cols; ++j) {
-                    if (d.y.vals[i][j] > 0) {
-                        char buff_tmp[100];
-                        sprintf(buff_tmp, " %d (%f), ", j, d.y.vals[i][j]);
-                        strcat(buff_string, buff_tmp);
-                    }
-                }
-                printf("%s \n", buff_string);
-
-                if (show_imgs == 1) {
-                    show_image(im, buff);
-                    wait_until_press_key_cv();
-                }
-                printf("\nYou use flag -show_imgs, so will be saved aug_...jpg images. Click on window and press ESC button \n");
-            }
         }
 
         free_data(d2);
         free(paths_mix);
+    }
+
+    if (show_imgs) {
+        int i, j;
+        for (i = 0; i < d.X.rows; ++i) {
+            image im = make_empty_image(w, h, 3);
+            im.data = d.X.vals[i];
+            char buff[1000];
+            sprintf(buff, "aug_%d_%s_%d", i, basecfg((char*)paths[i]), random_gen());
+            save_image(im, buff);
+
+            char buff_string[1000];
+            sprintf(buff_string, "\n Classes: ");
+            for (j = 0; j < d.y.cols; ++j) {
+                if (d.y.vals[i][j] > 0) {
+                    char buff_tmp[100];
+                    sprintf(buff_tmp, " %d (%f), ", j, d.y.vals[i][j]);
+                    strcat(buff_string, buff_tmp);
+                }
+            }
+            printf("%s \n", buff_string);
+
+            if (show_imgs == 1) {
+                show_image(im, buff);
+                wait_until_press_key_cv();
+            }
+        }
+        printf("\nYou use flag -show_imgs, so will be saved aug_...jpg images. Click on window and press ESC button \n");
     }
 
     return d;
