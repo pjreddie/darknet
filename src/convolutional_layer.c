@@ -609,7 +609,9 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
             if (train) {
                 l.x_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
-                //l.x_norm_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
+#ifndef CUDNN
+                l.x_norm_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
+#endif  // CUDNN
             }
         }
 
@@ -778,10 +780,12 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 
         if (l->batch_normalize) {
             cuda_free(l->x_gpu);
-            cuda_free(l->x_norm_gpu);
-
             l->x_gpu = cuda_make_array(l->output, total_batch*l->outputs);
+
+#ifndef CUDNN
+            cuda_free(l->x_norm_gpu);
             l->x_norm_gpu = cuda_make_array(l->output, total_batch*l->outputs);
+#endif  // CUDNN
         }
 
         if (l->xnor) {

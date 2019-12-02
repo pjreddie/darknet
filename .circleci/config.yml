@@ -7,6 +7,7 @@ jobs:
     working_directory: ~/work
     steps:
       - checkout
+      - run: nvcc --version
       - run: make LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 -j 8
       - run: make clean
       - run: make LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 AVX=1 -j 8
