@@ -923,8 +923,10 @@ void parse_net_options(list *options, network *net)
     net->blur = option_find_int_quiet(options, "blur", 0);
     net->mixup = option_find_int_quiet(options, "mixup", 0);
     int cutmix = option_find_int_quiet(options, "cutmix", 0);
-    if (net->mixup && cutmix) net->mixup = 3;
+    int mosaic = option_find_int_quiet(options, "mosaic", 0);
+    if (mosaic && cutmix) net->mixup = 4;
     else if (cutmix) net->mixup = 2;
+    else if (mosaic) net->mixup = 3;
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
