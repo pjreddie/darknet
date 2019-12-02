@@ -553,6 +553,15 @@ std::string get_system_frame_time_string()
 // ----------------------------------------
 
 
+#ifdef __CYGWIN__
+int send_http_post_request(char *http_post_host, int server_port, char *videosource,
+    detection *dets, int nboxes, int classes, char **names, long long int frame_id, int ext_output, int timeout)
+{
+    std::cerr << " send_http_post_request() isn't implemented \n";
+    return 0;
+}
+#else   //  __CYGWIN__
+
 #ifndef   NI_MAXHOST
 #define   NI_MAXHOST 1025
 #endif
@@ -620,6 +629,7 @@ int send_http_post_request(char *http_post_host, int server_port, char *videosou
 
     return 0;
 }
+#endif   //  __CYGWIN__
 
 #endif      // OPENCV
 
