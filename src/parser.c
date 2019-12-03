@@ -1148,6 +1148,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 #ifdef GPU
             l.output_gpu = net.layers[count-1].output_gpu;
             l.delta_gpu = net.layers[count-1].delta_gpu;
+            l.keep_delta_gpu = 1;
 #endif
         }
         else if (lt == EMPTY) {
@@ -1168,7 +1169,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 
 #ifdef GPU
         // futher GPU-memory optimization: net.optimized_memory == 2
-        if (net.optimized_memory >= 2 && params.train)
+        if (net.optimized_memory >= 2 && params.train && l.type != DROPOUT)
         {
             l.optimized_memory = net.optimized_memory;
             if (l.output_gpu) {
@@ -1187,7 +1188,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             }
 
             // maximum optimization
-            if (net.optimized_memory >= 3) {
+            if (net.optimized_memory >= 3 && l.type != DROPOUT) {
                 if (l.delta_gpu) {
                     cuda_free(l.delta_gpu);
                     //l.delta_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
@@ -1257,7 +1258,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             }
 
             // maximum optimization
-            if (net.optimized_memory >= 3) {
+            if (net.optimized_memory >= 3 && l.type != DROPOUT) {
                 if (l.delta_gpu && l.keep_delta_gpu) {
                     //cuda_free(l.delta_gpu);   // already called above
                     l.delta_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
