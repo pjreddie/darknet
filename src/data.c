@@ -882,10 +882,10 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 flip = use_flip ? random_gen() % 2 : 0;
 
-                //blur = rand_int(0, 1) ? (use_blur) : 0;
                 int tmp_blur = rand_int(0, 2);  // 0 - disable, 1 - blur background, 2 - blur the whole image
-                if (tmp_blur == 2) blur = use_blur;
-                else blur = tmp_blur;
+                if (tmp_blur == 0) blur = 0;
+                else if (tmp_blur == 1) blur = 1;
+                else blur = use_blur;
             }
 
             int pleft = rand_precalc_random(-dw, dw, r1);
@@ -935,7 +935,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             if (min_w_h / 8 < blur && blur > 1) blur = min_w_h / 8;   // disable blur if one of the objects is too small
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
-                blur, boxes, d.y.vals[i]);
+                blur, boxes, truth);
 
             if (i_mixup) {
                 image old_img = ai;

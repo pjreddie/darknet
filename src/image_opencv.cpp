@@ -1236,6 +1236,10 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
             dst.copyTo(sized);
         }
 
+        //char txt[100];
+        //sprintf(txt, "blur = %d", blur);
+        //cv::putText(sized, txt, cv::Point(100, 100), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.7, CV_RGB(255, 0, 0), 1, CV_AA);
+
         // Mat -> image
         out = mat_to_image(sized);
     }
