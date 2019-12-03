@@ -79,7 +79,7 @@ matrix:
       osx_image: xcode10.1
       env:
         - additional_defines="-DBUILD_SHARED_LIBS=OFF"
-        - MATRIX_EVAL="brew install gcc && brew install yasm && unset CC && unset CXX"
+        - MATRIX_EVAL="brew install yasm && unset CC && unset CXX"
         - USE_VCPKG=true
         - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
@@ -217,6 +217,7 @@ install:
   - pushd $HOME
   - if [ -d "$HOME/vcpkg/.git" ] ; then echo vcpkg cached ; else rm -rf vcpkg ; git clone https://github.com/Microsoft/vcpkg ; fi
   - cd vcpkg
+  - git checkout .
   - git pull
   - if [ "${USE_VCPKG}" = true ] ; then ./bootstrap-vcpkg.sh ; fi
   - if [ "${USE_VCPKG}" = true ] ; then echo "set(VCPKG_BUILD_TYPE release)" >> triplets/x64-osx.cmake ; fi
@@ -226,6 +227,7 @@ install:
   #- if [ "${USE_VCPKG}" = true ] && [[ ! -z "${CUDACXX}" ]] ; then travis_wait 45 ./vcpkg install opencv[ffmpeg,cuda] --recurse; fi
   #- if [ "${USE_VCPKG}" = true ] && [[ -z "${CUDACXX}" ]] ; then travis_wait 45 ./vcpkg install opencv[ffmpeg] --recurse; fi
   - if [ "${USE_VCPKG}" = true ] ; then travis_wait 45 ./vcpkg install opencv[ffmpeg] --recurse; fi
+  - if [ "${USE_VCPKG}" = true ] ; then rm -rf buildtrees; fi
   - popd
 
 before_script:
