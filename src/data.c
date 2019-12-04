@@ -811,6 +811,73 @@ void blend_truth(float *new_truth, int boxes, float *old_truth)
     //printf("\n was %d bboxes, now %d bboxes \n", count_new_truth, t);
 }
 
+
+void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, int h, int cut_x, int cut_y, int i_mixup)
+{
+    const int t_size = 4 + 1;
+    int count_new_truth = 0;
+    int t;
+    for (t = 0; t < boxes; ++t) {
+        float x = new_truth[t*(4 + 1)];
+        if (!x) break;
+        count_new_truth++;
+
+    }
+    int new_t = count_new_truth;
+    for (t = count_new_truth; t < boxes; ++t) {
+        float *new_truth_ptr = new_truth + new_t*t_size;
+        float *old_truth_ptr = old_truth + (t - count_new_truth)*t_size;
+        float x = old_truth_ptr[0];
+        if (!x) break;
+
+        float xb = old_truth_ptr[0];
+        float yb = old_truth_ptr[1];
+        float wb = old_truth_ptr[2];
+        float hb = old_truth_ptr[3];
+
+        int left = (xb - wb / 2)*w;
+        int right = (xb + wb / 2)*w;
+        int top = (yb - hb / 2)*h;
+        int bot = (yb + hb / 2)*h;
+
+        if ((i_mixup == 0 && left < cut_x && top < cut_y) ||
+            (i_mixup == 1 && right > cut_x && top < cut_y) ||
+            (i_mixup == 2 && left < cut_x && bot > cut_y) ||
+            (i_mixup == 3 && right > cut_x && bot > cut_y))
+        {
+            if ((i_mixup == 0 || i_mixup == 2) && right > cut_x) {
+                float diff_x = (float)(right - cut_x) / w;
+                xb = xb - diff_x / 2;
+                wb = wb - diff_x;
+            }
+            if ((i_mixup == 1 || i_mixup == 3) && left < cut_x) {
+                float diff_x = (float)(cut_x - left) / w;
+                xb = xb + diff_x / 2;
+                wb = wb - diff_x;
+            }
+
+            if ((i_mixup == 0 || i_mixup == 1) && bot > cut_y) {
+                float diff_y = (float)(bot - cut_y) / h;
+                yb = yb - diff_y / 2;
+                hb = hb - diff_y;
+            }
+            if ((i_mixup == 2 || i_mixup == 3) && top < cut_y) {
+                float diff_y = (float)(cut_y - top) / h;
+                yb = yb + diff_y / 2;
+                hb = hb - diff_y;
+            }
+
+            new_truth_ptr[0] = xb;
+            new_truth_ptr[1] = yb;
+            new_truth_ptr[2] = wb;
+            new_truth_ptr[3] = hb;
+            new_truth_ptr[4] = old_truth_ptr[4];
+            new_t++;
+        }
+    }
+    //printf("\n was %d bboxes, now %d bboxes \n", count_new_truth, t);
+}
+
 #ifdef OPENCV
 
 #include "http_stream.h"
@@ -820,18 +887,21 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 {
     const int random_index = random_gen();
     c = c ? c : 3;
-    char **random_paths;
-    char **mixup_random_paths = NULL;
-    if (track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
-    else random_paths = get_random_paths(paths, n, m);
 
-    int mixup = use_mixup ? random_gen() % 2 : 0;
-    //printf("\n mixup = %d \n", mixup);
-    if (mixup) {
-        if (track) mixup_random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
-        else mixup_random_paths = get_random_paths(paths, n, m);
-    }
+    if (random_gen() % 2 == 0) use_mixup = 0;
     int i;
+
+    int *cut_x = NULL, *cut_y = NULL;
+    if (use_mixup == 3) {
+        cut_x = (int*)calloc(n, sizeof(int));
+        cut_y = (int*)calloc(n, sizeof(int));
+        const float min_offset = 0.2; // 20%
+        for (i = 0; i < n; ++i) {
+            cut_x[i] = rand_int(w*min_offset, w*(1 - min_offset));
+            cut_y[i] = rand_int(h*min_offset, h*(1 - min_offset));
+        }
+    }
+
     data d = {0};
     d.shallow = 0;
 
@@ -845,12 +915,16 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
     d.y = make_matrix(n, 5*boxes);
     int i_mixup = 0;
-    for (i_mixup = 0; i_mixup <= mixup; i_mixup++) {
+    for (i_mixup = 0; i_mixup <= use_mixup; i_mixup++) {
         if (i_mixup) augmentation_calculated = 0;   // recalculate augmentation for the 2nd sequence if(track==1)
+
+        char **random_paths;
+        if (track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
+        else random_paths = get_random_paths(paths, n, m);
 
         for (i = 0; i < n; ++i) {
             float *truth = (float*)calloc(5 * boxes, sizeof(float));
-            const char *filename = (i_mixup) ? mixup_random_paths[i] : random_paths[i];
+            const char *filename = random_paths[i];
 
             int flag = (c >= 3);
             mat_cv *src;
@@ -882,10 +956,12 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 flip = use_flip ? random_gen() % 2 : 0;
 
-                int tmp_blur = rand_int(0, 2);  // 0 - disable, 1 - blur background, 2 - blur the whole image
-                if (tmp_blur == 0) blur = 0;
-                else if (tmp_blur == 1) blur = 1;
-                else blur = use_blur;
+                if (use_blur) {
+                    int tmp_blur = rand_int(0, 2);  // 0 - disable, 1 - blur background, 2 - blur the whole image
+                    if (tmp_blur == 0) blur = 0;
+                    else if (tmp_blur == 1) blur = 1;
+                    else blur = use_blur;
+                }
             }
 
             int pleft = rand_precalc_random(-dw, dw, r1);
@@ -935,27 +1011,67 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             if (min_w_h / 8 < blur && blur > 1) blur = min_w_h / 8;   // disable blur if one of the objects is too small
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
-                blur, boxes, truth);
+                blur, boxes, d.y.vals[i]);
 
-            if (i_mixup) {
-                image old_img = ai;
-                old_img.data = d.X.vals[i];
-                //show_image(ai, "new");
-                //show_image(old_img, "old");
-                //wait_until_press_key_cv();
-                blend_images_cv(ai, 0.5, old_img, 0.5);
-                blend_truth(truth, boxes, d.y.vals[i]);
-                free_image(old_img);
+            if (use_mixup == 0) {
+                d.X.vals[i] = ai.data;
+                memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
+            }
+            else if (use_mixup == 1) {
+                if (i_mixup == 0) {
+                    d.X.vals[i] = ai.data;
+                    memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
+                }
+                else if (i_mixup == 1) {
+                    image old_img = make_empty_image(w, h, c);
+                    old_img.data = d.X.vals[i];
+                    //show_image(ai, "new");
+                    //show_image(old_img, "old");
+                    //wait_until_press_key_cv();
+                    blend_images_cv(ai, 0.5, old_img, 0.5);
+                    blend_truth(d.y.vals[i], boxes, truth);
+                    free_image(old_img);
+                    d.X.vals[i] = ai.data;
+                }
+            }
+            else if (use_mixup == 3) {
+                if (i_mixup == 0) {
+                    image tmp_img = make_image(w, h, c);
+                    d.X.vals[i] = tmp_img.data;
+                }
+
+                int k, x, y;
+                for (k = 0; k < c; ++k) {
+                    for (y = 0; y < h; ++y) {
+                        int j = y*w + k*w*h;
+                        if (i_mixup == 0 && y < cut_y[i]) {
+                            memcpy(&d.X.vals[i][j + 0], &ai.data[j + 0], cut_x[i] * sizeof(float));
+                        }
+                        if (i_mixup == 1 && y < cut_y[i]) {
+                            memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j + cut_x[i]], (w-cut_x[i]) * sizeof(float));
+                        }
+                        if (i_mixup == 2 && y >= cut_y[i]) {
+                            memcpy(&d.X.vals[i][j + 0], &ai.data[j + 0], cut_x[i] * sizeof(float));
+                        }
+                        if (i_mixup == 3 && y >= cut_y[i]) {
+                            memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j + cut_x[i]], (w - cut_x[i]) * sizeof(float));
+                        }
+                    }
+                }
+
+                blend_truth_mosaic(d.y.vals[i], boxes, truth, w, h, cut_x[i], cut_y[i], i_mixup);
+
+                free_image(ai);
+                ai.data = d.X.vals[i];
             }
 
-            d.X.vals[i] = ai.data;
-            memcpy(d.y.vals[i], truth, 5*boxes * sizeof(float));
 
-            if (show_imgs)// && i_mixup)   // delete i_mixup
+            if (show_imgs && i_mixup == use_mixup)   // delete i_mixup
             {
                 image tmp_ai = copy_image(ai);
                 char buff[1000];
-                sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg((char*)filename), random_gen());
+                //sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg((char*)filename), random_gen());
+                sprintf(buff, "aug_%d_%d_%d", random_index, i, random_gen());
                 int t;
                 for (t = 0; t < boxes; ++t) {
                     box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);
@@ -982,9 +1098,10 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             release_mat(&src);
             free(truth);
         }
+        if (random_paths) free(random_paths);
     }
-    free(random_paths);
-    if(mixup_random_paths) free(mixup_random_paths);
+
+
     return d;
 }
 #else    // OPENCV
