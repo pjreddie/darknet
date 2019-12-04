@@ -888,6 +888,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     const int random_index = random_gen();
     c = c ? c : 3;
 
+    assert(use_mixup != 2);
     if (random_gen() % 2 == 0) use_mixup = 0;
     int i;
 
@@ -1124,6 +1125,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     if(track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
     else random_paths = get_random_paths(paths, n, m);
 
+    assert(use_mixup < 2);
     int mixup = use_mixup ? random_gen() % 2 : 0;
     //printf("\n mixup = %d \n", mixup);
     if (mixup) {
