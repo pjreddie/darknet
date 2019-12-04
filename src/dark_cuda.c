@@ -280,9 +280,9 @@ float *cuda_make_array_pinned_preallocated(float *x, size_t n)
 {
     pthread_mutex_lock(&mutex_pinned);
     float *x_cpu = NULL;
-    const size_t memory_step = 4096;
+    const size_t memory_step = 512;// 4096;
     const size_t size = sizeof(float)*n;
-    const size_t allocation_size = ((size / 4096) + 1) * 4096;
+    const size_t allocation_size = ((size / memory_step) + 1) * memory_step;
 
     if (pinned_ptr && pinned_block_id < pinned_num_of_blocks && (allocation_size < pinned_block_size/2))
     {
