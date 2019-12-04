@@ -1258,6 +1258,16 @@ void blend_images_cv(image new_img, float alpha, image old_img, float beta)
     cv::addWeighted(new_mat, alpha, old_mat, beta, 0.0, new_mat);
 }
 
+// bilateralFilter bluring
+image blur_image(image src_img, int ksize)
+{
+    cv::Mat src = image_to_mat(src_img);
+    cv::Mat dst;
+    cv::bilateralFilter(src, dst, ksize, 75, 75);
+    image dst_img = mat_to_image(dst);
+    return dst_img;
+}
+
 // ====================================================================
 // Show Anchors
 // ====================================================================

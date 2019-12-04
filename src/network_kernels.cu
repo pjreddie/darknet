@@ -114,8 +114,8 @@ void backward_network_gpu(network net, network_state state)
 
         if (i != 0) {
             layer prev = net.layers[i - 1];
-            if (net.optimized_memory && state.delta && !prev.keep_delta_gpu && prev.delta_gpu != l.delta_gpu) {
-                simple_copy_ongpu(prev.outputs*prev.batch, state.delta, prev.delta_gpu);
+            if (net.optimized_memory && state.delta && !prev.keep_delta_gpu) {
+                if (prev.delta_gpu != state.delta) simple_copy_ongpu(prev.outputs*prev.batch, state.delta, prev.delta_gpu);
                 fill_ongpu(prev.outputs*prev.batch, 0, net.state_delta_gpu, 1);
             }
         }

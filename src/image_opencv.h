@@ -101,6 +101,9 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
 // blend two images with (alpha and beta)
 void blend_images_cv(image new_img, float alpha, image old_img, float beta);
 
+// bilateralFilter bluring
+image blur_image(image src_img, int ksize);
+
 // Show Anchors
 void show_acnhors(int number_of_boxes, int num_of_clusters, float *rel_width_height_array, model anchors_data, int width, int height);
 

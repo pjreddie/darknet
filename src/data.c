@@ -1289,7 +1289,7 @@ void *load_thread(void *ptr)
     if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == CLASSIFICATION_DATA){
-        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.mixup, a.show_imgs);
+        *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.mixup, a.blur, a.show_imgs);
     } else if (a.type == SUPER_DATA){
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
     } else if (a.type == WRITING_DATA){
@@ -1434,7 +1434,7 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     return d;
 }
 
-data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure, int mixup, int show_imgs)
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure, int mixup, int use_blur, int show_imgs)
 {
     char **paths_stored = paths;
     if(m) paths = get_random_paths(paths, n, m);
@@ -1556,6 +1556,28 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
             free_data(d4);
         }
     }
+
+#ifdef OPENCV
+    if (use_blur) {
+        int i;
+        for (i = 0; i < d.X.rows; ++i) {
+            if (random_gen() % 2) {
+                image im = make_empty_image(w, h, 3);
+                im.data = d.X.vals[i];
+                int ksize = use_blur;
+                if (use_blur == 1) ksize = 17;
+                image blurred = blur_image(im, ksize);
+                free_image(im);
+                d.X.vals[i] = blurred.data;
+                //if (i == 0) {
+                //    show_image(im, "Not blurred");
+                //    show_image(blurred, "blurred");
+                //    wait_until_press_key_cv();
+                //}
+            }
+        }
+    }
+#endif  // OPENCV
 
     if (show_imgs) {
         int i, j;
