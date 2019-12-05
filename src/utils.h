@@ -81,6 +81,7 @@ int int_index(int *a, int val, int n);
 int *random_index_order(int min, int max);
 int max_int_index(int *a, int n);
 boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check);
+int make_directory(char *path, int mode);
 
 #ifdef __cplusplus
 }
