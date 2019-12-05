@@ -95,17 +95,15 @@ extern "C" {
 
 mat_cv *load_image_mat_cv(const char *filename, int flag)
 {
+    cv::Mat *mat_ptr = NULL;
     try {
-        cv::Mat *mat_ptr = new cv::Mat();
-        cv::Mat &mat = *mat_ptr;
-        mat = cv::imread(filename, flag);
+        cv::Mat mat = cv::imread(filename, flag);
         if (mat.empty())
         {
-            delete mat_ptr;
             std::string shrinked_filename = filename;
             if (shrinked_filename.length() > 1024) {
-                shrinked_filename += "name is too long: ";
                 shrinked_filename.resize(1024);
+                shrinked_filename = std::string("name is too long: ") + shrinked_filename;
             }
             cerr << "Cannot load image " << shrinked_filename << std::endl;
             std::ofstream bad_list("bad.list", std::ios::out | std::ios::app);
@@ -113,14 +111,19 @@ mat_cv *load_image_mat_cv(const char *filename, int flag)
             //if (check_mistakes) getchar();
             return NULL;
         }
-        if (mat.channels() == 3) cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-        else if (mat.channels() == 4) cv::cvtColor(mat, mat, cv::COLOR_RGBA2BGRA);
+        cv::Mat dst;
+        if (mat.channels() == 3) cv::cvtColor(mat, dst, cv::COLOR_RGB2BGR);
+        else if (mat.channels() == 4) cv::cvtColor(mat, dst, cv::COLOR_RGBA2BGRA);
+        else dst = mat;
+
+        mat_ptr = new cv::Mat(dst);
 
         return (mat_cv *)mat_ptr;
     }
     catch (...) {
         cerr << "OpenCV exception: load_image_mat_cv \n";
     }
+    if (mat_ptr) delete mat_ptr;
     return NULL;
 }
 // ----------------------------------------
