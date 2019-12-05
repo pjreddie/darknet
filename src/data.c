@@ -1499,7 +1499,18 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
                 const int top = cut_y;
                 const int bot = cut_y + cut_h;
 
-                const float alpha = (float)(right - left)*(bot - top) / (float)(w*h);
+                assert(cut_x >= 0 && cut_x <= w);
+                assert(cut_y >= 0 && cut_y <= h);
+                assert(cut_w >= 0 && cut_w <= w);
+                assert(cut_h >= 0 && cut_h <= h);
+
+                assert(right >= 0 && right <= w);
+                assert(bot >= 0 && bot <= h);
+
+                assert(top <= bot);
+                assert(left <= right);
+
+                const float alpha = (float)(cut_w*cut_h) / (float)(w*h);
                 const float beta = 1 - alpha;
 
                 int c, x, y;

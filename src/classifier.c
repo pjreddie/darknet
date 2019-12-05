@@ -214,6 +214,9 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     free_ptrs((void**)paths, plist->size);
     free_list(plist);
     free(base);
+
+    free_list_contents_kvp(options);
+    free_list(options);
 }
 
 
