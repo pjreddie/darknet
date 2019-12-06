@@ -11,9 +11,13 @@ extern "C" {
 #ifdef OPENCV
 
 // declaration
-typedef struct mat_cv mat_cv;
-typedef struct cap_cv cap_cv;
-typedef struct write_cv write_cv;
+typedef void* mat_cv;
+typedef void* cap_cv;
+typedef void* write_cv;
+
+//typedef struct mat_cv mat_cv;
+//typedef struct cap_cv cap_cv;
+//typedef struct write_cv write_cv;
 
 // cv::Mat
 mat_cv *load_image_mat_cv(const char *filename, int flag);
