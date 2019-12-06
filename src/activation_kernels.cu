@@ -508,9 +508,9 @@ __global__ void gradient_array_normalize_channels_softmax_kernel(float *x, int s
     int wh_i = i % wh_step;
     int b = i / wh_step;
 
-    const float eps = 0.0001;
+    //const float eps = 0.0001;
     if (i < size) {
-        float grad = eps;
+        float grad = 0;// eps;
         int k;
         for (k = 0; k < channels; ++k) {
             float out = x[wh_i + k * wh_step + b*wh_step*channels];
