@@ -48,6 +48,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "swish") == 0) return SWISH;
     if (strcmp(s, "mish") == 0) return MISH;
     if (strcmp(s, "normalize_channels") == 0) return NORM_CHAN;
+    if (strcmp(s, "normalize_channels_softmax") == 0) return NORM_CHAN_SOFTMAX;
     if (strcmp(s, "loggy")==0) return LOGGY;
     if (strcmp(s, "relu")==0) return RELU;
     if (strcmp(s, "elu")==0) return ELU;
@@ -176,6 +177,61 @@ void activate_array_normalize_channels(float *x, const int n, int batch, int cha
     }
 }
 
+void activate_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *output)
+{
+    int size = n / channels;
+
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < size; ++i) {
+        int wh_i = i % wh_step;
+        int b = i / wh_step;
+
+        const float eps = 0.0001;
+        if (i < size) {
+            float sum = eps;
+            int k;
+            for (k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                sum += expf(val);
+            }
+            for (k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                val = expf(val) / sum;
+                output[wh_i + k * wh_step + b*wh_step*channels] = val;
+            }
+        }
+    }
+}
+
+void gradient_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *delta)
+{
+    int size = n / channels;
+
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < size; ++i) {
+        int wh_i = i % wh_step;
+        int b = i / wh_step;
+
+        const float eps = 0.0001;
+        if (i < size) {
+            float grad = eps;
+            int k;
+            for (k = 0; k < channels; ++k) {
+                float out = x[wh_i + k * wh_step + b*wh_step*channels];
+                float d = delta[wh_i + k * wh_step + b*wh_step*channels];
+                grad += out*d;
+            }
+            for (k = 0; k < channels; ++k) {
+                float d = delta[wh_i + k * wh_step + b*wh_step*channels];
+                d = d * grad;
+                delta[wh_i + k * wh_step + b*wh_step*channels] = d;
+            }
+        }
+    }
+}
+
 float gradient(float x, ACTIVATION a)
 {
     switch(a){
@@ -189,6 +245,10 @@ float gradient(float x, ACTIVATION a)
             return relu_gradient(x);
         case NORM_CHAN:
             return relu_gradient(x);
+        case NORM_CHAN_SOFTMAX:
+            printf(" Error: should be used custom NORM_CHAN_SOFTMAX-function for gradient \n");
+            exit(0);
+            return 0;
         case ELU:
             return elu_gradient(x);
         case SELU:
