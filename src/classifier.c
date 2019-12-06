@@ -209,14 +209,22 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     destroy_all_windows_cv();
 #endif
 
-    free_network(net);
-    free_ptrs((void**)labels, classes);
+    pthread_join(load_thread, 0);
+    free_data(buffer);
+
+    //free_network(net);
+    for (i = 0; i < ngpus; ++i) free_network(nets[i]);
+    free(nets);
+
+    //free_ptrs((void**)labels, classes);
+    free(labels);
     free_ptrs((void**)paths, plist->size);
     free_list(plist);
     free(base);
 
     free_list_contents_kvp(options);
     free_list(options);
+
 }
 
 
