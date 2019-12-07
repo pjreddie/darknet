@@ -827,6 +827,7 @@ void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, in
     int new_t = count_new_truth;
     for (t = count_new_truth; t < boxes; ++t) {
         float *new_truth_ptr = new_truth + new_t*t_size;
+        new_truth_ptr[0] = 0;
         float *old_truth_ptr = old_truth + (t - count_new_truth)*t_size;
         float x = old_truth_ptr[0];
         if (!x) break;
@@ -1041,7 +1042,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             if ((min_w_h / 8) < blur && blur > 1) blur = min_w_h / 8;   // disable blur if one of the objects is too small
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
-                blur, boxes, d.y.vals[i]);
+                blur, boxes, truth);
 
             if (use_mixup == 0) {
                 d.X.vals[i] = ai.data;
