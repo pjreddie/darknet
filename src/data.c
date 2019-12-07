@@ -812,7 +812,8 @@ void blend_truth(float *new_truth, int boxes, float *old_truth)
 }
 
 
-void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, int h, float cut_x, float cut_y, int i_mixup)
+void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, int h, float cut_x, float cut_y, int i_mixup,
+    int left_shift, int right_shift, int top_shift, int bot_shift)
 {
     const int t_size = 4 + 1;
     int count_new_truth = 0;
@@ -835,22 +836,24 @@ void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, in
         float wb = old_truth_ptr[2];
         float hb = old_truth_ptr[3];
 
+
+
         // shift 4 images
         if (i_mixup == 0) {
-            xb = xb - (float)(w - cut_x) / w;
-            yb = yb - (float)(h - cut_y) / h;
+            xb = xb - (float)(w - cut_x - right_shift) / w;
+            yb = yb - (float)(h - cut_y - bot_shift) / h;
         }
         if (i_mixup == 1) {
-            xb = xb + (float)cut_x / w;
-            yb = yb - (float)(h - cut_y) / h;
+            xb = xb + (float)(cut_x - left_shift) / w;
+            yb = yb - (float)(h - cut_y - bot_shift) / h;
         }
         if (i_mixup == 2) {
-            xb = xb - (float)(w - cut_x) / w;
-            yb = yb + (float)cut_y / h;
+            xb = xb - (float)(w - cut_x - right_shift) / w;
+            yb = yb + (float)(cut_y - top_shift) / h;
         }
         if (i_mixup == 3) {
-            xb = xb + (float)cut_x / w;
-            yb = yb + (float)cut_y / h;
+            xb = xb + (float)(cut_x - left_shift) / w;
+            yb = yb + (float)(cut_y - top_shift) / h;
         }
 
         int left = (xb - wb / 2)*w;
@@ -915,7 +918,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     c = c ? c : 3;
 
     assert(use_mixup != 2);
-    //if (random_gen() % 2 == 0) use_mixup = 0;
+    if (random_gen() % 2 == 0) use_mixup = 0;
     int i;
 
     int *cut_x = NULL, *cut_y = NULL;
@@ -1035,7 +1038,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
             int min_w_h = fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
 
-            if (min_w_h / 8 < blur && blur > 1) blur = min_w_h / 8;   // disable blur if one of the objects is too small
+            if ((min_w_h / 8) < blur && blur > 1) blur = min_w_h / 8;   // disable blur if one of the objects is too small
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
                 blur, boxes, d.y.vals[i]);
@@ -1067,30 +1070,43 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     d.X.vals[i] = tmp_img.data;
                 }
 
+                if (flip) {
+                    int tmp = pleft;
+                    pleft = pright;
+                    pright = tmp;
+                }
+
+                const int left_shift = min(cut_x[i], max(0, (-pleft*w / ow)));
+                const int top_shift = min(cut_y[i], max(0, (-ptop*h / oh)));
+
+                const int right_shift = min((w - cut_x[i]), max(0, (-pright*w / ow)));
+                const int bot_shift = min(h - cut_y[i], max(0, (-pbot*h / oh)));
+
+
                 int k, x, y;
                 for (k = 0; k < c; ++k) {
                     for (y = 0; y < h; ++y) {
                         int j = y*w + k*w*h;
                         if (i_mixup == 0 && y < cut_y[i]) {
-                            int j_src = (w - cut_x[i]) + (y + h - cut_y[i])*w + k*w*h;
+                            int j_src = (w - cut_x[i] - right_shift) + (y + h - cut_y[i] - bot_shift)*w + k*w*h;
                             memcpy(&d.X.vals[i][j + 0], &ai.data[j_src], cut_x[i] * sizeof(float));
                         }
                         if (i_mixup == 1 && y < cut_y[i]) {
-                            int j_src = (y + h - cut_y[i])*w + k*w*h;
+                            int j_src = left_shift + (y + h - cut_y[i] - bot_shift)*w + k*w*h;
                             memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j_src], (w-cut_x[i]) * sizeof(float));
                         }
                         if (i_mixup == 2 && y >= cut_y[i]) {
-                            int j_src = (w - cut_x[i]) + (y - cut_y[i])*w + k*w*h;
+                            int j_src = (w - cut_x[i] - right_shift) + (top_shift + y - cut_y[i])*w + k*w*h;
                             memcpy(&d.X.vals[i][j + 0], &ai.data[j_src], cut_x[i] * sizeof(float));
                         }
                         if (i_mixup == 3 && y >= cut_y[i]) {
-                            int j_src = (y - cut_y[i])*w + k*w*h;
+                            int j_src = left_shift + (top_shift + y - cut_y[i])*w + k*w*h;
                             memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j_src], (w - cut_x[i]) * sizeof(float));
                         }
                     }
                 }
 
-                blend_truth_mosaic(d.y.vals[i], boxes, truth, w, h, cut_x[i], cut_y[i], i_mixup);
+                blend_truth_mosaic(d.y.vals[i], boxes, truth, w, h, cut_x[i], cut_y[i], i_mixup, left_shift, right_shift, top_shift, bot_shift);
 
                 free_image(ai);
                 ai.data = d.X.vals[i];
