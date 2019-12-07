@@ -1076,11 +1076,11 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     pright = tmp;
                 }
 
-                const int left_shift = min(cut_x[i], max(0, (-pleft*w / ow)));
-                const int top_shift = min(cut_y[i], max(0, (-ptop*h / oh)));
+                const int left_shift = min_val_cmp(cut_x[i], max_val_cmp(0, (-pleft*w / ow)));
+                const int top_shift = min_val_cmp(cut_y[i], max_val_cmp(0, (-ptop*h / oh)));
 
-                const int right_shift = min((w - cut_x[i]), max(0, (-pright*w / ow)));
-                const int bot_shift = min(h - cut_y[i], max(0, (-pbot*h / oh)));
+                const int right_shift = min_val_cmp((w - cut_x[i]), max_val_cmp(0, (-pright*w / ow)));
+                const int bot_shift = min_val_cmp(h - cut_y[i], max_val_cmp(0, (-pbot*h / oh)));
 
 
                 int k, x, y;
