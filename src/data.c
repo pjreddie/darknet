@@ -812,7 +812,7 @@ void blend_truth(float *new_truth, int boxes, float *old_truth)
 }
 
 
-void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, int h, int cut_x, int cut_y, int i_mixup)
+void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, int h, float cut_x, float cut_y, int i_mixup)
 {
     const int t_size = 4 + 1;
     int count_new_truth = 0;
@@ -835,38 +835,64 @@ void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, in
         float wb = old_truth_ptr[2];
         float hb = old_truth_ptr[3];
 
+        // shift 4 images
+        if (i_mixup == 0) {
+            xb = xb - (float)(w - cut_x) / w;
+            yb = yb - (float)(h - cut_y) / h;
+        }
+        if (i_mixup == 1) {
+            xb = xb + (float)cut_x / w;
+            yb = yb - (float)(h - cut_y) / h;
+        }
+        if (i_mixup == 2) {
+            xb = xb - (float)(w - cut_x) / w;
+            yb = yb + (float)cut_y / h;
+        }
+        if (i_mixup == 3) {
+            xb = xb + (float)cut_x / w;
+            yb = yb + (float)cut_y / h;
+        }
+
         int left = (xb - wb / 2)*w;
         int right = (xb + wb / 2)*w;
         int top = (yb - hb / 2)*h;
         int bot = (yb + hb / 2)*h;
 
-        if ((i_mixup == 0 && left < cut_x && top < cut_y) ||
-            (i_mixup == 1 && right > cut_x && top < cut_y) ||
-            (i_mixup == 2 && left < cut_x && bot > cut_y) ||
-            (i_mixup == 3 && right > cut_x && bot > cut_y))
+        // fix out of bound
+        if (left < 0) {
+            float diff = (float)left / w;
+            xb = xb - diff / 2;
+            wb = wb + diff;
+        }
+
+        if (right > w) {
+            float diff = (float)(right - w) / w;
+            xb = xb - diff / 2;
+            wb = wb - diff;
+        }
+
+        if (top < 0) {
+            float diff = (float)top / h;
+            yb = yb - diff / 2;
+            hb = hb + diff;
+        }
+
+        if (bot > h) {
+            float diff = (float)(bot - h) / h;
+            yb = yb - diff / 2;
+            hb = hb - diff;
+        }
+
+        left = (xb - wb / 2)*w;
+        right = (xb + wb / 2)*w;
+        top = (yb - hb / 2)*h;
+        bot = (yb + hb / 2)*h;
+
+        // leave only within the image
+        if(left >= 0 && right <= w && top >= 0 && bot <= h &&
+            wb > 0 && wb < 1 && hb > 0 && hb < 1 &&
+            xb > 0 && xb < 1 && yb > 0 && yb < 1)
         {
-            if ((i_mixup == 0 || i_mixup == 2) && right > cut_x) {
-                float diff_x = (float)(right - cut_x) / w;
-                xb = xb - diff_x / 2;
-                wb = wb - diff_x;
-            }
-            if ((i_mixup == 1 || i_mixup == 3) && left < cut_x) {
-                float diff_x = (float)(cut_x - left) / w;
-                xb = xb + diff_x / 2;
-                wb = wb - diff_x;
-            }
-
-            if ((i_mixup == 0 || i_mixup == 1) && bot > cut_y) {
-                float diff_y = (float)(bot - cut_y) / h;
-                yb = yb - diff_y / 2;
-                hb = hb - diff_y;
-            }
-            if ((i_mixup == 2 || i_mixup == 3) && top < cut_y) {
-                float diff_y = (float)(cut_y - top) / h;
-                yb = yb + diff_y / 2;
-                hb = hb - diff_y;
-            }
-
             new_truth_ptr[0] = xb;
             new_truth_ptr[1] = yb;
             new_truth_ptr[2] = wb;
@@ -889,7 +915,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     c = c ? c : 3;
 
     assert(use_mixup != 2);
-    if (random_gen() % 2 == 0) use_mixup = 0;
+    //if (random_gen() % 2 == 0) use_mixup = 0;
     int i;
 
     int *cut_x = NULL, *cut_y = NULL;
@@ -1046,16 +1072,20 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     for (y = 0; y < h; ++y) {
                         int j = y*w + k*w*h;
                         if (i_mixup == 0 && y < cut_y[i]) {
-                            memcpy(&d.X.vals[i][j + 0], &ai.data[j + 0], cut_x[i] * sizeof(float));
+                            int j_src = (w - cut_x[i]) + (y + h - cut_y[i])*w + k*w*h;
+                            memcpy(&d.X.vals[i][j + 0], &ai.data[j_src], cut_x[i] * sizeof(float));
                         }
                         if (i_mixup == 1 && y < cut_y[i]) {
-                            memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j + cut_x[i]], (w-cut_x[i]) * sizeof(float));
+                            int j_src = (y + h - cut_y[i])*w + k*w*h;
+                            memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j_src], (w-cut_x[i]) * sizeof(float));
                         }
                         if (i_mixup == 2 && y >= cut_y[i]) {
-                            memcpy(&d.X.vals[i][j + 0], &ai.data[j + 0], cut_x[i] * sizeof(float));
+                            int j_src = (w - cut_x[i]) + (y - cut_y[i])*w + k*w*h;
+                            memcpy(&d.X.vals[i][j + 0], &ai.data[j_src], cut_x[i] * sizeof(float));
                         }
                         if (i_mixup == 3 && y >= cut_y[i]) {
-                            memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j + cut_x[i]], (w - cut_x[i]) * sizeof(float));
+                            int j_src = (y - cut_y[i])*w + k*w*h;
+                            memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j_src], (w - cut_x[i]) * sizeof(float));
                         }
                     }
                 }

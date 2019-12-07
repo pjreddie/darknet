@@ -369,7 +369,11 @@ void forward_yolo_layer(const layer l, network_state state)
         for (t = 0; t < l.max_boxes; ++t) {
             box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
             if (truth.x < 0 || truth.y < 0 || truth.x > 1 || truth.y > 1 || truth.w < 0 || truth.h < 0) {
+                char buff[256];
                 printf(" Wrong label: truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f \n", truth.x, truth.y, truth.w, truth.h);
+                sprintf(buff, "echo \"Wrong label: truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f\" >> bad_label.list",
+                    truth.x, truth.y, truth.w, truth.h);
+                system(buff);
             }
             int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
             if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
