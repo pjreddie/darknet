@@ -257,6 +257,7 @@ struct layer {
     float learning_rate_scale;
     float clip;
     int focal_loss;
+    float label_smooth_eps;
     int noloss;
     int softmax;
     int classes;
