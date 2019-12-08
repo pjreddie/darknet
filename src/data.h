@@ -91,7 +91,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 data load_data_tag(char **paths, int n, int m, int k, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure);
 matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure);
 data load_data_super(char **paths, int n, int m, int w, int h, int scale);
-data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure, int mixup, int use_blur, int show_imgs);
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure, int mixup, int use_blur, int show_imgs, float label_smooth_eps);
 data load_go(char *filename);
 
 box_label *read_boxes(char *filename, int *n);
@@ -116,6 +116,7 @@ data *split_data(data d, int part, int total);
 data concat_data(data d1, data d2);
 data concat_datas(data *d, int n);
 void fill_truth(char *path, char **labels, int k, float *truth);
+void fill_truth_smooth(char *path, char **labels, int k, float *truth, float label_smooth_eps);
 #ifdef __cplusplus
 }
 

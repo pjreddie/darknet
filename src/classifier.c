@@ -92,6 +92,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     args.hue = net.hue;
     args.size = net.w > net.h ? net.w : net.h;
 
+    args.label_smooth_eps = net.label_smooth_eps;
     args.mixup = net.mixup;
     if (dont_show && show_imgs) show_imgs = 2;
     args.show_imgs = show_imgs;
