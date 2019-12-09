@@ -64,7 +64,7 @@ layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *m
     l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 
-    /*
+
     free(l.output);
     if (cudaSuccess == cudaHostAlloc(&l.output, batch*l.outputs * sizeof(float), cudaHostRegisterMapped)) l.output_pinned = 1;
     else {
@@ -78,7 +78,7 @@ layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *m
         cudaGetLastError(); // reset CUDA-error
         l.delta = (float*)calloc(batch * l.outputs, sizeof(float));
     }
-    */
+
 #endif
 
     //fprintf(stderr, "Gaussian_yolo\n");
@@ -95,32 +95,32 @@ void resize_gaussian_yolo_layer(layer *l, int w, int h)
     l->outputs = h*w*l->n*(l->classes + 8 + 1);
     l->inputs = l->outputs;
 
-    l->output = (float *)realloc(l->output, l->batch*l->outputs * sizeof(float));
-    l->delta = (float *)realloc(l->delta, l->batch*l->outputs * sizeof(float));
+    //l->output = (float *)realloc(l->output, l->batch*l->outputs * sizeof(float));
+    //l->delta = (float *)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 
-    //if (!l->output_pinned) l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
-    //if (!l->delta_pinned) l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
+    if (!l->output_pinned) l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
+    if (!l->delta_pinned) l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 
 #ifdef GPU
-    /*
+
     if (l->output_pinned) {
-        cudaFreeHost(l->output);
+        CHECK_CUDA(cudaFreeHost(l->output));
         if (cudaSuccess != cudaHostAlloc(&l->output, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
             cudaGetLastError(); // reset CUDA-error
-            l->output = (float*)realloc(l->output, l->batch * l->outputs * sizeof(float));
+            l->output = (float*)calloc(l->batch * l->outputs, sizeof(float));
             l->output_pinned = 0;
         }
     }
 
     if (l->delta_pinned) {
-        cudaFreeHost(l->delta);
+        CHECK_CUDA(cudaFreeHost(l->delta));
         if (cudaSuccess != cudaHostAlloc(&l->delta, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
             cudaGetLastError(); // reset CUDA-error
-            l->delta = (float*)realloc(l->delta, l->batch * l->outputs * sizeof(float));
+            l->delta = (float*)calloc(l->batch * l->outputs, sizeof(float));
             l->delta_pinned = 0;
         }
     }
-    */
+
 
     cuda_free(l->delta_gpu);
     cuda_free(l->output_gpu);
@@ -473,12 +473,12 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                 j = (truth.y * l.h);
             }
             else if (l.yolo_point == YOLO_LEFT_TOP) {
-                i = ((truth.x - truth.w / 2) * l.w);
-                j = ((truth.y - truth.h / 2) * l.h);
+                i = min_val_cmp(l.w-1, max_val_cmp(0, ((truth.x - truth.w / 2) * l.w)));
+                j = min_val_cmp(l.h-1, max_val_cmp(0, ((truth.y - truth.h / 2) * l.h)));
             }
             else if (l.yolo_point == YOLO_RIGHT_BOTTOM) {
-                i = ((truth.x + truth.w / 2) * l.w);
-                j = ((truth.y + truth.h / 2) * l.h);
+                i = min_val_cmp(l.w-1, max_val_cmp(0, ((truth.x + truth.w / 2) * l.w)));
+                j = min_val_cmp(l.h-1, max_val_cmp(0, ((truth.y + truth.h / 2) * l.h)));
             }
 
             box truth_shift = truth;

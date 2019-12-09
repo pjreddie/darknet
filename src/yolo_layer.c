@@ -88,19 +88,19 @@ void resize_yolo_layer(layer *l, int w, int h)
 
 #ifdef GPU
     if (l->output_pinned) {
-        cudaFreeHost(l->output);
+        CHECK_CUDA(cudaFreeHost(l->output));
         if (cudaSuccess != cudaHostAlloc(&l->output, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
             cudaGetLastError(); // reset CUDA-error
-            l->output = (float*)realloc(l->output, l->batch * l->outputs * sizeof(float));
+            l->output = (float*)calloc(l->batch * l->outputs, sizeof(float));
             l->output_pinned = 0;
         }
     }
 
     if (l->delta_pinned) {
-        cudaFreeHost(l->delta);
+        CHECK_CUDA(cudaFreeHost(l->delta));
         if (cudaSuccess != cudaHostAlloc(&l->delta, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
             cudaGetLastError(); // reset CUDA-error
-            l->delta = (float*)realloc(l->delta, l->batch * l->outputs * sizeof(float));
+            l->delta = (float*)calloc(l->batch * l->outputs, sizeof(float));
             l->delta_pinned = 0;
         }
     }
