@@ -153,7 +153,7 @@ LIB_API Detector::Detector(std::string cfg_filename, std::string weight_filename
     char *cfgfile = const_cast<char *>(_cfg_filename.c_str());
     char *weightfile = const_cast<char *>(_weight_filename.c_str());
 
-    net = parse_network_cfg_custom(cfgfile, 1, 0);
+    net = parse_network_cfg_custom(cfgfile, 1, 1);
     if (weightfile) {
         load_weights(&net, weightfile);
     }
