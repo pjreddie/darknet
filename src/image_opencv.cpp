@@ -763,6 +763,7 @@ extern "C" image get_image_from_stream_resize(cap_cv *cap, int w, int h, int c, 
     if (once) {
         once = 0;
         do {
+            if (src) delete src;
             src = (cv::Mat*)get_capture_frame_cv(cap);
             if (!src) return make_empty_image(0, 0, 0);
         } while (src->cols < 1 || src->rows < 1 || src->channels() < 1);
@@ -794,6 +795,7 @@ extern "C" image get_image_from_stream_letterbox(cap_cv *cap, int w, int h, int 
     if (once) {
         once = 0;
         do {
+            if (src) delete src;
             src = (cv::Mat*)get_capture_frame_cv(cap);
             if (!src) return make_empty_image(0, 0, 0);
         } while (src->cols < 1 || src->rows < 1 || src->channels() < 1);

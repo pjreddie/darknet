@@ -208,12 +208,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     while(1){
         ++count;
         {
-            if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-            if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
-
-            float nms = .45;    // 0.4F
+            const float nms = .45;    // 0.4F
             int local_nboxes = nboxes;
             detection *local_dets = dets;
+
+            if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
+            if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 
             //if (nms) do_nms_obj(local_dets, local_nboxes, l.classes, nms);    // bad results
             if (nms) {
@@ -237,7 +237,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 int timeout = 3;            // 3 seconds
                 int http_post_port = 80;    // 443 https, 80 http
                 if (send_http_post_request(http_post_host, http_post_port, filename,
-                    dets, nboxes, classes, names, frame_id, ext_output, timeout))
+                    local_dets, nboxes, classes, names, frame_id, ext_output, timeout))
                 {
                     if (time_limit_sec > 0) send_http_post_once = 1;
                 }
