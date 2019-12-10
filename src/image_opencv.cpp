@@ -605,8 +605,9 @@ extern "C" void release_capture(cap_cv* cap)
 // ----------------------------------------
 
 extern "C" mat_cv* get_capture_frame_cv(cap_cv *cap) {
-    cv::Mat *mat = new cv::Mat();
+    cv::Mat *mat = NULL;
     try {
+        mat = new cv::Mat();
         if (cap) {
             cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
             if (cpp_cap.isOpened())
