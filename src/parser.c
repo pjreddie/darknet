@@ -701,8 +701,10 @@ avgpool_layer parse_avgpool(list *options, size_params params)
 
 dropout_layer parse_dropout(list *options, size_params params)
 {
-    float probability = option_find_float(options, "probability", .5);
-    dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability);
+    float probability = option_find_float(options, "probability", .2);
+    int dropblock = option_find_int_quiet(options, "dropblock", 0);
+    float dropblock_size = option_find_float_quiet(options, "dropblock_size", 0.5);
+    dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability, dropblock, dropblock_size, params.w, params.h, params.c);
     layer.out_w = params.w;
     layer.out_h = params.h;
     layer.out_c = params.c;

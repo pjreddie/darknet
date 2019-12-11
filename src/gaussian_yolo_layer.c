@@ -465,12 +465,10 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
             if(!truth.x) break;
             float best_iou = 0;
             int best_n = 0;
-            //i = (truth.x * l.w);
-            //j = (truth.y * l.h);
+            i = (truth.x * l.w);
+            j = (truth.y * l.h);
 
             if (l.yolo_point == YOLO_CENTER) {
-                i = (truth.x * l.w);
-                j = (truth.y * l.h);
             }
             else if (l.yolo_point == YOLO_LEFT_TOP) {
                 i = min_val_cmp(l.w-1, max_val_cmp(0, ((truth.x - truth.w / 2) * l.w)));

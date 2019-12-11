@@ -4,16 +4,28 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-dropout_layer make_dropout_layer(int batch, int inputs, float probability)
+dropout_layer make_dropout_layer(int batch, int inputs, float probability, int dropblock, float dropblock_size, int w, int h, int c)
 {
     dropout_layer l = { (LAYER_TYPE)0 };
     l.type = DROPOUT;
     l.probability = probability;
+    l.dropblock = dropblock;
+    l.dropblock_size = dropblock_size;
+    if (l.dropblock) {
+        l.out_w = l.w = w;
+        l.out_h = l.h = h;
+        l.out_c = l.c = c;
+
+        if (l.w <= 0 || l.h <= 0 || l.c <= 0) {
+            printf(" Error: DropBlock - there must be positive values for: l.w=%d, l.h=%d, l.c=%d \n", l.w, l.h, l.c);
+            exit(0);
+        }
+    }
     l.inputs = inputs;
     l.outputs = inputs;
     l.batch = batch;
     l.rand = (float*)calloc(inputs * batch, sizeof(float));
-    l.scale = 1./(1.-probability);
+    l.scale = 1./(1.0 - probability);
     l.forward = forward_dropout_layer;
     l.backward = backward_dropout_layer;
     #ifdef GPU
@@ -21,7 +33,8 @@ dropout_layer make_dropout_layer(int batch, int inputs, float probability)
     l.backward_gpu = backward_dropout_layer_gpu;
     l.rand_gpu = cuda_make_array(l.rand, inputs*batch);
     #endif
-    fprintf(stderr, "dropout       p = %.2f                  %4d  ->   %4d\n", probability, inputs, inputs);
+    if(l.dropblock) fprintf(stderr, "dropblock       p = %.2f   block_size = %.2f         %4d  ->   %4d\n", probability, l.dropblock_size, inputs, inputs);
+    else fprintf(stderr, "dropout       p = %.2f                  %4d  ->   %4d\n", probability, inputs, inputs);
     return l;
 }
 
