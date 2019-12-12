@@ -4,13 +4,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-dropout_layer make_dropout_layer(int batch, int inputs, float probability, int dropblock, float dropblock_size, int w, int h, int c)
+dropout_layer make_dropout_layer(int batch, int inputs, float probability, int dropblock, float dropblock_size_rel, int dropblock_size_abs, int w, int h, int c)
 {
     dropout_layer l = { (LAYER_TYPE)0 };
     l.type = DROPOUT;
     l.probability = probability;
     l.dropblock = dropblock;
-    l.dropblock_size = dropblock_size;
+    l.dropblock_size_rel = dropblock_size_rel;
+    l.dropblock_size_abs = dropblock_size_abs;
     if (l.dropblock) {
         l.out_w = l.w = w;
         l.out_h = l.h = h;
@@ -33,7 +34,10 @@ dropout_layer make_dropout_layer(int batch, int inputs, float probability, int d
     l.backward_gpu = backward_dropout_layer_gpu;
     l.rand_gpu = cuda_make_array(l.rand, inputs*batch);
     #endif
-    if(l.dropblock) fprintf(stderr, "dropblock       p = %.2f   block_size = %.2f         %4d  ->   %4d\n", probability, l.dropblock_size, inputs, inputs);
+    if (l.dropblock) {
+        if(l.dropblock_size_abs) fprintf(stderr, "dropblock       p = %.2f   l.dropblock_size_abs = %d         %4d  ->   %4d\n", probability, l.dropblock_size_abs, inputs, inputs);
+        else fprintf(stderr, "dropblock       p = %.2f   l.dropblock_size_rel = %.2f         %4d  ->   %4d\n", probability, l.dropblock_size_rel, inputs, inputs);
+    }
     else fprintf(stderr, "dropout       p = %.2f                  %4d  ->   %4d\n", probability, inputs, inputs);
     return l;
 }

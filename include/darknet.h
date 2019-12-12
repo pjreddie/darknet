@@ -311,7 +311,8 @@ struct layer {
 
     float temperature;
     float probability;
-    float dropblock_size;
+    float dropblock_size_rel;
+    int dropblock_size_abs;
     int dropblock;
     float scale;
 

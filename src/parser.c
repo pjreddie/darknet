@@ -703,8 +703,17 @@ dropout_layer parse_dropout(list *options, size_params params)
 {
     float probability = option_find_float(options, "probability", .2);
     int dropblock = option_find_int_quiet(options, "dropblock", 0);
-    float dropblock_size = option_find_float_quiet(options, "dropblock_size", 0.5);
-    dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability, dropblock, dropblock_size, params.w, params.h, params.c);
+    float dropblock_size_rel = option_find_float_quiet(options, "dropblock_size_rel", 0);
+    int dropblock_size_abs = option_find_float_quiet(options, "dropblock_size_abs", 0);
+    if (!dropblock_size_rel && !dropblock_size_abs) {
+        printf(" [dropout] - None of the parameters (dropblock_size_rel or dropblock_size_abs) are set, will be used: dropblock_size_abs = 7 \n");
+        dropblock_size_abs = 7;
+    }
+    if (dropblock_size_rel && dropblock_size_abs) {
+        printf(" [dropout] - Both parameters are set, only the parameter will be used: dropblock_size_abs = %d \n", dropblock_size_abs);
+        dropblock_size_rel = 0;
+    }
+    dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability, dropblock, dropblock_size_rel, dropblock_size_abs, params.w, params.h, params.c);
     layer.out_w = params.w;
     layer.out_h = params.h;
     layer.out_c = params.c;

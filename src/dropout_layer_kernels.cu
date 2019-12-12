@@ -25,16 +25,30 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
     //if (iteration_num < state.net.burn_in) return;
 
+    // We gradually increase the block size and the probability of dropout - during the first half of the training
+    float multiplier = 1.0;
+    if(iteration_num < (state.net.max_batches / 2))
+        multiplier = (iteration_num / (float)(state.net.max_batches / 2));
+
     // dropblock
     if (l.dropblock) {
         //l.probability = 1 / keep_prob
-        const int max_blocks_per_channel = 3;
-        const float cur_prob = l.probability * (iteration_num / (float)state.net.max_batches);
+        const int max_blocks_per_channel = 10;
+        const float cur_prob = l.probability * multiplier;
 
-        const int block_width = l.dropblock_size * l.w;
-        const int block_height = l.dropblock_size * l.h;
+        int block_width = l.dropblock_size_abs * multiplier;
+        int block_height = l.dropblock_size_abs * multiplier;
 
-        const float prob_place_block = cur_prob / (l.dropblock_size * l.dropblock_size * max_blocks_per_channel);
+        if (l.dropblock_size_rel) {
+            block_width = l.dropblock_size_rel * l.w * multiplier;
+            block_height = l.dropblock_size_rel * l.h * multiplier;
+        }
+
+        block_width = max_val_cmp(1, block_width);
+        block_height = max_val_cmp(1, block_height);
+
+        const float part_occupied_by_block = block_width * block_height / ((float)l.w * l.h);
+        const float prob_place_block = cur_prob / (part_occupied_by_block * max_blocks_per_channel);
 
         memset(l.rand, 0, l.batch * l.outputs * sizeof(float));
 
@@ -69,8 +83,8 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
         l.scale = (float)(l.batch*l.outputs) / (l.batch*l.outputs - count_ones);
 
 
-        //printf("\n l.scale = %f, cur_prob = %f, count_ones = %f, prob_place_block = %f, \n",
-        //    l.scale, cur_prob, count_ones, prob_place_block);
+        //printf("\n l.scale = %f, cur_prob = %f, count_ones = %f, prob_place_block = %f, block_width = %d, block_height = %d \n",
+        //    l.scale, cur_prob, count_ones, prob_place_block, block_width, block_height);
 
         int size = l.inputs*l.batch;
 
