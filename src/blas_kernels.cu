@@ -1150,7 +1150,7 @@ __global__ void backward_scale_channels_kernel(float *in_w_h_c_delta, int size, 
             int osd_index = index % channel_size + (index / batch_size)*channel_size;
 
             //out_state_delta[osd_index] += in_w_h_c_delta[index] * in_from_output[index]; // l.delta * from  (should be divided by channel_size?)
-            atomicAdd(&out_state_delta[osd_index], in_w_h_c_delta[index] * in_from_output[index]); // l.delta * from
+            atomicAdd(&out_state_delta[osd_index], in_w_h_c_delta[index] * in_from_output[index] / channel_size); // l.delta * from
 
             out_from_delta[index] += in_scales_c[osd_index] * in_w_h_c_delta[index]; // input * l.delta  // atomic isn't required here
 
