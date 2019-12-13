@@ -705,6 +705,10 @@ dropout_layer parse_dropout(list *options, size_params params)
     int dropblock = option_find_int_quiet(options, "dropblock", 0);
     float dropblock_size_rel = option_find_float_quiet(options, "dropblock_size_rel", 0);
     int dropblock_size_abs = option_find_float_quiet(options, "dropblock_size_abs", 0);
+    if (dropblock_size_abs > params.w || dropblock_size_abs > params.h) {
+        printf(" [dropout] - dropblock_size_abs = %d that is bigger than layer size %d x %d \n", dropblock_size_abs, params.w, params.h);
+        dropblock_size_abs = min_val_cmp(params.w, params.h);
+    }
     if (!dropblock_size_rel && !dropblock_size_abs) {
         printf(" [dropout] - None of the parameters (dropblock_size_rel or dropblock_size_abs) are set, will be used: dropblock_size_abs = 7 \n");
         dropblock_size_abs = 7;
@@ -898,10 +902,11 @@ learning_rate_policy get_policy(char *s)
 
 void parse_net_options(list *options, network *net)
 {
+    net->max_batches = option_find_int(options, "max_batches", 0);
     net->batch = option_find_int(options, "batch",1);
     net->learning_rate = option_find_float(options, "learning_rate", .001);
     net->learning_rate_min = option_find_float_quiet(options, "learning_rate_min", .00001);
-    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", 1000);
+    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", net->max_batches);
     net->batches_cycle_mult = option_find_int_quiet(options, "sgdr_mult", 2);
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
@@ -1013,7 +1018,7 @@ void parse_net_options(list *options, network *net)
     } else if (net->policy == POLY || net->policy == RANDOM){
         //net->power = option_find_float(options, "power", 1);
     }
-    net->max_batches = option_find_int(options, "max_batches", 0);
+
 }
 
 int is_network(section *s)

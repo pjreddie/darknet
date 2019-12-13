@@ -66,10 +66,11 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
                         const int x_block = rand_int(0, l.w - block_width - 1);
                         const int y_block = rand_int(0, l.h - block_height - 1);
                         for (y = y_block; y < (y_block + block_height); y++) {
-                            for (x = x_block; x < (x_block + block_width); x++) {
-                                const int index = x + y*l.w + pre_index;
-                                l.rand[index] = 1;
-                            }
+                            memset(&l.rand[x_block + y*l.w + pre_index], 1, block_width * sizeof(float));
+                            //for (x = x_block; x < (x_block + block_width); x++) {
+                            //    const int index = x + y*l.w + pre_index;
+                            //    l.rand[index] = 1;
+                            //}
                         }
                     }
                 }
