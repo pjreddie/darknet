@@ -214,19 +214,51 @@ void gradient_array_normalize_channels_softmax(float *x, const int n, int batch,
         int wh_i = i % wh_step;
         int b = i / wh_step;
 
-        //const float eps = 0.0001;
         if (i < size) {
-            float grad = 0;// eps;
+            float grad = 0;
             int k;
             for (k = 0; k < channels; ++k) {
-                float out = x[wh_i + k * wh_step + b*wh_step*channels];
-                float d = delta[wh_i + k * wh_step + b*wh_step*channels];
+                const int index = wh_i + k * wh_step + b*wh_step*channels;
+                float out = x[index];
+                float d = delta[index];
                 grad += out*d;
             }
             for (k = 0; k < channels; ++k) {
-                float d = delta[wh_i + k * wh_step + b*wh_step*channels];
+                const int index = wh_i + k * wh_step + b*wh_step*channels;
+                float d = delta[index];
                 d = d * grad;
-                delta[wh_i + k * wh_step + b*wh_step*channels] = d;
+                delta[index] = d;
+            }
+        }
+    }
+}
+
+void gradient_array_normalize_channels(float *x, const int n, int batch, int channels, int wh_step, float *delta)
+{
+    int size = n / channels;
+
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < size; ++i) {
+        int wh_i = i % wh_step;
+        int b = i / wh_step;
+
+        if (i < size) {
+            float grad = 0;
+            int k;
+            for (k = 0; k < channels; ++k) {
+                const int index = wh_i + k * wh_step + b*wh_step*channels;
+                float out = x[index];
+                float d = delta[index];
+                grad += out*d;
+            }
+            for (k = 0; k < channels; ++k) {
+                const int index = wh_i + k * wh_step + b*wh_step*channels;
+                if (x[index] > 0) {
+                    float d = delta[index];
+                    d = d * grad;
+                    delta[index] = d;
+                }
             }
         }
     }
@@ -244,9 +276,9 @@ float gradient(float x, ACTIVATION a)
         case RELU:
             return relu_gradient(x);
         case NORM_CHAN:
-            return relu_gradient(x);
+            //return relu_gradient(x);
         case NORM_CHAN_SOFTMAX:
-            printf(" Error: should be used custom NORM_CHAN_SOFTMAX-function for gradient \n");
+            printf(" Error: should be used custom NORM_CHAN or NORM_CHAN_SOFTMAX-function for gradient \n");
             exit(0);
             return 0;
         case ELU:

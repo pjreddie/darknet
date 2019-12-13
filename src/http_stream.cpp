@@ -544,6 +544,8 @@ void send_mjpeg(mat_cv* mat, int port, int timeout, int quality)
 std::string get_system_frame_time_string()
 {
     std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lock(mtx);
     struct tm *tmp_buf = localtime(&t);
     char buff[256];
     std::strftime(buff, 256, "%A %F %T", tmp_buf);
