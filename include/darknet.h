@@ -248,7 +248,10 @@ struct layer {
     int truth;
     float smooth;
     float dot;
+    int deform;
     int sway;
+    int rotate;
+    int stretch;
     float angle;
     float jitter;
     float saturation;

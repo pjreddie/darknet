@@ -200,10 +200,20 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
     int sway = option_find_int_quiet(options, "sway", 0);
+    int rotate = option_find_int_quiet(options, "rotate", 0);
+    int stretch = option_find_int_quiet(options, "stretch", 0);
+    if ((sway + rotate + stretch) > 1) {
+        printf(" Error: should be used only 1 param: sway=1, rotate=1 or stretch=1 in the [convolutional] layer \n");
+        exit(0);
+    }
+    int deform = sway || rotate || stretch;
 
-    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride_x,stride_y,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, antialiasing, share_layer, assisted_excitation, sway, params.train);
+    convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride_x,stride_y,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, antialiasing, share_layer, assisted_excitation, deform, params.train);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
+    layer.sway = sway;
+    layer.rotate = rotate;
+    layer.stretch = stretch;
     layer.angle = option_find_float_quiet(options, "angle", 15);
 
     if(params.net.adam){

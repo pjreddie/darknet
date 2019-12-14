@@ -370,7 +370,7 @@ void free_convolutional_batchnorm(convolutional_layer *l)
     }
 }
 
-convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, int antialiasing, convolutional_layer *share_layer, int assisted_excitation, int sway, int train)
+convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, int antialiasing, convolutional_layer *share_layer, int assisted_excitation, int deform, int train)
 {
     int total_batch = batch*steps;
     int i;
@@ -388,7 +388,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         stride_x = stride_y = l.stride = l.stride_x = l.stride_y = 1; // use stride=1 in host-layer
     }
 
-    l.sway = sway;
+    l.deform = deform;
     l.assisted_excitation = assisted_excitation;
     l.share_layer = share_layer;
     l.index = index;
@@ -543,7 +543,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
             l.activation_input_gpu = cuda_make_array(l.activation_input, total_batch*l.outputs);
         }
 
-        if (l.sway) l.weight_deform_gpu = cuda_make_array(NULL, l.nweights);
+        if (l.deform) l.weight_deform_gpu = cuda_make_array(NULL, l.nweights);
 
         if (adam) {
             l.m_gpu = cuda_make_array(l.m, l.nweights);

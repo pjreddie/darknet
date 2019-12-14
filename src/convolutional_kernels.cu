@@ -1192,7 +1192,7 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
         /*
         for (int angle = 0; angle < 360; angle++) {
             printf(" angle = %d \n", angle);
-            sway_and_flip_weights_gpu(l.weights_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, angle, 0);
+            smooth_rotate_weights_kernel(l.weights_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, angle, 0);
 
             cuda_pull_array(l.weight_deform_gpu, l.weights, l.nweights);
             visualize_convolutional_layer(l, "weights", NULL);
@@ -1200,12 +1200,13 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
         }
         */
 
-    if (l.sway) {
+    if (l.deform) {
 
         //for (l.angle = 0; l.angle < 360; l.angle++)
         //{
 
-            sway_and_flip_weights_gpu(l.weight_updates_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, l.angle, 1);
+            if (l.rotate) rotate_weights_gpu(l.weight_updates_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, 1);
+            else if (l.sway) sway_and_flip_weights_gpu(l.weight_updates_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, l.angle, 1);
 
             //simple_copy_ongpu(l.nweights, l.weight_updates_gpu, l.weight_deform_gpu);
 
@@ -1254,16 +1255,17 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
         }
     }
 
-    if (l.sway) {
-        //for (l.angle = 0; l.angle < 360; l.angle += 4)
+    if (l.deform) {
+        //for (l.angle = 0; l.angle < 50; l.angle += 0.1)
         //{
             expand_array_gpu(l.weights_gpu, l.weight_deform_gpu, l.nweights, 4);
 
             //simple_copy_ongpu(l.nweights, l.weight_deform_gpu, l.weights_gpu);
 
-            sway_and_flip_weights_gpu(l.weight_deform_gpu, l.weights_gpu, l.nweights, l.n, l.size, l.angle, 0);
+            if (l.rotate) rotate_weights_gpu(l.weight_deform_gpu, l.weights_gpu, l.nweights, l.n, l.size, 0);
+            else if (l.sway) sway_and_flip_weights_gpu(l.weight_deform_gpu, l.weights_gpu, l.nweights, l.n, l.size, l.angle, 0);
 
-            //printf(" angle = %f \n", l.angle);
+            //printf(" angle = %f, reverse = %d \n", l.angle, 0);
             //cuda_pull_array(l.weights_gpu, l.weights, l.nweights);
             //visualize_convolutional_layer(l, "weights", NULL);
             //wait_key_cv(10);

@@ -129,8 +129,9 @@ void backward_sam_gpu(float *in_w_h_c_delta, int size, int channel_size,
 
 void sam_gpu(float *in_w_h_c, int size, int channel_size, float *scales_c, float *out);
 
-void rotate_weights_gpu(const float *src_weight_gpu, float *weight_deform_gpu, int nweights, int n, int size, int angle, int reverse);
+void smooth_rotate_weights_gpu(const float *src_weight_gpu, float *weight_deform_gpu, int nweights, int n, int size, int angle, int reverse);
 void sway_and_flip_weights_gpu(const float *src_weight_gpu, float *weight_deform_gpu, int nweights, int n, int size, int angle, int reverse);
+void rotate_weights_gpu(const float *src_weight_gpu, float *weight_deform_gpu, int nweights, int n, int size, int reverse);
 void reduce_and_expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
 void expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
 
