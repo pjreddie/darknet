@@ -31,7 +31,7 @@ void cuda_convert_f32_to_f16(float* input_f32, size_t size, float *output_f16);
 void free_convolutional_batchnorm(convolutional_layer *l);
 
 size_t get_convolutional_workspace_size(layer l);
-convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, int antialiasing, convolutional_layer *share_layer, int assisted_excitation, int train);
+convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, int antialiasing, convolutional_layer *share_layer, int assisted_excitation, int sway, int train);
 void denormalize_convolutional_layer(convolutional_layer l);
 void set_specified_workspace_limit(convolutional_layer *l, size_t workspace_size_limit);
 void resize_convolutional_layer(convolutional_layer *layer, int w, int h);

@@ -1188,6 +1188,38 @@ void push_convolutional_layer(convolutional_layer l)
 
 void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay)
 {
+
+        /*
+        for (int angle = 0; angle < 360; angle++) {
+            printf(" angle = %d \n", angle);
+            sway_and_flip_weights_gpu(l.weights_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, angle, 0);
+
+            cuda_pull_array(l.weight_deform_gpu, l.weights, l.nweights);
+            visualize_convolutional_layer(l, "weights", NULL);
+            wait_key_cv(10);
+        }
+        */
+
+    if (l.sway) {
+
+        //for (l.angle = 0; l.angle < 360; l.angle++)
+        //{
+
+            sway_and_flip_weights_gpu(l.weight_updates_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, l.angle, 1);
+
+            //simple_copy_ongpu(l.nweights, l.weight_updates_gpu, l.weight_deform_gpu);
+
+            reduce_and_expand_array_gpu(l.weight_deform_gpu, l.weight_updates_gpu, l.nweights, 4);
+
+            //printf(" angle = %f \n", l.angle);
+            //cuda_pull_array(l.weight_updates_gpu, l.weights, l.nweights);
+            //visualize_convolutional_layer(l, "weights", NULL);
+            //wait_key_cv(10);
+        //}
+
+    }
+
+
     float learning_rate = learning_rate_init*l.learning_rate_scale;
     //float momentum = a.momentum;
     //float decay = a.decay;
@@ -1221,6 +1253,23 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
             scal_ongpu(l.n, momentum, l.scale_updates_gpu, 1);
         }
     }
+
+    if (l.sway) {
+        //for (l.angle = 0; l.angle < 360; l.angle += 4)
+        //{
+            expand_array_gpu(l.weights_gpu, l.weight_deform_gpu, l.nweights, 4);
+
+            //simple_copy_ongpu(l.nweights, l.weight_deform_gpu, l.weights_gpu);
+
+            sway_and_flip_weights_gpu(l.weight_deform_gpu, l.weights_gpu, l.nweights, l.n, l.size, l.angle, 0);
+
+            //printf(" angle = %f \n", l.angle);
+            //cuda_pull_array(l.weights_gpu, l.weights, l.nweights);
+            //visualize_convolutional_layer(l, "weights", NULL);
+            //wait_key_cv(10);
+        //}
+    }
+
     //if (l.clip) {
     //    constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
     //}

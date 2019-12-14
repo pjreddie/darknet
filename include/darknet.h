@@ -248,6 +248,7 @@ struct layer {
     int truth;
     float smooth;
     float dot;
+    int sway;
     float angle;
     float jitter;
     float saturation;
@@ -542,6 +543,7 @@ struct layer {
     float * x_norm_gpu;
     float * weights_gpu;
     float * weight_updates_gpu;
+    float * weight_deform_gpu;
     float * weight_change_gpu;
 
     float * weights_gpu16;
