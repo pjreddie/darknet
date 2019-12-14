@@ -207,6 +207,10 @@ convolutional_layer parse_convolutional(list *options, size_params params)
         exit(0);
     }
     int deform = sway || rotate || stretch;
+    if (deform && size == 1) {
+        printf(" Error: params (sway=1, rotate=1 or stretch=1) should be used only with size >=3 in the [convolutional] layer \n");
+        exit(0);
+    }
 
     convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride_x,stride_y,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, antialiasing, share_layer, assisted_excitation, deform, params.train);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);

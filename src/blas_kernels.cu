@@ -1262,8 +1262,10 @@ __global__  void smooth_rotate_weights_kernel(const float *src_weight_gpu, float
         const int x_c = kernel_size / 2;
         const int y_c = kernel_size / 2;
 
-        for (int x = 0; x < kernel_size; ++x) {
-            for (int y = 0; y < kernel_size; ++y) {
+        float dropout_sum = 0;
+
+        for (int y = 0; y < kernel_size; ++y) {
+            for (int x = 0; x < kernel_size; ++x) {
                 // Xsource = x*cos(alpha) + y*sin(alpha)
                 // Ysource = -x*sin(alpha) + y*cos(alpha)
 
@@ -1285,11 +1287,26 @@ __global__  void smooth_rotate_weights_kernel(const float *src_weight_gpu, float
 
                 float val = 0;
                 if (x_0 >= 0 && x_0 < kernel_size && y_0 >= 0 && y_0 < kernel_size) val += src_weight_gpu[x_0 + y_0*kernel_size + i] * c_x_0 * c_y_0;
+                else dropout_sum += c_x_0 * c_y_0;
+
                 if (x_1 >= 0 && x_1 < kernel_size && y_0 >= 0 && y_0 < kernel_size) val += src_weight_gpu[x_1 + y_0*kernel_size + i] * c_x_1 * c_y_0;
+                else dropout_sum += c_x_1 * c_y_0;
+
                 if (x_0 >= 0 && x_0 < kernel_size && y_1 >= 0 && y_1 < kernel_size) val += src_weight_gpu[x_0 + y_1*kernel_size + i] * c_x_0 * c_y_1;
+                else dropout_sum += c_x_0 * c_y_1;
+
                 if (x_1 >= 0 && x_1 < kernel_size && y_1 >= 0 && y_1 < kernel_size) val += src_weight_gpu[x_1 + y_1*kernel_size + i] * c_x_1 * c_y_1;
+                else dropout_sum += c_x_1 * c_y_1;
 
                 weight_deform_gpu[x + y*kernel_size + i] = val;
+            }
+        }
+
+        // compensate for dropped items
+        const float coef = (kernel_size*kernel_size) / (kernel_size*kernel_size - dropout_sum);
+        for (int y = 0; y < kernel_size; ++y) {
+            for (int x = 0; x < kernel_size; ++x) {
+                weight_deform_gpu[x + y*kernel_size + i] *= coef;
             }
         }
     }
@@ -1341,8 +1358,10 @@ __global__  void sway_and_flip_weights_kernel(const float *src_weight_gpu, float
             const int x_c = kernel_size / 2;
             const int y_c = kernel_size / 2;
 
-            for (int x = 0; x < kernel_size; ++x) {
-                for (int y = 0; y < kernel_size; ++y) {
+            float dropout_sum = 0;
+
+            for (int y = 0; y < kernel_size; ++y) {
+                for (int x = 0; x < kernel_size; ++x) {
                     // Xsource = x*cos(alpha) + y*sin(alpha)
                     // Ysource = -x*sin(alpha) + y*cos(alpha)
 
@@ -1361,22 +1380,36 @@ __global__  void sway_and_flip_weights_kernel(const float *src_weight_gpu, float
                     float c_y_0 = y_1 - y_s;
                     float c_y_1 = y_s - y_0;
 
-
                     float val = 0;
                     if (x_0 >= 0 && x_0 < kernel_size && y_0 >= 0 && y_0 < kernel_size) val += src_weight_gpu[x_0 + y_0*kernel_size + i] * c_x_0 * c_y_0;
+                    else dropout_sum += c_x_0 * c_y_0;
+
                     if (x_1 >= 0 && x_1 < kernel_size && y_0 >= 0 && y_0 < kernel_size) val += src_weight_gpu[x_1 + y_0*kernel_size + i] * c_x_1 * c_y_0;
+                    else dropout_sum += c_x_1 * c_y_0;
+
                     if (x_0 >= 0 && x_0 < kernel_size && y_1 >= 0 && y_1 < kernel_size) val += src_weight_gpu[x_0 + y_1*kernel_size + i] * c_x_0 * c_y_1;
+                    else dropout_sum += c_x_0 * c_y_1;
+
                     if (x_1 >= 0 && x_1 < kernel_size && y_1 >= 0 && y_1 < kernel_size) val += src_weight_gpu[x_1 + y_1*kernel_size + i] * c_x_1 * c_y_1;
+                    else dropout_sum += c_x_1 * c_y_1;
 
                     weight_deform_gpu[x + y*kernel_size + i] = val;
+                }
+            }
+
+            // compensate for dropped items
+            const float coef = (kernel_size*kernel_size) / (kernel_size*kernel_size - dropout_sum);
+            for (int y = 0; y < kernel_size; ++y) {
+                for (int x = 0; x < kernel_size; ++x) {
+                    weight_deform_gpu[x + y*kernel_size + i] *= coef;
                 }
             }
         }
         else if (stage_id == 3)
         {
             // flip
-            for (int x = 0; x < kernel_size; ++x) {
-                for (int y = 0; y < kernel_size; ++y) {
+            for (int y = 0; y < kernel_size; ++y) {
+                for (int x = 0; x < kernel_size; ++x) {
                     weight_deform_gpu[(kernel_size - x - 1) + y*kernel_size + i] = src_weight_gpu[x + y*kernel_size + i];
                 }
             }
@@ -1419,8 +1452,8 @@ __global__  void rotate_weights_kernel(const float *src_weight_gpu, float *weigh
 
         if (stage_id == 0) {
             // simple copy
-            for (int x = 0; x < kernel_size; ++x) {
-                for (int y = 0; y < kernel_size; ++y) {
+            for (int y = 0; y < kernel_size; ++y) {
+                for (int x = 0; x < kernel_size; ++x) {
                     const int src_i = x + y*kernel_size + i;
                     const int dst_i = x + y*kernel_size + i;
                     if (reverse) weight_deform_gpu[src_i] = src_weight_gpu[dst_i];
@@ -1431,8 +1464,8 @@ __global__  void rotate_weights_kernel(const float *src_weight_gpu, float *weigh
         else if (stage_id == 1)
         {
             // 90 degree clockwise rotation - 1
-            for (int x = 0; x < kernel_size; ++x) {
-                for (int y = 0; y < kernel_size; ++y) {
+            for (int y = 0; y < kernel_size; ++y) {
+                for (int x = 0; x < kernel_size; ++x) {
                     const int src_i = x + y*kernel_size + i;
                     const int dst_i = (kernel_size - 1 - y) + x*kernel_size + i;
                     if (reverse) weight_deform_gpu[src_i] = src_weight_gpu[dst_i];
@@ -1443,8 +1476,8 @@ __global__  void rotate_weights_kernel(const float *src_weight_gpu, float *weigh
         else if (stage_id == 2)
         {
             // 180 degree clockwise rotation - 2
-            for (int x = 0; x < kernel_size; ++x) {
-                for (int y = 0; y < kernel_size; ++y) {
+            for (int y = 0; y < kernel_size; ++y) {
+                for (int x = 0; x < kernel_size; ++x) {
                     const int src_i = x + y*kernel_size + i;
                     const int dst_i = (kernel_size - 1 - x) + (kernel_size - 1 - y)*kernel_size + i;
                     if (reverse) weight_deform_gpu[src_i] = src_weight_gpu[dst_i];
@@ -1455,8 +1488,8 @@ __global__  void rotate_weights_kernel(const float *src_weight_gpu, float *weigh
         else if (stage_id == 3)
         {
             // 270 degree clockwise rotation - 3
-            for (int x = 0; x < kernel_size; ++x) {
-                for (int y = 0; y < kernel_size; ++y) {
+            for (int y = 0; y < kernel_size; ++y) {
+                for (int x = 0; x < kernel_size; ++x) {
                     const int src_i = x + y*kernel_size + i;
                     const int dst_i = y + (kernel_size - 1 - x)*kernel_size + i;
                     if (reverse) weight_deform_gpu[src_i] = src_weight_gpu[dst_i];
