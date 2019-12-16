@@ -556,7 +556,7 @@ std::string get_system_frame_time_string()
 
 
 #ifdef __CYGWIN__
-int send_http_post_request(char *http_post_host, int server_port, char *videosource,
+int send_http_post_request(char *http_post_host, int server_port, const char *videosource,
     detection *dets, int nboxes, int classes, char **names, long long int frame_id, int ext_output, int timeout)
 {
     std::cerr << " send_http_post_request() isn't implemented \n";
@@ -578,7 +578,7 @@ int send_http_post_request(char *http_post_host, int server_port, char *videosou
 // https://webhook.site/
 // https://github.com/yhirose/cpp-httplib
 // sent POST http request
-int send_http_post_request(char *http_post_host, int server_port, char *videosource,
+int send_http_post_request(char *http_post_host, int server_port, const char *videosource,
     detection *dets, int nboxes, int classes, char **names, long long int frame_id, int ext_output, int timeout)
 {
     const float thresh = 0.005; // function get_network_boxes() has already filtred dets by actual threshold
