@@ -167,6 +167,7 @@ void free_layer(layer l)
 
     if (l.weights_gpu)             cuda_free(l.weights_gpu), l.weights_gpu = NULL;
     if (l.weight_updates_gpu)      cuda_free(l.weight_updates_gpu), l.weight_updates_gpu = NULL;
+    if (l.weight_deform_gpu)       cuda_free(l.weight_deform_gpu), l.weight_deform_gpu = NULL;
     if (l.weights_gpu16)           cuda_free(l.weights_gpu16), l.weights_gpu16 = NULL;
     if (l.weight_updates_gpu16)    cuda_free(l.weight_updates_gpu16), l.weight_updates_gpu16 = NULL;
     if (l.biases_gpu)              cuda_free(l.biases_gpu), l.biases_gpu = NULL;

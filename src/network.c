@@ -539,6 +539,8 @@ int resize_network(network *net, int w, int h)
             resize_scale_channels_layer(&l, net);
         }else if (l.type == DROPOUT) {
             resize_dropout_layer(&l, inputs);
+            l.out_w = l.w = w;
+            l.out_h = l.h = h;
             l.output = net->layers[i - 1].output;
             l.delta = net->layers[i - 1].delta;
 #ifdef GPU
@@ -564,7 +566,7 @@ int resize_network(network *net, int w, int h)
         if(l.workspace_size > workspace_size) workspace_size = l.workspace_size;
         inputs = l.outputs;
         net->layers[i] = l;
-        if(l.type != DROPOUT)
+        //if(l.type != DROPOUT)
         {
             w = l.out_w;
             h = l.out_h;

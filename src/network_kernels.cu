@@ -137,12 +137,14 @@ void backward_network_gpu(network net, network_state state)
 void update_network_gpu(network net)
 {
     cuda_set_device(net.gpu_index);
+    const int iteration_num = (*net.seen) / (net.batch * net.subdivisions);
     int i;
     int update_batch = net.batch*net.subdivisions * get_sequence_value(net);
     float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         l.t = get_current_batch(net);
+        if (iteration_num > (net.max_batches * 2 / 3)) l.deform = 0;
         if(l.update_gpu){
             l.update_gpu(l, update_batch, rate, net.momentum, net.decay);
         }
