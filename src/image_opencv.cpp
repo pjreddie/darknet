@@ -1002,7 +1002,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
 // ====================================================================
 // Draw Loss & Accuracy chart
 // ====================================================================
-extern "C" mat_cv* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show)
+extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show)
 {
     int img_offset = 60;
     int draw_size = img_size - img_offset;
@@ -1047,10 +1047,10 @@ extern "C" mat_cv* draw_train_chart(float max_img_loss, int max_batches, int num
         cv::putText(img, "Press 's' to save : chart.png", cv::Point(5, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
         if (!dont_show) {
             printf(" If error occurs - run training with flag: -dont_show \n");
-            cv::namedWindow("average loss", cv::WINDOW_NORMAL);
-            cv::moveWindow("average loss", 0, 0);
-            cv::resizeWindow("average loss", img_size, img_size);
-            cv::imshow("average loss", img);
+            cv::namedWindow(windows_name, cv::WINDOW_NORMAL);
+            cv::moveWindow(windows_name, 0, 0);
+            cv::resizeWindow(windows_name, img_size, img_size);
+            cv::imshow(windows_name, img);
             cv::waitKey(20);
         }
     }
@@ -1061,7 +1061,7 @@ extern "C" mat_cv* draw_train_chart(float max_img_loss, int max_batches, int num
 }
 // ----------------------------------------
 
-extern "C" void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
+extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
     float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port)
 {
     try {
@@ -1113,7 +1113,7 @@ extern "C" void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, f
 
         int k = 0;
         if (!dont_show) {
-            cv::imshow("average loss", img);
+            cv::imshow(windows_name, img);
             k = cv::waitKey(20);
         }
         static int old_batch = 0;

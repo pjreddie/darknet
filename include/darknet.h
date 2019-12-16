@@ -905,7 +905,8 @@ LIB_API image load_image_color(char *filename, int w, int h);
 LIB_API void free_image(image m);
 
 // layer.h
-LIB_API void free_layer(layer);
+LIB_API void free_layer_custom(layer l, int keep_cudnn_desc);
+LIB_API void free_layer(layer l);
 
 // data.c
 LIB_API void free_data(data d);

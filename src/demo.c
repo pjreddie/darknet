@@ -42,7 +42,6 @@ static int demo_json_port = -1;
 
 static float* predictions[NFRAMES];
 static int demo_index = 0;
-static image images[NFRAMES];
 static mat_cv* cv_images[NFRAMES];
 static float *avg;
 
@@ -147,7 +146,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     avg = (float *) calloc(l.outputs, sizeof(float));
     for(j = 0; j < NFRAMES; ++j) predictions[j] = (float *) calloc(l.outputs, sizeof(float));
-    for(j = 0; j < NFRAMES; ++j) images[j] = make_image(1,1,3);
 
     if (l.classes != demo_classes) {
         printf("Parameters don't match: in cfg-file classes=%d, in data-file classes=%d \n", l.classes, demo_classes);
@@ -171,6 +169,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     det_s = in_s;
 
     for (j = 0; j < NFRAMES / 2; ++j) {
+        free_detections(dets, nboxes);
         fetch_in_thread(0);
         detect_in_thread(0);
         det_img = in_img;
@@ -283,7 +282,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 printf("\n cvWriteFrame \n");
             }
 
-            release_mat(&show_img);
 
             pthread_join(fetch_thread, 0);
             pthread_join(detect_thread, 0);
@@ -296,6 +294,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             if (flag_exit == 1) break;
 
             if(delay == 0){
+                release_mat(&show_img);
                 show_img = det_img;
             }
             det_img = in_img;
@@ -320,13 +319,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     }
 
     // free memory
-    release_mat(&show_img);
-    release_mat(&in_img);
     free_image(in_s);
+    free_detections(dets, nboxes);
 
     free(avg);
     for (j = 0; j < NFRAMES; ++j) free(predictions[j]);
-    for (j = 0; j < NFRAMES; ++j) free_image(images[j]);
+    demo_index = (NFRAMES + demo_index - 1) % NFRAMES;
+    for (j = 0; j < NFRAMES; ++j) {
+            release_mat(&cv_images[j]);
+    }
 
     free_ptrs((void **)names, net.layers[net.n - 1].classes);
 
