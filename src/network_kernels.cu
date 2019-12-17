@@ -144,7 +144,7 @@ void update_network_gpu(network net)
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         l.t = get_current_batch(net);
-        if (iteration_num > (net.max_batches * 2 / 3)) l.deform = 0;
+        if (iteration_num > (net.max_batches * 1 / 2)) l.deform = 0;
         if(l.update_gpu){
             l.update_gpu(l, update_batch, rate, net.momentum, net.decay);
         }

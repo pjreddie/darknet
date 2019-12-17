@@ -1125,7 +1125,7 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
         else
             cv::putText(img, "- Saved", cv::Point(260, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 1, CV_AA);
 
-        if (mjpeg_port > 0) send_mjpeg((mat_cv *)&img, mjpeg_port, 500000, 100);
+        if (mjpeg_port > 0) send_mjpeg((mat_cv *)&img, mjpeg_port, 500000, 70);
     }
     catch (...) {
         cerr << "OpenCV exception: draw_train_loss() \n";

@@ -60,6 +60,7 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
         return;
     }
     if (l.mask)               free(l.mask);
+    if (l.classes_multipliers)free(l.classes_multipliers);
     if (l.cweights)           free(l.cweights);
     if (l.indexes)            free(l.indexes);
     if (l.input_layers)       free(l.input_layers);

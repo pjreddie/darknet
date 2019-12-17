@@ -363,12 +363,34 @@ int *parse_yolo_mask(char *a, int *num)
     return mask;
 }
 
+float *get_classes_multipliers(char *cpc, const int classes)
+{
+    float *classes_multipliers = NULL;
+    if (cpc) {
+        int classes_counters = classes;
+        int *counters_per_class = parse_yolo_mask(cpc, &classes_counters);
+        if (classes_counters != classes) {
+            printf(" number of values in counters_per_class = %d doesn't match with classes = %d \n", classes_counters, classes);
+            exit(0);
+        }
+        float max_counter = 0;
+        int i;
+        for (i = 0; i < classes_counters; ++i) if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
+        classes_multipliers = (float *)calloc(classes_counters, sizeof(float));
+        for (i = 0; i < classes_counters; ++i) classes_multipliers[i] = max_counter / counters_per_class[i];
+        free(counters_per_class);
+        printf(" classes_multipliers: ");
+        for (i = 0; i < classes_counters; ++i) printf("%.1f, ", classes_multipliers[i]);
+        printf("\n");
+    }
+    return classes_multipliers;
+}
+
 layer parse_yolo(list *options, size_params params)
 {
     int classes = option_find_int(options, "classes", 20);
     int total = option_find_int(options, "num", 1);
     int num = total;
-
     char *a = option_find_str(options, "mask", 0);
     int *mask = parse_yolo_mask(a, &num);
     int max_boxes = option_find_int_quiet(options, "max", 90);
@@ -379,6 +401,9 @@ layer parse_yolo(list *options, size_params params)
         exit(EXIT_FAILURE);
     }
     //assert(l.outputs == params.inputs);
+
+    char *cpc = option_find_str(options, "counters_per_class", 0);
+    l.classes_multipliers = get_classes_multipliers(cpc, classes);
 
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
@@ -471,6 +496,9 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
         exit(EXIT_FAILURE);
     }
     //assert(l.outputs == params.inputs);
+
+    char *cpc = option_find_str(options, "counters_per_class", 0);
+    l.classes_multipliers = get_classes_multipliers(cpc, classes);
 
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
