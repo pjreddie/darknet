@@ -341,7 +341,7 @@ void delta_gaussian_yolo_class(float *output, float *delta, int index, int class
     }
     for(n = 0; n < classes; ++n){
         delta[index + stride*n] = ((n == class_id) ? (1 - label_smooth_eps) : (0 + label_smooth_eps/classes)) - output[index + stride*n];
-        if (classes_multipliers) delta[index + stride*class_id] *= classes_multipliers[class_id];
+        if (classes_multipliers && n == class_id) delta[index + stride*class_id] *= classes_multipliers[class_id];
         if(n == class_id && avg_cat) *avg_cat += output[index + stride*n];
     }
 }

@@ -1545,7 +1545,7 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
         int i, j;
         for (i = 0; i < d2.X.rows; ++i) {
 
-            if (mixup == 4) mixup = rand_int(2, 3); // alternate MixUp and CutMix
+            if (mixup == 4) mixup = rand_int(2, 3); // alternate CutMix and Mosaic
 
             // MixUp -----------------------------------
             if (mixup == 1) {
