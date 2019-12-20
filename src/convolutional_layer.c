@@ -1447,9 +1447,17 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
     }
 }
 
-void update_convolutional_layer(convolutional_layer l, int batch, float learning_rate, float momentum, float decay)
+void update_convolutional_layer(convolutional_layer l, int batch, float learning_rate_init, float momentum, float decay)
 {
-    //int size = l.nweights;
+    float learning_rate = learning_rate_init*l.learning_rate_scale;
+    //float momentum = a.momentum;
+    //float decay = a.decay;
+    //int batch = a.batch;
+
+    axpy_cpu(l.nweights, -decay*batch, l.weights, 1, l.weight_updates, 1);
+    axpy_cpu(l.nweights, learning_rate / batch, l.weight_updates, 1, l.weights, 1);
+    scal_cpu(l.nweights, momentum, l.weight_updates, 1);
+
     axpy_cpu(l.n, learning_rate / batch, l.bias_updates, 1, l.biases, 1);
     scal_cpu(l.n, momentum, l.bias_updates, 1);
 
@@ -1457,10 +1465,6 @@ void update_convolutional_layer(convolutional_layer l, int batch, float learning
         axpy_cpu(l.n, learning_rate / batch, l.scale_updates, 1, l.scales, 1);
         scal_cpu(l.n, momentum, l.scale_updates, 1);
     }
-
-    axpy_cpu(l.nweights, -decay*batch, l.weights, 1, l.weight_updates, 1);
-    axpy_cpu(l.nweights, learning_rate / batch, l.weight_updates, 1, l.weights, 1);
-    scal_cpu(l.nweights, momentum, l.weight_updates, 1);
 }
 
 
