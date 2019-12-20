@@ -805,7 +805,7 @@ layer parse_normalization(list *options, size_params params)
 
 layer parse_batchnorm(list *options, size_params params)
 {
-    layer l = make_batchnorm_layer(params.batch, params.w, params.h, params.c);
+    layer l = make_batchnorm_layer(params.batch, params.w, params.h, params.c, params.train);
     return l;
 }
 
@@ -1507,6 +1507,7 @@ void save_batchnorm_weights(layer l, FILE *fp)
         pull_batchnorm_layer(l);
     }
 #endif
+    fwrite(l.biases, sizeof(float), l.c, fp);
     fwrite(l.scales, sizeof(float), l.c, fp);
     fwrite(l.rolling_mean, sizeof(float), l.c, fp);
     fwrite(l.rolling_variance, sizeof(float), l.c, fp);
@@ -1652,6 +1653,7 @@ void load_connected_weights(layer l, FILE *fp, int transpose)
 
 void load_batchnorm_weights(layer l, FILE *fp)
 {
+    fread(l.biases, sizeof(float), l.c, fp);
     fread(l.scales, sizeof(float), l.c, fp);
     fread(l.rolling_mean, sizeof(float), l.c, fp);
     fread(l.rolling_variance, sizeof(float), l.c, fp);
