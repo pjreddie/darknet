@@ -74,6 +74,8 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[connected]")==0) return CONNECTED;
     if (strcmp(type, "[max]")==0
             || strcmp(type, "[maxpool]")==0) return MAXPOOL;
+    if (strcmp(type, "[local_avg]") == 0
+        || strcmp(type, "[local_avgpool]") == 0) return LOCAL_AVGPOOL;
     if (strcmp(type, "[reorg3d]")==0) return REORG;
     if (strcmp(type, "[reorg]") == 0) return REORG_OLD;
     if (strcmp(type, "[avg]")==0
@@ -707,6 +709,29 @@ layer parse_reorg_old(list *options, size_params params)
     return layer;
 }
 
+maxpool_layer parse_local_avgpool(list *options, size_params params)
+{
+    int stride = option_find_int(options, "stride", 1);
+    int stride_x = option_find_int_quiet(options, "stride_x", stride);
+    int stride_y = option_find_int_quiet(options, "stride_y", stride);
+    int size = option_find_int(options, "size", stride);
+    int padding = option_find_int_quiet(options, "padding", size - 1);
+    int maxpool_depth = 0;
+    int out_channels = 1;
+    int antialiasing = 0;
+    const int avgpool = 1;
+
+    int batch, h, w, c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch = params.batch;
+    if (!(h && w && c)) error("Layer before [local_avgpool] layer must output image.");
+
+    maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, avgpool, params.train);
+    return layer;
+}
+
 maxpool_layer parse_maxpool(list *options, size_params params)
 {
     int stride = option_find_int(options, "stride",1);
@@ -717,15 +742,16 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     int maxpool_depth = option_find_int_quiet(options, "maxpool_depth", 0);
     int out_channels = option_find_int_quiet(options, "out_channels", 1);
     int antialiasing = option_find_int_quiet(options, "antialiasing", 0);
+    const int avgpool = 0;
 
     int batch,h,w,c;
     h = params.h;
     w = params.w;
     c = params.c;
     batch=params.batch;
-    if(!(h && w && c)) error("Layer before maxpool layer must output image.");
+    if(!(h && w && c)) error("Layer before [maxpool] layer must output image.");
 
-    maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, params.train);
+    maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, avgpool, params.train);
     return layer;
 }
 
@@ -1172,6 +1198,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             l = parse_batchnorm(options, params);
         }else if(lt == MAXPOOL){
             l = parse_maxpool(options, params);
+        }else if (lt == LOCAL_AVGPOOL) {
+            l = parse_local_avgpool(options, params);
         }else if(lt == REORG){
             l = parse_reorg(options, params);        }
         else if (lt == REORG_OLD) {

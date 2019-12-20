@@ -525,6 +525,8 @@ int resize_network(network *net, int w, int h)
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
             resize_maxpool_layer(&l, w, h);
+        }else if (l.type == LOCAL_AVGPOOL) {
+            resize_maxpool_layer(&l, w, h);
         }else if(l.type == REGION){
             resize_region_layer(&l, w, h);
         }else if (l.type == YOLO) {
