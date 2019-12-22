@@ -254,6 +254,7 @@ struct layer {
     int sway;
     int rotate;
     int stretch;
+    int stretch_sway;
     float angle;
     float jitter;
     float saturation;

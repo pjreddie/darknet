@@ -1210,6 +1210,7 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
             if (l.rotate) rotate_weights_gpu(l.weight_updates_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, 1);
             else if (l.sway) sway_and_flip_weights_gpu(l.weight_updates_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, l.angle, 1);
             else if (l.stretch) stretch_weights_gpu(l.weight_updates_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, 0, 1);
+            else if (l.stretch_sway) stretch_sway_flip_weights_gpu(l.weight_updates_gpu, l.weight_deform_gpu, l.nweights, l.n, l.size, l.angle, 1);
 
             //simple_copy_ongpu(l.nweights, l.weight_updates_gpu, l.weight_deform_gpu);
 
@@ -1268,6 +1269,7 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
             if (l.rotate) rotate_weights_gpu(l.weight_deform_gpu, l.weights_gpu, l.nweights, l.n, l.size, 0);
             else if (l.sway) sway_and_flip_weights_gpu(l.weight_deform_gpu, l.weights_gpu, l.nweights, l.n, l.size, l.angle, 0);
             else if (l.stretch) stretch_weights_gpu(l.weight_deform_gpu, l.weights_gpu, l.nweights, l.n, l.size, 0, 0);
+            else if (l.stretch_sway) stretch_sway_flip_weights_gpu(l.weight_deform_gpu, l.weights_gpu, l.nweights, l.n, l.size, l.angle, 0);
 
             //printf(" angle = %f, reverse = %d \n", l.angle, 0);
             //cuda_pull_array(l.weights_gpu, l.weights, l.nweights);

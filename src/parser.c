@@ -204,11 +204,12 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int sway = option_find_int_quiet(options, "sway", 0);
     int rotate = option_find_int_quiet(options, "rotate", 0);
     int stretch = option_find_int_quiet(options, "stretch", 0);
-    if ((sway + rotate + stretch) > 1) {
+    int stretch_sway = option_find_int_quiet(options, "stretch_sway", 0);
+    if ((sway + rotate + stretch + stretch_sway) > 1) {
         printf(" Error: should be used only 1 param: sway=1, rotate=1 or stretch=1 in the [convolutional] layer \n");
         exit(0);
     }
-    int deform = sway || rotate || stretch;
+    int deform = sway || rotate || stretch || stretch_sway;
     if (deform && size == 1) {
         printf(" Error: params (sway=1, rotate=1 or stretch=1) should be used only with size >=3 in the [convolutional] layer \n");
         exit(0);
@@ -220,6 +221,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     layer.sway = sway;
     layer.rotate = rotate;
     layer.stretch = stretch;
+    layer.stretch_sway = stretch_sway;
     layer.angle = option_find_float_quiet(options, "angle", 15);
 
     if(params.net.adam){
@@ -778,7 +780,7 @@ dropout_layer parse_dropout(list *options, size_params params)
         printf(" [dropout] - dropblock_size_abs = %d that is bigger than layer size %d x %d \n", dropblock_size_abs, params.w, params.h);
         dropblock_size_abs = min_val_cmp(params.w, params.h);
     }
-    if (!dropblock_size_rel && !dropblock_size_abs) {
+    if (dropblock && !dropblock_size_rel && !dropblock_size_abs) {
         printf(" [dropout] - None of the parameters (dropblock_size_rel or dropblock_size_abs) are set, will be used: dropblock_size_abs = 7 \n");
         dropblock_size_abs = 7;
     }

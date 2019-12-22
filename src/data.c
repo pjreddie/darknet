@@ -1628,7 +1628,9 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
                 }
 
                 for (j = 0; j < d.y.cols; ++j) {
-                    d.y.vals[i][j] = d.y.vals[i][j] * s1 + d2.y.vals[i][j] * s2 + d3.y.vals[i][j] * s3 + d4.y.vals[i][j] * s4;
+                    const float max_s = 1;// max_val_cmp(s1, max_val_cmp(s2, max_val_cmp(s3, s4)));
+
+                    d.y.vals[i][j] = d.y.vals[i][j] * s1 / max_s + d2.y.vals[i][j] * s2 / max_s + d3.y.vals[i][j] * s3 / max_s + d4.y.vals[i][j] * s4 / max_s;
                 }
             }
         }
