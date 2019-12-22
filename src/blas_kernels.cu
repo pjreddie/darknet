@@ -1692,7 +1692,7 @@ __global__  void stretch_sway_flip_weights_kernel(const float *src_weight_gpu, f
             for (int y = 0; y < kernel_size; ++y) {
                 for (int x = 0; x < kernel_size; ++x) {
                     if(scale > 1)
-                        weight_deform_gpu[x + y*kernel_size + i] *= scale;// *= coef;
+                        weight_deform_gpu[x + y*kernel_size + i] /= scale;// *= coef;
                 }
             }
         }

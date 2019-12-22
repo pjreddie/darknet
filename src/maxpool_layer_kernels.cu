@@ -309,7 +309,7 @@ __global__ void backward_local_avgpool_layer_kernel(int n, int in_h, int in_w, i
             }
         }
     }
-    prev_delta[index] += d / counter;
+    if(counter > 0) prev_delta[index] += d / counter;
 }
 
 
