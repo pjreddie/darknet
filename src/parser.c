@@ -1864,10 +1864,11 @@ network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 {
     printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
     network* net = (network*)calloc(1, sizeof(network));
-    *net = parse_network_cfg_custom(cfg, batch, 0);
+    *net = parse_network_cfg_custom(cfg, batch, 1);
     if (weights && weights[0] != 0) {
         load_weights(net, weights);
     }
+    //fuse_conv_batchnorm(*net);
     if (clear) (*net->seen) = 0;
     return net;
 }

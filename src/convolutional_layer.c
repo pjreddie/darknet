@@ -1249,7 +1249,9 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     if(l.batch_normalize){
         forward_batchnorm_layer(l, state);
     }
-    add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
+    else {
+        add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
+    }
 
     //activate_array(l.output, m*n*l.batch, l.activation);
     if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.output);
