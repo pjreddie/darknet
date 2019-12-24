@@ -148,7 +148,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int number_of_lines = 100;
     int img_size = 1000;
     char windows_name[100];
-    sprintf(windows_name, "average loss (id:%d)", random_gen());
+    sprintf(windows_name, "chart_%s.png", base);
     img = draw_train_chart(windows_name, max_img_loss, net.max_batches, number_of_lines, img_size, dont_show);
 #endif    //OPENCV
     if (net.track) {
