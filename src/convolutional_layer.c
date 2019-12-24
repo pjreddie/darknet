@@ -515,10 +515,13 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
             l.x = (float*)calloc(total_batch * l.outputs, sizeof(float));
             l.x_norm = (float*)calloc(total_batch * l.outputs, sizeof(float));
         }
-
-        if (l.activation == SWISH || l.activation == MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
 #endif  // not GPU
     }
+
+#ifndef GPU
+    if (l.activation == SWISH || l.activation == MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
+#endif  // not GPU
+
     if(adam){
         l.adam = 1;
         l.m = (float*)calloc(l.nweights, sizeof(float));
