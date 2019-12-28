@@ -1187,7 +1187,7 @@ void gun_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
 #endif
 }
 
-void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int benchmark)
+void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int benchmark, int benchmark_layers)
 {
 #ifdef OPENCV
     printf("Classifier Demo\n");
@@ -1195,6 +1195,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    net.benchmark_layers = benchmark_layers;
     set_batch_network(&net, 1);
     list *options = read_data_cfg(datacfg);
 
@@ -1329,6 +1330,8 @@ void run_classifier(int argc, char **argv)
 
     int dont_show = find_arg(argc, argv, "-dont_show");
     int benchmark = find_arg(argc, argv, "-benchmark");
+    int benchmark_layers = find_arg(argc, argv, "-benchmark_layers");
+    if (benchmark_layers) benchmark = 1;
     int dontuse_opencv = find_arg(argc, argv, "-dontuse_opencv");
     int show_imgs = find_arg(argc, argv, "-show_imgs");
     int calc_topk = find_arg(argc, argv, "-topk");
@@ -1344,7 +1347,7 @@ void run_classifier(int argc, char **argv)
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
     else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dontuse_opencv, dont_show, mjpeg_port, calc_topk, show_imgs);
-    else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename, benchmark);
+    else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename, benchmark, benchmark_layers);
     else if(0==strcmp(argv[2], "gun")) gun_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "threat")) threat_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "test")) test_classifier(data, cfg, weights, layer);
