@@ -1419,6 +1419,18 @@ image load_image_stb(char *filename, int channels)
     return im;
 }
 
+image load_image_stb_resize(char *filename, int w, int h, int c)
+{
+    image out = load_image_stb(filename, c);    // without OpenCV
+
+    if ((h && w) && (h != out.h || w != out.w)) {
+        image resized = resize_image(out, w, h);
+        free_image(out);
+        out = resized;
+    }
+    return out;
+}
+
 image load_image(char *filename, int w, int h, int c)
 {
 #ifdef OPENCV

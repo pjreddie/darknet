@@ -822,6 +822,7 @@ typedef struct load_args {
     int augment_speed;
     int letter_box;
     int show_imgs;
+    int dontuse_opencv;
     float jitter;
     int flip;
     int blur;

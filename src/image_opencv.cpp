@@ -1210,15 +1210,15 @@ extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
         if (blur) {
             cv::Mat dst(sized.size(), sized.type());
             if (blur == 1) {
-                //cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
-                cv::bilateralFilter(sized, dst, 17, 75, 75);
+                cv::GaussianBlur(sized, dst, cv::Size(17, 17), 0);
+                //cv::bilateralFilter(sized, dst, 17, 75, 75);
             }
             else {
                 int ksize = (blur / 2) * 2 + 1;
                 cv::Size kernel_size = cv::Size(ksize, ksize);
-                //cv::GaussianBlur(sized, dst, kernel_size, 0);
+                cv::GaussianBlur(sized, dst, kernel_size, 0);
                 //cv::medianBlur(sized, dst, ksize);
-                cv::bilateralFilter(sized, dst, ksize, 75, 75);
+                //cv::bilateralFilter(sized, dst, ksize, 75, 75);
 
                 // sharpen
                 //cv::Mat img_tmp;
@@ -1274,7 +1274,9 @@ extern "C" image blur_image(image src_img, int ksize)
 {
     cv::Mat src = image_to_mat(src_img);
     cv::Mat dst;
-    cv::bilateralFilter(src, dst, ksize, 75, 75);
+    cv::Size kernel_size = cv::Size(ksize, ksize);
+    cv::GaussianBlur(src, dst, kernel_size, 0);
+    //cv::bilateralFilter(src, dst, ksize, 75, 75);
     image dst_img = mat_to_image(dst);
     return dst_img;
 }
