@@ -1257,20 +1257,24 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         printf("\033[2J");
         printf("\033[1;1H");
 #endif
-        printf("\rFPS: %.2f \t AVG_FPS = %.2f ", fps, avg_fps);
+
 
         if (!benchmark) {
-            printf("\n");
+            printf("\rFPS: %.2f  (use -benchmark command line flag for correct measurement)\n", fps);
             for (i = 0; i < top; ++i) {
                 int index = indexes[i];
                 printf("%.1f%%: %s\n", predictions[index] * 100, names[index]);
             }
+            printf("\n");
 
             free_image(in_s);
             free_image(in);
 
             int c = wait_key_cv(10);// cvWaitKey(10);
             if (c == 27 || c == 1048603) break;
+        }
+        else {
+            printf("\rFPS: %.2f \t AVG_FPS = %.2f ", fps, avg_fps);
         }
 
         //gettimeofday(&tval_after, NULL);
