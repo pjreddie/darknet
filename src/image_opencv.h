@@ -111,8 +111,11 @@ image blur_image(image src_img, int ksize);
 // Show Anchors
 void show_acnhors(int number_of_boxes, int num_of_clusters, float *rel_width_height_array, model anchors_data, int width, int height);
 
+void show_opencv_info();
+
 #else   // OPENCV
 
+void show_opencv_info();
 int wait_key_cv(int delay);
 int wait_until_press_key_cv();
 void destroy_all_windows_cv();

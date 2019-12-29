@@ -77,6 +77,7 @@ extern "C" {
     cudaStream_t get_cuda_memcpy_stream();
     int get_number_of_blocks(int array_size, int block_size);
     int get_gpu_compute_capability(int i);
+    void show_cuda_cudnn_info();
 
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();

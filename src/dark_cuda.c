@@ -475,6 +475,24 @@ int get_gpu_compute_capability(int i)
     return cc;
 }
 
+void show_cuda_cudnn_info()
+{
+    int cuda_version = 0, cuda_driver_version = 0, device_count = 0;
+    CHECK_CUDA(cudaRuntimeGetVersion(&cuda_version));
+    CHECK_CUDA(cudaDriverGetVersion(&cuda_driver_version));
+    fprintf(stderr, " CUDA-version: %d (%d)", cuda_version, cuda_driver_version);
+    if(cuda_version < cuda_driver_version) printf(stderr, "\n Warning: CUDA-version is lower than Driver-version! \n");
+#ifdef CUDNN
+    fprintf(stderr, ", cuDNN: %d.%d.%d", CUDNN_MAJOR, CUDNN_MINOR, CUDNN_PATCHLEVEL);
+#endif  // CUDNN
+#ifdef CUDNN_HALF
+    fprintf(stderr, ", CUDNN_HALF=1");
+#endif  // CUDNN_HALF
+    CHECK_CUDA(cudaGetDeviceCount(&device_count));
+    fprintf(stderr, ", GPU count: %d ", device_count);
+    fprintf(stderr, " \n");
+}
+
 #else // GPU
 #include "darknet.h"
 void cuda_set_device(int n) {}

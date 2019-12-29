@@ -433,6 +433,12 @@ int main(int argc, char **argv)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
+#ifdef GPU
+    show_cuda_cudnn_info();
+#endif// GPU
+
+    show_opencv_info();
+
 	int i;
 	for (i = 0; i < argc; ++i) {
 		if (!argv[i]) continue;

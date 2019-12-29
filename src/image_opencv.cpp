@@ -1,4 +1,5 @@
 #include "image_opencv.h"
+#include <iostream>
 
 #ifdef OPENCV
 #include "utils.h"
@@ -8,7 +9,6 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include <iostream>
 #include <fstream>
 #include <algorithm>
 
@@ -1332,10 +1332,20 @@ extern "C" void show_acnhors(int number_of_boxes, int num_of_clusters, float *re
     cv::destroyAllWindows();
 }
 
+void show_opencv_info()
+{
+    std::cerr << " OpenCV version: " << CV_VERSION_MAJOR << "." << CV_VERSION_MINOR << "." << CVAUX_STR(CV_VERSION_REVISION) OCV_D
+        << std::endl;
+}
+
+
+
 }   // extern "C"
-
-
 #else  // OPENCV
+extern "C" void show_opencv_info()
+{
+    std::cerr << " OpenCV isn't used \n";
+}
 extern "C" int wait_key_cv(int delay) { return 0; }
 extern "C" int wait_until_press_key_cv() { return 0; }
 extern "C" void destroy_all_windows_cv() {}
