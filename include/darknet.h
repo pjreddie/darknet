@@ -869,6 +869,7 @@ typedef struct box_label {
 LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API network *load_network_custom(char *cfg, char *weights, int clear, int batch);
 LIB_API network *load_network(char *cfg, char *weights, int clear);
+LIB_API void free_network(network net);
 
 // network.c
 LIB_API load_args get_base_args(network *net);

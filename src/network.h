@@ -108,7 +108,7 @@ float get_current_seq_subdivisions(network net);
 int get_sequence_value(network net);
 float get_current_rate(network net);
 int get_current_batch(network net);
-void free_network(network net);
+//void free_network(network net); // darknet.h
 void compare_networks(network n1, network n2, data d);
 char *get_layer_string(LAYER_TYPE a);
 
