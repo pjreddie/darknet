@@ -813,6 +813,40 @@ float **one_hot_encode(float *a, int n, int k)
     return t;
 }
 
+static unsigned int x = 123456789, y = 362436069, z = 521288629;
+
+// Marsaglia's xorshf96 generator: period 2^96-1
+unsigned int random_gen_fast(void)
+{
+    unsigned int t;
+    x ^= x << 16;
+    x ^= x >> 5;
+    x ^= x << 1;
+
+    t = x;
+    x = y;
+    y = z;
+    z = t ^ x ^ y;
+
+    return z;
+}
+
+float random_float_fast()
+{
+    return ((float)random_gen_fast() / (float)UINT_MAX);
+}
+
+int rand_int_fast(int min, int max)
+{
+    if (max < min) {
+        int s = min;
+        min = max;
+        max = s;
+    }
+    int r = (random_gen_fast() % (max - min + 1)) + min;
+    return r;
+}
+
 unsigned int random_gen()
 {
     unsigned int rnd = 0;
@@ -829,11 +863,20 @@ unsigned int random_gen()
 
 float random_float()
 {
+    unsigned int rnd = 0;
 #ifdef WIN32
-    return ((float)random_gen() / (float)UINT_MAX);
-#else
-    return ((float)random_gen() / (float)RAND_MAX);
-#endif
+    rand_s(&rnd);
+    return ((float)rnd / (float)UINT_MAX);
+#else   // WIN32
+
+    rnd = rand();
+#if (RAND_MAX < 65536)
+    rnd = rand()*(RAND_MAX + 1) + rnd;
+    return((float)rnd / (float)(RAND_MAX*RAND_MAX));
+#endif  //(RAND_MAX < 65536)
+    return ((float)rnd / (float)RAND_MAX);
+
+#endif  // WIN32
 }
 
 float rand_uniform_strong(float min, float max)

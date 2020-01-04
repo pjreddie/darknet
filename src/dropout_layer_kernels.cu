@@ -59,12 +59,14 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
             for (k = 0; k < l.c; k++) {
                 for (i = 0; i < max_blocks_per_channel; i++) {
                     float rnd = random_float();
-                    //printf(" rnd = %f \n", rnd);
+                    printf(" rnd = %f \n", rnd);
+                    //int rn = rand_int_fast(1, 7);
+                    //printf(" rnd = %d \n", rn);
                     if (rnd < prob_place_block) {
                         //count_ones += block_width  *block_height;
                         const int pre_index = k*l.w*l.h + b*l.w*l.h*l.c;
-                        const int x_block = rand_int(0, l.w - block_width - 1);
-                        const int y_block = rand_int(0, l.h - block_height - 1);
+                        const int x_block = rand_int_fast(0, l.w - block_width - 1);
+                        const int y_block = rand_int_fast(0, l.h - block_height - 1);
                         for (y = y_block; y < (y_block + block_height); y++) {
                             memset(&l.rand[x_block + y*l.w + pre_index], 1, block_width * sizeof(float));
                             //for (x = x_block; x < (x_block + block_width); x++) {
