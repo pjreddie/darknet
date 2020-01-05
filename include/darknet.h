@@ -328,6 +328,8 @@ struct layer {
     int   * indexes;
     int   * input_layers;
     int   * input_sizes;
+    float **layers_output;
+    float **layers_delta;
     int   * map;
     int   * counts;
     float ** sums;
@@ -575,6 +577,10 @@ struct layer {
 
     float *gt_gpu;
     float *a_avg_gpu;
+
+    int *input_sizes_gpu;
+    float **layers_output_gpu;
+    float **layers_delta_gpu;
 #ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
     cudnnTensorDescriptor_t srcTensorDesc16, dstTensorDesc16;

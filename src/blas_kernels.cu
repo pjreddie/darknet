@@ -668,6 +668,75 @@ extern "C" void fill_ongpu(int N, float ALPHA, float * X, int INCX)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
+__global__ void shortcut_multilayer_kernel(int size, int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_output_gpu, float *out, float *in)
+{
+    const int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= size) return;
+
+    int src_id = id;
+    int src_i = src_id % src_outputs;
+    src_id /= src_outputs;
+    int src_b = src_id;
+
+    out[id] = in[id];
+
+    // layers
+    for (int i = 0; i < n; ++i) {
+        int add_outputs = outputs_of_layers_gpu[i];
+        if (src_i < add_outputs) {
+            int add_index = add_outputs*src_b + src_i;
+            int out_index = id;
+
+            float *add = layers_output_gpu[i];
+            out[out_index] += add[add_index];
+        }
+    }
+}
+
+extern "C" void shortcut_multilayer_gpu(int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_output_gpu, float *out, float *in)
+{
+    //printf(" src_outputs = %d, batch = %d, n = %d \n", src_outputs, batch, n);
+    int size = batch * src_outputs;
+    shortcut_multilayer_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> > (size, src_outputs, batch, n, outputs_of_layers_gpu, layers_output_gpu, out, in);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+
+__global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, int batch, int n, int *outputs_of_layers_gpu,
+    float **layers_delta_gpu, float *delta_out, float *delta_in)
+{
+    const int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= size) return;
+
+    int src_id = id;
+    int src_i = src_id % src_outputs;
+    src_id /= src_outputs;
+    int src_b = src_id;
+
+    delta_out[id] += delta_in[id];
+
+    // layers
+    for (int i = 0; i < n; ++i) {
+        int add_outputs = outputs_of_layers_gpu[i];
+        if (src_i < add_outputs) {
+            int add_index = add_outputs*src_b + src_i;
+            int out_index = id;
+
+            float *layer_delta = layers_delta_gpu[i];
+            layer_delta[add_index] += delta_in[id];
+        }
+    }
+}
+
+extern "C" void backward_shortcut_multilayer_gpu(int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_delta_gpu, float *delta_out, float *delta_in)
+{
+    //printf(" src_outputs = %d, batch = %d, n = %d \n", src_outputs, batch, n);
+    int size = batch * src_outputs;
+    backward_shortcut_multilayer_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> > (size, src_outputs, batch, n, outputs_of_layers_gpu, layers_delta_gpu, delta_out, delta_in);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
 __global__ void shortcut_kernel(int size, int minw, int minh, int minc, int stride, int sample, int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out)
 {
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;

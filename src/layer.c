@@ -65,6 +65,8 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.indexes)            free(l.indexes);
     if (l.input_layers)       free(l.input_layers);
     if (l.input_sizes)        free(l.input_sizes);
+    if (l.layers_output)      free(l.layers_output);
+    if (l.layers_delta)       free(l.layers_delta);
     if (l.map)                free(l.map);
     if (l.rand)               free(l.rand);
     if (l.cost)               free(l.cost);
@@ -190,6 +192,9 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.rand_gpu)                cuda_free(l.rand_gpu);
     if (l.squared_gpu)             cuda_free(l.squared_gpu);
     if (l.norms_gpu)               cuda_free(l.norms_gpu);
+    if (l.input_sizes_gpu)         cuda_free(l.input_sizes_gpu);
+    if (l.layers_output_gpu)       cuda_free(l.layers_output_gpu);
+    if (l.layers_delta_gpu)        cuda_free(l.layers_delta_gpu);
 
     // CONV-LSTM
     if (l.f_gpu)                   cuda_free(l.f_gpu);

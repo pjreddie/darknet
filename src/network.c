@@ -538,7 +538,7 @@ int resize_network(network *net, int w, int h)
         }else if(l.type == ROUTE){
             resize_route_layer(&l, net);
         }else if (l.type == SHORTCUT) {
-            resize_shortcut_layer(&l, w, h);
+            resize_shortcut_layer(&l, w, h, net);
         }else if (l.type == SCALE_CHANNELS) {
             resize_scale_channels_layer(&l, net);
         }else if (l.type == DROPOUT) {

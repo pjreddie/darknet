@@ -7,10 +7,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2, int assisted_excitation, ACTIVATION activation, int train);
+layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes, int w, int h, int c,
+    float **layers_output, float **layers_delta, float **layers_output_gpu, float **layers_delta_gpu, ACTIVATION activation, int train);
 void forward_shortcut_layer(const layer l, network_state state);
 void backward_shortcut_layer(const layer l, network_state state);
-void resize_shortcut_layer(layer *l, int w, int h);
+void resize_shortcut_layer(layer *l, int w, int h, network *net);
 
 #ifdef GPU
 void forward_shortcut_layer_gpu(const layer l, network_state state);

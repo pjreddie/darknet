@@ -817,15 +817,54 @@ layer parse_shortcut(list *options, size_params params, network net)
     ACTIVATION activation = get_activation(activation_s);
 
     int assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
+    //char *l = option_find(options, "from");
+    //int index = atoi(l);
+    //if(index < 0) index = params.index + index;
+
     char *l = option_find(options, "from");
-    int index = atoi(l);
-    if(index < 0) index = params.index + index;
+    int len = strlen(l);
+    if (!l) error("Route Layer must specify input layers: from = ...");
+    int n = 1;
+    int i;
+    for (i = 0; i < len; ++i) {
+        if (l[i] == ',') ++n;
+    }
 
-    int batch = params.batch;
-    layer from = net.layers[index];
-    if (from.antialiasing) from = *from.input_layer;
+    int* layers = (int*)calloc(n, sizeof(int));
+    int* sizes = (int*)calloc(n, sizeof(int));
+    float **layers_output = (float **)calloc(n, sizeof(float *));
+    float **layers_delta = (float **)calloc(n, sizeof(float *));
+    float **layers_output_gpu = (float **)calloc(n, sizeof(float *));
+    float **layers_delta_gpu = (float **)calloc(n, sizeof(float *));
 
-    layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c, assisted_excitation, activation, params.train);
+    for (i = 0; i < n; ++i) {
+        int index = atoi(l);
+        l = strchr(l, ',') + 1;
+        if (index < 0) index = params.index + index;
+        layers[i] = index;
+        sizes[i] = params.net.layers[index].outputs;
+        layers_output[i] = params.net.layers[index].output;
+        layers_delta[i] = params.net.layers[index].delta;
+
+    }
+
+#ifdef GPU
+    for (i = 0; i < n; ++i) {
+        layers_output_gpu[i] = params.net.layers[layers[i]].output_gpu;
+        layers_delta_gpu[i] = params.net.layers[layers[i]].delta_gpu;
+    }
+#endif// GPU
+
+    layer s = make_shortcut_layer(params.batch, n, layers, sizes, params.w, params.h, params.c, layers_output, layers_delta, layers_output_gpu, layers_delta_gpu, activation, params.train);
+
+    for (i = 0; i < n; ++i) {
+        int index = layers[i];
+        assert(params.w == net.layers[index].out_w && params.h == net.layers[index].out_h);
+
+        if (params.w != net.layers[index].out_w || params.h != net.layers[index].out_h || params.c != net.layers[index].out_c)
+            fprintf(stderr, " w = %d, w2 = %d, h = %d, h2 = %d, c = %d, c2 = %d \n",
+                params.w, net.layers[index].out_w, params.h, net.layers[index].out_h, params.c, params.net.layers[index].out_c);
+    }
 
     return s;
 }
