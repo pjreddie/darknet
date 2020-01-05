@@ -948,6 +948,10 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     c = c ? c : 3;
 
     assert(use_mixup != 2);
+    if (use_mixup == 3 && letter_box) {
+        printf("\n Combination: letter_box=1 & mosaic=1 - isn't supported, use only 1 of these parameters \n");
+        exit(0);
+    }
     if (random_gen() % 2 == 0) use_mixup = 0;
     int i;
 
