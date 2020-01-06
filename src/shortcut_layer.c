@@ -56,8 +56,8 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
 
     l.input_sizes_gpu = cuda_make_int_array_new_api(input_sizes, l.n);
-    l.layers_output_gpu = cuda_make_array_pointers(layers_output_gpu, l.n);
-    l.layers_delta_gpu = cuda_make_array_pointers(layers_delta_gpu, l.n);
+    l.layers_output_gpu = cuda_make_array_pointers((void**)layers_output_gpu, l.n);
+    l.layers_delta_gpu = cuda_make_array_pointers((void**)layers_delta_gpu, l.n);
 #endif  // GPU
 
     l.bflops = l.out_w * l.out_h * l.out_c * l.n / 1000000000.;
