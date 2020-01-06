@@ -55,7 +55,7 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     if (train) l.delta_gpu =  cuda_make_array(l.delta, l.outputs*batch);
     l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
 
-    l.input_sizes_gpu = cuda_make_array(input_sizes, l.n);
+    l.input_sizes_gpu = cuda_make_int_array_new_api(input_sizes, l.n);
     l.layers_output_gpu = cuda_make_array_pointers(layers_output_gpu, l.n);
     l.layers_delta_gpu = cuda_make_array_pointers(layers_delta_gpu, l.n);
 #endif  // GPU
