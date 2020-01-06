@@ -576,6 +576,12 @@ extern "C" void simple_copy_ongpu(int size, float *src, float *dst)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
+extern "C" void memcpy_ongpu(float *dst, float *src, int size_bytes)
+{
+    CHECK_CUDA(cudaMemcpyAsync(dst, src, size_bytes, cudaMemcpyDefault, get_cuda_stream()));
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
 extern "C" void mul_ongpu(int N, float * X, int INCX, float * Y, int INCY)
 {
     mul_kernel<<<cuda_gridsize(N), BLOCK, 0, get_cuda_stream() >>>(N, X, INCX, Y, INCY);

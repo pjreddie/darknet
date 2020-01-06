@@ -845,7 +845,6 @@ layer parse_shortcut(list *options, size_params params, network net)
         sizes[i] = params.net.layers[index].outputs;
         layers_output[i] = params.net.layers[index].output;
         layers_delta[i] = params.net.layers[index].delta;
-
     }
 
 #ifdef GPU

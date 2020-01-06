@@ -80,7 +80,10 @@ void resize_shortcut_layer(layer *l, int w, int h, network *net)
     for (i = 0; i < l->n; ++i) {
         int index = l->input_layers[i];
         l->input_sizes[i] = net->layers[index].outputs;
-        assert(l->w == net->layers[index].w && l->h == net->layers[index].h);
+        l->layers_output[i] = net->layers[index].output;
+        l->layers_delta[i] = net->layers[index].delta;
+
+        assert(l->w == net->layers[index].out_w && l->h == net->layers[index].out_h);
     }
 
 #ifdef GPU
@@ -91,6 +94,10 @@ void resize_shortcut_layer(layer *l, int w, int h, network *net)
         cuda_free(l->delta_gpu);
         l->delta_gpu = cuda_make_array(l->delta, l->outputs*l->batch);
     }
+
+    memcpy_ongpu(l->input_sizes_gpu, l->input_sizes, l->n * sizeof(int));
+    memcpy_ongpu(l->layers_output_gpu, l->layers_output, l->n * sizeof(float*));
+    memcpy_ongpu(l->layers_delta_gpu, l->layers_delta, l->n * sizeof(float*));
 #endif
 
 }
