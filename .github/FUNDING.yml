@@ -1,0 +1,12 @@
+# These are supported funding model platforms
+
+github: # Replace with up to 4 GitHub Sponsors-enabled usernames e.g., [user1, user2]
+patreon: # Replace with a single Patreon username
+open_collective: # Replace with a single Open Collective username
+ko_fi: # Replace with a single Ko-fi username
+tidelift: # Replace with a single Tidelift platform-name/package-name e.g., npm/babel
+community_bridge: # Replace with a single Community Bridge project-name e.g., cloud-foundry
+liberapay: # Replace with a single Liberapay username
+issuehunt: # Replace with a single IssueHunt username
+otechie: # Replace with a single Otechie username
+custom: ['https://paypal.me/alexeyab84', 'https://blockchain.coinmarketcap.com/address/bitcoin/36La9T7DoLVMrUQzm6rBDGsxutyvDzbHnp', 'https://etherscan.io/address/0x193d56BE3C65e3Fb8f48c291B17C0702e211A588#', 'https://explorer.zcha.in/accounts/t1PzwJ28Prb7Nk8fgfT3RXCr6Xtw54tgjoy'] # Replace with up to 4 custom sponsorship URLs e.g., ['link1', 'link2']

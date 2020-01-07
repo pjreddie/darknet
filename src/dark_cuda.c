@@ -101,7 +101,11 @@ dim3 cuda_gridsize(size_t n){
         x = ceil(sqrt(k));
         y = (n-1)/(x*BLOCK) + 1;
     }
-    dim3 d = { (unsigned int)x, (unsigned int)y, 1 };
+    //dim3 d = { (unsigned int)x, (unsigned int)y, 1 };
+    dim3 d;
+    d.x = x;
+    d.y = y;
+    d.z = 1;
     //printf("%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
     return d;
 }
@@ -112,6 +116,7 @@ static int streamInit[16] = { 0 };
 cudaStream_t get_cuda_stream() {
     int i = cuda_get_device();
     if (!streamInit[i]) {
+        //printf("Create CUDA-stream \n");
         cudaError_t status = cudaStreamCreate(&streamsArray[i]);
         //cudaError_t status = cudaStreamCreateWithFlags(&streamsArray[i], cudaStreamNonBlocking);
         if (status != cudaSuccess) {
@@ -225,19 +230,156 @@ cublasHandle_t blas_handle()
     return handle[i];
 }
 
+static float **pinned_ptr = NULL;
+static size_t pinned_num_of_blocks = 0;
+static size_t pinned_index = 0;
+static size_t pinned_block_id = 0;
+static const size_t pinned_block_size = (size_t)1024 * 1024 * 1024 * 1;   // 1 GB block size
+static pthread_mutex_t mutex_pinned = PTHREAD_MUTEX_INITIALIZER;
+
+// free CPU-pinned memory
+void free_pinned_memory()
+{
+    if (pinned_ptr) {
+        int k;
+        for (k = 0; k < pinned_num_of_blocks; ++k) {
+            cuda_free_host(pinned_ptr[k]);
+        }
+        free(pinned_ptr);
+        pinned_ptr = NULL;
+    }
+}
+
+// custom CPU-pinned memory allocation
+void pre_allocate_pinned_memory(const size_t size)
+{
+    const size_t num_of_blocks = size / pinned_block_size + ((size % pinned_block_size) ? 1 : 0);
+    printf("pre_allocate... pinned_ptr = %p \n", pinned_ptr);
+
+    pthread_mutex_lock(&mutex_pinned);
+    if (!pinned_ptr) {
+        pinned_ptr = (float **)calloc(num_of_blocks, sizeof(float *));
+        if(!pinned_ptr) error("calloc failed in pre_allocate() \n");
+
+        printf("pre_allocate: size = %Iu MB, num_of_blocks = %Iu, block_size = %Iu MB \n",
+            size / (1024*1024), num_of_blocks, pinned_block_size / (1024 * 1024));
+
+        int k;
+        for (k = 0; k < num_of_blocks; ++k) {
+            cudaError_t status = cudaHostAlloc((void **)&pinned_ptr[k], pinned_block_size, cudaHostRegisterMapped);
+            if (status != cudaSuccess) fprintf(stderr, " Can't pre-allocate CUDA-pinned buffer on CPU-RAM \n");
+            CHECK_CUDA(status);
+            if (!pinned_ptr[k]) error("cudaHostAlloc failed\n");
+            else {
+                printf(" Allocated %d pinned block \n", pinned_block_size);
+            }
+        }
+        pinned_num_of_blocks = num_of_blocks;
+    }
+    pthread_mutex_unlock(&mutex_pinned);
+}
+
+// simple - get pre-allocated pinned memory
+float *cuda_make_array_pinned_preallocated(float *x, size_t n)
+{
+    pthread_mutex_lock(&mutex_pinned);
+    float *x_cpu = NULL;
+    const size_t memory_step = 512;// 4096;
+    const size_t size = sizeof(float)*n;
+    const size_t allocation_size = ((size / memory_step) + 1) * memory_step;
+
+    if (pinned_ptr && pinned_block_id < pinned_num_of_blocks && (allocation_size < pinned_block_size/2))
+    {
+        if ((allocation_size + pinned_index) > pinned_block_size) {
+            const float filled = (float)100 * pinned_index / pinned_block_size;
+            printf("\n Pinned block_id = %d, filled = %f %% \n", pinned_block_id, filled);
+            pinned_block_id++;
+            pinned_index = 0;
+        }
+        if ((allocation_size + pinned_index) < pinned_block_size && pinned_block_id < pinned_num_of_blocks) {
+            x_cpu = (float *)((char *)pinned_ptr[pinned_block_id] + pinned_index);
+            pinned_index += allocation_size;
+        }
+        else {
+            //printf("Pre-allocated pinned memory is over! \n");
+        }
+    }
+
+    if(!x_cpu) {
+        if (allocation_size > pinned_block_size / 2) {
+            printf("Try to allocate new pinned memory, size = %d MB \n", size / (1024 * 1024));
+            cudaError_t status = cudaHostAlloc((void **)&x_cpu, size, cudaHostRegisterMapped);
+            if (status != cudaSuccess) fprintf(stderr, " Can't allocate CUDA-pinned memory on CPU-RAM (pre-allocated memory is over too) \n");
+            CHECK_CUDA(status);
+        }
+        else {
+            printf("Try to allocate new pinned BLOCK, size = %d MB \n", size / (1024 * 1024));
+            pinned_num_of_blocks++;
+            pinned_block_id = pinned_num_of_blocks - 1;
+            pinned_index = 0;
+            pinned_ptr = (float **)realloc(pinned_ptr, pinned_num_of_blocks * sizeof(float *));
+            cudaError_t status = cudaHostAlloc((void **)&pinned_ptr[pinned_block_id], pinned_block_size, cudaHostRegisterMapped);
+            if (status != cudaSuccess) fprintf(stderr, " Can't pre-allocate CUDA-pinned buffer on CPU-RAM \n");
+            CHECK_CUDA(status);
+            x_cpu = pinned_ptr[pinned_block_id];
+        }
+    }
+
+    if (x) {
+        cudaError_t status = cudaMemcpyAsync(x_cpu, x, size, cudaMemcpyDefault, get_cuda_stream());
+        CHECK_CUDA(status);
+    }
+
+    pthread_mutex_unlock(&mutex_pinned);
+    return x_cpu;
+}
+
+float *cuda_make_array_pinned(float *x, size_t n)
+{
+    float *x_gpu;
+    size_t size = sizeof(float)*n;
+    //cudaError_t status = cudaMalloc((void **)&x_gpu, size);
+    cudaError_t status = cudaHostAlloc((void **)&x_gpu, size, cudaHostRegisterMapped);
+    if (status != cudaSuccess) fprintf(stderr, " Can't allocate CUDA-pinned memory on CPU-RAM \n");
+    CHECK_CUDA(status);
+    if (x) {
+        status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyDefault, get_cuda_stream());
+        CHECK_CUDA(status);
+    }
+    if (!x_gpu) error("cudaHostAlloc failed\n");
+    return x_gpu;
+}
+
 float *cuda_make_array(float *x, size_t n)
 {
     float *x_gpu;
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMalloc((void **)&x_gpu, size);
+    //cudaError_t status = cudaMallocManaged((void **)&x_gpu, size, cudaMemAttachGlobal);
+    //status = cudaMemAdvise(x_gpu, size, cudaMemAdviseSetPreferredLocation, cudaCpuDeviceId);
     if (status != cudaSuccess) fprintf(stderr, " Try to set subdivisions=64 in your cfg-file. \n");
     CHECK_CUDA(status);
     if(x){
         //status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
-        status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
+        status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyDefault, get_cuda_stream());
         CHECK_CUDA(status);
     }
     if(!x_gpu) error("Cuda malloc failed\n");
+    return x_gpu;
+}
+
+void **cuda_make_array_pointers(void **x, size_t n)
+{
+    void **x_gpu;
+    size_t size = sizeof(void*) * n;
+    cudaError_t status = cudaMalloc((void **)&x_gpu, size);
+    if (status != cudaSuccess) fprintf(stderr, " Try to set subdivisions=64 in your cfg-file. \n");
+    CHECK_CUDA(status);
+    if (x) {
+        status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyDefault, get_cuda_stream());
+        CHECK_CUDA(status);
+    }
+    if (!x_gpu) error("Cuda malloc failed\n");
     return x_gpu;
 }
 
@@ -285,8 +427,8 @@ int *cuda_make_int_array_new_api(int *x, size_t n)
 	cudaError_t status = cudaMalloc((void **)&x_gpu, size);
     CHECK_CUDA(status);
 	if (x) {
-		//status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
-        status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
+		//status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
+        cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
         CHECK_CUDA(status);
 	}
 	if (!x_gpu) error("Cuda malloc failed\n");
@@ -300,11 +442,18 @@ void cuda_free(float *x_gpu)
     CHECK_CUDA(status);
 }
 
+void cuda_free_host(float *x_cpu)
+{
+    //cudaStreamSynchronize(get_cuda_stream());
+    cudaError_t status = cudaFreeHost(x_cpu);
+    CHECK_CUDA(status);
+}
+
 void cuda_push_array(float *x_gpu, float *x, size_t n)
 {
     size_t size = sizeof(float)*n;
     //cudaError_t status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
-    cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
+    cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyDefault, get_cuda_stream());
     CHECK_CUDA(status);
 }
 
@@ -312,7 +461,7 @@ void cuda_pull_array(float *x_gpu, float *x, size_t n)
 {
     size_t size = sizeof(float)*n;
     //cudaError_t status = cudaMemcpy(x, x_gpu, size, cudaMemcpyDeviceToHost);
-    cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDeviceToHost, get_cuda_stream());
+    cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDefault, get_cuda_stream());
     CHECK_CUDA(status);
     cudaStreamSynchronize(get_cuda_stream());
 }
@@ -320,7 +469,7 @@ void cuda_pull_array(float *x_gpu, float *x, size_t n)
 void cuda_pull_array_async(float *x_gpu, float *x, size_t n)
 {
     size_t size = sizeof(float)*n;
-    cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDeviceToHost, get_cuda_stream());
+    cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDefault, get_cuda_stream());
     check_error(status);
     //cudaStreamSynchronize(get_cuda_stream());
 }
@@ -338,6 +487,24 @@ int get_gpu_compute_capability(int i)
     CHECK_CUDA(status);
     int cc = prop.major * 100 + prop.minor * 10;    // __CUDA_ARCH__ format
     return cc;
+}
+
+void show_cuda_cudnn_info()
+{
+    int cuda_version = 0, cuda_driver_version = 0, device_count = 0;
+    CHECK_CUDA(cudaRuntimeGetVersion(&cuda_version));
+    CHECK_CUDA(cudaDriverGetVersion(&cuda_driver_version));
+    fprintf(stderr, " CUDA-version: %d (%d)", cuda_version, cuda_driver_version);
+    if(cuda_version < cuda_driver_version) fprintf(stderr, "\n Warning: CUDA-version is lower than Driver-version! \n");
+#ifdef CUDNN
+    fprintf(stderr, ", cuDNN: %d.%d.%d", CUDNN_MAJOR, CUDNN_MINOR, CUDNN_PATCHLEVEL);
+#endif  // CUDNN
+#ifdef CUDNN_HALF
+    fprintf(stderr, ", CUDNN_HALF=1");
+#endif  // CUDNN_HALF
+    CHECK_CUDA(cudaGetDeviceCount(&device_count));
+    fprintf(stderr, ", GPU count: %d ", device_count);
+    fprintf(stderr, " \n");
 }
 
 #else // GPU

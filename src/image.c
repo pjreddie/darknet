@@ -773,6 +773,20 @@ image make_random_image(int w, int h, int c)
     return out;
 }
 
+image float_to_image_scaled(int w, int h, int c, float *data)
+{
+    image out = make_image(w, h, c);
+    int abs_max = 0;
+    int i = 0;
+    for (i = 0; i < w*h*c; ++i) {
+        if (fabs(data[i]) > abs_max) abs_max = fabs(data[i]);
+    }
+    for (i = 0; i < w*h*c; ++i) {
+        out.data[i] = data[i] / abs_max;
+    }
+    return out;
+}
+
 image float_to_image(int w, int h, int c, float *data)
 {
     image out = make_empty_image(w,h,c);
@@ -1278,6 +1292,8 @@ float bilinear_interpolate(image im, float x, float y, int c)
 
 image resize_image(image im, int w, int h)
 {
+    if (im.w == w && im.h == h) return copy_image(im);
+
     image resized = make_image(w, h, im.c);
     image part = make_image(w, im.h, im.c);
     int r, c, k;
@@ -1404,6 +1420,18 @@ image load_image_stb(char *filename, int channels)
     }
     free(data);
     return im;
+}
+
+image load_image_stb_resize(char *filename, int w, int h, int c)
+{
+    image out = load_image_stb(filename, c);    // without OpenCV
+
+    if ((h && w) && (h != out.h || w != out.w)) {
+        image resized = resize_image(out, w, h);
+        free_image(out);
+        out = resized;
+    }
+    return out;
 }
 
 image load_image(char *filename, int w, int h, int c)

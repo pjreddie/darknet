@@ -35,6 +35,11 @@ __device__ float relie_activate_kernel(float x){return (x>0) ? x : .01f*x;}
 __device__ float ramp_activate_kernel(float x){return x*(x>0)+.1f*x;}
 __device__ float leaky_activate_kernel(float x){return (x>0) ? x : .1f*x;}
 __device__ float tanh_activate_kernel(float x){return (2/(1 + expf(-2*x)) - 1);}
+__device__ float softplus_kernel(float x, float threshold = 20) {
+    if (x > threshold) return x;                // too large
+    else if (x < -threshold) return expf(x);    // too small
+    return logf(expf(x) + 1);
+}
 __device__ float plse_activate_kernel(float x)
 {
     if(x < -4) return .01f * (x + 4);
@@ -121,6 +126,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
         return loggy_gradient_kernel(x);
     case RELU:
         return relu_gradient_kernel(x);
+    case NORM_CHAN:
+        return relu_gradient_kernel(x);
     case ELU:
         return elu_gradient_kernel(x);
     case SELU:
@@ -199,6 +206,23 @@ __global__ void activate_array_swish_kernel(float *x, int n, float *output_sigmo
     }
 }
 
+// https://github.com/digantamisra98/Mish
+__global__ void activate_array_mish_kernel(float *x, int n, float *activation_input, float *output_gpu)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i < n) {
+        const float MISH_THRESHOLD = 20;
+        float x_val = x[i];
+        activation_input[i] = x_val;    // store value before activation
+        //output_gpu[i] = x_val * tanh_activate_kernel(logf(1 + expf(x_val)));
+
+        // Pytorch: https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h#L17-L20
+        // TF: https://github.com/tensorflow/addons/blob/093cdfa85d334cbe19a37624c33198f3140109ed/tensorflow_addons/custom_ops/activations/cc/kernels/mish_op.h#L40-L49
+        // log1p(x) == log(x + 1)
+        output_gpu[i] = x_val * tanh_activate_kernel( softplus_kernel(x_val, MISH_THRESHOLD) );
+    }
+}
+
 __global__ void activate_array_leaky_kernel(float *x, int n)
 {
     int index = blockIdx.x*blockDim.x + threadIdx.x;
@@ -260,6 +284,32 @@ __global__ void gradient_array_swish_kernel(float *x, int n, float *sigmoid_gpu,
     if (i < n) {
         float swish = x[i];
         delta[i] *= swish + sigmoid_gpu[i] * (1 - swish); // gradient_kernel(x[i], a);
+    }
+}
+
+// https://github.com/digantamisra98/Mish
+__global__ void gradient_array_mish_kernel(int n, float *activation_input_gpu, float *delta)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i < n) {
+        const float MISH_THRESHOLD = 20.0f;
+
+        // implementation from TensorFlow: https://github.com/tensorflow/addons/blob/093cdfa85d334cbe19a37624c33198f3140109ed/tensorflow_addons/custom_ops/activations/cc/kernels/mish_op.h#L66-L80
+        // implementation from Pytorch: https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h#L26-L31
+        // log1p(x) == log(x + 1)
+        const float inp = activation_input_gpu[i];
+        const float sp = softplus_kernel(inp, MISH_THRESHOLD);
+        const float grad_sp = 1 - expf(-sp);
+        const float tsp = tanh(sp);
+        const float grad_tsp = (1 - tsp*tsp) * grad_sp;
+        const float grad = inp * grad_tsp + tsp;
+        delta[i] *= grad;
+
+        //float x = activation_input[i];
+        //float d = 2 * expf(x) + expf(2 * x) + 2;
+        //float w = 4 * (x + 1) + 4 * expf(2 * x) + expf(3 * x) + expf(x)*(4 * x + 6);
+        //float derivative = expf(x) * w / (d * d);
+        //delta[i] *= derivative;
     }
 }
 
@@ -333,6 +383,13 @@ extern "C" void activate_array_swish_ongpu(float *x, int n, float *output_sigmoi
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
+extern "C" void activate_array_mish_ongpu(float *x, int n, float *activation_input_gpu, float *output_gpu)
+{
+    const int num_blocks = get_number_of_blocks(n, BLOCK);
+    activate_array_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> >(x, n, activation_input_gpu, output_gpu);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
 extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
@@ -342,6 +399,11 @@ extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta
     else if (a == TANH) gradient_array_tanh_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == HARDTAN) gradient_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == RELU) gradient_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    //else if (a == NORM_CHAN) gradient_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == NORM_CHAN_SOFTMAX || a == NORM_CHAN) {
+        printf(" Error: should be used custom NORM_CHAN_SOFTMAX-function for gradient \n");
+        exit(0);
+    }
     else if (a == SELU) gradient_array_selu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else
         gradient_array_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (x, n, a, delta);
@@ -353,5 +415,165 @@ extern "C" void gradient_array_swish_ongpu(float *x, int n, float *sigmoid_gpu, 
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
     gradient_array_swish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (x, n, sigmoid_gpu, delta);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+extern "C" void gradient_array_mish_ongpu(int n, float *activation_input_gpu, float *delta)
+{
+    const int num_blocks = get_number_of_blocks(n, BLOCK);
+    gradient_array_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, activation_input_gpu, delta);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+__global__ void activate_array_normalize_channels_kernel(float *x, int size, int batch, int channels, int wh_step, float *output_gpu)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    int wh_i = i % wh_step;
+    int b = i / wh_step;
+
+    const float eps = 0.0001;
+    if (i < size) {
+        float sum = eps;
+        int k;
+        for (k = 0; k < channels; ++k) {
+            float val = x[wh_i + k * wh_step + b*wh_step*channels];
+            if (val > 0) sum += val;
+        }
+        for (k = 0; k < channels; ++k) {
+            float val = x[wh_i + k * wh_step + b*wh_step*channels];
+            if (val > 0) val = val / sum;
+            else val = 0;
+            output_gpu[wh_i + k * wh_step + b*wh_step*channels] = val;
+        }
+    }
+}
+
+extern "C" void activate_array_normalize_channels_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu)
+{
+    // n = w*h*c*batch
+    // size = w*h*batch
+    int size = n / channels;
+
+    const int num_blocks = get_number_of_blocks(size, BLOCK);
+
+    activate_array_normalize_channels_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (x, size, batch, channels, wh_step, output_gpu);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+
+__global__ void activate_array_normalize_channels_softmax_kernel(float *x, int size, int batch, int channels, int wh_step, float *output_gpu)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    int wh_i = i % wh_step;
+    int b = i / wh_step;
+
+    const float eps = 0.0001;
+    if (i < size) {
+        float sum = eps;
+        int k;
+        for (k = 0; k < channels; ++k) {
+            float val = x[wh_i + k * wh_step + b*wh_step*channels];
+            sum += expf(val);
+        }
+        for (k = 0; k < channels; ++k) {
+            float val = x[wh_i + k * wh_step + b*wh_step*channels];
+            val = expf(val) / sum;
+            output_gpu[wh_i + k * wh_step + b*wh_step*channels] = val;
+        }
+    }
+}
+
+extern "C" void activate_array_normalize_channels_softmax_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu)
+{
+    // n = w*h*c*batch
+    // size = w*h*batch
+    int size = n / channels;
+
+    const int num_blocks = get_number_of_blocks(size, BLOCK);
+
+    activate_array_normalize_channels_softmax_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (x, size, batch, channels, wh_step, output_gpu);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+
+__global__ void gradient_array_normalize_channels_softmax_kernel(float *x, int size, int batch, int channels, int wh_step, float *delta_gpu)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    int wh_i = i % wh_step;
+    int b = i / wh_step;
+
+    if (i < size) {
+        float grad = 0;
+        int k;
+        for (k = 0; k < channels; ++k) {
+            const int index = wh_i + k * wh_step + b*wh_step*channels;
+            float out = x[index];
+            float delta = delta_gpu[index];
+            grad += out*delta;
+        }
+        for (k = 0; k < channels; ++k) {
+            const int index = wh_i + k * wh_step + b*wh_step*channels;
+            float delta = delta_gpu[index];
+            delta = delta * grad;
+            delta_gpu[index] = delta;
+        }
+    }
+}
+
+extern "C" void gradient_array_normalize_channels_softmax_ongpu(float *output_gpu, int n, int batch, int channels, int wh_step, float *delta_gpu)
+{
+    // n = w*h*c*batch
+    // size = w*h*batch
+    int size = n / channels;
+
+    const int num_blocks = get_number_of_blocks(size, BLOCK);
+
+    gradient_array_normalize_channels_softmax_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (output_gpu, size, batch, channels, wh_step, delta_gpu);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+
+__global__ void gradient_array_normalize_channels_kernel(float *x, int size, int batch, int channels, int wh_step, float *delta_gpu)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    int wh_i = i % wh_step;
+    int b = i / wh_step;
+
+    if (i < size) {
+        float grad = 0;
+        int k;
+        for (k = 0; k < channels; ++k) {
+            const int index = wh_i + k * wh_step + b*wh_step*channels;
+            float out = x[index];
+            float delta = delta_gpu[index];
+            grad += out*delta;
+        }
+        for (k = 0; k < channels; ++k) {
+            const int index = wh_i + k * wh_step + b*wh_step*channels;
+            if (x[index] > 0) {
+                float delta = delta_gpu[index];
+                delta = delta * grad;
+                delta_gpu[index] = delta;
+            }
+        }
+    }
+}
+
+extern "C" void gradient_array_normalize_channels_ongpu(float *output_gpu, int n, int batch, int channels, int wh_step, float *delta_gpu)
+{
+    // n = w*h*c*batch
+    // size = w*h*batch
+    int size = n / channels;
+
+    const int num_blocks = get_number_of_blocks(size, BLOCK);
+
+    gradient_array_normalize_channels_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (output_gpu, size, batch, channels, wh_step, delta_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }

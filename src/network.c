@@ -34,6 +34,7 @@
 #include "shortcut_layer.h"
 #include "scale_channels_layer.h"
 #include "yolo_layer.h"
+#include "gaussian_yolo_layer.h"
 #include "upsample_layer.h"
 #include "parser.h"
 
@@ -204,6 +205,10 @@ char *get_layer_string(LAYER_TYPE a)
             return "detection";
         case REGION:
             return "region";
+        case YOLO:
+            return "yolo";
+        case GAUSSIAN_YOLO:
+            return "Gaussian_yolo";
         case DROPOUT:
             return "dropout";
         case CROP:
@@ -469,7 +474,7 @@ void set_batch_network(network *net, int b)
 
 #ifdef CUDNN
         if(net->layers[i].type == CONVOLUTIONAL){
-            cudnn_convolutional_setup(net->layers + i, cudnn_fastest);
+            cudnn_convolutional_setup(net->layers + i, cudnn_fastest, 0);
         }
         else if (net->layers[i].type == MAXPOOL) {
             cudnn_maxpool_setup(net->layers + i);
@@ -522,16 +527,32 @@ int resize_network(network *net, int w, int h)
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
             resize_maxpool_layer(&l, w, h);
+        }else if (l.type == LOCAL_AVGPOOL) {
+            resize_maxpool_layer(&l, w, h);
+        }else if (l.type == BATCHNORM) {
+            resize_batchnorm_layer(&l, w, h);
         }else if(l.type == REGION){
             resize_region_layer(&l, w, h);
         }else if (l.type == YOLO) {
             resize_yolo_layer(&l, w, h);
+        }else if (l.type == GAUSSIAN_YOLO) {
+            resize_gaussian_yolo_layer(&l, w, h);
         }else if(l.type == ROUTE){
             resize_route_layer(&l, net);
         }else if (l.type == SHORTCUT) {
-            resize_shortcut_layer(&l, w, h);
-        //}else if (l.type == SCALE_CHANNELS) {
-        //    resize_scale_channels_layer(&l, w, h);
+            resize_shortcut_layer(&l, w, h, net);
+        }else if (l.type == SCALE_CHANNELS) {
+            resize_scale_channels_layer(&l, net);
+        }else if (l.type == DROPOUT) {
+            resize_dropout_layer(&l, inputs);
+            l.out_w = l.w = w;
+            l.out_h = l.h = h;
+            l.output = net->layers[i - 1].output;
+            l.delta = net->layers[i - 1].delta;
+#ifdef GPU
+            l.output_gpu = net->layers[i-1].output_gpu;
+            l.delta_gpu = net->layers[i-1].delta_gpu;
+#endif
         }else if (l.type == UPSAMPLE) {
             resize_upsample_layer(&l, w, h);
         }else if(l.type == REORG){
@@ -551,9 +572,12 @@ int resize_network(network *net, int w, int h)
         if(l.workspace_size > workspace_size) workspace_size = l.workspace_size;
         inputs = l.outputs;
         net->layers[i] = l;
-        w = l.out_w;
-        h = l.out_h;
-        if(l.type == AVGPOOL) break;
+        //if(l.type != DROPOUT)
+        {
+            w = l.out_w;
+            h = l.out_h;
+        }
+        //if(l.type == AVGPOOL) break;
     }
 #ifdef GPU
     const int size = get_network_input_size(*net) * net->batch;
@@ -689,6 +713,9 @@ int num_detections(network *net, float thresh)
         if (l.type == YOLO) {
             s += yolo_num_detections(l, thresh);
         }
+        if (l.type == GAUSSIAN_YOLO) {
+            s += gaussian_yolo_num_detections(l, thresh);
+        }
         if (l.type == DETECTION || l.type == REGION) {
             s += l.w*l.h*l.n;
         }
@@ -705,6 +732,8 @@ detection *make_network_boxes(network *net, float thresh, int *num)
     detection* dets = (detection*)xcalloc(nboxes, sizeof(detection));
     for (i = 0; i < nboxes; ++i) {
         dets[i].prob = (float*)xcalloc(l.classes, sizeof(float));
+        // tx,ty,tw,th uncertainty
+        dets[i].uc = (float*)xcalloc(4, sizeof(float)); // Gaussian_YOLOv3
         if (l.coords > 4) {
             dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
         }
@@ -751,6 +780,10 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
                     prev_classes, l.classes);
             }
         }
+        if (l.type == GAUSSIAN_YOLO) {
+            int count = get_gaussian_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets, letter);
+            dets += count;
+        }
         if (l.type == REGION) {
             custom_get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets, letter);
             //get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets);
@@ -775,6 +808,7 @@ void free_detections(detection *dets, int n)
     int i;
     for (i = 0; i < n; ++i) {
         free(dets[i].prob);
+        if (dets[i].uc) free(dets[i].uc);
         if (dets[i].mask) free(dets[i].mask);
     }
     free(dets);
@@ -793,7 +827,8 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
 {
     const float thresh = 0.005; // function get_network_boxes() has already filtred dets by actual threshold
 
-    char *send_buf = (char *)xcalloc(1024, sizeof(char));
+    char *send_buf = (char *)calloc(1024, sizeof(char));
+    if (!send_buf) return 0;
     if (filename) {
         sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename);
     }
@@ -810,7 +845,8 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
             {
                 if (class_id != -1) strcat(send_buf, ", \n");
                 class_id = j;
-                char *buf = (char *)xcalloc(2048, sizeof(char));
+                char *buf = (char *)calloc(2048, sizeof(char));
+                if (!buf) return 0;
                 //sprintf(buf, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f}",
                 //    image_id, j, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h, dets[i].prob[j]);
 
@@ -820,7 +856,11 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
                 int send_buf_len = strlen(send_buf);
                 int buf_len = strlen(buf);
                 int total_len = send_buf_len + buf_len + 100;
-                send_buf = (char *)xrealloc(send_buf, total_len * sizeof(char));
+                send_buf = (char *)realloc(send_buf, total_len * sizeof(char));
+                if (!send_buf) {
+                    if (buf) free(buf);
+                    return 0;// exit(-1);
+                }
                 strcat(send_buf, buf);
                 free(buf);
             }
@@ -1002,6 +1042,7 @@ void free_network(network net)
 #ifdef GPU
     if (gpu_index >= 0) cuda_free(net.workspace);
     else free(net.workspace);
+    free_pinned_memory();
     if (net.input_state_gpu) cuda_free(net.input_state_gpu);
     if (net.input_pinned_cpu) {   // CPU
         if (net.input_pinned_cpu_flag) cudaFreeHost(net.input_pinned_cpu);
@@ -1033,11 +1074,14 @@ void fuse_conv_batchnorm(network net)
         if (l->type == CONVOLUTIONAL) {
             //printf(" Merges Convolutional-%d and batch_norm \n", j);
 
+            if (l->share_layer != NULL) {
+                l->batch_normalize = 0;
+            }
+
             if (l->batch_normalize) {
                 int f;
                 for (f = 0; f < l->n; ++f)
                 {
-                    //l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
                     l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f] + .000001));
 
                     const size_t filter_size = l->size*l->size*l->c / l->groups;
@@ -1045,11 +1089,11 @@ void fuse_conv_batchnorm(network net)
                     for (i = 0; i < filter_size; ++i) {
                         int w_index = f*filter_size + i;
 
-                        //l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
                         l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f] + .000001));
                     }
                 }
 
+                free_convolutional_batchnorm(l);
                 l->batch_normalize = 0;
 #ifdef GPU
                 if (gpu_index >= 0) {
@@ -1145,6 +1189,13 @@ void copy_weights_net(network net_train, network *net_map)
             copy_cudnn_descriptors(tmp_input_layer, net_map->layers[k].input_layer);
             copy_cudnn_descriptors(tmp_self_layer, net_map->layers[k].self_layer);
             copy_cudnn_descriptors(tmp_output_layer, net_map->layers[k].output_layer);
+        }
+        else if(l->input_layer) // for AntiAliasing
+        {
+            layer tmp_input_layer;
+            copy_cudnn_descriptors(*net_map->layers[k].input_layer, &tmp_input_layer);
+            net_map->layers[k].input_layer = net_train.layers[k].input_layer;
+            copy_cudnn_descriptors(tmp_input_layer, net_map->layers[k].input_layer);
         }
         net_map->layers[k].batch = 1;
         net_map->layers[k].steps = 1;

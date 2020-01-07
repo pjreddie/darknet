@@ -226,6 +226,12 @@ void validate_coco(char *cfgfile, char *weightfile)
     fprintf(fp, "\n]\n");
     fclose(fp);
 
+    if (val) free(val);
+    if (val_resized) free(val_resized);
+    if (buf) free(buf);
+    if (buf_resized) free(buf_resized);
+    if (thr) free(thr);
+
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
 }
 
@@ -311,7 +317,9 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
         }
 
         fprintf(stderr, "%5d %5d %5d\tRPs/Img: %.2f\tIOU: %.2f%%\tRecall:%.2f%%\n", i, correct, total, (float)proposals/(i+1), avg_iou*100/total, 100.*correct/total);
-        free(id);
+
+        if (fps) free(fps);
+        if (id) free(id);
         free_image(orig);
         free_image(sized);
     }
@@ -404,5 +412,5 @@ void run_coco(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, hier_thresh, cam_index, filename, coco_classes, 80, frame_skip,
-		prefix, out_filename, mjpeg_port, json_port, dont_show, ext_output, 0);
+		prefix, out_filename, mjpeg_port, json_port, dont_show, ext_output, 0, 0, 0, 0, 0);
 }

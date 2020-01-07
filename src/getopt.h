@@ -67,7 +67,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,13 +190,13 @@ extern "C" {
  *	Parse long options in argc/argv argument vector.
  * Returns -1 if short_too is set and the option does not match long_options.
  */
-static int parse_long_options(char* const* nargv, const char* options, const struct option* long_options, int* idx, int short_too);
+/* static int parse_long_options(char* const* nargv, const char* options, const struct option* long_options, int* idx, int short_too); */
 
 /*
  * getopt_internal --
  *	Parse argc/argv argument vector.  Called by user level routines.
  */
-static int getopt_internal(int nargc, char* const* nargv, const char* options, const struct option* long_options, int* idx, int flags);
+/* static int getopt_internal(int nargc, char* const* nargv, const char* options, const struct option* long_options, int* idx, int flags); */
 
 /*
  * getopt_long --

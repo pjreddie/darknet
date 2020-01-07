@@ -5,7 +5,7 @@
 #include "math.h"
 
 //typedef enum{
-//    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
+//    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH, MISH
 //}ACTIVATION;
 
 #ifdef __cplusplus
@@ -18,13 +18,26 @@ float activate(float x, ACTIVATION a);
 float gradient(float x, ACTIVATION a);
 void gradient_array(const float *x, const int n, const ACTIVATION a, float *delta);
 void gradient_array_swish(const float *x, const int n, const float * sigmoid, float * delta);
+void gradient_array_mish(const int n, const float * activation_input, float * delta);
 void activate_array(float *x, const int n, const ACTIVATION a);
 void activate_array_swish(float *x, const int n, float * output_sigmoid, float * output);
+void activate_array_mish(float *x, const int n, float * activation_input, float * output);
+void activate_array_normalize_channels(float *x, const int n, int batch, int channels, int wh_step, float *output);
+void gradient_array_normalize_channels(float *x, const int n, int batch, int channels, int wh_step, float *delta);
+void activate_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *output);
+void gradient_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *delta);
 #ifdef GPU
 void activate_array_ongpu(float *x, int n, ACTIVATION a);
 void activate_array_swish_ongpu(float *x, int n, float *output_sigmoid_gpu, float *output_gpu);
+void activate_array_mish_ongpu(float *x, int n, float *activation_input_gpu, float *output_gpu);
 void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta);
 void gradient_array_swish_ongpu(float *x, int n, float *sigmoid_gpu, float *delta);
+void gradient_array_mish_ongpu(int n, float *activation_input_gpu, float *delta);
+void activate_array_normalize_channels_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu);
+void gradient_array_normalize_channels_ongpu(float *output_gpu, int n, int batch, int channels, int wh_step, float *delta_gpu);
+void activate_array_normalize_channels_softmax_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu);
+void gradient_array_normalize_channels_softmax_ongpu(float *output_gpu, int n, int batch, int channels, int wh_step, float *delta_gpu);
+
 #endif
 
 static inline float stair_activate(float x)
@@ -49,6 +62,11 @@ static inline float relie_activate(float x){return (x>0) ? x : .01f*x;}
 static inline float ramp_activate(float x){return x*(x>0)+.1f*x;}
 static inline float leaky_activate(float x){return (x>0) ? x : .1f*x;}
 static inline float tanh_activate(float x){return (expf(2*x)-1)/(expf(2*x)+1);}
+static inline float softplus_activate(float x, float threshold) {
+    if (x > threshold) return x;                // too large
+    else if (x < -threshold) return expf(x);    // too small
+    return logf(expf(x) + 1);
+}
 static inline float plse_activate(float x)
 {
     if(x < -4) return .01f * (x + 4);

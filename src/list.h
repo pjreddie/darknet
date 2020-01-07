@@ -23,6 +23,7 @@ void list_insert(list *, void *);
 
 void **list_to_array(list *l);
 
+void free_list_val(list *l);
 void free_list(list *l);
 void free_list_contents(list *l);
 void free_list_contents_kvp(list *l);

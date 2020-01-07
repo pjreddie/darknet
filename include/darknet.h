@@ -102,13 +102,24 @@ typedef struct tree {
 
 // activations.h
 typedef enum {
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH, MISH, NORM_CHAN, NORM_CHAN_SOFTMAX
 }ACTIVATION;
 
 // parser.h
 typedef enum {
-    IOU, GIOU, MSE
+    IOU, GIOU, MSE, DIOU, CIOU
 } IOU_LOSS;
+
+// parser.h
+typedef enum {
+    DEFAULT_NMS, GREEDY_NMS, DIOU_NMS, CORNERS_NMS
+} NMS_KIND;
+
+// parser.h
+typedef enum {
+    YOLO_CENTER = 1 << 0, YOLO_LEFT_TOP = 1 << 1, YOLO_RIGHT_BOTTOM = 1 << 2
+} YOLO_POINT;
+
 
 // image.h
 typedef enum{
@@ -126,6 +137,7 @@ typedef enum {
     DECONVOLUTIONAL,
     CONNECTED,
     MAXPOOL,
+    LOCAL_AVGPOOL,
     SOFTMAX,
     DETECTION,
     DROPOUT,
@@ -149,6 +161,7 @@ typedef enum {
     XNOR,
     REGION,
     YOLO,
+    GAUSSIAN_YOLO,
     ISEG,
     REORG,
     REORG_OLD,
@@ -189,6 +202,8 @@ struct layer {
     void(*backward_gpu)  (struct layer, struct network_state);
     void(*update_gpu)    (struct layer, int, float, float, float);
     layer *share_layer;
+    int train;
+    int avgpool;
     int batch_normalize;
     int shortcut;
     int batch;
@@ -205,10 +220,14 @@ struct layer {
     int n;
     int max_boxes;
     int groups;
+    int group_id;
     int size;
     int side;
     int stride;
+    int stride_x;
+    int stride_y;
     int dilation;
+    int antialiasing;
     int maxpool_depth;
     int out_channels;
     int reverse;
@@ -218,16 +237,24 @@ struct layer {
     int sqrt;
     int flip;
     int index;
+    int scale_wh;
     int binary;
     int xnor;
     int peephole;
     int use_bin_output;
+    int keep_delta_gpu;
+    int optimized_memory;
     int steps;
     int state_constrain;
     int hidden;
     int truth;
     float smooth;
     float dot;
+    int deform;
+    int sway;
+    int rotate;
+    int stretch;
+    int stretch_sway;
     float angle;
     float jitter;
     float saturation;
@@ -237,6 +264,8 @@ struct layer {
     float learning_rate_scale;
     float clip;
     int focal_loss;
+    float *classes_multipliers;
+    float label_smooth_eps;
     int noloss;
     int softmax;
     int classes;
@@ -274,6 +303,7 @@ struct layer {
     int random;
     float ignore_thresh;
     float truth_thresh;
+    float iou_thresh;
     float thresh;
     float focus;
     int classfix;
@@ -289,12 +319,17 @@ struct layer {
 
     float temperature;
     float probability;
+    float dropblock_size_rel;
+    int dropblock_size_abs;
+    int dropblock;
     float scale;
 
     char  * cweights;
     int   * indexes;
     int   * input_layers;
     int   * input_sizes;
+    float **layers_output;
+    float **layers_delta;
     int   * map;
     int   * counts;
     float ** sums;
@@ -323,9 +358,13 @@ struct layer {
     float *weight_updates;
 
     float scale_x_y;
+    float uc_normalizer;
     float iou_normalizer;
     float cls_normalizer;
     IOU_LOSS iou_loss;
+    NMS_KIND nms_kind;
+    float beta_nms;
+    YOLO_POINT yolo_point;
 
     char *align_bit_weights_gpu;
     float *mean_arr_gpu;
@@ -343,7 +382,7 @@ struct layer {
     float *col_image;
     float * delta;
     float * output;
-    float * output_sigmoid;
+    float * activation_input;
     int delta_pinned;
     int output_pinned;
     float * loss;
@@ -513,6 +552,7 @@ struct layer {
     float * x_norm_gpu;
     float * weights_gpu;
     float * weight_updates_gpu;
+    float * weight_deform_gpu;
     float * weight_change_gpu;
 
     float * weights_gpu16;
@@ -526,13 +566,21 @@ struct layer {
     float * scale_updates_gpu;
     float * scale_change_gpu;
 
+    float * input_antialiasing_gpu;
     float * output_gpu;
-    float * output_sigmoid_gpu;
+    float * activation_input_gpu;
     float * loss_gpu;
     float * delta_gpu;
     float * rand_gpu;
     float * squared_gpu;
     float * norms_gpu;
+
+    float *gt_gpu;
+    float *a_avg_gpu;
+
+    int *input_sizes_gpu;
+    float **layers_output_gpu;
+    float **layers_delta_gpu;
 #ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
     cudnnTensorDescriptor_t srcTensorDesc16, dstTensorDesc16;
@@ -567,6 +615,7 @@ typedef struct network {
     layer *layers;
     float *output;
     learning_rate_policy policy;
+    int benchmark_layers;
 
     float learning_rate;
     float learning_rate_min;
@@ -608,6 +657,7 @@ typedef struct network {
     int flip; // horizontal flip 50% probability augmentaiont for classifier training (default = 1)
     int blur;
     int mixup;
+    float label_smooth_eps;
     int letter_box;
     float angle;
     float aspect;
@@ -651,7 +701,13 @@ typedef struct network {
     size_t *max_input16_size;
     size_t *max_output16_size;
     int wait_stream;
+
+    float *global_delta_gpu;
+    float *state_delta_gpu;
+    size_t max_delta_gpu_size;
 #endif
+    int optimized_memory;
+    size_t workspace_size_limit;
 } network;
 
 // network.h
@@ -707,7 +763,7 @@ typedef struct dxrep {
 
 // box.h
 typedef struct ious {
-    float iou, giou;
+    float iou, giou, diou, ciou;
     dxrep dx_iou;
     dxrep dx_giou;
 } ious;
@@ -721,6 +777,8 @@ typedef struct detection{
     float *mask;
     float objectness;
     int sort_class;
+    float *uc; // Gaussian_YOLOv3 - tx,ty,tw,th uncertainty
+    int points; // bit-0 - center, bit-1 - top-left-corner, bit-2 - bottom-right-corner
 } detection;
 
 // matrix.h
@@ -771,10 +829,12 @@ typedef struct load_args {
     int augment_speed;
     int letter_box;
     int show_imgs;
+    int dontuse_opencv;
     float jitter;
     int flip;
     int blur;
     int mixup;
+    float label_smooth_eps;
     float angle;
     float aspect;
     float saturation;
@@ -815,6 +875,7 @@ typedef struct box_label {
 LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API network *load_network_custom(char *cfg, char *weights, int clear, int batch);
 LIB_API network *load_network(char *cfg, char *weights, int clear);
+LIB_API void free_network(network net);
 
 // network.c
 LIB_API load_args get_base_args(network *net);
@@ -822,6 +883,7 @@ LIB_API load_args get_base_args(network *net);
 // box.h
 LIB_API void do_nms_sort(detection *dets, int total, int classes, float thresh);
 LIB_API void do_nms_obj(detection *dets, int total, int classes, float thresh);
+LIB_API void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIND nms_kind, float beta1);
 
 // network.h
 LIB_API float *network_predict(network net, float *input);
@@ -839,9 +901,9 @@ LIB_API void reset_rnn(network *net);
 LIB_API float *network_predict_image(network *net, image im);
 LIB_API float *network_predict_image_letterbox(network *net, image im);
 LIB_API float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, const float iou_thresh, const int map_points, int letter_box, network *existing_net);
-LIB_API void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, int mjpeg_port, int show_imgs);
+LIB_API void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, int mjpeg_port, int show_imgs, int benchmark_layers);
 LIB_API void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
-    float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile, int letter_box);
+    float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile, int letter_box, int benchmark_layers);
 LIB_API int network_width(network *net);
 LIB_API int network_height(network *net);
 LIB_API void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh, int norm);
@@ -856,12 +918,14 @@ LIB_API image load_image_color(char *filename, int w, int h);
 LIB_API void free_image(image m);
 
 // layer.h
-LIB_API void free_layer(layer);
+LIB_API void free_layer_custom(layer l, int keep_cudnn_desc);
+LIB_API void free_layer(layer l);
 
 // data.c
 LIB_API void free_data(data d);
 LIB_API pthread_t load_data(load_args args);
 LIB_API pthread_t load_data_in_thread(load_args args);
+LIB_API void *load_thread(void *ptr);
 
 // dark_cuda.h
 LIB_API void cuda_pull_array(float *x_gpu, float *x, size_t n);
@@ -890,6 +954,9 @@ double get_time();
 void stop_timer_and_show();
 void stop_timer_and_show_name(char *name);
 void show_total_time();
+
+// gemm.h
+LIB_API void init_cpu();
 
 #ifdef __cplusplus
 }

@@ -17,7 +17,9 @@
 #include "gettimeofday.h"
 #else
 #include <sys/time.h>
+#include <sys/stat.h>
 #endif
+
 
 #ifndef USE_CMAKE_LIBS
 #pragma warning(disable: 4996)
@@ -70,7 +72,7 @@ int *read_map(char *filename)
         map[n-1] = atoi(str);
         free(str);
     }
-    fclose(file);
+    if (file) fclose(file);
     return map;
 }
 
@@ -95,6 +97,7 @@ void shuffle(void *arr, size_t n, size_t size)
         memcpy((char*)arr+(j*size), (char*)arr+(i*size), size);
         memcpy((char*)arr+(i*size), swp,          size);
     }
+    free(swp);
 }
 
 void del_arg(int argc, char **argv, int index)
@@ -248,11 +251,12 @@ void find_replace_extension(char *str, char *orig, char *rep, char *output)
         error("strdup failed");
     }
     char *p = strstr(buffer, orig);
-    if (p && *(p+strlen(orig)) == '\0') {
-        *p = '\0';
-        sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
-    } else if(str!=output) {
-        strcpy(output,str);
+    int offset = (p - buffer);
+    int chars_from_end = strlen(buffer) - offset;
+    if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
+        sprintf(output, "%s", buffer);
+        free(buffer);
+        return;
     }
     free(buffer);
 }
@@ -851,6 +855,40 @@ float **one_hot_encode(float *a, int n, int k)
     return t;
 }
 
+static unsigned int x = 123456789, y = 362436069, z = 521288629;
+
+// Marsaglia's xorshf96 generator: period 2^96-1
+unsigned int random_gen_fast(void)
+{
+    unsigned int t;
+    x ^= x << 16;
+    x ^= x >> 5;
+    x ^= x << 1;
+
+    t = x;
+    x = y;
+    y = z;
+    z = t ^ x ^ y;
+
+    return z;
+}
+
+float random_float_fast()
+{
+    return ((float)random_gen_fast() / (float)UINT_MAX);
+}
+
+int rand_int_fast(int min, int max)
+{
+    if (max < min) {
+        int s = min;
+        min = max;
+        max = s;
+    }
+    int r = (random_gen_fast() % (max - min + 1)) + min;
+    return r;
+}
+
 unsigned int random_gen()
 {
     unsigned int rnd = 0;
@@ -867,11 +905,20 @@ unsigned int random_gen()
 
 float random_float()
 {
+    unsigned int rnd = 0;
 #ifdef WIN32
-    return ((float)random_gen() / (float)UINT_MAX);
-#else
-    return ((float)random_gen() / (float)RAND_MAX);
-#endif
+    rand_s(&rnd);
+    return ((float)rnd / (float)UINT_MAX);
+#else   // WIN32
+
+    rnd = rand();
+#if (RAND_MAX < 65536)
+    rnd = rand()*(RAND_MAX + 1) + rnd;
+    return((float)rnd / (float)(RAND_MAX*RAND_MAX));
+#endif  //(RAND_MAX < 65536)
+    return ((float)rnd / (float)RAND_MAX);
+
+#endif  // WIN32
 }
 
 float rand_uniform_strong(float min, float max)
@@ -956,4 +1003,33 @@ int max_int_index(int *a, int n)
         }
     }
     return max_i;
+}
+
+
+// Absolute box from relative coordinate bounding box and image size
+boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check)
+{
+    boxabs ba;
+    ba.left = (b->x - b->w / 2.)*img_w;
+    ba.right = (b->x + b->w / 2.)*img_w;
+    ba.top = (b->y - b->h / 2.)*img_h;
+    ba.bot = (b->y + b->h / 2.)*img_h;
+
+    if (bounds_check) {
+        if (ba.left < 0) ba.left = 0;
+        if (ba.right > img_w - 1) ba.right = img_w - 1;
+        if (ba.top < 0) ba.top = 0;
+        if (ba.bot > img_h - 1) ba.bot = img_h - 1;
+    }
+
+    return ba;
+}
+
+int make_directory(char *path, int mode)
+{
+#ifdef WIN32
+    return _mkdir(path);
+#else
+    return mkdir(path, mode);
+#endif
 }

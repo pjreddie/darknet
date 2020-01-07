@@ -147,10 +147,13 @@ LIB_API Detector::Detector(std::string cfg_filename, std::string weight_filename
     net.gpu_index = cur_gpu_id;
     //gpu_index = i;
 
-    char *cfgfile = const_cast<char *>(cfg_filename.data());
-    char *weightfile = const_cast<char *>(weight_filename.data());
+    _cfg_filename = cfg_filename;
+    _weight_filename = weight_filename;
 
-    net = parse_network_cfg_custom(cfgfile, 1, 0);
+    char *cfgfile = const_cast<char *>(_cfg_filename.c_str());
+    char *weightfile = const_cast<char *>(_weight_filename.c_str());
+
+    net = parse_network_cfg_custom(cfgfile, 1, 1);
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -243,7 +246,7 @@ static image load_image_stb(char *filename, int channels)
 
 LIB_API image_t Detector::load_image(std::string image_filename)
 {
-    char *input = const_cast<char *>(image_filename.data());
+    char *input = const_cast<char *>(image_filename.c_str());
     image im = load_image_stb(input, 3);
 
     image_t img;

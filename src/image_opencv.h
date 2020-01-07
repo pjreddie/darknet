@@ -11,9 +11,13 @@ extern "C" {
 #ifdef OPENCV
 
 // declaration
-typedef struct mat_cv mat_cv;
-typedef struct cap_cv cap_cv;
-typedef struct write_cv write_cv;
+typedef void* mat_cv;
+typedef void* cap_cv;
+typedef void* write_cv;
+
+//typedef struct mat_cv mat_cv;
+//typedef struct cap_cv cap_cv;
+//typedef struct write_cv write_cv;
 
 // cv::Mat
 mat_cv *load_image_mat_cv(const char *filename, int flag);
@@ -88,8 +92,8 @@ void save_cv_jpg(mat_cv *img, const char *name);
 void draw_detections_cv_v3(mat_cv* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
 
 // Draw Loss & Accuracy chart
-mat_cv* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show);
-void draw_train_loss(mat_cv* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
+mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show);
+void draw_train_loss(char *windows_name, mat_cv* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
     float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port);
 
 // Data augmentation
@@ -101,11 +105,17 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
 // blend two images with (alpha and beta)
 void blend_images_cv(image new_img, float alpha, image old_img, float beta);
 
+// bilateralFilter bluring
+image blur_image(image src_img, int ksize);
+
 // Show Anchors
 void show_acnhors(int number_of_boxes, int num_of_clusters, float *rel_width_height_array, model anchors_data, int width, int height);
 
+void show_opencv_info();
+
 #else   // OPENCV
 
+void show_opencv_info();
 int wait_key_cv(int delay);
 int wait_until_press_key_cv();
 void destroy_all_windows_cv();
