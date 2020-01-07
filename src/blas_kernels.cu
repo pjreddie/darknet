@@ -576,7 +576,7 @@ extern "C" void simple_copy_ongpu(int size, float *src, float *dst)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
-extern "C" void memcpy_ongpu(float *dst, float *src, int size_bytes)
+extern "C" void memcpy_ongpu(void *dst, void *src, int size_bytes)
 {
     CHECK_CUDA(cudaMemcpyAsync(dst, src, size_bytes, cudaMemcpyDefault, get_cuda_stream()));
     CHECK_CUDA(cudaPeekAtLastError());
