@@ -816,10 +816,10 @@ layer parse_shortcut(list *options, size_params params, network net)
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
 
-    int assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
-    //char *l = option_find(options, "from");
-    //int index = atoi(l);
-    //if(index < 0) index = params.index + index;
+    char *weights_type_srt = option_find_str_quiet(options, "weights_type", "none");
+    WEIGHTS_TYPE_T weights_type = NO_WEIGHTS;
+    if(strcmp(weights_type_srt, "per_feature") == 0) weights_type = PER_FEATURE;
+    else if (strcmp(weights_type_srt, "per_channel") == 0) weights_type = PER_CHANNEL;
 
     char *l = option_find(options, "from");
     int len = strlen(l);
@@ -854,7 +854,11 @@ layer parse_shortcut(list *options, size_params params, network net)
     }
 #endif// GPU
 
-    layer s = make_shortcut_layer(params.batch, n, layers, sizes, params.w, params.h, params.c, layers_output, layers_delta, layers_output_gpu, layers_delta_gpu, activation, params.train);
+    layer s = make_shortcut_layer(params.batch, n, layers, sizes, params.w, params.h, params.c, layers_output, layers_delta,
+        layers_output_gpu, layers_delta_gpu, weights_type, activation, params.train);
+
+    free(layers_output_gpu);
+    free(layers_delta_gpu);
 
     for (i = 0; i < n; ++i) {
         int index = layers[i];
@@ -1515,6 +1519,18 @@ void save_convolutional_weights_binary(layer l, FILE *fp)
     }
 }
 
+void save_shortcut_weights(layer l, FILE *fp)
+{
+#ifdef GPU
+    if (gpu_index >= 0) {
+        pull_shortcut_layer(l);
+    }
+#endif
+    int num = l.nweights;
+    fwrite(l.weights, sizeof(float), num, fp);
+
+}
+
 void save_convolutional_weights(layer l, FILE *fp)
 {
     if(l.binary){
@@ -1591,8 +1607,10 @@ void save_weights_upto(network net, char *filename, int cutoff)
     int i;
     for(i = 0; i < net.n && i < cutoff; ++i){
         layer l = net.layers[i];
-        if(l.type == CONVOLUTIONAL && l.share_layer == NULL){
+        if (l.type == CONVOLUTIONAL && l.share_layer == NULL) {
             save_convolutional_weights(l, fp);
+        } if (l.type == SHORTCUT && l.nweights > 0) {
+            save_shortcut_weights(l, fp);
         } if(l.type == CONNECTED){
             save_connected_weights(l, fp);
         } if(l.type == BATCHNORM){
@@ -1786,6 +1804,22 @@ void load_convolutional_weights(layer l, FILE *fp)
 #endif
 }
 
+void load_shortcut_weights(layer l, FILE *fp)
+{
+    if (l.binary) {
+        //load_convolutional_weights_binary(l, fp);
+        //return;
+    }
+    int num = l.nweights;
+    int read_bytes;
+    read_bytes = fread(l.weights, sizeof(float), num, fp);
+    if (read_bytes > 0 && read_bytes < num) printf("\n Warning: Unexpected end of wights-file! l.weights - l.index = %d \n", l.index);
+#ifdef GPU
+    if (gpu_index >= 0) {
+        push_shortcut_layer(l);
+    }
+#endif
+}
 
 void load_weights_upto(network *net, char *filename, int cutoff)
 {
@@ -1825,6 +1859,9 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         if (l.dontload) continue;
         if(l.type == CONVOLUTIONAL && l.share_layer == NULL){
             load_convolutional_weights(l, fp);
+        }
+        if (l.type == SHORTCUT && l.nweights > 0) {
+            load_shortcut_weights(l, fp);
         }
         if(l.type == CONNECTED){
             load_connected_weights(l, fp, transpose);

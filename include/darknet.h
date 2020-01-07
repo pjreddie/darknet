@@ -120,6 +120,11 @@ typedef enum {
     YOLO_CENTER = 1 << 0, YOLO_LEFT_TOP = 1 << 1, YOLO_RIGHT_BOTTOM = 1 << 2
 } YOLO_POINT;
 
+// parser.h
+typedef enum {
+    NO_WEIGHTS, PER_FEATURE, PER_CHANNEL
+} WEIGHTS_TYPE_T;
+
 
 // image.h
 typedef enum{
@@ -330,6 +335,7 @@ struct layer {
     int   * input_sizes;
     float **layers_output;
     float **layers_delta;
+    WEIGHTS_TYPE_T weights_type;
     int   * map;
     int   * counts;
     float ** sums;

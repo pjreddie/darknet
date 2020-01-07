@@ -68,36 +68,49 @@ void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, floa
     }
 }
 
-void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *outputs_of_layers, float **layers_output, float *out, float *in)
+void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *outputs_of_layers, float **layers_output, float *out, float *in, float *weights, int nweights)
 {
+    // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
+    const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
+    const int step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
+
     int id;
     #pragma omp parallel for
     for (id = 0; id < size; ++id) {
 
         int src_id = id;
-        int src_i = src_id % src_outputs;
+        const int src_i = src_id % src_outputs;
         src_id /= src_outputs;
         int src_b = src_id;
 
-        out[id] = in[id];
+        if(weights) out[id] = in[id] * weights[src_i / step]; // [0 or c or (c, h ,w)]
+        else out[id] = in[id];
 
         // layers
-        for (int i = 0; i < n; ++i) {
+        int i;
+        for (i = 0; i < n; ++i) {
             int add_outputs = outputs_of_layers[i];
             if (src_i < add_outputs) {
                 int add_index = add_outputs*src_b + src_i;
                 int out_index = id;
 
                 float *add = layers_output[i];
-                out[out_index] += add[add_index];
+                const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
+
+                if (weights) out[out_index] += add[add_index] * weights[weights_index]; // [0 or c or (c, h ,w)]
+                else out[out_index] += add[add_index];
             }
         }
     }
 }
 
 void backward_shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *outputs_of_layers,
-    float **layers_delta, float *delta_out, float *delta_in)
+    float **layers_delta, float *delta_out, float *delta_in, float *weights, float *weight_updates, int nweights, float *in, float **layers_output)
 {
+    // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
+    const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
+    const int step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
+
     int id;
     #pragma omp parallel for
     for (id = 0; id < size; ++id) {
@@ -106,17 +119,29 @@ void backward_shortcut_multilayer_cpu(int size, int src_outputs, int batch, int 
         src_id /= src_outputs;
         int src_b = src_id;
 
-        delta_out[id] += delta_in[id];
+        if (weights) {
+            delta_out[id] += delta_in[id] * weights[src_i / step]; // [0 or c or (c, h ,w)]
+            weight_updates[src_i / step] += delta_in[id] * in[id];
+        }
+        else delta_out[id] += delta_in[id];
 
         // layers
-        for (int i = 0; i < n; ++i) {
+        int i;
+        for (i = 0; i < n; ++i) {
             int add_outputs = outputs_of_layers[i];
             if (src_i < add_outputs) {
                 int add_index = add_outputs*src_b + src_i;
                 int out_index = id;
 
                 float *layer_delta = layers_delta[i];
-                layer_delta[add_index] += delta_in[id];
+                if (weights) {
+                    float *add = layers_output[i];
+                    const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
+
+                    layer_delta[add_index] += delta_in[id] * weights[weights_index]; // [0 or c or (c, h ,w)]
+                    weight_updates[weights_index] += delta_in[id] * add[add_index];
+                }
+                else layer_delta[add_index] += delta_in[id];
             }
         }
     }

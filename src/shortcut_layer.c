@@ -7,7 +7,7 @@
 #include <assert.h>
 
 layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes, int w, int h, int c,
-    float **layers_output, float **layers_delta, float **layers_output_gpu, float **layers_delta_gpu, ACTIVATION activation, int train)
+    float **layers_output, float **layers_delta, float **layers_output_gpu, float **layers_delta_gpu, WEIGHTS_TYPE_T weights_type, ACTIVATION activation, int train)
 {
     fprintf(stderr, "Shortcut Layer: ");
     int i;
@@ -23,6 +23,7 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     l.input_sizes = input_sizes;
     l.layers_output = layers_output;
     l.layers_delta = layers_delta;
+    l.weights_type = weights_type;
 
     //l.w = w2;
     //l.h = h2;
@@ -40,6 +41,18 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     if (train) l.delta = (float*)calloc(l.outputs * batch, sizeof(float));
     l.output = (float*)calloc(l.outputs * batch, sizeof(float));
 
+    if (l.weights_type == PER_FEATURE) l.nweights = (l.n + 1);
+    else if (l.weights_type == PER_CHANNEL) l.nweights = (l.n + 1) * l.c;
+
+    if (l.nweights > 0) {
+        l.weights = (float*)calloc(l.nweights, sizeof(float));
+        float scale = sqrt(2. / l.nweights);
+        for (i = 0; i < l.nweights; ++i) l.weights[i] = 1;// scale*rand_uniform(-1, 1);   // rand_normal();
+
+        if (train) l.weight_updates = (float*)calloc(l.nweights, sizeof(float));
+        l.update = update_shortcut_layer;
+    }
+
     l.forward = forward_shortcut_layer;
     l.backward = backward_shortcut_layer;
 #ifndef GPU
@@ -52,16 +65,23 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     l.forward_gpu = forward_shortcut_layer_gpu;
     l.backward_gpu = backward_shortcut_layer_gpu;
 
+    if (l.nweights > 0) {
+        l.update_gpu = update_shortcut_layer_gpu;
+        l.weights_gpu = cuda_make_array(l.weights, l.nweights);
+        if (train) l.weight_updates_gpu = cuda_make_array(l.weight_updates, l.nweights);
+    }
+
     if (train) l.delta_gpu =  cuda_make_array(l.delta, l.outputs*batch);
     l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
 
     l.input_sizes_gpu = cuda_make_int_array_new_api(input_sizes, l.n);
-    l.layers_output_gpu = cuda_make_array_pointers((void**)layers_output_gpu, l.n);
-    l.layers_delta_gpu = cuda_make_array_pointers((void**)layers_delta_gpu, l.n);
+    l.layers_output_gpu = (float**)cuda_make_array_pointers((void**)layers_output_gpu, l.n);
+    l.layers_delta_gpu = (float**)cuda_make_array_pointers((void**)layers_delta_gpu, l.n);
 #endif  // GPU
 
     l.bflops = l.out_w * l.out_h * l.out_c * l.n / 1000000000.;
-    fprintf(stderr, " outputs:%4d x%4d x%4d %5.3f BF\n", l.out_w, l.out_h, l.out_c, l.bflops);
+    if (l.weights_type) l.bflops *= 2;
+    fprintf(stderr, " wt = %d, outputs:%4d x%4d x%4d %5.3f BF\n", l.weights_type, l.out_w, l.out_h, l.out_c, l.bflops);
     return l;
 }
 
@@ -95,9 +115,21 @@ void resize_shortcut_layer(layer *l, int w, int h, network *net)
         l->delta_gpu = cuda_make_array(l->delta, l->outputs*l->batch);
     }
 
+    float **layers_output_gpu = (float **)calloc(l->n, sizeof(float *));
+    float **layers_delta_gpu = (float **)calloc(l->n, sizeof(float *));
+
+    for (i = 0; i < l->n; ++i) {
+        const int index = l->input_layers[i];
+        layers_output_gpu[i] = net->layers[index].output_gpu;
+        layers_delta_gpu[i] = net->layers[index].delta_gpu;
+    }
+
     memcpy_ongpu(l->input_sizes_gpu, l->input_sizes, l->n * sizeof(int));
-    memcpy_ongpu(l->layers_output_gpu, l->layers_output, l->n * sizeof(float*));
-    memcpy_ongpu(l->layers_delta_gpu, l->layers_delta, l->n * sizeof(float*));
+    memcpy_ongpu(l->layers_output_gpu, layers_output_gpu, l->n * sizeof(float*));
+    memcpy_ongpu(l->layers_delta_gpu, layers_delta_gpu, l->n * sizeof(float*));
+
+    free(layers_output_gpu);
+    free(layers_delta_gpu);
 #endif
 
 }
@@ -108,7 +140,7 @@ void forward_shortcut_layer(const layer l, network_state state)
     int from_h = state.net.layers[l.index].h;
     int from_c = state.net.layers[l.index].c;
 
-    if (l.n == 1 && from_w == l.w && from_h == l.h && from_c == l.c) {
+    if (l.nweights == 0 && l.n == 1 && from_w == l.w && from_h == l.h && from_c == l.c) {
         int size = l.batch * l.w * l.h * l.c;
         int i;
         #pragma omp parallel for
@@ -116,7 +148,7 @@ void forward_shortcut_layer(const layer l, network_state state)
             l.output[i] = state.input[i] + state.net.layers[l.index].output[i];
     }
     else {
-        shortcut_multilayer_cpu(l.outputs * l.batch, l.outputs, l.batch, l.n, l.input_sizes, l.layers_output, l.output, state.input);
+        shortcut_multilayer_cpu(l.outputs * l.batch, l.outputs, l.batch, l.n, l.input_sizes, l.layers_output, l.output, state.input, l.weights, l.nweights);
     }
 
     //copy_cpu(l.outputs*l.batch, state.input, 1, l.output, 1);
@@ -135,10 +167,22 @@ void backward_shortcut_layer(const layer l, network_state state)
     else gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
 
     backward_shortcut_multilayer_cpu(l.outputs * l.batch, l.outputs, l.batch, l.n, l.input_sizes,
-        l.layers_delta, state.delta, l.delta);
+        l.layers_delta, state.delta, l.delta, l.weights, l.weight_updates, l.nweights, state.input, l.layers_output);
 
     //axpy_cpu(l.outputs*l.batch, 1, l.delta, 1, state.delta, 1);
     //shortcut_cpu(l.batch, l.out_w, l.out_h, l.out_c, l.delta, l.w, l.h, l.c, state.net.layers[l.index].delta);
+}
+
+void update_shortcut_layer(layer l, int batch, float learning_rate_init, float momentum, float decay)
+{
+    float learning_rate = learning_rate_init*l.learning_rate_scale;
+    //float momentum = a.momentum;
+    //float decay = a.decay;
+    //int batch = a.batch;
+
+    axpy_cpu(l.nweights, -decay*batch, l.weights, 1, l.weight_updates, 1);
+    axpy_cpu(l.nweights, learning_rate / batch, l.weight_updates, 1, l.weights, 1);
+    scal_cpu(l.nweights, momentum, l.weight_updates, 1);
 }
 
 #ifdef GPU
@@ -159,7 +203,7 @@ void forward_shortcut_layer_gpu(const layer l, network_state state)
     //}
     //else
     {
-        shortcut_multilayer_gpu(l.outputs, l.batch, l.n, l.input_sizes_gpu, l.layers_output_gpu, l.output_gpu, state.input);
+        shortcut_multilayer_gpu(l.outputs, l.batch, l.n, l.input_sizes_gpu, l.layers_output_gpu, l.output_gpu, state.input, l.weights_gpu, l.nweights);
     }
 
     if (l.activation == SWISH) activate_array_swish_ongpu(l.output_gpu, l.outputs*l.batch, l.activation_input_gpu, l.output_gpu);
@@ -174,9 +218,42 @@ void backward_shortcut_layer_gpu(const layer l, network_state state)
     else if (l.activation == MISH) gradient_array_mish_ongpu(l.outputs*l.batch, l.activation_input_gpu, l.delta_gpu);
     else gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
 
-    backward_shortcut_multilayer_gpu(l.outputs, l.batch, l.n, l.input_sizes_gpu, l.layers_delta_gpu, state.delta, l.delta_gpu);
+    backward_shortcut_multilayer_gpu(l.outputs, l.batch, l.n, l.input_sizes_gpu, l.layers_delta_gpu, state.delta, l.delta_gpu,
+        l.weights_gpu, l.weight_updates_gpu, l.nweights, state.input, l.layers_output_gpu);
 
     //axpy_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1, state.delta, 1);
     //shortcut_gpu(l.batch, l.out_w, l.out_h, l.out_c, l.delta_gpu, l.w, l.h, l.c, state.net.layers[l.index].delta_gpu);
+}
+
+void update_shortcut_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay)
+{
+    float learning_rate = learning_rate_init*l.learning_rate_scale;
+    //float momentum = a.momentum;
+    //float decay = a.decay;
+    //int batch = a.batch;
+
+    fix_nan_and_inf(l.weight_updates_gpu, l.nweights);
+    fix_nan_and_inf(l.weights_gpu, l.nweights);
+
+    axpy_ongpu(l.nweights, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);
+    axpy_ongpu(l.nweights, learning_rate / batch, l.weight_updates_gpu, 1, l.weights_gpu, 1);
+    scal_ongpu(l.nweights, momentum, l.weight_updates_gpu, 1);
+
+    //if (l.clip) {
+    //    constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
+    //}
+}
+
+void pull_shortcut_layer(layer l)
+{
+    cuda_pull_array_async(l.weights_gpu, l.weights, l.nweights);
+    CHECK_CUDA(cudaPeekAtLastError());
+    cudaStreamSynchronize(get_cuda_stream());
+}
+
+void push_shortcut_layer(layer l)
+{
+    cuda_push_array(l.weights_gpu, l.weights, l.nweights);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 #endif
