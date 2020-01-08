@@ -196,12 +196,12 @@ void forward_shortcut_layer_gpu(const layer l, network_state state)
 
     //-----------
     //if (l.outputs == l.input_sizes[0])
-    //if(l.n == 1)
-    //{
-    //    input_shortcut_gpu(state.input, l.batch, state.net.layers[l.index].w, state.net.layers[l.index].h, state.net.layers[l.index].c,
-    //        state.net.layers[l.index].output_gpu, l.out_w, l.out_h, l.out_c, l.output_gpu);
-    //}
-    //else
+    if(l.n == 1 && l.nweights == 0)
+    {
+        input_shortcut_gpu(state.input, l.batch, state.net.layers[l.index].w, state.net.layers[l.index].h, state.net.layers[l.index].c,
+            state.net.layers[l.index].output_gpu, l.out_w, l.out_h, l.out_c, l.output_gpu);
+    }
+    else
     {
         shortcut_multilayer_gpu(l.outputs, l.batch, l.n, l.input_sizes_gpu, l.layers_output_gpu, l.output_gpu, state.input, l.weights_gpu, l.nweights);
     }
