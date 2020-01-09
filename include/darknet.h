@@ -125,6 +125,10 @@ typedef enum {
     NO_WEIGHTS, PER_FEATURE, PER_CHANNEL
 } WEIGHTS_TYPE_T;
 
+// parser.h
+typedef enum {
+    NO_NORMALIZATION, RELU_NORMALIZATION, SOFTMAX_NORMALIZATION
+} WEIGHTS_NORMALIZATION_T;
 
 // image.h
 typedef enum{
@@ -336,6 +340,7 @@ struct layer {
     float **layers_output;
     float **layers_delta;
     WEIGHTS_TYPE_T weights_type;
+    WEIGHTS_NORMALIZATION_T weights_normalizion;
     int   * map;
     int   * counts;
     float ** sums;

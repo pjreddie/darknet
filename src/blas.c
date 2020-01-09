@@ -68,7 +68,12 @@ void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, floa
     }
 }
 
-void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *outputs_of_layers, float **layers_output, float *out, float *in, float *weights, int nweights)
+static float relu(float src) {
+    if (src > 0) return src;
+    return 0;
+}
+
+void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *outputs_of_layers, float **layers_output, float *out, float *in, float *weights, int nweights, WEIGHTS_NORMALIZATION_T weights_normalizion)
 {
     // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
     const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
@@ -83,11 +88,28 @@ void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *o
         src_id /= src_outputs;
         int src_b = src_id;
 
-        if(weights) out[id] = in[id] * weights[src_i / step]; // [0 or c or (c, h ,w)]
+        float sum = 1;
+        int i;
+        if (weights_normalizion) {
+            const float eps = 0.0001;
+            sum = eps;
+            for (i = 0; i < (n + 1); ++i) {
+                const int weights_index = src_i / step + i*layer_step;  // [0 or c or (c, h ,w)]
+                if (weights_normalizion == RELU_NORMALIZATION) sum += relu(weights[weights_index]);
+                else if (weights_normalizion == SOFTMAX_NORMALIZATION) sum += expf(weights[weights_index]);
+            }
+        }
+
+        if (weights) {
+            float w = weights[src_i / step];
+            if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+            else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w) / sum;
+
+            out[id] = in[id] * w; // [0 or c or (c, h ,w)]
+        }
         else out[id] = in[id];
 
         // layers
-        int i;
         for (i = 0; i < n; ++i) {
             int add_outputs = outputs_of_layers[i];
             if (src_i < add_outputs) {
@@ -95,9 +117,15 @@ void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *o
                 int out_index = id;
 
                 float *add = layers_output[i];
-                const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
 
-                if (weights) out[out_index] += add[add_index] * weights[weights_index]; // [0 or c or (c, h ,w)]
+                if (weights) {
+                    const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
+                    float w = weights[weights_index];
+                    if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+                    else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w) / sum;
+
+                    out[out_index] += add[add_index] * w; // [0 or c or (c, h ,w)]
+                }
                 else out[out_index] += add[add_index];
             }
         }
@@ -105,7 +133,7 @@ void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *o
 }
 
 void backward_shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *outputs_of_layers,
-    float **layers_delta, float *delta_out, float *delta_in, float *weights, float *weight_updates, int nweights, float *in, float **layers_output)
+    float **layers_delta, float *delta_out, float *delta_in, float *weights, float *weight_updates, int nweights, float *in, float **layers_output, WEIGHTS_NORMALIZATION_T weights_normalizion)
 {
     // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
     const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
@@ -119,14 +147,37 @@ void backward_shortcut_multilayer_cpu(int size, int src_outputs, int batch, int 
         src_id /= src_outputs;
         int src_b = src_id;
 
+        float grad = 1, sum = 1;
+        int i;
+        if (weights_normalizion) {
+            const float eps = 0.0001;
+            sum = eps;
+            for (i = 0; i < (n + 1); ++i) {
+                const int weights_index = src_i / step + i*layer_step;  // [0 or c or (c, h ,w)]
+                if (weights_normalizion == RELU_NORMALIZATION) sum += relu(weights[weights_index]);
+                else if (weights_normalizion == SOFTMAX_NORMALIZATION) sum += expf(weights[weights_index]);
+            }
+
+            grad = 0;
+            for (i = 0; i < (n + 1); ++i) {
+                const int weights_index = src_i / step + i*layer_step;  // [0 or c or (c, h ,w)]
+                const float delta_w = delta_in[id] * in[id];
+                if (weights_normalizion == RELU_NORMALIZATION) grad += delta_w * relu(weights[weights_index]) / sum;
+                else if (weights_normalizion == SOFTMAX_NORMALIZATION) grad += delta_w * expf(weights[weights_index]) / sum;
+            }
+        }
+
         if (weights) {
-            delta_out[id] += delta_in[id] * weights[src_i / step]; // [0 or c or (c, h ,w)]
-            weight_updates[src_i / step] += delta_in[id] * in[id];
+            float w = weights[src_i / step];
+            if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+            else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w) / sum;
+
+            delta_out[id] += delta_in[id] * w; // [0 or c or (c, h ,w)]
+            weight_updates[src_i / step] += delta_in[id] * in[id] * grad;
         }
         else delta_out[id] += delta_in[id];
 
         // layers
-        int i;
         for (i = 0; i < n; ++i) {
             int add_outputs = outputs_of_layers[i];
             if (src_i < add_outputs) {
@@ -136,10 +187,14 @@ void backward_shortcut_multilayer_cpu(int size, int src_outputs, int batch, int 
                 float *layer_delta = layers_delta[i];
                 if (weights) {
                     float *add = layers_output[i];
-                    const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
 
-                    layer_delta[add_index] += delta_in[id] * weights[weights_index]; // [0 or c or (c, h ,w)]
-                    weight_updates[weights_index] += delta_in[id] * add[add_index];
+                    const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
+                    float w = weights[weights_index];
+                    if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+                    else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w) / sum;
+
+                    layer_delta[add_index] += delta_in[id] * w; // [0 or c or (c, h ,w)]
+                    weight_updates[weights_index] += delta_in[id] * add[add_index] * grad;
                 }
                 else layer_delta[add_index] += delta_in[id];
             }

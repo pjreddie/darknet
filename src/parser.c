@@ -816,10 +816,15 @@ layer parse_shortcut(list *options, size_params params, network net)
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
 
-    char *weights_type_srt = option_find_str_quiet(options, "weights_type", "none");
+    char *weights_type_str = option_find_str_quiet(options, "weights_type", "none");
     WEIGHTS_TYPE_T weights_type = NO_WEIGHTS;
-    if(strcmp(weights_type_srt, "per_feature") == 0) weights_type = PER_FEATURE;
-    else if (strcmp(weights_type_srt, "per_channel") == 0) weights_type = PER_CHANNEL;
+    if(strcmp(weights_type_str, "per_feature") == 0) weights_type = PER_FEATURE;
+    else if (strcmp(weights_type_str, "per_channel") == 0) weights_type = PER_CHANNEL;
+
+    char *weights_normalizion_str = option_find_str_quiet(options, "weights_normalizion", "none");
+    WEIGHTS_NORMALIZATION_T weights_normalizion = NO_NORMALIZATION;
+    if (strcmp(weights_normalizion_str, "relu") == 0) weights_normalizion = RELU_NORMALIZATION;
+    else if (strcmp(weights_normalizion_str, "softmax") == 0) weights_normalizion = SOFTMAX_NORMALIZATION;
 
     char *l = option_find(options, "from");
     int len = strlen(l);
@@ -855,7 +860,7 @@ layer parse_shortcut(list *options, size_params params, network net)
 #endif// GPU
 
     layer s = make_shortcut_layer(params.batch, n, layers, sizes, params.w, params.h, params.c, layers_output, layers_delta,
-        layers_output_gpu, layers_delta_gpu, weights_type, activation, params.train);
+        layers_output_gpu, layers_delta_gpu, weights_type, weights_normalizion, activation, params.train);
 
     free(layers_output_gpu);
     free(layers_delta_gpu);
