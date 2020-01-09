@@ -813,7 +813,7 @@ layer parse_batchnorm(list *options, size_params params)
 
 layer parse_shortcut(list *options, size_params params, network net)
 {
-    char *activation_s = option_find_str(options, "activation", "logistic");
+    char *activation_s = option_find_str(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
 
     char *weights_type_str = option_find_str_quiet(options, "weights_type", "none");
