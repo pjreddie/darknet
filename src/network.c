@@ -541,6 +541,8 @@ int resize_network(network *net, int w, int h)
             resize_shortcut_layer(&l, w, h, net);
         }else if (l.type == SCALE_CHANNELS) {
             resize_scale_channels_layer(&l, net);
+        }else if (l.type == SAM) {
+            resize_sam_layer(&l, w, h);
         }else if (l.type == DROPOUT) {
             resize_dropout_layer(&l, inputs);
             l.out_w = l.w = w;
