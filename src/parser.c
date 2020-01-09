@@ -439,7 +439,7 @@ layer parse_yolo(list *options, size_params params)
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
@@ -541,7 +541,7 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
@@ -590,7 +590,7 @@ layer parse_region(list *options, size_params params)
     l.thresh = option_find_float(options, "thresh", .5);
     l.classfix = option_find_int_quiet(options, "classfix", 0);
     l.absolute = option_find_int_quiet(options, "absolute", 0);
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     l.coord_scale = option_find_float(options, "coord_scale", 1);
     l.object_scale = option_find_float(options, "object_scale", 1);
@@ -639,7 +639,7 @@ detection_layer parse_detection(list *options, size_params params)
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
     layer.jitter = option_find_float(options, "jitter", .2);
-    layer.random = option_find_int_quiet(options, "random", 0);
+    layer.random = option_find_float_quiet(options, "random", 0);
     layer.reorg = option_find_int_quiet(options, "reorg", 0);
     return layer;
 }
@@ -1060,6 +1060,7 @@ void parse_net_options(list *options, network *net)
     else if (mosaic) net->mixup = 3;
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
     net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
+    net->resize_step = option_find_float_quiet(options, "resize_step", 32);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);

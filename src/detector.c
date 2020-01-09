@@ -168,19 +168,22 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //while(i*imgs < N*120){
     while (get_current_batch(net) < net.max_batches) {
         if (l.random && count++ % 10 == 0) {
-            printf("Resizing\n");
-            float random_val = rand_scale(1.4);    // *x or /x
-            int dim_w = roundl(random_val*init_w / 32 + 1) * 32;
-            int dim_h = roundl(random_val*init_h / 32 + 1) * 32;
+            float rand_coef = 1.4;
+            if (l.random != 1.0) rand_coef = l.random;
+            printf("Resizing, random_coef = %.2f \n", rand_coef);
+            float random_val = rand_scale(rand_coef);    // *x or /x
+            int dim_w = roundl(random_val*init_w / net.resize_step + 1) * net.resize_step;
+            int dim_h = roundl(random_val*init_h / net.resize_step + 1) * net.resize_step;
+            if (random_val < 1 && (dim_w > init_w || dim_h > init_h)) dim_w = init_w, dim_h = init_h;
 
             // at the beginning
             if (avg_loss < 0) {
-                dim_w = roundl(1.4*init_w / 32 + 1) * 32;
-                dim_h = roundl(1.4*init_h / 32 + 1) * 32;
+                dim_w = roundl(rand_coef*init_w / net.resize_step + 1) * net.resize_step;
+                dim_h = roundl(rand_coef*init_h / net.resize_step + 1) * net.resize_step;
             }
 
-            if (dim_w < 32) dim_w = 32;
-            if (dim_h < 32) dim_h = 32;
+            if (dim_w < net.resize_step) dim_w = net.resize_step;
+            if (dim_h < net.resize_step) dim_h = net.resize_step;
 
             printf("%d x %d \n", dim_w, dim_h);
             args.w = dim_w;

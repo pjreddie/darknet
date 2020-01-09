@@ -305,7 +305,7 @@ struct layer {
     float mask_scale;
     float class_scale;
     int bias_match;
-    int random;
+    float random;
     float ignore_thresh;
     float truth_thresh;
     float iou_thresh;
@@ -664,6 +664,7 @@ typedef struct network {
     int blur;
     int mixup;
     float label_smooth_eps;
+    int resize_step;
     int letter_box;
     float angle;
     float aspect;
