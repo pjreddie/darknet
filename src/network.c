@@ -33,6 +33,7 @@
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "scale_channels_layer.h"
+#include "sam_layer.h"
 #include "yolo_layer.h"
 #include "gaussian_yolo_layer.h"
 #include "upsample_layer.h"
