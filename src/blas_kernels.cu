@@ -686,7 +686,8 @@ __global__ void shortcut_multilayer_kernel(int size, int src_outputs, int batch,
 
     // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
     const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
-    const int step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
+    int step = 0;
+    if (weights_gpu) step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
 
     int src_id = id;
     const int src_i = src_id % src_outputs;
@@ -694,7 +695,7 @@ __global__ void shortcut_multilayer_kernel(int size, int src_outputs, int batch,
     int src_b = src_id;
 
     float sum = 1;
-    if (weights_normalizion) {
+    if (weights_gpu && weights_normalizion) {
         const float eps = 0.0001;
         sum = eps;
         for (int i = 0; i < (n + 1); ++i) {
@@ -752,8 +753,8 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
 
     // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
     const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
-    const int step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
-    //if(id == 0) printf(" layer_step = %d, step = %d \n", layer_step, step);
+    int step = 0;
+    if (weights_gpu) step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
 
     int src_id = id;
     const int src_i = src_id % src_outputs;
@@ -762,7 +763,7 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
 
     float grad = 1, sum = 1;
     int i;
-    if (weights_normalizion) {
+    if (weights_gpu && weights_normalizion) {
         const float eps = 0.0001;
         sum = eps;
         for (i = 0; i < (n + 1); ++i) {

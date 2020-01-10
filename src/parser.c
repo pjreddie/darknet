@@ -818,12 +818,12 @@ layer parse_shortcut(list *options, size_params params, network net)
 
     char *weights_type_str = option_find_str_quiet(options, "weights_type", "none");
     WEIGHTS_TYPE_T weights_type = NO_WEIGHTS;
-    if(strcmp(weights_type_str, "per_feature") == 0) weights_type = PER_FEATURE;
+    if(strcmp(weights_type_str, "per_feature") == 0 || strcmp(weights_type_str, "per_layer") == 0) weights_type = PER_FEATURE;
     else if (strcmp(weights_type_str, "per_channel") == 0) weights_type = PER_CHANNEL;
 
     char *weights_normalizion_str = option_find_str_quiet(options, "weights_normalizion", "none");
     WEIGHTS_NORMALIZATION_T weights_normalizion = NO_NORMALIZATION;
-    if (strcmp(weights_normalizion_str, "relu") == 0) weights_normalizion = RELU_NORMALIZATION;
+    if (strcmp(weights_normalizion_str, "relu") == 0 || strcmp(weights_normalizion_str, "avg_relu") == 0) weights_normalizion = RELU_NORMALIZATION;
     else if (strcmp(weights_normalizion_str, "softmax") == 0) weights_normalizion = SOFTMAX_NORMALIZATION;
 
     char *l = option_find(options, "from");
