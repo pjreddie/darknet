@@ -162,7 +162,7 @@ cudnnHandle_t cudnn_handle()
         cudnnCreate(&handle[i]);
         init[i] = 1;
         cudnnStatus_t status = cudnnSetStream(handle[i], get_cuda_stream());
-        CHECK_CUDA(status);
+        CHECK_CUDNN(status);
     }
     return handle[i];
 }
