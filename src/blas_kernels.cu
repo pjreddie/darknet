@@ -576,7 +576,7 @@ extern "C" void simple_copy_ongpu(int size, float *src, float *dst)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
-extern "C" void memcpy_ongpu(float *dst, float *src, int size_bytes)
+extern "C" void memcpy_ongpu(void *dst, void *src, int size_bytes)
 {
     CHECK_CUDA(cudaMemcpyAsync(dst, src, size_bytes, cudaMemcpyDefault, get_cuda_stream()));
     CHECK_CUDA(cudaPeekAtLastError());
@@ -674,17 +674,44 @@ extern "C" void fill_ongpu(int N, float ALPHA, float * X, int INCX)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
-__global__ void shortcut_multilayer_kernel(int size, int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_output_gpu, float *out, float *in)
+__device__ float relu(float src) {
+    if (src > 0) return src;
+    return 0;
+}
+
+__global__ void shortcut_multilayer_kernel(int size, int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_output_gpu, float *out, float *in, float *weights_gpu, int nweights, WEIGHTS_NORMALIZATION_T weights_normalizion)
 {
     const int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (id >= size) return;
 
+    // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
+    const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
+    const int step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
+
     int src_id = id;
-    int src_i = src_id % src_outputs;
+    const int src_i = src_id % src_outputs;
     src_id /= src_outputs;
     int src_b = src_id;
 
-    out[id] = in[id];
+    float sum = 1;
+    if (weights_normalizion) {
+        const float eps = 0.0001;
+        sum = eps;
+        for (int i = 0; i < (n + 1); ++i) {
+            const int weights_index = src_i / step + i*layer_step;  // [0 or c or (c, h ,w)]
+            if (weights_normalizion == RELU_NORMALIZATION) sum += relu(weights_gpu[weights_index]);
+            else if (weights_normalizion == SOFTMAX_NORMALIZATION) sum += expf(weights_gpu[weights_index]);
+        }
+    }
+
+    if (weights_gpu) {
+        float w = weights_gpu[src_i / step];
+        if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+        else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w) / sum;
+
+        out[id] = in[id] * w; // [0 or c or (c, h ,w)]
+    }
+    else out[id] = in[id];
 
     // layers
     for (int i = 0; i < n; ++i) {
@@ -694,33 +721,74 @@ __global__ void shortcut_multilayer_kernel(int size, int src_outputs, int batch,
             int out_index = id;
 
             float *add = layers_output_gpu[i];
-            out[out_index] += add[add_index];
+
+            if (weights_gpu) {
+                const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
+                float w = weights_gpu[weights_index];
+                if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+                else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w) / sum;
+
+                out[out_index] += add[add_index] * w; // [0 or c or (c, h ,w)]
+            }
+            else out[out_index] += add[add_index];
         }
     }
 }
 
-extern "C" void shortcut_multilayer_gpu(int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_output_gpu, float *out, float *in)
+extern "C" void shortcut_multilayer_gpu(int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_output_gpu, float *out, float *in, float *weights_gpu, int nweights, WEIGHTS_NORMALIZATION_T weights_normalizion)
 {
     //printf(" src_outputs = %d, batch = %d, n = %d \n", src_outputs, batch, n);
     int size = batch * src_outputs;
-    shortcut_multilayer_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> > (size, src_outputs, batch, n, outputs_of_layers_gpu, layers_output_gpu, out, in);
+    shortcut_multilayer_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> > (size, src_outputs, batch, n, outputs_of_layers_gpu, layers_output_gpu, out, in, weights_gpu, nweights, weights_normalizion);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
 
-
 __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, int batch, int n, int *outputs_of_layers_gpu,
-    float **layers_delta_gpu, float *delta_out, float *delta_in)
+    float **layers_delta_gpu, float *delta_out, float *delta_in, float *weights_gpu, float *weight_updates_gpu, int nweights, float *in, float **layers_output_gpu, WEIGHTS_NORMALIZATION_T weights_normalizion)
 {
     const int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (id >= size) return;
 
+    // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
+    const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
+    const int step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
+    //if(id == 0) printf(" layer_step = %d, step = %d \n", layer_step, step);
+
     int src_id = id;
-    int src_i = src_id % src_outputs;
+    const int src_i = src_id % src_outputs;
     src_id /= src_outputs;
     int src_b = src_id;
 
-    delta_out[id] += delta_in[id];
+    float grad = 1, sum = 1;
+    int i;
+    if (weights_normalizion) {
+        const float eps = 0.0001;
+        sum = eps;
+        for (i = 0; i < (n + 1); ++i) {
+            const int weights_index = src_i / step + i*layer_step;  // [0 or c or (c, h ,w)]
+            if (weights_normalizion == RELU_NORMALIZATION) sum += relu(weights_gpu[weights_index]);
+            else if (weights_normalizion == SOFTMAX_NORMALIZATION) sum += expf(weights_gpu[weights_index]);
+        }
+
+        grad = 0;
+        for (i = 0; i < (n + 1); ++i) {
+            const int weights_index = src_i / step + i*layer_step;  // [0 or c or (c, h ,w)]
+            const float delta_w = delta_in[id] * in[id];
+            if (weights_normalizion == RELU_NORMALIZATION) grad += delta_w * relu(weights_gpu[weights_index]) / sum;
+            else if (weights_normalizion == SOFTMAX_NORMALIZATION) grad += delta_w * expf(weights_gpu[weights_index]) / sum;
+        }
+    }
+
+    if (weights_gpu) {
+        float w = weights_gpu[src_i / step];
+        if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+        else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w) / sum;
+
+        delta_out[id] += delta_in[id] * w; // [0 or c or (c, h ,w)]
+        weight_updates_gpu[src_i / step] += delta_in[id] * in[id] * grad;
+    }
+    else delta_out[id] += delta_in[id];
 
     // layers
     for (int i = 0; i < n; ++i) {
@@ -730,16 +798,33 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
             int out_index = id;
 
             float *layer_delta = layers_delta_gpu[i];
-            layer_delta[add_index] += delta_in[id];
+            if (weights_gpu) {
+                float *add = layers_output_gpu[i];
+
+                const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
+                float w = weights_gpu[weights_index];
+                if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+                else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w) / sum;
+
+                layer_delta[add_index] += delta_in[id] * w;
+                weight_updates_gpu[weights_index] += delta_in[id] * add[add_index] * grad;
+            }
+            else layer_delta[add_index] += delta_in[id];
         }
     }
 }
 
-extern "C" void backward_shortcut_multilayer_gpu(int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_delta_gpu, float *delta_out, float *delta_in)
+extern "C" void backward_shortcut_multilayer_gpu(int src_outputs, int batch, int n, int *outputs_of_layers_gpu,
+    float **layers_delta_gpu, float *delta_out, float *delta_in, float *weights_gpu, float *weight_updates_gpu, int nweights, float *in, float **layers_output_gpu, WEIGHTS_NORMALIZATION_T weights_normalizion)
 {
+    const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
+    const int step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
+    //printf(" nweights = %d, n = %d, layer_step = %d, step = %d \n", nweights, n, layer_step, step);
+
     //printf(" src_outputs = %d, batch = %d, n = %d \n", src_outputs, batch, n);
     int size = batch * src_outputs;
-    backward_shortcut_multilayer_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> > (size, src_outputs, batch, n, outputs_of_layers_gpu, layers_delta_gpu, delta_out, delta_in);
+    backward_shortcut_multilayer_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> > (size, src_outputs, batch, n, outputs_of_layers_gpu,
+        layers_delta_gpu, delta_out, delta_in, weights_gpu, weight_updates_gpu, nweights, in, layers_output_gpu, weights_normalizion);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 

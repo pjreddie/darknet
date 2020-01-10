@@ -439,7 +439,7 @@ layer parse_yolo(list *options, size_params params)
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
@@ -541,7 +541,7 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
@@ -590,7 +590,7 @@ layer parse_region(list *options, size_params params)
     l.thresh = option_find_float(options, "thresh", .5);
     l.classfix = option_find_int_quiet(options, "classfix", 0);
     l.absolute = option_find_int_quiet(options, "absolute", 0);
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     l.coord_scale = option_find_float(options, "coord_scale", 1);
     l.object_scale = option_find_float(options, "object_scale", 1);
@@ -639,7 +639,7 @@ detection_layer parse_detection(list *options, size_params params)
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
     layer.jitter = option_find_float(options, "jitter", .2);
-    layer.random = option_find_int_quiet(options, "random", 0);
+    layer.random = option_find_float_quiet(options, "random", 0);
     layer.reorg = option_find_int_quiet(options, "reorg", 0);
     return layer;
 }
@@ -813,13 +813,18 @@ layer parse_batchnorm(list *options, size_params params)
 
 layer parse_shortcut(list *options, size_params params, network net)
 {
-    char *activation_s = option_find_str(options, "activation", "logistic");
+    char *activation_s = option_find_str(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
 
-    int assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
-    //char *l = option_find(options, "from");
-    //int index = atoi(l);
-    //if(index < 0) index = params.index + index;
+    char *weights_type_str = option_find_str_quiet(options, "weights_type", "none");
+    WEIGHTS_TYPE_T weights_type = NO_WEIGHTS;
+    if(strcmp(weights_type_str, "per_feature") == 0) weights_type = PER_FEATURE;
+    else if (strcmp(weights_type_str, "per_channel") == 0) weights_type = PER_CHANNEL;
+
+    char *weights_normalizion_str = option_find_str_quiet(options, "weights_normalizion", "none");
+    WEIGHTS_NORMALIZATION_T weights_normalizion = NO_NORMALIZATION;
+    if (strcmp(weights_normalizion_str, "relu") == 0) weights_normalizion = RELU_NORMALIZATION;
+    else if (strcmp(weights_normalizion_str, "softmax") == 0) weights_normalizion = SOFTMAX_NORMALIZATION;
 
     char *l = option_find(options, "from");
     int len = strlen(l);
@@ -854,15 +859,19 @@ layer parse_shortcut(list *options, size_params params, network net)
     }
 #endif// GPU
 
-    layer s = make_shortcut_layer(params.batch, n, layers, sizes, params.w, params.h, params.c, layers_output, layers_delta, layers_output_gpu, layers_delta_gpu, activation, params.train);
+    layer s = make_shortcut_layer(params.batch, n, layers, sizes, params.w, params.h, params.c, layers_output, layers_delta,
+        layers_output_gpu, layers_delta_gpu, weights_type, weights_normalizion, activation, params.train);
+
+    free(layers_output_gpu);
+    free(layers_delta_gpu);
 
     for (i = 0; i < n; ++i) {
         int index = layers[i];
         assert(params.w == net.layers[index].out_w && params.h == net.layers[index].out_h);
 
         if (params.w != net.layers[index].out_w || params.h != net.layers[index].out_h || params.c != net.layers[index].out_c)
-            fprintf(stderr, " w = %d, w2 = %d, h = %d, h2 = %d, c = %d, c2 = %d \n",
-                params.w, net.layers[index].out_w, params.h, net.layers[index].out_h, params.c, params.net.layers[index].out_c);
+            fprintf(stderr, " (%4d x%4d x%4d) + (%4d x%4d x%4d) \n",
+                params.w, params.h, params.c, net.layers[index].out_w, net.layers[index].out_h, params.net.layers[index].out_c);
     }
 
     return s;
@@ -1056,6 +1065,7 @@ void parse_net_options(list *options, network *net)
     else if (mosaic) net->mixup = 3;
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
     net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
+    net->resize_step = option_find_float_quiet(options, "resize_step", 32);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);
@@ -1515,6 +1525,18 @@ void save_convolutional_weights_binary(layer l, FILE *fp)
     }
 }
 
+void save_shortcut_weights(layer l, FILE *fp)
+{
+#ifdef GPU
+    if (gpu_index >= 0) {
+        pull_shortcut_layer(l);
+    }
+#endif
+    int num = l.nweights;
+    fwrite(l.weights, sizeof(float), num, fp);
+
+}
+
 void save_convolutional_weights(layer l, FILE *fp)
 {
     if(l.binary){
@@ -1591,8 +1613,10 @@ void save_weights_upto(network net, char *filename, int cutoff)
     int i;
     for(i = 0; i < net.n && i < cutoff; ++i){
         layer l = net.layers[i];
-        if(l.type == CONVOLUTIONAL && l.share_layer == NULL){
+        if (l.type == CONVOLUTIONAL && l.share_layer == NULL) {
             save_convolutional_weights(l, fp);
+        } if (l.type == SHORTCUT && l.nweights > 0) {
+            save_shortcut_weights(l, fp);
         } if(l.type == CONNECTED){
             save_connected_weights(l, fp);
         } if(l.type == BATCHNORM){
@@ -1786,6 +1810,22 @@ void load_convolutional_weights(layer l, FILE *fp)
 #endif
 }
 
+void load_shortcut_weights(layer l, FILE *fp)
+{
+    if (l.binary) {
+        //load_convolutional_weights_binary(l, fp);
+        //return;
+    }
+    int num = l.nweights;
+    int read_bytes;
+    read_bytes = fread(l.weights, sizeof(float), num, fp);
+    if (read_bytes > 0 && read_bytes < num) printf("\n Warning: Unexpected end of wights-file! l.weights - l.index = %d \n", l.index);
+#ifdef GPU
+    if (gpu_index >= 0) {
+        push_shortcut_layer(l);
+    }
+#endif
+}
 
 void load_weights_upto(network *net, char *filename, int cutoff)
 {
@@ -1825,6 +1865,9 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         if (l.dontload) continue;
         if(l.type == CONVOLUTIONAL && l.share_layer == NULL){
             load_convolutional_weights(l, fp);
+        }
+        if (l.type == SHORTCUT && l.nweights > 0) {
+            load_shortcut_weights(l, fp);
         }
         if(l.type == CONNECTED){
             load_connected_weights(l, fp, transpose);

@@ -120,6 +120,15 @@ typedef enum {
     YOLO_CENTER = 1 << 0, YOLO_LEFT_TOP = 1 << 1, YOLO_RIGHT_BOTTOM = 1 << 2
 } YOLO_POINT;
 
+// parser.h
+typedef enum {
+    NO_WEIGHTS, PER_FEATURE, PER_CHANNEL
+} WEIGHTS_TYPE_T;
+
+// parser.h
+typedef enum {
+    NO_NORMALIZATION, RELU_NORMALIZATION, SOFTMAX_NORMALIZATION
+} WEIGHTS_NORMALIZATION_T;
 
 // image.h
 typedef enum{
@@ -300,7 +309,7 @@ struct layer {
     float mask_scale;
     float class_scale;
     int bias_match;
-    int random;
+    float random;
     float ignore_thresh;
     float truth_thresh;
     float iou_thresh;
@@ -330,6 +339,8 @@ struct layer {
     int   * input_sizes;
     float **layers_output;
     float **layers_delta;
+    WEIGHTS_TYPE_T weights_type;
+    WEIGHTS_NORMALIZATION_T weights_normalizion;
     int   * map;
     int   * counts;
     float ** sums;
@@ -658,6 +669,7 @@ typedef struct network {
     int blur;
     int mixup;
     float label_smooth_eps;
+    int resize_step;
     int letter_box;
     float angle;
     float aspect;
