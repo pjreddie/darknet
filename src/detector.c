@@ -18,7 +18,7 @@ typedef __compar_fn_t comparison_fn_t;
 
 #include "http_stream.h"
 
-extern int check_mistakes = 0;
+int check_mistakes = 0;
 
 static int coco_ids[] = { 1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90 };
 
@@ -1246,7 +1246,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     free(tp_for_thresh_per_class);
     free(fp_for_thresh_per_class);
 
-    fprintf(stderr, "Total Detection Time: %ld Seconds\n", time(0) - start);
+    fprintf(stderr, "Total Detection Time: %d Seconds\n", (int)(time(0) - start));
     printf("\nSet -points flag:\n");
     printf(" `-points 101` for MS COCO \n");
     printf(" `-points 11` for PascalVOC 2007 (uncomment `difficult` in voc.data) \n");
@@ -1333,7 +1333,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
         int num_labels = 0;
         box_label *truth = read_boxes(labelpath, &num_labels);
         //printf(" new path: %s \n", labelpath);
-        char buff[6144];
+        char *buff = (char*)xcalloc(6144, sizeof(char));
         for (j = 0; j < num_labels; ++j)
         {
             if (truth[j].x > 1 || truth[j].x <= 0 || truth[j].y > 1 || truth[j].y <= 0 ||
@@ -1348,13 +1348,12 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
             }
             number_of_boxes++;
             rel_width_height_array = (float*)xrealloc(rel_width_height_array, 2 * number_of_boxes * sizeof(float));
-            if (!rel_width_height_array) {
-              error("realloc failed");
-            }
+
             rel_width_height_array[number_of_boxes * 2 - 2] = truth[j].w * width;
             rel_width_height_array[number_of_boxes * 2 - 1] = truth[j].h * height;
             printf("\r loaded \t image: %d \t box: %d", i + 1, number_of_boxes);
         }
+        free(buff);
     }
     printf("\n all loaded. \n");
     printf("\n calculating k-means++ ...");
@@ -1650,9 +1649,9 @@ void run_detector(int argc, char **argv)
     int ngpus = 0;
     if (gpu_list) {
         printf("%s\n", gpu_list);
-        size_t len = strlen(gpu_list);
+        int len = (int)strlen(gpu_list);
         ngpus = 1;
-        size_t i;
+        int i;
         for (i = 0; i < len; ++i) {
             if (gpu_list[i] == ',') ++ngpus;
         }

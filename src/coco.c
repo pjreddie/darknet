@@ -288,7 +288,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
         char *id = basecfg(path);
         network_predict(net, sized.data);
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 1);
-        // nms is always 0 if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
+        if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms_thresh);
 
         char labelpath[4096];
 		replace_image_to_label(path, labelpath);
