@@ -202,7 +202,7 @@ void validate_coco(char *cfg, char *weights)
             free_image(val_resized[t]);
         }
     }
-    fseek(fp, -2, SEEK_CUR); 
+    fseek(fp, -2, SEEK_CUR);
     fprintf(fp, "\n]\n");
     fclose(fp);
 
@@ -323,7 +323,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         detection *dets = get_network_boxes(net, 1, 1, thresh, 0, 0, 0, &nboxes);
         if (nms) do_nms_sort(dets, l.side*l.side*l.n, l.classes, nms);
 
-        draw_detections(im, dets, l.side*l.side*l.n, thresh, coco_classes, alphabet, 80);
+        draw_detections(im, dets, l.side*l.side*l.n, thresh, coco_classes, alphabet, 80, 0.0);
         save_image(im, "prediction");
         show_image(im, "predictions", 0);
         free_detections(dets, nboxes);

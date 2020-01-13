@@ -353,7 +353,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
         if(fps) fclose(fps[j]);
     }
     if(coco){
-        fseek(fp, -2, SEEK_CUR); 
+        fseek(fp, -2, SEEK_CUR);
         fprintf(fp, "\n]\n");
         fclose(fp);
     }
@@ -479,7 +479,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         if(fps) fclose(fps[j]);
     }
     if(coco){
-        fseek(fp, -2, SEEK_CUR); 
+        fseek(fp, -2, SEEK_CUR);
         fprintf(fp, "\n]\n");
         fclose(fp);
     }
@@ -598,10 +598,13 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
         int nboxes = 0;
         detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+        // printf("The detected class is %d\n", dets->classes);
+        // printf("The prob is %f\n",*dets->prob);
+        // printf("The x,y,w,h is %f, %f, %f, %f", dets->bbox.x, dets->bbox.y, dets->bbox.w, dets->bbox.h);
         //printf("%d\n", nboxes);
         //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
-        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes, 0.0);
         free_detections(dets, nboxes);
         if(outfile){
             save_image(im, outfile);
@@ -648,7 +651,7 @@ void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow(base, CV_WINDOW_NORMAL); 
+    cvNamedWindow(base, CV_WINDOW_NORMAL);
     cvResizeWindow(base, 512, 512);
     float fps = 0;
     int i;
@@ -721,7 +724,7 @@ void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_in
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    cvNamedWindow(base, CV_WINDOW_NORMAL); 
+    cvNamedWindow(base, CV_WINDOW_NORMAL);
     cvResizeWindow(base, 512, 512);
     float fps = 0;
     int i;

@@ -5,6 +5,14 @@
 #include <stdio.h>
 #include <math.h>
 
+// Json api library
+#include <json-c/json.h>
+
+// Xml api library
+// #include <libxml/tree.h>
+// #include <libxml/encoding.h>
+// #include <libxml/xmlwriter.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -81,8 +89,8 @@ static float bilinear_interpolate(image im, float x, float y, int c)
     float dx = x - ix;
     float dy = y - iy;
 
-    float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
-        dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
+    float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) +
+        dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) +
         (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
         dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
     return val;
@@ -124,7 +132,7 @@ image tile_images(image a, image b, int dx)
     if(a.w == 0) return copy_image(b);
     image c = make_image(a.w + b.w + dx, (a.h > b.h) ? a.h : b.h, (a.c > b.c) ? a.c : b.c);
     fill_cpu(c.w*c.h*c.c, 1, c.data, 1);
-    embed_image(a, c, 0, 0); 
+    embed_image(a, c, 0, 0);
     composite_image(b, c, a.w + dx, 0);
     return c;
 }
@@ -236,9 +244,50 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
+float get_average_color(image im, int left, int right, int top, int bot, int c, float ratio) {
+  float result = 0.0;
+  int shrinked_left = left + (right - left) * ratio;
+  int shrinked_right = right - (right-left) * ratio;
+  int shrinked_top = top + (bot - top) * ratio;
+  int shrinked_bot = bot - (bot - top) * ratio;
+  for(int j = shrinked_left; j < shrinked_right; ++j){
+      for(int i = shrinked_top; i < shrinked_bot; ++i){
+          result += get_pixel(im, j , i, c);
+      }
+  }
+  return 255.0 * result/((shrinked_right-shrinked_left)*(shrinked_bot-shrinked_top));
+}
+
+static char color_name[][64] = {"Black", "White", "Red",
+                                "Blue", "Yellow", "Green"};
+static float color_rgb[][3] = {{0,0,0}, {255,255,255}, {255,0,0},
+                               {0,0,255}, {255,255,0},{0,128,0}};
+
+char* get_color_name(float r, float g, float b) {
+  float dist = -1;
+  char* color;
+  for (int i = 0; i < 6; i++) {
+    float d = pow(pow((r - color_rgb[i][0]), 2) +
+                  pow((g - color_rgb[i][1]), 2) +
+                  pow((b - color_rgb[i][2]), 2), 0.5);
+    if (dist < 0 || d < dist) {
+      dist = d;
+      color = color_name[i];
+    }
+  }
+  return color;
+}
+
+void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, double time_index)
 {
     int i,j;
+    struct json_object *json_obj = json_object_new_object();
+    char file_name[64];
+    snprintf(file_name, sizeof(file_name), "output-%f.json", time_index);
+    FILE *file = fopen(file_name, "w+");
+    if(file == 0) file_error(file_name);
+    int obj_index = 1;
+    int person_index = 1;
 
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
@@ -257,28 +306,16 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
         }
         if(class >= 0){
             int width = im.h * .006;
-
-            /*
-               if(0){
-               width = pow(prob, 1./2.)*10+1;
-               alphabet = 0;
-               }
-             */
-
-            //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
             int offset = class*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
             float blue = get_color(0,offset,classes);
             float rgb[3];
 
-            //width = prob*20+2;
-
             rgb[0] = red;
             rgb[1] = green;
             rgb[2] = blue;
             box b = dets[i].bbox;
-            //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
             int left  = (b.x-b.w/2.)*im.w;
             int right = (b.x+b.w/2.)*im.w;
@@ -289,6 +326,103 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             if(right > im.w-1) right = im.w-1;
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
+
+            char *output = NULL;
+            output = strstr (labelstr, "person");
+
+            if (output != NULL) {
+              struct json_object *json_person = json_object_new_object();
+              int head_bot = top + (bot - top)/8;
+              int half_bot = top + (bot - top)/2;
+
+              char head[64];
+              draw_box_width(im, left, top, right, head_bot, width, red, green, blue);
+              float head_r = get_average_color(im, left, right, top, head_bot, 0, 0.3);
+              float head_g = get_average_color(im, left, right, top, head_bot, 1, 0.3);
+              float head_b = get_average_color(im, left, right, top, head_bot, 2, 0.3);
+              snprintf(head, sizeof(head), "%s",
+                       get_color_name(head_r, head_g, head_b));
+
+              struct json_object *json_head = json_object_new_string(head);
+              json_object_object_add(json_person, "head_color", json_head);
+
+              if (alphabet) {
+                  image label = get_label(alphabet, head, (im.h*.03));
+                  draw_label(im, top + width, right, label, rgb);
+                  free_image(label);
+              }
+              if (dets[i].mask){
+                  image mask = float_to_image(14, 14, 1, dets[i].mask);
+                  image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                  image tmask = threshold_image(resized_mask, .5);
+                  embed_image(tmask, im, left, top);
+                  free_image(mask);
+                  free_image(resized_mask);
+                  free_image(tmask);
+              }
+
+              char upper_body[64];
+              draw_box_width(im, left, head_bot, right, half_bot, width, red, green, blue);
+              float upper_body_r = get_average_color(im, left, right, head_bot, half_bot, 0, 0.3);
+              float upper_body_g = get_average_color(im, left, right, head_bot, half_bot, 1, 0.3);
+              float upper_body_b = get_average_color(im, left, right, head_bot, half_bot, 2, 0.3);
+              snprintf(upper_body, sizeof(upper_body), "%s",
+                       get_color_name(upper_body_r, upper_body_g, upper_body_b));
+
+              struct json_object *json_upper_body = json_object_new_string(upper_body);
+              json_object_object_add(json_person, "upper_body_color", json_upper_body);
+
+              if (alphabet) {
+                  image label = get_label(alphabet, upper_body, (im.h*.03));
+                  draw_label(im, head_bot + width, right, label, rgb);
+                  free_image(label);
+              }
+              if (dets[i].mask){
+                  image mask = float_to_image(14, 14, 1, dets[i].mask);
+                  image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                  image tmask = threshold_image(resized_mask, .5);
+                  embed_image(tmask, im, left, top);
+                  free_image(mask);
+                  free_image(resized_mask);
+                  free_image(tmask);
+              }
+
+              char bottom_body[64];
+              draw_box_width(im, left, half_bot, right, bot, width, red, green, blue);
+              float bottom_body_r = get_average_color(im, left, right, half_bot, bot, 0, 0.3);
+              float bottom_body_g = get_average_color(im, left, right, half_bot, bot, 1, 0.3);
+              float bottom_body_b = get_average_color(im, left, right, half_bot, bot, 2, 0.3);
+              snprintf(bottom_body, sizeof(bottom_body),
+                       "%s",
+                       get_color_name(bottom_body_r, bottom_body_g, bottom_body_b));
+
+              struct json_object *json_bottom_body = json_object_new_string(bottom_body);
+              json_object_object_add(json_person, "bottom_body_color", json_bottom_body);
+
+              char person_object[64];
+              sprintf(person_object, "person %d", person_index++);
+              json_object_object_add(json_obj, person_object, json_person);
+
+              if (alphabet) {
+                  image label = get_label(alphabet, bottom_body, (im.h*.03));
+                  draw_label(im, half_bot + width, right, label, rgb);
+                  free_image(label);
+              }
+              if (dets[i].mask){
+                  image mask = float_to_image(14, 14, 1, dets[i].mask);
+                  image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                  image tmask = threshold_image(resized_mask, .5);
+                  embed_image(tmask, im, left, half_bot);
+                  free_image(mask);
+                  free_image(resized_mask);
+                  free_image(tmask);
+              }
+              continue;
+            }
+            char object[64];
+
+            sprintf(object, "object %d", obj_index++);
+            json_object_object_add(json_obj, object, json_object_new_string(labelstr));
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
@@ -307,6 +441,9 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             }
         }
     }
+    fprintf(file, json_object_to_json_string_ext(json_obj, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
+    printf(json_object_to_json_string_ext(json_obj, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
+    fclose(file);
 }
 
 void transpose_image(image im)
@@ -647,7 +784,7 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)
 
 image center_crop_image(image im, int w, int h)
 {
-    int m = (im.w < im.h) ? im.w : im.h;   
+    int m = (im.w < im.h) ? im.w : im.h;
     image c = crop_image(im, (im.w - m) / 2, (im.h - m)/2, m, m);
     image r = resize_image(c, w, h);
     free_image(c);
@@ -805,7 +942,7 @@ void letterbox_image_into(image im, int w, int h, image boxed)
         new_w = (im.w * h)/im.h;
     }
     image resized = resize_image(im, new_w, new_h);
-    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2); 
+    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2);
     free_image(resized);
 }
 
@@ -825,7 +962,7 @@ image letterbox_image(image im, int w, int h)
     fill_image(boxed, .5);
     //int i;
     //for(i = 0; i < boxed.w*boxed.h*boxed.c; ++i) boxed.data[i] = 0;
-    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2); 
+    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2);
     free_image(resized);
     return boxed;
 }
@@ -1091,7 +1228,7 @@ image blend_image(image fore, image back, float alpha)
     for(k = 0; k < fore.c; ++k){
         for(j = 0; j < fore.h; ++j){
             for(i = 0; i < fore.w; ++i){
-                float val = alpha * get_pixel(fore, i, j, k) + 
+                float val = alpha * get_pixel(fore, i, j, k) +
                     (1 - alpha)* get_pixel(back, i, j, k);
                 set_pixel(blend, i, j, k, val);
             }
@@ -1198,7 +1335,7 @@ void saturate_exposure_image(image im, float sat, float exposure)
 
 image resize_image(image im, int w, int h)
 {
-    image resized = make_image(w, h, im.c);   
+    image resized = make_image(w, h, im.c);
     image part = make_image(w, im.h, im.c);
     int r, c, k;
     float w_scale = (float)(im.w - 1) / (w - 1);
@@ -1394,7 +1531,7 @@ image collapse_images_vert(image *ims, int n)
         free_image(copy);
     }
     return filters;
-} 
+}
 
 image collapse_images_horz(image *ims, int n)
 {
@@ -1430,7 +1567,7 @@ image collapse_images_horz(image *ims, int n)
         free_image(copy);
     }
     return filters;
-} 
+}
 
 void show_image_normalized(image im, const char *name)
 {

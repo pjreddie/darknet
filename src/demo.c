@@ -33,6 +33,7 @@ static float **predictions;
 static float *avg;
 static int demo_done = 0;
 static int demo_total = 0;
+static double start_time = 0;
 double demo_time;
 
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num);
@@ -100,28 +101,6 @@ void *detect_in_thread(void *ptr)
     int nboxes = 0;
     dets = avg_predictions(net, &nboxes);
 
-
-    /*
-       int i,j;
-       box zero = {0};
-       int classes = l.classes;
-       for(i = 0; i < demo_detections; ++i){
-       avg[i].objectness = 0;
-       avg[i].bbox = zero;
-       memset(avg[i].prob, 0, classes*sizeof(float));
-       for(j = 0; j < demo_frame; ++j){
-       axpy_cpu(classes, 1./demo_frame, dets[j][i].prob, 1, avg[i].prob, 1);
-       avg[i].objectness += dets[j][i].objectness * 1./demo_frame;
-       avg[i].bbox.x += dets[j][i].bbox.x * 1./demo_frame;
-       avg[i].bbox.y += dets[j][i].bbox.y * 1./demo_frame;
-       avg[i].bbox.w += dets[j][i].bbox.w * 1./demo_frame;
-       avg[i].bbox.h += dets[j][i].bbox.h * 1./demo_frame;
-       }
-    //copy_cpu(classes, dets[0][i].prob, 1, avg[i].prob, 1);
-    //avg[i].objectness = dets[0][i].objectness;
-    }
-     */
-
     if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
 
     printf("\033[2J");
@@ -129,7 +108,8 @@ void *detect_in_thread(void *ptr)
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
-    draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
+    double time_index = what_time_is_it_now() - start_time;
+    draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, time_index);
     free_detections(dets, nboxes);
 
     demo_index = (demo_index + 1)%demo_frame;
@@ -230,7 +210,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         make_window("Demo", 1352, 1013, fullscreen);
     }
 
-    demo_time = what_time_is_it_now();
+    demo_time = start_time = what_time_is_it_now();
 
     while(!demo_done){
         buff_index = (buff_index + 1) %3;
@@ -310,7 +290,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
    int count = 0;
    if(!prefix){
-   cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
+   cvNamedWindow("Demo", CV_WINDOW_NORMAL);
    if(fullscreen){
    cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
    } else {
@@ -346,4 +326,3 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
 #endif
-
