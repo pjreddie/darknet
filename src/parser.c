@@ -1856,17 +1856,18 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fread(&minor, sizeof(int), 1, fp);
     fread(&revision, sizeof(int), 1, fp);
     if ((major * 10 + minor) >= 2) {
-        printf("\n seen 64 \n");
+        printf("\n seen 64");
         uint64_t iseen = 0;
         fread(&iseen, sizeof(uint64_t), 1, fp);
         *net->seen = iseen;
     }
     else {
-        printf("\n seen 32 \n");
+        printf("\n seen 32");
         uint32_t iseen = 0;
         fread(&iseen, sizeof(uint32_t), 1, fp);
         *net->seen = iseen;
     }
+    printf(", trained: %.0f K-images (%.0f Kilo-batches_64) \n", (float)(*net->seen / 1000), (float)(*net->seen / 64000));
     int transpose = (major > 1000) || (minor > 1000);
 
     int i;

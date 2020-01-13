@@ -110,6 +110,8 @@ void resize_shortcut_layer(layer *l, int w, int h, network *net)
         assert(l->w == net->layers[index].out_w && l->h == net->layers[index].out_h);
     }
 
+    if (l->activation == SWISH || l->activation == MISH) l->activation_input = (float*)realloc(l->activation_input, l->batch*l->outputs * sizeof(float));
+
 #ifdef GPU
     cuda_free(l->output_gpu);
     l->output_gpu = cuda_make_array(l->output, l->outputs*l->batch);
@@ -134,6 +136,11 @@ void resize_shortcut_layer(layer *l, int w, int h, network *net)
 
     free(layers_output_gpu);
     free(layers_delta_gpu);
+
+    if (l->activation == SWISH || l->activation == MISH) {
+        cuda_free(l->activation_input_gpu);
+        l->activation_input_gpu = cuda_make_array(l->activation_input, l->batch*l->outputs);
+    }
 #endif
 
 }
