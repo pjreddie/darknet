@@ -688,14 +688,12 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             free_image(val_resized[t]);
         }
     }
-    free(buf);
-    free(buf_resized);
-    free(val);
-    free(val_resized);
-    for (j = 0; j < classes; ++j) {
-        if (fps) fclose(fps[j]);
+    if (fps) {
+        for (j = 0; j < classes; ++j) {
+            fclose(fps[j]);
+        }
+        free(fps);
     }
-    if (fps) free(fps);
     if (coco) {
 #ifdef WIN32
         fseek(fp, -3, SEEK_CUR);
@@ -922,12 +920,12 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     time_t start = time(0);
     for (i = nthreads; i < m + nthreads; i += nthreads) {
         fprintf(stderr, "\r%d", i);
-        for (t = 0; t < nthreads && i + t - nthreads < m; ++t) {
+        for (t = 0; t < nthreads && (i + t - nthreads) < m; ++t) {
             pthread_join(thr[t], 0);
             val[t] = buf[t];
             val_resized[t] = buf_resized[t];
         }
-        for (t = 0; t < nthreads && i + t < m; ++t) {
+        for (t = 0; t < nthreads && (i + t) < m; ++t) {
             args.path = paths[i + t];
             args.im = &buf[t];
             args.resized = &buf_resized[t];
@@ -1070,12 +1068,10 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             free_image(val_resized[t]);
         }
     }
-    free(val);
-    free(val_resized);
-    for (t = 0; t < nthreads; ++t) {
-        pthread_join(thr[t], 0);
-    }
-    free(thr);
+
+    //for (t = 0; t < nthreads; ++t) {
+    //    pthread_join(thr[t], 0);
+    //}
 
     if ((tp_for_thresh + fp_for_thresh) > 0)
         avg_iou = avg_iou / (tp_for_thresh + fp_for_thresh);
