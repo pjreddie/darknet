@@ -66,65 +66,65 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
     l.peephole = peephole;
 
     // U
-    l.uf = (layer*)calloc(1, sizeof(layer));
+    l.uf = (layer*)xcalloc(1, sizeof(layer));
     *(l.uf) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
     l.uf->batch = batch;
     if (l.workspace_size < l.uf->workspace_size) l.workspace_size = l.uf->workspace_size;
 
-    l.ui = (layer*)calloc(1, sizeof(layer));
+    l.ui = (layer*)xcalloc(1, sizeof(layer));
     *(l.ui) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
     l.ui->batch = batch;
     if (l.workspace_size < l.ui->workspace_size) l.workspace_size = l.ui->workspace_size;
 
-    l.ug = (layer*)calloc(1, sizeof(layer));
+    l.ug = (layer*)xcalloc(1, sizeof(layer));
     *(l.ug) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
     l.ug->batch = batch;
     if (l.workspace_size < l.ug->workspace_size) l.workspace_size = l.ug->workspace_size;
 
-    l.uo = (layer*)calloc(1, sizeof(layer));
+    l.uo = (layer*)xcalloc(1, sizeof(layer));
     *(l.uo) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
     l.uo->batch = batch;
     if (l.workspace_size < l.uo->workspace_size) l.workspace_size = l.uo->workspace_size;
 
 
     // W
-    l.wf = (layer*)calloc(1, sizeof(layer));
+    l.wf = (layer*)xcalloc(1, sizeof(layer));
     *(l.wf) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
     l.wf->batch = batch;
     if (l.workspace_size < l.wf->workspace_size) l.workspace_size = l.wf->workspace_size;
 
-    l.wi = (layer*)calloc(1, sizeof(layer));
+    l.wi = (layer*)xcalloc(1, sizeof(layer));
     *(l.wi) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
     l.wi->batch = batch;
     if (l.workspace_size < l.wi->workspace_size) l.workspace_size = l.wi->workspace_size;
 
-    l.wg = (layer*)calloc(1, sizeof(layer));
+    l.wg = (layer*)xcalloc(1, sizeof(layer));
     *(l.wg) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
     l.wg->batch = batch;
     if (l.workspace_size < l.wg->workspace_size) l.workspace_size = l.wg->workspace_size;
 
-    l.wo = (layer*)calloc(1, sizeof(layer));
+    l.wo = (layer*)xcalloc(1, sizeof(layer));
     *(l.wo) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
     l.wo->batch = batch;
     if (l.workspace_size < l.wo->workspace_size) l.workspace_size = l.wo->workspace_size;
 
 
     // V
-    l.vf = (layer*)calloc(1, sizeof(layer));
+    l.vf = (layer*)xcalloc(1, sizeof(layer));
     if (l.peephole) {
         *(l.vf) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
         l.vf->batch = batch;
         if (l.workspace_size < l.vf->workspace_size) l.workspace_size = l.vf->workspace_size;
     }
 
-    l.vi = (layer*)calloc(1, sizeof(layer));
+    l.vi = (layer*)xcalloc(1, sizeof(layer));
     if (l.peephole) {
         *(l.vi) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
         l.vi->batch = batch;
         if (l.workspace_size < l.vi->workspace_size) l.workspace_size = l.vi->workspace_size;
     }
 
-    l.vo = (layer*)calloc(1, sizeof(layer));
+    l.vo = (layer*)xcalloc(1, sizeof(layer));
     if (l.peephole) {
         *(l.vo) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, 0, NULL, 0, 0, train);
         l.vo->batch = batch;
@@ -142,30 +142,30 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
 
     assert(l.wo->outputs == l.uo->outputs);
 
-    l.output = (float*)calloc(outputs * batch * steps, sizeof(float));
-    //l.state = (float*)calloc(outputs * batch, sizeof(float));
+    l.output = (float*)xcalloc(outputs * batch * steps, sizeof(float));
+    //l.state = (float*)xcalloc(outputs * batch, sizeof(float));
 
     l.forward = forward_conv_lstm_layer;
     l.update = update_conv_lstm_layer;
     l.backward = backward_conv_lstm_layer;
 
-    l.prev_state_cpu =  (float*)calloc(batch*outputs, sizeof(float));
-    l.prev_cell_cpu =   (float*)calloc(batch*outputs, sizeof(float));
-    l.cell_cpu =        (float*)calloc(batch*outputs*steps, sizeof(float));
+    l.prev_state_cpu =  (float*)xcalloc(batch*outputs, sizeof(float));
+    l.prev_cell_cpu =   (float*)xcalloc(batch*outputs, sizeof(float));
+    l.cell_cpu =        (float*)xcalloc(batch*outputs*steps, sizeof(float));
 
-    l.f_cpu =           (float*)calloc(batch*outputs, sizeof(float));
-    l.i_cpu =           (float*)calloc(batch*outputs, sizeof(float));
-    l.g_cpu =           (float*)calloc(batch*outputs, sizeof(float));
-    l.o_cpu =           (float*)calloc(batch*outputs, sizeof(float));
-    l.c_cpu =           (float*)calloc(batch*outputs, sizeof(float));
-    l.stored_c_cpu = (float*)calloc(batch*outputs, sizeof(float));
-    l.h_cpu =           (float*)calloc(batch*outputs, sizeof(float));
-    l.stored_h_cpu = (float*)calloc(batch*outputs, sizeof(float));
-    l.temp_cpu =        (float*)calloc(batch*outputs, sizeof(float));
-    l.temp2_cpu =       (float*)calloc(batch*outputs, sizeof(float));
-    l.temp3_cpu =       (float*)calloc(batch*outputs, sizeof(float));
-    l.dc_cpu =          (float*)calloc(batch*outputs, sizeof(float));
-    l.dh_cpu =          (float*)calloc(batch*outputs, sizeof(float));
+    l.f_cpu =           (float*)xcalloc(batch*outputs, sizeof(float));
+    l.i_cpu =           (float*)xcalloc(batch*outputs, sizeof(float));
+    l.g_cpu =           (float*)xcalloc(batch*outputs, sizeof(float));
+    l.o_cpu =           (float*)xcalloc(batch*outputs, sizeof(float));
+    l.c_cpu =           (float*)xcalloc(batch*outputs, sizeof(float));
+    l.stored_c_cpu = (float*)xcalloc(batch*outputs, sizeof(float));
+    l.h_cpu =           (float*)xcalloc(batch*outputs, sizeof(float));
+    l.stored_h_cpu = (float*)xcalloc(batch*outputs, sizeof(float));
+    l.temp_cpu =        (float*)xcalloc(batch*outputs, sizeof(float));
+    l.temp2_cpu =       (float*)xcalloc(batch*outputs, sizeof(float));
+    l.temp3_cpu =       (float*)xcalloc(batch*outputs, sizeof(float));
+    l.dc_cpu =          (float*)xcalloc(batch*outputs, sizeof(float));
+    l.dh_cpu =          (float*)xcalloc(batch*outputs, sizeof(float));
 
 #ifdef GPU
     l.forward_gpu = forward_conv_lstm_layer_gpu;
@@ -276,26 +276,26 @@ void resize_conv_lstm_layer(layer *l, int w, int h)
 
     assert(l->wo->outputs == l->uo->outputs);
 
-    l->output = (float*)realloc(l->output, outputs * batch * steps * sizeof(float));
-    //l->state = (float*)realloc(l->state, outputs * batch * sizeof(float));
+    l->output = (float*)xrealloc(l->output, outputs * batch * steps * sizeof(float));
+    //l->state = (float*)xrealloc(l->state, outputs * batch * sizeof(float));
 
-    l->prev_state_cpu = (float*)realloc(l->prev_state_cpu, batch*outputs * sizeof(float));
-    l->prev_cell_cpu = (float*)realloc(l->prev_cell_cpu, batch*outputs * sizeof(float));
-    l->cell_cpu = (float*)realloc(l->cell_cpu, batch*outputs*steps * sizeof(float));
+    l->prev_state_cpu = (float*)xrealloc(l->prev_state_cpu, batch*outputs * sizeof(float));
+    l->prev_cell_cpu = (float*)xrealloc(l->prev_cell_cpu, batch*outputs * sizeof(float));
+    l->cell_cpu = (float*)xrealloc(l->cell_cpu, batch*outputs*steps * sizeof(float));
 
-    l->f_cpu = (float*)realloc(l->f_cpu, batch*outputs * sizeof(float));
-    l->i_cpu = (float*)realloc(l->i_cpu, batch*outputs * sizeof(float));
-    l->g_cpu = (float*)realloc(l->g_cpu, batch*outputs * sizeof(float));
-    l->o_cpu = (float*)realloc(l->o_cpu, batch*outputs * sizeof(float));
-    l->c_cpu = (float*)realloc(l->c_cpu, batch*outputs * sizeof(float));
-    l->h_cpu = (float*)realloc(l->h_cpu, batch*outputs * sizeof(float));
-    l->temp_cpu = (float*)realloc(l->temp_cpu, batch*outputs * sizeof(float));
-    l->temp2_cpu = (float*)realloc(l->temp2_cpu, batch*outputs * sizeof(float));
-    l->temp3_cpu = (float*)realloc(l->temp3_cpu, batch*outputs * sizeof(float));
-    l->dc_cpu = (float*)realloc(l->dc_cpu, batch*outputs * sizeof(float));
-    l->dh_cpu = (float*)realloc(l->dh_cpu, batch*outputs * sizeof(float));
-    l->stored_c_cpu = (float*)realloc(l->stored_c_cpu, batch*outputs * sizeof(float));
-    l->stored_h_cpu = (float*)realloc(l->stored_h_cpu, batch*outputs * sizeof(float));
+    l->f_cpu = (float*)xrealloc(l->f_cpu, batch*outputs * sizeof(float));
+    l->i_cpu = (float*)xrealloc(l->i_cpu, batch*outputs * sizeof(float));
+    l->g_cpu = (float*)xrealloc(l->g_cpu, batch*outputs * sizeof(float));
+    l->o_cpu = (float*)xrealloc(l->o_cpu, batch*outputs * sizeof(float));
+    l->c_cpu = (float*)xrealloc(l->c_cpu, batch*outputs * sizeof(float));
+    l->h_cpu = (float*)xrealloc(l->h_cpu, batch*outputs * sizeof(float));
+    l->temp_cpu = (float*)xrealloc(l->temp_cpu, batch*outputs * sizeof(float));
+    l->temp2_cpu = (float*)xrealloc(l->temp2_cpu, batch*outputs * sizeof(float));
+    l->temp3_cpu = (float*)xrealloc(l->temp3_cpu, batch*outputs * sizeof(float));
+    l->dc_cpu = (float*)xrealloc(l->dc_cpu, batch*outputs * sizeof(float));
+    l->dh_cpu = (float*)xrealloc(l->dh_cpu, batch*outputs * sizeof(float));
+    l->stored_c_cpu = (float*)xrealloc(l->stored_c_cpu, batch*outputs * sizeof(float));
+    l->stored_h_cpu = (float*)xrealloc(l->stored_h_cpu, batch*outputs * sizeof(float));
 
 #ifdef GPU
     //if (l->state_gpu) cudaFree(l->state_gpu);

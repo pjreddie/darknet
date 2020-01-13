@@ -122,7 +122,6 @@ cudaStream_t get_cuda_stream() {
         if (status != cudaSuccess) {
             printf(" cudaStreamCreate error: %d \n", status);
             const char *s = cudaGetErrorString(status);
-            char buffer[256];
             printf("CUDA Error: %s\n", s);
             status = cudaStreamCreateWithFlags(&streamsArray[i], cudaStreamDefault);
             CHECK_CUDA(status);
@@ -143,7 +142,6 @@ cudaStream_t get_cuda_memcpy_stream() {
         if (status != cudaSuccess) {
             printf(" cudaStreamCreate-Memcpy error: %d \n", status);
             const char *s = cudaGetErrorString(status);
-            char buffer[256];
             printf("CUDA Error: %s\n", s);
             status = cudaStreamCreateWithFlags(&streamsArray2[i], cudaStreamDefault);
             CHECK_CUDA(status);
@@ -164,6 +162,7 @@ cudnnHandle_t cudnn_handle()
         cudnnCreate(&handle[i]);
         init[i] = 1;
         cudnnStatus_t status = cudnnSetStream(handle[i], get_cuda_stream());
+        CHECK_CUDNN(status);
     }
     return handle[i];
 }
@@ -400,7 +399,7 @@ void cuda_random(float *x_gpu, size_t n)
 
 float cuda_compare(float *x_gpu, float *x, size_t n, char *s)
 {
-    float* tmp = (float*)calloc(n, sizeof(float));
+    float* tmp = (float*)xcalloc(n, sizeof(float));
     cuda_pull_array(x_gpu, tmp, n);
     //int i;
     //for(i = 0; i < n; ++i) printf("%f %f\n", tmp[i], x[i]);

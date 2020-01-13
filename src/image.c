@@ -1,3 +1,6 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include "image.h"
 #include "utils.h"
 #include "blas.h"
@@ -246,9 +249,9 @@ image **load_alphabet()
 {
     int i, j;
     const int nsize = 8;
-    image** alphabets = (image**)calloc(nsize, sizeof(image*));
+    image** alphabets = (image**)xcalloc(nsize, sizeof(image*));
     for(j = 0; j < nsize; ++j){
-        alphabets[j] = (image*)calloc(128, sizeof(image));
+        alphabets[j] = (image*)xcalloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
             char buff[256];
             sprintf(buff, "data/labels/%d_%d.png", i, j);
@@ -264,7 +267,7 @@ image **load_alphabet()
 detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num, char **names)
 {
     int selected_num = 0;
-    detection_with_class* result_arr = (detection_with_class*)calloc(dets_num, sizeof(detection_with_class));
+    detection_with_class* result_arr = (detection_with_class*)xcalloc(dets_num, sizeof(detection_with_class));
     int i;
     for (i = 0; i < dets_num; ++i) {
         int best_class = -1;
@@ -616,8 +619,8 @@ void normalize_image(image p)
 
 void normalize_image2(image p)
 {
-    float* min = (float*)calloc(p.c, sizeof(float));
-    float* max = (float*)calloc(p.c, sizeof(float));
+    float* min = (float*)xcalloc(p.c, sizeof(float));
+    float* max = (float*)xcalloc(p.c, sizeof(float));
     int i,j;
     for(i = 0; i < p.c; ++i) min[i] = max[i] = p.data[i*p.h*p.w];
 
@@ -646,7 +649,7 @@ void normalize_image2(image p)
 image copy_image(image p)
 {
     image copy = p;
-    copy.data = (float*)calloc(p.h * p.w * p.c, sizeof(float));
+    copy.data = (float*)xcalloc(p.h * p.w * p.c, sizeof(float));
     memcpy(copy.data, p.data, p.h*p.w*p.c*sizeof(float));
     return copy;
 }
@@ -676,7 +679,7 @@ void save_image_png(image im, const char *name)
     char buff[256];
     //sprintf(buff, "%s (%d)", name, windows);
     sprintf(buff, "%s.png", name);
-    unsigned char* data = (unsigned char*)calloc(im.w * im.h * im.c, sizeof(unsigned char));
+    unsigned char* data = (unsigned char*)xcalloc(im.w * im.h * im.c, sizeof(unsigned char));
     int i,k;
     for(k = 0; k < im.c; ++k){
         for(i = 0; i < im.w*im.h; ++i){
@@ -697,7 +700,7 @@ void save_image_options(image im, const char *name, IMTYPE f, int quality)
     else if (f == TGA) sprintf(buff, "%s.tga", name);
     else if (f == JPG) sprintf(buff, "%s.jpg", name);
     else               sprintf(buff, "%s.png", name);
-    unsigned char* data = (unsigned char*)calloc(im.w * im.h * im.c, sizeof(unsigned char));
+    unsigned char* data = (unsigned char*)xcalloc(im.w * im.h * im.c, sizeof(unsigned char));
     int i, k;
     for (k = 0; k < im.c; ++k) {
         for (i = 0; i < im.w*im.h; ++i) {
@@ -755,14 +758,14 @@ image make_empty_image(int w, int h, int c)
 image make_image(int w, int h, int c)
 {
     image out = make_empty_image(w,h,c);
-    out.data = (float*)calloc(h * w * c, sizeof(float));
+    out.data = (float*)xcalloc(h * w * c, sizeof(float));
     return out;
 }
 
 image make_random_image(int w, int h, int c)
 {
     image out = make_empty_image(w,h,c);
-    out.data = (float*)calloc(h * w * c, sizeof(float));
+    out.data = (float*)xcalloc(h * w * c, sizeof(float));
     int i;
     for(i = 0; i < w*h*c; ++i){
         out.data[i] = (rand_normal() * .25) + .5;

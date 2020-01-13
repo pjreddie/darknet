@@ -49,7 +49,7 @@ void gemm_bin(int M, int N, int K, float ALPHA,
 float *random_matrix(int rows, int cols)
 {
     int i;
-    float* m = (float*)calloc(rows * cols, sizeof(float));
+    float* m = (float*)xcalloc(rows * cols, sizeof(float));
     for(i = 0; i < rows*cols; ++i){
         m[i] = (float)rand()/RAND_MAX;
     }
@@ -154,7 +154,7 @@ void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr)
 {
-    int *count_arr = calloc(M*N, sizeof(int));
+    int *count_arr = xcalloc(M*N, sizeof(int));
 
     int i, j, k;
     for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
@@ -184,7 +184,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr)
 {
-    int *count_arr = calloc(M*N, sizeof(int));
+    int *count_arr = xcalloc(M*N, sizeof(int));
 
     int i, j, k;
     for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
@@ -213,7 +213,7 @@ void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
     unsigned char *B, int ldb,
     float *C, int ldc, float *mean_arr)
 {
-    int *count_arr = calloc(M*N, sizeof(int));
+    int *count_arr = xcalloc(M*N, sizeof(int));
 
     int i;
 
@@ -319,6 +319,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 //----------------------------
 
 // is not used
+/*
 void transpose_32x32_bits_my(uint32_t *A, uint32_t *B, int lda, int ldb)
 {
     unsigned int x, y;
@@ -328,6 +329,7 @@ void transpose_32x32_bits_my(uint32_t *A, uint32_t *B, int lda, int ldb)
         }
     }
 }
+*/
 
 #ifndef GPU
 uint8_t reverse_8_bit(uint8_t a) {
@@ -2368,7 +2370,7 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
     memset(dst, 0, dst_size);
 
     size_t i;
-    char* byte_arr = (char*)calloc(size, sizeof(char));
+    char* byte_arr = (char*)xcalloc(size, sizeof(char));
     for (i = 0; i < size; ++i) {
         if (src[i] > 0) byte_arr[i] = 1;
     }

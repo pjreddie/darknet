@@ -48,7 +48,9 @@ metadata get_metadata(char *file)
     }
     m.classes = option_find_int(options, "classes", 2);
     free_list(options);
-    printf("Loaded - names_list: %s, classes = %d \n", name_list, m.classes);
+    if(name_list) {
+        printf("Loaded - names_list: %s, classes = %d \n", name_list, m.classes);
+    }
     return m;
 }
 
@@ -72,7 +74,7 @@ int read_option(char *s, list *options)
 
 void option_insert(list *l, char *key, char *val)
 {
-    kvp* p = (kvp*)malloc(sizeof(kvp));
+    kvp* p = (kvp*)xmalloc(sizeof(kvp));
     p->key = key;
     p->val = val;
     p->used = 0;

@@ -9,7 +9,7 @@ typedef layer region_layer;
 #ifdef __cplusplus
 extern "C" {
 #endif
-region_layer make_region_layer(int batch, int h, int w, int n, int classes, int coords, int max_boxes);
+region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords, int max_boxes);
 void forward_region_layer(const region_layer l, network_state state);
 void backward_region_layer(const region_layer l, network_state state);
 void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness, int *map);

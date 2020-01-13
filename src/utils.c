@@ -1,3 +1,6 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +25,28 @@
 #pragma warning(disable: 4996)
 #endif
 
+void *xmalloc(size_t size) {
+    void *ptr=malloc(size);
+    if(!ptr) {
+        malloc_error();
+    }
+    return ptr;
+}
+void *xcalloc(size_t nmemb, size_t size) {
+    void *ptr=calloc(nmemb,size);
+    if(!ptr) {
+        calloc_error();
+    }
+    return ptr;
+}
+void *xrealloc(void *ptr, size_t size) {
+    ptr=realloc(ptr,size);
+    if(!ptr) {
+        realloc_error();
+    }
+    return ptr;
+}
+
 double what_time_is_it_now()
 {
     struct timeval time;
@@ -40,8 +65,12 @@ int *read_map(char *filename)
     if(!file) file_error(filename);
     while((str=fgetl(file))){
         ++n;
-        map = (int*)realloc(map, n * sizeof(int));
+        map = (int*)xrealloc(map, n * sizeof(int));
+        if(!map) {
+          error("realloc failed");
+        }
         map[n-1] = atoi(str);
+        free(str);
     }
     if (file) fclose(file);
     return map;
@@ -61,7 +90,7 @@ void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections)
 void shuffle(void *arr, size_t n, size_t size)
 {
     size_t i;
-    void* swp = (void*)calloc(1, size);
+    void* swp = (void*)xcalloc(1, size);
     for(i = 0; i < n-1; ++i){
         size_t j = i + random_gen()/(RAND_MAX / (n-i)+1);
         memcpy(swp,            (char*)arr+(j*size), size);
@@ -177,12 +206,15 @@ void pm(int M, int N, float *A)
 
 void find_replace(const char* str, char* orig, char* rep, char* output)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
+    char* buffer = strdup(str);
+    if(!buffer) {
+        error("strdup failed");
+    }
     char *p;
-
-    sprintf(buffer, "%s", str);
     if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
-        sprintf(output, "%s", buffer);
+        if(str!=output) {
+            strcpy(output,str);
+        }
         free(buffer);
         return;
     }
@@ -195,8 +227,10 @@ void find_replace(const char* str, char* orig, char* rep, char* output)
 
 void trim(char *str)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
-    sprintf(buffer, "%s", str);
+    char* buffer = strdup(str);
+    if(!buffer) {
+        error("strdup failed");
+    }
 
     char *p = buffer;
     while (*p == ' ' || *p == '\t') ++p;
@@ -206,16 +240,16 @@ void trim(char *str)
         *end = '\0';
         --end;
     }
-    sprintf(str, "%s", p);
-
+    strcpy(str,p);
     free(buffer);
 }
 
 void find_replace_extension(char *str, char *orig, char *rep, char *output)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
-
-    sprintf(buffer, "%s", str);
+    char* buffer = strdup(str);
+    if(!buffer) {
+        error("strdup failed");
+    }
     char *p = strstr(buffer, orig);
     int offset = (p - buffer);
     int chars_from_end = strlen(buffer) - offset;
@@ -224,9 +258,6 @@ void find_replace_extension(char *str, char *orig, char *rep, char *output)
         free(buffer);
         return;
     }
-
-    *p = '\0';
-    sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
     free(buffer);
 }
 
@@ -300,7 +331,19 @@ void error(const char *s)
 
 void malloc_error()
 {
-    fprintf(stderr, "Malloc error\n");
+    fprintf(stderr, "xMalloc error\n");
+    exit(EXIT_FAILURE);
+}
+
+void calloc_error()
+{
+    fprintf(stderr, "Calloc error\n");
+    exit(EXIT_FAILURE);
+}
+
+void realloc_error()
+{
+    fprintf(stderr, "Realloc error\n");
     exit(EXIT_FAILURE);
 }
 
@@ -376,7 +419,7 @@ char *fgetl(FILE *fp)
 {
     if(feof(fp)) return 0;
     size_t size = 512;
-    char* line = (char*)malloc(size * sizeof(char));
+    char* line = (char*)xmalloc(size * sizeof(char));
     if(!fgets(line, size, fp)){
         free(line);
         return 0;
@@ -387,11 +430,7 @@ char *fgetl(FILE *fp)
     while((line[curr-1] != '\n') && !feof(fp)){
         if(curr == size-1){
             size *= 2;
-            line = (char*)realloc(line, size * sizeof(char));
-            if(!line) {
-                printf("%ld\n", size);
-                malloc_error();
-            }
+            line = (char*)xrealloc(line, size * sizeof(char));
         }
         size_t readsize = size-curr;
         if(readsize > INT_MAX) readsize = INT_MAX-1;
@@ -466,7 +505,10 @@ void write_all(int fd, char *buffer, size_t bytes)
 
 char *copy_string(char *s)
 {
-    char* copy = (char*)malloc(strlen(s) + 1);
+    if(!s) {
+        return NULL;
+    }
+    char* copy = (char*)xmalloc(strlen(s) + 1);
     strncpy(copy, s, strlen(s)+1);
     return copy;
 }
@@ -502,7 +544,7 @@ int count_fields(char *line)
 
 float *parse_fields(char *line, int n)
 {
-    float* field = (float*)calloc(n, sizeof(float));
+    float* field = (float*)xcalloc(n, sizeof(float));
     char *c, *p, *end;
     int count = 0;
     int done = 0;
@@ -690,8 +732,8 @@ int max_index(float *a, int n)
 int top_max_index(float *a, int n, int k)
 {
     if (n <= 0) return -1;
-    float *values = (float*)calloc(k, sizeof(float));
-    int *indexes = (int*)calloc(k, sizeof(int));
+    float *values = (float*)xcalloc(k, sizeof(float));
+    int *indexes = (int*)xcalloc(k, sizeof(int));
     int i, j;
     for (i = 0; i < n; ++i) {
         for (j = 0; j < k; ++j) {
@@ -804,9 +846,9 @@ float rand_scale(float s)
 float **one_hot_encode(float *a, int n, int k)
 {
     int i;
-    float** t = (float**)calloc(n, sizeof(float*));
+    float** t = (float**)xcalloc(n, sizeof(float*));
     for(i = 0; i < n; ++i){
-        t[i] = (float*)calloc(k, sizeof(float));
+        t[i] = (float*)xcalloc(k, sizeof(float));
         int index = (int)a[i];
         t[i][index] = 1;
     }
@@ -935,7 +977,7 @@ int check_array_is_inf(float *arr, int size)
 
 int *random_index_order(int min, int max)
 {
-    int *inds = (int *)calloc(max - min, sizeof(int));
+    int *inds = (int *)xcalloc(max - min, sizeof(int));
     int i;
     for (i = min; i < max; ++i) {
         inds[i - min] = i;
@@ -962,6 +1004,7 @@ int max_int_index(int *a, int n)
     }
     return max_i;
 }
+
 
 // Absolute box from relative coordinate bounding box and image size
 boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check)

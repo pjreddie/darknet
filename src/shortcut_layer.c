@@ -2,6 +2,7 @@
 #include "convolutional_layer.h"
 #include "dark_cuda.h"
 #include "blas.h"
+#include "utils.h"
 #include "gemm.h"
 #include <stdio.h>
 #include <assert.h>
@@ -40,8 +41,9 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
 
     l.index = l.input_layers[0];
 
-    if (train) l.delta = (float*)calloc(l.outputs * batch, sizeof(float));
-    l.output = (float*)calloc(l.outputs * batch, sizeof(float));
+
+    if (train) l.delta = (float*)xcalloc(l.outputs * batch, sizeof(float));
+    l.output = (float*)xcalloc(l.outputs * batch, sizeof(float));
 
     if (l.weights_type == PER_FEATURE) l.nweights = (l.n + 1);
     else if (l.weights_type == PER_CHANNEL) l.nweights = (l.n + 1) * l.c;
@@ -95,8 +97,8 @@ void resize_shortcut_layer(layer *l, int w, int h, network *net)
     l->h = l->out_h = h;
     l->outputs = w*h*l->out_c;
     l->inputs = l->outputs;
-    if (l->train) l->delta = (float*)realloc(l->delta, l->outputs * l->batch * sizeof(float));
-    l->output = (float*)realloc(l->output, l->outputs * l->batch * sizeof(float));
+    if (l->train) l->delta = (float*)xrealloc(l->delta, l->outputs * l->batch * sizeof(float));
+    l->output = (float*)xrealloc(l->output, l->outputs * l->batch * sizeof(float));
 
     int i;
     for (i = 0; i < l->n; ++i) {

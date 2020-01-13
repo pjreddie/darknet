@@ -15,7 +15,7 @@ void free_matrix(matrix m)
 
 float matrix_topk_accuracy(matrix truth, matrix guess, int k)
 {
-    int* indexes = (int*)calloc(k, sizeof(int));
+    int* indexes = (int*)xcalloc(k, sizeof(int));
     int n = truth.cols;
     int i,j;
     int correct = 0;
@@ -48,15 +48,15 @@ matrix resize_matrix(matrix m, int size)
     int i;
     if (m.rows == size) return m;
     if (m.rows < size) {
-        m.vals = (float**)realloc(m.vals, size * sizeof(float*));
+        m.vals = (float**)xrealloc(m.vals, size * sizeof(float*));
         for (i = m.rows; i < size; ++i) {
-            m.vals[i] = (float*)calloc(m.cols, sizeof(float));
+            m.vals[i] = (float*)xcalloc(m.cols, sizeof(float));
         }
     } else if (m.rows > size) {
         for (i = size; i < m.rows; ++i) {
             free(m.vals[i]);
         }
-        m.vals = (float**)realloc(m.vals, size * sizeof(float*));
+        m.vals = (float**)xrealloc(m.vals, size * sizeof(float*));
     }
     m.rows = size;
     return m;
@@ -79,9 +79,9 @@ matrix make_matrix(int rows, int cols)
     matrix m;
     m.rows = rows;
     m.cols = cols;
-    m.vals = (float**)calloc(m.rows, sizeof(float*));
+    m.vals = (float**)xcalloc(m.rows, sizeof(float*));
     for(i = 0; i < m.rows; ++i){
-        m.vals[i] = (float*)calloc(m.cols, sizeof(float));
+        m.vals[i] = (float*)xcalloc(m.cols, sizeof(float));
     }
     return m;
 }
@@ -92,7 +92,7 @@ matrix hold_out_matrix(matrix *m, int n)
     matrix h;
     h.rows = n;
     h.cols = m->cols;
-    h.vals = (float**)calloc(h.rows, sizeof(float*));
+    h.vals = (float**)xcalloc(h.rows, sizeof(float*));
     for(i = 0; i < n; ++i){
         int index = rand()%m->rows;
         h.vals[i] = m->vals[index];
@@ -103,7 +103,7 @@ matrix hold_out_matrix(matrix *m, int n)
 
 float *pop_column(matrix *m, int c)
 {
-    float* col = (float*)calloc(m->rows, sizeof(float));
+    float* col = (float*)xcalloc(m->rows, sizeof(float));
     int i, j;
     for(i = 0; i < m->rows; ++i){
         col[i] = m->vals[i][c];
@@ -127,18 +127,18 @@ matrix csv_to_matrix(char *filename)
 
     int n = 0;
     int size = 1024;
-    m.vals = (float**)calloc(size, sizeof(float*));
+    m.vals = (float**)xcalloc(size, sizeof(float*));
     while((line = fgetl(fp))){
         if(m.cols == -1) m.cols = count_fields(line);
         if(n == size){
             size *= 2;
-            m.vals = (float**)realloc(m.vals, size * sizeof(float*));
+            m.vals = (float**)xrealloc(m.vals, size * sizeof(float*));
         }
         m.vals[n] = parse_fields(line, m.cols);
         free(line);
         ++n;
     }
-    m.vals = (float**)realloc(m.vals, n * sizeof(float*));
+    m.vals = (float**)xrealloc(m.vals, n * sizeof(float*));
     m.rows = n;
     return m;
 }
@@ -225,7 +225,7 @@ void kmeans_maximization(matrix data, int *assignments, matrix centers)
     matrix old_centers = make_matrix(centers.rows, centers.cols);
 
     int i, j;
-    int *counts = (int*)calloc(centers.rows, sizeof(int));
+    int *counts = (int*)xcalloc(centers.rows, sizeof(int));
     for (i = 0; i < centers.rows; ++i) {
         for (j = 0; j < centers.cols; ++j) {
             old_centers.vals[i][j] = centers.vals[i][j];
@@ -251,6 +251,7 @@ void kmeans_maximization(matrix data, int *assignments, matrix centers)
             if(centers.vals[i][j] == 0) centers.vals[i][j] = old_centers.vals[i][j];
         }
     }
+    free(counts);
     free_matrix(old_centers);
 }
 
@@ -268,7 +269,7 @@ void random_centers(matrix data, matrix centers) {
 int *sample(int n)
 {
     int i;
-    int* s = (int*)calloc(n, sizeof(int));
+    int* s = (int*)xcalloc(n, sizeof(int));
     for (i = 0; i < n; ++i) s[i] = i;
     for (i = n - 1; i >= 0; --i) {
         int swap = s[i];
@@ -300,7 +301,7 @@ void copy(float *x, float *y, int n)
 model do_kmeans(matrix data, int k)
 {
     matrix centers = make_matrix(k, data.cols);
-    int* assignments = (int*)calloc(data.rows, sizeof(int));
+    int* assignments = (int*)xcalloc(data.rows, sizeof(int));
     //smart_centers(data, centers);
     random_centers(data, centers);  // IoU = 67.31% after kmeans
 

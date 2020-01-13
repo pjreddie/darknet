@@ -17,6 +17,9 @@ extern "C" {
 LIB_API void free_ptrs(void **ptrs, int n);
 LIB_API void top_k(float *a, int n, int k, int *index);
 
+void *xmalloc(size_t size);
+void *xcalloc(size_t nmemb, size_t size);
+void *xrealloc(void *ptr, size_t size);
 double what_time_is_it_now();
 int *read_map(char *filename);
 void shuffle(void *arr, size_t n, size_t size);
@@ -34,6 +37,8 @@ LIB_API void find_replace(const char* str, char* orig, char* rep, char* output);
 void replace_image_to_label(const char* input_path, char* output_path);
 void error(const char *s);
 void malloc_error();
+void calloc_error();
+void realloc_error();
 void file_error(char *s);
 void strip(char *s);
 void strip_args(char *s);

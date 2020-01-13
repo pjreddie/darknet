@@ -1,5 +1,6 @@
 #include "upsample_layer.h"
 #include "dark_cuda.h"
+#include "utils.h"
 #include "blas.h"
 
 #include <stdio.h>
@@ -24,8 +25,8 @@ layer make_upsample_layer(int batch, int w, int h, int c, int stride)
     l.stride = stride;
     l.outputs = l.out_w*l.out_h*l.out_c;
     l.inputs = l.w*l.h*l.c;
-    l.delta = (float*)calloc(l.outputs * batch, sizeof(float));
-    l.output = (float*)calloc(l.outputs * batch, sizeof(float));
+    l.delta = (float*)xcalloc(l.outputs * batch, sizeof(float));
+    l.output = (float*)xcalloc(l.outputs * batch, sizeof(float));
 
     l.forward = forward_upsample_layer;
     l.backward = backward_upsample_layer;
@@ -53,8 +54,8 @@ void resize_upsample_layer(layer *l, int w, int h)
     }
     l->outputs = l->out_w*l->out_h*l->out_c;
     l->inputs = l->h*l->w*l->c;
-    l->delta = (float*)realloc(l->delta, l->outputs * l->batch * sizeof(float));
-    l->output = (float*)realloc(l->output, l->outputs * l->batch * sizeof(float));
+    l->delta = (float*)xrealloc(l->delta, l->outputs * l->batch * sizeof(float));
+    l->output = (float*)xrealloc(l->output, l->outputs * l->batch * sizeof(float));
 
 #ifdef GPU
     cuda_free(l->output_gpu);

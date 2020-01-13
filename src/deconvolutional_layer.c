@@ -57,11 +57,11 @@ deconvolutional_layer make_deconvolutional_layer(int batch, int h, int w, int c,
     l.stride = stride;
     l.size = size;
 
-    l.weights = (float*)calloc(c * n * size * size, sizeof(float));
-    l.weight_updates = (float*)calloc(c * n * size * size, sizeof(float));
+    l.weights = (float*)xcalloc(c * n * size * size, sizeof(float));
+    l.weight_updates = (float*)xcalloc(c * n * size * size, sizeof(float));
 
-    l.biases = (float*)calloc(n, sizeof(float));
-    l.bias_updates = (float*)calloc(n, sizeof(float));
+    l.biases = (float*)xcalloc(n, sizeof(float));
+    l.bias_updates = (float*)xcalloc(n, sizeof(float));
     float scale = 1./sqrt(size*size*c);
     for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_normal();
     for(i = 0; i < n; ++i){
@@ -76,9 +76,9 @@ deconvolutional_layer make_deconvolutional_layer(int batch, int h, int w, int c,
     l.outputs = l.out_w * l.out_h * l.out_c;
     l.inputs = l.w * l.h * l.c;
 
-    l.col_image = (float*)calloc(h * w * size * size * n, sizeof(float));
-    l.output = (float*)calloc(l.batch * out_h * out_w * n, sizeof(float));
-    l.delta = (float*)calloc(l.batch * out_h * out_w * n, sizeof(float));
+    l.col_image = (float*)xcalloc(h * w * size * size * n, sizeof(float));
+    l.output = (float*)xcalloc(l.batch * out_h * out_w * n, sizeof(float));
+    l.delta = (float*)xcalloc(l.batch * out_h * out_w * n, sizeof(float));
 
     l.forward = forward_deconvolutional_layer;
     l.backward = backward_deconvolutional_layer;
@@ -110,11 +110,11 @@ void resize_deconvolutional_layer(deconvolutional_layer *l, int h, int w)
     int out_h = deconvolutional_out_height(*l);
     int out_w = deconvolutional_out_width(*l);
 
-    l->col_image = (float*)realloc(l->col_image,
+    l->col_image = (float*)xrealloc(l->col_image,
                                 out_h*out_w*l->size*l->size*l->c*sizeof(float));
-    l->output = (float*)realloc(l->output,
+    l->output = (float*)xrealloc(l->output,
                                 l->batch*out_h * out_w * l->n*sizeof(float));
-    l->delta = (float*)realloc(l->delta,
+    l->delta = (float*)xrealloc(l->delta,
                                 l->batch*out_h * out_w * l->n*sizeof(float));
     #ifdef GPU
     cuda_free(l->col_image_gpu);
