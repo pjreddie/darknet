@@ -21,7 +21,7 @@ OBJDIR=./obj/
 
 CC=gcc
 CPP=g++ -std=c++11
-NVCC=nvcc
+NVCC=/usr/local/cuda/bin/nvcc
 AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
