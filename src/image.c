@@ -283,7 +283,8 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
     int i,j;
     struct json_object *json_obj = json_object_new_object();
     char file_name[64];
-    snprintf(file_name, sizeof(file_name), "output-%f.json", time_index);
+    int time_stamp = floor(time_index);
+    snprintf(file_name, sizeof(file_name), "output-%d.json", time_stamp);
     FILE *file = fopen(file_name, "w+");
     if(file == 0) file_error(file_name);
     int obj_index = 1;
