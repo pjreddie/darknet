@@ -433,12 +433,6 @@ int main(int argc, char **argv)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-#ifdef GPU
-    show_cuda_cudnn_info();
-#endif// GPU
-
-    show_opencv_info();
-
 	int i;
 	for (i = 0; i < argc; ++i) {
 		if (!argv[i]) continue;
@@ -466,7 +460,11 @@ int main(int argc, char **argv)
         cuda_set_device(gpu_index);
         CHECK_CUDA(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
     }
+
+    show_cuda_cudnn_info();
 #endif
+
+    show_opencv_info();
 
     if (0 == strcmp(argv[1], "average")){
         average(argc, argv);

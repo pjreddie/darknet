@@ -232,7 +232,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
     // 3. FP32 Master Copy of Weights
     // More: http://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#tensor_ops
     CHECK_CUDNN(cudnnSetConvolutionGroupCount(l->convDesc, l->groups));
-    //if (l->groups == 1) CHECK_CUDNN(cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH));
+    CHECK_CUDNN(cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH));
 #if((CUDNN_MAJOR*10 + CUDNN_MINOR) >= 72)   // cuDNN >= 7.2
     //CHECK_CUDNN(cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH_ALLOW_CONVERSION)); // reduces the speed of regular and group convolution
 #endif

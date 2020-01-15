@@ -420,7 +420,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     //if (state.use_mixed_precision) {
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
     if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
-        (l.c / l.groups) % 8 == 0 && l.n % 8 == 0 && !state.train && l.groups <= 8 && l.size > 1)
+        (l.c / l.groups) % 8 == 0 && l.n % 8 == 0 && !state.train && l.groups <= 1 && l.size > 1)
     {
         //printf("\n CUDNN_HALF!!! state.index = %d \n", state.index);
 
@@ -671,7 +671,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 //#ifdef CUDNN_HALF
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
     if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
-        (l.c / l.groups) % 8 == 0 && l.n % 8 == 0 && !state.train && l.groups <= 8 && l.size > 1)
+        (l.c / l.groups) % 8 == 0 && l.n % 8 == 0 && !state.train && l.groups <= 1 && l.size > 1)
     {
         const size_t input16_size = l.batch*l.c*l.w*l.h;
         const size_t delta16_size = l.batch*l.n*l.out_w*l.out_h;
