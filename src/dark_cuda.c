@@ -85,7 +85,7 @@ void check_error_extended(cudaError_t status, const char *file, int line, const 
         printf("CUDA status Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
         check_error(status);
     }
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CUDA_DEBUG)
     status = cudaDeviceSynchronize();
     if (status != cudaSuccess)
         printf("CUDA status = cudaDeviceSynchronize() Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
@@ -170,7 +170,7 @@ cudnnHandle_t cudnn_handle()
 
 void cudnn_check_error(cudnnStatus_t status)
 {
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CUDA_DEBUG)
     cudaDeviceSynchronize();
 #endif
     cudnnStatus_t status2 = CUDNN_STATUS_SUCCESS;
@@ -207,7 +207,7 @@ void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line
         printf("\n cuDNN status Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
         cudnn_check_error(status);
     }
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CUDA_DEBUG)
     status = cudaDeviceSynchronize();
     if (status != CUDNN_STATUS_SUCCESS)
         printf("\n cuDNN status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
