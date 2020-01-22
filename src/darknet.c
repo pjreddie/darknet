@@ -466,6 +466,8 @@ int main(int argc, char **argv)
 
     show_opencv_info();
 
+    init_cpu();
+
     if (0 == strcmp(argv[1], "average")){
         average(argc, argv);
     } else if (0 == strcmp(argv[1], "yolo")){

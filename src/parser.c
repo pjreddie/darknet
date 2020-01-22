@@ -1544,7 +1544,6 @@ void save_shortcut_weights(layer l, FILE *fp)
 #endif
     int num = l.nweights;
     fwrite(l.weights, sizeof(float), num, fp);
-
 }
 
 void save_convolutional_weights(layer l, FILE *fp)
@@ -1822,10 +1821,6 @@ void load_convolutional_weights(layer l, FILE *fp)
 
 void load_shortcut_weights(layer l, FILE *fp)
 {
-    if (l.binary) {
-        //load_convolutional_weights_binary(l, fp);
-        //return;
-    }
     int num = l.nweights;
     int read_bytes;
     read_bytes = fread(l.weights, sizeof(float), num, fp);

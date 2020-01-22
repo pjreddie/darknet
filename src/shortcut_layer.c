@@ -186,14 +186,16 @@ void backward_shortcut_layer(const layer l, network_state state)
 
 void update_shortcut_layer(layer l, int batch, float learning_rate_init, float momentum, float decay)
 {
-    float learning_rate = learning_rate_init*l.learning_rate_scale;
-    //float momentum = a.momentum;
-    //float decay = a.decay;
-    //int batch = a.batch;
+    if (l.nweights > 0) {
+        float learning_rate = learning_rate_init*l.learning_rate_scale;
+        //float momentum = a.momentum;
+        //float decay = a.decay;
+        //int batch = a.batch;
 
-    axpy_cpu(l.nweights, -decay*batch, l.weights, 1, l.weight_updates, 1);
-    axpy_cpu(l.nweights, learning_rate / batch, l.weight_updates, 1, l.weights, 1);
-    scal_cpu(l.nweights, momentum, l.weight_updates, 1);
+        axpy_cpu(l.nweights, -decay*batch, l.weights, 1, l.weight_updates, 1);
+        axpy_cpu(l.nweights, learning_rate / batch, l.weight_updates, 1, l.weights, 1);
+        scal_cpu(l.nweights, momentum, l.weight_updates, 1);
+    }
 }
 
 #ifdef GPU
@@ -238,28 +240,30 @@ void backward_shortcut_layer_gpu(const layer l, network_state state)
 
 void update_shortcut_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay)
 {
-    float learning_rate = learning_rate_init*l.learning_rate_scale;
-    //float momentum = a.momentum;
-    //float decay = a.decay;
-    //int batch = a.batch;
+    if (l.nweights > 0) {
+        float learning_rate = learning_rate_init*l.learning_rate_scale;
+        //float momentum = a.momentum;
+        //float decay = a.decay;
+        //int batch = a.batch;
 
-    fix_nan_and_inf(l.weight_updates_gpu, l.nweights);
-    fix_nan_and_inf(l.weights_gpu, l.nweights);
+        fix_nan_and_inf(l.weight_updates_gpu, l.nweights);
+        fix_nan_and_inf(l.weights_gpu, l.nweights);
 
-    axpy_ongpu(l.nweights, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);
-    axpy_ongpu(l.nweights, learning_rate / batch, l.weight_updates_gpu, 1, l.weights_gpu, 1);
-    scal_ongpu(l.nweights, momentum, l.weight_updates_gpu, 1);
+        axpy_ongpu(l.nweights, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);
+        axpy_ongpu(l.nweights, learning_rate / batch, l.weight_updates_gpu, 1, l.weights_gpu, 1);
+        scal_ongpu(l.nweights, momentum, l.weight_updates_gpu, 1);
 
-    //if (l.clip) {
-    //    constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
-    //}
+        //if (l.clip) {
+        //    constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
+        //}
+    }
 }
 
 void pull_shortcut_layer(layer l)
 {
     cuda_pull_array_async(l.weights_gpu, l.weights, l.nweights);
     CHECK_CUDA(cudaPeekAtLastError());
-    cudaStreamSynchronize(get_cuda_stream());
+    CHECK_CUDA(cudaStreamSynchronize(get_cuda_stream()));
 }
 
 void push_shortcut_layer(layer l)
