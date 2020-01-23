@@ -1608,7 +1608,7 @@ void run_detector(int argc, char **argv)
     int dont_show = find_arg(argc, argv, "-dont_show");
     int benchmark = find_arg(argc, argv, "-benchmark");
     int benchmark_layers = find_arg(argc, argv, "-benchmark_layers");
-    if (benchmark_layers) benchmark = 1;
+    //if (benchmark_layers) benchmark = 1;
     if (benchmark) dont_show = 1;
     int show = find_arg(argc, argv, "-show");
     int letter_box = find_arg(argc, argv, "-letter_box");
