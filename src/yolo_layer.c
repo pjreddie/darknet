@@ -129,7 +129,20 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     return b;
 }
 
-ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate)
+static inline float fix_nan_inf(float val)
+{
+    if (isnan(val) || isinf(val)) val = 0;
+    return val;
+}
+
+static inline float clip_value(float val, const float max_val)
+{
+    if (val > max_val) val = max_val;
+    else if (val < -max_val) val = -max_val;
+    return val;
+}
+
+ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate, int max_delta)
 {
     ious all_ious = { 0 };
     // i - step in layer width
@@ -184,10 +197,15 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         dw *= iou_normalizer;
         dh *= iou_normalizer;
 
-        if (isnan(dx) || isinf(dx)) dx = 0;
-        if (isnan(dy) || isinf(dy)) dy = 0;
-        if (isnan(dw) || isinf(dw)) dw = 0;
-        if (isnan(dh) || isinf(dh)) dh = 0;
+        dx = fix_nan_inf(dx);
+        dy = fix_nan_inf(dy);
+        dw = fix_nan_inf(dw);
+        dh = fix_nan_inf(dh);
+
+        dx = clip_value(dx, max_delta);
+        dy = clip_value(dy, max_delta);
+        dw = clip_value(dw, max_delta);
+        dh = clip_value(dh, max_delta);
 
         if (!accumulate) {
             delta[index + 0 * stride] = 0;
@@ -370,7 +388,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.focal_loss, l.label_smooth_eps, l.classes_multipliers);
                         box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
                         const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                        delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1);
+                        delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta);
                     }
                 }
             }
@@ -412,7 +430,7 @@ void forward_yolo_layer(const layer l, network_state state)
 
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                 const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1);
+                ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta);
 
                 // range is 0 <= 1
                 tot_iou += all_ious.iou;
@@ -456,7 +474,7 @@ void forward_yolo_layer(const layer l, network_state state)
 
                         int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                         const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                        ious all_ious = delta_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1);
+                        ious all_ious = delta_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta);
 
                         // range is 0 <= 1
                         tot_iou += all_ious.iou;
