@@ -5,6 +5,7 @@
 #include "dark_cuda.h"
 #include "utils.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -182,6 +183,11 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         dy *= iou_normalizer;
         dw *= iou_normalizer;
         dh *= iou_normalizer;
+
+        if (isnan(dx) || isinf(dx)) dx = 0;
+        if (isnan(dy) || isinf(dy)) dy = 0;
+        if (isnan(dw) || isinf(dw)) dw = 0;
+        if (isnan(dh) || isinf(dh)) dh = 0;
 
         if (!accumulate) {
             delta[index + 0 * stride] = 0;
