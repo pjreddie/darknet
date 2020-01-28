@@ -436,7 +436,12 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c/groups));
-    for(i = 0; i < l.nweights; ++i) l.weights[i] = scale*rand_uniform(-1, 1);   // rand_normal();
+    if (l.activation == NORM_CHAN_SOFTMAX_MAXVAL) {
+        for (i = 0; i < l.nweights; ++i) l.weights[i] = -10;   // rand_normal();
+    }
+    else {
+        for (i = 0; i < l.nweights; ++i) l.weights[i] = scale*rand_uniform(-1, 1);   // rand_normal();
+    }
     int out_h = convolutional_out_height(l);
     int out_w = convolutional_out_width(l);
     l.out_h = out_h;

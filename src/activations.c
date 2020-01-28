@@ -197,7 +197,7 @@ void activate_array_normalize_channels_softmax(float *x, const int n, int batch,
             if (use_max_val) {
                 for (k = 0; k < channels; ++k) {
                     float val = x[wh_i + k * wh_step + b*wh_step*channels];
-                    if (val > max_val) max_val = val;
+                    if (val > max_val || k == 0) max_val = val;
                 }
             }
             else
