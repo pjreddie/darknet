@@ -24,7 +24,7 @@ void activate_array_swish(float *x, const int n, float * output_sigmoid, float *
 void activate_array_mish(float *x, const int n, float * activation_input, float * output);
 void activate_array_normalize_channels(float *x, const int n, int batch, int channels, int wh_step, float *output);
 void gradient_array_normalize_channels(float *x, const int n, int batch, int channels, int wh_step, float *delta);
-void activate_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *output);
+void activate_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *output, int use_max_val);
 void gradient_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *delta);
 #ifdef GPU
 void activate_array_ongpu(float *x, int n, ACTIVATION a);
@@ -35,7 +35,7 @@ void gradient_array_swish_ongpu(float *x, int n, float *sigmoid_gpu, float *delt
 void gradient_array_mish_ongpu(int n, float *activation_input_gpu, float *delta);
 void activate_array_normalize_channels_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu);
 void gradient_array_normalize_channels_ongpu(float *output_gpu, int n, int batch, int channels, int wh_step, float *delta_gpu);
-void activate_array_normalize_channels_softmax_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu);
+void activate_array_normalize_channels_softmax_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu, int use_max_val);
 void gradient_array_normalize_channels_softmax_ongpu(float *output_gpu, int n, int batch, int channels, int wh_step, float *delta_gpu);
 
 #endif

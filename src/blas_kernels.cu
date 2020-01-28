@@ -2,6 +2,7 @@
 #include <curand.h>
 #include <cublas_v2.h>
 #include <assert.h>
+#include <float.h>
 
 #include "blas.h"
 #include "dark_cuda.h"
@@ -716,7 +717,7 @@ __global__ void shortcut_multilayer_kernel(int size, int src_outputs, int batch,
     src_id /= src_outputs;
     int src_b = src_id;
 
-    float sum = 1, max_val = -INFINITY;
+    float sum = 1, max_val = -FLT_MAX;
     if (weights_gpu && weights_normalizion) {
         if (weights_normalizion == SOFTMAX_NORMALIZATION) {
             for (int i = 0; i < (n + 1); ++i) {
@@ -798,7 +799,7 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
     src_id /= src_outputs;
     int src_b = src_id;
 
-    float grad = 1, sum = 1, max_val = -INFINITY;
+    float grad = 1, sum = 1, max_val = -FLT_MAX;
     int i;
     if (weights_gpu && weights_normalizion) {
         if (weights_normalizion == SOFTMAX_NORMALIZATION) {

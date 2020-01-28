@@ -90,7 +90,7 @@ void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *o
         src_id /= src_outputs;
         int src_b = src_id;
 
-        float sum = 1, max_val = -INFINITY;
+        float sum = 1, max_val = -FLT_MAX;
         int i;
         if (weights && weights_normalizion) {
             if (weights_normalizion == SOFTMAX_NORMALIZATION) {
@@ -158,7 +158,7 @@ void backward_shortcut_multilayer_cpu(int size, int src_outputs, int batch, int 
         src_id /= src_outputs;
         int src_b = src_id;
 
-        float grad = 1, sum = 1, max_val = -INFINITY;
+        float grad = 1, sum = 1, max_val = -FLT_MAX;;
         int i;
         if (weights && weights_normalizion) {
             if (weights_normalizion == SOFTMAX_NORMALIZATION) {

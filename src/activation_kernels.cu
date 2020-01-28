@@ -2,6 +2,7 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <cublas_v2.h>
+#include <float.h>
 
 #include "activations.h"
 #include "dark_cuda.h"
@@ -464,7 +465,7 @@ extern "C" void activate_array_normalize_channels_ongpu(float *x, int n, int bat
 
 
 
-__global__ void activate_array_normalize_channels_softmax_kernel(float *x, int size, int batch, int channels, int wh_step, float *output_gpu)
+__global__ void activate_array_normalize_channels_softmax_kernel(float *x, int size, int batch, int channels, int wh_step, float *output_gpu, int use_max_val)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -474,20 +475,30 @@ __global__ void activate_array_normalize_channels_softmax_kernel(float *x, int s
     const float eps = 0.0001;
     if (i < size) {
         float sum = eps;
+        float max_val = -FLT_MAX;
         int k;
+        if (use_max_val) {
+            for (k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                if (val > max_val) max_val = val;
+            }
+        }
+        else
+            max_val = 0;
+
         for (k = 0; k < channels; ++k) {
             float val = x[wh_i + k * wh_step + b*wh_step*channels];
-            sum += expf(val);
+            sum += expf(val - max_val);
         }
         for (k = 0; k < channels; ++k) {
             float val = x[wh_i + k * wh_step + b*wh_step*channels];
-            val = expf(val) / sum;
+            val = expf(val - max_val) / sum;
             output_gpu[wh_i + k * wh_step + b*wh_step*channels] = val;
         }
     }
 }
 
-extern "C" void activate_array_normalize_channels_softmax_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu)
+extern "C" void activate_array_normalize_channels_softmax_ongpu(float *x, int n, int batch, int channels, int wh_step, float *output_gpu, int use_max_val)
 {
     // n = w*h*c*batch
     // size = w*h*batch
@@ -495,7 +506,7 @@ extern "C" void activate_array_normalize_channels_softmax_ongpu(float *x, int n,
 
     const int num_blocks = get_number_of_blocks(size, BLOCK);
 
-    activate_array_normalize_channels_softmax_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (x, size, batch, channels, wh_step, output_gpu);
+    activate_array_normalize_channels_softmax_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (x, size, batch, channels, wh_step, output_gpu, use_max_val);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
