@@ -320,15 +320,17 @@ float delta_gaussian_yolo_box(box truth, float *x, float *biases, int n, int ind
     delta_uw = fix_nan_inf(delta_uw);
     delta_uh = fix_nan_inf(delta_uh);
 
-    delta_x = clip_value(delta_x, max_delta);
-    delta_y = clip_value(delta_y, max_delta);
-    delta_w = clip_value(delta_w, max_delta);
-    delta_h = clip_value(delta_h, max_delta);
+    if (max_delta != FLT_MAX) {
+        delta_x = clip_value(delta_x, max_delta);
+        delta_y = clip_value(delta_y, max_delta);
+        delta_w = clip_value(delta_w, max_delta);
+        delta_h = clip_value(delta_h, max_delta);
 
-    delta_ux = clip_value(delta_ux, max_delta);
-    delta_uy = clip_value(delta_uy, max_delta);
-    delta_uw = clip_value(delta_uw, max_delta);
-    delta_uh = clip_value(delta_uh, max_delta);
+        delta_ux = clip_value(delta_ux, max_delta);
+        delta_uy = clip_value(delta_uy, max_delta);
+        delta_uw = clip_value(delta_uw, max_delta);
+        delta_uh = clip_value(delta_uh, max_delta);
+    }
 
     delta[index + 0 * stride] += delta_x;
     delta[index + 2 * stride] += delta_y;

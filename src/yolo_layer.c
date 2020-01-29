@@ -137,12 +137,18 @@ static inline float fix_nan_inf(float val)
 
 static inline float clip_value(float val, const float max_val)
 {
-    if (val > max_val) val = max_val;
-    else if (val < -max_val) val = -max_val;
+    if (val > max_val) {
+        //printf("\n val = %f > max_val = %f \n", val, max_val);
+        val = max_val;
+    }
+    else if (val < -max_val) {
+        //printf("\n val = %f < -max_val = %f \n", val, -max_val);
+        val = -max_val;
+    }
     return val;
 }
 
-ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate, int max_delta)
+ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate, float max_delta)
 {
     ious all_ious = { 0 };
     // i - step in layer width
@@ -197,15 +203,19 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         dw *= iou_normalizer;
         dh *= iou_normalizer;
 
+
         dx = fix_nan_inf(dx);
         dy = fix_nan_inf(dy);
         dw = fix_nan_inf(dw);
         dh = fix_nan_inf(dh);
 
-        dx = clip_value(dx, max_delta);
-        dy = clip_value(dy, max_delta);
-        dw = clip_value(dw, max_delta);
-        dh = clip_value(dh, max_delta);
+        if (max_delta != FLT_MAX) {
+            dx = clip_value(dx, max_delta);
+            dy = clip_value(dy, max_delta);
+            dw = clip_value(dw, max_delta);
+            dh = clip_value(dh, max_delta);
+        }
+
 
         if (!accumulate) {
             delta[index + 0 * stride] = 0;
