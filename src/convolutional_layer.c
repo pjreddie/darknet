@@ -231,6 +231,9 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
     // 2. Loss Scaling - required only for: activation gradients. We do not use.
     // 3. FP32 Master Copy of Weights
     // More: http://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#tensor_ops
+    if (l->groups < 1) l->groups = 1;
+    if (l->stride_x < 1) l->stride_x = 1;
+    if (l->stride_y < 1) l->stride_y = 1;
     CHECK_CUDNN(cudnnSetConvolutionGroupCount(l->convDesc, l->groups));
     CHECK_CUDNN(cudnnSetConvolutionMathType(l->convDesc, CUDNN_TENSOR_OP_MATH));
 #if((CUDNN_MAJOR*10 + CUDNN_MINOR) >= 72)   // cuDNN >= 7.2
@@ -256,7 +259,6 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
     CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, data_type, l->batch, l->out_c, l->out_h, l->out_w));
     CHECK_CUDNN(cudnnSetFilter4dDescriptor(l->weightDesc, data_type, CUDNN_TENSOR_NCHW, l->n, l->c / l->groups, l->size, l->size));
 
-//#ifdef CUDNN_HALF
     // backward delta
     CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->dsrcTensorDesc16, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, l->batch, l->c, l->h, l->w));
     CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->ddstTensorDesc16, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, l->batch, l->out_c, l->out_h, l->out_w));
@@ -269,15 +271,15 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
 
     // batch norm
     CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->normDstTensorDescF16, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, l->batch, l->out_c, l->out_h, l->out_w));
-//#endif
 
     // batch norm
     CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l->out_c, 1, 1));
     CHECK_CUDNN(cudnnSetTensor4dDescriptor(l->normDstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l->batch, l->out_c, l->out_h, l->out_w));
 
-    //printf("\n l->dilation = %d, l->pad = %d, l->size = %d \n", l->dilation, l->pad, l->size);
+    //printf("\n l->dilation = %d, l->pad = %d, l->size = %d, l->stride = %d, l->stride_x = %d, l->stride_y = %d, l->groups = %d, l->w = %d, l->h = %d, l->c = %d, l->n = %d, l->out_w = %d, l->out_h = %d, l->out_c = %d, l->batch = %d, data_type = %d \n",
+    //    l->dilation, l->pad, l->size, l->stride, l->stride_x, l->stride_y, l->groups, l->w, l->h, l->c, l->n, l->out_w, l->out_h, l->out_c, l->batch, data_type);
 #if(CUDNN_MAJOR >= 6)
-    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad * l->dilation, l->pad* l->dilation, l->stride_y, l->stride_x, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));    // cudnn >= 6.0
+    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad * l->dilation, l->pad * l->dilation, l->stride_y, l->stride_x, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));    // cudnn >= 6.0
 #else
     CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad * l->dilation, l->pad * l->dilation, l->stride_y, l->stride_x, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION));    // cudnn 5.1
 #endif

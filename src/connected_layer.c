@@ -69,10 +69,12 @@ connected_layer make_connected_layer(int batch, int steps, int inputs, int outpu
     l.out_c = outputs;
     l.n = l.out_c;
     l.size = 1;
-    l.stride = 1;
+    l.stride = l.stride_x = l.stride_y = 1;
     l.pad = 0;
     l.activation = activation;
     l.learning_rate_scale = 1;
+    l.groups = 1;
+    l.dilation = 1;
 
     l.output = (float*)xcalloc(total_batch * outputs, sizeof(float));
     l.delta = (float*)xcalloc(total_batch * outputs, sizeof(float));
