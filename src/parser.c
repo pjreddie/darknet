@@ -1965,7 +1965,7 @@ network *load_network_custom(char *cfg, char *weights, int clear, int batch)
         printf(" Try to load weights: %s \n", weights);
         load_weights(net, weights);
     }
-    //fuse_conv_batchnorm(*net);
+    fuse_conv_batchnorm(*net);
     if (clear) (*net->seen) = 0;
     return net;
 }
