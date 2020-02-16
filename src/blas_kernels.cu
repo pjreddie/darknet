@@ -9,23 +9,25 @@
 #include "utils.h"
 #include "tree.h"
 
-__global__ void scale_bias_kernel(float *output, float *biases, int n, int size)
-{
-    int offset = blockIdx.x * blockDim.x + threadIdx.x;
-    int filter = blockIdx.y;
-    int batch = blockIdx.z;
 
-    if(offset < size) output[(batch*n+filter)*size + offset] *= biases[filter];
+__global__ void scale_bias_kernel(float *output, float *scale, int batch, int filters, int spatial, int current_size)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index >= current_size) return;
+
+    int f = (index / spatial) % filters;
+    output[index] *= scale[f];
 }
 
-void scale_bias_gpu(float *output, float *biases, int batch, int n, int size)
+void scale_bias_gpu(float *output, float *scale, int batch, int filters, int spatial)
 {
-    dim3 dimGrid((size-1)/BLOCK + 1, n, batch);
-    dim3 dimBlock(BLOCK, 1, 1);
+    const int current_size = batch * filters * spatial;
+    const int num_blocks = get_number_of_blocks(current_size, BLOCK);
 
-    scale_bias_kernel<<<dimGrid, dimBlock, 0, get_cuda_stream()>>>(output, biases, n, size);
+    scale_bias_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(output, scale, batch, filters, spatial, current_size);
     CHECK_CUDA(cudaPeekAtLastError());
 }
+
 
 __global__ void backward_scale_kernel(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates)
 {
@@ -53,21 +55,21 @@ void backward_scale_gpu(float *x_norm, float *delta, int batch, int n, int size,
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
-__global__ void add_bias_kernel(float *output, float *biases, int n, int size)
+__global__ void add_bias_kernel(float *output, float *biases, int batch, int filters, int spatial, int current_size)
 {
-    int offset = blockIdx.x * blockDim.x + threadIdx.x;
-    int filter = blockIdx.y;
-    int batch = blockIdx.z;
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index >= current_size) return;
 
-    if(offset < size) output[(batch*n+filter)*size + offset] += biases[filter];
+    int f = (index / spatial) % filters;
+    output[index] += biases[f];
 }
 
-void add_bias_gpu(float *output, float *biases, int batch, int n, int size)
+void add_bias_gpu(float *output, float *biases, int batch, int filters, int spatial)
 {
-    dim3 dimGrid((size-1)/BLOCK + 1, n, batch);
-    dim3 dimBlock(BLOCK, 1, 1);
+    const int current_size = batch * filters * spatial;
+    const int num_blocks = get_number_of_blocks(current_size, BLOCK);
 
-    add_bias_kernel<<<dimGrid, dimBlock, 0, get_cuda_stream()>>>(output, biases, n, size);
+    add_bias_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(output, biases, batch, filters, spatial, current_size);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -173,11 +175,20 @@ extern "C" void adam_update_gpu(float *w, float *d, float *m, float *v, float B1
 
 __global__ void normalize_kernel(int N, float *x, float *mean, float *variance, int batch, int filters, int spatial)
 {
-    int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
     if (index >= N) return;
-    int f = (index/spatial)%filters;
+    int f = (index / spatial) % filters;
 
-    x[index] = (x[index] - mean[f])/(sqrtf(variance[f]) + .000001f);
+    x[index] = (x[index] - mean[f]) / (sqrtf(variance[f] + .000001f));
+}
+
+extern "C" void normalize_gpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
+{
+    const int current_size = batch * filters * spatial;
+    const int num_blocks = get_number_of_blocks(current_size, BLOCK);
+
+    normalize_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(current_size, x, mean, variance, batch, filters, spatial);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 __global__ void normalize_delta_kernel(int N, float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta)
@@ -459,12 +470,7 @@ __global__ void mul_kernel(int N, float *X, int INCX, float *Y, int INCY)
 }
 
 
-extern "C" void normalize_gpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
-{
-    size_t N = batch*filters*spatial;
-    normalize_kernel<<<cuda_gridsize(N), BLOCK, 0, get_cuda_stream()>>>(N, x, mean, variance, batch, filters, spatial);
-    CHECK_CUDA(cudaPeekAtLastError());
-}
+
 
 __global__ void  fast_mean_kernel(float *x, int batch, int filters, int spatial, float *mean)
 {
