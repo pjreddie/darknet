@@ -898,10 +898,10 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 #endif
     if (state.net.try_fix_nan) {
         if (state.delta) {
-            fix_nan_and_inf(state.delta, l.inputs * l.batch);
+            reset_nan_and_inf(state.delta, l.inputs * l.batch);
         }
         int size = l.nweights;
-        fix_nan_and_inf(l.weight_updates_gpu, size);
+        reset_nan_and_inf(l.weight_updates_gpu, size);
         fix_nan_and_inf(l.weights_gpu, size);
     }
 }
@@ -1232,7 +1232,7 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
     //float decay = a.decay;
     //int batch = a.batch;
 
-    fix_nan_and_inf(l.weight_updates_gpu, l.nweights);
+    reset_nan_and_inf(l.weight_updates_gpu, l.nweights);
     fix_nan_and_inf(l.weights_gpu, l.nweights);
 
     if (l.adam) {

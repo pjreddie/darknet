@@ -46,13 +46,14 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     if (train) l.delta = (float*)xcalloc(l.outputs * batch, sizeof(float));
     l.output = (float*)xcalloc(l.outputs * batch, sizeof(float));
 
+    l.nweights = 0;
     if (l.weights_type == PER_FEATURE) l.nweights = (l.n + 1);
     else if (l.weights_type == PER_CHANNEL) l.nweights = (l.n + 1) * l.c;
 
     if (l.nweights > 0) {
         l.weights = (float*)calloc(l.nweights, sizeof(float));
         float scale = sqrt(2. / l.nweights);
-        for (i = 0; i < l.nweights; ++i) l.weights[i] = 1;// scale*rand_uniform(-1, 1);   // rand_normal();
+        for (i = 0; i < l.nweights; ++i) l.weights[i] = 1 + 0.01*rand_uniform(-1, 1);// scale*rand_uniform(-1, 1);   // rand_normal();
 
         if (train) l.weight_updates = (float*)calloc(l.nweights, sizeof(float));
         l.update = update_shortcut_layer;
@@ -247,7 +248,7 @@ void update_shortcut_layer_gpu(layer l, int batch, float learning_rate_init, flo
         //float decay = a.decay;
         //int batch = a.batch;
 
-        fix_nan_and_inf(l.weight_updates_gpu, l.nweights);
+        reset_nan_and_inf(l.weight_updates_gpu, l.nweights);
         fix_nan_and_inf(l.weights_gpu, l.nweights);
 
         axpy_ongpu(l.nweights, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);

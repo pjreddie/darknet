@@ -840,7 +840,10 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
         else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w - max_val) / sum;
 
         delta_out[id] += delta_in[id] * w; // [0 or c or (c, h ,w)]
-        weight_updates_gpu[src_i / step] += delta_in[id] * in[id] * grad;
+        float weights_update_tmp = delta_in[id] * in[id] * grad;
+
+        if (!isnan(weights_update_tmp) && !isinf(weights_update_tmp))
+            weight_updates_gpu[src_i / step] += weights_update_tmp;
     }
     else delta_out[id] += delta_in[id];
 
@@ -861,7 +864,10 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
                 else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w - max_val) / sum;
 
                 layer_delta[add_index] += delta_in[id] * w;
-                weight_updates_gpu[weights_index] += delta_in[id] * add[add_index] * grad;
+                float weights_update_tmp = delta_in[id] * add[add_index] * grad;
+
+                if (!isnan(weights_update_tmp) && !isinf(weights_update_tmp))
+                    weight_updates_gpu[weights_index] += weights_update_tmp;
             }
             else layer_delta[add_index] += delta_in[id];
         }
@@ -1224,6 +1230,27 @@ extern "C" void fix_nan_and_inf(float *input, size_t size)
     CHECK_CUDA(cudaPeekAtLastError());
     //CHECK_CUDA(cudaDeviceSynchronize());
 }
+
+
+__global__ void reset_nan_and_inf_kernel(float *input, size_t size)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size) {
+        float val = input[index];
+        if (isnan(val) || isinf(val))
+            input[index] = 0;
+    }
+}
+
+extern "C" void reset_nan_and_inf(float *input, size_t size)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    reset_nan_and_inf_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, size);
+    CHECK_CUDA(cudaPeekAtLastError());
+    //CHECK_CUDA(cudaDeviceSynchronize());
+}
+
 
 
 __global__ void is_nan_or_inf_kernel(float *input, size_t size, int *pinned_return)

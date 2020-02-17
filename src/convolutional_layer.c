@@ -346,28 +346,28 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
 void free_convolutional_batchnorm(convolutional_layer *l)
 {
     if (!l->share_layer) {
-        free(l->scales);            l->scales = NULL;
-        free(l->scale_updates);     l->scale_updates = NULL;
-        free(l->mean);              l->mean = NULL;
-        free(l->variance);          l->variance = NULL;
-        free(l->mean_delta);        l->mean_delta = NULL;
-        free(l->variance_delta);    l->variance_delta = NULL;
-        free(l->rolling_mean);      l->rolling_mean = NULL;
-        free(l->rolling_variance);  l->rolling_variance = NULL;
-        free(l->x);                 l->x = NULL;
-        free(l->x_norm);            l->x_norm = NULL;
+        if (l->scales)          free(l->scales),            l->scales = NULL;
+        if (l->scale_updates)   free(l->scale_updates),     l->scale_updates = NULL;
+        if (l->mean)            free(l->mean),              l->mean = NULL;
+        if (l->variance)        free(l->variance),          l->variance = NULL;
+        if (l->mean_delta)      free(l->mean_delta),        l->mean_delta = NULL;
+        if (l->variance_delta)  free(l->variance_delta),    l->variance_delta = NULL;
+        if (l->rolling_mean)    free(l->rolling_mean),      l->rolling_mean = NULL;
+        if (l->rolling_variance) free(l->rolling_variance),  l->rolling_variance = NULL;
+        if (l->x)               free(l->x),                 l->x = NULL;
+        if (l->x_norm)          free(l->x_norm),            l->x_norm = NULL;
 
 #ifdef GPU
-        cuda_free(l->scales_gpu);           l->scales_gpu = NULL;
-        cuda_free(l->scale_updates_gpu);    l->scale_updates_gpu = NULL;
-        cuda_free(l->mean_gpu);             l->mean_gpu = NULL;
-        cuda_free(l->variance_gpu);         l->variance_gpu = NULL;
-        cuda_free(l->mean_delta_gpu);       l->mean_delta_gpu = NULL;
-        cuda_free(l->variance_delta_gpu);   l->variance_delta_gpu = NULL;
-        cuda_free(l->rolling_mean_gpu);     l->rolling_mean_gpu = NULL;
-        cuda_free(l->rolling_variance_gpu); l->rolling_variance_gpu = NULL;
-        cuda_free(l->x_gpu);                l->x_gpu = NULL;
-        cuda_free(l->x_norm_gpu);           l->x_norm_gpu = NULL;
+        if (l->scales_gpu)          cuda_free(l->scales_gpu),           l->scales_gpu = NULL;
+        if (l->scale_updates_gpu)   cuda_free(l->scale_updates_gpu),    l->scale_updates_gpu = NULL;
+        if (l->mean_gpu)            cuda_free(l->mean_gpu),             l->mean_gpu = NULL;
+        if (l->variance_gpu)        cuda_free(l->variance_gpu),         l->variance_gpu = NULL;
+        if (l->mean_delta_gpu)      cuda_free(l->mean_delta_gpu),       l->mean_delta_gpu = NULL;
+        if (l->variance_delta_gpu)  cuda_free(l->variance_delta_gpu),   l->variance_delta_gpu = NULL;
+        if (l->rolling_mean_gpu)    cuda_free(l->rolling_mean_gpu),     l->rolling_mean_gpu = NULL;
+        if (l->rolling_variance_gpu) cuda_free(l->rolling_variance_gpu), l->rolling_variance_gpu = NULL;
+        if (l->x_gpu)               cuda_free(l->x_gpu),                l->x_gpu = NULL;
+        if (l->x_norm_gpu)          cuda_free(l->x_norm_gpu),           l->x_norm_gpu = NULL;
 #endif
     }
 }

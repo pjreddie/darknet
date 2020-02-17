@@ -119,6 +119,7 @@ void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int for
 void softmax_tree_gpu(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
 
 void fix_nan_and_inf(float *input, size_t size);
+void reset_nan_and_inf(float *input, size_t size);
 int is_nan_or_inf(float *input, size_t size);
 
 void add_3_arrays_activate(float *a1, float *a2, float *a3, size_t size, ACTIVATION a, float *dst);

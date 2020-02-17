@@ -1067,6 +1067,10 @@ void free_network(network net)
 #endif
 }
 
+static float relu(float src) {
+    if (src > 0) return src;
+    return 0;
+}
 
 void fuse_conv_batchnorm(network net)
 {
@@ -1104,6 +1108,57 @@ void fuse_conv_batchnorm(network net)
                 }
 #endif
             }
+        }
+        else  if (l->type == SHORTCUT && l->weights && l->weights_normalizion)
+        {
+            if (l->nweights > 0) {
+                //cuda_pull_array(l.weights_gpu, l.weights, l.nweights);
+                for (int i = 0; i < l->nweights; ++i) printf(" w = %f,", l->weights[i]);
+                printf(" l->nweights = %d \n", l->nweights);
+            }
+
+            // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
+            const int layer_step = l->nweights / (l->n + 1);    // 1 or l.c or (l.c * l.h * l.w)
+
+            int chan, i;
+            for (chan = 0; chan < layer_step; ++chan)
+            {
+                float sum = 1, max_val = -FLT_MAX;
+
+                if (l->weights_normalizion == SOFTMAX_NORMALIZATION) {
+                    for (i = 0; i < (l->n + 1); ++i) {
+                        int w_index = chan + i * layer_step;
+                        float w = l->weights[w_index];
+                        if (max_val < w) max_val = w;
+                    }
+                }
+
+                const float eps = 0.0001;
+                sum = eps;
+
+                for (i = 0; i < (l->n + 1); ++i) {
+                    int w_index = chan + i * layer_step;
+                    float w = l->weights[w_index];
+                    if (l->weights_normalizion == RELU_NORMALIZATION) sum += relu(w);
+                    else if (l->weights_normalizion == SOFTMAX_NORMALIZATION) sum += expf(w - max_val);
+                }
+
+                for (i = 0; i < (l->n + 1); ++i) {
+                    int w_index = chan + i * layer_step;
+                    float w = l->weights[w_index];
+                    if (l->weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+                    else if (l->weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w - max_val) / sum;
+                    l->weights[w_index] = w;
+                }
+            }
+
+            l->weights_normalizion = 0;
+
+#ifdef GPU
+            if (gpu_index >= 0) {
+                push_shortcut_layer(*l);
+            }
+#endif
         }
         else {
             //printf(" Fusion skip layer type: %d \n", l->type);
