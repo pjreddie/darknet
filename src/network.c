@@ -1152,7 +1152,7 @@ void fuse_conv_batchnorm(network net)
                 }
             }
 
-            l->weights_normalizion = 0;
+            l->weights_normalizion = NO_NORMALIZATION;
 
 #ifdef GPU
             if (gpu_index >= 0) {
