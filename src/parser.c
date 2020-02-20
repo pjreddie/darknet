@@ -198,6 +198,8 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     batch=params.batch;
     if(!(h && w && c)) error("Layer before convolutional layer must output image.");
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
+    int cbn = option_find_int_quiet(options, "cbn", 0);
+    if (cbn) batch_normalize = 2;
     int binary = option_find_int_quiet(options, "binary", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);

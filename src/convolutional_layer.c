@@ -416,7 +416,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     if (l.share_layer) {
         if (l.size != l.share_layer->size || l.nweights != l.share_layer->nweights || l.c != l.share_layer->c || l.n != l.share_layer->n) {
-            printf("Layer size, nweights, channels or filters don't match for the share_layer");
+            printf(" Layer size, nweights, channels or filters don't match for the share_layer");
             getchar();
         }
 
@@ -611,6 +611,8 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
                     l.mean_gpu = cuda_make_array(l.mean, n);
                     l.variance_gpu = cuda_make_array(l.variance, n);
+                    l.m_cbn_avg_gpu = cuda_make_array(l.mean, n);
+                    l.v_cbn_avg_gpu = cuda_make_array(l.variance, n);
 #ifndef CUDNN
                     l.mean_delta_gpu = cuda_make_array(l.mean, n);
                     l.variance_delta_gpu = cuda_make_array(l.variance, n);
@@ -1238,7 +1240,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                         l.c / l.groups,     // input channels
                         l.h, l.w,           // input size (h, w)
                         l.size, l.size,     // kernel size (h, w)
-                        l.pad, l.pad,       // padding (h, w)
+                        l.pad * l.dilation, l.pad * l.dilation,       // padding (h, w)
                         l.stride_y, l.stride_x, // stride (h, w)
                         l.dilation, l.dilation, // dilation (h, w)
                         b);                 // output
@@ -1429,7 +1431,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
                 l.c / l.groups,     // input channels
                 l.h, l.w,           // input size (h, w)
                 l.size, l.size,     // kernel size (h, w)
-                l.pad, l.pad,       // padding (h, w)
+                l.pad * l.dilation, l.pad * l.dilation,       // padding (h, w)
                 l.stride_y, l.stride_x, // stride (h, w)
                 l.dilation, l.dilation, // dilation (h, w)
                 b);                 // output
@@ -1451,7 +1453,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
                     l.c / l.groups,         // input channels (h, w)
                     l.h, l.w,               // input size (h, w)
                     l.size, l.size,         // kernel size (h, w)
-                    l.pad, l.pad,           // padding (h, w)
+                    l.pad * l.dilation, l.pad * l.dilation,           // padding (h, w)
                     l.stride_y, l.stride_x,     // stride (h, w)
                     l.dilation, l.dilation, // dilation (h, w)
                     state.delta + (i*l.groups + j)* (l.c / l.groups)*l.h*l.w); // output (delta)

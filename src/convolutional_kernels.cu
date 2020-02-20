@@ -578,7 +578,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                     l.c / l.groups,         // input channels
                     l.h, l.w,               // input size (h, w)
                     l.size, l.size,         // kernel size (h, w)
-                    l.pad, l.pad,           // padding (h, w)
+                    l.pad * l.dilation, l.pad * l.dilation,   // padding (h, w)
                     l.stride_y, l.stride_x,     // stride (h, w)
                     l.dilation, l.dilation, // dilation (h, w)
                     state.workspace);       // output
@@ -858,7 +858,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 l.c / l.groups,         // input channels
                 l.h, l.w,               // input size (h, w)
                 l.size, l.size,         // kernel size (h, w)
-                l.pad, l.pad,           // padding (h, w)
+                l.pad * l.dilation, l.pad * l.dilation,   // padding (h, w)
                 l.stride_y, l.stride_x,     // stride (h, w)
                 l.dilation, l.dilation, // dilation (h, w)
                 state.workspace);       // output
@@ -883,7 +883,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                     l.c / l.groups,         // input channels
                     l.h, l.w,               // input size (h, w)
                     l.size, l.size,         // kernel size (h, w)
-                    l.pad, l.pad,           // padding size (h, w)
+                    l.pad * l.dilation, l.pad * l.dilation,   // padding size (h, w)
                     l.stride_y, l.stride_x,     // stride size (h, w)
                     l.dilation, l.dilation, // dilation size (h, w)
                     delta);                 // output (delta)
