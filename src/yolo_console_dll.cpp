@@ -24,9 +24,17 @@
 
 #ifdef OPENCV
 #ifdef ZED_STEREO
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
+#if ZED_SDK_MAJOR_VERSION == 2
+#define ZED_STEREO_2_COMPAT_MODE
+#endif
+
+#undef GPU // avoid conflict with sl::MEM::GPU
+
+#ifdef ZED_STEREO_2_COMPAT_MODE
 #pragma comment(lib, "sl_core64.lib")
 #pragma comment(lib, "sl_input64.lib")
+#endif
 #pragma comment(lib, "sl_zed64.lib")
 
 float getMedian(std::vector<float> &v) {
@@ -92,6 +100,7 @@ std::vector<bbox_t> get_3d_coordinates(std::vector<bbox_t> bbox_vect, cv::Mat xy
     return bbox3d_vect;
 }
 
+#ifdef ZED_STEREO_2_COMPAT_MODE
 cv::Mat slMat2cvMat(sl::Mat &input) {
     // Mapping between MAT_TYPE and CV_TYPE
     int cv_type = -1;
@@ -125,6 +134,41 @@ cv::Mat slMat2cvMat(sl::Mat &input) {
     }
     return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(sl::MEM_CPU));
 }
+#else
+cv::Mat slMat2cvMat(sl::Mat &input) {
+    // Mapping between MAT_TYPE and CV_TYPE
+    int cv_type = -1;
+    switch (input.getDataType()) {
+    case sl::MAT_TYPE::F32_C1:
+        cv_type = CV_32FC1;
+        break;
+    case sl::MAT_TYPE::F32_C2:
+        cv_type = CV_32FC2;
+        break;
+    case sl::MAT_TYPE::F32_C3:
+        cv_type = CV_32FC3;
+        break;
+    case sl::MAT_TYPE::F32_C4:
+        cv_type = CV_32FC4;
+        break;
+    case sl::MAT_TYPE::U8_C1:
+        cv_type = CV_8UC1;
+        break;
+    case sl::MAT_TYPE::U8_C2:
+        cv_type = CV_8UC2;
+        break;
+    case sl::MAT_TYPE::U8_C3:
+        cv_type = CV_8UC3;
+        break;
+    case sl::MAT_TYPE::U8_C4:
+        cv_type = CV_8UC4;
+        break;
+    default:
+        break;
+    }
+    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(sl::MEM::CPU));
+}
+#endif
 
 cv::Mat zed_capture_rgb(sl::Camera &zed) {
     sl::Mat left;
@@ -136,7 +180,11 @@ cv::Mat zed_capture_rgb(sl::Camera &zed) {
 
 cv::Mat zed_capture_3d(sl::Camera &zed) {
     sl::Mat cur_cloud;
+#ifdef ZED_STEREO_2_COMPAT_MODE
     zed.retrieveMeasure(cur_cloud, sl::MEASURE_XYZ);
+#else
+    zed.retrieveMeasure(cur_cloud, sl::MEASURE::XYZ);
+#endif
     return slMat2cvMat(cur_cloud).clone();
 }
 
@@ -334,13 +382,21 @@ int main(int argc, char *argv[])
 #ifdef ZED_STEREO
                 sl::InitParameters init_params;
                 init_params.depth_minimum_distance = 0.5;
+    #ifdef ZED_STEREO_2_COMPAT_MODE
                 init_params.depth_mode = sl::DEPTH_MODE_ULTRA;
                 init_params.camera_resolution = sl::RESOLUTION_HD720;// sl::RESOLUTION_HD1080, sl::RESOLUTION_HD720
                 init_params.coordinate_units = sl::UNIT_METER;
-                //init_params.sdk_cuda_ctx = (CUcontext)detector.get_cuda_context();
-                init_params.sdk_gpu_id = detector.cur_gpu_id;
                 init_params.camera_buffer_count_linux = 2;
                 if (file_ext == "svo") init_params.svo_input_filename.set(filename.c_str());
+    #else
+                init_params.depth_mode = sl::DEPTH_MODE::ULTRA;
+                init_params.camera_resolution = sl::RESOLUTION::HD720;// sl::RESOLUTION::HD1080, sl::RESOLUTION::HD720
+                init_params.coordinate_units = sl::UNIT::METER;
+                if (file_ext == "svo") init_params.input.setFromSVOFile(filename.c_str());
+    #endif
+                //init_params.sdk_cuda_ctx = (CUcontext)detector.get_cuda_context();
+                init_params.sdk_gpu_id = detector.cur_gpu_id;
+                
                 if (filename == "zed_camera" || file_ext == "svo") {
                     std::cout << "ZED 3D Camera " << zed.open(init_params) << std::endl;
                     if (!zed.isOpened()) {
@@ -407,7 +463,13 @@ int main(int argc, char *argv[])
                         detection_data = detection_data_t();
 #ifdef ZED_STEREO
                         if (use_zed_camera) {
-                            while (zed.grab() != sl::SUCCESS) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                            while (zed.grab() !=
+        #ifdef ZED_STEREO_2_COMPAT_MODE
+                                sl::SUCCESS 
+        #else
+                                sl::ERROR_CODE::SUCCESS
+        #endif
+                                ) std::this_thread::sleep_for(std::chrono::milliseconds(2));
                             detection_data.cap_frame = zed_capture_rgb(zed);
                             detection_data.zed_cloud = zed_capture_3d(zed);
                         }
