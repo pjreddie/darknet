@@ -389,7 +389,7 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
             printf("\n Wrong annotation: class_id = %d. But class_id should be [from 0 to %d], file: %s \n", id, (classes-1), labelpath);
             sprintf(buff, "echo %s \"Wrong annotation: class_id = %d. But class_id should be [from 0 to %d]\" >> bad_label.list", labelpath, id, (classes-1));
             system(buff);
-            getchar();
+            if (check_mistakes) getchar();
             ++sub;
             continue;
         }

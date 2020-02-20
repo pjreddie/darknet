@@ -11,6 +11,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+extern int check_mistakes;
+
 layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes, int max_boxes)
 {
     int i;
@@ -363,7 +365,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         if (class_id >= l.classes) {
                             printf("\n Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes - 1);
                             printf("\n truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f, class_id = %d \n", truth.x, truth.y, truth.w, truth.h, class_id);
-                            getchar();
+                            if (check_mistakes) getchar();
                             continue; // if label contains class_id more than number of classes in the cfg-file
                         }
                         if (!truth.x) break;  // continue;
