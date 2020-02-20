@@ -1410,7 +1410,10 @@ image load_image_stb(char *filename, int channels)
         char *new_line = "\n";
         fwrite(new_line, sizeof(char), strlen(new_line), fw);
         fclose(fw);
-        if (check_mistakes) getchar();
+        if (check_mistakes) {
+            printf("\n Error in load_image_stb() \n");
+            getchar();
+        }
         return make_image(10, 10, 3);
         //exit(EXIT_FAILURE);
     }

@@ -59,7 +59,7 @@ void check_error(cudaError_t status)
     {
         const char *s = cudaGetErrorString(status);
         char buffer[256];
-        printf("CUDA Error: %s\n", s);
+        printf("\n CUDA Error: %s\n", s);
         snprintf(buffer, 256, "CUDA Error: %s", s);
 #ifdef WIN32
         getchar();
@@ -70,7 +70,7 @@ void check_error(cudaError_t status)
     {
         const char *s = cudaGetErrorString(status2);
         char buffer[256];
-        printf("CUDA Error Prev: %s\n", s);
+        printf("\n CUDA Error Prev: %s\n", s);
         snprintf(buffer, 256, "CUDA Error Prev: %s", s);
 #ifdef WIN32
         getchar();
@@ -181,7 +181,7 @@ void cudnn_check_error(cudnnStatus_t status)
     {
         const char *s = cudnnGetErrorString(status);
         char buffer[256];
-        printf("cuDNN Error: %s\n", s);
+        printf("\n cuDNN Error: %s\n", s);
         snprintf(buffer, 256, "cuDNN Error: %s", s);
 #ifdef WIN32
         getchar();
@@ -192,7 +192,7 @@ void cudnn_check_error(cudnnStatus_t status)
     {
         const char *s = cudnnGetErrorString(status2);
         char buffer[256];
-        printf("cuDNN Error Prev: %s\n", s);
+        printf("\n cuDNN Error Prev: %s\n", s);
         snprintf(buffer, 256, "cuDNN Error Prev: %s", s);
 #ifdef WIN32
         getchar();

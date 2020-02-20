@@ -192,7 +192,10 @@ box_label *read_boxes(char *filename, int *n)
         char *new_line = "\n";
         fwrite(new_line, sizeof(char), strlen(new_line), fw);
         fclose(fw);
-        if (check_mistakes) getchar();
+        if (check_mistakes) {
+            printf("\n Error in read_boxes() \n");
+            getchar();
+        }
 
         *n = 0;
         return boxes;
@@ -994,7 +997,10 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             mat_cv *src;
             src = load_image_mat_cv(filename, flag);
             if (src == NULL) {
-                if (check_mistakes) getchar();
+                if (check_mistakes) {
+                    printf("\n Error in load_data_detection() - OpenCV \n");
+                    getchar();
+                }
                 continue;
             }
 

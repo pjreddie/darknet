@@ -67,7 +67,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     char topk_buff[10];
     sprintf(topk_buff, "top%d", topk_data);
     if (classes != net.layers[net.n - 1].inputs) {
-        printf(" Error: num of filters = %d in the last conv-layer in cfg-file doesn't match to classes = %d in data-file \n",
+        printf("\n Error: num of filters = %d in the last conv-layer in cfg-file doesn't match to classes = %d in data-file \n",
             net.layers[net.n - 1].inputs, classes);
         getchar();
     }
@@ -806,7 +806,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     int classes = option_find_int(options, "classes", 2);
     printf(" classes = %d, output in cfg = %d \n", classes, net.layers[net.n - 1].c);
     if (classes != net.layers[net.n - 1].inputs) {
-        printf(" Error: num of filters = %d in the last conv-layer in cfg-file doesn't match to classes = %d in data-file \n",
+        printf("\n Error: num of filters = %d in the last conv-layer in cfg-file doesn't match to classes = %d in data-file \n",
             net.layers[net.n - 1].inputs, classes);
         getchar();
     }

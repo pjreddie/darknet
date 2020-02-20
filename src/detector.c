@@ -51,7 +51,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         int names_size = 0;
         char **names = get_labels_custom(name_list, &names_size);
         if (net_classes != names_size) {
-            printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
+            printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
                 name_list, names_size, net_classes, cfgfile);
             if (net_classes > names_size) getchar();
         }
@@ -855,7 +855,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         calculate_binary_weights(net);
     }
     if (net.layers[net.n - 1].classes != names_size) {
-        printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
+        printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
             name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
         getchar();
     }
@@ -1466,7 +1466,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     fuse_conv_batchnorm(net);
     calculate_binary_weights(net);
     if (net.layers[net.n - 1].classes != names_size) {
-        printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
+        printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
             name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
         if (net.layers[net.n - 1].classes > names_size) getchar();
     }
