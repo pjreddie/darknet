@@ -586,6 +586,8 @@ struct layer {
     float * loss_gpu;
     float * delta_gpu;
     float * rand_gpu;
+    float * drop_blocks_scale;
+    float * drop_blocks_scale_gpu;
     float * squared_gpu;
     float * norms_gpu;
 

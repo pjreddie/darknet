@@ -29,11 +29,13 @@ dropout_layer make_dropout_layer(int batch, int inputs, float probability, int d
     l.scale = 1./(1.0 - probability);
     l.forward = forward_dropout_layer;
     l.backward = backward_dropout_layer;
-    #ifdef GPU
+#ifdef GPU
     l.forward_gpu = forward_dropout_layer_gpu;
     l.backward_gpu = backward_dropout_layer_gpu;
     l.rand_gpu = cuda_make_array(l.rand, inputs*batch);
-    #endif
+    l.drop_blocks_scale = cuda_make_array_pinned(l.rand, l.batch);
+    l.drop_blocks_scale_gpu = cuda_make_array(l.rand, l.batch);
+#endif
     if (l.dropblock) {
         if(l.dropblock_size_abs) fprintf(stderr, "dropblock       p = %.2f   l.dropblock_size_abs = %d         %4d  ->   %4d\n", probability, l.dropblock_size_abs, inputs, inputs);
         else fprintf(stderr, "dropblock       p = %.2f   l.dropblock_size_rel = %.2f         %4d  ->   %4d\n", probability, l.dropblock_size_rel, inputs, inputs);

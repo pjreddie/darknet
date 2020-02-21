@@ -55,7 +55,9 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.type == DROPOUT) {
         if (l.rand)           free(l.rand);
 #ifdef GPU
-        if (l.rand_gpu)             cuda_free(l.rand_gpu);
+        if (l.rand_gpu)              cuda_free(l.rand_gpu);
+        if (l.drop_blocks_scale)     cuda_free_host(l.drop_blocks_scale);
+        if (l.drop_blocks_scale_gpu) cuda_free(l.drop_blocks_scale_gpu);
 #endif
         return;
     }
