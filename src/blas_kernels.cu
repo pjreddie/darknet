@@ -15,7 +15,9 @@ __global__ void compare_2_arrays_kernel(float *one, float *two, int size)
     const int index = blockIdx.x*blockDim.x + threadIdx.x;
     if (index >= size) return;
 
-    if (one[index] != two[index]) printf(" i: %d - one = %f, two = %f \n", index, one[index], two[index]);
+    const float diff = 100 * fabs(one[index] - two[index]) / fabs(one[index]);
+
+    if (diff > 10) printf(" i: %d - one = %f, two = %f, diff = %f %% \n", index, one[index], two[index], diff);
 }
 
 void compare_2_arrays_gpu(float *one, float *two, int size)
@@ -600,12 +602,12 @@ __global__ void  fast_v_cbn_kernel(const float *x, float *mean, int batch, int f
         v_avg[filter] = alpha_cbn * v_tmp + (1 - alpha_cbn) * v_avg[filter];
 
         float variance_tmp = fmax(0.0f, v_avg[filter] - powf(m_avg[filter], 2));
-        if (inverse_variance) variance_tmp = 1.0f / sqrtf(variance_tmp + epsilon);
-        variance[filter] = variance_tmp;
+        if (inverse_variance) variance[filter] = 1.0f / sqrtf(variance_tmp + epsilon);
+        else variance[filter] = variance_tmp;
 
         rolling_mean_gpu[filter] = alpha * mean[filter] + (1 - alpha) * rolling_mean_gpu[filter];
 
-        rolling_variance_gpu[filter] = alpha * variance[filter] + (1 - alpha) * rolling_variance_gpu[filter];
+        rolling_variance_gpu[filter] = alpha * variance_tmp + (1 - alpha) * rolling_variance_gpu[filter];
     }
 }
 
@@ -617,24 +619,28 @@ extern "C" void fast_v_cbn_gpu(const float *x, float *mean, int batch, int filte
 }
 
 
-__global__ void normalize_scale_bias_kernel(int N, float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, float epsilon)
+__global__ void normalize_scale_bias_kernel(int N, float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, int inverse_variance, float epsilon)
 {
     const int index = blockIdx.x*blockDim.x + threadIdx.x;
     if (index >= N) return;
     int f = (index / spatial) % filters;
 
-    float val = (x[index] - mean[f]) / (sqrtf(variance[f] + epsilon)) * scales[f] + biases[f];
+    float val = 0;
+    if(inverse_variance) val = (x[index] - mean[f]) * variance[f];
+    else val = (x[index] - mean[f]) / (sqrtf(variance[f] + epsilon));
+    val *= scales[f];
+    val += biases[f];
 
     if (!isnan(val) && !isinf(val))
         x[index] = val;
 }
 
-extern "C" void normalize_scale_bias_gpu(float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, float epsilon)
+extern "C" void normalize_scale_bias_gpu(float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, int inverse_variance, float epsilon)
 {
     const int current_size = batch * filters * spatial;
     const int num_blocks = get_number_of_blocks(current_size, BLOCK);
 
-    normalize_scale_bias_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(current_size, x, mean, variance, scales, biases, batch, filters, spatial, epsilon);
+    normalize_scale_bias_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(current_size, x, mean, variance, scales, biases, batch, filters, spatial, inverse_variance, epsilon);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 

@@ -89,7 +89,7 @@ void fast_mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
 void fast_variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
 void fast_v_cbn_gpu(const float *x, float *mean, int batch, int filters, int spatial, int minibatch_index, float *m_avg, float *v_avg, float *variance,
     const float alpha, float *rolling_mean_gpu, float *rolling_variance_gpu, int inverse_variance, float epsilon);
-void normalize_scale_bias_gpu(float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, float epsilon);
+void normalize_scale_bias_gpu(float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, int inverse_variance, float epsilon);
 void compare_2_arrays_gpu(float *one, float *two, int size);
 void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out);
 void shortcut_multilayer_gpu(int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_output_gpu, float *out, float *in, float *weights_gpu, int nweights, WEIGHTS_NORMALIZATION_T weights_normalizion);

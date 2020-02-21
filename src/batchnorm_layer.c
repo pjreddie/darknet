@@ -269,13 +269,13 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
             fast_v_cbn_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, minibatch_index, l.m_cbn_avg_gpu, l.v_cbn_avg_gpu, l.variance_gpu,
                 alpha, l.rolling_mean_gpu, l.rolling_variance_gpu, inverse_variance, .00001);
 
-            normalize_scale_bias_gpu(l.output_gpu, l.mean_gpu, l.variance_gpu, l.scales_gpu, l.biases_gpu, l.batch, l.out_c, l.out_h*l.out_w, .00001f);
+            normalize_scale_bias_gpu(l.output_gpu, l.mean_gpu, l.variance_gpu, l.scales_gpu, l.biases_gpu, l.batch, l.out_c, l.out_h*l.out_w, inverse_variance, .00001f);
 
 #ifndef CUDNN
             simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.x_norm_gpu);
 #endif  // CUDNN
 
-            //printf("\n CBN \n");
+            //printf("\n CBN, minibatch_index = %d \n", minibatch_index);
         }
         else {
 #ifdef CUDNN
@@ -341,6 +341,7 @@ void backward_batchnorm_layer_gpu(layer l, network_state state)
         l.mean_gpu = l.rolling_mean_gpu;
         l.variance_gpu = l.rolling_variance_gpu;
     }
+
 #ifdef CUDNN
     float one = 1;
     float zero = 0;
