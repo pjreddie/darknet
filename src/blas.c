@@ -177,6 +177,7 @@ void backward_shortcut_multilayer_cpu(int size, int src_outputs, int batch, int 
                 else if (weights_normalizion == SOFTMAX_NORMALIZATION) sum += expf(w - max_val);
             }
 
+            /*
             grad = 0;
             for (i = 0; i < (n + 1); ++i) {
                 const int weights_index = src_i / step + i*layer_step;  // [0 or c or (c, h ,w)]
@@ -185,6 +186,7 @@ void backward_shortcut_multilayer_cpu(int size, int src_outputs, int batch, int 
                 if (weights_normalizion == RELU_NORMALIZATION) grad += delta_w * relu(w) / sum;
                 else if (weights_normalizion == SOFTMAX_NORMALIZATION) grad += delta_w * expf(w - max_val) / sum;
             }
+            */
         }
 
         if (weights) {
