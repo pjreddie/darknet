@@ -438,8 +438,8 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c/groups));
-    if (l.activation == NORM_CHAN_SOFTMAX_MAXVAL) {
-        for (i = 0; i < l.nweights; ++i) l.weights[i] = -10;   // rand_normal();
+    if (l.activation == NORM_CHAN || l.activation == NORM_CHAN_SOFTMAX || l.activation == NORM_CHAN_SOFTMAX_MAXVAL) {
+        for (i = 0; i < l.nweights; ++i) l.weights[i] = 1;   // rand_normal();
     }
     else {
         for (i = 0; i < l.nweights; ++i) l.weights[i] = scale*rand_uniform(-1, 1);   // rand_normal();

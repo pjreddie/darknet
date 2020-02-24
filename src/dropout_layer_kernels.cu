@@ -60,9 +60,11 @@ __global__ void dropblock_fast_kernel(float *rand, float prob, int w, int h, int
         int x = b_x + i_x;
         int y = b_y + i_y;
 
-        int index = b*spatial*f + f*spatial + y*w + x;
+        if (x < w && y < h) {
+            int index = b*spatial*f + f*spatial + y*w + x;
 
-        output[index] = 0;
+            output[index] = 0;
+        }
     }
 
     if (id == 0 && drop_blocks_scale) {
