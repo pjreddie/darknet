@@ -106,6 +106,16 @@ void forward_network_gpu(network net, network_state state)
             cudaStreamSynchronize(get_cuda_stream());
         state.input = l.output_gpu;
         //cudaDeviceSynchronize();
+
+        /*
+        cuda_pull_array(l.output_gpu, l.output, l.outputs);
+        cudaStreamSynchronize(get_cuda_stream());
+        float avg_val = 0;
+        int k;
+        for (k = 0; k < l.outputs; ++k) avg_val += l.output[k];
+        printf(" i: %d - avg_val = %f \n", i, avg_val / l.outputs);
+        */
+
 /*
         cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
         if (l.out_w >= 0 && l.out_h >= 1 && l.c >= 3) {
