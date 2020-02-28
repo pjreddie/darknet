@@ -3,6 +3,7 @@ import sys
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+from image_processing import *
 
 from darknet import *
 
@@ -19,9 +20,9 @@ def draw(path, r):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     font = cv2.FONT_HERSHEY_SIMPLEX
-    fontScale = 0.8
-    color = (255, 0, 0)
-    thickness = 2
+    fontScale = 1
+    color = (255, 20, 147)
+    thickness = 3
 
     for i in range(len(r)):
         #print(r[i][2])
@@ -29,9 +30,10 @@ def draw(path, r):
         #box = r[i][2]
         print(box)
         org = (int(box[2]), int(box[3]*0.98))
-        cv2.rectangle(img, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255,0,0), 2)
+        cv2.rectangle(img, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), color, 2)
         img = cv2.putText(img, r[i][0].decode("utf-8"), org, font, fontScale, color, thickness, cv2.LINE_AA)
 
+    img = display_obj_count(img, len(r))
     plt.imshow(img)
     plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
     plt.show()
@@ -44,9 +46,11 @@ if __name__ == "__main__":
 
     # b"../data/car_plate1/slices/0.jpg"
     r = detect(net, meta, bytes(sys.argv[1], 'utf-8'))
-    img = draw("{}".format(sys.argv[1]), r)
-    img = Image.fromarray(img)
+    print(r)
 
+    count = len(r)
+    img = draw("{}".format(sys.argv[1]), r)
+
+    img = Image.fromarray(img)
     if sys.argv[2]!=None:
         img.save(sys.argv[2])
-    print(r)

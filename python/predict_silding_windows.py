@@ -39,7 +39,7 @@ def draw(path, r):
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     fontScale = 0.5
-    color = (255, 0, 0)
+    color = (255, 20, 147)
     thickness = 1
 
     for i in range(len(r)):
@@ -48,7 +48,7 @@ def draw(path, r):
         #box = r[i][2]
         print(box)
         org = (int(box[2]), int(box[3]*0.98))
-        cv2.rectangle(img, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255,0,0), 2)
+        cv2.rectangle(img, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), color, 2)
         img = cv2.putText(img, r[i][0].decode("utf-8"), org, font, fontScale, color, thickness, cv2.LINE_AA)
 
     #plt.imshow(img)

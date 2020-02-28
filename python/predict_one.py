@@ -25,7 +25,7 @@ def draw(path, r):
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     fontScale = 0.8
-    color = (255, 0, 0)
+    color = (255, 20, 147)
     thickness = 2
 
     for i in range(len(r)):
@@ -34,7 +34,7 @@ def draw(path, r):
         #box = r[i][2]
         print(box)
         org = (int(box[2]), int(box[3]*0.98))
-        cv2.rectangle(img, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255,0,0), 2)
+        cv2.rectangle(img, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), color, 2)
         img = cv2.putText(img, r[i][0].decode("utf-8"), org, font, fontScale, color, thickness, cv2.LINE_AA)
 
     #plt.imshow(img)
@@ -83,9 +83,12 @@ if __name__=="__main__":
     pathIn = 'temp/'
     files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
     files.sort(key = lambda x: int(x[0:-4]))
+    count = 0
     for i in range(len(files)):
         filename=pathIn + files[i]
         r = detect(net, meta, bytes(filename, 'utf-8'))
+        count = count + len(r)
+
         img = draw("{}".format(filename), r)
         img = Image.fromarray(img)
         img.save(filename)
@@ -95,4 +98,16 @@ if __name__=="__main__":
     m12 = get_concat_h(pred_slice[0], pred_slice[1])
     m34 = get_concat_h(pred_slice[2], pred_slice[3])
     im = get_concat_v(m12, m34)
-    im.save('output/pred_4slices_output.jpg')
+    #im.save('output/pred_4slices_output.jpg')
+    im = im.convert('RGB')
+    im = np.array(im)
+    im = display_obj_count(img=im, count=count)
+    #im.save('output/pred_4slices_output.jpg')
+
+    #im_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    #im = Image.fromarray(im)
+    Image.fromarray(im).save('output/pred_4slices_output.jpg')
+    
+    plt.imshow(im)
+    plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+    plt.show()
