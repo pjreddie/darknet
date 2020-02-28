@@ -22,3 +22,4 @@ Position (1,0)              |  Position (1,1)
 #### image tiling (Avoid resizing)
 #### when dealing with big images, darknet will resize the image into the network input size; this process downsample the image and might even change the aspect ratio which will destroy features.
 #### For image tiling, we simply have a small window that have the same size as the network input size, slice through the entire image and predict on every single slice.
+<img src="samples/output_tiling.jpg" width="100%">
