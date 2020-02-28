@@ -71,7 +71,7 @@ def convert_frames_to_video(pathIn,pathOut,fps=25):
 if __name__=="__main__":
 
     # load model
-    net = load_net(b"../cfg/yolov3_ssig.cfg", b"../backup/yolov3_ssig_final.weights", 0)
+    net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../../Documents/darknet/backup/yolov3_ssig_final.weights", 0)
     meta = load_meta(b"../cfg/ssig.data")
 
     # spilt image into 4 slices
@@ -95,4 +95,4 @@ if __name__=="__main__":
     m12 = get_concat_h(pred_slice[0], pred_slice[1])
     m34 = get_concat_h(pred_slice[2], pred_slice[3])
     im = get_concat_v(m12, m34)
-    im.save('output.jpg')
+    im.save('output/pred_4slices_output.jpg')
