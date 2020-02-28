@@ -9,7 +9,7 @@
     python3 predict_one.py image
 #### predict slices
 Position (0,0)             |  Position (0,1)
-:-------------------------|:-------------------------
+:-------------------------:|:-------------------------:
 <img src="temp/0.jpg" width="90%"> | <img src="temp/1.jpg" width="90%">
 Position (1,0)              |  Position (1,1)
 <img src="temp/2.jpg" width="90%"> | <img src="temp/3.jpg" width="90%">
