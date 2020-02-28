@@ -9,10 +9,10 @@
     python3 predict_one.py image
 #### predict slices
 Position (0,0)             |  Position (0,1)
-:-------------------------:|:-------------------------:
-<img src="output/pred_4slices_output.jpg" width="50%"> | <img src="output/pred_4slices_output.jpg" width="50%">
+:-------------------------|:-------------------------
+<img src="temp/0.jpg" width="100%"> | <img src="temp/1.jpg" width="100%">
 Position (1,0)              |  Position (1,1)
-<img src="output/pred_4slices_output.jpg" width="50%"> | <img src="output/pred_4slices_output.jpg" width="50%">
+<img src="temp/2.jpg" width="100%"> | <img src="temp/3.jpg" width="100%">
 
 #### merge predicted slices
 <img src="output/pred_4slices_output.jpg" width="100%">
