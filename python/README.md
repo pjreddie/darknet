@@ -2,11 +2,19 @@
 ## predict.py
 #### predict a given image and display output.
     python3 predict.py image <output_file_path>
-
+<img src="samples/output_org1.jpg" width="100%">
 
 ## predict_one.py
 #### split an image into 4 slices and predict on each image, then merge back to one. output will be store in output and 4 slices will be store in temp
     python3 predict_one.py image
+##### predict slices
+<img src="output/pred_4slices_output.jpg" width="25%">
+<img src="output/pred_4slices_output.jpg" width="25%">
+<img src="output/pred_4slices_output.jpg" width="25%">
+<img src="output/pred_4slices_output.jpg" width="25%">
+
+##### merge predicted slices
+<img src="output/pred_4slices_output.jpg" width="100%">
 
 ## predict_silding_windows.py
     python3 predict_silding_windows.py image
