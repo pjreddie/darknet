@@ -7,13 +7,14 @@
 ## predict_one.py
 #### split an image into 4 slices and predict on each image, then merge back to one. output will be store in output and 4 slices will be store in temp
     python3 predict_one.py image
-##### predict slices
-<img src="output/pred_4slices_output.jpg" width="25%">
-<img src="output/pred_4slices_output.jpg" width="25%">
-<img src="output/pred_4slices_output.jpg" width="25%">
-<img src="output/pred_4slices_output.jpg" width="25%">
+#### predict slices
+Position (0,0)             |  Position (0,1)
+:-------------------------:|:-------------------------:
+<img src="output/pred_4slices_output.jpg" width="50%"> | <img src="output/pred_4slices_output.jpg" width="50%">
+Position (1,0)              |  Position (1,1)
+<img src="output/pred_4slices_output.jpg" width="50%"> | <img src="output/pred_4slices_output.jpg" width="50%">
 
-##### merge predicted slices
+#### merge predicted slices
 <img src="output/pred_4slices_output.jpg" width="100%">
 
 ## predict_silding_windows.py
