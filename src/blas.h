@@ -87,7 +87,7 @@ void fast_variance_delta_gpu(float *x, float *delta, float *mean, float *varianc
 
 void fast_mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
 void fast_variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
-void fast_v_cbn_gpu(const float *x, float *mean, int batch, int filters, int spatial, int minibatch_index, float *m_avg, float *v_avg, float *variance,
+void fast_v_cbn_gpu(const float *x, float *mean, int batch, int filters, int spatial, int minibatch_index, int max_minibatch_index, float *m_avg, float *v_avg, float *variance,
     const float alpha, float *rolling_mean_gpu, float *rolling_variance_gpu, int inverse_variance, float epsilon);
 void normalize_scale_bias_gpu(float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, int inverse_variance, float epsilon);
 void compare_2_arrays_gpu(float *one, float *two, int size);

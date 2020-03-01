@@ -34,6 +34,8 @@
 
 #define SECRET_NUM -1234
 
+typedef enum { UNUSED_DEF_VAL } UNUSED_ENUM_TYPE;
+
 #ifdef GPU
 
 #include <cuda_runtime.h>
@@ -42,8 +44,8 @@
 
 #ifdef CUDNN
 #include <cudnn.h>
-#endif
-#endif
+#endif  // CUDNN
+#endif  // GPU
 
 #ifdef __cplusplus
 extern "C" {
@@ -495,7 +497,7 @@ struct layer {
 
     size_t workspace_size;
 
-#ifdef GPU
+//#ifdef GPU
     int *indexes_gpu;
 
     float *z_gpu;
@@ -610,8 +612,21 @@ struct layer {
     cudnnConvolutionBwdDataAlgo_t bd_algo, bd_algo16;
     cudnnConvolutionBwdFilterAlgo_t bf_algo, bf_algo16;
     cudnnPoolingDescriptor_t poolingDesc;
+#else   // CUDNN
+    void* srcTensorDesc, *dstTensorDesc;
+    void* srcTensorDesc16, *dstTensorDesc16;
+    void* dsrcTensorDesc, *ddstTensorDesc;
+    void* dsrcTensorDesc16, *ddstTensorDesc16;
+    void* normTensorDesc, *normDstTensorDesc, *normDstTensorDescF16;
+    void* weightDesc, *weightDesc16;
+    void* dweightDesc, *dweightDesc16;
+    void* convDesc;
+    UNUSED_ENUM_TYPE fw_algo, fw_algo16;
+    UNUSED_ENUM_TYPE bd_algo, bd_algo16;
+    UNUSED_ENUM_TYPE bf_algo, bf_algo16;
+    void* poolingDesc;
 #endif  // CUDNN
-#endif  // GPU
+//#endif  // GPU
 };
 
 
@@ -701,7 +716,7 @@ typedef struct network {
     float *cost;
     float clip;
 
-#ifdef GPU
+//#ifdef GPU
     //float *input_gpu;
     //float *truth_gpu;
     float *delta_gpu;
@@ -722,7 +737,7 @@ typedef struct network {
     float *global_delta_gpu;
     float *state_delta_gpu;
     size_t max_delta_gpu_size;
-#endif
+//#endif  // GPU
     int optimized_memory;
     size_t workspace_size_limit;
 } network;

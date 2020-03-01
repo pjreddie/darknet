@@ -258,15 +258,17 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
             fast_mean_gpu(l.output_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.mean_gpu);
 
             //fast_v_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, l.v_cbn_gpu);
-            int minibatch_index = state.net.current_subdivision + 1;
-            float alpha = 0.01;
+            const int minibatch_index = state.net.current_subdivision + 1;
+            const int max_minibatch_index = state.net.subdivisions;
+            //printf("\n minibatch_index = %d, max_minibatch_index = %d \n", minibatch_index, max_minibatch_index);
+            const float alpha = 0.01;
 
             int inverse_variance = 0;
 #ifdef CUDNN
             inverse_variance = 1;
 #endif  // CUDNN
 
-            fast_v_cbn_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, minibatch_index, l.m_cbn_avg_gpu, l.v_cbn_avg_gpu, l.variance_gpu,
+            fast_v_cbn_gpu(l.output_gpu, l.mean_gpu, l.batch, l.out_c, l.out_h*l.out_w, minibatch_index, max_minibatch_index, l.m_cbn_avg_gpu, l.v_cbn_avg_gpu, l.variance_gpu,
                 alpha, l.rolling_mean_gpu, l.rolling_variance_gpu, inverse_variance, .00001);
 
             normalize_scale_bias_gpu(l.output_gpu, l.mean_gpu, l.variance_gpu, l.scales_gpu, l.biases_gpu, l.batch, l.out_c, l.out_h*l.out_w, inverse_variance, .00001f);
