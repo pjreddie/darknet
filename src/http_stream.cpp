@@ -258,10 +258,11 @@ public:
                 //_write(s, head, 0);
                 if (!close_all_sockets) _write(s, ", \n", 0);
                 int n = _write(s, outputbuf, outlen);
-                if (n < outlen)
+                if (n < (int)outlen)
                 {
                     cerr << "JSON_sender: kill client " << s << endl;
-                    ::shutdown(s, 2);
+                    close_socket(s);
+                    //::shutdown(s, 2);
                     FD_CLR(s, &master);
                 }
 
@@ -448,7 +449,7 @@ public:
         cv::imencode(".jpg", frame, outbuf, params);  //REMOVED FOR COMPATIBILITY
         // https://docs.opencv.org/3.4/d4/da8/group__imgcodecs.html#ga292d81be8d76901bff7988d18d2b42ac
         //std::cerr << "cv::imencode call disabled!" << std::endl;
-        size_t outlen = outbuf.size();
+        int outlen = static_cast<int>(outbuf.size());
 
 #ifdef _WIN32
         for (unsigned i = 0; i<rread.fd_count; i++)
@@ -504,11 +505,12 @@ public:
                 sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
                 _write(s, head, 0);
                 int n = _write(s, (char*)(&outbuf[0]), outlen);
-                //cerr << "known client " << s << " " << n << endl;
-                if (n < outlen)
+                cerr << "known client: " << s << ", sent = " << n << ", must be sent outlen = " << outlen << endl;
+                if (n < (int)outlen)
                 {
                     cerr << "MJPG_sender: kill client " << s << endl;
-                    ::shutdown(s, 2);
+                    //::shutdown(s, 2);
+                    close_socket(s);
                     FD_CLR(s, &master);
                 }
             }
