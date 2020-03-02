@@ -318,7 +318,7 @@ float train_network_datum_gpu(network net, float *x, float *y)
     float error = get_network_cost(net);
     //if (((*net.seen) / net.batch) % net.subdivisions == 0) update_network_gpu(net);
     const int sequence = get_sequence_value(net);
-    if (((*net.seen) / net.batch) % (net.subdivisions*sequence) == 0) update_network_gpu(net);
+    //if (((*net.seen) / net.batch) % (net.subdivisions*sequence) == 0) update_network_gpu(net);
 
     return error;
 }
@@ -564,7 +564,9 @@ float train_networks(network *nets, int n, data d, int interval)
         sum += errors[i];
     }
     //cudaDeviceSynchronize();
-    if (get_current_batch(nets[0]) % interval == 0) {
+    *nets[0].cur_iteration += (n - 1);
+    if (get_current_iteration(nets[0]) % interval == 0)
+    {
         printf("Syncing... ");
         fflush(stdout);
         sync_nets(nets, n, interval);

@@ -95,7 +95,7 @@ __global__ void yoloswag420blazeit360noscope(float *input, int size, float *rand
 void forward_dropout_layer_gpu(dropout_layer l, network_state state)
 {
     if (!state.train) return;
-    int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
+    int iteration_num = get_current_iteration(state.net); // (*state.net.seen) / (state.net.batch*state.net.subdivisions);
     //if (iteration_num < state.net.burn_in) return;
 
     // We gradually increase the block size and the probability of dropout - during the first half of the training
@@ -141,9 +141,9 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
         for (int b = 0; b < l.batch; ++b) {
             const float prob = l.drop_blocks_scale[b] * block_size * block_size / (float)l.outputs;
             const float scale = 1.0f / (1.0f - prob);
-            printf(" %d x %d - block_size = %d, block_size*block_size = %d , ", l.w, l.h, block_size, block_size*block_size);
-            printf(" , l.drop_blocks_scale[b] = %f, prob = %f, calc scale = %f \t cur_prob = %f, cur_scale = %f \n",
-                l.drop_blocks_scale[b], prob, scale, cur_prob, cur_scale);
+            //printf(" %d x %d - block_size = %d, block_size*block_size = %d , ", l.w, l.h, block_size, block_size*block_size);
+            //printf(" , l.drop_blocks_scale[b] = %f, prob = %f, calc scale = %f \t cur_prob = %f, cur_scale = %f \n",
+            //    l.drop_blocks_scale[b], prob, scale, cur_prob, cur_scale);
             l.drop_blocks_scale[b] = scale;
         }
 
@@ -176,14 +176,14 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
 void backward_dropout_layer_gpu(dropout_layer l, network_state state)
 {
     if(!state.delta) return;
-    //int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
+    //int iteration_num = get_current_iteration(state.net); //(*state.net.seen) / (state.net.batch*state.net.subdivisions);
     //if (iteration_num < state.net.burn_in) return;
 
     int size = l.inputs*l.batch;
 
     // dropblock
     if (l.dropblock) {
-        int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
+        int iteration_num = get_current_iteration(state.net); //(*state.net.seen) / (state.net.batch*state.net.subdivisions);
         float multiplier = 1.0;
         if (iteration_num < (state.net.max_batches*0.85))
             multiplier = (iteration_num / (float)(state.net.max_batches*0.85));

@@ -1053,6 +1053,8 @@ void parse_net_options(list *options, network *net)
     net->batch *= net->time_steps;
     net->subdivisions = subdivs;
 
+    *net->cur_iteration = 0;
+    net->dynamic_minibatch = option_find_int_quiet(options, "dynamic_minibatch", 0);
     net->optimized_memory = option_find_int_quiet(options, "optimized_memory", 0);
     net->workspace_size_limit = (size_t)1024*1024 * option_find_float_quiet(options, "workspace_size_limit_MB", 1024);  // 1024 MB by default
 
@@ -1357,6 +1359,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }
 #endif // GPU
 
+        l.dynamic_minibatch = net.dynamic_minibatch;
         l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
@@ -1873,6 +1876,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         fread(&iseen, sizeof(uint32_t), 1, fp);
         *net->seen = iseen;
     }
+    *net->cur_iteration = get_current_batch(*net);
     printf(", trained: %.0f K-images (%.0f Kilo-batches_64) \n", (float)(*net->seen / 1000), (float)(*net->seen / 64000));
     int transpose = (major > 1000) || (minor > 1000);
 

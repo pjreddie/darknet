@@ -57,6 +57,11 @@ load_args get_base_args(network *net)
     return args;
 }
 
+int64_t get_current_iteration(network net)
+{
+    return *net.cur_iteration;
+}
+
 int get_current_batch(network net)
 {
     int batch_num = (*net.seen)/(net.batch*net.subdivisions);
@@ -240,6 +245,7 @@ network make_network(int n)
     net.n = n;
     net.layers = (layer*)xcalloc(net.n, sizeof(layer));
     net.seen = (uint64_t*)xcalloc(1, sizeof(uint64_t));
+    net.cur_iteration = (int*)xcalloc(1, sizeof(int));
 #ifdef GPU
     net.input_gpu = (float**)xcalloc(1, sizeof(float*));
     net.truth_gpu = (float**)xcalloc(1, sizeof(float*));
@@ -359,7 +365,7 @@ float train_network_datum(network net, float *x, float *y)
     forward_network(net, state);
     backward_network(net, state);
     float error = get_network_cost(net);
-    if(((*net.seen)/net.batch)%net.subdivisions == 0) update_network(net);
+    //if(((*net.seen)/net.batch)%net.subdivisions == 0) update_network(net);
     return error;
 }
 
@@ -404,6 +410,12 @@ float train_network_waitkey(network net, data d, int wait_key)
         sum += err;
         if(wait_key) wait_key_cv(5);
     }
+    (*net.cur_iteration) += 1;
+#ifdef GPU
+    update_network_gpu(net);
+#else   // GPU
+    update_network(net);
+#endif  // GPU
     free(X);
     free(y);
     return (float)sum/(n*batch);
@@ -523,7 +535,7 @@ int resize_network(network *net, int w, int h)
     //fflush(stderr);
     for (i = 0; i < net->n; ++i){
         layer l = net->layers[i];
-        //printf(" %d: layer = %d,", i, l.type);
+        //printf(" (resize %d: layer = %d) , ", i, l.type);
         if(l.type == CONVOLUTIONAL){
             resize_convolutional_layer(&l, w, h);
         }
@@ -1048,6 +1060,7 @@ void free_network(network net)
     free(net.scales);
     free(net.steps);
     free(net.seen);
+    free(net.cur_iteration);
 
 #ifdef GPU
     if (gpu_index >= 0) cuda_free(net.workspace);

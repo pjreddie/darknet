@@ -218,6 +218,7 @@ struct layer {
     int batch_normalize;
     int shortcut;
     int batch;
+    int dynamic_minibatch;
     int forced;
     int flipped;
     int inputs;
@@ -640,6 +641,7 @@ typedef struct network {
     int n;
     int batch;
     uint64_t *seen;
+    int *cur_iteration;
     int *t;
     float epoch;
     int subdivisions;
@@ -739,6 +741,7 @@ typedef struct network {
     size_t max_delta_gpu_size;
 //#endif  // GPU
     int optimized_memory;
+    int dynamic_minibatch;
     size_t workspace_size_limit;
 } network;
 
