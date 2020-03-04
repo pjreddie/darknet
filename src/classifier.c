@@ -132,6 +132,10 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     int iter_topk = get_current_batch(net);
     float topk = 0;
 
+    int count = 0;
+    double start, end, tmp, time_remaining[1000] = {0};
+    start = what_time_is_it_now();
+
     while(get_current_batch(net) < net.max_batches || net.max_batches == 0){
         time=clock();
 
@@ -182,7 +186,18 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
 #ifdef OPENCV
-        if (!dontuse_opencv) draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, topk_buff, dont_show, mjpeg_port);
+        end = what_time_is_it_now();
+        time_remaining[i%1000] = (net.max_batches - i)*(end - start) / 60 / 60;
+        tmp = 0.0;
+        int j, count = 0;
+        for (j = 0; j < 1000; ++j){
+            if (time_remaining[j] != 0){
+                tmp += time_remaining[j];
+                count++;
+            }
+        }
+        if (!dontuse_opencv) draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, topk_buff, dont_show, mjpeg_port, tmp/count);
+        start = what_time_is_it_now();
 #endif  // OPENCV
 
         if (i >= (iter_save + 1000)) {
