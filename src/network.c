@@ -1133,7 +1133,8 @@ void fuse_conv_batchnorm(network net)
         {
             if (l->nweights > 0) {
                 //cuda_pull_array(l.weights_gpu, l.weights, l.nweights);
-                for (int i = 0; i < l->nweights; ++i) printf(" w = %f,", l->weights[i]);
+                int i;
+                for (i = 0; i < l->nweights; ++i) printf(" w = %f,", l->weights[i]);
                 printf(" l->nweights = %d \n", l->nweights);
             }
 

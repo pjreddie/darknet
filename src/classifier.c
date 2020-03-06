@@ -162,8 +162,8 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         calc_topk_for_each = fmax(calc_topk_for_each, 100);
         if (i % 10 == 0) {
             if (calc_topk) {
-                fprintf(stderr, "\n (next TOP5 calculation at %d iterations) ", calc_topk_for_each);
-                if (topk > 0) fprintf(stderr, " Last accuracy TOP5 = %2.2f %% \n", topk * 100);
+                fprintf(stderr, "\n (next TOP%d calculation at %d iterations) ", topk_data, calc_topk_for_each);
+                if (topk > 0) fprintf(stderr, " Last accuracy TOP%d = %2.2f %% \n", topk_data, topk * 100);
             }
 
             if (net.cudnn_half) {
@@ -175,7 +175,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         int draw_precision = 0;
         if (calc_topk && (i >= calc_topk_for_each || i == net.max_batches)) {
             iter_topk = i;
-            topk = validate_classifier_single(datacfg, cfgfile, weightfile, &net, topk_data); // calc TOP5
+            topk = validate_classifier_single(datacfg, cfgfile, weightfile, &net, topk_data); // calc TOP-n
             printf("\n accuracy %s = %f \n", topk_buff, topk);
             draw_precision = 1;
         }
