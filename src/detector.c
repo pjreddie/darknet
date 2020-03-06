@@ -308,10 +308,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         time_remaining[i%1000] = (net.max_batches - i)*(end - start) / 60 / 60;
         tmp = 0.0;
         int j, count = 0;
-        for (j = 0; j < 1000; ++j){
+        if (i > 50){
+            for (j = 0; j < 1000; ++j){
             if (time_remaining[j] != 0){
                 tmp += time_remaining[j];
                 count++;
+            }
             }
         }
         draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port, tmp/count);
