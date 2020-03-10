@@ -165,6 +165,7 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
     copy_cpu(l.n/3*l.c, l.weights, 1, l.weights +   l.n/3*l.c, 1);
     copy_cpu(l.n/3*l.c, l.weights, 1, l.weights + 2*l.n/3*l.c, 1);
     *net.seen = 0;
+    *net.cur_iteration = 0;
     save_weights(net, outfile);
 }
 
@@ -176,6 +177,7 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
         load_weights_upto(&net, weightfile, max);
     }
     *net.seen = 0;
+    *net.cur_iteration = 0;
     save_weights_upto(net, outfile, max);
 }
 

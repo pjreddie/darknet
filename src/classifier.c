@@ -48,7 +48,10 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         if(weightfile){
             load_weights(&nets[i], weightfile);
         }
-        if(clear) *nets[i].seen = 0;
+        if (clear) {
+            *nets[i].seen = 0;
+            *nets[i].cur_iteration = 0;
+        }
         nets[i].learning_rate *= ngpus;
     }
     srand(time(0));

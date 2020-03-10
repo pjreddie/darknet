@@ -1973,7 +1973,10 @@ network *load_network_custom(char *cfg, char *weights, int clear, int batch)
         load_weights(net, weights);
     }
     fuse_conv_batchnorm(*net);
-    if (clear) (*net->seen) = 0;
+    if (clear) {
+        (*net->seen) = 0;
+        (*net->cur_iteration) = 0;
+    }
     return net;
 }
 
@@ -1987,6 +1990,9 @@ network *load_network(char *cfg, char *weights, int clear)
         printf(" Try to load weights: %s \n", weights);
         load_weights(net, weights);
     }
-    if (clear) (*net->seen) = 0;
+    if (clear) {
+        (*net->seen) = 0;
+        (*net->cur_iteration) = 0;
+    }
     return net;
 }

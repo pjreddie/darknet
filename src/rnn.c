@@ -155,7 +155,10 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int batch = net.batch;
     int steps = net.time_steps;
-    if(clear) *net.seen = 0;
+    if (clear) {
+        *net.seen = 0;
+        *net.cur_iteration = 0;
+    }
     int i = (*net.seen)/net.batch;
 
     int streams = batch/steps;
