@@ -74,6 +74,15 @@ __global__ void dropblock_fast_kernel(float *rand, float prob, int w, int h, int
 
 }
 
+__global__ void set_scales_dropblock_kernel(float *drop_blocks_scale, int block_size_w, int block_size_h, int outputs, int batch)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index >= batch) return;
+
+    const float prob = drop_blocks_scale[index] * block_size_w * block_size_h / (float)outputs;
+    const float scale = 1.0f / (1.0f - prob);
+    drop_blocks_scale[index] = scale;
+}
 
 __global__ void scale_dropblock_kernel(float *output, int size, int outputs, float *drop_blocks_scale)
 {
@@ -136,6 +145,11 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
         dropblock_fast_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (l.rand_gpu, block_prob, l.w, l.h, l.w*l.h, l.c, block_size, l.drop_blocks_scale_gpu, state.input);
         CHECK_CUDA(cudaPeekAtLastError());
 
+        num_blocks = get_number_of_blocks(l.batch, BLOCK);
+        set_scales_dropblock_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (l.drop_blocks_scale_gpu, block_size, block_size, l.outputs, l.batch);
+        CHECK_CUDA(cudaPeekAtLastError());
+
+        /*
         cuda_pull_array(l.drop_blocks_scale_gpu, l.drop_blocks_scale, l.batch);
 
         for (int b = 0; b < l.batch; ++b) {
@@ -148,6 +162,7 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
         }
 
         cuda_push_array(l.drop_blocks_scale_gpu, l.drop_blocks_scale, l.batch);
+        */
 
         num_blocks = get_number_of_blocks(l.outputs * l.batch, BLOCK);
         scale_dropblock_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (state.input, l.outputs * l.batch, l.outputs, l.drop_blocks_scale_gpu);

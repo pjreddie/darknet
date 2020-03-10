@@ -1345,7 +1345,7 @@ void show_opencv_info()
 #else  // OPENCV
 extern "C" void show_opencv_info()
 {
-    std::cerr << " OpenCV isn't used \n";
+    std::cerr << " OpenCV isn't used - data increase will run slowly \n";
 }
 extern "C" int wait_key_cv(int delay) { return 0; }
 extern "C" int wait_until_press_key_cv() { return 0; }
