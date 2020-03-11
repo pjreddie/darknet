@@ -374,11 +374,11 @@ void forward_yolo_layer(const layer l, network_state state)
                     for (t = 0; t < l.max_boxes; ++t) {
                         box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
                         int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
-                        if (class_id >= l.classes) {
+                        if (class_id >= l.classes || class_id < 0) {
                             printf("\n Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes - 1);
                             printf("\n truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f, class_id = %d \n", truth.x, truth.y, truth.w, truth.h, class_id);
                             if (check_mistakes) getchar();
-                            continue; // if label contains class_id more than number of classes in the cfg-file
+                            continue; // if label contains class_id more than number of classes in the cfg-file and class_id check garbage value
                         }
                         if (!truth.x) break;  // continue;
 
@@ -427,7 +427,7 @@ void forward_yolo_layer(const layer l, network_state state)
                 system(buff);
             }
             int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
-            if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
+            if (class_id >= l.classes || class_id < 0) continue; // if label contains class_id more than number of classes in the cfg-file and class_id check garbage value
 
             if (!truth.x) break;  // continue;
             float best_iou = 0;
