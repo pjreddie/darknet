@@ -12,6 +12,9 @@
 #include "blas.h"
 #include "connected_layer.h"
 
+int check_mistakes = 0;
+int cuda_debug_sync = 0;
+
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void run_voxel(int argc, char **argv);
@@ -459,14 +462,20 @@ int main(int argc, char **argv)
     gpu_index = -1;
     printf(" GPU isn't used \n");
     init_cpu();
-#else
+#else   // GPU
     if(gpu_index >= 0){
         cuda_set_device(gpu_index);
         CHECK_CUDA(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
     }
 
     show_cuda_cudnn_info();
-#endif
+    cuda_debug_sync = find_arg(argc, argv, "-cuda_debug_sync");
+
+#ifdef CUDNN_HALF
+    printf(" CUDNN_HALF=1 \n");
+#endif  // CUDNN_HALF
+
+#endif  // GPU
 
     show_opencv_info();
 

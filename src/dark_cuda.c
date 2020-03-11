@@ -29,6 +29,8 @@ int gpu_index = 0;
 #error "If you set CUDNN_HALF=1 then you must set CUDNN=1"
 #endif
 
+extern int cuda_debug_sync;
+
 void cuda_set_device(int n)
 {
     gpu_index = n;
@@ -86,10 +88,13 @@ void check_error_extended(cudaError_t status, const char *file, int line, const 
         check_error(status);
     }
 #if defined(DEBUG) || defined(CUDA_DEBUG)
-    status = cudaDeviceSynchronize();
-    if (status != cudaSuccess)
-        printf("CUDA status = cudaDeviceSynchronize() Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    cuda_debug_sync = 1;
 #endif
+    if (cuda_debug_sync) {
+        status = cudaDeviceSynchronize();
+        if (status != cudaSuccess)
+            printf("CUDA status = cudaDeviceSynchronize() Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    }
     check_error(status);
 }
 
@@ -173,6 +178,9 @@ void cudnn_check_error(cudnnStatus_t status)
 #if defined(DEBUG) || defined(CUDA_DEBUG)
     cudaDeviceSynchronize();
 #endif
+    if (cuda_debug_sync) {
+        cudaDeviceSynchronize();
+    }
     cudnnStatus_t status2 = CUDNN_STATUS_SUCCESS;
 #ifdef CUDNN_ERRQUERY_RAWCODE
     cudnnStatus_t status_tmp = cudnnQueryRuntimeError(cudnn_handle(), &status2, CUDNN_ERRQUERY_RAWCODE, NULL);
@@ -208,10 +216,13 @@ void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line
         cudnn_check_error(status);
     }
 #if defined(DEBUG) || defined(CUDA_DEBUG)
-    status = cudaDeviceSynchronize();
-    if (status != CUDNN_STATUS_SUCCESS)
-        printf("\n cuDNN status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    cuda_debug_sync = 1;
 #endif
+    if (cuda_debug_sync) {
+        status = cudaDeviceSynchronize();
+        if (status != CUDNN_STATUS_SUCCESS)
+            printf("\n cuDNN status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    }
     cudnn_check_error(status);
 }
 #endif

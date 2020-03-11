@@ -1054,6 +1054,7 @@ void parse_net_options(list *options, network *net)
     net->batch *= net->time_steps;
     net->subdivisions = subdivs;
 
+    *net->seen = 0;
     *net->cur_iteration = 0;
     net->dynamic_minibatch = option_find_int_quiet(options, "dynamic_minibatch", 0);
     net->optimized_memory = option_find_int_quiet(options, "optimized_memory", 0);
@@ -1096,7 +1097,7 @@ void parse_net_options(list *options, network *net)
     char *policy_s = option_find_str(options, "policy", "constant");
     net->policy = get_policy(policy_s);
     net->burn_in = option_find_int_quiet(options, "burn_in", 0);
-#ifdef CUDNN_HALF
+#ifdef GPU
     if (net->gpu_index >= 0) {
         int compute_capability = get_gpu_compute_capability(net->gpu_index);
         if (get_gpu_compute_capability(net->gpu_index) >= 700) net->cudnn_half = 1;
@@ -1104,7 +1105,7 @@ void parse_net_options(list *options, network *net)
         fprintf(stderr, " compute_capability = %d, cudnn_half = %d \n", compute_capability, net->cudnn_half);
     }
     else fprintf(stderr, " GPU isn't used \n");
-#endif
+#endif// GPU
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
         net->scale = option_find_float(options, "scale", 1);
@@ -1630,6 +1631,7 @@ void save_weights_upto(network net, char *filename, int cutoff)
     fwrite(&major, sizeof(int), 1, fp);
     fwrite(&minor, sizeof(int), 1, fp);
     fwrite(&revision, sizeof(int), 1, fp);
+    (*net.seen) = (*net.cur_iteration) * net.batch * net.subdivisions;
     fwrite(net.seen, sizeof(uint64_t), 1, fp);
 
     int i;
