@@ -12,8 +12,6 @@
 #include "blas.h"
 #include "connected_layer.h"
 
-int cuda_debug_sync = 0;
-
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void run_voxel(int argc, char **argv);

@@ -1,6 +1,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+int cuda_debug_sync = 0;
 int gpu_index = 0;
 #ifdef __cplusplus
 }
@@ -19,6 +20,7 @@ int gpu_index = 0;
 
 #pragma comment(lib, "cuda.lib")
 
+
 #ifdef CUDNN
 #ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "cudnn.lib")
@@ -29,7 +31,6 @@ int gpu_index = 0;
 #error "If you set CUDNN_HALF=1 then you must set CUDNN=1"
 #endif
 
-extern int cuda_debug_sync;
 
 void cuda_set_device(int n)
 {
