@@ -248,7 +248,7 @@ void update_network_gpu(network net)
         l.t = get_current_batch(net);
         if (iteration_num > (net.max_batches * 1 / 2)) l.deform = 0;
         if(l.update_gpu){
-            l.update_gpu(l, update_batch, rate, net.momentum, net.decay);
+            l.update_gpu(l, update_batch, rate, net.momentum, net.decay, net.loss_scale);
         }
     }
 }
@@ -379,7 +379,7 @@ void update_layer(layer l, network net)
     float rate = get_current_rate(net);
     l.t = get_current_batch(net);
     if(l.update_gpu){
-        l.update_gpu(l, update_batch, rate, net.momentum, net.decay);
+        l.update_gpu(l, update_batch, rate, net.momentum, net.decay, net.loss_scale);
     }
 }
 

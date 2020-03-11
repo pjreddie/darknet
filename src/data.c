@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern int check_mistakes;
+
 #define NUMCHARS 37
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -178,7 +180,6 @@ matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int 
     return X;
 }
 
-extern int check_mistakes;
 
 box_label *read_boxes(char *filename, int *n)
 {

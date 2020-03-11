@@ -253,7 +253,7 @@ void backward_local_layer_gpu(local_layer l, network_state state)
     }
 }
 
-void update_local_layer_gpu(local_layer l, int batch, float learning_rate, float momentum, float decay)
+void update_local_layer_gpu(local_layer l, int batch, float learning_rate, float momentum, float decay, float loss_scale)
 {
     int locations = l.out_w*l.out_h;
     int size = l.size*l.size*l.c*l.n*locations;

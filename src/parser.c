@@ -1056,6 +1056,7 @@ void parse_net_options(list *options, network *net)
 
     *net->seen = 0;
     *net->cur_iteration = 0;
+    net->loss_scale = option_find_float_quiet(options, "loss_scale", 1);
     net->dynamic_minibatch = option_find_int_quiet(options, "dynamic_minibatch", 0);
     net->optimized_memory = option_find_int_quiet(options, "optimized_memory", 0);
     net->workspace_size_limit = (size_t)1024*1024 * option_find_float_quiet(options, "workspace_size_limit_MB", 1024);  // 1024 MB by default
@@ -1205,7 +1206,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     params.batch = net.batch;
     params.time_steps = net.time_steps;
     params.net = net;
-    printf("batch = %d, time_steps = %d, train = %d \n", net.batch, net.time_steps, params.train);
+    printf("mini_batch = %d, batch = %d, time_steps = %d, train = %d \n", net.batch, net.batch * net.subdivisions, net.time_steps, params.train);
 
     int avg_outputs = 0;
     float bflops = 0;

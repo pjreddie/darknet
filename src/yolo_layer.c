@@ -822,6 +822,6 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
 
 void backward_yolo_layer_gpu(const layer l, network_state state)
 {
-    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
+    axpy_ongpu(l.batch*l.inputs, state.net.loss_scale, l.delta_gpu, 1, state.delta, 1);
 }
 #endif

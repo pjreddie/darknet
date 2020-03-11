@@ -387,9 +387,9 @@ void backward_batchnorm_layer_gpu(layer l, network_state state)
     }
 }
 
-void update_batchnorm_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay)
+void update_batchnorm_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay, float loss_scale)
 {
-    float learning_rate = learning_rate_init*l.learning_rate_scale;
+    float learning_rate = learning_rate_init * l.learning_rate_scale / loss_scale;
     //float momentum = a.momentum;
     //float decay = a.decay;
     //int batch = a.batch;

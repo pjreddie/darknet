@@ -15,7 +15,7 @@ extern "C" {
 #ifdef GPU
 void forward_convolutional_layer_gpu(convolutional_layer layer, network_state state);
 void backward_convolutional_layer_gpu(convolutional_layer layer, network_state state);
-void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay);
+void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay, float loss_scale);
 
 void push_convolutional_layer(convolutional_layer layer);
 void pull_convolutional_layer(convolutional_layer layer);

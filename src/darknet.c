@@ -12,7 +12,6 @@
 #include "blas.h"
 #include "connected_layer.h"
 
-int check_mistakes = 0;
 int cuda_debug_sync = 0;
 
 
