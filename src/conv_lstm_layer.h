@@ -23,7 +23,7 @@ void update_conv_lstm_layer(layer l, int batch, float learning_rate, float momen
 #ifdef GPU
 void forward_conv_lstm_layer_gpu(layer l, network_state state);
 void backward_conv_lstm_layer_gpu(layer l, network_state state);
-void update_conv_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay);
+void update_conv_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay, float loss_scale);
 #endif
 
 #ifdef __cplusplus
