@@ -960,7 +960,7 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
         else if (weights_normalizion == SOFTMAX_NORMALIZATION) grad = w*(1-w);
 
         delta_out[id] += delta_in[id] * w; // [0 or c or (c, h ,w)]
-        float weights_update_tmp = delta_in[id] * in[id] * grad;
+        float weights_update_tmp = delta_in[id] * in[id] * grad / step;
 
         if (layer_step == 1 && (size/32) > (id/32 + 1)) {
             float wu = warpAllReduceSum(weights_update_tmp);
@@ -997,7 +997,7 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
                 else if (weights_normalizion == SOFTMAX_NORMALIZATION) grad = w*(1 - w);
 
                 layer_delta[add_index] += delta_in[id] * w;
-                float weights_update_tmp = delta_in[id] * add[add_index] * grad;
+                float weights_update_tmp = delta_in[id] * add[add_index] * grad / step;
 
                 if (layer_step == 1 && (size / 32) > (id / 32 + 1)) {
                     float wu = warpAllReduceSum(weights_update_tmp);

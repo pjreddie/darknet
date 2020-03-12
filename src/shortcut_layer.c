@@ -53,7 +53,7 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     if (l.nweights > 0) {
         l.weights = (float*)calloc(l.nweights, sizeof(float));
         float scale = sqrt(2. / l.nweights);
-        for (i = 0; i < l.nweights; ++i) l.weights[i] = 1 + 0.01*rand_uniform(-1, 1);// scale*rand_uniform(-1, 1);   // rand_normal();
+        for (i = 0; i < l.nweights; ++i) l.weights[i] = 1;// +0.01*rand_uniform(-1, 1);// scale*rand_uniform(-1, 1);   // rand_normal();
 
         if (train) l.weight_updates = (float*)calloc(l.nweights, sizeof(float));
         l.update = update_shortcut_layer;
@@ -261,7 +261,7 @@ void update_shortcut_layer_gpu(layer l, int batch, float learning_rate_init, flo
         scal_ongpu(l.nweights, momentum, l.weight_updates_gpu, 1);
 
         //if (l.clip) {
-        //    constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
+        //    constrain_ongpu(l.nweights, l.clip, l.weights_gpu, 1);
         //}
     }
 }

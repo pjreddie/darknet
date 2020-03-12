@@ -1287,9 +1287,9 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
         //}
     }
 
-    //if (l.clip) {
-    //    constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
-    //}
+    if (l.clip) {
+        constrain_ongpu(l.nweights, l.clip, l.weights_gpu, 1);
+    }
 }
 
 /*
