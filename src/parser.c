@@ -1362,7 +1362,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }
 #endif // GPU
 
-        l.clip = option_find_int_quiet(options, "clip", 0);
+        l.clip = option_find_float_quiet(options, "clip", 0);
         l.dynamic_minibatch = net.dynamic_minibatch;
         l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
