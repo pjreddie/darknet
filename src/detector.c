@@ -356,7 +356,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             save_weights(net, buff);
         }
 
-        if (iteration >= (iter_save_last + 100) || iteration % 100 == 0) {
+        if (iteration >= (iter_save_last + 100) || (iteration % 100 == 0 && iteration > 1)) {
             iter_save_last = iteration;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);

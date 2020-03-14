@@ -172,7 +172,7 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
 void partial(char *cfgfile, char *weightfile, char *outfile, int max)
 {
     gpu_index = -1;
-    network net = parse_network_cfg(cfgfile);
+    network net = parse_network_cfg_custom(cfgfile, 1, 1);
     if(weightfile){
         load_weights_upto(&net, weightfile, max);
     }

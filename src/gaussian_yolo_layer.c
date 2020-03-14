@@ -371,25 +371,20 @@ void delta_gaussian_yolo_class(float *output, float *delta, int index, int class
 {
     int n;
     if (delta[index]){
-        if (label_smooth_eps > 0) {
-            float out_val = output[index + stride*class_id] * (1 - label_smooth_eps) + 0.5*label_smooth_eps;
-            delta[index + stride*class_id] = 1 - out_val;
-        }
-        else {
-            delta[index + stride*class_id] = 1 - output[index + stride*class_id];
-        }
+        float y_true = 1;
+        if (label_smooth_eps) y_true = y_true *  (1 - label_smooth_eps) + 0.5*label_smooth_eps;
+        delta[index + stride*class_id] = y_true - output[index + stride*class_id];
+        //delta[index + stride*class_id] = 1 - output[index + stride*class_id];
+
         if (classes_multipliers) delta[index + stride*class_id] *= classes_multipliers[class_id];
         if(avg_cat) *avg_cat += output[index + stride*class_id];
         return;
     }
     for(n = 0; n < classes; ++n){
-        if (label_smooth_eps > 0) {
-            float out_val = output[index + stride*class_id] * (1 - label_smooth_eps) + 0.5*label_smooth_eps;
-            delta[index + stride*n] = ((n == class_id) ? 1 : 0) - out_val;
-        }
-        else {
-            delta[index + stride*n] = ((n == class_id) ? 1 : 0) - output[index + stride*n];
-        }
+        float y_true = ((n == class_id) ? 1 : 0);
+        if (label_smooth_eps) y_true = y_true *  (1 - label_smooth_eps) + 0.5*label_smooth_eps;
+        delta[index + stride*n] = y_true - output[index + stride*n];
+
         if (classes_multipliers && n == class_id) delta[index + stride*class_id] *= classes_multipliers[class_id];
         if(n == class_id && avg_cat) *avg_cat += output[index + stride*n];
     }

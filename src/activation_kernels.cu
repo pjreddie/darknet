@@ -493,6 +493,7 @@ __global__ void activate_array_normalize_channels_softmax_kernel(float *x, int s
         for (k = 0; k < channels; ++k) {
             float val = x[wh_i + k * wh_step + b*wh_step*channels];
             val = expf(val - max_val) / sum;
+            if (isnan(val) || isinf(val)) val = 0;
             output_gpu[wh_i + k * wh_step + b*wh_step*channels] = val;
         }
     }
@@ -535,6 +536,7 @@ __global__ void gradient_array_normalize_channels_softmax_kernel(float *x, int s
             float delta = delta_gpu[index];
             float grad = x[index] * (1 - x[index]);
             delta = delta * grad;
+            if (isnan(delta) || isinf(delta)) delta = 0;
             delta_gpu[index] = delta;
         }
     }

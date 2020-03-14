@@ -60,6 +60,7 @@ void fix_nan_and_inf_cpu(float *input, size_t size);
 
 #ifdef GPU
 
+void constrain_weight_updates_ongpu(int N, float learning_rate, float *weights_gpu, float *weight_updates_gpu);
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
 void simple_copy_ongpu(int size, float *src, float *dst);

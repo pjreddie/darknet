@@ -257,13 +257,12 @@ void delta_yolo_class(float *output, float *delta, int index, int class_id, int 
 {
     int n;
     if (delta[index + stride*class_id]){
-        if (label_smooth_eps > 0) {
-            float out_val = output[index + stride*class_id] * (1 - label_smooth_eps) + 0.5*label_smooth_eps;
-            delta[index + stride*class_id] = 1 - out_val;
-        }
-        else {
-            delta[index + stride*class_id] = 1 - output[index + stride*class_id];
-        }
+        float y_true = 1;
+        if(label_smooth_eps) y_true = y_true *  (1 - label_smooth_eps) + 0.5*label_smooth_eps;
+        float result_delta = y_true - output[index + stride*class_id];
+        if(!isnan(result_delta) && !isinf(result_delta)) delta[index + stride*class_id] = result_delta;
+        //delta[index + stride*class_id] = 1 - output[index + stride*class_id];
+
         if (classes_multipliers) delta[index + stride*class_id] *= classes_multipliers[class_id];
         if(avg_cat) *avg_cat += output[index + stride*class_id];
         return;
@@ -291,13 +290,11 @@ void delta_yolo_class(float *output, float *delta, int index, int class_id, int 
     else {
         // default
         for (n = 0; n < classes; ++n) {
-            if (label_smooth_eps > 0) {
-                float out_val = output[index + stride*class_id] * (1 - label_smooth_eps) + 0.5*label_smooth_eps;
-                delta[index + stride*n] = ((n == class_id) ? 1 : 0) - out_val;
-            }
-            else {
-                delta[index + stride*n] = ((n == class_id) ? 1 : 0) - output[index + stride*n];
-            }
+            float y_true = ((n == class_id) ? 1 : 0);
+            if (label_smooth_eps) y_true = y_true *  (1 - label_smooth_eps) + 0.5*label_smooth_eps;
+            float result_delta = y_true - output[index + stride*n];
+            if (!isnan(result_delta) && !isinf(result_delta)) delta[index + stride*n] = result_delta;
+
             if (classes_multipliers && n == class_id) delta[index + stride*class_id] *= classes_multipliers[class_id];
             if (n == class_id && avg_cat) *avg_cat += output[index + stride*n];
         }
@@ -385,6 +382,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
                         int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
                         float objectness = l.output[obj_index];
+                        if (isnan(objectness) || isinf(objectness)) l.output[obj_index] = 0;
                         int class_id_match = compare_yolo_class(l.output, l.classes, class_index, l.w*l.h, objectness, class_id, 0.25f);
 
                         float iou = box_iou(pred, truth);
