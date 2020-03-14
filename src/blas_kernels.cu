@@ -418,21 +418,21 @@ __global__ void reorg_kernel(int N, float *x, int w, int h, int c, int batch, in
     //else out[0] = x[0];
 }
 
-__global__ void constrain_weight_updates_kernel(int N, float learning_rate, float *weights_gpu, float *weight_updates_gpu)
+__global__ void constrain_weight_updates_kernel(int N, float coef, float *weights_gpu, float *weight_updates_gpu)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (i < N) {
         const float w = weights_gpu[i];
         const float wu = weight_updates_gpu[i];
-        const float wu_sign = (wu == 0) ? 0 : (wu / wu);
-        const float abs_limit = fabs(w*learning_rate);
+        const float wu_sign = (wu == 0) ? 0 : (fabs(wu) / wu);
+        const float abs_limit = fabs(w * coef);
         if (fabs(wu) > abs_limit) weight_updates_gpu[i] = abs_limit * wu_sign;
     }
 }
 
-extern "C" void constrain_weight_updates_ongpu(int N, float learning_rate, float *weights_gpu, float *weight_updates_gpu)
+extern "C" void constrain_weight_updates_ongpu(int N, float coef, float *weights_gpu, float *weight_updates_gpu)
 {
-    constrain_weight_updates_kernel << <cuda_gridsize(N), BLOCK, 0, get_cuda_stream() >> >(N, learning_rate, weights_gpu, weight_updates_gpu);
+    constrain_weight_updates_kernel << <cuda_gridsize(N), BLOCK, 0, get_cuda_stream() >> >(N, coef, weights_gpu, weight_updates_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 

@@ -256,7 +256,7 @@ void update_shortcut_layer_gpu(layer l, int batch, float learning_rate_init, flo
         reset_nan_and_inf(l.weight_updates_gpu, l.nweights);
         fix_nan_and_inf(l.weights_gpu, l.nweights);
 
-        constrain_weight_updates_ongpu(l.nweights, 0.001, l.weights_gpu, l.weight_updates_gpu);
+        constrain_weight_updates_ongpu(l.nweights, 1, l.weights_gpu, l.weight_updates_gpu);
 
         /*
         cuda_pull_array_async(l.weights_gpu, l.weights, l.nweights);
@@ -282,6 +282,7 @@ void update_shortcut_layer_gpu(layer l, int batch, float learning_rate_init, flo
 
 void pull_shortcut_layer(layer l)
 {
+    constrain_weight_updates_ongpu(l.nweights, 1, l.weights_gpu, l.weight_updates_gpu);
     cuda_pull_array_async(l.weight_updates_gpu, l.weight_updates, l.nweights);
     cuda_pull_array_async(l.weights_gpu, l.weights, l.nweights);
     CHECK_CUDA(cudaPeekAtLastError());
