@@ -1563,9 +1563,10 @@ void save_shortcut_weights(layer l, FILE *fp)
         printf("\n pull_shortcut_layer \n");
     }
 #endif
-    for (int i = 0; i < l.nweights; ++i) printf(" %f, ", l.weight_updates[i]);
+    int i;
+    for (i = 0; i < l.nweights; ++i) printf(" %f, ", l.weight_updates[i]);
     printf(" l.nweights = %d - update \n", l.nweights);
-    for (int i = 0; i < l.nweights; ++i) printf(" %f, ", l.weights[i]);
+    for (i = 0; i < l.nweights; ++i) printf(" %f, ", l.weights[i]);
     printf(" l.nweights = %d \n\n", l.nweights);
 
     int num = l.nweights;
