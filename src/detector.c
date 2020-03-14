@@ -191,7 +191,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             if (dim_w < net.resize_step) dim_w = net.resize_step;
             if (dim_h < net.resize_step) dim_h = net.resize_step;
             int dim_b = (init_b * max_dim_w * max_dim_h) / (dim_w * dim_h);
-            int new_dim_b = (int)(dim_b * 0.8);
+            int new_dim_b = (int)(dim_b * 0.9);
             if (new_dim_b > init_b) dim_b = new_dim_b;
 
             args.w = dim_w;
