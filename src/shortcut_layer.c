@@ -250,7 +250,7 @@ void update_shortcut_layer_gpu(layer l, int batch, float learning_rate_init, flo
 
         // Loss scale for Mixed-Precision on Tensor-Cores
         if (loss_scale != 1.0) {
-            scal_ongpu(l.nweights, 1.0 / loss_scale, l.weight_updates_gpu, 1);
+            if(l.weight_updates_gpu && l.nweights > 0) scal_ongpu(l.nweights, 1.0 / loss_scale, l.weight_updates_gpu, 1);
         }
 
         reset_nan_and_inf(l.weight_updates_gpu, l.nweights);
