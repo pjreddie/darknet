@@ -1101,8 +1101,10 @@ void parse_net_options(list *options, network *net)
 #ifdef GPU
     if (net->gpu_index >= 0) {
         int compute_capability = get_gpu_compute_capability(net->gpu_index);
-        if (get_gpu_compute_capability(net->gpu_index) >= 700) net->cudnn_half = 1;
+#ifdef CUDNN_HALF
+        if (compute_capability >= 700) net->cudnn_half = 1;
         else net->cudnn_half = 0;
+#endif// CUDNN_HALF
         fprintf(stderr, " compute_capability = %d, cudnn_half = %d \n", compute_capability, net->cudnn_half);
     }
     else fprintf(stderr, " GPU isn't used \n");
