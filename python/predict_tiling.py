@@ -128,9 +128,9 @@ def predict_tilies(img, net, meta):
             # plt read pred.jpg
             im = cv2.imread(pred_temp)
             imb = cv2.resize(im, (600,600))
-            cv2.imshow('res: '+str(im.shape)+' _ '+'pos: '+str(boxes[i]['pos']), imb)
-            key = cv2.waitKey(300)
-            cv2.destroyAllWindows()
+            # cv2.imshow('res: '+str(im.shape)+' _ '+'pos: '+str(boxes[i]['pos']), imb)
+            # key = cv2.waitKey(300)
+            # cv2.destroyAllWindows()
 
             # save boxes
             for j in range(len(r)):
@@ -150,8 +150,8 @@ def predict_tilies(img, net, meta):
                     if d<20. and d!=0.0:
                         org_boxes.pop()
 
-            if key == ord('q'):
-                break
+            #if key == ord('q'):
+            #    break
 
     return org_boxes
 
@@ -216,9 +216,9 @@ if __name__=="__main__":
     print("img", img)
     img = draw_cor(sys.argv[1], org_boxes)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    cv2.imshow('ouput', img)
-    key = cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow('ouput', img)
+    # key = cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = Image.fromarray(img)
     img.save('output/output_tiling.jpg')
