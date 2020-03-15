@@ -12,7 +12,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from os.path import isfile, join
 
-import image_slicer
+# import image_slicer
 
 from darknet import *
 from image_processing import *
@@ -211,7 +211,7 @@ if __name__=="__main__":
             if key == ord('q'):
                 break
     '''
-    
+
     print(org_boxes)
     print("img", img)
     img = draw_cor(sys.argv[1], org_boxes)
