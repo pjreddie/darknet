@@ -10,12 +10,12 @@
 #### predict slices
 Position (0,0)             |  Position (0,1)
 :-------------------------:|:-------------------------:
-<img src="temp/0.jpg" width="90%"> | <img src="temp/1.jpg" width="90%">
+<img src="samples/0.jpg" width="90%"> | <img src="samples/1.jpg" width="90%">
 Position (1,0)              |  Position (1,1)
-<img src="temp/2.jpg" width="90%"> | <img src="temp/3.jpg" width="90%">
+<img src="samples/2.jpg" width="90%"> | <img src="samples/3.jpg" width="90%">
 
 #### merge predicted slices
-<img src="output/pred_4slices_output.jpg" width="90%">
+<img src="samples/pred_4slices_output.jpg" width="90%">
 
 ## predict_silding_windows.py
     python3 predict_silding_windows.py image
