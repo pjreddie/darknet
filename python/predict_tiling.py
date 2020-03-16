@@ -119,8 +119,8 @@ def predict_tilies(img, net, meta):
             cv2.imwrite(temp, cv2.cvtColor(im, cv2.COLOR_RGB2BGR))
 
             # predict
-            r = []
-            # r = detect(net, meta, bytes(temp, 'utf-8'))
+            # r = []
+            r = detect(net, meta, bytes(temp, 'utf-8'))
             #print(r)
             img = draw("{}".format(temp), r)
             img = Image.fromarray(img)
@@ -170,49 +170,6 @@ if __name__=="__main__":
     boxes = image_boxes(img, [416,416])
     org_boxes = predict_tilies(img, net, meta)
 
-    '''
-    for i in range(len(boxes)):
-        im = cv2.cvtColor(boxes[i]['img'], cv2.COLOR_BGR2RGB)
-        if im.shape[0]==416 and im.shape[1]==416:
-            print('res: '+str(im.shape)+'\n'+'pos: '+str(boxes[i]['pos']))
-            print()
-            # save a tile
-            cv2.imwrite(temp, cv2.cvtColor(im, cv2.COLOR_RGB2BGR))
-
-            # predict
-            r = detect(net, meta, bytes(temp, 'utf-8'))
-            #print(r)
-            img = draw("{}".format(temp), r)
-            img = Image.fromarray(img)
-            img.save(pred_temp)
-
-            # plt read pred.jpg
-            im = cv2.imread(pred_temp)
-            imb = cv2.resize(im, (600,600))
-            cv2.imshow('res: '+str(im.shape)+' _ '+'pos: '+str(boxes[i]['pos']), imb)
-            key = cv2.waitKey(300)
-            cv2.destroyAllWindows()
-
-            # save boxes
-            for j in range(len(r)):
-                box = []
-                box_temp = from_yolo_to_cor(im, r[j][2])
-                box.append(box_temp[0] + boxes[i]['pos'][0])
-                box.append(box_temp[1] + boxes[i]['pos'][1])
-                box.append(box_temp[2] + boxes[i]['pos'][0])
-                box.append(box_temp[3] + boxes[i]['pos'][1])
-
-                org_boxes.append(box)
-                for b in org_boxes:
-                    d = distance(b, box)
-                    print(d)
-                    if d<20. and d!=0.0:
-                        org_boxes.pop()
-
-            if key == ord('q'):
-                break
-    '''
-
     print(org_boxes)
     print("img", img)
     img = draw_cor(sys.argv[1], org_boxes)
@@ -222,4 +179,5 @@ if __name__=="__main__":
     # cv2.destroyAllWindows()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = Image.fromarray(img)
-    img.save('output/output_tiling.jpg')
+    #img.save('output/output_tiling.jpg')
+    img.save('{}'.format(sys.argv[2]))
