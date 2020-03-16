@@ -43,7 +43,7 @@ def draw_cor(path, boxes):
         img = cv2.putText(img, 'car_plate', org, font, fontScale, color, thickness, cv2.LINE_AA)
 
     # add count
-    img = display_obj_count(img, len(r))
+    img = display_obj_count(img, len(boxes))
 
     return img
 
@@ -119,7 +119,8 @@ def predict_tilies(img, net, meta):
             cv2.imwrite(temp, cv2.cvtColor(im, cv2.COLOR_RGB2BGR))
 
             # predict
-            r = detect(net, meta, bytes(temp, 'utf-8'))
+            r = []
+            # r = detect(net, meta, bytes(temp, 'utf-8'))
             #print(r)
             img = draw("{}".format(temp), r)
             img = Image.fromarray(img)
