@@ -1,3 +1,4 @@
 opencv-python
-image_slicer
+matplotlib
+tqdm
 Pillow

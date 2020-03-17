@@ -43,6 +43,7 @@ def draw_cor(path, boxes):
         img = cv2.putText(img, 'car_plate', org, font, fontScale, color, thickness, cv2.LINE_AA)
 
     # add count
+    print(boxes)
     img = display_obj_count(img, len(boxes))
 
     return img
