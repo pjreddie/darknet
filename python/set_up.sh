@@ -2,12 +2,13 @@
 
 apt-get update
 # apt install git-all
-apt-get install python3
-apt-get install python
-apt install curl
+apt-get install -y python3
+apt-get install -y python
+apt install -y curl
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 python get-pip.py
-apt install python3-pip
+apt install -y python3-pip
 apt-get install -y libsm6 libxext6 libxrender-dev
 pip3 install -r ../requirements.txt
+apt install -y vim
 apt-get update
