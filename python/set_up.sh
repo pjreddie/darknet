@@ -1,3 +1,5 @@
+# docker run --gpus '"device=1"' -it --name cuda nvidia/cuda bash
+
 apt-get update
 # apt install git-all
 apt-get install python3
