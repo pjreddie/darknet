@@ -9,4 +9,5 @@ curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 python get-pip.py
 apt install python3-pip
 apt-get install -y libsm6 libxext6 libxrender-dev
+pip3 install -r ../requirements.txt
 apt-get update
