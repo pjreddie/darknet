@@ -161,7 +161,7 @@ def predict_tilies(img, net, meta):
 if __name__=="__main__":
 
     # load model
-    net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../weights/yolov3_ssig_final.weights", 0)
+    net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../yolov3_ssig_final.weights", 0)
     meta = load_meta(b"../cfg/ssig.data")
 
     temp = 'temp/temp.jpg'
