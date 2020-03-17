@@ -34,14 +34,16 @@ def draw(path, r):
         img = cv2.putText(img, r[i][0].decode("utf-8"), org, font, fontScale, color, thickness, cv2.LINE_AA)
 
     img = display_obj_count(img, len(r))
-    plt.imshow(img)
-    plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-    plt.show()
+    #plt.imshow(img)
+    #plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+    #plt.show()
 
     return img
 
 if __name__ == "__main__":
-    net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../../Documents/darknet/backup/yolov3_ssig_final.weights", 0)
+    
+    # load model
+    net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../yolov3_ssig_final.weights", 0)
     meta = load_meta(b"../cfg/ssig.data")
 
     # b"../data/car_plate1/slices/0.jpg"
