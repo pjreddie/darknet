@@ -165,7 +165,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     pthread_t load_thread = load_data(args);
 
     int count = 0;
-    double start, end, tmp, time_remaining[1000] = {0};
+    double start, end, time_remaining, avg_t_minus_1, avg_t, alpha = 0.01;
     start = what_time_is_it_now();
 
     //while(i*imgs < N*120){
@@ -305,18 +305,15 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         }
 #ifdef OPENCV
         end = what_time_is_it_now();
-        time_remaining[i%1000] = (net.max_batches - i)*(end - start) / 60 / 60;
-        tmp = 0.0;
-        int j, count = 0;
-        if (i > 50){
-            for (j = 0; j < 1000; ++j){
-            if (time_remaining[j] != 0){
-                tmp += time_remaining[j];
-                count++;
+        time_remaining = (net.max_batches - i)*(end - start) / 60 / 60;
+        if (i > 1){  // ignore the first iteration
+            if (i == 2){
+                avg_t_minus_1 = time_remaining;
             }
-            }
+            avg_t = alpha * time_remaining + (1 - alpha) * avg_t_minus_1;
+            avg_t_minus_1 = avg_t;
         }
-        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port, tmp/count);
+        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port, avg_t);
         start = what_time_is_it_now();
 #endif    // OPENCV
 
