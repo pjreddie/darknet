@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern int check_mistakes;
+
 #define NUMCHARS 37
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -178,7 +180,6 @@ matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int 
     return X;
 }
 
-extern int check_mistakes;
 
 box_label *read_boxes(char *filename, int *n)
 {
@@ -950,7 +951,10 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     const int random_index = random_gen();
     c = c ? c : 3;
 
-    assert(use_mixup != 2);
+    if (use_mixup == 2) {
+        printf("\n cutmix=1 - isn't supported for Detector \n");
+        exit(0);
+    }
     if (use_mixup == 3 && letter_box) {
         printf("\n Combination: letter_box=1 & mosaic=1 - isn't supported, use only 1 of these parameters \n");
         exit(0);
@@ -1211,7 +1215,15 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     if(track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
     else random_paths = get_random_paths(paths, n, m);
 
-    assert(use_mixup < 2);
+    //assert(use_mixup < 2);
+    if (use_mixup == 2) {
+        printf("\n cutmix=1 - isn't supported for Detector \n");
+        exit(0);
+    }
+    if (use_mixup == 3) {
+        printf("\n mosaic=1 - compile Darknet with OpenCV for using mosaic=1 \n");
+        exit(0);
+    }
     int mixup = use_mixup ? random_gen() % 2 : 0;
     //printf("\n mixup = %d \n", mixup);
     if (mixup) {

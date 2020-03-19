@@ -19,7 +19,7 @@ void update_rnn_layer(layer l, int batch, float learning_rate, float momentum, f
 #ifdef GPU
 void forward_rnn_layer_gpu(layer l, network_state state);
 void backward_rnn_layer_gpu(layer l, network_state state);
-void update_rnn_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay);
+void update_rnn_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay, float loss_scale);
 void push_rnn_layer(layer l);
 void pull_rnn_layer(layer l);
 #endif

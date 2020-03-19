@@ -165,17 +165,19 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
     copy_cpu(l.n/3*l.c, l.weights, 1, l.weights +   l.n/3*l.c, 1);
     copy_cpu(l.n/3*l.c, l.weights, 1, l.weights + 2*l.n/3*l.c, 1);
     *net.seen = 0;
+    *net.cur_iteration = 0;
     save_weights(net, outfile);
 }
 
 void partial(char *cfgfile, char *weightfile, char *outfile, int max)
 {
     gpu_index = -1;
-    network net = parse_network_cfg(cfgfile);
+    network net = parse_network_cfg_custom(cfgfile, 1, 1);
     if(weightfile){
         load_weights_upto(&net, weightfile, max);
     }
     *net.seen = 0;
+    *net.cur_iteration = 0;
     save_weights_upto(net, outfile, max);
 }
 
@@ -455,15 +457,22 @@ int main(int argc, char **argv)
 
 #ifndef GPU
     gpu_index = -1;
+    printf(" GPU isn't used \n");
     init_cpu();
-#else
+#else   // GPU
     if(gpu_index >= 0){
         cuda_set_device(gpu_index);
         CHECK_CUDA(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
     }
 
     show_cuda_cudnn_info();
-#endif
+    cuda_debug_sync = find_arg(argc, argv, "-cuda_debug_sync");
+
+#ifdef CUDNN_HALF
+    printf(" CUDNN_HALF=1 \n");
+#endif  // CUDNN_HALF
+
+#endif  // GPU
 
     show_opencv_info();
 

@@ -18,7 +18,7 @@ void resize_batchnorm_layer(layer *l, int w, int h);
 #ifdef GPU
 void forward_batchnorm_layer_gpu(layer l, network_state state);
 void backward_batchnorm_layer_gpu(layer l, network_state state);
-void update_batchnorm_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay);
+void update_batchnorm_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay, float loss_scale);
 void pull_batchnorm_layer(layer l);
 void push_batchnorm_layer(layer l);
 #endif

@@ -997,6 +997,7 @@ route_layer parse_route(list *options, size_params params)
         if(next.out_w == first.out_w && next.out_h == first.out_h){
             layer.out_c += next.out_c;
         }else{
+            fprintf(stderr, " The width and height of the input layers are different. \n");
             layer.out_h = layer.out_w = layer.out_c = 0;
         }
     }
@@ -1053,6 +1054,10 @@ void parse_net_options(list *options, network *net)
     net->batch *= net->time_steps;
     net->subdivisions = subdivs;
 
+    *net->seen = 0;
+    *net->cur_iteration = 0;
+    net->loss_scale = option_find_float_quiet(options, "loss_scale", 1);
+    net->dynamic_minibatch = option_find_int_quiet(options, "dynamic_minibatch", 0);
     net->optimized_memory = option_find_int_quiet(options, "optimized_memory", 0);
     net->workspace_size_limit = (size_t)1024*1024 * option_find_float_quiet(options, "workspace_size_limit_MB", 1024);  // 1024 MB by default
 
@@ -1093,15 +1098,17 @@ void parse_net_options(list *options, network *net)
     char *policy_s = option_find_str(options, "policy", "constant");
     net->policy = get_policy(policy_s);
     net->burn_in = option_find_int_quiet(options, "burn_in", 0);
-#ifdef CUDNN_HALF
+#ifdef GPU
     if (net->gpu_index >= 0) {
         int compute_capability = get_gpu_compute_capability(net->gpu_index);
-        if (get_gpu_compute_capability(net->gpu_index) >= 700) net->cudnn_half = 1;
+#ifdef CUDNN_HALF
+        if (compute_capability >= 700) net->cudnn_half = 1;
         else net->cudnn_half = 0;
+#endif// CUDNN_HALF
         fprintf(stderr, " compute_capability = %d, cudnn_half = %d \n", compute_capability, net->cudnn_half);
     }
     else fprintf(stderr, " GPU isn't used \n");
-#endif
+#endif// GPU
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
         net->scale = option_find_float(options, "scale", 1);
@@ -1201,7 +1208,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     params.batch = net.batch;
     params.time_steps = net.time_steps;
     params.net = net;
-    printf("batch = %d, time_steps = %d, train = %d \n", net.batch, net.time_steps, params.train);
+    printf("mini_batch = %d, batch = %d, time_steps = %d, train = %d \n", net.batch, net.batch * net.subdivisions, net.time_steps, params.train);
 
     int avg_outputs = 0;
     float bflops = 0;
@@ -1357,7 +1364,11 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }
 #endif // GPU
 
+        l.clip = option_find_float_quiet(options, "clip", 0);
+        l.dynamic_minibatch = net.dynamic_minibatch;
         l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
+        l.dont_update = option_find_int_quiet(options, "dont_update", 0);
+        l.burnin_update = option_find_int_quiet(options, "burnin_update", 0);
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
@@ -1549,8 +1560,15 @@ void save_shortcut_weights(layer l, FILE *fp)
 #ifdef GPU
     if (gpu_index >= 0) {
         pull_shortcut_layer(l);
+        printf("\n pull_shortcut_layer \n");
     }
 #endif
+    int i;
+    for (i = 0; i < l.nweights; ++i) printf(" %f, ", l.weight_updates[i]);
+    printf(" l.nweights = %d - update \n", l.nweights);
+    for (i = 0; i < l.nweights; ++i) printf(" %f, ", l.weights[i]);
+    printf(" l.nweights = %d \n\n", l.nweights);
+
     int num = l.nweights;
     fwrite(l.weights, sizeof(float), num, fp);
 }
@@ -1626,6 +1644,7 @@ void save_weights_upto(network net, char *filename, int cutoff)
     fwrite(&major, sizeof(int), 1, fp);
     fwrite(&minor, sizeof(int), 1, fp);
     fwrite(&revision, sizeof(int), 1, fp);
+    //(*net.seen) = (*net.cur_iteration) * net.batch * net.subdivisions;
     fwrite(net.seen, sizeof(uint64_t), 1, fp);
 
     int i;
@@ -1835,7 +1854,7 @@ void load_shortcut_weights(layer l, FILE *fp)
     read_bytes = fread(l.weights, sizeof(float), num, fp);
     if (read_bytes > 0 && read_bytes < num) printf("\n Warning: Unexpected end of wights-file! l.weights - l.index = %d \n", l.index);
     //for (int i = 0; i < l.nweights; ++i) printf(" %f, ", l.weights[i]);
-    //printf("\n\n");
+    //printf(" read_bytes = %d \n\n", read_bytes);
 #ifdef GPU
     if (gpu_index >= 0) {
         push_shortcut_layer(l);
@@ -1873,6 +1892,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         fread(&iseen, sizeof(uint32_t), 1, fp);
         *net->seen = iseen;
     }
+    *net->cur_iteration = get_current_batch(*net);
     printf(", trained: %.0f K-images (%.0f Kilo-batches_64) \n", (float)(*net->seen / 1000), (float)(*net->seen / 64000));
     int transpose = (major > 1000) || (minor > 1000);
 
@@ -1968,7 +1988,10 @@ network *load_network_custom(char *cfg, char *weights, int clear, int batch)
         load_weights(net, weights);
     }
     fuse_conv_batchnorm(*net);
-    if (clear) (*net->seen) = 0;
+    if (clear) {
+        (*net->seen) = 0;
+        (*net->cur_iteration) = 0;
+    }
     return net;
 }
 
@@ -1982,6 +2005,9 @@ network *load_network(char *cfg, char *weights, int clear)
         printf(" Try to load weights: %s \n", weights);
         load_weights(net, weights);
     }
-    if (clear) (*net->seen) = 0;
+    if (clear) {
+        (*net->seen) = 0;
+        (*net->cur_iteration) = 0;
+    }
     return net;
 }

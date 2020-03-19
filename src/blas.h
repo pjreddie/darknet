@@ -60,6 +60,7 @@ void fix_nan_and_inf_cpu(float *input, size_t size);
 
 #ifdef GPU
 
+void constrain_weight_updates_ongpu(int N, float coef, float *weights_gpu, float *weight_updates_gpu);
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
 void simple_copy_ongpu(int size, float *src, float *dst);
@@ -87,7 +88,7 @@ void fast_variance_delta_gpu(float *x, float *delta, float *mean, float *varianc
 
 void fast_mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
 void fast_variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
-void fast_v_cbn_gpu(const float *x, float *mean, int batch, int filters, int spatial, int minibatch_index, float *m_avg, float *v_avg, float *variance,
+void fast_v_cbn_gpu(const float *x, float *mean, int batch, int filters, int spatial, int minibatch_index, int max_minibatch_index, float *m_avg, float *v_avg, float *variance,
     const float alpha, float *rolling_mean_gpu, float *rolling_variance_gpu, int inverse_variance, float epsilon);
 void normalize_scale_bias_gpu(float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, int inverse_variance, float epsilon);
 void compare_2_arrays_gpu(float *one, float *two, int size);

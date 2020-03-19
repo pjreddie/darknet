@@ -257,7 +257,12 @@ void delta_yolo_class(float *output, float *delta, int index, int class_id, int 
 {
     int n;
     if (delta[index + stride*class_id]){
-        delta[index + stride*class_id] = (1 - label_smooth_eps) - output[index + stride*class_id];
+        float y_true = 1;
+        if(label_smooth_eps) y_true = y_true *  (1 - label_smooth_eps) + 0.5*label_smooth_eps;
+        float result_delta = y_true - output[index + stride*class_id];
+        if(!isnan(result_delta) && !isinf(result_delta)) delta[index + stride*class_id] = result_delta;
+        //delta[index + stride*class_id] = 1 - output[index + stride*class_id];
+
         if (classes_multipliers) delta[index + stride*class_id] *= classes_multipliers[class_id];
         if(avg_cat) *avg_cat += output[index + stride*class_id];
         return;
@@ -285,7 +290,11 @@ void delta_yolo_class(float *output, float *delta, int index, int class_id, int 
     else {
         // default
         for (n = 0; n < classes; ++n) {
-            delta[index + stride*n] = ((n == class_id) ? (1 - label_smooth_eps) : (0 + label_smooth_eps/classes)) - output[index + stride*n];
+            float y_true = ((n == class_id) ? 1 : 0);
+            if (label_smooth_eps) y_true = y_true *  (1 - label_smooth_eps) + 0.5*label_smooth_eps;
+            float result_delta = y_true - output[index + stride*n];
+            if (!isnan(result_delta) && !isinf(result_delta)) delta[index + stride*n] = result_delta;
+
             if (classes_multipliers && n == class_id) delta[index + stride*class_id] *= classes_multipliers[class_id];
             if (n == class_id && avg_cat) *avg_cat += output[index + stride*n];
         }
@@ -362,17 +371,18 @@ void forward_yolo_layer(const layer l, network_state state)
                     for (t = 0; t < l.max_boxes; ++t) {
                         box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
                         int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
-                        if (class_id >= l.classes) {
+                        if (class_id >= l.classes || class_id < 0) {
                             printf("\n Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes - 1);
                             printf("\n truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f, class_id = %d \n", truth.x, truth.y, truth.w, truth.h, class_id);
                             if (check_mistakes) getchar();
-                            continue; // if label contains class_id more than number of classes in the cfg-file
+                            continue; // if label contains class_id more than number of classes in the cfg-file and class_id check garbage value
                         }
                         if (!truth.x) break;  // continue;
 
                         int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
                         int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
                         float objectness = l.output[obj_index];
+                        if (isnan(objectness) || isinf(objectness)) l.output[obj_index] = 0;
                         int class_id_match = compare_yolo_class(l.output, l.classes, class_index, l.w*l.h, objectness, class_id, 0.25f);
 
                         float iou = box_iou(pred, truth);
@@ -415,7 +425,7 @@ void forward_yolo_layer(const layer l, network_state state)
                 system(buff);
             }
             int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
-            if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
+            if (class_id >= l.classes || class_id < 0) continue; // if label contains class_id more than number of classes in the cfg-file and class_id check garbage value
 
             if (!truth.x) break;  // continue;
             float best_iou = 0;
@@ -530,6 +540,9 @@ void forward_yolo_layer(const layer l, network_state state)
             }
         }
     }
+
+    if (count == 0) count = 1;
+    if (class_count == 0) class_count = 1;
 
     //*(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
     //printf("Region %d Avg IOU: %f, Class: %f, Obj: %f, No Obj: %f, .5R: %f, .75R: %f,  count: %d\n", state.index, avg_iou / count, avg_cat / class_count, avg_obj / count, avg_anyobj / (l.w*l.h*l.n*l.batch), recall / count, recall75 / count, count);
@@ -810,6 +823,6 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
 
 void backward_yolo_layer_gpu(const layer l, network_state state)
 {
-    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
+    axpy_ongpu(l.batch*l.inputs, state.net.loss_scale, l.delta_gpu, 1, state.delta, 1);
 }
 #endif

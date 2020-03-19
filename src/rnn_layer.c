@@ -196,11 +196,11 @@ void push_rnn_layer(layer l)
     push_connected_layer(*(l.output_layer));
 }
 
-void update_rnn_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_rnn_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay, float loss_scale)
 {
-    update_connected_layer_gpu(*(l.input_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.self_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.output_layer), batch, learning_rate, momentum, decay);
+    update_connected_layer_gpu(*(l.input_layer), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.self_layer), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.output_layer), batch, learning_rate, momentum, decay, loss_scale);
 }
 
 void forward_rnn_layer_gpu(layer l, network_state state)

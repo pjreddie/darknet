@@ -20,7 +20,7 @@ void update_crnn_layer(layer l, int batch, float learning_rate, float momentum, 
 #ifdef GPU
 void forward_crnn_layer_gpu(layer l, network_state state);
 void backward_crnn_layer_gpu(layer l, network_state state);
-void update_crnn_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay);
+void update_crnn_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay, float loss_scale);
 void push_crnn_layer(layer l);
 void pull_crnn_layer(layer l);
 #endif

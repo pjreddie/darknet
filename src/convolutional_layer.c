@@ -786,7 +786,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 
     if (l->activation == SWISH || l->activation == MISH) l->activation_input = (float*)realloc(l->activation_input, total_batch*l->outputs * sizeof(float));
 #ifdef GPU
-    if (old_w < w || old_h < h) {
+    if (old_w < w || old_h < h || l->dynamic_minibatch) {
         if (l->train) {
             cuda_free(l->delta_gpu);
             l->delta_gpu = cuda_make_array(l->delta, total_batch*l->outputs);

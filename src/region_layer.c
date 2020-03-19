@@ -67,7 +67,8 @@ void resize_region_layer(layer *l, int w, int h)
     l->delta = (float*)xrealloc(l->delta, l->batch * l->outputs * sizeof(float));
 
 #ifdef GPU
-    if (old_w < w || old_h < h) {
+    //if (old_w < w || old_h < h)
+    {
         cuda_free(l->delta_gpu);
         cuda_free(l->output_gpu);
 

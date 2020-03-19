@@ -206,14 +206,14 @@ void push_gru_layer(layer l)
 {
 }
 
-void update_gru_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_gru_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay, float loss_scale)
 {
-    update_connected_layer_gpu(*(l.input_r_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.input_z_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.input_h_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.state_r_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.state_z_layer), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.state_h_layer), batch, learning_rate, momentum, decay);
+    update_connected_layer_gpu(*(l.input_r_layer), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.input_z_layer), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.input_h_layer), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.state_r_layer), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.state_z_layer), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.state_h_layer), batch, learning_rate, momentum, decay, loss_scale);
 }
 
 void forward_gru_layer_gpu(layer l, network_state state)

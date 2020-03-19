@@ -791,21 +791,21 @@ void push_conv_lstm_layer(layer l)
     push_convolutional_layer(*(l.uo));
 }
 
-void update_conv_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_conv_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay, float loss_scale)
 {
     if (l.peephole) {
-        update_convolutional_layer_gpu(*(l.vf), batch, learning_rate, momentum, decay);
-        update_convolutional_layer_gpu(*(l.vi), batch, learning_rate, momentum, decay);
-        update_convolutional_layer_gpu(*(l.vo), batch, learning_rate, momentum, decay);
+        update_convolutional_layer_gpu(*(l.vf), batch, learning_rate, momentum, decay, loss_scale);
+        update_convolutional_layer_gpu(*(l.vi), batch, learning_rate, momentum, decay, loss_scale);
+        update_convolutional_layer_gpu(*(l.vo), batch, learning_rate, momentum, decay, loss_scale);
     }
-    update_convolutional_layer_gpu(*(l.wf), batch, learning_rate, momentum, decay);
-    update_convolutional_layer_gpu(*(l.wi), batch, learning_rate, momentum, decay);
-    update_convolutional_layer_gpu(*(l.wg), batch, learning_rate, momentum, decay);
-    update_convolutional_layer_gpu(*(l.wo), batch, learning_rate, momentum, decay);
-    update_convolutional_layer_gpu(*(l.uf), batch, learning_rate, momentum, decay);
-    update_convolutional_layer_gpu(*(l.ui), batch, learning_rate, momentum, decay);
-    update_convolutional_layer_gpu(*(l.ug), batch, learning_rate, momentum, decay);
-    update_convolutional_layer_gpu(*(l.uo), batch, learning_rate, momentum, decay);
+    update_convolutional_layer_gpu(*(l.wf), batch, learning_rate, momentum, decay, loss_scale);
+    update_convolutional_layer_gpu(*(l.wi), batch, learning_rate, momentum, decay, loss_scale);
+    update_convolutional_layer_gpu(*(l.wg), batch, learning_rate, momentum, decay, loss_scale);
+    update_convolutional_layer_gpu(*(l.wo), batch, learning_rate, momentum, decay, loss_scale);
+    update_convolutional_layer_gpu(*(l.uf), batch, learning_rate, momentum, decay, loss_scale);
+    update_convolutional_layer_gpu(*(l.ui), batch, learning_rate, momentum, decay, loss_scale);
+    update_convolutional_layer_gpu(*(l.ug), batch, learning_rate, momentum, decay, loss_scale);
+    update_convolutional_layer_gpu(*(l.uo), batch, learning_rate, momentum, decay, loss_scale);
 }
 
 void forward_conv_lstm_layer_gpu(layer l, network_state state)

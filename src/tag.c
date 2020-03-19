@@ -13,7 +13,10 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    if(clear) *net.seen = 0;
+    if (clear) {
+        *net.seen = 0;
+        *net.cur_iteration = 0;
+    }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
     list* plist = get_paths("tag/train.list");

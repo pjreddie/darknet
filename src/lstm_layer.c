@@ -401,16 +401,16 @@ void backward_lstm_layer(layer l, network_state state)
 }
 
 #ifdef GPU
-void update_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay)
+void update_lstm_layer_gpu(layer l, int batch, float learning_rate, float momentum, float decay, float loss_scale)
 {
-    update_connected_layer_gpu(*(l.wf), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wi), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wg), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.wo), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.uf), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.ui), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.ug), batch, learning_rate, momentum, decay);
-    update_connected_layer_gpu(*(l.uo), batch, learning_rate, momentum, decay);
+    update_connected_layer_gpu(*(l.wf), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.wi), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.wg), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.wo), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.uf), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.ui), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.ug), batch, learning_rate, momentum, decay, loss_scale);
+    update_connected_layer_gpu(*(l.uo), batch, learning_rate, momentum, decay, loss_scale);
 }
 
 void forward_lstm_layer_gpu(layer l, network_state state)

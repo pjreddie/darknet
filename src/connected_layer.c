@@ -308,8 +308,17 @@ void push_connected_layer(connected_layer l)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
-void update_connected_layer_gpu(connected_layer l, int batch, float learning_rate, float momentum, float decay)
+void update_connected_layer_gpu(connected_layer l, int batch, float learning_rate_init, float momentum, float decay, float loss_scale)
 {
+    float learning_rate = learning_rate_init * l.learning_rate_scale;
+
+    // Loss scale for Mixed-Precision on Tensor-Cores
+    if (loss_scale != 1.0) {
+        scal_ongpu(l.inputs*l.outputs, 1.0 / loss_scale, l.weight_updates_gpu, 1);
+        scal_ongpu(l.outputs, 1.0 / loss_scale, l.bias_updates_gpu, 1);
+        scal_ongpu(l.outputs, 1.0 / loss_scale, l.scale_updates_gpu, 1);
+    }
+
     axpy_ongpu(l.outputs, learning_rate/batch, l.bias_updates_gpu, 1, l.biases_gpu, 1);
     scal_ongpu(l.outputs, momentum, l.bias_updates_gpu, 1);
 
