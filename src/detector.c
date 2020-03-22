@@ -168,7 +168,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //printf(" imgs = %d \n", imgs);
 
     pthread_t load_thread = load_data(args);
+
     int count = 0;
+    double time_remaining, avg_time = -1, alpha_time = 0.01;
+
     //while(i*imgs < N*120){
     while (get_current_iteration(net) < net.max_batches) {
         if (l.random && count++ % 10 == 0) {
@@ -290,7 +293,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             if (iteration < net.burn_in * 3) fprintf(stderr, "\n Tensor Cores are disabled until the first %d iterations are reached.", 3 * net.burn_in);
             else fprintf(stderr, "\n Tensor Cores are used.");
         }
-        printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", iteration, loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), iteration*imgs);
+        printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images, %f time left\n", iteration, loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), iteration*imgs, avg_time);
 
         int draw_precision = 0;
         if (calc_map && (iteration >= next_map_calc || iteration == net.max_batches)) {
@@ -341,8 +344,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
             draw_precision = 1;
         }
+        time_remaining = (net.max_batches - iteration)*(what_time_is_it_now() - time + load_time) / 60 / 60;
+        // set initial value, even if resume training from 10000 iteration
+        if (avg_time < 0) avg_time = time_remaining;
+        else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
 #ifdef OPENCV
-        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port);
+        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port, avg_time);
 #endif    // OPENCV
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {

@@ -1063,7 +1063,7 @@ extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int 
 // ----------------------------------------
 
 extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
-    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port)
+    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port, double time_remaining)
 {
     try {
         cv::Mat &img = *(cv::Mat*)img_src;
@@ -1104,10 +1104,9 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
             old_precision = precision;
             iteration_old = current_batch;
         }
-
-        sprintf(char_buff, "current avg loss = %2.4f    iteration = %d", avg_loss, current_batch);
+        sprintf(char_buff, "current avg loss = %2.4f    iteration = %d    approx. time left = %2.2f hours", avg_loss, current_batch, time_remaining);
         pt1.x = 15, pt1.y = draw_size + 18;
-        pt2.x = pt1.x + 460, pt2.y = pt1.y + 20;
+        pt2.x = pt1.x + 800, pt2.y = pt1.y + 20;
         cv::rectangle(img, pt1, pt2, CV_RGB(255, 255, 255), CV_FILLED, 8, 0);
         pt1.y += 15;
         cv::putText(img, char_buff, pt1, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 100), 1, CV_AA);
