@@ -1143,7 +1143,7 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
 extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
     float dhue, float dsat, float dexp,
-    int blur, int num_boxes, float *truth)
+    int gaussian_noise, int blur, int num_boxes, float *truth)
 {
     image out;
     try {
@@ -1246,6 +1246,19 @@ extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
                 }
             }
             dst.copyTo(sized);
+        }
+
+        if (gaussian_noise) {
+            cv::Mat noise = cv::Mat(sized.size(), sized.type());
+            gaussian_noise = std::min(gaussian_noise, 127);
+            gaussian_noise = std::max(gaussian_noise, 0);
+            cv::randn(noise, 0, gaussian_noise);  //mean and variance
+            cv::Mat sized_norm = sized + noise;
+            //cv::normalize(sized_norm, sized_norm, 0.0, 255.0, cv::NORM_MINMAX, sized.type());
+            //cv::imshow("source", sized);
+            //cv::imshow("gaussian noise", sized_norm);
+            //cv::waitKey(0);
+            sized = sized_norm;
         }
 
         //char txt[100];

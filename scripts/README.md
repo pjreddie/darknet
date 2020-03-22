@@ -2,6 +2,10 @@
 
 ### Datasets:
 
+59.26TB of research data: http://academictorrents.com/ 
+
+ImageNet Torrent: http://academictorrents.com/browse.php?search=imagenet&page=0
+
 25 thousand datasets on Kaggle: https://www.kaggle.com/datasets
 
 BDD100K - Diverse Driving Video: https://bair.berkeley.edu/blog/2018/05/30/bdd/

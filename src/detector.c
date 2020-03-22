@@ -136,6 +136,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.threads = 64;    // 16 or 64
 
     args.angle = net.angle;
+    args.gaussian_noise = net.gaussian_noise;
     args.blur = net.blur;
     args.mixup = net.mixup;
     args.exposure = net.exposure;
