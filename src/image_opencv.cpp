@@ -1003,8 +1003,13 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
 // ====================================================================
 // Draw Loss & Accuracy chart
 // ====================================================================
-extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show)
+extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show, char* chart_path)
 {
+    if (chart_path != NULL && chart_path[0] != '\0'){
+        cv::Mat* img_ptr = new cv::Mat(cv::imread(chart_path));
+        return (mat_cv*)img_ptr;
+    }
+
     int img_offset = 60;
     int draw_size = img_size - img_offset;
     cv::Mat *img_ptr = new cv::Mat(img_size, img_size, CV_8UC3, CV_RGB(255, 255, 255));
@@ -1085,10 +1090,12 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
             if (iteration_old == 0)
                 cv::putText(img, accuracy_name, cv::Point(10, 12), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
 
-            cv::line(img,
-                cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
-                cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
-                CV_RGB(255, 0, 0), 1, 8, 0);
+	    if (iteration_old != 0){
+            	cv::line(img,
+                    cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
+                    cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
+                    CV_RGB(255, 0, 0), 1, 8, 0);
+	    }
 
             sprintf(char_buff, "%2.1f%% ", precision * 100);
             cv::putText(img, char_buff, cv::Point(10, 28), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
