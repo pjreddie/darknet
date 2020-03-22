@@ -42,6 +42,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         cuda_set_device(gpus[0]);
         printf(" Prepare additional network for mAP calculation...\n");
         net_map = parse_network_cfg_custom(cfgfile, 1, 1);
+        net_map.benchmark_layers = benchmark_layers;
         const int net_classes = net_map.layers[net_map.n - 1].classes;
 
         int k;  // free memory unnecessary arrays
