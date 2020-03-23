@@ -7,7 +7,6 @@
 #include "activations.h"
 #include "dark_cuda.h"
 
-
 __device__ float lhtan_activate_kernel(float x)
 {
     if(x < 0) return .001*x;
@@ -30,6 +29,7 @@ __device__ float linear_activate_kernel(float x){return x;}
 __device__ float logistic_activate_kernel(float x){return 1.f/(1.f + expf(-x));}
 __device__ float loggy_activate_kernel(float x){return 2.f/(1.f + expf(-x)) - 1;}
 __device__ float relu_activate_kernel(float x){return x*(x>0);}
+__device__ float relu6_activate_kernel(float x) { return min_val_cmp(max_val_cmp(x, 0), 6); }
 __device__ float elu_activate_kernel(float x){return (x >= 0)*x + (x < 0)*(expf(x)-1);}
 __device__ float selu_activate_kernel(float x) { return (x >= 0)*1.0507f*x + (x < 0)*1.0507f*1.6732f*(expf(x) - 1); }
 __device__ float relie_activate_kernel(float x){return (x>0) ? x : .01f*x;}
@@ -68,6 +68,7 @@ __device__ float loggy_gradient_kernel(float x)
     return 2*(1-y)*y;
 }
 __device__ float relu_gradient_kernel(float x){return (x>0);}
+__device__ float relu6_gradient_kernel(float x) { return (x > 0 && x < 6); }
 __device__ float elu_gradient_kernel(float x){return (x >= 0) + (x < 0)*(x + 1);}
 __device__ float selu_gradient_kernel(float x) { return (x >= 0)*1.0507f + (x < 0)*(x + 1.0507f*1.6732f); }
 __device__ float relie_gradient_kernel(float x){return (x>0) ? 1 : .01f;}
@@ -92,6 +93,8 @@ __device__ float activate_kernel(float x, ACTIVATION a)
             return loggy_activate_kernel(x);
         case RELU:
             return relu_activate_kernel(x);
+        case RELU6:
+            return relu6_activate_kernel(x);
         case ELU:
             return elu_activate_kernel(x);
         case SELU:
@@ -127,6 +130,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
         return loggy_gradient_kernel(x);
     case RELU:
         return relu_gradient_kernel(x);
+    case RELU6:
+        return relu6_gradient_kernel(x);
     case NORM_CHAN:
         return relu_gradient_kernel(x);
     case ELU:
@@ -272,6 +277,14 @@ __global__ void activate_array_relu_kernel(float *x, int n)
     }
 }
 
+__global__ void activate_array_relu6_kernel(float *x, int n)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        x[index] = relu6_activate_kernel(x[index]);
+    }
+}
+
 __global__ void gradient_array_kernel(float *x, int n, ACTIVATION a, float *delta)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -362,6 +375,14 @@ __global__ void gradient_array_relu_kernel(float *x, int n, float *delta)
     }
 }
 
+__global__ void gradient_array_relu6_kernel(float *x, int n, float *delta)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        delta[index] *= relu6_gradient_kernel(x[index]);
+    }
+}
+
 extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
@@ -371,6 +392,7 @@ extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
     else if (a == TANH) activate_array_tanh_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
     else if (a == HARDTAN) activate_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
     else if (a == RELU) activate_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == RELU6) activate_array_relu6_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
     else if (a == SELU) activate_array_selu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
     else
         activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
@@ -400,6 +422,7 @@ extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta
     else if (a == TANH) gradient_array_tanh_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == HARDTAN) gradient_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == RELU) gradient_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == RELU6) gradient_array_relu6_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     //else if (a == NORM_CHAN) gradient_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == NORM_CHAN_SOFTMAX || a == NORM_CHAN) {
         printf(" Error: should be used custom NORM_CHAN_SOFTMAX-function for gradient \n");

@@ -53,6 +53,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "normalize_channels_softmax_maxval") == 0) return NORM_CHAN_SOFTMAX_MAXVAL;
     if (strcmp(s, "loggy")==0) return LOGGY;
     if (strcmp(s, "relu")==0) return RELU;
+    if (strcmp(s, "relu6") == 0) return RELU6;
     if (strcmp(s, "elu")==0) return ELU;
     if (strcmp(s, "selu") == 0) return SELU;
     if (strcmp(s, "relie")==0) return RELIE;
