@@ -482,8 +482,9 @@ __global__ void scal_add_kernel(int N, float ALPHA, float BETA, float *X, int IN
 
 __global__ void fill_kernel(int N, float ALPHA, float *X, int INCX)
 {
-    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-    if(i < N) X[i*INCX] = ALPHA;
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index >= N) return;
+    X[index*INCX] = ALPHA;
 }
 
 __global__ void mask_kernel_new_api(int n, float *x, float mask_num, float *mask, float val)
@@ -810,7 +811,9 @@ extern "C" void supp_ongpu(int N, float ALPHA, float * X, int INCX)
 
 extern "C" void fill_ongpu(int N, float ALPHA, float * X, int INCX)
 {
-    fill_kernel<<<cuda_gridsize(N), BLOCK, 0, get_cuda_stream()>>>(N, ALPHA, X, INCX);
+    //fill_kernel<<<cuda_gridsize(N), BLOCK, 0, get_cuda_stream()>>>(N, ALPHA, X, INCX);
+    //CHECK_CUDA(cudaPeekAtLastError());
+    fill_kernel << <get_number_of_blocks(N, BLOCK), BLOCK, 0, get_cuda_stream() >> >(N, ALPHA, X, INCX);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
