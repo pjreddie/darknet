@@ -1404,7 +1404,7 @@ extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int
             cv::Size(x_size, y_size));
 
         printf(" x_start = %d, y_start = %d, x_size = %d, y_size = %d \n",
-            x_start, y_start, x_size, y_size);
+            x_start.load(), y_start.load(), x_size.load(), y_size.load());
 
         rectangle(frame, selected_rect, cv::Scalar(150, 200, 150));
         cv::imshow(window_name, frame);
