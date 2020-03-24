@@ -109,7 +109,7 @@ void blend_images_cv(image new_img, float alpha, image old_img, float beta);
 image blur_image(image src_img, int ksize);
 
 // draw objects for Adversarial attacks
-void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int num_truth, int *it_num_set, float *lr_set, int classes, char **names);
+void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int num_truth, int *it_num_set, float *lr_set, int *boxonly, int classes, char **names);
 
 // Show Anchors
 void show_acnhors(int number_of_boxes, int num_of_clusters, float *rel_width_height_array, model anchors_data, int width, int height);

@@ -232,7 +232,6 @@ void backward_network_gpu(network net, network_state state)
         printf(" x_size = %d, original_delta = %p, original_input = %p, net.learning_rate = %d \n",
             x_size, original_delta, original_input, x_size, net.learning_rate);
         axpy_ongpu(x_size, net.learning_rate, original_delta, 1, original_input, 1);
-        //axpy_ongpu(x_size, 0.1, original_delta, 1, original_input, 1);
         constrain_min_max_ongpu(x_size, 0, 1, original_input, 1);
     }
 

@@ -171,8 +171,8 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         float tw = log(truth.w*w / biases[2 * n]);
         float th = log(truth.h*h / biases[2 * n + 1]);
 
-        printf(" tx = %f, ty = %f, tw = %f, th = %f \n", tx, ty, tw, th);
-        printf(" x = %f, y = %f, w = %f, h = %f \n", x[index + 0 * stride], x[index + 1 * stride], x[index + 2 * stride], x[index + 3 * stride]);
+        //printf(" tx = %f, ty = %f, tw = %f, th = %f \n", tx, ty, tw, th);
+        //printf(" x = %f, y = %f, w = %f, h = %f \n", x[index + 0 * stride], x[index + 1 * stride], x[index + 2 * stride], x[index + 3 * stride]);
 
         // accumulate delta
         delta[index + 0 * stride] += scale * (tx - x[index + 0 * stride]) * iou_normalizer;
@@ -477,9 +477,8 @@ void forward_yolo_layer(const layer l, network_state state)
                 int class_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4 + 1);
                 delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat, l.focal_loss, l.label_smooth_eps, l.classes_multipliers);
 
-                printf(" label: class_id = %d, truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f \n", class_id, truth.x, truth.y, truth.w, truth.h);
-                printf(" mask_n = %d, l.output[obj_index] = %f, l.output[class_index + class_id] = %f \n\n", mask_n, l.output[obj_index], l.output[class_index + class_id]);
-
+                //printf(" label: class_id = %d, truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f \n", class_id, truth.x, truth.y, truth.w, truth.h);
+                //printf(" mask_n = %d, l.output[obj_index] = %f, l.output[class_index + class_id] = %f \n\n", mask_n, l.output[obj_index], l.output[class_index + class_id]);
 
                 ++count;
                 ++class_count;

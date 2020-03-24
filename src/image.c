@@ -654,6 +654,11 @@ void normalize_image2(image p)
     free(max);
 }
 
+void copy_image_inplace(image src, image dst)
+{
+    memcpy(dst.data, src.data, src.h*src.w*src.c * sizeof(float));
+}
+
 image copy_image(image p)
 {
     image copy = p;

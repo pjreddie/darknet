@@ -1709,6 +1709,8 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
         if (letter_box) sized = letterbox_image(im, net.w, net.h);
         else sized = resize_image(im, net.w, net.h);
 
+        image src_sized = copy_image(sized);
+
         layer l = net.layers[net.n - 1];
         net.num_boxes = l.max_boxes;
         int num_truth = l.truths;
@@ -1716,8 +1718,9 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
 
         int *it_num_set = (int *)xcalloc(1, sizeof(int));
         float *lr_set = (float *)xcalloc(1, sizeof(float));
+        int *boxonly = (int *)xcalloc(1, sizeof(int));
 
-        cv_draw_object(sized, truth_cpu, net.num_boxes, num_truth, it_num_set, lr_set, l.classes, names);
+        cv_draw_object(sized, truth_cpu, net.num_boxes, num_truth, it_num_set, lr_set, boxonly, l.classes, names);
 
         net.learning_rate = *lr_set;
         it_num = *it_num_set;
@@ -1736,17 +1739,6 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
         int iteration;
         for (iteration = 0; iteration < it_num; ++iteration)
         {
-            /*
-            free_network(net);
-            net = parse_network_cfg(cfgfile);// parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
-            net.learning_rate = *lr_set;
-            net.adversarial = 1;
-            set_batch_network(&net, 1);
-            if (weightfile) {
-                load_weights(&net, weightfile);
-            }
-            */
-
             if (iteration == it_num - 1) {
                 net.train = 0;
                 quantize_image(sized);
@@ -1758,55 +1750,38 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
             draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, it_num, 0, 0, "mAP%", dont_show, 0, 0);
             //quantize_image(sized);
 
+            if (*boxonly) {
+                int dw = truth_cpu[2] * sized.w, dh = truth_cpu[3] * sized.h;
+                int dx = truth_cpu[0] * sized.w - dw / 2, dy = truth_cpu[1] * sized.h - dh / 2;
+                image crop = crop_image(sized, dx, dy, dw, dh);
+                copy_image_inplace(src_sized, sized);
+                embed_image(crop, sized, dx, dy);
+            }
+
             show_image_cv(sized, "image_optimization");
             wait_key_cv(20);
-        }
-
-        {
-        int nboxes = 0;
-        detection *dets = get_network_boxes(&net, im.w, im.h, thresh, 0, 0, 1, &nboxes, letter_box);
-        if (nms) {
-            if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
-            else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
-        }
-        draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 1);
-        save_image(im, "pre_predictions");
-        if (!dont_show) {
-            show_image(im, "pre_predictions");
-        }
         }
 
         quantize_image(sized);
         save_image_png(sized, "drawn");
         //sized = load_image("drawn.png", 0, 0, net.c);
 
-        free_network(net);
-        net = parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
-        if (weightfile) {
-            load_weights(&net, weightfile);
-        }
-        net.benchmark_layers = benchmark_layers;
-
-
-        double time = get_time_point();
-        network_predict(net, X);
-        printf("%s: Predicted in %lf milli-seconds.\n", input, ((double)get_time_point() - time) / 1000);
-
         int nboxes = 0;
-        detection *dets = get_network_boxes(&net, im.w, im.h, thresh, 0, 0, 1, &nboxes, letter_box);
+        detection *dets = get_network_boxes(&net, sized.w, sized.h, thresh, 0, 0, 1, &nboxes, letter_box);
         if (nms) {
             if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
             else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
         }
-        draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 1);
-        save_image(im, "predictions");
+        draw_detections_v3(sized, dets, nboxes, thresh, names, alphabet, l.classes, 1);
+        save_image(sized, "pre_predictions");
         if (!dont_show) {
-            show_image(im, "predictions");
+            show_image(sized, "pre_predictions");
         }
 
         free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
+        free_image(src_sized);
 
         if (!dont_show) {
             wait_until_press_key_cv();

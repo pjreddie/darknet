@@ -1347,7 +1347,7 @@ void callback_mouse_click(int event, int x, int y, int flags, void* user_data)
     }
 }
 
-extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int num_truth, int *it_num_set, float *lr_set, int classes, char **names)
+extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int num_truth, int *it_num_set, float *lr_set, int *boxonly, int classes, char **names)
 {
     cv::Mat frame = image_to_mat(sized);
     if(frame.channels() == 3) cv::cvtColor(frame, frame, cv::COLOR_RGB2BGR);
@@ -1373,6 +1373,9 @@ extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int
     int cl_trackbar_value = 0;
     std::string const cl_trackbar_name = "class_id";
     int cl_tb_res = cv::createTrackbar(cl_trackbar_name, window_name, &cl_trackbar_value, classes-1);
+
+    std::string const bo_trackbar_name = "box-only";
+    int bo_tb_res = cv::createTrackbar(bo_trackbar_name, window_name, boxonly, 1);
 
     int i = 0;
 
