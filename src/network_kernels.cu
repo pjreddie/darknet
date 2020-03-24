@@ -227,6 +227,15 @@ void backward_network_gpu(network net, network_state state)
         */
     }
 
+    if (net.adversarial) {
+        int x_size = get_network_input_size(net)*net.batch;
+        printf(" x_size = %d, original_delta = %p, original_input = %p, net.learning_rate = %d \n",
+            x_size, original_delta, original_input, x_size, net.learning_rate);
+        axpy_ongpu(x_size, net.learning_rate, original_delta, 1, original_input, 1);
+        //axpy_ongpu(x_size, 0.1, original_delta, 1, original_input, 1);
+        constrain_min_max_ongpu(x_size, 0, 1, original_input, 1);
+    }
+
     if (net.benchmark_layers) {
         printf("\n\nSorted by time (backward):\n");
         qsort(sorted_avg_time_per_layer, net.n, sizeof(time_benchmark_layers), time_comparator);
@@ -272,6 +281,7 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     }
     state.input = *net.input_gpu;
     state.delta = 0;
+    if (net.adversarial) state.delta = cuda_make_array(NULL, x_size);
     state.truth = *net.truth_gpu;
     state.train = 1;
 #if defined(CUDNN_HALF) && defined(CUDNN)
@@ -311,6 +321,11 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     forward_network_gpu(net, state);
     //cudaStreamSynchronize(get_cuda_stream());
     backward_network_gpu(net, state);
+
+    if (net.adversarial) {
+        cuda_free(state.delta);
+        cuda_pull_array(*net.input_gpu, x, x_size);
+    }
 }
 
 float train_network_datum_gpu(network net, float *x, float *y)

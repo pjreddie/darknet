@@ -459,6 +459,11 @@ __global__ void constrain_kernel(int N, float ALPHA, float *X, int INCX)
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if(i < N) X[i*INCX] = fminf(ALPHA, fmaxf(-ALPHA, X[i*INCX]));
 }
+__global__ void constrain_min_max_kernel(int N, float MIN, float MAX, float *X, int INCX)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i < N) X[i*INCX] = fminf(MAX, fmaxf(MIN, X[i*INCX]));
+}
 
 __global__ void supp_kernel(int N, float ALPHA, float *X, int INCX)
 {
@@ -787,6 +792,12 @@ extern "C" void const_ongpu(int N, float ALPHA, float * X, int INCX)
 extern "C" void constrain_ongpu(int N, float ALPHA, float * X, int INCX)
 {
     constrain_kernel<<<cuda_gridsize(N), BLOCK, 0, get_cuda_stream() >>>(N, ALPHA, X, INCX);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+extern "C" void constrain_min_max_ongpu(int N, float MIN, float MAX, float * X, int INCX)
+{
+    constrain_min_max_kernel << <cuda_gridsize(N), BLOCK, 0, get_cuda_stream() >> >(N, MIN, MAX, X, INCX);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 

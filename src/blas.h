@@ -21,6 +21,7 @@ void test_blas();
 
 void const_cpu(int N, float ALPHA, float *X, int INCX);
 void constrain_ongpu(int N, float ALPHA, float * X, int INCX);
+void constrain_min_max_ongpu(int N, float MIN, float MAX, float * X, int INCX);
 void pow_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void mul_cpu(int N, float *X, int INCX, float *Y, int INCY);
 

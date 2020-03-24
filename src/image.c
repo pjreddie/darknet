@@ -1298,6 +1298,13 @@ float bilinear_interpolate(image im, float x, float y, int c)
     return val;
 }
 
+image quantize_image(image im)
+{
+    int size = im.c * im.w * im.h;
+    int i;
+    for (i = 0; i < size; ++i) im.data[i] = (int)(im.data[i] * 255) / 255. + (0.5/255);
+}
+
 image resize_image(image im, int w, int h)
 {
     if (im.w == w && im.h == h) return copy_image(im);

@@ -1292,6 +1292,8 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
     }
 }
 
+
+
 /*
 void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float learning_rate, float momentum, float decay)
 {

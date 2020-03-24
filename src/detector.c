@@ -1656,6 +1656,195 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     free_network(net);
 }
 
+#ifdef OPENCV
+
+// adversarial attack dnn
+void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int dont_show, int it_num,
+    int letter_box, int benchmark_layers)
+{
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    int names_size = 0;
+    char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
+
+    image **alphabet = load_alphabet();
+    network net = parse_network_cfg(cfgfile);// parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
+    net.adversarial = 1;
+    set_batch_network(&net, 1);
+    if (weightfile) {
+        load_weights(&net, weightfile);
+    }
+    net.benchmark_layers = benchmark_layers;
+    //fuse_conv_batchnorm(net);
+    //calculate_binary_weights(net);
+    if (net.layers[net.n - 1].classes != names_size) {
+        printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
+            name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
+        if (net.layers[net.n - 1].classes > names_size) getchar();
+    }
+
+    srand(2222222);
+    char buff[256];
+    char *input = buff;
+
+    int j;
+    float nms = .45;    // 0.4F
+    while (1) {
+        if (filename) {
+            strncpy(input, filename, 256);
+            if (strlen(input) > 0)
+                if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
+        }
+        else {
+            printf("Enter Image Path: ");
+            fflush(stdout);
+            input = fgets(input, 256, stdin);
+            if (!input) break;
+            strtok(input, "\n");
+        }
+        //image im;
+        //image sized = load_image_resize(input, net.w, net.h, net.c, &im);
+        image im = load_image(input, 0, 0, net.c);
+        image sized;
+        if (letter_box) sized = letterbox_image(im, net.w, net.h);
+        else sized = resize_image(im, net.w, net.h);
+
+        layer l = net.layers[net.n - 1];
+        net.num_boxes = l.max_boxes;
+        int num_truth = l.truths;
+        float *truth_cpu = (float *)xcalloc(num_truth, sizeof(float));
+
+        int *it_num_set = (int *)xcalloc(1, sizeof(int));
+        float *lr_set = (float *)xcalloc(1, sizeof(float));
+
+        cv_draw_object(sized, truth_cpu, net.num_boxes, num_truth, it_num_set, lr_set);
+
+        net.learning_rate = *lr_set;
+        it_num = *it_num_set;
+
+        float *X = sized.data;
+
+        mat_cv* img = NULL;
+        float max_img_loss = 5;
+        int number_of_lines = 100;
+        int img_size = 1000;
+        char windows_name[100];
+        char *base = basecfg(cfgfile);
+        sprintf(windows_name, "chart_%s.png", base);
+        img = draw_train_chart(windows_name, max_img_loss, it_num, number_of_lines, img_size, dont_show, NULL);
+
+        int iteration;
+        for (iteration = 0; iteration < it_num; ++iteration)
+        {
+            /*
+            free_network(net);
+            net = parse_network_cfg(cfgfile);// parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
+            net.learning_rate = *lr_set;
+            net.adversarial = 1;
+            set_batch_network(&net, 1);
+            if (weightfile) {
+                load_weights(&net, weightfile);
+            }
+            */
+
+            if (iteration == it_num - 1) {
+                net.train = 0;
+                quantize_image(sized);
+                network_predict(net, X);
+            }
+            else forward_backward_network_gpu(net, X, truth_cpu);
+
+            float avg_loss = get_network_cost(net);
+            draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, it_num, 0, 0, "mAP%", dont_show, 0, 0);
+            //quantize_image(sized);
+
+            show_image_cv(sized, "image_optimization");
+            wait_key_cv(20);
+        }
+
+        {
+        int nboxes = 0;
+        detection *dets = get_network_boxes(&net, im.w, im.h, thresh, 0, 0, 1, &nboxes, letter_box);
+        if (nms) {
+            if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
+            else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+        }
+        draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 1);
+        save_image(im, "pre_predictions");
+        if (!dont_show) {
+            show_image(im, "pre_predictions");
+        }
+        }
+
+        quantize_image(sized);
+        save_image_png(sized, "drawn");
+        //sized = load_image("drawn.png", 0, 0, net.c);
+
+        free_network(net);
+        net = parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
+        if (weightfile) {
+            load_weights(&net, weightfile);
+        }
+        net.benchmark_layers = benchmark_layers;
+
+
+        double time = get_time_point();
+        network_predict(net, X);
+        printf("%s: Predicted in %lf milli-seconds.\n", input, ((double)get_time_point() - time) / 1000);
+
+        int nboxes = 0;
+        detection *dets = get_network_boxes(&net, im.w, im.h, thresh, 0, 0, 1, &nboxes, letter_box);
+        if (nms) {
+            if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
+            else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+        }
+        draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 1);
+        save_image(im, "predictions");
+        if (!dont_show) {
+            show_image(im, "predictions");
+        }
+
+        free_detections(dets, nboxes);
+        free_image(im);
+        free_image(sized);
+
+        if (!dont_show) {
+            wait_until_press_key_cv();
+            destroy_all_windows_cv();
+        }
+
+        free(lr_set);
+        free(it_num_set);
+
+        if (filename) break;
+    }
+
+    // free memory
+    free_ptrs((void**)names, net.layers[net.n - 1].classes);
+    free_list_contents_kvp(options);
+    free_list(options);
+
+    int i;
+    const int nsize = 8;
+    for (j = 0; j < nsize; ++j) {
+        for (i = 32; i < 127; ++i) {
+            free_image(alphabet[j][i]);
+        }
+        free(alphabet[j]);
+    }
+    free(alphabet);
+
+    free_network(net);
+}
+#else // OPENCV
+void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int dont_show, int it_num,
+    int letter_box, int benchmark_layers)
+{
+    printf(" ./darknet detector draw ... can't be used without OpenCV! \n");
+    getchar();
+}
+#endif // OPENCV
+
 void run_detector(int argc, char **argv)
 {
     int dont_show = find_arg(argc, argv, "-dont_show");
@@ -1732,6 +1921,10 @@ void run_detector(int argc, char **argv)
     else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
     else if (0 == strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh, iou_thresh, map_points, letter_box, NULL);
     else if (0 == strcmp(argv[2], "calc_anchors")) calc_anchors(datacfg, num_of_clusters, width, height, show);
+    else if (0 == strcmp(argv[2], "draw")) {
+        int it_num = 100;
+        draw_object(datacfg, cfg, weights, filename, thresh, dont_show, it_num, letter_box, benchmark_layers);
+    }
     else if (0 == strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);

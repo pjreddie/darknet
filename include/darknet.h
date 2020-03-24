@@ -696,6 +696,7 @@ typedef struct network {
     int mixup;
     float label_smooth_eps;
     int resize_step;
+    int adversarial;
     int letter_box;
     float angle;
     float aspect;
@@ -950,6 +951,7 @@ LIB_API void optimize_picture(network *net, image orig, int max_layer, float sca
 
 // image.h
 LIB_API image resize_image(image im, int w, int h);
+LIB_API image quantize_image(image im);
 LIB_API void copy_image_from_bytes(image im, char *pdata);
 LIB_API image letterbox_image(image im, int w, int h);
 LIB_API void rgbgr_image(image im);
