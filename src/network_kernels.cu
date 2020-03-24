@@ -281,7 +281,10 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     }
     state.input = *net.input_gpu;
     state.delta = 0;
-    if (net.adversarial) state.delta = cuda_make_array(NULL, x_size);
+    if (net.adversarial) {
+        state.train = 0;
+        state.delta = cuda_make_array(NULL, x_size);
+    }
     state.truth = *net.truth_gpu;
     state.train = 1;
 #if defined(CUDNN_HALF) && defined(CUDNN)

@@ -1656,7 +1656,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     free_network(net);
 }
 
-#ifdef OPENCV
+#if defined(OPENCV) && defined(GPU)
 
 // adversarial attack dnn
 void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int dont_show, int it_num,
@@ -1675,7 +1675,7 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
         load_weights(&net, weightfile);
     }
     net.benchmark_layers = benchmark_layers;
-    //fuse_conv_batchnorm(net);
+    fuse_conv_batchnorm(net);
     //calculate_binary_weights(net);
     if (net.layers[net.n - 1].classes != names_size) {
         printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
@@ -1717,7 +1717,7 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
         int *it_num_set = (int *)xcalloc(1, sizeof(int));
         float *lr_set = (float *)xcalloc(1, sizeof(float));
 
-        cv_draw_object(sized, truth_cpu, net.num_boxes, num_truth, it_num_set, lr_set);
+        cv_draw_object(sized, truth_cpu, net.num_boxes, num_truth, it_num_set, lr_set, l.classes, names);
 
         net.learning_rate = *lr_set;
         it_num = *it_num_set;
@@ -1836,14 +1836,14 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
 
     free_network(net);
 }
-#else // OPENCV
+#else // defined(OPENCV) && defined(GPU)
 void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int dont_show, int it_num,
     int letter_box, int benchmark_layers)
 {
-    printf(" ./darknet detector draw ... can't be used without OpenCV! \n");
+    printf(" ./darknet detector draw ... can't be used without OpenCV and CUDA! \n");
     getchar();
 }
-#endif // OPENCV
+#endif // defined(OPENCV) && defined(GPU)
 
 void run_detector(int argc, char **argv)
 {

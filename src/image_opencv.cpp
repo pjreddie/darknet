@@ -1347,7 +1347,7 @@ void callback_mouse_click(int event, int x, int y, int flags, void* user_data)
     }
 }
 
-extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int num_truth, int *it_num_set, float *lr_set)
+extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int num_truth, int *it_num_set, float *lr_set, int classes, char **names)
 {
     cv::Mat frame = image_to_mat(sized);
     if(frame.channels() == 3) cv::cvtColor(frame, frame, cv::COLOR_RGB2BGR);
@@ -1366,12 +1366,15 @@ extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int
     std::string const it_trackbar_name = "iterations";
     int it_tb_res = cv::createTrackbar(it_trackbar_name, window_name, &it_trackbar_value, 1000);
 
-    int lr_trackbar_value = 3;
+    int lr_trackbar_value = 12;
     std::string const lr_trackbar_name = "learning_rate exp";
     int lr_tb_res = cv::createTrackbar(lr_trackbar_name, window_name, &lr_trackbar_value, 20);
 
+    int cl_trackbar_value = 0;
+    std::string const cl_trackbar_name = "class_id";
+    int cl_tb_res = cv::createTrackbar(cl_trackbar_name, window_name, &cl_trackbar_value, classes-1);
+
     int i = 0;
-    int id = 0;
 
     while (!selected) {
 #ifndef CV_VERSION_EPOCH
@@ -1383,8 +1386,17 @@ extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int
 
         frame_clone = frame.clone();
         char buff[100];
-        std::string lr_value = "learning_rage = " + std::to_string(1.0 / pow(2, lr_trackbar_value));
-        cv::putText(frame_clone, lr_value, cv::Point2i(20, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(100, 50, 50), 2);
+        std::string lr_value = "learning_rate = " + std::to_string(1.0 / pow(2, lr_trackbar_value));
+        cv::putText(frame_clone, lr_value, cv::Point2i(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(10, 50, 10), 3);
+        cv::putText(frame_clone, lr_value, cv::Point2i(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(20, 120, 60), 2);
+        cv::putText(frame_clone, lr_value, cv::Point2i(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(50, 200, 100), 1);
+
+        if (names) {
+            std::string obj_name = names[cl_trackbar_value];
+            cv::putText(frame_clone, obj_name, cv::Point2i(10, 40), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(10, 50, 10), 3);
+            cv::putText(frame_clone, obj_name, cv::Point2i(10, 40), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(20, 120, 60), 2);
+            cv::putText(frame_clone, obj_name, cv::Point2i(10, 40), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(50, 200, 100), 1);
+        }
 
         if (draw_select) {
              cv::Rect selected_rect(
@@ -1422,7 +1434,7 @@ extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int
         truth_cpu[i * 5 + 1] = relative_center_y;
         truth_cpu[i * 5 + 2] = relative_width;
         truth_cpu[i * 5 + 3] = relative_height;
-        truth_cpu[i * 5 + 4] = id;
+        truth_cpu[i * 5 + 4] = cl_trackbar_value;
     }
 
     *it_num_set = it_trackbar_value;
