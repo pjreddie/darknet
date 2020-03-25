@@ -1739,16 +1739,10 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
         int iteration;
         for (iteration = 0; iteration < it_num; ++iteration)
         {
-            if (iteration == it_num - 1) {
-                net.train = 0;
-                quantize_image(sized);
-                network_predict(net, X);
-            }
-            else forward_backward_network_gpu(net, X, truth_cpu);
+            forward_backward_network_gpu(net, X, truth_cpu);
 
             float avg_loss = get_network_cost(net);
             draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, it_num, 0, 0, "mAP%", dont_show, 0, 0);
-            //quantize_image(sized);
 
             if (*boxonly) {
                 int dw = truth_cpu[2] * sized.w, dh = truth_cpu[3] * sized.h;
@@ -1762,7 +1756,10 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
             wait_key_cv(20);
         }
 
+        net.train = 0;
         quantize_image(sized);
+        network_predict(net, X);
+
         save_image_png(sized, "drawn");
         //sized = load_image("drawn.png", 0, 0, net.c);
 
