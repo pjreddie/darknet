@@ -1744,6 +1744,9 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
             float avg_loss = get_network_cost(net);
             draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, it_num, 0, 0, "mAP%", dont_show, 0, 0);
 
+            float inv_loss = 1.0 / max_val_cmp(0.01, avg_loss);
+            //net.learning_rate = *lr_set * inv_loss;
+
             if (*boxonly) {
                 int dw = truth_cpu[2] * sized.w, dh = truth_cpu[3] * sized.h;
                 int dx = truth_cpu[0] * sized.w - dw / 2, dy = truth_cpu[1] * sized.h - dh / 2;

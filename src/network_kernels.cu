@@ -227,6 +227,49 @@ void backward_network_gpu(network net, network_state state)
         */
     }
 
+    if (net.adversarial && net.attention)
+    {
+        int img_size = net.w * net.h * net.c;
+        float *original_input_cpu = (float *)xcalloc(img_size, sizeof(float));
+        float *original_delta_cpu = (float *)xcalloc(img_size, sizeof(float));
+        cuda_pull_array(original_input, original_input_cpu, img_size);
+        cuda_pull_array(original_delta, original_delta_cpu, img_size);
+
+        image attention_img;
+        attention_img.w = net.w;
+        attention_img.h = net.h;
+        attention_img.c = net.c;
+        attention_img.data = original_delta_cpu;
+        int k;
+        float min_val = 999999, mean_val = 0, max_val = -999999;
+        for (k = 0; k < img_size; ++k) {
+            if (original_delta_cpu[k] < min_val) min_val = original_delta_cpu[k];
+            if (original_delta_cpu[k] > max_val) max_val = original_delta_cpu[k];
+            mean_val += original_delta_cpu[k];
+        }
+        mean_val = mean_val / img_size;
+        float range = max_val - min_val;
+
+        for (k = 0; k < img_size; ++k) {
+            float val = original_delta_cpu[k];
+            val = fabs(mean_val - val) / range;
+            original_delta_cpu[k] = val * 4;
+        }
+
+        image resized = resize_image(attention_img, net.w/4, net.w/4);
+        attention_img = resize_image(resized, net.w, net.w);
+
+        for (k = 0; k < img_size; ++k) attention_img.data[k] += original_input_cpu[k];
+
+        //normalize_image(attention_img);
+        show_image(attention_img, "delta");
+
+        free_image(resized);
+        free_image(attention_img);
+
+        free(original_input_cpu);
+        free(original_delta_cpu);
+    }
     if (net.adversarial) {
         int x_size = get_network_input_size(net)*net.batch;
         printf(" x_size = %d, original_delta = %p, original_input = %p, net.learning_rate = %d \n",
@@ -333,12 +376,14 @@ void forward_backward_network_gpu(network net, float *x, float *y)
 float train_network_datum_gpu(network net, float *x, float *y)
 {
     *net.seen += net.batch;
-    if (net.adversarial_lr && rand_int(0, 1) == 1 && get_current_iteration(net) > net.burn_in) {
+    if (net.adversarial_lr && rand_int(0, 1) == 1) {// && get_current_iteration(net) > net.burn_in) {
         net.adversarial = 1;
         float lr_old = net.learning_rate;
         net.learning_rate = net.adversarial_lr;
         layer l = net.layers[net.n - 1];
-        float *truth_cpu = (float *)xcalloc(l.truths * l.batch, sizeof(float));
+        int y_size = get_network_output_size(net)*net.batch;
+        if (net.layers[net.n - 1].truths) y_size = net.layers[net.n - 1].truths*net.batch;
+        float *truth_cpu = (float *)xcalloc(y_size, sizeof(float));
 
         printf("\n adversarial training, adversarial_lr = %f \n", net.adversarial_lr);
 

@@ -696,7 +696,8 @@ typedef struct network {
     int mixup;
     float label_smooth_eps;
     int resize_step;
-    int adversarial;
+    int attention;
+    int adversarial;    
     float adversarial_lr;
     int letter_box;
     float angle;
