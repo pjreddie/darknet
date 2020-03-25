@@ -235,36 +235,9 @@ void backward_network_gpu(network net, network_state state)
         cuda_pull_array(original_input, original_input_cpu, img_size);
         cuda_pull_array(original_delta, original_delta_cpu, img_size);
 
-        image attention_img;
-        attention_img.w = net.w;
-        attention_img.h = net.h;
-        attention_img.c = net.c;
-        attention_img.data = original_delta_cpu;
-        int k;
-        float min_val = 999999, mean_val = 0, max_val = -999999;
-        for (k = 0; k < img_size; ++k) {
-            if (original_delta_cpu[k] < min_val) min_val = original_delta_cpu[k];
-            if (original_delta_cpu[k] > max_val) max_val = original_delta_cpu[k];
-            mean_val += original_delta_cpu[k];
-        }
-        mean_val = mean_val / img_size;
-        float range = max_val - min_val;
+        image attention_img = make_attention_image(img_size, original_delta_cpu, original_input_cpu, net.w, net.h, net.c);
+        show_image(attention_img, "attention_img");
 
-        for (k = 0; k < img_size; ++k) {
-            float val = original_delta_cpu[k];
-            val = fabs(mean_val - val) / range;
-            original_delta_cpu[k] = val * 4;
-        }
-
-        image resized = resize_image(attention_img, net.w/4, net.w/4);
-        attention_img = resize_image(resized, net.w, net.w);
-
-        for (k = 0; k < img_size; ++k) attention_img.data[k] += original_input_cpu[k];
-
-        //normalize_image(attention_img);
-        show_image(attention_img, "delta");
-
-        free_image(resized);
         free_image(attention_img);
 
         free(original_input_cpu);
@@ -376,7 +349,7 @@ void forward_backward_network_gpu(network net, float *x, float *y)
 float train_network_datum_gpu(network net, float *x, float *y)
 {
     *net.seen += net.batch;
-    if (net.adversarial_lr && rand_int(0, 1) == 1) {// && get_current_iteration(net) > net.burn_in) {
+    if (net.adversarial_lr && rand_int(0, 1) == 1 && get_current_iteration(net) > net.burn_in) {
         net.adversarial = 1;
         float lr_old = net.learning_rate;
         net.learning_rate = net.adversarial_lr;
