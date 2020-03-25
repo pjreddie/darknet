@@ -1675,7 +1675,7 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
         load_weights(&net, weightfile);
     }
     net.benchmark_layers = benchmark_layers;
-    fuse_conv_batchnorm(net);
+    //fuse_conv_batchnorm(net);
     //calculate_binary_weights(net);
     if (net.layers[net.n - 1].classes != names_size) {
         printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",

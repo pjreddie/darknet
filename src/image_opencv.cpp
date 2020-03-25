@@ -1362,11 +1362,11 @@ extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int
     cv::setMouseCallback(window_name, callback_mouse_click);
 
 
-    int it_trackbar_value = 50;
+    int it_trackbar_value = 200;
     std::string const it_trackbar_name = "iterations";
     int it_tb_res = cv::createTrackbar(it_trackbar_name, window_name, &it_trackbar_value, 1000);
 
-    int lr_trackbar_value = 12;
+    int lr_trackbar_value = 10;
     std::string const lr_trackbar_name = "learning_rate exp";
     int lr_tb_res = cv::createTrackbar(lr_trackbar_name, window_name, &lr_trackbar_value, 20);
 

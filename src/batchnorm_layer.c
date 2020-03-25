@@ -231,23 +231,30 @@ void update_batchnorm_layer(layer l, int batch, float learning_rate, float momen
 
 void pull_batchnorm_layer(layer l)
 {
-    cuda_pull_array(l.biases_gpu, l.biases, l.c);
-    cuda_pull_array(l.scales_gpu, l.scales, l.c);
-    cuda_pull_array(l.rolling_mean_gpu, l.rolling_mean, l.c);
-    cuda_pull_array(l.rolling_variance_gpu, l.rolling_variance, l.c);
+    cuda_pull_array(l.biases_gpu, l.biases, l.out_c);
+    cuda_pull_array(l.scales_gpu, l.scales, l.out_c);
+    cuda_pull_array(l.rolling_mean_gpu, l.rolling_mean, l.out_c);
+    cuda_pull_array(l.rolling_variance_gpu, l.rolling_variance, l.out_c);
 }
 void push_batchnorm_layer(layer l)
 {
-    cuda_push_array(l.biases_gpu, l.biases, l.c);
-    cuda_push_array(l.scales_gpu, l.scales, l.c);
-    cuda_push_array(l.rolling_mean_gpu, l.rolling_mean, l.c);
-    cuda_push_array(l.rolling_variance_gpu, l.rolling_variance, l.c);
+    cuda_push_array(l.biases_gpu, l.biases, l.out_c);
+    cuda_push_array(l.scales_gpu, l.scales, l.out_c);
+    cuda_push_array(l.rolling_mean_gpu, l.rolling_mean, l.out_c);
+    cuda_push_array(l.rolling_variance_gpu, l.rolling_variance, l.out_c);
 }
 
 void forward_batchnorm_layer_gpu(layer l, network_state state)
 {
     if (l.type == BATCHNORM) simple_copy_ongpu(l.outputs*l.batch, state.input, l.output_gpu);
         //copy_ongpu(l.outputs*l.batch, state.input, 1, l.output_gpu, 1);
+
+    if (state.net.adversarial) {
+        normalize_gpu(l.output_gpu, l.rolling_mean_gpu, l.rolling_variance_gpu, l.batch, l.out_c, l.out_h*l.out_w);
+        scale_bias_gpu(l.output_gpu, l.scales_gpu, l.batch, l.out_c, l.out_h*l.out_w);
+        add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.out_c, l.out_w*l.out_h);
+        return;
+    }
 
     if (state.train) {
         simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.x_gpu);
@@ -339,9 +346,23 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
 
 void backward_batchnorm_layer_gpu(layer l, network_state state)
 {
+    if (state.net.adversarial) {
+        inverse_variance_ongpu(l.out_c, l.rolling_variance_gpu, l.variance_gpu, 0.00001);
+
+        scale_bias_gpu(l.delta_gpu, l.variance_gpu, l.batch, l.out_c, l.out_h*l.out_w);
+        scale_bias_gpu(l.delta_gpu, l.scales_gpu, l.batch, l.out_c, l.out_h*l.out_w);
+        return;
+    }
+
     if (!state.train) {
-        l.mean_gpu = l.rolling_mean_gpu;
-        l.variance_gpu = l.rolling_variance_gpu;
+        //l.mean_gpu = l.rolling_mean_gpu;
+        //l.variance_gpu = l.rolling_variance_gpu;
+        simple_copy_ongpu(l.out_c, l.rolling_mean_gpu, l.mean_gpu);
+#ifdef CUDNN
+        inverse_variance_ongpu(l.out_c, l.rolling_variance_gpu, l.variance_gpu, 0.00001);
+#else
+        simple_copy_ongpu(l.out_c, l.rolling_variance_gpu, l.variance_gpu);
+#endif
     }
 
 #ifdef CUDNN

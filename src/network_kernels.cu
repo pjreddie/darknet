@@ -333,6 +333,28 @@ void forward_backward_network_gpu(network net, float *x, float *y)
 float train_network_datum_gpu(network net, float *x, float *y)
 {
     *net.seen += net.batch;
+    if (net.adversarial_lr && rand_int(0, 1) == 1 && get_current_iteration(net) > net.burn_in) {
+        net.adversarial = 1;
+        float lr_old = net.learning_rate;
+        net.learning_rate = net.adversarial_lr;
+        layer l = net.layers[net.n - 1];
+        float *truth_cpu = (float *)xcalloc(l.truths * l.batch, sizeof(float));
+
+        printf("\n adversarial training, adversarial_lr = %f \n", net.adversarial_lr);
+
+        forward_backward_network_gpu(net, x, truth_cpu);
+
+        image im;
+        im.w = net.w;
+        im.h = net.h;
+        im.c = net.c;
+        im.data = x;
+        //show_image(im, "adversarial data augmentation");
+
+        free(truth_cpu);
+        net.learning_rate = lr_old;
+        net.adversarial = 0;
+    }
     forward_backward_network_gpu(net, x, y);
     float error = get_network_cost(net);
     //if (((*net.seen) / net.batch) % net.subdivisions == 0) update_network_gpu(net);

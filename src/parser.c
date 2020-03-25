@@ -1086,7 +1086,8 @@ void parse_net_options(list *options, network *net)
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
     net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     net->resize_step = option_find_float_quiet(options, "resize_step", 32);
-    net->adversarial = option_find_int_quiet(options, "adversarial", 0);
+    //net->adversarial = option_find_int_quiet(options, "adversarial", 0);
+    net->adversarial_lr = option_find_float_quiet(options, "adversarial_lr", 0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);

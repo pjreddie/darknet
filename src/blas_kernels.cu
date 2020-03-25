@@ -641,9 +641,9 @@ __global__ void  fast_v_cbn_kernel(const float *x, float *mean, int batch, int f
 
         //if (max_minibatch_index == minibatch_index)
         {
-            rolling_mean_gpu[filter] = alpha * mean[filter] + (1 - alpha) * rolling_mean_gpu[filter];
+            if(rolling_mean_gpu) rolling_mean_gpu[filter] = alpha * mean[filter] + (1 - alpha) * rolling_mean_gpu[filter];
 
-            rolling_variance_gpu[filter] = alpha * variance_tmp + (1 - alpha) * rolling_variance_gpu[filter];
+            if(rolling_variance_gpu) rolling_variance_gpu[filter] = alpha * variance_tmp + (1 - alpha) * rolling_variance_gpu[filter];
         }
     }
 }
@@ -655,6 +655,19 @@ extern "C" void fast_v_cbn_gpu(const float *x, float *mean, int batch, int filte
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
+__global__ void inverse_variance_kernel(int size, float *src, float *dst, float epsilon)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < size)
+        dst[index] = 1.0f / sqrtf(src[index] + epsilon);
+}
+
+extern "C" void inverse_variance_ongpu(int size, float *src, float *dst, float epsilon)
+{
+    const int num_blocks = size / BLOCK + 1;
+    inverse_variance_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(size, src, dst, epsilon);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
 
 __global__ void normalize_scale_bias_kernel(int N, float *x, float *mean, float *variance, float *scales, float *biases, int batch, int filters, int spatial, int inverse_variance, float epsilon)
 {
