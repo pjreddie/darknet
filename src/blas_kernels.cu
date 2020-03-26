@@ -1034,7 +1034,7 @@ __global__ void backward_shortcut_multilayer_kernel(int size, int src_outputs, i
 
                 const int weights_index = src_i / step + (i + 1)*layer_step;  // [0 or c or (c, h ,w)]
                 float w = weights_gpu[weights_index];
-                if (weights_normalizion == RELU_NORMALIZATION) w = relu(w) / sum;
+                if (weights_normalizion == RELU_NORMALIZATION) w = lrelu(w) / sum;
                 else if (weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w - max_val) / sum;
 
                 if (weights_normalizion == RELU_NORMALIZATION) grad = w;
