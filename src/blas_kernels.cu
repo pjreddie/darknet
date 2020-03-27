@@ -852,6 +852,15 @@ __device__ float lrelu(float src) {
     return eps;
 }
 
+__device__ float grad_relu(float src) {
+    return (src > 0);
+}
+
+__device__ float grad_lrelu(float src) {
+    const float eps = 0.001;
+    return (src > eps);
+}
+
 __global__ void shortcut_singlelayer_simple_kernel(int size, int src_outputs, int batch, int n, int *outputs_of_layers_gpu, float **layers_output_gpu, float *out, float *in, float *weights_gpu, int nweights, WEIGHTS_NORMALIZATION_T weights_normalizion)
 {
     const int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;

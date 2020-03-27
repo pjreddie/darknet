@@ -492,6 +492,18 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                     if (best_match_iou > l.ignore_thresh) {
                         l.delta[obj_index] = 0;
                     }
+                    else if (state.net.adversarial) {
+                        int class_index = entry_gaussian_index(l, b, n*l.w*l.h + j*l.w + i, 9);
+                        int stride = l.w*l.h;
+                        float scale = pred.w * pred.h;
+                        if (scale > 0) scale = sqrt(scale);
+                        l.delta[obj_index] = scale * l.cls_normalizer * (0 - l.output[obj_index]);
+                        int cl_id;
+                        for (cl_id = 0; cl_id < l.classes; ++cl_id) {
+                            if (l.output[class_index + stride*cl_id] * l.output[obj_index] > 0.25)
+                                l.delta[class_index + stride*cl_id] = scale * (0 - l.output[class_index + stride*cl_id]);
+                        }
+                    }
                     if (best_iou > l.truth_thresh) {
                         l.delta[obj_index] = l.cls_normalizer * (1 - l.output[obj_index]);
 
