@@ -1096,6 +1096,8 @@ void parse_net_options(list *options, network *net)
     net->hue = option_find_float_quiet(options, "hue", 0);
     net->power = option_find_float_quiet(options, "power", 4);
 
+    const int show_receptive_field = option_find_float_quiet(options, "show_receptive_field", 0);
+
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
 
     char *policy_s = option_find_str(options, "policy", "constant");
@@ -1218,6 +1220,9 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     size_t workspace_size = 0;
     size_t max_inputs = 0;
     size_t max_outputs = 0;
+    int receptive_w = 1, receptive_h = 1;
+    int receptive_w_scale = 1, receptive_h_scale = 1;
+
     n = n->next;
     int count = 0;
     free_section(s);
@@ -1330,6 +1335,58 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 #endif
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
+        }
+
+        // calculate receptive field
+        if(show_receptive_field)
+        {
+            int dilation = max_val_cmp(1, l.dilation);
+            int stride = max_val_cmp(1, l.stride);
+            int size = max_val_cmp(1, l.size);
+
+            if (l.type == UPSAMPLE || (l.type == REORG))
+            {
+
+                l.receptive_w = receptive_w;
+                l.receptive_h = receptive_h;
+                l.receptive_w_scale = receptive_w_scale = receptive_w_scale / stride;
+                l.receptive_h_scale = receptive_h_scale = receptive_h_scale / stride;
+
+            }
+            else {
+                if (l.type == ROUTE) {
+                    receptive_w = receptive_h = receptive_w_scale = receptive_h_scale = 0;
+                    int k;
+                    for (k = 0; k < l.n; ++k) {
+                        layer route_l = net.layers[l.input_layers[k]];
+                        receptive_w = max_val_cmp(receptive_w, route_l.receptive_w);
+                        receptive_h = max_val_cmp(receptive_h, route_l.receptive_h);
+                        receptive_w_scale = max_val_cmp(receptive_w_scale, route_l.receptive_w_scale);
+                        receptive_h_scale = max_val_cmp(receptive_h_scale, route_l.receptive_h_scale);
+                    }
+                }
+                else
+                {
+                    int increase_receptive = size + (dilation - 1) * 2 - 1;// stride;
+                    increase_receptive = max_val_cmp(0, increase_receptive);
+
+                    receptive_w += increase_receptive * receptive_w_scale;
+                    receptive_h += increase_receptive * receptive_h_scale;
+                    receptive_w_scale *= stride;
+                    receptive_h_scale *= stride;
+                }
+
+                l.receptive_w = receptive_w;
+                l.receptive_h = receptive_h;
+                l.receptive_w_scale = receptive_w_scale;
+                l.receptive_h_scale = receptive_h_scale;
+            }
+            //printf(" size = %d, dilation = %d, stride = %d, receptive_w = %d, receptive_w_scale = %d - ", size, dilation, stride, receptive_w, receptive_w_scale);
+
+            int cur_receptive_w = receptive_w;
+            int cur_receptive_h = receptive_h;
+
+            fprintf(stderr, "%4d - receptive field: %d x %d \n", count, cur_receptive_w, cur_receptive_h);
         }
 
 #ifdef GPU

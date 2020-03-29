@@ -338,6 +338,11 @@ struct layer {
     int dropblock;
     float scale;
 
+    int receptive_w;
+    int receptive_h;
+    int receptive_w_scale;
+    int receptive_h_scale;
+
     char  * cweights;
     int   * indexes;
     int   * input_layers;
