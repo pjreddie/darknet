@@ -1096,8 +1096,6 @@ void parse_net_options(list *options, network *net)
     net->hue = option_find_float_quiet(options, "hue", 0);
     net->power = option_find_float_quiet(options, "power", 4);
 
-    const int show_receptive_field = option_find_float_quiet(options, "show_receptive_field", 0);
-
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
 
     char *policy_s = option_find_str(options, "policy", "constant");
@@ -1222,6 +1220,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     size_t max_outputs = 0;
     int receptive_w = 1, receptive_h = 1;
     int receptive_w_scale = 1, receptive_h_scale = 1;
+    const int show_receptive_field = option_find_float_quiet(options, "show_receptive_field", 0);
 
     n = n->next;
     int count = 0;
