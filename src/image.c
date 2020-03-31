@@ -1303,7 +1303,7 @@ float bilinear_interpolate(image im, float x, float y, int c)
     return val;
 }
 
-image quantize_image(image im)
+void quantize_image(image im)
 {
     int size = im.c * im.w * im.h;
     int i;
