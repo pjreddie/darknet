@@ -192,7 +192,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         if (avg_time < 0) avg_time = time_remaining;
         else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
         start = what_time_is_it_now();
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images, %f time left\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen, avg_time);
+        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images, %f hours left\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen, avg_time);
 #ifdef OPENCV
         if (!dontuse_opencv) draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, topk_buff, dont_show, mjpeg_port, avg_time);
 #endif  // OPENCV
