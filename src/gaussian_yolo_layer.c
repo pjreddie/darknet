@@ -582,7 +582,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                     box pred = { 0 };
                     pred.w = l.biases[2 * n] / state.net.w;
                     pred.h = l.biases[2 * n + 1] / state.net.h;
-                    float iou = box_iou(pred, truth_shift);
+                    float iou = box_iou_kind(pred, truth_shift, l.iou_thresh_kind); // IOU, GIOU, MSE, DIOU, CIOU
                     // iou, n
 
                     if (iou > l.iou_thresh) {

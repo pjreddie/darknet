@@ -384,6 +384,7 @@ struct layer {
     float iou_normalizer;
     float cls_normalizer;
     IOU_LOSS iou_loss;
+    IOU_LOSS iou_thresh_kind;
     NMS_KIND nms_kind;
     float beta_nms;
     YOLO_POINT yolo_point;

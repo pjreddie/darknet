@@ -426,6 +426,16 @@ layer parse_yolo(list *options, size_params params)
     fprintf(stderr, "[yolo] params: iou loss: %s (%d), iou_norm: %2.2f, cls_norm: %2.2f, scale_x_y: %2.2f\n",
         iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
 
+    char *iou_thresh_kind_str = option_find_str_quiet(options, "iou_thresh_kind", "iou");
+    if (strcmp(iou_loss, "IOU") == 0) l.iou_thresh_kind = IOU;
+    else if (strcmp(iou_loss, "giou") == 0) l.iou_thresh_kind = GIOU;
+    else if (strcmp(iou_loss, "diou") == 0) l.iou_thresh_kind = DIOU;
+    else if (strcmp(iou_loss, "ciou") == 0) l.iou_thresh_kind = CIOU;
+    else {
+        fprintf(stderr, " Wrong iou_thresh_kind = %s \n", iou_thresh_kind_str);
+        l.iou_thresh_kind = IOU;
+    }
+
     l.beta_nms = option_find_float_quiet(options, "beta_nms", 0.6);
     char *nms_kind = option_find_str_quiet(options, "nms_kind", "default");
     if (strcmp(nms_kind, "default") == 0) l.nms_kind = DEFAULT_NMS;
@@ -520,6 +530,16 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     else if (strcmp(iou_loss, "diou") == 0) l.iou_loss = DIOU;
     else if (strcmp(iou_loss, "ciou") == 0) l.iou_loss = CIOU;
     else l.iou_loss = IOU;
+
+    char *iou_thresh_kind_str = option_find_str_quiet(options, "iou_thresh_kind", "iou");
+    if (strcmp(iou_loss, "IOU") == 0) l.iou_thresh_kind = IOU;
+    else if (strcmp(iou_loss, "giou") == 0) l.iou_thresh_kind = GIOU;
+    else if (strcmp(iou_loss, "diou") == 0) l.iou_thresh_kind = DIOU;
+    else if (strcmp(iou_loss, "ciou") == 0) l.iou_thresh_kind = CIOU;
+    else {
+        fprintf(stderr, " Wrong iou_thresh_kind = %s \n", iou_thresh_kind_str);
+        l.iou_thresh_kind = IOU;
+    }
 
     l.beta_nms = option_find_float_quiet(options, "beta_nms", 0.6);
     char *nms_kind = option_find_str_quiet(options, "nms_kind", "default");

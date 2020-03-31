@@ -33,6 +33,7 @@ extern "C" {
 box float_to_box(float *f);
 box float_to_box_stride(float *f, int stride);
 float box_iou(box a, box b);
+float box_iou_kind(box a, box b, IOU_LOSS iou_kind);
 float box_rmse(box a, box b);
 dxrep dx_box_iou(box a, box b, IOU_LOSS iou_loss);
 float box_giou(box a, box b);
