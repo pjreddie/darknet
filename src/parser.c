@@ -1723,7 +1723,7 @@ void save_weights_upto(network net, char *filename, int cutoff)
     fwrite(&major, sizeof(int), 1, fp);
     fwrite(&minor, sizeof(int), 1, fp);
     fwrite(&revision, sizeof(int), 1, fp);
-    //(*net.seen) = (*net.cur_iteration) * net.batch * net.subdivisions;
+    (*net.seen) = get_current_iteration(net) * net.batch * net.subdivisions; // remove this line, when you will save to weights-file both: seen & cur_iteration
     fwrite(net.seen, sizeof(uint64_t), 1, fp);
 
     int i;
