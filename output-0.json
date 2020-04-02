@@ -1,0 +1,12 @@
+{
+   "person 1": {
+     "head_color": "Dark Green",
+     "upper_body_color": "Dark Green",
+     "bottom_body_color": "Gray"
+   },
+   "person 2": {
+     "head_color": "Black",
+     "upper_body_color": "Black",
+     "bottom_body_color": "Dark Red"
+   }
+ }
