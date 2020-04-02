@@ -427,10 +427,10 @@ layer parse_yolo(list *options, size_params params)
         iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
 
     char *iou_thresh_kind_str = option_find_str_quiet(options, "iou_thresh_kind", "iou");
-    if (strcmp(iou_loss, "IOU") == 0) l.iou_thresh_kind = IOU;
-    else if (strcmp(iou_loss, "giou") == 0) l.iou_thresh_kind = GIOU;
-    else if (strcmp(iou_loss, "diou") == 0) l.iou_thresh_kind = DIOU;
-    else if (strcmp(iou_loss, "ciou") == 0) l.iou_thresh_kind = CIOU;
+    if (strcmp(iou_thresh_kind_str, "iou") == 0) l.iou_thresh_kind = IOU;
+    else if (strcmp(iou_thresh_kind_str, "giou") == 0) l.iou_thresh_kind = GIOU;
+    else if (strcmp(iou_thresh_kind_str, "diou") == 0) l.iou_thresh_kind = DIOU;
+    else if (strcmp(iou_thresh_kind_str, "ciou") == 0) l.iou_thresh_kind = CIOU;
     else {
         fprintf(stderr, " Wrong iou_thresh_kind = %s \n", iou_thresh_kind_str);
         l.iou_thresh_kind = IOU;
@@ -532,10 +532,10 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     else l.iou_loss = IOU;
 
     char *iou_thresh_kind_str = option_find_str_quiet(options, "iou_thresh_kind", "iou");
-    if (strcmp(iou_loss, "IOU") == 0) l.iou_thresh_kind = IOU;
-    else if (strcmp(iou_loss, "giou") == 0) l.iou_thresh_kind = GIOU;
-    else if (strcmp(iou_loss, "diou") == 0) l.iou_thresh_kind = DIOU;
-    else if (strcmp(iou_loss, "ciou") == 0) l.iou_thresh_kind = CIOU;
+    if (strcmp(iou_thresh_kind_str, "iou") == 0) l.iou_thresh_kind = IOU;
+    else if (strcmp(iou_thresh_kind_str, "giou") == 0) l.iou_thresh_kind = GIOU;
+    else if (strcmp(iou_thresh_kind_str, "diou") == 0) l.iou_thresh_kind = DIOU;
+    else if (strcmp(iou_thresh_kind_str, "ciou") == 0) l.iou_thresh_kind = CIOU;
     else {
         fprintf(stderr, " Wrong iou_thresh_kind = %s \n", iou_thresh_kind_str);
         l.iou_thresh_kind = IOU;
@@ -1234,6 +1234,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     printf("mini_batch = %d, batch = %d, time_steps = %d, train = %d \n", net.batch, net.batch * net.subdivisions, net.time_steps, params.train);
 
     int avg_outputs = 0;
+    int avg_counter = 0;
     float bflops = 0;
     size_t workspace_size = 0;
     size_t max_inputs = 0;
@@ -1476,7 +1477,10 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }
         if (l.bflops > 0) bflops += l.bflops;
 
-        avg_outputs += l.outputs;
+        if (l.w > 1 && l.h > 1) {
+            avg_outputs += l.outputs;
+            avg_counter++;
+        }
     }
     free_list(sections);
 
@@ -1520,7 +1524,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
-    avg_outputs = avg_outputs / count;
+    avg_outputs = avg_outputs / avg_counter;
     fprintf(stderr, "Total BFLOPS %5.3f \n", bflops);
     fprintf(stderr, "avg_outputs = %d \n", avg_outputs);
 #ifdef GPU
