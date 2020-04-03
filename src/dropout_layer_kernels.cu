@@ -8,8 +8,11 @@
 #include "utils.h"
 #include "blas.h"
 
+#include "image_opencv.h"
+#include "image.h"
 
-__global__ void dropblock_fast_kernel(float *rand, float prob, int w, int h, int spatial, int filters, int block_size, float *drop_blocks_scale, float *output)
+
+__global__ void dropblock_fast_kernel(float *rand, float prob, int w, int h, int spatial, int filters, int batch, int block_size, float *drop_blocks_scale, float *output)
 {
     const int threads = BLOCK;
     const int id = threadIdx.x;
@@ -32,6 +35,7 @@ __global__ void dropblock_fast_kernel(float *rand, float prob, int w, int h, int
         if (rand[index] < prob) {
             //Chose with the lowest rand[i]
             int new_val = rand[index] * 1000000;
+            rand[index] = 1;
             int old_val = atomicMin(&prob_block, new_val);
             if (new_val < old_val) {
                 index_block = i;
@@ -47,6 +51,9 @@ __global__ void dropblock_fast_kernel(float *rand, float prob, int w, int h, int
     int b_x = index_block % w;
     int b_y = index_block / w;
 
+    if (b_x > (w - block_size)) b_x = b_x - (w - block_size);
+    if (b_y > (h - block_size)) b_y = b_y - (h - block_size);
+
     b_x = max(0, min(b_x, w - block_size));
     b_y = max(0, min(b_y, h - block_size));
 
@@ -54,21 +61,24 @@ __global__ void dropblock_fast_kernel(float *rand, float prob, int w, int h, int
 
     for (i = id; i < block_square_size; i += threads)
     {
-        int i_x = i % w;
-        int i_y = i / w;
+        int i_x = i % block_size;
+        int i_y = i / block_size;
 
         int x = b_x + i_x;
         int y = b_y + i_y;
 
-        if (x < w && y < h) {
-            int index = b*spatial*f + f*spatial + y*w + x;
+        if (x >= 0 && x < w && y >= 0 && y < h) {
+            int new_index = b*filters*spatial + f*spatial + y*w + x;
 
-            output[index] = 0;
+            output[new_index] = 0;
+            rand[new_index] = 0;
         }
     }
 
+    //if (id == 0 && b == 0) printf(" f = %d, b = %d \n", f, b);
+
     if (id == 0 && drop_blocks_scale) {
-        atomicAdd(&drop_blocks_scale[b], 1);
+        atomicAdd(&drop_blocks_scale[b], block_square_size);
         //if(b == 0) printf("\n index_block = %d \n", index_block);
     }
 
@@ -79,7 +89,8 @@ __global__ void set_scales_dropblock_kernel(float *drop_blocks_scale, int block_
     const int index = blockIdx.x*blockDim.x + threadIdx.x;
     if (index >= batch) return;
 
-    const float prob = drop_blocks_scale[index] * block_size_w * block_size_h / (float)outputs;
+    //printf(" drop_blocks_scale[index] = %f \n", drop_blocks_scale[index]);
+    const float prob = drop_blocks_scale[index] / (float)outputs;
     const float scale = 1.0f / (1.0f - prob);
     drop_blocks_scale[index] = scale;
 }
@@ -91,6 +102,15 @@ __global__ void scale_dropblock_kernel(float *output, int size, int outputs, flo
 
     const int b = index / outputs;
     output[index] *= drop_blocks_scale[b];
+}
+
+
+__global__ void backward_dropblock_kernel(float *pass, float *delta, int size)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index >= size) return;
+
+    if (pass[index] == 0) delta[index] = 0;
 }
 
 
@@ -135,14 +155,17 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
 
         const int block_size = min_val_cmp(block_width, block_height);
         const float block_prob = cur_prob / (block_size*block_size);
+        assert(block_size <= l.w && block_size <= l.h);
 
-        int size = l.inputs*l.batch;
+        const int size = l.inputs*l.batch;
         cuda_random(l.rand_gpu, size);
 
         fill_ongpu(l.batch, 0, l.drop_blocks_scale_gpu, 1);
 
+        //fill_ongpu(l.outputs * l.batch, 1, state.input, 1); // remove!!!
+
         int num_blocks = l.batch * l.c;
-        dropblock_fast_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (l.rand_gpu, block_prob, l.w, l.h, l.w*l.h, l.c, block_size, l.drop_blocks_scale_gpu, state.input);
+        dropblock_fast_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (l.rand_gpu, block_prob, l.w, l.h, l.w*l.h, l.c, l.batch, block_size, l.drop_blocks_scale_gpu, state.input);
         CHECK_CUDA(cudaPeekAtLastError());
 
         num_blocks = get_number_of_blocks(l.batch, BLOCK);
@@ -150,24 +173,39 @@ void forward_dropout_layer_gpu(dropout_layer l, network_state state)
         CHECK_CUDA(cudaPeekAtLastError());
 
         /*
-        cuda_pull_array(l.drop_blocks_scale_gpu, l.drop_blocks_scale, l.batch);
+        {
+            cuda_pull_array(l.drop_blocks_scale_gpu, l.drop_blocks_scale, l.batch);
 
-        for (int b = 0; b < l.batch; ++b) {
-            const float prob = l.drop_blocks_scale[b] * block_size * block_size / (float)l.outputs;
-            const float scale = 1.0f / (1.0f - prob);
-            //printf(" %d x %d - block_size = %d, block_size*block_size = %d , ", l.w, l.h, block_size, block_size*block_size);
-            //printf(" , l.drop_blocks_scale[b] = %f, prob = %f, calc scale = %f \t cur_prob = %f, cur_scale = %f \n",
-            //    l.drop_blocks_scale[b], prob, scale, cur_prob, cur_scale);
-            l.drop_blocks_scale[b] = scale;
+            float avg_scale = 0;
+
+            for (int b = 0; b < l.batch; ++b) {
+                const float scale = l.drop_blocks_scale[b];
+                avg_scale += scale;
+                printf(" %d x %d - block_size = %d, block_size*block_size = %d , ", l.w, l.h, block_size, block_size*block_size);
+                printf(" , l.drop_blocks_scale[b] = %f, scale = %f \t cur_prob = %f, cur_scale = %f \n",
+                    l.drop_blocks_scale[b], scale, cur_prob, cur_scale);
+            }
+            avg_scale = avg_scale / l.batch;
+            printf(" avg_scale = %f \n", avg_scale);
+
+            float *output = (float *)calloc(l.outputs * l.batch, sizeof(float));
+            cuda_pull_array(state.input, output, l.outputs * l.batch);
+
+            printf(" l.w = %d, l.h = %d, l.c = %d \n", l.w, l.h, l.c);
+
+            image img = float_to_image(l.w, l.h, l.c, output);
+            img = collapse_image_layers(img, 1);
+            //normalize_image(img);
+
+            show_image(img, "dropout - forward");
+            wait_key_cv(0);
+            //free_image(img);
+            //free(output);
         }
-
-        cuda_push_array(l.drop_blocks_scale_gpu, l.drop_blocks_scale, l.batch);
         */
 
         num_blocks = get_number_of_blocks(l.outputs * l.batch, BLOCK);
         scale_dropblock_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (state.input, l.outputs * l.batch, l.outputs, l.drop_blocks_scale_gpu);
-        //scal_ongpu(l.outputs * l.batch, cur_scale, state.input, 1);
-        //scal_ongpu(l.outputs * l.batch, l.drop_blocks_scale[0], state.input, 1);
         CHECK_CUDA(cudaPeekAtLastError());
 
     }
@@ -194,7 +232,7 @@ void backward_dropout_layer_gpu(dropout_layer l, network_state state)
     //int iteration_num = get_current_iteration(state.net); //(*state.net.seen) / (state.net.batch*state.net.subdivisions);
     //if (iteration_num < state.net.burn_in) return;
 
-    int size = l.inputs*l.batch;
+    const int size = l.inputs*l.batch;
 
     // dropblock
     if (l.dropblock) {
@@ -223,18 +261,47 @@ void backward_dropout_layer_gpu(dropout_layer l, network_state state)
         const int block_size = min_val_cmp(block_width, block_height);
         const float block_prob = cur_prob / (block_size*block_size);
 
-        int num_blocks = l.batch * l.c;
-        dropblock_fast_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (l.rand_gpu, block_prob, l.w, l.h, l.w*l.h, l.c, block_size, NULL, state.delta);
+        //fill_ongpu(l.outputs * l.batch, 1, state.delta, 1); // remove!!!
+
+        int num_blocks = get_number_of_blocks(l.outputs * l.batch, BLOCK);
+        backward_dropblock_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(l.rand_gpu, state.delta, l.outputs * l.batch);
         CHECK_CUDA(cudaPeekAtLastError());
 
-        num_blocks = get_number_of_blocks(l.outputs * l.batch, BLOCK);
         scale_dropblock_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (state.delta, l.outputs * l.batch, l.outputs, l.drop_blocks_scale_gpu);
-        //scal_ongpu(l.outputs * l.batch, cur_scale, state.input, 1);
-        //scal_ongpu(l.outputs * l.batch, l.drop_blocks_scale[0], state.input, 1);
         CHECK_CUDA(cudaPeekAtLastError());
 
-        //drop_block_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> > (state.delta, size, l.rand_gpu, l.scale);
-        //CHECK_CUDA(cudaPeekAtLastError());
+        /*
+        {
+            cuda_pull_array(l.drop_blocks_scale_gpu, l.drop_blocks_scale, l.batch);
+
+            float avg_scale = 0;
+
+            for (int b = 0; b < l.batch; ++b) {
+                const float scale = l.drop_blocks_scale[b];
+                avg_scale += scale;
+                printf(" %d x %d - block_size = %d, block_size*block_size = %d , ", l.w, l.h, block_size, block_size*block_size);
+                printf(" , l.drop_blocks_scale[b] = %f, scale = %f \t cur_prob = %f, cur_scale = %f \n",
+                    l.drop_blocks_scale[b], scale, cur_prob, cur_scale);
+            }
+            avg_scale = avg_scale / l.batch;
+            printf(" avg_scale = %f \n", avg_scale);
+
+            float *output = (float *)calloc(l.outputs * l.batch, sizeof(float));
+            cuda_pull_array(state.delta, output, l.outputs * l.batch);
+
+            printf(" l.w = %d, l.h = %d, l.c = %d \n", l.w, l.h, l.c);
+
+            image img = float_to_image(l.w, l.h, l.c, output);
+            img = collapse_image_layers(img, 1);
+            //normalize_image(img);
+
+            show_image(img, "dropout - delta");
+            wait_key_cv(0);
+            //free_image(img);
+            //free(output);
+        }
+        */
+
     }
     // dropout
     else {
