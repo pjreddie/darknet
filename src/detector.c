@@ -1369,6 +1369,9 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
     int number_of_images = plist->size;
     char **paths = (char **)list_to_array(plist);
 
+    int classes = option_find_int(options, "classes", 1);
+    int* counter_per_class = (int*)xcalloc(classes, sizeof(int));
+
     srand(time(0));
     int number_of_boxes = 0;
     printf(" read labels from %d images \n", number_of_images);
@@ -1395,6 +1398,12 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
                 system(buff);
                 if (check_mistakes) getchar();
             }
+            if (truth[j].id >= classes) {
+                classes = truth[j].id + 1;
+                counter_per_class = (int*)xrealloc(counter_per_class, classes * sizeof(int));
+            }
+            counter_per_class[truth[j].id]++;
+
             number_of_boxes++;
             rel_width_height_array = (float*)xrealloc(rel_width_height_array, 2 * number_of_boxes * sizeof(float));
 
@@ -1461,10 +1470,33 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
         }
         else avg_iou += best_iou;
     }
+
+    char buff[1024];
+    FILE* fwc = fopen("counters_per_class.txt", "wb");
+    if (fwc) {
+        sprintf(buff, "counters_per_class = ");
+        printf("\n%s", buff);
+        fwrite(buff, sizeof(char), strlen(buff), fwc);
+        for (i = 0; i < classes; ++i) {
+            sprintf(buff, "%d", counter_per_class[i]);
+            printf("%s", buff);
+            fwrite(buff, sizeof(char), strlen(buff), fwc);
+            if (i < classes - 1) {
+                fwrite(", ", sizeof(char), 2, fwc);
+                printf(", ");
+            }
+        }
+        printf("\n");
+        fclose(fwc);
+    }
+    else {
+        printf(" Error: file counters_per_class.txt can't be open \n");
+    }
+
     avg_iou = 100 * avg_iou / number_of_boxes;
     printf("\n avg IoU = %2.2f %% \n", avg_iou);
 
-    char buff[1024];
+
     FILE* fw = fopen("anchors.txt", "wb");
     if (fw) {
         printf("\nSaving anchors to the file: anchors.txt \n");
@@ -1494,6 +1526,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 #endif // OPENCV
     }
     free(rel_width_height_array);
+    free(counter_per_class);
 
     getchar();
 }

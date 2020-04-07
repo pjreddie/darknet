@@ -104,7 +104,9 @@ You can get cfg-files by path: `darknet/cfg/`
 * **PyTorch > ONNX > CoreML > iOS** how to convert cfg/weights-files to pt-file: [ultralytics/yolov3](https://github.com/ultralytics/yolov3#darknet-conversion) and [iOS App](https://itunes.apple.com/app/id1452689527)
 * **TensorRT** for YOLOv3 (-70% faster inference): [Yolo is natively supported in DeepStream 4.0](https://news.developer.nvidia.com/deepstream-sdk-4-now-available/)
 * **TVM** - compilation of deep learning models (Keras, MXNet, PyTorch, Tensorflow, CoreML, DarkNet) into minimum deployable modules on diverse hardware backends (CPUs, GPUs, FPGA, and specialized accelerators): https://tvm.ai/about
+* **OpenDataCam** - It detects, tracks and counts moving objects by using Yolo: https://github.com/opendatacam/opendatacam#-hardware-pre-requisite
 * **Netron** - Visualizer for neural networks: https://github.com/lutzroeder/netron
+
 
 #### Datasets
 
