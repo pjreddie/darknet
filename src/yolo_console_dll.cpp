@@ -111,7 +111,13 @@ cv::Mat slMat2cvMat(sl::Mat &input) {
         ) {
         cv_type = CV_32FC4;
     } else cv_type = CV_8UC4; // sl::Mat used are either RGBA images or XYZ (4C) point clouds
-    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(sl::MEM::CPU));
+    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(
+#ifdef ZED_STEREO_2_COMPAT_MODE
+        sl::MEM::MEM_CPU
+#else
+        sl::MEM::CPU
+#endif
+        ));
 }
 
 cv::Mat zed_capture_rgb(sl::Camera &zed) {
