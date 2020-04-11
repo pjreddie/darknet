@@ -625,6 +625,7 @@ float train_networks(network *nets, int n, data d, int interval)
     }
     //cudaDeviceSynchronize();
     *nets[0].cur_iteration += (n - 1);
+    *nets[0].seen = nets[0].batch * nets[0].subdivisions * get_current_iteration(nets[0]); // remove this line, when you will save to weights-file both: seen & cur_iteration
     if (get_current_iteration(nets[0]) % interval == 0)
     {
         printf("Syncing... ");
