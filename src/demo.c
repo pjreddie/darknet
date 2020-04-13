@@ -156,8 +156,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     flag_exit = 0;
 
-    pthread_t fetch_thread;
-    pthread_t detect_thread;
+    custom_thread_t fetch_thread = NULL;
+    custom_thread_t detect_thread = NULL;
 
     fetch_in_thread(0);
     det_img = in_img;
@@ -214,8 +214,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             int local_nboxes = nboxes;
             detection *local_dets = dets;
 
-            if (!benchmark) if (pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-            if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+            if (!benchmark) if (custom_create_thread(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
+            if(custom_create_thread(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 
             //if (nms) do_nms_obj(local_dets, local_nboxes, l.classes, nms);    // bad results
             if (nms) {
@@ -285,9 +285,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 printf("\n cvWriteFrame \n");
             }
 
-            pthread_join(detect_thread, 0);
+            custom_join(detect_thread, 0);
             if (!benchmark) {
-                pthread_join(fetch_thread, 0);
+                custom_join(fetch_thread, 0);
                 free_image(det_s);
             }
 

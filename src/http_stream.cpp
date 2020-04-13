@@ -682,6 +682,27 @@ void show_total_time() {
     std::cout << " Total: " << total_time * 1000 << " msec" << std::endl;
 }
 
+
+int custom_create_thread(custom_thread_t * tid, const custom_attr_t * attr, void *(*func) (void *), void *arg)
+{
+    *tid = (custom_thread_t *)new std::thread(func, arg);
+    if (tid) return 0;
+    else return -1;
+}
+
+int custom_join(custom_thread_t thread, void **value_ptr)
+{
+    std::thread *ptr = (std::thread *)thread;
+    if (ptr) {
+        ptr->join();
+        delete ptr;
+        return 0;
+    }
+    else printf(" Error: ptr of thread is NULL in custom_join() \n");
+
+    return -1;
+}
+
 #else // C++11
 #include <iostream>
 

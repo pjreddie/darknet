@@ -18,6 +18,12 @@ int send_http_post_request(char *http_post_host, int server_port, const char *vi
 
 #endif  // OPENCV
 
+typedef void* custom_thread_t;
+typedef void* custom_attr_t;
+
+int custom_create_thread(custom_thread_t * tid, const custom_attr_t * attr, void *(*func) (void *), void *arg);
+int custom_join(custom_thread_t thread, void **value_ptr);
+
 #ifdef __cplusplus
 }
 #endif
