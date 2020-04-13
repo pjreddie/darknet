@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <ctime>
 using std::cerr;
 using std::endl;
@@ -685,14 +686,15 @@ void show_total_time() {
 
 int custom_create_thread(custom_thread_t * tid, const custom_attr_t * attr, void *(*func) (void *), void *arg)
 {
-    *tid = (custom_thread_t *)new std::thread(func, arg);
+    std::thread *ptr = new std::thread(func, arg);
+    *tid = (custom_thread_t *)ptr;
     if (tid) return 0;
     else return -1;
 }
 
-int custom_join(custom_thread_t thread, void **value_ptr)
+int custom_join(custom_thread_t tid, void **value_ptr)
 {
-    std::thread *ptr = (std::thread *)thread;
+    std::thread *ptr = (std::thread *)tid;
     if (ptr) {
         ptr->join();
         delete ptr;
