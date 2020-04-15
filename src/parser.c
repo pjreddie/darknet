@@ -332,6 +332,7 @@ layer parse_yolo(list *options, size_params params)
         for(i = 0; i < len; ++i){
             if (a[i] == ',') ++n;
         }
+        assert(n <= total*2);
         for(i = 0; i < n; ++i){
             float bias = atof(a);
             l.biases[i] = bias;
