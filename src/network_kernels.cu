@@ -273,6 +273,8 @@ void update_network_gpu(network net)
         l.t = get_current_batch(net);
         if (iteration_num > (net.max_batches * 1 / 2)) l.deform = 0;
         if (l.burnin_update && (l.burnin_update*net.burn_in > iteration_num)) continue;
+        if (l.train_only_bn) continue;
+
         if(l.update_gpu && l.dont_update < iteration_num){
             l.update_gpu(l, update_batch, rate, net.momentum, net.decay, net.loss_scale);
         }

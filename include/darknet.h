@@ -324,6 +324,7 @@ struct layer {
 
     int onlyforward;
     int stopbackward;
+    int train_only_bn;
     int dont_update;
     int burnin_update;
     int dontload;

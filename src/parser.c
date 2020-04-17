@@ -1190,6 +1190,39 @@ int is_network(section *s)
             || strcmp(s->type, "[network]")==0);
 }
 
+void set_train_only_bn(network net)
+{
+    int train_only_bn = 0;
+    int i;
+    for (i = net.n - 1; i >= 0; --i) {
+        if (net.layers[i].train_only_bn) train_only_bn = net.layers[i].train_only_bn;  // set l.train_only_bn for all previous layers
+        if (train_only_bn) {
+            net.layers[i].train_only_bn = train_only_bn;
+
+            if (net.layers[i].type == CONV_LSTM) {
+                net.layers[i].wf->train_only_bn = train_only_bn;
+                net.layers[i].wi->train_only_bn = train_only_bn;
+                net.layers[i].wg->train_only_bn = train_only_bn;
+                net.layers[i].wo->train_only_bn = train_only_bn;
+                net.layers[i].uf->train_only_bn = train_only_bn;
+                net.layers[i].ui->train_only_bn = train_only_bn;
+                net.layers[i].ug->train_only_bn = train_only_bn;
+                net.layers[i].uo->train_only_bn = train_only_bn;
+                if (net.layers[i].peephole) {
+                    net.layers[i].vf->train_only_bn = train_only_bn;
+                    net.layers[i].vi->train_only_bn = train_only_bn;
+                    net.layers[i].vo->train_only_bn = train_only_bn;
+                }
+            }
+            else if (net.layers[i].type == CRNN) {
+                net.layers[i].input_layer->train_only_bn = train_only_bn;
+                net.layers[i].self_layer->train_only_bn = train_only_bn;
+                net.layers[i].output_layer->train_only_bn = train_only_bn;
+            }
+        }
+    }
+}
+
 network parse_network_cfg(char *filename)
 {
     return parse_network_cfg_custom(filename, 0, 0);
@@ -1450,6 +1483,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         l.dont_update = option_find_int_quiet(options, "dont_update", 0);
         l.burnin_update = option_find_int_quiet(options, "burnin_update", 0);
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
+        l.train_only_bn = option_find_int_quiet(options, "train_only_bn", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
@@ -1521,6 +1555,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }
     }
 #endif
+
+    set_train_only_bn(net); // set l.train_only_bn for all required layers
 
     net.outputs = get_network_output_size(net);
     net.output = get_network_output(net);
