@@ -56,7 +56,7 @@ static volatile int run_fetch_in_thread = 0;
 static volatile int run_detect_in_thread = 0;
 
 
-int fetch_in_thread(void *ptr)
+void *fetch_in_thread(void *ptr)
 {
     while (!custom_atomic_load_int(&flag_exit)) {
         while (!custom_atomic_load_int(&run_fetch_in_thread)) {
@@ -81,13 +81,14 @@ int fetch_in_thread(void *ptr)
     return 0;
 }
 
-int fetch_in_thread_sync(void *ptr)
+void *fetch_in_thread_sync(void *ptr)
 {
     custom_atomic_store_int(&run_fetch_in_thread, 1);
     while (custom_atomic_load_int(&run_fetch_in_thread)) this_thread_sleep_for(thread_wait_ms);
+    return 0;
 }
 
-int detect_in_thread(void *ptr)
+void *detect_in_thread(void *ptr)
 {
     while (!custom_atomic_load_int(&flag_exit)) {
         while (!custom_atomic_load_int(&run_detect_in_thread)) {
@@ -118,10 +119,11 @@ int detect_in_thread(void *ptr)
     return 0;
 }
 
-int detect_in_thread_sync(void *ptr)
+void *detect_in_thread_sync(void *ptr)
 {
     custom_atomic_store_int(&run_detect_in_thread, 1);
     while (custom_atomic_load_int(&run_detect_in_thread)) this_thread_sleep_for(thread_wait_ms);
+    return 0;
 }
 
 double get_wall_time()
@@ -184,7 +186,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         getchar();
         exit(0);
     }
-
 
     flag_exit = 0;
 
