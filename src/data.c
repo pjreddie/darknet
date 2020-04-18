@@ -3,6 +3,7 @@
 #include "image.h"
 #include "dark_cuda.h"
 #include "box.h"
+#include "http_stream.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1426,6 +1427,40 @@ pthread_t load_data_in_thread(load_args args)
     return thread;
 }
 
+static const int thread_wait_ms = 5;
+static volatile int flag_exit;
+static volatile int * run_load_data = NULL;
+static load_args * args_swap = NULL;
+static pthread_t* threads = NULL;
+
+pthread_mutex_t mtx_load_data = PTHREAD_MUTEX_INITIALIZER;
+
+void *run_thread_loop(void *ptr)
+{
+    const int i = *(int *)ptr;
+
+    while (!custom_atomic_load_int(&flag_exit)) {
+        while (!custom_atomic_load_int(&run_load_data[i])) {
+            if (custom_atomic_load_int(&flag_exit)) {
+                free(ptr);
+                return 0;
+            }
+            this_thread_sleep_for(thread_wait_ms);
+        }
+
+        pthread_mutex_lock(&mtx_load_data);
+        load_args *args_local = (load_args *)xcalloc(1, sizeof(load_args));
+        *args_local = args_swap[i];
+        pthread_mutex_unlock(&mtx_load_data);
+
+        load_thread(args_local);
+
+        custom_atomic_store_int(&run_load_data[i], 0);
+    }
+    free(ptr);
+    return 0;
+}
+
 void *load_threads(void *ptr)
 {
     //srand(time(0));
@@ -1436,6 +1471,34 @@ void *load_threads(void *ptr)
     int total = args.n;
     free(ptr);
     data* buffers = (data*)xcalloc(args.threads, sizeof(data));
+    if (!threads) {
+        threads = (pthread_t*)xcalloc(args.threads, sizeof(pthread_t));
+        run_load_data = (volatile int *)xcalloc(args.threads, sizeof(int));
+        args_swap = (load_args *)xcalloc(args.threads, sizeof(load_args));
+        fprintf(stderr, " Create %d permanent cpu-threads \n", args.threads);
+
+        for (i = 0; i < args.threads; ++i) {
+            int* ptr = (int*)xcalloc(1, sizeof(int));
+            *ptr = i;
+            if (pthread_create(&threads[i], 0, run_thread_loop, ptr)) error("Thread creation failed");
+        }
+    }
+
+    for (i = 0; i < args.threads; ++i) {
+        args.d = buffers + i;
+        args.n = (i + 1) * total / args.threads - i * total / args.threads;
+
+        pthread_mutex_lock(&mtx_load_data);
+        args_swap[i] = args;
+        pthread_mutex_unlock(&mtx_load_data);
+
+        custom_atomic_store_int(&run_load_data[i], 1);  // run thread
+    }
+    for (i = 0; i < args.threads; ++i) {
+        while (custom_atomic_load_int(&run_load_data[i])) this_thread_sleep_for(thread_wait_ms); //   join
+    }
+
+    /*
     pthread_t* threads = (pthread_t*)xcalloc(args.threads, sizeof(pthread_t));
     for(i = 0; i < args.threads; ++i){
         args.d = buffers + i;
@@ -1445,6 +1508,8 @@ void *load_threads(void *ptr)
     for(i = 0; i < args.threads; ++i){
         pthread_join(threads[i], 0);
     }
+    */
+
     *out = concat_datas(buffers, args.threads);
     out->shallow = 0;
     for(i = 0; i < args.threads; ++i){
@@ -1452,8 +1517,26 @@ void *load_threads(void *ptr)
         free_data(buffers[i]);
     }
     free(buffers);
-    free(threads);
+    //free(threads);
     return 0;
+}
+
+void free_load_threads(void *ptr)
+{
+    load_args args = *(load_args *)ptr;
+    if (args.threads == 0) args.threads = 1;
+    int i;
+    if (threads) {
+        custom_atomic_store_int(&flag_exit, 1);
+        for (i = 0; i < args.threads; ++i) {
+            pthread_join(threads[i], 0);
+        }
+        free((void*)run_load_data);
+        free(args_swap);
+        free(threads);
+        threads = NULL;
+        custom_atomic_store_int(&flag_exit, 0);
+    }
 }
 
 pthread_t load_data(load_args args)

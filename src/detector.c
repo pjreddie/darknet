@@ -392,6 +392,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     pthread_join(load_thread, 0);
     free_data(buffer);
 
+    free_load_threads(&args);
+
     free(base);
     free(paths);
     free_list_contents(plist);
