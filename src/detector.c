@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "darknet.h"
 #include "network.h"
 #include "region_layer.h"
@@ -424,7 +425,9 @@ static int get_coco_image_id(char *filename)
 static void print_cocos(FILE *fp, char *image_path, detection *dets, int num_boxes, int classes, int w, int h)
 {
     int i, j;
-    int image_id = get_coco_image_id(image_path);
+    //int image_id = get_coco_image_id(image_path);
+    char *p = basecfg(image_path);
+    int image_id = atoi(p);
     for (i = 0; i < num_boxes; ++i) {
         float xmin = dets[i].bbox.x - dets[i].bbox.w / 2.;
         float xmax = dets[i].bbox.x + dets[i].bbox.w / 2.;
@@ -442,7 +445,12 @@ static void print_cocos(FILE *fp, char *image_path, detection *dets, int num_box
         float bh = ymax - ymin;
 
         for (j = 0; j < classes; ++j) {
-            if (dets[i].prob[j] > 0) fprintf(fp, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, dets[i].prob[j]);
+            if (dets[i].prob[j] > 0) {
+                char buff[1024];
+                sprintf(buff, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, dets[i].prob[j]);
+                fprintf(fp, buff);
+                //printf("%s", buff);
+            }
         }
     }
 }
@@ -605,6 +613,8 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         load_weights(&net, weightfile);
     }
     //set_batch_network(&net, 1);
+    fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
@@ -668,7 +678,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int i = 0;
     int t;
 
-    float thresh = .005;
+    float thresh = .001;
     float nms = .45;
 
     int nthreads = 4;
