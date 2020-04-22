@@ -895,12 +895,12 @@ void free_detections(detection *dets, int n)
     free(dets);
 }
 
-void free_batch_detections(detNumPair *detNumPairs, int n)
+void free_batch_detections(det_num_pair *det_num_pairs, int n)
 {
     int  i;
     for(i=0; i<n; ++i)
-        free_detections(detNumPairs[i].dets, detNumPairs[i].num);
-    free(detNumPairs);
+        free_detections(det_num_pairs[i].dets, det_num_pairs[i].num);
+    free(det_num_pairs);
 }
 
 // JSON format:
@@ -978,14 +978,14 @@ float *network_predict_image(network *net, image im)
     return p;
 }
 
-detNumPair* network_predict_batch(network *net, image im, int batch_size, int w, int h, float thresh, float hier, int *map, int relative, int letter)
+det_num_pair* network_predict_batch(network *net, image im, int batch_size, int w, int h, float thresh, float hier, int *map, int relative, int letter)
 {
     network_predict(*net, im.data);
-    detNumPair *pdets = (struct detNumPair *)calloc(batch_size, sizeof(detNumPair));
+    det_num_pair *pdets = (struct det_num_pair *)calloc(batch_size, sizeof(det_num_pair));
     int num;
     for(int batch=0; batch<batch_size; batch++){
         detection *dets = make_network_boxes_batch(net, thresh, &num, batch);
-        fill_network_boxes_batch(net, w, h, thresh, hier, map, relative, dets, letter, batch);    
+        fill_network_boxes_batch(net, w, h, thresh, hier, map, relative, dets, letter, batch);
         pdets[batch].num = num;
         pdets[batch].dets = dets;
     }
