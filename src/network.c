@@ -745,6 +745,22 @@ int num_detections(network *net, float thresh)
     return s;
 }
 
+int num_detections_batch(network *net, float thresh, int batch)
+{
+    int i;
+    int s = 0;
+    for (i = 0; i < net->n; ++i) {
+        layer l = net->layers[i];
+        if (l.type == YOLO) {
+            s += yolo_num_detections_batch(l, thresh, batch);
+        }
+        if (l.type == DETECTION || l.type == REGION) {
+            s += l.w*l.h*l.n;
+        }
+    }
+    return s;
+}
+
 detection *make_network_boxes(network *net, float thresh, int *num)
 {
     layer l = net->layers[net->n - 1];
@@ -763,6 +779,22 @@ detection *make_network_boxes(network *net, float thresh, int *num)
     return dets;
 }
 
+detection *make_network_boxes_batch(network *net, float thresh, int *num, int batch)
+{
+    int i;
+    layer l = net->layers[net->n - 1];
+    int nboxes = num_detections_batch(net, thresh, batch);
+    assert(num != NULL);
+    *num = nboxes;
+    detection* dets = (detection*)calloc(nboxes, sizeof(detection));
+    for (i = 0; i < nboxes; ++i) {
+        dets[i].prob = (float*)calloc(l.classes, sizeof(float));
+        if (l.coords > 4) {
+            dets[i].mask = (float*)calloc(l.coords - 4, sizeof(float));
+        }
+    }
+    return dets;
+}
 
 void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, float thresh, int *map, float hier, int relative, detection *dets, int letter)
 {
@@ -818,6 +850,33 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
     }
 }
 
+void fill_network_boxes_batch(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets, int letter, int batch)
+{
+    int prev_classes = -1;
+    int j;
+    for (j = 0; j < net->n; ++j) {
+        layer l = net->layers[j];
+        if (l.type == YOLO) {
+            int count = get_yolo_detections_batch(l, w, h, net->w, net->h, thresh, map, relative, dets, letter, batch);
+            dets += count;
+            if (prev_classes < 0) prev_classes = l.classes;
+            else if (prev_classes != l.classes) {
+                printf(" Error: Different [yolo] layers have different number of classes = %d and %d - check your cfg-file! \n",
+                    prev_classes, l.classes);
+            }
+        }
+        if (l.type == REGION) {
+            custom_get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets, letter);
+            //get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets);
+            dets += l.w*l.h*l.n;
+        }
+        if (l.type == DETECTION) {
+            get_detection_detections(l, w, h, thresh, dets);
+            dets += l.w*l.h*l.n;
+        }
+    }
+}
+
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num, int letter)
 {
     detection *dets = make_network_boxes(net, thresh, num);
@@ -834,6 +893,14 @@ void free_detections(detection *dets, int n)
         if (dets[i].mask) free(dets[i].mask);
     }
     free(dets);
+}
+
+void free_batch_detections(detNumPair *detNumPairs, int n)
+{
+    int  i;
+    for(i=0; i<n; ++i)
+        free_detections(detNumPairs[i].dets, detNumPairs[i].num);
+    free(detNumPairs);
 }
 
 // JSON format:
@@ -909,6 +976,20 @@ float *network_predict_image(network *net, image im)
         free_image(imr);
     }
     return p;
+}
+
+detNumPair* network_predict_batch(network *net, image im, int batch_size, int w, int h, float thresh, float hier, int *map, int relative, int letter)
+{
+    network_predict(*net, im.data);
+    detNumPair *pdets = (struct detNumPair *)calloc(batch_size, sizeof(detNumPair));
+    int num;
+    for(int batch=0; batch<batch_size; batch++){
+        detection *dets = make_network_boxes_batch(net, thresh, &num, batch);
+        fill_network_boxes_batch(net, w, h, thresh, hier, map, relative, dets, letter, batch);    
+        pdets[batch].num = num;
+        pdets[batch].dets = dets;
+    }
+    return pdets;
 }
 
 float *network_predict_image_letterbox(network *net, image im)

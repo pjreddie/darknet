@@ -830,6 +830,12 @@ typedef struct detection{
     int points; // bit-0 - center, bit-1 - top-left-corner, bit-2 - bottom-right-corner
 } detection;
 
+// network.c -batch inference
+typedef struct detNumPair {
+    int num;
+    detection *dets;
+} detNumPair, *pdetNumPair;
+
 // matrix.h
 typedef struct matrix {
     int rows, cols;
