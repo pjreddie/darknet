@@ -1,6 +1,8 @@
 # Yolo-v4 and Yolo-v3/v2 for Windows and Linux
 ### (neural network for object detection) - Tensor Cores can be used on [Linux](https://github.com/AlexeyAB/darknet#how-to-compile-on-linux) and [Windows](https://github.com/AlexeyAB/darknet#how-to-compile-on-windows-using-cmake-gui)
 
+Paper Yolo v4: https://arxiv.org/abs/2004.10934
+
 More details: http://pjreddie.com/darknet/yolo/
 
 
@@ -37,9 +39,13 @@ More details: http://pjreddie.com/darknet/yolo/
 11.  [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
 12. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
 
-|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://user-images.githubusercontent.com/4096485/71702416-6645dc00-2de0-11ea-8d65-de7d4b604021.png) mAP@0.5 (AP50) - FPS (GeForce 1080 Ti) https://arxiv.org/abs/1911.11929 https://github.com/WongKinYiu/CrossStagePartialNetworks - more models |
+
+
+|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://user-images.githubusercontent.com/4096485/80163662-7ed04100-85df-11ea-8db7-1232b1158827.png) AP50:95 / AP50 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2004.10934 |
 |---|---|
 
+* Yolo v4 Full comparison: [map_fps](https://user-images.githubusercontent.com/4096485/80163825-061db480-85e0-11ea-9ff9-13c7143789cb.png)
+* CSPNet: [map_fps](https://user-images.githubusercontent.com/4096485/71702416-6645dc00-2de0-11ea-8d65-de7d4b604021.png) [paper](https://arxiv.org/abs/1911.11929) Comparison: https://github.com/WongKinYiu/CrossStagePartialNetworks
 * Yolo v3 on MS COCO: [Speed / Accuracy (mAP@0.5) chart](https://user-images.githubusercontent.com/4096485/52151356-e5d4a380-2683-11e9-9d7d-ac7bc192c477.jpg)
 * Yolo v3 on MS COCO (Yolo v3 vs RetinaNet) - Figure 3: https://arxiv.org/pdf/1804.02767v1.pdf
 * Yolo v2 on Pascal VOC 2007: https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg
@@ -51,7 +57,7 @@ There are weights-file for different cfg-files (trained for MS COCO dataset):
 
 FPS on RTX 2070 (R) and Tesla V100 (V):
 
-* [yolov4.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4.cfg) - 245 MB: [yolov4.weights](https://drive.google.com/open?id=1cewMfusmPjYWbrnuJRuKhPMwRe_b9PaT)
+* [yolov4.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4.cfg) - 245 MB: [yolov4.weights](https://drive.google.com/open?id=1cewMfusmPjYWbrnuJRuKhPMwRe_b9PaT) paper [Yolo v4](https://arxiv.org/abs/2004.10934)
     * `width=608 height=608` in cfg: **65.7% mAP@0.5 (43.5% AP@0.5:0.95) - 34(R) FPS / 62(V) FPS** - 128.5 BFlops
     * `width=512 height=512` in cfg: **64.9% mAP@0.5 (43.0% AP@0.5:0.95) - 45(R) FPS / 83(V) FPS** - 91.1 BFlops
     * `width=416 height=416` in cfg: **62.8% mAP@0.5 (41.2% AP@0.5:0.95) - 55(R) FPS / 96(V) FPS** - 60.1 BFlops
