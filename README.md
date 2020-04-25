@@ -41,15 +41,45 @@ More details: http://pjreddie.com/darknet/yolo/
 
 
 
-|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://user-images.githubusercontent.com/4096485/80163662-7ed04100-85df-11ea-8db7-1232b1158827.png) AP50:95 / AP50 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2004.10934 |
+|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![readme](https://user-images.githubusercontent.com/4096485/80213782-5f1e3480-8642-11ea-8fdf-0e6b9a6b5f4c.png) AP50:95 / AP50 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2004.10934 |
 |---|---|
 
-* Yolo v4 Full comparison: [map_fps](https://user-images.githubusercontent.com/4096485/80163825-061db480-85e0-11ea-9ff9-13c7143789cb.png)
+* Yolo v4 Full comparison: [map_fps](https://user-images.githubusercontent.com/4096485/80213824-6e9d7d80-8642-11ea-94a6-0be90c7d7cd5.png)
 * CSPNet: [map_fps](https://user-images.githubusercontent.com/4096485/71702416-6645dc00-2de0-11ea-8d65-de7d4b604021.png) [paper](https://arxiv.org/abs/1911.11929) Comparison: https://github.com/WongKinYiu/CrossStagePartialNetworks
 * Yolo v3 on MS COCO: [Speed / Accuracy (mAP@0.5) chart](https://user-images.githubusercontent.com/4096485/52151356-e5d4a380-2683-11e9-9d7d-ac7bc192c477.jpg)
 * Yolo v3 on MS COCO (Yolo v3 vs RetinaNet) - Figure 3: https://arxiv.org/pdf/1804.02767v1.pdf
 * Yolo v2 on Pascal VOC 2007: https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg
 * Yolo v2 on Pascal VOC 2012 (comp4): https://hsto.org/files/3a6/fdf/b53/3a6fdfb533f34cee9b52bdd9bb0b19d9.jpg
+
+#### How to evaluate AP of YOLOv4 on the MS COCO evaluation server
+
+1. Download and unzip test-dev2017 dataset from MS COCO server: http://images.cocodataset.org/zips/test2017.zip
+2. Download list of images for Detection taks and replace the paths with yours: https://raw.githubusercontent.com/AlexeyAB/darknet/master/scripts/testdev2017.txt
+3. Download `yolov4.weights` file: https://drive.google.com/open?id=1cewMfusmPjYWbrnuJRuKhPMwRe_b9PaT
+4. Content of the file `cfg/coco.data` should be
+```
+classes= 80
+train  = <replace with your path>/trainvalno5k.txt
+valid = <replace with your path>/testdev2017.txt
+names = data/coco.names
+backup = backup
+eval=coco
+```
+5. Create `/results/` folder near with `./darknet` executable file
+6. Run validation: `./darknet detector valid cfg/coco.data cfg/yolov4.cfg yolov4.weights`
+7. Rename the file  `/results/coco_results.json` to `detections_test-dev2017_yolov4_results.json` and compress it to `detections_test-dev2017_yolov4_results.zip`
+8. Submit file `detections_test-dev2017_yolov4_results.zip` to the MS COCO evaluation server for the `test-dev2019 (bbox)`
+
+#### How to evaluate FPS of YOLOv4 on GPU
+
+1. Compile Darknet with `GPU=1 CUDNN=1 CUDNN_HALF=1 OPENCV=1` in the `Makefile` (or use the same settings with Cmake)
+2. Download `yolov4.weights` file: https://drive.google.com/open?id=1cewMfusmPjYWbrnuJRuKhPMwRe_b9PaT
+3. Get any .avi/.mp4 video file (preferably not more than 1920x1080 to avoid bottlenecks in CPU performance)
+4. Run one of two commands and look at the AVG FPS:
+* include video_capturing + NMS + drawing_bboxes: 
+    `./darknet detector demo cfg/coco.data cfg/yolov4.cfg yolov4.weights test.mp4 -dont_show -ext_output`
+* exclude video_capturing + NMS + drawing_bboxes: 
+    `./darknet detector demo cfg/coco.data cfg/yolov4.cfg yolov4.weights test.mp4 -benchmark`
 
 #### Pre-trained models
 
