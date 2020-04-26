@@ -983,7 +983,8 @@ det_num_pair* network_predict_batch(network *net, image im, int batch_size, int 
     network_predict(*net, im.data);
     det_num_pair *pdets = (struct det_num_pair *)calloc(batch_size, sizeof(det_num_pair));
     int num;
-    for(int batch=0; batch<batch_size; batch++){
+    int batch;
+    for(batch=0; batch < batch_size; batch++){
         detection *dets = make_network_boxes_batch(net, thresh, &num, batch);
         fill_network_boxes_batch(net, w, h, thresh, hier, map, relative, dets, letter, batch);
         pdets[batch].num = num;
