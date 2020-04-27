@@ -19,6 +19,8 @@ char *get_activation_string(ACTIVATION a)
             return "elu";
         case SELU:
             return "selu";
+        case GELU:
+            return "gelu";
         case RELIE:
             return "relie";
         case RAMP:
@@ -56,6 +58,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "relu6") == 0) return RELU6;
     if (strcmp(s, "elu")==0) return ELU;
     if (strcmp(s, "selu") == 0) return SELU;
+    if (strcmp(s, "gelu") == 0) return GELU;
     if (strcmp(s, "relie")==0) return RELIE;
     if (strcmp(s, "plse")==0) return PLSE;
     if (strcmp(s, "hardtan")==0) return HARDTAN;
@@ -84,6 +87,8 @@ float activate(float x, ACTIVATION a)
             return elu_activate(x);
         case SELU:
             return selu_activate(x);
+        case GELU:
+            return gelu_activate(x);
         case RELIE:
             return relie_activate(x);
         case RAMP:
@@ -300,6 +305,8 @@ float gradient(float x, ACTIVATION a)
             return elu_gradient(x);
         case SELU:
             return selu_gradient(x);
+        case GELU:
+            return gelu_gradient(x);
         case RELIE:
             return relie_gradient(x);
         case RAMP:

@@ -65,6 +65,7 @@ static inline float ramp_activate(float x){return x*(x>0)+.1f*x;}
 static inline float leaky_activate(float x){return (x>0) ? x : .1f*x;}
 //static inline float tanh_activate(float x){return (expf(2*x)-1)/(expf(2*x)+1);}
 static inline float tanh_activate(float x) { return (2 / (1 + expf(-2 * x)) - 1); }
+static inline float gelu_activate(float x) { return (0.5*x*(1 + tanhf(0.797885*x + 0.035677*powf(x, 3)))); }
 static inline float softplus_activate(float x, float threshold) {
     if (x > threshold) return x;                // too large
     else if (x < -threshold) return expf(x);    // too small
@@ -114,6 +115,12 @@ static inline float relie_gradient(float x){return (x>0) ? 1 : .01f;}
 static inline float ramp_gradient(float x){return (x>0)+.1f;}
 static inline float leaky_gradient(float x){return (x>0) ? 1 : .1f;}
 static inline float tanh_gradient(float x){return 1-x*x;}
+
+static inline float sech(float x) { return 2 / (expf(x) + expf(-x)); }
+static inline float gelu_gradient(float x) {
+    const float x3 = powf(x, 3);
+    return 0.5*tanhf(0.0356774*x3 + 0.797885*x) + (0.0535161*x3 + 0.398942*x) * powf(sech(0.0356774*x3 + 0.797885*x), 2) + 0.5;
+}
 static inline float plse_gradient(float x){return (x < 0 || x > 1) ? .01f : .125f;}
 
 #ifdef __cplusplus
