@@ -70,7 +70,8 @@ void *fetch_in_thread(void *ptr)
             in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
         if (!in_s.data) {
             printf("Stream closed.\n");
-            flag_exit = 1;
+            custom_atomic_store_int(&flag_exit, 1);
+            custom_atomic_store_int(&run_fetch_in_thread, 0);
             //exit(EXIT_FAILURE);
             return 0;
         }
