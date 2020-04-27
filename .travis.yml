@@ -74,15 +74,15 @@ matrix:
         - additional_defines=""
         - MATRIX_EVAL="brew install opencv"
 
-    - os: osx
-      name: macOS - clang - vcpkg
-      osx_image: xcode10.1
-      env:
-        - additional_defines="-DBUILD_SHARED_LIBS=OFF"
-        - MATRIX_EVAL="brew install yasm && unset CC && unset CXX"
-        - USE_VCPKG=true
-        - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
-
+#    - os: osx
+#      name: macOS - clang - vcpkg
+#      osx_image: xcode10.1
+#      env:
+#        - additional_defines="-DBUILD_SHARED_LIBS=OFF"
+#        - MATRIX_EVAL="brew install yasm && unset CC && unset CXX"
+#        - USE_VCPKG=true
+#        - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
+#
     - os: linux
       compiler: clang
       dist: bionic
