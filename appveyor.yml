@@ -24,13 +24,13 @@ environment:
     #  configuration: Release
     #  VCPKG_ROOT: C:\Tools\vcpkg
     #  VCPKG_DEFAULT_TRIPLET: x64-windows
-    #- platform: Win64
-    #  USE_CUDA: yes
-    #  INSTALL_CUDA_VERSION: 10.2
-    #  COMPILER: vs
-    #  configuration: Release
-    #  VCPKG_ROOT: C:\Tools\vcpkg
-    #  VCPKG_DEFAULT_TRIPLET: x64-windows
+    - platform: Win64
+      USE_CUDA: yes
+      INSTALL_CUDA_VERSION: 10.2
+      COMPILER: vs
+      configuration: Release
+      VCPKG_ROOT: C:\Tools\vcpkg
+      VCPKG_DEFAULT_TRIPLET: x64-windows
     #- platform: Win64
     #  USE_CUDA: no
     #  COMPILER: vs
@@ -58,8 +58,8 @@ install:
   - cd %WORKSPACE%\
   - if [%USE_CUDA%]==[yes] if [%INSTALL_CUDA_VERSION%]==[10.0] curl -L https://developer.nvidia.com/compute/cuda/10.0/Prod/local_installers/cuda_10.0.130_411.31_win10 -o setup.exe
   - if [%USE_CUDA%]==[yes] if [%INSTALL_CUDA_VERSION%]==[10.1] curl -L https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda_10.1.105_418.96_win10.exe -o setup.exe
-  - if [%USE_CUDA%]==[yes] if [%INSTALL_CUDA_VERSION%]==[10.2] curl -L http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda_10.2.89_441.22_win10.exe -o setup.exe
-  - if [%USE_CUDA%]==[yes] .\setup.exe -s nvcc_%INSTALL_CUDA_VERSION% cuobjdump_%INSTALL_CUDA_VERSION% nvprune_%INSTALL_CUDA_VERSION% cupti_%INSTALL_CUDA_VERSION% gpu_library_advisor_%INSTALL_CUDA_VERSION% memcheck_%INSTALL_CUDA_VERSION% nvdisasm_%INSTALL_CUDA_VERSION% nvprof_%INSTALL_CUDA_VERSION% visual_profiler_%INSTALL_CUDA_VERSION% visual_studio_integration_%INSTALL_CUDA_VERSION% cublas_%INSTALL_CUDA_VERSION% cublas_dev_%INSTALL_CUDA_VERSION% cudart_%INSTALL_CUDA_VERSION% cufft_%INSTALL_CUDA_VERSION% cufft_dev_%INSTALL_CUDA_VERSION% curand_%INSTALL_CUDA_VERSION% curand_dev_%INSTALL_CUDA_VERSION% cusolver_%INSTALL_CUDA_VERSION% cusolver_dev_%INSTALL_CUDA_VERSION% cusparse_%INSTALL_CUDA_VERSION% cusparse_dev_%INSTALL_CUDA_VERSION% nvgraph_%INSTALL_CUDA_VERSION% nvgraph_dev_%INSTALL_CUDA_VERSION% npp_%INSTALL_CUDA_VERSION% npp_dev_%INSTALL_CUDA_VERSION% nvrtc_%INSTALL_CUDA_VERSION% nvrtc_dev_%INSTALL_CUDA_VERSION% nvml_dev_%INSTALL_CUDA_VERSION% occupancy_calculator_%INSTALL_CUDA_VERSION% fortran_examples_%INSTALL_CUDA_VERSION%
+  - if [%USE_CUDA%]==[yes] if [%INSTALL_CUDA_VERSION%]==[10.2] choco install cuda -y
+  - if [%USE_CUDA%]==[yes] if NOT [%INSTALL_CUDA_VERSION%]==[10.2] .\setup.exe -s nvcc_%INSTALL_CUDA_VERSION% cuobjdump_%INSTALL_CUDA_VERSION% nvprune_%INSTALL_CUDA_VERSION% cupti_%INSTALL_CUDA_VERSION% gpu_library_advisor_%INSTALL_CUDA_VERSION% memcheck_%INSTALL_CUDA_VERSION% nvdisasm_%INSTALL_CUDA_VERSION% nvprof_%INSTALL_CUDA_VERSION% visual_profiler_%INSTALL_CUDA_VERSION% visual_studio_integration_%INSTALL_CUDA_VERSION% cublas_%INSTALL_CUDA_VERSION% cublas_dev_%INSTALL_CUDA_VERSION% cudart_%INSTALL_CUDA_VERSION% cufft_%INSTALL_CUDA_VERSION% cufft_dev_%INSTALL_CUDA_VERSION% curand_%INSTALL_CUDA_VERSION% curand_dev_%INSTALL_CUDA_VERSION% cusolver_%INSTALL_CUDA_VERSION% cusolver_dev_%INSTALL_CUDA_VERSION% cusparse_%INSTALL_CUDA_VERSION% cusparse_dev_%INSTALL_CUDA_VERSION% nvgraph_%INSTALL_CUDA_VERSION% nvgraph_dev_%INSTALL_CUDA_VERSION% npp_%INSTALL_CUDA_VERSION% npp_dev_%INSTALL_CUDA_VERSION% nvrtc_%INSTALL_CUDA_VERSION% nvrtc_dev_%INSTALL_CUDA_VERSION% nvml_dev_%INSTALL_CUDA_VERSION% occupancy_calculator_%INSTALL_CUDA_VERSION% fortran_examples_%INSTALL_CUDA_VERSION%
   - if [%USE_CUDA%]==[yes] set CUDA_PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%INSTALL_CUDA_VERSION%
   - if [%USE_CUDA%]==[yes] if [%INSTALL_CUDA_VERSION%]==[10.0] set CUDA_PATH_V10_0=%CUDA_PATH%
   - if [%USE_CUDA%]==[yes] if [%INSTALL_CUDA_VERSION%]==[10.1] set CUDA_PATH_V10_1=%CUDA_PATH%

@@ -8,28 +8,21 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-   # Install system dependencies
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
       run: sudo apt install yasm
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
-    # Restore from cache the previously built ports. If "cache miss", then provision vcpkg, install desired ports, finally cache everything for the next run.
     - name: Restore from cache and run vcpkg
       env:
         vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_linux.diff
       uses: lukka/run-vcpkg@v2
       with:
-        # Response file stored in source control, it provides the list of ports and triplet(s).
         vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
-        # Location of the vcpkg as submodule of the repository.
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
         vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
-        # Since the cache must be invalidated when content of the response file changes, let's
-        # compute its hash and append this to the computed cache's key.
         appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
 
     - name: 'Build with CMake and Ninja'
@@ -66,16 +59,79 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-   # Install system dependencies
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
       run: sudo apt install libopencv-dev
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake and Ninja'
+      uses: lukka/run-cmake@v2
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--target install'
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-${{ runner.os }}
+        path: cfg
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-${{ runner.os }}
+        path: data
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-${{ runner.os }}
+        path: ${{ github.workspace }}/*dark*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-${{ runner.os }}
+        path: ${{ github.workspace }}/uselib*
+
+
+  linux-build-with-cuda:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Update apt
+      run: sudo apt update
+    - name: Install dependencies
+      run: sudo apt install libopencv-dev
+
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Install CUDA'
+      env:
+        INSTALL_CUDA_VERSION: "10.2"
+        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda-10.2"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
+        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
+      run: |
+        wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
+        sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+        sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
+        wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
+        sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
+        sudo apt update
+        sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
+        sudo apt-get install -y --no-install-recommends libcudnn7-dev
+        sudo ln -s /usr/local/cuda-${{ env.INSTALL_CUDA_VERSION }}/lib64/stubs/libcuda.so /usr/local/cuda-${{ env.INSTALL_CUDA_VERSION }}/lib64/stubs/libcuda.so.1
+
+    - name: 'Build with CMake and Ninja'
+      env:
+        INSTALL_CUDA_VERSION: "10.2"
+        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda-10.2"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
+        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
       uses: lukka/run-cmake@v2
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -109,7 +165,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake and Ninja'
@@ -129,26 +184,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-   # Install system dependencies
     - name: Install dependencies
       run: brew install libomp yasm
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
-    # Restore from cache the previously built ports. If "cache miss", then provision vcpkg, install desired ports, finally cache everything for the next run.
     - name: Restore from cache and run vcpkg
       env:
         vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_osx.diff
       uses: lukka/run-vcpkg@v2
       with:
-        # Response file stored in source control, it provides the list of ports and triplet(s).
         vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
-        # Location of the vcpkg as submodule of the repository.
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
         vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
-        # Since the cache must be invalidated when content of the response file changes, let's
-        # compute its hash and append this to the computed cache's key.
         appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
 
     - name: 'Build with CMake and Ninja'
@@ -185,11 +233,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-   # Install system dependencies
     - name: Install dependencies
       run: brew install opencv libomp
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake and Ninja'
@@ -226,7 +272,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake and Ninja'
@@ -246,22 +291,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
-    # Restore from cache the previously built ports. If "cache miss", then provision vcpkg, install desired ports, finally cache everything for the next run.
     - name: Restore from cache and run vcpkg
       env:
         vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_windows.diff
       uses: lukka/run-vcpkg@v2
       with:
-        # Response file stored in source control, it provides the list of ports and triplet(s).
         vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
-        # Location of the vcpkg as submodule of the repository.
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
         vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
-        # Since the cache must be invalidated when content of the response file changes, let's
-        # compute its hash and append this to the computed cache's key.
         appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
 
     - name: 'Build with CMake and Ninja'
@@ -273,7 +312,75 @@ jobs:
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
         cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
         cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+        buildWithCMakeArgs: '--config Release --target install'
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: cfg
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: data
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ github.workspace }}/*dark*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ github.workspace }}/buildDirectory/*.dll
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ github.workspace }}/uselib*
+
+
+  windows-build-vcpkg-with-cuda:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: 'Install CUDA'
+      run: |
+        choco install cuda -y
+        $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
+        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+        refreshenv
+
+    - uses: lukka/get-cmake@latest
+
+    - name: Restore from cache and run vcpkg
+      env:
+        vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_windows_cuda.diff
+        INSTALL_CUDA_VERSION: "10.2"
+        CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDACXX: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
+
+      uses: lukka/run-vcpkg@v2
+      with:
+        vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
+        appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
+
+    - name: 'Build with CMake and Ninja'
+      env:
+        INSTALL_CUDA_VERSION: "10.2"
+        CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDACXX: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
+      uses: lukka/run-cmake@v2
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--config Release --target install'
 
     - uses: actions/upload-artifact@v2
       with:
@@ -302,7 +409,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake and Ninja'
@@ -314,7 +420,7 @@ jobs:
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
         cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
         cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+        buildWithCMakeArgs: '--config Release --target install'
 
     - uses: actions/upload-artifact@v2
       with:
@@ -337,12 +443,12 @@ jobs:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
 
+
   windows-build-integrated-libs-cpp-mode:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
 
-   # Install latest CMake.
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake and Ninja'
@@ -354,4 +460,59 @@ jobs:
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
         cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE"
         cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+        buildWithCMakeArgs: '--config Release --target install'
+
+
+  windows-build-integrated-libs-with-cuda:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: 'Install CUDA'
+      run: |
+        choco install cuda -y
+        $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
+        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+        refreshenv
+
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build with CMake and Ninja'
+      env:
+        INSTALL_CUDA_VERSION: "10.2"
+        CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDACXX: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
+      uses: lukka/run-cmake@v2
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--config Release --target install'
+
+
+  windows-mingw:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: fixPath
+      run: |
+        set PATH=%PATH:C:\Program Files\Git\bin;=%
+        set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
+      shell: cmd
+
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build with CMake and Ninja'
+      uses: lukka/run-cmake@v2
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-G\"MinGW Makefiles\" -DCMAKE_BUILD_TYPE=Release"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--config Release --target install'

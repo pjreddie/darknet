@@ -1,4 +1,4 @@
-#ifdef _WIN32
+#ifdef _MSC_VER
 #ifndef __GETOPT_H__
 /**
  * DISCLAIMER

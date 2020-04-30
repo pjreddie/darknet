@@ -242,14 +242,10 @@ The `CMakeLists.txt` will attempt to find installed optional dependencies like
 CUDA, cudnn, ZED and build against those. It will also create a shared object
 library file to use `darknet` for code development.
 
-Do inside the cloned repository:
+Open a bash terminal inside the cloned repository and launch:
 
-```
-mkdir build-release
-cd build-release
-cmake ..
-make
-make install
+```bash
+./build.sh
 ```
 
 ### How to compile on Linux (using `make`)
@@ -270,51 +266,34 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 
 To run Darknet on Linux use examples from this article, just use `./darknet` instead of `darknet.exe`, i.e. use this command: `./darknet detector test ./cfg/coco.data ./cfg/yolov4.cfg ./yolov4.weights`
 
-### How to compile on Windows (using `CMake-GUI`)
+### How to compile on Windows (using `CMake`)
 
 This is the recommended approach to build Darknet on Windows if you have already
 installed Visual Studio 2015/2017/2019, CUDA > 10.0, cuDNN > 7.0, and
 OpenCV > 2.4.
 
-Use `CMake-GUI` as shown here on this [**IMAGE**](https://user-images.githubusercontent.com/4096485/55107892-6becf380-50e3-11e9-9a0a-556a943c429a.png):
+Open a Powershell terminal inside the cloned repository and launch:
 
-1. Configure
-2. Optional platform for generator (Set: x64)
-3. Finish
-4. Generate
-5. Open Project
-6. Set: x64 & Release
-7. Build
-8. Build solution
+```PowerShell
+.\build.ps1
+```
 
 ### How to compile on Windows (using `vcpkg`)
 
-If you have already installed Visual Studio 2015/2017/2019, CUDA > 10.0,
-cuDNN > 7.0, OpenCV > 2.4, then to compile Darknet it is recommended to use
-[CMake-GUI](#how-to-compile-on-windows-using-cmake-gui).
-
-Otherwise, follow these steps:
-
 1. Install or update Visual Studio to at least version 2017, making sure to have it fully patched (run again the installer if not sure to automatically update to latest version). If you need to install from scratch, download VS from here: [Visual Studio Community](http://visualstudio.com)
 
-2. Install CUDA and cuDNN
+2. Install CUDA
 
-3. Install `git` and `cmake`. Make sure they are on the Path at least for the current account
+3. Install [vcpkg](https://github.com/Microsoft/vcpkg) and try to install a test library to make sure everything is working, for example `vcpkg install opengl`
 
-4. Install [vcpkg](https://github.com/Microsoft/vcpkg) and try to install a test library to make sure everything is working, for example `vcpkg install opengl`
-
-5. Define an environment variables, `VCPKG_ROOT`, pointing to the install path of `vcpkg`
-
-6. Define another environment variable, with name `VCPKG_DEFAULT_TRIPLET` and value `x64-windows`
-
-7. Open Powershell and type these commands:
+4. Open Powershell and type these commands:
 
 ```PowerShell
-PS \>                  cd $env:VCPKG_ROOT
-PS Code\vcpkg>         .\vcpkg install pthreads opencv[ffmpeg] #replace with opencv[cuda,ffmpeg] in case you want to use cuda-accelerated openCV
+PS \>                  cd vcpkg
+PS Code\vcpkg>         .\vcpkg install darknet[full]:x64-windows #replace with darknet[opencv-base,weights]:x64-windows for a quicker install; use --head if you want to build latest commit on master branch and not latest release
 ```
 
-8.  Open Powershell, go to the `darknet` folder and build with the command `.\build.ps1`. If you want to use Visual Studio, you will find two custom solutions created for you by CMake after the build, one in `build_win_debug` and the other in `build_win_release`, containing all the appropriate config flags for your system.
+5. You will find darknet inside the vcpkg\installed\x64-windows\tools\darknet folder, together with all the necessary weight and cfg files
 
 ### How to compile on Windows (legacy way)
 

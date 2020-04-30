@@ -256,7 +256,7 @@ list(APPEND headers
   ${CMAKE_CURRENT_LIST_DIR}/include/darknet.h
 )
 #remove windows only files
-if(NOT WIN32)
+if(NOT MSVC)
   list(REMOVE_ITEM headers
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.h
     ${CMAKE_CURRENT_LIST_DIR}/src/getopt.h
@@ -276,7 +276,7 @@ list(REMOVE_ITEM sources
   ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c
 )
 #remove windows only files
-if(NOT WIN32)
+if(NOT MSVC)
   list(REMOVE_ITEM sources
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.c
     ${CMAKE_CURRENT_LIST_DIR}/src/getopt.c
