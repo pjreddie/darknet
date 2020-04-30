@@ -3,7 +3,61 @@ name: Darknet Continuous Integration
 on: [push, pull_request]
 
 jobs:
-  linux-build-vcpkg:
+  linux-make:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Update apt
+      run: sudo apt update
+    - name: Install dependencies
+      run: sudo apt install libopencv-dev
+
+    - name: 'Install CUDA'
+      run: |
+        wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
+        sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+        sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
+        wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
+        sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
+        sudo apt update
+        sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
+        sudo apt-get install -y --no-install-recommends libcudnn7-dev
+        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/stubs/libcuda.so.1
+        nvcc --version
+        gcc --version
+
+    - name: 'LIBSO=1 GPU=0 CUDNN=0 OPENCV=0'
+      run: |
+        make LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 -j 8
+        make clean
+    - name: 'LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 DEBUG=1'
+      run: |
+        make LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 DEBUG=1 -j 8
+        make clean
+    - name: 'LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 AVX=1'
+      run: |
+        make LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 AVX=1 -j 8
+        make clean
+    - name: 'LIBSO=1 GPU=0 CUDNN=0 OPENCV=1'
+      run: |
+        make LIBSO=1 GPU=0 CUDNN=0 OPENCV=1 -j 8
+        make clean
+    - name: 'LIBSO=1 GPU=1 CUDNN=1 OPENCV=1'
+      run: |
+        make LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 -j 8
+        make clean
+    - name: 'LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 CUDNN_HALF=1'
+      run: |
+        make LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 CUDNN_HALF=1 -j 8
+        make clean
+    - name: 'LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 CUDNN_HALF=1 USE_CPP=1'
+      run: |
+        make LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 CUDNN_HALF=1 USE_CPP=1 -j 8
+        make clean
+
+
+  linux-cmake-vcpkg:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -54,7 +108,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  linux-build:
+  linux-cmake:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -95,7 +149,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  linux-build-with-cuda:
+  linux-cmake-with-cuda:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -160,7 +214,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  linux-build-no-opencv-cpp-mode:
+  linux-cmake-no-opencv-cpp-mode:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -179,7 +233,7 @@ jobs:
         buildWithCMakeArgs: '--target install'
 
 
-  macos-build-vcpkg:
+  macos-cmake-vcpkg:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
@@ -228,7 +282,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  macos-build:
+  macos-cmake:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
@@ -267,7 +321,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  macos-build-no-opencv-no-omp-cpp-mode:
+  macos-cmake-no-opencv-no-omp-cpp-mode:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
@@ -286,7 +340,7 @@ jobs:
         buildWithCMakeArgs: '--target install'
 
 
-  windows-build-vcpkg:
+  windows-cmake-vcpkg:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -336,7 +390,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  windows-build-vcpkg-with-cuda:
+  windows-cmake-vcpkg-with-cuda:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -404,7 +458,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  windows-build-integrated-libs:
+  windows-cmake-integrated-libs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -444,7 +498,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  windows-build-integrated-libs-cpp-mode:
+  windows-cmake-integrated-libs-cpp-mode:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -463,7 +517,7 @@ jobs:
         buildWithCMakeArgs: '--config Release --target install'
 
 
-  windows-build-integrated-libs-with-cuda:
+  windows-cmake-integrated-libs-with-cuda:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -494,7 +548,7 @@ jobs:
         buildWithCMakeArgs: '--config Release --target install'
 
 
-  windows-mingw:
+  windows-cmake-mingw:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
