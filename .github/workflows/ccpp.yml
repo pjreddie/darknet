@@ -40,7 +40,7 @@ jobs:
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
         cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF"
+        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release"
         buildWithCMakeArgs: '--target install'
 
     - uses: actions/upload-artifact@v2
@@ -82,6 +82,7 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--target install'
 
@@ -138,7 +139,7 @@ jobs:
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
         cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF"
+        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release"
         buildWithCMakeArgs: '--target install'
 
     - uses: actions/upload-artifact@v2
@@ -178,6 +179,7 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--target install'
 
@@ -229,6 +231,7 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--target install'
 
