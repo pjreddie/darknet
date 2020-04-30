@@ -293,6 +293,8 @@ float gradient(float x, ACTIVATION a)
             return loggy_gradient(x);
         case RELU:
             return relu_gradient(x);
+        case RELU6:
+            return relu6_gradient(x);
         case NORM_CHAN:
             //return relu_gradient(x);
         case NORM_CHAN_SOFTMAX_MAXVAL:

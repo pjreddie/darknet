@@ -42,8 +42,8 @@ altNames = None
 def YOLO():
 
     global metaMain, netMain, altNames
-    configPath = "./cfg/yolov3.cfg"
-    weightPath = "./yolov3.weights"
+    configPath = "./cfg/yolov4.cfg"
+    weightPath = "./yolov4.weights"
     metaPath = "./cfg/coco.data"
     if not os.path.exists(configPath):
         raise ValueError("Invalid config path `" +
