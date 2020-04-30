@@ -12,7 +12,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install libopencv-dev yasm
+      run: sudo apt install yasm
 
    # Install latest CMake.
     - uses: lukka/get-cmake@latest
@@ -70,7 +70,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install libopencv-dev yasm
+      run: sudo apt install libopencv-dev
 
    # Install latest CMake.
     - uses: lukka/get-cmake@latest
@@ -110,7 +110,7 @@ jobs:
 
    # Install system dependencies
     - name: Install dependencies
-      run: brew install opencv libomp yasm
+      run: brew install libomp yasm
 
    # Install latest CMake.
     - uses: lukka/get-cmake@latest
@@ -166,7 +166,7 @@ jobs:
 
    # Install system dependencies
     - name: Install dependencies
-      run: brew install opencv libomp yasm
+      run: brew install opencv libomp
 
    # Install latest CMake.
     - uses: lukka/get-cmake@latest
