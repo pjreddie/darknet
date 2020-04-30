@@ -10,20 +10,20 @@ environment:
       COMPILER: cygwin
       CYGWIN_NOWINPATH: yes
       CYGSH: C:\cygwin64\bin\bash -c
-    - platform: Win64
-      USE_CUDA: yes
-      INSTALL_CUDA_VERSION: 10.0
-      COMPILER: vs
-      configuration: Release
-      VCPKG_ROOT: C:\Tools\vcpkg
-      VCPKG_DEFAULT_TRIPLET: x64-windows
-    - platform: Win64
-      USE_CUDA: yes
-      INSTALL_CUDA_VERSION: 10.1
-      COMPILER: vs
-      configuration: Release
-      VCPKG_ROOT: C:\Tools\vcpkg
-      VCPKG_DEFAULT_TRIPLET: x64-windows
+    #- platform: Win64
+    #  USE_CUDA: yes
+    #  INSTALL_CUDA_VERSION: 10.0
+    #  COMPILER: vs
+    #  configuration: Release
+    #  VCPKG_ROOT: C:\Tools\vcpkg
+    #  VCPKG_DEFAULT_TRIPLET: x64-windows
+    #- platform: Win64
+    #  USE_CUDA: yes
+    #  INSTALL_CUDA_VERSION: 10.1
+    #  COMPILER: vs
+    #  configuration: Release
+    #  VCPKG_ROOT: C:\Tools\vcpkg
+    #  VCPKG_DEFAULT_TRIPLET: x64-windows
     #- platform: Win64
     #  USE_CUDA: yes
     #  INSTALL_CUDA_VERSION: 10.2
@@ -31,23 +31,23 @@ environment:
     #  configuration: Release
     #  VCPKG_ROOT: C:\Tools\vcpkg
     #  VCPKG_DEFAULT_TRIPLET: x64-windows
-    - platform: Win64
-      USE_CUDA: no
-      COMPILER: vs
-      configuration: Release
-      VCPKG_ROOT: C:\Tools\vcpkg
-      VCPKG_DEFAULT_TRIPLET: x64-windows
-    - platform: Win64
-      USE_CUDA: no
-      COMPILER: vs
-      configuration: Release
-      USE_INTEGRATED_LIBS: yes
-    - platform: Win64
-      USE_CUDA: no
-      COMPILER: vs
-      configuration: Release
-      USE_INTEGRATED_LIBS: yes
-      FORCE_CPP: yes
+    #- platform: Win64
+    #  USE_CUDA: no
+    #  COMPILER: vs
+    #  configuration: Release
+    #  VCPKG_ROOT: C:\Tools\vcpkg
+    #  VCPKG_DEFAULT_TRIPLET: x64-windows
+    #- platform: Win64
+    #  USE_CUDA: no
+    #  COMPILER: vs
+    #  configuration: Release
+    #  USE_INTEGRATED_LIBS: yes
+    #- platform: Win64
+    #  USE_CUDA: no
+    #  COMPILER: vs
+    #  configuration: Release
+    #  USE_INTEGRATED_LIBS: yes
+    #  FORCE_CPP: yes
 
 install:
   - if [%COMPILER%]==[vs] cinst cmake ninja

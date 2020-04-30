@@ -104,6 +104,26 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
+  linux-build-no-opencv-cpp-mode:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+   # Install latest CMake.
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build with CMake and Ninja'
+      uses: lukka/run-cmake@v2
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--target install'
+
+
   macos-build-vcpkg:
     runs-on: macOS-latest
     steps:
@@ -201,6 +221,26 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
+  macos-build-no-opencv-no-omp-cpp-mode:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v2
+
+   # Install latest CMake.
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build with CMake and Ninja'
+      uses: lukka/run-cmake@v2
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--target install'
+
+
   windows-build-vcpkg:
     runs-on: windows-latest
     steps:
@@ -250,4 +290,68 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ runner.workspace }}/buildDirectory/*.dll
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
+
+
+  windows-build-integrated-libs:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+   # Install latest CMake.
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build with CMake and Ninja'
+      uses: lukka/run-cmake@v2
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--target install'
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: cfg
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: data
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ github.workspace }}/*dark*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ github.workspace }}/3rdparty/pthreads/bin/*.dll
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ github.workspace }}/uselib*
+
+  windows-build-integrated-libs-cpp-mode:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+   # Install latest CMake.
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build with CMake and Ninja'
+      uses: lukka/run-cmake@v2
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--target install'
