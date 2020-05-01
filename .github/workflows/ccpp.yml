@@ -24,6 +24,11 @@ jobs:
         sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
         sudo apt-get install -y --no-install-recommends libcudnn7-dev
         sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-10.2 /usr/local/cuda
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
         nvcc --version
         gcc --version
 
@@ -45,14 +50,20 @@ jobs:
         make clean
     - name: 'LIBSO=1 GPU=1 CUDNN=1 OPENCV=1'
       run: |
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
         make LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 -j 8
         make clean
     - name: 'LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 CUDNN_HALF=1'
       run: |
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
         make LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 CUDNN_HALF=1 -j 8
         make clean
     - name: 'LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 CUDNN_HALF=1 USE_CPP=1'
       run: |
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
         make LIBSO=1 GPU=1 CUDNN=1 OPENCV=1 CUDNN_HALF=1 USE_CPP=1 -j 8
         make clean
 
@@ -163,7 +174,6 @@ jobs:
 
     - name: 'Install CUDA'
       env:
-        INSTALL_CUDA_VERSION: "10.2"
         CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
         CUDA_PATH: "/usr/local/cuda-10.2"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
@@ -177,11 +187,10 @@ jobs:
         sudo apt update
         sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
         sudo apt-get install -y --no-install-recommends libcudnn7-dev
-        sudo ln -s /usr/local/cuda-${{ env.INSTALL_CUDA_VERSION }}/lib64/stubs/libcuda.so /usr/local/cuda-${{ env.INSTALL_CUDA_VERSION }}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/stubs/libcuda.so.1
 
     - name: 'Build with CMake and Ninja'
       env:
-        INSTALL_CUDA_VERSION: "10.2"
         CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
         CUDA_PATH: "/usr/local/cuda-10.2"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
@@ -198,19 +207,19 @@ jobs:
 
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-${{ runner.os }}
+        name: darknet-cuda-${{ runner.os }}
         path: cfg
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-${{ runner.os }}
+        name: darknet-cuda-${{ runner.os }}
         path: data
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-${{ runner.os }}
+        name: darknet-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-${{ runner.os }}
+        name: darknet-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
 
 
@@ -383,7 +392,7 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: darknet-vcpkg-${{ runner.os }}
-        path: ${{ github.workspace }}/buildDirectory/*.dll
+        path: ${{ runner.workspace }}/buildDirectory/Release/*.dll
     - uses: actions/upload-artifact@v2
       with:
         name: darknet-vcpkg-${{ runner.os }}
@@ -406,7 +415,6 @@ jobs:
     - name: Restore from cache and run vcpkg
       env:
         vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_windows_cuda.diff
-        INSTALL_CUDA_VERSION: "10.2"
         CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
@@ -421,7 +429,6 @@ jobs:
 
     - name: 'Build with CMake and Ninja'
       env:
-        INSTALL_CUDA_VERSION: "10.2"
         CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
@@ -438,23 +445,23 @@ jobs:
 
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: cfg
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: data
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
-        path: ${{ runner.workspace }}/buildDirectory/*.dll
+        name: darknet-vcpkg-cuda-${{ runner.os }}
+        path: ${{ runner.workspace }}/buildDirectory/Release/*.dll
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
 
 
@@ -478,23 +485,23 @@ jobs:
 
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-${{ runner.os }}
         path: cfg
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-${{ runner.os }}
         path: data
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/3rdparty/pthreads/bin/*.dll
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
 
 
@@ -532,7 +539,6 @@ jobs:
 
     - name: 'Build with CMake and Ninja'
       env:
-        INSTALL_CUDA_VERSION: "10.2"
         CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
@@ -552,11 +558,6 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: fixPath
-      run: |
-        set PATH=%PATH:C:\Program Files\Git\bin;=%
-        set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
-      shell: cmd
 
     - uses: lukka/get-cmake@latest
 
@@ -570,3 +571,24 @@ jobs:
         cmakeAppendedArgs: "-G\"MinGW Makefiles\" -DCMAKE_BUILD_TYPE=Release"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--config Release --target install'
+
+
+  windows-cmake-cygwin:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Install Cygwin'
+      run: |
+        choco install cygwin -y
+        choco install cyg-get -y
+        cyg-get gcc-g++ cmake make libopencv-devel libncurses-devel
+
+    - name: 'Build'
+      run: |
+        mkdir buildDirectory
+        cd buildDirectory
+        path C:\tools\cygwin\bin
+        bash -c 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release"'
+        bash -c 'cmake --build . --target install -- -j8'
+      shell: cmd
