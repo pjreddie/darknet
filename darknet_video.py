@@ -73,7 +73,7 @@ def main():
     darknet_image = darknet.make_image(width, height, 3)
 
     cap = cv2.VideoCapture(args.input)
-    video = set_video(args.input, args.output_file, (width, height))
+    video = set_video(args.input, args.out_filename, (width, height))
 
     while cap.isOpened():
         prev_time = time.time()
@@ -87,7 +87,7 @@ def main():
         detections = darknet.detect_image(network, class_names, darknet_image, thresh=args.thresh)
         image = darknet.draw_boxes(detections, frame_resized, class_colors)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        if args.output_file is not None:
+        if args.out_filename is not None:
             video.write(image)
         fps = int(1/(time.time() - prev_time))
         print("FPS: {}".format(fps))
