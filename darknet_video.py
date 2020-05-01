@@ -1,115 +1,103 @@
-from ctypes import *
-import math
-import random
 import os
 import cv2
-import numpy as np
 import time
 import darknet
-
-def convertBack(x, y, w, h):
-    xmin = int(round(x - (w / 2)))
-    xmax = int(round(x + (w / 2)))
-    ymin = int(round(y - (h / 2)))
-    ymax = int(round(y + (h / 2)))
-    return xmin, ymin, xmax, ymax
+import argparse
+import random
 
 
-def cvDrawBoxes(detections, img):
-    for detection in detections:
-        x, y, w, h = detection[2][0],\
-            detection[2][1],\
-            detection[2][2],\
-            detection[2][3]
-        xmin, ymin, xmax, ymax = convertBack(
-            float(x), float(y), float(w), float(h))
-        pt1 = (xmin, ymin)
-        pt2 = (xmax, ymax)
-        cv2.rectangle(img, pt1, pt2, (0, 255, 0), 1)
-        cv2.putText(img,
-                    detection[0].decode() +
-                    " [" + str(round(detection[1] * 100, 2)) + "]",
-                    (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                    [0, 255, 0], 2)
-    return img
+def parser():
+    parser = argparse.ArgumentParser(description="YOLO Object Detection")
+    parser.add_argument("--input", type=str, default=0,
+                        help="video source. If empty, uses webcam 0 stream")
+    parser.add_argument("--output_file", type=str, default="",
+                        help="inference video name. Not saved if empty")
+    parser.add_argument("--weights", default="yolov4.weights",
+                        help="yolo weights path")
+    parser.add_argument("--dont_show", action='store_true',
+                        help="windown inference display. For headless systems")
+    parser.add_argument("--ext_output", action='store_true',
+                        help="display bbox coordinates of detected objects")
+    parser.add_argument("--config_file", default="./cfg/yolov4.cfg",
+                        help="path to config file")
+    parser.add_argument("--data_file", default="./cfg/coco.data",
+                        help="path to data file")
+    parser.add_argument("--thresh", type=float, default=.25,
+                        help="remove detections with confidence below this value")
+    return parser.parse_args()
 
 
-netMain = None
-metaMain = None
-altNames = None
+def check_arguments_errors(args):
+    assert 0 < args.thresh < 1, "Threshold should be a float between zero and one (non-inclusive)"
+    if not os.path.exists(args.config_file):
+        raise(ValueError("Invalid config path {}".format(os.path.abspath(args.config_file))))
+    if not os.path.exists(args.weights):
+        raise(ValueError("Invalid weight path {}".format(os.path.abspath(args.weights))))
+    if not os.path.exists(args.data_file):
+        raise(ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
+    if args.input and not os.path.exists(args.input):
+        raise(ValueError("Invalid image path {}".format(os.path.abspath(args.input))))
 
 
-def YOLO():
+def set_video(input_video, output_video, size, fps=15):
+    """
+    Setup input and ouput (saved) video objects
+        args:
+            input_video (str): path to video, or webcam device number
+            output_video (str): inference video name to be saved
+            fps: frames per second for saved video (adjust this number for
+            player speed)
+        returns:
+            cap: cv2 input video object
+            video: cv2 output video object
+    """
+    fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+    video = cv2.VideoWriter(output_video, fourcc, fps, size)
+    return video
 
-    global metaMain, netMain, altNames
-    configPath = "./cfg/yolov4.cfg"
-    weightPath = "./yolov4.weights"
-    metaPath = "./cfg/coco.data"
-    if not os.path.exists(configPath):
-        raise ValueError("Invalid config path `" +
-                         os.path.abspath(configPath)+"`")
-    if not os.path.exists(weightPath):
-        raise ValueError("Invalid weight path `" +
-                         os.path.abspath(weightPath)+"`")
-    if not os.path.exists(metaPath):
-        raise ValueError("Invalid data file path `" +
-                         os.path.abspath(metaPath)+"`")
-    if netMain is None:
-        netMain = darknet.load_net_custom(configPath.encode(
-            "ascii"), weightPath.encode("ascii"), 0, 1)  # batch size = 1
-    if metaMain is None:
-        metaMain = darknet.load_meta(metaPath.encode("ascii"))
-    if altNames is None:
-        try:
-            with open(metaPath) as metaFH:
-                metaContents = metaFH.read()
-                import re
-                match = re.search("names *= *(.*)$", metaContents,
-                                  re.IGNORECASE | re.MULTILINE)
-                if match:
-                    result = match.group(1)
-                else:
-                    result = None
-                try:
-                    if os.path.exists(result):
-                        with open(result) as namesFH:
-                            namesList = namesFH.read().strip().split("\n")
-                            altNames = [x.strip() for x in namesList]
-                except TypeError:
-                    pass
-        except Exception:
-            pass
-    #cap = cv2.VideoCapture(0)
-    cap = cv2.VideoCapture("test.mp4")
-    cap.set(3, 1280)
-    cap.set(4, 720)
-    out = cv2.VideoWriter(
-        "output.avi", cv2.VideoWriter_fourcc(*"MJPG"), 10.0,
-        (darknet.network_width(netMain), darknet.network_height(netMain)))
-    print("Starting the YOLO loop...")
 
-    # Create an image we reuse for each detect
-    darknet_image = darknet.make_image(darknet.network_width(netMain),
-                                    darknet.network_height(netMain),3)
-    while True:
+def main():
+    args = parser()
+    check_arguments_errors(args)
+    random.seed(3)  # deterministic bbox colors
+
+    network, class_names, class_colors = darknet.load_network(
+        args.config_file,
+        args.data_file,
+        args.weights
+    )
+    # Darknet doesn't accept numpy images.
+    # Create one with image we reuse for each detect
+    width = darknet.network_width(network)
+    height = darknet.network_height(network)
+    darknet_image = darknet.make_image(width, height, 3)
+
+    cap = cv2.VideoCapture(args.input)
+    video = set_video(args.input, args.output_file, (width, height))
+
+    while cap.isOpened():
         prev_time = time.time()
-        ret, frame_read = cap.read()
-        frame_rgb = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
-        frame_resized = cv2.resize(frame_rgb,
-                                   (darknet.network_width(netMain),
-                                    darknet.network_height(netMain)),
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_resized = cv2.resize(frame_rgb, (width, height),
                                    interpolation=cv2.INTER_LINEAR)
-
-        darknet.copy_image_from_bytes(darknet_image,frame_resized.tobytes())
-
-        detections = darknet.detect_image(netMain, metaMain, darknet_image, thresh=0.25)
-        image = cvDrawBoxes(detections, frame_resized)
+        darknet.copy_image_from_bytes(darknet_image, frame_resized.tobytes())
+        detections = darknet.detect_image(network, class_names, darknet_image, thresh=args.thresh)
+        image = darknet.draw_boxes(detections, frame_resized, class_colors)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        print(1/(time.time()-prev_time))
-        cv2.imshow('Demo', image)
-        cv2.waitKey(3)
+        if args.output_file is not None:
+            video.write(image)
+        fps = int(1/(time.time() - prev_time))
+        print("FPS: {}".format(fps))
+        darknet.print_detections(detections, args.ext_output)
+        if not args.dont_show:
+            cv2.imshow('Inference', image)
+            cv2.waitKey(fps)
     cap.release()
-    out.release()
+    video.release()
+
 
 if __name__ == "__main__":
-    YOLO()
+    main()
