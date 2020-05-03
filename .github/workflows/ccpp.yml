@@ -3,7 +3,7 @@ name: Darknet Continuous Integration
 on: [push, pull_request]
 
 jobs:
-  linux-make:
+  ubuntu-makefile:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -68,7 +68,7 @@ jobs:
         make clean
 
 
-  linux-cmake-vcpkg:
+  ubuntu-vcpkg:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -119,7 +119,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  linux-cmake:
+  ubuntu:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -160,7 +160,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  linux-cmake-with-cuda:
+  ubuntu-cuda:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -223,7 +223,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  linux-cmake-no-opencv-cpp-mode:
+  ubuntu-no-ocv-cpp:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -242,7 +242,7 @@ jobs:
         buildWithCMakeArgs: '--target install'
 
 
-  macos-cmake-vcpkg:
+  osx-vcpkg:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
@@ -291,7 +291,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  macos-cmake:
+  osx:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
@@ -330,7 +330,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  macos-cmake-no-opencv-no-omp-cpp-mode:
+  osx-no-ocv-no-omp-cpp:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
@@ -349,7 +349,7 @@ jobs:
         buildWithCMakeArgs: '--target install'
 
 
-  windows-cmake-vcpkg:
+  win-vcpkg:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -399,7 +399,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  windows-cmake-vcpkg-with-cuda:
+  win-vcpkg-cuda:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -465,7 +465,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  windows-cmake-integrated-libs:
+  win-integrated-libs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -505,7 +505,7 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  windows-cmake-integrated-libs-cpp-mode:
+  win-intlibs-cpp:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -524,7 +524,7 @@ jobs:
         buildWithCMakeArgs: '--config Release --target install'
 
 
-  windows-cmake-integrated-libs-with-cuda:
+  win-intlibs-cuda:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -554,7 +554,7 @@ jobs:
         buildWithCMakeArgs: '--config Release --target install'
 
 
-  windows-cmake-mingw:
+  mingw:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -573,7 +573,7 @@ jobs:
         buildWithCMakeArgs: '--config Release --target install'
 
 
-  windows-cmake-cygwin:
+  cygwin:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
