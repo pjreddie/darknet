@@ -718,11 +718,19 @@ void custom_atomic_store_int(volatile int* obj, int desr)
     std::atomic_store(ptr_a, desr);
 }
 
+#if !defined(__MINGW64__)
 void this_thread_sleep_for(int ms_time)
 {
     std::chrono::milliseconds dura(ms_time);
     std::this_thread::sleep_for(dura);
 }
+#else
+void this_thread_sleep_for(int ms_time)
+{
+    std::cerr << " this_thread_sleep_for() isn't implemented \n";
+    return;
+}
+#endif
 
 void this_thread_yield()
 {

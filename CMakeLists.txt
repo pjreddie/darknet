@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.12)
 
 set(Darknet_MAJOR_VERSION 0)
 set(Darknet_MINOR_VERSION 2)
 set(Darknet_PATCH_VERSION 5)
-set(Darknet_TWEAK_VERSION 1)
+set(Darknet_TWEAK_VERSION 2)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION}.${Darknet_TWEAK_VERSION})
 
 option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" OFF)
@@ -39,6 +39,16 @@ enable_language(CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 
+set(default_build_type "Release")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+      STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Install prefix" FORCE)
 endif()
@@ -48,31 +58,28 @@ set(INSTALL_LIB_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where lib 
 set(INSTALL_INCLUDE_DIR  "include/darknet"           CACHE PATH "Path where headers will be installed")
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
 
-if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
-  message(WARNING "To build with CUDA support you need CMake 3.9.0+")
-  set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA support" FORCE)
-else()
-  include(CheckLanguage)
-  check_language(CUDA)
-  if(CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
-    set(CUDA_ARCHITECTURES "Auto" CACHE STRING "\"Auto\" detects local machine GPU compute arch at runtime, \"Common\" and \"All\" cover common and entire subsets of architectures, \"Names\" is a list of architectures to enable by name, \"Numbers\" is a list of compute capabilities (version number) to enable")
-    set_property(CACHE CUDA_ARCHITECTURES PROPERTY STRINGS "Auto" "Common" "All" "Kepler Maxwell Kepler+Tegra Maxwell+Tegra Pascal" "3.0 7.5")
-    enable_language(CUDA)
-    find_package(CUDA REQUIRED)
-    if(CUDA_VERSION VERSION_LESS "9.0")
-      message(STATUS "Unsupported CUDA version, please upgrade to CUDA 9+. Disabling CUDA support")
-      set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA support" FORCE)
-    else()
-      cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS ${CUDA_ARCHITECTURES})
-      message(STATUS "Building with CUDA flags: " "${CUDA_ARCH_FLAGS}")
-      if (NOT "arch=compute_70,code=sm_70" IN_LIST CUDA_ARCH_FLAGS AND NOT "arch=compute_72,code=sm_72" IN_LIST CUDA_ARCH_FLAGS AND NOT "arch=compute_75,code=sm_75" IN_LIST CUDA_ARCH_FLAGS)
-        set(ENABLE_CUDNN_HALF "FALSE" CACHE BOOL "Enable CUDNN Half precision" FORCE)
-        message(STATUS "Your setup does not supports half precision (it requires CC >= 7.0)")
-      endif()
-    endif()
-  else()
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
+  set(CUDA_ARCHITECTURES "Auto" CACHE STRING "\"Auto\" detects local machine GPU compute arch at runtime, \"Common\" and \"All\" cover common and entire subsets of architectures, \"Names\" is a list of architectures to enable by name, \"Numbers\" is a list of compute capabilities (version number) to enable")
+  set_property(CACHE CUDA_ARCHITECTURES PROPERTY STRINGS "Auto" "Common" "All" "Kepler Maxwell Kepler+Tegra Maxwell+Tegra Pascal" "3.0 7.5")
+  enable_language(CUDA)
+  if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "9.0")
+    message(STATUS "Unsupported CUDA version, please upgrade to CUDA 9+. Disabling CUDA support")
     set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA support" FORCE)
+  else()
+    find_package(CUDA REQUIRED)
+    cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS ${CUDA_ARCHITECTURES})
+    message(STATUS "Building with CUDA flags: " "${CUDA_ARCH_FLAGS}")
+    if (NOT "arch=compute_70,code=sm_70" IN_LIST CUDA_ARCH_FLAGS AND NOT "arch=compute_72,code=sm_72" IN_LIST CUDA_ARCH_FLAGS AND NOT "arch=compute_75,code=sm_75" IN_LIST CUDA_ARCH_FLAGS)
+      set(ENABLE_CUDNN_HALF "FALSE" CACHE BOOL "Enable CUDNN Half precision" FORCE)
+      message(STATUS "Your setup does not supports half precision (it requires CC >= 7.0)")
+    else()
+      message(STATUS "Your setup supports half precision (it requires CC >= 7.0)")
+    endif()
   endif()
+else()
+  set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA support" FORCE)
 endif()
 
 if (WIN32 AND ENABLE_CUDA AND CMAKE_MAKE_PROGRAM MATCHES "ninja")
@@ -127,10 +134,10 @@ if(ENABLE_OPENCV)
   endif()
 endif()
 find_package(Stb REQUIRED)
-if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
-  message(WARNING "To build with OpenMP support you need CMake 3.11.0+")
-else()
-  find_package(OpenMP)
+find_package(OpenMP)
+
+if(APPLE AND NOT OPENMP_FOUND)
+  message(STATUS "  ->  To enable OpenMP on macOS, please install libomp from Homebrew")
 endif()
 
 set(ADDITIONAL_CXX_FLAGS "-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -Wno-deprecated-declarations -Wno-write-strings")
@@ -249,7 +256,7 @@ list(APPEND headers
   ${CMAKE_CURRENT_LIST_DIR}/include/darknet.h
 )
 #remove windows only files
-if(NOT WIN32)
+if(NOT MSVC)
   list(REMOVE_ITEM headers
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.h
     ${CMAKE_CURRENT_LIST_DIR}/src/getopt.h
@@ -269,7 +276,7 @@ list(REMOVE_ITEM sources
   ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c
 )
 #remove windows only files
-if(NOT WIN32)
+if(NOT MSVC)
   list(REMOVE_ITEM sources
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.c
     ${CMAKE_CURRENT_LIST_DIR}/src/getopt.c
@@ -357,14 +364,19 @@ endif()
 
 if(MSVC)
   target_link_libraries(darknet PRIVATE PThreads_windows::PThreads_windows)
-  target_link_libraries(darknet PRIVATE wsock32 ws2_32)
+  target_link_libraries(darknet PRIVATE wsock32)
   target_link_libraries(dark PUBLIC PThreads_windows::PThreads_windows)
-  target_link_libraries(dark PUBLIC wsock32 ws2_32)
+  target_link_libraries(dark PUBLIC wsock32)
   target_link_libraries(uselib PRIVATE PThreads_windows::PThreads_windows)
   target_compile_definitions(darknet PRIVATE -D_CRT_RAND_S -DNOMINMAX -D_USE_MATH_DEFINES)
   target_compile_definitions(dark PRIVATE -D_CRT_RAND_S -DNOMINMAX -D_USE_MATH_DEFINES)
   target_compile_definitions(dark PUBLIC -D_CRT_SECURE_NO_WARNINGS)
   target_compile_definitions(uselib PRIVATE -D_CRT_RAND_S -DNOMINMAX -D_USE_MATH_DEFINES)
+endif()
+
+if(MSVC OR MINGW)
+  target_link_libraries(darknet PRIVATE ws2_32)
+  target_link_libraries(dark PUBLIC ws2_32)
 endif()
 
 target_link_libraries(darknet PRIVATE Threads::Threads)
