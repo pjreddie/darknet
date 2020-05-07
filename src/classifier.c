@@ -187,7 +187,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             draw_precision = 1;
         }
 
-        time_remaining = (net.max_batches - i)*(what_time_is_it_now() - start) / 60 / 60;
+        time_remaining = ((net.max_batches - i) / ngpus) * (what_time_is_it_now() - start) / 60 / 60;
         // set initial value, even if resume training from 10000 iteration
         if (avg_time < 0) avg_time = time_remaining;
         else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
