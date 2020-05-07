@@ -1125,12 +1125,13 @@ void parse_net_options(list *options, network *net)
     net->burn_in = option_find_int_quiet(options, "burn_in", 0);
 #ifdef GPU
     if (net->gpu_index >= 0) {
-        int compute_capability = get_gpu_compute_capability(net->gpu_index);
+        char device_name[1024];
+        int compute_capability = get_gpu_compute_capability(net->gpu_index, device_name);
 #ifdef CUDNN_HALF
         if (compute_capability >= 700) net->cudnn_half = 1;
         else net->cudnn_half = 0;
 #endif// CUDNN_HALF
-        fprintf(stderr, " compute_capability = %d, cudnn_half = %d \n", compute_capability, net->cudnn_half);
+        fprintf(stderr, " %d : compute_capability = %d, cudnn_half = %d, GPU: %s \n", net->gpu_index, compute_capability, net->cudnn_half, device_name);
     }
     else fprintf(stderr, " GPU isn't used \n");
 #endif// GPU
