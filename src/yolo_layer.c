@@ -55,6 +55,7 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.forward_gpu = forward_yolo_layer_gpu;
     l.backward_gpu = backward_yolo_layer_gpu;
     l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
+    l.output_avg_gpu = cuda_make_array(l.output, batch*l.outputs);
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 
     free(l.output);
@@ -110,6 +111,7 @@ void resize_yolo_layer(layer *l, int w, int h)
 
     cuda_free(l->delta_gpu);
     cuda_free(l->output_gpu);
+    cuda_free(l->output_avg_gpu);
 
     l->delta_gpu =     cuda_make_array(l->delta, l->batch*l->outputs);
     l->output_gpu =    cuda_make_array(l->output, l->batch*l->outputs);
