@@ -771,7 +771,7 @@ detection *make_network_boxes(network *net, float thresh, int *num)
     for (i = 0; i < nboxes; ++i) {
         dets[i].prob = (float*)xcalloc(l.classes, sizeof(float));
         // tx,ty,tw,th uncertainty
-        dets[i].uc = (float*)xcalloc(4, sizeof(float)); // Gaussian_YOLOv3
+        if(l.type == GAUSSIAN_YOLO) dets[i].uc = (float*)xcalloc(4, sizeof(float)); // Gaussian_YOLOv3
         if (l.coords > 4) {
             dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
         }
