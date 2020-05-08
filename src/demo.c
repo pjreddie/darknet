@@ -244,6 +244,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     double start_time = get_time_point();
     float avg_fps = 0;
     int frame_counter = 0;
+    int global_frame_counter = 0;
 
     while(1){
         ++count;
@@ -291,7 +292,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
             if(!prefix){
                 if (!dont_show) {
-                    show_image_mat(show_img, "Demo");
+                    const int each_frame = max_val_cmp(1, avg_fps / 100);
+                    if(global_frame_counter % each_frame == 0) show_image_mat(show_img, "Demo");
                     int c = wait_key_cv(1);
                     if (c == 10) {
                         if (frame_skip == 0) frame_skip = 60;
@@ -363,6 +365,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
             float spent_time = (get_time_point() - start_time) / 1000000;
             frame_counter++;
+            global_frame_counter++;
             if (spent_time >= 3.0f) {
                 //printf(" spent_time = %f \n", spent_time);
                 avg_fps = frame_counter / spent_time;

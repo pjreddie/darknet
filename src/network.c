@@ -1217,7 +1217,7 @@ void fuse_conv_batchnorm(network net)
 #endif
             }
         }
-        else  if (l->type == SHORTCUT && l->weights && l->weights_normalizion)
+        else  if (l->type == SHORTCUT && l->weights && l->weights_normalization)
         {
             if (l->nweights > 0) {
                 //cuda_pull_array(l.weights_gpu, l.weights, l.nweights);
@@ -1234,7 +1234,7 @@ void fuse_conv_batchnorm(network net)
             {
                 float sum = 1, max_val = -FLT_MAX;
 
-                if (l->weights_normalizion == SOFTMAX_NORMALIZATION) {
+                if (l->weights_normalization == SOFTMAX_NORMALIZATION) {
                     for (i = 0; i < (l->n + 1); ++i) {
                         int w_index = chan + i * layer_step;
                         float w = l->weights[w_index];
@@ -1248,20 +1248,20 @@ void fuse_conv_batchnorm(network net)
                 for (i = 0; i < (l->n + 1); ++i) {
                     int w_index = chan + i * layer_step;
                     float w = l->weights[w_index];
-                    if (l->weights_normalizion == RELU_NORMALIZATION) sum += lrelu(w);
-                    else if (l->weights_normalizion == SOFTMAX_NORMALIZATION) sum += expf(w - max_val);
+                    if (l->weights_normalization == RELU_NORMALIZATION) sum += lrelu(w);
+                    else if (l->weights_normalization == SOFTMAX_NORMALIZATION) sum += expf(w - max_val);
                 }
 
                 for (i = 0; i < (l->n + 1); ++i) {
                     int w_index = chan + i * layer_step;
                     float w = l->weights[w_index];
-                    if (l->weights_normalizion == RELU_NORMALIZATION) w = lrelu(w) / sum;
-                    else if (l->weights_normalizion == SOFTMAX_NORMALIZATION) w = expf(w - max_val) / sum;
+                    if (l->weights_normalization == RELU_NORMALIZATION) w = lrelu(w) / sum;
+                    else if (l->weights_normalization == SOFTMAX_NORMALIZATION) w = expf(w - max_val) / sum;
                     l->weights[w_index] = w;
                 }
             }
 
-            l->weights_normalizion = NO_NORMALIZATION;
+            l->weights_normalization = NO_NORMALIZATION;
 
 #ifdef GPU
             if (gpu_index >= 0) {

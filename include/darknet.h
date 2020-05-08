@@ -352,7 +352,7 @@ struct layer {
     float **layers_output;
     float **layers_delta;
     WEIGHTS_TYPE_T weights_type;
-    WEIGHTS_NORMALIZATION_T weights_normalizion;
+    WEIGHTS_NORMALIZATION_T weights_normalization;
     int   * map;
     int   * counts;
     float ** sums;

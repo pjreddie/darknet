@@ -8,7 +8,7 @@
 #include <assert.h>
 
 layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes, int w, int h, int c,
-    float **layers_output, float **layers_delta, float **layers_output_gpu, float **layers_delta_gpu, WEIGHTS_TYPE_T weights_type, WEIGHTS_NORMALIZATION_T weights_normalizion,
+    float **layers_output, float **layers_delta, float **layers_output_gpu, float **layers_delta_gpu, WEIGHTS_TYPE_T weights_type, WEIGHTS_NORMALIZATION_T weights_normalization,
     ACTIVATION activation, int train)
 {
     fprintf(stderr, "Shortcut Layer: ");
@@ -26,7 +26,7 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     l.layers_output = layers_output;
     l.layers_delta = layers_delta;
     l.weights_type = weights_type;
-    l.weights_normalizion = weights_normalizion;
+    l.weights_normalization = weights_normalization;
     l.learning_rate_scale = 1;  // not necessary
 
     //l.w = w2;
@@ -87,7 +87,7 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
 
     l.bflops = l.out_w * l.out_h * l.out_c * l.n / 1000000000.;
     if (l.weights_type) l.bflops *= 2;
-    fprintf(stderr, " wt = %d, wn = %d, outputs:%4d x%4d x%4d %5.3f BF\n", l.weights_type, l.weights_normalizion, l.out_w, l.out_h, l.out_c, l.bflops);
+    fprintf(stderr, " wt = %d, wn = %d, outputs:%4d x%4d x%4d %5.3f BF\n", l.weights_type, l.weights_normalization, l.out_w, l.out_h, l.out_c, l.bflops);
     return l;
 }
 
@@ -161,7 +161,7 @@ void forward_shortcut_layer(const layer l, network_state state)
             l.output[i] = state.input[i] + state.net.layers[l.index].output[i];
     }
     else {
-        shortcut_multilayer_cpu(l.outputs * l.batch, l.outputs, l.batch, l.n, l.input_sizes, l.layers_output, l.output, state.input, l.weights, l.nweights, l.weights_normalizion);
+        shortcut_multilayer_cpu(l.outputs * l.batch, l.outputs, l.batch, l.n, l.input_sizes, l.layers_output, l.output, state.input, l.weights, l.nweights, l.weights_normalization);
     }
 
     //copy_cpu(l.outputs*l.batch, state.input, 1, l.output, 1);
@@ -180,7 +180,7 @@ void backward_shortcut_layer(const layer l, network_state state)
     else gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
 
     backward_shortcut_multilayer_cpu(l.outputs * l.batch, l.outputs, l.batch, l.n, l.input_sizes,
-        l.layers_delta, state.delta, l.delta, l.weights, l.weight_updates, l.nweights, state.input, l.layers_output, l.weights_normalizion);
+        l.layers_delta, state.delta, l.delta, l.weights, l.weight_updates, l.nweights, state.input, l.layers_output, l.weights_normalization);
 
     //axpy_cpu(l.outputs*l.batch, 1, l.delta, 1, state.delta, 1);
     //shortcut_cpu(l.batch, l.out_w, l.out_h, l.out_c, l.delta, l.w, l.h, l.c, state.net.layers[l.index].delta);
@@ -218,7 +218,7 @@ void forward_shortcut_layer_gpu(const layer l, network_state state)
     //}
     //else
     {
-        shortcut_multilayer_gpu(l.outputs, l.batch, l.n, l.input_sizes_gpu, l.layers_output_gpu, l.output_gpu, state.input, l.weights_gpu, l.nweights, l.weights_normalizion);
+        shortcut_multilayer_gpu(l.outputs, l.batch, l.n, l.input_sizes_gpu, l.layers_output_gpu, l.output_gpu, state.input, l.weights_gpu, l.nweights, l.weights_normalization);
     }
 
     if (l.activation == SWISH) activate_array_swish_ongpu(l.output_gpu, l.outputs*l.batch, l.activation_input_gpu, l.output_gpu);
@@ -234,7 +234,7 @@ void backward_shortcut_layer_gpu(const layer l, network_state state)
     else gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
 
     backward_shortcut_multilayer_gpu(l.outputs, l.batch, l.n, l.input_sizes_gpu, l.layers_delta_gpu, state.delta, l.delta_gpu,
-        l.weights_gpu, l.weight_updates_gpu, l.nweights, state.input, l.layers_output_gpu, l.weights_normalizion);
+        l.weights_gpu, l.weight_updates_gpu, l.nweights, state.input, l.layers_output_gpu, l.weights_normalization);
 
     //axpy_ongpu(l.outputs*l.batch, 1, l.delta_gpu, 1, state.delta, 1);
     //shortcut_gpu(l.batch, l.out_w, l.out_h, l.out_c, l.delta_gpu, l.w, l.h, l.c, state.net.layers[l.index].delta_gpu);
