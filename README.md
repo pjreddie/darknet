@@ -167,7 +167,7 @@ Others: https://www.youtube.com/user/pjreddie/videos
 
 ### Improvements in this repository
 
-* added support for Windows
+* developed State-of-the-Art object detector YOLOv4
 * added State-of-Art models: CSP, PRN, EfficientNet
 * added layers: [conv_lstm], [scale_channels] SE/ASFF/BiFPN, [local_avgpool], [sam], [Gaussian_yolo], [reorg3d] (fixed [reorg]), fixed [batchnorm]
 * added the ability for training recurrent models (with layers conv-lstm`[conv_lstm]`/conv-rnn`[crnn]`) for accurate detection on video
@@ -187,6 +187,7 @@ Others: https://www.youtube.com/user/pjreddie/videos
 * added calculation of anchors for training
 * added example of Detection and Tracking objects: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
 * run-time tips and warnings if you use incorrect cfg-file or dataset
+* added support for Windows
 * many other fixes of code...
 
 And added manual - [How to train Yolo v4-v2 (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
