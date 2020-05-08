@@ -696,7 +696,8 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     args.h = net.h;
     args.c = net.c;
     args.type = IMAGE_DATA;
-    //args.type = LETTERBOX_DATA;
+    const int letter_box = net.letter_box;
+    if (letter_box) args.type = LETTERBOX_DATA;
 
     for (t = 0; t < nthreads; ++t) {
         args.path = paths[i + t];
@@ -726,8 +727,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             int w = val[t].w;
             int h = val[t].h;
             int nboxes = 0;
-            int letterbox = (args.type == LETTERBOX_DATA);
-            detection *dets = get_network_boxes(&net, w, h, thresh, .5, map, 0, &nboxes, letterbox);
+            detection *dets = get_network_boxes(&net, w, h, thresh, .5, map, 0, &nboxes, letter_box);
             if (nms) {
                 if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
                 else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
