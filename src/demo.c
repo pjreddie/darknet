@@ -101,9 +101,11 @@ void *detect_in_thread(void *ptr)
         float *X = det_s.data;
         float *prediction = network_predict(net, X);
 
-        memcpy(predictions[demo_index], prediction, l.outputs * sizeof(float));
-        mean_arrays(predictions, NFRAMES, l.outputs, avg);
-        l.output = avg;
+        int i;
+        for (i = 0; i < net.n; ++i) {
+            layer l = net.layers[i];
+            if (l.type == YOLO) l.mean_alpha = 1.0 / NFRAMES;
+        }
 
         cv_images[demo_index] = det_img;
         det_img = cv_images[(demo_index + NFRAMES / 2 + 1) % NFRAMES];

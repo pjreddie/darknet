@@ -223,6 +223,7 @@ struct layer {
     int flipped;
     int inputs;
     int outputs;
+    float mean_alpha;
     int nweights;
     int nbiases;
     int extra;
@@ -595,6 +596,7 @@ struct layer {
 
     float * input_antialiasing_gpu;
     float * output_gpu;
+    float * output_avg_gpu;
     float * activation_input_gpu;
     float * loss_gpu;
     float * delta_gpu;

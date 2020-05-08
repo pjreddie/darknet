@@ -113,6 +113,7 @@ void resize_yolo_layer(layer *l, int w, int h)
 
     l->delta_gpu =     cuda_make_array(l->delta, l->batch*l->outputs);
     l->output_gpu =    cuda_make_array(l->output, l->batch*l->outputs);
+    l->output_avg_gpu = cuda_make_array(l->output, l->batch*l->outputs);
 #endif
 }
 
@@ -871,6 +872,7 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
     }
     if(!state.train || l.onlyforward){
         //cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+        if (l.mean_alpha && l.output_avg_gpu) mean_array_gpu(l.output_gpu, l.batch*l.outputs, l.mean_alpha, l.output_avg_gpu);
         cuda_pull_array_async(l.output_gpu, l.output, l.batch*l.outputs);
         CHECK_CUDA(cudaPeekAtLastError());
         return;

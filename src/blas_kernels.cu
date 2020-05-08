@@ -39,6 +39,24 @@ void compare_2_arrays_gpu(float *one, float *two, int size)
     CHECK_CUDA(cudaDeviceSynchronize());
 }
 
+__global__ void mean_array_kernel(float *src, int size, float alpha, float *avg)
+{
+    const int i = blockIdx.x*blockDim.x + threadIdx.x;
+    if (i >= size) return;
+
+    avg[i] = avg[i] * (1 - alpha) + src[i] * alpha;
+    src[i] = avg[i];
+}
+
+
+void mean_array_gpu(float *src, int size, float alpha, float *avg)
+{
+    const int num_blocks = get_number_of_blocks(size, BLOCK);
+
+    mean_array_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(src, size, alpha, avg);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
 
 __global__ void scale_bias_kernel(float *output, float *scale, int batch, int filters, int spatial, int current_size)
 {

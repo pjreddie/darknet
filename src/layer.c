@@ -190,6 +190,7 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.optimized_memory < 2) {
         if (l.x_gpu)                   cuda_free(l.x_gpu);  l.x_gpu = NULL;
         if (l.output_gpu)              cuda_free(l.output_gpu), l.output_gpu = NULL;
+        if (l.output_avg_gpu)          cuda_free(l.output_avg_gpu), l.output_avg_gpu = NULL;
         if (l.activation_input_gpu)    cuda_free(l.activation_input_gpu), l.activation_input_gpu = NULL;
     }
     if (l.delta_gpu && l.keep_delta_gpu && l.optimized_memory < 3) cuda_free(l.delta_gpu), l.delta_gpu = NULL;
