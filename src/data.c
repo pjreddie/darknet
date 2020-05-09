@@ -896,35 +896,86 @@ void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, in
         int top = (yb - hb / 2)*h;
         int bot = (yb + hb / 2)*h;
 
-        // fix out of bound
-        if (left < 0) {
-            float diff = (float)left / w;
-            xb = xb - diff / 2;
-            wb = wb + diff;
-        }
+        /*
+        {
+            // fix out of Mosaic-bound
+            float left_bound = 0, right_bound = 0, top_bound = 0, bot_bound = 0;
+            if (i_mixup == 0) {
+                left_bound = 0;
+                right_bound = cut_x;
+                top_bound = 0;
+                bot_bound = cut_y;
+            }
+            if (i_mixup == 1) {
+                left_bound = cut_x;
+                right_bound = w;
+                top_bound = 0;
+                bot_bound = cut_y;
+            }
+            if (i_mixup == 2) {
+                left_bound = 0;
+                right_bound = cut_x;
+                top_bound = cut_y;
+                bot_bound = h;
+            }
+            if (i_mixup == 3) {
+                left_bound = cut_x;
+                right_bound = w;
+                top_bound = cut_y;
+                bot_bound = h;
+            }
 
-        if (right > w) {
-            float diff = (float)(right - w) / w;
-            xb = xb - diff / 2;
-            wb = wb - diff;
-        }
 
-        if (top < 0) {
-            float diff = (float)top / h;
-            yb = yb - diff / 2;
-            hb = hb + diff;
-        }
+            if (left < left_bound) {
+                //printf(" i_mixup = %d, left = %d, left_bound = %f \n", i_mixup, left, left_bound);
+                left = left_bound;
+            }
+            if (right > right_bound) {
+                //printf(" i_mixup = %d, right = %d, right_bound = %f \n", i_mixup, right, right_bound);
+                right = right_bound;
+            }
+            if (top < top_bound) top = top_bound;
+            if (bot > bot_bound) bot = bot_bound;
 
-        if (bot > h) {
-            float diff = (float)(bot - h) / h;
-            yb = yb - diff / 2;
-            hb = hb - diff;
-        }
 
-        left = (xb - wb / 2)*w;
-        right = (xb + wb / 2)*w;
-        top = (yb - hb / 2)*h;
-        bot = (yb + hb / 2)*h;
+            xb = ((float)(right + left) / 2) / w;
+            wb = ((float)(right - left)) / w;
+            yb = ((float)(bot + top) / 2) / h;
+            hb = ((float)(bot - top)) / h;
+        }
+        */
+
+        {
+            // fix out of bound
+            if (left < 0) {
+                float diff = (float)left / w;
+                xb = xb - diff / 2;
+                wb = wb + diff;
+            }
+
+            if (right > w) {
+                float diff = (float)(right - w) / w;
+                xb = xb - diff / 2;
+                wb = wb - diff;
+            }
+
+            if (top < 0) {
+                float diff = (float)top / h;
+                yb = yb - diff / 2;
+                hb = hb + diff;
+            }
+
+            if (bot > h) {
+                float diff = (float)(bot - h) / h;
+                yb = yb - diff / 2;
+                hb = hb - diff;
+            }
+
+            left = (xb - wb / 2)*w;
+            right = (xb + wb / 2)*w;
+            top = (yb - hb / 2)*h;
+            bot = (yb + hb / 2)*h;
+        }
 
         // leave only within the image
         if(left >= 0 && right <= w && top >= 0 && bot <= h &&
@@ -952,12 +1003,15 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     const int random_index = random_gen();
     c = c ? c : 3;
 
-    if (use_mixup == 2) {
-        printf("\n cutmix=1 - isn't supported for Detector \n");
-        exit(0);
+    if (use_mixup == 2 || use_mixup == 4) {
+        printf("\n cutmix=1 - isn't supported for Detector (use cutmix=1 only for Classifier) \n");
+        if (check_mistakes) getchar();
+        if(use_mixup == 2) use_mixup = 0;
+        else use_mixup = 3;
     }
     if (use_mixup == 3 && letter_box) {
         printf("\n Combination: letter_box=1 & mosaic=1 - isn't supported, use only 1 of these parameters \n");
+        if (check_mistakes) getchar();
         exit(0);
     }
     if (random_gen() % 2 == 0) use_mixup = 0;
@@ -1002,8 +1056,9 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             mat_cv *src;
             src = load_image_mat_cv(filename, flag);
             if (src == NULL) {
+                printf("\n Error in load_data_detection() - OpenCV \n");
+                fflush(stdout);
                 if (check_mistakes) {
-                    printf("\n Error in load_data_detection() - OpenCV \n");
                     getchar();
                 }
                 continue;
@@ -1224,7 +1279,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
         printf("\n cutmix=1 - isn't supported for Detector \n");
         exit(0);
     }
-    if (use_mixup == 3) {
+    if (use_mixup == 3 || use_mixup == 4) {
         printf("\n mosaic=1 - compile Darknet with OpenCV for using mosaic=1 \n");
         exit(0);
     }
