@@ -859,6 +859,36 @@ extern "C" void fill_ongpu(int N, float ALPHA, float * X, int INCX)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
+__global__ void gradient_centralization_kernel(int filters, int f_size, float *in)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+    const int tid = index % WARP_SIZE;
+    const int f = index / WARP_SIZE;
+
+    if (f >= filters) return;
+
+    float mean = 0;
+    for (int i = 0; i < f_size; i += WARP_SIZE) {
+        mean += warpAllReduceSum(in[f*f_size + i + tid]);
+    }
+    mean = mean / f_size;
+    for (int i = 0; i < f_size; i += WARP_SIZE) {
+        in[f*f_size + i + tid] -= mean;
+    }
+
+}
+
+extern "C" void gradient_centralization_gpu(int w, int h, int c, int f, float *in)
+{
+    const int size = f * WARP_SIZE;
+    const int f_size = c * h * w;
+    if (f_size % WARP_SIZE == 0) {
+
+        gradient_centralization_kernel << <get_number_of_blocks(size, BLOCK), BLOCK, 0, get_cuda_stream() >> > (f, f_size, in);
+        CHECK_CUDA(cudaPeekAtLastError());
+    }
+}
+
 __device__ float relu(float src) {
     if (src > 0) return src;
     return 0;

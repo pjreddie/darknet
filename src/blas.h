@@ -77,6 +77,7 @@ void const_ongpu(int N, float ALPHA, float *X, int INCX);
 void pow_ongpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void mul_ongpu(int N, float *X, int INCX, float *Y, int INCY);
 void fill_ongpu(int N, float ALPHA, float * X, int INCX);
+void gradient_centralization_gpu(int w, int h, int c, int f, float *in);
 
 void mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
 void variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);

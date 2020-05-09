@@ -264,6 +264,7 @@ struct layer {
     float smooth;
     float dot;
     int deform;
+    int grad_centr;
     int sway;
     int rotate;
     int stretch;

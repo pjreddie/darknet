@@ -1248,6 +1248,14 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
     reset_nan_and_inf(l.weight_updates_gpu, l.nweights);
     fix_nan_and_inf(l.weights_gpu, l.nweights);
 
+    // Gradient Centralization
+    if (l.grad_centr && l.batch_normalize) {
+        // weights[filters][channels][height][width]
+        // for(filters) w[f] = w[f] - mean(w[c][h][w])
+        gradient_centralization_gpu(l.size, l.size, l.c, l.n, l.weight_updates_gpu);
+    }
+
+
     if (l.adam) {
         //adam_update_gpu(l.weights_gpu, l.weight_updates_gpu, l.m_gpu, l.v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.nweights, batch, a.t);
         adam_update_gpu(l.weights_gpu, l.weight_updates_gpu, l.m_gpu, l.v_gpu, l.B1, l.B2, l.eps, decay, learning_rate, l.nweights, batch, l.t);
