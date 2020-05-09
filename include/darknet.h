@@ -271,6 +271,7 @@ struct layer {
     int stretch_sway;
     float angle;
     float jitter;
+    float resize;
     float saturation;
     float exposure;
     float shift;
@@ -890,6 +891,7 @@ typedef struct load_args {
     int show_imgs;
     int dontuse_opencv;
     float jitter;
+    float resize;
     int flip;
     int gaussian_noise;
     int blur;

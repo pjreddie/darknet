@@ -104,7 +104,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     layer l = net.layers[net.n - 1];
 
     int classes = l.classes;
-    float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
     int train_images_num = plist->size;
@@ -129,7 +128,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.m = plist->size;
     args.classes = classes;
     args.flip = net.flip;
-    args.jitter = jitter;
+    args.jitter = l.jitter;
+    args.resize = l.resize;
     args.num_boxes = l.max_boxes;
     net.num_boxes = args.num_boxes;
     net.train_images_num = train_images_num;

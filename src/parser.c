@@ -449,6 +449,7 @@ layer parse_yolo(list *options, size_params params)
     }
 
     l.jitter = option_find_float(options, "jitter", .2);
+    l.resize = option_find_float_quiet(options, "resize", 1.0);
     l.focal_loss = option_find_int_quiet(options, "focal_loss", 0);
 
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
@@ -564,6 +565,7 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
         iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y, l.yolo_point);
 
     l.jitter = option_find_float(options, "jitter", .2);
+    l.resize = option_find_float_quiet(options, "resize", 1.0);
 
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
@@ -612,6 +614,7 @@ layer parse_region(list *options, size_params params)
     l.focal_loss = option_find_int_quiet(options, "focal_loss", 0);
     //l.max_boxes = option_find_int_quiet(options, "max",30);
     l.jitter = option_find_float(options, "jitter", .2);
+    l.resize = option_find_float_quiet(options, "resize", 1.0);
     l.rescore = option_find_int_quiet(options, "rescore",0);
 
     l.thresh = option_find_float(options, "thresh", .5);
@@ -666,6 +669,7 @@ detection_layer parse_detection(list *options, size_params params)
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
     layer.jitter = option_find_float(options, "jitter", .2);
+    layer.resize = option_find_float_quiet(options, "resize", 1.0);
     layer.random = option_find_float_quiet(options, "random", 0);
     layer.reorg = option_find_int_quiet(options, "reorg", 0);
     return layer;

@@ -998,7 +998,7 @@ void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, in
 #include "http_stream.h"
 
 data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_gaussian_noise, int use_blur, int use_mixup,
-    float jitter, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
+    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -1036,6 +1036,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.cols = h*w*c;
 
     float r1 = 0, r2 = 0, r3 = 0, r4 = 0, r_scale = 0;
+    float resize_r1 = 0, resize_r2 = 0;
     float dhue = 0, dsat = 0, dexp = 0, flip = 0, blur = 0;
     int augmentation_calculated = 0, gaussian_noise = 0;
 
@@ -1070,9 +1071,22 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int dw = (ow*jitter);
             int dh = (oh*jitter);
 
+            float resize_down = resize, resize_up = resize;
+            if (resize_down > 1.0) resize_down = 1 / resize_down;
+            int min_rdw = ow*(1 - (1 / resize_down)) / 2;   // < 0
+            int min_rdh = oh*(1 - (1 / resize_down)) / 2;   // < 0
+
+            if (resize_up < 1.0) resize_up = 1 / resize_up;
+            int max_rdw = ow*(1 - (1 / resize_up)) / 2;     // > 0
+            int max_rdh = oh*(1 - (1 / resize_up)) / 2;     // > 0
+            //printf(" down = %f, up = %f \n", (1 - (1 / resize_down)) / 2, (1 - (1 / resize_up)) / 2);
+
             if (!augmentation_calculated || !track)
             {
                 augmentation_calculated = 1;
+                resize_r1 = random_float();
+                resize_r2 = random_float();
+
                 r1 = random_float();
                 r2 = random_float();
                 r3 = random_float();
@@ -1101,6 +1115,21 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int pright = rand_precalc_random(-dw, dw, r2);
             int ptop = rand_precalc_random(-dh, dh, r3);
             int pbot = rand_precalc_random(-dh, dh, r4);
+
+            if (resize < 1) {
+                // downsize only
+                pleft += rand_precalc_random(min_rdw, 0, resize_r1);
+                pright += rand_precalc_random(min_rdw, 0, resize_r2);
+                ptop += rand_precalc_random(min_rdh, 0, resize_r1);
+                pbot += rand_precalc_random(min_rdh, 0, resize_r2);
+            }
+            else {
+                pleft += rand_precalc_random(min_rdw, max_rdw, resize_r1);
+                pright += rand_precalc_random(min_rdw, max_rdw, resize_r2);
+                ptop += rand_precalc_random(min_rdh, max_rdh, resize_r1);
+                pbot += rand_precalc_random(min_rdh, max_rdh, resize_r2);
+            }
+
             //printf("\n pleft = %d, pright = %d, ptop = %d, pbot = %d, ow = %d, oh = %d \n", pleft, pright, ptop, pbot, ow, oh);
 
             //float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
@@ -1127,7 +1156,27 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     pright = pright - delta_w;
                     //printf(" result_ar = %f, ow_tmp = %f, delta_w = %d, pleft = %f, pright = %f \n", result_ar, ow_tmp, delta_w, pleft, pright);
                 }
+
+                //printf("\n pleft = %d, pright = %d, ptop = %d, pbot = %d, ow = %d, oh = %d \n", pleft, pright, ptop, pbot, ow, oh);
             }
+
+            /*
+            // move each 2nd image to the corner - so that most of it was visible
+            if (use_mixup == 3 && random_gen() % 2 == 0) {
+                if (flip) {
+                    if (i_mixup == 0) pleft += pright, pright = 0, pbot += ptop, ptop = 0;
+                    if (i_mixup == 1) pright += pleft, pleft = 0, pbot += ptop, ptop = 0;
+                    if (i_mixup == 2) pleft += pright, pright = 0, ptop += pbot, pbot = 0;
+                    if (i_mixup == 3) pright += pleft, pleft = 0, ptop += pbot, pbot = 0;
+                }
+                else {
+                    if (i_mixup == 0) pright += pleft, pleft = 0, pbot += ptop, ptop = 0;
+                    if (i_mixup == 1) pleft += pright, pright = 0, pbot += ptop, ptop = 0;
+                    if (i_mixup == 2) pright += pleft, pleft = 0, ptop += pbot, pbot = 0;
+                    if (i_mixup == 3) pleft += pright, pright = 0, ptop += pbot, pbot = 0;
+                }
+            }
+            */
 
             int swidth = ow - pleft - pright;
             int sheight = oh - ptop - pbot;
@@ -1264,8 +1313,8 @@ void blend_images(image new_img, float alpha, image old_img, float beta)
         new_img.data[i] = new_img.data[i] * alpha + old_img.data[i] * beta;
 }
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int gaussian_noise, int use_blur, int use_mixup, float jitter,
-    float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int gaussian_noise, int use_blur, int use_mixup,
+    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -1299,6 +1348,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.cols = h*w*c;
 
     float r1 = 0, r2 = 0, r3 = 0, r4 = 0, r_scale;
+    float resize_r1 = 0, resize_r2 = 0;
     float dhue = 0, dsat = 0, dexp = 0, flip = 0;
     int augmentation_calculated = 0;
 
@@ -1318,9 +1368,21 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int dw = (ow*jitter);
             int dh = (oh*jitter);
 
+            float resize_down = resize, resize_up = resize;
+            if (resize_down > 1.0) resize_down = 1 / resize_down;
+            int min_rdw = ow*(1 - (1 / resize_down)) / 2;
+            int min_rdh = oh*(1 - (1 / resize_down)) / 2;
+
+            if (resize_up < 1.0) resize_up = 1 / resize_up;
+            int max_rdw = ow*(1 - (1 / resize_up)) / 2;
+            int max_rdh = oh*(1 - (1 / resize_up)) / 2;
+
             if (!augmentation_calculated || !track)
             {
                 augmentation_calculated = 1;
+                resize_r1 = random_float();
+                resize_r2 = random_float();
+
                 r1 = random_float();
                 r2 = random_float();
                 r3 = random_float();
@@ -1340,7 +1402,19 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int ptop = rand_precalc_random(-dh, dh, r3);
             int pbot = rand_precalc_random(-dh, dh, r4);
 
-            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
+            if (resize < 1) {
+                // downsize only
+                pleft += rand_precalc_random(min_rdw, 0, resize_r1);
+                pright += rand_precalc_random(min_rdw, 0, resize_r2);
+                ptop += rand_precalc_random(min_rdh, 0, resize_r1);
+                pbot += rand_precalc_random(min_rdh, 0, resize_r2);
+            }
+            else {
+                pleft += rand_precalc_random(min_rdw, max_rdw, resize_r1);
+                pright += rand_precalc_random(min_rdw, max_rdw, resize_r2);
+                ptop += rand_precalc_random(min_rdh, max_rdh, resize_r1);
+                pbot += rand_precalc_random(min_rdh, max_rdh, resize_r2);
+            }
 
             if (letter_box)
             {
@@ -1454,7 +1528,7 @@ void *load_thread(void *ptr)
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){
-        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.gaussian_noise, a.blur, a.mixup, a.jitter,
+        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.gaussian_noise, a.blur, a.mixup, a.jitter, a.resize,
             a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.letter_box, a.show_imgs);
     } else if (a.type == SWAG_DATA){
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
