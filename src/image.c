@@ -133,7 +133,7 @@ image get_label_v3(image **characters, char *string, int size)
         label = n;
         ++string;
     }
-    image b = border_image(label, label.h*.25);
+    image b = border_image(label, label.h*.05);
     free_image(label);
     return b;
 }
@@ -347,7 +347,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
     // image output
     qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_probs);
     for (i = 0; i < selected_detections_num; ++i) {
-            int width = im.h * .006;
+            int width = im.h * .002;
             if (width < 1)
                 width = 1;
 
@@ -422,7 +422,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
                         strcat(labelstr, names[j]);
                     }
                 }
-                image label = get_label_v3(alphabet, labelstr, (im.h*.03));
+                image label = get_label_v3(alphabet, labelstr, (im.h*.02));
                 draw_label(im, top + width, left, label, rgb);
                 free_image(label);
             }
