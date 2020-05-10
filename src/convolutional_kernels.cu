@@ -1252,7 +1252,7 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
     if (l.grad_centr && l.batch_normalize) {
         // weights[filters][channels][height][width]
         // for(filters) w[f] = w[f] - mean(w[c][h][w])
-        gradient_centralization_gpu(l.size, l.size, l.c, l.n, l.weight_updates_gpu);
+        gradient_centralization_gpu(l.size, l.size, l.c / l.groups, l.n, l.weight_updates_gpu);
     }
 
 
