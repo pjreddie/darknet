@@ -357,6 +357,7 @@ int *parse_yolo_mask(char *a, int *num)
         int n = 1;
         int i;
         for (i = 0; i < len; ++i) {
+            if (a[i] == '#') break;
             if (a[i] == ',') ++n;
         }
         mask = (int*)xcalloc(n, sizeof(int));
@@ -466,6 +467,7 @@ layer parse_yolo(list *options, size_params params)
         int n = 1;
         int i;
         for (i = 0; i < len; ++i) {
+            if (a[i] == '#') break;
             if (a[i] == ',') ++n;
         }
         for (i = 0; i < n && i < total*2; ++i) {
@@ -486,6 +488,7 @@ int *parse_gaussian_yolo_mask(char *a, int *num) // Gaussian_YOLOv3
         int n = 1;
         int i;
         for (i = 0; i < len; ++i) {
+            if (a[i] == '#') break;
             if (a[i] == ',') ++n;
         }
         mask = (int *)calloc(n, sizeof(int));
@@ -1154,6 +1157,7 @@ void parse_net_options(list *options, network *net)
             int n = 1;
             int i;
             for (i = 0; i < len; ++i) {
+                if (l[i] == '#') break;
                 if (l[i] == ',') ++n;
             }
             int* steps = (int*)xcalloc(n, sizeof(int));
