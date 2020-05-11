@@ -26,6 +26,7 @@ int custom_join(custom_thread_t thread, void **value_ptr);
 
 int custom_atomic_load_int(volatile int* obj);
 void custom_atomic_store_int(volatile int* obj, int desr);
+int get_num_threads();
 void this_thread_sleep_for(int ms_time);
 void this_thread_yield();
 

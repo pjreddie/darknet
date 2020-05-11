@@ -718,6 +718,11 @@ void custom_atomic_store_int(volatile int* obj, int desr)
     std::atomic_store(ptr_a, desr);
 }
 
+int get_num_threads()
+{
+    return std::thread::hardware_concurrency();
+}
+
 #if !defined(__MINGW64__)
 void this_thread_sleep_for(int ms_time)
 {
