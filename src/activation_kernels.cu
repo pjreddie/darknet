@@ -233,11 +233,11 @@ __device__ float mish_njuffa(float x)
 
 __device__ float mish_yashas(float x)
 {
-    auto e = __expf(x);
+    float e = __expf(x);
     if (x <= -18.0f)
         return x * e;
 
-    auto n = e * e + 2 * e;
+    float n = e * e + 2 * e;
     if (x <= -5.0f)
         return x * __fdividef(n, n + 2);
 
