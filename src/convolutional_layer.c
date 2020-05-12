@@ -547,7 +547,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     if(gpu_index >= 0){
 
-        if (l.activation == SWISH || l.activation == MISH) {
+        if (train && (l.activation == SWISH || l.activation == MISH)) {
             l.activation_input_gpu = cuda_make_array(l.activation_input, total_batch*l.outputs);
         }
 
