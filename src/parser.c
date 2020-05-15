@@ -1118,6 +1118,7 @@ void parse_net_options(list *options, network *net)
     net->resize_step = option_find_float_quiet(options, "resize_step", 32);
     net->attention = option_find_int_quiet(options, "attention", 0);
     net->adversarial_lr = option_find_float_quiet(options, "adversarial_lr", 0);
+    net->max_chart_loss = option_find_float_quiet(options, "max_chart_loss", 5.0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);

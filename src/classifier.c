@@ -116,7 +116,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 #ifdef OPENCV
     //args.threads = 3;
     mat_cv* img = NULL;
-    float max_img_loss = 10;
+    float max_img_loss = net.max_chart_loss;
     int number_of_lines = 100;
     int img_size = 1000;
     char windows_name[100];

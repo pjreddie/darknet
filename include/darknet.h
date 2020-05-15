@@ -711,6 +711,7 @@ typedef struct network {
     int attention;
     int adversarial;    
     float adversarial_lr;
+    float max_chart_loss;
     int letter_box;
     float angle;
     float aspect;
