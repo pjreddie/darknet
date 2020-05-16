@@ -35,24 +35,25 @@ def check_arguments_errors(args):
         raise(ValueError("Invalid weight path {}".format(os.path.abspath(args.weights))))
     if not os.path.exists(args.data_file):
         raise(ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
-    if args.input and not os.path.exists(args.input):
-        raise(ValueError("Invalid image path {}".format(os.path.abspath(args.input))))
+    if str2int(args.input) == str and not os.path.exists(args.input):
+        raise(ValueError("Invalid video path {}".format(os.path.abspath(args.input))))
 
 
-def set_video(input_video, output_video, size, fps=15):
+def str2int(video_path):
     """
-    Setup input and ouput (saved) video objects
-        args:
-            input_video (str): path to video, or webcam device number
-            output_video (str): inference video name to be saved
-            fps: frames per second for saved video (adjust this number for
-            player speed)
-        returns:
-            cap: cv2 input video object
-            video: cv2 output video object
+    argparse returns and string althout webcam uses int (0, 1 ...)
+    Cast to int if needed
     """
+    try:
+        return int(video_path)
+    except ValueError:
+        return video_path
+
+
+def set_saved_video(input_video, output_video, size):
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-    video = cv2.VideoWriter(output_video, fourcc, fps, size)
+    fps = int(input_video.get(cv2.CAP_PROP_FPS))
+    video = cv2.VideoWriter(output_video, fourcc, fps, size,)
     return video
 
 
@@ -72,8 +73,9 @@ def main():
     height = darknet.network_height(network)
     darknet_image = darknet.make_image(width, height, 3)
 
-    cap = cv2.VideoCapture(args.input)
-    video = set_video(args.input, args.out_filename, (width, height))
+    input_path = str2int(args.input)
+    cap = cv2.VideoCapture(input_path)
+    video = set_saved_video(cap, args.out_filename, (width, height))
 
     while cap.isOpened():
         prev_time = time.time()
