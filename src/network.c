@@ -772,9 +772,10 @@ detection *make_network_boxes(network *net, float thresh, int *num)
         dets[i].prob = (float*)xcalloc(l.classes, sizeof(float));
         // tx,ty,tw,th uncertainty
         if(l.type == GAUSSIAN_YOLO) dets[i].uc = (float*)xcalloc(4, sizeof(float)); // Gaussian_YOLOv3
-        if (l.coords > 4) {
-            dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
-        }
+        else dets[i].uc = NULL;
+
+        if (l.coords > 4) dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
+        else dets[i].mask = NULL;
     }
     return dets;
 }
@@ -789,9 +790,12 @@ detection *make_network_boxes_batch(network *net, float thresh, int *num, int ba
     detection* dets = (detection*)calloc(nboxes, sizeof(detection));
     for (i = 0; i < nboxes; ++i) {
         dets[i].prob = (float*)calloc(l.classes, sizeof(float));
-        if (l.coords > 4) {
-            dets[i].mask = (float*)calloc(l.coords - 4, sizeof(float));
-        }
+        // tx,ty,tw,th uncertainty
+        if (l.type == GAUSSIAN_YOLO) dets[i].uc = (float*)xcalloc(4, sizeof(float)); // Gaussian_YOLOv3
+        else dets[i].uc = NULL;
+
+        if (l.coords > 4) dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
+        else dets[i].mask = NULL;
     }
     return dets;
 }

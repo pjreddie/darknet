@@ -38,6 +38,7 @@ void *xcalloc(size_t nmemb, size_t size) {
     if(!ptr) {
         calloc_error();
     }
+    memset(ptr, 0, nmemb * size);
     return ptr;
 }
 
@@ -328,19 +329,19 @@ void error(const char *s)
 
 void malloc_error()
 {
-    fprintf(stderr, "xMalloc error\n");
+    fprintf(stderr, "xMalloc error - possibly out of CPU RAM \n");
     exit(EXIT_FAILURE);
 }
 
 void calloc_error()
 {
-    fprintf(stderr, "Calloc error\n");
+    fprintf(stderr, "Calloc error - possibly out of CPU RAM \n");
     exit(EXIT_FAILURE);
 }
 
 void realloc_error()
 {
-    fprintf(stderr, "Realloc error\n");
+    fprintf(stderr, "Realloc error - possibly out of CPU RAM \n");
     exit(EXIT_FAILURE);
 }
 
