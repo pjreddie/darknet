@@ -37,12 +37,10 @@ static int demo_ext_output = 0;
 static long long int frame_id = 0;
 static int demo_json_port = -1;
 
-#define NFRAMES 3
 
-static float* predictions[NFRAMES];
+static int avg_frames;
 static int demo_index = 0;
-static mat_cv* cv_images[NFRAMES];
-static float *avg;
+static mat_cv** cv_images;
 
 mat_cv* in_img;
 mat_cv* det_img;
@@ -102,8 +100,8 @@ void *detect_in_thread(void *ptr)
         float *prediction = network_predict(net, X);
 
         cv_images[demo_index] = det_img;
-        det_img = cv_images[(demo_index + NFRAMES / 2 + 1) % NFRAMES];
-        demo_index = (demo_index + 1) % NFRAMES;
+        det_img = cv_images[(demo_index + avg_frames / 2 + 1) % avg_frames];
+        demo_index = (demo_index + 1) % avg_frames;
 
         if (letter_box)
             dets = get_network_boxes(&net, get_width_mat(in_img), get_height_mat(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
@@ -132,10 +130,12 @@ double get_wall_time()
     return (double)walltime.tv_sec + (double)walltime.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
+void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes, int avgframes,
     int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int dontdraw_bbox, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char *http_post_host,
     int benchmark, int benchmark_layers)
 {
+    if (avgframes < 1) avgframes = 1;
+    avg_frames = avgframes;
     letter_box = letter_box_in;
     in_img = det_img = show_img = NULL;
     //skip = frame_skip;
@@ -157,12 +157,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     calculate_binary_weights(net);
     srand(2222222);
 
-    int i;
-    for (i = 0; i < net.n; ++i) {
-        layer l = net.layers[i];
-        if (l.type == YOLO) l.mean_alpha = 1.0 / NFRAMES;
-    }
-
     if(filename){
         printf("video file: %s\n", filename);
         cap = get_capture_video_stream(filename);
@@ -181,8 +175,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     layer l = net.layers[net.n-1];
     int j;
 
-    avg = (float *) calloc(l.outputs, sizeof(float));
-    for(j = 0; j < NFRAMES; ++j) predictions[j] = (float *) calloc(l.outputs, sizeof(float));
+    cv_images = (mat_cv**)xcalloc(avg_frames, sizeof(mat_cv));
+
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        layer l = net.layers[i];
+        if (l.type == YOLO) l.mean_alpha = 1.0 / avg_frames;
+    }
 
     if (l.classes != demo_classes) {
         printf("\n Parameters don't match: in cfg-file classes=%d, in data-file classes=%d \n", l.classes, demo_classes);
@@ -206,7 +205,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     det_img = in_img;
     det_s = in_s;
 
-    for (j = 0; j < NFRAMES / 2; ++j) {
+    for (j = 0; j < avg_frames / 2; ++j) {
         free_detections(dets, nboxes);
         fetch_in_thread_sync(0); //fetch_in_thread(0);
         detect_in_thread_sync(0); //fetch_in_thread(0);
@@ -292,7 +291,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
             if(!prefix){
                 if (!dont_show) {
-                    const int each_frame = max_val_cmp(1, avg_fps / 100);
+                    const int each_frame = max_val_cmp(1, avg_fps / 60);
                     if(global_frame_counter % each_frame == 0) show_image_mat(show_img, "Demo");
                     int c = wait_key_cv(1);
                     if (c == 10) {
@@ -389,12 +388,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     free_image(in_s);
     free_detections(dets, nboxes);
 
-    free(avg);
-    for (j = 0; j < NFRAMES; ++j) free(predictions[j]);
-    demo_index = (NFRAMES + demo_index - 1) % NFRAMES;
-    for (j = 0; j < NFRAMES; ++j) {
+    demo_index = (avg_frames + demo_index - 1) % avg_frames;
+    for (j = 0; j < avg_frames; ++j) {
             release_mat(&cv_images[j]);
     }
+    free(cv_images);
 
     free_ptrs((void **)names, net.layers[net.n - 1].classes);
 
@@ -410,7 +408,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     //cudaProfilerStop();
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
+void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes, int avgframes,
     int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int dontdraw_bbox, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char *http_post_host,
     int benchmark, int benchmark_layers)
 {

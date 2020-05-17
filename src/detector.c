@@ -1883,6 +1883,7 @@ void run_detector(int argc, char **argv)
     check_mistakes = find_arg(argc, argv, "-check_mistakes");
     int show_imgs = find_arg(argc, argv, "-show_imgs");
     int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
+    int avgframes = find_int_arg(argc, argv, "-avgframes", 3);
     int dontdraw_bbox = find_arg(argc, argv, "-dontdraw_bbox");
     int json_port = find_int_arg(argc, argv, "-json_port", -1);
     char *http_post_host = find_char_arg(argc, argv, "-http_post_host", 0);
@@ -1958,7 +1959,7 @@ void run_detector(int argc, char **argv)
         if (filename)
             if (strlen(filename) > 0)
                 if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
-        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
+        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, avgframes, frame_skip, prefix, out_filename,
             mjpeg_port, dontdraw_bbox, json_port, dont_show, ext_output, letter_box, time_limit_sec, http_post_host, benchmark, benchmark_layers);
 
         free_list_contents_kvp(options);
