@@ -1457,9 +1457,9 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 
 #ifdef GPU
         // futher GPU-memory optimization: net.optimized_memory == 2
+        l.optimized_memory = net.optimized_memory;
         if (net.optimized_memory >= 2 && params.train && l.type != DROPOUT)
         {
-            l.optimized_memory = net.optimized_memory;
             if (l.output_gpu) {
                 cuda_free(l.output_gpu);
                 //l.output_gpu = cuda_make_array_pinned(l.output, l.batch*l.outputs); // l.steps
