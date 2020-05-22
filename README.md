@@ -50,6 +50,12 @@ More details: http://pjreddie.com/darknet/yolo/
 * Yolo v2 on Pascal VOC 2007: https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg
 * Yolo v2 on Pascal VOC 2012 (comp4): https://hsto.org/files/3a6/fdf/b53/3a6fdfb533f34cee9b52bdd9bb0b19d9.jpg
 
+#### Examples of results
+
+[![Yolo v4](http://img.youtube.com/vi/1_SiUOYUoOI/0.jpg)](https://youtu.be/1_SiUOYUoOI "Yolo v4")
+
+Others: https://www.youtube.com/user/pjreddie/videos
+
 #### How to evaluate AP of YOLOv4 on the MS COCO evaluation server
 
 1. Download and unzip test-dev2017 dataset from MS COCO server: http://images.cocodataset.org/zips/test2017.zip
@@ -162,11 +168,7 @@ You can get cfg-files by path: `darknet/cfg/`
 * German/Belgium/Russian/LISA/MASTIF Traffic Sign Datasets for Detection - use this parsers: https://github.com/angeligareta/Datasets2Darknet#detection-task
 * List of other datasets: https://github.com/AlexeyAB/darknet/tree/master/scripts#datasets
 
-##### Examples of results
 
-[![Yolo v3](http://img.youtube.com/vi/VOC3huqHrss/0.jpg)](https://www.youtube.com/watch?v=MPU2HistivI "Yolo v3")
-
-Others: https://www.youtube.com/user/pjreddie/videos
 
 ### Improvements in this repository
 
