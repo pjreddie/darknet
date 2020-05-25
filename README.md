@@ -40,8 +40,21 @@ More details: http://pjreddie.com/darknet/yolo/
 
 
 
-|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![readme](https://user-images.githubusercontent.com/4096485/80213782-5f1e3480-8642-11ea-8fdf-0e6b9a6b5f4c.png) AP50:95 / AP50 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2004.10934 |
+|  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![modern_gpus](https://user-images.githubusercontent.com/4096485/82835867-f1c62380-9ecd-11ea-9134-1598ed2abc4b.png) AP50:95 / AP50 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2004.10934 |
 |---|---|
+
+tkDNN-TensorRT accelerates YOLOv4 **~2x** times for batch=1 and **3x-4x** times for batch=4.
+OpenCV-dnn is ~10% slower than tkDNN-TensorRT.
+* tkDNN: https://github.com/ceccocats/tkDNN
+* OpenCV: https://gist.github.com/YashasSamaga/48bdb167303e10f4d07b754888ddbdcf
+
+**GeForce RTX 2080 Ti:**
+| Network Size 	| Darknet, FPS (avg)| tkDNN TensorRT FP32, FPS  | tkDNN TensorRT FP16, FPS  | OpenCV FP16, FPS | tkDNN TensorRT FP16 batch=4, FPS  | OpenCV FP16 batch=4, FPS | tkDNN Speedup |
+|:-----:|:--------:|--------:|--------:|--------:|--------:|--------:|------:|
+|320	| 100 | 116 | **202** | 171 | **423** | 384 | **4.2x** |
+|416	| 82 | 103 | **162** | 146 | **284** | 260 | **3.5x** |
+|512	| 69 | 91 | **134** | 125 | **206** | 190 | **2.9x** |
+|608 	| 53 | 62 | **103** | 100 | **150** | 133 | **2.8x**  |
 
 * Yolo v4 Full comparison: [map_fps](https://user-images.githubusercontent.com/4096485/80283279-0e303e00-871f-11ea-814c-870967d77fd1.png)
 * CSPNet: [paper](https://arxiv.org/abs/1911.11929) and [map_fps](https://user-images.githubusercontent.com/4096485/71702416-6645dc00-2de0-11ea-8d65-de7d4b604021.png) comparison: https://github.com/WongKinYiu/CrossStagePartialNetworks
@@ -50,7 +63,7 @@ More details: http://pjreddie.com/darknet/yolo/
 * Yolo v2 on Pascal VOC 2007: https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg
 * Yolo v2 on Pascal VOC 2012 (comp4): https://hsto.org/files/3a6/fdf/b53/3a6fdfb533f34cee9b52bdd9bb0b19d9.jpg
 
-#### Examples of results
+#### Youtube video of results
 
 [![Yolo v4](http://img.youtube.com/vi/1_SiUOYUoOI/0.jpg)](https://youtu.be/1_SiUOYUoOI "Yolo v4")
 
