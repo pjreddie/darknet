@@ -313,8 +313,9 @@ layer parse_conv_lstm(list *options, size_params params)
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int peephole = option_find_int_quiet(options, "peephole", 0);
+    int bottleneck = option_find_int_quiet(options, "bottleneck", 0);
 
-    layer l = make_conv_lstm_layer(params.batch, params.h, params.w, params.c, output_filters, groups, params.time_steps, size, stride, dilation, padding, activation, batch_normalize, peephole, xnor, params.train);
+    layer l = make_conv_lstm_layer(params.batch, params.h, params.w, params.c, output_filters, groups, params.time_steps, size, stride, dilation, padding, activation, batch_normalize, peephole, xnor, bottleneck, params.train);
 
     l.state_constrain = option_find_int_quiet(options, "state_constrain", params.time_steps * 32);
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
@@ -1817,9 +1818,11 @@ void save_weights_upto(network net, char *filename, int cutoff)
                 save_convolutional_weights(*(l.vo), fp);
             }
             save_convolutional_weights(*(l.wf), fp);
-            save_convolutional_weights(*(l.wi), fp);
-            save_convolutional_weights(*(l.wg), fp);
-            save_convolutional_weights(*(l.wo), fp);
+            if (!l.bottleneck) {
+                save_convolutional_weights(*(l.wi), fp);
+                save_convolutional_weights(*(l.wg), fp);
+                save_convolutional_weights(*(l.wo), fp);
+            }
             save_convolutional_weights(*(l.uf), fp);
             save_convolutional_weights(*(l.ui), fp);
             save_convolutional_weights(*(l.ug), fp);
@@ -2079,9 +2082,11 @@ void load_weights_upto(network *net, char *filename, int cutoff)
                 load_convolutional_weights(*(l.vo), fp);
             }
             load_convolutional_weights(*(l.wf), fp);
-            load_convolutional_weights(*(l.wi), fp);
-            load_convolutional_weights(*(l.wg), fp);
-            load_convolutional_weights(*(l.wo), fp);
+            if (!l.bottleneck) {
+                load_convolutional_weights(*(l.wi), fp);
+                load_convolutional_weights(*(l.wg), fp);
+                load_convolutional_weights(*(l.wo), fp);
+            }
             load_convolutional_weights(*(l.uf), fp);
             load_convolutional_weights(*(l.ui), fp);
             load_convolutional_weights(*(l.ug), fp);

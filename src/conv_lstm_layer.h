@@ -9,7 +9,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, int groups, int steps, int size, int stride, int dilation, int pad, ACTIVATION activation, int batch_normalize, int peephole, int xnor, int train);
+layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, int groups, int steps, int size, int stride, int dilation, int pad, ACTIVATION activation, int batch_normalize, int peephole, int xnor, int bottleneck, int train);
 void resize_conv_lstm_layer(layer *l, int w, int h);
 void free_state_conv_lstm(layer l);
 void randomize_state_conv_lstm(layer l);

@@ -258,6 +258,7 @@ struct layer {
     int keep_delta_gpu;
     int optimized_memory;
     int steps;
+    int bottleneck;
     int state_constrain;
     int hidden;
     int truth;
@@ -518,6 +519,8 @@ struct layer {
     float *r_gpu;
     float *h_gpu;
     float *stored_h_gpu;
+    float *bottelneck_hi_gpu;
+    float *bottelneck_delta_gpu;
 
     float *temp_gpu;
     float *temp2_gpu;

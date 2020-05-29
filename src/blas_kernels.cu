@@ -1535,8 +1535,8 @@ __global__ void add_3_arrays_activate_kernel(float *a1, float *a2, float *a3, si
     const int index = blockIdx.x*blockDim.x + threadIdx.x;
     if (index < size) {
         float val = 0;
-        val += a1[index];
-        val += a2[index];
+        if (a1) val += a1[index];
+        if (a2) val += a2[index];
         if (a3) val += a3[index];
         if (a == LOGISTIC) val = 1.f / (1.f + expf(-val));
         else if(a == TANH) val = (2 / (1 + expf(-2 * val)) - 1);

@@ -12,6 +12,9 @@ darknet.exe partial cfg/csdarknet53-omega.cfg csdarknet53-omega_final.weights cs
 darknet.exe partial cfg/cd53paspp-omega.cfg cd53paspp-omega_final.weights cd53paspp-omega.conv.137 137
 
 
+darknet.exe partial cfg/yolov4.cfg backup/yolov4_final.weights yolov4.conv.137 137
+
+
 darknet.exe partial cfg/csresnext50.cfg csresnext50.weights csresnext50.conv.75 75
 
 

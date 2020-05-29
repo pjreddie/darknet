@@ -33,9 +33,11 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
             free(l.vo);
         }
         free_sublayer(l.wf);
-        free_sublayer(l.wi);
-        free_sublayer(l.wg);
-        free_sublayer(l.wo);
+        if (!l.bottleneck) {
+            free_sublayer(l.wi);
+            free_sublayer(l.wg);
+            free_sublayer(l.wo);
+        }
         free_sublayer(l.uf);
         free_sublayer(l.ui);
         free_sublayer(l.ug);
@@ -208,6 +210,8 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.o_gpu)                   cuda_free(l.o_gpu);
     if (l.c_gpu)                   cuda_free(l.c_gpu);
     if (l.h_gpu)                   cuda_free(l.h_gpu);
+    if (l.bottelneck_hi_gpu)       cuda_free(l.bottelneck_hi_gpu);
+    if (l.bottelneck_delta_gpu)    cuda_free(l.bottelneck_delta_gpu);
     if (l.temp_gpu)                cuda_free(l.temp_gpu);
     if (l.temp2_gpu)               cuda_free(l.temp2_gpu);
     if (l.temp3_gpu)               cuda_free(l.temp3_gpu);
