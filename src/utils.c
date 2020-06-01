@@ -579,12 +579,10 @@ void mean_arrays(float **a, int n, int els, float *avg)
     int j;
     memset(avg, 0, els*sizeof(float));
     for(j = 0; j < n; ++j){
-        #pragma omp parallel for
         for(i = 0; i < els; ++i){
             avg[i] += a[j][i];
         }
     }
-    #pragma omp parallel for
     for(i = 0; i < els; ++i){
         avg[i] /= n;
     }
