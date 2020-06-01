@@ -205,6 +205,7 @@ typedef struct update_args {
 struct layer {
     LAYER_TYPE type;
     ACTIVATION activation;
+    ACTIVATION lstm_activation;
     COST_TYPE cost_type;
     void(*forward)   (struct layer, struct network_state);
     void(*backward)  (struct layer, struct network_state);

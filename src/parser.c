@@ -308,7 +308,7 @@ layer parse_conv_lstm(list *options, size_params params)
 
     int output_filters = option_find_int(options, "output", 1);
     int groups = option_find_int_quiet(options, "groups", 1);
-    char *activation_s = option_find_str(options, "activation", "LINEAR");
+    char *activation_s = option_find_str(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
@@ -319,6 +319,9 @@ layer parse_conv_lstm(list *options, size_params params)
 
     l.state_constrain = option_find_int_quiet(options, "state_constrain", params.time_steps * 32);
     l.shortcut = option_find_int_quiet(options, "shortcut", 0);
+
+    char *lstm_activation_s = option_find_str(options, "lstm_activation", "tanh");
+    l.lstm_activation = get_activation(lstm_activation_s);
 
     return l;
 }

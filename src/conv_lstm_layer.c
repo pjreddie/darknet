@@ -889,7 +889,7 @@ void forward_conv_lstm_layer_gpu(layer l, network_state state)
             simple_copy_ongpu(l.outputs*l.batch, state.input, l.bottelneck_hi_gpu + l.outputs*l.batch);
             s.input = l.bottelneck_hi_gpu;
             forward_convolutional_layer_gpu(wf, s); // 2x input channels
-            activate_array_ongpu(wf.output_gpu, l.outputs*l.batch, TANH);
+            activate_array_ongpu(wf.output_gpu, l.outputs*l.batch, l.lstm_activation);
             s.input = wf.output_gpu;
         }
         else {
@@ -928,7 +928,7 @@ void forward_conv_lstm_layer_gpu(layer l, network_state state)
         //activate_array_ongpu(l.i_gpu, l.outputs*l.batch, LOGISTIC);
 
         // g = wg + ug
-        add_3_arrays_activate((l.bottleneck)?NULL:wg.output_gpu, ug.output_gpu, NULL, l.outputs*l.batch, TANH, l.g_gpu);
+        add_3_arrays_activate((l.bottleneck)?NULL:wg.output_gpu, ug.output_gpu, NULL, l.outputs*l.batch, l.lstm_activation, l.g_gpu);
         //copy_ongpu(l.outputs*l.batch, wg.output_gpu, 1, l.g_gpu, 1);
         //axpy_ongpu(l.outputs*l.batch, 1, ug.output_gpu, 1, l.g_gpu, 1);
         //activate_array_ongpu(l.g_gpu, l.outputs*l.batch, TANH);
@@ -952,17 +952,24 @@ void forward_conv_lstm_layer_gpu(layer l, network_state state)
         //activate_array_ongpu(l.o_gpu, l.outputs*l.batch, LOGISTIC);
 
         // h = o * tanh(c)
-        activate_and_mult(l.c_gpu, l.o_gpu, l.outputs*l.batch, TANH, l.h_gpu);
+        activate_and_mult(l.c_gpu, l.o_gpu, l.outputs*l.batch, l.lstm_activation, l.h_gpu);
         //simple_copy_ongpu(l.outputs*l.batch, l.c_gpu, l.h_gpu);
         //activate_array_ongpu(l.h_gpu, l.outputs*l.batch, TANH);
         //mul_ongpu(l.outputs*l.batch, l.o_gpu, 1, l.h_gpu, 1);
 
-        fix_nan_and_inf(l.c_gpu, l.outputs*l.batch);
-        fix_nan_and_inf(l.h_gpu, l.outputs*l.batch);
+        fix_nan_and_inf(l.c_gpu, l.outputs*l.batch);    // should be fix_nan_and_inf()
+        fix_nan_and_inf(l.h_gpu, l.outputs*l.batch);    // should be fix_nan_and_inf()
         if (l.state_constrain) constrain_ongpu(l.outputs*l.batch, l.state_constrain, l.c_gpu, 1);
 
         if(state.train) simple_copy_ongpu(l.outputs*l.batch, l.c_gpu, l.cell_gpu);
         simple_copy_ongpu(l.outputs*l.batch, l.h_gpu, l.output_gpu); // is required for both Detection and Training
+
+        if (l.shortcut) {
+            printf("\n shortcut \n");
+            // partial residual connection
+            if (l.bottleneck) axpy_ongpu(l.outputs*l.batch/2, 1, wf.output_gpu, 1, l.output_gpu, 1);
+            //else axpy_ongpu(l.outputs*l.batch, 1, l.f_gpu, 1, l.output_gpu, 1);
+        }
 
         state.input += l.inputs*l.batch;
         l.output_gpu    += l.outputs*l.batch;
@@ -1066,10 +1073,10 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         //activate_array_ongpu(l.i_gpu, l.outputs*l.batch, LOGISTIC);
 
         // g = wg + ug
-        add_3_arrays_activate((l.bottleneck) ? NULL : wg.output_gpu, ug.output_gpu, NULL, l.outputs*l.batch, TANH, l.g_gpu);
+        add_3_arrays_activate((l.bottleneck) ? NULL : wg.output_gpu, ug.output_gpu, NULL, l.outputs*l.batch, l.lstm_activation, l.g_gpu);   // TANH
         //copy_ongpu(l.outputs*l.batch, wg.output_gpu, 1, l.g_gpu, 1);
         //axpy_ongpu(l.outputs*l.batch, 1, ug.output_gpu, 1, l.g_gpu, 1);
-        //activate_array_ongpu(l.g_gpu, l.outputs*l.batch, TANH);
+        //activate_array_ongpu(l.g_gpu, l.outputs*l.batch, l.lstm_activation);
 
         // o = wo + uo + vo
         add_3_arrays_activate((l.bottleneck) ? NULL : wo.output_gpu, uo.output_gpu, (l.peephole) ? vo.output_gpu : NULL, l.outputs*l.batch, LOGISTIC, l.o_gpu);
@@ -1082,12 +1089,12 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         simple_copy_ongpu(l.outputs*l.batch, l.delta_gpu, l.temp3_gpu);  // temp3 = delta
 
         simple_copy_ongpu(l.outputs*l.batch, l.c_gpu, l.temp_gpu);
-        activate_array_ongpu(l.temp_gpu, l.outputs*l.batch, TANH);  // temp  = tanh(c)
+        activate_array_ongpu(l.temp_gpu, l.outputs*l.batch, l.lstm_activation);  // temp  = tanh(c)
 
         simple_copy_ongpu(l.outputs*l.batch, l.temp3_gpu, l.temp2_gpu);
         mul_ongpu(l.outputs*l.batch, l.o_gpu, 1, l.temp2_gpu, 1);   // temp2 = delta * o
 
-        gradient_array_ongpu(l.temp_gpu, l.outputs*l.batch, TANH, l.temp2_gpu); // temp2 = delta * o * grad_tanh(tanh(c))
+        gradient_array_ongpu(l.temp_gpu, l.outputs*l.batch, l.lstm_activation, l.temp2_gpu); // temp2 = delta * o * grad_tanh(tanh(c))
         //???
         axpy_ongpu(l.outputs*l.batch, 1, l.dc_gpu, 1, l.temp2_gpu, 1);          // temp2 = delta * o * grad_tanh(tanh(c)) + delta_c(???)
         // temp  = tanh(c)
@@ -1095,7 +1102,7 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         // temp3 = delta
 
         simple_copy_ongpu(l.outputs*l.batch, l.c_gpu, l.temp_gpu);
-        activate_array_ongpu(l.temp_gpu, l.outputs*l.batch, TANH);    // temp  = tanh(c)
+        activate_array_ongpu(l.temp_gpu, l.outputs*l.batch, l.lstm_activation);    // temp  = tanh(c)
 
         mul_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp_gpu, 1);  // temp  = delta * tanh(c)
         gradient_array_ongpu(l.o_gpu, l.outputs*l.batch, LOGISTIC, l.temp_gpu);  // temp  = delta * tanh(c) * grad_logistic(o)
@@ -1133,14 +1140,14 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         // g
         simple_copy_ongpu(l.outputs*l.batch, l.temp2_gpu, l.temp_gpu);
         mul_ongpu(l.outputs*l.batch, l.i_gpu, 1, l.temp_gpu, 1);
-        gradient_array_ongpu(l.g_gpu, l.outputs*l.batch, TANH, l.temp_gpu);
+        gradient_array_ongpu(l.g_gpu, l.outputs*l.batch, l.lstm_activation, l.temp_gpu);
         // delta for c,f,i,g(w,u,v): temp = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * i * grad_tanh(g)
 
         if (!l.bottleneck) {
             simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wg.delta_gpu);
             s.input = l.prev_state_gpu;
-            s.delta = l.dh_gpu;
-            backward_convolutional_layer_gpu(wg, s);
+            s.delta = l.dh_gpu;   // comment this
+            backward_convolutional_layer_gpu(wg, s);  // lead to nan
         }
 
         simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, ug.delta_gpu);
@@ -1170,8 +1177,8 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         if (!l.bottleneck) {
             simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wi.delta_gpu);
             s.input = l.prev_state_gpu;
-            s.delta = l.dh_gpu;
-            backward_convolutional_layer_gpu(wi, s);
+            s.delta = l.dh_gpu;   // comment this
+            backward_convolutional_layer_gpu(wi, s);  // lead to nan (after 1000 it)
         }
 
         simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, ui.delta_gpu);
@@ -1217,9 +1224,10 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
             fill_ongpu(l.outputs * l.batch * 2, 0, l.bottelneck_delta_gpu, 1);
             s.input = l.bottelneck_hi_gpu;
             s.delta = l.bottelneck_delta_gpu;
-            gradient_array_ongpu(wf.output_gpu, l.outputs*l.batch, TANH, wf.delta_gpu);
+            if (l.shortcut) axpy_ongpu(l.outputs*l.batch/2, 1, l.delta_gpu, 1, wf.delta_gpu, 1);    // partial residual connection
+            gradient_array_ongpu(wf.output_gpu, l.outputs*l.batch, l.lstm_activation, wf.delta_gpu);
 
-            fix_nan_and_inf(wf.delta_gpu, l.outputs*l.batch);
+            reset_nan_and_inf(wf.delta_gpu, l.outputs*l.batch);
             constrain_ongpu(l.outputs*l.batch, 1, wf.delta_gpu, 1);
         }
         else {
@@ -1232,7 +1240,7 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         backward_convolutional_layer_gpu(wf, s);
 
         if (l.bottleneck) {
-            fix_nan_and_inf(l.bottelneck_delta_gpu, l.outputs*l.batch*2);
+            reset_nan_and_inf(l.bottelneck_delta_gpu, l.outputs*l.batch*2);
             //constrain_ongpu(l.outputs*l.batch*2, 1, l.bottelneck_delta_gpu, 1);
             if (l.dh_gpu) axpy_ongpu(l.outputs*l.batch, 1, l.bottelneck_delta_gpu, 1, l.dh_gpu, 1);
             axpy_ongpu(l.outputs*l.batch, 1, l.bottelneck_delta_gpu + l.outputs*l.batch, 1, state.delta, 1);    // lead to nan
@@ -1242,7 +1250,8 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         simple_copy_ongpu(l.outputs*l.batch, l.temp2_gpu, l.temp_gpu);
         mul_ongpu(l.outputs*l.batch, l.f_gpu, 1, l.temp_gpu, 1);
         simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, l.dc_gpu);
-        fix_nan_and_inf(l.dc_gpu, l.outputs*l.batch);
+        reset_nan_and_inf(l.dc_gpu, l.outputs*l.batch);
+        if (i != 0) reset_nan_and_inf(l.dh_gpu, l.outputs*l.batch);
         // delta for c,f,i,g(w,u,v): delta_c = temp = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * f    // (grad_linear(c)==1)
 
         state.input -= l.inputs*l.batch;
