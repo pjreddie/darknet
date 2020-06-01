@@ -965,7 +965,6 @@ void forward_conv_lstm_layer_gpu(layer l, network_state state)
         simple_copy_ongpu(l.outputs*l.batch, l.h_gpu, l.output_gpu); // is required for both Detection and Training
 
         if (l.shortcut) {
-            printf("\n shortcut \n");
             // partial residual connection
             if (l.bottleneck) axpy_ongpu(l.outputs*l.batch/2, 1, wf.output_gpu, 1, l.output_gpu, 1);
             //else axpy_ongpu(l.outputs*l.batch, 1, l.f_gpu, 1, l.output_gpu, 1);
@@ -1122,7 +1121,8 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         if (!l.bottleneck) {
             simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wo.delta_gpu);
             s.input = l.prev_state_gpu;
-            s.delta = l.dh_gpu;
+            s.delta = l.temp3_gpu;// s.delta = l.dh_gpu;
+            fill_ongpu(l.outputs * l.batch, 0, l.temp3_gpu, 1);
             backward_convolutional_layer_gpu(wo, s);
         }
 
@@ -1146,7 +1146,7 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         if (!l.bottleneck) {
             simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wg.delta_gpu);
             s.input = l.prev_state_gpu;
-            s.delta = l.dh_gpu;   // comment this
+            s.delta = l.temp3_gpu;// s.delta = l.dh_gpu;   // comment this
             backward_convolutional_layer_gpu(wg, s);  // lead to nan
         }
 
@@ -1177,7 +1177,7 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         if (!l.bottleneck) {
             simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wi.delta_gpu);
             s.input = l.prev_state_gpu;
-            s.delta = l.dh_gpu;   // comment this
+            s.delta = l.temp3_gpu;// s.delta = l.dh_gpu;   // comment this
             backward_convolutional_layer_gpu(wi, s);  // lead to nan (after 1000 it)
         }
 
@@ -1233,7 +1233,7 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         else {
             s.input = l.prev_state_gpu;
             simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wf.delta_gpu);
-            s.delta = l.dh_gpu;
+            s.delta = l.temp3_gpu;// s.delta = l.dh_gpu;
         }
 
         // WF
@@ -1242,8 +1242,11 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         if (l.bottleneck) {
             reset_nan_and_inf(l.bottelneck_delta_gpu, l.outputs*l.batch*2);
             //constrain_ongpu(l.outputs*l.batch*2, 1, l.bottelneck_delta_gpu, 1);
-            if (l.dh_gpu) axpy_ongpu(l.outputs*l.batch, 1, l.bottelneck_delta_gpu, 1, l.dh_gpu, 1);
+            if (l.dh_gpu) axpy_ongpu(l.outputs*l.batch, l.time_normalizer, l.bottelneck_delta_gpu, 1, l.dh_gpu, 1);
             axpy_ongpu(l.outputs*l.batch, 1, l.bottelneck_delta_gpu + l.outputs*l.batch, 1, state.delta, 1);    // lead to nan
+        }
+        else {
+            axpy_ongpu(l.outputs*l.batch, l.time_normalizer, l.temp3_gpu, 1, l.dh_gpu, 1);
         }
 
         // c

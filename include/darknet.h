@@ -260,6 +260,7 @@ struct layer {
     int optimized_memory;
     int steps;
     int bottleneck;
+    float time_normalizer;
     int state_constrain;
     int hidden;
     int truth;

@@ -322,6 +322,7 @@ layer parse_conv_lstm(list *options, size_params params)
 
     char *lstm_activation_s = option_find_str(options, "lstm_activation", "tanh");
     l.lstm_activation = get_activation(lstm_activation_s);
+    l.time_normalizer = option_find_float_quiet(options, "time_normalizer", 1.0);
 
     return l;
 }
