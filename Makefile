@@ -1,7 +1,7 @@
-GPU=0
-CUDNN=0
-OPENCV=0
-OPENMP=0
+GPU=1
+CUDNN=1
+OPENCV=1
+OPENMP=1
 DEBUG=0
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
@@ -11,7 +11,15 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
 #      -gencode arch=compute_20,code=[sm_20,sm_21] \ This one is deprecated?
 
 # This is what I use, uncomment if you know your arch and want to specify
-# ARCH= -gencode arch=compute_52,code=compute_52
+
+# Tesla V100
+#ARCH= -gencode arch=compute_70,code=[sm_70,compute_70]
+
+## Jetson TX2 add this
+ARCH= -gencode arch=compute_62,code=[sm_62,compute_62]
+
+## Jetson Xavier 
+#ARCH= -gencode arch=compute_72,code=[sm_72,compute_72]
 
 VPATH=./src/:./examples
 SLIB=libdarknet.so
@@ -42,8 +50,10 @@ CFLAGS+=$(OPTS)
 ifeq ($(OPENCV), 1) 
 COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
-LDFLAGS+= `pkg-config --libs opencv 2> /dev/null || pkg-config --libs opencv4` -lstdc++
-COMMON+= `pkg-config --cflags opencv 2> /dev/null || pkg-config --cflags opencv4`
+# LDFLAGS+= `pkg-config --libs opencv 2> /dev/null || pkg-config --libs opencv4` -lstdc++
+# COMMON+= `pkg-config --cflags opencv 2> /dev/null || pkg-config --cflags opencv4`
+LDFLAGS+= `pkg-config --libs opencv4` -lstdc++
+COMMON+= `pkg-config --cflags opencv4` 
 endif
 
 ifeq ($(GPU), 1) 
