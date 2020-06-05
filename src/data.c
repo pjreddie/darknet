@@ -847,8 +847,12 @@ void blend_truth(float *new_truth, int boxes, float *old_truth)
 
 
 void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, int h, float cut_x, float cut_y, int i_mixup,
-    int left_shift, int right_shift, int top_shift, int bot_shift)
+    int left_shift, int right_shift, int top_shift, int bot_shift,
+    int net_w, int net_h)
 {
+    const float lowest_w = 1.F / net_w;
+    const float lowest_h = 1.F / net_h;
+
     const int t_size = 4 + 1;
     int count_new_truth = 0;
     int t;
@@ -981,7 +985,8 @@ void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, in
         // leave only within the image
         if(left >= 0 && right <= w && top >= 0 && bot <= h &&
             wb > 0 && wb < 1 && hb > 0 && hb < 1 &&
-            xb > 0 && xb < 1 && yb > 0 && yb < 1)
+            xb > 0 && xb < 1 && yb > 0 && yb < 1 &&
+            wb > lowest_w && hb > lowest_h)
         {
             new_truth_ptr[0] = xb;
             new_truth_ptr[1] = yb;
@@ -1258,7 +1263,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     }
                 }
 
-                blend_truth_mosaic(d.y.vals[i], boxes, truth, w, h, cut_x[i], cut_y[i], i_mixup, left_shift, right_shift, top_shift, bot_shift);
+                blend_truth_mosaic(d.y.vals[i], boxes, truth, w, h, cut_x[i], cut_y[i], i_mixup, left_shift, right_shift, top_shift, bot_shift, w, h);
 
                 free_image(ai);
                 ai.data = d.X.vals[i];
