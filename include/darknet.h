@@ -669,6 +669,8 @@ typedef struct network {
     float *output;
     learning_rate_policy policy;
     int benchmark_layers;
+    int *total_bbox;
+    int *rewritten_bbox;
 
     float learning_rate;
     float learning_rate_min;
@@ -718,6 +720,7 @@ typedef struct network {
     float adversarial_lr;
     float max_chart_loss;
     int letter_box;
+    int mosaic_bound;
     float angle;
     float aspect;
     float exposure;
@@ -894,6 +897,7 @@ typedef struct load_args {
     int track;
     int augment_speed;
     int letter_box;
+    int mosaic_bound;
     int show_imgs;
     int dontuse_opencv;
     float jitter;

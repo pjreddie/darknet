@@ -246,6 +246,9 @@ network make_network(int n)
     net.layers = (layer*)xcalloc(net.n, sizeof(layer));
     net.seen = (uint64_t*)xcalloc(1, sizeof(uint64_t));
     net.cur_iteration = (int*)xcalloc(1, sizeof(int));
+    net.total_bbox = (int*)xcalloc(1, sizeof(int));
+    net.rewritten_bbox = (int*)xcalloc(1, sizeof(int));
+    *net.rewritten_bbox = *net.total_bbox = 0;
 #ifdef GPU
     net.input_gpu = (float**)xcalloc(1, sizeof(float*));
     net.truth_gpu = (float**)xcalloc(1, sizeof(float*));
@@ -366,6 +369,7 @@ float train_network_datum(network net, float *x, float *y)
     backward_network(net, state);
     float error = get_network_cost(net);
     //if(((*net.seen)/net.batch)%net.subdivisions == 0) update_network(net);
+    printf(" total_bbox = %d, rewritten_bbox = %f %% \n", *(state.net.total_bbox), 100 * (float)*(state.net.rewritten_bbox) / *(state.net.total_bbox));
     return error;
 }
 
@@ -1147,6 +1151,8 @@ void free_network(network net)
     free(net.steps);
     free(net.seen);
     free(net.cur_iteration);
+    free(net.total_bbox);
+    free(net.rewritten_bbox);
 
 #ifdef GPU
     if (gpu_index >= 0) cuda_free(net.workspace);

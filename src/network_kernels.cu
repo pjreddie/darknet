@@ -348,6 +348,7 @@ void forward_backward_network_gpu(network net, float *x, float *y)
         cuda_free(state.delta);
         cuda_pull_array(*net.input_gpu, x, x_size);
     }
+    printf(" total_bbox = %d, rewritten_bbox = %f %% \n", *(state.net.total_bbox), 100 * (float)*(state.net.rewritten_bbox) / *(state.net.total_bbox));
 }
 
 float train_network_datum_gpu(network net, float *x, float *y)
@@ -356,7 +357,8 @@ float train_network_datum_gpu(network net, float *x, float *y)
     if (net.adversarial_lr && rand_int(0, 1) == 1 && get_current_iteration(net) > net.burn_in) {
         net.adversarial = 1;
         float lr_old = net.learning_rate;
-        float scale = 1.0 - (get_current_iteration(net) / ((float)net.max_batches));
+        float scale = (get_current_iteration(net) / ((float)net.max_batches));
+        //scale = sin(scale * M_PI);
         net.learning_rate = net.adversarial_lr * scale;
         layer l = net.layers[net.n - 1];
         int y_size = get_network_output_size(net)*net.batch;

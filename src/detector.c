@@ -145,6 +145,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.saturation = net.saturation;
     args.hue = net.hue;
     args.letter_box = net.letter_box;
+    args.mosaic_bound = net.mosaic_bound;
     if (dont_show && show_imgs) show_imgs = 2;
     args.show_imgs = show_imgs;
 

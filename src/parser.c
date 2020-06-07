@@ -1119,6 +1119,7 @@ void parse_net_options(list *options, network *net)
     else if (cutmix) net->mixup = 2;
     else if (mosaic) net->mixup = 3;
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
+    net->mosaic_bound = option_find_int_quiet(options, "mosaic_bound", 0);
     net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     net->resize_step = option_find_float_quiet(options, "resize_step", 32);
     net->attention = option_find_int_quiet(options, "attention", 0);
