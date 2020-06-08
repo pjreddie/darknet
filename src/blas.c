@@ -521,7 +521,8 @@ float cosine_similarity(float *A, float *B, unsigned int feature_size)
 {
     float mul = 0.0, d_a = 0.0, d_b = 0.0;
 
-    for (unsigned int i = 0; i < feature_size; ++i)
+    int i;
+    for(i = 0; i < feature_size; ++i)
     {
         mul += A[i] * B[i];
         d_a += A[i] * A[i];
@@ -537,7 +538,7 @@ float cosine_similarity(float *A, float *B, unsigned int feature_size)
 
 // num_of_samples = 2 * loaded_images = mini_batch_size
 
-float P_constrastive(int i, int l, int num_of_samples, float **z, unsigned int feature_size, float temperature)
+float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature)
 {
     if (i == l) {
         printf(" Error: in P_constrastive must be i != l, while i = %d, l = %d \n", i, l);
@@ -550,6 +551,7 @@ float P_constrastive(int i, int l, int num_of_samples, float **z, unsigned int f
     float denominator = 0;
     int k;
     for (k = 0; k < num_of_samples; ++k) {
+        //if (k != i && labels[k] != labels[i]) {
         if (k != i) {
             const float sim_den = cosine_similarity(z[k], z[l], feature_size);
             denominator += expf(sim_den / temperature);
@@ -570,8 +572,8 @@ void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, floa
     int j;
     for (j = 0; j < num_of_samples; ++j) {
         if (i != j && labels[i] == labels[j]) {
-            const double sim = cosine_similarity(z[i], z[j], feature_size);
-            const double P = P_constrastive(i, j, num_of_samples, z, feature_size, temperature);
+            const float sim = cosine_similarity(z[i], z[j], feature_size);
+            const float P = P_constrastive(i, j, labels, num_of_samples, z, feature_size, temperature);
 
             int m;
             for (m = 0; m < feature_size; ++m) {
@@ -595,8 +597,8 @@ void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, floa
             int k;
             for (k = 0; k < num_of_samples; ++k) {
                 if (k != i && k != j) {
-                    const double sim = cosine_similarity(z[i], z[k], feature_size);
-                    const double P = P_constrastive(i, k, num_of_samples, z, feature_size, temperature);
+                    const float sim = cosine_similarity(z[i], z[k], feature_size);
+                    const float P = P_constrastive(i, k, labels, num_of_samples, z, feature_size, temperature);
 
                     int m;
                     for (m = 0; m < feature_size; ++m) {
