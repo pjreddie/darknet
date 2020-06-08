@@ -155,7 +155,7 @@ void reduce_and_expand_array_gpu(const float *src_gpu, float *dst_gpu, int size,
 void expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
 
 float cosine_similarity(float *A, float *B, unsigned int feature_size);
-float P_constrastive(int i, int l, int num_of_samples, float **z, unsigned int feature_size, float temperature);
+float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature);
 void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta);
 void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta);
 
