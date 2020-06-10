@@ -92,7 +92,11 @@ COMMON+= `pkg-config --cflags opencv4 2> /dev/null || pkg-config --cflags opencv
 endif
 
 ifeq ($(OPENMP), 1)
-CFLAGS+= -fopenmp
+    ifeq ($(OS),Darwin) #MAC
+	    CFLAGS+= -Xpreprocessor -fopenmp
+	else
+		CFLAGS+= -fopenmp
+	endif
 LDFLAGS+= -lgomp
 endif
 
