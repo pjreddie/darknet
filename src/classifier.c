@@ -845,10 +845,10 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         }
         image im = load_image_color(input, 0, 0);
         image resized = resize_min(im, net.w);
-        image r = crop_image(resized, (resized.w - net.w)/2, (resized.h - net.h)/2, net.w, net.h);
-        printf("%d %d\n", r.w, r.h);
+        image cropped = crop_image(resized, (resized.w - net.w)/2, (resized.h - net.h)/2, net.w, net.h);
+        printf("%d %d\n", cropped.w, cropped.h);
 
-        float *X = r.data;
+        float *X = cropped.data;
 
         double time = get_time_point();
         float *predictions = network_predict(net, X);
@@ -862,7 +862,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             if(net.hierarchy) printf("%d, %s: %f, parent: %s \n",index, names[index], predictions[index], (net.hierarchy->parent[index] >= 0) ? names[net.hierarchy->parent[index]] : "Root");
             else printf("%s: %f\n",names[index], predictions[index]);
         }
-        free_image(r);
+        free_image(cropped);
         free_image(im);
         free_image(resized);
         if (filename) break;
