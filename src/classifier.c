@@ -862,9 +862,13 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             if(net.hierarchy) printf("%d, %s: %f, parent: %s \n",index, names[index], predictions[index], (net.hierarchy->parent[index] >= 0) ? names[net.hierarchy->parent[index]] : "Root");
             else printf("%s: %f\n",names[index], predictions[index]);
         }
+
         free_image(cropped);
+        if (resized.data != im.data) {
+            free_image(resized);
+        }
         free_image(im);
-        free_image(resized);
+
         if (filename) break;
     }
     free(indexes);
