@@ -153,8 +153,12 @@ static inline float clip_value(float val, const float max_val)
     return val;
 }
 
-ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate, float max_delta)
+ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate, float max_delta, int *rewritten_bbox)
 {
+    if (delta[index + 0 * stride] || delta[index + 1 * stride] || delta[index + 2 * stride] || delta[index + 3 * stride]) {
+        (*rewritten_bbox)++;
+    }
+
     ious all_ious = { 0 };
     // i - step in layer width
     // j - step in layer height
@@ -412,8 +416,7 @@ void forward_yolo_layer(const layer l, network_state state)
 
                             int class_id = state.truth[best_match_t*(4 + 1) + b*l.truths + 4];
                             if (l.map) class_id = l.map[class_id];
-                            const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                            l.delta[class_index + stride*class_id] = class_multiplier * (iou_multiplier - l.output[class_index + stride*class_id]);
+                            delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.focal_loss, l.label_smooth_eps, l.classes_multipliers);
                         }
                         else l.delta[obj_index] = 0;
                     }
@@ -423,9 +426,23 @@ void forward_yolo_layer(const layer l, network_state state)
                         if (scale > 0) scale = sqrt(scale);
                         l.delta[obj_index] = scale * l.cls_normalizer * (0 - l.output[obj_index]);
                         int cl_id;
+                        int found_object = 0;
                         for (cl_id = 0; cl_id < l.classes; ++cl_id) {
-                            if(l.output[class_index + stride*cl_id] * l.output[obj_index] > 0.25)
+                            if (l.output[class_index + stride*cl_id] * l.output[obj_index] > 0.25) {
                                 l.delta[class_index + stride*cl_id] = scale * (0 - l.output[class_index + stride*cl_id]);
+                                found_object = 1;
+                            }
+                        }
+                        if (found_object) {
+                            // don't use this loop for adversarial attack drawing
+                            for (cl_id = 0; cl_id < l.classes; ++cl_id)
+                                if (l.output[class_index + stride*cl_id] * l.output[obj_index] < 0.25)
+                                    l.delta[class_index + stride*cl_id] = scale * (1 - l.output[class_index + stride*cl_id]);
+
+                            l.delta[box_index + 0 * stride] += scale * (0 - l.output[box_index + 0 * stride]);
+                            l.delta[box_index + 1 * stride] += scale * (0 - l.output[box_index + 1 * stride]);
+                            l.delta[box_index + 2 * stride] += scale * (0 - l.output[box_index + 2 * stride]);
+                            l.delta[box_index + 3 * stride] += scale * (0 - l.output[box_index + 3 * stride]);
                         }
                     }
                     if (best_iou > l.truth_thresh) {
@@ -440,7 +457,8 @@ void forward_yolo_layer(const layer l, network_state state)
                         const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
                         if (l.objectness_smooth) l.delta[class_index + stride*class_id] = class_multiplier * (iou_multiplier - l.output[class_index + stride*class_id]);
                         box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
-                        delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta);
+                        delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox);
+                        (*state.net.total_bbox)++;
                     }
                 }
             }
@@ -482,7 +500,8 @@ void forward_yolo_layer(const layer l, network_state state)
 
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                 const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta);
+                ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox);
+                (*state.net.total_bbox)++;
 
                 // range is 0 <= 1
                 tot_iou += all_ious.iou;
@@ -529,7 +548,8 @@ void forward_yolo_layer(const layer l, network_state state)
 
                         int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                         const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                        ious all_ious = delta_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta);
+                        ious all_ious = delta_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox);
+                        (*state.net.total_bbox)++;
 
                         // range is 0 <= 1
                         tot_iou += all_ious.iou;

@@ -579,12 +579,10 @@ void mean_arrays(float **a, int n, int els, float *avg)
     int j;
     memset(avg, 0, els*sizeof(float));
     for(j = 0; j < n; ++j){
-        #pragma omp parallel for
         for(i = 0; i < els; ++i){
             avg[i] += a[j][i];
         }
     }
-    #pragma omp parallel for
     for(i = 0; i < els; ++i){
         avg[i] /= n;
     }
@@ -645,8 +643,8 @@ void normalize_array(float *a, int n)
     for(i = 0; i < n; ++i){
         a[i] = (a[i] - mu)/sigma;
     }
-    mu = mean_array(a,n);
-    sigma = sqrt(variance_array(a,n));
+    //mu = mean_array(a,n);
+    //sigma = sqrt(variance_array(a,n));
 }
 
 void translate_array(float *a, int n, float s)

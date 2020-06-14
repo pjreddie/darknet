@@ -180,7 +180,8 @@ typedef enum {
     LOGXENT,
     L2NORM,
     EMPTY,
-    BLANK
+    BLANK,
+    CONTRASTIVE
 } LAYER_TYPE;
 
 // layer.h
@@ -205,6 +206,7 @@ typedef struct update_args {
 struct layer {
     LAYER_TYPE type;
     ACTIVATION activation;
+    ACTIVATION lstm_activation;
     COST_TYPE cost_type;
     void(*forward)   (struct layer, struct network_state);
     void(*backward)  (struct layer, struct network_state);
@@ -258,6 +260,8 @@ struct layer {
     int keep_delta_gpu;
     int optimized_memory;
     int steps;
+    int bottleneck;
+    float time_normalizer;
     int state_constrain;
     int hidden;
     int truth;
@@ -360,6 +364,9 @@ struct layer {
     float ** sums;
     float * rand;
     float * cost;
+    int *labels;
+    float *cos_sim;
+    float *p_constrastive;
     float * state;
     float * prev_state;
     float * forgot_state;
@@ -518,6 +525,8 @@ struct layer {
     float *r_gpu;
     float *h_gpu;
     float *stored_h_gpu;
+    float *bottelneck_hi_gpu;
+    float *bottelneck_delta_gpu;
 
     float *temp_gpu;
     float *temp2_gpu;
@@ -602,6 +611,7 @@ struct layer {
     float * activation_input_gpu;
     float * loss_gpu;
     float * delta_gpu;
+    float * cos_sim_gpu;
     float * rand_gpu;
     float * drop_blocks_scale;
     float * drop_blocks_scale_gpu;
@@ -664,6 +674,8 @@ typedef struct network {
     float *output;
     learning_rate_policy policy;
     int benchmark_layers;
+    int *total_bbox;
+    int *rewritten_bbox;
 
     float learning_rate;
     float learning_rate_min;
@@ -713,6 +725,8 @@ typedef struct network {
     float adversarial_lr;
     float max_chart_loss;
     int letter_box;
+    int mosaic_bound;
+    int contrastive;
     float angle;
     float aspect;
     float exposure;
@@ -889,8 +903,10 @@ typedef struct load_args {
     int track;
     int augment_speed;
     int letter_box;
+    int mosaic_bound;
     int show_imgs;
     int dontuse_opencv;
+    int contrastive;
     float jitter;
     float resize;
     int flip;
