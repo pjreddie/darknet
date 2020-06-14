@@ -43,14 +43,14 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
 
     l.forward = forward_softmax_layer;
     l.backward = backward_softmax_layer;
-    #ifdef GPU
+#ifdef GPU
     l.forward_gpu = forward_softmax_layer_gpu;
     l.backward_gpu = backward_softmax_layer_gpu;
 
     l.output_gpu = cuda_make_array(l.output, inputs*batch);
     l.loss_gpu = cuda_make_array(l.loss, inputs*batch);
     l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
-    #endif
+#endif
     return l;
 }
 
@@ -120,6 +120,200 @@ void forward_softmax_layer_gpu(const softmax_layer l, network_state net)
 void backward_softmax_layer_gpu(const softmax_layer layer, network_state net)
 {
 	axpy_ongpu(layer.batch*layer.inputs, 1, layer.delta_gpu, 1, net.delta, 1);
+}
+
+#endif
+
+// -------------------------------------
+
+
+contrastive_layer make_contrastive_layer(int batch, int w, int h, int n, int classes, int inputs)
+{
+    fprintf(stderr, "contrastive   %4d x%4d x%4d - batch: %4d \t classes = %4d \n", w, h, n, batch, classes);
+    contrastive_layer l = { (LAYER_TYPE)0 };
+    l.type = CONTRASTIVE;
+    l.batch = batch;
+    l.inputs = inputs;
+    l.outputs = inputs;
+    l.w = w;
+    l.h = h;
+    l.c = n;
+    l.n = n;
+    l.classes = classes;
+    l.temperature = 1;
+    //l.loss = (float*)xcalloc(inputs * batch, sizeof(float));
+    l.output = (float*)xcalloc(inputs * batch, sizeof(float));
+    l.delta = (float*)xcalloc(inputs * batch, sizeof(float));
+    l.cost = (float*)xcalloc(1, sizeof(float));
+    l.labels = (int*)xcalloc(l.batch, sizeof(int));
+    l.cos_sim = (float*)xcalloc(l.batch*l.batch, sizeof(float));
+    l.p_constrastive = (float*)xcalloc(l.batch*l.batch, sizeof(float));
+
+    l.forward = forward_contrastive_layer;
+    l.backward = backward_contrastive_layer;
+#ifdef GPU
+    l.forward_gpu = forward_contrastive_layer_gpu;
+    l.backward_gpu = backward_contrastive_layer_gpu;
+
+    l.output_gpu = cuda_make_array(l.output, inputs*batch);
+    //l.loss_gpu = cuda_make_array(l.loss, inputs*batch);
+    l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
+    //l.cos_sim_gpu = cuda_make_array(l.cos_sim, l.batch*l.batch);
+#endif
+    return l;
+}
+
+
+void forward_contrastive_layer(const contrastive_layer l, network_state state)
+{
+    if (!state.train) return;
+    const float truth_thresh = 0.2;
+
+    memset(l.delta, 0, l.batch*l.inputs * sizeof(float));
+
+    int b, w, h;
+    // set labels
+    for (b = 0; b < l.batch; ++b) {
+        for (h = 0; h < l.h; ++h) {
+            for (w = 0; w < l.w; ++w)
+            {
+                // find truth with max prob (only 1 label even if mosaic is used)
+                float max_truth = 0;
+                int n;
+                for (n = 0; n < l.classes; ++n) {
+                    const float truth_prob = state.truth[b*l.classes + n];
+                    //printf(" truth_prob = %f, ", truth_prob);
+                    if (truth_prob > max_truth)
+                    {
+                        max_truth = truth_prob;
+                        l.labels[b] = n;
+                    }
+                }
+                //printf(", l.labels[b] = %d ", l.labels[b]);
+            }
+        }
+    }
+    //printf("\n\n");
+
+    // set pointers to features
+    float **z = (float**)xcalloc(l.batch, sizeof(float*));
+    for (b = 0; b < l.batch; ++b) {
+        for (h = 0; h < l.h; ++h) {
+            for (w = 0; w < l.w; ++w)
+            {
+                z[b] = state.input + b*l.inputs;
+            }
+        }
+    }
+
+    // precalculate cosine similiraty
+    for (b = 0; b < l.batch; ++b) {
+        int b2;
+        for (b2 = 0; b2 < l.batch; ++b2) {
+            const float sim = cosine_similarity(z[b], z[b2], l.n);
+            l.cos_sim[b*l.batch + b2] = sim;
+            //if (sim > 1.001 || sim < -1) {
+            //    printf(" sim = %f, ", sim); getchar();
+           //}
+        }
+    }
+
+    // show near sim
+    float good_contrast = 0;
+    for (b = 0; b < l.batch; b += 2) {
+        float same = l.cos_sim[b*l.batch + b];
+        float aug = l.cos_sim[b*l.batch + b + 1];
+        float diff = l.cos_sim[b*l.batch + b + 2];
+        good_contrast += (aug > diff);
+        //printf(" l.labels[b] = %d, l.labels[b+1] = %d, l.labels[b+2] = %d, b = %d \n", l.labels[b], l.labels[b + 1], l.labels[b + 2], b);
+        //printf(" same = %f, aug = %f, diff = %f, (aug > diff) = %d \n", same, aug, diff, (aug > diff));
+    }
+    printf("good contrast = %f %% \n", 100 * good_contrast / (l.batch/2));
+
+    // precalculate P_contrastive
+    for (b = 0; b < l.batch; ++b) {
+        int b2;
+        for (b2 = 0; b2 < l.batch; ++b2) {
+            if (b != b2) {
+                const float P = P_constrastive(b, b2, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim);
+                l.p_constrastive[b*l.batch + b2] = P;
+                if (P > 1 || P < -1) {
+                    printf(" p = %f, ", P); getchar();
+                }
+            }
+        }
+    }
+
+    // calc deltas
+    for (b = 0; b < l.batch; ++b) {
+        for (h = 0; h < l.h; ++h) {
+            for (w = 0; w < l.w; ++w)
+            {
+                //printf(" b = %d, ", b);
+                // positive
+                grad_contrastive_loss_positive(b, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim, l.p_constrastive, l.delta);
+
+                // negative
+                grad_contrastive_loss_negative(b, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim, l.p_constrastive, l.delta);
+            }
+        }
+    }
+
+    *(l.cost) = pow(mag_array(l.delta, l.inputs * l.batch), 2);
+
+    free(z);
+}
+
+void backward_contrastive_layer(const contrastive_layer l, network_state net)
+{
+    axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, net.delta, 1);
+}
+
+
+#ifdef GPU
+
+void pull_contrastive_layer_output(const contrastive_layer l)
+{
+    cuda_pull_array(l.output_gpu, l.output, l.inputs*l.batch);
+}
+
+void push_contrastive_layer_output(const contrastive_layer l)
+{
+    cuda_push_array(l.delta_gpu, l.delta, l.inputs*l.batch);
+}
+
+
+void forward_contrastive_layer_gpu(const contrastive_layer l, network_state state)
+{
+    if (!state.train) return;
+    simple_copy_ongpu(l.batch*l.inputs, state.input, l.output_gpu);
+
+    float *in_cpu = (float *)xcalloc(l.batch*l.inputs, sizeof(float));
+    cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+    memcpy(in_cpu, l.output, l.batch*l.outputs * sizeof(float));
+    float *truth_cpu = 0;
+    if (state.truth) {
+        int num_truth = l.batch*l.classes;
+        truth_cpu = (float *)xcalloc(num_truth, sizeof(float));
+        cuda_pull_array(state.truth, truth_cpu, num_truth);
+    }
+    network_state cpu_state = state;
+    cpu_state.net = state.net;
+    cpu_state.index = state.index;
+    cpu_state.train = state.train;
+    cpu_state.truth = truth_cpu;
+    cpu_state.input = in_cpu;
+
+    forward_contrastive_layer(l, cpu_state);
+    cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
+
+    free(in_cpu);
+    if (cpu_state.truth) free(cpu_state.truth);
+}
+
+void backward_contrastive_layer_gpu(const contrastive_layer layer, network_state state)
+{
+    axpy_ongpu(layer.batch*layer.inputs, 1, layer.delta_gpu, 1, state.delta, 1);
 }
 
 #endif

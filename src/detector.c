@@ -146,6 +146,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.hue = net.hue;
     args.letter_box = net.letter_box;
     args.mosaic_bound = net.mosaic_bound;
+    args.contrastive = net.contrastive;
     if (dont_show && show_imgs) show_imgs = 2;
     args.show_imgs = show_imgs;
 
@@ -162,6 +163,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     sprintf(windows_name, "chart_%s.png", base);
     img = draw_train_chart(windows_name, max_img_loss, net.max_batches, number_of_lines, img_size, dont_show, chart_path);
 #endif    //OPENCV
+    if (net.contrastive && args.threads > net.batch/2) args.threads = net.batch / 2;
     if (net.track) {
         args.track = net.track;
         args.augment_speed = net.augment_speed;

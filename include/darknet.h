@@ -180,7 +180,8 @@ typedef enum {
     LOGXENT,
     L2NORM,
     EMPTY,
-    BLANK
+    BLANK,
+    CONTRASTIVE
 } LAYER_TYPE;
 
 // layer.h
@@ -363,6 +364,9 @@ struct layer {
     float ** sums;
     float * rand;
     float * cost;
+    int *labels;
+    float *cos_sim;
+    float *p_constrastive;
     float * state;
     float * prev_state;
     float * forgot_state;
@@ -607,6 +611,7 @@ struct layer {
     float * activation_input_gpu;
     float * loss_gpu;
     float * delta_gpu;
+    float * cos_sim_gpu;
     float * rand_gpu;
     float * drop_blocks_scale;
     float * drop_blocks_scale_gpu;
@@ -721,6 +726,7 @@ typedef struct network {
     float max_chart_loss;
     int letter_box;
     int mosaic_bound;
+    int contrastive;
     float angle;
     float aspect;
     float exposure;
@@ -900,6 +906,7 @@ typedef struct load_args {
     int mosaic_bound;
     int show_imgs;
     int dontuse_opencv;
+    int contrastive;
     float jitter;
     float resize;
     int flip;

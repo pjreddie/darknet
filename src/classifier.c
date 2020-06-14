@@ -87,8 +87,10 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     args.h = net.h;
     args.c = net.c;
     args.threads = 32;
+    if (net.contrastive && args.threads > net.batch/2) args.threads = net.batch / 2;
     args.hierarchy = net.hierarchy;
 
+    args.contrastive = net.contrastive;
     args.dontuse_opencv = dontuse_opencv;
     args.min = net.min_crop;
     args.max = net.max_crop;

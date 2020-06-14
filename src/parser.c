@@ -86,6 +86,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[batchnorm]")==0) return BATCHNORM;
     if (strcmp(type, "[soft]")==0
             || strcmp(type, "[softmax]")==0) return SOFTMAX;
+    if (strcmp(type, "[contrastive]") == 0) return CONTRASTIVE;
     if (strcmp(type, "[route]")==0) return ROUTE;
     if (strcmp(type, "[upsample]") == 0) return UPSAMPLE;
     if (strcmp(type, "[empty]") == 0) return EMPTY;
@@ -352,6 +353,14 @@ softmax_layer parse_softmax(list *options, size_params params)
 	layer.spatial = option_find_float_quiet(options, "spatial", 0);
 	layer.noloss = option_find_int_quiet(options, "noloss", 0);
 	return layer;
+}
+
+contrastive_layer parse_contrastive(list *options, size_params params)
+{
+    int classes = option_find_int(options, "classes", 1000);
+    contrastive_layer layer = make_contrastive_layer(params.batch, params.w, params.h, params.c, classes, params.inputs);
+    layer.temperature = option_find_float_quiet(options, "temperature", 1);
+    return layer;
 }
 
 int *parse_yolo_mask(char *a, int *num)
@@ -1120,6 +1129,7 @@ void parse_net_options(list *options, network *net)
     else if (mosaic) net->mixup = 3;
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
     net->mosaic_bound = option_find_int_quiet(options, "mosaic_bound", 0);
+    net->contrastive = option_find_int_quiet(options, "contrastive", 0);
     net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     net->resize_step = option_find_float_quiet(options, "resize_step", 32);
     net->attention = option_find_int_quiet(options, "attention", 0);
@@ -1343,6 +1353,9 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }else if(lt == SOFTMAX){
             l = parse_softmax(options, params);
             net.hierarchy = l.softmax_tree;
+            l.keep_delta_gpu = 1;
+        }else if (lt == CONTRASTIVE) {
+            l = parse_contrastive(options, params);
             l.keep_delta_gpu = 1;
         }else if(lt == NORMALIZATION){
             l = parse_normalization(options, params);

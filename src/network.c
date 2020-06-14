@@ -369,7 +369,8 @@ float train_network_datum(network net, float *x, float *y)
     backward_network(net, state);
     float error = get_network_cost(net);
     //if(((*net.seen)/net.batch)%net.subdivisions == 0) update_network(net);
-    printf(" total_bbox = %d, rewritten_bbox = %f %% \n", *(state.net.total_bbox), 100 * (float)*(state.net.rewritten_bbox) / *(state.net.total_bbox));
+    if(*(state.net.total_bbox) > 0)
+        fprintf(stderr, " total_bbox = %d, rewritten_bbox = %f %% \n", *(state.net.total_bbox), 100 * (float)*(state.net.rewritten_bbox) / *(state.net.total_bbox));
     return error;
 }
 

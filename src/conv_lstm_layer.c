@@ -179,6 +179,22 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
     l.dc_cpu =          (float*)xcalloc(batch*outputs, sizeof(float));
     l.dh_cpu =          (float*)xcalloc(batch*outputs, sizeof(float));
 
+    /*
+    {
+        int k;
+        for (k = 0; k < l.uf->n; ++k) {
+            l.uf->biases[k] = 2;    // ~0.9
+            l.ui->biases[k] = -22;  // ~0.1
+            l.uo->biases[k] = 5;    // ~1.0
+        }
+#ifdef GPU
+        cuda_push_array(l.uf->biases_gpu, l.uf->biases, l.n);
+        cuda_push_array(l.ui->biases_gpu, l.ui->biases, l.n);
+        cuda_push_array(l.uo->biases_gpu, l.uo->biases, l.n);
+#endif// GPU
+    }
+    */
+
 #ifdef GPU
     l.forward_gpu = forward_conv_lstm_layer_gpu;
     l.backward_gpu = backward_conv_lstm_layer_gpu;

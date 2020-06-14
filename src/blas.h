@@ -59,6 +59,12 @@ void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *er
 void constrain_cpu(int size, float ALPHA, float *X);
 void fix_nan_and_inf_cpu(float *input, size_t size);
 
+float cosine_similarity(float *A, float *B, unsigned int feature_size);
+float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim);
+void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta);
+void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta);
+
+
 #ifdef GPU
 
 void constrain_weight_updates_ongpu(int N, float coef, float *weights_gpu, float *weight_updates_gpu);
@@ -154,12 +160,7 @@ void rotate_weights_gpu(const float *src_weight_gpu, float *weight_deform_gpu, i
 void reduce_and_expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
 void expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
 
-float cosine_similarity(float *A, float *B, unsigned int feature_size);
-float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature);
-void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta);
-void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta);
-
-#endif
+#endif // GPU
 #ifdef __cplusplus
 }
 #endif

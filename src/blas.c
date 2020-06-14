@@ -516,6 +516,18 @@ void fix_nan_and_inf_cpu(float *input, size_t size)
     }
 }
 
+// Euclidean_norm
+float math_vector_length(float *A, unsigned int feature_size)
+{
+    float sum = 0;
+    int i;
+    for (i = 0; i < feature_size; ++i)
+    {
+        sum += A[i] * A[i];
+    }
+    float vector_length = sqrtf(sum);
+    return vector_length;
+}
 
 float cosine_similarity(float *A, float *B, unsigned int feature_size)
 {
@@ -529,7 +541,7 @@ float cosine_similarity(float *A, float *B, unsigned int feature_size)
         d_b += B[i] * B[i];
     }
     float similarity;
-    float divider = sqrt(d_a) * sqrt(d_b);
+    float divider = sqrtf(d_a) * sqrtf(d_b);
     if (divider > 0) similarity = mul / divider;
     else similarity = 0;
 
@@ -537,15 +549,14 @@ float cosine_similarity(float *A, float *B, unsigned int feature_size)
 }
 
 // num_of_samples = 2 * loaded_images = mini_batch_size
-
-float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature)
+float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim)
 {
     if (i == l) {
-        printf(" Error: in P_constrastive must be i != l, while i = %d, l = %d \n", i, l);
+        fprintf(stderr, " Error: in P_constrastive must be i != l, while i = %d, l = %d \n", i, l);
         getchar();
     }
 
-    const float sim = cosine_similarity(z[i], z[l], feature_size);
+    const float sim = cos_sim[i*num_of_samples + l]; // cosine_similarity(z[i], z[l], feature_size);
     const float numerator = expf(sim / temperature);
 
     float denominator = 0;
@@ -553,7 +564,7 @@ float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, u
     for (k = 0; k < num_of_samples; ++k) {
         //if (k != i && labels[k] != labels[i]) {
         if (k != i) {
-            const float sim_den = cosine_similarity(z[k], z[l], feature_size);
+            const float sim_den = cos_sim[k*num_of_samples + l]; // cosine_similarity(z[k], z[l], feature_size);
             denominator += expf(sim_den / temperature);
         }
     }
@@ -567,17 +578,32 @@ float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, u
 // z[feature_size][num_of_samples] - array of arrays with contrastive features (output of conv-layer, f.e. 128 floats for each sample)
 // delta[feature_size] - array with deltas for backpropagation
 // temperature - scalar temperature param (temperature > 0), f.e. temperature = 0.07: Supervised Contrastive Learning
-void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta)
+void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta)
 {
+    const float vec_len = math_vector_length(z[i], feature_size);
     int j;
+    int N = 0;
+    for (j = 0; j < num_of_samples; ++j) {
+        if (labels[i] == labels[j]) N++;
+    }
+    if (N == 0 || temperature == 0 || vec_len == 0) {
+        fprintf(stderr, " Error: N == 0 || temperature == 0 || vec_len == 0. N=%f, temperature=%f, vec_len=%f \n", N, temperature, vec_len);
+        getchar();
+    }
+    const float mult = 1 / ((2 * N - 1) * temperature * vec_len);
+
     for (j = 0; j < num_of_samples; ++j) {
         if (i != j && labels[i] == labels[j]) {
-            const float sim = cosine_similarity(z[i], z[j], feature_size);
-            const float P = P_constrastive(i, j, labels, num_of_samples, z, feature_size, temperature);
+            const float sim = cos_sim[i*num_of_samples + j];        // cosine_similarity(z[i], z[j], feature_size);
+            const float P = p_constrastive[i*num_of_samples + j];   // P_constrastive(i, j, labels, num_of_samples, z, feature_size, temperature, cos_sim);
+            //const float custom_pos_mult = 1 - sim;
 
             int m;
             for (m = 0; m < feature_size; ++m) {
-                delta[m] += (sim * z[i][m] - z[j][m]) * (1 - P);
+                //const float d = mult*(sim * z[i][m] - z[j][m]) * (1 - P); // bad
+                const float d = mult*(sim * z[j][m] - z[j][m]) * (1 - P); // good
+               // printf(" pos: z[j][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[j][m], z[i][m], d, sim);
+                delta[m] -= d;
             }
         }
     }
@@ -588,21 +614,37 @@ void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, floa
 // z[feature_size][num_of_samples] - array of arrays with contrastive features (output of conv-layer, f.e. 128 floats for each sample)
 // delta[feature_size] - array with deltas for backpropagation
 // temperature - scalar temperature param (temperature > 0), f.e. temperature = 0.07: Supervised Contrastive Learning
-void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta)
+void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta)
 {
+    const float vec_len = math_vector_length(z[i], feature_size);
     int j;
+    int N = 0;
+    for (j = 0; j < num_of_samples; ++j) {
+        if (labels[i] == labels[j]) N++;
+    }
+    if (N == 0 || temperature == 0 || vec_len == 0) {
+        fprintf(stderr, " Error: N == 0 || temperature == 0 || vec_len == 0. N=%f, temperature=%f, vec_len=%f \n", N, temperature, vec_len);
+        getchar();
+    }
+    const float mult = 1 / ((2 * N - 1) * temperature * vec_len);
+
     for (j = 0; j < num_of_samples; ++j) {
         if (i != j && labels[i] == labels[j]) {
 
             int k;
             for (k = 0; k < num_of_samples; ++k) {
+                //if (k != i && k != j && labels[k] != labels[i]) {
                 if (k != i && k != j) {
-                    const float sim = cosine_similarity(z[i], z[k], feature_size);
-                    const float P = P_constrastive(i, k, labels, num_of_samples, z, feature_size, temperature);
+                    const float sim = cos_sim[i*num_of_samples + k];        // cosine_similarity(z[i], z[k], feature_size);
+                    const float P = p_constrastive[i*num_of_samples + k];   // P_constrastive(i, k, labels, num_of_samples, z, feature_size, temperature, cos_sim);
+                    //const float custom_pos_mult = 1 + sim;
 
                     int m;
                     for (m = 0; m < feature_size; ++m) {
-                        delta[m] += (z[k][m] - sim * z[i][m]) * P;
+                        //const float d = mult*(z[k][m] - sim * z[i][m]) * P;   // bad
+                        const float d = mult*(z[k][m] - sim * z[k][m]) * P; // good
+                        //printf(" neg: z[k][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[k][m], z[i][m], d, sim);
+                        delta[m] -= d;
                     }
                 }
             }
