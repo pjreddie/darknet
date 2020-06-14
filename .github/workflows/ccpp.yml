@@ -405,7 +405,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: 'Install CUDA'
       run: |
-        choco install cuda -y
+        choco install cuda --version=10.2.89.20191206 -y
         $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
         Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
         refreshenv
@@ -530,7 +530,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: 'Install CUDA'
       run: |
-        choco install cuda -y
+        choco install cuda --version=10.2.89.20191206 -y
         $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
         Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
         refreshenv
