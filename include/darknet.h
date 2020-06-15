@@ -727,6 +727,7 @@ typedef struct network {
     int letter_box;
     int mosaic_bound;
     int contrastive;
+    int unsupervised;
     float angle;
     float aspect;
     float exposure;

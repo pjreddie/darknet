@@ -69,13 +69,18 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     int topk_data = option_find_int(options, "top", 5);
     char topk_buff[10];
     sprintf(topk_buff, "top%d", topk_data);
-    if (classes != net.layers[net.n - 1].inputs) {
+    layer l = net.layers[net.n - 1];
+    if (classes != l.outputs && (l.type == SOFTMAX || l.type == COST)) {
         printf("\n Error: num of filters = %d in the last conv-layer in cfg-file doesn't match to classes = %d in data-file \n",
-            net.layers[net.n - 1].inputs, classes);
+            l.outputs, classes);
         getchar();
     }
 
     char **labels = get_labels(label_list);
+    if (net.unsupervised) {
+        free(labels);
+        labels = NULL;
+    }
     list *plist = get_paths(train_list);
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
@@ -184,8 +189,16 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         int draw_precision = 0;
         if (calc_topk && (i >= calc_topk_for_each || i == net.max_batches)) {
             iter_topk = i;
-            topk = validate_classifier_single(datacfg, cfgfile, weightfile, &net, topk_data); // calc TOP-n
-            printf("\n accuracy %s = %f \n", topk_buff, topk);
+            if (net.contrastive && l.type != SOFTMAX && l.type != COST) {
+                int k;
+                for (k = 0; k < net.n; ++k) if (net.layers[k].type == CONTRASTIVE) break;
+                topk = *(net.layers[k].loss) / 100;
+                sprintf(topk_buff, "Contr");
+            }
+            else {
+                topk = validate_classifier_single(datacfg, cfgfile, weightfile, &net, topk_data); // calc TOP-n
+                printf("\n accuracy %s = %f \n", topk_buff, topk);
+            }
             draw_precision = 1;
         }
 
@@ -240,7 +253,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     free(nets);
 
     //free_ptrs((void**)labels, classes);
-    free(labels);
+    if(labels) free(labels);
     free_ptrs((void**)paths, plist->size);
     free_list(plist);
     free(nets);
@@ -820,9 +833,10 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     if(!name_list) name_list = option_find_str(options, "labels", "data/labels.list");
     int classes = option_find_int(options, "classes", 2);
     printf(" classes = %d, output in cfg = %d \n", classes, net.layers[net.n - 1].c);
-    if (classes != net.layers[net.n - 1].inputs) {
+    layer l = net.layers[net.n - 1];
+    if (classes != l.outputs && (l.type == SOFTMAX || l.type == COST)) {
         printf("\n Error: num of filters = %d in the last conv-layer in cfg-file doesn't match to classes = %d in data-file \n",
-            net.layers[net.n - 1].inputs, classes);
+            l.outputs, classes);
         getchar();
     }
     if (top == 0) top = option_find_int(options, "top", 1);

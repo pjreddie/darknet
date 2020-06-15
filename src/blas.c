@@ -590,9 +590,10 @@ void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, floa
         fprintf(stderr, " Error: N == 0 || temperature == 0 || vec_len == 0. N=%f, temperature=%f, vec_len=%f \n", N, temperature, vec_len);
         getchar();
     }
-    const float mult = 1 / ((2 * N - 1) * temperature * vec_len);
+    const float mult = 1 / ((N - 1) * temperature * vec_len);
 
     for (j = 0; j < num_of_samples; ++j) {
+        //if (i != j && (i/2) == (j/2)) {
         if (i != j && labels[i] == labels[j]) {
             const float sim = cos_sim[i*num_of_samples + j];        // cosine_similarity(z[i], z[j], feature_size);
             const float P = p_constrastive[i*num_of_samples + j];   // P_constrastive(i, j, labels, num_of_samples, z, feature_size, temperature, cos_sim);
@@ -600,8 +601,8 @@ void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, floa
 
             int m;
             for (m = 0; m < feature_size; ++m) {
-                //const float d = mult*(sim * z[i][m] - z[j][m]) * (1 - P); // bad
-                const float d = mult*(sim * z[j][m] - z[j][m]) * (1 - P); // good
+                const float d = mult*(sim * z[i][m] - z[j][m]) * (1 - P); // good
+                //const float d = mult*(sim * z[j][m] - z[j][m]) * (1 - P); // bad
                // printf(" pos: z[j][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[j][m], z[i][m], d, sim);
                 delta[m] -= d;
             }
@@ -626,9 +627,10 @@ void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, floa
         fprintf(stderr, " Error: N == 0 || temperature == 0 || vec_len == 0. N=%f, temperature=%f, vec_len=%f \n", N, temperature, vec_len);
         getchar();
     }
-    const float mult = 1 / ((2 * N - 1) * temperature * vec_len);
+    const float mult = 1 / ((N - 1) * temperature * vec_len);
 
     for (j = 0; j < num_of_samples; ++j) {
+        //if (i != j && (i/2) == (j/2)) {
         if (i != j && labels[i] == labels[j]) {
 
             int k;
@@ -641,8 +643,8 @@ void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, floa
 
                     int m;
                     for (m = 0; m < feature_size; ++m) {
-                        //const float d = mult*(z[k][m] - sim * z[i][m]) * P;   // bad
-                        const float d = mult*(z[k][m] - sim * z[k][m]) * P; // good
+                        const float d = mult*(z[k][m] - sim * z[i][m]) * P;   // good
+                        //const float d = mult*(z[k][m] - sim * z[k][m]) * P; // bad
                         //printf(" neg: z[k][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[k][m], z[i][m], d, sim);
                         delta[m] -= d;
                     }

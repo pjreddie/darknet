@@ -141,7 +141,7 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int n, int cla
     l.n = n;
     l.classes = classes;
     l.temperature = 1;
-    //l.loss = (float*)xcalloc(inputs * batch, sizeof(float));
+    l.loss = (float*)xcalloc(1, sizeof(float));
     l.output = (float*)xcalloc(inputs * batch, sizeof(float));
     l.delta = (float*)xcalloc(inputs * batch, sizeof(float));
     l.cost = (float*)xcalloc(1, sizeof(float));
@@ -156,7 +156,6 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int n, int cla
     l.backward_gpu = backward_contrastive_layer_gpu;
 
     l.output_gpu = cuda_make_array(l.output, inputs*batch);
-    //l.loss_gpu = cuda_make_array(l.loss, inputs*batch);
     l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
     //l.cos_sim_gpu = cuda_make_array(l.cos_sim, l.batch*l.batch);
 #endif
@@ -164,10 +163,10 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int n, int cla
 }
 
 
-void forward_contrastive_layer(const contrastive_layer l, network_state state)
+void forward_contrastive_layer(contrastive_layer l, network_state state)
 {
     if (!state.train) return;
-    const float truth_thresh = 0.2;
+    const float truth_thresh = state.net.label_smooth_eps;
 
     memset(l.delta, 0, l.batch*l.inputs * sizeof(float));
 
@@ -183,7 +182,8 @@ void forward_contrastive_layer(const contrastive_layer l, network_state state)
                 for (n = 0; n < l.classes; ++n) {
                     const float truth_prob = state.truth[b*l.classes + n];
                     //printf(" truth_prob = %f, ", truth_prob);
-                    if (truth_prob > max_truth)
+                    //if (truth_prob > max_truth)
+                    if (truth_prob > truth_thresh)
                     {
                         max_truth = truth_prob;
                         l.labels[b] = n;
@@ -228,7 +228,8 @@ void forward_contrastive_layer(const contrastive_layer l, network_state state)
         //printf(" l.labels[b] = %d, l.labels[b+1] = %d, l.labels[b+2] = %d, b = %d \n", l.labels[b], l.labels[b + 1], l.labels[b + 2], b);
         //printf(" same = %f, aug = %f, diff = %f, (aug > diff) = %d \n", same, aug, diff, (aug > diff));
     }
-    printf("good contrast = %f %% \n", 100 * good_contrast / (l.batch/2));
+    *l.loss = 100 * good_contrast / (l.batch / 2);
+    printf(" Contrast accuracy = %f %% \n", *l.loss);
 
     // precalculate P_contrastive
     for (b = 0; b < l.batch; ++b) {
@@ -251,10 +252,10 @@ void forward_contrastive_layer(const contrastive_layer l, network_state state)
             {
                 //printf(" b = %d, ", b);
                 // positive
-                grad_contrastive_loss_positive(b, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim, l.p_constrastive, l.delta);
+                grad_contrastive_loss_positive(b, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim, l.p_constrastive, l.delta + b*l.inputs);
 
                 // negative
-                grad_contrastive_loss_negative(b, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim, l.p_constrastive, l.delta);
+                grad_contrastive_loss_negative(b, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim, l.p_constrastive, l.delta + b*l.inputs);
             }
         }
     }
@@ -264,9 +265,9 @@ void forward_contrastive_layer(const contrastive_layer l, network_state state)
     free(z);
 }
 
-void backward_contrastive_layer(const contrastive_layer l, network_state net)
+void backward_contrastive_layer(contrastive_layer l, network_state state)
 {
-    axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, net.delta, 1);
+    axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, state.delta, 1);
 }
 
 
@@ -283,10 +284,10 @@ void push_contrastive_layer_output(const contrastive_layer l)
 }
 
 
-void forward_contrastive_layer_gpu(const contrastive_layer l, network_state state)
+void forward_contrastive_layer_gpu(contrastive_layer l, network_state state)
 {
-    if (!state.train) return;
     simple_copy_ongpu(l.batch*l.inputs, state.input, l.output_gpu);
+    if (!state.train) return;
 
     float *in_cpu = (float *)xcalloc(l.batch*l.inputs, sizeof(float));
     cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
@@ -311,7 +312,7 @@ void forward_contrastive_layer_gpu(const contrastive_layer l, network_state stat
     if (cpu_state.truth) free(cpu_state.truth);
 }
 
-void backward_contrastive_layer_gpu(const contrastive_layer layer, network_state state)
+void backward_contrastive_layer_gpu(contrastive_layer layer, network_state state)
 {
     axpy_ongpu(layer.batch*layer.inputs, 1, layer.delta_gpu, 1, state.delta, 1);
 }

@@ -613,7 +613,9 @@ matrix load_labels_paths(char **paths, int n, char **labels, int k, tree *hierar
     } else {
         // unsupervised learning
         for (i = 0; i < n; ++i) {
-            const int class_id = i / 2;
+            const int img_index = (contrastive) ? (i / 2) : i;
+            const uintptr_t path_p = (uintptr_t)paths[img_index];// abs(random_gen());
+            const int class_id = path_p % k;
             int l;
             for (l = 0; l < k; ++l) y.vals[i][l] = 0;
             y.vals[i][class_id] = 1;
