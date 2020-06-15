@@ -245,6 +245,16 @@ __device__ float mish_yashas(float x)
     return x - 2 * __fdividef(x, n + 2);
 }
 
+__device__ float mish_yashas2(float x)
+{
+    auto e = __expf(x);
+    auto n = e * e + 2 * e;
+    if (x <= -0.6f)
+        return x * __fdividef(n, n + 2);
+
+    return x - 2 * __fdividef(x, n + 2);
+}
+
 // https://github.com/digantamisra98/Mish
 __global__ void activate_array_mish_kernel(float *x, int n, float *activation_input, float *output_gpu)
 {
@@ -259,7 +269,7 @@ __global__ void activate_array_mish_kernel(float *x, int n, float *activation_in
         // TF: https://github.com/tensorflow/addons/blob/093cdfa85d334cbe19a37624c33198f3140109ed/tensorflow_addons/custom_ops/activations/cc/kernels/mish_op.h#L40-L49
         // log1p(x) == log(x + 1)
         //output_gpu[i] = x_val * tanh_activate_kernel( softplus_kernel(x_val, MISH_THRESHOLD) );
-        output_gpu[i] = mish_yashas(x_val);
+        output_gpu[i] = mish_yashas2(x_val);
         //output_gpu[i] = mish_njuffa(x_val);
     }
 }
