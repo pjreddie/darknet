@@ -247,8 +247,8 @@ __device__ float mish_yashas(float x)
 
 __device__ float mish_yashas2(float x)
 {
-    auto e = __expf(x);
-    auto n = e * e + 2 * e;
+    float e = __expf(x);
+    float n = e * e + 2 * e;
     if (x <= -0.6f)
         return x * __fdividef(n, n + 2);
 
