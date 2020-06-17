@@ -45,4 +45,4 @@ You can use the Darknet directly using Docker.
 * Run the YOLO using Webcam `./darknet detector demo cfg/coco.data cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights`
 
 ### Credits for Docker Support
-Developed by IEEE Robotics and Automation Society Student Branch Chapter of International Hellenic University (Serres) as part of his research into robotics, machine learning and machine vision under [YOLO License](./LICENSE.md)
+Developed by IEEE Robotics and Automation Society Student Branch Chapter of International Hellenic University (Serres) as part of his research into robotics, machine learning and machine vision under [YOLO License](./LICENSE)
