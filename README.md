@@ -12,3 +12,28 @@ Useful links: https://medium.com/@alexeyab84/yolov4-the-most-accurate-real-time-
 For more information see the [Darknet project website](http://pjreddie.com/darknet).
 
 For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
+
+## Docker Support ##
+You can use the Darknet directly using Docker.
+
+### Getting started
+* Clone the repository
+* Copy the .env.example as .env from docker directory
+    * Edit the .env file
+        * The most important (required) variables are the following:
+            * DOCKER_APP_UID, Must be the host user ID, example `1000`
+            * DOCKER_APP_GID, Must be the host group ID, example `1000`
+            * DOCKER_CAMERA_DEVICE, Must be your webcam device, example `video0`
+* Go to project directory with terminal
+* Pick and Build your desired Docker image, using the right shell script `*.sh`
+    * `./docker/build-cpu-image.sh` to use Darknet with CPU-only Support with OpenCV and OpenMP
+    * `./docker/build-gpu-image.sh` to use Darknet with GPU-CUDA Support with OpenCV and OpenMP
+    * `./docker/build-images.sh` to build both images
+* Download the `yolov3-tiny.weights` and put the file in weights directory
+* Edit the Makefile variables to enable CUDA, CUDNN, OpenCV and/or OpenMP
+* Pick and Start Docker container, using the right shell script `*.sh`
+    * `./docker/access-cpu-container.sh` to use Darknet with CPU-only Support with OpenCV and OpenMP
+    * `./docker/access-gpu-container.sh` to use Darknet with GPU-CUDA Support with OpenCV and OpenMP
+* Build the Darknet with the following command `make`
+* Run the Eagle Test using OpenCV `./darknet imtest data/eagle.jpg`
+* Run the YOLO using Webcam `./darknet detector demo cfg/coco.data cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights`
