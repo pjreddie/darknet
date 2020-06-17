@@ -43,3 +43,6 @@ You can use the Darknet directly using Docker.
 * Build the Darknet with the following command `make`
 * Run the Eagle Test using OpenCV `./darknet imtest data/eagle.jpg`
 * Run the YOLO using Webcam `./darknet detector demo cfg/coco.data cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights`
+
+### Credits for Docker Support
+Developed by IEEE Robotics and Automation Society Student Branch Chapter of International Hellenic University (Serres) as part of his research into robotics, machine learning and machine vision under [YOLO License](./README.md)
