@@ -16,6 +16,12 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 ## Docker Support ##
 You can use the Darknet directly using Docker.
 
+### Requirements
+* Debian-based OS (Tested on [Ubuntu 20.04 LTS](https://ubuntu.com/download))
+* [Docker](https://www.docker.com/)
+* [NVIDIA Docker](https://github.com/NVIDIA/nvidia-docker)
+* NVIDIA GPU with CUDA-Support (Tested on NVIDIA GeForce GTX 1050 Mobile)
+
 ### Getting started
 * Clone the repository
 * Copy the .env.example as .env from docker directory
