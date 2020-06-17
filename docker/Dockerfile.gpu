@@ -1,0 +1,46 @@
+FROM nvidia/cuda:10.2-cudnn7-devel
+MAINTAINER "Iordanis Kostelidis <Kostelidis@IEEE.org>"
+
+ENV DEBIAN_FRONTEND="noninteractive"
+
+# Update the base image
+RUN apt-get update
+
+# Setup timezone
+ARG DOCKER_TIMEZONE="Europe/Athens"
+RUN apt-get -y install tzdata \
+ && ln -fs /usr/share/zoneinfo/${DOCKER_TIMEZONE} /etc/localtime \
+ && dpkg-reconfigure --frontend noninteractive tzdata
+
+# Setup locales
+RUN apt-get install -y locales locales-all
+
+# Install basic utils and applications
+RUN apt-get -y install apt-utils \
+ && apt-get -y install sudo nano wget
+
+# Install application dependencies
+RUN apt-get -y install \
+    build-essential \
+    cmake \
+    pkg-config \
+    python-opencv \
+    libopencv-dev \
+    libomp-dev
+
+# Clean up
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create application user
+ARG DOCKER_APP_USERNAME="darknet"
+ARG DOCKER_APP_PASSWORD="letmein"
+ARG DOCKER_APP_UID=1000
+ARG DOCKER_APP_GID=1000
+RUN groupadd -g "${DOCKER_APP_GID}" "${DOCKER_APP_USERNAME}" \
+ && useradd -u "${DOCKER_APP_UID}" -ms /bin/bash -g ${DOCKER_APP_USERNAME} ${DOCKER_APP_USERNAME} \
+ && usermod -aG sudo ${DOCKER_APP_USERNAME} \
+ && echo "${DOCKER_APP_USERNAME}:${DOCKER_APP_PASSWORD}" | chpasswd
+
+USER darknet
+RUN mkdir /home/darknet/app
+WORKDIR /home/darknet/app
