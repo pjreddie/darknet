@@ -389,6 +389,14 @@ __global__ void gradient_array_leaky_kernel(float *x, int n, float *delta)
     }
 }
 
+__global__ void gradient_array_revleaky_kernel(float *x, int n, float *delta)
+{
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    if (index < n) {
+        delta[index] /= leaky_gradient_kernel(x[index]);
+    }
+}
+
 __global__ void gradient_array_selu_kernel(float *x, int n, float *delta)
 {
     int index = blockIdx.x*blockDim.x + threadIdx.x;
@@ -449,7 +457,7 @@ extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
     if (a == LINEAR) return;
-    else if(a == LEAKY) activate_array_leaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == LEAKY || a == REVLEAKY) activate_array_leaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
     else if (a == LOGISTIC) activate_array_logistic_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
     else if (a == TANH) activate_array_tanh_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
     else if (a == HARDTAN) activate_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
@@ -481,6 +489,7 @@ extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta
     const int num_blocks = get_number_of_blocks(n, BLOCK);
     if (a == LINEAR) return;
     else if (a == LEAKY) gradient_array_leaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == REVLEAKY) gradient_array_revleaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == LOGISTIC) gradient_array_logistic_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == TANH) gradient_array_tanh_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
     else if (a == HARDTAN) gradient_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);

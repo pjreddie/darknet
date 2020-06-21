@@ -65,6 +65,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "lhtan")==0) return LHTAN;
     if (strcmp(s, "linear")==0) return LINEAR;
     if (strcmp(s, "ramp")==0) return RAMP;
+    if (strcmp(s, "revleaky") == 0) return REVLEAKY;
     if (strcmp(s, "leaky")==0) return LEAKY;
     if (strcmp(s, "tanh")==0) return TANH;
     if (strcmp(s, "stair")==0) return STAIR;
@@ -93,6 +94,7 @@ float activate(float x, ACTIVATION a)
             return relie_activate(x);
         case RAMP:
             return ramp_activate(x);
+        case REVLEAKY:
         case LEAKY:
             return leaky_activate(x);
         case TANH:
@@ -313,6 +315,7 @@ float gradient(float x, ACTIVATION a)
             return relie_gradient(x);
         case RAMP:
             return ramp_gradient(x);
+        case REVLEAKY:
         case LEAKY:
             return leaky_gradient(x);
         case TANH:

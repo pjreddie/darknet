@@ -1922,11 +1922,11 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
     if (use_blur) {
         int i;
         for (i = 0; i < d.X.rows; ++i) {
-            if (random_gen() % 2) {
+            if (random_gen() % 4 == 0) {
                 image im = make_empty_image(w, h, 3);
                 im.data = d.X.vals[i];
                 int ksize = use_blur;
-                if (use_blur == 1) ksize = 17;
+                if (use_blur == 1) ksize = 15;
                 image blurred = blur_image(im, ksize);
                 free_image(im);
                 d.X.vals[i] = blurred.data;

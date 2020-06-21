@@ -168,9 +168,14 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
     if (!state.train) return;
     const float truth_thresh = state.net.label_smooth_eps;
 
-    memset(l.delta, 0, l.batch*l.inputs * sizeof(float));
-
     int b, w, h;
+
+    memset(l.delta, 0, l.batch*l.inputs * sizeof(float));
+    for (b = 0; b < l.batch; ++b) {
+        if (state.net.adversarial) l.labels[b] = b % 2;
+        else l.labels[b] = b / 2;
+    }
+
     // set labels
     for (b = 0; b < l.batch; ++b) {
         for (h = 0; h < l.h; ++h) {
@@ -185,6 +190,7 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
                     //if (truth_prob > max_truth)
                     if (truth_prob > truth_thresh)
                     {
+                        //printf(" truth_prob = %f, max_truth = %f, n = %d; ", truth_prob, max_truth, n);
                         max_truth = truth_prob;
                         l.labels[b] = n;
                     }
@@ -261,6 +267,9 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
     }
 
     *(l.cost) = pow(mag_array(l.delta, l.inputs * l.batch), 2);
+    if (state.net.adversarial) {
+        printf(" adversarial contrastive loss = %f \n\n", *(l.cost));
+    }
 
     free(z);
 }

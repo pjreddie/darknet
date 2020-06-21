@@ -227,6 +227,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     layer.stretch_sway = stretch_sway;
     layer.angle = option_find_float_quiet(options, "angle", 15);
     layer.grad_centr = option_find_int_quiet(options, "grad_centr", 0);
+    layer.reverse = option_find_float_quiet(options, "reverse", 0);
 
     if(params.net.adam){
         layer.B1 = params.net.B1;

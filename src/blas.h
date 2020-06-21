@@ -159,6 +159,7 @@ void stretch_sway_flip_weights_gpu(const float *src_weight_gpu, float *weight_de
 void rotate_weights_gpu(const float *src_weight_gpu, float *weight_deform_gpu, int nweights, int n, int size, int reverse);
 void reduce_and_expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
 void expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
+void mult_inverse_array_gpu(const float *src_gpu, float *dst_gpu, int size, float eps);
 
 #endif // GPU
 #ifdef __cplusplus
