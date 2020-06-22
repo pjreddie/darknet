@@ -1264,18 +1264,12 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
 
     }
 
-
-    float learning_rate = learning_rate_init*l.learning_rate_scale;
+    // Loss scale for Mixed-Precision on Tensor-Cores
+    float learning_rate = learning_rate_init*l.learning_rate_scale / loss_scale;
     //float momentum = a.momentum;
     //float decay = a.decay;
     //int batch = a.batch;
 
-    // Loss scale for Mixed-Precision on Tensor-Cores
-    if (loss_scale != 1.0) {
-        if (l.weight_updates_gpu && l.nweights > 0) scal_ongpu(l.nweights, 1.0 / loss_scale, l.weight_updates_gpu, 1);
-        if (l.bias_updates_gpu && l.n > 0) scal_ongpu(l.n, 1.0 / loss_scale, l.bias_updates_gpu, 1);
-        if (l.scale_updates_gpu && l.n > 0) scal_ongpu(l.n, 1.0 / loss_scale, l.scale_updates_gpu, 1);
-    }
 
     reset_nan_and_inf(l.weight_updates_gpu, l.nweights);
     fix_nan_and_inf(l.weights_gpu, l.nweights);
@@ -1301,7 +1295,7 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
         //axpy_ongpu(l.nweights, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);
         //axpy_ongpu(l.nweights, learning_rate / batch, l.weight_updates_gpu, 1, l.weights_gpu, 1);
         //scal_ongpu(l.nweights, momentum, l.weight_updates_gpu, 1);
-        axpy_ongpu(l.nweights, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);
+        axpy_ongpu(l.nweights, -decay*batch*loss_scale, l.weights_gpu, 1, l.weight_updates_gpu, 1);
         axpy_ongpu(l.nweights, learning_rate / batch, l.weight_updates_gpu, 1, l.weights_gpu, 1);
         scal_ongpu(l.nweights, momentum, l.weight_updates_gpu, 1);
 

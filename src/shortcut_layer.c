@@ -243,15 +243,10 @@ void backward_shortcut_layer_gpu(const layer l, network_state state)
 void update_shortcut_layer_gpu(layer l, int batch, float learning_rate_init, float momentum, float decay, float loss_scale)
 {
     if (l.nweights > 0) {
-        float learning_rate = learning_rate_init*l.learning_rate_scale;
+        float learning_rate = learning_rate_init*l.learning_rate_scale / loss_scale;
         //float momentum = a.momentum;
         //float decay = a.decay;
         //int batch = a.batch;
-
-        // Loss scale for Mixed-Precision on Tensor-Cores
-        if (loss_scale != 1.0) {
-            if(l.weight_updates_gpu && l.nweights > 0) scal_ongpu(l.nweights, 1.0 / loss_scale, l.weight_updates_gpu, 1);
-        }
 
         reset_nan_and_inf(l.weight_updates_gpu, l.nweights);
         fix_nan_and_inf(l.weights_gpu, l.nweights);
