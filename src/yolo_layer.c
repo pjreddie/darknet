@@ -416,7 +416,9 @@ void forward_yolo_layer(const layer l, network_state state)
 
                             int class_id = state.truth[best_match_t*(4 + 1) + b*l.truths + 4];
                             if (l.map) class_id = l.map[class_id];
-                            delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.focal_loss, l.label_smooth_eps, l.classes_multipliers);
+                            if (class_id < l.classes && class_id >= 0) {
+                                delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.focal_loss, l.label_smooth_eps, l.classes_multipliers);
+                            }
                         }
                         else l.delta[obj_index] = 0;
                     }

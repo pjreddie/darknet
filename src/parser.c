@@ -386,7 +386,7 @@ int *parse_yolo_mask(char *a, int *num)
     return mask;
 }
 
-float *get_classes_multipliers(char *cpc, const int classes)
+float *get_classes_multipliers(char *cpc, const int classes, const float max_delta)
 {
     float *classes_multipliers = NULL;
     if (cpc) {
@@ -398,9 +398,15 @@ float *get_classes_multipliers(char *cpc, const int classes)
         }
         float max_counter = 0;
         int i;
-        for (i = 0; i < classes_counters; ++i) if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
+        for (i = 0; i < classes_counters; ++i) {
+            if (counters_per_class[i] < 1) counters_per_class[i] = 1;
+            if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
+        }
         classes_multipliers = (float *)calloc(classes_counters, sizeof(float));
-        for (i = 0; i < classes_counters; ++i) classes_multipliers[i] = max_counter / counters_per_class[i];
+        for (i = 0; i < classes_counters; ++i) {
+            classes_multipliers[i] = max_counter / counters_per_class[i];
+            if(classes_multipliers[i] > max_delta) classes_multipliers[i] = max_delta;
+        }
         free(counters_per_class);
         printf(" classes_multipliers: ");
         for (i = 0; i < classes_counters; ++i) printf("%.1f, ", classes_multipliers[i]);
@@ -425,13 +431,13 @@ layer parse_yolo(list *options, size_params params)
     }
     //assert(l.outputs == params.inputs);
 
+    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     char *cpc = option_find_str(options, "counters_per_class", 0);
-    l.classes_multipliers = get_classes_multipliers(cpc, classes);
+    l.classes_multipliers = get_classes_multipliers(cpc, classes, l.max_delta);
 
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
-    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
     l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
     char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
@@ -534,14 +540,13 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
         exit(EXIT_FAILURE);
     }
     //assert(l.outputs == params.inputs);
-
+    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     char *cpc = option_find_str(options, "counters_per_class", 0);
-    l.classes_multipliers = get_classes_multipliers(cpc, classes);
+    l.classes_multipliers = get_classes_multipliers(cpc, classes, l.max_delta);
 
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
-    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     l.uc_normalizer = option_find_float_quiet(options, "uc_normalizer", 1.0);
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
     l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1.0);
