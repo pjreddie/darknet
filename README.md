@@ -526,7 +526,7 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
 
 Do all the same steps as for the full yolo model as described above. With the exception of:
 * Download file with the first 29-convolutional layers of yolov4-tiny: https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.conv.29
- (Or get this file from yolov4-tiny.weights file by using command: `darknet.exe partial cfg/yolov5-tiny.cfg yolov5-tiny.weights yolov5-tiny.conv.29 29`
+ (Or get this file from yolov4-tiny.weights file by using command: `darknet.exe partial cfg/yolov4-tiny.cfg yolov4-tiny.weights yolov4-tiny.conv.29 29`
 * Make your custom model `yolov4-tiny-obj.cfg` based on `cfg/yolov4-tiny.cfg` instead of `yolov4.cfg`
 * Start training: `darknet.exe detector train data/obj.data yolov4-tiny-obj.cfg yolov4-tiny.conv.29`
 
