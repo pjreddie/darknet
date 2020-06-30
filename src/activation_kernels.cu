@@ -31,6 +31,7 @@ __device__ float logistic_activate_kernel(float x){return 1.f/(1.f + expf(-x));}
 __device__ float loggy_activate_kernel(float x){return 2.f/(1.f + expf(-x)) - 1;}
 __device__ float relu_activate_kernel(float x){return x*(x>0);}
 __device__ float elu_activate_kernel(float x){return (x >= 0)*x + (x < 0)*(expf(x)-1);}
+__device__ float selu_activate_kernel(float x){return (x >= 0)*1.0507f*x + (x < 0)*1.0507f*1.6732f*(expf(x)-1);}
 __device__ float relie_activate_kernel(float x){return (x>0) ? x : .01f*x;}
 __device__ float ramp_activate_kernel(float x){return x*(x>0)+.1f*x;}
 __device__ float leaky_activate_kernel(float x){return (x>0) ? x : .1f*x;}
@@ -63,6 +64,7 @@ __device__ float loggy_gradient_kernel(float x)
 }
 __device__ float relu_gradient_kernel(float x){return (x>0);}
 __device__ float elu_gradient_kernel(float x){return (x >= 0) + (x < 0)*(x + 1);}
+__device__ float selu_gradient_kernel(float x){return (x >= 0)*1.0507 + (x < 0)*(x + 1.0507*1.6732);}
 __device__ float relie_gradient_kernel(float x){return (x>0) ? 1 : .01f;}
 __device__ float ramp_gradient_kernel(float x){return (x>0)+.1f;}
 __device__ float leaky_gradient_kernel(float x){return (x>0) ? 1 : .1f;}
@@ -87,6 +89,8 @@ __device__ float activate_kernel(float x, ACTIVATION a)
             return relu_activate_kernel(x);
         case ELU:
             return elu_activate_kernel(x);
+        case SELU:
+            return selu_activate_kernel(x);
         case RELIE:
             return relie_activate_kernel(x);
         case RAMP:
@@ -120,6 +124,8 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
             return relu_gradient_kernel(x);
         case ELU:
             return elu_gradient_kernel(x);
+        case SELU:
+            return selu_gradient_kernel(x);
         case RELIE:
             return relie_gradient_kernel(x);
         case RAMP:
@@ -138,6 +144,41 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
             return lhtan_gradient_kernel(x);
     }
     return 0;
+}
+
+__global__ void binary_gradient_array_kernel(float *x, float *dy, int n, int s, BINARY_ACTIVATION a, float *dx)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    int i = id % s;
+    int b = id / s;
+    float x1 = x[b*s + i];
+    float x2 = x[b*s + s/2 + i];
+    if(id < n) {
+        float de = dy[id];
+        dx[b*s + i] = x2*de;
+        dx[b*s + s/2 + i] = x1*de; 
+    }
+}
+
+extern "C" void binary_gradient_array_gpu(float *x, float *dx, int n, int size, BINARY_ACTIVATION a, float *y) 
+{
+    binary_gradient_array_kernel<<<cuda_gridsize(n/2), BLOCK>>>(x, dx, n/2, size, a, y);
+    check_error(cudaPeekAtLastError());
+}
+__global__ void binary_activate_array_kernel(float *x, int n, int s, BINARY_ACTIVATION a, float *y)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    int i = id % s;
+    int b = id / s;
+    float x1 = x[b*s + i];
+    float x2 = x[b*s + s/2 + i];
+    if(id < n) y[id] = x1*x2;
+}
+
+extern "C" void binary_activate_array_gpu(float *x, int n, int size, BINARY_ACTIVATION a, float *y) 
+{
+    binary_activate_array_kernel<<<cuda_gridsize(n/2), BLOCK>>>(x, n/2, size, a, y);
+    check_error(cudaPeekAtLastError());
 }
 
 __global__ void activate_array_kernel(float *x, int n, ACTIVATION a)

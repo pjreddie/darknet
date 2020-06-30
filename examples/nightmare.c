@@ -47,7 +47,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
 #ifdef GPU
     net->delta_gpu = cuda_make_array(delta.data, im.w*im.h*im.c);
-    cuda_push_array(net->input_gpu, im.data, net->inputs);
+    copy_cpu(net->inputs, im.data, 1, net->input, 1);
 
     forward_network_gpu(net);
     copy_gpu(last.outputs, last.output_gpu, 1, last.delta_gpu, 1);
@@ -62,7 +62,8 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
     cuda_free(net->delta_gpu);
     net->delta_gpu = 0;
 #else
-    net->input = im.data;
+    printf("\nnet: %d %d %d im: %d %d %d\n", net->w, net->h, net->inputs, im.w, im.h, im.c);
+    copy_cpu(net->inputs, im.data, 1, net->input, 1);
     net->delta = delta.data;
     forward_network(net);
     copy_cpu(last.outputs, last.output, 1, last.delta, 1);
@@ -82,6 +83,10 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
      */
 
     //rate = rate / abs_mean(out.data, out.w*out.h*out.c);
+    image gray = make_image(out.w, out.h, out.c);
+    fill_image(gray, .5);
+    axpy_cpu(orig.w*orig.h*orig.c, -1, orig.data, 1, gray.data, 1);
+    axpy_cpu(orig.w*orig.h*orig.c, .1, gray.data, 1, out.data, 1);
 
     if(norm) normalize_array(out.data, out.w*out.h*out.c);
     axpy_cpu(orig.w*orig.h*orig.c, rate, out.data, 1, orig.data, 1);
@@ -308,8 +313,7 @@ void run_nightmare(int argc, char **argv)
     int reconstruct = find_arg(argc, argv, "-reconstruct");
     int smooth_size = find_int_arg(argc, argv, "-smooth", 1);
 
-    network *net = parse_network_cfg(cfg);
-    load_weights(net, weights);
+    network *net = load_network(cfg, weights, 0);
     char *cfgbase = basecfg(cfg);
     char *imbase = basecfg(input);
 
@@ -372,10 +376,7 @@ void run_nightmare(int argc, char **argv)
             if(reconstruct){
                 reconstruct_picture(net, features, im, update, rate, momentum, lambda, smooth_size, 1);
                 //if ((n+1)%30 == 0) rate *= .5;
-                show_image(im, "reconstruction");
-#ifdef OPENCV
-                cvWaitKey(10);
-#endif
+                show_image(im, "reconstruction", 10);
             }else{
                 int layer = max_layer + rand()%range - range/2;
                 int octave = rand()%octaves;
@@ -396,8 +397,7 @@ void run_nightmare(int argc, char **argv)
         }
         printf("%d %s\n", e, buff);
         save_image(im, buff);
-        //show_image(im, buff);
-        //cvWaitKey(0);
+        //show_image(im, buff, 0);
 
         if(rotate){
             image rot = rotate_image(im, rotate);
