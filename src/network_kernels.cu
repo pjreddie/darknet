@@ -386,7 +386,7 @@ float train_network_datum_gpu(network net, float *x, float *y)
         im.h = net.h;
         im.c = net.c;
         im.data = x;
-        //show_image(im, "adversarial data augmentation");
+        show_image(im, "adversarial data augmentation");
         //wait_key_cv(1);
 
         free(old_input);

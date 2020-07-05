@@ -359,8 +359,16 @@ softmax_layer parse_softmax(list *options, size_params params)
 contrastive_layer parse_contrastive(list *options, size_params params)
 {
     int classes = option_find_int(options, "classes", 1000);
-    contrastive_layer layer = make_contrastive_layer(params.batch, params.w, params.h, params.c, classes, params.inputs);
+    layer *yolo_layer = NULL;
+    int yolo_layer_id = option_find_int_quiet(options, "yolo_layer", 0);
+    if (yolo_layer_id < 0) yolo_layer_id = params.index + yolo_layer_id;
+    if(yolo_layer_id != 0) yolo_layer = params.net.layers + yolo_layer_id;
+
+    contrastive_layer layer = make_contrastive_layer(params.batch, params.w, params.h, params.c, classes, params.inputs, yolo_layer);
     layer.temperature = option_find_float_quiet(options, "temperature", 1);
+    layer.steps = params.time_steps;
+    layer.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    layer.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     return layer;
 }
 
@@ -1100,9 +1108,10 @@ void parse_net_options(list *options, network *net)
     net->init_sequential_subdivisions = net->sequential_subdivisions = option_find_int_quiet(options, "sequential_subdivisions", subdivs);
     if (net->sequential_subdivisions > subdivs) net->init_sequential_subdivisions = net->sequential_subdivisions = subdivs;
     net->try_fix_nan = option_find_int_quiet(options, "try_fix_nan", 0);
-    net->batch /= subdivs;
-    net->batch *= net->time_steps;
-    net->subdivisions = subdivs;
+    net->batch /= subdivs;          // mini_batch
+    const int mini_batch = net->batch;
+    net->batch *= net->time_steps;  // mini_batch * time_steps
+    net->subdivisions = subdivs;    // number of mini_batches
 
     *net->seen = 0;
     *net->cur_iteration = 0;
@@ -1137,6 +1146,10 @@ void parse_net_options(list *options, network *net)
     net->mosaic_bound = option_find_int_quiet(options, "mosaic_bound", 0);
     net->contrastive = option_find_int_quiet(options, "contrastive", 0);
     net->unsupervised = option_find_int_quiet(options, "unsupervised", 0);
+    if (net->contrastive && mini_batch < 2) {
+        printf(" Error: mini_batch size (batch/subdivisions) should be higher than 1 for Contrastive loss \n");
+        exit(0);
+    }
     net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     net->resize_step = option_find_float_quiet(options, "resize_step", 32);
     net->attention = option_find_int_quiet(options, "attention", 0);

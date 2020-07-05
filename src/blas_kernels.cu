@@ -2321,10 +2321,12 @@ __global__  void mult_inverse_array_kernel(const float *src_gpu, float *dst_gpu,
 
     if (index < size) {
         float val = src_gpu[index];
-        float sign = 1;
-        if (val < 0) sign = -1;
-        if (fabs(val) < fabs(eps)) val = eps * sign;
-        dst_gpu[index] = eps * 1.0f / val;
+        float sign = (val < 0) ? -1 : 1;
+        // eps = 1 by default
+        // eps = 2 - lower delta
+        // eps = 0 - higher delta (linear)
+        // eps = -1 - high delta (inverse number)
+        dst_gpu[index] = powf(fabs(val), eps) * sign;
     }
 }
 

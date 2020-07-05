@@ -548,8 +548,163 @@ float cosine_similarity(float *A, float *B, unsigned int feature_size)
     return similarity;
 }
 
+int check_sim(size_t i, size_t j, contrastive_params *contrast_p, int contrast_p_size)
+{
+    size_t z;
+    for (z = 0; z < contrast_p_size; ++z) {
+        if (contrast_p[z].i == i && contrast_p[z].j == j) break;
+    }
+    if (z == contrast_p_size) {
+        return 0;   // not found
+    }
+
+    return 1;   // found
+}
+
+float find_sim(size_t i, size_t j, contrastive_params *contrast_p, int contrast_p_size)
+{
+    size_t z;
+    for (z = 0; z < contrast_p_size; ++z) {
+        if (contrast_p[z].i == i && contrast_p[z].j == j) break;
+    }
+    if (z == contrast_p_size) {
+        printf(" Error: find_sim(): sim isn't found: i = %d, j = %d, z = %d \n", i, j, z);
+        getchar();
+    }
+
+    return contrast_p[z].sim;
+}
+
+float find_P_constrastive(size_t i, size_t j, contrastive_params *contrast_p, int contrast_p_size)
+{
+    size_t z;
+    for (z = 0; z < contrast_p_size; ++z) {
+        if (contrast_p[z].i == i && contrast_p[z].j == j) break;
+    }
+    if (z == contrast_p_size) {
+        printf(" Error: find_P_constrastive(): P isn't found: i = %d, j = %d, z = %d \n", i, j, z);
+        getchar();
+    }
+
+    return contrast_p[z].P;
+}
+
 // num_of_samples = 2 * loaded_images = mini_batch_size
-float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim)
+float P_constrastive_f(size_t i, size_t l, int *labels, float **z, unsigned int feature_size, float temperature, contrastive_params *contrast_p, int contrast_p_size)
+{
+    if (i == l) {
+        fprintf(stderr, " Error: in P_constrastive must be i != l, while i = %d, l = %d \n", i, l);
+        getchar();
+    }
+
+    const float sim = find_sim(i, l, contrast_p, contrast_p_size); // cosine_similarity(z[i], z[l], feature_size);
+    const float numerator = expf(sim / temperature);
+
+    float denominator = 0;
+    int k;
+    for (k = 0; k < contrast_p_size; ++k) {
+        contrastive_params cp = contrast_p[k];
+        //if (k != i && labels[k] != labels[i]) {
+        //if (k != i) {
+        if (cp.i != i && cp.j == l) {
+            const float sim_den = cp.sim;
+            //const float sim_den = find_sim(k, l, contrast_p, contrast_p_size); // cosine_similarity(z[k], z[l], feature_size);
+            denominator += expf(sim_den / temperature);
+        }
+    }
+
+    float result = numerator / denominator;
+    if (denominator == 0) result = 1;
+    if (result > 1) result = 0.9999;
+    return result;
+}
+
+void grad_contrastive_loss_positive_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, contrastive_params *contrast_p, int contrast_p_size)
+{
+    const float vec_len = math_vector_length(z[i], feature_size);
+    size_t j;
+    float N = 0;
+    for (j = 0; j < num_of_samples; ++j) {
+        if (labels[i] == labels[j] && labels[i] > 0) N++;
+    }
+    if (N == 0 || temperature == 0 || vec_len == 0) {
+        fprintf(stderr, " Error: N == 0 || temperature == 0 || vec_len == 0. N=%f, temperature=%f, vec_len=%f \n", N, temperature, vec_len);
+        getchar();
+    }
+    const float mult = 1 / ((N - 1) * temperature * vec_len);
+
+    for (j = 0; j < num_of_samples; ++j) {
+        //if (i != j && (i/2) == (j/2)) {
+        if (i != j && labels[i] == labels[j] && labels[i] > 0) {
+            //printf(" i = %d, j = %d, num_of_samples = %d, labels[i] = %d, labels[j] = %d \n",
+            //    i, j, num_of_samples, labels[i], labels[j]);
+            if (!check_sim(i, j, contrast_p, contrast_p_size)) continue;
+            const float sim = find_sim(i, j, contrast_p, contrast_p_size); //cos_sim[i*num_of_samples + j];        // cosine_similarity(z[i], z[j], feature_size);
+            const float P = find_P_constrastive(i, j, contrast_p, contrast_p_size); //p_constrastive[i*num_of_samples + j];   // P_constrastive(i, j, labels, num_of_samples, z, feature_size, temperature, cos_sim);
+                                                                    //const float custom_pos_mult = 1 - sim;
+
+
+            int m;
+            //const float d = mult*(sim * z[i][m] - z[j][m]) * (1 - P); // 1
+            for (m = 0; m < feature_size; ++m) {
+                //const float d = mult*(sim * z[j][m] - z[j][m]) * (1 - P); // my
+                //const float d = mult*(sim * z[i][m] + sim * z[j][m] - z[j][m]) *(1 - P); // 1+2
+                const float d = mult*(sim * z[i][m] - z[j][m]) *(1 - P); // 1 (70%)
+                //const float d = mult*(sim * z[j][m] - z[j][m]) * (1 - P); // 2
+                // printf(" pos: z[j][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[j][m], z[i][m], d, sim);
+                delta[m] -= d;
+            }
+        }
+    }
+}
+
+void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, contrastive_params *contrast_p, int contrast_p_size)
+{
+    const float vec_len = math_vector_length(z[i], feature_size);
+    size_t j;
+    float N = 0;
+    for (j = 0; j < num_of_samples; ++j) {
+        if (labels[i] == labels[j] && labels[i] > 0) N++;
+    }
+    if (N == 0 || temperature == 0 || vec_len == 0) {
+        fprintf(stderr, " Error: N == 0 || temperature == 0 || vec_len == 0. N=%f, temperature=%f, vec_len=%f \n", N, temperature, vec_len);
+        getchar();
+    }
+    const float mult = 1 / ((N - 1) * temperature * vec_len);
+
+    for (j = 0; j < num_of_samples; ++j) {
+        //if (i != j && (i/2) == (j/2)) {
+        if (i != j && labels[i] == labels[j] && labels[i] > 0) {
+
+            size_t k;
+            for (k = 0; k < num_of_samples; ++k) {
+                //if (k != i && k != j && labels[k] != labels[i]) {
+                if (k != i && k != j && labels[k] >= 0) {
+                    if (!check_sim(i, k, contrast_p, contrast_p_size)) continue;
+                    const float sim = find_sim(i, k, contrast_p, contrast_p_size); //cos_sim[i*num_of_samples + k];        // cosine_similarity(z[i], z[k], feature_size);
+                    const float P = find_P_constrastive(i, k, contrast_p, contrast_p_size); //p_constrastive[i*num_of_samples + k];   // P_constrastive(i, k, labels, num_of_samples, z, feature_size, temperature, cos_sim);
+                                                                            //const float custom_pos_mult = 1 + sim;
+
+                    int m;
+                    //const float d = mult*(z[k][m] + sim * z[i][m]) * P;   // my1
+                    for (m = 0; m < feature_size; ++m) {
+                        //const float d = mult*(z[k][m] + sim * z[i][m]) * P;   // 1 (70%)
+                        //const float d = mult*(z[k][m] - sim * z[k][m] - sim * z[i][m]) * P;   // 1+2
+                        const float d = mult*(z[k][m] - sim * z[i][m]) * P;   // 1 (70%)
+                        //const float d = mult*(z[k][m] - sim * z[k][m]) * P; // 2
+                        //printf(" neg: z[k][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[k][m], z[i][m], d, sim);
+                        delta[m] -= d;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+// num_of_samples = 2 * loaded_images = mini_batch_size
+float P_constrastive(size_t i, size_t l, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim)
 {
     if (i == l) {
         fprintf(stderr, " Error: in P_constrastive must be i != l, while i = %d, l = %d \n", i, l);
@@ -578,11 +733,11 @@ float P_constrastive(int i, int l, int *labels, int num_of_samples, float **z, u
 // z[feature_size][num_of_samples] - array of arrays with contrastive features (output of conv-layer, f.e. 128 floats for each sample)
 // delta[feature_size] - array with deltas for backpropagation
 // temperature - scalar temperature param (temperature > 0), f.e. temperature = 0.07: Supervised Contrastive Learning
-void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta)
+void grad_contrastive_loss_positive(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta)
 {
     const float vec_len = math_vector_length(z[i], feature_size);
-    int j;
-    int N = 0;
+    size_t j;
+    float N = 0;
     for (j = 0; j < num_of_samples; ++j) {
         if (labels[i] == labels[j]) N++;
     }
@@ -595,6 +750,8 @@ void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, floa
     for (j = 0; j < num_of_samples; ++j) {
         //if (i != j && (i/2) == (j/2)) {
         if (i != j && labels[i] == labels[j]) {
+            //printf(" i = %d, j = %d, num_of_samples = %d, labels[i] = %d, labels[j] = %d \n",
+            //    i, j, num_of_samples, labels[i], labels[j]);
             const float sim = cos_sim[i*num_of_samples + j];        // cosine_similarity(z[i], z[j], feature_size);
             const float P = p_constrastive[i*num_of_samples + j];   // P_constrastive(i, j, labels, num_of_samples, z, feature_size, temperature, cos_sim);
             //const float custom_pos_mult = 1 - sim;
@@ -615,11 +772,11 @@ void grad_contrastive_loss_positive(int i, int *labels, int num_of_samples, floa
 // z[feature_size][num_of_samples] - array of arrays with contrastive features (output of conv-layer, f.e. 128 floats for each sample)
 // delta[feature_size] - array with deltas for backpropagation
 // temperature - scalar temperature param (temperature > 0), f.e. temperature = 0.07: Supervised Contrastive Learning
-void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta)
+void grad_contrastive_loss_negative(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta)
 {
     const float vec_len = math_vector_length(z[i], feature_size);
-    int j;
-    int N = 0;
+    size_t j;
+    float N = 0;
     for (j = 0; j < num_of_samples; ++j) {
         if (labels[i] == labels[j]) N++;
     }
@@ -633,10 +790,10 @@ void grad_contrastive_loss_negative(int i, int *labels, int num_of_samples, floa
         //if (i != j && (i/2) == (j/2)) {
         if (i != j && labels[i] == labels[j]) {
 
-            int k;
+            size_t k;
             for (k = 0; k < num_of_samples; ++k) {
                 //if (k != i && k != j && labels[k] != labels[i]) {
-                if (k != i && k != j) {
+                if (k != i && k != j && labels[k] >= 0) {
                     const float sim = cos_sim[i*num_of_samples + k];        // cosine_similarity(z[i], z[k], feature_size);
                     const float P = p_constrastive[i*num_of_samples + k];   // P_constrastive(i, k, labels, num_of_samples, z, feature_size, temperature, cos_sim);
                     //const float custom_pos_mult = 1 + sim;

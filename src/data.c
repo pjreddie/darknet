@@ -45,7 +45,7 @@ char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
 }
 */
 
-char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augment_speed)
+char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augment_speed, int contrastive)
 {
     int speed = rand_int(1, augment_speed);
     if (speed < 1) speed = 1;
@@ -55,7 +55,9 @@ char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augm
     //printf("n = %d, mini_batch = %d \n", n, mini_batch);
     unsigned int *start_time_indexes = (unsigned int *)xcalloc(mini_batch, sizeof(unsigned int));
     for (i = 0; i < mini_batch; ++i) {
-        start_time_indexes[i] = random_gen() % m;
+        if (contrastive && (i % 2) == 1) start_time_indexes[i] = start_time_indexes[i - 1];
+        else start_time_indexes[i] = random_gen() % m;
+
         //printf(" start_time_indexes[i] = %u, ", start_time_indexes[i]);
     }
 
@@ -67,6 +69,7 @@ char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augm
 
             //int index = random_gen() % m;
             sequentia_paths[i] = paths[index];
+            //printf(" index = %d, ", index);
             //if(i == 0) printf("%s\n", paths[index]);
             //printf(" index = %u - grp: %s \n", index, paths[index]);
             if (strlen(sequentia_paths[i]) <= 4) printf(" Very small path to the image: %s \n", sequentia_paths[i]);
@@ -77,15 +80,18 @@ char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augm
     return sequentia_paths;
 }
 
-char **get_random_paths(char **paths, int n, int m)
+char **get_random_paths_custom(char **paths, int n, int m, int contrastive)
 {
     char** random_paths = (char**)xcalloc(n, sizeof(char*));
     int i;
     pthread_mutex_lock(&mutex);
+    int old_index = 0;
     //printf("n = %d \n", n);
     for(i = 0; i < n; ++i){
         do {
             int index = random_gen() % m;
+            if (contrastive && (i % 2 == 1)) index = old_index;
+            else old_index = index;
             random_paths[i] = paths[index];
             //if(i == 0) printf("%s\n", paths[index]);
             //printf("grp: %s\n", paths[index]);
@@ -94,6 +100,11 @@ char **get_random_paths(char **paths, int n, int m)
     }
     pthread_mutex_unlock(&mutex);
     return random_paths;
+}
+
+char **get_random_paths(char **paths, int n, int m)
+{
+    return get_random_paths_custom(paths, n, m, 0);
 }
 
 char **find_replace_paths(char **paths, int n, char *find, char *replace)
@@ -203,11 +214,16 @@ box_label *read_boxes(char *filename, int *n)
         *n = 0;
         return boxes;
     }
+    const int max_obj_img = 4000;// 30000;
+    const int img_hash = (custom_hash(filename) % max_obj_img)*max_obj_img;
+    //printf(" img_hash = %d, filename = %s; ", img_hash, filename);
     float x, y, h, w;
     int id;
     int count = 0;
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
         boxes = (box_label*)xrealloc(boxes, (count + 1) * sizeof(box_label));
+        boxes[count].track_id = count + img_hash;
+        //printf(" boxes[count].track_id = %d, count = %d \n", boxes[count].track_id, count);
         boxes[count].id = id;
         boxes[count].x = x;
         boxes[count].y = y;
@@ -358,7 +374,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
-int fill_truth_detection(const char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
+int fill_truth_detection(const char *path, int num_boxes, int truth_size, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
     int net_w, int net_h)
 {
     char labelpath[4096];
@@ -383,6 +399,7 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
         w = boxes[i].w;
         h = boxes[i].h;
         id = boxes[i].id;
+        int track_id = boxes[i].track_id;
 
         // not detect small objects
         //if ((w < 0.001F || h < 0.001F)) continue;
@@ -435,11 +452,14 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
         if (x == 0) x += lowest_w;
         if (y == 0) y += lowest_h;
 
-        truth[(i-sub)*5+0] = x;
-        truth[(i-sub)*5+1] = y;
-        truth[(i-sub)*5+2] = w;
-        truth[(i-sub)*5+3] = h;
-        truth[(i-sub)*5+4] = id;
+        truth[(i-sub)*truth_size +0] = x;
+        truth[(i-sub)*truth_size +1] = y;
+        truth[(i-sub)*truth_size +2] = w;
+        truth[(i-sub)*truth_size +3] = h;
+        truth[(i-sub)*truth_size +4] = id;
+        truth[(i-sub)*truth_size +5] = track_id;
+        //float val = track_id;
+        //printf(" i = %d, sub = %d, truth_size = %d, track_id = %d, %f, %f\n", i, sub, truth_size, track_id, truth[(i - sub)*truth_size + 5], val);
 
         if (min_w_h == 0) min_w_h = w*net_w;
         if (min_w_h > w*net_w) min_w_h = w*net_w;
@@ -848,20 +868,19 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     return d;
 }
 
-void blend_truth(float *new_truth, int boxes, float *old_truth)
+void blend_truth(float *new_truth, int boxes, int truth_size, float *old_truth)
 {
-    const int t_size = 4 + 1;
     int count_new_truth = 0;
     int t;
     for (t = 0; t < boxes; ++t) {
-        float x = new_truth[t*(4 + 1)];
+        float x = new_truth[t*truth_size];
         if (!x) break;
         count_new_truth++;
 
     }
     for (t = count_new_truth; t < boxes; ++t) {
-        float *new_truth_ptr = new_truth + t*t_size;
-        float *old_truth_ptr = old_truth + (t - count_new_truth)*t_size;
+        float *new_truth_ptr = new_truth + t*truth_size;
+        float *old_truth_ptr = old_truth + (t - count_new_truth)*truth_size;
         float x = old_truth_ptr[0];
         if (!x) break;
 
@@ -875,27 +894,26 @@ void blend_truth(float *new_truth, int boxes, float *old_truth)
 }
 
 
-void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, int h, float cut_x, float cut_y, int i_mixup,
+void blend_truth_mosaic(float *new_truth, int boxes, int truth_size, float *old_truth, int w, int h, float cut_x, float cut_y, int i_mixup,
     int left_shift, int right_shift, int top_shift, int bot_shift,
     int net_w, int net_h, int mosaic_bound)
 {
     const float lowest_w = 1.F / net_w;
     const float lowest_h = 1.F / net_h;
 
-    const int t_size = 4 + 1;
     int count_new_truth = 0;
     int t;
     for (t = 0; t < boxes; ++t) {
-        float x = new_truth[t*(4 + 1)];
+        float x = new_truth[t*truth_size];
         if (!x) break;
         count_new_truth++;
 
     }
     int new_t = count_new_truth;
     for (t = count_new_truth; t < boxes; ++t) {
-        float *new_truth_ptr = new_truth + new_t*t_size;
+        float *new_truth_ptr = new_truth + new_t*truth_size;
         new_truth_ptr[0] = 0;
-        float *old_truth_ptr = old_truth + (t - count_new_truth)*t_size;
+        float *old_truth_ptr = old_truth + (t - count_new_truth)*truth_size;
         float x = old_truth_ptr[0];
         if (!x) break;
 
@@ -1031,8 +1049,8 @@ void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, in
 
 #include "http_stream.h"
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_gaussian_noise, int use_blur, int use_mixup,
-    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int mosaic_bound, int show_imgs)
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int truth_size, int classes, int use_flip, int use_gaussian_noise, int use_blur, int use_mixup,
+    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int mosaic_bound, int contrastive, int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -1074,17 +1092,17 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     float dhue = 0, dsat = 0, dexp = 0, flip = 0, blur = 0;
     int augmentation_calculated = 0, gaussian_noise = 0;
 
-    d.y = make_matrix(n, 5*boxes);
+    d.y = make_matrix(n, truth_size*boxes);
     int i_mixup = 0;
     for (i_mixup = 0; i_mixup <= use_mixup; i_mixup++) {
         if (i_mixup) augmentation_calculated = 0;   // recalculate augmentation for the 2nd sequence if(track==1)
 
         char **random_paths;
-        if (track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
-        else random_paths = get_random_paths(paths, n, m);
+        if (track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed, contrastive);
+        else random_paths = get_random_paths_custom(paths, n, m, contrastive);
 
         for (i = 0; i < n; ++i) {
-            float *truth = (float*)xcalloc(5 * boxes, sizeof(float));
+            float *truth = (float*)xcalloc(truth_size * boxes, sizeof(float));
             const char *filename = random_paths[i];
 
             int flag = (c >= 3);
@@ -1221,21 +1239,23 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             float dy = ((float)ptop / oh) / sy;
 
 
-            int min_w_h = fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
+            int min_w_h = fill_truth_detection(filename, boxes, truth_size, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
+            //for (int z = 0; z < boxes; ++z) if(truth[z*truth_size] > 0) printf(" track_id = %f \n", truth[z*truth_size + 5]);
+            //printf(" truth_size = %d \n", truth_size);
 
             if ((min_w_h / 8) < blur && blur > 1) blur = min_w_h / 8;   // disable blur if one of the objects is too small
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
-                gaussian_noise, blur, boxes, truth);
+                gaussian_noise, blur, boxes, truth_size, truth);
 
             if (use_mixup == 0) {
                 d.X.vals[i] = ai.data;
-                memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
+                memcpy(d.y.vals[i], truth, truth_size * boxes * sizeof(float));
             }
             else if (use_mixup == 1) {
                 if (i_mixup == 0) {
                     d.X.vals[i] = ai.data;
-                    memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
+                    memcpy(d.y.vals[i], truth, truth_size * boxes * sizeof(float));
                 }
                 else if (i_mixup == 1) {
                     image old_img = make_empty_image(w, h, c);
@@ -1244,7 +1264,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     //show_image(old_img, "old");
                     //wait_until_press_key_cv();
                     blend_images_cv(ai, 0.5, old_img, 0.5);
-                    blend_truth(d.y.vals[i], boxes, truth);
+                    blend_truth(d.y.vals[i], boxes, truth_size, truth);
                     free_image(old_img);
                     d.X.vals[i] = ai.data;
                 }
@@ -1291,7 +1311,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     }
                 }
 
-                blend_truth_mosaic(d.y.vals[i], boxes, truth, w, h, cut_x[i], cut_y[i], i_mixup, left_shift, right_shift, top_shift, bot_shift, w, h, mosaic_bound);
+                blend_truth_mosaic(d.y.vals[i], boxes, truth_size, truth, w, h, cut_x[i], cut_y[i], i_mixup, left_shift, right_shift, top_shift, bot_shift, w, h, mosaic_bound);
 
                 free_image(ai);
                 ai.data = d.X.vals[i];
@@ -1306,7 +1326,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 sprintf(buff, "aug_%d_%d_%d", random_index, i, random_gen());
                 int t;
                 for (t = 0; t < boxes; ++t) {
-                    box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);
+                    box b = float_to_box_stride(d.y.vals[i] + t*truth_size, 1);
                     if (!b.x) break;
                     int left = (b.x - b.w / 2.)*ai.w;
                     int right = (b.x + b.w / 2.)*ai.w;
@@ -1346,15 +1366,15 @@ void blend_images(image new_img, float alpha, image old_img, float beta)
         new_img.data[i] = new_img.data[i] * alpha + old_img.data[i] * beta;
 }
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int gaussian_noise, int use_blur, int use_mixup,
-    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int mosaic_bound, int show_imgs)
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int truth_size, int classes, int use_flip, int gaussian_noise, int use_blur, int use_mixup,
+    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int mosaic_bound, int contrastive, int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
     char **random_paths;
     char **mixup_random_paths = NULL;
-    if(track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
-    else random_paths = get_random_paths(paths, n, m);
+    if(track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed, contrastive);
+    else random_paths = get_random_paths_custom(paths, n, m, contrastive);
 
     //assert(use_mixup < 2);
     if (use_mixup == 2) {
@@ -1368,7 +1388,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     int mixup = use_mixup ? random_gen() % 2 : 0;
     //printf("\n mixup = %d \n", mixup);
     if (mixup) {
-        if (track) mixup_random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
+        if (track) mixup_random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed, contrastive);
         else mixup_random_paths = get_random_paths(paths, n, m);
     }
 
@@ -1385,12 +1405,12 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     float dhue = 0, dsat = 0, dexp = 0, flip = 0;
     int augmentation_calculated = 0;
 
-    d.y = make_matrix(n, 5 * boxes);
+    d.y = make_matrix(n, truth_size * boxes);
     int i_mixup = 0;
     for (i_mixup = 0; i_mixup <= mixup; i_mixup++) {
         if (i_mixup) augmentation_calculated = 0;
         for (i = 0; i < n; ++i) {
-            float *truth = (float*)xcalloc(5 * boxes, sizeof(float));
+            float *truth = (float*)xcalloc(truth_size * boxes, sizeof(float));
             char *filename = (i_mixup) ? mixup_random_paths[i] : random_paths[i];
 
             image orig = load_image(filename, 0, 0, c);
@@ -1489,7 +1509,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             distort_image(sized, dhue, dsat, dexp);
             //random_distort_image(sized, hue, saturation, exposure);
 
-            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
+            fill_truth_detection(filename, boxes, truth_size, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
 
             if (i_mixup) {
                 image old_img = sized;
@@ -1498,12 +1518,12 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 //show_image(old_img, "old");
                 //wait_until_press_key_cv();
                 blend_images(sized, 0.5, old_img, 0.5);
-                blend_truth(truth, boxes, d.y.vals[i]);
+                blend_truth(truth, boxes, truth_size, d.y.vals[i]);
                 free_image(old_img);
             }
 
             d.X.vals[i] = sized.data;
-            memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
+            memcpy(d.y.vals[i], truth, truth_size * boxes * sizeof(float));
 
             if (show_imgs)// && i_mixup)
             {
@@ -1512,7 +1532,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 int t;
                 for (t = 0; t < boxes; ++t) {
-                    box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);
+                    box b = float_to_box_stride(d.y.vals[i] + t*truth_size, 1);
                     if (!b.x) break;
                     int left = (b.x - b.w / 2.)*sized.w;
                     int right = (b.x + b.w / 2.)*sized.w;
@@ -1561,8 +1581,8 @@ void *load_thread(void *ptr)
     } else if (a.type == REGION_DATA){
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){
-        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.gaussian_noise, a.blur, a.mixup, a.jitter, a.resize,
-            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.letter_box, a.mosaic_bound, a.show_imgs);
+        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.truth_size, a.classes, a.flip, a.gaussian_noise, a.blur, a.mixup, a.jitter, a.resize,
+            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.letter_box, a.mosaic_bound, a.contrastive, a.show_imgs);
     } else if (a.type == SWAG_DATA){
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
     } else if (a.type == COMPARE_DATA){

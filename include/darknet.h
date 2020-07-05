@@ -142,6 +142,15 @@ typedef enum{
     MULT, ADD, SUB, DIV
 } BINARY_ACTIVATION;
 
+// blas.h
+typedef struct contrastive_params {
+    float sim;
+    float P;
+    size_t i, j;
+    int time_step_i, time_step_j;
+} contrastive_params;
+
+
 // layer.h
 typedef enum {
     CONVOLUTIONAL,
@@ -234,6 +243,7 @@ struct layer {
     int out_h, out_w, out_c;
     int n;
     int max_boxes;
+    int truth_size;
     int groups;
     int group_id;
     int size;
@@ -288,6 +298,8 @@ struct layer {
     int noloss;
     int softmax;
     int classes;
+    int detection;
+    int embedding_size;
     int coords;
     int background;
     int rescore;
@@ -367,6 +379,8 @@ struct layer {
     int *labels;
     float *cos_sim;
     float *p_constrastive;
+    contrastive_params *contrast_p;
+    int *contrast_p_size;
     float * state;
     float * prev_state;
     float * forgot_state;
@@ -894,6 +908,7 @@ typedef struct load_args {
     int nh;
     int nw;
     int num_boxes;
+    int truth_size;
     int min, max, size;
     int classes;
     int background;
@@ -930,6 +945,7 @@ typedef struct load_args {
 // data.h
 typedef struct box_label {
     int id;
+    int track_id;
     float x, y, w, h;
     float left, right, top, bottom;
 } box_label;
@@ -947,7 +963,6 @@ typedef struct box_label {
 //    node *front;
 //    node *back;
 //} list;
-
 // -----------------------------------------------------
 
 

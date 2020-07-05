@@ -64,6 +64,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
+    float avg_contrastive_acc = 0;
     network* nets = (network*)xcalloc(ngpus, sizeof(network));
 
     srand(time(0));
@@ -102,6 +103,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     data train, buffer;
 
     layer l = net.layers[net.n - 1];
+    for (k = 0; k < net.n; ++k) {
+        layer lk = net.layers[k];
+        if (lk.type == YOLO || lk.type == GAUSSIAN_YOLO || lk.type == REGION) {
+            l = lk;
+            printf(" Detection layer: %d - type = %d \n", k, l.type);
+        }
+    }
 
     int classes = l.classes;
 
@@ -131,6 +139,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.jitter = l.jitter;
     args.resize = l.resize;
     args.num_boxes = l.max_boxes;
+    args.truth_size = l.truth_size;
     net.num_boxes = args.num_boxes;
     net.train_images_num = train_images_num;
     args.d = &buffer;
@@ -244,6 +253,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             printf(" sequential_subdivisions = %d, sequence = %d \n", net.sequential_subdivisions, get_sequence_value(net));
         }
         load_thread = load_data(args);
+        //wait_key_cv(500);
 
         /*
         int k;
@@ -358,7 +368,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         if (avg_time < 0) avg_time = time_remaining;
         else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
 #ifdef OPENCV
-        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port, avg_time);
+        if (net.contrastive) {
+            float cur_con_acc = *net.layers[net.n - 1].loss;
+            if (cur_con_acc >= 0) avg_contrastive_acc = avg_contrastive_acc*0.99 + cur_con_acc * 0.01;
+            printf("  avg_contrastive_acc = %f \n", avg_contrastive_acc);
+        }
+        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", avg_contrastive_acc / 100, dont_show, mjpeg_port, avg_time);
 #endif    // OPENCV
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
@@ -1794,7 +1809,7 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
             forward_backward_network_gpu(net, X, truth_cpu);
 
             float avg_loss = get_network_cost(net);
-            draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, it_num, 0, 0, "mAP%", dont_show, 0, 0);
+            draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, it_num, 0, 0, "mAP%", 0, dont_show, 0, 0);
 
             float inv_loss = 1.0 / max_val_cmp(0.01, avg_loss);
             //net.learning_rate = *lr_set * inv_loss;
