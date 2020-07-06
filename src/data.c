@@ -1139,18 +1139,20 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 resize_r1 = random_float();
                 resize_r2 = random_float();
 
-                r1 = random_float();
-                r2 = random_float();
-                r3 = random_float();
-                r4 = random_float();
+                if (!contrastive || i % 2 == 0) {
+                    r1 = random_float();
+                    r2 = random_float();
+                    r3 = random_float();
+                    r4 = random_float();
+
+                    flip = use_flip ? random_gen() % 2 : 0;
+                }
 
                 r_scale = random_float();
 
                 dhue = rand_uniform_strong(-hue, hue);
                 dsat = rand_scale(saturation);
                 dexp = rand_scale(exposure);
-
-                flip = use_flip ? random_gen() % 2 : 0;
 
                 if (use_blur) {
                     int tmp_blur = rand_int(0, 2);  // 0 - disable, 1 - blur background, 2 - blur the whole image
