@@ -781,6 +781,9 @@ detection *make_network_boxes(network *net, float thresh, int *num)
 
         if (l.coords > 4) dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
         else dets[i].mask = NULL;
+
+        if(l.embedding_layer) dets[i].embeddings = (float*)xcalloc(l.embedding_size, sizeof(float));
+        else dets[i].embeddings = NULL;
     }
     return dets;
 }
@@ -801,6 +804,9 @@ detection *make_network_boxes_batch(network *net, float thresh, int *num, int ba
 
         if (l.coords > 4) dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
         else dets[i].mask = NULL;
+
+        if (l.embedding_layer) dets[i].embeddings = (float*)xcalloc(l.embedding_size, sizeof(float));
+        else dets[i].embeddings = NULL;
     }
     return dets;
 }
@@ -900,6 +906,7 @@ void free_detections(detection *dets, int n)
         free(dets[i].prob);
         if (dets[i].uc) free(dets[i].uc);
         if (dets[i].mask) free(dets[i].mask);
+        if (dets[i].embeddings) free(dets[i].embeddings);
     }
     free(dets);
 }

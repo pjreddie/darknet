@@ -253,13 +253,15 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
             for (h = 0; h < l.h; ++h) {
                 for (w = 0; w < l.w; ++w)
                 {
-                    const int input_index = b*l.inputs + n*l.embedding_size*l.h*l.w + h*l.w + w;
-
                     const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
+                    if (l.labels[z_index] < 0) continue;
 
-                    float *ptr = state.input + input_index;
+                    //const int input_index = b*l.inputs + n*l.embedding_size*l.h*l.w + h*l.w + w;
+                    //float *ptr = state.input + input_index;
+                    //z[z_index] = ptr;
 
-                    z[z_index] = ptr;
+                    z[z_index] = (float*)xcalloc(l.embedding_size, sizeof(float));
+                    get_embedding(state.input, l.w, l.h, l.c, l.embedding_size, w, h, n, b, z[z_index]);
                 }
             }
         }
@@ -328,7 +330,7 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
                                         contrast_p = (contrastive_params*)xrealloc(contrast_p, contrast_p_size * sizeof(contrastive_params));
                                     }
 
-                                    if (sim > 1.001 || sim < -1) {
+                                    if (sim > 1.001 || sim < -1.001) {
                                         printf(" sim = %f, ", sim); getchar();
                                     }
                                 }
@@ -458,23 +460,26 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
                     const size_t step = l.batch*l.n*l.h*l.w;
                     if (l.labels[z_index] < 0) continue;
 
+                    const int delta_index = b*l.embedding_size*l.n*l.h*l.w + n*l.embedding_size*l.h*l.w + h*l.w + w;
+                    const int wh = l.w*l.h;
+
                     if (l.detection) {
                         // detector
 
                         // positive
-                        grad_contrastive_loss_positive_f(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.delta + z_index, contrast_p, contrast_p_index);
+                        grad_contrastive_loss_positive_f(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.delta + delta_index, wh, contrast_p, contrast_p_index);
 
                         // negative
-                        grad_contrastive_loss_negative_f(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.delta + z_index, contrast_p, contrast_p_index);
+                        grad_contrastive_loss_negative_f(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.delta + delta_index, wh, contrast_p, contrast_p_index);
                     }
                     else {
                         // classifier
 
                         // positive
-                        grad_contrastive_loss_positive(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.p_constrastive, l.delta + b*l.inputs);
+                        grad_contrastive_loss_positive(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.p_constrastive, l.delta + delta_index, wh);
 
                         // negative
-                        grad_contrastive_loss_negative(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.p_constrastive, l.delta + b*l.inputs);
+                        grad_contrastive_loss_negative(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.p_constrastive, l.delta + delta_index, wh);
                     }
 
                 }
@@ -494,6 +499,19 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
     }
     else {
         printf(" contrastive loss = %f \n\n", *(l.cost));
+    }
+
+    for (b = 0; b < l.batch; ++b) {
+        for (n = 0; n < l.n; ++n) {
+            for (h = 0; h < l.h; ++h) {
+                for (w = 0; w < l.w; ++w)
+                {
+                    const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
+                    //if (l.labels[z_index] < 0) continue;
+                    if (z[z_index]) free(z[z_index]);
+                }
+            }
+        }
     }
 
     free(contrast_p);

@@ -300,6 +300,7 @@ struct layer {
     int softmax;
     int classes;
     int detection;
+    layer *embedding_layer;
     int embedding_size;
     int coords;
     int background;
@@ -741,6 +742,7 @@ typedef struct network {
     int letter_box;
     int mosaic_bound;
     int contrastive;
+    int contrastive_jit_flip;
     int unsupervised;
     float angle;
     float aspect;
@@ -863,6 +865,7 @@ typedef struct detection{
     int sort_class;
     float *uc; // Gaussian_YOLOv3 - tx,ty,tw,th uncertainty
     int points; // bit-0 - center, bit-1 - top-left-corner, bit-2 - bottom-right-corner
+    float *embeddings;  // embeddings for tracking
 } detection;
 
 // network.c -batch inference
@@ -923,6 +926,7 @@ typedef struct load_args {
     int show_imgs;
     int dontuse_opencv;
     int contrastive;
+    int contrastive_jit_flip;
     float jitter;
     float resize;
     int flip;

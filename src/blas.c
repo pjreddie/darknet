@@ -516,6 +516,19 @@ void fix_nan_and_inf_cpu(float *input, size_t size)
     }
 }
 
+void get_embedding(float *src, int src_w, int src_h, int src_c, int embedding_size, int cur_w, int cur_h, int cur_n, int cur_b, float *dst)
+{
+    int i;
+    for (i = 0; i < embedding_size; ++i) {
+        const int src_index = cur_b*(src_c*src_h*src_w) + cur_n*(embedding_size*src_h*src_w) + i*src_h*src_w + cur_h*(src_w) + cur_w;
+
+        const float val = src[src_index];
+        dst[i] = val;
+        //printf(" val = %f, ", val);
+    }
+}
+
+
 // Euclidean_norm
 float math_vector_length(float *A, unsigned int feature_size)
 {
@@ -633,7 +646,7 @@ float P_constrastive_f(size_t i, size_t l, int *labels, float **z, unsigned int 
     return result;
 }
 
-void grad_contrastive_loss_positive_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, contrastive_params *contrast_p, int contrast_p_size)
+void grad_contrastive_loss_positive_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, int wh, contrastive_params *contrast_p, int contrast_p_size)
 {
     const float vec_len = math_vector_length(z[i], feature_size);
     size_t j;
@@ -671,13 +684,14 @@ void grad_contrastive_loss_positive_f(size_t i, int *labels, size_t num_of_sampl
                 const float d = mult*(sim * z[i][m] - z[j][m]) *(1 - P); // 1 (70%)
                 //const float d = mult*(sim * z[j][m] - z[j][m]) * (1 - P); // 2
                 // printf(" pos: z[j][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[j][m], z[i][m], d, sim);
-                delta[m] -= d;
+                const int out_i = m * wh;
+                delta[out_i] -= d;
             }
         }
     }
 }
 
-void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, contrastive_params *contrast_p, int contrast_p_size)
+void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, int wh, contrastive_params *contrast_p, int contrast_p_size)
 {
     const float vec_len = math_vector_length(z[i], feature_size);
     size_t j;
@@ -717,7 +731,8 @@ void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_sampl
                         const float d = mult*(z[k][m] - sim * z[i][m]) * P;   // 1 (70%)
                         //const float d = mult*(z[k][m] - sim * z[k][m]) * P; // 2
                         //printf(" neg: z[k][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[k][m], z[i][m], d, sim);
-                        delta[m] -= d;
+                        const int out_i = m * wh;
+                        delta[out_i] -= d;
                     }
                 }
             }
@@ -759,7 +774,7 @@ float P_constrastive(size_t i, size_t l, int *labels, size_t num_of_samples, flo
 // z[feature_size][num_of_samples] - array of arrays with contrastive features (output of conv-layer, f.e. 128 floats for each sample)
 // delta[feature_size] - array with deltas for backpropagation
 // temperature - scalar temperature param (temperature > 0), f.e. temperature = 0.07: Supervised Contrastive Learning
-void grad_contrastive_loss_positive(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta)
+void grad_contrastive_loss_positive(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta, int wh)
 {
     const float vec_len = math_vector_length(z[i], feature_size);
     size_t j;
@@ -787,7 +802,8 @@ void grad_contrastive_loss_positive(size_t i, int *labels, size_t num_of_samples
                 const float d = mult*(sim * z[i][m] - z[j][m]) * (1 - P); // good
                 //const float d = mult*(sim * z[j][m] - z[j][m]) * (1 - P); // bad
                // printf(" pos: z[j][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[j][m], z[i][m], d, sim);
-                delta[m] -= d;
+                const int out_i = m * wh;
+                delta[out_i] -= d;
             }
         }
     }
@@ -798,7 +814,7 @@ void grad_contrastive_loss_positive(size_t i, int *labels, size_t num_of_samples
 // z[feature_size][num_of_samples] - array of arrays with contrastive features (output of conv-layer, f.e. 128 floats for each sample)
 // delta[feature_size] - array with deltas for backpropagation
 // temperature - scalar temperature param (temperature > 0), f.e. temperature = 0.07: Supervised Contrastive Learning
-void grad_contrastive_loss_negative(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta)
+void grad_contrastive_loss_negative(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *cos_sim, float *p_constrastive, float *delta, int wh)
 {
     const float vec_len = math_vector_length(z[i], feature_size);
     size_t j;
@@ -829,7 +845,8 @@ void grad_contrastive_loss_negative(size_t i, int *labels, size_t num_of_samples
                         const float d = mult*(z[k][m] - sim * z[i][m]) * P;   // good
                         //const float d = mult*(z[k][m] - sim * z[k][m]) * P; // bad
                         //printf(" neg: z[k][m] = %f, z[i][m] = %f, d = %f, sim = %f \n", z[k][m], z[i][m], d, sim);
-                        delta[m] -= d;
+                        const int out_i = m * wh;
+                        delta[out_i] -= d;
                     }
                 }
             }

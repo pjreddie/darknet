@@ -487,6 +487,15 @@ layer parse_yolo(list *options, size_params params)
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
     l.random = option_find_float_quiet(options, "random", 0);
 
+    int embedding_layer_id = option_find_int_quiet(options, "embedding_layer", 999999);
+    if (embedding_layer_id < 0) embedding_layer_id = params.index + embedding_layer_id;
+    if (embedding_layer_id != 999999) {
+        printf(" embedding_layer_id = %d, ", embedding_layer_id);
+        l.embedding_layer = &params.net.layers[embedding_layer_id];
+        l.embedding_size = l.embedding_layer->n / l.n;
+        printf(" embedding_size = %d \n", l.embedding_size);
+    }
+
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
 
@@ -1145,6 +1154,7 @@ void parse_net_options(list *options, network *net)
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
     net->mosaic_bound = option_find_int_quiet(options, "mosaic_bound", 0);
     net->contrastive = option_find_int_quiet(options, "contrastive", 0);
+    net->contrastive_jit_flip = option_find_int_quiet(options, "contrastive_jit_flip", 0);
     net->unsupervised = option_find_int_quiet(options, "unsupervised", 0);
     if (net->contrastive && mini_batch < 2) {
         printf(" Error: mini_batch size (batch/subdivisions) should be higher than 1 for Contrastive loss \n");
