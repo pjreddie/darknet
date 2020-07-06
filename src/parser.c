@@ -491,8 +491,10 @@ layer parse_yolo(list *options, size_params params)
     if (embedding_layer_id < 0) embedding_layer_id = params.index + embedding_layer_id;
     if (embedding_layer_id != 999999) {
         printf(" embedding_layer_id = %d, ", embedding_layer_id);
-        l.embedding_layer = &params.net.layers[embedding_layer_id];
-        l.embedding_size = l.embedding_layer->n / l.n;
+        layer le = params.net.layers[embedding_layer_id];
+        l.embedding_layer_id = embedding_layer_id;
+        l.embedding_output = (float*)xcalloc(le.batch * le.outputs, sizeof(float));
+        l.embedding_size = le.n / l.n;
         printf(" embedding_size = %d \n", l.embedding_size);
     }
 

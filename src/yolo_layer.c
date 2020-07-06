@@ -841,9 +841,8 @@ int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh,
                 dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
                 dets[count].objectness = objectness;
                 dets[count].classes = l.classes;
-                if (l.embedding_layer) {
-                    layer le = *l.embedding_layer;
-                    get_embedding(le.output, le.w, le.h, le.n, l.embedding_size, col, row, n, 0, dets[count].embeddings);
+                if (l.embedding_output) {
+                    get_embedding(l.embedding_output, l.w, l.h, l.n*l.embedding_size, l.embedding_size, col, row, n, 0, dets[count].embeddings);
                 }
 
                 for (j = 0; j < l.classes; ++j) {
@@ -878,9 +877,8 @@ int get_yolo_detections_batch(layer l, int w, int h, int netw, int neth, float t
                 dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
                 dets[count].objectness = objectness;
                 dets[count].classes = l.classes;
-                if (l.embedding_layer) {
-                    layer le = *l.embedding_layer;
-                    get_embedding(le.output, le.w, le.h, le.n, l.embedding_size, col, row, n, batch, dets[count].embeddings);
+                if (l.embedding_output) {
+                    get_embedding(l.embedding_output, l.w, l.h, l.n*l.embedding_size, l.embedding_size, col, row, n, batch, dets[count].embeddings);
                 }
 
                 for (j = 0; j < l.classes; ++j) {
@@ -900,6 +898,11 @@ int get_yolo_detections_batch(layer l, int w, int h, int netw, int neth, float t
 
 void forward_yolo_layer_gpu(const layer l, network_state state)
 {
+    if (l.embedding_output) {
+        layer le = state.net.layers[l.embedding_layer_id];
+        cuda_pull_array_async(le.output_gpu, l.embedding_output, le.batch*le.outputs);
+    }
+
     //copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
     simple_copy_ongpu(l.batch*l.inputs, state.input, l.output_gpu);
     int b, n;

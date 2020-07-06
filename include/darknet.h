@@ -300,7 +300,8 @@ struct layer {
     int softmax;
     int classes;
     int detection;
-    layer *embedding_layer;
+    int embedding_layer_id;
+    float *embedding_output;
     int embedding_size;
     int coords;
     int background;
