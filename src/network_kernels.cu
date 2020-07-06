@@ -237,6 +237,7 @@ void backward_network_gpu(network net, network_state state)
 
         image attention_img = make_attention_image(img_size, original_delta_cpu, original_input_cpu, net.w, net.h, net.c);
         show_image(attention_img, "attention_img");
+        resize_window_cv("attention_img", 500, 500);
 
         free_image(attention_img);
 
@@ -376,7 +377,7 @@ float train_network_datum_gpu(network net, float *x, float *y)
         int b;
         for (b = 0; b < net.batch; ++b) {
             if (b % 2 == 1 && net.contrastive) {
-                printf(" b = %d old img, ", b);
+                //printf(" b = %d old img, ", b);
                 memcpy(x + img_size*b, old_input + img_size*b, img_size * sizeof(float));
             }
         }
@@ -387,7 +388,8 @@ float train_network_datum_gpu(network net, float *x, float *y)
         im.c = net.c;
         im.data = x;
         show_image(im, "adversarial data augmentation");
-        //wait_key_cv(1);
+        resize_window_cv("adversarial data augmentation", 500, 500);
+        wait_key_cv(1);
 
         free(old_input);
         free(truth_cpu);

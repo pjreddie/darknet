@@ -374,6 +374,17 @@ extern "C" void create_window_cv(char const* window_name, int full_screen, int w
 }
 // ----------------------------------------
 
+extern "C" void resize_window_cv(char const* window_name, int width, int height)
+{
+    try {
+        cv::resizeWindow(window_name, width, height);
+    }
+    catch (...) {
+        cerr << "OpenCV exception: create_window_cv \n";
+    }
+}
+// ----------------------------------------
+
 extern "C" void destroy_all_windows_cv()
 {
     try {

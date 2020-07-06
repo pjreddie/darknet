@@ -32,6 +32,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     int i;
 
     float avg_loss = -1;
+    float avg_contrastive_acc = 0;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
@@ -209,7 +210,15 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         start = what_time_is_it_now();
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images, %f hours left\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen, avg_time);
 #ifdef OPENCV
-        if (!dontuse_opencv) draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, topk_buff, 0, dont_show, mjpeg_port, avg_time);
+        if (net.contrastive) {
+            float cur_con_acc = -1;
+            int k;
+            for (k = 0; k < net.n; ++k)
+                if (net.layers[k].type == CONTRASTIVE) cur_con_acc = *net.layers[k].loss;
+            if (cur_con_acc >= 0) avg_contrastive_acc = avg_contrastive_acc*0.99 + cur_con_acc * 0.01;
+            printf("  avg_contrastive_acc = %f \n", avg_contrastive_acc);
+        }
+        if (!dontuse_opencv) draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, topk_buff, avg_contrastive_acc / 100, dont_show, mjpeg_port, avg_time);
 #endif  // OPENCV
 
         if (i >= (iter_save + 1000)) {

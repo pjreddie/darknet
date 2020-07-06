@@ -369,7 +369,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
 #ifdef OPENCV
         if (net.contrastive) {
-            float cur_con_acc = *net.layers[net.n - 1].loss;
+            float cur_con_acc = -1;
+            for (k = 0; k < net.n; ++k)
+                if (net.layers[k].type == CONTRASTIVE) cur_con_acc = *net.layers[k].loss;
             if (cur_con_acc >= 0) avg_contrastive_acc = avg_contrastive_acc*0.99 + cur_con_acc * 0.01;
             printf("  avg_contrastive_acc = %f \n", avg_contrastive_acc);
         }

@@ -76,9 +76,8 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.cost)               free(l.cost);
     if (l.labels && !l.detection) free(l.labels);
     if (l.cos_sim)            free(l.cos_sim);
+    if (l.exp_cos_sim)        free(l.exp_cos_sim);
     if (l.p_constrastive)     free(l.p_constrastive);
-    if (l.contrast_p)         free(l.contrast_p);
-    if (l.contrast_p_size)    free(l.contrast_p_size);
     if (l.state)              free(l.state);
     if (l.prev_state)         free(l.prev_state);
     if (l.forgot_state)       free(l.forgot_state);
