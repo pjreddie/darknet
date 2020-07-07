@@ -895,7 +895,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                         class_id = j;
                         char buff[20];
                         if (dets[i].track_id) {
-                            sprintf(buff, " (track = %d)", dets[i].track_id);
+                            sprintf(buff, " (id: %d)", dets[i].track_id);
                             strcat(labelstr, buff);
                         }
                         sprintf(buff, " (%2.0f%%)", dets[i].prob[j] * 100);
