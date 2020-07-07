@@ -775,13 +775,15 @@ int check_prob(detection det, float thresh)
     return 0;
 }
 
-int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh)
+int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh, int detection_count)
 {
     for (int i = 0; i < new_dets_num; ++i) {
         if (new_dets[i].track_id == 0 && check_prob(new_dets[i], thresh)) {
             //printf(" old_tid = %d, new_tid = %d, sim = %f \n", new_dets[i].track_id, new_track_id, new_dets[i].sim);
-            new_dets[i].track_id = new_track_id;
-            new_track_id++;
+            if (new_dets[i].sort_class > detection_count) {
+                new_dets[i].track_id = new_track_id;
+                new_track_id++;
+            }
         }
     }
     return new_track_id;
@@ -795,7 +797,8 @@ float *make_float_array(float* src, size_t size)
 }
 
 struct detection_t : detection {
-    detection_t(detection det) : detection(det)
+    int det_count;
+    detection_t(detection det) : detection(det), det_count(0)
     {
         if (embeddings) embeddings = make_float_array(det.embeddings, embedding_size);
         if (prob) prob = make_float_array(det.prob, classes);
@@ -818,7 +821,7 @@ struct detection_t : detection {
 
 
 
-void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, int deque_size)
+void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, float track_ciou_norm, int deque_size, int dets_for_track, int dets_for_show)
 {
     static int new_track_id = 1;
     static std::deque<std::vector<detection_t>> old_dets_dq;
@@ -858,26 +861,44 @@ void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim
         const int new_id = sim_det[index].new_id;
         const int old_id = sim_det[index].old_id;
         const int track_id = old_dets[old_id].track_id;
-        if (check_prob(new_dets[new_id], thresh) && track_idx[track_id] && new_idx[new_id] && old_idx[old_id] && sim_thresh < sim_det[index].sim) {
-            new_dets[new_id].sim = sim_det[index].sim;
-            new_dets[new_id].track_id = track_id;
-            new_idx[new_id] = 0;
-            old_idx[old_id] = 0;
-            track_idx[track_id] = 0;
+        const int det_count = old_dets[old_id].sort_class;
+        if (check_prob(new_dets[new_id], thresh) && track_idx[track_id] && new_idx[new_id] && old_idx[old_id]) {
+            float sim = sim_det[index].sim;
+            float ciou = box_ciou(new_dets[new_id].bbox, old_dets[old_id].bbox);
+            sim = sim * (1 - track_ciou_norm) + ciou * track_ciou_norm;
+            if (sim_thresh < sim) {
+                new_dets[new_id].sim = sim;
+                new_dets[new_id].track_id = track_id;
+                new_dets[new_id].sort_class = det_count + 1;
+                new_idx[new_id] = 0;
+                old_idx[old_id] = 0;
+                if(track_id) track_idx[track_id] = 0;
+            }
         }
     }
 
     // set new track_id
-    new_track_id = fill_remaining_id(new_dets, new_dets_num, new_track_id, thresh);
+    new_track_id = fill_remaining_id(new_dets, new_dets_num, new_track_id, thresh, dets_for_track);
 
     // store new_detections to the queue of vectors
     std::vector<detection_t> new_det_vec;
     for (int i = 0; i < new_dets_num; ++i) {
-        if(check_prob(new_dets[i], thresh))
+        if (check_prob(new_dets[i], thresh)) {
             new_det_vec.push_back(new_dets[i]);
+        }
     }
 
-    old_dets_dq.push_back(new_det_vec); // add new
-    if (old_dets_dq.size() > deque_size) old_dets_dq.pop_front();   // remove old
+    // add new
+    old_dets_dq.push_back(new_det_vec);
+    // remove old
+    if (old_dets_dq.size() > deque_size) old_dets_dq.pop_front();
+
+    // remove detection which were detected only on few frames
+    for (int i = 0; i < new_dets_num; ++i) {
+        if (new_dets[i].sort_class < dets_for_show)
+            for (int j = 0; j < new_dets[i].classes; ++j) {
+                new_dets[i].prob[j] = 0;
+            }
+    }
 }
 

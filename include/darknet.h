@@ -305,6 +305,9 @@ struct layer {
     int embedding_size;
     float sim_thresh;
     int track_history_size;
+    int dets_for_track;
+    int dets_for_show;
+    float track_ciou_norm;
     int coords;
     int background;
     int rescore;
@@ -1068,7 +1071,7 @@ void stop_timer_and_show();
 void stop_timer_and_show_name(char *name);
 void show_total_time();
 
-void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, int deque_size);
+void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, float track_ciou_norm, int deque_size, int dets_for_track, int dets_for_show);
 int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh);
 
 
