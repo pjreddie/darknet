@@ -123,6 +123,7 @@ void show_opencv_info();
 int wait_key_cv(int delay);
 int wait_until_press_key_cv();
 void destroy_all_windows_cv();
+void resize_window_cv(char const* window_name, int width, int height);
 
 #endif  // OPENCV
 

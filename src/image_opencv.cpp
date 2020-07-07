@@ -893,10 +893,15 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                     if (class_id < 0) {
                         strcat(labelstr, names[j]);
                         class_id = j;
-                        char buff[10];
+                        char buff[20];
+                        if (dets[i].track_id) {
+                            sprintf(buff, " (track = %d)", dets[i].track_id);
+                            strcat(labelstr, buff);
+                        }
                         sprintf(buff, " (%2.0f%%)", dets[i].prob[j] * 100);
                         strcat(labelstr, buff);
                         printf("%s: %.0f%% ", names[j], dets[i].prob[j] * 100);
+                        if (dets[i].track_id) printf("(track = %d, sim = %f) ", dets[i].track_id, dets[i].sim);
                     }
                     else {
                         strcat(labelstr, ", ");
@@ -1540,4 +1545,5 @@ extern "C" void show_opencv_info()
 extern "C" int wait_key_cv(int delay) { return 0; }
 extern "C" int wait_until_press_key_cv() { return 0; }
 extern "C" void destroy_all_windows_cv() {}
+extern "C" void resize_window_cv(char const* window_name, int width, int height) {}
 #endif // OPENCV

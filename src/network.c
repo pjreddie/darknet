@@ -792,6 +792,7 @@ detection *make_network_boxes(network *net, float thresh, int *num)
 
         if(l.embedding_output) dets[i].embeddings = (float*)xcalloc(l.embedding_size, sizeof(float));
         else dets[i].embeddings = NULL;
+        dets[i].embedding_size = l.embedding_size;
     }
     return dets;
 }
@@ -823,6 +824,7 @@ detection *make_network_boxes_batch(network *net, float thresh, int *num, int ba
 
         if (l.embedding_output) dets[i].embeddings = (float*)xcalloc(l.embedding_size, sizeof(float));
         else dets[i].embeddings = NULL;
+        dets[i].embedding_size = l.embedding_size;
     }
     return dets;
 }

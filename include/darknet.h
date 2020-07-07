@@ -303,6 +303,8 @@ struct layer {
     int embedding_layer_id;
     float *embedding_output;
     int embedding_size;
+    float sim_thresh;
+    int track_history_size;
     int coords;
     int background;
     int rescore;
@@ -867,6 +869,9 @@ typedef struct detection{
     float *uc; // Gaussian_YOLOv3 - tx,ty,tw,th uncertainty
     int points; // bit-0 - center, bit-1 - top-left-corner, bit-2 - bottom-right-corner
     float *embeddings;  // embeddings for tracking
+    int embedding_size;
+    float sim;
+    int track_id;    
 } detection;
 
 // network.c -batch inference
@@ -1062,6 +1067,10 @@ double get_time();
 void stop_timer_and_show();
 void stop_timer_and_show_name(char *name);
 void show_total_time();
+
+void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, int deque_size);
+int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh);
+
 
 // gemm.h
 LIB_API void init_cpu();

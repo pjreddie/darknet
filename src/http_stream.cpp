@@ -755,3 +755,129 @@ void stop_timer_and_show() {
 void stop_timer_and_show_name(char *name) { stop_timer_and_show(); }
 void total_time() {}
 #endif // C++11
+
+#include <deque>
+#include <vector>
+#include <iostream>
+#include "blas.h"
+#include "utils.h"
+
+struct similarity_detections_t {
+    int old_id, new_id;
+    float sim;
+};
+
+int check_prob(detection det, float thresh)
+{
+    for (int i = 0; i < det.classes; ++i) {
+        if (det.prob[i] > thresh) return 1;
+    }
+    return 0;
+}
+
+int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh)
+{
+    for (int i = 0; i < new_dets_num; ++i) {
+        if (new_dets[i].track_id == 0 && check_prob(new_dets[i], thresh)) {
+            //printf(" old_tid = %d, new_tid = %d, sim = %f \n", new_dets[i].track_id, new_track_id, new_dets[i].sim);
+            new_dets[i].track_id = new_track_id;
+            new_track_id++;
+        }
+    }
+    return new_track_id;
+}
+
+float *make_float_array(float* src, size_t size)
+{
+    float *dst = (float*)xcalloc(size, sizeof(float));
+    memcpy(dst, src, size*sizeof(float));
+    return dst;
+}
+
+struct detection_t : detection {
+    detection_t(detection det) : detection(det)
+    {
+        if (embeddings) embeddings = make_float_array(det.embeddings, embedding_size);
+        if (prob) prob = make_float_array(det.prob, classes);
+        if (uc) uc = make_float_array(det.uc, 4);
+    }
+
+    detection_t(detection_t const& det) : detection(det)
+    {
+        if (embeddings) embeddings = make_float_array(det.embeddings, embedding_size);
+        if (prob) prob = make_float_array(det.prob, classes);
+        if (uc) uc = make_float_array(det.uc, 4);
+    }
+
+    ~detection_t() {
+        if (embeddings) free(embeddings);
+        if (prob) free(prob);
+        if (uc) free(uc);
+    }
+};
+
+
+
+void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, int deque_size)
+{
+    static int new_track_id = 1;
+    static std::deque<std::vector<detection_t>> old_dets_dq;
+
+    // copy detections from queue of vectors to the one vector
+    std::vector<detection_t> old_dets;
+    for (std::vector<detection_t> &v : old_dets_dq) {
+        for (int i = 0; i < v.size(); ++i) {
+            old_dets.push_back(v[i]);
+        }
+    }
+
+    std::vector<similarity_detections_t> sim_det(old_dets.size() * new_dets_num);
+
+    // calculate similarity
+    for (int old_id = 0; old_id < old_dets.size(); ++old_id) {
+        for (int new_id = 0; new_id < new_dets_num; ++new_id) {
+            const int index = old_id*new_dets_num + new_id;
+            const float sim = cosine_similarity(new_dets[new_id].embeddings, old_dets[old_id].embeddings, old_dets[0].embedding_size);
+            sim_det[index].new_id = new_id;
+            sim_det[index].old_id = old_id;
+            sim_det[index].sim = sim;
+        }
+    }
+
+    // sort similarity
+    std::sort(sim_det.begin(), sim_det.end(), [](similarity_detections_t v1, similarity_detections_t v2) { return v1.sim > v2.sim; });
+    if(sim_det.size() > 0) printf(" sim_det_first = %f, sim_det_end = %f \n", sim_det.begin()->sim, sim_det.rbegin()->sim);
+
+
+    std::vector<int> new_idx(new_dets_num, 1);
+    std::vector<int> old_idx(old_dets.size(), 1);
+    std::vector<int> track_idx(new_track_id, 1);
+
+    // match objects
+    for (int index = 0; index < new_dets_num*old_dets.size(); ++index) {
+        const int new_id = sim_det[index].new_id;
+        const int old_id = sim_det[index].old_id;
+        const int track_id = old_dets[old_id].track_id;
+        if (check_prob(new_dets[new_id], thresh) && track_idx[track_id] && new_idx[new_id] && old_idx[old_id] && sim_thresh < sim_det[index].sim) {
+            new_dets[new_id].sim = sim_det[index].sim;
+            new_dets[new_id].track_id = track_id;
+            new_idx[new_id] = 0;
+            old_idx[old_id] = 0;
+            track_idx[track_id] = 0;
+        }
+    }
+
+    // set new track_id
+    new_track_id = fill_remaining_id(new_dets, new_dets_num, new_track_id, thresh);
+
+    // store new_detections to the queue of vectors
+    std::vector<detection_t> new_det_vec;
+    for (int i = 0; i < new_dets_num; ++i) {
+        if(check_prob(new_dets[i], thresh))
+            new_det_vec.push_back(new_dets[i]);
+    }
+
+    old_dets_dq.push_back(new_det_vec); // add new
+    if (old_dets_dq.size() > deque_size) old_dets_dq.pop_front();   // remove old
+}
+
