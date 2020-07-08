@@ -84,12 +84,14 @@ void forward_iseg_layer(const layer l, network net)
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
     memset(l.delta, 0, l.outputs * l.batch * sizeof(float));
 
-#ifndef GPU
+#ifdef GPU
+    if(net.gpu_index<0) 
+#endif
     for (b = 0; b < l.batch; ++b){
         int index = b*l.outputs;
         activate_array(l.output + index, l.classes*l.w*l.h, LOGISTIC);
     }
-#endif
+
 
     for (b = 0; b < l.batch; ++b){
         // a priori, each pixel has no class
