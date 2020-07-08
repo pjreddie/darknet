@@ -161,6 +161,8 @@ void forward_region_layer(const layer l, network net)
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
 
 #ifndef GPU
+    if(net.gpu_index<0){
+#endif
     for (b = 0; b < l.batch; ++b){
         for(n = 0; n < l.n; ++n){
             int index = entry_index(l, b, n*l.w*l.h, 0);
@@ -182,6 +184,8 @@ void forward_region_layer(const layer l, network net)
     } else if (l.softmax){
         int index = entry_index(l, 0, 0, l.coords + !l.background);
         softmax_cpu(net.input + index, l.classes + l.background, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, 1, l.output + index);
+    }
+#ifdef GPU
     }
 #endif
 
