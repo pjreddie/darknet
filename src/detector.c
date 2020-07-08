@@ -647,6 +647,14 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n - 1];
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        layer lk = net.layers[k];
+        if (lk.type == YOLO || lk.type == GAUSSIAN_YOLO || lk.type == REGION) {
+            l = lk;
+            printf(" Detection layer: %d - type = %d \n", k, l.type);
+        }
+    }
     int classes = l.classes;
 
     char buff[1024];
@@ -960,6 +968,14 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
 
 
     layer l = net.layers[net.n - 1];
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        layer lk = net.layers[k];
+        if (lk.type == YOLO || lk.type == GAUSSIAN_YOLO || lk.type == REGION) {
+            l = lk;
+            printf(" Detection layer: %d - type = %d \n", k, l.type);
+        }
+    }
     int classes = l.classes;
 
     int m = plist->size;
@@ -1042,7 +1058,8 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
                 if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
                 else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
             }
-            //if (nms) do_nms_obj(dets, nboxes, l.classes, nms);
+
+            //if (l.embedding_size) set_track_id(dets, nboxes, thresh, l.sim_thresh, l.track_ciou_norm, l.track_history_size, l.dets_for_track, l.dets_for_show);
 
             char labelpath[4096];
             replace_image_to_label(path, labelpath);
@@ -1628,7 +1645,16 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         image sized;
         if(letter_box) sized = letterbox_image(im, net.w, net.h);
         else sized = resize_image(im, net.w, net.h);
+
         layer l = net.layers[net.n - 1];
+        int k;
+        for (k = 0; k < net.n; ++k) {
+            layer lk = net.layers[k];
+            if (lk.type == YOLO || lk.type == GAUSSIAN_YOLO || lk.type == REGION) {
+                l = lk;
+                printf(" Detection layer: %d - type = %d \n", k, l.type);
+            }
+        }
 
         //box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
         //float **probs = calloc(l.w*l.h*l.n, sizeof(float*));
@@ -1785,6 +1811,15 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
         image src_sized = copy_image(sized);
 
         layer l = net.layers[net.n - 1];
+        int k;
+        for (k = 0; k < net.n; ++k) {
+            layer lk = net.layers[k];
+            if (lk.type == YOLO || lk.type == GAUSSIAN_YOLO || lk.type == REGION) {
+                l = lk;
+                printf(" Detection layer: %d - type = %d \n", k, l.type);
+            }
+        }
+
         net.num_boxes = l.max_boxes;
         int num_truth = l.truths;
         float *truth_cpu = (float *)xcalloc(num_truth, sizeof(float));
