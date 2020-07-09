@@ -862,6 +862,7 @@ void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim
         const int old_id = sim_det[index].old_id;
         const int track_id = old_dets[old_id].track_id;
         const int det_count = old_dets[old_id].sort_class;
+        //printf(" ciou = %f \n", box_ciou(new_dets[new_id].bbox, old_dets[old_id].bbox));
         if (check_prob(new_dets[new_id], thresh) && track_idx[track_id] && new_idx[new_id] && old_idx[old_id]) {
             float sim = sim_det[index].sim;
             float ciou = box_ciou(new_dets[new_id].bbox, old_dets[old_id].bbox);

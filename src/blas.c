@@ -658,6 +658,7 @@ void grad_contrastive_loss_positive_f(size_t i, int *labels, size_t num_of_sampl
         fprintf(stderr, " Error: N == 0 || temperature == 0 || vec_len == 0. N=%f, temperature=%f, vec_len=%f, labels[i] = %d \n",
             N, temperature, vec_len, labels[i]);
         getchar();
+        return;
     }
     const float mult = 1 / ((N - 1) * temperature * vec_len);
 
@@ -703,6 +704,7 @@ void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_sampl
         fprintf(stderr, " Error: N == 0 || temperature == 0 || vec_len == 0. N=%f, temperature=%f, vec_len=%f, labels[i] = %d \n",
             N, temperature, vec_len, labels[i]);
         getchar();
+        return;
     }
     const float mult = 1 / ((N - 1) * temperature * vec_len);
 
