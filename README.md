@@ -52,17 +52,17 @@ About Darknet framework: http://pjreddie.com/darknet/
 |---|---|
 
 tkDNN-TensorRT accelerates YOLOv4 **~2x** times for batch=1 and **3x-4x** times for batch=4.
-OpenCV-dnn is ~10% slower than tkDNN-TensorRT.
 * tkDNN: https://github.com/ceccocats/tkDNN
 * OpenCV: https://gist.github.com/YashasSamaga/48bdb167303e10f4d07b754888ddbdcf
 
 **GeForce RTX 2080 Ti:**
 | Network Size 	| Darknet, FPS (avg)| tkDNN TensorRT FP32, FPS  | tkDNN TensorRT FP16, FPS  | OpenCV FP16, FPS | tkDNN TensorRT FP16 batch=4, FPS  | OpenCV FP16 batch=4, FPS | tkDNN Speedup |
 |:-----:|:--------:|--------:|--------:|--------:|--------:|--------:|------:|
-|320	| 100 | 116 | **202** | 171 | **423** | 384 | **4.2x** |
-|416	| 82 | 103 | **162** | 146 | **284** | 260 | **3.5x** |
-|512	| 69 | 91 | **134** | 125 | **206** | 190 | **2.9x** |
-|608 	| 53 | 62 | **103** | 100 | **150** | 133 | **2.8x**  |
+|320	| 100 | 116 | **202** | 183 | 423 | **430** | **4.3x** |
+|416	| 82 | 103 | **162** | 159 | 284 | **294** | **3.6x** |
+|512	| 69 | 91 | 134 | **138** | 206 | **216** | **3.1x** |
+|608 	| 53 | 62 | 103 | **115**| 150 | **150** | **2.8x**  |
+|Tiny 416 | 500 | 609 | **790** | 773 | **1774** | 1353 | **3.5x**  |
 
 * Yolo v4 Full comparison: [map_fps](https://user-images.githubusercontent.com/4096485/80283279-0e303e00-871f-11ea-814c-870967d77fd1.png)
 * Yolo v4 tiny comparison: [tiny_fps](https://user-images.githubusercontent.com/4096485/85734112-6e366700-b705-11ea-95d1-fcba0de76d72.png)
