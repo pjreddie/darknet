@@ -775,6 +775,19 @@ int check_prob(detection det, float thresh)
     return 0;
 }
 
+int check_classes_id(detection det1, detection det2, float thresh)
+{
+    if (det1.classes != det2.classes) {
+        printf(" Error: det1.classes != det2.classes \n");
+        getchar();
+    }
+
+    for (int i = 0; i < det1.classes; ++i) {
+        if (det1.prob[i] > thresh && det2.prob[i] > thresh) return 1;
+    }
+    return 0;
+}
+
 int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh, int detection_count)
 {
     for (int i = 0; i < new_dets_num; ++i) {
@@ -863,7 +876,7 @@ void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim
         const int track_id = old_dets[old_id].track_id;
         const int det_count = old_dets[old_id].sort_class;
         //printf(" ciou = %f \n", box_ciou(new_dets[new_id].bbox, old_dets[old_id].bbox));
-        if (check_prob(new_dets[new_id], thresh) && track_idx[track_id] && new_idx[new_id] && old_idx[old_id]) {
+        if (track_idx[track_id] && new_idx[new_id] && old_idx[old_id] && check_classes_id(new_dets[new_id], old_dets[old_id], thresh)) {
             float sim = sim_det[index].sim;
             float ciou = box_ciou(new_dets[new_id].bbox, old_dets[old_id].bbox);
             sim = sim * (1 - track_ciou_norm) + ciou * track_ciou_norm;
