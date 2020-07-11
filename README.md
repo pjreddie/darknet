@@ -62,7 +62,8 @@ tkDNN-TensorRT accelerates YOLOv4 **~2x** times for batch=1 and **3x-4x** times 
 |416	| 82 | 103 | **162** | 159 | 284 | **294** | **3.6x** |
 |512	| 69 | 91 | 134 | **138** | 206 | **216** | **3.1x** |
 |608 	| 53 | 62 | 103 | **115**| 150 | **150** | **2.8x**  |
-|Tiny 416 | 500 | 609 | **790** | 773 | **1774** | 1353 | **3.5x**  |
+|Tiny 416 | 443 | 609 | **790** | 773 | **1774** | 1353 | **3.5x**  |
+|Tiny 416 CPU Core i7 7700HQ | 6 | - | - | 42 | - | 39 | **7.0x**  |
 
 * Yolo v4 Full comparison: [map_fps](https://user-images.githubusercontent.com/4096485/80283279-0e303e00-871f-11ea-814c-870967d77fd1.png)
 * Yolo v4 tiny comparison: [tiny_fps](https://user-images.githubusercontent.com/4096485/85734112-6e366700-b705-11ea-95d1-fcba0de76d72.png)
