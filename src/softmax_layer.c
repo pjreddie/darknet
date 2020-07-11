@@ -117,9 +117,9 @@ void forward_softmax_layer_gpu(const softmax_layer l, network_state net)
     }
 }
 
-void backward_softmax_layer_gpu(const softmax_layer layer, network_state net)
+void backward_softmax_layer_gpu(const softmax_layer layer, network_state state)
 {
-	axpy_ongpu(layer.batch*layer.inputs, 1, layer.delta_gpu, 1, net.delta, 1);
+	axpy_ongpu(layer.batch*layer.inputs, state.net.loss_scale, layer.delta_gpu, 1, state.delta, 1);
 }
 
 #endif
@@ -127,27 +127,52 @@ void backward_softmax_layer_gpu(const softmax_layer layer, network_state net)
 // -------------------------------------
 
 
-contrastive_layer make_contrastive_layer(int batch, int w, int h, int n, int classes, int inputs)
+contrastive_layer make_contrastive_layer(int batch, int w, int h, int c, int classes, int inputs, layer *yolo_layer)
 {
-    fprintf(stderr, "contrastive   %4d x%4d x%4d - batch: %4d \t classes = %4d \n", w, h, n, batch, classes);
     contrastive_layer l = { (LAYER_TYPE)0 };
     l.type = CONTRASTIVE;
     l.batch = batch;
     l.inputs = inputs;
-    l.outputs = inputs;
     l.w = w;
     l.h = h;
-    l.c = n;
-    l.n = n;
-    l.classes = classes;
+    l.c = c;
     l.temperature = 1;
-    //l.loss = (float*)xcalloc(inputs * batch, sizeof(float));
+
+    if (yolo_layer) {
+        l.detection = 1;
+        l.labels = yolo_layer->labels;  // track id
+        l.n = yolo_layer->n;            // num of embeddings per cell = num of anchors
+        l.classes = yolo_layer->classes;// num of classes
+        l.embedding_size = l.inputs / (l.n*l.h*l.w);
+        l.truths = yolo_layer->truths;
+    }
+    else {
+        l.detection = 0;
+        l.labels = (int*)xcalloc(l.batch, sizeof(int)); // labels
+        l.n = 1;                                        // num of embeddings per cell
+        l.classes = classes;                            // num of classes
+        l.embedding_size = l.c;
+    }
+    l.outputs = inputs;
+
+    l.loss = (float*)xcalloc(1, sizeof(float));
     l.output = (float*)xcalloc(inputs * batch, sizeof(float));
     l.delta = (float*)xcalloc(inputs * batch, sizeof(float));
     l.cost = (float*)xcalloc(1, sizeof(float));
-    l.labels = (int*)xcalloc(l.batch, sizeof(int));
-    l.cos_sim = (float*)xcalloc(l.batch*l.batch, sizeof(float));
-    l.p_constrastive = (float*)xcalloc(l.batch*l.batch, sizeof(float));
+
+    const size_t step = l.batch*l.n*l.h*l.w;
+    l.cos_sim = NULL;
+    l.exp_cos_sim = NULL;
+    l.p_constrastive = NULL;
+    if (!l.detection) {
+        l.cos_sim = (float*)xcalloc(step*step, sizeof(float));
+        l.exp_cos_sim = (float*)xcalloc(step*step, sizeof(float));
+        l.p_constrastive = (float*)xcalloc(step*step, sizeof(float));
+    }
+    //l.p_constrastive = (float*)xcalloc(step*step, sizeof(float));
+    //l.contrast_p_size = (int*)xcalloc(1, sizeof(int));
+    //*l.contrast_p_size = step;
+    //l.contrast_p = (contrastive_params*)xcalloc(*l.contrast_p_size, sizeof(contrastive_params));
 
     l.forward = forward_contrastive_layer;
     l.backward = backward_contrastive_layer;
@@ -156,68 +181,189 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int n, int cla
     l.backward_gpu = backward_contrastive_layer_gpu;
 
     l.output_gpu = cuda_make_array(l.output, inputs*batch);
-    //l.loss_gpu = cuda_make_array(l.loss, inputs*batch);
     l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
-    //l.cos_sim_gpu = cuda_make_array(l.cos_sim, l.batch*l.batch);
 #endif
+    fprintf(stderr, "contrastive %4d x%4d x%4d x emb_size %4d x batch: %4d  classes = %4d, step = %4d \n", w, h, l.n, l.embedding_size, batch, classes, step);
+    if(l.detection) fprintf(stderr, "detection \n");
     return l;
 }
 
+static inline float clip_value(float val, const float max_val)
+{
+    if (val > max_val) {
+        //printf("\n val = %f > max_val = %f \n", val, max_val);
+        val = max_val;
+    }
+    else if (val < -max_val) {
+        //printf("\n val = %f < -max_val = %f \n", val, -max_val);
+        val = -max_val;
+    }
+    return val;
+}
 
-void forward_contrastive_layer(const contrastive_layer l, network_state state)
+void forward_contrastive_layer(contrastive_layer l, network_state state)
 {
     if (!state.train) return;
-    const float truth_thresh = 0.2;
+    const float truth_thresh = state.net.label_smooth_eps;
 
-    memset(l.delta, 0, l.batch*l.inputs * sizeof(float));
+    const int mini_batch = l.batch / l.steps;
 
-    int b, w, h;
-    // set labels
-    for (b = 0; b < l.batch; ++b) {
-        for (h = 0; h < l.h; ++h) {
-            for (w = 0; w < l.w; ++w)
-            {
-                // find truth with max prob (only 1 label even if mosaic is used)
-                float max_truth = 0;
-                int n;
-                for (n = 0; n < l.classes; ++n) {
-                    const float truth_prob = state.truth[b*l.classes + n];
-                    //printf(" truth_prob = %f, ", truth_prob);
-                    if (truth_prob > max_truth)
-                    {
-                        max_truth = truth_prob;
-                        l.labels[b] = n;
+    int b, n, w, h;
+    fill_cpu(l.batch*l.inputs, 0, l.delta, 1);
+
+    if (!l.detection) {
+
+        for (b = 0; b < l.batch; ++b) {
+            if (state.net.adversarial) l.labels[b] = b % 2;
+            else l.labels[b] = b / 2;
+        }
+
+        // set labels
+        for (b = 0; b < l.batch; ++b) {
+            for (h = 0; h < l.h; ++h) {
+                for (w = 0; w < l.w; ++w)
+                {
+                    // find truth with max prob (only 1 label even if mosaic is used)
+                    float max_truth = 0;
+                    int n;
+                    for (n = 0; n < l.classes; ++n) {
+                        const float truth_prob = state.truth[b*l.classes + n];
+                        //printf(" truth_prob = %f, ", truth_prob);
+                        //if (truth_prob > max_truth)
+                        if (truth_prob > truth_thresh)
+                        {
+                            //printf(" truth_prob = %f, max_truth = %f, n = %d; ", truth_prob, max_truth, n);
+                            max_truth = truth_prob;
+                            l.labels[b] = n;
+                        }
                     }
+                    //printf(", l.labels[b] = %d ", l.labels[b]);
                 }
-                //printf(", l.labels[b] = %d ", l.labels[b]);
             }
         }
+
     }
     //printf("\n\n");
 
     // set pointers to features
-    float **z = (float**)xcalloc(l.batch, sizeof(float*));
+    float **z = (float**)xcalloc(l.batch*l.n*l.h*l.w, sizeof(float*));
+
     for (b = 0; b < l.batch; ++b) {
-        for (h = 0; h < l.h; ++h) {
-            for (w = 0; w < l.w; ++w)
-            {
-                z[b] = state.input + b*l.inputs;
+        for (n = 0; n < l.n; ++n) {
+            for (h = 0; h < l.h; ++h) {
+                for (w = 0; w < l.w; ++w)
+                {
+                    const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
+                    if (l.labels[z_index] < 0) continue;
+
+                    //const int input_index = b*l.inputs + n*l.embedding_size*l.h*l.w + h*l.w + w;
+                    //float *ptr = state.input + input_index;
+                    //z[z_index] = ptr;
+
+                    z[z_index] = (float*)xcalloc(l.embedding_size, sizeof(float));
+                    get_embedding(state.input, l.w, l.h, l.c, l.embedding_size, w, h, n, b, z[z_index]);
+                }
             }
         }
     }
 
+    int b2, n2, h2, w2;
+    int contrast_p_index = 0;
+
+    const size_t step = l.batch*l.n*l.h*l.w;
+    size_t contrast_p_size = step;
+    if (!l.detection) contrast_p_size = l.batch*l.batch;
+    contrastive_params *contrast_p = (contrastive_params*)xcalloc(contrast_p_size, sizeof(contrastive_params));
+
+    float *max_sim_same = (float *)xcalloc(l.batch*l.inputs, sizeof(float));
+    float *max_sim_diff = (float *)xcalloc(l.batch*l.inputs, sizeof(float));
+    fill_cpu(l.batch*l.inputs, -10, max_sim_same, 1);
+    fill_cpu(l.batch*l.inputs, -10, max_sim_diff, 1);
+
     // precalculate cosine similiraty
     for (b = 0; b < l.batch; ++b) {
-        int b2;
-        for (b2 = 0; b2 < l.batch; ++b2) {
-            const float sim = cosine_similarity(z[b], z[b2], l.n);
-            l.cos_sim[b*l.batch + b2] = sim;
-            //if (sim > 1.001 || sim < -1) {
-            //    printf(" sim = %f, ", sim); getchar();
-           //}
+        for (n = 0; n < l.n; ++n) {
+            for (h = 0; h < l.h; ++h) {
+                for (w = 0; w < l.w; ++w)
+                {
+                    const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
+                    if (l.labels[z_index] < 0) continue;
+
+                    for (b2 = 0; b2 < l.batch; ++b2) {
+                        for (n2 = 0; n2 < l.n; ++n2) {
+                            for (h2 = 0; h2 < l.h; ++h2) {
+                                for (w2 = 0; w2 < l.w; ++w2)
+                                {
+                                    const int z_index2 = b2*l.n*l.h*l.w + n2*l.h*l.w + h2*l.w + w2;
+                                    if (l.labels[z_index2] < 0) continue;
+                                    if (z_index == z_index2) continue;
+
+                                    const int time_step_i = b / mini_batch;
+                                    const int time_step_j = b2 / mini_batch;
+                                    if (time_step_i != time_step_j) continue;
+
+                                    const size_t step = l.batch*l.n*l.h*l.w;
+
+                                    const float sim = cosine_similarity(z[z_index], z[z_index2], l.embedding_size);
+                                    const float exp_sim = expf(sim / l.temperature);
+                                    if (!l.detection) {
+                                        l.cos_sim[z_index*step + z_index2] = sim;
+                                        l.exp_cos_sim[z_index*step + z_index2] = exp_sim;
+                                    }
+
+                                    // calc good sim
+                                    if (l.labels[z_index] == l.labels[z_index2] && max_sim_same[z_index] < sim) max_sim_same[z_index] = sim;
+                                    if (l.labels[z_index] != l.labels[z_index2] && max_sim_diff[z_index] < sim) max_sim_diff[z_index] = sim;
+                                    //printf(" z_i = %d, z_i2 = %d, l = %d, l2 = %d, sim = %f \n", z_index, z_index2, l.labels[z_index], l.labels[z_index2], sim);
+
+                                    contrast_p[contrast_p_index].sim = sim;
+                                    contrast_p[contrast_p_index].exp_sim = exp_sim;
+                                    contrast_p[contrast_p_index].i = z_index;
+                                    contrast_p[contrast_p_index].j = z_index2;
+                                    contrast_p[contrast_p_index].time_step_i = time_step_i;
+                                    contrast_p[contrast_p_index].time_step_j = time_step_j;
+                                    contrast_p_index++;
+                                    //printf(" contrast_p_index = %d, contrast_p_size = %d \n", contrast_p_index, contrast_p_size);
+                                    if ((contrast_p_index+1) >= contrast_p_size) {
+                                        contrast_p_size = contrast_p_index + 1;
+                                        //printf(" contrast_p_size = %d, z_index = %d, z_index2 = %d \n", contrast_p_size, z_index, z_index2);
+                                        contrast_p = (contrastive_params*)xrealloc(contrast_p, contrast_p_size * sizeof(contrastive_params));
+                                    }
+
+                                    if (sim > 1.001 || sim < -1.001) {
+                                        printf(" sim = %f, ", sim); getchar();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
+    // calc contrastive accuracy
+    int i;
+    int good_sims = 0, all_sims = 0, same_sim = 0, diff_sim = 0;
+    for (i = 0; i < l.batch*l.inputs; ++i) {
+        if (max_sim_same[i] >= -1 && max_sim_diff[i] >= -1) {
+            if (max_sim_same[i] >= -1) same_sim++;
+            if (max_sim_diff[i] >= -1) diff_sim++;
+            ++all_sims;
+            //printf(" max_sim_diff[i] = %f, max_sim_same[i] = %f \n", max_sim_diff[i], max_sim_same[i]);
+            if (max_sim_diff[i] < max_sim_same[i]) good_sims++;
+        }
+    }
+    if (all_sims > 0) {
+        *l.loss = 100 * good_sims / all_sims;
+    }
+    else *l.loss = -1;
+    printf(" Contrast accuracy = %f %%, all = %d, good = %d, same = %d, diff = %d \n", *l.loss, all_sims, good_sims, same_sim, diff_sim);
+    free(max_sim_same);
+    free(max_sim_diff);
+
+
+    /*
     // show near sim
     float good_contrast = 0;
     for (b = 0; b < l.batch; b += 2) {
@@ -228,14 +374,17 @@ void forward_contrastive_layer(const contrastive_layer l, network_state state)
         //printf(" l.labels[b] = %d, l.labels[b+1] = %d, l.labels[b+2] = %d, b = %d \n", l.labels[b], l.labels[b + 1], l.labels[b + 2], b);
         //printf(" same = %f, aug = %f, diff = %f, (aug > diff) = %d \n", same, aug, diff, (aug > diff));
     }
-    printf("good contrast = %f %% \n", 100 * good_contrast / (l.batch/2));
+    *l.loss = 100 * good_contrast / (l.batch / 2);
+    printf(" Contrast accuracy = %f %% \n", *l.loss);
+    */
 
+    /*
     // precalculate P_contrastive
     for (b = 0; b < l.batch; ++b) {
         int b2;
         for (b2 = 0; b2 < l.batch; ++b2) {
             if (b != b2) {
-                const float P = P_constrastive(b, b2, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim);
+                const float P = P_constrastive(b, b2, l.labels, l.batch, z, l.embedding_size, l.temperature, l.cos_sim);
                 l.p_constrastive[b*l.batch + b2] = P;
                 if (P > 1 || P < -1) {
                     printf(" p = %f, ", P); getchar();
@@ -243,30 +392,135 @@ void forward_contrastive_layer(const contrastive_layer l, network_state state)
             }
         }
     }
+    */
 
-    // calc deltas
+    // precalculate P-contrastive
     for (b = 0; b < l.batch; ++b) {
-        for (h = 0; h < l.h; ++h) {
-            for (w = 0; w < l.w; ++w)
-            {
-                //printf(" b = %d, ", b);
-                // positive
-                grad_contrastive_loss_positive(b, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim, l.p_constrastive, l.delta);
+        for (n = 0; n < l.n; ++n) {
+            for (h = 0; h < l.h; ++h) {
+                for (w = 0; w < l.w; ++w)
+                {
+                    const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
+                    if (l.labels[z_index] < 0) continue;
 
-                // negative
-                grad_contrastive_loss_negative(b, l.labels, l.batch, z, l.n, l.temperature, l.cos_sim, l.p_constrastive, l.delta);
+                    for (b2 = 0; b2 < l.batch; ++b2) {
+                        for (n2 = 0; n2 < l.n; ++n2) {
+                            for (h2 = 0; h2 < l.h; ++h2) {
+                                for (w2 = 0; w2 < l.w; ++w2)
+                                {
+                                    const int z_index2 = b2*l.n*l.h*l.w + n2*l.h*l.w + h2*l.w + w2;
+                                    if (l.labels[z_index2] < 0) continue;
+                                    if (z_index == z_index2) continue;
+
+                                    const int time_step_i = b / mini_batch;
+                                    const int time_step_j = b2 / mini_batch;
+                                    if (time_step_i != time_step_j) continue;
+
+                                    const size_t step = l.batch*l.n*l.h*l.w;
+
+                                    float P = -10;
+                                    if (l.detection) {
+                                        P = P_constrastive_f(z_index, z_index2, l.labels, z, l.embedding_size, l.temperature, contrast_p, contrast_p_index);
+                                    }
+                                    else {
+                                        P = P_constrastive(z_index, z_index2, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.exp_cos_sim);
+                                        l.p_constrastive[z_index*step + z_index2] = P;
+                                    }
+
+                                    int q;
+                                    for (q = 0; q < contrast_p_index; ++q)
+                                        if (contrast_p[q].i == z_index && contrast_p[q].j == z_index2) {
+                                            contrast_p[q].P = P;
+                                            break;
+                                        }
+
+                                    //if (q == contrast_p_index) getchar();
+
+
+                                    //if (P > 1 || P < -1) {
+                                    //    printf(" p = %f, z_index = %d, z_index2 = %d ", P, z_index, z_index2); getchar();
+                                    //}
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    *(l.cost) = pow(mag_array(l.delta, l.inputs * l.batch), 2);
 
+    // calc deltas
+    for (b = 0; b < l.batch; ++b) {
+        for (n = 0; n < l.n; ++n) {
+            for (h = 0; h < l.h; ++h) {
+                for (w = 0; w < l.w; ++w)
+                {
+                    const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
+                    const size_t step = l.batch*l.n*l.h*l.w;
+                    if (l.labels[z_index] < 0) continue;
+
+                    const int delta_index = b*l.embedding_size*l.n*l.h*l.w + n*l.embedding_size*l.h*l.w + h*l.w + w;
+                    const int wh = l.w*l.h;
+
+                    if (l.detection) {
+                        // detector
+
+                        // positive
+                        grad_contrastive_loss_positive_f(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.delta + delta_index, wh, contrast_p, contrast_p_index);
+
+                        // negative
+                        grad_contrastive_loss_negative_f(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.delta + delta_index, wh, contrast_p, contrast_p_index);
+                    }
+                    else {
+                        // classifier
+
+                        // positive
+                        grad_contrastive_loss_positive(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.p_constrastive, l.delta + delta_index, wh);
+
+                        // negative
+                        grad_contrastive_loss_negative(z_index, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.p_constrastive, l.delta + delta_index, wh);
+                    }
+
+                }
+            }
+        }
+    }
+
+    scal_cpu(l.inputs * l.batch, l.cls_normalizer, l.delta, 1);
+
+    for (i = 0; i < l.inputs * l.batch; ++i) {
+        l.delta[i] = clip_value(l.delta[i], l.max_delta);
+    }
+
+    *(l.cost) = pow(mag_array(l.delta, l.inputs * l.batch), 2);
+    if (state.net.adversarial) {
+        printf(" adversarial contrastive loss = %f \n\n", *(l.cost));
+    }
+    else {
+        printf(" contrastive loss = %f \n\n", *(l.cost));
+    }
+
+    for (b = 0; b < l.batch; ++b) {
+        for (n = 0; n < l.n; ++n) {
+            for (h = 0; h < l.h; ++h) {
+                for (w = 0; w < l.w; ++w)
+                {
+                    const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
+                    //if (l.labels[z_index] < 0) continue;
+                    if (z[z_index]) free(z[z_index]);
+                }
+            }
+        }
+    }
+
+    free(contrast_p);
     free(z);
 }
 
-void backward_contrastive_layer(const contrastive_layer l, network_state net)
+void backward_contrastive_layer(contrastive_layer l, network_state state)
 {
-    axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, net.delta, 1);
+    axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, state.delta, 1);
 }
 
 
@@ -283,10 +537,10 @@ void push_contrastive_layer_output(const contrastive_layer l)
 }
 
 
-void forward_contrastive_layer_gpu(const contrastive_layer l, network_state state)
+void forward_contrastive_layer_gpu(contrastive_layer l, network_state state)
 {
-    if (!state.train) return;
     simple_copy_ongpu(l.batch*l.inputs, state.input, l.output_gpu);
+    if (!state.train) return;
 
     float *in_cpu = (float *)xcalloc(l.batch*l.inputs, sizeof(float));
     cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
@@ -294,6 +548,7 @@ void forward_contrastive_layer_gpu(const contrastive_layer l, network_state stat
     float *truth_cpu = 0;
     if (state.truth) {
         int num_truth = l.batch*l.classes;
+        if (l.detection) num_truth = l.batch*l.truths;
         truth_cpu = (float *)xcalloc(num_truth, sizeof(float));
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
@@ -311,9 +566,9 @@ void forward_contrastive_layer_gpu(const contrastive_layer l, network_state stat
     if (cpu_state.truth) free(cpu_state.truth);
 }
 
-void backward_contrastive_layer_gpu(const contrastive_layer layer, network_state state)
+void backward_contrastive_layer_gpu(contrastive_layer layer, network_state state)
 {
-    axpy_ongpu(layer.batch*layer.inputs, 1, layer.delta_gpu, 1, state.delta, 1);
+    axpy_ongpu(layer.batch*layer.inputs, state.net.loss_scale, layer.delta_gpu, 1, state.delta, 1);
 }
 
 #endif

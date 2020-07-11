@@ -2312,3 +2312,29 @@ extern "C" void expand_array_gpu(const float *src_gpu, float *dst_gpu, int size,
 
     CHECK_CUDA(cudaPeekAtLastError());
 }
+
+
+
+__global__  void mult_inverse_array_kernel(const float *src_gpu, float *dst_gpu, int size, const float eps)
+{
+    const int index = blockIdx.x*blockDim.x + threadIdx.x;
+
+    if (index < size) {
+        float val = src_gpu[index];
+        float sign = (val < 0) ? -1 : 1;
+        // eps = 1 by default
+        // eps = 2 - lower delta
+        // eps = 0 - higher delta (linear)
+        // eps = -1 - high delta (inverse number)
+        dst_gpu[index] = powf(fabs(val), eps) * sign;
+    }
+}
+
+extern "C" void mult_inverse_array_gpu(const float *src_gpu, float *dst_gpu, int size, float eps)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    mult_inverse_array_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (src_gpu, dst_gpu, size, eps);
+
+    CHECK_CUDA(cudaPeekAtLastError());
+}

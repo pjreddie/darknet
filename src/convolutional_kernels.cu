@@ -797,6 +797,22 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         }
 
         if (!state.net.adversarial && !l.train_only_bn) {
+
+            float *old_input = state.input;
+            /*
+            if (l.reverse) {
+                if (*state.net.max_output16_size < l.inputs*l.batch) {
+                    *state.net.max_output16_size = l.inputs*l.batch;
+                    if (*state.net.output16_gpu) cuda_free(*state.net.output16_gpu);
+                    assert(*state.net.max_output16_size > 0);
+                    *state.net.output16_gpu = cuda_make_array(NULL, *state.net.max_output16_size);
+                }
+                mult_inverse_array_gpu(state.input, *state.net.output16_gpu, l.inputs*l.batch, l.reverse);
+                state.input = *state.net.output16_gpu;
+            }
+            */
+
+
             // calculate conv weight updates
             // if used: beta=1 then loss decreases faster
             CHECK_CUDNN(cudnnConvolutionBackwardFilter(cudnn_handle(),
@@ -812,10 +828,29 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 &one,
                 l.dweightDesc,
                 l.weight_updates_gpu));
+
+            state.input = old_input;
         }
+
 
         if (state.delta) {
             if (l.binary || l.xnor) swap_binary(&l);
+
+            float *old_weights = l.weights_gpu;
+
+            if (l.reverse) {
+                if (*state.net.max_output16_size < l.nweights) {
+                    *state.net.max_output16_size = l.nweights;
+                    if (*state.net.output16_gpu) cuda_free(*state.net.output16_gpu);
+                    assert(*state.net.max_output16_size > 0);
+                    *state.net.output16_gpu = cuda_make_array(NULL, l.nweights);
+                }
+                mult_inverse_array_gpu(l.weights_gpu, *state.net.output16_gpu, l.nweights, l.reverse);
+                l.weights_gpu = *state.net.output16_gpu;
+            }
+
+
+
             // http://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#cudnnConvolutionBackwardData
             // calculate delta for the next layer
             CHECK_CUDNN(cudnnConvolutionBackwardData(cudnn_handle(),
@@ -831,6 +866,8 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 &one,
                 l.dsrcTensorDesc,
                 state.delta));
+
+            l.weights_gpu = old_weights;
 
             if (l.binary || l.xnor) swap_binary(&l);
             if (l.xnor) gradient_array_ongpu(original_input, l.batch*l.c*l.h*l.w, HARDTAN, state.delta);
@@ -1232,18 +1269,12 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
 
     }
 
-
-    float learning_rate = learning_rate_init*l.learning_rate_scale;
+    // Loss scale for Mixed-Precision on Tensor-Cores
+    float learning_rate = learning_rate_init*l.learning_rate_scale / loss_scale;
     //float momentum = a.momentum;
     //float decay = a.decay;
     //int batch = a.batch;
 
-    // Loss scale for Mixed-Precision on Tensor-Cores
-    if (loss_scale != 1.0) {
-        if (l.weight_updates_gpu && l.nweights > 0) scal_ongpu(l.nweights, 1.0 / loss_scale, l.weight_updates_gpu, 1);
-        if (l.bias_updates_gpu && l.n > 0) scal_ongpu(l.n, 1.0 / loss_scale, l.bias_updates_gpu, 1);
-        if (l.scale_updates_gpu && l.n > 0) scal_ongpu(l.n, 1.0 / loss_scale, l.scale_updates_gpu, 1);
-    }
 
     reset_nan_and_inf(l.weight_updates_gpu, l.nweights);
     fix_nan_and_inf(l.weights_gpu, l.nweights);
@@ -1269,7 +1300,7 @@ void update_convolutional_layer_gpu(layer l, int batch, float learning_rate_init
         //axpy_ongpu(l.nweights, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);
         //axpy_ongpu(l.nweights, learning_rate / batch, l.weight_updates_gpu, 1, l.weights_gpu, 1);
         //scal_ongpu(l.nweights, momentum, l.weight_updates_gpu, 1);
-        axpy_ongpu(l.nweights, -decay*batch, l.weights_gpu, 1, l.weight_updates_gpu, 1);
+        axpy_ongpu(l.nweights, -decay*batch*loss_scale, l.weights_gpu, 1, l.weight_updates_gpu, 1);
         axpy_ongpu(l.nweights, learning_rate / batch, l.weight_updates_gpu, 1, l.weights_gpu, 1);
         scal_ongpu(l.nweights, momentum, l.weight_updates_gpu, 1);
 

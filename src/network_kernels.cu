@@ -237,6 +237,7 @@ void backward_network_gpu(network net, network_state state)
 
         image attention_img = make_attention_image(img_size, original_delta_cpu, original_input_cpu, net.w, net.h, net.c);
         show_image(attention_img, "attention_img");
+        resize_window_cv("attention_img", 500, 500);
 
         free_image(attention_img);
 
@@ -299,7 +300,6 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     state.input = *net.input_gpu;
     state.delta = 0;
     if (net.adversarial) {
-        state.train = 0;
         state.delta = cuda_make_array(NULL, x_size);
     }
     state.truth = *net.truth_gpu;
@@ -366,17 +366,32 @@ float train_network_datum_gpu(network net, float *x, float *y)
         if (net.layers[net.n - 1].truths) y_size = net.layers[net.n - 1].truths*net.batch;
         float *truth_cpu = (float *)xcalloc(y_size, sizeof(float));
 
-        printf("\n adversarial training, adversarial_lr = %f \n", net.adversarial_lr);
+        const int img_size = net.w*net.h*net.c;
+        float *old_input = (float *)xcalloc(img_size*net.batch, sizeof(float));
+        memcpy(old_input, x, img_size*net.batch * sizeof(float));
+
+        printf("\n adversarial training, adversarial_lr = %f \n", net.adversarial_lr * scale);
 
         forward_backward_network_gpu(net, x, truth_cpu);
+
+        int b;
+        for (b = 0; b < net.batch; ++b) {
+            if (b % 2 == 1 && net.contrastive) {
+                //printf(" b = %d old img, ", b);
+                memcpy(x + img_size*b, old_input + img_size*b, img_size * sizeof(float));
+            }
+        }
 
         image im;
         im.w = net.w;
         im.h = net.h;
         im.c = net.c;
         im.data = x;
-        //show_image(im, "adversarial data augmentation");
+        show_image(im, "adversarial data augmentation");
+        resize_window_cv("adversarial data augmentation", 500, 500);
+        wait_key_cv(1);
 
+        free(old_input);
         free(truth_cpu);
         net.learning_rate = lr_old;
         net.adversarial = 0;
