@@ -44,7 +44,7 @@ def draw(path, r):
 if __name__ == "__main__":
 
     # check
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 4:
         print("Usage: python3 {} <ini_file> <image> <output_file_path>".format(sys.argv[0]))
         sys.exit()
 
@@ -62,12 +62,12 @@ if __name__ == "__main__":
     meta = load_meta(b"{}".format(data_path))
 
     # b"../data/car_plate1/slices/0.jpg"
-    r = detect(net, meta, bytes(sys.argv[1], 'utf-8'))
+    r = detect(net, meta, bytes(sys.argv[2], 'utf-8'))
     print(r)
 
     count = len(r)
-    img = draw("{}".format(sys.argv[1]), r)
+    img = draw("{}".format(sys.argv[2]), r)
 
     img = Image.fromarray(img)
-    if sys.argv[2]!=None:
-        img.save(sys.argv[2])
+    if sys.argv[3]!=None:
+        img.save(sys.argv[3])
