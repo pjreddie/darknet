@@ -57,9 +57,10 @@ if __name__ == "__main__":
 
     # load model
     #net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../yolov3_ssig_final.weights", 0)
-    net = load_net(b"{}".format(cfg_path), b"{}".format(weights_path), 0)
+    #bytes(cfg_path, 'utf-8')
+    net = load_net(bytes(cfg_path, 'utf-8'), bytes(weights_path, 'utf-8'), 0)
     #meta = load_meta(b"../cfg/ssig.data")
-    meta = load_meta(b"{}".format(data_path))
+    meta = load_meta(bytes(data_path, 'utf-8'))
 
     # b"../data/car_plate1/slices/0.jpg"
     r = detect(net, meta, bytes(sys.argv[2], 'utf-8'))
