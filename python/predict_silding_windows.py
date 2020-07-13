@@ -14,6 +14,7 @@ from os.path import isfile, join
 
 import image_slicer
 
+import configparser
 from darknet import *
 from image_processing import *
 
@@ -103,14 +104,29 @@ def convert_frames_to_video(pathIn,pathOut,fps=25):
 
 if __name__=="__main__":
 
+    # check
+    if len(sys.argv) != 3:
+        print("Usage: python3 {} <ini_file> <image>".format(sys.argv[0]))
+        sys.exit()
+
+    # read cfg.ini
+    config = configparser.ConfigParser()
+    config.read('{}'.format(sys.argv[1]))
+    cfg_path = config.get("cfg", 'path')
+    weights_path = config.get("weights", 'path')
+    data_path = config.get("data", 'path')
+
     # load model
-    net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../../Documents/darknet/backup/yolov3_ssig_final.weights", 0)
-    meta = load_meta(b"../cfg/ssig.data")
+    #net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../yolov3_ssig_final.weights", 0)
+    #bytes(cfg_path, 'utf-8')
+    net = load_net(bytes(cfg_path, 'utf-8'), bytes(weights_path, 'utf-8'), 0)
+    #meta = load_meta(b"../cfg/ssig.data")
+    meta = load_meta(bytes(data_path, 'utf-8'))
 
     temp = 'temp/temp.jpg'
     pred_temp = 'pred.jpg'
 
-    img = read_image(sys.argv[1])
+    img = read_image(sys.argv[2])
     boxes = image_boxes(img, [416,416])
     org_boxes = []
 
@@ -157,11 +173,11 @@ if __name__=="__main__":
 
     print(org_boxes)
     print("img", img)
-    img = draw_cor(sys.argv[1], org_boxes)
+    img = draw_cor(sys.argv[2], org_boxes)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     cv2.imshow('ouput', img)
     key = cv2.waitKey(0)
     cv2.destroyAllWindows()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = Image.fromarray(img)
-    img.save('output/output_tiling.jpg')
+    img.save('temp/output_tiling.jpg')
