@@ -11,4 +11,6 @@ apt install -y python3-pip
 apt-get install -y libsm6 libxext6 libxrender-dev
 pip3 install -r ../requirements.txt
 apt install -y vim
+pip3 install image-slicer
 apt-get update
+apt-get upgrade

@@ -8,6 +8,7 @@ from os.path import isfile, join
 
 import image_slicer
 
+import configparser
 from darknet import *
 from image_processing import *
 
@@ -70,17 +71,32 @@ def convert_frames_to_video(pathIn,pathOut,fps=25):
 
 if __name__=="__main__":
 
+    # check
+    if len(sys.argv) != 3:
+        print("Usage: python3 {} <ini_file> <image>".format(sys.argv[0]))
+        sys.exit()
+
+    # read cfg.ini
+    config = configparser.ConfigParser()
+    config.read('{}'.format(sys.argv[1]))
+    cfg_path = config.get("cfg", 'path')
+    weights_path = config.get("weights", 'path')
+    data_path = config.get("data", 'path')
+
     # load model
-    net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../../Documents/darknet/backup/yolov3_ssig_final.weights", 0)
-    meta = load_meta(b"../cfg/ssig.data")
+    #net = load_net(b"../cfg/yolov3_ssig.cfg", b"../../yolov3_ssig_final.weights", 0)
+    #bytes(cfg_path, 'utf-8')
+    net = load_net(bytes(cfg_path, 'utf-8'), bytes(weights_path, 'utf-8'), 0)
+    #meta = load_meta(b"../cfg/ssig.data")
+    meta = load_meta(bytes(data_path, 'utf-8'))
 
     # spilt image into 4 slices
-    s = image_slicer.slice(sys.argv[1], 4, save=False)
+    s = image_slicer.slice(sys.argv[2], 4, save=False)
     for i in range(len(s)):
-        s[i].save('temp/{}.jpg'.format(i))
+        s[i].save('4slice_tmp/{}.jpg'.format(i))
 
     pred_slice = []
-    pathIn = 'temp/'
+    pathIn = '4slice_tmp/'
     files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
     files.sort(key = lambda x: int(x[0:-4]))
     count = 0
@@ -106,8 +122,8 @@ if __name__=="__main__":
 
     #im_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     #im = Image.fromarray(im)
-    Image.fromarray(im).save('output/pred_4slices_output.jpg')
-    
+    Image.fromarray(im).save('temp/pred_4slices_output.jpg')
+
     plt.imshow(im)
     plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
     plt.show()
