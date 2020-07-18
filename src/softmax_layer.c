@@ -143,6 +143,7 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int c, int cla
         l.labels = yolo_layer->labels;  // track id
         l.n = yolo_layer->n;            // num of embeddings per cell = num of anchors
         l.classes = yolo_layer->classes;// num of classes
+        classes = l.classes;
         l.embedding_size = l.inputs / (l.n*l.h*l.w);
         l.truths = yolo_layer->truths;
     }
@@ -183,7 +184,7 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int c, int cla
     l.output_gpu = cuda_make_array(l.output, inputs*batch);
     l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
 #endif
-    fprintf(stderr, "contrastive %4d x%4d x%4d x emb_size %4d x batch: %4d  classes = %4d, step = %4d \n", w, h, l.n, l.embedding_size, batch, classes, step);
+    fprintf(stderr, "contrastive %4d x%4d x%4d x emb_size %4d x batch: %4d  classes = %4d, step = %4d \n", w, h, l.n, l.embedding_size, batch, l.classes, step);
     if(l.detection) fprintf(stderr, "detection \n");
     return l;
 }
