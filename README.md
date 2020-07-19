@@ -7,6 +7,8 @@ Yolo v4 paper: https://arxiv.org/abs/2004.10934
 
 Yolo v4 source code: https://github.com/AlexeyAB/darknet
 
+Yolov v4 tiny discussion: https://www.reddit.com/r/MachineLearning/comments/hu7lyt/p_yolov4tiny_speed_1770_fps_tensorrtbatch4/
+
 Useful links: https://medium.com/@alexeyab84/yolov4-the-most-accurate-real-time-neural-network-on-ms-coco-dataset-73adfd3602fe?source=friends_link&sk=6039748846bbcf1d960c3061542591d7
 
 For more information see the [Darknet project website](http://pjreddie.com/darknet).
