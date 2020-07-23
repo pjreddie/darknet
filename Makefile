@@ -25,6 +25,9 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
 
 OS := $(shell uname)
 
+# Tesla A100 (GA100), DGX-A100, RTX 3080
+# ARCH= -gencode arch=compute_80,code=[sm_80,compute_80]
+
 # Tesla V100
 # ARCH= -gencode arch=compute_70,code=[sm_70,compute_70]
 
