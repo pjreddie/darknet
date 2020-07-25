@@ -851,8 +851,7 @@ public:
 
 
     track_kalman_t(int _max_objects = 1000, int _min_frames = 3, float _max_dist = 40, cv::Size _img_size = cv::Size(10000, 10000)) :
-        max_objects(_max_objects), min_frames(_min_frames), max_dist(_max_dist), img_size(_img_size),
-        track_id_counter(0)
+        track_id_counter(0), max_objects(_max_objects), min_frames(_min_frames), max_dist(_max_dist), img_size(_img_size)
     {
         kalman_vec.resize(max_objects);
         track_id_state_id_time.resize(max_objects);
