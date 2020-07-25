@@ -91,13 +91,13 @@ __global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c
     if (indexes) indexes[out_index] = max_i;
 }
 
-__global__ void forward_zero_nonmax_kernel(int n, int *indexes, float *output)
+__global__ void forward_zero_nonmax_kernel(int n, float *input, float *output)
 {
 
     int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (id >= n) return;
 
-    if (indexes[id] != id) output[id] = 0;
+    if (input[id] != output[id]) output[id] = 0;
 }
 
 __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride_x, int stride_y, int size, int pad, float *delta, float *prev_delta, int *indexes)
@@ -196,7 +196,7 @@ extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state sta
         CHECK_CUDA(cudaPeekAtLastError());
 
         if (layer.maxpool_zero_nonmax) {
-            forward_zero_nonmax_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, layer.indexes_gpu, layer.output_gpu);
+            forward_zero_nonmax_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, state.input, layer.output_gpu);
             CHECK_CUDA(cudaPeekAtLastError());
         }
     }
