@@ -1164,6 +1164,11 @@ float network_accuracy_multi(network net, data d, int n)
     return acc;
 }
 
+void free_network_ptr(network* net)
+{
+    free_network(*net);
+}
+
 void free_network(network net)
 {
     int i;
