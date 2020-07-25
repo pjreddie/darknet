@@ -146,6 +146,15 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int c, int cla
         classes = l.classes;
         l.embedding_size = l.inputs / (l.n*l.h*l.w);
         l.truths = yolo_layer->truths;
+        if (l.embedding_size != yolo_layer->embedding_size) {
+            printf(" Error: [contrastive] embedding_size=%d isn't equal to [yolo] embedding_size=%d. They should use the same [convolutional] layer \n", l.embedding_size, yolo_layer->embedding_size);
+            getchar();
+            exit(0);
+        }
+        if (l.inputs % (l.n*l.h*l.w) != 0) {
+            printf(" Warning: filters= number in the previous (embedding) layer isn't divisable by number of anchors %d \n", l.n);
+            getchar();
+        }
     }
     else {
         l.detection = 0;
@@ -395,52 +404,62 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
     }
     */
 
-    // precalculate P-contrastive
-    for (b = 0; b < l.batch; ++b) {
-        for (n = 0; n < l.n; ++n) {
-            for (h = 0; h < l.h; ++h) {
-                for (w = 0; w < l.w; ++w)
-                {
-                    const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
-                    if (l.labels[z_index] < 0) continue;
 
-                    for (b2 = 0; b2 < l.batch; ++b2) {
-                        for (n2 = 0; n2 < l.n; ++n2) {
-                            for (h2 = 0; h2 < l.h; ++h2) {
-                                for (w2 = 0; w2 < l.w; ++w2)
-                                {
-                                    const int z_index2 = b2*l.n*l.h*l.w + n2*l.h*l.w + h2*l.w + w2;
-                                    if (l.labels[z_index2] < 0) continue;
-                                    if (z_index == z_index2) continue;
+    if (l.detection) {
+        int k;
+        #pragma omp parallel for
+        for (k = 0; k < contrast_p_index; ++k) {
+            contrast_p[k].P = P_constrastive_f_det(k, l.labels, z, l.embedding_size, l.temperature, contrast_p, contrast_p_index);
+        }
+    }
+    else {
+        // precalculate P-contrastive
+        for (b = 0; b < l.batch; ++b) {
+            for (n = 0; n < l.n; ++n) {
+                for (h = 0; h < l.h; ++h) {
+                    for (w = 0; w < l.w; ++w)
+                    {
+                        const int z_index = b*l.n*l.h*l.w + n*l.h*l.w + h*l.w + w;
+                        if (l.labels[z_index] < 0) continue;
 
-                                    const int time_step_i = b / mini_batch;
-                                    const int time_step_j = b2 / mini_batch;
-                                    if (time_step_i != time_step_j) continue;
+                        for (b2 = 0; b2 < l.batch; ++b2) {
+                            for (n2 = 0; n2 < l.n; ++n2) {
+                                for (h2 = 0; h2 < l.h; ++h2) {
+                                    for (w2 = 0; w2 < l.w; ++w2)
+                                    {
+                                        const int z_index2 = b2*l.n*l.h*l.w + n2*l.h*l.w + h2*l.w + w2;
+                                        if (l.labels[z_index2] < 0) continue;
+                                        if (z_index == z_index2) continue;
 
-                                    const size_t step = l.batch*l.n*l.h*l.w;
+                                        const int time_step_i = b / mini_batch;
+                                        const int time_step_j = b2 / mini_batch;
+                                        if (time_step_i != time_step_j) continue;
 
-                                    float P = -10;
-                                    if (l.detection) {
-                                        P = P_constrastive_f(z_index, z_index2, l.labels, z, l.embedding_size, l.temperature, contrast_p, contrast_p_index);
-                                    }
-                                    else {
-                                        P = P_constrastive(z_index, z_index2, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.exp_cos_sim);
-                                        l.p_constrastive[z_index*step + z_index2] = P;
-                                    }
+                                        const size_t step = l.batch*l.n*l.h*l.w;
 
-                                    int q;
-                                    for (q = 0; q < contrast_p_index; ++q)
-                                        if (contrast_p[q].i == z_index && contrast_p[q].j == z_index2) {
-                                            contrast_p[q].P = P;
-                                            break;
+                                        float P = -10;
+                                        if (l.detection) {
+                                            P = P_constrastive_f(z_index, z_index2, l.labels, z, l.embedding_size, l.temperature, contrast_p, contrast_p_index);
+                                        }
+                                        else {
+                                            P = P_constrastive(z_index, z_index2, l.labels, step, z, l.embedding_size, l.temperature, l.cos_sim, l.exp_cos_sim);
+                                            l.p_constrastive[z_index*step + z_index2] = P;
                                         }
 
-                                    //if (q == contrast_p_index) getchar();
+                                        int q;
+                                        for (q = 0; q < contrast_p_index; ++q)
+                                            if (contrast_p[q].i == z_index && contrast_p[q].j == z_index2) {
+                                                contrast_p[q].P = P;
+                                                break;
+                                            }
+
+                                        //if (q == contrast_p_index) getchar();
 
 
-                                    //if (P > 1 || P < -1) {
-                                    //    printf(" p = %f, z_index = %d, z_index2 = %d ", P, z_index, z_index2); getchar();
-                                    //}
+                                        //if (P > 1 || P < -1) {
+                                        //    printf(" p = %f, z_index = %d, z_index2 = %d ", P, z_index, z_index2); getchar();
+                                        //}
+                                    }
                                 }
                             }
                         }
@@ -452,6 +471,7 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
 
 
     // calc deltas
+    #pragma omp parallel for
     for (b = 0; b < l.batch; ++b) {
         for (n = 0; n < l.n; ++n) {
             for (h = 0; h < l.h; ++h) {

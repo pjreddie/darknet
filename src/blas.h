@@ -63,6 +63,7 @@ void fix_nan_and_inf_cpu(float *input, size_t size);
 int check_sim(size_t i, size_t j, contrastive_params *contrast_p, int contrast_p_size);
 float find_sim(size_t i, size_t j, contrastive_params *contrast_p, int contrast_p_size);
 float find_P_constrastive(size_t i, size_t j, contrastive_params *contrast_p, int contrast_p_size);
+float P_constrastive_f_det(size_t il, int *labels, float **z, unsigned int feature_size, float temperature, contrastive_params *contrast_p, int contrast_p_size);
 float P_constrastive_f(size_t i, size_t l, int *labels, float **z, unsigned int feature_size, float temperature, contrastive_params *contrast_p, int contrast_p_size);
 void grad_contrastive_loss_positive_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, int wh, contrastive_params *contrast_p, int contrast_p_size);
 void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, int wh, contrastive_params *contrast_p, int contrast_p_size);
