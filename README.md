@@ -55,7 +55,7 @@ tkDNN-TensorRT accelerates YOLOv4 **~2x** times for batch=1 and **3x-4x** times 
 * tkDNN: https://github.com/ceccocats/tkDNN
 * OpenCV: https://gist.github.com/YashasSamaga/48bdb167303e10f4d07b754888ddbdcf
 
-**GeForce RTX 2080 Ti:**
+#### GeForce RTX 2080 Ti:
 | Network Size 	| Darknet, FPS (avg)| tkDNN TensorRT FP32, FPS  | tkDNN TensorRT FP16, FPS  | OpenCV FP16, FPS | tkDNN TensorRT FP16 batch=4, FPS  | OpenCV FP16 batch=4, FPS | tkDNN Speedup |
 |:-----:|:--------:|--------:|--------:|--------:|--------:|--------:|------:|
 |320	| 100 | 116 | **202** | 183 | 423 | **430** | **4.3x** |
