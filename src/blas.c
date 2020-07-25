@@ -289,7 +289,7 @@ void normalize_cpu(float *x, float *mean, float *variance, int batch, int filter
         for(f = 0; f < filters; ++f){
             for(i = 0; i < spatial; ++i){
                 int index = b*filters*spatial + f*spatial + i;
-                x[index] = (x[index] - mean[f])/(sqrt(variance[f] + .000001f));
+                x[index] = (x[index] - mean[f])/(sqrt(variance[f] + .00001f));
             }
         }
     }
