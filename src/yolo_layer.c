@@ -419,15 +419,10 @@ void forward_yolo_layer(const layer l, network_state state)
                     avg_anyobj += l.output[obj_index];
                     l.delta[obj_index] = l.cls_normalizer * (0 - l.output[obj_index]);
                     if (best_match_iou > l.ignore_thresh) {
-                        const float iou_multiplier = best_match_iou*best_match_iou;// (best_match_iou - l.ignore_thresh) / (1.0 - l.ignore_thresh);
                         if (l.objectness_smooth) {
-                            l.delta[obj_index] = l.cls_normalizer * (iou_multiplier - l.output[obj_index]);
+                            const float delta_obj = l.cls_normalizer * (best_match_iou - l.output[obj_index]);
+                            if (delta_obj > l.delta[obj_index]) l.delta[obj_index] = delta_obj;
 
-                            int class_id = state.truth[best_match_t*l.truth_size + b*l.truths + 4];
-                            if (l.map) class_id = l.map[class_id];
-                            if (class_id < l.classes && class_id >= 0) {
-                                delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.focal_loss, l.label_smooth_eps, l.classes_multipliers);
-                            }
                         }
                         else l.delta[obj_index] = 0;
                     }
@@ -535,7 +530,10 @@ void forward_yolo_layer(const layer l, network_state state)
 
                 int obj_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4);
                 avg_obj += l.output[obj_index];
-                l.delta[obj_index] = class_multiplier * l.cls_normalizer * (1 - l.output[obj_index]);
+                if (l.objectness_smooth) {
+                    float delta_obj = class_multiplier * l.cls_normalizer * (1 - l.output[obj_index]);
+                    if (l.delta[obj_index] == 0) l.delta[obj_index] = delta_obj;
+                } else l.delta[obj_index] = class_multiplier * l.cls_normalizer * (1 - l.output[obj_index]);
 
                 int class_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4 + 1);
                 delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat, l.focal_loss, l.label_smooth_eps, l.classes_multipliers);
@@ -583,7 +581,11 @@ void forward_yolo_layer(const layer l, network_state state)
 
                         int obj_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4);
                         avg_obj += l.output[obj_index];
-                        l.delta[obj_index] = class_multiplier * l.cls_normalizer * (1 - l.output[obj_index]);
+                        if (l.objectness_smooth) {
+                            float delta_obj = class_multiplier * l.cls_normalizer * (1 - l.output[obj_index]);
+                            if (l.delta[obj_index] == 0) l.delta[obj_index] = delta_obj;
+                        }
+                        else l.delta[obj_index] = class_multiplier * l.cls_normalizer * (1 - l.output[obj_index]);
 
                         int class_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4 + 1);
                         delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat, l.focal_loss, l.label_smooth_eps, l.classes_multipliers);

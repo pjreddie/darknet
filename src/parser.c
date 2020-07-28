@@ -1656,6 +1656,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }
 
         // pre-allocate memory for inference on Tensor Cores (fp16)
+        *net.max_input16_size = 0;
+        *net.max_output16_size = 0;
         if (net.cudnn_half) {
             *net.max_input16_size = max_inputs;
             CHECK_CUDA(cudaMalloc((void **)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)

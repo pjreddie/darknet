@@ -403,9 +403,9 @@ __global__ void gradient_array_mish_kernel(int n, float *activation_input_gpu, f
 __device__ float hard_mish_yashas_grad(float x)
 {
     if (x > 0)
-        return x;
+        return 1;
     if (x > -2)
-        return x * x / 2 + x;
+        return x + 1;
     return 0;
 }
 

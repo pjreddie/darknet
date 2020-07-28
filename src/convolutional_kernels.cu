@@ -844,7 +844,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             if (l.reverse) {
                 if (*state.net.max_output16_size < l.nweights) {
                     *state.net.max_output16_size = l.nweights;
-                    if (*state.net.output16_gpu) cuda_free(*state.net.output16_gpu);
+                    if (*state.net.output16_gpu && *state.net.max_output16_size > 0) cuda_free(*state.net.output16_gpu);
                     assert(*state.net.max_output16_size > 0);
                     *state.net.output16_gpu = cuda_make_array(NULL, l.nweights);
                 }
