@@ -4,8 +4,7 @@ Python 3 wrapper for identifying objects in images
 
 Requires DLL compilation
 
-Both the GPU and no-GPU version should be compiled; the no-GPU version should
-be renamed "yolo_cpp_dll_nogpu.dll".
+Both the GPU and no-GPU version should be compiled; the no-GPU version should be renamed "yolo_cpp_dll_nogpu.dll".
 
 On a GPU system, you can force CPU evaluation by any of:
 
@@ -13,22 +12,18 @@ On a GPU system, you can force CPU evaluation by any of:
 - Set environment variable CUDA_VISIBLE_DEVICES to -1
 - Set environment variable "FORCE_CPU" to "true"
 
-
-Directly viewing or returning bounding-boxed images requires OpenCV
-to be installed (`pip install opencv-python`)
-
+Directly viewing or returning bounding-boxed images requires scikit-image to be installed (`pip install scikit-image`)
 
 Original *nix 2.7: https://github.com/pjreddie/darknet/blob/0f110834f4e18b30d5f101bf8f1724c34b7b83db/python/darknet.py
 Windows Python 2.7 version: https://github.com/AlexeyAB/darknet/blob/fc496d52bf22a0bb257300d3c79be9cd80e722cb/build/darknet/x64/darknet.py
 
 @author: Philip Kahn
-@author: Jaled Moustafa Calvo
-@date: 09/04/2020
+@date: 20180503
 """
 from ctypes import *
-import os
-import re
+import math
 import random
+import os
 
 
 class BOX(Structure):
@@ -36,6 +31,7 @@ class BOX(Structure):
                 ("y", c_float),
                 ("w", c_float),
                 ("h", c_float)]
+
 
 class DETECTION(Structure):
     _fields_ = [("bbox", BOX),
@@ -45,7 +41,16 @@ class DETECTION(Structure):
                 ("objectness", c_float),
                 ("sort_class", c_int),
                 ("uc", POINTER(c_float)),
-                ("points", c_int)]
+                ("points", c_int),
+                ("embeddings", POINTER(c_float)),
+                ("embedding_size", c_int),
+                ("sim", c_float),
+                ("track_id", c_int)]
+
+
+class DETNUMPAIR(Structure):
+    _fields_ = [("num", c_int),
+                ("dets", POINTER(DETECTION))]
 
 
 class IMAGE(Structure):
@@ -53,6 +58,7 @@ class IMAGE(Structure):
                 ("h", c_int),
                 ("c", c_int),
                 ("data", POINTER(c_float))]
+
 
 class METADATA(Structure):
     _fields_ = [("classes", c_int),
@@ -67,28 +73,9 @@ def network_height(net):
     return lib.network_height(net)
 
 
-def class_colors(names):
-    """
-    Create a dict with one random BGR color for each
-    class name
-    """
-    return {name:(
-        random.randint(0, 255),
-        random.randint(0, 255),
-        random.randint(0, 255)) for name in names}
-   
-
-def decode_detection(detections):
-    decoded = []
-    for label, confidence, bbox in detections:
-        confidence = str(round(confidence * 100, 2))
-        decoded.append((str(label), confidence, bbox))
-    return decoded
-
-
 def bbox2points(bbox):
     """
-    From bounding box yolo format 
+    From bounding box yolo format
     to corner points cv2 rectangle
     """
     x, y, w, h = bbox
@@ -96,18 +83,39 @@ def bbox2points(bbox):
     xmax = int(round(x + (w / 2)))
     ymin = int(round(y - (h / 2)))
     ymax = int(round(y + (h / 2)))
-    return (xmin, ymin), (xmax, ymax)
+    return xmin, ymin, xmax, ymax
 
 
-def draw_boxes(detections, image, colors):
-    import cv2
-    for label, confidence, bbox in detections:
-        pt1, pt2 = bbox2points(bbox)
-        cv2.rectangle(image, pt1, pt2, colors[label], 1)
-        cv2.putText(image, "{} [{}]".format(label, confidence),
-                    (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                    colors[label], 2)
-    return image
+def class_colors(names):
+    """
+    Create a dict with one random BGR color for each
+    class name
+    """
+    return {name: (
+        random.randint(0, 255),
+        random.randint(0, 255),
+        random.randint(0, 255)) for name in names}
+
+
+def load_network(config_file, data_file, weights, batch_size=1):
+    """
+    load model description and weights from config files
+    args:
+        config_file (str): path to .cfg model file
+        data_file (str): path to .data model file
+        weights (str): path to weights
+    returns:
+        network: trained model
+        class_names
+        class_colors
+    """
+    network = load_net_custom(
+        config_file.encode("ascii"),
+        weights.encode("ascii"), 0, batch_size)
+    metadata = load_meta(data_file.encode("ascii"))
+    class_names = [metadata.names[i].decode("ascii") for i in range(metadata.classes)]
+    colors = class_colors(class_names)
+    return network, class_names, colors
 
 
 def print_detections(detections, coordinates=False):
@@ -120,25 +128,23 @@ def print_detections(detections, coordinates=False):
             print("{}: {}%".format(label, confidence))
 
 
-def load_network(config_file, data_file, weights):
-    """
-    load model description and weights from config files
-    args:
-        config_file (str): path to .cfg model file
-        data_file (str): path to .data model file
-        weights (str): path to weights
-    returns:
-        network: trained model
-        class_names
-        class_colors      
-    """
-    network = load_net_custom(
-        config_file.encode("ascii"),
-        weights.encode("ascii"), 0, 1)  # batch size = 1
-    metadata = load_meta(data_file.encode("ascii"))
-    class_names = [metadata.names[i].decode("ascii") for i in range(metadata.classes)]
-    colors = class_colors(class_names)
-    return network, class_names, colors
+def draw_boxes(detections, image, colors):
+    import cv2
+    for label, confidence, bbox in detections:
+        left, top, right, bottom = bbox2points(bbox)
+        cv2.rectangle(image, (left, top), (right, bottom), colors[label], 1)
+        cv2.putText(image, "{} [{:.2f}]".format(label, float(confidence)),
+                    (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                    colors[label], 2)
+    return image
+
+
+def decode_detection(detections):
+    decoded = []
+    for label, confidence, bbox in detections:
+        confidence = str(round(confidence * 100, 2))
+        decoded.append((str(label), confidence, bbox))
+    return decoded
 
 
 def remove_negatives(detections, class_names, num):
@@ -172,12 +178,8 @@ def detect_image(network, class_names, image, thresh=.5, hier_thresh=.5, nms=.45
     return sorted(predictions, key=lambda x: x[1])
 
 
-def classify(network, meta, image):
-    detections = predict_image(network, image)
-    predictions = [(name, detection[idx]) for idx, name in enumerate(class_names)]
-    return sorted(predictions, key=lambda x: -x[1])
-
-
+#  lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
+#  lib = CDLL("libdarknet.so", RTLD_GLOBAL)
 hasGPU = True
 if os.name == "nt":
     cwd = os.path.dirname(__file__)
@@ -193,7 +195,7 @@ if os.name == "nt":
             if tmp in ["1", "true", "yes", "on"]:
                 raise ValueError("ForceCPU")
             else:
-                print("Flag value '"+tmp+"' not forcing CPU mode")
+                print("Flag value {} not forcing CPU mode".format(tmp))
         except KeyError:
             # We never set the flag
             if 'CUDA_VISIBLE_DEVICES' in envKeys:
@@ -203,9 +205,8 @@ if os.name == "nt":
                 global DARKNET_FORCE_CPU
                 if DARKNET_FORCE_CPU:
                     raise ValueError("ForceCPU")
-            except NameError:
-                pass
-            # print("FORCE_CPU flag undefined, proceeding with GPU")
+            except NameError as cpu_error:
+                print(cpu_error)
         if not os.path.exists(winGPUdll):
             raise ValueError("NoDLL")
         lib = CDLL(winGPUdll, RTLD_GLOBAL)
@@ -215,10 +216,9 @@ if os.name == "nt":
             lib = CDLL(winNoGPUdll, RTLD_GLOBAL)
             print("Notice: CPU-only mode")
         else:
-            # Try the other way, in case no_gpu was
-            # compile but not renamed
+            # Try the other way, in case no_gpu was compile but not renamed
             lib = CDLL(winGPUdll, RTLD_GLOBAL)
-            print("Environment variables indicated a CPU run, but we didn't find `"+winNoGPUdll+"`. Trying a GPU run anyway.")
+            print("Environment variables indicated a CPU run, but we didn't find {}. Trying a GPU run anyway.".format(winNoGPUdll))
 else:
     lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
@@ -253,6 +253,9 @@ make_network_boxes.restype = POINTER(DETECTION)
 
 free_detections = lib.free_detections
 free_detections.argtypes = [POINTER(DETECTION), c_int]
+
+free_batch_detections = lib.free_batch_detections
+free_batch_detections.argtypes = [POINTER(DETNUMPAIR), c_int]
 
 free_ptrs = lib.free_ptrs
 free_ptrs.argtypes = [POINTER(c_void_p), c_int]
@@ -302,3 +305,8 @@ predict_image.restype = POINTER(c_float)
 predict_image_letterbox = lib.network_predict_image_letterbox
 predict_image_letterbox.argtypes = [c_void_p, IMAGE]
 predict_image_letterbox.restype = POINTER(c_float)
+
+network_predict_batch = lib.network_predict_batch
+network_predict_batch.argtypes = [c_void_p, IMAGE, c_int, c_int, c_int,
+                                   c_float, c_float, POINTER(c_int), c_int, c_int]
+network_predict_batch.restype = POINTER(DETNUMPAIR)
