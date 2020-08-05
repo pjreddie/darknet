@@ -126,7 +126,7 @@ void backward_softmax_layer_gpu(const softmax_layer layer, network_state state)
 
 // -------------------------------------
 
-
+// Supervised Contrastive Learning: https://arxiv.org/pdf/2004.11362.pdf
 contrastive_layer make_contrastive_layer(int batch, int w, int h, int c, int classes, int inputs, layer *yolo_layer)
 {
     contrastive_layer l = { (LAYER_TYPE)0 };
@@ -138,8 +138,10 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int c, int cla
     l.c = c;
     l.temperature = 1;
 
+    l.max_boxes = 0;
     if (yolo_layer) {
         l.detection = 1;
+        l.max_boxes = yolo_layer->max_boxes;
         l.labels = yolo_layer->labels;  // track id
         l.n = yolo_layer->n;            // num of embeddings per cell = num of anchors
         l.classes = yolo_layer->classes;// num of classes
@@ -192,6 +194,10 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int c, int cla
 
     l.output_gpu = cuda_make_array(l.output, inputs*batch);
     l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
+
+    const int max_contr_size = (l.max_boxes*l.batch)*(l.max_boxes*l.batch) * sizeof(contrastive_params)/4;
+    printf(" max_contr_size = %d MB \n", max_contr_size / (1024*1024));
+    l.contrast_p_gpu = cuda_make_array(NULL, max_contr_size);
 #endif
     fprintf(stderr, "contrastive %4d x%4d x%4d x emb_size %4d x batch: %4d  classes = %4d, step = %4d \n", w, h, l.n, l.embedding_size, batch, l.classes, step);
     if(l.detection) fprintf(stderr, "detection \n");
@@ -408,11 +414,25 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
     const size_t contr_size = contrast_p_index;
 
     if (l.detection) {
+#ifdef GPU
+        const int max_contr_size = (l.max_boxes*l.batch)*(l.max_boxes*l.batch);
+        if (max_contr_size < contr_size) {
+            printf(" Error: too large number of bboxes: contr_size = %d > max_contr_size  = %d \n", contr_size, max_contr_size);
+            exit(0);
+        }
+        int *labels = NULL;
+        if (contr_size > 2) {
+            cuda_push_array(l.contrast_p_gpu, contrast_p, contr_size * sizeof(contrastive_params) / 4);
+            P_constrastive_f_det_gpu(labels, l.embedding_size, l.temperature, l.contrast_p_gpu, contr_size);
+            cuda_pull_array(l.contrast_p_gpu, contrast_p, contr_size * sizeof(contrastive_params) / 4);
+        }
+#else   // GPU
         int k;
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (k = 0; k < contr_size; ++k) {
             contrast_p[k].P = P_constrastive_f_det(k, l.labels, z, l.embedding_size, l.temperature, contrast_p, contr_size);
         }
+#endif  // GPU
     }
     else {
         // precalculate P-contrastive

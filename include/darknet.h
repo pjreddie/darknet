@@ -147,7 +147,7 @@ typedef struct contrastive_params {
     float sim;
     float exp_sim;
     float P;
-    size_t i, j;
+    int i, j;
     int time_step_i, time_step_j;
 } contrastive_params;
 
@@ -389,6 +389,7 @@ struct layer {
     float *cos_sim;
     float *exp_cos_sim;
     float *p_constrastive;
+    contrastive_params *contrast_p_gpu;
     float * state;
     float * prev_state;
     float * forgot_state;

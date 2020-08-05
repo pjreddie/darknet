@@ -171,6 +171,7 @@ void rotate_weights_gpu(const float *src_weight_gpu, float *weight_deform_gpu, i
 void reduce_and_expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
 void expand_array_gpu(const float *src_gpu, float *dst_gpu, int size, int groups);
 void mult_inverse_array_gpu(const float *src_gpu, float *dst_gpu, int size, float eps);
+void P_constrastive_f_det_gpu(int *labels, unsigned int feature_size, float temperature, contrastive_params *contrast_p, const int contrast_p_size);
 
 #endif // GPU
 #ifdef __cplusplus
