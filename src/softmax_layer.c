@@ -422,9 +422,9 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
         }
         int *labels = NULL;
         if (contr_size > 2) {
-            cuda_push_array((contrastive_params *)l.contrast_p_gpu, (contrastive_params *)contrast_p, contr_size * sizeof(contrastive_params) / 4);
+            cuda_push_array((float *)l.contrast_p_gpu, (float *)contrast_p, contr_size * sizeof(contrastive_params) / 4);
             P_constrastive_f_det_gpu(labels, l.embedding_size, l.temperature, l.contrast_p_gpu, contr_size);
-            cuda_pull_array((contrastive_params *)l.contrast_p_gpu, (contrastive_params *)contrast_p, contr_size * sizeof(contrastive_params) / 4);
+            cuda_pull_array((float *)l.contrast_p_gpu, (float *)contrast_p, contr_size * sizeof(contrastive_params) / 4);
         }
 #else   // GPU
         int k;
