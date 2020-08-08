@@ -188,6 +188,10 @@ load_net_custom = lib.load_network_custom
 load_net_custom.argtypes = [c_char_p, c_char_p, c_int, c_int]
 load_net_custom.restype = c_void_p
 
+free_network_ptr = lib.free_network_ptr
+free_network_ptr.argtypes = [c_void_p]
+free_network_ptr.restype = c_void_p
+
 do_nms_obj = lib.do_nms_obj
 do_nms_obj.argtypes = [POINTER(DETECTION), c_int, c_int, c_float]
 
