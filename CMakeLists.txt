@@ -313,6 +313,7 @@ endif()
 if(BUILD_AS_CPP)
   set_target_properties(dark PROPERTIES LINKER_LANGUAGE CXX)
 endif()
+set_target_properties(dark PROPERTIES OUTPUT_NAME "darknet")
 
 if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND BUILD_USELIB_TRACK)
   add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
