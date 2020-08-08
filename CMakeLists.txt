@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 set(Darknet_MAJOR_VERSION 0)
 set(Darknet_MINOR_VERSION 2)
 set(Darknet_PATCH_VERSION 5)
-set(Darknet_TWEAK_VERSION 2)
+set(Darknet_TWEAK_VERSION 3)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION}.${Darknet_TWEAK_VERSION})
 
 option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" OFF)

@@ -21,7 +21,7 @@ else {
 Remove-Item -r $temp_folder
 Set-Location ..
 Set-Location $vcpkg_folder\
-git.exe clone https://github.com/Microsoft/vcpkg
+git.exe clone https://github.com/microsoft/vcpkg
 Set-Location vcpkg
-.\bootstrap-vcpkg.bat
+.\bootstrap-vcpkg.bat -disableMetrics
 .\vcpkg.exe install darknet[${features}]:x64-windows

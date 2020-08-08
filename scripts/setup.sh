@@ -43,7 +43,7 @@ fi
 rm -rf $temp_folder
 cd ..
 cd $vcpkg_folder
-git clone https://github.com/Microsoft/vcpkg
+git clone https://github.com/microsoft/vcpkg
 cd vcpkg
-./bootstrap-vcpkg.sh
+./bootstrap-vcpkg.sh -disableMetrics
 ./vcpkg install darknet[${features}]
