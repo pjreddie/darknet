@@ -638,8 +638,8 @@ float P_constrastive_f_det(size_t il, int *labels, float **z, unsigned int featu
         }
     }
 
-    float result = numerator / denominator;
-    if (denominator == 0) result = 1;
+    float result = 0.9999;
+    if (denominator != 0) result = numerator / denominator;
     if (result > 1) result = 0.9999;
     return result;
 }
@@ -669,8 +669,8 @@ float P_constrastive_f(size_t i, size_t l, int *labels, float **z, unsigned int 
         }
     }
 
-    float result = numerator / denominator;
-    if (denominator == 0) result = 1;
+    float result = 0.9999;
+    if (denominator != 0) result = numerator / denominator;
     if (result > 1) result = 0.9999;
     return result;
 }

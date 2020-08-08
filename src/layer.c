@@ -149,6 +149,7 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
 #ifdef GPU
     if (l.indexes_gpu)           cuda_free((float *)l.indexes_gpu);
 
+    if (l.contrast_p_gpu)          cuda_free((float *)l.contrast_p_gpu);
     if (l.z_gpu)                   cuda_free(l.z_gpu);
     if (l.r_gpu)                   cuda_free(l.r_gpu);
     if (l.m_gpu)                   cuda_free(l.m_gpu);

@@ -147,7 +147,7 @@ typedef struct contrastive_params {
     float sim;
     float exp_sim;
     float P;
-    size_t i, j;
+    int i, j;
     int time_step_i, time_step_j;
 } contrastive_params;
 
@@ -389,6 +389,7 @@ struct layer {
     float *cos_sim;
     float *exp_cos_sim;
     float *p_constrastive;
+    contrastive_params *contrast_p_gpu;
     float * state;
     float * prev_state;
     float * forgot_state;
@@ -1073,8 +1074,8 @@ void stop_timer_and_show();
 void stop_timer_and_show_name(char *name);
 void show_total_time();
 
-void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, float track_ciou_norm, int deque_size, int dets_for_track, int dets_for_show);
-int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh);
+LIB_API void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, float track_ciou_norm, int deque_size, int dets_for_track, int dets_for_show);
+LIB_API int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh);
 
 
 // gemm.h

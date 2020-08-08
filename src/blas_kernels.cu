@@ -2338,3 +2338,48 @@ extern "C" void mult_inverse_array_gpu(const float *src_gpu, float *dst_gpu, int
 
     CHECK_CUDA(cudaPeekAtLastError());
 }
+
+
+
+__global__ void P_constrastive_f_det_kernel(int *labels, unsigned int feature_size, float temperature, contrastive_params *contrast_p, const int contrast_p_size)
+{
+    const int il = blockIdx.x*blockDim.x + threadIdx.x;
+
+    if (il < contrast_p_size) {
+        const float sim = contrast_p[il].sim;
+        const size_t i = contrast_p[il].i;
+        const size_t j = contrast_p[il].j;
+
+        const float numerator = expf(sim / temperature);
+
+        float denominator = 0;
+        int k;
+        for (k = 0; k < contrast_p_size; ++k) {
+            contrastive_params cp = contrast_p[k];
+            //if (k != i && labels[k] != labels[i]) {
+            //if (k != i) {
+            if (cp.i != i && cp.j == j) {
+                //const float sim_den = cp.sim;
+                ////const float sim_den = find_sim(k, l, contrast_p, contrast_p_size); // cosine_similarity(z[k], z[l], feature_size);
+                //denominator += expf(sim_den / temperature);
+                denominator += cp.exp_sim;
+            }
+        }
+
+        float result = 0.9999;
+        if (denominator != 0) result = numerator / denominator;
+        if (result > 1) result = 0.9999;
+
+        contrast_p[il].P = result;
+    }
+}
+
+
+extern "C" void P_constrastive_f_det_gpu(int *labels, unsigned int feature_size, float temperature, contrastive_params *contrast_p, const int contrast_p_size)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(contrast_p_size, block_size);
+    P_constrastive_f_det_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (labels, feature_size, temperature, contrast_p, contrast_p_size);
+
+    CHECK_CUDA(cudaPeekAtLastError());
+}
