@@ -274,6 +274,25 @@ __global__ void activate_array_mish_kernel(float *x, int n, float *activation_in
     }
 }
 
+__device__ float hard_mish_yashas(float x)
+{
+    if (x > 0)
+        return x;
+    if (x > -2)
+        return x * x / 2 + x;
+    return 0;
+}
+
+__global__ void activate_array_hard_mish_kernel(float *x, int n, float *activation_input, float *output_gpu)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i < n) {
+
+        float x_val = x[i];
+        if (activation_input) activation_input[i] = x_val;    // store value before activation
+        output_gpu[i] = hard_mish_yashas(x_val);
+    }
+}
 __global__ void activate_array_leaky_kernel(float *x, int n)
 {
     int index = blockIdx.x*blockDim.x + threadIdx.x;
@@ -381,6 +400,25 @@ __global__ void gradient_array_mish_kernel(int n, float *activation_input_gpu, f
     }
 }
 
+__device__ float hard_mish_yashas_grad(float x)
+{
+    if (x > 0)
+        return 1;
+    if (x > -2)
+        return x + 1;
+    return 0;
+}
+
+__global__ void gradient_array_hard_mish_kernel(int n, float *activation_input_gpu, float *delta)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i < n) {
+
+        const float x = activation_input_gpu[i];
+        delta[i] *= hard_mish_yashas_grad(x);
+    }
+}
+
 __global__ void gradient_array_leaky_kernel(float *x, int n, float *delta)
 {
     int index = blockIdx.x*blockDim.x + threadIdx.x;
@@ -484,6 +522,13 @@ extern "C" void activate_array_mish_ongpu(float *x, int n, float *activation_inp
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
+extern "C" void activate_array_hard_mish_ongpu(float *x, int n, float *activation_input_gpu, float *output_gpu)
+{
+    const int num_blocks = get_number_of_blocks(n, BLOCK);
+    activate_array_hard_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> >(x, n, activation_input_gpu, output_gpu);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
 extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
@@ -519,6 +564,13 @@ extern "C" void gradient_array_mish_ongpu(int n, float *activation_input_gpu, fl
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
     gradient_array_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, activation_input_gpu, delta);
+    CHECK_CUDA(cudaPeekAtLastError());
+}
+
+extern "C" void gradient_array_hard_mish_ongpu(int n, float *activation_input_gpu, float *delta)
+{
+    const int num_blocks = get_number_of_blocks(n, BLOCK);
+    gradient_array_hard_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, activation_input_gpu, delta);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 

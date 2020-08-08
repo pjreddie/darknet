@@ -50,6 +50,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "logistic")==0) return LOGISTIC;
     if (strcmp(s, "swish") == 0) return SWISH;
     if (strcmp(s, "mish") == 0) return MISH;
+    if (strcmp(s, "hard_mish") == 0) return HARD_MISH;
     if (strcmp(s, "normalize_channels") == 0) return NORM_CHAN;
     if (strcmp(s, "normalize_channels_softmax") == 0) return NORM_CHAN_SOFTMAX;
     if (strcmp(s, "normalize_channels_softmax_maxval") == 0) return NORM_CHAN_SOFTMAX_MAXVAL;
@@ -156,6 +157,26 @@ void activate_array_mish(float *x, const int n, float * activation_input, float 
         float x_val = x[i];
         activation_input[i] = x_val;    // store value before activation
         output[i] = x_val * tanh_activate( softplus_activate(x_val, MISH_THRESHOLD) );
+    }
+}
+
+static float hard_mish_yashas(float x)
+{
+    if (x > 0)
+        return x;
+    if (x > -2)
+        return x * x / 2 + x;
+    return 0;
+}
+
+void activate_array_hard_mish(float *x, const int n, float * activation_input, float * output)
+{
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < n; ++i) {
+        float x_val = x[i];
+        activation_input[i] = x_val;    // store value before activation
+        output[i] = hard_mish_yashas(x_val);
     }
 }
 
@@ -376,5 +397,24 @@ void gradient_array_mish(const int n, const float * activation_input, float * de
         //float w = 4 * (x + 1) + 4 * expf(2 * x) + expf(3 * x) + expf(x)*(4 * x + 6);
         //float derivative = expf(x) * w / (d * d);
         //delta[i] *= derivative;
+    }
+}
+
+static float hard_mish_yashas_grad(float x)
+{
+    if (x > 0)
+        return 1;
+    if (x > -2)
+        return x + 1;
+    return 0;
+}
+
+void gradient_array_hard_mish(const int n, const float * activation_input, float * delta)
+{
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < n; ++i) {
+        float inp = activation_input[i];
+        delta[i] *= hard_mish_yashas_grad(inp);
     }
 }

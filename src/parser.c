@@ -363,6 +363,11 @@ contrastive_layer parse_contrastive(list *options, size_params params)
     int yolo_layer_id = option_find_int_quiet(options, "yolo_layer", 0);
     if (yolo_layer_id < 0) yolo_layer_id = params.index + yolo_layer_id;
     if(yolo_layer_id != 0) yolo_layer = params.net.layers + yolo_layer_id;
+    if (yolo_layer->type != YOLO) {
+        printf(" Error: [contrastive] layer should point to the [yolo] layer instead of %d layer! \n", yolo_layer_id);
+        getchar();
+        exit(0);
+    }
 
     contrastive_layer layer = make_contrastive_layer(params.batch, params.w, params.h, params.c, classes, params.inputs, yolo_layer);
     layer.temperature = option_find_float_quiet(options, "temperature", 1);
@@ -501,6 +506,10 @@ layer parse_yolo(list *options, size_params params)
         l.embedding_output = (float*)xcalloc(le.batch * le.outputs, sizeof(float));
         l.embedding_size = le.n / l.n;
         printf(" embedding_size = %d \n", l.embedding_size);
+        if (le.n % l.n != 0) {
+            printf(" Warning: filters=%d number in embedding_layer=%d isn't divisable by number of anchors %d \n", le.n, embedding_layer_id, l.n);
+            getchar();
+        }
     }
 
     char *map_file = option_find_str(options, "map", 0);
@@ -832,6 +841,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     if(!(h && w && c)) error("Layer before [maxpool] layer must output image.");
 
     maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, avgpool, params.train);
+    layer.maxpool_zero_nonmax = option_find_int_quiet(options, "maxpool_zero_nonmax", 0);
     return layer;
 }
 
@@ -1646,6 +1656,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         }
 
         // pre-allocate memory for inference on Tensor Cores (fp16)
+        *net.max_input16_size = 0;
+        *net.max_output16_size = 0;
         if (net.cudnn_half) {
             *net.max_input16_size = max_inputs;
             CHECK_CUDA(cudaMalloc((void **)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)

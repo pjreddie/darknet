@@ -310,7 +310,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
         &returned_algo_count, // workspace_size_specify,
         conv_fwd_results));
 
-    CHECK_CUDNN(cudaMemGetInfo(&free_memory, &total_memory));
+    CHECK_CUDA(cudaMemGetInfo(&free_memory, &total_memory));
 
     found_conv_algorithm = 0;
     min_time = 1000000;   // 1000 sec
@@ -349,7 +349,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
         &returned_algo_count, // workspace_size_specify,
         &conv_bwd_data_results[0]));
 
-    CHECK_CUDNN(cudaMemGetInfo(&free_memory, &total_memory));
+    CHECK_CUDA(cudaMemGetInfo(&free_memory, &total_memory));
 
     found_conv_algorithm = 0;
     min_time = 1000000;   // 1000 sec
@@ -386,7 +386,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
         &returned_algo_count, // workspace_size_specify,
         &conv_bwd_filter_results[0]));
 
-    CHECK_CUDNN(cudaMemGetInfo(&free_memory, &total_memory));
+    CHECK_CUDA(cudaMemGetInfo(&free_memory, &total_memory));
 
     found_conv_algorithm = 0;
     min_time = 1000000;   // 1000 sec
@@ -658,7 +658,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     }
 
 #ifndef GPU
-    if (l.activation == SWISH || l.activation == MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
+    if (l.activation == SWISH || l.activation == MISH || l.activation == HARD_MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
 #endif  // not GPU
 
     if(adam){
@@ -680,7 +680,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     if(gpu_index >= 0){
 
-        if (train && (l.activation == SWISH || l.activation == MISH)) {
+        if (train && (l.activation == SWISH || l.activation == MISH || l.activation == HARD_MISH)) {
             l.activation_input_gpu = cuda_make_array(l.activation_input, total_batch*l.outputs);
         }
 
@@ -917,7 +917,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         //l->binary_input = realloc(l->inputs*l->batch, sizeof(float));
     }
 
-    if (l->activation == SWISH || l->activation == MISH) l->activation_input = (float*)realloc(l->activation_input, total_batch*l->outputs * sizeof(float));
+    if (l->activation == SWISH || l->activation == MISH || l->activation == HARD_MISH) l->activation_input = (float*)realloc(l->activation_input, total_batch*l->outputs * sizeof(float));
 #ifdef GPU
     if (old_w < w || old_h < h || l->dynamic_minibatch) {
         if (l->train) {
@@ -943,7 +943,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
             l->binary_input_gpu = cuda_make_array(0, l->inputs*l->batch);
         }
 
-        if (l->activation == SWISH || l->activation == MISH) {
+        if (l->activation == SWISH || l->activation == MISH || l->activation == HARD_MISH) {
             cuda_free(l->activation_input_gpu);
             l->activation_input_gpu = cuda_make_array(l->activation_input, total_batch*l->outputs);
         }
@@ -1353,6 +1353,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 //activate_array(l.output, m*n*l.batch, l.activation);
                 if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.output);
                 else if (l.activation == MISH) activate_array_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
+                else if (l.activation == HARD_MISH) activate_array_hard_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
                 else if (l.activation == NORM_CHAN) activate_array_normalize_channels(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output);
                 else if (l.activation == NORM_CHAN_SOFTMAX) activate_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output, 0);
                 else if (l.activation == NORM_CHAN_SOFTMAX_MAXVAL) activate_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output, 1);
@@ -1398,6 +1399,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     //activate_array(l.output, m*n*l.batch, l.activation);
     if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.output);
     else if (l.activation == MISH) activate_array_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
+    else if (l.activation == HARD_MISH) activate_array_hard_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
     else if (l.activation == NORM_CHAN) activate_array_normalize_channels(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output);
     else if (l.activation == NORM_CHAN_SOFTMAX) activate_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output, 0);
     else if (l.activation == NORM_CHAN_SOFTMAX_MAXVAL) activate_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output, 1);
@@ -1539,6 +1541,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
 
     if (l.activation == SWISH) gradient_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.delta);
     else if (l.activation == MISH) gradient_array_mish(l.outputs*l.batch, l.activation_input, l.delta);
+    else if (l.activation == HARD_MISH) gradient_array_hard_mish(l.outputs*l.batch, l.activation_input, l.delta);
     else if (l.activation == NORM_CHAN_SOFTMAX || l.activation == NORM_CHAN_SOFTMAX_MAXVAL) gradient_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.delta);
     else if (l.activation == NORM_CHAN) gradient_array_normalize_channels(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.delta);
     else gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);

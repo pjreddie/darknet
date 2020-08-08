@@ -1031,7 +1031,7 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
     }
 
     //for (i = 0; i < w*h*c; i += 8) {
-        //*((__m256*)&input[i]) = _mm256_and_ps(*((__m256*)&input[i]), _mm256_castsi256_ps(all256_sing1));
+        //(*(__m256*)&input[i]) = _mm256_and_ps(*((__m256*)&input[i]), _mm256_castsi256_ps(all256_sing1));
     //}
 
 
@@ -1124,7 +1124,7 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
 
                     //__m256 out = *((__m256*)&output[output_index]);
                     //out = _mm256_add_ps(out, sum256);
-                    //*((__m256*)&output[output_index]) = out;
+                    //(*(__m256*)&output[output_index]) = out;
                     *((__m256*)&output[output_index]) = sum256;
 
                     //_mm256_storeu_ps(&C[i*ldc + j], result256);

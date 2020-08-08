@@ -104,7 +104,7 @@ typedef struct tree {
 
 // activations.h
 typedef enum {
-    LOGISTIC, RELU, RELU6, RELIE, LINEAR, RAMP, TANH, PLSE, REVLEAKY, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, GELU, SWISH, MISH, NORM_CHAN, NORM_CHAN_SOFTMAX, NORM_CHAN_SOFTMAX_MAXVAL
+    LOGISTIC, RELU, RELU6, RELIE, LINEAR, RAMP, TANH, PLSE, REVLEAKY, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, GELU, SWISH, MISH, HARD_MISH, NORM_CHAN, NORM_CHAN_SOFTMAX, NORM_CHAN_SOFTMAX_MAXVAL
 }ACTIVATION;
 
 // parser.h
@@ -147,7 +147,7 @@ typedef struct contrastive_params {
     float sim;
     float exp_sim;
     float P;
-    size_t i, j;
+    int i, j;
     int time_step_i, time_step_j;
 } contrastive_params;
 
@@ -255,6 +255,7 @@ struct layer {
     int dilation;
     int antialiasing;
     int maxpool_depth;
+    int maxpool_zero_nonmax;
     int out_channels;
     float reverse;
     int flatten;
@@ -388,6 +389,7 @@ struct layer {
     float *cos_sim;
     float *exp_cos_sim;
     float *p_constrastive;
+    contrastive_params *contrast_p_gpu;
     float * state;
     float * prev_state;
     float * forgot_state;
@@ -984,6 +986,7 @@ LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API network *load_network_custom(char *cfg, char *weights, int clear, int batch);
 LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API void free_network(network net);
+LIB_API void free_network_ptr(network* net);
 
 // network.c
 LIB_API load_args get_base_args(network *net);
@@ -1071,8 +1074,8 @@ void stop_timer_and_show();
 void stop_timer_and_show_name(char *name);
 void show_total_time();
 
-void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, float track_ciou_norm, int deque_size, int dets_for_track, int dets_for_show);
-int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh);
+LIB_API void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim_thresh, float track_ciou_norm, int deque_size, int dets_for_track, int dets_for_show);
+LIB_API int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh);
 
 
 // gemm.h
