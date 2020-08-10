@@ -178,7 +178,7 @@ You can get cfg-files by path: `darknet/cfg/`
 * **TensorFlow:** YOLOv4 on TensorFlow 2.0 / TFlite / Andriod: https://github.com/hunglc007/tensorflow-yolov4-tflite
     For YOLOv3 - convert `yolov3.weights`/`cfg` files to `yolov3.ckpt`/`pb/meta`: by using [mystic123](https://github.com/mystic123/tensorflow-yolo-v3) project, and [TensorFlow-lite](https://www.tensorflow.org/lite/guide/get_started#2_convert_the_model_format)
 * **OpenCV-dnn** the fastest implementation of YOLOv4 for CPU (x86/ARM-Android), OpenCV can be compiled with [OpenVINO-backend](https://github.com/opencv/opencv/wiki/Intel's-Deep-Learning-Inference-Engine-backend) for running on (Myriad X / USB Neural Compute Stick / Arria FPGA), use `yolov4.weights`/`cfg` with: [C++ example](https://github.com/opencv/opencv/blob/8c25a8eb7b10fb50cda323ee6bec68aa1a9ce43c/samples/dnn/object_detection.cpp#L192-L221) or [Python example](https://github.com/opencv/opencv/blob/8c25a8eb7b10fb50cda323ee6bec68aa1a9ce43c/samples/dnn/object_detection.py#L129-L150)
-* **Intel OpenVINO 2019 R1:** (Myriad X / USB Neural Compute Stick / Arria FPGA): read this [manual](https://software.intel.com/en-us/articles/OpenVINO-Using-TensorFlow#converting-a-darknet-yolo-model)
+* **Intel OpenVINO 2020 R4:** (NPU Myriad X / USB Neural Compute Stick / Arria FPGA): read this [manual](https://github.com/TNTWEN/OpenVINO-YOLOV4) (old [manual](https://software.intel.com/en-us/articles/OpenVINO-Using-TensorFlow#converting-a-darknet-yolo-model) )
 * **Tencent/ncnn:** the fastest inference of YOLOv4 on mobile phone CPU: https://github.com/Tencent/ncnn
 * **PyTorch > ONNX**: 
     * [WongKinYiu/PyTorch_YOLOv4](https://github.com/WongKinYiu/PyTorch_YOLOv4)
