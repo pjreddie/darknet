@@ -16,7 +16,7 @@
 # define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-# define COLOR_NUM 51
+# define COLOR_NUM 62
 # define PERSON_NUM 24
 
 int windows = 0;
@@ -260,26 +260,26 @@ float get_average_color(image im, int left, int right, int top, int bot, int c) 
 // consolidated color table
 static char color_name[][64] = {
   "Black", "Black", "Black", "Black","gray",
-  "Red", "Red", "Red", "Red", "Red",
+  "Red", "Red", "Red", "Red", "Red","Red",
   "Brown", "Brown", "Brown",
-  "Orange", "Orange",
-  "Yellow", "Yellow", "Yellow", "Yellow", "Yellow",
-  "Green", "Green", "Green", "Green", "Green", "Green", "Green", "Green","Green",
+  "Orange", "Orange","Orange","Orange",
+  "Yellow", "Yellow", "Yellow", "Yellow", "Yellow", "Yellow",
+  "Green", "Green", "Green", "Green", "Green", "Green", "Green", "Green","Green","Green", "Green",
   "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue",
-  "Purple", "Purple", "Purple", "Purple", "Purple",
+  "Purple", "Purple", "Purple", "Purple", "Purple","Purple", "Purple","Purple","Purple", "Purple",
   "White", "White", "White","gray", "gray"
 };
 
 static float color_rgb[][3] = {
   {0, 0, 0}, {51, 0, 25}, {32, 32, 32}, {64, 64, 64}, {96, 96, 96},  // 5 in Black & gray
-  {102, 0, 0}, {153, 0, 0}, {204, 0, 0}, {255, 0, 0}, {255, 51, 51}, // 5 in Red
+  {102, 0, 0}, {153, 0, 0}, {204, 0, 0}, {255, 0, 0}, {255, 51, 51}, {125,35,35}, // 6 in Red
   {51, 25, 0}, {102, 51, 0}, {153, 76, 0}, // 3 in Brown
-  {204, 102, 0}, {255, 128, 0}, // 2 in Orange
-  {153, 153, 0},{204, 204, 0}, {255, 255, 0}, {255, 255, 51}, {255, 255, 102}, //  5 in yellow
-  {0, 102, 0},{0, 153, 0}, {0, 204, 0}, {0, 255, 0}, {51, 255, 51}, {0, 51, 25},{0, 102, 51}, {0, 153, 76}, {28, 72, 68}, // 9 in green 
+  {204, 102, 0}, {255, 128, 0}, {255,153,51}, {230,60,10},// 4 in Orange
+  {153, 153, 0},{204, 204, 0}, {255, 255, 0}, {255, 255, 51}, {255, 255, 102}, {200,200,90},//  6 in yellow
+  {0, 102, 0},{0, 153, 0}, {0, 204, 0}, {0, 255, 0}, {51, 255, 51}, {0, 51, 25},{0, 102, 51}, {0, 153, 76}, {28, 72, 68}, {60,90,50}, {90,202,162}, // 11 in green 
   {0, 0, 102}, {0, 0, 153}, {0, 0, 204}, {0, 0, 255}, {51, 255, 255}, {0, 25, 51}, 
   {0, 51, 102}, {0, 76, 153}, {0, 102, 204}, {0, 128.255},{50, 40, 102}, {102, 150, 200}, // 12 in Blue series
-  {51, 0, 102}, {76, 0, 153}, {102, 0, 204}, {127, 0, 255}, {153, 51, 255}, // 5 in Purple
+  {51, 0, 102}, {76, 0, 153}, {102, 0, 204}, {127, 0, 255}, {153, 51, 255}, {178,102,255}, {204,153,255},{120,60,120},{66,28,75}, {189,137,183},// 10 in Purple
   {255, 255, 255}, {224, 224, 224}, {192, 192, 192}, {160, 160, 160}, {128, 128, 128} // 5 in  White & gray
 };
 
