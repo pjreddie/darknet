@@ -16,7 +16,7 @@
 # define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-# define COLOR_NUM 62
+# define COLOR_NUM 61
 # define PERSON_NUM 24
 
 int windows = 0;
@@ -262,7 +262,7 @@ static char color_name[][64] = {
   "Black", "Black", "Black", "Black","gray",
   "Red", "Red", "Red", "Red", "Red","Red",
   "Brown", "Brown", "Brown",
-  "Orange", "Orange","Orange","Orange",
+  "Orange", "Orange","Orange",
   "Yellow", "Yellow", "Yellow", "Yellow", "Yellow", "Yellow",
   "Green", "Green", "Green", "Green", "Green", "Green", "Green", "Green","Green","Green", "Green",
   "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue",
@@ -274,7 +274,7 @@ static float color_rgb[][3] = {
   {0, 0, 0}, {51, 0, 25}, {32, 32, 32}, {64, 64, 64}, {96, 96, 96},  // 5 in Black & gray
   {102, 0, 0}, {153, 0, 0}, {204, 0, 0}, {255, 0, 0}, {255, 51, 51}, {125,35,35}, // 6 in Red
   {51, 25, 0}, {102, 51, 0}, {153, 76, 0}, // 3 in Brown
-  {204, 102, 0}, {255, 128, 0}, {255,153,51}, {230,60,10},// 4 in Orange
+  {204, 102, 0}, {255, 128, 0}, {230,60,10},// 3 in Orange
   {153, 153, 0},{204, 204, 0}, {255, 255, 0}, {255, 255, 51}, {255, 255, 102}, {200,200,90},//  6 in yellow
   {0, 102, 0},{0, 153, 0}, {0, 204, 0}, {0, 255, 0}, {51, 255, 51}, {0, 51, 25},{0, 102, 51}, {0, 153, 76}, {28, 72, 68}, {60,90,50}, {90,202,162}, // 11 in green 
   {0, 0, 102}, {0, 0, 153}, {0, 0, 204}, {0, 0, 255}, {51, 255, 255}, {0, 25, 51}, 
@@ -355,7 +355,7 @@ int get_most_color_index(image im, int left, int right, int top, int bot,
   mean_r = sum_r / count;
   mean_g = sum_g / count;
   mean_b = sum_b / count; 
-  // printf("mean_r = %f, mean_g = %f, mean_b = %f \n ", mean_r,mean_g,mean_b); 
+  printf("mean_r = %f, mean_g = %f, mean_b = %f \n ", mean_r,mean_g,mean_b); 
 
   int color_max_count = 0;
   int color_max_index = 0;
