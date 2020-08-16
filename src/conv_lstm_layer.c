@@ -242,7 +242,6 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
 
 layer make_history_layer(int batch, int h, int w, int c, int history_size, int steps, int train)
 {
-    //steps = 1;
     layer l = { (LAYER_TYPE)0 };
     l.train = train;
     l.batch = batch;

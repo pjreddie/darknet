@@ -2383,3 +2383,50 @@ extern "C" void P_constrastive_f_det_gpu(int *labels, unsigned int feature_size,
 
     CHECK_CUDA(cudaPeekAtLastError());
 }
+
+
+
+
+__global__ void coord_conv_kernel(float *dst, int w, int h, int chan, int batch, int type)
+{
+    int i = blockIdx.x*blockDim.x + threadIdx.x;
+
+    const int x = i % w;
+    i = i / w;
+    const int y = i % h;
+    i = i / h;
+    const int c = i % chan;
+    //i = i / chan;
+    //const int b = i % batch;
+
+    if (type == 0) {
+        if (c == 0) {
+            const float x_val = (2.0f * x) / w - 1.0f;  // [-1; 1)
+            dst[i] = x_val; // x - coord
+        }
+        else if (c == 1) {
+            const float y_val = (2.0f * y) / h - 1.0f;  // [-1; 1)
+            dst[i] = y_val; // y - coord
+        }
+        else if (c == 2) {
+            const float x_val = (2.0f * x) / w - 1.0f;  // [-1; 1)
+            const float y_val = (2.0f * y) / h - 1.0f;  // [-1; 1)
+            const float rad_val = sqrtf(x_val*x_val + y_val*y_val);  // [0; 1.414)
+            dst[i] = rad_val; // rad - coord
+        }
+    }
+    else if (type == 1) {
+        if (c >= 0 && c <= 2) {
+            dst[i] = 0;
+        }
+    }
+}
+
+extern "C" void coord_conv_gpu(float *dst, int size, int w, int h, int chan, int b, int type)
+{
+    const int block_size = BLOCK;
+    const int num_blocks = get_number_of_blocks(size, block_size);
+    coord_conv_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (dst, w, h, chan, b, type);
+
+    CHECK_CUDA(cudaPeekAtLastError());
+}

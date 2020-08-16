@@ -259,6 +259,7 @@ struct layer {
     int maxpool_zero_nonmax;
     int out_channels;
     float reverse;
+    int coordconv;
     int flatten;
     int spatial;
     int pad;
