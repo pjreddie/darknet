@@ -569,7 +569,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             float *a = l.weights_gpu + j*l.nweights / l.groups;
             float *b = state.workspace;
             float *c = l.output_gpu + (i*l.groups + j)*n*m;
-            if (l.size == 1) {
+            if (l.size == 1 && l.stride == 1 && l.dilation == 1) {
                 b = im;
             }
             else {

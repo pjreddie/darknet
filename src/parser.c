@@ -69,6 +69,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[gru]")==0) return GRU;
     if (strcmp(type, "[lstm]")==0) return LSTM;
     if (strcmp(type, "[conv_lstm]") == 0) return CONV_LSTM;
+    if (strcmp(type, "[history]") == 0) return HISTORY;
     if (strcmp(type, "[rnn]")==0) return RNN;
     if (strcmp(type, "[conn]")==0
             || strcmp(type, "[connected]")==0) return CONNECTED;
@@ -326,6 +327,13 @@ layer parse_conv_lstm(list *options, size_params params)
     l.lstm_activation = get_activation(lstm_activation_s);
     l.time_normalizer = option_find_float_quiet(options, "time_normalizer", 1.0);
 
+    return l;
+}
+
+layer parse_history(list *options, size_params params)
+{
+    int history_size = option_find_int(options, "history_size", 4);
+    layer l = make_history_layer(params.batch, params.h, params.w, params.c, history_size, params.time_steps, params.train);
     return l;
 }
 
@@ -1377,6 +1385,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             l = parse_lstm(options, params);
         }else if (lt == CONV_LSTM) {
             l = parse_conv_lstm(options, params);
+        }else if (lt == HISTORY) {
+            l = parse_history(options, params);
         }else if(lt == CRNN){
             l = parse_crnn(options, params);
         }else if(lt == CONNECTED){

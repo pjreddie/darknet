@@ -1364,7 +1364,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             else {
                 //printf(" l.index = %d - FP32 \n", l.index);
                 float *im = state.input + (i*l.groups + j)*(l.c / l.groups)*l.h*l.w;
-                if (l.size == 1) {
+                if (l.size == 1 && l.stride == 1 && l.dilation == 1) {
                     b = im;
                 }
                 else {
