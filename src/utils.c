@@ -38,7 +38,6 @@ void *xcalloc(size_t nmemb, size_t size) {
     if(!ptr) {
         calloc_error();
     }
-    memset(ptr, 0, nmemb * size);
     return ptr;
 }
 
