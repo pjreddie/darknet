@@ -5029,7 +5029,7 @@ static int stbi__bitcount(unsigned int a)
 
 // extract an arbitrarily-aligned N-bit value (N=bits)
 // from v, and then make it 8-bits long and fractionally
-// extend it to full full range.
+// extend it to full range.
 static int stbi__shiftsigned(int v, int shift, int bits)
 {
    static unsigned int mul_table[9] = {
@@ -5184,7 +5184,7 @@ static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req
    out = (stbi_uc *) stbi__malloc_mad3(target, s->img_x, s->img_y, 0);
    if (!out) return stbi__errpuc("outofmem", "Out of memory");
    if (info.bpp < 16) {
-      int z=0;
+      short z=0;
       if (psize == 0 || psize > 256) { STBI_FREE(out); return stbi__errpuc("invalid", "Corrupt BMP"); }
       for (i=0; i < psize; ++i) {
          pal[i][2] = stbi__get8(s);
@@ -5201,7 +5201,7 @@ static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req
       pad = (-width)&3;
       if (info.bpp == 1) {
          for (j=0; j < (int) s->img_y; ++j) {
-            int bit_offset = 7, v = stbi__get8(s);
+            short bit_offset = 7, v = stbi__get8(s);
             for (i=0; i < (int) s->img_x; ++i) {
                int color = (v>>bit_offset)&0x1;
                out[z++] = pal[color][0];
@@ -5217,7 +5217,7 @@ static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req
       } else {
          for (j=0; j < (int) s->img_y; ++j) {
             for (i=0; i < (int) s->img_x; i += 2) {
-               int v=stbi__get8(s),v2=0;
+               short v=stbi__get8(s),v2=0;
                if (info.bpp == 4) {
                   v2 = v & 15;
                   v >>= 4;
@@ -5237,9 +5237,9 @@ static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req
          }
       }
    } else {
-      int rshift=0,gshift=0,bshift=0,ashift=0,rcount=0,gcount=0,bcount=0,acount=0;
-      int z = 0;
-      int easy=0;
+      short rshift=0,gshift=0,bshift=0,ashift=0,rcount=0,gcount=0,bcount=0,acount=0;
+      short z = 0;
+      short easy=0;
       stbi__skip(s, info.offset - 14 - info.hsz);
       if (info.bpp == 24) width = 3 * s->img_x;
       else if (info.bpp == 16) width = 2*s->img_x;
@@ -5272,7 +5272,7 @@ static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req
                if (target == 4) out[z++] = a;
             }
          } else {
-            int bpp = info.bpp;
+            short bpp = info.bpp;
             for (i=0; i < (int) s->img_x; ++i) {
                stbi__uint32 v = (bpp == 16 ? (stbi__uint32) stbi__get16le(s) : stbi__get32le(s));
                unsigned int a;
@@ -5339,7 +5339,7 @@ static int stbi__tga_get_comp(int bits_per_pixel, int is_grey, int* is_rgb16)
 static int stbi__tga_info(stbi__context *s, int *x, int *y, int *comp)
 {
     int tga_w, tga_h, tga_comp, tga_image_type, tga_bits_per_pixel, tga_colormap_bpp;
-    int sz, tga_colormap_type;
+    short sz, tga_colormap_type;
     stbi__get8(s);                   // discard Offset
     tga_colormap_type = stbi__get8(s); // colormap type
     if( tga_colormap_type > 1 ) {
@@ -5404,7 +5404,7 @@ static int stbi__tga_info(stbi__context *s, int *x, int *y, int *comp)
 static int stbi__tga_test(stbi__context *s)
 {
    int res = 0;
-   int sz, tga_color_type;
+   short sz, tga_color_type;
    stbi__get8(s);      //   discard Offset
    tga_color_type = stbi__get8(s);   //   color type
    if ( tga_color_type > 1 ) goto errorEnd;   //   only RGB or indexed allowed
@@ -5438,9 +5438,9 @@ static void stbi__tga_read_rgb16(stbi__context *s, stbi_uc* out)
    stbi__uint16 px = (stbi__uint16)stbi__get16le(s);
    stbi__uint16 fiveBitMask = 31;
    // we have 3 channels with 5bits each
-   int r = (px >> 10) & fiveBitMask;
-   int g = (px >> 5) & fiveBitMask;
-   int b = px & fiveBitMask;
+   short r = (px >> 10) & fiveBitMask;
+   short g = (px >> 5) & fiveBitMask;
+   short b = px & fiveBitMask;
    // Note that this saves the data in RGB(A) order, so it doesn't need to be swapped later
    out[0] = (stbi_uc)((r * 255)/31);
    out[1] = (stbi_uc)((g * 255)/31);
@@ -5473,7 +5473,7 @@ static void *stbi__tga_load(stbi__context *s, int *x, int *y, int *comp, int req
    //   image data
    unsigned char *tga_data;
    unsigned char *tga_palette = NULL;
-   int i, j;
+   unsigned short i, j;
    unsigned char raw_data[4] = {0};
    int RLE_count = 0;
    int RLE_repeating = 0;
@@ -5660,7 +5660,7 @@ static int stbi__psd_test(stbi__context *s)
 
 static int stbi__psd_decode_rle(stbi__context *s, stbi_uc *p, int pixelCount)
 {
-   int count, nleft, len;
+   short count, nleft, len;
 
    count = 0;
    while ((nleft = pixelCount - count) > 0) {
@@ -5903,24 +5903,20 @@ static void *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int req
 // See http://ozviz.wasp.uwa.edu.au/~pbourke/dataformats/softimagepic/
 
 #ifndef STBI_NO_PIC
-static int stbi__pic_is4(stbi__context *s,const char *str)
+static short stbi__pic_is4(stbi__context *s,const char *str)
 {
-   int i;
-   for (i=0; i<4; ++i)
+   for (short i=0; i<4; ++i)
       if (stbi__get8(s) != (stbi_uc)str[i])
          return 0;
-
    return 1;
 }
 
-static int stbi__pic_test_core(stbi__context *s)
+static short stbi__pic_test_core(stbi__context *s)
 {
-   int i;
-
    if (!stbi__pic_is4(s,"\x53\x80\xF6\x34"))
       return 0;
 
-   for(i=0;i<84;++i)
+   for(short i=0;i<84;++i)
       stbi__get8(s);
 
    if (!stbi__pic_is4(s,"PICT"))
@@ -5936,7 +5932,7 @@ typedef struct
 
 static stbi_uc *stbi__readval(stbi__context *s, int channel, stbi_uc *dest)
 {
-   int mask=0x80, i;
+   short mask=0x80, i;
 
    for (i=0; i<4; ++i, mask>>=1) {
       if (channel & mask) {
@@ -5950,7 +5946,7 @@ static stbi_uc *stbi__readval(stbi__context *s, int channel, stbi_uc *dest)
 
 static void stbi__copyval(int channel,stbi_uc *dest,const stbi_uc *src)
 {
-   int mask=0x80,i;
+   short mask=0x80,i;
 
    for (i=0;i<4; ++i, mask>>=1)
       if (channel&mask)
@@ -5959,7 +5955,7 @@ static void stbi__copyval(int channel,stbi_uc *dest,const stbi_uc *src)
 
 static stbi_uc *stbi__pic_load_core(stbi__context *s,int width,int height,int *comp, stbi_uc *result)
 {
-   int act_comp=0,num_packets=0,y,chained;
+   short act_comp=0,num_packets=0,y,chained;
    stbi__pic_packet packets[10];
 
    // this will (should...) cater for even some bizarre stuff like having data
@@ -6070,7 +6066,7 @@ static stbi_uc *stbi__pic_load_core(stbi__context *s,int width,int height,int *c
 static void *stbi__pic_load(stbi__context *s,int *px,int *py,int *comp,int req_comp, stbi__result_info *ri)
 {
    stbi_uc *result;
-   int i, x,y, internal_comp;
+   short i, x,y, internal_comp;
    STBI_NOTUSED(ri);
 
    if (!comp) comp = &internal_comp;
@@ -6161,8 +6157,7 @@ static int stbi__gif_test(stbi__context *s)
 
 static void stbi__gif_parse_colortable(stbi__context *s, stbi_uc pal[256][4], int num_entries, int transp)
 {
-   int i;
-   for (i=0; i < num_entries; ++i) {
+   for (int i=0; i < num_entries; ++i) {
       pal[i][2] = stbi__get8(s);
       pal[i][1] = stbi__get8(s);
       pal[i][0] = stbi__get8(s);
@@ -6215,7 +6210,7 @@ static int stbi__gif_info_raw(stbi__context *s, int *x, int *y, int *comp)
 static void stbi__out_gif_code(stbi__gif *g, stbi__uint16 code)
 {
    stbi_uc *p, *c;
-   int idx; 
+   short idx; 
 
    // recurse to decode the prefixes, since the linked-list is backwards,
    // and working backwards through an interleaved image would be nasty
@@ -6259,8 +6254,8 @@ static stbi_uc *stbi__process_gif_raster(stbi__context *s, stbi__gif *g)
 
    lzw_cs = stbi__get8(s);
    if (lzw_cs > 12) return NULL;
-   clear = 1 << lzw_cs;
-   first = 1;
+   	
+   clear = (first = 1) << lzw_cs;
    codesize = lzw_cs + 1;
    codemask = (1 << codesize) - 1;
    bits = 0;
@@ -6341,7 +6336,7 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
    int dispose; 
    int first_frame; 
    int pi; 
-   int pcount; 
+   short pcount; 
 
    // on first frame, any non-written pixels get the background colour (non-transparent)
    first_frame = 0; 
@@ -6354,7 +6349,7 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
 
       // image is treated as "tranparent" at the start - ie, nothing overwrites the current background; 
       // background colour is only used for pixels that are not rendered first frame, after that "background"
-      // color refers to teh color that was there the previous frame. 
+      // color refers to the color that was there the previous frame. 
       memset( g->out, 0x00, 4 * g->w * g->h ); 
       memset( g->background, 0x00, 4 * g->w * g->h ); // state of the background (starts transparent)
       memset( g->history, 0x00, g->w * g->h );        // pixels that were affected previous frame
@@ -6382,8 +6377,7 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
             }
          }
       } else {
-         // This is a non-disposal case eithe way, so just 
-         // leave the pixels as is, and they will become the new background
+         // This is a non-disposal case either way, so just leave the pixels as is, and they will become the new background
          // 1: do not dispose
          // 0:  not specified.
       }
@@ -6393,7 +6387,7 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
    }
 
    // clear my history; 
-   memset( g->history, 0x00, g->w * g->h );        // pixels that were affected previous frame
+   memset( g->history, 0x00, g->w * g->h );// pixels that were affected previous frame
 
    for (;;) {
       int tag = stbi__get8(s); 
@@ -6501,7 +6495,7 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
 static void *stbi__load_gif_main(stbi__context *s, int **delays, int *x, int *y, int *z, int *comp, int req_comp)
 {
    if (stbi__gif_test(s)) {
-      int layers = 0; 
+      short layers = 0; 
       stbi_uc *u = 0;
       stbi_uc *out = 0;
       stbi_uc *two_back = 0; 
@@ -6595,10 +6589,9 @@ static int stbi__gif_info(stbi__context *s, int *x, int *y, int *comp)
 // Radiance RGBE HDR loader
 // originally by Nicolas Schulz
 #ifndef STBI_NO_HDR
-static int stbi__hdr_test_core(stbi__context *s, const char *signature)
+static short stbi__hdr_test_core(stbi__context *s, const char *signature)
 {
-   int i;
-   for (i=0; signature[i]; ++i)
+   for (short i=0; signature[i]; ++i)
       if (stbi__get8(s) != signature[i])
           return 0;
    stbi__rewind(s);
@@ -6670,13 +6663,13 @@ static float *stbi__hdr_load(stbi__context *s, int *x, int *y, int *comp, int re
 {
    char buffer[STBI__HDR_BUFLEN];
    char *token;
-   int valid = 0;
+   short valid = 0;
    int width, height;
    stbi_uc *scanline;
    float *hdr_data;
    int len;
    unsigned char count, value;
-   int i, j, k, c1,c2, z;
+   short i, j, k, c1,c2, z;
    const char *headerToken;
    STBI_NOTUSED(ri);
 
@@ -6798,7 +6791,7 @@ static int stbi__hdr_info(stbi__context *s, int *x, int *y, int *comp)
 {
    char buffer[STBI__HDR_BUFLEN];
    char *token;
-   int valid = 0;
+   short valid = 0;
    int dummy;
 
    if (!x) x = &dummy;
