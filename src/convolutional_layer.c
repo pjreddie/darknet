@@ -283,6 +283,135 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
 #else
     CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad * l->dilation, l->pad * l->dilation, l->stride_y, l->stride_x, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION));    // cudnn 5.1
 #endif
+
+
+#if CUDNN_MAJOR >= 8
+
+    if (cudnn_preference == cudnn_smallest)
+    {
+        workspace_size_specify = 0;
+    }
+
+    size_t free_memory, total_memory;
+    int requested_algo_count = 0, returned_algo_count = 0;
+    int found_conv_algorithm = 0;
+    float min_time = 1000000;   // 1000 sec
+
+    // FWD
+    cudnnConvolutionFwdAlgoPerf_t conv_fwd_results[100];
+    CHECK_CUDNN(cudnnGetConvolutionForwardAlgorithmMaxCount(cudnn_handle(), &requested_algo_count));
+
+    CHECK_CUDNN(cudnnGetConvolutionForwardAlgorithm_v7(cudnn_handle(),
+        l->srcTensorDesc,
+        l->weightDesc,
+        l->convDesc,
+        l->dstTensorDesc,
+        requested_algo_count, // (cudnnConvolutionFwdPreference_t)forward_algo,
+        &returned_algo_count, // workspace_size_specify,
+        conv_fwd_results));
+
+    CHECK_CUDA(cudaMemGetInfo(&free_memory, &total_memory));
+
+    found_conv_algorithm = 0;
+    min_time = 1000000;   // 1000 sec
+    for (int i = 0; i < returned_algo_count; i++)
+    {
+        if (conv_fwd_results[i].status == CUDNN_STATUS_SUCCESS &&
+            conv_fwd_results[i].algo != CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED &&
+            conv_fwd_results[i].memory < free_memory &&
+            conv_fwd_results[i].memory <= workspace_size_specify &&
+            conv_fwd_results[i].time < min_time)
+        {
+            found_conv_algorithm = 1;
+            l->fw_algo = conv_fwd_results[i].algo;
+            min_time = conv_fwd_results[i].time;
+            //printf(" - cuDNN FWD algo: %d, time = %f ms \n", l->fw_algo, min_time);
+        }
+    }
+
+    if (!found_conv_algorithm) {
+        printf(" Error: cuDNN isn't found FWD algo for convolution.\n");
+        getchar();
+        exit(0);
+    }
+    //printf(" cuDNN FWD algo: %d, time = %f ms \n", l->fw_algo, min_time);
+
+    // Bwd-Data
+    cudnnConvolutionBwdDataAlgoPerf_t conv_bwd_data_results[100];
+    CHECK_CUDNN(cudnnGetConvolutionBackwardDataAlgorithmMaxCount(cudnn_handle(), &requested_algo_count));
+
+    CHECK_CUDNN(cudnnGetConvolutionBackwardDataAlgorithm_v7(cudnn_handle(),
+        l->weightDesc,
+        l->ddstTensorDesc,
+        l->convDesc,
+        l->dsrcTensorDesc,
+        requested_algo_count, // (cudnnConvolutionFwdPreference_t)forward_algo,
+        &returned_algo_count, // workspace_size_specify,
+        &conv_bwd_data_results[0]));
+
+    CHECK_CUDA(cudaMemGetInfo(&free_memory, &total_memory));
+
+    found_conv_algorithm = 0;
+    min_time = 1000000;   // 1000 sec
+    for (int i = 0; i < returned_algo_count; i++)
+    {
+        if (conv_bwd_data_results[i].status == CUDNN_STATUS_SUCCESS &&
+            conv_bwd_data_results[i].memory < free_memory &&
+            conv_bwd_data_results[i].memory <= workspace_size_specify &&
+            conv_bwd_data_results[i].time < min_time)
+        {
+            found_conv_algorithm = 1;
+            l->bd_algo = conv_bwd_data_results[i].algo;
+            min_time = conv_bwd_data_results[i].time;
+        }
+    }
+
+    if (!found_conv_algorithm) {
+        printf(" Error: cuDNN isn't found BWD-data algo for convolution.\n");
+        getchar();
+        exit(0);
+    }
+    //printf(" cuDNN BWD-data algo: %d \n", l->bd_algo);
+
+    // Bwd-Filters
+    cudnnConvolutionBwdFilterAlgoPerf_t conv_bwd_filter_results[100];
+    CHECK_CUDNN(cudnnGetConvolutionBackwardFilterAlgorithmMaxCount(cudnn_handle(), &requested_algo_count));
+
+    CHECK_CUDNN(cudnnGetConvolutionBackwardFilterAlgorithm_v7(cudnn_handle(),
+        l->srcTensorDesc,
+        l->ddstTensorDesc,
+        l->convDesc,
+        l->dweightDesc,
+        requested_algo_count, // (cudnnConvolutionFwdPreference_t)forward_algo,
+        &returned_algo_count, // workspace_size_specify,
+        &conv_bwd_filter_results[0]));
+
+    CHECK_CUDA(cudaMemGetInfo(&free_memory, &total_memory));
+
+    found_conv_algorithm = 0;
+    min_time = 1000000;   // 1000 sec
+    for (int i = 0; i < returned_algo_count; i++)
+    {
+        if (conv_bwd_filter_results[i].status == CUDNN_STATUS_SUCCESS &&
+            conv_bwd_filter_results[i].memory < free_memory &&
+            conv_bwd_filter_results[i].memory <= workspace_size_specify &&
+            conv_bwd_filter_results[i].time < min_time)
+        {
+            found_conv_algorithm = 1;
+            l->bf_algo = conv_bwd_filter_results[i].algo;
+            min_time = conv_bwd_filter_results[i].time;
+        }
+    }
+
+    if (!found_conv_algorithm) {
+        printf(" Error: cuDNN isn't found BWD-filter algo for convolution.\n");
+        getchar();
+        exit(0);
+    }
+    //printf(" cuDNN BWD-filter algo: %d \n", l->bf_algo);
+
+#else   // CUDNN_MAJOR >= 8
+
     int forward_algo = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
     int backward_algo = CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST;
     int backward_filter = CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST;
@@ -309,22 +438,26 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
             (cudnnConvolutionFwdPreference_t)forward_algo,
             workspace_size_specify,
             &l->fw_algo));
+
     CHECK_CUDNN(cudnnGetConvolutionBackwardDataAlgorithm(cudnn_handle(),
-            l->weightDesc,
-            l->ddstTensorDesc,
-            l->convDesc,
-            l->dsrcTensorDesc,
-            (cudnnConvolutionBwdDataPreference_t)backward_algo,
-            workspace_size_specify,
-            &l->bd_algo));
+        l->weightDesc,
+        l->ddstTensorDesc,
+        l->convDesc,
+        l->dsrcTensorDesc,
+        (cudnnConvolutionBwdDataPreference_t)backward_algo,
+        workspace_size_specify,
+        &l->bd_algo));
+
     CHECK_CUDNN(cudnnGetConvolutionBackwardFilterAlgorithm(cudnn_handle(),
-            l->srcTensorDesc,
-            l->ddstTensorDesc,
-            l->convDesc,
-            l->dweightDesc,
-            (cudnnConvolutionBwdFilterPreference_t)backward_filter,
-            workspace_size_specify,
-            &l->bf_algo));
+        l->srcTensorDesc,
+        l->ddstTensorDesc,
+        l->convDesc,
+        l->dweightDesc,
+        (cudnnConvolutionBwdFilterPreference_t)backward_filter,
+        workspace_size_specify,
+        &l->bf_algo));
+#endif  // CUDNN_MAJOR >= 8
+
 
     //if (data_type == CUDNN_DATA_HALF)
     {
@@ -525,7 +658,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     }
 
 #ifndef GPU
-    if (l.activation == SWISH || l.activation == MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
+    if (l.activation == SWISH || l.activation == MISH || l.activation == HARD_MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
 #endif  // not GPU
 
     if(adam){
@@ -547,7 +680,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     if(gpu_index >= 0){
 
-        if (l.activation == SWISH || l.activation == MISH) {
+        if (train && (l.activation == SWISH || l.activation == MISH || l.activation == HARD_MISH)) {
             l.activation_input_gpu = cuda_make_array(l.activation_input, total_batch*l.outputs);
         }
 
@@ -784,7 +917,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         //l->binary_input = realloc(l->inputs*l->batch, sizeof(float));
     }
 
-    if (l->activation == SWISH || l->activation == MISH) l->activation_input = (float*)realloc(l->activation_input, total_batch*l->outputs * sizeof(float));
+    if (l->activation == SWISH || l->activation == MISH || l->activation == HARD_MISH) l->activation_input = (float*)realloc(l->activation_input, total_batch*l->outputs * sizeof(float));
 #ifdef GPU
     if (old_w < w || old_h < h || l->dynamic_minibatch) {
         if (l->train) {
@@ -810,7 +943,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
             l->binary_input_gpu = cuda_make_array(0, l->inputs*l->batch);
         }
 
-        if (l->activation == SWISH || l->activation == MISH) {
+        if (l->activation == SWISH || l->activation == MISH || l->activation == HARD_MISH) {
             cuda_free(l->activation_input_gpu);
             l->activation_input_gpu = cuda_make_array(l->activation_input, total_batch*l->outputs);
         }
@@ -1220,6 +1353,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 //activate_array(l.output, m*n*l.batch, l.activation);
                 if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.output);
                 else if (l.activation == MISH) activate_array_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
+                else if (l.activation == HARD_MISH) activate_array_hard_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
                 else if (l.activation == NORM_CHAN) activate_array_normalize_channels(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output);
                 else if (l.activation == NORM_CHAN_SOFTMAX) activate_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output, 0);
                 else if (l.activation == NORM_CHAN_SOFTMAX_MAXVAL) activate_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output, 1);
@@ -1230,7 +1364,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             else {
                 //printf(" l.index = %d - FP32 \n", l.index);
                 float *im = state.input + (i*l.groups + j)*(l.c / l.groups)*l.h*l.w;
-                if (l.size == 1) {
+                if (l.size == 1 && l.stride == 1 && l.dilation == 1) {
                     b = im;
                 }
                 else {
@@ -1265,6 +1399,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     //activate_array(l.output, m*n*l.batch, l.activation);
     if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.output);
     else if (l.activation == MISH) activate_array_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
+    else if (l.activation == HARD_MISH) activate_array_hard_mish(l.output, l.outputs*l.batch, l.activation_input, l.output);
     else if (l.activation == NORM_CHAN) activate_array_normalize_channels(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output);
     else if (l.activation == NORM_CHAN_SOFTMAX) activate_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output, 0);
     else if (l.activation == NORM_CHAN_SOFTMAX_MAXVAL) activate_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.output, 1);
@@ -1406,6 +1541,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
 
     if (l.activation == SWISH) gradient_array_swish(l.output, l.outputs*l.batch, l.activation_input, l.delta);
     else if (l.activation == MISH) gradient_array_mish(l.outputs*l.batch, l.activation_input, l.delta);
+    else if (l.activation == HARD_MISH) gradient_array_hard_mish(l.outputs*l.batch, l.activation_input, l.delta);
     else if (l.activation == NORM_CHAN_SOFTMAX || l.activation == NORM_CHAN_SOFTMAX_MAXVAL) gradient_array_normalize_channels_softmax(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.delta);
     else if (l.activation == NORM_CHAN) gradient_array_normalize_channels(l.output, l.outputs*l.batch, l.batch, l.out_c, l.out_w*l.out_h, l.delta);
     else gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);

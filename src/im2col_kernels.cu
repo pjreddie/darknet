@@ -60,7 +60,7 @@ __global__ void im2col_gpu_kernel(const int n, const float* data_im,
                     data_im_ptr[i * width + j] : 0;
 
                 //data_im[(channel_in * height + h_in) * width + w_in + i * width + j];
-                //*data_col_ptr = data_im_ptr[ii * width + jj];
+                //(*data_col_ptr) = data_im_ptr[ii * width + jj];
 
                 data_col_ptr += height_col * width_col;
             }
@@ -122,7 +122,7 @@ __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
                 *data_col_ptr = val;
                 //tmp_s[0] = val;
 
-                //*data_col_ptr = (h >= 0 && w >= 0 && h < height && w < width) ?
+                //(*data_col_ptr) = (h >= 0 && w >= 0 && h < height && w < width) ?
                 //    data_im_ptr[i * width + j] : 0;
 
                 //float src_val = (h >= 0 && w >= 0 && h < height && w < width) ? data_im_ptr[i * width + j] : 0;
@@ -178,11 +178,11 @@ __global__ void im2col_align_gpu_kernel(const int n, const float* data_im,
                 int out_index = (channel_out + i*ksize + j) * bit_align + pre_out_index;// h_out * width_col + w_out;
                 data_col[out_index] = val;
 
-                //*data_col_ptr = val;
+                //(*data_col_ptr) = val;
                 //dst_s[threadIdx.x] = val;
                 //tmp_s[0] = val;
 
-                //*data_col_ptr = (h >= 0 && w >= 0 && h < height && w < width) ?
+                //(*data_col_ptr) = (h >= 0 && w >= 0 && h < height && w < width) ?
                 //    data_im_ptr[i * width + j] : 0;
 
                 //float src_val = (h >= 0 && w >= 0 && h < height && w < width) ? data_im_ptr[i * width + j] : 0;
@@ -1175,7 +1175,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 
     //if (i_cur < M && (index % N == 0 || threadIdx.x == 0)) {
     //for (int k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-    //*((uint64_t *)(A_s + (local_i*lda + k) / 8)) = *((uint64_t *)(A + (i_cur*lda + k) / 8));    // weights
+    //(*(uint64_t *)(A_s + (local_i*lda + k) / 8)) = *((uint64_t *)(A + (i_cur*lda + k) / 8));    // weights
     //  }
     //}
 

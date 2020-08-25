@@ -74,15 +74,22 @@ matrix:
         - additional_defines=""
         - MATRIX_EVAL="brew install opencv"
 
-#    - os: osx
-#      name: macOS - clang - vcpkg
-#      osx_image: xcode10.1
-#      env:
-#        - additional_defines="-DBUILD_SHARED_LIBS=OFF"
-#        - MATRIX_EVAL="brew install yasm && unset CC && unset CXX"
-#        - USE_VCPKG=true
-#        - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
-#
+    - os: osx
+      compiler: clang
+      name: macOS - clang - opencv(latest) - libomp
+      env:
+        - additional_defines=""
+        - MATRIX_EVAL="brew install opencv libomp"
+
+    - os: osx
+      name: macOS - clang - vcpkg
+      osx_image: xcode11.4
+      env:
+        - additional_defines="-DBUILD_SHARED_LIBS=OFF"
+        - MATRIX_EVAL="brew install yasm && unset CC && unset CXX"
+        - USE_VCPKG=true
+        - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
+
     - os: linux
       compiler: clang
       dist: bionic
@@ -159,11 +166,12 @@ matrix:
             - libopencv-dev
       env:
         - additional_defines=""
-        - CUDACXX=/usr/local/cuda-10.0/bin/nvcc
-        - CUDA_PATH=/usr/local/cuda-10.0
-        - CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-10.0
-        - LD_LIBRARY_PATH="/usr/local/cuda-10.0/lib64:/usr/local/cuda-10.0/lib64/stubs:${LD_LIBRARY_PATH}"
-        - MATRIX_EVAL="wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_10.0.130-1_amd64.deb && sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/7fa2af80.pub && sudo dpkg -i cuda-repo-ubuntu1404_10.0.130-1_amd64.deb && wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1404/x86_64/nvidia-machine-learning-repo-ubuntu1404_4.0-2_amd64.deb && sudo dpkg -i nvidia-machine-learning-repo-ubuntu1404_4.0-2_amd64.deb && sudo apt-get -y update && sudo apt-get install -y --no-install-recommends cuda-compiler-10-0 cuda-libraries-dev-10-0 cuda-driver-dev-10-0 cuda-cudart-dev-10-0 cuda-cublas-dev-10-0 cuda-curand-dev-10-0 && sudo apt-get install -y --no-install-recommends libcudnn7-dev && sudo ln -s /usr/local/cuda-10.0/lib64/stubs/libcuda.so /usr/local/cuda-10.0/lib64/stubs/libcuda.so.1"
+        - INSTALL_CUDA_VERSION="10.2"
+        - CUDACXX=/usr/local/cuda-${INSTALL_CUDA_VERSION}/bin/nvcc
+        - CUDA_PATH=/usr/local/cuda-${INSTALL_CUDA_VERSION}
+        - CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-${INSTALL_CUDA_VERSION}
+        - LD_LIBRARY_PATH="/usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64:/usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs:${LD_LIBRARY_PATH}"
+        - MATRIX_EVAL="wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb && sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub && sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb && wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb && sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb && sudo apt-get -y update && sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2 && sudo apt-get install -y --no-install-recommends libcudnn7-dev && sudo ln -s /usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs/libcuda.so.1"
 
     - os: linux
       compiler: gcc
@@ -176,11 +184,12 @@ matrix:
             - libopencv-dev
       env:
         - additional_defines=""
-        - CUDACXX=/usr/local/cuda-10.0/bin/nvcc
-        - CUDA_PATH=/usr/local/cuda-10.0
-        - CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-10.0
-        - LD_LIBRARY_PATH="/usr/local/cuda-10.0/lib64:/usr/local/cuda-10.0/lib64/stubs:${LD_LIBRARY_PATH}"
-        - MATRIX_EVAL="wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_10.0.130-1_amd64.deb && sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/7fa2af80.pub && sudo dpkg -i cuda-repo-ubuntu1404_10.0.130-1_amd64.deb && wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1404/x86_64/nvidia-machine-learning-repo-ubuntu1404_4.0-2_amd64.deb && sudo dpkg -i nvidia-machine-learning-repo-ubuntu1404_4.0-2_amd64.deb && sudo apt-get -y update && sudo apt-get install -y --no-install-recommends cuda-compiler-10-0 cuda-libraries-dev-10-0 cuda-driver-dev-10-0 cuda-cudart-dev-10-0 cuda-cublas-dev-10-0 cuda-curand-dev-10-0 && sudo apt-get install -y --no-install-recommends libcudnn7-dev && sudo ln -s /usr/local/cuda-10.0/lib64/stubs/libcuda.so /usr/local/cuda-10.0/lib64/stubs/libcuda.so.1"
+        - INSTALL_CUDA_VERSION="10.2"
+        - CUDACXX=/usr/local/cuda-${INSTALL_CUDA_VERSION}/bin/nvcc
+        - CUDA_PATH=/usr/local/cuda-${INSTALL_CUDA_VERSION}
+        - CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-${INSTALL_CUDA_VERSION}
+        - LD_LIBRARY_PATH="/usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64:/usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs:${LD_LIBRARY_PATH}"
+        - MATRIX_EVAL="wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb && sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub && sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb && wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb && sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb && sudo apt-get -y update && sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2 && sudo apt-get install -y --no-install-recommends libcudnn7-dev && sudo ln -s /usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs/libcuda.so.1"
 
     - os: linux
       compiler: gcc
@@ -195,25 +204,24 @@ matrix:
         - additional_defines="-DBUILD_SHARED_LIBS=OFF"
         - USE_VCPKG=true
         - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        - CUDACXX=/usr/local/cuda-10.0/bin/nvcc
-        - CUDA_PATH=/usr/local/cuda-10.0
-        - CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-10.0
-        - LD_LIBRARY_PATH="/usr/local/cuda-10.0/lib64:/usr/local/cuda-10.0/lib64/stubs:${LD_LIBRARY_PATH}"
-        - MATRIX_EVAL="wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_10.0.130-1_amd64.deb && sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/7fa2af80.pub && sudo dpkg -i cuda-repo-ubuntu1404_10.0.130-1_amd64.deb && wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1404/x86_64/nvidia-machine-learning-repo-ubuntu1404_4.0-2_amd64.deb && sudo dpkg -i nvidia-machine-learning-repo-ubuntu1404_4.0-2_amd64.deb && sudo apt-get -y update && sudo apt-get install -y --no-install-recommends cuda-compiler-10-0 cuda-libraries-dev-10-0 cuda-driver-dev-10-0 cuda-cudart-dev-10-0 cuda-cublas-dev-10-0 cuda-curand-dev-10-0 && sudo apt-get install -y --no-install-recommends libcudnn7-dev && sudo ln -s /usr/local/cuda-10.0/lib64/stubs/libcuda.so /usr/local/cuda-10.0/lib64/stubs/libcuda.so.1"
+        - INSTALL_CUDA_VERSION="10.2"
+        - CUDACXX=/usr/local/cuda-${INSTALL_CUDA_VERSION}/bin/nvcc
+        - CUDA_PATH=/usr/local/cuda-${INSTALL_CUDA_VERSION}
+        - CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-${INSTALL_CUDA_VERSION}
+        - LD_LIBRARY_PATH="/usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64:/usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs:${LD_LIBRARY_PATH}"
+        - MATRIX_EVAL="wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb && sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub && sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb && wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb && sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb && sudo apt-get -y update && sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2 && sudo apt-get install -y --no-install-recommends libcudnn7-dev && sudo ln -s /usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs/libcuda.so.1"
 
-#  allow_failures:
-#    - name: macOS - vcpkg
-#    - name: ubuntu 18.04 - gcc - vcpkg
-#    - name: ubuntu 18.04 - gcc - CUDA 10 - vcpkg
+  allow_failures:
+    - name: macOS - clang - vcpkg
 
 before_install:
   - travis_retry eval "${MATRIX_EVAL}"
 
 install:
   # CMake upgrade on Linux
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then wget --no-check-certificate https://github.com/Kitware/CMake/releases/download/v3.13.4/cmake-3.13.4-Linux-x86_64.tar.gz ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then tar -xzf cmake-3.13.4-Linux-x86_64.tar.gz ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then export PATH=$PWD/cmake-3.13.4-Linux-x86_64/bin:$PATH ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then wget --no-check-certificate https://github.com/Kitware/CMake/releases/download/v3.17.2/cmake-3.17.2-Linux-x86_64.tar.gz ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then tar -xzf cmake-3.17.2-Linux-x86_64.tar.gz ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then export PATH=$PWD/cmake-3.17.2-Linux-x86_64/bin:$PATH ; fi
   - pushd $HOME
   - if [ -d "$HOME/vcpkg/.git" ] ; then echo vcpkg cached ; else rm -rf vcpkg ; git clone https://github.com/Microsoft/vcpkg ; fi
   - cd vcpkg
@@ -222,6 +230,7 @@ install:
   - if [ "${USE_VCPKG}" = true ] ; then ./bootstrap-vcpkg.sh ; fi
   - if [ "${USE_VCPKG}" = true ] ; then echo "set(VCPKG_BUILD_TYPE release)" >> triplets/x64-osx.cmake ; fi
   - if [ "${USE_VCPKG}" = true ] ; then echo "set(VCPKG_BUILD_TYPE release)" >> triplets/x64-linux.cmake ; fi
+  - if [ "${USE_VCPKG}" = true ] ; then travis_wait 45 ./vcpkg upgrade --no-dry-run; fi
   - if [ "${USE_VCPKG}" = true ] ; then travis_wait ./vcpkg install stb pthreads --recurse; fi
   - if [ "${USE_VCPKG}" = true ] ; then travis_wait 45 ./vcpkg install ffmpeg --recurse; fi
   #- if [ "${USE_VCPKG}" = true ] && [[ ! -z "${CUDACXX}" ]] ; then travis_wait 45 ./vcpkg install opencv[ffmpeg,cuda] --recurse; fi

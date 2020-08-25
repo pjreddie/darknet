@@ -4,17 +4,23 @@
 
 59.26TB of research data: http://academictorrents.com/ 
 
-ImageNet Torrent: http://academictorrents.com/browse.php?search=imagenet&page=0
+ImageNet Torrent (Stanford): http://academictorrents.com/browse.php?search=imagenet&page=0
 
 25 thousand datasets on Kaggle: https://www.kaggle.com/datasets
 
-BDD100K - Diverse Driving Video: https://bair.berkeley.edu/blog/2018/05/30/bdd/
+BDD100K - Diverse Driving Video (Berkeley): https://bair.berkeley.edu/blog/2018/05/30/bdd/
 
-Pascal VOC: http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html
+KITTI - for autonomous driving (Toyota): http://www.cvlibs.net/datasets/kitti/
 
-MS COCO: http://cocodataset.org/#download
+A2D2 - for autonomous driving (Audi): https://www.a2d2.audi/a2d2/en.html
 
-ImageNet: http://imagenet.stanford.edu/download.php
+nuScenes (for autonomous driving): https://www.nuscenes.org/overview
+
+Pascal VOC (Oxford): http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html
+
+MS COCO (Microsoft): http://cocodataset.org/#download
+
+ImageNet (Stanford): http://imagenet.stanford.edu/download.php
 
 ImageNet (ILSVRC2012): http://www.image-net.org/challenges/LSVRC/2012/nonpub-downloads
 
@@ -22,7 +28,7 @@ ImageNet (ILSVRC2015): http://image-net.org/small/download.php
 
 ImageNet VID: http://bvisionweb1.cs.unc.edu/ilsvrc2015/download-videos-3j16.php
 
-Open Images: https://storage.googleapis.com/openimages/web/download.html
+Open Images (Google): https://storage.googleapis.com/openimages/web/download.html
 
 Cityscapes: https://www.cityscapes-dataset.com/
 
@@ -48,9 +54,6 @@ Visual Question Answering: https://visualqa.org/download.html
 
 Large Movie Review Dataset: http://ai.stanford.edu/~amaas/data/sentiment/
 
-KITTI (for autonomous driving): http://www.cvlibs.net/datasets/kitti/
-
-nuScenes (for autonomous driving): https://www.nuscenes.org/overview
 
 ----
 

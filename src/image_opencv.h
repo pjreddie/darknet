@@ -47,6 +47,7 @@ image mat_to_image_cv(mat_cv *mat);
 
 // Window
 void create_window_cv(char const* window_name, int full_screen, int width, int height);
+void resize_window_cv(char const* window_name, int width, int height);
 void destroy_all_windows_cv();
 int wait_key_cv(int delay);
 int wait_until_press_key_cv();
@@ -94,13 +95,13 @@ void draw_detections_cv_v3(mat_cv* show_img, detection *dets, int num, float thr
 // Draw Loss & Accuracy chart
 mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show, char* chart_path);
 void draw_train_loss(char *windows_name, mat_cv* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
-    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port, double time_remaining);
+    float precision, int draw_precision, char *accuracy_name, float contr_acc, int dont_show, int mjpeg_port, double time_remaining);
 
 // Data augmentation
 image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
     float dhue, float dsat, float dexp,
-    int gaussian_noise, int blur, int num_boxes, float *truth);
+    int gaussian_noise, int blur, int num_boxes, int truth_size, float *truth);
 
 // blend two images with (alpha and beta)
 void blend_images_cv(image new_img, float alpha, image old_img, float beta);
@@ -122,6 +123,7 @@ void show_opencv_info();
 int wait_key_cv(int delay);
 int wait_until_press_key_cv();
 void destroy_all_windows_cv();
+void resize_window_cv(char const* window_name, int width, int height);
 
 #endif  // OPENCV
 

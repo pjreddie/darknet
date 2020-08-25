@@ -398,7 +398,7 @@ int main(int argc, char *argv[])
                     bool exit_flag;
                     cv::Mat zed_cloud;
                     std::queue<cv::Mat> track_optflow_queue;
-                    detection_data_t() : exit_flag(false), new_detection(false) {}
+                    detection_data_t() : new_detection(false), exit_flag(false) {}
                 };
 
                 const bool sync = detection_sync; // sync data exchange

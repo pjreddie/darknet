@@ -33,9 +33,11 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
             free(l.vo);
         }
         free_sublayer(l.wf);
-        free_sublayer(l.wi);
-        free_sublayer(l.wg);
-        free_sublayer(l.wo);
+        if (!l.bottleneck) {
+            free_sublayer(l.wi);
+            free_sublayer(l.wg);
+            free_sublayer(l.wo);
+        }
         free_sublayer(l.uf);
         free_sublayer(l.ui);
         free_sublayer(l.ug);
@@ -72,6 +74,11 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.map)                free(l.map);
     if (l.rand)               free(l.rand);
     if (l.cost)               free(l.cost);
+    if (l.labels && !l.detection) free(l.labels);
+    if (l.cos_sim)            free(l.cos_sim);
+    if (l.exp_cos_sim)        free(l.exp_cos_sim);
+    if (l.p_constrastive)     free(l.p_constrastive);
+    if (l.embedding_output)   free(l.embedding_output);
     if (l.state)              free(l.state);
     if (l.prev_state)         free(l.prev_state);
     if (l.forgot_state)       free(l.forgot_state);
@@ -142,6 +149,7 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
 #ifdef GPU
     if (l.indexes_gpu)           cuda_free((float *)l.indexes_gpu);
 
+    if (l.contrast_p_gpu)          cuda_free((float *)l.contrast_p_gpu);
     if (l.z_gpu)                   cuda_free(l.z_gpu);
     if (l.r_gpu)                   cuda_free(l.r_gpu);
     if (l.m_gpu)                   cuda_free(l.m_gpu);
@@ -188,11 +196,13 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.scale_updates_gpu)       cuda_free(l.scale_updates_gpu), l.scale_updates_gpu = NULL;
     if (l.input_antialiasing_gpu)  cuda_free(l.input_antialiasing_gpu), l.input_antialiasing_gpu = NULL;
     if (l.optimized_memory < 2) {
-        if (l.x_gpu)                   cuda_free(l.x_gpu);  l.x_gpu = NULL;
+        if (l.x_gpu)                   cuda_free(l.x_gpu),  l.x_gpu = NULL;
         if (l.output_gpu)              cuda_free(l.output_gpu), l.output_gpu = NULL;
+        if (l.output_avg_gpu)          cuda_free(l.output_avg_gpu), l.output_avg_gpu = NULL;
         if (l.activation_input_gpu)    cuda_free(l.activation_input_gpu), l.activation_input_gpu = NULL;
     }
-    if (l.delta_gpu && l.keep_delta_gpu && l.optimized_memory < 3) cuda_free(l.delta_gpu), l.delta_gpu = NULL;
+    if (l.delta_gpu && (l.optimized_memory < 1 || l.keep_delta_gpu && l.optimized_memory < 3)) cuda_free(l.delta_gpu), l.delta_gpu = NULL;
+    if (l.cos_sim_gpu)             cuda_free(l.cos_sim_gpu);
     if (l.rand_gpu)                cuda_free(l.rand_gpu);
     if (l.squared_gpu)             cuda_free(l.squared_gpu);
     if (l.norms_gpu)               cuda_free(l.norms_gpu);
@@ -207,6 +217,8 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.o_gpu)                   cuda_free(l.o_gpu);
     if (l.c_gpu)                   cuda_free(l.c_gpu);
     if (l.h_gpu)                   cuda_free(l.h_gpu);
+    if (l.bottelneck_hi_gpu)       cuda_free(l.bottelneck_hi_gpu);
+    if (l.bottelneck_delta_gpu)    cuda_free(l.bottelneck_delta_gpu);
     if (l.temp_gpu)                cuda_free(l.temp_gpu);
     if (l.temp2_gpu)               cuda_free(l.temp2_gpu);
     if (l.temp3_gpu)               cuda_free(l.temp3_gpu);

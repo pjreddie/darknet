@@ -491,12 +491,13 @@ int get_number_of_blocks(int array_size, int block_size)
     return array_size / block_size + ((array_size % block_size > 0) ? 1 : 0);
 }
 
-int get_gpu_compute_capability(int i)
+int get_gpu_compute_capability(int i, char *device_name)
 {
     typedef struct cudaDeviceProp cudaDeviceProp;
     cudaDeviceProp prop;
     cudaError_t status = cudaGetDeviceProperties(&prop, i);
     CHECK_CUDA(status);
+    if (device_name) strcpy(device_name, prop.name);
     int cc = prop.major * 100 + prop.minor * 10;    // __CUDA_ARCH__ format
     return cc;
 }

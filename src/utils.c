@@ -38,6 +38,7 @@ void *xcalloc(size_t nmemb, size_t size) {
     if(!ptr) {
         calloc_error();
     }
+    memset(ptr, 0, nmemb * size);
     return ptr;
 }
 
@@ -328,19 +329,19 @@ void error(const char *s)
 
 void malloc_error()
 {
-    fprintf(stderr, "xMalloc error\n");
+    fprintf(stderr, "xMalloc error - possibly out of CPU RAM \n");
     exit(EXIT_FAILURE);
 }
 
 void calloc_error()
 {
-    fprintf(stderr, "Calloc error\n");
+    fprintf(stderr, "Calloc error - possibly out of CPU RAM \n");
     exit(EXIT_FAILURE);
 }
 
 void realloc_error()
 {
-    fprintf(stderr, "Realloc error\n");
+    fprintf(stderr, "Realloc error - possibly out of CPU RAM \n");
     exit(EXIT_FAILURE);
 }
 
@@ -642,8 +643,8 @@ void normalize_array(float *a, int n)
     for(i = 0; i < n; ++i){
         a[i] = (a[i] - mu)/sigma;
     }
-    mu = mean_array(a,n);
-    sigma = sqrt(variance_array(a,n));
+    //mu = mean_array(a,n);
+    //sigma = sqrt(variance_array(a,n));
 }
 
 void translate_array(float *a, int n, float s)
@@ -1029,4 +1030,15 @@ int make_directory(char *path, int mode)
 #else
     return mkdir(path, mode);
 #endif
+}
+
+unsigned long custom_hash(char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    while (c = *str++)
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
 }
