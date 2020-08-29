@@ -367,7 +367,7 @@ void averages_gaussian_yolo_deltas(int class_index, int box_index, int stride, i
     }
 }
 
-void delta_gaussian_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat, float label_smooth_eps, float *classes_multipliers)
+void delta_gaussian_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat, float label_smooth_eps, float *classes_multipliers, float cls_normalizer)
 {
     int n;
     if (delta[index]){
@@ -385,7 +385,7 @@ void delta_gaussian_yolo_class(float *output, float *delta, int index, int class
         if (label_smooth_eps) y_true = y_true *  (1 - label_smooth_eps) + 0.5*label_smooth_eps;
         delta[index + stride*n] = y_true - output[index + stride*n];
 
-        if (classes_multipliers && n == class_id) delta[index + stride*class_id] *= classes_multipliers[class_id];
+        if (classes_multipliers && n == class_id) delta[index + stride*class_id] *= classes_multipliers[class_id] * cls_normalizer;
         if(n == class_id && avg_cat) *avg_cat += output[index + stride*n];
     }
 }
@@ -498,7 +498,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
 
                             int class_id = state.truth[best_match_t*(4 + 1) + b*l.truths + 4];
                             if (l.map) class_id = l.map[class_id];
-                            delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.label_smooth_eps, l.classes_multipliers);
+                            delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.label_smooth_eps, l.classes_multipliers, l.cls_normalizer);
                         }
                         else l.delta[obj_index] = 0;
                     }
@@ -520,7 +520,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
 
                         int class_id = state.truth[best_t*(4 + 1) + b*l.truths + 4];
                         if (l.map) class_id = l.map[class_id];
-                        delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.label_smooth_eps, l.classes_multipliers);
+                        delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.label_smooth_eps, l.classes_multipliers, l.cls_normalizer);
                         const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
                         if (l.objectness_smooth) l.delta[class_index + stride*class_id] = class_multiplier * (iou_multiplier - l.output[class_index + stride*class_id]);
                         box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
@@ -576,7 +576,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                 l.delta[obj_index] = class_multiplier * l.obj_normalizer * (1 - l.output[obj_index]);
 
                 int class_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 9);
-                delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat, l.label_smooth_eps, l.classes_multipliers);
+                delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat, l.label_smooth_eps, l.classes_multipliers, l.cls_normalizer);
 
                 ++count;
                 ++class_count;
@@ -609,7 +609,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                         l.delta[obj_index] = class_multiplier * l.obj_normalizer * (1 - l.output[obj_index]);
 
                         int class_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 9);
-                        delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat, l.label_smooth_eps, l.classes_multipliers);
+                        delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, &avg_cat, l.label_smooth_eps, l.classes_multipliers, l.cls_normalizer);
 
                         ++count;
                         ++class_count;
