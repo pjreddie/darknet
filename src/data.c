@@ -545,7 +545,7 @@ void fill_truth(char *path, char **labels, int k, float *truth)
     int i;
     char *filename = "";
     for (i = strlen(path) - 1; i >= 0; --i) {
-        if (path[i] == '/') {
+        if (path[i] == '/' || path[i] == '\\') {
             filename = malloc(strlen(path + i) + 1);
             strcpy(filename, path + i + 1);
             break;
