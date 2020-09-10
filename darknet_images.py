@@ -139,7 +139,7 @@ def convert2relative(image, bbox):
     YOLO format use relative coordinates for annotation
     """
     x, y, w, h = bbox
-    width, height, _ = image.shape
+    height, width, _ = image.shape
     return x/width, y/height, w/width, h/height
 
 
