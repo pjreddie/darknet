@@ -675,7 +675,7 @@ float P_constrastive_f(size_t i, size_t l, int *labels, float **z, unsigned int 
     return result;
 }
 
-void grad_contrastive_loss_positive_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, int wh, contrastive_params *contrast_p, int contrast_p_size)
+void grad_contrastive_loss_positive_f(size_t i, int *class_ids, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, int wh, contrastive_params *contrast_p, int contrast_p_size)
 {
     const float vec_len = math_vector_length(z[i], feature_size);
     size_t j;
@@ -721,7 +721,7 @@ void grad_contrastive_loss_positive_f(size_t i, int *labels, size_t num_of_sampl
     }
 }
 
-void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, int wh, contrastive_params *contrast_p, int contrast_p_size)
+void grad_contrastive_loss_negative_f(size_t i, int *class_ids, int *labels, size_t num_of_samples, float **z, unsigned int feature_size, float temperature, float *delta, int wh, contrastive_params *contrast_p, int contrast_p_size, int neg_max)
 {
     const float vec_len = math_vector_length(z[i], feature_size);
     size_t j;
@@ -737,14 +737,17 @@ void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_sampl
     }
     const float mult = 1 / ((N - 1) * temperature * vec_len);
 
+    int neg_counter = 0;
+
     for (j = 0; j < num_of_samples; ++j) {
         //if (i != j && (i/2) == (j/2)) {
-        if (i != j && labels[i] == labels[j] && labels[i] >= 0) {
+        if (labels[i] >= 0 && labels[i] == labels[j] && i != j) {
 
             size_t k;
             for (k = 0; k < num_of_samples; ++k) {
                 //if (k != i && k != j && labels[k] != labels[i]) {
-                if (k != i && k != j && labels[k] >= 0) {
+                if (k != i && k != j && labels[k] != labels[i] && class_ids[j] == class_ids[k]) {
+                    neg_counter++;
                     const int sim_P_i = get_sim_P_index(i, k, contrast_p, contrast_p_size);
                     if (sim_P_i < 0) continue;
                     const float sim = contrast_p[sim_P_i].sim;
@@ -765,6 +768,8 @@ void grad_contrastive_loss_negative_f(size_t i, int *labels, size_t num_of_sampl
                         const int out_i = m * wh;
                         delta[out_i] -= d;
                     }
+
+                    if (neg_counter >= neg_max) return;
                 }
             }
         }

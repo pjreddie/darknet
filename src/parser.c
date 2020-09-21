@@ -383,6 +383,7 @@ contrastive_layer parse_contrastive(list *options, size_params params)
     layer.steps = params.time_steps;
     layer.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
     layer.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
+    layer.contrastive_neg_max = option_find_int_quiet(options, "contrastive_neg_max", 3);
     return layer;
 }
 
@@ -1185,6 +1186,7 @@ void parse_net_options(list *options, network *net)
     net->mosaic_bound = option_find_int_quiet(options, "mosaic_bound", 0);
     net->contrastive = option_find_int_quiet(options, "contrastive", 0);
     net->contrastive_jit_flip = option_find_int_quiet(options, "contrastive_jit_flip", 0);
+    net->contrastive_color = option_find_int_quiet(options, "contrastive_color", 0);
     net->unsupervised = option_find_int_quiet(options, "unsupervised", 0);
     if (net->contrastive && mini_batch < 2) {
         printf(" Error: mini_batch size (batch/subdivisions) should be higher than 1 for Contrastive loss \n");

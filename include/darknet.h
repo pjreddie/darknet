@@ -389,6 +389,8 @@ struct layer {
     float * rand;
     float * cost;
     int *labels;
+    int *class_ids;
+    int contrastive_neg_max;
     float *cos_sim;
     float *exp_cos_sim;
     float *p_constrastive;
@@ -756,6 +758,7 @@ typedef struct network {
     int mosaic_bound;
     int contrastive;
     int contrastive_jit_flip;
+    int contrastive_color;
     int unsupervised;
     float angle;
     float aspect;
@@ -943,6 +946,7 @@ typedef struct load_args {
     int dontuse_opencv;
     int contrastive;
     int contrastive_jit_flip;
+    int contrastive_color;
     float jitter;
     float resize;
     int flip;

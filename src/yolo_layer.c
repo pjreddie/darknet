@@ -46,6 +46,8 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.truths = l.max_boxes*l.truth_size;    // 90*(4 + 1);
     l.labels = (int*)xcalloc(batch * l.w*l.h*l.n, sizeof(int));
     for (i = 0; i < batch * l.w*l.h*l.n; ++i) l.labels[i] = -1;
+    l.class_ids = (int*)xcalloc(batch * l.w*l.h*l.n, sizeof(int));
+    for (i = 0; i < batch * l.w*l.h*l.n; ++i) l.class_ids[i] = -1;
 
     l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float));
     l.output = (float*)xcalloc(batch * l.outputs, sizeof(float));
@@ -93,6 +95,7 @@ void resize_yolo_layer(layer *l, int w, int h)
 
     if (l->embedding_output) l->embedding_output = (float*)xrealloc(l->output, l->batch * l->embedding_size * l->n * l->h * l->w * sizeof(float));
     if (l->labels) l->labels = (int*)xrealloc(l->labels, l->batch * l->n * l->h * l->w * sizeof(int));
+    if (l->class_ids) l->class_ids = (int*)xrealloc(l->class_ids, l->batch * l->n * l->h * l->w * sizeof(int));
 
     if (!l->output_pinned) l->output = (float*)xrealloc(l->output, l->batch*l->outputs * sizeof(float));
     if (!l->delta_pinned) l->delta = (float*)xrealloc(l->delta, l->batch*l->outputs*sizeof(float));
@@ -360,6 +363,7 @@ void forward_yolo_layer(const layer l, network_state state)
     if (!state.train) return;
 
     for (i = 0; i < l.batch * l.w*l.h*l.n; ++i) l.labels[i] = -1;
+    for (i = 0; i < l.batch * l.w*l.h*l.n; ++i) l.class_ids[i] = -1;
     //float avg_iou = 0;
     float tot_iou = 0;
     float tot_giou = 0;
@@ -513,6 +517,7 @@ void forward_yolo_layer(const layer l, network_state state)
                 const int track_id = state.truth[truth_in_index];
                 const int truth_out_index = b*l.n*l.w*l.h + mask_n*l.w*l.h + j*l.w + i;
                 l.labels[truth_out_index] = track_id;
+                l.class_ids[truth_out_index] = class_id;
                 //printf(" track_id = %d, t = %d, b = %d, truth_in_index = %d, truth_out_index = %d \n", track_id, t, b, truth_in_index, truth_out_index);
 
                 // range is 0 <= 1
@@ -603,11 +608,13 @@ void forward_yolo_layer(const layer l, network_state state)
         for (j = 0; j < l.h; ++j) {
             for (i = 0; i < l.w; ++i) {
                 for (n = 0; n < l.n; ++n) {
+                    int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
                     int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
                     int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
                     const int stride = l.w*l.h;
 
-                    averages_yolo_deltas(class_index, box_index, stride, l.classes, l.delta);
+                    if(l.delta[obj_index] != 0)
+                        averages_yolo_deltas(class_index, box_index, stride, l.classes, l.delta);
                 }
             }
         }
