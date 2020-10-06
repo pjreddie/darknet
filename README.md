@@ -615,6 +615,7 @@ Different tools for marking objects in images:
 6. in C++: https://github.com/jveitchmichaelis/deeplabel
 7. in C#: https://github.com/BMW-InnovationLab/BMW-Labeltool-Lite
 8. DL-Annotator for Windows ($30): [url](https://www.microsoft.com/en-us/p/dlannotator/9nsx79m7t8fn?activetab=pivot:overviewtab)
+9. v7labs - the greatest cloud labeling tool ($1.5 per hour): https://www.v7labs.com/
 
 ## How to use Yolo as DLL and SO libraries
 
