@@ -145,6 +145,7 @@ def image_classification(image, network, class_names):
     darknet.copy_image_from_bytes(darknet_image, image_resized.tobytes())
     detections = darknet.predict_image(network, darknet_image)
     predictions = [(name, detections[idx]) for idx, name in enumerate(class_names)]
+    darknet.free_image(darknet_image)
     return sorted(predictions, key=lambda x: -x[1])
 
 
