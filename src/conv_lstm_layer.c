@@ -287,6 +287,11 @@ layer make_history_layer(int batch, int h, int w, int c, int history_size, int s
 
 void forward_history_layer(layer l, network_state state)
 {
+    if (l.steps == 1) {
+        copy_cpu(l.inputs*l.batch, state.input, 1, l.output, 1);
+        return;
+    }
+
     const int batch = l.batch / l.steps;
 
     float *prev_output = l.prev_state_cpu;
@@ -307,7 +312,6 @@ void forward_history_layer(layer l, network_state state)
             copy_cpu(shift_size, prev_output + b*l.outputs, 1, output + output_sift, 1);
 
             copy_cpu(l.inputs, input, 1, output, 1);
-
         }
         prev_output = l.output + i*l.outputs*batch;
     }
@@ -318,6 +322,11 @@ void forward_history_layer(layer l, network_state state)
 
 void backward_history_layer(layer l, network_state state)
 {
+    if (l.steps == 1) {
+        axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, state.delta, 1);
+        return;
+    }
+
     const int batch = l.batch / l.steps;
 
     // l.delta -> state.delta
@@ -339,6 +348,11 @@ void backward_history_layer(layer l, network_state state)
 #ifdef GPU
 void forward_history_layer_gpu(const layer l, network_state state)
 {
+    if (l.steps == 1) {
+        simple_copy_ongpu(l.inputs*l.batch, state.input, l.output_gpu);
+        return;
+    }
+
     const int batch = l.batch / l.steps;
 
     //int copy_size = l.inputs*batch*l.steps;
@@ -386,6 +400,11 @@ void forward_history_layer_gpu(const layer l, network_state state)
 
 void backward_history_layer_gpu(const layer l, network_state state)
 {
+    if (l.steps == 1) {
+        axpy_ongpu(l.inputs*l.batch, 1, l.delta_gpu, 1, state.delta, 1);
+        return;
+    }
+
     const int batch = l.batch / l.steps;
 
     //int copy_size = l.inputs*batch*l.steps;

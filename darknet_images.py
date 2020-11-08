@@ -111,6 +111,7 @@ def image_detection(image_path, network, class_names, class_colors, thresh):
 
     darknet.copy_image_from_bytes(darknet_image, image_resized.tobytes())
     detections = darknet.detect_image(network, class_names, darknet_image, thresh=thresh)
+    darknet.free_image(darknet_image)
     image = darknet.draw_boxes(detections, image_resized, class_colors)
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB), detections
 
@@ -139,7 +140,7 @@ def convert2relative(image, bbox):
     YOLO format use relative coordinates for annotation
     """
     x, y, w, h = bbox
-    width, height, _ = image.shape
+    height, width, _ = image.shape
     return x/width, y/height, w/width, h/height
 
 

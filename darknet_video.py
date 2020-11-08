@@ -84,6 +84,7 @@ def inference(darknet_image_queue, detections_queue, fps_queue):
         fps_queue.put(fps)
         print("FPS: {}".format(fps))
         darknet.print_detections(detections, args.ext_output)
+        darknet.free_image(darknet_image)
     cap.release()
 
 

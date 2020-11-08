@@ -383,6 +383,7 @@ contrastive_layer parse_contrastive(list *options, size_params params)
     layer.steps = params.time_steps;
     layer.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
     layer.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
+    layer.contrastive_neg_max = option_find_int_quiet(options, "contrastive_neg_max", 3);
     return layer;
 }
 
@@ -461,7 +462,9 @@ layer parse_yolo(list *options, size_params params)
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
+    l.obj_normalizer = option_find_float_quiet(options, "obj_normalizer", 1);
     l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    l.delta_normalizer = option_find_float_quiet(options, "delta_normalizer", 1);
     char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
 
     if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
@@ -469,8 +472,8 @@ layer parse_yolo(list *options, size_params params)
     else if (strcmp(iou_loss, "diou") == 0) l.iou_loss = DIOU;
     else if (strcmp(iou_loss, "ciou") == 0) l.iou_loss = CIOU;
     else l.iou_loss = IOU;
-    fprintf(stderr, "[yolo] params: iou loss: %s (%d), iou_norm: %2.2f, cls_norm: %2.2f, scale_x_y: %2.2f\n",
-        iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
+    fprintf(stderr, "[yolo] params: iou loss: %s (%d), iou_norm: %2.2f, obj_norm: %2.2f, cls_norm: %2.2f, delta_norm: %2.2f, scale_x_y: %2.2f\n",
+        iou_loss, l.iou_loss, l.iou_normalizer, l.obj_normalizer, l.cls_normalizer, l.delta_normalizer, l.scale_x_y);
 
     char *iou_thresh_kind_str = option_find_str_quiet(options, "iou_thresh_kind", "iou");
     if (strcmp(iou_thresh_kind_str, "iou") == 0) l.iou_thresh_kind = IOU;
@@ -591,7 +594,9 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
     l.uc_normalizer = option_find_float_quiet(options, "uc_normalizer", 1.0);
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
-    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1.0);
+    l.obj_normalizer = option_find_float_quiet(options, "obj_normalizer", 1.0);
+    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    l.delta_normalizer = option_find_float_quiet(options, "delta_normalizer", 1);
     char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
 
     if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
@@ -626,8 +631,8 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     else if (strcmp(yolo_point, "right_bottom") == 0) l.yolo_point = YOLO_RIGHT_BOTTOM;
     else l.yolo_point = YOLO_CENTER;
 
-    fprintf(stderr, "[Gaussian_yolo] iou loss: %s (%d), iou_norm: %2.2f, cls_norm: %2.2f, scale: %2.2f, point: %d\n",
-        iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y, l.yolo_point);
+    fprintf(stderr, "[Gaussian_yolo] iou loss: %s (%d), iou_norm: %2.2f, obj_norm: %2.2f, cls_norm: %2.2f, delta_norm: %2.2f, scale: %2.2f, point: %d\n",
+        iou_loss, l.iou_loss, l.iou_normalizer, l.obj_normalizer, l.cls_normalizer, l.delta_normalizer, l.scale_x_y, l.yolo_point);
 
     l.jitter = option_find_float(options, "jitter", .2);
     l.resize = option_find_float_quiet(options, "resize", 1.0);
@@ -1181,6 +1186,7 @@ void parse_net_options(list *options, network *net)
     net->mosaic_bound = option_find_int_quiet(options, "mosaic_bound", 0);
     net->contrastive = option_find_int_quiet(options, "contrastive", 0);
     net->contrastive_jit_flip = option_find_int_quiet(options, "contrastive_jit_flip", 0);
+    net->contrastive_color = option_find_int_quiet(options, "contrastive_color", 0);
     net->unsupervised = option_find_int_quiet(options, "unsupervised", 0);
     if (net->contrastive && mini_batch < 2) {
         printf(" Error: mini_batch size (batch/subdivisions) should be higher than 1 for Contrastive loss \n");
