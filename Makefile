@@ -49,6 +49,9 @@ OS := $(shell uname)
 # For Jetson Tx2 or Drive-PX2 uncomment:
 # ARCH= -gencode arch=compute_62,code=[sm_62,compute_62]
 
+# For Tesla GA10x cards, RTX 3090, RTX 3080, RTX 3070, RTX A6000, RTX A40 uncomment:
+# ARCH= -gencode arch=compute_86,code=[sm_86,compute_86]
+
 
 VPATH=./src/
 EXEC=darknet
