@@ -135,6 +135,20 @@ def batch_detection(network, images, class_names, class_colors,
     return images, batch_predictions
 
 
+def image_classification(image, network, class_names):
+    width = darknet.network_width(network)
+    height = darknet.network_height(network)
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image_resized = cv2.resize(image_rgb, (width, height),
+                                interpolation=cv2.INTER_LINEAR)
+    darknet_image = darknet.make_image(width, height, 3)
+    darknet.copy_image_from_bytes(darknet_image, image_resized.tobytes())
+    detections = darknet.predict_image(network, darknet_image)
+    predictions = [(name, detections[idx]) for idx, name in enumerate(class_names)]
+    darknet.free_image(darknet_image)
+    return sorted(predictions, key=lambda x: -x[1])
+
+
 def convert2relative(image, bbox):
     """
     YOLO format use relative coordinates for annotation
