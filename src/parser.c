@@ -461,6 +461,7 @@ layer parse_yolo(list *options, size_params params)
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
+    l.new_coords = option_find_int_quiet(options, "new_coords", 0);
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
     l.obj_normalizer = option_find_float_quiet(options, "obj_normalizer", 1);
     l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);

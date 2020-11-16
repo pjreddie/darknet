@@ -129,7 +129,7 @@ void resize_yolo_layer(layer *l, int w, int h)
 #endif
 }
 
-box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, int stride)
+box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, int stride, int new_coords)
 {
     box b;
     // ln - natural logarithm (base = e)
@@ -137,10 +137,18 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     // y` = t.y * lh - i;   // y = ln(y`/(1-y`))   // y - output of previous conv-layer
                             // w = ln(t.w * net.w / anchors_w); // w - output of previous conv-layer
                             // h = ln(t.h * net.h / anchors_h); // h - output of previous conv-layer
-    b.x = (i + x[index + 0*stride]) / lw;
-    b.y = (j + x[index + 1*stride]) / lh;
-    b.w = exp(x[index + 2*stride]) * biases[2*n]   / w;
-    b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
+    if (new_coords) {
+        b.x = (i + x[index + 0 * stride] * 2 - 0.5) / lw;
+        b.y = (j + x[index + 1 * stride] * 2 - 0.5) / lh;
+        b.w = x[index + 2 * stride] * x[index + 2 * stride] * 4 * biases[2 * n] / w;
+        b.h = x[index + 3 * stride] * x[index + 3 * stride] * 4 * biases[2 * n + 1] / h;
+    }
+    else {
+        b.x = (i + x[index + 0*stride]) / lw;
+        b.y = (j + x[index + 1*stride]) / lh;
+        b.w = exp(x[index + 2*stride]) * biases[2*n]   / w;
+        b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
+    }
     return b;
 }
 
@@ -163,7 +171,7 @@ static inline float clip_value(float val, const float max_val)
     return val;
 }
 
-ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate, float max_delta, int *rewritten_bbox)
+ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate, float max_delta, int *rewritten_bbox, int new_coords)
 {
     if (delta[index + 0 * stride] || delta[index + 1 * stride] || delta[index + 2 * stride] || delta[index + 3 * stride]) {
         (*rewritten_bbox)++;
@@ -173,7 +181,7 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
     // i - step in layer width
     // j - step in layer height
     //  Returns a box in absolute coordinates
-    box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
+    box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride, new_coords);
     all_ious.iou = box_iou(pred, truth);
     all_ious.giou = box_giou(pred, truth);
     all_ious.diou = box_diou(pred, truth);
@@ -187,6 +195,13 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         float ty = (truth.y*lh - j);
         float tw = log(truth.w*w / biases[2 * n]);
         float th = log(truth.h*h / biases[2 * n + 1]);
+
+        if (new_coords) {
+            tx = (truth.x*lw - i + 0.5) / 2;
+            ty = (truth.y*lh - j + 0.5) / 2;
+            tw = sqrt(truth.w*w / (4 * biases[2 * n]));
+            th = sqrt(truth.h*h / (4 * biases[2 * n + 1]));
+        }
 
         //printf(" tx = %f, ty = %f, tw = %f, th = %f \n", tx, ty, tw, th);
         //printf(" x = %f, y = %f, w = %f, h = %f \n", x[index + 0 * stride], x[index + 1 * stride], x[index + 2 * stride], x[index + 3 * stride]);
@@ -216,8 +231,14 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         float dh = all_ious.dx_iou.dr;
 
         // predict exponential, apply gradient of e^delta_t ONLY for w,h
-        dw *= exp(x[index + 2 * stride]);
-        dh *= exp(x[index + 3 * stride]);
+        if (new_coords) {
+            dw *= 8 * x[index + 2 * stride];
+            dh *= 8 * x[index + 3 * stride];
+        }
+        else {
+            dw *= exp(x[index + 2 * stride]);
+            dh *= exp(x[index + 3 * stride]);
+        }
 
         // normalize iou weight
         dx *= iou_normalizer;
@@ -389,7 +410,7 @@ void forward_yolo_layer(const layer l, network_state state)
                     const int obj_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4);
                     const int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
                     const int stride = l.w*l.h;
-                    box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.w*l.h);
+                    box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.w*l.h, l.new_coords);
                     float best_match_iou = 0;
                     int best_match_t = 0;
                     float best_iou = 0;
@@ -467,7 +488,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
                         if (l.objectness_smooth) l.delta[class_index + stride*class_id] = class_multiplier * (iou_multiplier - l.output[class_index + stride*class_id]);
                         box truth = float_to_box_stride(state.truth + best_t*l.truth_size + b*l.truths, 1);
-                        delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox);
+                        delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox, l.new_coords);
                         (*state.net.total_bbox)++;
                     }
                 }
@@ -510,7 +531,7 @@ void forward_yolo_layer(const layer l, network_state state)
 
                 int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                 const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox);
+                ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox, l.new_coords);
                 (*state.net.total_bbox)++;
 
                 const int truth_in_index = t*l.truth_size + b*l.truths + 5;
@@ -568,7 +589,7 @@ void forward_yolo_layer(const layer l, network_state state)
 
                         int box_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
                         const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                        ious all_ious = delta_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox);
+                        ious all_ious = delta_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox, l.new_coords);
                         (*state.net.total_bbox)++;
 
                         // range is 0 <= 1
@@ -850,7 +871,7 @@ int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh,
             if (objectness > thresh) {
                 //printf("\n objectness = %f, thresh = %f, i = %d, n = %d \n", objectness, thresh, i, n);
                 int box_index = entry_index(l, 0, n*l.w*l.h + i, 0);
-                dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
+                dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h, l.new_coords);
                 dets[count].objectness = objectness;
                 dets[count].classes = l.classes;
                 if (l.embedding_output) {
@@ -886,7 +907,7 @@ int get_yolo_detections_batch(layer l, int w, int h, int netw, int neth, float t
             if (objectness > thresh) {
                 //printf("\n objectness = %f, thresh = %f, i = %d, n = %d \n", objectness, thresh, i, n);
                 int box_index = entry_index(l, batch, n*l.w*l.h + i, 0);
-                dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
+                dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h, l.new_coords);
                 dets[count].objectness = objectness;
                 dets[count].classes = l.classes;
                 if (l.embedding_output) {
@@ -925,7 +946,12 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
             // x = ln(y/(1-y))  // ln - natural logarithm (base = e)
             // if(y->1) x -> inf
             // if(y->0) x -> -inf
-            activate_array_ongpu(l.output_gpu + index, 2*l.w*l.h, LOGISTIC);    // x,y
+            if (l.new_coords) {
+                activate_array_ongpu(l.output_gpu + index, 4 * l.w*l.h, LOGISTIC);    // x,y
+            }
+            else {
+                activate_array_ongpu(l.output_gpu + index, 2 * l.w*l.h, LOGISTIC);    // x,y
+            }
             if (l.scale_x_y != 1) scal_add_ongpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output_gpu + index, 1);      // scale x,y
             index = entry_index(l, b, n*l.w*l.h, 4);
             activate_array_ongpu(l.output_gpu + index, (1+l.classes)*l.w*l.h, LOGISTIC); // classes and objectness
