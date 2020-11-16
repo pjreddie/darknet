@@ -913,7 +913,7 @@ void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIN
                     */
                     dets[j].prob[k] = 0;
                 }
-                else if (box_iou(a, b) > thresh && nms_kind == GREEDY_NMS) {
+                else if (box_diou(a, b) > thresh && nms_kind == GREEDY_NMS) {
                     dets[j].prob[k] = 0;
                 }
                 else {
