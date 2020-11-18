@@ -255,6 +255,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
             }
         }
+
         if(class >= 0){
             int width = im.h * .006;
 
@@ -290,7 +291,14 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
 
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            image bb_crop = crop_image(im, left, top, right-left, bot-top);
+            char im_name[10];
+            sprintf(im_name, "%d", i);
+            save_image(bb_crop, im_name);
+
+            printf("Bounding Box: Left=%d, Top=%d, Right=%d, Bottom=%d\n", left, top, right, bot);
+
+            //draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
                 image label = get_label(alphabet, labelstr, (im.h*.03));
                 draw_label(im, top + width, left, label, rgb);
@@ -573,7 +581,7 @@ void save_image_options(image im, const char *name, IMTYPE f, int quality)
 
 void save_image(image im, const char *name)
 {
-    save_image_options(im, name, JPG, 80);
+    save_image_options(im, name, JPG, 100);
 }
 
 void show_image_layers(image p, char *name)
