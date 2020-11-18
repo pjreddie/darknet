@@ -947,7 +947,7 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
             // if(y->1) x -> inf
             // if(y->0) x -> -inf
             if (l.new_coords) {
-                activate_array_ongpu(l.output_gpu + index, 4 * l.w*l.h, LOGISTIC);    // x,y
+                activate_array_ongpu(l.output_gpu + index, 4 * l.w*l.h, LOGISTIC);    // x,y,w,h
             }
             else {
                 activate_array_ongpu(l.output_gpu + index, 2 * l.w*l.h, LOGISTIC);    // x,y
