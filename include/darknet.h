@@ -420,6 +420,7 @@ struct layer {
     float scale_x_y;
     int objectness_smooth;
     int new_coords;
+    int show_details;
     float max_delta;
     float uc_normalizer;
     float iou_normalizer;
