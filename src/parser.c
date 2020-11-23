@@ -1155,6 +1155,8 @@ void parse_net_options(list *options, network *net)
     net->batch *= net->time_steps;  // mini_batch * time_steps
     net->subdivisions = subdivs;    // number of mini_batches
 
+    net->equidistant_point = option_find_int_quiet(options, "equidistant_point", 0);
+    *net->delta_rolling_avg = 0;
     *net->seen = 0;
     *net->cur_iteration = 0;
     net->loss_scale = option_find_float_quiet(options, "loss_scale", 1);

@@ -245,6 +245,7 @@ network make_network(int n)
     net.n = n;
     net.layers = (layer*)xcalloc(net.n, sizeof(layer));
     net.seen = (uint64_t*)xcalloc(1, sizeof(uint64_t));
+    net.delta_rolling_avg = (float*)xcalloc(1, sizeof(float));    
     net.cur_iteration = (int*)xcalloc(1, sizeof(int));
     net.total_bbox = (int*)xcalloc(1, sizeof(int));
     net.rewritten_bbox = (int*)xcalloc(1, sizeof(int));
@@ -1181,6 +1182,7 @@ void free_network(network net)
     free(net.scales);
     free(net.steps);
     free(net.seen);
+    free(net.delta_rolling_avg);    
     free(net.cur_iteration);
     free(net.total_bbox);
     free(net.rewritten_bbox);

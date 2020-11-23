@@ -362,7 +362,7 @@ static int entry_index(layer l, int batch, int location, int entry)
     return batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc;
 }
 
-typedef struct {
+typedef struct train_yolo_args {
     layer l;
     network_state state;
     int b;
@@ -372,7 +372,7 @@ typedef struct {
     int class_count;
 } train_yolo_args;
 
-void process_batch(train_yolo_args* ptr)
+void *process_batch(void* ptr)
 {
     {
         train_yolo_args *args = (train_yolo_args*)ptr;
@@ -642,7 +642,7 @@ void process_batch(train_yolo_args* ptr)
 
     }
 
-    //free(ptr);
+    return 0;
 }
 
 
@@ -651,6 +651,7 @@ void forward_yolo_layer(const layer l, network_state state)
 {
     //int i, j, b, t, n;
     memcpy(l.output, state.input, l.outputs*l.batch * sizeof(float));
+    int b, n;
 
 #ifndef GPU
     for (b = 0; b < l.batch; ++b) {
@@ -661,7 +662,7 @@ void forward_yolo_layer(const layer l, network_state state)
             }
             else {
                 activate_array(l.output + index, 2 * l.w*l.h, LOGISTIC);        // x,y,
-            }pr
+            }
             scal_add_cpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output + index, 1);    // scale x,y
             index = entry_index(l, b, n*l.w*l.h, 4);
             activate_array(l.output + index, (1 + l.classes)*l.w*l.h, LOGISTIC);
@@ -695,40 +696,57 @@ void forward_yolo_layer(const layer l, network_state state)
     *(l.cost) = 0;
 
 
-
-    int b;
-
     int num_threads = l.batch;
     pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
 
-    train_yolo_args* ptr = (train_yolo_args*)calloc(l.batch, sizeof(train_yolo_args));
+    struct train_yolo_args* yolo_args = (train_yolo_args*)xcalloc(l.batch, sizeof(struct train_yolo_args));
 
     for (b = 0; b < l.batch; b++)
     {
-        //train_yolo_args* ptr = (train_yolo_args*)calloc(1, sizeof(train_yolo_args));
-        ptr[b].l = l;
-        ptr[b].state = state;
-        ptr[b].b = b;
+        yolo_args[b].l = l;
+        yolo_args[b].state = state;
+        yolo_args[b].b = b;
 
-        ptr[b].tot_iou = 0;
-        ptr[b].count = 0;
-        ptr[b].class_count = 0;
+        yolo_args[b].tot_iou = 0;
+        yolo_args[b].count = 0;
+        yolo_args[b].class_count = 0;
 
-        if (pthread_create(&threads[b], 0, process_batch, &ptr[b])) error("Thread creation failed");
+        if (pthread_create(&threads[b], 0, process_batch, &(yolo_args[b]))) error("Thread creation failed");
     }
 
     for (b = 0; b < l.batch; b++)
     {
         pthread_join(threads[b], 0);
 
-        tot_iou += ptr[b].tot_iou;
-        count += ptr[b].count;
-        class_count += ptr[b].class_count;
+        tot_iou += yolo_args[b].tot_iou;
+        count += yolo_args[b].count;
+        class_count += yolo_args[b].class_count;
     }
 
-    free(ptr);
+    free(yolo_args);
     free(threads);
 
+    // Search for an equidistant point from the distant boundaries of the local minimum
+    int iteration_num = get_current_iteration(state.net);
+    //printf(" equidistant_point ep = %d, it = %d \n", state.net.equidistant_point, iteration_num);
+
+    if (state.net.equidistant_point && state.net.equidistant_point < iteration_num) {
+        float progress_it = iteration_num - state.net.equidistant_point;
+        float progress = progress_it / (state.net.max_batches - state.net.equidistant_point);
+        float loss_threshold = (*state.net.delta_rolling_avg) * progress;
+        printf(" RUN equidistant_point loss_threshold = %f, ep = %d, it = %d \n", loss_threshold, state.net.equidistant_point, iteration_num);
+
+        float cur_max = 0;
+        for (i = 0; i < l.batch * l.outputs; ++i) {
+            if (cur_max < fabs(l.delta[i]))
+                cur_max = fabs(l.delta[i]);
+
+            if (fabs(l.delta[i]) < loss_threshold)
+                l.delta[i] = 0;
+        }
+        
+        *state.net.delta_rolling_avg = *state.net.delta_rolling_avg * 0.99 + cur_max * 0.01;
+    }
 
     if (count == 0) count = 1;
     if (class_count == 0) class_count = 1;

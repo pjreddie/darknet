@@ -697,6 +697,8 @@ typedef struct network {
     int n;
     int batch;
     uint64_t *seen;
+    float *delta_rolling_avg;
+    int equidistant_point;
     int *cur_iteration;
     float loss_scale;
     int *t;
