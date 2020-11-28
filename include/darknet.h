@@ -697,8 +697,14 @@ typedef struct network {
     int n;
     int batch;
     uint64_t *seen;
+    float *badlabels_reject_threshold;
+    float *delta_rolling_max;
     float *delta_rolling_avg;
+    float *delta_rolling_std;
     int equidistant_point;
+    float badlabels_rejection_percentage;
+    float num_sigmas_reject_badlabels;
+    float ema_alpha;
     int *cur_iteration;
     float loss_scale;
     int *t;

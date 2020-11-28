@@ -728,24 +728,113 @@ void forward_yolo_layer(const layer l, network_state state)
 
     // Search for an equidistant point from the distant boundaries of the local minimum
     int iteration_num = get_current_iteration(state.net);
+    const int start_point = state.net.max_batches * 3 / 4;
     //printf(" equidistant_point ep = %d, it = %d \n", state.net.equidistant_point, iteration_num);
 
-    if (state.net.equidistant_point && state.net.equidistant_point < iteration_num) {
-        float progress_it = iteration_num - state.net.equidistant_point;
-        float progress = progress_it / (state.net.max_batches - state.net.equidistant_point);
-        float loss_threshold = (*state.net.delta_rolling_avg) * progress;
-        printf(" RUN equidistant_point loss_threshold = %f, ep = %d, it = %d \n", loss_threshold, state.net.equidistant_point, iteration_num);
+    if ((state.net.badlabels_rejection_percentage && start_point < iteration_num) ||
+        (state.net.num_sigmas_reject_badlabels && start_point < iteration_num) ||
+        (state.net.equidistant_point && state.net.equidistant_point < iteration_num))
+    {
+        const float progress_it = iteration_num - state.net.equidistant_point;
+        const float progress = progress_it / (state.net.max_batches - state.net.equidistant_point);
+        float ep_loss_threshold = (*state.net.delta_rolling_avg) * progress;
 
         float cur_max = 0;
+        float cur_avg = 0;
+        float counter = 0;
         for (i = 0; i < l.batch * l.outputs; ++i) {
-            if (cur_max < fabs(l.delta[i]))
-                cur_max = fabs(l.delta[i]);
 
-            if (fabs(l.delta[i]) < loss_threshold)
-                l.delta[i] = 0;
+            if (l.delta[i] != 0) {
+                counter++;
+                cur_avg += fabs(l.delta[i]);
+
+                if (cur_max < fabs(l.delta[i]))
+                    cur_max = fabs(l.delta[i]);
+            }
         }
-        
-        *state.net.delta_rolling_avg = *state.net.delta_rolling_avg * 0.99 + cur_max * 0.01;
+
+        cur_avg = cur_avg / counter;
+
+        if (*state.net.delta_rolling_max == 0) *state.net.delta_rolling_max = cur_max;
+        *state.net.delta_rolling_max = *state.net.delta_rolling_max * 0.99 + cur_max * 0.01;
+        *state.net.delta_rolling_avg = *state.net.delta_rolling_avg * 0.99 + cur_avg * 0.01;
+
+        // reject high loss to filter bad labels
+        if (state.net.num_sigmas_reject_badlabels && start_point < iteration_num)
+        {
+            const float rolling_std = (*state.net.delta_rolling_std);
+            const float rolling_max = (*state.net.delta_rolling_max);
+            const float rolling_avg = (*state.net.delta_rolling_avg);
+            const float progress_badlabels = (float)(iteration_num - start_point) / (start_point);
+
+            float cur_std = 0;
+            float counter = 0;
+            for (i = 0; i < l.batch * l.outputs; ++i) {
+                if (l.delta[i] != 0) {
+                    counter++;
+                    cur_std += pow(l.delta[i] - rolling_avg, 2);
+                }
+            }
+            cur_std = sqrt(cur_std / counter);
+
+            *state.net.delta_rolling_std = *state.net.delta_rolling_std * 0.99 + cur_std * 0.01;
+
+            float final_badlebels_threshold = rolling_avg + rolling_std * state.net.num_sigmas_reject_badlabels;
+            float badlabels_threshold = rolling_max - progress_badlabels * fabs(rolling_max - final_badlebels_threshold);
+            badlabels_threshold = max_val_cmp(final_badlebels_threshold, badlabels_threshold);
+            for (i = 0; i < l.batch * l.outputs; ++i) {
+                if (fabs(l.delta[i]) > badlabels_threshold)
+                    l.delta[i] = 0;
+            }
+            printf(" rolling_std = %f, rolling_max = %f, rolling_avg = %f \n", rolling_std, rolling_max, rolling_avg);
+            printf(" badlabels loss_threshold = %f, start_it = %d, progress = %f \n", badlabels_threshold, start_point, progress_badlabels *100);
+
+            ep_loss_threshold = min_val_cmp(final_badlebels_threshold, rolling_avg) * progress;
+        }
+
+
+        // reject some percent of the highest deltas to filter bad labels
+        if (state.net.badlabels_rejection_percentage && start_point < iteration_num) {
+            if (*state.net.badlabels_reject_threshold == 0)
+                *state.net.badlabels_reject_threshold = *state.net.delta_rolling_max;
+
+            printf(" badlabels_reject_threshold = %f \n", *state.net.badlabels_reject_threshold);
+
+            const float num_deltas_per_anchor = (l.classes + 4 + 1);
+            float counter_reject = 0;
+            float counter_all = 0;
+            for (i = 0; i < l.batch * l.outputs; ++i) {
+                if (l.delta[i] != 0) {
+                    counter_all++;
+                    if (fabs(l.delta[i]) > (*state.net.badlabels_reject_threshold)) {
+                        counter_reject++;
+                        l.delta[i] = 0;
+                    }
+                }
+            }
+            float cur_percent = 100 * (counter_reject*num_deltas_per_anchor / counter_all);
+            if (cur_percent > state.net.badlabels_rejection_percentage) {
+                *state.net.badlabels_reject_threshold += 0.01;
+                printf(" increase!!! \n");
+            }
+            else if (*state.net.badlabels_reject_threshold > 0.01) {
+                *state.net.badlabels_reject_threshold -= 0.01;
+                printf(" decrease!!! \n");
+            }
+
+            printf(" badlabels_reject_threshold = %f, cur_percent = %f, badlabels_rejection_percentage = %f, delta_rolling_max = %f \n",
+                *state.net.badlabels_reject_threshold, cur_percent, state.net.badlabels_rejection_percentage, *state.net.delta_rolling_max);
+        }
+
+
+        // reject low loss to find equidistant point
+        if (state.net.equidistant_point && state.net.equidistant_point < iteration_num) {
+            printf(" equidistant_point loss_threshold = %f, start_it = %d, progress = %3.1f %% \n", ep_loss_threshold, state.net.equidistant_point, progress * 100);
+            for (i = 0; i < l.batch * l.outputs; ++i) {
+                if (fabs(l.delta[i]) < ep_loss_threshold)
+                    l.delta[i] = 0;
+            }
+        }
     }
 
     if (count == 0) count = 1;

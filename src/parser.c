@@ -1156,7 +1156,13 @@ void parse_net_options(list *options, network *net)
     net->subdivisions = subdivs;    // number of mini_batches
 
     net->equidistant_point = option_find_int_quiet(options, "equidistant_point", 0);
+    net->badlabels_rejection_percentage = option_find_float_quiet(options, "badlabels_rejection_percentage", 0);
+    net->num_sigmas_reject_badlabels = option_find_float_quiet(options, "num_sigmas_reject_badlabels", 0);
+    net->ema_alpha = option_find_float_quiet(options, "ema_alpha", 0);
+    *net->badlabels_reject_threshold = 0;
+    *net->delta_rolling_max = 0;
     *net->delta_rolling_avg = 0;
+    *net->delta_rolling_std = 0;
     *net->seen = 0;
     *net->cur_iteration = 0;
     net->loss_scale = option_find_float_quiet(options, "loss_scale", 1);
