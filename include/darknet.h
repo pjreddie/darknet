@@ -414,6 +414,10 @@ struct layer {
     float *scales;
     float *scale_updates;
 
+    float *weights_ema;
+    float *biases_ema;
+    float *scales_ema;
+
     float *weights;
     float *weight_updates;
 

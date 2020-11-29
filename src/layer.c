@@ -92,6 +92,9 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.bias_updates)       free(l.bias_updates), l.bias_updates = NULL;
     if (l.scales)             free(l.scales), l.scales = NULL;
     if (l.scale_updates)      free(l.scale_updates), l.scale_updates = NULL;
+    if (l.biases_ema)         free(l.biases_ema), l.biases = NULL;
+    if (l.scales_ema)         free(l.scales_ema), l.scales = NULL;
+    if (l.weights_ema)        free(l.weights_ema), l.weights = NULL;
     if (l.weights)            free(l.weights), l.weights = NULL;
     if (l.weight_updates)     free(l.weight_updates), l.weight_updates = NULL;
     if (l.align_bit_weights)  free(l.align_bit_weights);

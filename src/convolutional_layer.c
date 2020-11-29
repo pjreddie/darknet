@@ -566,6 +566,9 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         if (train) {
             l.weight_updates = (float*)xcalloc(l.nweights, sizeof(float));
             l.bias_updates = (float*)xcalloc(n, sizeof(float));
+
+            l.weights_ema = (float*)xcalloc(l.nweights, sizeof(float));
+            l.biases_ema = (float*)xcalloc(n, sizeof(float));
         }
     }
 
@@ -637,6 +640,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
                 l.scales[i] = 1;
             }
             if (train) {
+                l.scales_ema = (float*)xcalloc(n, sizeof(float));
                 l.scale_updates = (float*)xcalloc(n, sizeof(float));
 
                 l.mean = (float*)xcalloc(n, sizeof(float));

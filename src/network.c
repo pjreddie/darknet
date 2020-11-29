@@ -425,6 +425,34 @@ float train_network_waitkey(network net, data d, int wait_key)
 #else   // GPU
     update_network(net);
 #endif  // GPU
+
+    int ema_start_point = net.max_batches / 2;
+
+    if (net.ema_alpha && (*net.cur_iteration) >= ema_start_point)
+    {
+        int ema_period = (net.max_batches - ema_start_point - 1000) * (1.0 - net.ema_alpha);
+        int ema_apply_point = net.max_batches - 1000;
+
+        if (!is_ema_initialized(net))
+        {
+            ema_update(net, 0); // init EMA
+            printf(" EMA initialization \n");
+        }
+
+        if ((*net.cur_iteration) >= ema_apply_point)
+        {
+            ema_apply(net); // apply EMA (BN rolling mean/var recalculation is required)
+            printf(" ema_apply() \n");
+        }
+        else
+        if ((*net.cur_iteration) < ema_apply_point &&
+            (*net.cur_iteration) % ema_period == 0)
+        {
+            ema_update(net, net.ema_alpha); // update EMA
+            printf(" ema_update(), ema_alpha = %f \n", net.ema_alpha);
+        }
+    }
+
     free(X);
     free(y);
     return (float)sum/(n*batch);
@@ -1489,3 +1517,77 @@ void restore_network_recurrent_state(network net)
         if (net.layers[k].type == CRNN) free_state_crnn(net.layers[k]);
     }
 }
+
+
+int is_ema_initialized(network net)
+{
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        layer l = net.layers[i];
+        if (l.type == CONVOLUTIONAL) {
+            int k;
+            if (l.weights_ema) {
+                for (k = 0; k < l.nweights; ++k) {
+                    if (l.weights_ema[k] != 0) return 1;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+void ema_update(network net, float ema_alpha)
+{
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        layer l = net.layers[i];
+        if (l.type == CONVOLUTIONAL) {
+#ifdef GPU
+            if (gpu_index >= 0) {
+                pull_convolutional_layer(l);
+            }
+#endif
+            int k;
+            if (l.weights_ema) {
+                for (k = 0; k < l.nweights; ++k) {
+                    l.weights_ema[k] = ema_alpha * l.weights_ema[k] + (1 - ema_alpha) * l.weights[k];
+                }
+            }
+
+            for (k = 0; k < l.n; ++k) {
+                if (l.biases_ema) l.biases_ema[k] = ema_alpha * l.biases_ema[k] + (1 - ema_alpha) * l.biases[k];
+                if (l.scales_ema) l.scales_ema[k] = ema_alpha * l.scales_ema[k] + (1 - ema_alpha) * l.scales[k];
+            }
+        }
+    }
+}
+
+
+void ema_apply(network net)
+{
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        layer l = net.layers[i];
+        if (l.type == CONVOLUTIONAL) {
+            int k;
+            if (l.weights_ema) {
+                for (k = 0; k < l.nweights; ++k) {
+                    l.weights[k] = l.weights_ema[k];
+                }
+            }
+
+            for (k = 0; k < l.n; ++k) {
+                if (l.biases_ema) l.biases[k] = l.biases_ema[k];
+                if (l.scales_ema) l.scales[k] = l.scales_ema[k];
+            }
+
+#ifdef GPU
+            if (gpu_index >= 0) {
+                push_convolutional_layer(l);
+            }
+#endif
+        }
+    }
+}
+

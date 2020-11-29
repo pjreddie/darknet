@@ -400,6 +400,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             char buff[256];
             sprintf(buff, "%s/%s_last.weights", backup_directory, base);
             save_weights(net, buff);
+
+            if (net.ema_alpha && is_ema_initialized(net)) {
+                sprintf(buff, "%s/%s_ema.weights", backup_directory, base);
+                save_weights_upto(net, buff, net.n, 1);
+                printf(" EMA weights are saved to the file: %s \n", buff);
+            }
         }
         free_data(train);
     }
