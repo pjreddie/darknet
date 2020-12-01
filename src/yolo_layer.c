@@ -138,8 +138,8 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     // w = ln(t.w * net.w / anchors_w); // w - output of previous conv-layer
     // h = ln(t.h * net.h / anchors_h); // h - output of previous conv-layer
     if (new_coords) {
-        b.x = (i + x[index + 0 * stride] * 2 - 0.5) / lw;
-        b.y = (j + x[index + 1 * stride] * 2 - 0.5) / lh;
+        b.x = (i + x[index + 0 * stride]) / lw;
+        b.y = (j + x[index + 1 * stride]) / lh;
         b.w = x[index + 2 * stride] * x[index + 2 * stride] * 4 * biases[2 * n] / w;
         b.h = x[index + 3 * stride] * x[index + 3 * stride] * 4 * biases[2 * n + 1] / h;
     }
@@ -197,8 +197,8 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         float th = log(truth.h*h / biases[2 * n + 1]);
 
         if (new_coords) {
-            tx = (truth.x*lw - i + 0.5) / 2;
-            ty = (truth.y*lh - j + 0.5) / 2;
+            //tx = (truth.x*lw - i + 0.5) / 2;
+            //ty = (truth.y*lh - j + 0.5) / 2;
             tw = sqrt(truth.w*w / (4 * biases[2 * n]));
             th = sqrt(truth.h*h / (4 * biases[2 * n + 1]));
         }
