@@ -17,13 +17,16 @@ ZED_CAMERA_v2_8=0
 USE_CPP=0
 DEBUG=0
 
-ARCH= -gencode arch=compute_30,code=sm_30 \
-      -gencode arch=compute_35,code=sm_35 \
+ARCH= -gencode arch=compute_35,code=sm_35 \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52] \
-	    -gencode arch=compute_61,code=[sm_61,compute_61]
+	    -gencode arch=compute_61,code=[sm_61,compute_61] \
+        -gencode arch=compute_86,code=[sm_86,compute_86]
 
 OS := $(shell uname)
+
+# Kepler GeForce GTX 770, GTX 760, GT 740
+# ARCH= -gencode arch=compute_30,code=sm_30
 
 # Tesla A100 (GA100), DGX-A100, RTX 3080
 # ARCH= -gencode arch=compute_80,code=[sm_80,compute_80]
