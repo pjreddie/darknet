@@ -1155,6 +1155,7 @@ void parse_net_options(list *options, network *net)
     net->batch *= net->time_steps;  // mini_batch * time_steps
     net->subdivisions = subdivs;    // number of mini_batches
 
+    net->weights_reject_freq = option_find_int_quiet(options, "weights_reject_freq", 0);
     net->equidistant_point = option_find_int_quiet(options, "equidistant_point", 0);
     net->badlabels_rejection_percentage = option_find_float_quiet(options, "badlabels_rejection_percentage", 0);
     net->num_sigmas_reject_badlabels = option_find_float_quiet(options, "num_sigmas_reject_badlabels", 0);

@@ -439,7 +439,7 @@ float train_network_waitkey(network net, data d, int wait_key)
             printf(" EMA initialization \n");
         }
 
-        if ((*net.cur_iteration) >= ema_apply_point)
+        if ((*net.cur_iteration) == ema_apply_point)
         {
             ema_apply(net); // apply EMA (BN rolling mean/var recalculation is required)
             printf(" ema_apply() \n");
@@ -452,6 +452,18 @@ float train_network_waitkey(network net, data d, int wait_key)
             printf(" ema_update(), ema_alpha = %f \n", net.ema_alpha);
         }
     }
+
+
+    int reject_stop_point = net.max_batches*3/4;
+
+    if ((*net.cur_iteration) < reject_stop_point &&
+        net.weights_reject_freq &&
+        (*net.cur_iteration) % net.weights_reject_freq == 0)
+    {
+        float sim_threshold = 0.4;
+        reject_similar_weights(net, sim_threshold);
+    }
+
 
     free(X);
     free(y);
@@ -1591,3 +1603,64 @@ void ema_apply(network net)
     }
 }
 
+
+
+void reject_similar_weights(network net, float sim_threshold)
+{
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        layer l = net.layers[i];
+        if (i == 0) continue;
+        if (net.n > i + 1) if (net.layers[i + 1].type == YOLO) continue;
+        if (net.n > i + 2) if (net.layers[i + 2].type == YOLO) continue;
+        if (net.n > i + 3) if (net.layers[i + 3].type == YOLO) continue;
+
+        if (l.type == CONVOLUTIONAL && l.activation != LINEAR) {
+#ifdef GPU
+            if (gpu_index >= 0) {
+                pull_convolutional_layer(l);
+            }
+#endif
+            int k, j;
+            float max_sim = -1000;
+            int max_sim_index = 0;
+            int max_sim_index2 = 0;
+            int filter_size = l.size*l.size*l.c;
+            for (k = 0; k < l.n; ++k)
+            {
+                for (j = k+1; j < l.n; ++j)
+                {
+                    int w1 = k;
+                    int w2 = j;
+
+                    float sim = cosine_similarity(&l.weights[filter_size*w1], &l.weights[filter_size*w2], filter_size);
+                    if (sim > max_sim) {
+                        max_sim = sim;
+                        max_sim_index = w1;
+                        max_sim_index2 = w2;
+                    }
+                }
+            }
+
+            printf(" reject_similar_weights: i = %d, l.n = %d, w1 = %d, w2 = %d, sim = %f, thresh = %f \n",
+                i, l.n, max_sim_index, max_sim_index2, max_sim, sim_threshold);
+
+            if (max_sim > sim_threshold) {
+                printf(" rejecting... \n");
+                float scale = sqrt(2. / (l.size*l.size*l.c / l.groups));
+
+                for (k = 0; k < filter_size; ++k) {
+                    l.weights[max_sim_index*filter_size + k] = scale*rand_uniform(-1, 1);
+                }
+                if (l.biases) l.biases[max_sim_index] = 0.0f;
+                if (l.scales) l.scales[max_sim_index] = 1.0f;
+            }
+
+#ifdef GPU
+            if (gpu_index >= 0) {
+                push_convolutional_layer(l);
+            }
+#endif
+        }
+    }
+}
