@@ -232,8 +232,13 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
 
         // predict exponential, apply gradient of e^delta_t ONLY for w,h
         if (new_coords) {
-            dw *= 8 * x[index + 2 * stride];
-            dh *= 8 * x[index + 3 * stride];
+            dw *= 8 * x[index + 2 * stride] * biases[2 * n] / w;
+            dh *= 8 * x[index + 3 * stride] * biases[2 * n + 1] / h;
+
+            //float grad_w = 8 * exp(-x[index + 2 * stride]) / pow(exp(-x[index + 2 * stride]) + 1, 3);
+            //float grad_h = 8 * exp(-x[index + 3 * stride]) / pow(exp(-x[index + 3 * stride]) + 1, 3);
+            //dw *= grad_w;
+            //dh *= grad_h;
         }
         else {
             dw *= exp(x[index + 2 * stride]);
