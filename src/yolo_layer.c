@@ -230,11 +230,13 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
         float dw = all_ious.dx_iou.dl;
         float dh = all_ious.dx_iou.dr;
 
-        /*
+
         // predict exponential, apply gradient of e^delta_t ONLY for w,h
         if (new_coords) {
-            dw *= 8 * x[index + 2 * stride] * biases[2 * n] / w;
-            dh *= 8 * x[index + 3 * stride] * biases[2 * n + 1] / h;
+            //dw *= 8 * x[index + 2 * stride];
+            //dh *= 8 * x[index + 3 * stride];
+            //dw *= 8 * x[index + 2 * stride] * biases[2 * n] / w;
+            //dh *= 8 * x[index + 3 * stride] * biases[2 * n + 1] / h;
 
             //float grad_w = 8 * exp(-x[index + 2 * stride]) / pow(exp(-x[index + 2 * stride]) + 1, 3);
             //float grad_h = 8 * exp(-x[index + 3 * stride]) / pow(exp(-x[index + 3 * stride]) + 1, 3);
@@ -245,10 +247,10 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
             dw *= exp(x[index + 2 * stride]);
             dh *= exp(x[index + 3 * stride]);
         }
-        */
 
-        dw *= exp(x[index + 2 * stride]);
-        dh *= exp(x[index + 3 * stride]);
+
+        //dw *= exp(x[index + 2 * stride]);
+        //dh *= exp(x[index + 3 * stride]);
 
         // normalize iou weight
         dx *= iou_normalizer;
@@ -668,14 +670,14 @@ void forward_yolo_layer(const layer l, network_state state)
         for (n = 0; n < l.n; ++n) {
             int index = entry_index(l, b, n*l.w*l.h, 0);
             if (l.new_coords) {
-                activate_array(l.output + index, 4 * l.w*l.h, LOGISTIC);    // x,y,w,h
+                //activate_array(l.output + index, 4 * l.w*l.h, LOGISTIC);    // x,y,w,h
             }
             else {
                 activate_array(l.output + index, 2 * l.w*l.h, LOGISTIC);        // x,y,
+                index = entry_index(l, b, n*l.w*l.h, 4);
+                activate_array(l.output + index, (1 + l.classes)*l.w*l.h, LOGISTIC);
             }
             scal_add_cpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output + index, 1);    // scale x,y
-            index = entry_index(l, b, n*l.w*l.h, 4);
-            activate_array(l.output + index, (1 + l.classes)*l.w*l.h, LOGISTIC);
         }
     }
 #endif
@@ -1173,14 +1175,15 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
             // if(y->1) x -> inf
             // if(y->0) x -> -inf
             if (l.new_coords) {
-                activate_array_ongpu(l.output_gpu + index, 4 * l.w*l.h, LOGISTIC);    // x,y,w,h
+                //activate_array_ongpu(l.output_gpu + index, 4 * l.w*l.h, LOGISTIC);    // x,y,w,h
             }
             else {
                 activate_array_ongpu(l.output_gpu + index, 2 * l.w*l.h, LOGISTIC);    // x,y
+
+                index = entry_index(l, b, n*l.w*l.h, 4);
+                activate_array_ongpu(l.output_gpu + index, (1 + l.classes)*l.w*l.h, LOGISTIC); // classes and objectness
             }
             if (l.scale_x_y != 1) scal_add_ongpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output_gpu + index, 1);      // scale x,y
-            index = entry_index(l, b, n*l.w*l.h, 4);
-            activate_array_ongpu(l.output_gpu + index, (1+l.classes)*l.w*l.h, LOGISTIC); // classes and objectness
         }
     }
     if(!state.train || l.onlyforward){
