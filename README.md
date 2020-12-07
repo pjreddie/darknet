@@ -5,6 +5,14 @@ Darknet is an open source neural network framework written in C and CUDA. It is 
 
 **Discord** invite link for for communication and questions: https://discord.gg/zSq8rtW
 
+## Scaled-YOLOv4: 
+
+* **paper:** https://arxiv.org/abs/2011.08036
+
+* **source code:** https://github.com/WongKinYiu/ScaledYOLOv4
+
+* **Darknet:** https://github.com/AlexeyAB/darknet
+
 ## YOLOv4:
 
 * **paper:** https://arxiv.org/abs/2004.10934
@@ -19,8 +27,11 @@ For more information see the [Darknet project website](http://pjreddie.com/darkn
 
 For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
 
+![scaled_yolov4](https://user-images.githubusercontent.com/4096485/101356322-f1f5a180-38a8-11eb-9907-4fe4f188d887.png) AP50:95 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2011.08036
 
-![YOLOv4Tiny](https://user-images.githubusercontent.com/4096485/85734112-6e366700-b705-11ea-95d1-fcba0de76d72.png)
+----
+
+![YOLOv4Tiny](https://user-images.githubusercontent.com/4096485/101363015-e5c21200-38b1-11eb-986f-b3e516e05977.png)
 
 ----
 
