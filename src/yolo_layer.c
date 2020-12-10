@@ -380,6 +380,7 @@ typedef struct train_yolo_args {
     int b;
 
     float tot_iou;
+    float tot_giou_loss;
     int count;
     int class_count;
 } train_yolo_args;
@@ -720,6 +721,7 @@ void forward_yolo_layer(const layer l, network_state state)
         yolo_args[b].b = b;
 
         yolo_args[b].tot_iou = 0;
+        yolo_args[b].tot_giou_loss = 0;
         yolo_args[b].count = 0;
         yolo_args[b].class_count = 0;
 
@@ -731,6 +733,7 @@ void forward_yolo_layer(const layer l, network_state state)
         pthread_join(threads[b], 0);
 
         tot_iou += yolo_args[b].tot_iou;
+        tot_giou_loss += yolo_args[b].tot_giou_loss;
         count += yolo_args[b].count;
         class_count += yolo_args[b].class_count;
     }
@@ -891,7 +894,7 @@ void forward_yolo_layer(const layer l, network_state state)
 
         float avg_iou_loss = 0;
         *(l.cost) = loss;
-        /*
+
         // gIOU loss + MSE (objectness) loss
         if (l.iou_loss == MSE) {
             *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
@@ -908,7 +911,7 @@ void forward_yolo_layer(const layer l, network_state state)
             }
             *(l.cost) = avg_iou_loss + classification_loss;
         }
-        */
+
 
         loss /= l.batch;
         classification_loss /= l.batch;
