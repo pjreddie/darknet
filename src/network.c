@@ -445,8 +445,7 @@ float train_network_waitkey(network net, data d, int wait_key)
             printf(" ema_apply() \n");
         }
         else
-        if ((*net.cur_iteration) < ema_apply_point &&
-            (*net.cur_iteration) % ema_period == 0)
+        if ((*net.cur_iteration) < ema_apply_point)// && (*net.cur_iteration) % ema_period == 0)
         {
             ema_update(net, net.ema_alpha); // update EMA
             printf(" ema_update(), ema_alpha = %f \n", net.ema_alpha);

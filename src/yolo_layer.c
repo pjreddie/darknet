@@ -381,6 +381,7 @@ typedef struct train_yolo_args {
 
     float tot_iou;
     float tot_giou_loss;
+    float tot_iou_loss;
     int count;
     int class_count;
 } train_yolo_args;
@@ -401,8 +402,8 @@ void *process_batch(void* ptr)
         float tot_giou = 0;
         float tot_diou = 0;
         float tot_ciou = 0;
-        float tot_iou_loss = 0;
-        float tot_giou_loss = 0;
+        //float tot_iou_loss = 0;
+        //float tot_giou_loss = 0;
         float tot_diou_loss = 0;
         float tot_ciou_loss = 0;
         float recall = 0;
@@ -553,10 +554,10 @@ void *process_batch(void* ptr)
 
                 // range is 0 <= 1
                 args->tot_iou += all_ious.iou;
-                tot_iou_loss += 1 - all_ious.iou;
+                args->tot_iou_loss += 1 - all_ious.iou;
                 // range is -1 <= giou <= 1
                 tot_giou += all_ious.giou;
-                tot_giou_loss += 1 - all_ious.giou;
+                args->tot_giou_loss += 1 - all_ious.giou;
 
                 tot_diou += all_ious.diou;
                 tot_diou_loss += 1 - all_ious.diou;
@@ -605,10 +606,10 @@ void *process_batch(void* ptr)
 
                         // range is 0 <= 1
                         args->tot_iou += all_ious.iou;
-                        tot_iou_loss += 1 - all_ious.iou;
+                        args->tot_iou_loss += 1 - all_ious.iou;
                         // range is -1 <= giou <= 1
                         tot_giou += all_ious.giou;
-                        tot_giou_loss += 1 - all_ious.giou;
+                        args->tot_giou_loss += 1 - all_ious.giou;
 
                         tot_diou += all_ious.diou;
                         tot_diou_loss += 1 - all_ious.diou;
@@ -721,6 +722,7 @@ void forward_yolo_layer(const layer l, network_state state)
         yolo_args[b].b = b;
 
         yolo_args[b].tot_iou = 0;
+        yolo_args[b].tot_iou_loss = 0;
         yolo_args[b].tot_giou_loss = 0;
         yolo_args[b].count = 0;
         yolo_args[b].class_count = 0;
@@ -733,6 +735,7 @@ void forward_yolo_layer(const layer l, network_state state)
         pthread_join(threads[b], 0);
 
         tot_iou += yolo_args[b].tot_iou;
+        tot_iou_loss += yolo_args[b].tot_iou_loss;
         tot_giou_loss += yolo_args[b].tot_giou_loss;
         count += yolo_args[b].count;
         class_count += yolo_args[b].class_count;
