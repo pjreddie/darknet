@@ -670,16 +670,16 @@ void forward_yolo_layer(const layer l, network_state state)
 #ifndef GPU
     for (b = 0; b < l.batch; ++b) {
         for (n = 0; n < l.n; ++n) {
-            int index = entry_index(l, b, n*l.w*l.h, 0);
+            int bbox_index = entry_index(l, b, n*l.w*l.h, 0);
             if (l.new_coords) {
-                //activate_array(l.output + index, 4 * l.w*l.h, LOGISTIC);    // x,y,w,h
+                //activate_array(l.output + bbox_index, 4 * l.w*l.h, LOGISTIC);    // x,y,w,h
             }
             else {
-                activate_array(l.output + index, 2 * l.w*l.h, LOGISTIC);        // x,y,
-                index = entry_index(l, b, n*l.w*l.h, 4);
-                activate_array(l.output + index, (1 + l.classes)*l.w*l.h, LOGISTIC);
+                activate_array(l.output + bbox_index, 2 * l.w*l.h, LOGISTIC);        // x,y,
+                int obj_index = entry_index(l, b, n*l.w*l.h, 4);
+                activate_array(l.output + obj_index, (1 + l.classes)*l.w*l.h, LOGISTIC);
             }
-            scal_add_cpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output + index, 1);    // scale x,y
+            scal_add_cpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output + bbox_index, 1);    // scale x,y
         }
     }
 #endif
