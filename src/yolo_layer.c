@@ -755,7 +755,7 @@ void forward_yolo_layer(const layer l, network_state state)
     {
         const float progress_it = iteration_num - state.net.equidistant_point;
         const float progress = progress_it / (state.net.max_batches - state.net.equidistant_point);
-        float ep_loss_threshold = (*state.net.delta_rolling_avg) * progress;
+        float ep_loss_threshold = (*state.net.delta_rolling_avg) * progress * 1.4;
 
         float cur_max = 0;
         float cur_avg = 0;
