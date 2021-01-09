@@ -372,7 +372,7 @@ PS Code\vcpkg>         .\vcpkg install darknet[full]:x64-windows #replace with d
 PS Code\vcpkg>         cd ..
 PS Code\>              git clone https://github.com/AlexeyAB/darknet
 PS Code\>              cd darknet
-PS Code\darknet>       .\build.ps1
+PS Code\darknet>       powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
 ## How to train with multi-GPU
