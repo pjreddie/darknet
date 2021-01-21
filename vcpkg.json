@@ -1,0 +1,19 @@
+{
+  "name": "darknet",
+  "version-string": "0.2.5.4",
+  "port-version": 1,
+  "homepage": "https://github.com/alexeyab/darknet",
+  "description": "Neural networks for object detection",
+  "dependencies": [
+    "stb",
+    "pthreads",
+    {
+      "name": "opencv",
+      "features": [ "ffmpeg" ]
+    },
+    {
+      "name": "cudnn",
+      "platform": "!osx"
+    }
+  ]
+}

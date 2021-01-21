@@ -32,7 +32,7 @@ endif()
 # Allow libraries to be set manually
 if(NOT PThreads_windows_LIBRARY)
   find_library(PThreads_windows_LIBRARY_RELEASE NAMES pthreadsVC2 pthreadVC2 PATHS ${PThreads_windows_DIR} PATH_SUFFIXES lib)
-  find_library(PThreads_windows_LIBRARY_DEBUG NAMES pthreadsVC2d pthreadVC2d PATHS ${PThreads_windows_DIR} PATH_SUFFIXES lib)
+  find_library(PThreads_windows_LIBRARY_DEBUG NAMES pthreadsVC2d pthreadVC2d pthreadsVC2 pthreadVC2 PATHS ${PThreads_windows_DIR} PATH_SUFFIXES lib)
   select_library_configurations(PThreads_windows)
 endif()
 
@@ -44,7 +44,7 @@ list(TRANSFORM PThreads_windows_DLL_DIR APPEND "/../bin")
 message(STATUS "PThreads_windows_DLL_DIR: ${PThreads_windows_DLL_DIR}")
 
 find_file(PThreads_windows_LIBRARY_RELEASE_DLL NAMES pthreadVC2.dll PATHS ${PThreads_windows_DLL_DIR})
-find_file(PThreads_windows_LIBRARY_DEBUG_DLL NAMES pthreadVC2d.dll PATHS ${PThreads_windows_DLL_DIR})
+find_file(PThreads_windows_LIBRARY_DEBUG_DLL NAMES pthreadVC2d.dll pthreadVC2.dll PATHS ${PThreads_windows_DLL_DIR})
 
 # Register imported libraries:
 # 1. If we can find a Windows .dll file (or if we can find both Debug and

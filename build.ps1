@@ -1,9 +1,30 @@
 #!/usr/bin/env pwsh
 
-$number_of_build_workers=8
-$use_vcpkg=$true
-$use_ninja=$false
-$force_cpp_build=$false
+$number_of_build_workers = 8
+$enable_cuda = $true
+$use_vcpkg = $true
+$use_ninja = $true
+$force_cpp_build = $false
+
+#$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
+
+
+$CMAKE_EXE = Get-Command cmake | Select-Object -ExpandProperty Definition
+$NINJA_EXE = Get-Command ninja | Select-Object -ExpandProperty Definition
+
+if (-Not $CMAKE_EXE) {
+  throw "Could not find CMake, please install it"
+}
+else {
+  Write-Host "Using CMake from ${CMAKE_EXE}"
+}
+
+if (-Not $NINJA_EXE -and $use_ninja) {
+  throw "Could not find Ninja, please install it"
+}
+else {
+  Write-Host "Using Ninja from ${NINJA_EXE}"
+}
 
 function getProgramFiles32bit() {
   $out = ${env:PROGRAMFILES(X86)}
@@ -80,11 +101,13 @@ if ((Test-Path env:VCPKG_ROOT) -and $use_vcpkg) {
 }
 elseif ((Test-Path "${env:WORKSPACE}\vcpkg") -and $use_vcpkg) {
   $vcpkg_path = "${env:WORKSPACE}\vcpkg"
+  $env:VCPKG_ROOT = "${env:WORKSPACE}\vcpkg"
   Write-Host "Found vcpkg in WORKSPACE\vcpkg: $vcpkg_path"
 }
 else {
-  $use_vcpkg=$false
+  $use_vcpkg = $false
   Write-Host "Skipping vcpkg-enabled builds because the VCPKG_ROOT environment variable is not defined or you requested to avoid VCPKG, using self-distributed libs`n" -ForegroundColor Yellow
+  $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
 }
 
 if ($null -eq $env:VCPKG_DEFAULT_TRIPLET -and $use_vcpkg) {
@@ -115,7 +138,7 @@ if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
 
 $tokens = getLatestVisualStudioWithDesktopWorkloadVersion
 $tokens = $tokens.split('.')
-if($use_ninja) {
+if ($use_ninja) {
   $generator = "Ninja"
 }
 else {
@@ -155,75 +178,49 @@ if (Test-Path env:CUDA_PATH) {
   }
 }
 
-if($force_cpp_build) {
-  $additional_build_setup="-DBUILD_AS_CPP:BOOL=TRUE"
+if ($force_cpp_build) {
+  $additional_build_setup = $additional_build_setup + " -DBUILD_AS_CPP:BOOL=ON"
+}
+
+if (-Not($enable_cuda)) {
+  $additional_build_setup = $additional_build_setup + " -DENABLE_CUDA:BOOL=OFF"
 }
 
 if ($use_vcpkg) {
-  ## DEBUG
-  #New-Item -Path .\build_win_debug -ItemType directory -Force
-  #Set-Location build_win_debug
-  #if ($use_ninja) {
-    #cmake -G "$generator" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" #"-DCMAKE_BUILD_TYPE=Debug" $additional_build_setup ..
-    #$dllfolder = "."
-  #}
-  #else {
-    #cmake -G "$generator" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Debug" $additional_build_setup ..
-    #$dllfolder = "Debug"
-  #}
-  #cmake --build . --config Debug --target install
-  ##cmake --build . --config Debug --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
-  #Remove-Item DarknetConfig.cmake
-  #Remove-Item DarknetConfigVersion.cmake
-  #$dllfiles = Get-ChildItem ${dllfolder}\*.dll
-  #if ($dllfiles) {
-  #  Copy-Item $dllfiles ..
-  #}
-  #Set-Location ..
-  #Copy-Item cmake\Modules\*.cmake share\darknet\
-
-  # RELEASE
   New-Item -Path .\build_win_release -ItemType directory -Force
   Set-Location build_win_release
-  if($use_ninja) {
-    cmake -G "$generator" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
+  if ($use_ninja) {
+    $cmake_args = "-G `"$generator`" `"-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet`" `"-DCMAKE_BUILD_TYPE=Release`" ${additional_build_setup} -S .."
     $dllfolder = "."
   }
   else {
-    cmake -G "$generator" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
+    $cmake_args = "-G `"$generator`" -T `"host=x64`" -A `"x64`" `"-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet`" `"-DCMAKE_BUILD_TYPE=Release`" ${additional_build_setup} -S .."
     $dllfolder = "Release"
   }
-  cmake --build . --config Release --target install
-  #cmake --build . --config Release --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
-  Remove-Item DarknetConfig.cmake
-  Remove-Item DarknetConfigVersion.cmake
-  $dllfiles = Get-ChildItem ${dllfolder}\*.dll
-  if ($dllfiles) {
-    Copy-Item $dllfiles ..
-  }
-  Set-Location ..
-  Copy-Item cmake\Modules\*.cmake share\darknet\
 }
 else {
   # USE LOCAL PTHREAD LIB AND LOCAL STB HEADER, NO VCPKG, ONLY RELEASE MODE SUPPORTED
   # if you want to manually force this case, remove VCPKG_ROOT env variable and remember to use "vcpkg integrate remove" in case you had enabled user-wide vcpkg integration
   New-Item -Path .\build_win_release_novcpkg -ItemType directory -Force
   Set-Location build_win_release_novcpkg
-  if($use_ninja) {
-    cmake -G "$generator" $additional_build_setup ..
+  if ($use_ninja) {
+    $cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
+    $dllfolder = "..\3rdparty\pthreads\bin"
   }
   else {
-    cmake -G "$generator" -T "host=x64" -A "x64" $additional_build_setup ..
+    $cmake_args = "-G `"$generator`" -T `"host=x64`" -A `"x64`" ${additional_build_setup} -S .."
+    $dllfolder = "..\3rdparty\pthreads\bin"
   }
-  cmake --build . --config Release --target install
-  #cmake --build . --config Release --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
-  Remove-Item DarknetConfig.cmake
-  Remove-Item DarknetConfigVersion.cmake
-  $dllfolder = "..\3rdparty\pthreads\bin"
-  $dllfiles = Get-ChildItem ${dllfolder}\*.dll
-  if ($dllfiles) {
-    Copy-Item $dllfiles ..
-  }
-  Set-Location ..
-  Copy-Item cmake\Modules\*.cmake share\darknet\
 }
+
+Write-Host "CMake args: $cmake_args"
+Start-Process -NoNewWindow -Wait -FilePath $CMAKE_EXE -ArgumentList $cmake_args
+Start-Process -NoNewWindow -Wait -FilePath $CMAKE_EXE -ArgumentList "--build . --config Release --parallel ${number_of_build_workers} --target install"
+Remove-Item DarknetConfig.cmake
+Remove-Item DarknetConfigVersion.cmake
+$dllfiles = Get-ChildItem ${dllfolder}\*.dll
+if ($dllfiles) {
+  Copy-Item $dllfiles ..
+}
+Set-Location ..
+Copy-Item cmake\Modules\*.cmake share\darknet\
