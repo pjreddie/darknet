@@ -46,19 +46,22 @@ cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimization
 
 if(ENABLE_VCPKG_INTEGRATION AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
-  set(_VCPKG_INSTALLED_DIR ${CMAKE_CURRENT_LIST_DIR}/vcpkg CACHE STRING "")
+  #set(_VCPKG_INSTALLED_DIR ${CMAKE_CURRENT_LIST_DIR}/vcpkg CACHE STRING "")  #folder for manifest-installed dependencies
   message(STATUS "VCPKG found: $ENV{VCPKG_ROOT}")
   message(STATUS "Using VCPKG integration")
-  message(STATUS "Installing dependencies in ${_VCPKG_INSTALLED_DIR}")
+  set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
+elseif(DEFINED CMAKE_TOOLCHAIN_FILE)
+  message(STATUS "Using toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+  set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
+elseif(WIN32)
+  message(STATUS "vcpkg not found, toolchain not defined, using integrated libs on win32")
+  set(USE_INTEGRATED_LIBS "TRUE" CACHE BOOL "Use libs distributed with this repo")
+else()
+  message(WARNING "vcpkg not found, toolchain not defined, system not win32 so build might fail")
+  set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
 endif()
 
 project(Darknet VERSION ${Darknet_VERSION})
-
-if(WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  set(USE_INTEGRATED_LIBS "TRUE" CACHE BOOL "Use libs distributed with this repo")
-else()
-  set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
-endif()
 
 enable_language(C)
 enable_language(CXX)

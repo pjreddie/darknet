@@ -110,6 +110,7 @@ jobs:
         vcpkgGitCommitId: 'e4ce66eecfd3e5cca5eac06c971921bf8e37cf88'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-linux'
+        additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
 
     - name: 'Build with CMake and Ninja'
       env:
@@ -286,6 +287,7 @@ jobs:
         vcpkgGitCommitId: 'e4ce66eecfd3e5cca5eac06c971921bf8e37cf88'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-osx'
+        additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
 
     - name: 'Build with CMake and Ninja'
       uses: lukka/run-cmake@v3
@@ -400,6 +402,7 @@ jobs:
         vcpkgGitCommitId: 'e4ce66eecfd3e5cca5eac06c971921bf8e37cf88'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-windows'
+        additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
 
     - name: 'Build with CMake and Ninja'
       env:
@@ -413,7 +416,7 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES=ON"
+        cmakeAppendedArgs: "-GNinja -DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES=ON"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--config Release --target install'
 
