@@ -38,23 +38,31 @@ About Darknet framework: http://pjreddie.com/darknet/
 * [Yolo v4 in other frameworks (TensorRT, TensorFlow, PyTorch, OpenVINO, OpenCV-dnn, TVM,...)](#yolo-v4-in-other-frameworks)
 * [Datasets](#datasets)
 
-0. [Improvements in this repository](#improvements-in-this-repository)
-1. [How to use](#how-to-use-on-the-command-line)
-2. How to compile on Linux
-   * [Using cmake](#how-to-compile-on-linux-using-cmake)
-   * [Using make](#how-to-compile-on-linux-using-make)
-3. How to compile on Windows
-   * [Using cmake](#how-to-compile-on-windows-using-cmake)
-   * [Using vcpkg](#how-to-compile-on-windows-using-vcpkg)
-   * [Legacy way](#how-to-compile-on-windows-legacy-way)
-4. [Training and Evaluation of speed and accuracy on MS COCO](https://github.com/AlexeyAB/darknet/wiki#training-and-evaluation-of-speed-and-accuracy-on-ms-coco)
-5. [How to train with multi-GPU:](#how-to-train-with-multi-gpu)
-6. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
-7. [How to train tiny-yolo (to detect your custom objects)](#how-to-train-tiny-yolo-to-detect-your-custom-objects)
-8. [When should I stop training](#when-should-i-stop-training)
-9. [How to improve object detection](#how-to-improve-object-detection)
-10. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-11. [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
+- [Yolo v4, v3 and v2 for Windows and Linux](#yolo-v4-v3-and-v2-for-windows-and-linux)
+  - [(neural networks for object detection)](#neural-networks-for-object-detection)
+      - [GeForce RTX 2080 Ti:](#geforce-rtx-2080-ti)
+      - [Youtube video of results](#youtube-video-of-results)
+      - [How to evaluate AP of YOLOv4 on the MS COCO evaluation server](#how-to-evaluate-ap-of-yolov4-on-the-ms-coco-evaluation-server)
+      - [How to evaluate FPS of YOLOv4 on GPU](#how-to-evaluate-fps-of-yolov4-on-gpu)
+      - [Pre-trained models](#pre-trained-models)
+    - [Requirements](#requirements)
+    - [Yolo v4 in other frameworks](#yolo-v4-in-other-frameworks)
+      - [Datasets](#datasets)
+    - [Improvements in this repository](#improvements-in-this-repository)
+      - [How to use on the command line](#how-to-use-on-the-command-line)
+        - [For using network video-camera mjpeg-stream with any Android smartphone](#for-using-network-video-camera-mjpeg-stream-with-any-android-smartphone)
+    - [How to compile on Linux/macOS (using `CMake`)](#how-to-compile-on-linuxmacos-using-cmake)
+    - [How to compile on Linux (using `make`)](#how-to-compile-on-linux-using-make)
+    - [How to compile on Windows (using `CMake`)](#how-to-compile-on-windows-using-cmake)
+    - [How to compile on Windows (using `vcpkg`)](#how-to-compile-on-windows-using-vcpkg)
+  - [How to train with multi-GPU](#how-to-train-with-multi-gpu)
+  - [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
+    - [How to train tiny-yolo (to detect your custom objects):](#how-to-train-tiny-yolo-to-detect-your-custom-objects)
+  - [When should I stop training:](#when-should-i-stop-training)
+    - [Custom object detection:](#custom-object-detection)
+  - [How to improve object detection:](#how-to-improve-object-detection)
+  - [How to mark bounded boxes of objects and create annotation files:](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+  - [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
 
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) 
 
@@ -189,7 +197,7 @@ You can get cfg-files by path: `darknet/cfg/`
 ### Requirements
 
 * Windows or Linux
-* **CMake >= 3.12**: https://cmake.org/download/
+* **CMake >= 3.18**: https://cmake.org/download/
 * **CUDA >= 10.0**: https://developer.nvidia.com/cuda-toolkit-archive (on Linux do [Post-installation Actions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#post-installation-actions))
 * **OpenCV >= 2.4**: use your preferred package manager (brew, apt), build from source using [vcpkg](https://github.com/Microsoft/vcpkg) or download from [OpenCV official site](https://opencv.org/releases.html) (on Windows set system variable `OpenCV_DIR` = `C:\opencv\build` - where are the `include` and `x64` folders [image](https://user-images.githubusercontent.com/4096485/53249516-5130f480-36c9-11e9-8238-a6e82e48c6f2.png))
 * **cuDNN >= 7.0** https://developer.nvidia.com/rdp/cudnn-archive (on **Linux** copy `cudnn.h`,`libcudnn.so`... as desribed here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installlinux-tar , on **Windows** copy `cudnn.h`,`cudnn64_7.dll`, `cudnn64_7.lib` as desribed here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installwindows )
@@ -335,15 +343,15 @@ To run Darknet on Linux use examples from this article, just use `./darknet` ins
 
 Requires: 
 * MSVS: https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community
-* Cmake GUI: `Windows win64-x64 Installer`https://cmake.org/download/
+* CMake GUI: `Windows win64-x64 Installer`https://cmake.org/download/
 * Download Darknet zip-archive with the latest commit and uncompress it: [master.zip](https://github.com/AlexeyAB/darknet/archive/master.zip)
 
 In the Windows: 
 
 
-* Start (button) -> All programms -> Cmake -> Cmake (gui) -> 
+* Start (button) -> All programms -> CMake -> CMake (gui) -> 
 
-* [look at image](https://habrastorage.org/webt/pz/s1/uu/pzs1uu4heb7vflfcjqn-lxy-aqu.jpeg) In Cmake: Enter input path to the darknet Source, and output path to the Binaries -> Configure (button) -> Optional platform for generator: `x64`  -> Finish -> Generate -> Open Project -> 
+* [look at image](https://habrastorage.org/webt/pz/s1/uu/pzs1uu4heb7vflfcjqn-lxy-aqu.jpeg) In CMake: Enter input path to the darknet Source, and output path to the Binaries -> Configure (button) -> Optional platform for generator: `x64`  -> Finish -> Generate -> Open Project -> 
 
 * in MS Visual Studio: Select: x64 and Release -> Build -> Build solution
 
@@ -366,9 +374,18 @@ This is the recommended approach to build Darknet on Windows.
 ```PowerShell
 PS Code\>              git clone https://github.com/microsoft/vcpkg
 PS Code\>              cd vcpkg
-PS Code\vcpkg>         $env:VCPKG_ROOT=$PWD
 PS Code\vcpkg>         .\bootstrap-vcpkg.bat
-PS Code\vcpkg>         .\vcpkg install darknet[full]:x64-windows #replace with darknet[opencv-base,cuda,cudnn]:x64-windows for a quicker install of dependencies
+PS Code\vcpkg>         .\vcpkg.exe install darknet[full]:x64-windows #replace with darknet[opencv-base,cuda,cudnn,weights,weights-train]:x64-windows for a quicker install of dependencies
+PS Code\vcpkg>         cd ..
+```
+
+If you prefer to download the most recent, maybe unreleased version, on the last line you need to add `--head` tag, like `.\vcpkg.exe install darknet[full]:x64-windows --head`. After completion, you can find darknet executables, networks and weights inside `installed\x64-windows\tools\darknet`; lib file is inside `installed\x64-windows\lib` and dll file is inside `installed\x64-windows\bin`.
+
+To manually build a version of darknet, after completing the previous step, you can also run
+
+```PowerShell
+PS Code\>              cd vcpkg
+PS Code\vcpkg>         $env:VCPKG_ROOT=$PWD
 PS Code\vcpkg>         cd ..
 PS Code\>              git clone https://github.com/AlexeyAB/darknet
 PS Code\>              cd darknet
