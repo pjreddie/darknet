@@ -376,7 +376,7 @@ jobs:
         buildWithCMakeArgs: '--target install'
 
 
-  win-vcpkg-cuda:
+  win-vcpkg-cuda-ninja:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -386,15 +386,17 @@ jobs:
         $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
         Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
         refreshenv
+        #echo "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin/" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo $env:PATH
 
     - uses: lukka/get-cmake@latest
 
     - name: Restore from cache and run vcpkg
       env:
-        CUDA_PATH: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDACXX: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
+        CUDA_PATH: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2"
+        CUDA_PATH_V10_2: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2"
+        CUDA_TOOLKIT_ROOT_DIR: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2"
+        CUDACXX: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin/nvcc.exe"
       uses: lukka/run-vcpkg@v6
       with:
         setupOnly: true
@@ -406,10 +408,10 @@ jobs:
 
     - name: 'Build with CMake and Ninja'
       env:
-        CUDA_PATH: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDACXX: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
+        CUDA_PATH: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2"
+        CUDA_PATH_V10_2: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2"
+        CUDA_TOOLKIT_ROOT_DIR: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2"
+        CUDACXX: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin/nvcc.exe"
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -515,11 +517,6 @@ jobs:
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake and Ninja'
-      env:
-        CUDA_PATH: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2"
-        CUDACXX: "C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced

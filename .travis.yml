@@ -209,8 +209,8 @@ matrix:
         - LD_LIBRARY_PATH="/usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64:/usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs:${LD_LIBRARY_PATH}"
         - MATRIX_EVAL="wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb && sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub && sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb && wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb && sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb && sudo apt-get -y update && sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2 && sudo apt-get install -y --no-install-recommends libcudnn7-dev && sudo ln -s /usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${INSTALL_CUDA_VERSION}/lib64/stubs/libcuda.so.1"
 
-#  allow_failures:
-#    - name: macOS - clang - vcpkg
+  allow_failures:
+    - name: macOS - clang - vcpkg
 
 before_install:
   - travis_retry eval "${MATRIX_EVAL}"
