@@ -107,7 +107,7 @@ jobs:
       with:
         setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: 'e4ce66eecfd3e5cca5eac06c971921bf8e37cf88'
+        vcpkgGitCommitId: '865de0c130f3d34174ac7a410789df3c44a27fd2'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-linux'
         additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
@@ -284,7 +284,7 @@ jobs:
       with:
         setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: 'e4ce66eecfd3e5cca5eac06c971921bf8e37cf88'
+        vcpkgGitCommitId: '865de0c130f3d34174ac7a410789df3c44a27fd2'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-osx'
         additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
@@ -402,7 +402,7 @@ jobs:
       with:
         setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: 'e4ce66eecfd3e5cca5eac06c971921bf8e37cf88'
+        vcpkgGitCommitId: '865de0c130f3d34174ac7a410789df3c44a27fd2'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-windows'
         additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
