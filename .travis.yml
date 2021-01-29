@@ -97,7 +97,7 @@ matrix:
       osx_image: xcode12.3
       env:
         - additional_defines="-DBUILD_SHARED_LIBS=OFF -DENABLE_CUDA=OFF"
-        - MATRIX_EVAL="brew install yasm && unset CC && unset CXX"
+        - MATRIX_EVAL="brew install yasm nasm libomp && unset CC && unset CXX"
         - USE_VCPKG=true
         - VCPKG_ROOT="$HOME/vcpkg"
         - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
@@ -197,6 +197,7 @@ matrix:
           update: true
           packages:
             - yasm
+            - nasm
       env:
         - additional_defines="-DBUILD_SHARED_LIBS=OFF"
         - USE_VCPKG=true
