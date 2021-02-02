@@ -109,8 +109,9 @@ void *detect_in_thread(void *ptr)
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
     double time_index = what_time_is_it_now() - start_time;
+    char* im_name = "test";
     if (time_index - floor(time_index) > 0.8) {
-        draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, time_index);
+        draw_detections(display, im_name, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, time_index);
         free_detections(dets, nboxes);
     }
     demo_index = (demo_index + 1)%demo_frame;

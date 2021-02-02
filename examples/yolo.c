@@ -273,6 +273,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     char buff[256];
     char *input = buff;
     float nms=.4;
+    char* im_name;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -294,7 +295,9 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         detection *dets = get_network_boxes(net, 1, 1, thresh, 0, 0, 0, &nboxes);
         if (nms) do_nms_sort(dets, l.side*l.side*l.n, l.classes, nms);
 
-        draw_detections(im, dets, l.side*l.side*l.n, thresh, voc_names, alphabet, 20, 0.0);
+        im_name = input;
+
+        draw_detections(im, im_name, dets, l.side*l.side*l.n, thresh, voc_names, alphabet, 20, 0.0);
         save_image(im, "predictions");
         show_image(im, "predictions", 0);
         free_detections(dets, nboxes);

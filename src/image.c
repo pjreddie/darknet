@@ -603,13 +603,14 @@ int find_prev_center(float x, float y, float max_mov, bool * prev_assigned) {
   return assigned_prev_index;
 }
 
-void draw_detections(image im, detection * dets, int num, float thresh,
+void draw_detections(image im, char* im_name, detection * dets, int num, float thresh,
   char ** names, image ** alphabet, int classes,
   double time_index) {
   struct json_object * json_obj = json_object_new_object();
   char file_name[64];
   int time_stamp = floor(time_index);
-  snprintf(file_name, sizeof(file_name), "output-%d.json", time_stamp);
+  snprintf(file_name, sizeof(file_name), "%s-%d.json", im_name, time_stamp);
+  printf("filename = %s\n", file_name);
   FILE * file = fopen(file_name, "w+");
   if (file == 0)
     file_error(file_name);

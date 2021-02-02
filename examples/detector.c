@@ -3,6 +3,14 @@
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 
+char *GetFilename(char *p)
+{ 
+    static char name[20]={""};
+    char *q = strrchr(p,'/') + 1;
+         strncpy(name,q,strlen(q)-4);//Note the following 6. If the name of the character in your test set (excluding the suffix) is other length, please change the length you need (the official default length is 6). )
+    return name;
+}
+
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
     list *options = read_data_cfg(datacfg);
@@ -558,7 +566,116 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     }
 }
 
+void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
+{
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    char **names = get_labels(name_list);
+ 
+    image **alphabet = load_alphabet();
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    srand(2222222);
+    double time;
+    char buff[256];
+    char *input = buff;
+    float nms=.45;
+    int i=0;
+    char* im_name;
 
+    while(1){
+        if(filename){
+            strncpy(input, filename, 256);
+            image im = load_image_color(input,0,0);
+            image sized = letterbox_image(im, net->w, net->h);
+        //image sized = resize_image(im, net->w, net->h);
+        //image sized2 = resize_max(im, net->w);
+        //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
+        //resize_network(net, sized.w, sized.h);
+            layer l = net->layers[net->n-1];
+ 
+ 
+            float *X = sized.data;
+            im_name = GetFilename(input);
+            time=what_time_is_it_now();
+            network_predict(net, X);
+            printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+            int nboxes = 0;
+            detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+            //printf("%d\n", nboxes);
+            //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+            if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+                draw_detections(im, im_name, dets, nboxes, thresh, names, alphabet, l.classes, 0.0);
+                free_detections(dets, nboxes);
+            if(outfile)
+             {
+                save_image(im, outfile);
+             }
+            else{
+                save_image(im, "predictions");
+            }
+            free_image(im);
+            free_image(sized);
+            if (filename) break;
+         } 
+        else {
+            printf("Enter Image Path: ");
+            fflush(stdout);
+            input = fgets(input, 256, stdin);
+            if(!input) return;
+            strtok(input, "\n");
+   
+            list *plist = get_paths(input);
+            char **paths = (char **)list_to_array(plist);
+             printf("Start Testing!\n");
+            int m = plist->size;
+            for(i = 0; i < m; ++i){
+             char *path = paths[i];
+             image im = load_image_color(path,0,0);
+             image sized = letterbox_image(im, net->w, net->h);
+        //image sized = resize_image(im, net->w, net->h);
+        //image sized2 = resize_max(im, net->w);
+        //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
+        //resize_network(net, sized.w, sized.h);
+        layer l = net->layers[net->n-1];
+ 
+ 
+        float *X = sized.data;
+        time=what_time_is_it_now();
+        network_predict(net, X);
+
+        im_name = GetFilename(path);
+        printf("image name: %s\n", im_name);
+        printf("Try Very Hard:");
+        printf("%s: Predicted in %f seconds.\n", path, what_time_is_it_now()-time);
+        int nboxes = 0;
+        detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+        //printf("%d\n", nboxes);
+        //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+        draw_detections(im, im_name, dets, nboxes, thresh, names, alphabet, l.classes, 0.0);
+        free_detections(dets, nboxes);
+        if(outfile){
+            save_image(im, outfile);
+        }
+        else{
+             
+             char b[2048];
+                         sprintf(b,"/Users/taosun/Documents/GitHub/darknet_ng/out/%s",im_name);//"/home/FENGsl/darknet/data" modified to its own path
+            
+            save_image(im, b);
+            printf("save %s successfully!\n",im_name);
+        }
+ 
+        free_image(im);
+        free_image(sized);
+        if (filename) break;
+        }
+      }
+    }
+}
+
+/*
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
@@ -611,10 +728,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         }
         else{
             save_image(im, "predictions");
-#ifdef OPENCV
-            make_window("predictions", 512, 512, 0);
-            show_image(im, "predictions", 0);
-#endif
+// #ifdef OPENCV
+//             make_window("predictions", 512, 512, 0);
+//             show_image(im, "predictions", 0);
+// #endif
         }
 
         free_image(im);
@@ -622,6 +739,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (filename) break;
     }
 }
+
+*/
 
 /*
 void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
