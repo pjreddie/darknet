@@ -259,7 +259,7 @@ float get_average_color(image im, int left, int right, int top, int bot, int c) 
 
 // consolidated color table
 static char color_name[][64] = {
-  "Black", "Black", "Black", "Black","gray",
+  "Black", "Black", "Black", "Black","Gray",
   "Red", "Red", "Red", "Red", "Red","Red",
   "Brown", "Brown", "Brown",
   "Orange", "Orange","Orange",
@@ -267,7 +267,7 @@ static char color_name[][64] = {
   "Green", "Green", "Green", "Green", "Green", "Green", "Green", "Green","Green","Green", "Green",
   "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue", "Blue",
   "Purple", "Purple", "Purple", "Purple", "Purple","Purple", "Purple","Purple","Purple", "Purple",
-  "White", "White", "White","gray", "gray"
+  "White", "White", "White","Gray", "Gray"
 };
 
 static float color_rgb[][3] = {
@@ -282,6 +282,53 @@ static float color_rgb[][3] = {
   {51, 0, 102}, {76, 0, 153}, {102, 0, 204}, {127, 0, 255}, {153, 51, 255}, {178,102,255}, {204,153,255},{120,60,120},{66,28,75}, {189,137,183},// 10 in Purple
   {255, 255, 255}, {224, 224, 224}, {192, 192, 192}, {160, 160, 160}, {128, 128, 128} // 5 in  White & gray
 };
+
+int top_color2number(char* color){
+  if (strcmp(color, "Black") == 0)
+    return 0;
+  else if (strcmp(color, "Purple") == 0)
+    return 1;
+  else if (strcmp(color, "Green") == 0)
+    return 2;
+  else if (strcmp(color, "Blue") == 0)
+    return 3;
+  else if (strcmp(color, "Gray") == 0)
+    return 4;
+  else if (strcmp(color, "White") == 0)
+    return 5;
+  else if (strcmp(color, "Yellow") == 0)
+    return 6;
+  else if (strcmp(color, "Red") == 0)
+    return 7;
+  else if (strcmp(color, "Brown") == 0)
+    return 8;
+  else
+    return 9;
+}
+
+
+int bottom_color2number(char* color){
+  if (strcmp(color, "White") == 0)
+    return 0;
+  else if (strcmp(color, "Purple") == 0)
+    return 1;
+  else if (strcmp(color, "Black") == 0)
+    return 2;
+  else if (strcmp(color, "Green") == 0)
+    return 3;
+  else if (strcmp(color, "Gray") == 0)
+    return 4;
+  else if (strcmp(color, "Red") == 0)
+    return 5;
+  else if (strcmp(color, "Yellow") == 0)
+    return 6;
+  else if (strcmp(color, "Blue") == 0)
+    return 7;
+  else if (strcmp(color, "Brown") == 0)
+    return 8;
+  else
+    return 9;
+}
 
 float color_dist_euclid(float r1, float g1, float b1,
   float r2, float g2, float b2) {
@@ -449,6 +496,8 @@ struct json_object * draw_person(image im, image ** alphabet, detection person) 
   int top = (person_box.y - person_box.h / 2.) * im.h;
   int bot = (person_box.y + person_box.h / 2.) * im.h;
 
+  int color_code[3]; // person color code array, head, top, bottom 
+
   // Draw head.
   int neck = top + (bot - top) / 8;
   int waist = top + (bot - top) / 2;
@@ -462,10 +511,8 @@ struct json_object * draw_person(image im, image ** alphabet, detection person) 
   struct json_object * json_person = json_object_new_object();
 
   char head[64];
-  snprintf(head, sizeof(head), "%s",
-    color_name[get_most_color_index_weighted(im, head_left,
-      head_right, head_top,
-      head_bot)]);
+  snprintf(head, sizeof(head), "%s", color_name[get_most_color_index_weighted(im, head_left, head_right, head_top, head_bot)]);
+  color_code[0] = top_color2number(head);
   draw_box_width(im, head_left, head_top, head_right, head_bot, width, rgb[0], rgb[1], rgb[2]);
   struct json_object * json_head = json_object_new_string(head);
   json_object_object_add(json_person, "head_color", json_head);
@@ -498,8 +545,8 @@ struct json_object * draw_person(image im, image ** alphabet, detection person) 
       upper_body_right,
       upper_body_top,
       upper_body_bot)]);
+  color_code[1] = top_color2number(upper_body);
   draw_box_width(im, upper_body_left, upper_body_top, upper_body_right, upper_body_bot, width, rgb[0], rgb[1], rgb[2]);
-
   struct json_object * json_upper_body = json_object_new_string(upper_body);
   json_object_object_add(json_person, "upper_body_color", json_upper_body);
 
@@ -530,11 +577,28 @@ struct json_object * draw_person(image im, image ** alphabet, detection person) 
       bottom_body_right,
       bottom_body_top,
       bottom_body_bot)]);
+  color_code[2] = bottom_color2number(bottom_body);
   draw_box_width(im, bottom_body_left, bottom_body_top, bottom_body_right,
     bottom_body_bot, width, rgb[0], rgb[1], rgb[2]);
 
   struct json_object * json_bottom_body = json_object_new_string(bottom_body);
   json_object_object_add(json_person, "bottom_body_color", json_bottom_body);
+
+  char* color_array[3];
+  char color_code_out[64];
+  for (int i = 0; i < 3; i++) {   
+        char c[sizeof(int)];    
+        // copy int to char
+        snprintf(c, sizeof(int), "%d", color_code[i]); //copy those 4bytes
+        // allocate enough space on char* array to store this result
+        color_array[i] = malloc(sizeof(c)); 
+        strcpy(color_array[i], c); // copy to the array of results
+        color_code_out[i] = *(color_array[i]);
+  }   
+  
+  struct json_object * json_color_code = json_object_new_string(color_code_out);
+  json_object_object_add(json_person, "color_code", json_color_code);
+
   if (alphabet) {
     image label = get_label(alphabet, bottom_body, (im.h * .003));
     draw_label(im, bottom_body_top + width, bottom_body_left, label,
