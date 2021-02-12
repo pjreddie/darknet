@@ -1,0 +1,7 @@
+data_classification:
+  - <replace me>
+poc:
+  - name: Jane Smith
+    email: jane.smith@example.com
+  - name: Tasmania
+    email: Tasmania_team@example.com
