@@ -37,8 +37,13 @@ if [ "$install_cuda" = true ] ; then
     features = "full"
   fi
 else
-  features = "opencv-base,weights,weights-train"
+  if [[ -v CUDA_PATH ]]; then
+    features = "full"
+  else
+    features = "opencv-base,weights,weights-train"
+  fi
 fi
+
 
 rm -rf $temp_folder
 cd ..

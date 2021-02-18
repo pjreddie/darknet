@@ -1,12 +1,19 @@
 ## enable or disable installed components
 
-$install_cuda=$true
+$install_choco = $true
+$install_cuda = $true
+
+if ($install_cuda -and -not $install_choco) {
+  Write-Host "If you want to install cuda without letting the script install also choco, be sure Chocolatey is already installed"
+}
 
 ###########################
 
 # Download and install Chocolatey
 Set-ExecutionPolicy unrestricted
-Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+if ($install_choco) {
+  Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+}
 choco.exe install -y cmake ninja powershell git vscode
 choco-exe install -y visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.CoreBuildTools --includeRecommended --includeOptional --passive --locale en-US --lang en-US"
 
@@ -15,7 +22,12 @@ if ($install_cuda) {
   $features = "full"
 }
 else {
-  $features = "opencv-base,weights,weights-train"
+  if (-not $null -eq $env:CUDA_PATH) {
+    $features = "full"
+  }
+  else{
+    $features = "opencv-base,weights,weights-train"
+  }
 }
 
 Remove-Item -r $temp_folder
