@@ -188,6 +188,14 @@ if (-Not($enable_cuda)) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_CUDA:BOOL=OFF"
 }
 
+if (-Not($enable_cudnn)) {
+  $additional_build_setup = $additional_build_setup + " -DENABLE_CUDNN:BOOL=OFF"
+}
+
+if (-Not($enable_opencv)) {
+  $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV:BOOL=OFF"
+}
+
 if ($use_vcpkg) {
   New-Item -Path .\build_win_release -ItemType directory -Force
   Set-Location build_win_release

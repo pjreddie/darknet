@@ -4,6 +4,8 @@ number_of_build_workers=8
 use_vcpkg=false
 force_cpp_build=false
 enable_cuda=false
+enable_cudnn=false
+enable_opencv=false
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   vcpkg_triplet="x64-osx"
@@ -39,6 +41,14 @@ fi
 if [ "$enable_cuda" = false ]
 then
   additional_build_setup=${additional_build_setup}" -DENABLE_CUDA:BOOL=FALSE"
+fi
+if [ "$enable_cudnn" = false ]
+then
+  additional_build_setup=${additional_build_setup}" -DENABLE_CUDNN:BOOL=FALSE"
+fi
+if [ "$enable_opencv" = false ]
+then
+  additional_build_setup=${additional_build_setup}" -DENABLE_OPENCV:BOOL=FALSE"
 fi
 
 ## DEBUG
