@@ -1,24 +1,20 @@
-## enable or disable installed components
+#!/usr/bin/env pwsh
 
-$install_choco = $true
-$install_cuda = $true
+$install_cuda = $false
 
-if ($install_cuda -and -not $install_choco) {
-  Write-Host "If you want to install cuda without letting the script install also choco, be sure Chocolatey is already installed"
-}
-
-###########################
-
-# Download and install Chocolatey
-Set-ExecutionPolicy unrestricted
-if ($install_choco) {
+if ($null -eq (Get-Command "choco.exe" -ErrorAction SilentlyContinue)) {
+  # Download and install Chocolatey
+  Set-ExecutionPolicy unrestricted -Scope CurrentUser
   Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+  Write-Host "Please close and re-open powershell and then re-run setup.ps1 script"
+  Break
 }
-choco.exe install -y cmake ninja powershell git vscode
-choco-exe install -y visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.CoreBuildTools --includeRecommended --includeOptional --passive --locale en-US --lang en-US"
+
+Start-Process -FilePath "choco" -Verb runAs -ArgumentList " install -y cmake ninja powershell git vscode"
+Start-Process -FilePath "choco" -Verb runAs -ArgumentList " install -y visualstudio2019buildtools --package-parameters `"--add Microsoft.VisualStudio.Component.VC.CoreBuildTools --includeRecommended --includeOptional --passive --locale en-US --lang en-US`""
 
 if ($install_cuda) {
-  choco-exe install -y cuda
+  Start-Process -FilePath "choco" -Verb runAs -ArgumentList " install -y cuda"
   $features = "full"
 }
 else {
@@ -30,9 +26,6 @@ else {
   }
 }
 
-Remove-Item -r $temp_folder
-Set-Location ..
-Set-Location $vcpkg_folder\
 git.exe clone https://github.com/microsoft/vcpkg
 Set-Location vcpkg
 .\bootstrap-vcpkg.bat -disableMetrics

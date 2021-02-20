@@ -3,7 +3,7 @@
 $number_of_build_workers = 8
 $enable_cuda = $true
 $use_vcpkg = $true
-$use_ninja = $false
+$use_ninja = $true
 $force_cpp_build = $false
 
 #$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
@@ -20,7 +20,8 @@ else {
 if ($use_ninja) {
   $NINJA_EXE = Get-Command ninja | Select-Object -ExpandProperty Definition
   if (-Not $NINJA_EXE) {
-    throw "Could not find Ninja, please install it"
+    $use_ninja = $false
+    Write-Host "Could not find Ninja, using msbuild as a fallback" -ForegroundColor Yellow
   }
   else {
     Write-Host "Using Ninja from ${NINJA_EXE}"

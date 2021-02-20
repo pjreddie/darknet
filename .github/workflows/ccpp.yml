@@ -376,73 +376,54 @@ jobs:
         buildWithCMakeArgs: '--target install'
 
 
-#  win-vcpkg-cuda-ninja:
-#    runs-on: windows-latest
-#    steps:
-#    - uses: actions/checkout@v2
-#    - name: 'Install CUDA'
-#      run: |
-#        choco install cuda --version=10.2.89.20191206 -y
-#        $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
-#        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-#        refreshenv
-#        echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-#        refreshenv
-#        echo $env:PATH
-#
-#    - uses: lukka/get-cmake@latest
-#
-#    - name: Restore from cache and run vcpkg
-#      env:
-#        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-#        CUDA_PATH_V10_2: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-#        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-#        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
-#      uses: lukka/run-vcpkg@v6
-#      with:
-#        setupOnly: true
-#        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-#        vcpkgGitCommitId: '865de0c130f3d34174ac7a410789df3c44a27fd2'
-#        appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
-#        vcpkgTriplet: 'x64-windows'
-#        additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
-#
-#    - name: 'Build with CMake and Ninja'
-#      env:
-#        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-#        CUDA_PATH_V10_2: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-#        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-#        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
-#      uses: lukka/run-cmake@v3
-#      with:
-#        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-#        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-#        useVcpkgToolchainFile: true
-#        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-#        cmakeAppendedArgs: "-GNinja -DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES=ON"
-#        cmakeBuildType: 'Release'
-#        buildWithCMakeArgs: '--config Release --target install'
-#
-#    - uses: actions/upload-artifact@v2
-#      with:
-#        name: darknet-vcpkg-cuda-${{ runner.os }}
-#        path: cfg
-#    - uses: actions/upload-artifact@v2
-#      with:
-#        name: darknet-vcpkg-cuda-${{ runner.os }}
-#        path: data
-#    - uses: actions/upload-artifact@v2
-#      with:
-#        name: darknet-vcpkg-cuda-${{ runner.os }}
-#        path: ${{ github.workspace }}/*dark*
-#    - uses: actions/upload-artifact@v2
-#      with:
-#        name: darknet-vcpkg-cuda-${{ runner.os }}
-#        path: ${{ runner.workspace }}/buildDirectory/Release/*.dll
-#    - uses: actions/upload-artifact@v2
-#      with:
-#        name: darknet-vcpkg-cuda-${{ runner.os }}
-#        path: ${{ github.workspace }}/uselib*
+  win-vcpkg-ninja:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: lukka/get-cmake@latest
+
+    - name: Restore from cache and run vcpkg
+      uses: lukka/run-vcpkg@v6
+      with:
+        setupOnly: true
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgGitCommitId: '865de0c130f3d34174ac7a410789df3c44a27fd2'
+        appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
+        vcpkgTriplet: 'x64-windows'
+        additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+
+    - name: 'Build with CMake and Ninja'
+      uses: lukka/run-cmake@v3
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/buildDirectory'
+        cmakeAppendedArgs: "-GNinja -DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES=ON -DENABLE_CUDA=OFF"
+        cmakeBuildType: 'Release'
+        buildWithCMakeArgs: '--config Release --target install'
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: cfg
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: data
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ github.workspace }}/*dark*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ runner.workspace }}/buildDirectory/Release/*.dll
+    - uses: actions/upload-artifact@v2
+      with:
+        name: darknet-vcpkg-${{ runner.os }}
+        path: ${{ github.workspace }}/uselib*
 
 
   win-intlibs:
