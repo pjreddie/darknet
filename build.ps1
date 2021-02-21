@@ -2,14 +2,14 @@
 
 $number_of_build_workers = 8
 $enable_cuda = $true
+$enable_cudnn = $true
+$enable_opencv = $true
 $use_vcpkg = $true
-$use_ninja = $true
 $force_cpp_build = $false
 
 #$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
 
-$CMAKE_EXE = Get-Command cmake | Select-Object -ExpandProperty Definition
-
+$CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
 if (-Not $CMAKE_EXE) {
   throw "Could not find CMake, please install it"
 }
@@ -17,15 +17,13 @@ else {
   Write-Host "Using CMake from ${CMAKE_EXE}"
 }
 
-if ($use_ninja) {
-  $NINJA_EXE = Get-Command ninja | Select-Object -ExpandProperty Definition
-  if (-Not $NINJA_EXE) {
-    $use_ninja = $false
-    Write-Host "Could not find Ninja, using msbuild as a fallback" -ForegroundColor Yellow
-  }
-  else {
-    Write-Host "Using Ninja from ${NINJA_EXE}"
-  }
+$NINJA_EXE = Get-Command ninja 2> $null | Select-Object -ExpandProperty Definition
+if (-Not $NINJA_EXE) {
+  $use_ninja = $false
+  Write-Host "Could not find Ninja, using msbuild as a fallback" -ForegroundColor Yellow
+}
+else {
+  Write-Host "Using Ninja from ${NINJA_EXE}"
 }
 
 function getProgramFiles32bit() {
