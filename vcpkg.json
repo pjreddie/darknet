@@ -56,7 +56,6 @@
           "name": "opencv2",
           "features": [
             "contrib",
-            "dnn",
             "ffmpeg"
           ]
         }
@@ -70,7 +69,6 @@
           "features": [
             "contrib",
             "cuda",
-            "dnn",
             "ffmpeg"
           ]
         }

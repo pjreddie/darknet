@@ -4,7 +4,7 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   ubuntu-makefile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -15,18 +15,18 @@ jobs:
 
     - name: 'Install CUDA'
       run: |
-        wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
-        sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
-        sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
         sudo apt update
-        sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
-        sudo apt-get install -y --no-install-recommends libcudnn7-dev
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/libcuda.so
-        sudo ln -s /usr/local/cuda-10.2 /usr/local/cuda
+        sudo apt-get dist-upgrade -y
+        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
+        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
+        sudo apt-get install -y --no-install-recommends libcudnn8-dev
+        sudo rm -rf /usr/local/cuda
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
         export PATH=/usr/local/cuda/bin:$PATH
         export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
         nvcc --version
@@ -69,7 +69,7 @@ jobs:
 
 
   ubuntu-vcpkg-cuda:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -81,28 +81,30 @@ jobs:
     - uses: lukka/get-cmake@latest
 
     - name: 'Install CUDA'
-      env:
-        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda-10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
-        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
       run: |
-        wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
-        sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
-        sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
         sudo apt update
-        sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
-        sudo apt-get install -y --no-install-recommends libcudnn7-dev
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/stubs/libcuda.so.1
+        sudo apt-get dist-upgrade -y
+        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
+        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
+        sudo apt-get install -y --no-install-recommends libcudnn8-dev
+        sudo rm -rf /usr/local/cuda
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
+        nvcc --version
+        gcc --version
 
     - name: Restore from cache and run vcpkg
       env:
-        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda-10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
-        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       uses: lukka/run-vcpkg@v6
       with:
         setupOnly: true
@@ -112,12 +114,12 @@ jobs:
         vcpkgTriplet: 'x64-linux'
         additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       env:
-        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda-10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
-        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -125,7 +127,7 @@ jobs:
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
         cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release"
+        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDNN=OFF"
         buildWithCMakeArgs: '--target install'
 
     - uses: actions/upload-artifact@v2
@@ -147,7 +149,7 @@ jobs:
 
 
   ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -158,14 +160,14 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF"
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDNN=OFF -DENABLE_CUDA=OFF"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--target install'
 
@@ -188,7 +190,7 @@ jobs:
 
 
   ubuntu-cuda:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -200,28 +202,30 @@ jobs:
     - uses: lukka/get-cmake@latest
 
     - name: 'Install CUDA'
-      env:
-        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda-10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
-        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
       run: |
-        wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
-        sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
-        sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
         sudo apt update
-        sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
-        sudo apt-get install -y --no-install-recommends libcudnn7-dev
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/stubs/libcuda.so.1
+        sudo apt-get dist-upgrade -y
+        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
+        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
+        sudo apt-get install -y --no-install-recommends libcudnn8-dev
+        sudo rm -rf /usr/local/cuda
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
+        nvcc --version
+        gcc --version
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       env:
-        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda-10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
-        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -251,13 +255,13 @@ jobs:
 
 
   ubuntu-no-ocv-cpp:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -289,7 +293,7 @@ jobs:
         vcpkgTriplet: 'x64-osx'
         additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -297,7 +301,7 @@ jobs:
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
         cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF"
+        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF"
         buildWithCMakeArgs: '--target install'
 
     - uses: actions/upload-artifact@v2
@@ -328,14 +332,14 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF"
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--target install'
 
@@ -364,7 +368,7 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -393,14 +397,14 @@ jobs:
         vcpkgTriplet: 'x64-windows'
         additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-GNinja -DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES=ON -DENABLE_CUDA=OFF"
+        cmakeAppendedArgs: "-GNinja -DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES=ON -DENABLE_CUDNN=OFF -DENABLE_CUDA=OFF"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--config Release --target install'
 
@@ -433,7 +437,7 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -473,7 +477,7 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -498,7 +502,7 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       env:
         CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_PATH_V10_2: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
@@ -522,7 +526,7 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build with CMake'
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
