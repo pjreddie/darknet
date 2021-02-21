@@ -28,6 +28,8 @@
         {
           "name": "opencv",
           "features": [
+            "contrib",
+            "dnn",
             "ffmpeg"
           ]
         }
@@ -39,13 +41,10 @@
         {
           "name": "opencv",
           "features": [
+            "contrib",
+            "cuda",
+            "dnn",
             "ffmpeg"
-          ]
-        },
-        {
-          "name": "opencv",
-          "features": [
-            "cuda"
           ]
         }
       ]
@@ -56,6 +55,8 @@
         {
           "name": "opencv2",
           "features": [
+            "contrib",
+            "dnn",
             "ffmpeg"
           ]
         }
@@ -67,13 +68,10 @@
         {
           "name": "opencv2",
           "features": [
+            "contrib",
+            "cuda",
+            "dnn",
             "ffmpeg"
-          ]
-        },
-        {
-          "name": "opencv2",
-          "features": [
-            "cuda"
           ]
         }
       ]
@@ -84,6 +82,8 @@
         {
           "name": "opencv3",
           "features": [
+            "contrib",
+            "dnn",
             "ffmpeg"
           ]
         }
@@ -95,13 +95,10 @@
         {
           "name": "opencv3",
           "features": [
+            "contrib",
+            "cuda",
+            "dnn",
             "ffmpeg"
-          ]
-        },
-        {
-          "name": "opencv3",
-          "features": [
-            "cuda"
           ]
         }
       ]

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 number_of_build_workers=8
-use_vcpkg=false
+use_vcpkg=true
 force_cpp_build=false
 enable_cuda=false
 enable_cudnn=false
-enable_opencv=false
+enable_opencv=true
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   vcpkg_triplet="x64-osx"
