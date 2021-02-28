@@ -299,6 +299,10 @@ cudaStream_t switch_stream(int i) {
     return switchStreamsArray[i];
 }
 
+#ifndef cudaEventWaitDefault
+#define cudaEventWaitDefault 0x00
+#endif // cudaEventWaitDefault
+
 static const max_events = 1024;
 static cudaEvent_t switchEventsArray[1024];
 static volatile int event_counter = 0;
