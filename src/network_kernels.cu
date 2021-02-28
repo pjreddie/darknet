@@ -664,7 +664,7 @@ float train_networks(network *nets, int n, data d, int interval)
 float *get_network_output_layer_gpu(network net, int i)
 {
     layer l = net.layers[i];
-    if(l.type != REGION) cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
+    if(l.type != REGION && l.type != YOLO && (*net.cuda_graph_ready) == 0) cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
     return l.output;
 }
 
@@ -686,12 +686,49 @@ float *network_predict_gpu(network net, float *input)
     //state.input = cuda_make_array(input, size);   // memory will be allocated in the parse_network_cfg_custom()
     state.input = net.input_state_gpu;
     memcpy(net.input_pinned_cpu, input, size * sizeof(float));
-    cuda_push_array(state.input, net.input_pinned_cpu, size);
     state.truth = 0;
     state.train = 0;
     state.delta = 0;
-    forward_network_gpu(net, state);
+
+    //cudaGraphExec_t instance = (cudaGraphExec_t)net.cuda_graph_exec;
+    static cudaGraphExec_t instance;
+
+    if ((*net.cuda_graph_ready) == 0) {
+        static cudaGraph_t graph;
+        if (net.use_cuda_graph == 1) {
+            int i;
+            for (i = 0; i < 16; ++i) switch_stream(i);
+
+            cudaStream_t stream0 = switch_stream(0);
+            CHECK_CUDA(cudaDeviceSynchronize());
+            printf("Try to capture graph... \n");
+            //cudaGraph_t graph = (cudaGraph_t)net.cuda_graph;
+            CHECK_CUDA(cudaStreamBeginCapture(stream0, cudaStreamCaptureModeGlobal));
+        }
+
+        cuda_push_array(state.input, net.input_pinned_cpu, size);
+        forward_network_gpu(net, state);
+
+        if (net.use_cuda_graph == 1) {
+            cudaStream_t stream0 = switch_stream(0);
+            CHECK_CUDA(cudaStreamEndCapture(stream0, &graph));
+            CHECK_CUDA(cudaGraphInstantiate(&instance, graph, NULL, NULL, 0));
+            (*net.cuda_graph_ready) = 1;
+            printf(" graph is captured... \n");
+            CHECK_CUDA(cudaDeviceSynchronize());
+        }
+        CHECK_CUDA(cudaStreamSynchronize(get_cuda_stream()));
+    }
+    else {
+        cudaStream_t stream0 = switch_stream(0);
+        //printf(" cudaGraphLaunch \n");
+        CHECK_CUDA( cudaGraphLaunch(instance, stream0) );
+        CHECK_CUDA( cudaStreamSynchronize(stream0) );
+        //printf(" ~cudaGraphLaunch \n");
+    }
+
     float *out = get_network_output_gpu(net);
+    reset_wait_stream_events();
     //cuda_free(state.input);   // will be freed in the free_network()
     return out;
 }

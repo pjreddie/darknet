@@ -2315,7 +2315,8 @@ extern "C" void expand_array_gpu(const float *src_gpu, float *dst_gpu, int size,
 
 
 
-__global__  void mult_inverse_array_kernel(const float *src_gpu, float *dst_gpu, int size, const float eps)
+__global__  void mult_inverse_array_kernel(const float *src_gpu, float *dst_gpu, int size, const float eps,
+    float divider, const float clip, const float abs_add)
 {
     const int index = blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -2326,15 +2327,20 @@ __global__  void mult_inverse_array_kernel(const float *src_gpu, float *dst_gpu,
         // eps = 2 - lower delta
         // eps = 0 - higher delta (linear)
         // eps = -1 - high delta (inverse number)
-        dst_gpu[index] = powf(fabs(val), eps) * sign;
+        // = (abs(x)*10+1)^(-1)
+        float unsigned_val = powf(fabs(val)*10 + abs_add, eps);
+        unsigned_val = unsigned_val / divider;
+        if (unsigned_val > clip && clip != 0.0) unsigned_val = clip;
+        if (isnan(unsigned_val) || isinf(unsigned_val)) unsigned_val = 0;
+        dst_gpu[index] = unsigned_val * sign;
     }
 }
 
-extern "C" void mult_inverse_array_gpu(const float *src_gpu, float *dst_gpu, int size, float eps)
+extern "C" void mult_inverse_array_gpu(const float *src_gpu, float *dst_gpu, int size, float eps, float divider, float clip, float abs_add)
 {
     const int block_size = BLOCK;
     const int num_blocks = get_number_of_blocks(size, block_size);
-    mult_inverse_array_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (src_gpu, dst_gpu, size, eps);
+    mult_inverse_array_kernel << <num_blocks, block_size, 0, get_cuda_stream() >> > (src_gpu, dst_gpu, size, eps, divider, clip, abs_add);
 
     CHECK_CUDA(cudaPeekAtLastError());
 }
