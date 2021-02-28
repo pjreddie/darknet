@@ -2,7 +2,7 @@ version: 2.0
 jobs:
   build:
     docker:
-       - image: witekkq/cuda-opencv:latest
+       - image: julianassmann/opencv-cuda:cuda-11.1-opencv-4.5
 #      - image: alantrrs/cuda-opencv:latest
 #      - image: nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
     working_directory: ~/work
