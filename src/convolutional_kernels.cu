@@ -1103,10 +1103,10 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
             float dh = (1 - truth.h) * beta;
             //printf(" alpha = %f, beta = %f, truth.w = %f, dw = %f, tw+dw = %f, l.out_w = %d \n", alpha, beta, truth.w, dw, truth.w+dw, l.out_w);
 
-            int left = floor((truth.x - (dw + truth.w) / 2) * l.out_w);
-            int right = ceil((truth.x + (dw + truth.w) / 2) * l.out_w);
-            int top = floor((truth.y - (dh + truth.h) / 2) * l.out_h);
-            int bottom = ceil((truth.y + (dh + truth.h) / 2) * l.out_h);
+            int left = floorf((truth.x - (dw + truth.w) / 2) * l.out_w);
+            int right = ceilf((truth.x + (dw + truth.w) / 2) * l.out_w);
+            int top = floorf((truth.y - (dh + truth.h) / 2) * l.out_h);
+            int bottom = ceilf((truth.y + (dh + truth.h) / 2) * l.out_h);
             if (left < 0) left = 0;
             if (top < 0) top = 0;
             if (right > l.out_w) right = l.out_w;
