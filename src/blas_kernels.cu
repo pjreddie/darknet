@@ -1758,11 +1758,11 @@ __global__  void smooth_rotate_weights_kernel(const float *src_weight_gpu, float
                 float x_s = x_c + (x - x_c)*cos_a + (y - y_c)*sin_a;
                 float y_s = y_c - (x - x_c)*sin_a + (y - y_c)*cos_a;
 
-                int x_0 = floor(x_s);   // round down
-                int x_1 = ceil(x_s);    // round up
+                int x_0 = floorf(x_s);   // round down
+                int x_1 = ceilf(x_s);    // round up
                 if (x_0 == x_1) x_1 = x_0 + 1;
-                int y_0 = floor(y_s);
-                int y_1 = ceil(y_s);
+                int y_0 = floorf(y_s);
+                int y_1 = ceilf(y_s);
                 if (y_0 == y_1) y_1 = y_0 + 1;
 
                 float c_x_0 = x_1 - x_s;
@@ -1855,11 +1855,11 @@ __global__  void stretch_weights_kernel(const float *src_weight_gpu, float *weig
                     float x_s = x_c + (x - x_c) / scale;
                     float y_s = y_c + (y - y_c) / scale;
 
-                    int x_0 = floor(x_s);   // round down
-                    int x_1 = ceil(x_s);    // round up
+                    int x_0 = floorf(x_s);   // round down
+                    int x_1 = ceilf(x_s);    // round up
                     if (x_0 == x_1) x_1 = x_0 + 1;
-                    int y_0 = floor(y_s);
-                    int y_1 = ceil(y_s);
+                    int y_0 = floorf(y_s);
+                    int y_1 = ceilf(y_s);
                     if (y_0 == y_1) y_1 = y_0 + 1;
 
                     float c_x_0 = x_1 - x_s;
@@ -1953,11 +1953,11 @@ __global__  void sway_and_flip_weights_kernel(const float *src_weight_gpu, float
                     float x_s = x_c + (x - x_c)*cos_a + (y - y_c)*sin_a;
                     float y_s = y_c - (x - x_c)*sin_a + (y - y_c)*cos_a;
 
-                    int x_0 = floor(x_s);   // round down
-                    int x_1 = ceil(x_s);    // round up
+                    int x_0 = floorf(x_s);   // round down
+                    int x_1 = ceilf(x_s);    // round up
                     if (x_0 == x_1) x_1 = x_0 + 1;
-                    int y_0 = floor(y_s);
-                    int y_1 = ceil(y_s);
+                    int y_0 = floorf(y_s);
+                    int y_1 = ceilf(y_s);
                     if (y_0 == y_1) y_1 = y_0 + 1;
 
                     float c_x_0 = x_1 - x_s;
@@ -2144,11 +2144,11 @@ __global__  void stretch_sway_flip_weights_kernel(const float *src_weight_gpu, f
                     float x_s = x_c + (x - x_c) / scale;
                     float y_s = y_c + (y - y_c) / scale;
 
-                    int x_0 = floor(x_s);   // round down
-                    int x_1 = ceil(x_s);    // round up
+                    int x_0 = floorf(x_s);   // round down
+                    int x_1 = ceilf(x_s);    // round up
                     if (x_0 == x_1) x_1 = x_0 + 1;
-                    int y_0 = floor(y_s);
-                    int y_1 = ceil(y_s);
+                    int y_0 = floorf(y_s);
+                    int y_1 = ceilf(y_s);
                     if (y_0 == y_1) y_1 = y_0 + 1;
 
                     float c_x_0 = x_1 - x_s;
@@ -2203,11 +2203,11 @@ __global__  void stretch_sway_flip_weights_kernel(const float *src_weight_gpu, f
                     float x_s = x_c + (x - x_c)*cos_a + (y - y_c)*sin_a;
                     float y_s = y_c - (x - x_c)*sin_a + (y - y_c)*cos_a;
 
-                    int x_0 = floor(x_s);   // round down
-                    int x_1 = ceil(x_s);    // round up
+                    int x_0 = floorf(x_s);   // round down
+                    int x_1 = ceilf(x_s);    // round up
                     if (x_0 == x_1) x_1 = x_0 + 1;
-                    int y_0 = floor(y_s);
-                    int y_1 = ceil(y_s);
+                    int y_0 = floorf(y_s);
+                    int y_1 = ceilf(y_s);
                     if (y_0 == y_1) y_1 = y_0 + 1;
 
                     float c_x_0 = x_1 - x_s;

@@ -85,7 +85,7 @@ __device__ float gelu_gradient_kernel(float x) {
 __device__ float plse_gradient_kernel(float x){return (x < 0 || x > 1) ? .01f : .125f;}
 __device__ float stair_gradient_kernel(float x)
 {
-    if (floor(x) == x) return 0;
+    if (floorf(x) == x) return 0;
     return 1;
 }
 
