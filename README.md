@@ -58,7 +58,7 @@ About Darknet framework: http://pjreddie.com/darknet/
 
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) 
 
-![scaled_yolov4](https://user-images.githubusercontent.com/4096485/101356322-f1f5a180-38a8-11eb-9907-4fe4f188d887.png) AP50:95 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2011.08036
+![scaled_yolov4](https://user-images.githubusercontent.com/4096485/112776361-281d8380-9048-11eb-8083-8728b12dcd55.png) AP50:95 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2011.08036
 
 ----
 
