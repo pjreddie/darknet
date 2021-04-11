@@ -557,6 +557,9 @@ struct layer {
 //#ifdef GPU
     int *indexes_gpu;
 
+    int stream;
+    int wait_stream_id;
+
     float *z_gpu;
     float *r_gpu;
     float *h_gpu;
@@ -817,6 +820,11 @@ typedef struct network {
     size_t *max_input16_size;
     size_t *max_output16_size;
     int wait_stream;
+    
+    void *cuda_graph;
+    void *cuda_graph_exec;
+    int use_cuda_graph;
+    int *cuda_graph_ready;
 
     float *global_delta_gpu;
     float *state_delta_gpu;

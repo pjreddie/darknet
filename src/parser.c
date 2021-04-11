@@ -231,6 +231,9 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     layer.reverse = option_find_float_quiet(options, "reverse", 0);
     layer.coordconv = option_find_int_quiet(options, "coordconv", 0);
 
+    layer.stream = option_find_int_quiet(options, "stream", -1);
+    layer.wait_stream_id = option_find_int_quiet(options, "wait_stream", -1);
+
     if(params.net.adam){
         layer.B1 = params.net.B1;
         layer.B2 = params.net.B2;
@@ -1107,6 +1110,9 @@ route_layer parse_route(list *options, size_params params)
     layer.h = first.h;
     layer.c = layer.out_c;
 
+    layer.stream = option_find_int_quiet(options, "stream", -1);
+    layer.wait_stream_id = option_find_int_quiet(options, "wait_stream", -1);
+
     if (n > 3) fprintf(stderr, " \t    ");
     else if (n > 1) fprintf(stderr, " \t            ");
     else fprintf(stderr, " \t\t            ");
@@ -1166,10 +1172,13 @@ void parse_net_options(list *options, network *net)
     *net->delta_rolling_std = 0;
     *net->seen = 0;
     *net->cur_iteration = 0;
+    *net->cuda_graph_ready = 0;
+    net->use_cuda_graph = option_find_int_quiet(options, "use_cuda_graph", 0);
     net->loss_scale = option_find_float_quiet(options, "loss_scale", 1);
     net->dynamic_minibatch = option_find_int_quiet(options, "dynamic_minibatch", 0);
     net->optimized_memory = option_find_int_quiet(options, "optimized_memory", 0);
     net->workspace_size_limit = (size_t)1024*1024 * option_find_float_quiet(options, "workspace_size_limit_MB", 1024);  // 1024 MB by default
+
 
     net->adam = option_find_int_quiet(options, "adam", 0);
     if(net->adam){
@@ -1672,7 +1681,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     fprintf(stderr, "avg_outputs = %d \n", avg_outputs);
 #ifdef GPU
     get_cuda_stream();
-    get_cuda_memcpy_stream();
+    //get_cuda_memcpy_stream();
     if (gpu_index >= 0)
     {
         int size = get_network_input_size(net) * net.batch;

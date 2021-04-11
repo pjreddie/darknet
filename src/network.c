@@ -245,6 +245,7 @@ network make_network(int n)
     net.n = n;
     net.layers = (layer*)xcalloc(net.n, sizeof(layer));
     net.seen = (uint64_t*)xcalloc(1, sizeof(uint64_t));
+    net.cuda_graph_ready = (int*)xcalloc(1, sizeof(int));
     net.badlabels_reject_threshold = (float*)xcalloc(1, sizeof(float));
     net.delta_rolling_max = (float*)xcalloc(1, sizeof(float));
     net.delta_rolling_avg = (float*)xcalloc(1, sizeof(float));
@@ -1224,6 +1225,7 @@ void free_network(network net)
     free(net.scales);
     free(net.steps);
     free(net.seen);
+    free(net.cuda_graph_ready);
     free(net.badlabels_reject_threshold);
     free(net.delta_rolling_max);
     free(net.delta_rolling_avg);
