@@ -107,7 +107,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      uses: lukka/run-vcpkg@v6
+      uses: lukka/run-vcpkg@v7
       with:
         setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
@@ -287,7 +287,7 @@ jobs:
     - uses: lukka/get-cmake@latest
 
     - name: Restore from cache and run vcpkg
-      uses: lukka/run-vcpkg@v6
+      uses: lukka/run-vcpkg@v7
       with:
         setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
@@ -391,7 +391,7 @@ jobs:
     - uses: lukka/get-cmake@latest
 
     - name: Restore from cache and run vcpkg
-      uses: lukka/run-vcpkg@v6
+      uses: lukka/run-vcpkg@v7
       with:
         setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
