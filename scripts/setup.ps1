@@ -22,7 +22,7 @@ else {
     $features = "full"
   }
   else{
-    $features = "opencv-base,weights,weights-train"
+    $features = "opencv-base"
   }
 }
 

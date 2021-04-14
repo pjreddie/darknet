@@ -55,14 +55,14 @@ if [ "$install_cuda" = true ] ; then
       features="full"
     else
       echo "Unable to auto-install CUDA on this Linux OS"
-      features="opencv-base,weights,weights-train"
+      features="opencv-base"
     fi
   fi
 else
   if [[ -v CUDA_PATH ]]; then
     features="full"
   else
-    features="opencv-base,weights,weights-train"
+    features="opencv-base"
   fi
 fi
 
