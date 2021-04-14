@@ -22,16 +22,24 @@ if ($IsWindows -and -Not $env:VCPKG_DEFAULT_TRIPLET) {
 }
 
 if ($EnableCUDA) {
+  if($IsMacOS) {
+    Write-Host "Cannot enable CUDA on macOS" -ForegroundColor Yellow
+    $EnableCUDA = $false
+  }
   Write-Host "CUDA is enabled"
 }
-else {
+elseif (-Not $IsMacOS) {
   Write-Host "CUDA is disabled, please pass -EnableCUDA to the script to enable"
 }
 
 if ($EnableCUDNN) {
+  if ($IsMacOS) {
+    Write-Host "Cannot enable CUDNN on macOS" -ForegroundColor Yellow
+    $EnableCUDNN = $false
+  }
   Write-Host "CUDNN is enabled"
 }
-else {
+elseif (-Not $IsMacOS) {
   Write-Host "CUDNN is disabled, please pass -EnableCUDNN to the script to enable"
 }
 
@@ -234,24 +242,26 @@ if ($DoNotSetupVS -and $DoNotUseNinja) {
 }
 Write-Host "Setting up environment to use CMake generator: $generator" -ForegroundColor Yellow
 
-if ($null -eq (Get-Command "nvcc" -ErrorAction SilentlyContinue)) {
-  if (Test-Path env:CUDA_PATH) {
-    $env:PATH += ";${env:CUDA_PATH}/bin"
-    Write-Host "Found cuda in ${env:CUDA_PATH}" -ForegroundColor Yellow
+if (-Not $IsMacOS -and $EnableCUDA) {
+  if ($null -eq (Get-Command "nvcc" -ErrorAction SilentlyContinue)) {
+    if (Test-Path env:CUDA_PATH) {
+      $env:PATH += ";${env:CUDA_PATH}/bin"
+      Write-Host "Found cuda in ${env:CUDA_PATH}" -ForegroundColor Yellow
+    }
+    else {
+      Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder" -ForegroundColor Yellow
+    }
   }
-  else {
-    Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder" -ForegroundColor Yellow
-  }
-}
 
-if (Test-Path env:CUDA_PATH) {
-  if (-Not(Test-Path env:CUDA_TOOLKIT_ROOT_DIR)) {
-    $env:CUDA_TOOLKIT_ROOT_DIR = "${env:CUDA_PATH}"
-    Write-Host "Added missing env variable CUDA_TOOLKIT_ROOT_DIR" -ForegroundColor Yellow
-  }
-  if (-Not(Test-Path env:CUDACXX)) {
-    $env:CUDACXX = "${env:CUDA_PATH}/bin/nvcc"
-    Write-Host "Added missing env variable CUDACXX" -ForegroundColor Yellow
+  if (Test-Path env:CUDA_PATH) {
+    if (-Not(Test-Path env:CUDA_TOOLKIT_ROOT_DIR)) {
+      $env:CUDA_TOOLKIT_ROOT_DIR = "${env:CUDA_PATH}"
+      Write-Host "Added missing env variable CUDA_TOOLKIT_ROOT_DIR" -ForegroundColor Yellow
+    }
+    if (-Not(Test-Path env:CUDACXX)) {
+      $env:CUDACXX = "${env:CUDA_PATH}/bin/nvcc"
+      Write-Host "Added missing env variable CUDACXX" -ForegroundColor Yellow
+    }
   }
 }
 

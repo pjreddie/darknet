@@ -312,11 +312,30 @@ On Linux find executable file `./darknet` in the root directory, while on Window
 
 The `CMakeLists.txt` will attempt to find installed optional dependencies like CUDA, cudnn, ZED and build against those. It will also create a shared object library file to use `darknet` for code development.
 
-Open a shell terminal inside the cloned repository and launch:
+Install powershell if you do not already have it ([guide here](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell)).
 
-```bash
-./build.sh
+Then, open a powershell terminal inside the darknet repository and type these commands (using `vcpkg` to automatically download dependencies):
+
+```PowerShell
+PS Code/>              git clone https://github.com/microsoft/vcpkg
+PS Code/>              cd vcpkg
+PS Code/vcpkg>         ./bootstrap-vcpkg.bat
+PS Code/vcpkg>         $env:VCPKG_ROOT=$PWD
+PS Code/vcpkg>         cd ..
+PS Code/>              git clone https://github.com/AlexeyAB/darknet
+PS Code/>              cd darknet
+PS Code/darknet>       ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
+
+or these commands (without `vcpkg` - please install required libraries manually)
+
+```PowerShell
+PS Code/>              git clone https://github.com/AlexeyAB/darknet
+PS Code/>              cd darknet
+PS Code/darknet>       ./build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN
+```
+
+(remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested into)
 
 To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware.com/
 
@@ -372,24 +391,14 @@ This is the recommended approach to build Darknet on Windows.
 3. Open Powershell (Start -> All programs -> Windows Powershell) and type these commands:
 
 ```PowerShell
-PS Code\>              git clone https://github.com/microsoft/vcpkg
-PS Code\>              cd vcpkg
-PS Code\vcpkg>         .\bootstrap-vcpkg.bat
-PS Code\vcpkg>         .\vcpkg.exe install darknet[full]:x64-windows #replace with darknet[opencv-base,cuda,cudnn,weights,weights-train]:x64-windows for a quicker install of dependencies
-PS Code\vcpkg>         cd ..
-```
-
-If you prefer to download the most recent, maybe unreleased version, on the last line you need to add `--head` tag, like `.\vcpkg.exe install darknet[full]:x64-windows --head`. After completion, you can find darknet executables, networks and weights inside `installed\x64-windows\tools\darknet`; lib file is inside `installed\x64-windows\lib` and dll file is inside `installed\x64-windows\bin`.
-
-To manually build a version of darknet, after completing the previous step, you can also run
-
-```PowerShell
-PS Code\>              cd vcpkg
-PS Code\vcpkg>         $env:VCPKG_ROOT=$PWD
-PS Code\vcpkg>         cd ..
-PS Code\>              git clone https://github.com/AlexeyAB/darknet
-PS Code\>              cd darknet
-PS Code\darknet>       powershell -ExecutionPolicy Bypass -File .\build.ps1
+PS Code/>              git clone https://github.com/microsoft/vcpkg
+PS Code/>              cd vcpkg
+PS Code/vcpkg>         ./bootstrap-vcpkg.bat
+PS Code/vcpkg>         $env:VCPKG_ROOT=$PWD
+PS Code/vcpkg>         cd ..
+PS Code/>              git clone https://github.com/AlexeyAB/darknet
+PS Code/>              cd darknet
+PS Code/darknet>       ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
 
 ## How to train with multi-GPU
