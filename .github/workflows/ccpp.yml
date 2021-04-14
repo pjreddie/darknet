@@ -124,8 +124,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: |
-        "./build.ps1 -DoNotSetupVS -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN"
+      run: ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA
 
     - uses: actions/upload-artifact@v2
       with:
@@ -164,8 +163,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: |
-        "./build.ps1 -DoNotSetupVS -EnableOPENCV"
+      run: ./build.ps1 -EnableOPENCV
 
     - uses: actions/upload-artifact@v2
       with:
@@ -224,8 +222,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: |
-        "./build.ps1 -DoNotSetupVS -EnableOPENCV -EnableCUDA"
+      run: ./build.ps1 -EnableOPENCV -EnableCUDA
 
     - uses: actions/upload-artifact@v2
       with:
@@ -254,8 +251,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: |
-        "./build.ps1 -DoNotSetupVS -ForceCPP"
+      run: ./build.ps1 -ForceCPP
 
 
   osx-vcpkg:
@@ -283,8 +279,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: |
-        "./build.ps1 -DoNotSetupVS -UseVCPKG -EnableOPENCV"
+      run: ./build.ps1 -UseVCPKG -EnableOPENCV
 
     - uses: actions/upload-artifact@v2
       with:
@@ -316,8 +311,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: |
-        "./build.ps1 -DoNotSetupVS -EnableOPENCV"
+      run: ./build.ps1 -EnableOPENCV
 
     - uses: actions/upload-artifact@v2
       with:
@@ -346,8 +340,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: |
-        "./build.ps1 -DoNotSetupVS -ForceCPP"
+      run: ./build.ps1 -ForceCPP
 
 
   win-vcpkg:
@@ -362,7 +355,7 @@ jobs:
       run: >
         git clone https://github.com/microsoft/vcpkg;
         ./vcpkg/bootstrap-vcpkg.sh;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         sources add
         -source "https://nuget.pkg.github.com/cenit/index.json"
         -storepasswordincleartext
@@ -372,8 +365,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: |
-        "./build.ps1 -UseVCPKG -EnableOPENCV"
+      run: ./build.ps1 -UseVCPKG -EnableOPENCV
 
     - uses: actions/upload-artifact@v2
       with:
@@ -406,8 +398,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: |
-        "./build.ps1"
+      run: ./build.ps1
 
     - uses: actions/upload-artifact@v2
       with:
@@ -440,8 +431,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: |
-        "./build.ps1 -ForceCPP"
+      run: ./build.ps1 -ForceCPP
 
 
   win-intlibs-cuda:
@@ -464,8 +454,7 @@ jobs:
         CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
       shell: pwsh
-      run: |
-        "./build.ps1 -EnableCUDA"
+      run: ./build.ps1 -EnableCUDA
 
 
   mingw:

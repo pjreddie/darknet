@@ -13,6 +13,13 @@ param (
 $number_of_build_workers = 8
 #$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
 
+if (-Not $IsWindows) {
+  $DoNotSetupVS = $true
+}
+
+if ($IsWindows -and -Not $env:VCPKG_DEFAULT_TRIPLET) {
+  $env:VCPKG_DEFAULT_TRIPLET = "x64-windows"
+}
 
 if ($EnableCUDA) {
   Write-Host "CUDA is enabled"
@@ -61,16 +68,6 @@ if ($ForceCPP) {
 }
 else {
   Write-Host "ForceCPP build mode is disabled, please pass -ForceCPP to the script to enable"
-}
-
-if ($IsWindows) {
-  $vcpkg_triplet = "x64-windows"
-}
-if ($IsMacOS) {
-  $vcpkg_triplet = "x64-osx"
-}
-if ($IsLinux) {
-  $vcpkg_triplet = "x64-linux"
 }
 
 $CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
@@ -269,13 +266,7 @@ if (-Not($EnableOPENCV)) {
 Push-Location $PSScriptRoot
 New-Item -Path ./build_release -ItemType directory -Force
 Set-Location build_release
-
-if ($UseVCPKG) {
-    $cmake_args = "-G `"$generator`" `"-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet`" `"-DCMAKE_BUILD_TYPE=Release`" ${additional_build_setup} -S .."
-}
-else {
-    $cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
-}
+$cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
 Write-Host "CMake args: $cmake_args"
 Start-Process -NoNewWindow -Wait -FilePath $CMAKE_EXE -ArgumentList $cmake_args
 Start-Process -NoNewWindow -Wait -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${number_of_build_workers} --target install"
