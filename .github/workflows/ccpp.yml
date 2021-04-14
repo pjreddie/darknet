@@ -2,6 +2,9 @@ name: Darknet Continuous Integration
 
 on: [push, pull_request, workflow_dispatch]
 
+env:
+  VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,readwrite'
+
 jobs:
   ubuntu-makefile:
     runs-on: ubuntu-20.04
@@ -101,52 +104,44 @@ jobs:
         nvcc --version
         gcc --version
 
-    - name: Restore from cache and run vcpkg
-      env:
-        CUDACXX: "/usr/local/cuda/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
-        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      uses: lukka/run-vcpkg@v7
-      with:
-        setupOnly: true
-        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '99dc49dae7e170c3be63dd097230007f3bb73c4f'
-        appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
-        vcpkgTriplet: 'x64-linux'
-        additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg;
+        ./vcpkg/bootstrap-vcpkg.sh;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        sources add
+        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -storepasswordincleartext
+        -name "vcpkgbinarycache"
+        -username "cenit"
+        -password "${{ secrets.GITHUB_TOKEN }}"
 
-    - name: 'Build with CMake'
+    - name: 'Build'
+      shell: pwsh
       env:
         CUDACXX: "/usr/local/cuda/bin/nvcc"
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDNN=OFF"
-        buildWithCMakeArgs: '--target install'
+      run: |
+        "./build.ps1 -DoNotSetupVS -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN"
 
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: cfg
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: data
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
 
 
@@ -162,16 +157,15 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDNN=OFF -DENABLE_CUDA=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      env:
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
+      run: |
+        "./build.ps1 -DoNotSetupVS -EnableOPENCV"
 
     - uses: actions/upload-artifact@v2
       with:
@@ -223,21 +217,15 @@ jobs:
         nvcc --version
         gcc --version
 
-    - name: 'Build with CMake'
+    - name: 'Build'
+      shell: pwsh
       env:
         CUDACXX: "/usr/local/cuda/bin/nvcc"
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=ON"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+      run: |
+        "./build.ps1 -DoNotSetupVS -EnableOPENCV -EnableCUDA"
 
     - uses: actions/upload-artifact@v2
       with:
@@ -264,16 +252,10 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      run: |
+        "./build.ps1 -DoNotSetupVS -ForceCPP"
 
 
   osx-vcpkg:
@@ -286,26 +268,23 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: Restore from cache and run vcpkg
-      uses: lukka/run-vcpkg@v7
-      with:
-        setupOnly: true
-        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '99dc49dae7e170c3be63dd097230007f3bb73c4f'
-        appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
-        vcpkgTriplet: 'x64-osx'
-        additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg;
+        ./vcpkg/bootstrap-vcpkg.sh;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        sources add
+        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -storepasswordincleartext
+        -name "vcpkgbinarycache"
+        -username "cenit"
+        -password "${{ secrets.GITHUB_TOKEN }}"
 
-    - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF"
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      run: |
+        "./build.ps1 -DoNotSetupVS -UseVCPKG -EnableOPENCV"
 
     - uses: actions/upload-artifact@v2
       with:
@@ -335,16 +314,10 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      run: |
+        "./build.ps1 -DoNotSetupVS -EnableOPENCV"
 
     - uses: actions/upload-artifact@v2
       with:
@@ -371,45 +344,36 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      run: |
+        "./build.ps1 -DoNotSetupVS -ForceCPP"
 
 
-  win-vcpkg-ninja:
+  win-vcpkg:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
 
     - uses: lukka/get-cmake@latest
 
-    - name: Restore from cache and run vcpkg
-      uses: lukka/run-vcpkg@v7
-      with:
-        setupOnly: true
-        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '99dc49dae7e170c3be63dd097230007f3bb73c4f'
-        appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
-        vcpkgTriplet: 'x64-windows'
-        additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg;
+        ./vcpkg/bootstrap-vcpkg.sh;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        sources add
+        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -storepasswordincleartext
+        -name "vcpkgbinarycache"
+        -username "cenit"
+        -password "${{ secrets.GITHUB_TOKEN }}"
 
-    - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-GNinja -DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES=ON -DENABLE_CUDNN=OFF -DENABLE_CUDA=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+    - name: 'Build'
+      shell: pwsh
+      run: |
+        "./build.ps1 -UseVCPKG -EnableOPENCV"
 
     - uses: actions/upload-artifact@v2
       with:
@@ -440,16 +404,10 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+    - name: 'Build'
+      shell: pwsh
+      run: |
+        "./build.ps1"
 
     - uses: actions/upload-artifact@v2
       with:
@@ -480,16 +438,10 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+    - name: 'Build'
+      shell: pwsh
+      run: |
+        "./build.ps1 -ForceCPP"
 
 
   win-intlibs-cuda:
@@ -505,21 +457,15 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake'
+    - name: 'Build'
       env:
         CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_PATH_V10_2: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release  -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+      shell: pwsh
+      run: |
+        "./build.ps1 -EnableCUDA"
 
 
   mingw:
