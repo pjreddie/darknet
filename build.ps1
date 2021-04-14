@@ -70,6 +70,8 @@ else {
   Write-Host "ForceCPP build mode is disabled, please pass -ForceCPP to the script to enable"
 }
 
+Push-Location $PSScriptRoot
+
 $CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
 if (-Not $CMAKE_EXE) {
   throw "Could not find CMake, please install it"
@@ -176,6 +178,12 @@ elseif ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
   Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: ${RUNVCPKG_VCPKG_ROOT_OUT}"
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
+elseif ((Test-Path "$PWD/vcpkg") -and $UseVCPKG) {
+  $vcpkg_path = "$PWD/vcpkg"
+  $env:VCPKG_ROOT = "$PWD/vcpkg"
+  Write-Host "Found vcpkg in $PWD/vcpkg: $PWD/vcpkg"
+  $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+}
 else {
   Write-Host "Skipping vcpkg integration`n" -ForegroundColor Yellow
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
@@ -263,7 +271,6 @@ if (-Not($EnableOPENCV)) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV:BOOL=OFF"
 }
 
-Push-Location $PSScriptRoot
 New-Item -Path ./build_release -ItemType directory -Force
 Set-Location build_release
 $cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
