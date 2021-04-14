@@ -4,6 +4,7 @@ param (
   [switch]$EnableCUDA = $false,
   [switch]$EnableCUDNN = $false,
   [switch]$EnableOPENCV = $false,
+  [switch]$EnableOPENCV_CUDA = $false,
   [switch]$UseVCPKG = $false,
   [switch]$DoNotSetupVS = $false,
   [switch]$DoNotUseNinja = $false,
@@ -48,6 +49,22 @@ if ($EnableOPENCV) {
 }
 else {
   Write-Host "OPENCV is disabled, please pass -EnableOPENCV to the script to enable"
+}
+
+if ($EnableCUDA -and $EnableOPENCV -and -not $EnableOPENCV_CUDA) {
+  Write-Host "OPENCV with CUDA extension is not enabled, you can enable it passing -EnableOPENCV_CUDA"
+}
+elseif ($EnableOPENCV -and $EnableOPENCV_CUDA -and -not $EnableCUDA) {
+  Write-Host "OPENCV with CUDA extension was requested, but CUDA is not enabled, you can enable it passing -EnableCUDA"
+  $EnableOPENCV_CUDA = $false
+}
+elseif ($EnableCUDA -and $EnableOPENCV_CUDA -and -not $EnableOPENCV) {
+  Write-Host "OPENCV with CUDA extension was requested, but OPENCV is not enabled, you can enable it passing -EnableOPENCV"
+  $EnableOPENCV_CUDA = $false
+}
+elseif ($EnableOPENCV_CUDA -and -not $EnableCUDA -and -not $EnableOPENCV) {
+  Write-Host "OPENCV with CUDA extension was requested, but OPENCV and CUDA are not enabled, you can enable them passing -EnableOPENCV -EnableCUDA"
+  $EnableOPENCV_CUDA = $false
 }
 
 if ($UseVCPKG) {
@@ -279,6 +296,10 @@ if (-Not($EnableCUDNN)) {
 
 if (-Not($EnableOPENCV)) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV:BOOL=OFF"
+}
+
+if ($EnableOPENCV_CUDA) {
+  $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV_WITH_CUDA:BOOL=ON"
 }
 
 New-Item -Path ./build_release -ItemType directory -Force
