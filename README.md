@@ -52,6 +52,8 @@ About Darknet framework: http://pjreddie.com/darknet/
       - [How to use on the command line](#how-to-use-on-the-command-line)
         - [For using network video-camera mjpeg-stream with any Android smartphone](#for-using-network-video-camera-mjpeg-stream-with-any-android-smartphone)
     - [How to compile on Linux/macOS (using `CMake`)](#how-to-compile-on-linuxmacos-using-cmake)
+    - [Using `vcpkg`](#using-vcpkg)
+    - [Using libraries manually provided](#using-libraries-manually-provided)
     - [How to compile on Linux (using `make`)](#how-to-compile-on-linux-using-make)
     - [How to compile on Windows (using `CMake`)](#how-to-compile-on-windows-using-cmake)
     - [How to compile on Windows (using `vcpkg`)](#how-to-compile-on-windows-using-vcpkg)
@@ -315,7 +317,11 @@ The `CMakeLists.txt` will attempt to find installed optional dependencies like C
 
 Install powershell if you do not already have it ([guide here](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell)).
 
-Then, open a shell inside the darknet repository and type these commands (using `vcpkg` to automatically download dependencies):
+To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware.com/
+
+### Using `vcpkg`
+
+Open a shell and type these commands
 
 ```PowerShell
 PS Code/>              git clone https://github.com/microsoft/vcpkg
@@ -329,8 +335,11 @@ PS Code/darknet>       ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCU
 ```
 
 (add option `-EnableOPENCV_CUDA` if you want to build OpenCV with CUDA support - very slow to build!)
+If you open the `build.ps1` script at the beginning you will find all available switches.
 
-or these commands (without `vcpkg` - please install required libraries manually)
+### Using libraries manually provided
+
+Open a shell and type these commands
 
 ```PowerShell
 PS Code/>              git clone https://github.com/AlexeyAB/darknet
@@ -340,8 +349,6 @@ PS Code/darknet>       ./build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN
 
 (remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested into).
 If you open the `build.ps1` script at the beginning you will find all available switches.
-
-To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware.com/
 
 ### How to compile on Linux (using `make`)
 
@@ -369,8 +376,7 @@ Requires:
 * CMake GUI: `Windows win64-x64 Installer`https://cmake.org/download/
 * Download Darknet zip-archive with the latest commit and uncompress it: [master.zip](https://github.com/AlexeyAB/darknet/archive/master.zip)
 
-In the Windows: 
-
+In Windows: 
 
 * Start (button) -> All programms -> CMake -> CMake (gui) -> 
 
@@ -381,7 +387,6 @@ In the Windows:
 * find the executable file `darknet.exe` in the output path to the binaries you specified
 
 ![x64 and Release](https://habrastorage.org/webt/ay/ty/f-/aytyf-8bufe7q-16yoecommlwys.jpeg)
-
 
 
 ### How to compile on Windows (using `vcpkg`)
