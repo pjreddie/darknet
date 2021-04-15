@@ -124,7 +124,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA
+      run: ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -ForceStaticLib
 
     - uses: actions/upload-artifact@v2
       with:
@@ -279,7 +279,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -UseVCPKG -EnableOPENCV
+      run: ./build.ps1 -UseVCPKG
 
     - uses: actions/upload-artifact@v2
       with:

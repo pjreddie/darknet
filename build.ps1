@@ -8,7 +8,9 @@ param (
   [switch]$UseVCPKG = $false,
   [switch]$DoNotSetupVS = $false,
   [switch]$DoNotUseNinja = $false,
-  [switch]$ForceCPP = $false
+  [switch]$ForceCPP = $false,
+  [switch]$ForceStaticLib = $false,
+  [switch]$ForceGCC8 = $false
 )
 
 $number_of_build_workers = 8
@@ -16,6 +18,17 @@ $number_of_build_workers = 8
 
 if (-Not $IsWindows) {
   $DoNotSetupVS = $true
+}
+
+if ($ForceStaticLib) {
+  Write-Host "Forced CMake to produce a static library"
+  $additional_build_setup = " -DBUILD_SHARED_LIBS=OFF "
+}
+
+if ($IsLinux -and $ForceGCC8) {
+  Write-Host "Manually setting CC and CXX variables to gcc-8 and g++-8"
+  $env:CC = "gcc-8"
+  $env:CXX = "g++-8"
 }
 
 if ($IsWindows -and -Not $env:VCPKG_DEFAULT_TRIPLET) {
