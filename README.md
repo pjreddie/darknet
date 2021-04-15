@@ -197,7 +197,7 @@ You can get cfg-files by path: `darknet/cfg/`
 ### Requirements
 
 * **CMake >= 3.18**: https://cmake.org/download/
-* **Powershell**: https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell
+* **Powershell** (already installed on windows): https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell
 * **CUDA >= 10.2**: https://developer.nvidia.com/cuda-toolkit-archive (on Linux do [Post-installation Actions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#post-installation-actions))
 * **OpenCV >= 2.4**: use your preferred package manager (brew, apt), build from source using [vcpkg](https://github.com/Microsoft/vcpkg) or download from [OpenCV official site](https://opencv.org/releases.html) (on Windows set system variable `OpenCV_DIR` = `C:\opencv\build` - where are the `include` and `x64` folders [image](https://user-images.githubusercontent.com/4096485/53249516-5130f480-36c9-11e9-8238-a6e82e48c6f2.png))
 * **cuDNN >= 8.0.2** https://developer.nvidia.com/rdp/cudnn-archive (on **Linux** copy `cudnn.h`,`libcudnn.so`... as desribed here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installlinux-tar , on **Windows** copy `cudnn.h`,`cudnn64_7.dll`, `cudnn64_7.lib` as desribed here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installwindows )
@@ -315,18 +315,20 @@ The `CMakeLists.txt` will attempt to find installed optional dependencies like C
 
 Install powershell if you do not already have it ([guide here](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell)).
 
-Then, open a powershell terminal inside the darknet repository and type these commands (using `vcpkg` to automatically download dependencies):
+Then, open a shell inside the darknet repository and type these commands (using `vcpkg` to automatically download dependencies):
 
 ```PowerShell
 PS Code/>              git clone https://github.com/microsoft/vcpkg
 PS Code/>              cd vcpkg
-PS Code/vcpkg>         ./bootstrap-vcpkg.bat
+PS Code/vcpkg>         ./bootstrap-vcpkg.sh
 PS Code/vcpkg>         $env:VCPKG_ROOT=$PWD
 PS Code/vcpkg>         cd ..
 PS Code/>              git clone https://github.com/AlexeyAB/darknet
 PS Code/>              cd darknet
 PS Code/darknet>       ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
+
+(add option `-EnableOPENCV_CUDA` if you want to build OpenCV with CUDA support - very slow to build!)
 
 or these commands (without `vcpkg` - please install required libraries manually)
 
@@ -336,7 +338,8 @@ PS Code/>              cd darknet
 PS Code/darknet>       ./build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
 
-(remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested into)
+(remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested into).
+If you open the `build.ps1` script at the beginning you will find all available switches.
 
 To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware.com/
 
@@ -394,13 +397,15 @@ This is the recommended approach to build Darknet on Windows.
 ```PowerShell
 PS Code/>              git clone https://github.com/microsoft/vcpkg
 PS Code/>              cd vcpkg
-PS Code/vcpkg>         ./bootstrap-vcpkg.bat
+PS Code/vcpkg>         .\bootstrap-vcpkg.bat
 PS Code/vcpkg>         $env:VCPKG_ROOT=$PWD
 PS Code/vcpkg>         cd ..
 PS Code/>              git clone https://github.com/AlexeyAB/darknet
 PS Code/>              cd darknet
-PS Code/darknet>       ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
+PS Code/darknet>       .\build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
+
+(add option `-EnableOPENCV_CUDA` if you want to build OpenCV with CUDA support - very slow to build! - or remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested in them). If you open the `build.ps1` script at the beginning you will find all available switches.
 
 ## How to train with multi-GPU
 
