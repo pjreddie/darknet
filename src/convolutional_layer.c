@@ -319,7 +319,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
         if (conv_fwd_results[i].status == CUDNN_STATUS_SUCCESS &&
             conv_fwd_results[i].algo != CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED &&
             conv_fwd_results[i].memory < free_memory &&
-            conv_fwd_results[i].memory <= workspace_size_specify &&
+            (conv_fwd_results[i].memory <= workspace_size_specify || cudnn_preference == cudnn_fastest) &&
             conv_fwd_results[i].time < min_time)
         {
             found_conv_algorithm = 1;
@@ -357,7 +357,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
     {
         if (conv_bwd_data_results[i].status == CUDNN_STATUS_SUCCESS &&
             conv_bwd_data_results[i].memory < free_memory &&
-            conv_bwd_data_results[i].memory <= workspace_size_specify &&
+            (conv_bwd_data_results[i].memory <= workspace_size_specify || cudnn_preference == cudnn_fastest) &&
             conv_bwd_data_results[i].time < min_time)
         {
             found_conv_algorithm = 1;
@@ -394,7 +394,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
     {
         if (conv_bwd_filter_results[i].status == CUDNN_STATUS_SUCCESS &&
             conv_bwd_filter_results[i].memory < free_memory &&
-            conv_bwd_filter_results[i].memory <= workspace_size_specify &&
+            (conv_bwd_filter_results[i].memory <= workspace_size_specify || cudnn_preference == cudnn_fastest) &&
             conv_bwd_filter_results[i].time < min_time)
         {
             found_conv_algorithm = 1;
@@ -566,6 +566,9 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         if (train) {
             l.weight_updates = (float*)xcalloc(l.nweights, sizeof(float));
             l.bias_updates = (float*)xcalloc(n, sizeof(float));
+
+            l.weights_ema = (float*)xcalloc(l.nweights, sizeof(float));
+            l.biases_ema = (float*)xcalloc(n, sizeof(float));
         }
     }
 
@@ -637,6 +640,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
                 l.scales[i] = 1;
             }
             if (train) {
+                l.scales_ema = (float*)xcalloc(n, sizeof(float));
                 l.scale_updates = (float*)xcalloc(n, sizeof(float));
 
                 l.mean = (float*)xcalloc(n, sizeof(float));
@@ -1364,7 +1368,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             else {
                 //printf(" l.index = %d - FP32 \n", l.index);
                 float *im = state.input + (i*l.groups + j)*(l.c / l.groups)*l.h*l.w;
-                if (l.size == 1) {
+                if (l.size == 1 && l.stride == 1 && l.dilation == 1) {
                     b = im;
                 }
                 else {

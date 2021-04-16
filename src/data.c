@@ -1050,7 +1050,7 @@ void blend_truth_mosaic(float *new_truth, int boxes, int truth_size, float *old_
 #include "http_stream.h"
 
 data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int truth_size, int classes, int use_flip, int use_gaussian_noise, int use_blur, int use_mixup,
-    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int mosaic_bound, int contrastive, int contrastive_jit_flip, int show_imgs)
+    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int mosaic_bound, int contrastive, int contrastive_jit_flip, int contrastive_color, int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -1151,9 +1151,12 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 r_scale = random_float();
 
-                dhue = rand_uniform_strong(-hue, hue);
-                dsat = rand_scale(saturation);
-                dexp = rand_scale(exposure);
+                if (!contrastive || contrastive_color || i % 2 == 0)
+                {
+                    dhue = rand_uniform_strong(-hue, hue);
+                    dsat = rand_scale(saturation);
+                    dexp = rand_scale(exposure);
+                }
 
                 if (use_blur) {
                     int tmp_blur = rand_int(0, 2);  // 0 - disable, 1 - blur background, 2 - blur the whole image
@@ -1370,7 +1373,7 @@ void blend_images(image new_img, float alpha, image old_img, float beta)
 }
 
 data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int truth_size, int classes, int use_flip, int gaussian_noise, int use_blur, int use_mixup,
-    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int mosaic_bound, int contrastive, int contrastive_jit_flip, int show_imgs)
+    float jitter, float resize, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int mosaic_bound, int contrastive, int contrastive_jit_flip, int contrastive_color, int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -1451,9 +1454,12 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 r_scale = random_float();
 
-                dhue = rand_uniform_strong(-hue, hue);
-                dsat = rand_scale(saturation);
-                dexp = rand_scale(exposure);
+                if (!contrastive || contrastive_color || i % 2 == 0)
+                {
+                    dhue = rand_uniform_strong(-hue, hue);
+                    dsat = rand_scale(saturation);
+                    dexp = rand_scale(exposure);
+                }
             }
 
             int pleft = rand_precalc_random(-dw, dw, r1);
@@ -1588,7 +1594,7 @@ void *load_thread(void *ptr)
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){
         *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.truth_size, a.classes, a.flip, a.gaussian_noise, a.blur, a.mixup, a.jitter, a.resize,
-            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.letter_box, a.mosaic_bound, a.contrastive, a.contrastive_jit_flip, a.show_imgs);
+            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.letter_box, a.mosaic_bound, a.contrastive, a.contrastive_jit_flip, a.contrastive_color, a.show_imgs);
     } else if (a.type == SWAG_DATA){
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
     } else if (a.type == COMPARE_DATA){

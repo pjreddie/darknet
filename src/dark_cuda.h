@@ -77,10 +77,14 @@ extern "C" {
     float cuda_compare(float *x_gpu, float *x, size_t n, char *s);
     dim3 cuda_gridsize(size_t n);
     cudaStream_t get_cuda_stream();
-    cudaStream_t get_cuda_memcpy_stream();
+    //cudaStream_t get_cuda_memcpy_stream();
     int get_number_of_blocks(int array_size, int block_size);
     int get_gpu_compute_capability(int i, char *device_name);
     void show_cuda_cudnn_info();
+
+    cudaStream_t switch_stream(int i);
+    void wait_stream(int i);
+    void reset_wait_stream_events();
 
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();

@@ -2,13 +2,17 @@ version: 2.0
 jobs:
   build:
     docker:
-       - image: alantrrs/cuda-opencv:latest
+       - image: datamachines/cudnn_tensorflow_opencv:11.2.0_2.4.1_4.5.1-20210211
+#      - image: alexeyab84/dockerfiles:latest
+#      - image: alantrrs/cuda-opencv:latest
 #      - image: nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
     working_directory: ~/work
     steps:
       - checkout
       - run: nvcc --version
       - run: gcc --version
+      - run: export PATH=$PATH:/usr/local/include/opencv4/
+      - run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/:/usr/lib/:/usr/lib64/
       - run: make LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 -j 8
       - run: make clean
       - run: make LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 DEBUG=1 -j 8

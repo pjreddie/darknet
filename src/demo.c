@@ -97,7 +97,8 @@ void *detect_in_thread(void *ptr)
 
         layer l = net.layers[net.n - 1];
         float *X = det_s.data;
-        float *prediction = network_predict(net, X);
+        //float *prediction =
+        network_predict(net, X);
 
         cv_images[demo_index] = det_img;
         det_img = cv_images[(demo_index + avg_frames / 2 + 1) % avg_frames];
@@ -107,6 +108,12 @@ void *detect_in_thread(void *ptr)
             dets = get_network_boxes(&net, get_width_mat(in_img), get_height_mat(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
         else
             dets = get_network_boxes(&net, net.w, net.h, demo_thresh, demo_thresh, 0, 1, &nboxes, 0); // resized
+
+        //const float nms = .45;
+        //if (nms) {
+        //    if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
+        //    else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+        //}
 
         custom_atomic_store_int(&run_detect_in_thread, 0);
     }
@@ -152,6 +159,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    if (net.letter_box) letter_box = 1;
     net.benchmark_layers = benchmark_layers;
     fuse_conv_batchnorm(net);
     calculate_binary_weights(net);

@@ -1,10 +1,13 @@
 name: Darknet Continuous Integration
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
+
+env:
+  VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,readwrite'
 
 jobs:
   ubuntu-makefile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -15,18 +18,19 @@ jobs:
 
     - name: 'Install CUDA'
       run: |
-        wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
-        sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
-        sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
         sudo apt update
-        sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
-        sudo apt-get install -y --no-install-recommends libcudnn7-dev
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/libcuda.so
-        sudo ln -s /usr/local/cuda-10.2 /usr/local/cuda
+        sudo apt-get dist-upgrade -y
+        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+        sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
+        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
+        sudo apt-get install -y --no-install-recommends libcudnn8-dev
+        sudo rm -rf /usr/local/cuda
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
         export PATH=/usr/local/cuda/bin:$PATH
         export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
         nvcc --version
@@ -68,59 +72,80 @@ jobs:
         make clean
 
 
-  ubuntu-vcpkg:
-    runs-on: ubuntu-latest
+  ubuntu-vcpkg-cuda:
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install yasm
+      run: sudo apt install yasm nasm
 
     - uses: lukka/get-cmake@latest
 
-    - name: Restore from cache and run vcpkg
-      env:
-        vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_linux.diff
-      uses: lukka/run-vcpkg@v2
-      with:
-        vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
-        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
-        appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
+    - name: 'Install CUDA'
+      run: |
+        sudo apt update
+        sudo apt-get dist-upgrade -y
+        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+        sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
+        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
+        sudo apt-get install -y --no-install-recommends libcudnn8-dev
+        sudo rm -rf /usr/local/cuda
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
+        nvcc --version
+        gcc --version
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release"
-        buildWithCMakeArgs: '--target install'
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg;
+        ./vcpkg/bootstrap-vcpkg.sh;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        sources add
+        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -storepasswordincleartext
+        -name "vcpkgbinarycache"
+        -username "cenit"
+        -password "${{ secrets.GITHUB_TOKEN }}"
+
+    - name: 'Build'
+      shell: pwsh
+      env:
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
+      run: ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -ForceStaticLib
 
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: cfg
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: data
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
     - uses: actions/upload-artifact@v2
       with:
-        name: darknet-vcpkg-${{ runner.os }}
+        name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
 
 
   ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -131,16 +156,14 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      env:
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
+      run: ./build.ps1 -EnableOPENCV
 
     - uses: actions/upload-artifact@v2
       with:
@@ -161,7 +184,7 @@ jobs:
 
 
   ubuntu-cuda:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -173,37 +196,33 @@ jobs:
     - uses: lukka/get-cmake@latest
 
     - name: 'Install CUDA'
-      env:
-        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda-10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
-        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
       run: |
-        wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
-        sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
-        wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
-        sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
         sudo apt update
-        sudo apt-get install -y --no-install-recommends cuda-compiler-10-2 cuda-libraries-dev-10-2 cuda-driver-dev-10-2 cuda-cudart-dev-10-2 cuda-curand-dev-10-2
-        sudo apt-get install -y --no-install-recommends libcudnn7-dev
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-10.2/lib64/stubs/libcuda.so.1
+        sudo apt-get dist-upgrade -y
+        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+        sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
+        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
+        sudo apt-get install -y --no-install-recommends libcudnn8-dev
+        sudo rm -rf /usr/local/cuda
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
+        nvcc --version
+        gcc --version
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build'
+      shell: pwsh
       env:
-        CUDACXX: "/usr/local/cuda-10.2/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda-10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda-10.2"
-        LD_LIBRARY_PATH: "/usr/local/cuda-10.2/lib64:/usr/local/cuda-10.2/lib64/stubs:$LD_LIBRARY_PATH"
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
+      run: ./build.ps1 -EnableOPENCV -EnableCUDA
 
     - uses: actions/upload-artifact@v2
       with:
@@ -224,54 +243,43 @@ jobs:
 
 
   ubuntu-no-ocv-cpp:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -ForceCPP
 
 
   osx-vcpkg:
-    runs-on: macOS-latest
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
-      run: brew install libomp yasm
+      run: brew install libomp yasm nasm
 
     - uses: lukka/get-cmake@latest
 
-    - name: Restore from cache and run vcpkg
-      env:
-        vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_osx.diff
-      uses: lukka/run-vcpkg@v2
-      with:
-        vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
-        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
-        appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg;
+        ./vcpkg/bootstrap-vcpkg.sh;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        sources add
+        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -storepasswordincleartext
+        -name "vcpkgbinarycache"
+        -username "cenit"
+        -password "${{ secrets.GITHUB_TOKEN }}"
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release"
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -UseVCPKG
 
     - uses: actions/upload-artifact@v2
       with:
@@ -292,7 +300,7 @@ jobs:
 
 
   osx:
-    runs-on: macOS-latest
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
 
@@ -301,16 +309,9 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -EnableOPENCV
 
     - uses: actions/upload-artifact@v2
       with:
@@ -331,22 +332,15 @@ jobs:
 
 
   osx-no-ocv-no-omp-cpp:
-    runs-on: macOS-latest
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--target install'
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -ForceCPP
 
 
   win-vcpkg:
@@ -356,26 +350,22 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: Restore from cache and run vcpkg
-      env:
-        vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_windows.diff
-      uses: lukka/run-vcpkg@v2
-      with:
-        vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
-        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
-        appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg;
+        ./vcpkg/bootstrap-vcpkg.sh;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        sources add
+        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -storepasswordincleartext
+        -name "vcpkgbinarycache"
+        -username "cenit"
+        -password "${{ secrets.GITHUB_TOKEN }}"
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -UseVCPKG -EnableOPENCV
 
     - uses: actions/upload-artifact@v2
       with:
@@ -399,89 +389,16 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
-  win-vcpkg-cuda:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: 'Install CUDA'
-      run: |
-        choco install cuda --version=10.2.89.20191206 -y
-        $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
-        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-        refreshenv
-
-    - uses: lukka/get-cmake@latest
-
-    - name: Restore from cache and run vcpkg
-      env:
-        vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_windows_cuda.diff
-        CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDACXX: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
-
-      uses: lukka/run-vcpkg@v2
-      with:
-        vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
-        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
-        appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
-
-    - name: 'Build with CMake and Ninja'
-      env:
-        CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDACXX: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
-
-    - uses: actions/upload-artifact@v2
-      with:
-        name: darknet-vcpkg-cuda-${{ runner.os }}
-        path: cfg
-    - uses: actions/upload-artifact@v2
-      with:
-        name: darknet-vcpkg-cuda-${{ runner.os }}
-        path: data
-    - uses: actions/upload-artifact@v2
-      with:
-        name: darknet-vcpkg-cuda-${{ runner.os }}
-        path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
-      with:
-        name: darknet-vcpkg-cuda-${{ runner.os }}
-        path: ${{ runner.workspace }}/buildDirectory/Release/*.dll
-    - uses: actions/upload-artifact@v2
-      with:
-        name: darknet-vcpkg-cuda-${{ runner.os }}
-        path: ${{ github.workspace }}/uselib*
-
-
-  win-integrated-libs:
+  win-intlibs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1
 
     - uses: actions/upload-artifact@v2
       with:
@@ -512,16 +429,9 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DBUILD_AS_CPP:BOOL=TRUE"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -ForceCPP
 
 
   win-intlibs-cuda:
@@ -537,21 +447,14 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
+    - name: 'Build'
       env:
-        CUDA_PATH: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDA_PATH_V10_2: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDACXX: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDA_PATH_V10_2: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
+        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
+      shell: pwsh
+      run: ./build.ps1 -EnableCUDA
 
 
   mingw:
@@ -561,34 +464,13 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
-    - name: 'Build with CMake and Ninja'
-      uses: lukka/run-cmake@v2
+    - name: 'Build with CMake'
+      uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-G\"MinGW Makefiles\" -DCMAKE_BUILD_TYPE=Release"
+        cmakeAppendedArgs: "-G\"MinGW Makefiles\" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--config Release --target install'
-
-
-  cygwin:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: 'Install Cygwin'
-      run: |
-        choco install cygwin -y
-        choco install cyg-get -y
-        cyg-get gcc-g++ cmake make libopencv-devel libncurses-devel
-
-    - name: 'Build'
-      run: |
-        mkdir buildDirectory
-        cd buildDirectory
-        path C:\tools\cygwin\bin
-        bash -c 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release"'
-        bash -c 'cmake --build . --target install -- -j8'
-      shell: cmd

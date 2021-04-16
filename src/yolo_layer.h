@@ -20,7 +20,7 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
 
 #ifdef GPU
 void forward_yolo_layer_gpu(const layer l, network_state state);
-void backward_yolo_layer_gpu(layer l, network_state state);
+void backward_yolo_layer_gpu(const layer l, network_state state);
 #endif
 
 #ifdef __cplusplus

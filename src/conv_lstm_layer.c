@@ -240,6 +240,198 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
     return l;
 }
 
+layer make_history_layer(int batch, int h, int w, int c, int history_size, int steps, int train)
+{
+    layer l = { (LAYER_TYPE)0 };
+    l.train = train;
+    l.batch = batch;
+    l.type = HISTORY;
+    l.steps = steps;
+    l.history_size = history_size;
+    l.h = h;
+    l.w = w;
+    l.c = c;
+    l.out_h = h;
+    l.out_w = w;
+    l.out_c = c * history_size;
+    l.inputs = h * w * c;
+    l.outputs = h * w * c * history_size;
+
+    l.forward = forward_history_layer;
+    l.backward = backward_history_layer;
+
+    fprintf(stderr, "HISTORY b = %d, s = %2d, steps = %2d   %4d x%4d x%4d -> %4d x%4d x%4d \n", l.batch / l.steps, l.history_size, l.steps, w, h, c, l.out_w, l.out_h, l.out_c);
+
+    l.output = (float*)xcalloc(l.batch * l.outputs, sizeof(float));
+    l.delta = (float*)xcalloc(l.batch * l.outputs, sizeof(float));
+
+    l.prev_state_cpu = (float*)xcalloc(l.batch*l.outputs, sizeof(float));
+
+#ifdef GPU
+
+    l.forward_gpu = forward_history_layer_gpu;
+    l.backward_gpu = backward_history_layer_gpu;
+
+    l.output_gpu = cuda_make_array(0, l.batch * l.outputs);
+    l.delta_gpu = cuda_make_array(0, l.batch * l.outputs);
+
+    l.prev_state_gpu = cuda_make_array(0, l.batch*l.outputs);
+
+#endif  // GPU
+
+    //l.batch = 4;
+    //l.steps = 1;
+
+    return l;
+}
+
+void forward_history_layer(layer l, network_state state)
+{
+    if (l.steps == 1) {
+        copy_cpu(l.inputs*l.batch, state.input, 1, l.output, 1);
+        return;
+    }
+
+    const int batch = l.batch / l.steps;
+
+    float *prev_output = l.prev_state_cpu;
+
+    int i;
+    for (i = 0; i < l.steps; ++i) {
+        // shift cell
+        int shift_size = l.inputs * (l.history_size - 1);
+        int output_sift = l.inputs;
+
+        int b;
+        for (b = 0; b < batch; ++b) {
+            int input_start = b*l.inputs + i*l.inputs*batch;
+            int output_start = b*l.outputs + i*l.outputs*batch;
+            float *input = state.input + input_start;
+            float *output = l.output + output_start;
+
+            copy_cpu(shift_size, prev_output + b*l.outputs, 1, output + output_sift, 1);
+
+            copy_cpu(l.inputs, input, 1, output, 1);
+        }
+        prev_output = l.output + i*l.outputs*batch;
+    }
+
+    int output_start = (l.steps-1)*l.outputs*batch;
+    copy_cpu(batch*l.outputs, l.output + output_start, 1, l.prev_state_cpu, 1);
+}
+
+void backward_history_layer(layer l, network_state state)
+{
+    if (l.steps == 1) {
+        axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, state.delta, 1);
+        return;
+    }
+
+    const int batch = l.batch / l.steps;
+
+    // l.delta -> state.delta
+    int i;
+    for (i = 0; i < l.steps; ++i) {
+        int b;
+        for (b = 0; b < batch; ++b) {
+            int input_start = b*l.inputs + i*l.inputs*batch;
+            int output_start = b*l.outputs + i*l.outputs*batch;
+            float *state_delta = state.delta + input_start;
+            float *l_delta = l.delta + output_start;
+
+            //copy_cpu(l.inputs, l_delta, 1, state_delta, 1);
+            axpy_cpu(l.inputs, 1, l_delta, 1, state_delta, 1);
+        }
+    }
+}
+
+#ifdef GPU
+void forward_history_layer_gpu(const layer l, network_state state)
+{
+    if (l.steps == 1) {
+        simple_copy_ongpu(l.inputs*l.batch, state.input, l.output_gpu);
+        return;
+    }
+
+    const int batch = l.batch / l.steps;
+
+    //int copy_size = l.inputs*batch*l.steps;
+    //printf(" copy_size = %d, inputs = %d, batch = %d, steps = %d, l.history_size = %d \n", copy_size, l.inputs, batch, l.steps, l.history_size);
+    //simple_copy_ongpu(copy_size, state.input, l.output_gpu);
+    //return;
+
+    //fill_ongpu(batch*l.outputs, 0, l.prev_state_gpu, 1);
+    float *prev_output = l.prev_state_gpu;
+
+    int i;
+    for (i = 0; i < l.steps; ++i) {
+        // shift cell
+        int shift_size = l.inputs * (l.history_size - 1);
+        int output_sift = l.inputs;
+
+        int b;
+        for (b = 0; b < batch; ++b) {
+            //printf(" hist-fw: i = %d, b = %d \n", i, b);
+
+            int input_start = b*l.inputs + i*l.inputs*batch;
+            int output_start = b*l.outputs + i*l.outputs*batch;
+            float *input = state.input + input_start;
+            float *output = l.output_gpu + output_start;
+
+            //copy_cpu(shift_size, prev_output + b*l.outputs, 1, output + output_sift, 1);
+            simple_copy_ongpu(shift_size, prev_output + b*l.outputs, output + output_sift);
+
+            //copy_cpu(l.inputs, input, 1, output, 1);
+            simple_copy_ongpu(l.inputs, input, output);
+
+            int h;
+            for (h = 1; h < l.history_size; ++h) {
+                //scal_ongpu(l.inputs, (l.history_size - h)/ (float)l.history_size, output + h*l.inputs, 1);
+                //scal_ongpu(l.inputs, 0, output + h*l.inputs, 1);
+            }
+        }
+        prev_output = l.output_gpu + i*l.outputs*batch;
+    }
+
+    int output_start = (l.steps - 1)*l.outputs*batch;
+    //copy_cpu(batch*l.outputs, l.output + output_start, 1, l.prev_state_cpu, 1);
+    simple_copy_ongpu(batch*l.outputs, l.output_gpu + output_start, l.prev_state_gpu);
+}
+
+void backward_history_layer_gpu(const layer l, network_state state)
+{
+    if (l.steps == 1) {
+        axpy_ongpu(l.inputs*l.batch, 1, l.delta_gpu, 1, state.delta, 1);
+        return;
+    }
+
+    const int batch = l.batch / l.steps;
+
+    //int copy_size = l.inputs*batch*l.steps;
+    //printf(" copy_size = %d, inputs = %d, batch = %d, steps = %d, l.history_size = %d \n", copy_size, l.inputs, batch, l.steps, l.history_size);
+    //axpy_ongpu(copy_size, 1, l.delta_gpu, 1, state.delta, 1);
+    //return;
+
+    // l.delta -> state.delta
+    int i;
+    for (i = 0; i < l.steps; ++i) {
+        int b;
+        for (b = 0; b < batch; ++b) {
+            //printf(" hist-bw: i = %d, b = %d \n", i, b);
+
+            int input_start = b*l.inputs + i*l.inputs*batch;
+            int output_start = b*l.outputs + i*l.outputs*batch;
+            float *state_delta = state.delta + input_start;
+            float *l_delta = l.delta_gpu + output_start;
+
+            //copy_cpu(l.inputs, l_delta, 1, state_delta, 1);
+            axpy_ongpu(l.inputs, 1, l_delta, 1, state_delta, 1);
+        }
+    }
+}
+#endif
+
+
 void update_conv_lstm_layer(layer l, int batch, float learning_rate, float momentum, float decay)
 {
     if (l.peephole) {

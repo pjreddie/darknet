@@ -1,8 +1,0 @@
-cuda
-cudnn
-stb
-pthreads
-ffmpeg
-opencv[ffmpeg]
---triplet
-x64-linux

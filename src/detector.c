@@ -157,6 +157,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.mosaic_bound = net.mosaic_bound;
     args.contrastive = net.contrastive;
     args.contrastive_jit_flip = net.contrastive_jit_flip;
+    args.contrastive_color = net.contrastive_color;
     if (dont_show && show_imgs) show_imgs = 2;
     args.show_imgs = show_imgs;
 
@@ -381,7 +382,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
         //if (i % 100 == 0) {
-        if (iteration >= (iter_save + 1000) || iteration % 1000 == 0) {
+        if ((iteration >= (iter_save + 10000) || iteration % 10000 == 0) ||
+            (iteration >= (iter_save + 1000) || iteration % 1000 == 0) && net.max_batches < 10000)
+        {
             iter_save = iteration;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
@@ -399,6 +402,12 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             char buff[256];
             sprintf(buff, "%s/%s_last.weights", backup_directory, base);
             save_weights(net, buff);
+
+            if (net.ema_alpha && is_ema_initialized(net)) {
+                sprintf(buff, "%s/%s_ema.weights", backup_directory, base);
+                save_weights_upto(net, buff, net.n, 1);
+                printf(" EMA weights are saved to the file: %s \n", buff);
+            }
         }
         free_data(train);
     }
@@ -713,7 +722,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int t;
 
     float thresh = .001;
-    float nms = .45;
+    float nms = .6;
 
     int nthreads = 4;
     if (m < 4) nthreads = m;
@@ -999,6 +1008,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     args.w = net.w;
     args.h = net.h;
     args.c = net.c;
+    letter_box = net.letter_box;
     if (letter_box) args.type = LETTERBOX_DATA;
     else args.type = IMAGE_DATA;
 
@@ -1603,6 +1613,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     if (weightfile) {
         load_weights(&net, weightfile);
     }
+    if (net.letter_box) letter_box = 1;
     net.benchmark_layers = benchmark_layers;
     fuse_conv_batchnorm(net);
     calculate_binary_weights(net);

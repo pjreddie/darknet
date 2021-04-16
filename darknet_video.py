@@ -69,8 +69,9 @@ def video_capture(frame_queue, darknet_image_queue):
         frame_resized = cv2.resize(frame_rgb, (width, height),
                                    interpolation=cv2.INTER_LINEAR)
         frame_queue.put(frame_resized)
-        darknet.copy_image_from_bytes(darknet_image, frame_resized.tobytes())
-        darknet_image_queue.put(darknet_image)
+        img_for_detect = darknet.make_image(width, height, 3)
+        darknet.copy_image_from_bytes(img_for_detect, frame_resized.tobytes())
+        darknet_image_queue.put(img_for_detect)
     cap.release()
 
 
@@ -84,6 +85,7 @@ def inference(darknet_image_queue, detections_queue, fps_queue):
         fps_queue.put(fps)
         print("FPS: {}".format(fps))
         darknet.print_detections(detections, args.ext_output)
+        darknet.free_image(darknet_image)
     cap.release()
 
 
@@ -122,11 +124,8 @@ if __name__ == '__main__':
             args.weights,
             batch_size=1
         )
-    # Darknet doesn't accept numpy images.
-    # Create one with image we reuse for each detect
     width = darknet.network_width(network)
     height = darknet.network_height(network)
-    darknet_image = darknet.make_image(width, height, 3)
     input_path = str2int(args.input)
     cap = cv2.VideoCapture(input_path)
     Thread(target=video_capture, args=(frame_queue, darknet_image_queue)).start()

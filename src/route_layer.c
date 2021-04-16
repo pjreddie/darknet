@@ -116,6 +116,14 @@ void backward_route_layer(const route_layer l, network_state state)
 #ifdef GPU
 void forward_route_layer_gpu(const route_layer l, network_state state)
 {
+    if (l.stream >= 0) {
+        switch_stream(l.stream);
+    }
+
+    if (l.wait_stream_id >= 0) {
+        wait_stream(l.wait_stream_id);
+    }
+
     int i, j;
     int offset = 0;
     for(i = 0; i < l.n; ++i){
