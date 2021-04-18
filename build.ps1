@@ -1,11 +1,15 @@
 #!/usr/bin/env pwsh
 
 param (
+  [switch]$DisableInteractive = $false,
   [switch]$EnableCUDA = $false,
   [switch]$EnableCUDNN = $false,
   [switch]$EnableOPENCV = $false,
   [switch]$EnableOPENCV_CUDA = $false,
   [switch]$UseVCPKG = $false,
+  [switch]$DoNotUpdateVCPKG = $false,
+  [switch]$DoNotUpdateDARKNET = $false,
+  [switch]$DoNotDeleteBuildFolder = $false,
   [switch]$DoNotSetupVS = $false,
   [switch]$DoNotUseNinja = $false,
   [switch]$ForceCPP = $false,
@@ -13,8 +17,44 @@ param (
   [switch]$ForceGCC8 = $false
 )
 
+if (-Not $DisableInteractive -and -Not $UseVCPKG) {
+  $Result = Read-Host "Enable vcpkg to install darknet dependencies (yes/no)"
+  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+    $UseVCPKG = $true
+  }
+}
+
+if (-Not $DisableInteractive -and -Not $EnableCUDA -and -Not $IsMacOS) {
+  $Result = Read-Host "Enable CUDA integration (yes/no)"
+  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+    $EnableCUDA = $true
+  }
+}
+
+if ($EnableCUDA -and -Not $DisableInteractive -and -Not $EnableCUDNN) {
+  $Result = Read-Host "Enable CUDNN optional dependency (yes/no)"
+  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+    $EnableCUDNN = $true
+  }
+}
+
+if (-Not $DisableInteractive -and -Not $EnableOPENCV) {
+  $Result = Read-Host "Enable OpenCV optional dependency (yes/no)"
+  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+    $EnableOPENCV = $true
+  }
+}
+
 $number_of_build_workers = 8
 #$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
+
+if ($IsLinux -or $IsMacOS) {
+  $bootstrap_ext = ".sh"
+}
+elseif ($IsWindows) {
+  $bootstrap_ext = ".bat"
+}
+Write-Host "Native shell script extension: ${bootstrap_ext}"
 
 if (-Not $IsWindows) {
   $DoNotSetupVS = $true
@@ -36,7 +76,7 @@ if ($IsWindows -and -Not $env:VCPKG_DEFAULT_TRIPLET) {
 }
 
 if ($EnableCUDA) {
-  if($IsMacOS) {
+  if ($IsMacOS) {
     Write-Host "Cannot enable CUDA on macOS" -ForegroundColor Yellow
     $EnableCUDA = $false
   }
@@ -82,6 +122,12 @@ elseif ($EnableOPENCV_CUDA -and -not $EnableCUDA -and -not $EnableOPENCV) {
 
 if ($UseVCPKG) {
   Write-Host "VCPKG is enabled"
+  if ($DoNotUpdateVCPKG) {
+    Write-Host "VCPKG will not be updated to latest version if found" -ForegroundColor Yellow
+  }
+  else {
+    Write-Host "VCPKG will be updated to latest version if found"
+  }
 }
 else {
   Write-Host "VCPKG is disabled, please pass -UseVCPKG to the script to enable"
@@ -109,6 +155,18 @@ else {
 }
 
 Push-Location $PSScriptRoot
+
+$GIT_EXE = Get-Command git 2> $null | Select-Object -ExpandProperty Definition
+if (-Not $GIT_EXE) {
+  throw "Could not find git, please install it"
+}
+else {
+  Write-Host "Using git from ${GIT_EXE}"
+}
+
+if ((Test-Path "$PSScriptRoot/.git") -and -not $DoNotUpdateDARKNET) {
+  & $GIT_EXE pull
+}
 
 $CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
 if (-Not $CMAKE_EXE) {
@@ -216,7 +274,10 @@ elseif ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
   Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: ${RUNVCPKG_VCPKG_ROOT_OUT}"
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
-elseif ((Test-Path "$PWD/vcpkg") -and $UseVCPKG) {
+elseif ($UseVCPKG) {
+  if (-Not (Test-Path "$PWD/vcpkg")) {
+    & $GIT_EXE clone https://github.com/microsoft/vcpkg
+  }
   $vcpkg_path = "$PWD/vcpkg"
   $env:VCPKG_ROOT = "$PWD/vcpkg"
   Write-Host "Found vcpkg in $PWD/vcpkg: $PWD/vcpkg"
@@ -225,6 +286,13 @@ elseif ((Test-Path "$PWD/vcpkg") -and $UseVCPKG) {
 else {
   Write-Host "Skipping vcpkg integration`n" -ForegroundColor Yellow
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
+}
+
+if ($UseVCPKG -and (Test-Path "$vcpkg_path/.git") -and -not $DoNotUpdateVCPKG) {
+  Push-Location $vcpkg_path
+  & $GIT_EXE pull
+  & $PWD/bootstrap-vcpkg${bootstrap_ext} -disableMetrics
+  Pop-Location
 }
 
 if (-Not $DoNotSetupVS) {
@@ -239,7 +307,7 @@ if (-Not $DoNotSetupVS) {
       }
     }
     Pop-Location
-    Write-Host "Visual Studio Command Prompt variables set" -ForegroundColor Yellow
+    Write-Host "Visual Studio Command Prompt variables set"
   }
 
   $tokens = getLatestVisualStudioWithDesktopWorkloadVersion
@@ -270,13 +338,13 @@ if (-Not $DoNotSetupVS) {
 if ($DoNotSetupVS -and $DoNotUseNinja) {
   $generator = "Unix Makefiles"
 }
-Write-Host "Setting up environment to use CMake generator: $generator" -ForegroundColor Yellow
+Write-Host "Setting up environment to use CMake generator: $generator"
 
 if (-Not $IsMacOS -and $EnableCUDA) {
   if ($null -eq (Get-Command "nvcc" -ErrorAction SilentlyContinue)) {
     if (Test-Path env:CUDA_PATH) {
       $env:PATH += ";${env:CUDA_PATH}/bin"
-      Write-Host "Found cuda in ${env:CUDA_PATH}" -ForegroundColor Yellow
+      Write-Host "Found cuda in ${env:CUDA_PATH}"
     }
     else {
       Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder" -ForegroundColor Yellow
@@ -311,12 +379,18 @@ if (-Not($EnableOPENCV)) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV:BOOL=OFF"
 }
 
-if ($EnableOPENCV_CUDA) {
-  $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV_WITH_CUDA:BOOL=ON"
+if (-Not($EnableOPENCV_CUDA)) {
+  $additional_build_setup = $additional_build_setup + " -DVCPKG_BUILD_OPENCV_WITH_CUDA:BOOL=OFF"
 }
 
-New-Item -Path ./build_release -ItemType directory -Force
-Set-Location build_release
+$build_folder = "./build_release"
+if (-Not $DoNotDeleteBuildFolder) {
+  Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
+}
+
+New-Item -Path $build_folder -ItemType directory -Force
+Set-Location $build_folder
 $cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
 Write-Host "CMake args: $cmake_args"
 Start-Process -NoNewWindow -Wait -FilePath $CMAKE_EXE -ArgumentList $cmake_args

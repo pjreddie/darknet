@@ -111,10 +111,10 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         sources add
-        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
         -storepasswordincleartext
         -name "vcpkgbinarycache"
-        -username "cenit"
+        -username "AlexeyAB"
         -password "${{ secrets.GITHUB_TOKEN }}"
 
     - name: 'Build'
@@ -124,7 +124,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -ForceStaticLib
+      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
 
     - uses: actions/upload-artifact@v2
       with:
@@ -163,7 +163,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -EnableOPENCV
+      run: ./build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
 
     - uses: actions/upload-artifact@v2
       with:
@@ -222,7 +222,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -EnableOPENCV -EnableCUDA
+      run: ./build.ps1 -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
 
     - uses: actions/upload-artifact@v2
       with:
@@ -251,7 +251,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP
+      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
 
 
   osx-vcpkg:
@@ -271,15 +271,15 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         sources add
-        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
         -storepasswordincleartext
         -name "vcpkgbinarycache"
-        -username "cenit"
+        -username "AlexeyAB"
         -password "${{ secrets.GITHUB_TOKEN }}"
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -UseVCPKG
+      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -DisableInteractive -DoNotUpdateDARKNET
 
     - uses: actions/upload-artifact@v2
       with:
@@ -311,7 +311,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -EnableOPENCV
+      run: ./build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
 
     - uses: actions/upload-artifact@v2
       with:
@@ -340,7 +340,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP
+      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
 
 
   win-vcpkg:
@@ -357,15 +357,15 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         sources add
-        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
         -storepasswordincleartext
         -name "vcpkgbinarycache"
-        -username "cenit"
+        -username "AlexeyAB"
         -password "${{ secrets.GITHUB_TOKEN }}"
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -UseVCPKG -EnableOPENCV
+      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
 
     - uses: actions/upload-artifact@v2
       with:
@@ -398,7 +398,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1
+      run: ./build.ps1 -DisableInteractive -DoNotUpdateDARKNET
 
     - uses: actions/upload-artifact@v2
       with:
@@ -431,7 +431,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP
+      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
 
 
   win-intlibs-cuda:
@@ -454,7 +454,7 @@ jobs:
         CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
         CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
       shell: pwsh
-      run: ./build.ps1 -EnableCUDA
+      run: ./build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
 
 
   mingw:

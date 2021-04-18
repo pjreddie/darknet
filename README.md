@@ -31,7 +31,7 @@ About Darknet framework: http://pjreddie.com/darknet/
 
 
 * [YOLOv4 model zoo](https://github.com/AlexeyAB/darknet/wiki/YOLOv4-model-zoo)
-* [Requirements (and how to install dependecies)](#requirements)
+* [Requirements (and how to install dependencies)](#requirements)
 * [Pre-trained models](#pre-trained-models)
 * [FAQ - frequently asked questions](https://github.com/AlexeyAB/darknet/wiki/FAQ---frequently-asked-questions)
 * [Explanations in issues](https://github.com/AlexeyAB/darknet/issues?q=is%3Aopen+is%3Aissue+label%3AExplanations)
@@ -107,7 +107,7 @@ Others: https://www.youtube.com/user/pjreddie/videos
 #### How to evaluate AP of YOLOv4 on the MS COCO evaluation server
 
 1. Download and unzip test-dev2017 dataset from MS COCO server: http://images.cocodataset.org/zips/test2017.zip
-2. Download list of images for Detection taks and replace the paths with yours: https://raw.githubusercontent.com/AlexeyAB/darknet/master/scripts/testdev2017.txt
+2. Download list of images for Detection tasks and replace the paths with yours: https://raw.githubusercontent.com/AlexeyAB/darknet/master/scripts/testdev2017.txt
 3. Download `yolov4.weights` file 245 MB: [yolov4.weights](https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights) (Google-drive mirror [yolov4.weights](https://drive.google.com/open?id=1cewMfusmPjYWbrnuJRuKhPMwRe_b9PaT) )
 4. Content of the file `cfg/coco.data` should be
 
@@ -202,13 +202,13 @@ You can get cfg-files by path: `darknet/cfg/`
 * **Powershell** (already installed on windows): https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell
 * **CUDA >= 10.2**: https://developer.nvidia.com/cuda-toolkit-archive (on Linux do [Post-installation Actions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#post-installation-actions))
 * **OpenCV >= 2.4**: use your preferred package manager (brew, apt), build from source using [vcpkg](https://github.com/Microsoft/vcpkg) or download from [OpenCV official site](https://opencv.org/releases.html) (on Windows set system variable `OpenCV_DIR` = `C:\opencv\build` - where are the `include` and `x64` folders [image](https://user-images.githubusercontent.com/4096485/53249516-5130f480-36c9-11e9-8238-a6e82e48c6f2.png))
-* **cuDNN >= 8.0.2** https://developer.nvidia.com/rdp/cudnn-archive (on **Linux** copy `cudnn.h`,`libcudnn.so`... as desribed here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installlinux-tar , on **Windows** copy `cudnn.h`,`cudnn64_7.dll`, `cudnn64_7.lib` as desribed here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installwindows )
+* **cuDNN >= 8.0.2** https://developer.nvidia.com/rdp/cudnn-archive (on **Linux** copy `cudnn.h`,`libcudnn.so`... as described here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installlinux-tar , on **Windows** copy `cudnn.h`,`cudnn64_7.dll`, `cudnn64_7.lib` as described here https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html#installwindows )
 * **GPU with CC >= 3.0**: https://en.wikipedia.org/wiki/CUDA#GPUs_supported
 
 ### Yolo v4 in other frameworks
 
 * **Pytorch - Scaled-YOLOv4:** https://github.com/WongKinYiu/ScaledYOLOv4
-* **TensorFlow:** `pip install yolov4` YOLOv4 on TensorFlow 2.0 / TFlite / Andriod: https://github.com/hunglc007/tensorflow-yolov4-tflite
+* **TensorFlow:** `pip install yolov4` YOLOv4 on TensorFlow 2.0 / TFlite / Android: https://github.com/hunglc007/tensorflow-yolov4-tflite
     Official TF models: https://github.com/tensorflow/models/tree/master/official/vision/beta/projects/yolo
     For YOLOv4 - convert `yolov4.weights`/`cfg` files to `yolov4.pb` by using [TNTWEN](https://github.com/TNTWEN/OpenVINO-YOLOV4) project, and to `yolov4.tflite` [TensorFlow-lite](https://www.tensorflow.org/lite/guide/get_started#2_convert_the_model_format)
 * **OpenCV-dnn** the fastest implementation of YOLOv4 for CPU (x86/ARM-Android), OpenCV can be compiled with [OpenVINO-backend](https://github.com/opencv/opencv/wiki/Intel's-Deep-Learning-Inference-Engine-backend) for running on (Myriad X / USB Neural Compute Stick / Arria FPGA), use `yolov4.weights`/`cfg` with: [C++ example](https://github.com/opencv/opencv/blob/8c25a8eb7b10fb50cda323ee6bec68aa1a9ce43c/samples/dnn/object_detection.cpp#L192-L221) or [Python example](https://github.com/opencv/opencv/blob/8c25a8eb7b10fb50cda323ee6bec68aa1a9ce43c/samples/dnn/object_detection.py#L129-L150)
@@ -226,7 +226,7 @@ You can get cfg-files by path: `darknet/cfg/`
 * **Triton Inference Server / TensorRT** https://github.com/isarsoft/yolov4-triton-tensorrt
 * **Xilinx Zynq Ultrascale+ Deep Learning Processor (DPU) ZCU102/ZCU104:** https://github.com/Xilinx/Vitis-In-Depth-Tutorial/tree/master/Machine_Learning/Design_Tutorials/07-yolov4-tutorial
 * **Amazon Neurochip / Amazon EC2 Inf1 instances** 1.85 times higher throughput and 37% lower cost per image for TensorFlow based YOLOv4 model, using Keras [URL](https://aws.amazon.com/ru/blogs/machine-learning/improving-performance-for-deep-learning-based-object-detection-with-an-aws-neuron-compiled-yolov4-model-on-aws-inferentia/)
-* **TVM** - compilation of deep learning models (Keras, MXNet, PyTorch, Tensorflow, CoreML, DarkNet) into minimum deployable modules on diverse hardware backends (CPUs, GPUs, FPGA, and specialized accelerators): https://tvm.ai/about
+* **TVM** - compilation of deep learning models (Keras, MXNet, PyTorch, Tensorflow, CoreML, DarkNet) into minimum deployable modules on diverse hardware backend (CPUs, GPUs, FPGA, and specialized accelerators): https://tvm.ai/about
 * **OpenDataCam** - It detects, tracks and counts moving objects by using YOLOv4: https://github.com/opendatacam/opendatacam#-hardware-pre-requisite
 * **Netron** - Visualizer for neural networks: https://github.com/lutzroeder/netron
 
@@ -287,12 +287,12 @@ On Linux find executable file `./darknet` in the root directory, while on Window
 * Train on **Amazon EC2**, to see mAP & Loss-chart using URL like: `http://ec2-35-160-228-91.us-west-2.compute.amazonaws.com:8090` in the Chrome/Firefox (**Darknet should be compiled with OpenCV**): 
     `./darknet detector train cfg/coco.data yolov4.cfg yolov4.conv.137 -dont_show -mjpeg_port 8090 -map`
 * 186 MB Yolo9000 - image: `darknet.exe detector test cfg/combine9k.data cfg/yolo9000.cfg yolo9000.weights`
-* Remeber to put data/9k.tree and data/coco9k.map under the same folder of your app if you use the cpp api to build an app
+* Remember to put data/9k.tree and data/coco9k.map under the same folder of your app if you use the cpp api to build an app
 * To process a list of images `data/train.txt` and save results of detection to `result.json` file use: 
     `darknet.exe detector test cfg/coco.data cfg/yolov4.cfg yolov4.weights -ext_output -dont_show -out result.json < data/train.txt`
 * To process a list of images `data/train.txt` and save results of detection to `result.txt` use:                             
     `darknet.exe detector test cfg/coco.data cfg/yolov4.cfg yolov4.weights -dont_show -ext_output < data/train.txt > result.txt`
-* Pseudo-lableing - to process a list of images `data/new_train.txt` and save results of detection in Yolo training format for each image as label `<image_name>.txt` (in this way you can increase the amount of training data) use:
+* Pseudo-labelling - to process a list of images `data/new_train.txt` and save results of detection in Yolo training format for each image as label `<image_name>.txt` (in this way you can increase the amount of training data) use:
     `darknet.exe detector test cfg/coco.data cfg/yolov4.cfg yolov4.weights -thresh 0.25 -dont_show -save_labels < data/new_train.txt`
 * To calculate anchors: `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
 * To check accuracy mAP@IoU=50: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
@@ -324,11 +324,6 @@ To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware
 Open a shell and type these commands
 
 ```PowerShell
-PS Code/>              git clone https://github.com/microsoft/vcpkg
-PS Code/>              cd vcpkg
-PS Code/vcpkg>         ./bootstrap-vcpkg.sh
-PS Code/vcpkg>         $env:VCPKG_ROOT=$PWD
-PS Code/vcpkg>         cd ..
 PS Code/>              git clone https://github.com/AlexeyAB/darknet
 PS Code/>              cd darknet
 PS Code/darknet>       ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
@@ -359,9 +354,9 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 * `CUDNN=1` to build with cuDNN v5-v7 to accelerate training by using GPU (cuDNN should be in `/usr/local/cudnn`)
 * `CUDNN_HALF=1` to build for Tensor Cores (on Titan V / Tesla V100 / DGX-2 and later) speedup Detection 3x, Training 2x
 * `OPENCV=1` to build with OpenCV 4.x/3.x/2.4.x - allows to detect on video files and video streams from network cameras or web-cams
-* `DEBUG=1` to bould debug version of Yolo
+* `DEBUG=1` to build debug version of Yolo
 * `OPENMP=1` to build with OpenMP support to accelerate Yolo by using multi-core CPU
-* `LIBSO=1` to build a library `darknet.so` and binary runable file `uselib` that uses this library. Or you can try to run so `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib test.mp4` How to use this SO-library from your own code - you can look at C++ example: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
+* `LIBSO=1` to build a library `darknet.so` and binary runnable file `uselib` that uses this library. Or you can try to run so `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib test.mp4` How to use this SO-library from your own code - you can look at C++ example: https://github.com/AlexeyAB/darknet/blob/master/src/yolo_console_dll.cpp
     or use in such a way: `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib data/coco.names cfg/yolov4.cfg yolov4.weights test.mp4`
 * `ZED_CAMERA=1` to build a library with ZED-3D-camera support (should be ZED SDK installed), then run
     `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib data/coco.names cfg/yolov4.cfg yolov4.weights zed_camera`
@@ -371,16 +366,17 @@ To run Darknet on Linux use examples from this article, just use `./darknet` ins
 
 ### How to compile on Windows (using `CMake`)
 
-Requires: 
-* MSVS: https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community
+Requires:
+
+* MSVC: https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community
 * CMake GUI: `Windows win64-x64 Installer`https://cmake.org/download/
 * Download Darknet zip-archive with the latest commit and uncompress it: [master.zip](https://github.com/AlexeyAB/darknet/archive/master.zip)
 
-In Windows: 
+In Windows:
 
-* Start (button) -> All programms -> CMake -> CMake (gui) -> 
+* Start (button) -> All programs -> CMake -> CMake (gui) ->
 
-* [look at image](https://habrastorage.org/webt/pz/s1/uu/pzs1uu4heb7vflfcjqn-lxy-aqu.jpeg) In CMake: Enter input path to the darknet Source, and output path to the Binaries -> Configure (button) -> Optional platform for generator: `x64`  -> Finish -> Generate -> Open Project -> 
+* [look at image](https://habrastorage.org/webt/pz/s1/uu/pzs1uu4heb7vflfcjqn-lxy-aqu.jpeg) In CMake: Enter input path to the darknet Source, and output path to the Binaries -> Configure (button) -> Optional platform for generator: `x64`  -> Finish -> Generate -> Open Project ->
 
 * in MS Visual Studio: Select: x64 and Release -> Build -> Build solution
 
@@ -400,11 +396,6 @@ This is the recommended approach to build Darknet on Windows.
 3. Open Powershell (Start -> All programs -> Windows Powershell) and type these commands:
 
 ```PowerShell
-PS Code/>              git clone https://github.com/microsoft/vcpkg
-PS Code/>              cd vcpkg
-PS Code/vcpkg>         .\bootstrap-vcpkg.bat
-PS Code/vcpkg>         $env:VCPKG_ROOT=$PWD
-PS Code/vcpkg>         cd ..
 PS Code/>              git clone https://github.com/AlexeyAB/darknet
 PS Code/>              cd darknet
 PS Code/darknet>       .\build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
@@ -490,7 +481,7 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
   * `<object-class>` - integer object number from `0` to `(classes-1)`
   * `<x_center> <y_center> <width> <height>` - float values **relative** to width and height of image, it can be equal from `(0.0 to 1.0]`
   * for example: `<x> = <absolute_x> / <image_width>` or `<height> = <absolute_height> / <image_height>`
-  * atention: `<x_center> <y_center>` - are center of rectangle (are not top-left corner)
+  * attention: `<x_center> <y_center>` - are center of rectangle (are not top-left corner)
 
   For example for `img1.jpg` you will be created `img1.txt` containing:
 
@@ -570,15 +561,15 @@ Usually sufficient 2000 iterations for each class(object), but not less than num
   * **9002** - iteration number (number of batch)
   * **0.60730 avg** - average loss (error) - **the lower, the better**
 
-  When you see that average loss **0.xxxxxx avg** no longer decreases at many iterations then you should stop training. The final avgerage loss can be from `0.05` (for a small model and easy dataset) to `3.0` (for a big model and a difficult dataset).
+  When you see that average loss **0.xxxxxx avg** no longer decreases at many iterations then you should stop training. The final average loss can be from `0.05` (for a small model and easy dataset) to `3.0` (for a big model and a difficult dataset).
   
   Or if you train with flag `-map` then you will see mAP indicator `Last accuracy mAP@0.5 = 18.50%` in the console - this indicator is better than Loss, so train while mAP increases. 
 
 2. Once training is stopped, you should take some of last `.weights`-files from `darknet\build\darknet\x64\backup` and choose the best of them:
 
-For example, you stopped training after 9000 iterations, but the best result can give one of previous weights (7000, 8000, 9000). It can happen due to overfitting. **Overfitting** - is case when you can detect objects on images from training-dataset, but can't detect objects on any others images. You should get weights from **Early Stopping Point**:
+For example, you stopped training after 9000 iterations, but the best result can give one of previous weights (7000, 8000, 9000). It can happen due to over-fitting. **Over-fitting** - is case when you can detect objects on images from training-dataset, but can't detect objects on any others images. You should get weights from **Early Stopping Point**:
 
-![Overfitting](https://hsto.org/files/5dc/7ae/7fa/5dc7ae7fad9d4e3eb3a484c58bfc1ff5.png) 
+![Over-fitting](https://hsto.org/files/5dc/7ae/7fa/5dc7ae7fad9d4e3eb3a484c58bfc1ff5.png) 
 
 To get weights from Early Stopping Point:
 
@@ -592,7 +583,7 @@ To get weights from Early Stopping Point:
 * `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_8000.weights`
 * `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_9000.weights`
 
-And comapre last output lines for each weights (7000, 8000, 9000):
+And compare last output lines for each weights (7000, 8000, 9000):
 
 Choose weights-file **with the highest mAP (mean average precision)** or IoU (intersect over union)
 
@@ -610,7 +601,7 @@ So you will see mAP-chart (red-line) in the Loss-chart Window. mAP will be calcu
 
 Example of custom object detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_8000.weights`
 
-* **IoU** (intersect over union) - average instersect over union of objects and detections for a certain threshold = 0.24
+* **IoU** (intersect over union) - average intersect over union of objects and detections for a certain threshold = 0.24
 
 * **mAP** (mean average precision) - mean value of `average precisions` for each class, where `average precision` is average value of 11 points on PR-curve for each possible threshold (each probability of detection) for the same class (Precision-Recall in terms of PascalVOC, where Precision=TP/(TP+FP) and Recall=TP/(TP+FN) ), page-11: http://homepages.inf.ed.ac.uk/ckiw/postscript/ijcv_voc09.pdf
 
@@ -639,7 +630,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
 * my Loss is very high and mAP is very low, is training wrong? Run training with ` -show_imgs` flag at the end of training command, do you see correct bounded boxes of objects (in windows or in files `aug_...jpg`)? If no - your training dataset is wrong.
 
-* for each object which you want to detect - there must be at least 1 similar object in the Training dataset with about the same: shape, side of object, relative size, angle of rotation, tilt, illumination. So desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides, on different backgrounds - you should preferably have 2000 different images for each class or more, and you should train `2000*classes` iterations or more
+* for each object which you want to detect - there must be at least 1 similar object in the Training dataset with about the same: shape, side of object, relative size, angle of rotation, tilt, illumination. So desirable that your training dataset include images with objects at different: scales, rotations, lightings, from different sides, on different backgrounds - you should preferably have 2000 different images for each class or more, and you should train `2000*classes` iterations or more
 
 * desirable that your training dataset include images with non-labeled objects that you do not want to detect - negative samples without bounded box (empty `.txt` files) - use as many images of negative samples as there are images with objects
 
@@ -670,7 +661,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
 * to speedup training (with decreasing detection accuracy) set param `stopbackward=1` for layer-136 in cfg-file
 
-* each: `model of object, side, illimination, scale, each 30 grad` of the turn and inclination angles - these are *different objects* from an internal perspective of the neural network. So the more *different objects* you want to detect, the more complex network model should be used.
+* each: `model of object, side, illumination, scale, each 30 grad` of the turn and inclination angles - these are *different objects* from an internal perspective of the neural network. So the more *different objects* you want to detect, the more complex network model should be used.
 
 * to make the detected bounded boxes more accurate, you can add 3 parameters `ignore_thresh = .9 iou_normalizer=0.5 iou_loss=giou` to each `[yolo]` layer and train, it will increase mAP@0.9, but decrease mAP@0.5.
 

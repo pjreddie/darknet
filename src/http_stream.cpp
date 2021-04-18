@@ -70,8 +70,12 @@ static int close_socket(SOCKET s) {
 #define SOCKADDR    struct sockaddr
 #define SOCKADDR_IN  struct sockaddr_in
 #define ADDRPOINTER  unsigned int*
+#ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
+#endif
+#ifndef SOCKET_ERROR
 #define SOCKET_ERROR   -1
+#endif
 struct _IGNORE_PIPE_SIGNAL
 {
     struct sigaction new_actn, old_actn;
@@ -934,4 +938,3 @@ void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim
         }
     }
 }
-
