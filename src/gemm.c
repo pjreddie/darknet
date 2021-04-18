@@ -23,8 +23,18 @@ static inline uint32_t popcnt(uint32_t v) {
 #define POPCNT64(x) (popcnt((unsigned)(x)) + popcnt((unsigned)((uint64_t)(x) >> 32)))
 #else
 #include <intrin.h>
+#ifdef _WIN64
 #define POPCNT(x) __popcnt(x)
 #define POPCNT64(x) __popcnt64(x)
+#else
+static inline int popcnt_64(uint64_t val64) {
+  int tmp_count = __popcnt(val64);
+  tmp_count += __popcnt(val64 >> 32);
+  return tmp_count;
+}
+#define POPCNT(x) __popcnt(x)
+#define POPCNT64(x) popcnt_64(x)
+#endif
 #endif
 #elif defined(__GNUC__)
 #define POPCNT(x) __builtin_popcount(x)
@@ -515,7 +525,7 @@ void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
     }
 }
 
-#if (defined(__AVX__) && defined(__x86_64__)) || (defined(_WIN64) && !defined(__MINGW32__))
+#if (defined(__AVX__) && defined(__x86_64__)) || (defined(_WIN64) && !defined(__MINGW32__) && !defined(_M_ARM64))
 
 #if (defined(_WIN64) && !defined(__MINGW64__))
 #include <intrin.h>
