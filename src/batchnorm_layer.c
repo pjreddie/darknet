@@ -32,6 +32,12 @@ layer make_batchnorm_layer(int batch, int w, int h, int c)
     l.rolling_mean = calloc(c, sizeof(float));
     l.rolling_variance = calloc(c, sizeof(float));
 
+    l.mean_delta = calloc(c, sizeof(float));
+    l.variance_delta = calloc(c, sizeof(float));
+
+    l.x = calloc(l.batch*l.outputs, sizeof(float));
+    l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
+
     l.forward = forward_batchnorm_layer;
     l.backward = backward_batchnorm_layer;
 #ifdef GPU
