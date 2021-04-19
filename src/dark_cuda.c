@@ -123,8 +123,11 @@ cudaStream_t get_cuda_stream() {
     int i = cuda_get_device();
     if (!streamInit[i]) {
         printf("Create CUDA-stream - %d \n", i);
-        //cudaError_t status = cudaStreamCreate(&streamsArray[i], cudaStreamNonBlocking);
+#ifdef CUDNN
         cudaError_t status = cudaStreamCreateWithFlags(&streamsArray[i], cudaStreamNonBlocking);
+#else
+        cudaError_t status = cudaStreamCreate(&streamsArray[i]);
+#endif
         if (status != cudaSuccess) {
             printf(" cudaStreamCreate error: %d \n", status);
             const char *s = cudaGetErrorString(status);
