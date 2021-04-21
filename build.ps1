@@ -393,8 +393,16 @@ New-Item -Path $build_folder -ItemType directory -Force
 Set-Location $build_folder
 $cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
 Write-Host "CMake args: $cmake_args"
-Start-Process -NoNewWindow -Wait -FilePath $CMAKE_EXE -ArgumentList $cmake_args
-Start-Process -NoNewWindow -Wait -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${number_of_build_workers} --target install"
+$proc = Start-Process -NoNewWindow -Wait -PassThru -FilePath $CMAKE_EXE -ArgumentList $cmake_args
+$exitCode = $proc.ExitCode
+if (-not $exitCode -eq 0) {
+  Throw "Config failed! Exited with $exitCode."
+}
+$proc = Start-Process -NoNewWindow -Wait -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${number_of_build_workers} --target install"
+$exitCode = $proc.ExitCode
+if (-not $exitCode -eq 0) {
+  Throw "Config failed! Exited with $exitCode."
+}
 Remove-Item DarknetConfig.cmake
 Remove-Item DarknetConfigVersion.cmake
 $dllfiles = Get-ChildItem ./${dllfolder}/*.dll

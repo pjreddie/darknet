@@ -3,6 +3,7 @@ name: Darknet Continuous Integration
 on: [push, pull_request, workflow_dispatch]
 
 env:
+  #VCPKG_BINARY_SOURCES: 'clear;nuget,githubpackages,readwrite'
   VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,readwrite'
 
 jobs:
@@ -107,15 +108,20 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg;
-        ./vcpkg/bootstrap-vcpkg.sh;
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "githubpackages"
+        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        sources add
-        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
-        -storepasswordincleartext
-        -name "vcpkgbinarycache"
-        -username "AlexeyAB"
-        -password "${{ secrets.GITHUB_TOKEN }}"
+        setapikey ${{ secrets.GITHUB_TOKEN }}
+        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
       shell: pwsh
@@ -267,15 +273,20 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg;
-        ./vcpkg/bootstrap-vcpkg.sh;
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "githubpackages"
+        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        sources add
-        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
-        -storepasswordincleartext
-        -name "vcpkgbinarycache"
-        -username "AlexeyAB"
-        -password "${{ secrets.GITHUB_TOKEN }}"
+        setapikey ${{ secrets.GITHUB_TOKEN }}
+        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
       shell: pwsh
@@ -353,15 +364,20 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg;
-        ./vcpkg/bootstrap-vcpkg.sh;
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "githubpackages"
+        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        sources add
-        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
-        -storepasswordincleartext
-        -name "vcpkgbinarycache"
-        -username "AlexeyAB"
-        -password "${{ secrets.GITHUB_TOKEN }}"
+        setapikey ${{ secrets.GITHUB_TOKEN }}
+        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
       shell: pwsh
@@ -439,20 +455,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: 'Install CUDA'
-      run: |
-        choco install cuda --version=10.2.89.20191206 -y
-        $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
-        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-        refreshenv
+      run: ./scripts/deploy-cuda.ps1
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Build'
       env:
-        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDA_PATH_V10_2: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2"
-        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
+        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3"
+        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3"
+        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3\\bin\\nvcc.exe"
       shell: pwsh
       run: ./build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
 

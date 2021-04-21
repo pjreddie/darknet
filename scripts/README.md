@@ -1,8 +1,6 @@
+# Datasets
 
-
-### Datasets:
-
-59.26TB of research data: http://academictorrents.com/ 
+59.26TB of research data: http://academictorrents.com/
 
 ImageNet Torrent (Stanford): http://academictorrents.com/browse.php?search=imagenet&page=0
 
@@ -53,7 +51,6 @@ Core50: https://vlomonaco.github.io/core50/
 Visual Question Answering: https://visualqa.org/download.html
 
 Large Movie Review Dataset: http://ai.stanford.edu/~amaas/data/sentiment/
-
 
 ----
 

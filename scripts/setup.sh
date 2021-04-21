@@ -77,3 +77,9 @@ if [[ ! -v VCPKG_ROOT ]]; then
 fi
 
 $VCPKG_ROOT/vcpkg install darknet[${features}]
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  echo "Darknet installed in $VCPKG_ROOT/installed/x64-osx/tools/darknet"
+else
+  echo "Darknet installed in $VCPKG_ROOT/installed/x64-linux/tools/darknet"
+fi
