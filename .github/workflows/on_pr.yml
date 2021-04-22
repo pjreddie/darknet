@@ -1,9 +1,9 @@
-name: Darknet Continuous Integration
+name: Darknet Pull Requests
 
-on: [push, workflow_dispatch]
+on: [pull_request]
 
 env:
-  VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,readwrite'
+  VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,read'
 
 jobs:
   ubuntu-makefile:
@@ -111,9 +111,6 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
-        -Source http://93.49.111.10:5555/v3/index.json ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
@@ -270,9 +267,6 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
-        -Source http://93.49.111.10:5555/v3/index.json ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
@@ -355,9 +349,6 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
-        -Source http://93.49.111.10:5555/v3/index.json ;
-        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'

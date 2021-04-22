@@ -393,12 +393,14 @@ New-Item -Path $build_folder -ItemType directory -Force
 Set-Location $build_folder
 $cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
 Write-Host "CMake args: $cmake_args"
-$proc = Start-Process -NoNewWindow -Wait -PassThru -FilePath $CMAKE_EXE -ArgumentList $cmake_args
+$proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList $cmake_args
+$proc.WaitForExit()
 $exitCode = $proc.ExitCode
 if (-not $exitCode -eq 0) {
   Throw "Config failed! Exited with $exitCode."
 }
-$proc = Start-Process -NoNewWindow -Wait -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${number_of_build_workers} --target install"
+$proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${number_of_build_workers} --target install"
+$proc.WaitForExit()
 $exitCode = $proc.ExitCode
 if (-not $exitCode -eq 0) {
   Throw "Config failed! Exited with $exitCode."

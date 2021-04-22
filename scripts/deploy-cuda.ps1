@@ -12,7 +12,8 @@ try {
   Write-Host 'Downloading CUDA...'
   Invoke-WebRequest -Uri $url -OutFile "cuda_11.3.0_win10_network.exe"
   Write-Host 'Installing CUDA...'
-  $proc = Start-Process -Wait -PassThru -FilePath "./cuda_11.3.0_win10_network.exe" -ArgumentList @('-s ' + $CudaFeatures)
+  $proc = Start-Process -PassThru -FilePath "./cuda_11.3.0_win10_network.exe" -ArgumentList @('-s ' + $CudaFeatures)
+  $proc.WaitForExit()
   $exitCode = $proc.ExitCode
   if ($exitCode -eq 0) {
     Write-Host 'Installation successful!'
