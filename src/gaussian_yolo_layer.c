@@ -51,7 +51,8 @@ layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *m
     l.outputs = h*w*n*(classes + 8 + 1);
     l.inputs = l.outputs;
     l.max_boxes = max_boxes;
-    l.truths = l.max_boxes*(4 + 1);
+	l.truth_size = 4 + 2;
+    l.truths = l.max_boxes*l.truth_size;
     l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
     l.output = (float*)calloc(batch*l.outputs, sizeof(float));
     for(i = 0; i < total*2; ++i){
@@ -464,8 +465,8 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                     float best_iou = 0;
                     int best_t = 0;
                     for(t = 0; t < l.max_boxes; ++t){
-                        box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
-                        int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+                        box truth = float_to_box_stride(state.truth + t*l.truth_size + b*l.truths, 1);
+                        int class_id = state.truth[t*l.truth_size + b*l.truths + 4];
                         if (class_id >= l.classes) {
                             printf("\n Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes - 1);
                             printf(" truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f, class_id = %d \n", truth.x, truth.y, truth.w, truth.h, class_id);
@@ -496,7 +497,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                         if (l.objectness_smooth) {
                             l.delta[obj_index] = l.obj_normalizer * (iou_multiplier - l.output[obj_index]);
 
-                            int class_id = state.truth[best_match_t*(4 + 1) + b*l.truths + 4];
+                            int class_id = state.truth[best_match_t*l.truth_size + b*l.truths + 4];
                             if (l.map) class_id = l.map[class_id];
                             delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.label_smooth_eps, l.classes_multipliers, l.cls_normalizer);
                         }
@@ -518,19 +519,19 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                         else l.delta[obj_index] = l.obj_normalizer * (1 - l.output[obj_index]);
                         //l.delta[obj_index] = l.obj_normalizer * (1 - l.output[obj_index]);
 
-                        int class_id = state.truth[best_t*(4 + 1) + b*l.truths + 4];
+                        int class_id = state.truth[best_t*l.truth_size + b*l.truths + 4];
                         if (l.map) class_id = l.map[class_id];
                         delta_gaussian_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w*l.h, 0, l.label_smooth_eps, l.classes_multipliers, l.cls_normalizer);
                         const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
                         if (l.objectness_smooth) l.delta[class_index + stride*class_id] = class_multiplier * (iou_multiplier - l.output[class_index + stride*class_id]);
-                        box truth = float_to_box_stride(state.truth + best_t*(4 + 1) + b*l.truths, 1);
+                        box truth = float_to_box_stride(state.truth + best_t*l.truth_size + b*l.truths, 1);
                         delta_gaussian_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2-truth.w*truth.h), l.w*l.h, l.iou_normalizer * class_multiplier, l.iou_loss, l.uc_normalizer, 1, l.yolo_point, l.max_delta);
                     }
                 }
             }
         }
         for(t = 0; t < l.max_boxes; ++t){
-            box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
+            box truth = float_to_box_stride(state.truth + t*l.truth_size + b*l.truths, 1);
 
             if(!truth.x) break;
             float best_iou = 0;
@@ -564,7 +565,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
 
             int mask_n = int_index(l.mask, best_n, l.n);
             if(mask_n >= 0){
-                int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+                int class_id = state.truth[t*l.truth_size + b*l.truths + 4];
                 if (l.map) class_id = l.map[class_id];
 
                 int box_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
@@ -597,7 +598,7 @@ void forward_gaussian_yolo_layer(const layer l, network_state state)
                     // iou, n
 
                     if (iou > l.iou_thresh) {
-                        int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+                        int class_id = state.truth[t*l.truth_size + b*l.truths + 4];
                         if (l.map) class_id = l.map[class_id];
 
                         int box_index = entry_gaussian_index(l, b, mask_n*l.w*l.h + j*l.w + i, 0);
