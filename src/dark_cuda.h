@@ -56,7 +56,9 @@ extern "C" {
 #endif // __cplusplus
     void check_error(cudaError_t status);
     void check_error_extended(cudaError_t status, const char *file, int line, const char *date_time);
+    void cublas_check_error_extended(cublasStatus_t status, const char *file, int line, const char *date_time);
 #define CHECK_CUDA(X) check_error_extended(X, __FILE__ " : " __FUNCTION__, __LINE__,  __DATE__ " - " __TIME__ );
+#define CHECK_CUBLAS(X) cublas_check_error_extended(X, __FILE__ " : " __FUNCTION__, __LINE__,  __DATE__ " - " __TIME__ );
 
     cublasHandle_t blas_handle();
     void free_pinned_memory();

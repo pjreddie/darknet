@@ -239,6 +239,35 @@ static int switchCudnnInit[16];
 #endif
 
 
+void cublas_check_error(cublasStatus_t status)
+{
+#if defined(DEBUG) || defined(CUDA_DEBUG)
+    cudaDeviceSynchronize();
+#endif
+    if (cuda_debug_sync) {
+        cudaDeviceSynchronize();
+    }
+    if (status != CUBLAS_STATUS_SUCCESS) {
+        printf("cuBLAS Error\n");
+    }
+}
+
+void cublas_check_error_extended(cublasStatus_t status, const char *file, int line, const char *date_time)
+{
+    if (status != CUBLAS_STATUS_SUCCESS) {
+      printf("\n cuBLAS status Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    }
+#if defined(DEBUG) || defined(CUDA_DEBUG)
+    cuda_debug_sync = 1;
+#endif
+    if (cuda_debug_sync) {
+        cudaError_t status = cudaDeviceSynchronize();
+      if (status != CUDA_SUCCESS)
+          printf("\n cudaError_t status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+    }
+    cublas_check_error(status);
+}
+
 static int blasInit[16] = { 0 };
 static cublasHandle_t blasHandle[16];
 
@@ -246,9 +275,9 @@ cublasHandle_t blas_handle()
 {
     int i = cuda_get_device();
     if (!blasInit[i]) {
-        cublasCreate(&blasHandle[i]);
+        CHECK_CUBLAS(cublasCreate(&blasHandle[i]));
         cublasStatus_t status = cublasSetStream(blasHandle[i], get_cuda_stream());
-        CHECK_CUDA((cudaError_t)status);
+        CHECK_CUBLAS(status);
         blasInit[i] = 1;
     }
     return blasHandle[i];
