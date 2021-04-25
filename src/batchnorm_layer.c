@@ -36,6 +36,12 @@ layer make_batchnorm_layer(int batch, int w, int h, int c, int train)
     layer.rolling_mean = (float*)xcalloc(c, sizeof(float));
     layer.rolling_variance = (float*)xcalloc(c, sizeof(float));
 
+    layer.mean_delta = (float*)xcalloc(c, sizeof(float));
+    layer.variance_delta = (float*)xcalloc(c, sizeof(float));
+
+    layer.x = (float*)xcalloc(layer.batch*layer.outputs, sizeof(float));
+    layer.x_norm = (float*)xcalloc(layer.batch*layer.outputs, sizeof(float));
+
     layer.forward = forward_batchnorm_layer;
     layer.backward = backward_batchnorm_layer;
     layer.update = update_batchnorm_layer;
