@@ -25,6 +25,8 @@ import math
 import random
 import os
 
+print("Run: darknet_images.py or:\n")
+print("python.exe darknet_video.py --data_file cfg/coco.data --config_file cfg/yolov4.cfg --weights yolov4.weights --input test.mp4 \n")
 
 class BOX(Structure):
     _fields_ = [("x", c_float),

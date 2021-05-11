@@ -14,6 +14,6 @@ rem C:\Users\Alex\AppData\Local\Programs\Python\Python36\Scripts\pip install sci
 rem C:\Users\Alex\AppData\Local\Programs\Python\Python36\Scripts\pip install scipy
 rem C:\Users\Alex\AppData\Local\Programs\Python\Python36\Scripts\pip install opencv-python
 
-C:\Users\Alex\AppData\Local\Programs\Python\Python36\python.exe darknet.py
+C:\Users\Alex\AppData\Local\Programs\Python\Python36\python.exe darknet_images.py
 
 pause
