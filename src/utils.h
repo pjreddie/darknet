@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <stdbool.h>
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846   // pi
@@ -95,6 +96,7 @@ int max_int_index(int *a, int n);
 boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check);
 int make_directory(char *path, int mode);
 unsigned long custom_hash(char *str);
+bool is_live_stream(const char * path);
 
 #define max_val_cmp(a,b) (((a) > (b)) ? (a) : (b))
 #define min_val_cmp(a,b) (((a) < (b)) ? (a) : (b))
