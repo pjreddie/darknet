@@ -834,6 +834,15 @@ extern "C" image get_image_from_stream_letterbox(cap_cv *cap, int w, int h, int 
 }
 // ----------------------------------------
 
+extern "C" void consume_frame(cap_cv *cap){
+    cv::Mat *src = NULL;
+    src = (cv::Mat *)get_capture_frame_cv(cap);
+    if (src)
+        delete src;
+}
+// ----------------------------------------
+
+
 // ====================================================================
 // Image Saving
 // ====================================================================

@@ -36,6 +36,7 @@ static float demo_thresh = 0;
 static int demo_ext_output = 0;
 static long long int frame_id = 0;
 static int demo_json_port = -1;
+static bool demo_skip_frame = false;
 
 
 static int avg_frames;
@@ -59,6 +60,8 @@ void *fetch_in_thread(void *ptr)
     while (!custom_atomic_load_int(&flag_exit)) {
         while (!custom_atomic_load_int(&run_fetch_in_thread)) {
             if (custom_atomic_load_int(&flag_exit)) return 0;
+            if (demo_skip_frame)
+                consume_frame(cap);
             this_thread_yield();
         }
         int dont_close_stream = 0;    // set 1 if your IP-camera periodically turns off and turns on video-stream
@@ -168,9 +171,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     if(filename){
         printf("video file: %s\n", filename);
         cap = get_capture_video_stream(filename);
+        demo_skip_frame = is_live_stream(filename);
     }else{
         printf("Webcam index: %d\n", cam_index);
         cap = get_capture_webcam(cam_index);
+        demo_skip_frame = true;
     }
 
     if (!cap) {

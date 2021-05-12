@@ -1047,3 +1047,8 @@ unsigned long custom_hash(char *str)
 
     return hash;
 }
+
+bool is_live_stream(const char * path){
+    const char *url_schema = "://";
+    return (NULL != strstr(path, url_schema));
+}
