@@ -2460,12 +2460,14 @@ __global__ void backward_implicit_kernel(int size, int batch, int nweights, floa
     const int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (id >= size) return;
 
-    weight_updates_gpu[id % nweights] += delta_gpu[id];
+    for (int i = 0; i < batch; ++i) {
+        weight_updates_gpu[id] += delta_gpu[id + i * nweights];
+    }
 }
 
 extern "C" void backward_implicit_gpu(int batch, int nweights, float *weight_updates_gpu, float *delta_gpu)
 {
-    int size = batch * nweights;
+    int size = nweights;
     backward_implicit_kernel << <cuda_gridsize(size), BLOCK, 0, get_cuda_stream() >> > (size, batch, nweights, weight_updates_gpu, delta_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }

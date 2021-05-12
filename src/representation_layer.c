@@ -67,7 +67,6 @@ void forward_implicit_layer(const layer l, network_state state)
 void backward_implicit_layer(const layer l, network_state state)
 {
     int i;
-    #pragma omp parallel for
     for (i = 0; i < l.nweights * l.batch; ++i) {
         l.weight_updates[i % l.nweights] += l.delta[i];
     }
