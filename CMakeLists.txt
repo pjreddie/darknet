@@ -7,6 +7,8 @@ set(Darknet_PATCH_VERSION 5)
 set(Darknet_TWEAK_VERSION 4)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION}.${Darknet_TWEAK_VERSION})
 
+message("Darknet_VERSION: ${Darknet_VERSION}")
+
 option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" ON)
 option(CUDA_VERBOSE_BUILD "Create verbose CUDA build" ON)
 option(BUILD_SHARED_LIBS "Create dark as a shared library" ON)

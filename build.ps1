@@ -1,5 +1,6 @@
 #!/usr/bin/env pwsh
 
+
 param (
   [switch]$DisableInteractive = $false,
   [switch]$EnableCUDA = $false,
@@ -15,12 +16,14 @@ param (
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
   [switch]$ForceSetupVS = $false,
-  [switch]$ForceGCC8 = $false
+  [Int32]$ForceGCCVersion = 0
 )
 
+$build_ps1_version = "0.9"
 Function MyThrow ($Message) {
   if ($DisableInteractive) {
-    Throw $Message
+    Write-Host $Message -ForegroundColor Red
+    exit
   }
   else {
     # Check if running in PowerShell ISE
@@ -61,14 +64,18 @@ Function MyThrow ($Message) {
     182, # Application 1
     183  # Application 2
 
-    Write-Host $Message
+    Write-Host $Message -ForegroundColor Red
     Write-Host -NoNewline "Press any key to continue..."
-    while ($null -eq $KeyInfo.VirtualKeyCode -or $Ignore -contains $KeyInfo.VirtualKeyCode) {
+    while (($null -eq $KeyInfo.VirtualKeyCode) -or ($Ignore -contains $KeyInfo.VirtualKeyCode)) {
       $KeyInfo = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
     }
     exit
   }
 }
+
+Write-Host "Darknet build script version ${build_ps1_version}"
+Write-Host -NoNewLine "PowerShell version:"
+$PSVersionTable.PSVersion
 
 if ($PSVersionTable.PSVersion.Major -eq 5) {
   $IsWindowsPowerShell = $true
@@ -78,30 +85,30 @@ if ($PSVersionTable.PSVersion.Major -lt 5) {
   MyThrow("Your PowerShell version is too old, please update it.")
 }
 
-if (-Not $DisableInteractive -and -Not $UseVCPKG) {
+if ((-Not $DisableInteractive) -and (-Not $UseVCPKG)) {
   $Result = Read-Host "Enable vcpkg to install darknet dependencies (yes/no)"
-  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+  if (($Result -eq 'Yes') -or ($Result -eq 'Y') -or ($Result -eq 'yes') -or ($Result -eq 'y')) {
     $UseVCPKG = $true
   }
 }
 
-if (-Not $DisableInteractive -and -Not $EnableCUDA -and -Not $IsMacOS) {
+if ((-Not $DisableInteractive) -and (-Not $EnableCUDA) -and (-Not $IsMacOS)) {
   $Result = Read-Host "Enable CUDA integration (yes/no)"
-  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+  if (($Result -eq 'Yes') -or ($Result -eq 'Y') -or ($Result -eq 'yes') -or ($Result -eq 'y')) {
     $EnableCUDA = $true
   }
 }
 
-if ($EnableCUDA -and -Not $DisableInteractive -and -Not $EnableCUDNN) {
+if ($EnableCUDA -and (-Not $DisableInteractive) -and (-Not $EnableCUDNN)) {
   $Result = Read-Host "Enable CUDNN optional dependency (yes/no)"
-  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+  if (($Result -eq 'Yes') -or ($Result -eq 'Y') -or ($Result -eq 'yes') -or ($Result -eq 'y')) {
     $EnableCUDNN = $true
   }
 }
 
-if (-Not $DisableInteractive -and -Not $EnableOPENCV) {
+if ((-Not $DisableInteractive) -and (-Not $EnableOPENCV)) {
   $Result = Read-Host "Enable OpenCV optional dependency (yes/no)"
-  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+  if (($Result -eq 'Yes') -or ($Result -eq 'Y') -or ($Result -eq 'yes') -or ($Result -eq 'y')) {
     $EnableOPENCV = $true
   }
 }
@@ -115,9 +122,11 @@ if ($IsLinux -or $IsMacOS) {
 elseif ($IsWindows -or $IsWindowsPowerShell) {
   $bootstrap_ext = ".bat"
 }
-Write-Host "Native shell script extension: ${bootstrap_ext}"
+if ($UseVCPKG) {
+  Write-Host "vcpkg bootstrap script: bootstrap-vcpkg${bootstrap_ext}"
+}
 
-if (-Not $IsWindows -and -not $IsWindowsPowerShell -and -Not $ForceSetupVS) {
+if ((-Not $IsWindows) -and (-Not $IsWindowsPowerShell) -and (-Not $ForceSetupVS)) {
   $DoNotSetupVS = $true
 }
 
@@ -126,13 +135,13 @@ if ($ForceStaticLib) {
   $additional_build_setup = " -DBUILD_SHARED_LIBS=OFF "
 }
 
-if ($IsLinux -and $ForceGCC8) {
-  Write-Host "Manually setting CC and CXX variables to gcc-8 and g++-8"
-  $env:CC = "gcc-8"
-  $env:CXX = "g++-8"
+if (($IsLinux -or $IsMacOS) -and ($ForceGCCVersion -gt 0)) {
+  Write-Host "Manually setting CC and CXX variables to gcc version $ForceGCCVersion"
+  $env:CC = "gcc-$ForceGCCVersion"
+  $env:CXX = "g++-$ForceGCCVersion"
 }
 
-if (($IsWindows -or $IsWindowsPowerShell) -and -Not $env:VCPKG_DEFAULT_TRIPLET) {
+if (($IsWindows -or $IsWindowsPowerShell) -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
   $env:VCPKG_DEFAULT_TRIPLET = "x64-windows"
 }
 
@@ -165,18 +174,18 @@ else {
   Write-Host "OPENCV is disabled, please pass -EnableOPENCV to the script to enable"
 }
 
-if ($EnableCUDA -and $EnableOPENCV -and -not $EnableOPENCV_CUDA) {
+if ($EnableCUDA -and $EnableOPENCV -and (-Not $EnableOPENCV_CUDA)) {
   Write-Host "OPENCV with CUDA extension is not enabled, you can enable it passing -EnableOPENCV_CUDA"
 }
-elseif ($EnableOPENCV -and $EnableOPENCV_CUDA -and -not $EnableCUDA) {
+elseif ($EnableOPENCV -and $EnableOPENCV_CUDA -and (-Not $EnableCUDA)) {
   Write-Host "OPENCV with CUDA extension was requested, but CUDA is not enabled, you can enable it passing -EnableCUDA"
   $EnableOPENCV_CUDA = $false
 }
-elseif ($EnableCUDA -and $EnableOPENCV_CUDA -and -not $EnableOPENCV) {
+elseif ($EnableCUDA -and $EnableOPENCV_CUDA -and (-Not $EnableOPENCV)) {
   Write-Host "OPENCV with CUDA extension was requested, but OPENCV is not enabled, you can enable it passing -EnableOPENCV"
   $EnableOPENCV_CUDA = $false
 }
-elseif ($EnableOPENCV_CUDA -and -not $EnableCUDA -and -not $EnableOPENCV) {
+elseif ($EnableOPENCV_CUDA -and (-Not $EnableCUDA) -and (-Not $EnableOPENCV)) {
   Write-Host "OPENCV with CUDA extension was requested, but OPENCV and CUDA are not enabled, you can enable them passing -EnableOPENCV -EnableCUDA"
   $EnableOPENCV_CUDA = $false
 }
@@ -225,12 +234,19 @@ else {
   Write-Host "Using git from ${GIT_EXE}"
 }
 
-if ((Test-Path "$PSScriptRoot/.git") -and -not $DoNotUpdateDARKNET) {
-  $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "pull"
-  $proc.WaitForExit()
-  $exitCode = $proc.ExitCode
-  if (-not $exitCode -eq 0) {
-    MyThrow("Updating darknet sources failed! Exited with $exitCode.")
+if (Test-Path "$PSScriptRoot/.git") {
+  Write-Host "Darknet has been cloned with git and supports self-updating mechanism"
+  if ($DoNotUpdateDARKNET) {
+    Write-Host "Darknet will not self-update sources" -ForegroundColor Yellow
+  }
+  else {
+    Write-Host "Darknet will self-update sources, please pass -DoNotUpdateDARKNET to the script to disable"
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "pull"
+    $proc.WaitForExit()
+    $exitCode = $proc.ExitCode
+    if (-Not ($exitCode -eq 0)) {
+      MyThrow("Updating darknet sources failed! Exited with error code $exitCode.")
+    }
   }
 }
 
@@ -240,6 +256,12 @@ if (-Not $CMAKE_EXE) {
 }
 else {
   Write-Host "Using CMake from ${CMAKE_EXE}"
+  $proc = Start-Process -NoNewWindow -PassThru -FilePath ${CMAKE_EXE} -ArgumentList "--version"
+  $proc.WaitForExit()
+  $exitCode = $proc.ExitCode
+  if (-Not ($exitCode -eq 0)) {
+    MyThrow("CMake version check failed! Exited with error code $exitCode.")
+  }
 }
 
 if (-Not $DoNotUseNinja) {
@@ -250,7 +272,17 @@ if (-Not $DoNotUseNinja) {
   }
   else {
     Write-Host "Using Ninja from ${NINJA_EXE}"
-    $generator = "Ninja"
+    Write-Host -NoNewLine "Ninja version "
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath ${NINJA_EXE} -ArgumentList "--version"
+    $proc.WaitForExit()
+    $exitCode = $proc.ExitCode
+    if (-Not ($exitCode -eq 0)) {
+      $DoNotUseNinja = $true
+      Write-Host "Unable to run Ninja previously found, using msbuild or make backends as a fallback" -ForegroundColor Yellow
+    }
+    else {
+      $generator = "Ninja"
+    }
   }
 }
 
@@ -347,8 +379,8 @@ elseif ($UseVCPKG) {
     $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone https://github.com/microsoft/vcpkg"
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
-    if (-not $exitCode -eq 0) {
-      MyThrow("Cloning vcpkg sources failed! Exited with $exitCode.")
+    if (-not ($exitCode -eq 0)) {
+      MyThrow("Cloning vcpkg sources failed! Exited with error code $exitCode.")
     }
   }
   $vcpkg_path = "$PWD/vcpkg"
@@ -361,19 +393,19 @@ else {
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
 }
 
-if ($UseVCPKG -and (Test-Path "$vcpkg_path/.git") -and -not $DoNotUpdateVCPKG) {
+if ($UseVCPKG -and (Test-Path "$vcpkg_path/.git") -and (-Not $DoNotUpdateVCPKG)) {
   Push-Location $vcpkg_path
   $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "pull"
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
-  if (-not $exitCode -eq 0) {
-    MyThrow("Updating vcpkg sources failed! Exited with $exitCode.")
+  if (-Not ($exitCode -eq 0)) {
+    MyThrow("Updating vcpkg sources failed! Exited with error code $exitCode.")
   }
   $proc = Start-Process -NoNewWindow -PassThru -FilePath $PWD/bootstrap-vcpkg${bootstrap_ext} -ArgumentList "-disableMetrics"
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
-  if (-not $exitCode -eq 0) {
-    MyThrow("Bootstrapping vcpkg failed! Exited with $exitCode.")
+  if (-Not ($exitCode -eq 0)) {
+    MyThrow("Bootstrapping vcpkg failed! Exited with error code $exitCode.")
   }
   Pop-Location
 }
@@ -384,7 +416,7 @@ if ($UseVCPKG -and ($vcpkg_path.length -gt 40) -and ($IsWindows -or $IsWindowsPo
   Write-Host "You can use the subst command to ease the process if necessary" -ForegroundColor Yellow
   if (-Not $DisableInteractive) {
     $Result = Read-Host "Do you still want to continue? (yes/no)"
-    if ($Result -eq 'No' -or $Result -eq 'N' -or $Result -eq 'no' -or $Result -eq 'n') {
+    if (($Result -eq 'No') -or ($Result -eq 'N') -or ($Result -eq 'no') -or ($Result -eq 'n')) {
       MyThrow("Build aborted")
     }
   }
@@ -462,19 +494,19 @@ if ($ForceCPP) {
   $additional_build_setup = $additional_build_setup + " -DBUILD_AS_CPP:BOOL=ON"
 }
 
-if (-Not($EnableCUDA)) {
+if (-Not $EnableCUDA) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_CUDA:BOOL=OFF"
 }
 
-if (-Not($EnableCUDNN)) {
+if (-Not $EnableCUDNN) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_CUDNN:BOOL=OFF"
 }
 
-if (-Not($EnableOPENCV)) {
+if (-Not $EnableOPENCV) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV:BOOL=OFF"
 }
 
-if (-Not($EnableOPENCV_CUDA)) {
+if (-Not $EnableOPENCV_CUDA) {
   $additional_build_setup = $additional_build_setup + " -DVCPKG_BUILD_OPENCV_WITH_CUDA:BOOL=OFF"
 }
 
@@ -484,28 +516,31 @@ if (-Not $DoNotDeleteBuildFolder) {
   Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
 }
 
-New-Item -Path $build_folder -ItemType directory -Force
+New-Item -Path $build_folder -ItemType directory -Force | Out-Null
 Set-Location $build_folder
 $cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
+Write-Host "Configuring CMake project" -ForegroundColor Green
 Write-Host "CMake args: $cmake_args"
 $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList $cmake_args
 $proc.WaitForExit()
 $exitCode = $proc.ExitCode
-if (-not $exitCode -eq 0) {
-  MyThrow("Config failed! Exited with $exitCode.")
+if (-Not ($exitCode -eq 0)) {
+  MyThrow("Config failed! Exited with error code $exitCode.")
 }
+Write-Host "Building CMake project" -ForegroundColor Green
 $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${number_of_build_workers} --target install"
 $proc.WaitForExit()
 $exitCode = $proc.ExitCode
-if (-not $exitCode -eq 0) {
-  MyThrow("Config failed! Exited with $exitCode.")
+if (-Not ($exitCode -eq 0)) {
+  MyThrow("Config failed! Exited with error code $exitCode.")
 }
-Remove-Item DarknetConfig.cmake
-Remove-Item DarknetConfigVersion.cmake
+Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfig.cmake
+Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfigVersion.cmake
 $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
 if ($dllfiles) {
   Copy-Item $dllfiles ..
 }
 Set-Location ..
 Copy-Item cmake/Modules/*.cmake share/darknet/
+Write-Host "Build complete!" -ForegroundColor Green
 Pop-Location
