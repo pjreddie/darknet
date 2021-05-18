@@ -16,14 +16,16 @@ param (
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
   [switch]$ForceSetupVS = $false,
-  [Int32]$ForceGCCVersion = 0
+  [Int32]$ForceGCCVersion = 0,
+  [Int32]$NumberOfBuildWorkers = 8,
+  [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9"
+$build_ps1_version = "0.9.1"
 Function MyThrow ($Message) {
   if ($DisableInteractive) {
     Write-Host $Message -ForegroundColor Red
-    exit
+    throw
   }
   else {
     # Check if running in PowerShell ISE
@@ -32,7 +34,7 @@ Function MyThrow ($Message) {
       # Show MessageBox UI
       $Shell = New-Object -ComObject "WScript.Shell"
       $Shell.Popup($Message, 0, "OK", 0)
-      return
+      throw
     }
 
     $Ignore =
@@ -69,21 +71,12 @@ Function MyThrow ($Message) {
     while (($null -eq $KeyInfo.VirtualKeyCode) -or ($Ignore -contains $KeyInfo.VirtualKeyCode)) {
       $KeyInfo = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
     }
-    exit
+    Write-Host ""
+    throw
   }
 }
 
 Write-Host "Darknet build script version ${build_ps1_version}"
-Write-Host -NoNewLine "PowerShell version:"
-$PSVersionTable.PSVersion
-
-if ($PSVersionTable.PSVersion.Major -eq 5) {
-  $IsWindowsPowerShell = $true
-}
-
-if ($PSVersionTable.PSVersion.Major -lt 5) {
-  MyThrow("Your PowerShell version is too old, please update it.")
-}
 
 if ((-Not $DisableInteractive) -and (-Not $UseVCPKG)) {
   $Result = Read-Host "Enable vcpkg to install darknet dependencies (yes/no)"
@@ -113,8 +106,17 @@ if ((-Not $DisableInteractive) -and (-Not $EnableOPENCV)) {
   }
 }
 
-$number_of_build_workers = 8
-#$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
+Write-Host -NoNewLine "PowerShell version:"
+$PSVersionTable.PSVersion
+
+if ($PSVersionTable.PSVersion.Major -eq 5) {
+  $IsWindowsPowerShell = $true
+}
+
+if ($PSVersionTable.PSVersion.Major -lt 5) {
+  MyThrow("Your PowerShell version is too old, please update it.")
+}
+
 
 if ($IsLinux -or $IsMacOS) {
   $bootstrap_ext = ".sh"
@@ -132,7 +134,7 @@ if ((-Not $IsWindows) -and (-Not $IsWindowsPowerShell) -and (-Not $ForceSetupVS)
 
 if ($ForceStaticLib) {
   Write-Host "Forced CMake to produce a static library"
-  $additional_build_setup = " -DBUILD_SHARED_LIBS=OFF "
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DBUILD_SHARED_LIBS=OFF "
 }
 
 if (($IsLinux -or $IsMacOS) -and ($ForceGCCVersion -gt 0)) {
@@ -242,6 +244,7 @@ if (Test-Path "$PSScriptRoot/.git") {
   else {
     Write-Host "Darknet will self-update sources, please pass -DoNotUpdateDARKNET to the script to disable"
     $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "pull"
+    $handle = $proc.Handle
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
     if (-Not ($exitCode -eq 0)) {
@@ -257,6 +260,7 @@ if (-Not $CMAKE_EXE) {
 else {
   Write-Host "Using CMake from ${CMAKE_EXE}"
   $proc = Start-Process -NoNewWindow -PassThru -FilePath ${CMAKE_EXE} -ArgumentList "--version"
+  $handle = $proc.Handle
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
   if (-Not ($exitCode -eq 0)) {
@@ -274,6 +278,7 @@ if (-Not $DoNotUseNinja) {
     Write-Host "Using Ninja from ${NINJA_EXE}"
     Write-Host -NoNewLine "Ninja version "
     $proc = Start-Process -NoNewWindow -PassThru -FilePath ${NINJA_EXE} -ArgumentList "--version"
+    $handle = $proc.Handle
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
     if (-Not ($exitCode -eq 0)) {
@@ -358,25 +363,26 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
 if ((Test-Path env:VCPKG_ROOT) -and $UseVCPKG) {
   $vcpkg_path = "$env:VCPKG_ROOT"
   Write-Host "Found vcpkg in VCPKG_ROOT: $vcpkg_path"
-  $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
 elseif ((Test-Path "${env:WORKSPACE}/vcpkg") -and $UseVCPKG) {
   $vcpkg_path = "${env:WORKSPACE}/vcpkg"
   $env:VCPKG_ROOT = "${env:WORKSPACE}/vcpkg"
   Write-Host "Found vcpkg in WORKSPACE/vcpkg: $vcpkg_path"
-  $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
 elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
   if((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
     $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $env:VCPKG_ROOT = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: ${vcpkg_path}"
-    $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+    $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
   }
 }
 elseif ($UseVCPKG) {
   if (-Not (Test-Path "$PWD/vcpkg")) {
     $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone https://github.com/microsoft/vcpkg"
+    $handle = $proc.Handle
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
     if (-not ($exitCode -eq 0)) {
@@ -386,22 +392,24 @@ elseif ($UseVCPKG) {
   $vcpkg_path = "$PWD/vcpkg"
   $env:VCPKG_ROOT = "$PWD/vcpkg"
   Write-Host "Found vcpkg in $PWD/vcpkg: $PWD/vcpkg"
-  $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
 else {
   Write-Host "Skipping vcpkg integration`n" -ForegroundColor Yellow
-  $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
 }
 
 if ($UseVCPKG -and (Test-Path "$vcpkg_path/.git") -and (-Not $DoNotUpdateVCPKG)) {
   Push-Location $vcpkg_path
   $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "pull"
+  $handle = $proc.Handle
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
   if (-Not ($exitCode -eq 0)) {
     MyThrow("Updating vcpkg sources failed! Exited with error code $exitCode.")
   }
   $proc = Start-Process -NoNewWindow -PassThru -FilePath $PWD/bootstrap-vcpkg${bootstrap_ext} -ArgumentList "-disableMetrics"
+  $handle = $proc.Handle
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
   if (-Not ($exitCode -eq 0)) {
@@ -444,15 +452,15 @@ if (-Not $DoNotSetupVS) {
     $selectConfig = " --config Release "
     if ($tokens[0] -eq "14") {
       $generator = "Visual Studio 14 2015"
-      $additional_build_setup = $additional_build_setup + " -T `"host=x64`" -A `"x64`""
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
     }
     elseif ($tokens[0] -eq "15") {
       $generator = "Visual Studio 15 2017"
-      $additional_build_setup = $additional_build_setup + " -T `"host=x64`" -A `"x64`""
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
     }
     elseif ($tokens[0] -eq "16") {
       $generator = "Visual Studio 16 2019"
-      $additional_build_setup = $additional_build_setup + " -T `"host=x64`" -A `"x64`""
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
     }
     else {
       MyThrow("Unknown Visual Studio version, unsupported configuration")
@@ -491,23 +499,23 @@ if (-Not $IsMacOS -and $EnableCUDA) {
 }
 
 if ($ForceCPP) {
-  $additional_build_setup = $additional_build_setup + " -DBUILD_AS_CPP:BOOL=ON"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DBUILD_AS_CPP:BOOL=ON"
 }
 
 if (-Not $EnableCUDA) {
-  $additional_build_setup = $additional_build_setup + " -DENABLE_CUDA:BOOL=OFF"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_CUDA:BOOL=OFF"
 }
 
 if (-Not $EnableCUDNN) {
-  $additional_build_setup = $additional_build_setup + " -DENABLE_CUDNN:BOOL=OFF"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_CUDNN:BOOL=OFF"
 }
 
 if (-Not $EnableOPENCV) {
-  $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV:BOOL=OFF"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_OPENCV:BOOL=OFF"
 }
 
 if (-Not $EnableOPENCV_CUDA) {
-  $additional_build_setup = $additional_build_setup + " -DVCPKG_BUILD_OPENCV_WITH_CUDA:BOOL=OFF"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_BUILD_OPENCV_WITH_CUDA:BOOL=OFF"
 }
 
 $build_folder = "./build_release"
@@ -518,17 +526,19 @@ if (-Not $DoNotDeleteBuildFolder) {
 
 New-Item -Path $build_folder -ItemType directory -Force | Out-Null
 Set-Location $build_folder
-$cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
+$cmake_args = "-G `"$generator`" ${AdditionalBuildSetup} -S .."
 Write-Host "Configuring CMake project" -ForegroundColor Green
 Write-Host "CMake args: $cmake_args"
 $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList $cmake_args
+$handle = $proc.Handle
 $proc.WaitForExit()
 $exitCode = $proc.ExitCode
 if (-Not ($exitCode -eq 0)) {
   MyThrow("Config failed! Exited with error code $exitCode.")
 }
 Write-Host "Building CMake project" -ForegroundColor Green
-$proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${number_of_build_workers} --target install"
+$proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${NumberOfBuildWorkers} --target install"
+$handle = $proc.Handle
 $proc.WaitForExit()
 $exitCode = $proc.ExitCode
 if (-Not ($exitCode -eq 0)) {
