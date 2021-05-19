@@ -15,13 +15,15 @@ param (
   [switch]$DoNotUseNinja = $false,
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
+  [switch]$ForceVCPKGCacheRemoval = $false,
   [switch]$ForceSetupVS = $false,
   [Int32]$ForceGCCVersion = 0,
   [Int32]$NumberOfBuildWorkers = 8,
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.1"
+$build_ps1_version = "0.9.2"
+
 Function MyThrow ($Message) {
   if ($DisableInteractive) {
     Write-Host $Message -ForegroundColor Red
@@ -75,6 +77,28 @@ Function MyThrow ($Message) {
     throw
   }
 }
+
+Function DownloadNinja() {
+  Write-Host "Unable to find Ninja, downloading a portable version on-the-fly" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue ninja
+  Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
+  if ($IsWindows -or $IsWindowsPowerShell) {
+    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip"
+  }
+  elseif ($IsLinux) {
+    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip"
+  }
+  elseif ($IsMacOS) {
+    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-mac.zip"
+  }
+  else {
+    MyThrow("Unknown OS, unsupported")
+  }
+  Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile "ninja.zip"
+  Expand-Archive -Path ninja.zip
+  Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
+}
+
 
 Write-Host "Darknet build script version ${build_ps1_version}"
 
@@ -271,10 +295,15 @@ else {
 if (-Not $DoNotUseNinja) {
   $NINJA_EXE = Get-Command ninja 2> $null | Select-Object -ExpandProperty Definition
   if (-Not $NINJA_EXE) {
-    $DoNotUseNinja = $true
-    Write-Host "Could not find Ninja, using msbuild or make backends as a fallback" -ForegroundColor Yellow
+    DownloadNinja
+    $env:PATH += ";${PSScriptRoot}/ninja"
+    $NINJA_EXE = Get-Command ninja 2> $null | Select-Object -ExpandProperty Definition
+    if (-Not $NINJA_EXE) {
+      $DoNotUseNinja = $true
+      Write-Host "Could not find Ninja, unable to download a portable ninja, using msbuild or make backends as a fallback" -ForegroundColor Yellow
+    }
   }
-  else {
+  if ($NINJA_EXE) {
     Write-Host "Using Ninja from ${NINJA_EXE}"
     Write-Host -NoNewLine "Ninja version "
     $proc = Start-Process -NoNewWindow -PassThru -FilePath ${NINJA_EXE} -ArgumentList "--version"
@@ -287,6 +316,7 @@ if (-Not $DoNotUseNinja) {
     }
     else {
       $generator = "Ninja"
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -DCMAKE_BUILD_TYPE=Release"
     }
   }
 }
@@ -430,6 +460,27 @@ if ($UseVCPKG -and ($vcpkg_path.length -gt 40) -and ($IsWindows -or $IsWindowsPo
   }
 }
 
+if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
+  Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {
+  if ($IsWindows -or $IsWindowsPowerShell) {
+    $vcpkgbinarycachepath = "$env:LOCALAPPDATA/vcpkg/archive"
+  }
+  elseif ($IsLinux) {
+    $vcpkgbinarycachepath = "$env:HOME/.cache/vcpkg/archive"
+  }
+  elseif ($IsMacOS) {
+    $vcpkgbinarycachepath = "$env:HOME/.cache/vcpkg/archive"
+  }
+  else {
+    MyThrow("Unknown OS, unsupported")
+  }
+  Write-Host "Removing local vcpkg binary cache from $vcpkgbinarycachepath" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgbinarycachepath
+}
+
 if (-Not $DoNotSetupVS) {
   if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
     $vsfound = getLatestVisualStudioWithDesktopWorkloadPath
@@ -472,6 +523,7 @@ if (-Not $DoNotSetupVS) {
 }
 if ($DoNotSetupVS -and $DoNotUseNinja) {
   $generator = "Unix Makefiles"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DCMAKE_BUILD_TYPE=Release"
 }
 Write-Host "Setting up environment to use CMake generator: $generator"
 

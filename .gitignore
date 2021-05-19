@@ -22,6 +22,8 @@ cfg/
 temp/
 build/darknet/*
 build_*/
+ninja/
+ninja.zip
 vcpkg_installed/
 !build/darknet/YoloWrapper.cs
 .fuse*
