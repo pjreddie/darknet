@@ -22,7 +22,7 @@ param (
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.2"
+$build_ps1_version = "0.9.3"
 
 Function MyThrow ($Message) {
   if ($DisableInteractive) {
@@ -252,7 +252,7 @@ else {
 
 Push-Location $PSScriptRoot
 
-$GIT_EXE = Get-Command git 2> $null | Select-Object -ExpandProperty Definition
+$GIT_EXE = Get-Command "git" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
 if (-Not $GIT_EXE) {
   MyThrow("Could not find git, please install it")
 }
@@ -277,7 +277,7 @@ if (Test-Path "$PSScriptRoot/.git") {
   }
 }
 
-$CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
+$CMAKE_EXE = Get-Command "cmake" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
 if (-Not $CMAKE_EXE) {
   MyThrow("Could not find CMake, please install it")
 }
@@ -293,11 +293,11 @@ else {
 }
 
 if (-Not $DoNotUseNinja) {
-  $NINJA_EXE = Get-Command ninja 2> $null | Select-Object -ExpandProperty Definition
+  $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
   if (-Not $NINJA_EXE) {
     DownloadNinja
     $env:PATH += ";${PSScriptRoot}/ninja"
-    $NINJA_EXE = Get-Command ninja 2> $null | Select-Object -ExpandProperty Definition
+    $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
     if (-Not $NINJA_EXE) {
       $DoNotUseNinja = $true
       Write-Host "Could not find Ninja, unable to download a portable ninja, using msbuild or make backends as a fallback" -ForegroundColor Yellow
@@ -482,7 +482,8 @@ if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {
 }
 
 if (-Not $DoNotSetupVS) {
-  if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
+  $CL_EXE = Get-Command "cl" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
+  if ((-Not $CL_EXE) -or ($CL_EXE -match "HostX86\\x86") -or ($CL_EXE -match "HostX64\\x86")) {
     $vsfound = getLatestVisualStudioWithDesktopWorkloadPath
     Write-Host "Found VS in ${vsfound}"
     Push-Location "${vsfound}\Common7\Tools"
@@ -528,7 +529,8 @@ if ($DoNotSetupVS -and $DoNotUseNinja) {
 Write-Host "Setting up environment to use CMake generator: $generator"
 
 if (-Not $IsMacOS -and $EnableCUDA) {
-  if ($null -eq (Get-Command "nvcc" -ErrorAction SilentlyContinue)) {
+  $NVCC_EXE = Get-Command "nvcc" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
+  if (-Not $NVCC_EXE) {
     if (Test-Path env:CUDA_PATH) {
       $env:PATH += ";${env:CUDA_PATH}/bin"
       Write-Host "Found cuda in ${env:CUDA_PATH}"
