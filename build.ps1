@@ -18,11 +18,17 @@ param (
   [switch]$ForceVCPKGCacheRemoval = $false,
   [switch]$ForceSetupVS = $false,
   [Int32]$ForceGCCVersion = 0,
+  [Int32]$ForceOpenCVVersion = 0,
   [Int32]$NumberOfBuildWorkers = 8,
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.3"
+$build_ps1_version = "0.9.4"
+
+$ErrorActionPreference = "SilentlyContinue"
+Stop-Transcript | out-null
+$ErrorActionPreference = "Continue"
+Start-Transcript -Path $PSScriptRoot/build.log
 
 Function MyThrow ($Message) {
   if ($DisableInteractive) {
@@ -389,6 +395,7 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
   return $installationVersion
 }
 
+$vcpkg_root_set_by_this_script = $false
 
 if ((Test-Path env:VCPKG_ROOT) -and $UseVCPKG) {
   $vcpkg_path = "$env:VCPKG_ROOT"
@@ -398,6 +405,7 @@ if ((Test-Path env:VCPKG_ROOT) -and $UseVCPKG) {
 elseif ((Test-Path "${env:WORKSPACE}/vcpkg") -and $UseVCPKG) {
   $vcpkg_path = "${env:WORKSPACE}/vcpkg"
   $env:VCPKG_ROOT = "${env:WORKSPACE}/vcpkg"
+  $vcpkg_root_set_by_this_script = $true
   Write-Host "Found vcpkg in WORKSPACE/vcpkg: $vcpkg_path"
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
@@ -405,6 +413,7 @@ elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
   if((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
     $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $env:VCPKG_ROOT = "${RUNVCPKG_VCPKG_ROOT_OUT}"
+    $vcpkg_root_set_by_this_script = $true
     Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: ${vcpkg_path}"
     $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
   }
@@ -421,6 +430,7 @@ elseif ($UseVCPKG) {
   }
   $vcpkg_path = "$PWD/vcpkg"
   $env:VCPKG_ROOT = "$PWD/vcpkg"
+  $vcpkg_root_set_by_this_script = $true
   Write-Host "Found vcpkg in $PWD/vcpkg: $PWD/vcpkg"
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
@@ -462,6 +472,16 @@ if ($UseVCPKG -and ($vcpkg_path.length -gt 40) -and ($IsWindows -or $IsWindowsPo
 
 if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {
+  Write-Host "You requested OpenCV version 2, so vcpkg will install that version" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_USE_OPENCV4=OFF -DVCPKG_USE_OPENCV2=ON"
+}
+
+if (($ForceOpenCVVersion -eq 3) -and $UseVCPKG) {
+  Write-Host "You requested OpenCV version 3, so vcpkg will install that version" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_USE_OPENCV4=OFF -DVCPKG_USE_OPENCV3=ON"
 }
 
 if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {
@@ -608,3 +628,11 @@ Set-Location ..
 Copy-Item cmake/Modules/*.cmake share/darknet/
 Write-Host "Build complete!" -ForegroundColor Green
 Pop-Location
+
+if ($vcpkg_root_set_by_this_script) {
+  $env:VCPKG_ROOT = $null
+}
+
+$ErrorActionPreference = "SilentlyContinue"
+Stop-Transcript | out-null
+$ErrorActionPreference = "Continue"
