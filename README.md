@@ -220,6 +220,7 @@ You can get cfg-files by path: `darknet/cfg/`
   - [Tianxiaomo/pytorch-YOLOv4](https://github.com/Tianxiaomo/pytorch-YOLOv4)
   - [YOLOv5](https://github.com/ultralytics/yolov5)
 - **ONNX** on Jetson for YOLOv4: https://developer.nvidia.com/blog/announcing-onnx-runtime-for-jetson/
+- **nVidia Transfer Learning Toolkit (TLT>=3.0)** Training and Detection https://docs.nvidia.com/metropolis/TLT/tlt-user-guide/text/object_detection/yolo_v4.html
 - **TensorRT+tkDNN**: https://github.com/ceccocats/tkDNN#fps-results
 - **Deepstream 5.0 / TensorRT for YOLOv4** https://github.com/NVIDIA-AI-IOT/yolov4_deepstream or https://github.com/marcoslucianops/DeepStream-Yolo read [Yolo is natively supported in DeepStream 4.0](https://news.developer.nvidia.com/deepstream-sdk-4-now-available/) and [PDF](https://docs.nvidia.com/metropolis/deepstream/Custom_YOLO_Model_in_the_DeepStream_YOLO_App.pdf). Additionally [jkjung-avt/tensorrt_demos](https://github.com/jkjung-avt/tensorrt_demos) or [wang-xinyu/tensorrtx](https://github.com/wang-xinyu/tensorrtx)
 - **Triton Inference Server / TensorRT** https://github.com/isarsoft/yolov4-triton-tensorrt
