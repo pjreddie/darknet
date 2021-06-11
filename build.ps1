@@ -17,13 +17,14 @@ param (
   [switch]$ForceStaticLib = $false,
   [switch]$ForceVCPKGCacheRemoval = $false,
   [switch]$ForceSetupVS = $false,
+  [switch]$EnableCSharpWrapper = $false,
   [Int32]$ForceGCCVersion = 0,
   [Int32]$ForceOpenCVVersion = 0,
   [Int32]$NumberOfBuildWorkers = 8,
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.4"
+$build_ps1_version = "0.9.5"
 
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
@@ -242,6 +243,15 @@ else {
   Write-Host "VisualStudio integration is enabled, please pass -DoNotSetupVS to the script to disable"
 }
 
+if ($EnableCSharpWrapper -and ($IsWindowsPowerShell -or $IsWindows)) {
+  Write-Host "Yolo C# wrapper integration is enabled. Will be built with Visual Studio generator. Disabling Ninja"
+  $DoNotUseNinja = $true
+}
+else {
+  $EnableCSharpWrapper = $false
+  Write-Host "Yolo C# wrapper integration is disabled, please pass -EnableCSharpWrapper to the script to enable. You must be on Windows!"
+}
+
 if ($DoNotUseNinja) {
   Write-Host "Ninja is disabled"
 }
@@ -410,7 +420,7 @@ elseif ((Test-Path "${env:WORKSPACE}/vcpkg") -and $UseVCPKG) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
 elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
-  if((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
+  if ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
     $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $env:VCPKG_ROOT = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $vcpkg_root_set_by_this_script = $true
@@ -590,6 +600,10 @@ if (-Not $EnableOPENCV) {
 
 if (-Not $EnableOPENCV_CUDA) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_BUILD_OPENCV_WITH_CUDA:BOOL=OFF"
+}
+
+if ($EnableCSharpWrapper) {
+  $additional_build_setup = $additional_build_setup + " -DENABLE_CSHARP_WRAPPER:BOOL=ON"
 }
 
 $build_folder = "./build_release"

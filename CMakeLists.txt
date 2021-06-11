@@ -21,6 +21,7 @@ option(ENABLE_CUDNN "Enable CUDNN" ON)
 option(ENABLE_CUDNN_HALF "Enable CUDNN Half precision" ON)
 option(ENABLE_ZED_CAMERA "Enable ZED Camera support" ON)
 option(ENABLE_VCPKG_INTEGRATION "Enable VCPKG integration" ON)
+option(ENABLE_CSHARP_WRAPPER "Enable building a csharp wrapper" OFF)
 option(VCPKG_BUILD_OPENCV_WITH_CUDA "Build OpenCV with CUDA extension integration" ON)
 option(VCPKG_USE_OPENCV2 "Use legacy OpenCV 2" OFF)
 option(VCPKG_USE_OPENCV3 "Use legacy OpenCV 3" OFF)
@@ -576,3 +577,7 @@ install(FILES
   "${PROJECT_BINARY_DIR}/DarknetConfigVersion.cmake"
   DESTINATION "${INSTALL_CMAKE_DIR}"
 )
+
+if(ENABLE_CSHARP_WRAPPER)
+  add_subdirectory(src/csharp)
+endif()

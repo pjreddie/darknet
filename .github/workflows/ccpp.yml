@@ -1,6 +1,10 @@
 name: Darknet Continuous Integration
 
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 env:
   VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,readwrite'
@@ -68,6 +72,11 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
+    - name: Update apt
+      run: sudo apt update
+    - name: Install dependencies
+      run: sudo apt install yasm nasm
+
     - name: 'Install CUDA'
       run: ./scripts/deploy-cuda.sh
 
@@ -123,6 +132,11 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
+    - name: Update apt
+      run: sudo apt update
+    - name: Install dependencies
+      run: sudo apt install yasm nasm
+
     - name: 'Install CUDA'
       run: ./scripts/deploy-cuda.sh
 
@@ -160,6 +174,11 @@ jobs:
     - uses: actions/checkout@v2
 
     - uses: lukka/get-cmake@latest
+
+    - name: Update apt
+      run: sudo apt update
+    - name: Install dependencies
+      run: sudo apt install yasm nasm
 
     - name: 'Install CUDA'
       run: ./scripts/deploy-cuda.sh
@@ -511,6 +530,18 @@ jobs:
     - name: 'Build'
       shell: pwsh
       run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
+
+
+  win-csharp:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -EnableCSharpWrapper -DisableInteractive -DoNotUpdateDARKNET
 
 
   win-intlibs-cuda:
