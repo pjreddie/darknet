@@ -1,10 +1,11 @@
 #!/usr/bin/env pwsh
 
-$install_cuda = $false
+param (
+  [switch]$InstallCUDA = $false
+)
 
 if ($null -eq (Get-Command "choco.exe" -ErrorAction SilentlyContinue)) {
   # Download and install Chocolatey
-  Set-ExecutionPolicy unrestricted -Scope CurrentUser
   Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
   Throw "Please close and re-open powershell and then re-run setup.ps1 script"
 }
@@ -13,23 +14,26 @@ Start-Process -FilePath "choco" -Verb runAs -ArgumentList " install -y cmake nin
 Start-Process -FilePath "choco" -Verb runAs -ArgumentList " install -y visualstudio2019buildtools --package-parameters `"--add Microsoft.VisualStudio.Component.VC.CoreBuildTools --includeRecommended --includeOptional --passive --locale en-US --lang en-US`""
 Push-Location $PSScriptRoot
 
-if ($install_cuda) {
-  & ./deploy-cuda.ps1
-  $features = "full"
+if ($InstallCUDA) {
+  & $PSScriptRoot/deploy-cuda.ps1
+  $env:CUDA_PATH="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3"
+  $env:CUDA_TOOLKIT_ROOT_DIR="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3"
+  $env:CUDACXX="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3\\bin\\nvcc.exe"
+  $CUDAisAvailable = $true
 }
 else {
   if (-not $null -eq $env:CUDA_PATH) {
-    $features = "full"
+    $CUDAisAvailable = $true
   }
   else{
-    $features = "opencv-base"
+    $CUDAisAvailable = $false
   }
 }
 
-git.exe clone https://github.com/microsoft/vcpkg ../vcpkg
-Set-Location ..\vcpkg
-.\bootstrap-vcpkg.bat -disableMetrics
-.\vcpkg.exe install darknet[${features}]:x64-windows
-Pop-Location
-
-Write-Host "Darknet installed in $pwd\x64-windows\tools\darknet" -ForegroundColor Yellow
+if ($CUDAisAvailable) {
+  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
+  #& $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA  -DisableInteractive -DoNotUpdateDARKNET
+}
+else {
+  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+}

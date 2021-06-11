@@ -17,32 +17,6 @@ matrix:
         - MATRIX_EVAL=""
 
     - os: osx
-      compiler: gcc
-      name: macOS - gcc (llvm backend) - opencv@2
-      osx_image: xcode12.3
-      env:
-        - OpenCV_DIR="/usr/local/opt/opencv@2/"
-        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR} -DENABLE_CUDA=OFF"
-        - MATRIX_EVAL="brew install opencv@2"
-
-    - os: osx
-      compiler: gcc
-      name: macOS - gcc (llvm backend) - opencv@3
-      osx_image: xcode12.3
-      env:
-        - OpenCV_DIR="/usr/local/opt/opencv@3/"
-        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR} -DENABLE_CUDA=OFF"
-        - MATRIX_EVAL="brew install opencv@3"
-
-    - os: osx
-      compiler: gcc
-      name: macOS - gcc (llvm backend) - opencv(latest)
-      osx_image: xcode12.3
-      env:
-        - additional_defines=" -DENABLE_CUDA=OFF"
-        - MATRIX_EVAL="brew install opencv"
-
-    - os: osx
       compiler: clang
       name: macOS - clang
       osx_image: xcode12.3
@@ -57,40 +31,6 @@ matrix:
       env:
         - additional_defines="-DBUILD_AS_CPP:BOOL=TRUE -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
         - MATRIX_EVAL=""
-
-    - os: osx
-      compiler: clang
-      name: macOS - clang - opencv@2
-      osx_image: xcode12.3
-      env:
-        - OpenCV_DIR="/usr/local/opt/opencv@2/"
-        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR} -DENABLE_CUDA=OFF"
-        - MATRIX_EVAL="brew install opencv@2"
-
-    - os: osx
-      compiler: clang
-      name: macOS - clang - opencv@3
-      osx_image: xcode12.3
-      env:
-        - OpenCV_DIR="/usr/local/opt/opencv@3/"
-        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR} -DENABLE_CUDA=OFF"
-        - MATRIX_EVAL="brew install opencv@3"
-
-    - os: osx
-      compiler: clang
-      name: macOS - clang - opencv(latest)
-      osx_image: xcode12.3
-      env:
-        - additional_defines=" -DENABLE_CUDA=OFF"
-        - MATRIX_EVAL="brew install opencv"
-
-    - os: osx
-      compiler: clang
-      name: macOS - clang - opencv(latest) - libomp
-      osx_image: xcode12.3
-      env:
-        - additional_defines=" -DENABLE_CUDA=OFF"
-        - MATRIX_EVAL="brew install opencv libomp"
 
     - os: linux
       compiler: clang
