@@ -2026,6 +2026,7 @@ void save_weights_upto(network net, char *filename, int cutoff, int save_ema)
             fwrite(l.biases, sizeof(float), l.outputs, fp);
             fwrite(l.weights, sizeof(float), size, fp);
         }
+        fflush(fp);
     }
     fclose(fp);
 }
