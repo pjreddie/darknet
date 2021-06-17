@@ -458,7 +458,7 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: darknet-vcpkg-${{ runner.os }}
-        path: ${{ runner.workspace }}/buildDirectory/Release/*.dll
+        path: ${{ github.workspace }}/build_release/*.dll
     - uses: actions/upload-artifact@v2
       with:
         name: darknet-vcpkg-${{ runner.os }}

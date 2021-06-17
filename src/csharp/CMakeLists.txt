@@ -1,5 +1,5 @@
 
-project(YoloWrapper LANGUAGES CSharp)
+project(YoloCSharpWrapper LANGUAGES CSharp)
 include(CSharpUtilities)
 
 add_library(${PROJECT_NAME}
