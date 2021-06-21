@@ -603,7 +603,7 @@ if (-Not $EnableOPENCV_CUDA) {
 }
 
 if ($EnableCSharpWrapper) {
-  $additional_build_setup = $additional_build_setup + " -DENABLE_CSHARP_WRAPPER:BOOL=ON"
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_CSHARP_WRAPPER:BOOL=ON"
 }
 
 $build_folder = "./build_release"
