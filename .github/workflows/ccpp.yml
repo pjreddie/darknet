@@ -465,6 +465,28 @@ jobs:
         path: ${{ github.workspace }}/uselib*
 
 
+  win-vcpkg-port:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -UseVCPKG -InstallDARKNETthroughVCPKG -ForceVCPKGDarknetHEAD -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+
+
   win-intlibs:
     runs-on: windows-latest
     steps:
