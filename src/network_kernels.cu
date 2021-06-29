@@ -76,7 +76,7 @@ void forward_network_gpu(network net, network_state state)
     for(i = 0; i < net.n; ++i){
         state.index = i;
         layer l = net.layers[i];
-        if(l.delta_gpu && state.train){
+        if(l.delta_gpu && state.train && l.train){
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
 
@@ -271,6 +271,8 @@ void update_network_gpu(network net)
     float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
+        if (l.train == 0) continue;
+
         l.t = get_current_batch(net);
         if (iteration_num > (net.max_batches * 1 / 2)) l.deform = 0;
         if (l.burnin_update && (l.burnin_update*net.burn_in > iteration_num)) continue;

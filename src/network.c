@@ -273,7 +273,7 @@ void forward_network(network net, network_state state)
     for(i = 0; i < net.n; ++i){
         state.index = i;
         layer l = net.layers[i];
-        if(l.delta && state.train){
+        if(l.delta && state.train && l.train){
             scal_cpu(l.outputs * l.batch, 0, l.delta, 1);
         }
         //double time = get_time_point();
@@ -297,6 +297,7 @@ void update_network(network net)
     float rate = get_current_rate(net);
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
+        if (l.train == 0) continue;
         if(l.update){
             l.update(l, update_batch, rate, net.momentum, net.decay);
         }
