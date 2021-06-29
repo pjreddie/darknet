@@ -1499,7 +1499,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             int k;
             for (k = 0; k < l.n; ++k) {
                 net.layers[l.input_layers[k]].use_bin_output = 0;
-                net.layers[l.input_layers[k]].keep_delta_gpu = 1;
+                if (count >= last_stop_backward)
+                    net.layers[l.input_layers[k]].keep_delta_gpu = 1;
             }
         }else if (lt == UPSAMPLE) {
             l = parse_upsample(options, params, net);
@@ -1507,7 +1508,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             l = parse_shortcut(options, params, net);
             net.layers[count - 1].use_bin_output = 0;
             net.layers[l.index].use_bin_output = 0;
-            net.layers[l.index].keep_delta_gpu = 1;
+            if (count >= last_stop_backward)
+                net.layers[l.index].keep_delta_gpu = 1;
         }else if (lt == SCALE_CHANNELS) {
             l = parse_scale_channels(options, params, net);
             net.layers[count - 1].use_bin_output = 0;
@@ -1654,6 +1656,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
         option_unused(options);
+
+        if (l.stopbackward == 1) printf(" ------- previous layers are frozen ------- \n");
 
         net.layers[count] = l;
         if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;
