@@ -48,6 +48,7 @@ image mat_to_image_cv(mat_cv *mat);
 // Window
 void create_window_cv(char const* window_name, int full_screen, int width, int height);
 void resize_window_cv(char const* window_name, int width, int height);
+void move_window_cv(char const* window_name, int x, int y);
 void destroy_all_windows_cv();
 int wait_key_cv(int delay);
 int wait_until_press_key_cv();
