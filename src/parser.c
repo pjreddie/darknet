@@ -1425,9 +1425,12 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         ++count_tmp;
     }
 
+    int old_params_train = params.train;
+
     fprintf(stderr, "   layer   filters  size/strd(dil)      input                output\n");
     while(n){
 
+        params.train = old_params_train;
         if (count < last_stop_backward) params.train = 0;
 
         params.index = count;
