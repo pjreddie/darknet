@@ -1429,7 +1429,6 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     while(n){
 
         if (count < last_stop_backward) params.train = 0;
-        else params.train = 1;
 
         params.index = count;
         fprintf(stderr, "%4d ", count);
@@ -1693,9 +1692,9 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         for (k = 0; k < last_stop_backward; ++k) {
             layer l = net.layers[k];
             if (l.keep_delta_gpu) {
-                if (!l.delta) l.delta = (float*)xcalloc(l.outputs, sizeof(float));
+                if (!l.delta) l.delta = (float*)xcalloc(l.outputs*l.batch, sizeof(float));
 #ifdef GPU
-                if (!l.delta_gpu) l.delta_gpu = (float *)cuda_make_array(NULL, l.outputs);
+                if (!l.delta_gpu) l.delta_gpu = (float *)cuda_make_array(NULL, l.outputs*l.batch);
 #endif
             }
 
