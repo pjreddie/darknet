@@ -1615,7 +1615,12 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 #ifdef GPU
         // futher GPU-memory optimization: net.optimized_memory == 2
         l.optimized_memory = net.optimized_memory;
-        if (net.optimized_memory >= 2 && params.train && l.type != DROPOUT)
+        if (net.optimized_memory == 1 && params.train && l.type != DROPOUT) {
+            if (l.delta_gpu) {
+                cuda_free(l.delta_gpu);
+                l.delta_gpu = NULL;
+            }
+        } else if (net.optimized_memory >= 2 && params.train && l.type != DROPOUT)
         {
             if (l.output_gpu) {
                 cuda_free(l.output_gpu);
@@ -1731,6 +1736,9 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
                     else cuda_free(l.delta_gpu);
                 }
                 l.delta_gpu = net.global_delta_gpu;
+            }
+            else {
+                if (!l.delta_gpu) l.delta_gpu = (float *)cuda_make_array(NULL, l.outputs*l.batch);
             }
 
             // maximum optimization
