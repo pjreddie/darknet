@@ -1413,16 +1413,18 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     // find l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
     node *n_tmp = n;
     int count_tmp = 0;
-    while (n_tmp) {
-        s = (section *)n_tmp->val;
-        options = s->options;
-        int stopbackward = option_find_int_quiet(options, "stopbackward", 0);
-        if (stopbackward == 1) {
-            last_stop_backward = count_tmp;
-            printf("last_stop_backward = %d \n", last_stop_backward);
+    if (params.train == 1) {
+        while (n_tmp) {
+            s = (section *)n_tmp->val;
+            options = s->options;
+            int stopbackward = option_find_int_quiet(options, "stopbackward", 0);
+            if (stopbackward == 1) {
+                last_stop_backward = count_tmp;
+                printf("last_stop_backward = %d \n", last_stop_backward);
+            }
+            n_tmp = n_tmp->next;
+            ++count_tmp;
         }
-        n_tmp = n_tmp->next;
-        ++count_tmp;
     }
 
     int old_params_train = params.train;
@@ -1700,15 +1702,18 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         for (k = 0; k < last_stop_backward; ++k) {
             layer l = net.layers[k];
             if (l.keep_delta_gpu) {
-                if (!l.delta) l.delta = (float*)xcalloc(l.outputs*l.batch, sizeof(float));
+                if (!l.delta) {
+                    net.layers[k].delta = (float*)xcalloc(l.outputs*l.batch, sizeof(float));
+                }
 #ifdef GPU
-                if (!l.delta_gpu) l.delta_gpu = (float *)cuda_make_array(NULL, l.outputs*l.batch);
+                if (!l.delta_gpu) {
+                    net.layers[k].delta_gpu = (float *)cuda_make_array(NULL, l.outputs*l.batch);
+                }
 #endif
             }
 
-            l.onlyforward = 1;
-            l.train = 0;
-            net.layers[k] = l;
+            net.layers[k].onlyforward = 1;
+            net.layers[k].train = 0;
         }
     }
 
