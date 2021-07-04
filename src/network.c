@@ -1459,6 +1459,7 @@ void copy_weights_net(network net_train, network *net_map)
         }
         net_map->layers[k].batch = 1;
         net_map->layers[k].steps = 1;
+        net_map->layers[k].train = 0;
     }
 }
 
