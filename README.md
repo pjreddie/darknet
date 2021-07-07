@@ -66,6 +66,7 @@ About Darknet framework: http://pjreddie.com/darknet/
   - [How to improve object detection](#how-to-improve-object-detection)
   - [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
   - [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
+- [Citation](#citation)
 
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
