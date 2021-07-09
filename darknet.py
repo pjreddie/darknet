@@ -1,26 +1,13 @@
-#!python3
+#!/usr/bin/env python3
+
 """
 Python 3 wrapper for identifying objects in images
 
-Requires DLL compilation
-
-Both the GPU and no-GPU version should be compiled; the no-GPU version should be renamed "yolo_cpp_dll_nogpu.dll".
-
-On a GPU system, you can force CPU evaluation by any of:
-
-- Set global variable DARKNET_FORCE_CPU to True
-- Set environment variable CUDA_VISIBLE_DEVICES to -1
-- Set environment variable "FORCE_CPU" to "true"
-- Set environment variable "DARKNET_PATH" to path darknet lib .so (for Linux)
-
+Running the script requires opencv-python to be installed (`pip install opencv-python`)
 Directly viewing or returning bounding-boxed images requires scikit-image to be installed (`pip install scikit-image`)
-
-Original *nix 2.7: https://github.com/pjreddie/darknet/blob/0f110834f4e18b30d5f101bf8f1724c34b7b83db/python/darknet.py
-Windows Python 2.7 version: https://github.com/AlexeyAB/darknet/blob/fc496d52bf22a0bb257300d3c79be9cd80e722cb/build/darknet/x64/darknet.py
-
-@author: Philip Kahn
-@date: 20180503
+Use pip3 instead of pip on some systems to be sure to install modules for python3
 """
+
 from ctypes import *
 import math
 import random
@@ -178,51 +165,17 @@ def detect_image(network, class_names, image, thresh=.5, hier_thresh=.5, nms=.45
     return sorted(predictions, key=lambda x: x[1])
 
 
-#  lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
-#  lib = CDLL("libdarknet.so", RTLD_GLOBAL)
-hasGPU = True
-if os.name == "nt":
+if os.name == "posix":
+    cwd = os.path.dirname(__file__)
+    lib = CDLL(cwd + "/libdarknet.so", RTLD_GLOBAL)
+elif os.name == "nt":
     cwd = os.path.dirname(__file__)
     os.environ['PATH'] = cwd + ';' + os.environ['PATH']
-    winGPUdll = os.path.join(cwd, "yolo_cpp_dll.dll")
-    winNoGPUdll = os.path.join(cwd, "yolo_cpp_dll_nogpu.dll")
-    envKeys = list()
-    for k, v in os.environ.items():
-        envKeys.append(k)
-    try:
-        try:
-            tmp = os.environ["FORCE_CPU"].lower()
-            if tmp in ["1", "true", "yes", "on"]:
-                raise ValueError("ForceCPU")
-            else:
-                print("Flag value {} not forcing CPU mode".format(tmp))
-        except KeyError:
-            # We never set the flag
-            if 'CUDA_VISIBLE_DEVICES' in envKeys:
-                if int(os.environ['CUDA_VISIBLE_DEVICES']) < 0:
-                    raise ValueError("ForceCPU")
-            try:
-                global DARKNET_FORCE_CPU
-                if DARKNET_FORCE_CPU:
-                    raise ValueError("ForceCPU")
-            except NameError as cpu_error:
-                print(cpu_error)
-        if not os.path.exists(winGPUdll):
-            raise ValueError("NoDLL")
-        lib = CDLL(winGPUdll, RTLD_GLOBAL)
-    except (KeyError, ValueError):
-        hasGPU = False
-        if os.path.exists(winNoGPUdll):
-            lib = CDLL(winNoGPUdll, RTLD_GLOBAL)
-            print("Notice: CPU-only mode")
-        else:
-            # Try the other way, in case no_gpu was compile but not renamed
-            lib = CDLL(winGPUdll, RTLD_GLOBAL)
-            print("Environment variables indicated a CPU run, but we didn't find {}. Trying a GPU run anyway.".format(winNoGPUdll))
+    lib = CDLL("darknet.dll", RTLD_GLOBAL)
 else:
-    lib = CDLL(os.path.join(
-        os.environ.get('DARKNET_PATH', './'),
-        "libdarknet.so"), RTLD_GLOBAL)
+    print("Unsupported OS")
+    exit
+
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -235,10 +188,7 @@ predict = lib.network_predict_ptr
 predict.argtypes = [c_void_p, POINTER(c_float)]
 predict.restype = POINTER(c_float)
 
-if hasGPU:
-    set_gpu = lib.cuda_set_device
-    set_gpu.argtypes = [c_int]
-
+set_gpu = lib.cuda_set_device
 init_cpu = lib.init_cpu
 
 make_image = lib.make_image
