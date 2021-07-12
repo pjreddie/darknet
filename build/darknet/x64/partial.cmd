@@ -2,6 +2,15 @@ rem Download weights for - DenseNet201, ResNet50 and ResNet152 by this link: htt
 rem Download Yolo/Tiny-yolo: https://pjreddie.com/darknet/yolo/
 rem Download Yolo9000: http://pjreddie.com/media/files/yolo9000.weights
 
+
+darknet.exe partial cfg/yolov4-csp-swish.cfg yolov4-csp-swish.weights yolov4-csp-swish.conv.164 164
+
+
+darknet.exe partial cfg/yolov4-csp-x-swish.cfg yolov4-csp-x-swish.weights yolov4-csp-x-swish.conv.192 192
+
+
+pause
+
 darknet.exe partial cfg/yolov4-csp.cfg yolov4-csp.weights yolov4-csp.conv.142 142
 
 darknet.exe partial cfg/yolov4x-mish.cfg yolov4x-mish.weights yolov4x-mish.conv.166 166
