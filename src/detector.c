@@ -1204,6 +1204,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     qsort(detections, detections_count, sizeof(box_prob), detections_comparator);
 
     typedef struct {
+        double prob;
         double precision;
         double recall;
         int tp, fp, fn;
@@ -1238,6 +1239,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         }
 
         box_prob d = detections[rank];
+        pr[d.class_id][rank].prob = d.p;
         // if (detected && isn't detected before)
         if (d.truth_flag == 1) {
             if (truth_flags[d.unique_truth_index] == 0)
@@ -1310,15 +1312,17 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             for (point = 0; point < map_points; ++point) {
                 double cur_recall = point * 1.0 / (map_points-1);
                 double cur_precision = 0;
+                double cur_prob = 0;
                 for (rank = 0; rank < detections_count; ++rank)
                 {
                     if (pr[i][rank].recall >= cur_recall) {    // > or >=
                         if (pr[i][rank].precision > cur_precision) {
                             cur_precision = pr[i][rank].precision;
+                            cur_prob = pr[i][rank].prob;
                         }
                     }
                 }
-                //printf("class_id = %d, point = %d, cur_recall = %.4f, cur_precision = %.4f \n", i, point, cur_recall, cur_precision);
+                //printf("class_id = %d, point = %d, cur_prob = %.4f, cur_recall = %.4f, cur_precision = %.4f \n", i, point, cur_prob, cur_recall, cur_precision);
 
                 avg_precision += cur_precision;
             }
