@@ -136,7 +136,7 @@ def inference(darknet_image_queue, detections_queue, fps_queue):
 
 def drawing(frame_queue, detections_queue, fps_queue):
     random.seed(3)  # deterministic bbox colors
-    video = set_saved_video(cap, args.out_filename, (darknet_width, darknet_height))
+    video = set_saved_video(cap, args.out_filename, (video_width, video_height))
     while cap.isOpened():
         frame = frame_queue.get()
         detections = detections_queue.get()
@@ -149,7 +149,6 @@ def drawing(frame_queue, detections_queue, fps_queue):
             image = darknet.draw_boxes(detections_adjusted, frame, class_colors)
             if not args.dont_show:
                 cv2.imshow('Inference', image)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             if args.out_filename is not None:
                 video.write(image)
             if cv2.waitKey(fps) == 27:
@@ -177,6 +176,8 @@ if __name__ == '__main__':
     darknet_height = darknet.network_height(network)
     input_path = str2int(args.input)
     cap = cv2.VideoCapture(input_path)
+    video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     Thread(target=video_capture, args=(frame_queue, darknet_image_queue)).start()
     Thread(target=inference, args=(darknet_image_queue, detections_queue, fps_queue)).start()
     Thread(target=drawing, args=(frame_queue, detections_queue, fps_queue)).start()
