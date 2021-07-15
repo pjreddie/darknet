@@ -60,17 +60,63 @@ def set_saved_video(input_video, output_video, size):
     return video
 
 
+def convert2relative(bbox):
+    """
+    YOLO format use relative coordinates for annotation
+    """
+    x, y, w, h  = bbox
+    _height     = darknet_height
+    _width      = darknet_width
+    return x/_width, y/_height, w/_width, h/_height
+
+
+def convert2original(image, bbox):
+    x, y, w, h = convert2relative(bbox)
+
+    image_h, image_w, __ = image.shape
+
+    orig_x       = int(x * image_w)
+    orig_y       = int(y * image_h)
+    orig_width   = int(w * image_w)
+    orig_height  = int(h * image_h)
+
+    bbox_converted = (orig_x, orig_y, orig_width, orig_height)
+
+    return bbox_converted
+
+
+def convert4cropping(image, bbox):
+    x, y, w, h = convert2relative(bbox)
+
+    image_h, image_w, __ = image.shape
+
+    orig_left    = int((x - w / 2.) * image_w)
+    orig_right   = int((x + w / 2.) * image_w)
+    orig_top     = int((y - h / 2.) * image_h)
+    orig_bottom  = int((y + h / 2.) * image_h)
+
+    if (orig_left < 0): orig_left = 0
+    if (orig_right > image_w - 1): orig_right = image_w - 1
+    if (orig_top < 0): orig_top = 0
+    if (orig_bottom > image_h - 1): orig_bottom = image_h - 1
+
+    bbox_cropping = (orig_left, orig_top, orig_right, orig_bottom)
+
+    return bbox_cropping
+
+
 def video_capture(frame_queue, darknet_image_queue):
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame_resized = cv2.resize(frame_rgb, (width, height),
+        frame_resized = cv2.resize(frame_rgb, (darknet_width, darknet_height),
                                    interpolation=cv2.INTER_LINEAR)
-        frame_queue.put(frame_resized)
-        darknet.copy_image_from_bytes(darknet_image, frame_resized.tobytes())
-        darknet_image_queue.put(darknet_image)
+        frame_queue.put(frame)
+        img_for_detect = darknet.make_image(darknet_width, darknet_height, 3)
+        darknet.copy_image_from_bytes(img_for_detect, frame_resized.tobytes())
+        darknet_image_queue.put(img_for_detect)
     cap.release()
 
 
@@ -84,23 +130,27 @@ def inference(darknet_image_queue, detections_queue, fps_queue):
         fps_queue.put(fps)
         print("FPS: {}".format(fps))
         darknet.print_detections(detections, args.ext_output)
+        darknet.free_image(darknet_image)
     cap.release()
 
 
 def drawing(frame_queue, detections_queue, fps_queue):
     random.seed(3)  # deterministic bbox colors
-    video = set_saved_video(cap, args.out_filename, (width, height))
+    video = set_saved_video(cap, args.out_filename, (video_width, video_height))
     while cap.isOpened():
-        frame_resized = frame_queue.get()
+        frame = frame_queue.get()
         detections = detections_queue.get()
         fps = fps_queue.get()
-        if frame_resized is not None:
-            image = darknet.draw_boxes(detections, frame_resized, class_colors)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            if args.out_filename is not None:
-                video.write(image)
+        detections_adjusted = []
+        if frame is not None:
+            for label, confidence, bbox in detections:
+                bbox_adjusted = convert2original(frame, bbox)
+                detections_adjusted.append((str(label), confidence, bbox_adjusted))
+            image = darknet.draw_boxes(detections_adjusted, frame, class_colors)
             if not args.dont_show:
                 cv2.imshow('Inference', image)
+            if args.out_filename is not None:
+                video.write(image)
             if cv2.waitKey(fps) == 27:
                 break
     cap.release()
@@ -122,13 +172,12 @@ if __name__ == '__main__':
             args.weights,
             batch_size=1
         )
-    # Darknet doesn't accept numpy images.
-    # Create one with image we reuse for each detect
-    width = darknet.network_width(network)
-    height = darknet.network_height(network)
-    darknet_image = darknet.make_image(width, height, 3)
+    darknet_width = darknet.network_width(network)
+    darknet_height = darknet.network_height(network)
     input_path = str2int(args.input)
     cap = cv2.VideoCapture(input_path)
+    video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     Thread(target=video_capture, args=(frame_queue, darknet_image_queue)).start()
     Thread(target=inference, args=(darknet_image_queue, detections_queue, fps_queue)).start()
     Thread(target=drawing, args=(frame_queue, detections_queue, fps_queue)).start()
