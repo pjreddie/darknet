@@ -25,26 +25,26 @@
 #pragma warning(disable: 4996)
 #endif
 
-void *xmalloc(size_t size) {
+void *xmalloc_location(const size_t size, const char * const filename, const char * const funcname, const int line) {
     void *ptr=malloc(size);
     if(!ptr) {
-        malloc_error();
+        malloc_error(size, filename, funcname, line);
     }
     return ptr;
 }
 
-void *xcalloc(size_t nmemb, size_t size) {
-    void *ptr=calloc(nmemb,size);
+void *xcalloc_location(const size_t nmemb, const size_t size, const char * const filename, const char * const funcname, const int line) {
+    void *ptr=calloc(nmemb, size);
     if(!ptr) {
-        calloc_error();
+        calloc_error(nmemb * size, filename, funcname, line);
     }
     return ptr;
 }
 
-void *xrealloc(void *ptr, size_t size) {
+void *xrealloc_location(void *ptr, const size_t size, const char * const filename, const char * const funcname, const int line) {
     ptr=realloc(ptr,size);
     if(!ptr) {
-        realloc_error();
+        realloc_error(size, filename, funcname, line);
     }
     return ptr;
 }
@@ -325,32 +325,48 @@ void top_k(float *a, int n, int k, int *index)
     }
 }
 
-void error(const char *s)
+void error(const char * const msg, const char * const filename, const char * const funcname, const int line)
 {
-    perror(s);
-    assert(0);
+    fprintf(stderr, "Darknet error location: %s, %s, line #%d\n", filename, funcname, line);
+    perror(msg);
     exit(EXIT_FAILURE);
 }
 
-void malloc_error()
+const char * size_to_IEC_string(const size_t size)
 {
-    fprintf(stderr, "xMalloc error - possibly out of CPU RAM \n");
-    exit(EXIT_FAILURE);
+    const float bytes = (double)size;
+    const float KiB = 1024;
+    const float MiB = 1024 * KiB;
+    const float GiB = 1024 * MiB;
+
+    static char buffer[25];
+    if (size < KiB)         sprintf(buffer, "%ld bytes", size);
+    else if (size < MiB)    sprintf(buffer, "%1.1f KiB", bytes / KiB);
+    else if (size < GiB)    sprintf(buffer, "%1.1f MiB", bytes / MiB);
+    else                    sprintf(buffer, "%1.1f GiB", bytes / GiB);
+
+    return buffer;
 }
 
-void calloc_error()
+void malloc_error(const size_t size, const char * const filename, const char * const funcname, const int line)
 {
-    fprintf(stderr, "Calloc error - possibly out of CPU RAM \n");
-    exit(EXIT_FAILURE);
+    fprintf(stderr, "Failed to malloc %s\n", size_to_IEC_string(size));
+    error("Malloc error - possibly out of CPU RAM", filename, funcname, line);
 }
 
-void realloc_error()
+void calloc_error(const size_t size, const char * const filename, const char * const funcname, const int line)
 {
-    fprintf(stderr, "Realloc error - possibly out of CPU RAM \n");
-    exit(EXIT_FAILURE);
+    fprintf(stderr, "Failed to calloc %s\n", size_to_IEC_string(size));
+    error("Calloc error - possibly out of CPU RAM", filename, funcname, line);
 }
 
-void file_error(char *s)
+void realloc_error(const size_t size, const char * const filename, const char * const funcname, const int line)
+{
+    fprintf(stderr, "Failed to realloc %s\n", size_to_IEC_string(size));
+    error("Realloc error - possibly out of CPU RAM", filename, funcname, line);
+}
+
+void file_error(const char * const s)
 {
     fprintf(stderr, "Couldn't open file: %s\n", s);
     exit(EXIT_FAILURE);
@@ -460,7 +476,7 @@ int read_int(int fd)
 void write_int(int fd, int n)
 {
     int next = write(fd, &n, sizeof(int));
-    if(next <= 0) error("read failed");
+    if(next <= 0) error("read failed", DARKNET_LOC);
 }
 
 int read_all_fail(int fd, char *buffer, size_t bytes)
@@ -490,7 +506,7 @@ void read_all(int fd, char *buffer, size_t bytes)
     size_t n = 0;
     while(n < bytes){
         int next = read(fd, buffer + n, bytes-n);
-        if(next <= 0) error("read failed");
+        if(next <= 0) error("read failed", DARKNET_LOC);
         n += next;
     }
 }
@@ -500,7 +516,7 @@ void write_all(int fd, char *buffer, size_t bytes)
     size_t n = 0;
     while(n < bytes){
         size_t next = write(fd, buffer + n, bytes-n);
-        if(next <= 0) error("write failed");
+        if(next <= 0) error("write failed", DARKNET_LOC);
         n += next;
     }
 }

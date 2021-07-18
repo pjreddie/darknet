@@ -15,12 +15,24 @@
 extern "C" {
 #endif
 
+#define DARKNET_LOC __FILE__, __func__, __LINE__
+
 LIB_API void free_ptrs(void **ptrs, int n);
 LIB_API void top_k(float *a, int n, int k, int *index);
 
-void *xmalloc(size_t size);
-void *xcalloc(size_t nmemb, size_t size);
-void *xrealloc(void *ptr, size_t size);
+/* The "location" is the file, function, and line as defined by the DARKNET_LOC macro.
+ * This is then printed when error() is called to terminate the instance of darknet.
+ */
+void *xmalloc_location(const size_t size, const char * const filename, const char * const funcname, const int line);
+void *xcalloc_location(const size_t nmemb, const size_t size, const char * const filename, const char * const funcname, const int line);
+void *xrealloc_location(void *ptr, const size_t size, const char * const filename, const char * const funcname, const int line);
+
+#define xmalloc(s)      xmalloc_location(s, DARKNET_LOC)
+#define xcalloc(m, s)   xcalloc_location(m, s, DARKNET_LOC)
+#define xrealloc(p, s)  xrealloc_location(p, s, DARKNET_LOC)
+
+void error(const char * const msg, const char * const filename, const char * const funcname, const int line);
+
 double what_time_is_it_now();
 int *read_map(char *filename);
 void shuffle(void *arr, size_t n, size_t size);
@@ -36,11 +48,10 @@ int read_all_fail(int fd, char *buffer, size_t bytes);
 int write_all_fail(int fd, char *buffer, size_t bytes);
 LIB_API void find_replace(const char* str, char* orig, char* rep, char* output);
 void replace_image_to_label(const char* input_path, char* output_path);
-void error(const char *s);
-void malloc_error();
-void calloc_error();
-void realloc_error();
-void file_error(char *s);
+void malloc_error(const size_t size, const char * const filename, const char * const funcname, const int line);
+void calloc_error(const size_t size, const char * const filename, const char * const funcname, const int line);
+void realloc_error(const size_t size, const char * const filename, const char * const funcname, const int line);
+void file_error(const char * const s);
 void strip(char *s);
 void strip_args(char *s);
 void strip_char(char *s, char bad);

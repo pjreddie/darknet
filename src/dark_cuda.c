@@ -67,7 +67,7 @@ void check_error(cudaError_t status)
 #ifdef WIN32
         getchar();
 #endif
-        error(buffer);
+        error(buffer, DARKNET_LOC);
     }
     if (status2 != cudaSuccess)
     {
@@ -78,7 +78,7 @@ void check_error(cudaError_t status)
 #ifdef WIN32
         getchar();
 #endif
-        error(buffer);
+        error(buffer, DARKNET_LOC);
     }
 }
 
@@ -202,7 +202,7 @@ void cudnn_check_error(cudnnStatus_t status)
 #ifdef WIN32
         getchar();
 #endif
-        error(buffer);
+        error(buffer, DARKNET_LOC);
     }
     if (status2 != CUDNN_STATUS_SUCCESS)
     {
@@ -213,7 +213,7 @@ void cudnn_check_error(cudnnStatus_t status)
 #ifdef WIN32
         getchar();
 #endif
-        error(buffer);
+        error(buffer, DARKNET_LOC);
     }
 }
 
@@ -341,7 +341,7 @@ static volatile int event_counter = 0;
 
 void wait_stream(int i) {
     int dev_id = cuda_get_device();
-    if (event_counter >= max_events) error("CUDA max_events exceeded \n");
+    if (event_counter >= max_events) error("CUDA max_events exceeded", DARKNET_LOC);
 
     CHECK_CUDA( cudaEventCreateWithFlags(&switchEventsArray[event_counter], cudaEventDisableTiming) );
     //printf(" create event = %d (wait for stream = %d) \n", event_counter, i);
@@ -391,7 +391,7 @@ void pre_allocate_pinned_memory(const size_t size)
     pthread_mutex_lock(&mutex_pinned);
     if (!pinned_ptr) {
         pinned_ptr = (float **)calloc(num_of_blocks, sizeof(float *));
-        if(!pinned_ptr) error("calloc failed in pre_allocate() \n");
+        if(!pinned_ptr) error("calloc failed in pre_allocate()", DARKNET_LOC);
 
         printf("pre_allocate: size = %Iu MB, num_of_blocks = %Iu, block_size = %Iu MB \n",
             size / (1024*1024), num_of_blocks, pinned_block_size / (1024 * 1024));
@@ -401,7 +401,7 @@ void pre_allocate_pinned_memory(const size_t size)
             cudaError_t status = cudaHostAlloc((void **)&pinned_ptr[k], pinned_block_size, cudaHostRegisterMapped);
             if (status != cudaSuccess) fprintf(stderr, " Can't pre-allocate CUDA-pinned buffer on CPU-RAM \n");
             CHECK_CUDA(status);
-            if (!pinned_ptr[k]) error("cudaHostAlloc failed\n");
+            if (!pinned_ptr[k]) error("cudaHostAlloc failed", DARKNET_LOC);
             else {
                 printf(" Allocated %d pinned block \n", pinned_block_size);
             }
@@ -478,7 +478,7 @@ float *cuda_make_array_pinned(float *x, size_t n)
         status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyDefault, get_cuda_stream());
         CHECK_CUDA(status);
     }
-    if (!x_gpu) error("cudaHostAlloc failed\n");
+    if (!x_gpu) error("cudaHostAlloc failed", DARKNET_LOC);
     return x_gpu;
 }
 
@@ -496,7 +496,7 @@ float *cuda_make_array(float *x, size_t n)
         status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyDefault, get_cuda_stream());
         CHECK_CUDA(status);
     }
-    if(!x_gpu) error("Cuda malloc failed\n");
+    if(!x_gpu) error("Cuda malloc failed", DARKNET_LOC);
     return x_gpu;
 }
 
@@ -511,7 +511,7 @@ void **cuda_make_array_pointers(void **x, size_t n)
         status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyDefault, get_cuda_stream());
         CHECK_CUDA(status);
     }
-    if (!x_gpu) error("Cuda malloc failed\n");
+    if (!x_gpu) error("Cuda malloc failed", DARKNET_LOC);
     return x_gpu;
 }
 
@@ -563,7 +563,7 @@ int *cuda_make_int_array_new_api(int *x, size_t n)
         cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
         CHECK_CUDA(status);
 	}
-	if (!x_gpu) error("Cuda malloc failed\n");
+	if (!x_gpu) error("Cuda malloc failed", DARKNET_LOC);
 	return x_gpu;
 }
 

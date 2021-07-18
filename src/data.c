@@ -1617,7 +1617,7 @@ pthread_t load_data_in_thread(load_args args)
     pthread_t thread;
     struct load_args* ptr = (load_args*)xcalloc(1, sizeof(struct load_args));
     *ptr = args;
-    if(pthread_create(&thread, 0, load_thread, ptr)) error("Thread creation failed");
+    if(pthread_create(&thread, 0, load_thread, ptr)) error("Thread creation failed", DARKNET_LOC);
     return thread;
 }
 
@@ -1674,7 +1674,7 @@ void *load_threads(void *ptr)
         for (i = 0; i < args.threads; ++i) {
             int* ptr = (int*)xcalloc(1, sizeof(int));
             *ptr = i;
-            if (pthread_create(&threads[i], 0, run_thread_loop, ptr)) error("Thread creation failed");
+            if (pthread_create(&threads[i], 0, run_thread_loop, ptr)) error("Thread creation failed", DARKNET_LOC);
         }
     }
 
@@ -1738,7 +1738,7 @@ pthread_t load_data(load_args args)
     pthread_t thread;
     struct load_args* ptr = (load_args*)xcalloc(1, sizeof(struct load_args));
     *ptr = args;
-    if(pthread_create(&thread, 0, load_threads, ptr)) error("Thread creation failed");
+    if(pthread_create(&thread, 0, load_threads, ptr)) error("Thread creation failed", DARKNET_LOC);
     return thread;
 }
 

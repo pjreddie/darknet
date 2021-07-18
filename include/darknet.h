@@ -770,7 +770,7 @@ typedef struct network {
     float label_smooth_eps;
     int resize_step;
     int attention;
-    int adversarial;    
+    int adversarial;
     float adversarial_lr;
     float max_chart_loss;
     int letter_box;
@@ -821,7 +821,7 @@ typedef struct network {
     size_t *max_input16_size;
     size_t *max_output16_size;
     int wait_stream;
-    
+
     void *cuda_graph;
     void *cuda_graph_exec;
     int use_cuda_graph;
@@ -908,7 +908,7 @@ typedef struct detection{
     float *embeddings;  // embeddings for tracking
     int embedding_size;
     float sim;
-    int track_id;    
+    int track_id;
 } detection;
 
 // network.c -batch inference
@@ -1017,7 +1017,6 @@ typedef struct box_label {
 // parser.c
 LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API network *load_network_custom(char *cfg, char *weights, int clear, int batch);
-LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API void free_network(network net);
 LIB_API void free_network_ptr(network* net);
 

@@ -727,7 +727,7 @@ void forward_yolo_layer(const layer l, network_state state)
         yolo_args[b].count = 0;
         yolo_args[b].class_count = 0;
 
-        if (pthread_create(&threads[b], 0, process_batch, &(yolo_args[b]))) error("Thread creation failed");
+        if (pthread_create(&threads[b], 0, process_batch, &(yolo_args[b]))) error("Thread creation failed", DARKNET_LOC);
     }
 
     for (b = 0; b < l.batch; b++)

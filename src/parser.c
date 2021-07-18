@@ -159,7 +159,7 @@ local_layer parse_local(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch=params.batch;
-    if(!(h && w && c)) error("Layer before local layer must output image.");
+    if(!(h && w && c)) error("Layer before local layer must output image.", DARKNET_LOC);
 
     local_layer layer = make_local_layer(batch,h,w,c,n,size,stride,pad,activation);
 
@@ -205,7 +205,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch=params.batch;
-    if(!(h && w && c)) error("Layer before convolutional layer must output image.");
+    if(!(h && w && c)) error("Layer before convolutional layer must output image.", DARKNET_LOC);
     int batch_normalize = option_find_int_quiet(options, "batch_normalize", 0);
     int cbn = option_find_int_quiet(options, "cbn", 0);
     if (cbn) batch_normalize = 2;
@@ -781,7 +781,7 @@ crop_layer parse_crop(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch=params.batch;
-    if(!(h && w && c)) error("Layer before crop layer must output image.");
+    if(!(h && w && c)) error("Layer before crop layer must output image.", DARKNET_LOC);
 
     int noadjust = option_find_int_quiet(options, "noadjust",0);
 
@@ -801,7 +801,7 @@ layer parse_reorg(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch=params.batch;
-    if(!(h && w && c)) error("Layer before reorg layer must output image.");
+    if(!(h && w && c)) error("Layer before reorg layer must output image.", DARKNET_LOC);
 
     layer layer = make_reorg_layer(batch,w,h,c,stride,reverse);
     return layer;
@@ -818,7 +818,7 @@ layer parse_reorg_old(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch = params.batch;
-    if (!(h && w && c)) error("Layer before reorg layer must output image.");
+    if (!(h && w && c)) error("Layer before reorg layer must output image.", DARKNET_LOC);
 
     layer layer = make_reorg_old_layer(batch, w, h, c, stride, reverse);
     return layer;
@@ -841,7 +841,7 @@ maxpool_layer parse_local_avgpool(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch = params.batch;
-    if (!(h && w && c)) error("Layer before [local_avgpool] layer must output image.");
+    if (!(h && w && c)) error("Layer before [local_avgpool] layer must output image.", DARKNET_LOC);
 
     maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, avgpool, params.train);
     return layer;
@@ -864,7 +864,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch=params.batch;
-    if(!(h && w && c)) error("Layer before [maxpool] layer must output image.");
+    if(!(h && w && c)) error("Layer before [maxpool] layer must output image.", DARKNET_LOC);
 
     maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, avgpool, params.train);
     layer.maxpool_zero_nonmax = option_find_int_quiet(options, "maxpool_zero_nonmax", 0);
@@ -878,7 +878,7 @@ avgpool_layer parse_avgpool(list *options, size_params params)
     h = params.h;
     c = params.c;
     batch=params.batch;
-    if(!(h && w && c)) error("Layer before avgpool layer must output image.");
+    if(!(h && w && c)) error("Layer before avgpool layer must output image.", DARKNET_LOC);
 
     avgpool_layer layer = make_avgpool_layer(batch,w,h,c);
     return layer;
@@ -952,7 +952,7 @@ layer parse_shortcut(list *options, size_params params, network net)
 
     char *l = option_find(options, "from");
     int len = strlen(l);
-    if (!l) error("Route Layer must specify input layers: from = ...");
+    if (!l) error("Route Layer must specify input layers: from = ...", DARKNET_LOC);
     int n = 1;
     int i;
     for (i = 0; i < len; ++i) {
@@ -1084,7 +1084,7 @@ layer parse_upsample(list *options, size_params params, network net)
 route_layer parse_route(list *options, size_params params)
 {
     char *l = option_find(options, "layers");
-    if(!l) error("Route Layer must specify input layers");
+    if(!l) error("Route Layer must specify input layers", DARKNET_LOC);
     int len = strlen(l);
     int n = 1;
     int i;
@@ -1243,7 +1243,7 @@ void parse_net_options(list *options, network *net)
     net->hue = option_find_float_quiet(options, "hue", 0);
     net->power = option_find_float_quiet(options, "power", 4);
 
-    if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
+    if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied", DARKNET_LOC);
 
     char *policy_s = option_find_str(options, "policy", "constant");
     net->policy = get_policy(policy_s);
@@ -1267,7 +1267,7 @@ void parse_net_options(list *options, network *net)
         char *l = option_find(options, "steps");
         char *p = option_find(options, "scales");
         char *s = option_find(options, "seq_scales");
-        if(net->policy == STEPS && (!l || !p)) error("STEPS policy must have steps and scales in cfg file");
+        if(net->policy == STEPS && (!l || !p)) error("STEPS policy must have steps and scales in cfg file", DARKNET_LOC);
 
         if (l) {
             int len = strlen(l);
@@ -1361,7 +1361,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 {
     list *sections = read_cfg(filename);
     node *n = sections->front;
-    if(!n) error("Config file has no sections");
+    if(!n) error("Config file has no sections", DARKNET_LOC);
     network net = make_network(sections->size - 1);
     net.gpu_index = gpu_index;
     size_params params;
@@ -1371,7 +1371,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 
     section *s = (section *)n->val;
     list *options = s->options;
-    if(!is_network(s)) error("First section must be [net] or [network]");
+    if(!is_network(s)) error("First section must be [net] or [network]", DARKNET_LOC);
     parse_net_options(options, &net);
 
 #ifdef GPU

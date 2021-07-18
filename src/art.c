@@ -27,7 +27,7 @@ void demo_art(char *cfgfile, char *weightfile, int cam_index)
     cap = get_capture_webcam(cam_index);
 
     char *window = "ArtJudgementBot9000!!!";
-    if(!cap) error("Couldn't connect to webcam.\n");
+    if(!cap) error("Couldn't connect to webcam.", DARKNET_LOC);
     create_window_cv(window, 0, 512, 512);
     int i;
     int idx[] = {37, 401, 434};

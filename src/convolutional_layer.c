@@ -241,7 +241,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
 #endif
 #else   //if(CUDNN_MAJOR >= 7)
     if (l->groups > 1) {
-        error("CUDNN < 7 doesn't support groups, please upgrade!");
+        error("CUDNN < 7 doesn't support groups, please upgrade!", DARKNET_LOC);
     }
 #endif
 

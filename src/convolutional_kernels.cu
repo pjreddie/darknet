@@ -159,7 +159,7 @@ half *cuda_make_f16_from_f32_array(float *src, size_t n)
         assert(n > 0);
         cuda_convert_f32_to_f16(src, n, (float *)dst16);
     }
-    if (!dst16) error("Cuda malloc failed\n");
+    if (!dst16) error("Cuda malloc failed", DARKNET_LOC);
     return dst16;
 }
 
