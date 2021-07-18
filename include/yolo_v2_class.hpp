@@ -56,7 +56,7 @@ struct bbox_t_container {
 #include <opencv2/imgproc/imgproc_c.h>   // C
 #endif
 
-extern "C" LIB_API int init(const char *configurationFilename, const char *weightsFilename, int gpu);
+extern "C" LIB_API int init(const char *configurationFilename, const char *weightsFilename, int gpu, int batch_size);
 extern "C" LIB_API int detect_image(const char *filename, bbox_t_container &container);
 extern "C" LIB_API int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container);
 extern "C" LIB_API int dispose();
@@ -76,11 +76,12 @@ public:
     float nms = .4;
     bool wait_stream;
 
-    LIB_API Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
+    LIB_API Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0, int batch_size = 1);
     LIB_API ~Detector();
 
     LIB_API std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2, bool use_mean = false);
     LIB_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
+    LIB_API std::vector<std::vector<bbox_t>> detectBatch(image_t img, int batch_size, int width, int height, float thresh, bool make_nms = true);
     static LIB_API image_t load_image(std::string image_filename);
     static LIB_API void free_image(image_t m);
     LIB_API int get_net_width() const;
