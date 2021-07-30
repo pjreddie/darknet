@@ -51,9 +51,9 @@ if [ "$install_tools" = true ] ; then
       sudo apt-get install -y cmake
       sudo apt-get install -y powershell
       if [ "$bypass_driver_installation" = true ] ; then
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so
       fi
       export PATH=/usr/local/cuda/bin:$PATH
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
@@ -75,9 +75,9 @@ if [ "$install_tools" = true ] ; then
       sudo apt-get install -y cmake
       sudo apt-get install -y powershell
       if [ "$bypass_driver_installation" = true ] ; then
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so
       fi
       export PATH=/usr/local/cuda/bin:$PATH
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH

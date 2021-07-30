@@ -21,9 +21,9 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so
 
     - name: 'LIBSO=1 GPU=0 CUDNN=0 OPENCV=0'
       run: |
@@ -78,9 +78,9 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -118,9 +118,9 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -158,9 +158,9 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -220,9 +220,9 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.4/lib64/stubs/libcuda.so /usr/local/cuda-11.4/lib64/libcuda.so
 
     - name: 'Build'
       shell: pwsh
@@ -403,9 +403,9 @@ jobs:
 
     - name: 'Build'
       env:
-        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3"
-        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3\\bin\\nvcc.exe"
+        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.4"
+        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.4"
+        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.4\\bin\\nvcc.exe"
       shell: pwsh
       run: ./build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
 
