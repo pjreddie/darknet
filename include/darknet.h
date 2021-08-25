@@ -899,6 +899,7 @@ typedef struct ious {
 typedef struct detection{
     box bbox;
     int classes;
+    int best_class_idx;
     float *prob;
     float *mask;
     float objectness;

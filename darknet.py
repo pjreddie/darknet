@@ -24,6 +24,7 @@ class BOX(Structure):
 class DETECTION(Structure):
     _fields_ = [("bbox", BOX),
                 ("classes", c_int),
+                ("best_class_idx", c_int),
                 ("prob", POINTER(c_float)),
                 ("mask", POINTER(c_float)),
                 ("objectness", c_float),
@@ -133,6 +134,56 @@ def decode_detection(detections):
         decoded.append((str(label), confidence, bbox))
     return decoded
 
+# https://www.pyimagesearch.com/2015/02/16/faster-non-maximum-suppression-python/
+# Malisiewicz et al.
+def non_max_suppression_fast(detections, overlap_thresh):
+    boxes = []
+    for detection in detections:
+        _, _, _, (x, y, w, h) = detection
+        x1 = x - w / 2
+        y1 = y - h / 2
+        x2 = x + w / 2
+        y2 = y + h / 2
+        boxes.append(np.array([x1, y1, x2, y2]))
+    boxes_array = np.array(boxes)
+
+    # initialize the list of picked indexes
+    pick = []
+    # grab the coordinates of the bounding boxes
+    x1 = boxes_array[:, 0]
+    y1 = boxes_array[:, 1]
+    x2 = boxes_array[:, 2]
+    y2 = boxes_array[:, 3]
+    # compute the area of the bounding boxes and sort the bounding
+    # boxes by the bottom-right y-coordinate of the bounding box
+    area = (x2 - x1 + 1) * (y2 - y1 + 1)
+    idxs = np.argsort(y2)
+    # keep looping while some indexes still remain in the indexes
+    # list
+    while len(idxs) > 0:
+        # grab the last index in the indexes list and add the
+        # index value to the list of picked indexes
+        last = len(idxs) - 1
+        i = idxs[last]
+        pick.append(i)
+        # find the largest (x, y) coordinates for the start of
+        # the bounding box and the smallest (x, y) coordinates
+        # for the end of the bounding box
+        xx1 = np.maximum(x1[i], x1[idxs[:last]])
+        yy1 = np.maximum(y1[i], y1[idxs[:last]])
+        xx2 = np.minimum(x2[i], x2[idxs[:last]])
+        yy2 = np.minimum(y2[i], y2[idxs[:last]])
+        # compute the width and height of the bounding box
+        w = np.maximum(0, xx2 - xx1 + 1)
+        h = np.maximum(0, yy2 - yy1 + 1)
+        # compute the ratio of overlap
+        overlap = (w * h) / area[idxs[:last]]
+        # delete all indexes from the index list that have
+        idxs = np.delete(idxs, np.concatenate(([last],
+                                               np.where(overlap > overlap_thresh)[0])))
+        # return only the bounding boxes that were picked using the
+        # integer data type
+    return [detections[i] for i in pick]
 
 def remove_negatives(detections, class_names, num):
     """
@@ -145,6 +196,21 @@ def remove_negatives(detections, class_names, num):
                 bbox = detections[j].bbox
                 bbox = (bbox.x, bbox.y, bbox.w, bbox.h)
                 predictions.append((name, detections[j].prob[idx], (bbox)))
+    return predictions
+
+
+def remove_negatives_faster(detections, class_names, num):
+    """
+    Faster version of remove_negatives (very useful when using yolo9000)
+    """
+    predictions = []
+    for j in range(num):
+        if detections[j].best_class_idx == -1:
+            continue
+        name = class_names[detections[j].best_class_idx]
+        bbox = detections[j].bbox
+        bbox = (bbox.x, bbox.y, bbox.w, bbox.h)
+        predictions.append((name, detections[j].prob[detections[j].best_class_idx], bbox))
     return predictions
 
 

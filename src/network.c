@@ -885,7 +885,13 @@ void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, f
         dets[j].classes = l.classes;
         dets[j].bbox = boxes[j];
         dets[j].objectness = 1;
+        float highest_prob = 0;
+        dets[j].best_class_idx = -1;
         for (i = 0; i < l.classes; ++i) {
+            if (probs[j][i] > highest_prob) {
+            	highest_prob = probs[j][i];
+            	dets[j].best_class_idx = i;
+            }
             dets[j].prob[i] = probs[j][i];
         }
     }
