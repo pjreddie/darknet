@@ -5,6 +5,9 @@
 
 #ifdef GPU
 
+extern int *gpusg;
+extern int ngpusg;
+
 void check_error(cudaError_t status);
 cublasHandle_t blas_handle();
 int *cuda_make_int_array(int *x, size_t n);

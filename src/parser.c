@@ -27,6 +27,7 @@
 #include "parser.h"
 #include "region_layer.h"
 #include "yolo_layer.h"
+#include "yolo4_layer.h"
 #include "iseg_layer.h"
 #include "reorg_layer.h"
 #include "rnn_layer.h"
@@ -53,6 +54,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[detection]")==0) return DETECTION;
     if (strcmp(type, "[region]")==0) return REGION;
     if (strcmp(type, "[yolo]")==0) return YOLO;
+    if (strcmp(type, "[yolo4]")==0) return YOLO4;
     if (strcmp(type, "[iseg]")==0) return ISEG;
     if (strcmp(type, "[local]")==0) return LOCAL;
     if (strcmp(type, "[conv]")==0
@@ -155,6 +157,7 @@ layer parse_deconvolutional(list *options, size_params params)
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
+    int groups = option_find_int_quiet(options, "groups", 1);
 
     char *activation_s = option_find_str(options, "activation", "logistic");
     ACTIVATION activation = get_activation(activation_s);
@@ -326,19 +329,226 @@ layer parse_yolo(list *options, size_params params)
 
     a = option_find_str(options, "anchors", 0);
     if(a){
-        int len = strlen(a);
+        int len = (int) strlen(a);
         int n = 1;
         int i;
         for(i = 0; i < len; ++i){
             if (a[i] == ',') ++n;
         }
         for(i = 0; i < n; ++i){
-            float bias = atof(a);
+            float bias = (float) atof(a);
             l.biases[i] = bias;
             a = strchr(a, ',')+1;
         }
     }
     return l;
+}
+
+int *parse_yolo4_mask(char *a, int *num)
+{
+    int *mask = 0;
+    if(a){
+        int len = (int) strlen(a);
+        int n = 1;
+        int i;
+        for(i = 0; i < len; ++i){
+            if (a[i] == ',') ++n;
+        }
+        mask = calloc(n, sizeof(int));
+        for(i = 0; i < n; ++i){
+            int val = atoi(a);
+            mask[i] = val;
+            a = strchr(a, ',')+1;
+        }
+        *num = n;
+    }
+    return mask;
+}
+
+float *get_classes_multipliers_y4(char *cpc, const int classes, const float max_delta)
+{
+    float *classes_multipliers = NULL;
+    if (cpc) {
+        int classes_counters = classes;
+        int *counters_per_class = parse_yolo4_mask(cpc, &classes_counters);
+        if (classes_counters != classes) {
+            printf(" number of values in counters_per_class = %d doesn't match with classes = %d \n", classes_counters, classes);
+            exit(0);
+        }
+        float max_counter = 0;
+        int i;
+        for (i = 0; i < classes_counters; ++i) {
+            if (counters_per_class[i] < 1) counters_per_class[i] = 1;
+            if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
+        }
+        classes_multipliers = (float *)calloc(classes_counters, sizeof(float));
+        for (i = 0; i < classes_counters; ++i) {
+            classes_multipliers[i] = max_counter / counters_per_class[i];
+            if(classes_multipliers[i] > max_delta) classes_multipliers[i] = max_delta;
+        }
+        free(counters_per_class);
+        printf(" classes_multipliers: ");
+        for (i = 0; i < classes_counters; ++i) printf("%.1f, ", classes_multipliers[i]);
+        printf("\n");
+    }
+    return classes_multipliers;
+}
+
+float *get_classes_multipliers(char *cpc, const int classes, const float max_delta)
+{
+    float *classes_multipliers = NULL;
+    if (cpc) {
+        int classes_counters = classes;
+        int *counters_per_class = parse_yolo_mask(cpc, &classes_counters);
+        if (classes_counters != classes) {
+            printf(" number of values in counters_per_class = %d doesn't match with classes = %d \n", classes_counters, classes);
+            exit(0);
+        }
+        float max_counter = 0;
+        int i;
+        for (i = 0; i < classes_counters; ++i) {
+            if (counters_per_class[i] < 1) counters_per_class[i] = 1;
+            if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
+        }
+        classes_multipliers = (float *)calloc(classes_counters, sizeof(float));
+        for (i = 0; i < classes_counters; ++i) {
+            classes_multipliers[i] = max_counter / counters_per_class[i];
+            if(classes_multipliers[i] > max_delta) classes_multipliers[i] = max_delta;
+        }
+        free(counters_per_class);
+        printf(" classes_multipliers: ");
+        for (i = 0; i < classes_counters; ++i) printf("%.1f, ", classes_multipliers[i]);
+        printf("\n");
+    }
+    return classes_multipliers;
+}
+
+layer parse_yolo4(list *options, size_params params)
+{
+    int classes = option_find_int(options, "classes", 20);
+    int total = option_find_int(options, "num", 1);
+    int num = total;
+    char *a = option_find_str(options, "mask", 0);
+    int *mask = parse_yolo4_mask(a, &num);
+    int max_boxes = option_find_int_quiet(options, "max", 200);
+    layer l = make_yolo4_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
+    if (l.outputs != params.inputs) {
+        printf("Error: l.outputs == params.inputs \n");
+        printf("filters= in the [convolutional]-layer doesn't correspond to classes= or mask= in [yolo4]-layer \n");
+        exit(EXIT_FAILURE);
+    }
+
+    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
+    char *cpc = option_find_str(options, "counters_per_class", 0);
+    l.classes_multipliers = get_classes_multipliers_y4(cpc, classes, l.max_delta);
+
+    l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
+    l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
+    l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
+    l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
+    l.obj_normalizer = option_find_float_quiet(options, "obj_normalizer", 1);
+    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    l.delta_normalizer = option_find_float_quiet(options, "delta_normalizer", 1);
+    char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
+
+    if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
+    else if (strcmp(iou_loss, "giou") == 0) l.iou_loss = GIOU;
+    else if (strcmp(iou_loss, "diou") == 0) l.iou_loss = DIOU;
+    else if (strcmp(iou_loss, "ciou") == 0) l.iou_loss = CIOU;
+    else l.iou_loss = IOU;
+    fprintf(stderr, "[yolo4] params: iou loss: %s (%d), iou_norm: %2.2f, obj_norm: %2.2f, cls_norm: %2.2f, delta_norm: %2.2f, scale_x_y: %2.2f\n",
+            iou_loss, l.iou_loss, l.iou_normalizer, l.obj_normalizer, l.cls_normalizer, l.delta_normalizer, l.scale_x_y);
+
+    char *iou_thresh_kind_str = option_find_str_quiet(options, "iou_thresh_kind", "iou");
+    if (strcmp(iou_thresh_kind_str, "iou") == 0) l.iou_thresh_kind = IOU;
+    else if (strcmp(iou_thresh_kind_str, "giou") == 0) l.iou_thresh_kind = GIOU;
+    else if (strcmp(iou_thresh_kind_str, "diou") == 0) l.iou_thresh_kind = DIOU;
+    else if (strcmp(iou_thresh_kind_str, "ciou") == 0) l.iou_thresh_kind = CIOU;
+    else {
+        fprintf(stderr, " Wrong iou_thresh_kind = %s \n", iou_thresh_kind_str);
+        l.iou_thresh_kind = IOU;
+    }
+
+    l.beta_nms = option_find_float_quiet(options, "beta_nms", 0.6);
+    char *nms_kind = option_find_str_quiet(options, "nms_kind", "default");
+    if (strcmp(nms_kind, "default") == 0) l.nms_kind = DEFAULT_NMS;
+    else {
+        if (strcmp(nms_kind, "greedynms") == 0) l.nms_kind = GREEDY_NMS;
+        else if (strcmp(nms_kind, "diounms") == 0) l.nms_kind = DIOU_NMS;
+        else l.nms_kind = DEFAULT_NMS;
+        printf("nms_kind: %s (%d), beta = %f \n", nms_kind, l.nms_kind, l.beta_nms);
+    }
+
+    l.jitter = option_find_float(options, "jitter", .2);
+    l.resize = option_find_float_quiet(options, "resize", 1.0);
+    l.focal_loss = option_find_int_quiet(options, "focal_loss", 0);
+
+    l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
+    l.truth_thresh = option_find_float(options, "truth_thresh", 1);
+    l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
+    l.random = option_find_float_quiet(options, "random", 0);
+
+    l.track_history_size = option_find_int_quiet(options, "track_history_size", 5);
+    l.sim_thresh = option_find_float_quiet(options, "sim_thresh", 0.8);
+    l.dets_for_track = option_find_int_quiet(options, "dets_for_track", 1);
+    l.dets_for_show = option_find_int_quiet(options, "dets_for_show", 1);
+    l.track_ciou_norm = option_find_float_quiet(options, "track_ciou_norm", 0.01);
+    int embedding_layer_id = option_find_int_quiet(options, "embedding_layer", 999999);
+    if (embedding_layer_id < 0) embedding_layer_id = params.index + embedding_layer_id;
+    if (embedding_layer_id != 999999) {
+        printf(" embedding_layer_id = %d, ", embedding_layer_id);
+        layer le = params.net->layers[embedding_layer_id];
+        l.embedding_layer_id = embedding_layer_id;
+        l.embedding_output = (float*)calloc(le.batch * le.outputs, sizeof(float));
+        l.embedding_size = le.n / l.n;
+        printf(" embedding_size = %d \n", l.embedding_size);
+        if (le.n % l.n != 0) {
+            printf(" Warning: filters=%d number in embedding_layer=%d isn't divisable by number of anchors %d \n", le.n, embedding_layer_id, l.n);
+            getchar();
+        }
+    }
+
+    char *map_file = option_find_str(options, "map", 0);
+    if (map_file) l.map = read_map(map_file);
+
+    a = option_find_str(options, "anchors", 0);
+    if (a) {
+        int len = strlen(a);
+        int n = 1;
+        int i;
+        for (i = 0; i < len; ++i) {
+            if (a[i] == '#') break;
+            if (a[i] == ',') ++n;
+        }
+        for (i = 0; i < n && i < total*2; ++i) {
+            float bias = atof(a);
+            l.biases[i] = bias;
+            a = strchr(a, ',') + 1;
+        }
+    }
+    return l;
+}
+
+int *parse_gaussian_yolo4_mask(char *a, int *num) // Gaussian_YOLOv3
+{
+    int *mask = 0;
+    if (a) {
+        int len = strlen(a);
+        int n = 1;
+        int i;
+        for (i = 0; i < len; ++i) {
+            if (a[i] == '#') break;
+            if (a[i] == ',') ++n;
+        }
+        mask = (int *)calloc(n, sizeof(int));
+        for (i = 0; i < n; ++i) {
+            int val = atoi(a);
+            mask[i] = val;
+            a = strchr(a, ',') + 1;
+        }
+        *num = n;
+    }
+    return mask;
 }
 
 layer parse_iseg(list *options, size_params params)
@@ -620,7 +830,10 @@ route_layer parse_route(list *options, size_params params, network *net)
     }
     int batch = params.batch;
 
-    route_layer layer = make_route_layer(batch, n, layers, sizes);
+    int groups = option_find_int_quiet(options, "groups", 1);
+    int group_id = option_find_int_quiet(options, "group_id", 0);
+
+    route_layer layer = make_route_layer(batch, n, layers, sizes, groups, group_id);
 
     convolutional_layer first = net->layers[layers[0]];
     layer.out_w = first.out_w;
@@ -648,23 +861,40 @@ learning_rate_policy get_policy(char *s)
     if (strcmp(s, "exp")==0) return EXP;
     if (strcmp(s, "sigmoid")==0) return SIG;
     if (strcmp(s, "steps")==0) return STEPS;
+    if (strcmp(s, "sgdr")==0) return SGDR;
     fprintf(stderr, "Couldn't find policy %s, going with constant\n", s);
     return CONSTANT;
 }
 
 void parse_net_options(list *options, network *net)
 {
+    net->max_batches = option_find_int(options, "max_batches", 0);
     net->batch = option_find_int(options, "batch",1);
     net->learning_rate = option_find_float(options, "learning_rate", .001);
+    net->learning_rate_min = option_find_float_quiet(options, "learning_rate_min", .00001);
+    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", net->max_batches);
+    net->batches_cycle_mult = option_find_int_quiet(options, "sgdr_mult", 2);
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
     int subdivs = option_find_int(options, "subdivisions",1);
     net->time_steps = option_find_int_quiet(options, "time_steps",1);
     net->notruth = option_find_int_quiet(options, "notruth",0);
-    net->batch /= subdivs;
-    net->batch *= net->time_steps;
-    net->subdivisions = subdivs;
+    net->track = option_find_int_quiet(options, "track", 0);
+    net->augment_speed = option_find_int_quiet(options, "augment_speed", 2);
+    net->init_sequential_subdivisions = net->sequential_subdivisions = option_find_int_quiet(options, "sequential_subdivisions", subdivs);
+    if (net->sequential_subdivisions > subdivs) net->init_sequential_subdivisions = net->sequential_subdivisions = subdivs;
+    net->try_fix_nan = option_find_int_quiet(options, "try_fix_nan", 0);
+    net->batch /= subdivs;          // mini_batch
+    const int mini_batch = net->batch;
+    net->batch *= net->time_steps;  // mini_batch * time_steps
+    net->subdivisions = subdivs;    // number of mini_batches
     net->random = option_find_int_quiet(options, "random", 0);
+    *net->seen = 0;
+    *net->cur_iteration = 0;
+    net->loss_scale = option_find_float_quiet(options, "loss_scale", 1);
+    net->dynamic_minibatch = option_find_int_quiet(options, "dynamic_minibatch", 0);
+    net->optimized_memory = option_find_int_quiet(options, "optimized_memory", 0);
+    net->workspace_size_limit = (size_t)1024*1024 * option_find_float_quiet(options, "workspace_size_limit_MB", 1024);  // 1024 MB by default
 
     net->adam = option_find_int_quiet(options, "adam", 0);
     if(net->adam){
@@ -679,10 +909,34 @@ void parse_net_options(list *options, network *net)
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
     net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
-    net->max_ratio = option_find_float_quiet(options, "max_ratio", (float) net->max_crop / net->w);
-    net->min_ratio = option_find_float_quiet(options, "min_ratio", (float) net->min_crop / net->w);
-    net->center = option_find_int_quiet(options, "center",0);
-    net->clip = option_find_float_quiet(options, "clip", 0);
+    net->flip = option_find_int_quiet(options, "flip", 1);
+    net->blur = option_find_int_quiet(options, "blur", 0);
+    net->gaussian_noise = option_find_int_quiet(options, "gaussian_noise", 0);
+    net->mixup = option_find_int_quiet(options, "mixup", 0);
+    int cutmix = option_find_int_quiet(options, "cutmix", 0);
+    int mosaic = option_find_int_quiet(options, "mosaic", 0);
+    if (mosaic && cutmix) net->mixup = 4;
+    else if (cutmix) net->mixup = 2;
+    else if (mosaic) net->mixup = 3;
+	net->max_ratio = option_find_float_quiet(options, "max_ratio", (float) net->max_crop / net->w);
+	net->min_ratio = option_find_float_quiet(options, "min_ratio", (float) net->min_crop / net->w);
+	net->center = option_find_int_quiet(options, "center",0);
+	net->clip = option_find_float_quiet(options, "clip", 0);
+    net->letter_box = option_find_int_quiet(options, "letter_box", 0);
+    net->mosaic_bound = option_find_int_quiet(options, "mosaic_bound", 0);
+    net->contrastive = option_find_int_quiet(options, "contrastive", 0);
+    net->contrastive_jit_flip = option_find_int_quiet(options, "contrastive_jit_flip", 0);
+    net->contrastive_color = option_find_int_quiet(options, "contrastive_color", 0);
+    net->unsupervised = option_find_int_quiet(options, "unsupervised", 0);
+    if (net->contrastive && mini_batch < 2) {
+        printf(" Error: mini_batch size (batch/subdivisions) should be higher than 1 for Contrastive loss \n");
+        exit(0);
+    }
+    net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
+    net->resize_step = option_find_float_quiet(options, "resize_step", 32);
+    net->attention = option_find_int_quiet(options, "attention", 0);
+    net->adversarial_lr = option_find_float_quiet(options, "adversarial_lr", 0);
+    net->max_chart_loss = option_find_float_quiet(options, "max_chart_loss", 20.0);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);
@@ -699,36 +953,52 @@ void parse_net_options(list *options, network *net)
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
         net->scale = option_find_float(options, "scale", 1);
-    } else if (net->policy == STEPS){
+    } else if (net->policy == STEPS || net->policy == SGDR){
         char *l = option_find(options, "steps");
         char *p = option_find(options, "scales");
-        if(!l || !p) error("STEPS policy must have steps and scales in cfg file");
+        char *s = option_find(options, "seq_scales");
+        if(net->policy == STEPS && (!l || !p)) error("STEPS policy must have steps and scales in cfg file");
 
-        int len = strlen(l);
-        int n = 1;
-        int i;
-        for(i = 0; i < len; ++i){
-            if (l[i] == ',') ++n;
+        if (l) {
+            int len = strlen(l);
+            int n = 1;
+            int i;
+            for (i = 0; i < len; ++i) {
+                if (l[i] == '#') break;
+                if (l[i] == ',') ++n;
+            }
+            int* steps = (int*)calloc(n, sizeof(int));
+            float* scales = (float*)calloc(n, sizeof(float));
+            float* seq_scales = (float*)calloc(n, sizeof(float));
+            for (i = 0; i < n; ++i) {
+                float scale = 1.0;
+                if (p) {
+                    scale = atof(p);
+                    p = strchr(p, ',') + 1;
+                }
+                float sequence_scale = 1.0;
+                if (s) {
+                    sequence_scale = atof(s);
+                    s = strchr(s, ',') + 1;
+                }
+                int step = atoi(l);
+                l = strchr(l, ',') + 1;
+                steps[i] = step;
+                scales[i] = scale;
+                seq_scales[i] = sequence_scale;
+            }
+            net->scales = scales;
+            net->steps = steps;
+            net->seq_scales = seq_scales;
+            net->num_steps = n;
         }
-        int *steps = calloc(n, sizeof(int));
-        float *scales = calloc(n, sizeof(float));
-        for(i = 0; i < n; ++i){
-            int step    = atoi(l);
-            float scale = atof(p);
-            l = strchr(l, ',')+1;
-            p = strchr(p, ',')+1;
-            steps[i] = step;
-            scales[i] = scale;
-        }
-        net->scales = scales;
-        net->steps = steps;
-        net->num_steps = n;
     } else if (net->policy == EXP){
         net->gamma = option_find_float(options, "gamma", 1);
     } else if (net->policy == SIG){
         net->gamma = option_find_float(options, "gamma", 1);
         net->step = option_find_int(options, "step", 1);
     } else if (net->policy == POLY || net->policy == RANDOM){
+        //net->power = option_find_float(options, "power", 1);
     }
     net->max_batches = option_find_int(options, "max_batches", 0);
 }
@@ -803,6 +1073,9 @@ network *parse_network_cfg(char *filename)
             l = parse_region(options, params);
         }else if(lt == YOLO){
             l = parse_yolo(options, params);
+        }else if (lt == YOLO4) {
+            l = parse_yolo4(options, params);
+            l.keep_delta_gpu = 1;
         }else if(lt == ISEG){
             l = parse_iseg(options, params);
         }else if(lt == DETECTION){
@@ -831,8 +1104,10 @@ network *parse_network_cfg(char *filename)
             l.output = net->layers[count-1].output;
             l.delta = net->layers[count-1].delta;
 #ifdef GPU
-            l.output_gpu = net->layers[count-1].output_gpu;
-            l.delta_gpu = net->layers[count-1].delta_gpu;
+            if(gpu_index >= 0) {
+                l.output_gpu = net->layers[count - 1].output_gpu;
+                l.delta_gpu = net->layers[count - 1].delta_gpu;
+            }
 #endif
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
@@ -868,10 +1143,16 @@ network *parse_network_cfg(char *filename)
     net->output = out.output;
     net->input = calloc(net->inputs*net->batch, sizeof(float));
     net->truth = calloc(net->truths*net->batch, sizeof(float));
+    //TODO: CHECK! (1)
+    //net->delta = calloc(net->outputs*net->batch, sizeof(float));
 #ifdef GPU
-    net->output_gpu = out.output_gpu;
-    net->input_gpu = cuda_make_array(net->input, net->inputs*net->batch);
-    net->truth_gpu = cuda_make_array(net->truth, net->truths*net->batch);
+    if (net->gpu_index >= 0) {
+        net->output_gpu = out.output_gpu;
+        net->input_gpu = cuda_make_array(net->input, net->inputs * net->batch);
+        net->truth_gpu = cuda_make_array(net->truth, net->truths * net->batch);
+        //TODO: CHECK! (1)
+        //net->delta_gpu = cuda_make_array(net->delta, net->outputs * net->batch);
+    }
 #endif
     if(workspace_size){
         //printf("%ld\n", workspace_size);
@@ -1007,11 +1288,13 @@ void save_connected_weights(layer l, FILE *fp)
 void save_weights_upto(network *net, char *filename, int cutoff)
 {
 #ifdef GPU
-    if(net->gpu_index >= 0){
+    if(gpu_index >= 0){
         cuda_set_device(net->gpu_index);
     }
 #endif
+#if !defined(BENCHMARK) && !defined(LOSS_ONLY)
     fprintf(stderr, "Saving weights to %s\n", filename);
+#endif
     FILE *fp = fopen(filename, "wb");
     if(!fp) file_error(filename);
 
@@ -1021,7 +1304,11 @@ void save_weights_upto(network *net, char *filename, int cutoff)
     fwrite(&major, sizeof(int), 1, fp);
     fwrite(&minor, sizeof(int), 1, fp);
     fwrite(&revision, sizeof(int), 1, fp);
+#ifdef ARM
+    fwrite(net->seen, sizeof(unsigned long long), 1, fp); // 64-bit on ILP32 and LP64.
+#else
     fwrite(net->seen, sizeof(size_t), 1, fp);
+#endif
 
     int i;
     for(i = 0; i < net->n && i < cutoff; ++i){
@@ -1218,7 +1505,7 @@ void load_convolutional_weights(layer l, FILE *fp)
 void load_weights_upto(network *net, char *filename, int start, int cutoff)
 {
 #ifdef GPU
-    if(net->gpu_index >= 0){
+    if(gpu_index >= 0){
         cuda_set_device(net->gpu_index);
     }
 #endif
@@ -1234,7 +1521,11 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
     fread(&minor, sizeof(int), 1, fp);
     fread(&revision, sizeof(int), 1, fp);
     if ((major*10 + minor) >= 2 && major < 1000 && minor < 1000){
+#ifdef ARM
+        fread(net->seen, sizeof(unsigned long long), 1, fp); // 64-bit on ILP32 and LP64.
+#else
         fread(net->seen, sizeof(size_t), 1, fp);
+#endif
     } else {
         int iseen = 0;
         fread(&iseen, sizeof(int), 1, fp);
@@ -1301,7 +1592,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
 #endif
         }
     }
-    fprintf(stderr, "Done!\n");
+    fprintf(stderr, "done!\n");
     fclose(fp);
 }
 

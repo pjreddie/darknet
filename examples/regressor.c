@@ -1,6 +1,7 @@
-#include "darknet.h"
 #include <sys/time.h>
 #include <assert.h>
+#include "darknet.h"
+#include "image.h"
 
 void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
@@ -168,7 +169,7 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
-        image in = get_image_from_stream(cap);
+        image in = get_image_from_stream_cv(cap);
         image crop = center_crop_image(in, net->w, net->h);
         grayscale_image_3c(crop);
 

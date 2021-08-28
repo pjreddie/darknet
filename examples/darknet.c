@@ -1,4 +1,6 @@
 #include "darknet.h"
+#include "option_list.h"
+#include "utils.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -9,6 +11,7 @@ extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *
 extern void run_yolo(int argc, char **argv);
 extern void run_detector(int argc, char **argv);
 extern void run_coco(int argc, char **argv);
+extern void run_captcha(int argc, char **argv);
 extern void run_nightmare(int argc, char **argv);
 extern void run_classifier(int argc, char **argv);
 extern void run_regressor(int argc, char **argv);
@@ -399,9 +402,6 @@ void visualize(char *cfgfile, char *weightfile)
 
 int main(int argc, char **argv)
 {
-    //test_resize("data/bad.jpg");
-    //test_box();
-    //test_convolutional_layer();
     if(argc < 2){
         fprintf(stderr, "usage: %s <function>\n", argv[0]);
         return 0;
@@ -430,11 +430,11 @@ int main(int argc, char **argv)
     } else if (0 == strcmp(argv[1], "detector")){
         run_detector(argc, argv);
     } else if (0 == strcmp(argv[1], "detect")){
+        char *filename = (argc > 5) ? argv[5]: 0;
         float thresh = find_float_arg(argc, argv, "-thresh", .5);
-        char *filename = (argc > 4) ? argv[4]: 0;
         char *outfile = find_char_arg(argc, argv, "-out", 0);
         int fullscreen = find_arg(argc, argv, "-fullscreen");
-        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, .5, outfile, fullscreen);
+        test_detector(argv[2], argv[3], argv[4], filename, thresh, .5, outfile, fullscreen);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
     } else if (0 == strcmp(argv[1], "go")){
@@ -500,4 +500,3 @@ int main(int argc, char **argv)
     }
     return 0;
 }
-

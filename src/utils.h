@@ -27,6 +27,9 @@ void write_all(int fd, char *buffer, size_t bytes);
 int read_all_fail(int fd, char *buffer, size_t bytes);
 int write_all_fail(int fd, char *buffer, size_t bytes);
 void find_replace(char *str, char *orig, char *rep, char *output);
+void trim(char *str);
+void find_replace_extension(char *str, char *orig, char *rep, char *output);
+void replace_image_to_label(char* input_path, char* output_path);
 void malloc_error();
 void file_error(char *s);
 void strip(char *s);
@@ -48,6 +51,14 @@ float **one_hot_encode(float *a, int n, int k);
 float sec(clock_t clocks);
 void print_statistics(float *a, int n);
 int int_index(int *a, int val, int n);
+int *random_index_order_y4(int min, int max);
+int max_int_index_y4(int *a, int n);
+boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check);
+int make_directory(char *path, int mode);
+unsigned long custom_hash(char *str);
+
+#define max_val_cmp(a,b) (((a) > (b)) ? (a) : (b))
+#define min_val_cmp(a,b) (((a) < (b)) ? (a) : (b))
 
 #endif
 

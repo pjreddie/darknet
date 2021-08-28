@@ -1,10 +1,11 @@
 #include "route_layer.h"
+#include "utils.h"
 #include "cuda.h"
 #include "blas.h"
 
 #include <stdio.h>
 
-route_layer make_route_layer(int batch, int n, int *input_layers, int *input_sizes)
+route_layer make_route_layer(int batch, int n, int *input_layers, int *input_sizes, int groups, int group_id)
 {
     fprintf(stderr,"route ");
     route_layer l = {0};
@@ -13,6 +14,8 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     l.n = n;
     l.input_layers = input_layers;
     l.input_sizes = input_sizes;
+    l.groups = groups;
+    l.group_id = group_id;
     int i;
     int outputs = 0;
     for(i = 0; i < n; ++i){
@@ -22,17 +25,20 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     fprintf(stderr, "\n");
     l.outputs = outputs;
     l.inputs = outputs;
-    l.delta =  calloc(outputs*batch, sizeof(float));
-    l.output = calloc(outputs*batch, sizeof(float));;
+    //fprintf(stderr, " inputs = %d \t outputs = %d, groups = %d, group_id = %d \n", l.inputs, l.outputs, l.groups, l.group_id);
+    l.delta = (float*)calloc(outputs * batch, sizeof(float));
+    l.output = (float*)calloc(outputs * batch, sizeof(float));
 
     l.forward = forward_route_layer;
     l.backward = backward_route_layer;
     #ifdef GPU
-    l.forward_gpu = forward_route_layer_gpu;
-    l.backward_gpu = backward_route_layer_gpu;
+    if(gpu_index >= 0) {
+        l.forward_gpu = forward_route_layer_gpu;
+        l.backward_gpu = backward_route_layer_gpu;
 
-    l.delta_gpu =  cuda_make_array(l.delta, outputs*batch);
-    l.output_gpu = cuda_make_array(l.output, outputs*batch);
+        l.delta_gpu = cuda_make_array(l.delta, outputs * batch);
+        l.output_gpu = cuda_make_array(l.output, outputs * batch);
+    }
     #endif
     return l;
 }
@@ -54,21 +60,23 @@ void resize_route_layer(route_layer *l, network *net)
         if(next.out_w == first.out_w && next.out_h == first.out_h){
             l->out_c += next.out_c;
         }else{
-            printf("%d %d, %d %d\n", next.out_w, next.out_h, first.out_w, first.out_h);
+            printf("error: different size of input layers: %d x %d, %d x %d\n", next.out_w, next.out_h, first.out_w, first.out_h);
             l->out_h = l->out_w = l->out_c = 0;
         }
     }
     l->inputs = l->outputs;
     l->delta =  realloc(l->delta, l->outputs*l->batch*sizeof(float));
     l->output = realloc(l->output, l->outputs*l->batch*sizeof(float));
-
+	
 #ifdef GPU
-    cuda_free(l->output_gpu);
-    cuda_free(l->delta_gpu);
-    l->output_gpu  = cuda_make_array(l->output, l->outputs*l->batch);
-    l->delta_gpu   = cuda_make_array(l->delta,  l->outputs*l->batch);
+    if(gpu_index >= 0) {
+        cuda_free(l->output_gpu);
+        cuda_free(l->delta_gpu);
+
+        l->output_gpu = cuda_make_array(l->output, l->outputs * l->batch);
+        l->delta_gpu = cuda_make_array(l->delta, l->outputs * l->batch);
+    }
 #endif
-    
 }
 
 void forward_route_layer(const route_layer l, network net)

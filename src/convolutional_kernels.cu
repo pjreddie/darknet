@@ -22,7 +22,16 @@ __global__ void binarize_kernel(float *x, int n, float *binary)
 
 void binarize_gpu(float *x, int n, float *binary)
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     binarize_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, binary);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "binarize_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -43,7 +52,16 @@ __global__ void binarize_input_kernel(float *input, int n, int size, float *bina
 
 void binarize_input_gpu(float *input, int n, int size, float *binary)
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     binarize_input_kernel<<<cuda_gridsize(size), BLOCK>>>(input, n, size, binary);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "binarize_input_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -66,7 +84,16 @@ __global__ void binarize_weights_kernel(float *weights, int n, int size, float *
 
 void binarize_weights_gpu(float *weights, int n, int size, float *binary)
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     binarize_weights_kernel<<<cuda_gridsize(n), BLOCK>>>(weights, n, size, binary);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "binarize_weights_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -171,8 +198,16 @@ extern "C" void smooth_layer(layer l, int size, float rate)
     int c = l.out_c;
 
     size_t n = h*w*c*l.batch;
-
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     smooth_kernel<<<cuda_gridsize(n), BLOCK>>>(l.output_gpu, n, l.w, l.h, l.c, size, rate, l.delta_gpu);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "smooth_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -326,5 +361,3 @@ void update_convolutional_layer_gpu(layer l, update_args a)
         constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
     }
 }
-
-

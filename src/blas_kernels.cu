@@ -7,6 +7,7 @@ extern "C" {
 #include "blas.h"
 #include "cuda.h"
 #include "utils.h"
+clock_t t;
 }
 
 __global__ void scale_bias_kernel(float *output, float *biases, int n, int size)
@@ -18,12 +19,19 @@ __global__ void scale_bias_kernel(float *output, float *biases, int n, int size)
     if(offset < size) output[(batch*n+filter)*size + offset] *= biases[filter];
 }
 
-void scale_bias_gpu(float *output, float *biases, int batch, int n, int size)
+extern "C" void scale_bias_gpu(float *output, float *biases, int batch, int n, int size)
 {
     dim3 dimGrid((size-1)/BLOCK + 1, n, batch);
     dim3 dimBlock(BLOCK, 1, 1);
-
+#ifdef BENCHMARK
+    t = clock();
+#endif
     scale_bias_kernel<<<dimGrid, dimBlock>>>(output, biases, n, size);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "scale_bias_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -47,9 +55,17 @@ __global__ void backward_scale_kernel(float *x_norm, float *delta, int batch, in
     }
 }
 
-void backward_scale_gpu(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates)
+extern "C" void backward_scale_gpu(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     backward_scale_kernel<<<n, BLOCK>>>(x_norm, delta, batch, n, size, scale_updates);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "backward_scale_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -66,11 +82,18 @@ __global__ void add_bias_kernel(float *output, float *biases, int batch, int n, 
     output[(k*n+j)*size + i] += biases[j];
 }
 
-void add_bias_gpu(float *output, float *biases, int batch, int n, int size)
+extern "C" void add_bias_gpu(float *output, float *biases, int batch, int n, int size)
 {
     int num = n*size*batch;
-
+#ifdef BENCHMARK
+    t = clock();
+#endif
     add_bias_kernel<<<cuda_gridsize(num), BLOCK>>>(output, biases, batch, n, size);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "add_bias_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -107,12 +130,30 @@ __global__ void backward_bias_kernel(float *bias_updates, float *delta, int batc
     }
 }
 
-void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
+extern "C" void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size)
 {
     if(size == 1){
+#ifdef BENCHMARK
+    clock_t tc;
+    tc = clock();
+#endif
         backward_bias_conn_kernel<<<cuda_gridsize(n), BLOCK>>>(bias_updates, delta, batch, n);
+#ifdef BENCHMARK
+    tc = clock() - tc;
+    double time_taken = ((double)tc);
+    printf("%s\t%d\n", "backward_bias_conn_kernel", (int)time_taken);
+#endif
     }else{
+#ifdef BENCHMARK
+    clock_t tm;
+    tm = clock();
+#endif
         backward_bias_kernel<<<n, BLOCK>>>(bias_updates, delta, batch, n, size);
+#ifdef BENCHMARK
+    tm = clock() - tm;
+    double time_taken = ((double)tm);
+    printf("%s\t%d\n", "backward_bias_kernel", (int)time_taken);
+#endif
     }
     check_error(cudaPeekAtLastError());
 }
@@ -154,7 +195,15 @@ __global__ void dot_kernel(float *output, float scale, int batch, int n, int siz
 
 void dot_error_gpu(layer l)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     dot_kernel<<<cuda_gridsize(l.n*l.n), BLOCK>>>(l.output_gpu, l.dot, l.batch, l.n, l.out_w * l.out_h, l.delta_gpu);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "adam_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 */
@@ -173,7 +222,15 @@ __global__ void adam_kernel(int N, float *x, float *m, float *v, float B1, float
 
 extern "C" void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     adam_kernel<<<cuda_gridsize(n), BLOCK>>>(n, x, m, v, B1, B2, rate, eps, t);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "adam_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -212,7 +269,15 @@ __global__ void normalize_delta_kernel(int N, float *x, float *mean, float *vari
 extern "C" void normalize_delta_gpu(float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta)
 {
     size_t N = batch*filters*spatial;
+#ifdef BENCHMARK
+    t = clock();
+#endif
     normalize_delta_kernel<<<cuda_gridsize(N), BLOCK>>>(N, x, mean, variance, mean_delta, variance_delta, batch, filters, spatial, delta);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "normalize_delta_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -319,19 +384,43 @@ __global__ void mean_delta_kernel(float *delta, float *variance, int batch, int 
 
 extern "C" void mean_delta_gpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     mean_delta_kernel<<<cuda_gridsize(filters), BLOCK>>>(delta, variance, batch, filters, spatial, mean_delta);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "mean_delta_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void fast_mean_delta_gpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     fast_mean_delta_kernel<<<filters, BLOCK>>>(delta, variance, batch, filters, spatial, mean_delta);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "fast_mean_delta_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void fast_variance_delta_gpu(float *x, float *delta, float *mean, float *variance, int batch, int filters, int spatial, float *variance_delta)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     fast_variance_delta_kernel<<<filters, BLOCK>>>(x, delta, mean, variance, batch, filters, spatial, variance_delta);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "fast_variance_delta_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -465,7 +554,15 @@ __global__ void mul_kernel(int N, float *X, int INCX, float *Y, int INCY)
 extern "C" void normalize_gpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
 {
     size_t N = batch*filters*spatial;
+#ifdef BENCHMARK
+    t = clock();
+#endif
     normalize_kernel<<<cuda_gridsize(N), BLOCK>>>(N, x, mean, variance, batch, filters, spatial);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "normalize_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -494,7 +591,15 @@ __global__ void l2norm_kernel(int N, float *x, float *dx, int batch, int filters
 extern "C" void l2normalize_gpu(float *x, float *dx, int batch, int filters, int spatial)
 {
     size_t N = batch*spatial;
+#ifdef BENCHMARK
+    t = clock();
+#endif
     l2norm_kernel<<<cuda_gridsize(N), BLOCK>>>(N, x, dx, batch, filters, spatial);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "l2norm_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -559,26 +664,72 @@ __global__ void  fast_variance_kernel(float *x, float *mean, int batch, int filt
 
 extern "C" void fast_mean_gpu(float *x, int batch, int filters, int spatial, float *mean)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     fast_mean_kernel<<<filters, BLOCK>>>(x, batch, filters, spatial, mean);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "fast_mean_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void fast_variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     fast_variance_kernel<<<filters, BLOCK>>>(x, mean, batch, filters, spatial, variance);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "fast_variance_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 
 extern "C" void mean_gpu(float *x, int batch, int filters, int spatial, float *mean)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     mean_kernel<<<cuda_gridsize(filters), BLOCK>>>(x, batch, filters, spatial, mean);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "mean_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     variance_kernel<<<cuda_gridsize(filters), BLOCK>>>(x, mean, batch, filters, spatial, variance);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "variance_kernel", (int)time_taken);
+#endif
+    check_error(cudaPeekAtLastError());
+}
+
+extern "C" void axpy_gpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY)
+{
+#ifdef BENCHMARK
+    t = clock();
+#endif
+    axpy_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, OFFX, INCX, Y, OFFY, INCY);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "axpy_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -589,13 +740,29 @@ extern "C" void axpy_gpu(int N, float ALPHA, float * X, int INCX, float * Y, int
 
 extern "C" void pow_gpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     pow_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX, Y, INCY);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "pow_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
-extern "C" void axpy_gpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY)
+extern "C" void copy_gpu_offset(int N, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY)
 {
-    axpy_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, OFFX, INCX, Y, OFFY, INCY);
+#ifdef BENCHMARK
+    t = clock();
+#endif
+    copy_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, OFFX, INCX, Y, OFFY, INCY);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "copy_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -606,13 +773,15 @@ extern "C" void copy_gpu(int N, float * X, int INCX, float * Y, int INCY)
 
 extern "C" void mul_gpu(int N, float * X, int INCX, float * Y, int INCY)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     mul_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, INCX, Y, INCY);
-    check_error(cudaPeekAtLastError());
-}
-
-extern "C" void copy_gpu_offset(int N, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY)
-{
-    copy_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, OFFX, INCX, Y, OFFY, INCY);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "mul_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -636,14 +805,30 @@ __global__ void flatten_kernel(int N, float *x, int spatial, int layers, int bat
 extern "C" void flatten_gpu(float *x, int spatial, int layers, int batch, int forward, float *out)
 {
     int size = spatial*batch*layers;
+#ifdef BENCHMARK
+    t = clock();
+#endif
     flatten_kernel<<<cuda_gridsize(size), BLOCK>>>(size, x, spatial, layers, batch, forward, out);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "flatten_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void reorg_gpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
 {
     int size = w*h*c*batch;
+#ifdef BENCHMARK
+    t = clock();
+#endif
     reorg_kernel<<<cuda_gridsize(size), BLOCK>>>(size, x, w, h, c, batch, stride, forward, out);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "reorg_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -655,7 +840,15 @@ __global__ void mask_kernel(int n,  float *x, float mask_num, float *mask, float
 
 extern "C" void mask_gpu(int N, float * X, float mask_num, float * mask, float val)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask_num, mask, val);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "mask_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -667,44 +860,100 @@ __global__ void scale_mask_kernel(int n,  float *x, float mask_num, float *mask,
 
 extern "C" void scale_mask_gpu(int N, float * X, float mask_num, float * mask, float scale)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     scale_mask_kernel<<<cuda_gridsize(N), BLOCK>>>(N, X, mask_num, mask, scale);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "scale_mask_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void const_gpu(int N, float ALPHA, float * X, int INCX)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     const_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "const_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void constrain_gpu(int N, float ALPHA, float * X, int INCX)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     constrain_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "constrain_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 
 extern "C" void add_gpu(int N, float ALPHA, float * X, int INCX)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     add_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "add_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void scal_gpu(int N, float ALPHA, float * X, int INCX)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     scal_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "scal_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void supp_gpu(int N, float ALPHA, float * X, int INCX)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     supp_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "supp_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void fill_gpu(int N, float ALPHA, float * X, int INCX)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     fill_kernel<<<cuda_gridsize(N), BLOCK>>>(N, ALPHA, X, INCX);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "fill_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -740,7 +989,15 @@ extern "C" void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int 
     if(sample < 1) sample = 1;
 
     int size = batch * minw * minh * minc;
+#ifdef BENCHMARK
+    t = clock();
+#endif
     shortcut_kernel<<<cuda_gridsize(size), BLOCK>>>(size, minw, minh, minc, stride, sample, batch, w1, h1, c1, add, w2, h2, c2, s1, s2, out);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "shortcut_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -763,7 +1020,15 @@ __global__ void smooth_l1_kernel(int n, float *pred, float *truth, float *delta,
 
 extern "C" void smooth_l1_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     smooth_l1_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "smooth_l1_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -780,7 +1045,15 @@ __global__ void softmax_x_ent_kernel(int n, float *pred, float *truth, float *de
 
 extern "C" void softmax_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     softmax_x_ent_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "softmax_x_ent_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -797,7 +1070,15 @@ __global__ void logistic_x_ent_kernel(int n, float *pred, float *truth, float *d
 
 extern "C" void logistic_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     logistic_x_ent_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "logistic_x_ent_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -813,7 +1094,15 @@ __global__ void l2_kernel(int n, float *pred, float *truth, float *delta, float 
 
 extern "C" void l2_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     l2_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "l2_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -829,7 +1118,15 @@ __global__ void l1_kernel(int n, float *pred, float *truth, float *delta, float 
 
 extern "C" void l1_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     l1_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "l1_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -844,7 +1141,15 @@ __global__ void wgan_kernel(int n, float *pred, float *truth, float *delta, floa
 
 extern "C" void wgan_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     wgan_kernel<<<cuda_gridsize(n), BLOCK>>>(n, pred, truth, delta, error);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "wgan_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -875,7 +1180,15 @@ __global__ void deinter_kernel(int NX, float *X, int NY, float *Y, int B, float 
 
 extern "C" void deinter_gpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     deinter_kernel<<<cuda_gridsize((NX+NY)*B), BLOCK>>>(NX, X, NY, Y, B, OUT);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "deinter_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -895,13 +1208,29 @@ __global__ void inter_kernel(int NX, float *X, int NY, float *Y, int B, float *O
 
 extern "C" void inter_gpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     inter_kernel<<<cuda_gridsize((NX+NY)*B), BLOCK>>>(NX, X, NY, Y, B, OUT);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "inter_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void weighted_sum_gpu(float *a, float *b, float *s, int num, float *c)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     weighted_sum_kernel<<<cuda_gridsize(num), BLOCK>>>(num, a, b, s, c);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "weighted_sum_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -917,7 +1246,15 @@ __global__ void weighted_delta_kernel(int n, float *a, float *b, float *s, float
 
 extern "C" void weighted_delta_gpu(float *a, float *b, float *s, float *da, float *db, float *ds, int num, float *dc)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     weighted_delta_kernel<<<cuda_gridsize(num), BLOCK>>>(num, a, b, s, da, db, ds, dc);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "weighted_delta_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -931,7 +1268,15 @@ __global__ void mult_add_into_kernel(int n, float *a, float *b, float *c)
 
 extern "C" void mult_add_into_gpu(int num, float *a, float *b, float *c)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     mult_add_into_kernel<<<cuda_gridsize(num), BLOCK>>>(num, a, b, c);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "mult_add_into_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -982,7 +1327,15 @@ extern "C" void softmax_tree(float *input, int spatial, int batch, int stride, f
        }
      */
     int num = spatial*batch*hier.groups;
+#ifdef BENCHMARK
+    t = clock();
+#endif
     softmax_tree_kernel<<<cuda_gridsize(num), BLOCK>>>(input, spatial, batch, stride, temp, output, hier.groups, tree_groups_size, tree_groups_offset);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "softmax_tree_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
     cuda_free((float *)tree_groups_size);
     cuda_free((float *)tree_groups_offset);
@@ -999,7 +1352,15 @@ __global__ void softmax_kernel(float *input, int n, int batch, int batch_offset,
 
 extern "C" void softmax_gpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output)
 {
+#ifdef BENCHMARK
+    t = clock();
+#endif
     softmax_kernel<<<cuda_gridsize(batch*groups), BLOCK>>>(input, n, batch, batch_offset, groups, group_offset, stride, temp, output);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "softmax_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -1030,6 +1391,38 @@ __global__ void upsample_kernel(size_t N, float *x, int w, int h, int c, int bat
 extern "C" void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
     size_t size = w*h*c*batch*stride*stride;
+#ifdef BENCHMARK
+    t = clock();
+#endif
     upsample_kernel<<<cuda_gridsize(size), BLOCK>>>(size, in, w, h, c, batch, stride, forward, scale, out);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "upsample_kernel", (int)time_taken);
+#endif
+    check_error(cudaPeekAtLastError());
+}
+
+__global__ void mean_array_kernel(int N, float alpha, float *s, float *a)
+{
+    size_t i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i >= N) return;
+    a[i] *= (1 - alpha) + s[i];
+    a[i] *= alpha;
+    s[i] = a[i];
+}
+
+void mean_array_gpu(float *src, int N, float alpha, float *avg)
+{
+    size_t size = N;
+#ifdef BENCHMARK
+    t = clock();
+#endif
+    mean_array_kernel<<<cuda_gridsize(size), BLOCK>>>(size, alpha, src, avg);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "upsample_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }

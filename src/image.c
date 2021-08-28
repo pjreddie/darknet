@@ -146,6 +146,32 @@ image get_label(image **characters, char *string, int size)
     return b;
 }
 
+image tile_images_y4(image a, image b, int dx)
+{
+    if(a.w == 0) return copy_image(b);
+    image c = make_image(a.w + b.w + dx, (a.h > b.h) ? a.h : b.h, (a.c > b.c) ? a.c : b.c);
+    fill_cpu(c.w*c.h*c.c, 1, c.data, 1);
+    embed_image(a, c, 0, 0);
+    composite_image(b, c, a.w + dx, 0);
+    return c;
+}
+
+image get_label_y4(image **characters, char *string, int size)
+{
+    if(size > 7) size = 7;
+    image label = make_empty_image(0,0,0);
+    while(*string){
+        image l = characters[size][(int)*string];
+        image n = tile_images_y4(label, l, -size - 1 + (size+1)/2);
+        free_image(label);
+        label = n;
+        ++string;
+    }
+    image b = border_image(label, label.h*.25);
+    free_image(label);
+    return b;
+}
+
 void draw_label(image a, int r, int c, image label, const float *rgb)
 {
     int w = label.w;
@@ -224,7 +250,7 @@ image **load_alphabet()
 {
     int i, j;
     const int nsize = 8;
-    image **alphabets = calloc(nsize, sizeof(image));
+    image **alphabets = calloc(nsize, sizeof(image*));
     for(j = 0; j < nsize; ++j){
         alphabets[j] = calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
@@ -236,9 +262,11 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
+void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, float fps)
 {
     int i,j;
+    char percent[32];
+    char lfps[32];
 
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
@@ -252,18 +280,16 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                     strcat(labelstr, ", ");
                     strcat(labelstr, names[j]);
                 }
-                printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                //TODO: CHANGE!!!
+                //printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                strcat(labelstr, " ");
+                gcvt(dets[i].prob[j] * 100, 5, percent);
+                strcat(labelstr, percent);
             }
         }
-        if(class >= 0){
-            int width = im.h * .006;
 
-            /*
-               if(0){
-               width = pow(prob, 1./2.)*10+1;
-               alphabet = 0;
-               }
-             */
+        if(class >= 0) {
+            int width = im.h * .002;
 
             //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
             int offset = class*123457 % classes;
@@ -272,13 +298,85 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             float blue = get_color(0,offset,classes);
             float rgb[3];
 
-            //width = prob*20+2;
+            rgb[0] = red;
+            rgb[1] = green;
+            rgb[2] = blue;
+
+            box b = dets[i].bbox;
+
+            // printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+
+            int left = (b.x - b.w / 2.) * im.w;
+            int right = (b.x + b.w / 2.) * im.w;
+            int top = (b.y - b.h / 2.) * im.h;
+            int bot = (b.y + b.h / 2.) * im.h;
+
+            if (left < 0) left = 0;
+            if (right > im.w - 1) right = im.w - 1;
+            if (top < 0) top = 0;
+            if (bot > im.h - 1) bot = im.h - 1;
+
+            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+
+            if (alphabet) {
+                image label = get_label(alphabet, labelstr, (im.h * .002));
+                draw_label(im, top + width, left, label, rgb);
+                free_image(label);
+            }
+            if (dets[i].mask) {
+                image mask = float_to_image(14, 14, 1, dets[i].mask);
+                image resized_mask = resize_image(mask, b.w * im.w, b.h * im.h);
+                image tmask = threshold_image(resized_mask, .5);
+                embed_image(tmask, im, left, top);
+                free_image(mask);
+                free_image(resized_mask);
+                free_image(tmask);
+            }
+        }
+
+        int offset = 0;
+        float red = get_color(2, offset, classes);
+        float green = get_color(1, offset, classes);
+        float blue = get_color(0, offset, classes);
+    }
+
+    if (fps > 0) {
+        float lrgb[3];
+        lrgb[0] = 0;
+        lrgb[1] = 255;
+        lrgb[2] = 0;
+
+        image ilfps = get_label(alphabet, gcvt(fps, 5, lfps), (im.h * .03));
+        draw_label(im, 0, 0, ilfps, lrgb);
+        free_image(ilfps);
+    }
+}
+
+void draw_detections_y4(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, float fps)
+{
+    int i;
+
+    for(i = 0; i < num; ++i){
+        int class_id = max_index(dets[i].prob, classes);
+        float prob = dets[i].prob[class_id];
+        if(prob > thresh){
+            int width = im.h * .001;
+
+            if(1){
+                width = pow(prob, 1./2.)*10+1;
+                alphabet = 0;
+            }
+
+            int offset = class_id*123457 % classes;
+            float red = get_color(2,offset,classes);
+            float green = get_color(1,offset,classes);
+            float blue = get_color(0,offset,classes);
+            float rgb[3];
 
             rgb[0] = red;
             rgb[1] = green;
             rgb[2] = blue;
             box b = dets[i].bbox;
-            //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
             int left  = (b.x-b.w/2.)*im.w;
             int right = (b.x+b.w/2.)*im.w;
@@ -289,27 +387,31 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             if(right > im.w-1) right = im.w-1;
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
+            //printf("%s: %.0f%%", names[class_id], prob * 100);
+            //printf("\n");
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, labelstr, (im.h*.03));
+                char label_txt[512];
+                char percent[5];
+                strcat(label_txt, names[class_id]);
+                gcvt(prob * 100, 5, percent);
+                strcat(label_txt, " ");
+                strcat(label_txt, percent);
+                image label = get_label(alphabet, label_txt, (im.h*.03)/10);
                 draw_label(im, top + width, left, label, rgb);
-                free_image(label);
             }
-            if (dets[i].mask){
-                image mask = float_to_image(14, 14, 1, dets[i].mask);
-                image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
-                image tmask = threshold_image(resized_mask, .5);
-                embed_image(tmask, im, left, top);
-                free_image(mask);
-                free_image(resized_mask);
-                free_image(tmask);
+            if (alphabet && i == 0 && fps != 0) {
+                char lfps[5];
+                image ilfps = get_label(alphabet, gcvt(fps, 5, lfps), (im.h * .03)/10);
+                draw_label(im, 0, 0, ilfps, rgb);
+                free_image(ilfps);
             }
         }
     }
 }
 
-void transpose_image(image im)
+void transpose_image_y4(image im)
 {
     assert(im.w == im.h);
     int n, m;
@@ -362,7 +464,7 @@ void flip_image(image a)
     }
 }
 
-image image_distance(image a, image b)
+image image_distance_y4(image a, image b)
 {
     int i,j;
     image dist = make_image(a.w, a.h, 1);
@@ -537,13 +639,29 @@ void rgbgr_image(image im)
 int show_image(image p, const char *name, int ms)
 {
 #ifdef OPENCV
-    int c = show_image_cv(p, name, ms);
-    return c;
+    return cv_show_image(p, name, ms);
 #else
     fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
     save_image(p, name);
-    return -1;
+    return 0;
 #endif
+}
+
+void save_image_png(image im, const char *name)
+{
+    char buff[256];
+    //sprintf(buff, "%s (%d)", name, windows);
+    sprintf(buff, "%s.png", name);
+    unsigned char *data = calloc(im.w*im.h*im.c, sizeof(char));
+    int i,k;
+    for(k = 0; k < im.c; ++k){
+        for(i = 0; i < im.w*im.h; ++i){
+            data[i*im.c+k] = (unsigned char) (255*im.data[i + k*im.w*im.h]);
+        }
+    }
+    int success = stbi_write_png(buff, im.w, im.h, im.c, data, im.w*im.c);
+    free(data);
+    if(!success) fprintf(stderr, "Failed to write image %s\n", buff);
 }
 
 void save_image_options(image im, const char *name, IMTYPE f, int quality)
@@ -573,7 +691,11 @@ void save_image_options(image im, const char *name, IMTYPE f, int quality)
 
 void save_image(image im, const char *name)
 {
-    save_image_options(im, name, JPG, 80);
+#ifdef OPENCV
+    save_image_jpg_cv(im, name);
+#else
+    save_image_png(im, name);
+#endif
 }
 
 void show_image_layers(image p, char *name)
@@ -630,8 +752,12 @@ image float_to_image(int w, int h, int c, float *data)
     return out;
 }
 
+pthread_mutex_t pi_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void place_image(image im, int w, int h, int dx, int dy, image canvas)
 {
+    pthread_mutex_lock(&pi_mutex);
+
     int x, y, c;
     for(c = 0; c < im.c; ++c){
         for(y = 0; y < h; ++y){
@@ -643,6 +769,8 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)
             }
         }
     }
+    
+    pthread_mutex_unlock(&pi_mutex);
 }
 
 image center_crop_image(image im, int w, int h)
@@ -790,7 +918,11 @@ void composite_3d(char *f1, char *f2, char *out, int delta)
     for(i = 0; i < c.w*c.h; ++i){
         c.data[i] = a.data[i];
     }
+#ifdef OPENCV
+    save_image_jpg_cv(c, out);
+#else
     save_image(c, out);
+#endif
 }
 
 void letterbox_image_into(image im, int w, int h, image boxed)
@@ -1240,7 +1372,6 @@ image resize_image(image im, int w, int h)
     return resized;
 }
 
-
 void test_resize(char *filename)
 {
     image im = load_image(filename, 0,0, 3);
@@ -1292,6 +1423,10 @@ void test_resize(char *filename)
 
 image load_image_stb(char *filename, int channels)
 {
+    //if (filename) filename[strcspn(filename, "\n\r")] = 0;
+    char *pos;
+    if ((pos=strchr(filename, '\r')) != NULL) *pos = '\0';
+    if ((pos=strchr(filename, '\n')) != NULL) *pos = '\0';
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     if (!data) {
@@ -1436,7 +1571,7 @@ void show_image_normalized(image im, const char *name)
 {
     image c = copy_image(im);
     normalize_image(c);
-    show_image(c, name, 1);
+    show_image(c, name, 0);
     free_image(c);
 }
 

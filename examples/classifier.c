@@ -1,4 +1,5 @@
 #include "darknet.h"
+#include "image.h"
 
 #include <sys/time.h>
 #include <assert.h>
@@ -30,7 +31,9 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     for(i = 0; i < ngpus; ++i){
         srand(seed);
 #ifdef GPU
-        cuda_set_device(gpus[i]);
+        if(gpu_index >= 0) {
+            cuda_set_device(gpus[i]);
+        }
 #endif
         nets[i] = load_network(cfgfile, weightfile, clear);
         nets[i]->learning_rate *= ngpus;
@@ -40,7 +43,9 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
     int imgs = net->batch * net->subdivisions * ngpus;
 
+#ifndef BENCHMARK
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
+#endif
     list *options = read_data_cfg(datacfg);
 
     char *backup_directory = option_find_str(options, "backup", "/backup/");
@@ -96,20 +101,35 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
     int count = 0;
     int epoch = (*net->seen)/N;
+
+    if(count == 0) {
+        char buff[256];
+        sprintf(buff, "%s/%s.start.conv.weights",backup_directory,base);
+        save_weights(net, buff);
+    }
+
+#ifdef LOSS_ONLY
+    time = what_time_is_it_now();
+#endif
     while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
         if(net->random && count++%40 == 0){
+#if !defined(BENCHMARK) && !defined(LOSS_ONLY)
             printf("Resizing\n");
+#endif
             int dim = (rand() % 11 + 4) * 32;
             //if (get_current_batch(net)+200 > net->max_batches) dim = 608;
             //int dim = (rand() % 4 + 16) * 32;
+#if !defined(BENCHMARK) && !defined(LOSS_ONLY)
             printf("%d\n", dim);
+#endif
             args.w = dim;
             args.h = dim;
             args.size = dim;
             args.min = net->min_ratio*dim;
             args.max = net->max_ratio*dim;
+#ifndef BENCHMARK
             printf("%d %d\n", args.min, args.max);
-
+#endif
             pthread_join(load_thread, 0);
             train = buffer;
             free_data(train);
@@ -120,28 +140,40 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             }
             net = nets[0];
         }
+#ifndef LOSS_ONLY
         time = what_time_is_it_now();
-
+#endif
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
-
+#ifndef LOSS_ONLY
         printf("Loaded: %lf seconds\n", what_time_is_it_now()-time);
+#endif
+#ifndef LOSS_ONLY
         time = what_time_is_it_now();
-
+#endif
         float loss = 0;
 #ifdef GPU
-        if(ngpus == 1){
+        if (gpu_index >= 0) {
+            if (ngpus == 1) {
+                loss = train_network(net, train);
+            } else {
+                loss = train_networks(nets, ngpus, train, 4);
+            }
+        }
+        else {
             loss = train_network(net, train);
-        } else {
-            loss = train_networks(nets, ngpus, train, 4);
         }
 #else
         loss = train_network(net, train);
 #endif
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
+#ifdef LOSS_ONLY
+        printf("%lf\t%f\n", what_time_is_it_now()-time, loss);
+#else
         printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, *net->seen);
+#endif
         free_data(train);
         if(*net->seen/N > epoch){
             epoch = *net->seen/N;
@@ -154,6 +186,12 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             sprintf(buff, "%s/%s.backup",backup_directory,base);
             save_weights(net, buff);
         }
+#ifdef GPU_STATS
+        cuda_dump_mem_stat();
+#endif
+#ifdef BENCHMARK
+        break;
+#endif
     }
     char buff[256];
     sprintf(buff, "%s/%s.weights", backup_directory, base);
@@ -528,7 +566,9 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
             if(l.rolling_mean) printf("%f %f %f\n", l.rolling_mean[i], l.rolling_variance[i], l.scales[i]);
         }
 #ifdef GPU
-        cuda_pull_array(l.output_gpu, l.output, l.outputs);
+        if(gpu_index >= 0) {
+            cuda_pull_array(l.output_gpu, l.output, l.outputs);
+        }
 #endif
         for(i = 0; i < l.outputs; ++i){
             printf("%f\n", l.output[i]);
@@ -586,7 +626,8 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        image r = letterbox_image(im, net->w, net->h);
+        int resize = im.w != net->w || im.h != net->h;
+        image r = resize ? letterbox_image(im, net->w, net->h) : im;
         //image r = resize_min(im, 320);
         //printf("%d %d\n", r.w, r.h);
         //resize_network(net, r.w, r.h);
@@ -605,6 +646,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             printf("%5.2f%%: %s\n", predictions[index]*100, names[index]);
         }
         if(r.data != im.data) free_image(r);
+		
         free_image(im);
         if (filename) break;
     }
@@ -668,7 +710,8 @@ void csv_classifier(char *datacfg, char *cfgfile, char *weightfile)
         double time = what_time_is_it_now();
         char *path = paths[i];
         image im = load_image_color(path, 0, 0);
-        image r = letterbox_image(im, net->w, net->h);
+        int resize = im.w != net->w || im.h != net->h;
+        image r = resize ? letterbox_image(im, net->w, net->h) : im;
         float *predictions = network_predict(net, r.data);
         if(net->hierarchy) hierarchy_predictions(predictions, net->outputs, net->hierarchy, 1, 1);
         top_k(predictions, net->outputs, top, indexes);
@@ -680,7 +723,7 @@ void csv_classifier(char *datacfg, char *cfgfile, char *weightfile)
         printf("\n");
 
         free_image(im);
-        free_image(r);
+        if (resize) free_image(r);
 
         fprintf(stderr, "%lf seconds, %d images, %d total\n", what_time_is_it_now() - time, i+1, m);
     }
@@ -828,7 +871,7 @@ void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_i
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
-        image in = get_image_from_stream(cap);
+        image in = get_image_from_stream_cv(cap);
         if(!in.data) break;
         image in_s = resize_image(in, net->w, net->h);
 
@@ -890,7 +933,7 @@ void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_i
         }
         top_predictions(net, top, indexes);
         char buff[256];
-        sprintf(buff, "/home/pjreddie/tmp/threat_%06d", count);
+        sprintf(buff, "/home/piotr/tmp/threat_%06d", count);
         //save_image(out, buff);
 
         printf("\033[2J");
@@ -945,7 +988,7 @@ void gun_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
-        image in = get_image_from_stream(cap);
+        image in = get_image_from_stream_cv(cap);
         image in_s = resize_image(in, net->w, net->h);
 
         float *predictions = network_predict(net, in_s.data);
@@ -1015,9 +1058,10 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
-        image in = get_image_from_stream(cap);
+        image in = get_image_from_stream_cv(cap);
         //image in_s = resize_image(in, net->w, net->h);
-        image in_s = letterbox_image(in, net->w, net->h);
+        int resize = in.w != net->w || in.h != net->h;
+        image in_s = resize ? letterbox_image(in, net->w, net->h) : in;
 
         float *predictions = network_predict(net, in_s.data);
         if(net->hierarchy) hierarchy_predictions(predictions, net->outputs, net->hierarchy, 1, 1);
@@ -1045,7 +1089,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         }
 
         show_image(in, base, 10);
-        free_image(in_s);
+        if (resize) free_image(in_s);
         free_image(in);
 
         gettimeofday(&tval_after, NULL);

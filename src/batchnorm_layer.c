@@ -32,6 +32,12 @@ layer make_batchnorm_layer(int batch, int w, int h, int c)
     l.rolling_mean = calloc(c, sizeof(float));
     l.rolling_variance = calloc(c, sizeof(float));
 
+    l.mean_delta = calloc(c, sizeof(float));
+    l.variance_delta = calloc(c, sizeof(float));
+
+    l.x = calloc(l.batch*l.outputs, sizeof(float));
+    l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
+
     l.forward = forward_batchnorm_layer;
     l.backward = backward_batchnorm_layer;
 #ifdef GPU
@@ -50,20 +56,20 @@ layer make_batchnorm_layer(int batch, int w, int h, int c)
     l.mean_gpu = cuda_make_array(l.mean, c);
     l.variance_gpu = cuda_make_array(l.variance, c);
 
-    l.rolling_mean_gpu = cuda_make_array(l.mean, c);
-    l.rolling_variance_gpu = cuda_make_array(l.variance, c);
+    l.rolling_mean_gpu = cuda_make_array(l.rolling_mean, c);
+    l.rolling_variance_gpu = cuda_make_array(l.rolling_variance, c);
 
-    l.mean_delta_gpu = cuda_make_array(l.mean, c);
-    l.variance_delta_gpu = cuda_make_array(l.variance, c);
+    l.mean_delta_gpu = cuda_make_array(l.mean_delta, c);
+    l.variance_delta_gpu = cuda_make_array(l.variance_delta, c);
 
-    l.x_gpu = cuda_make_array(l.output, l.batch*l.outputs);
-    l.x_norm_gpu = cuda_make_array(l.output, l.batch*l.outputs);
+    l.x_gpu = cuda_make_array(l.x, l.batch*l.outputs);
+    l.x_norm_gpu = cuda_make_array(l.x_norm, l.batch*l.outputs);
+
     #ifdef CUDNN
     cudnnCreateTensorDescriptor(&l.normTensorDesc);
     cudnnCreateTensorDescriptor(&l.dstTensorDesc);
     cudnnSetTensor4dDescriptor(l.dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, l.batch, l.out_c, l.out_h, l.out_w); 
-    cudnnSetTensor4dDescriptor(l.normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l.out_c, 1, 1); 
-
+    cudnnSetTensor4dDescriptor(l.normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l.out_c, 1, 1);
     #endif
 #endif
     return l;
