@@ -15,6 +15,7 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     l.input_sizes = input_sizes;
     l.groups = groups;
     l.group_id = group_id;
+    l.wait_stream_id = -1;
     int i;
     int outputs = 0;
     for(i = 0; i < n; ++i){

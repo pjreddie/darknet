@@ -523,6 +523,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         stride_x = stride_y = l.stride = l.stride_x = l.stride_y = 1; // use stride=1 in host-layer
     }
 
+    l.wait_stream_id = -1;
     l.deform = deform;
     l.assisted_excitation = assisted_excitation;
     l.share_layer = share_layer;
