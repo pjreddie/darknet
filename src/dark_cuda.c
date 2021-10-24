@@ -18,14 +18,13 @@ int gpu_index = 0;
 #include <cuda.h>
 #include <stdio.h>
 
+#ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "cuda.lib")
 
-
 #ifdef CUDNN
-#ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "cudnn.lib")
-#endif  // USE_CMAKE_LIBS
 #endif  // CUDNN
+#endif  // USE_CMAKE_LIBS
 
 #if defined(CUDNN_HALF) && !defined(CUDNN)
 #error "If you set CUDNN_HALF=1 then you must set CUDNN=1"
