@@ -1,5 +1,95 @@
 #!/usr/bin/env pwsh
 
+<#
+
+.SYNOPSIS
+        build
+        Created By: Stefano Sinigardi
+        Created Date: February 18, 2019
+        Last Modified Date: November 10, 2021
+
+.DESCRIPTION
+Build darknet using CMake, trying to properly setup the environment around compiler
+
+.PARAMETER DisableInteractive
+Disable script interactivity (useful for CI runs)
+
+.PARAMETER EnableCUDA
+Enable CUDA feature
+
+.PARAMETER EnableCUDNN
+Enable CUDNN feature
+
+.PARAMETER EnableOPENCV
+Build darknet linking to OpenCV
+
+.PARAMETER EnableOPENCV_CUDA
+Use a CUDA-enabled OpenCV build
+
+.PARAMETER UseVCPKG
+Use VCPKG to build darknet dependencies. Clone it if not already found on system
+
+.PARAMETER InstallDARKNETthroughVCPKG
+Use VCPKG to install darknet thanks to the port integrated in it
+
+.PARAMETER InstallDARKNETdependenciesThroughVCPKGManifest
+Use VCPKG to install darknet dependencies using vcpkg manifest feature
+
+.PARAMETER ForceVCPKGDarknetHEAD
+Install darknet from vcpkg and force it to HEAD version, not latest port release
+
+.PARAMETER DoNotUpdateVCPKG
+Do not update vcpkg before running the build (valid only if vcpkg is cloned by this script or the version found on the system is git-enabled)
+
+.PARAMETER DoNotUpdateDARKNET
+Do not update darknet before running the build (valid only if darknet is git-enabled)
+
+.PARAMETER DoNotDeleteBuildFolder
+Do not delete temporary cmake build folder at the end of the script
+
+.PARAMETER DoNotSetupVS
+Do not setup VisualStudio environment using the vcvars script
+
+.PARAMETER DoNotUseNinja
+Do not use Ninja for build
+
+.PARAMETER ForceCPP
+Force building darknet using C++ compiler also for plain C code
+
+.PARAMETER ForceStaticLib
+Create darknet library as static instead of the default linking mode of your system
+
+.PARAMETER ForceVCPKGCacheRemoval
+Force clean up of the local vcpkg binary cache before building
+
+.PARAMETER DoNotDeleteBuildtreesFolder
+Do not delete vcpkg buildtrees temp folder at the end of the script
+
+.PARAMETER ForceSetupVS
+Forces Visual Studio setup, also on systems on which it would not have been enabled automatically
+
+.PARAMETER EnableCSharpWrapper
+Enables building C# darknet wrapper
+
+.PARAMETER DownloadWeights
+Download pre-trained weight files
+
+.PARAMETER ForceGCCVersion
+Force a specific GCC version
+
+.PARAMETER ForceOpenCVVersion
+Force a specific OpenCV version (valid only with vcpkg-enabled builds)
+
+.PARAMETER NumberOfBuildWorkers
+Forces a specific number of threads for parallel building
+
+.PARAMETER AdditionalBuildSetup
+Additional setup parameters to manually pass to CMake
+
+.EXAMPLE
+.\build -DisableInteractive -DoNotDeleteBuildFolder -UseVCPKG
+
+#>
 
 param (
   [switch]$DisableInteractive = $false,
@@ -19,6 +109,7 @@ param (
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
   [switch]$ForceVCPKGCacheRemoval = $false,
+  [switch]$DoNotDeleteBuildtreesFolder = $false,
   [switch]$ForceSetupVS = $false,
   [switch]$EnableCSharpWrapper = $false,
   [switch]$DownloadWeights = $false,
@@ -28,7 +119,7 @@ param (
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.6"
+$build_ps1_version = "0.9.7"
 
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
@@ -390,6 +481,14 @@ function getLatestVisualStudioWithDesktopWorkloadPath() {
       }
     }
     if (!$installationPath) {
+      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
+      $output = & $vswhereExe -prerelease -products * -latest -format xml
+      [xml]$asXml = $output
+      foreach ($instance in $asXml.instances.instance) {
+        $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
+      }
+    }
+    if (!$installationPath) {
       MyThrow("Could not locate any installation of Visual Studio")
     }
   }
@@ -412,6 +511,14 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
     if (!$installationVersion) {
       Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
       $output = & $vswhereExe -products * -latest -format xml
+      [xml]$asXml = $output
+      foreach ($instance in $asXml.instances.instance) {
+        $installationVersion = $instance.installationVersion
+      }
+    }
+    if (!$installationVersion) {
+      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
+      $output = & $vswhereExe -prerelease -products * -latest -format xml
       [xml]$asXml = $output
       foreach ($instance in $asXml.instances.instance) {
         $installationVersion = $instance.installationVersion
@@ -504,6 +611,11 @@ if ($UseVCPKG -and ($vcpkg_path.length -gt 40) -and ($IsWindows -or $IsWindowsPo
 
 if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if ($UseVCPKG -and (-Not $DoNotDeleteBuildtreesFolder)) {
+  Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$env:VCPKG_ROOT/buildtrees"
 }
 
 if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {
@@ -727,6 +839,11 @@ else {
   Set-Location ..
   Copy-Item cmake/Modules/*.cmake share/darknet/
   Pop-Location
+}
+
+if ($UseVCPKG -and (-Not $DoNotDeleteBuildtreesFolder)) {
+  Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$env:VCPKG_ROOT/buildtrees"
 }
 
 Write-Host "Build complete!" -ForegroundColor Green

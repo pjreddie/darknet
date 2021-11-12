@@ -16,9 +16,9 @@ Push-Location $PSScriptRoot
 
 if ($InstallCUDA) {
   & $PSScriptRoot/deploy-cuda.ps1
-  $env:CUDA_PATH="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.4"
-  $env:CUDA_TOOLKIT_ROOT_DIR="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.4"
-  $env:CUDACXX="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.4\\bin\\nvcc.exe"
+  $env:CUDA_PATH="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.5"
+  $env:CUDA_TOOLKIT_ROOT_DIR="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.5"
+  $env:CUDACXX="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.5\\bin\\nvcc.exe"
   $CUDAisAvailable = $true
 }
 else {
