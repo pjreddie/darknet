@@ -476,7 +476,7 @@ jobs:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
       run: >
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -525,7 +525,7 @@ jobs:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
       run: >
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -586,7 +586,7 @@ jobs:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
       run: >
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
 
