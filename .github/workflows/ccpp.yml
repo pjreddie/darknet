@@ -98,6 +98,7 @@ jobs:
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: Setup NuGet API key if found
+      shell: bash
       env:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
@@ -165,6 +166,7 @@ jobs:
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: Setup NuGet API key if found
+      shell: bash
       env:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
@@ -215,6 +217,7 @@ jobs:
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: Setup NuGet API key if found
+      shell: bash
       env:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
@@ -348,6 +351,7 @@ jobs:
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: Setup NuGet API key if found
+      shell: bash
       env:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
@@ -381,6 +385,7 @@ jobs:
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: Setup NuGet API key if found
+      shell: bash
       env:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
@@ -472,6 +477,7 @@ jobs:
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: Setup NuGet API key if found
+      shell: bash
       env:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
@@ -521,6 +527,7 @@ jobs:
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: Setup NuGet API key if found
+      shell: bash
       env:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
@@ -582,6 +589,7 @@ jobs:
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: Setup NuGet API key if found
+      shell: bash
       env:
         BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
       if: env.BAGET_API_KEY != null
