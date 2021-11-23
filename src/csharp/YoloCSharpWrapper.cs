@@ -9,7 +9,7 @@ namespace Darknet
         private const int MaxObjects = 1000;
 
         [DllImport(YoloLibraryName, EntryPoint = "init")]
-        private static extern int InitializeYolo(string configurationFilename, string weightsFilename, int gpu);
+        private static extern int InitializeYolo(string configurationFilename, string weightsFilename, int gpu, int batch_size);
 
         [DllImport(YoloLibraryName, EntryPoint = "detect_image")]
         private static extern int DetectImage(string filename, ref BboxContainer container);
@@ -38,9 +38,9 @@ namespace Darknet
             public bbox_t[] candidates;
         }
 
-        public YoloWrapper(string configurationFilename, string weightsFilename, int gpu)
+        public YoloWrapper(string configurationFilename, string weightsFilename, int gpu, int batch_size = 1)
         {
-            InitializeYolo(configurationFilename, weightsFilename, gpu);
+            InitializeYolo(configurationFilename, weightsFilename, gpu, batch_size);
         }
 
         public void Dispose()
