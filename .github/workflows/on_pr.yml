@@ -72,7 +72,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install yasm nasm
+      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev
 
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.sh
@@ -113,7 +113,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install yasm nasm
+      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev
 
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.sh
@@ -154,7 +154,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install yasm nasm
+      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev
 
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.sh

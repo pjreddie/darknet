@@ -38,6 +38,7 @@ mkdir -p $temp_folder
 cd $temp_folder
 
 if [ -f $script_dir/requested_cuda_version.sh ]; then
+  echo "Loading $script_dir/requested_cuda_version.sh"
   source $script_dir/requested_cuda_version.sh
 else
   echo "Unable to find requested_cuda_version.sh script"
@@ -54,7 +55,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     exit 3
   fi
 elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
+  echo "Running in $(cut -f2 <<< $(lsb_release -i))"
+  echo "InstallCUDA: $install_cuda"
+  echo "InstallTOOLS: $install_tools"
   if [ "$install_cuda" = true ] ; then
+    echo "Running $script_dir/deploy-cuda.sh"
     $script_dir/deploy-cuda.sh
     if [ "$bypass_driver_installation" = true ] ; then
       sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
@@ -68,9 +73,11 @@ elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
     export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
   fi
   if [ "$install_tools" = true ] ; then
+    echo "Installing tools"
     sudo apt-get update
-    sudo apt-get install -y git ninja-build build-essential g++ nasm yasm
+    sudo apt-get install -y git ninja-build build-essential g++ nasm yasm gperf
     sudo apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
+    sudo apt-get install -y libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev
     wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
     sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(cut -f2 <<< $(lsb_release -c)) main"
     wget -q https://packages.microsoft.com/config/ubuntu/$(cut -f2 <<< $(lsb_release -r))/packages-microsoft-prod.deb
@@ -80,6 +87,8 @@ elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
     sudo apt-get dist-upgrade -y
     sudo apt-get install -y cmake
     sudo apt-get install -y powershell
+    sudo apt-get install -y curl zip unzip tar
+    sudo apt-get install -y pkg-config autoconf libtool bison
   fi
 else
   if [ "$install_cuda" = true ] ; then
@@ -94,7 +103,7 @@ fi
 
 cd ..
 rm -rf "$temp_folder"
-
+echo "Building darknet"
 if [[ -v CUDA_PATH ]]; then
   ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateDARKNET
   #./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -EnableOPENCV_CUDA -DisableInteractive -DoNotUpdateDARKNET
