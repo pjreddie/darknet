@@ -119,7 +119,7 @@ param (
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.7"
+$build_ps1_version = "0.9.8"
 
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
@@ -676,6 +676,10 @@ if (-Not $DoNotSetupVS) {
     }
     elseif ($tokens[0] -eq "16") {
       $generator = "Visual Studio 16 2019"
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
+    }
+    elseif ($tokens[0] -eq "17") {
+      $generator = "Visual Studio 17 2022"
       $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
     }
     else {
