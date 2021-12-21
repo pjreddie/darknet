@@ -2,7 +2,8 @@
 #include <sys/time.h>
 #include <assert.h>
 
-void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
+void normalize_image2(image p);
+void train_isegmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int display)
 {
     int i;
 
@@ -24,6 +25,15 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     }
     srand(time(0));
     network *net = nets[0];
+    image pred = get_network_image(net);
+
+    image embed = pred;
+    embed.c = 3;
+    embed.data += embed.w*embed.h*80;
+
+    int div = net->w/pred.w;
+    assert(pred.w * div == net->w);
+    assert(pred.h * div == net->h);
 
     int imgs = net->batch * net->subdivisions * ngpus;
 
@@ -32,33 +42,33 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 
     char *backup_directory = option_find_str(options, "backup", "/backup/");
     char *train_list = option_find_str(options, "train", "data/train.list");
-    int classes = option_find_int(options, "classes", 1);
 
     list *plist = get_paths(train_list);
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
-    clock_t time;
 
     load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.threads = 32;
-    args.classes = classes;
+    args.scale = div;
+    args.num_boxes = 90;
 
-    args.min = net->min_ratio*net->w;
-    args.max = net->max_ratio*net->w;
+    args.min = net->min_crop;
+    args.max = net->max_crop;
     args.angle = net->angle;
     args.aspect = net->aspect;
     args.exposure = net->exposure;
     args.saturation = net->saturation;
     args.hue = net->hue;
     args.size = net->w;
+    args.classes = 80;
 
     args.paths = paths;
     args.n = imgs;
     args.m = N;
-    args.type = REGRESSION_DATA;
+    args.type = ISEG_DATA;
 
     data train;
     data buffer;
@@ -68,14 +78,14 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 
     int epoch = (*net->seen)/N;
     while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
-        time=clock();
+        double time = what_time_is_it_now();
 
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
 
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
-        time=clock();
+        printf("Loaded: %lf seconds\n", what_time_is_it_now()-time);
+        time = what_time_is_it_now();
 
         float loss = 0;
 #ifdef GPU
@@ -87,9 +97,26 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 #else
         loss = train_network(net, train);
 #endif
+        if(display){
+            image tr = float_to_image(net->w/div, net->h/div, 80, train.y.vals[net->batch*(net->subdivisions-1)]);
+            image im = float_to_image(net->w, net->h, net->c, train.X.vals[net->batch*(net->subdivisions-1)]);
+            pred.c = 80;
+            image mask = mask_to_rgb(tr);
+            image prmask = mask_to_rgb(pred);
+            image ecopy = copy_image(embed);
+            normalize_image2(ecopy);
+            show_image(ecopy, "embed", 1);
+            free_image(ecopy);
+
+            show_image(im, "input", 1);
+            show_image(prmask, "pred", 1);
+            show_image(mask, "truth", 100);
+            free_image(mask);
+            free_image(prmask);
+        }
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net->seen);
+        printf("%ld, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net->seen)/N, loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, *net->seen);
         free_data(train);
         if(*net->seen/N > epoch){
             epoch = *net->seen/N;
@@ -113,9 +140,9 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     free(base);
 }
 
-void predict_regressor(char *cfgfile, char *weightfile, char *filename)
+void predict_isegmenter(char *datafile, char *cfg, char *weights, char *filename)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -138,29 +165,30 @@ void predict_regressor(char *cfgfile, char *weightfile, char *filename)
         float *X = sized.data;
         time=clock();
         float *predictions = network_predict(net, X);
+        image pred = get_network_image(net);
+        image prmask = mask_to_rgb(pred);
         printf("Predicted: %f\n", predictions[0]);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        show_image(sized, "orig", 1);
+        show_image(prmask, "pred", 0);
         free_image(im);
         free_image(sized);
+        free_image(prmask);
         if (filename) break;
     }
 }
 
 
-void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename)
+void demo_isegmenter(char *datacfg, char *cfg, char *weights, int cam_index, const char *filename)
 {
 #ifdef OPENCV
-    printf("Regressor Demo\n");
-    network *net = load_network(cfgfile, weightfile, 0);
+    printf("Classifier Demo\n");
+    network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
 
     srand(2222222);
-    list *options = read_data_cfg(datacfg);
-    int classes = option_find_int(options, "classes", 1);
-    char *name_list = option_find_str(options, "names", 0);
-    char **names = get_labels(name_list);
-
     void * cap = open_video_stream(filename, cam_index, 0,0,0);
+
     if(!cap) error("Couldn't connect to webcam.\n");
     float fps = 0;
 
@@ -169,23 +197,21 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
         gettimeofday(&tval_before, NULL);
 
         image in = get_image_from_stream(cap);
-        image crop = center_crop_image(in, net->w, net->h);
-        grayscale_image_3c(crop);
+        image in_s = letterbox_image(in, net->w, net->h);
 
-        float *predictions = network_predict(net, crop.data);
+        network_predict(net, in_s.data);
 
         printf("\033[2J");
         printf("\033[1;1H");
         printf("\nFPS:%.0f\n",fps);
 
-        int i;
-        for(i = 0; i < classes; ++i){
-            printf("%s: %f\n", names[i], predictions[i]);
-        }
+        image pred = get_network_image(net);
+        image prmask = mask_to_rgb(pred);
+        show_image(prmask, "Segmenter", 10);
 
-        show_image(crop, "Regressor", 10);
+        free_image(in_s);
         free_image(in);
-        free_image(crop);
+        free_image(prmask);
 
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
@@ -196,7 +222,7 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
 }
 
 
-void run_regressor(int argc, char **argv)
+void run_isegmenter(int argc, char **argv)
 {
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
@@ -228,13 +254,14 @@ void run_regressor(int argc, char **argv)
 
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int clear = find_arg(argc, argv, "-clear");
+    int display = find_arg(argc, argv, "-display");
     char *data = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) predict_regressor(data, cfg, weights);
-    else if(0==strcmp(argv[2], "train")) train_regressor(data, cfg, weights, gpus, ngpus, clear);
-    else if(0==strcmp(argv[2], "demo")) demo_regressor(data, cfg, weights, cam_index, filename);
+    if(0==strcmp(argv[2], "test")) predict_isegmenter(data, cfg, weights, filename);
+    else if(0==strcmp(argv[2], "train")) train_isegmenter(data, cfg, weights, gpus, ngpus, clear, display);
+    else if(0==strcmp(argv[2], "demo")) demo_isegmenter(data, cfg, weights, cam_index, filename);
 }
 
 

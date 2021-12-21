@@ -572,7 +572,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     double time;
     char buff[256];
     char *input = buff;
-    float nms=.3;
+    float nms=.45;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -598,7 +598,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
         int nboxes = 0;
         detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
-        printf("%d\n", nboxes);
+        //printf("%d\n", nboxes);
         //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
         draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
@@ -609,13 +609,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         else{
             save_image(im, "predictions");
 #ifdef OPENCV
-            cvNamedWindow("predictions", CV_WINDOW_NORMAL); 
-            if(fullscreen){
-                cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-            }
-            show_image(im, "predictions");
-            cvWaitKey(0);
-            cvDestroyAllWindows();
+            make_window("predictions", 512, 512, 0);
+            show_image(im, "predictions", 0);
 #endif
         }
 
@@ -794,7 +789,7 @@ void network_detect(network *net, image im, float thresh, float hier_thresh, flo
 void run_detector(int argc, char **argv)
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
-    float thresh = find_float_arg(argc, argv, "-thresh", .24);
+    float thresh = find_float_arg(argc, argv, "-thresh", .5);
     float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);

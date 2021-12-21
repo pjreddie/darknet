@@ -5,9 +5,6 @@
 #include <string.h>
 #include <pthread.h>
 
-#define SECRET_NUM -1234
-extern int gpu_index;
-
 #ifdef GPU
     #define BLOCK 512
 
@@ -20,17 +17,12 @@ extern int gpu_index;
     #endif
 #endif
 
-#ifndef __cplusplus
-    #ifdef OPENCV
-    #include "opencv2/highgui/highgui_c.h"
-    #include "opencv2/imgproc/imgproc_c.h"
-    #include "opencv2/core/version.hpp"
-    #if CV_MAJOR_VERSION == 3
-    #include "opencv2/videoio/videoio_c.h"
-    #include "opencv2/imgcodecs/imgcodecs_c.h"
-    #endif
-    #endif
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+#define SECRET_NUM -1234
+extern int gpu_index;
 
 typedef struct{
     int classes;
@@ -54,8 +46,12 @@ typedef struct{
 tree *read_tree(char *filename);
 
 typedef enum{
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
 } ACTIVATION;
+
+typedef enum{
+    PNG, BMP, TGA, JPG
+} IMTYPE;
 
 typedef enum{
     MULT, ADD, SUB, DIV
@@ -86,6 +82,7 @@ typedef enum {
     XNOR,
     REGION,
     YOLO,
+    ISEG,
     REORG,
     UPSAMPLE,
     LOGXENT,
@@ -166,6 +163,7 @@ struct layer{
     float ratio;
     float learning_rate_scale;
     float clip;
+    int noloss;
     int softmax;
     int classes;
     int coords;
@@ -203,6 +201,7 @@ struct layer{
     int dontload;
     int dontsave;
     int dontloadscales;
+    int numload;
 
     float temperature;
     float probability;
@@ -213,6 +212,8 @@ struct layer{
     int   * input_layers;
     int   * input_sizes;
     int   * map;
+    int   * counts;
+    float ** sums;
     float * rand;
     float * cost;
     float * state;
@@ -540,7 +541,7 @@ typedef struct{
 } data;
 
 typedef enum {
-    CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA, SEGMENTATION_DATA, INSTANCE_DATA
+    CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA, SEGMENTATION_DATA, INSTANCE_DATA, ISEG_DATA
 } data_type;
 
 typedef struct load_args{
@@ -645,7 +646,8 @@ void harmless_update_network_gpu(network *net);
 #endif
 image get_label(image **characters, char *string, int size);
 void draw_label(image a, int r, int c, image label, const float *rgb);
-void save_image_png(image im, const char *name);
+void save_image(image im, const char *name);
+void save_image_options(image im, const char *name, IMTYPE f, int quality);
 void get_next_batch(data d, int n, int offset, float *X, float *y);
 void grayscale_image_3c(image im);
 void normalize_image(image p);
@@ -704,8 +706,7 @@ image mask_to_rgb(image mask);
 int resize_network(network *net, int w, int h);
 void free_matrix(matrix m);
 void test_resize(char *filename);
-void save_image(image p, const char *name);
-void show_image(image p, const char *name);
+int show_image(image p, const char *name, int ms);
 image copy_image(image p);
 void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b);
 float get_current_rate(network *net);
@@ -753,11 +754,12 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh);
 
 matrix make_matrix(int rows, int cols);
 
-#ifndef __cplusplus
 #ifdef OPENCV
-image get_image_from_stream(CvCapture *cap);
+void *open_video_stream(const char *f, int c, int w, int h, int fps);
+image get_image_from_stream(void *p);
+void make_window(char *name, int w, int h, int fullscreen);
 #endif
-#endif
+
 void free_image(image m);
 float train_network(network *net, data d);
 pthread_t load_data_in_thread(load_args args);
@@ -797,4 +799,7 @@ size_t rand_size_t();
 float rand_normal();
 float rand_uniform(float min, float max);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
