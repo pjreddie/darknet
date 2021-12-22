@@ -27,6 +27,11 @@ option(VCPKG_USE_OPENCV2 "Use legacy OpenCV 2" OFF)
 option(VCPKG_USE_OPENCV3 "Use legacy OpenCV 3" OFF)
 option(VCPKG_USE_OPENCV4 "Use OpenCV 4" ON)
 
+if(DEFINED ENV{VCPKG_DEFAULT_TRIPLET})
+  message(STATUS "Setting default vcpkg target triplet to $ENV{VCPKG_DEFAULT_TRIPLET}")
+  set(VCPKG_TARGET_TRIPLET $ENV{VCPKG_DEFAULT_TRIPLET})
+endif()
+
 if(VCPKG_USE_OPENCV4 AND VCPKG_USE_OPENCV2)
   message(STATUS "You required vcpkg feature related to OpenCV 2 but forgot to turn off those for OpenCV 4, doing that for you")
   set(VCPKG_USE_OPENCV4 OFF CACHE BOOL "Use OpenCV 4" FORCE)
