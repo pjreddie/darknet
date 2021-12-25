@@ -1,0 +1,5 @@
+classes=1
+train=/media/vj/TOSHIBA EXT/datasets/SSIG_ALPR/SSIG_ALPR_YOLO/SSIG_ALPR_YOLO/train.txt
+valid=/media/vj/TOSHIBA EXT/datasets/SSIG_ALPR/SSIG_ALPR_YOLO/SSIG_ALPR_YOLO/valid.txt
+names=/home/darknet/cfg/car_plate.names
+backup=backup
