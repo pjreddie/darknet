@@ -620,6 +620,99 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
 }
 
+void test_detector_on_txt_file(char *datacfg, char *cfgfile, char *weightfile, char *txt_filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
+{
+    // Check the txt file
+    if( access( txt_filename, F_OK ) == -1 ) {
+        printf("\nERROR: %s does not exist!\n", txt_filename);
+        return;
+    }
+
+    // Check the weightfile
+    if( access( weightfile, F_OK ) == -1 ) {
+        printf("\nERROR: %s does not exist!\n", weightfile);
+        return;
+    }
+
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    char **names = get_labels(name_list);
+
+    image **alphabet = load_alphabet();
+    network *net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    srand(2222222);
+    double time;
+    char buff[256];
+    char *input = buff;
+    float nms=.45;
+
+    FILE *file = fopen ( txt_filename, "r" );
+    char filename[1000];
+
+    // For each line
+    while ( fgets ( filename, sizeof filename, file ) != NULL ) {
+        // printf("%s", filename);
+        // Trim the last \n
+        int filename_len = strlen(filename);
+        if (filename_len > 0 && filename[filename_len-1] == '\n')
+            filename[filename_len-1] = 0;
+
+        // Copy file name
+        strncpy(input, filename, 256);
+
+        // Load image
+        image im = load_image_color(input,0,0);
+
+        // Resize image
+        image sized = letterbox_image(im, net->w, net->h);
+
+        layer l = net->layers[net->n-1];
+        float *X = sized.data;
+        time=what_time_is_it_now();
+
+        // printf("Predicting ...");
+        network_predict(net, X);
+        printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+
+        int nboxes = 0; 
+        detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
+        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+
+        // Draw bbox
+        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+
+        // Save image with bbox
+        if(outfile){
+            save_image(im, outfile);
+        }
+        else{
+            char *result = malloc(strlen(filename)+strlen("_predictions")+1);
+            strcpy(result, filename);
+            strcat(result, "_predictions");
+            // printf("%s", result);
+            save_image(im, result);
+#ifdef OPENCV
+            cvNamedWindow("predictions", CV_WINDOW_NORMAL);
+            if(fullscreen){
+                cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+            }
+            show_image(im, "predictions");
+            cvWaitKey(0);
+            cvDestroyAllWindows();
+#endif
+        }
+
+        free_detections(dets, nboxes);
+        free_image(im);
+        free_image(sized);
+    }
+
+    // Close file 
+    fclose ( file );
+}
+
+
 /*
 void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_index, const char *filename, int class, float thresh, int skip)
 {
@@ -834,6 +927,7 @@ void run_detector(int argc, char **argv)
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
+    else if(0==strcmp(argv[2], "txt")) test_detector_on_txt_file(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);

@@ -304,6 +304,57 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     }
 }
 
+void test_yolo_on_txt_file(char *cfgfile, char *weightfile, char *txt_filename, float thresh)
+{
+    printf("test_yolo_on_txt_file");
+    image **alphabet = load_alphabet();
+    network *net = load_network(cfgfile, weightfile, 0);
+    layer l = net->layers[net->n-1];
+    set_batch_network(net, 1);
+    srand(2222222);
+    clock_t time;
+    char buff[256];
+    char *input = buff;
+    float nms=.4;
+    
+    // Read txt file
+    FILE *file = fopen ( txt_filename, "r" );
+    char filename[1000];
+    
+    // For each line
+    while ( fgets ( filename, sizeof filename, file ) != NULL )
+    {
+        printf("%s", filename);
+        strncpy(input, filename, 256);
+        image im = load_image_color(input,0,0);
+        image sized = resize_image(im, net->w, net->h);
+        float *X = sized.data;
+        time=clock();
+
+        printf("Predicting ...");
+        network_predict(net, X);
+        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+
+        int nboxes = 0;
+        detection *dets = get_network_boxes(net, 1, 1, thresh, 0, 0, 0, &nboxes);
+        if (nms) do_nms_sort(dets, l.side*l.side*l.n, l.classes, nms);
+
+        draw_detections(im, dets, l.side*l.side*l.n, thresh, voc_names, alphabet, 20);
+        
+        char *result = malloc(strlen(filename)+strlen("_predictions")+1);
+        strcpy(result, filename);
+        strcat(result, "_predictions");
+        save_image(im, result);
+        
+        free_detections(dets, nboxes);
+        free_image(im);
+        free_image(sized);
+    }
+    
+    // Close file
+    fclose ( file );
+}
+
 void run_yolo(int argc, char **argv)
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
@@ -324,4 +375,5 @@ void run_yolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, voc_names, 20, frame_skip, prefix, avg, .5, 0,0,0,0);
+    else if(0==strcmp(argv[2], "txt")) test_yolo_on_txt_file(cfg, weights, filename, thresh);
 }
