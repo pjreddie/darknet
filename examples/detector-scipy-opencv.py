@@ -1,8 +1,7 @@
-# Stupid python path shit.
-# Instead just add darknet.py to somewhere in your python path
-# OK actually that might not be a great idea, idk, work in progress
-# Use at your own risk. or don't, i don't care
+"""Detector functions with different imread methods"""
 
+import ctypes
+from darknet_libwrapper import *
 from scipy.misc import imread
 import cv2
 
@@ -12,45 +11,47 @@ def array_to_image(arr):
     h = arr.shape[1]
     w = arr.shape[2]
     arr = (arr/255.0).flatten()
-    data = dn.c_array(dn.c_float, arr)
-    im = dn.IMAGE(w,h,c,data)
+    data = c_array(ctypes.c_float, arr)
+    im = IMAGE(w,h,c,data)
     return im
 
-def detect2(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
-    boxes = dn.make_boxes(net)
-    probs = dn.make_probs(net)
-    num =   dn.num_boxes(net)
-    dn.network_detect(net, image, thresh, hier_thresh, nms, boxes, probs)
+def _detector(net, meta, image, thresh=.5, hier=.5, nms=.45):
+    cuda_set_device(0)
+    num = ctypes.c_int(0)
+    num_ptr = ctypes.pointer(num)
+    network_predict_image(net, image)
+    dets = get_network_boxes(net, image.w, image.h, thresh, hier, None, 0, num_ptr)
+    num = num_ptr[0]
+    if (nms):
+         do_nms_sort(dets, num, meta.classes, nms)
+
     res = []
     for j in range(num):
         for i in range(meta.classes):
-            if probs[j][i] > 0:
-                res.append((meta.names[i], probs[j][i], (boxes[j].x, boxes[j].y, boxes[j].w, boxes[j].h)))
+            if dets[j].prob[i] > 0:
+                b = dets[j].bbox
+                res.append((meta.names[i], dets[j].prob[i], (b.x, b.y, b.w, b.h)))
     res = sorted(res, key=lambda x: -x[1])
-    dn.free_ptrs(dn.cast(probs, dn.POINTER(dn.c_void_p)), num)
+    free_image(im)
+    free_detections(dets, num)
     return res
 
-import sys, os
-sys.path.append(os.path.join(os.getcwd(),'python/'))
-
-import darknet as dn
-
 # Darknet
-net = dn.load_net("cfg/tiny-yolo.cfg", "tiny-yolo.weights", 0)
-meta = dn.load_meta("cfg/coco.data")
-r = dn.detect(net, meta, "data/dog.jpg")
-print r
+net = load_network("cfg/yolov2-tiny.cfg", "yolov2-tiny.weights", 0)
+meta = get_metadata("cfg/coco.data")
+im = load_image_color('data/dog.jpg', 0, 0)
+result = _detector(net, meta, im)
+print 'Darknet:\n', result
 
 # scipy
 arr= imread('data/dog.jpg')
 im = array_to_image(arr)
-r = detect2(net, meta, im)
-print r
+result = _detector(net, meta, im)
+print 'Scipy:\n', result
 
 # OpenCV
 arr = cv2.imread('data/dog.jpg')
 im = array_to_image(arr)
-dn.rgbgr_image(im)
-r = detect2(net, meta, im)
-print r
-
+rgbgr_image(im)
+result = _detector(net, meta, im)
+print 'OpenCV:\n', result
