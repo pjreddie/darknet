@@ -320,6 +320,7 @@ void validate_coco_recall(char *cfgfile, char *weightfile)
 
         //if (fps) free(fps);
         if (id) free(id);
+        free(truth);
         free_image(orig);
         free_image(sized);
     }
