@@ -24,11 +24,13 @@ layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
     l.forward = forward_activation_layer;
     l.backward = backward_activation_layer;
 #ifdef GPU
-    l.forward_gpu = forward_activation_layer_gpu;
-    l.backward_gpu = backward_activation_layer_gpu;
+    if(gpu_index >= 0) {
+        l.forward_gpu = forward_activation_layer_gpu;
+        l.backward_gpu = backward_activation_layer_gpu;
 
-    l.output_gpu = cuda_make_array(l.output, inputs*batch);
-    l.delta_gpu = cuda_make_array(l.delta, inputs*batch);
+        l.output_gpu = cuda_make_array(l.output, inputs * batch);
+        l.delta_gpu = cuda_make_array(l.delta, inputs * batch);
+    }
 #endif
     l.activation = activation;
     fprintf(stderr, "Activation Layer: %d inputs\n", inputs);

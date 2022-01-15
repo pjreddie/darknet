@@ -150,18 +150,42 @@ void cuda_free(float *x_gpu)
     check_error(status);
 }
 
+void cuda_free_int(int *x_gpu)
+{
+    cudaError_t status = cudaFree(x_gpu);
+    check_error(status);
+}
+
 void cuda_push_array(float *x_gpu, float *x, size_t n)
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
     check_error(status);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%x\t%d\n", "cuda_push_array", x, (int)time_taken);
+#endif
 }
 
 void cuda_pull_array(float *x_gpu, float *x, size_t n)
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpy(x, x_gpu, size, cudaMemcpyDeviceToHost);
     check_error(status);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%x\t%d\n", "cuda_pull_array", x, (int)time_taken);
+#endif
 }
 
 float cuda_mag_array(float *x_gpu, size_t n)

@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <math.h>
 #include <assert.h>
 #include <unistd.h>
@@ -10,7 +9,6 @@
 #include <sys/time.h>
 
 #include "utils.h"
-
 
 /*
 // old timing. is it better? who knows!!
@@ -130,6 +128,18 @@ int find_arg(int argc, char* argv[], char *arg)
     return 0;
 }
 
+int read_arg(int argc, char* argv[], char *arg)
+{
+    int i;
+    for(i = 0; i < argc; ++i) {
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int find_int_arg(int argc, char **argv, char *arg, int def)
 {
     int i;
@@ -154,6 +164,19 @@ float find_float_arg(int argc, char **argv, char *arg, float def)
             def = atof(argv[i+1]);
             del_arg(argc, argv, i);
             del_arg(argc, argv, i);
+            break;
+        }
+    }
+    return def;
+}
+
+char *read_char_arg(int argc, char **argv, char *arg, char *def)
+{
+    int i;
+    for(i = 0; i < argc-1; ++i){
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)){
+            def = argv[i+1];
             break;
         }
     }
@@ -227,6 +250,83 @@ void find_replace(char *str, char *orig, char *rep, char *output)
     *p = '\0';
 
     sprintf(output, "%s%s%s", buffer, rep, p+strlen(orig));
+}
+
+void trim(char *str)
+{
+    char* buffer = (char*)calloc(8192, sizeof(char));
+    sprintf(buffer, "%s", str);
+
+    char *p = buffer;
+    while (*p == ' ' || *p == '\t') ++p;
+
+    char *end = p + strlen(p) - 1;
+    while (*end == ' ' || *end == '\t') {
+        *end = '\0';
+        --end;
+    }
+    sprintf(str, "%s", p);
+
+    free(buffer);
+}
+
+void find_replace_extension(char *str, char *orig, char *rep, char *output)
+{
+    char* buffer = (char*)calloc(8192, sizeof(char));
+
+    sprintf(buffer, "%s", str);
+    char *p = strstr(buffer, orig);
+    int offset = (p - buffer);
+    int chars_from_end = strlen(buffer) - offset;
+    if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
+        sprintf(output, "%s", buffer);
+        free(buffer);
+        return;
+    }
+
+    *p = '\0';
+    sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
+    free(buffer);
+}
+
+void replace_image_to_label(char* input_path, char* output_path)
+{
+    find_replace(input_path, "/images/train2014/", "/labels/train2014/", output_path);    // COCO
+    find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);        // COCO
+    find_replace(output_path, "/JPEGImages/", "/labels/", output_path);    // PascalVOC
+    find_replace(output_path, "\\images\\train2014\\", "\\labels\\train2014\\", output_path);    // COCO
+    find_replace(output_path, "\\images\\val2014\\", "\\labels\\val2014\\", output_path);        // COCO
+    find_replace(output_path, "\\JPEGImages\\", "\\labels\\", output_path);    // PascalVOC
+    //find_replace(output_path, "/images/", "/labels/", output_path);    // COCO
+    //find_replace(output_path, "/VOC2007/JPEGImages/", "/VOC2007/labels/", output_path);        // PascalVOC
+    //find_replace(output_path, "/VOC2012/JPEGImages/", "/VOC2012/labels/", output_path);        // PascalVOC
+
+    //find_replace(output_path, "/raw/", "/labels/", output_path);
+    trim(output_path);
+
+    // replace only ext of files
+    find_replace_extension(output_path, ".jpg", ".txt", output_path);
+    find_replace_extension(output_path, ".JPG", ".txt", output_path); // error
+    find_replace_extension(output_path, ".jpeg", ".txt", output_path);
+    find_replace_extension(output_path, ".JPEG", ".txt", output_path);
+    find_replace_extension(output_path, ".png", ".txt", output_path);
+    find_replace_extension(output_path, ".PNG", ".txt", output_path);
+    find_replace_extension(output_path, ".bmp", ".txt", output_path);
+    find_replace_extension(output_path, ".BMP", ".txt", output_path);
+    find_replace_extension(output_path, ".ppm", ".txt", output_path);
+    find_replace_extension(output_path, ".PPM", ".txt", output_path);
+    find_replace_extension(output_path, ".tiff", ".txt", output_path);
+    find_replace_extension(output_path, ".TIFF", ".txt", output_path);
+
+    // Check file ends with txt:
+    if(strlen(output_path) > 4) {
+        char *output_path_ext = output_path + strlen(output_path) - 4;
+        if( strcmp(".txt", output_path_ext) != 0){
+            fprintf(stderr, "Failed to infer label file name (check image extension is supported): %s \n", output_path);
+        }
+    }else{
+        fprintf(stderr, "Label file name is too short: %s \n", output_path);
+    }
 }
 
 float sec(clock_t clocks)
@@ -419,11 +519,11 @@ void write_all(int fd, char *buffer, size_t bytes)
     }
 }
 
-
-char *copy_string(char *s)
+inline char *copy_string(char *s)
 {
-    char *copy = malloc(strlen(s)+1);
-    strncpy(copy, s, strlen(s)+1);
+    size_t length = strlen(s);
+    char *copy = calloc(sizeof(char), length);
+    memcpy(copy, s, length * sizeof (char));
     return copy;
 }
 
@@ -724,3 +824,191 @@ float **one_hot_encode(float *a, int n, int k)
     return t;
 }
 
+
+static unsigned int x = 123456789, y = 362436069, z = 521288629;
+
+// Marsaglia's xorshf96 generator: period 2^96-1
+unsigned int random_gen_fast(void)
+{
+    unsigned int t;
+    x ^= x << 16;
+    x ^= x >> 5;
+    x ^= x << 1;
+
+    t = x;
+    x = y;
+    y = z;
+    z = t ^ x ^ y;
+
+    return z;
+}
+
+float random_float_fast()
+{
+    return ((float)random_gen_fast() / (float)UINT_MAX);
+}
+
+int rand_int_fast(int min, int max)
+{
+    if (max < min) {
+        int s = min;
+        min = max;
+        max = s;
+    }
+    int r = (random_gen_fast() % (max - min + 1)) + min;
+    return r;
+}
+
+unsigned int random_gen()
+{
+    unsigned int rnd = 0;
+#ifdef WIN32
+    rand_s(&rnd);
+#else   // WIN32
+    rnd = rand();
+#if (RAND_MAX < 65536)
+    rnd = rand()*(RAND_MAX + 1) + rnd;
+#endif  //(RAND_MAX < 65536)
+#endif  // WIN32
+    return rnd;
+}
+
+float random_float()
+{
+    unsigned int rnd = 0;
+#ifdef WIN32
+    rand_s(&rnd);
+    return ((float)rnd / (float)UINT_MAX);
+#else   // WIN32
+
+    rnd = rand();
+#if (RAND_MAX < 65536)
+    rnd = rand()*(RAND_MAX + 1) + rnd;
+    return((float)rnd / (float)(RAND_MAX*RAND_MAX));
+#endif  //(RAND_MAX < 65536)
+    return ((float)rnd / (float)RAND_MAX);
+
+#endif  // WIN32
+}
+
+float rand_uniform_strong(float min, float max)
+{
+    if (max < min) {
+        float swap = min;
+        min = max;
+        max = swap;
+    }
+    return (random_float() * (max - min)) + min;
+}
+
+float rand_precalc_random(float min, float max, float random_part)
+{
+    if (max < min) {
+        float swap = min;
+        min = max;
+        max = swap;
+    }
+    return (random_part * (max - min)) + min;
+}
+
+#define RS_SCALE (1.0 / (1.0 + RAND_MAX))
+
+double double_rand(void)
+{
+    double d;
+    do {
+        d = (((rand() * RS_SCALE) + rand()) * RS_SCALE + rand()) * RS_SCALE;
+    } while (d >= 1); // Round off
+    return d;
+}
+
+unsigned int uint_rand(unsigned int less_than)
+{
+    return (unsigned int)((less_than)* double_rand());
+}
+
+int check_array_is_nan(float *arr, int size)
+{
+    int i;
+    for (i = 0; i < size; ++i) {
+        if (isnan(arr[i])) return 1;
+    }
+    return 0;
+}
+
+int check_array_is_inf(float *arr, int size)
+{
+    int i;
+    for (i = 0; i < size; ++i) {
+        if (isinf(arr[i])) return 1;
+    }
+    return 0;
+}
+
+int *random_index_order_y4(int min, int max)
+{
+    int *inds = (int *)calloc(max - min, sizeof(int));
+    int i;
+    for (i = min; i < max; ++i) {
+        inds[i - min] = i;
+    }
+    for (i = min; i < max - 1; ++i) {
+        int swap = inds[i - min];
+        int index = i + rand() % (max - i);
+        inds[i - min] = inds[index - min];
+        inds[index - min] = swap;
+    }
+    return inds;
+}
+
+int max_int_index_y4(int *a, int n)
+{
+    if (n <= 0) return -1;
+    int i, max_i = 0;
+    int max = a[0];
+    for (i = 1; i < n; ++i) {
+        if (a[i] > max) {
+            max = a[i];
+            max_i = i;
+        }
+    }
+    return max_i;
+}
+
+
+// Absolute box from relative coordinate bounding box and image size
+boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check)
+{
+    boxabs ba;
+    ba.left = (b->x - b->w / 2.)*img_w;
+    ba.right = (b->x + b->w / 2.)*img_w;
+    ba.top = (b->y - b->h / 2.)*img_h;
+    ba.bot = (b->y + b->h / 2.)*img_h;
+
+    if (bounds_check) {
+        if (ba.left < 0) ba.left = 0;
+        if (ba.right > img_w - 1) ba.right = img_w - 1;
+        if (ba.top < 0) ba.top = 0;
+        if (ba.bot > img_h - 1) ba.bot = img_h - 1;
+    }
+
+    return ba;
+}
+
+unsigned long custom_hash(char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
+int entry_index(layer l, int batch, int location, int entry)
+{
+    int n =   location / (l.w*l.h);
+    int loc = location % (l.w*l.h);
+    return batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc;
+}

@@ -1,4 +1,6 @@
 #include "darknet.h"
+#include "image.h"
+
 #include <sys/time.h>
 #include <assert.h>
 
@@ -184,7 +186,7 @@ void demo_segmenter(char *datacfg, char *cfg, char *weights, int cam_index, cons
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
-        image in = get_image_from_stream(cap);
+        image in = get_image_from_stream_cv(cap);
         image in_s = letterbox_image(in, net->w, net->h);
 
         network_predict(net, in_s.data);

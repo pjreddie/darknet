@@ -1,4 +1,5 @@
 #include "darknet.h"
+#include "image.h"
 
 #include <sys/time.h>
 
@@ -19,7 +20,7 @@ void demo_art(char *cfgfile, char *weightfile, int cam_index)
     int n = sizeof(idx)/sizeof(idx[0]);
 
     while(1){
-        image in = get_image_from_stream(cap);
+        image in = get_image_from_stream_cv(cap);
         image in_s = resize_image(in, net->w, net->h);
 
         float *p = network_predict(net, in_s.data);

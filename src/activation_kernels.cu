@@ -3,10 +3,8 @@
 #include "cublas_v2.h"
 
 extern "C" {
-#include "activations.h"
 #include "cuda.h"
 }
-
 
 __device__ float lhtan_activate_kernel(float x)
 {
@@ -76,6 +74,34 @@ __device__ float stair_gradient_kernel(float x)
     return 1;
 }
 
+__device__ float softplus(float x) {
+    float t = 27;
+    if (x >  t) return x;
+    if (x < -t) return expf(x);
+    return log1pf(expf(x));
+}
+
+__device__ float mish_activate_kernel(float x) {
+    //https://arxiv.org/abs/1908.08681v1
+    float c = softplus(x);
+    float a = x * tanhf(c);
+    return a;
+}
+
+__device__ float mish_gradient_kernel(float x) {
+    //https://arxiv.org/abs/1908.08681v1
+    //float d = 2*exp(2*x) + exp(2*x) + 2;
+    //float w = 4*(x+1) + 4*exp(2*x) + exp(3*x) + exp(x*(4*x+6));
+    //float g = exp(x) * w / pow(d,2);
+    //return g;
+    float sp = softplus(x);
+    float g_sp = -expm1f(-sp);
+    float tsp = tanhf(sp);
+    float g_tsp = (1 - tsp*tsp) * g_sp;
+    float g = x * g_tsp / tsp;
+    return g;
+}
+
 __device__ float activate_kernel(float x, ACTIVATION a)
 {
     switch(a){
@@ -107,6 +133,9 @@ __device__ float activate_kernel(float x, ACTIVATION a)
             return hardtan_activate_kernel(x);
         case LHTAN:
             return lhtan_activate_kernel(x);
+        case MISH:
+            return mish_activate_kernel(x);
+        default: relu_activate_kernel(x);
     }
     return 0;
 }
@@ -142,6 +171,9 @@ __device__ float gradient_kernel(float x, ACTIVATION a)
             return hardtan_gradient_kernel(x);
         case LHTAN:
             return lhtan_gradient_kernel(x);
+        case MISH:
+            return mish_gradient_kernel(x);
+        default: relu_gradient_kernel(x);
     }
     return 0;
 }
@@ -162,7 +194,16 @@ __global__ void binary_gradient_array_kernel(float *x, float *dy, int n, int s, 
 
 extern "C" void binary_gradient_array_gpu(float *x, float *dx, int n, int size, BINARY_ACTIVATION a, float *y) 
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     binary_gradient_array_kernel<<<cuda_gridsize(n/2), BLOCK>>>(x, dx, n/2, size, a, y);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "binary_gradient_array_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 __global__ void binary_activate_array_kernel(float *x, int n, int s, BINARY_ACTIVATION a, float *y)
@@ -177,7 +218,16 @@ __global__ void binary_activate_array_kernel(float *x, int n, int s, BINARY_ACTI
 
 extern "C" void binary_activate_array_gpu(float *x, int n, int size, BINARY_ACTIVATION a, float *y) 
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     binary_activate_array_kernel<<<cuda_gridsize(n/2), BLOCK>>>(x, n/2, size, a, y);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "binary_activate_array_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
@@ -195,12 +245,30 @@ __global__ void gradient_array_kernel(float *x, int n, ACTIVATION a, float *delt
 
 extern "C" void activate_array_gpu(float *x, int n, ACTIVATION a) 
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     activate_array_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, a);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "activate_array_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }
 
 extern "C" void gradient_array_gpu(float *x, int n, ACTIVATION a, float *delta) 
 {
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     gradient_array_kernel<<<cuda_gridsize(n), BLOCK>>>(x, n, a, delta);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%d\n", "gradient_array_kernel", (int)time_taken);
+#endif
     check_error(cudaPeekAtLastError());
 }

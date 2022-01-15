@@ -122,13 +122,6 @@ void delta_yolo_class(float *output, float *delta, int index, int class, int cla
     }
 }
 
-static int entry_index(layer l, int batch, int location, int entry)
-{
-    int n =   location / (l.w*l.h);
-    int loc = location % (l.w*l.h);
-    return batch*l.outputs + n*l.w*l.h*(4+l.classes+1) + entry*l.w*l.h + loc;
-}
-
 void forward_yolo_layer(const layer l, network net)
 {
     int i,j,b,t,n;
@@ -356,6 +349,7 @@ void forward_yolo_layer_gpu(const layer l, network net)
             activate_array_gpu(l.output_gpu + index, (1+l.classes)*l.w*l.h, LOGISTIC);
         }
     }
+
     if(!net.train || l.onlyforward){
         cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
         return;

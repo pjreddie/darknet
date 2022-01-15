@@ -1,6 +1,7 @@
-#include "darknet.h"
 #include <sys/time.h>
 #include <assert.h>
+#include "darknet.h"
+#include "image.h"
 
 void normalize_image2(image p);
 void train_isegmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int display)
@@ -196,7 +197,7 @@ void demo_isegmenter(char *datacfg, char *cfg, char *weights, int cam_index, con
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
-        image in = get_image_from_stream(cap);
+        image in = get_image_from_stream_cv(cap);
         image in_s = letterbox_image(in, net->w, net->h);
 
         network_predict(net, in_s.data);
