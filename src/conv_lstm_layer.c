@@ -1454,7 +1454,7 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
             axpy_ongpu(l.outputs*l.batch, 1, l.bottelneck_delta_gpu + l.outputs*l.batch, 1, state.delta, 1);    // lead to nan
         }
         else {
-            axpy_ongpu(l.outputs*l.batch, l.time_normalizer, l.temp3_gpu, 1, l.dh_gpu, 1);
+            // if (l.dh_gpu) axpy_ongpu(l.outputs*l.batch, l.time_normalizer, l.temp3_gpu, 1, l.dh_gpu, 1);
         }
 
         // c
