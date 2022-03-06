@@ -14,6 +14,9 @@ Build darknet using CMake, trying to properly setup the environment around compi
 .PARAMETER DisableInteractive
 Disable script interactivity (useful for CI runs)
 
+.PARAMETER DisableDLLcopy
+Disable automatic DLL deployment through vcpkg at the end
+
 .PARAMETER EnableCUDA
 Enable CUDA feature
 
@@ -62,8 +65,11 @@ Create darknet library as static instead of the default linking mode of your sys
 .PARAMETER ForceVCPKGCacheRemoval
 Force clean up of the local vcpkg binary cache before building
 
-.PARAMETER DoNotDeleteBuildtreesFolder
-Do not delete vcpkg buildtrees temp folder at the end of the script
+.PARAMETER ForceVCPKGBuildtreesRemoval
+Force clean up of vcpkg buildtrees temp folder at the end of the script
+
+.PARAMETER ForceVCPKGPackagesRemoval
+Force clean up of vcpkg packages folder at the end of the script
 
 .PARAMETER ForceSetupVS
 Forces Visual Studio setup, also on systems on which it would not have been enabled automatically
@@ -93,6 +99,7 @@ Additional setup parameters to manually pass to CMake
 
 param (
   [switch]$DisableInteractive = $false,
+  [switch]$DisableDLLcopy = $false,
   [switch]$EnableCUDA = $false,
   [switch]$EnableCUDNN = $false,
   [switch]$EnableOPENCV = $false,
@@ -109,7 +116,8 @@ param (
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
   [switch]$ForceVCPKGCacheRemoval = $false,
-  [switch]$DoNotDeleteBuildtreesFolder = $false,
+  [switch]$ForceVCPKGBuildtreesRemoval = $false,
+  [switch]$ForceVCPKGPackagesRemoval = $false,
   [switch]$ForceSetupVS = $false,
   [switch]$EnableCSharpWrapper = $false,
   [switch]$DownloadWeights = $false,
@@ -119,7 +127,7 @@ param (
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.8"
+$build_ps1_version = "1.9.8"
 
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
@@ -202,10 +210,10 @@ Function DownloadNinja() {
 }
 
 
-Write-Host "Darknet build script version ${build_ps1_version}"
+Write-Host "Build script version ${build_ps1_version}"
 
 if ((-Not $DisableInteractive) -and (-Not $UseVCPKG)) {
-  $Result = Read-Host "Enable vcpkg to install darknet dependencies (yes/no)"
+  $Result = Read-Host "Enable vcpkg to install dependencies (yes/no)"
   if (($Result -eq 'Yes') -or ($Result -eq 'Y') -or ($Result -eq 'yes') -or ($Result -eq 'y')) {
     $UseVCPKG = $true
   }
@@ -431,7 +439,7 @@ if (-Not $DoNotUseNinja) {
   $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
   if (-Not $NINJA_EXE) {
     DownloadNinja
-    $env:PATH += ";${PSScriptRoot}/ninja"
+    $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, "${PSScriptRoot}/ninja"
     $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
     if (-Not $NINJA_EXE) {
       $DoNotUseNinja = $true
@@ -555,7 +563,7 @@ elseif ((Test-Path "${env:WORKSPACE}/vcpkg") -and $UseVCPKG) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
 elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
-  if ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
+  if((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
     $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $env:VCPKG_ROOT = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $vcpkg_root_set_by_this_script = $true
@@ -619,7 +627,7 @@ if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
 }
 
-if ($UseVCPKG -and (-Not $DoNotDeleteBuildtreesFolder)) {
+if ($UseVCPKG -and $ForceVCPKGBuildtreesRemoval) {
   Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
   Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$env:VCPKG_ROOT/buildtrees"
 }
@@ -706,7 +714,7 @@ if (-Not $IsMacOS -and $EnableCUDA) {
   $NVCC_EXE = Get-Command "nvcc" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
   if (-Not $NVCC_EXE) {
     if (Test-Path env:CUDA_PATH) {
-      $env:PATH += ";${env:CUDA_PATH}/bin"
+      $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, "${env:CUDA_PATH}/bin"
       Write-Host "Found cuda in ${env:CUDA_PATH}"
     }
     else {
@@ -724,6 +732,10 @@ if (-Not $IsMacOS -and $EnableCUDA) {
       Write-Host "Added missing env variable CUDACXX" -ForegroundColor Yellow
     }
   }
+}
+
+if (-Not $DisableDLLcopy) {
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON"
 }
 
 if ($ForceCPP) {
@@ -748,6 +760,10 @@ if (-Not $EnableOPENCV_CUDA) {
 
 if ($EnableCSharpWrapper) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_CSHARP_WRAPPER:BOOL=ON"
+}
+
+if (-Not $InstallDARKNETthroughVCPKG) {
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_DEPLOY_CUSTOM_CMAKE_MODULES:BOOL=ON"
 }
 
 if ($InstallDARKNETthroughVCPKG) {
@@ -811,7 +827,6 @@ if ($InstallDARKNETthroughVCPKG) {
     if (-Not ($exitCode -eq 0)) {
       MyThrow("Installing darknet dependencies through vcpkg failed! Exited with error code $exitCode.")
     }
-    Pop-Location
   }
 }
 else {
@@ -842,21 +857,43 @@ else {
   }
   Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfig.cmake
   Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfigVersion.cmake
-  $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
-  if ($dllfiles) {
-    Copy-Item $dllfiles ..
+  if (-Not $UseVCPKG -And -Not $DisableDLLcopy) {
+    $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
+    if ($dllfiles) {
+      Copy-Item $dllfiles ..
+    }
   }
   Set-Location ..
-  Copy-Item cmake/Modules/*.cmake share/darknet/
-  Pop-Location
 }
 
-if ($UseVCPKG -and (-Not $DoNotDeleteBuildtreesFolder)) {
-  Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
-  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$env:VCPKG_ROOT/buildtrees"
+
+if (-Not $DoNotDeleteBuildFolder) {
+  Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
 }
 
 Write-Host "Build complete!" -ForegroundColor Green
+Pop-Location
+
+if ($ForceVCPKGBuildtreesRemoval -and (-Not $UseVCPKG)) {
+  Write-Host "VCPKG is not enabled, so local vcpkg buildtrees folder will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if ($UseVCPKG -and $ForceVCPKGBuildtreesRemoval) {
+  $vcpkgbuildtreespath = "$vcpkg_path/buildtrees"
+  Write-Host "Removing local vcpkg buildtrees folder from $vcpkgbuildtreespath" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgbuildtreespath
+}
+
+if ($ForceVCPKGPackagesRemoval -and (-Not $UseVCPKG)) {
+  Write-Host "VCPKG is not enabled, so local vcpkg packages folder will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if ($UseVCPKG -and $ForceVCPKGPackagesRemoval) {
+  $vcpkgpackagespath = "$vcpkg_path/packages"
+  Write-Host "Removing local vcpkg packages folder from $vcpkgpackagespath" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgpackagespath
+}
 
 if ($DownloadWeights) {
   Write-Host "Downloading weights..." -ForegroundColor Yellow

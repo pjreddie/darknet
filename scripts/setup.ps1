@@ -11,14 +11,14 @@ if ($null -eq (Get-Command "choco.exe" -ErrorAction SilentlyContinue)) {
 }
 
 Start-Process -FilePath "choco" -Verb runAs -ArgumentList " install -y cmake ninja powershell git vscode"
-Start-Process -FilePath "choco" -Verb runAs -ArgumentList " install -y visualstudio2019buildtools --package-parameters `"--add Microsoft.VisualStudio.Component.VC.CoreBuildTools --includeRecommended --includeOptional --passive --locale en-US --lang en-US`""
+Start-Process -FilePath "choco" -Verb runAs -ArgumentList " install -y visualstudio2022buildtools --package-parameters `"--add Microsoft.VisualStudio.Component.VC.CoreBuildTools --includeRecommended --includeOptional --passive --locale en-US --lang en-US`""
 Push-Location $PSScriptRoot
 
 if ($InstallCUDA) {
   & $PSScriptRoot/deploy-cuda.ps1
-  $env:CUDA_PATH="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.5"
-  $env:CUDA_TOOLKIT_ROOT_DIR="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.5"
-  $env:CUDACXX="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.5\\bin\\nvcc.exe"
+  $env:CUDA_PATH="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.6"
+  $env:CUDA_TOOLKIT_ROOT_DIR="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.6"
+  $env:CUDACXX="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.6\\bin\\nvcc.exe"
   $CUDAisAvailable = $true
 }
 else {
