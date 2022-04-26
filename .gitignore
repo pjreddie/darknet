@@ -29,4 +29,6 @@ Thumbs.db
 # Generated Libs
 libdarknet.a
 libdarknet.so
+
+# IDEs garbage
 .idea/
