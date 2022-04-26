@@ -145,31 +145,40 @@ void cudnn_convolutional_setup(layer *l)
     }
     #endif
 
-    cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
-            l->srcTensorDesc,
-            l->weightDesc,
-            l->convDesc,
-            l->dstTensorDesc,
-            CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-            2000000000,
-            &l->fw_algo);
-    cudnnGetConvolutionBackwardDataAlgorithm(cudnn_handle(),
-            l->weightDesc,
-            l->ddstTensorDesc,
-            l->convDesc,
-            l->dsrcTensorDesc,
-            CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
-            2000000000,
-            &l->bd_algo);
-    cudnnGetConvolutionBackwardFilterAlgorithm(cudnn_handle(),
-            l->srcTensorDesc,
-            l->ddstTensorDesc,
-            l->convDesc,
-            l->dweightDesc,
-            CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
-            2000000000,
-            &l->bf_algo);
+    #if CUDNN_MAJOR >= 8
+    // Following functions no longer exist in release of CUDNN 8+ and have no replacement. This is the minimal
+    // intervention necessary for project to work on CUDNN 8+ (CUDA 11+).
+
+    //    cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
+    //            l->srcTensorDesc,
+    //            l->weightDesc,
+    //            l->convDesc,
+    //            l->dstTensorDesc,
+    //            CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
+    //            2000000000,
+    //            &l->fw_algo);
+        l->fw_algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
+    //    cudnnGetConvolutionBackwardDataAlgorithm(cudnn_handle(),
+    //            l->weightDesc,
+    //            l->ddstTensorDesc,
+    //            l->convDesc,
+    //            l->dsrcTensorDesc,
+    //            CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
+    //            2000000000,
+    //            &l->bd_algo);
+        l->bd_algo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
+    //    cudnnGetConvolutionBackwardFilterAlgorithm(cudnn_handle(),
+    //            l->srcTensorDesc,
+    //            l->ddstTensorDesc,
+    //            l->convDesc,
+    //            l->dweightDesc,
+    //            CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
+    //            2000000000,
+    //            &l->bf_algo);
+        l->bf_algo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
+    #endif
 }
+
 #endif
 #endif
 
