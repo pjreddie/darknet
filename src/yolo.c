@@ -190,7 +190,6 @@ void validate_yolo(char *cfgfile, char *weightfile)
         }
     }
 
-    if (fps) free(fps);
     if (val) free(val);
     if (val_resized) free(val_resized);
     if (buf) free(buf);
@@ -198,10 +197,12 @@ void validate_yolo(char *cfgfile, char *weightfile)
     if (thr) free(thr);
 
     fprintf(stderr, "Total Detection Time: %f Seconds\n", (double)(time(0) - start));
-    for(j = 0; j < classes; ++j){
-        fclose(fps[j]);
+    if (fps) {
+        for(j = 0; j < classes; ++j){
+            fclose(fps[j]);
+        }
+        free(fps);
     }
-    free(fps);
 }
 
 void validate_yolo_recall(char *cfgfile, char *weightfile)
