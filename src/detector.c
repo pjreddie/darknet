@@ -492,7 +492,7 @@ static void print_cocos(FILE *fp, char *image_path, detection *dets, int num_box
             if (dets[i].prob[j] > 0) {
                 char buff[1024];
                 sprintf(buff, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f},\n", image_id, coco_ids[j], bx, by, bw, bh, dets[i].prob[j]);
-                fprintf(fp, buff);
+                fprintf(fp, "%s", buff);
                 //printf("%s", buff);
             }
         }
