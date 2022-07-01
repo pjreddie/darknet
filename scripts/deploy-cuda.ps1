@@ -5,16 +5,22 @@ param (
   [switch]$DisableSilentMode = $false
 )
 
-$url = 'https://developer.download.nvidia.com/compute/cuda/11.6.1/network_installers/cuda_11.6.1_windows_network.exe'
+Import-Module -Name $PSScriptRoot/utils.psm1 -Force
 
-$CudaFeatures = 'nvcc_11.6 cuobjdump_11.6 nvprune_11.6 cupti_11.6 memcheck_11.6 nvdisasm_11.6 nvprof_11.6 ' + `
-  'cublas_11.6 cublas_dev_11.6 nvjpeg_11.6 nvjpeg_dev_11.6 nvtx_11.6 cuxxfilt_11.6 sanitizer_11.6 ' + `
-  'cudart_11.6 cufft_11.6 cufft_dev_11.6 curand_11.6 curand_dev_11.6 cusolver_11.6 cusolver_dev_11.6 ' + `
-  'cusparse_11.6 cusparse_dev_11.6 npp_11.6 npp_dev_11.6 nvrtc_11.6 nvrtc_dev_11.6 nvml_dev_11.6 ' + `
-  'occupancy_calculator_11.6 documentation_11.6 '
+$url = "https://developer.download.nvidia.com/compute/cuda/${cuda_version_full}/network_installers/cuda_${cuda_version_full}_windows_network.exe"
+
+$CudaFeatures = "nvcc_${cuda_version_short} cuobjdump_${cuda_version_short} nvprune_${cuda_version_short} " + `
+  " cupti_${cuda_version_short} memcheck_${cuda_version_short} nvdisasm_${cuda_version_short} nvprof_${cuda_version_short} " + `
+  " cublas_${cuda_version_short} cublas_dev_${cuda_version_short} nvjpeg_${cuda_version_short} nvjpeg_dev_${cuda_version_short} " + `
+  " nvtx_${cuda_version_short} cuxxfilt_${cuda_version_short} sanitizer_${cuda_version_short} " + `
+  " cudart_${cuda_version_short} cufft_${cuda_version_short} cufft_dev_${cuda_version_short} curand_${cuda_version_short} " + `
+  " curand_dev_${cuda_version_short} cusolver_${cuda_version_short} cusolver_dev_${cuda_version_short} " + `
+  " cusparse_${cuda_version_short} cusparse_dev_${cuda_version_short} npp_${cuda_version_short} npp_dev_${cuda_version_short} " + `
+  " nvrtc_${cuda_version_short} nvrtc_dev_${cuda_version_short} nvml_dev_${cuda_version_short} " + `
+  " occupancy_calculator_${cuda_version_short} documentation_${cuda_version_short} "
 
 if (-Not $DisableVisualStudioFeatures) {
-  $CudaFeatures = $CudaFeatures + 'visual_studio_integration_11.6 visual_profiler_11.6  '
+  $CudaFeatures = $CudaFeatures + "visual_studio_integration_${cuda_version_short} visual_profiler_${cuda_version_short}  "
 }
 
 if ($DisableSilentMode) {
@@ -26,10 +32,10 @@ else {
 
 try {
   Push-Location $PSScriptRoot
-  Write-Host 'Downloading CUDA...'
-  Invoke-WebRequest -Uri $url -OutFile "cuda_11.6.1_windows_network.exe"
+  Write-Host "Downloading CUDA from $url..."
+  Invoke-WebRequest -Uri $url -OutFile "cuda_${cuda_version_full}_windows_network.exe"
   Write-Host 'Installing CUDA...'
-  $proc = Start-Process -PassThru -FilePath "./cuda_11.6.1_windows_network.exe" -ArgumentList @($SilentFlag + $CudaFeatures)
+  $proc = Start-Process -PassThru -FilePath "./cuda_${cuda_version_full}_windows_network.exe" -ArgumentList @($SilentFlag + $CudaFeatures)
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
   Pop-Location

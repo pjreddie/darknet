@@ -127,90 +127,15 @@ param (
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "1.9.8"
+$build_ps1_version = "2.0.0"
+Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
 
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
 $ErrorActionPreference = "Continue"
 Start-Transcript -Path $PSScriptRoot/build.log
 
-Function MyThrow ($Message) {
-  if ($DisableInteractive) {
-    Write-Host $Message -ForegroundColor Red
-    throw
-  }
-  else {
-    # Check if running in PowerShell ISE
-    if ($psISE) {
-      # "ReadKey" not supported in PowerShell ISE.
-      # Show MessageBox UI
-      $Shell = New-Object -ComObject "WScript.Shell"
-      $Shell.Popup($Message, 0, "OK", 0)
-      throw
-    }
-
-    $Ignore =
-    16, # Shift (left or right)
-    17, # Ctrl (left or right)
-    18, # Alt (left or right)
-    20, # Caps lock
-    91, # Windows key (left)
-    92, # Windows key (right)
-    93, # Menu key
-    144, # Num lock
-    145, # Scroll lock
-    166, # Back
-    167, # Forward
-    168, # Refresh
-    169, # Stop
-    170, # Search
-    171, # Favorites
-    172, # Start/Home
-    173, # Mute
-    174, # Volume Down
-    175, # Volume Up
-    176, # Next Track
-    177, # Previous Track
-    178, # Stop Media
-    179, # Play
-    180, # Mail
-    181, # Select Media
-    182, # Application 1
-    183  # Application 2
-
-    Write-Host $Message -ForegroundColor Red
-    Write-Host -NoNewline "Press any key to continue..."
-    while (($null -eq $KeyInfo.VirtualKeyCode) -or ($Ignore -contains $KeyInfo.VirtualKeyCode)) {
-      $KeyInfo = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
-    }
-    Write-Host ""
-    throw
-  }
-}
-
-Function DownloadNinja() {
-  Write-Host "Unable to find Ninja, downloading a portable version on-the-fly" -ForegroundColor Yellow
-  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue ninja
-  Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
-  if ($IsWindows -or $IsWindowsPowerShell) {
-    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip"
-  }
-  elseif ($IsLinux) {
-    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip"
-  }
-  elseif ($IsMacOS) {
-    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-mac.zip"
-  }
-  else {
-    MyThrow("Unknown OS, unsupported")
-  }
-  Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile "ninja.zip"
-  Expand-Archive -Path ninja.zip
-  Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
-}
-
-
-Write-Host "Build script version ${build_ps1_version}"
+Write-Host "Build script version ${build_ps1_version}, utils module version ${utils_psm1_version}"
 
 if ((-Not $DisableInteractive) -and (-Not $UseVCPKG)) {
   $Result = Read-Host "Enable vcpkg to install dependencies (yes/no)"
@@ -462,90 +387,6 @@ if (-Not $DoNotUseNinja) {
       $AdditionalBuildSetup = $AdditionalBuildSetup + " -DCMAKE_BUILD_TYPE=Release"
     }
   }
-}
-
-function getProgramFiles32bit() {
-  $out = ${env:PROGRAMFILES(X86)}
-  if ($null -eq $out) {
-    $out = ${env:PROGRAMFILES}
-  }
-
-  if ($null -eq $out) {
-    MyThrow("Could not find [Program Files 32-bit]")
-  }
-
-  return $out
-}
-
-function getLatestVisualStudioWithDesktopWorkloadPath() {
-  $programFiles = getProgramFiles32bit
-  $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
-  if (Test-Path $vswhereExe) {
-    $output = & $vswhereExe -products * -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop -format xml
-    [xml]$asXml = $output
-    foreach ($instance in $asXml.instances.instance) {
-      $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
-    }
-    if (!$installationPath) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
-      $output = & $vswhereExe -products * -latest -format xml
-      [xml]$asXml = $output
-      foreach ($instance in $asXml.instances.instance) {
-        $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
-      }
-    }
-    if (!$installationPath) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
-      $output = & $vswhereExe -prerelease -products * -latest -format xml
-      [xml]$asXml = $output
-      foreach ($instance in $asXml.instances.instance) {
-        $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
-      }
-    }
-    if (!$installationPath) {
-      MyThrow("Could not locate any installation of Visual Studio")
-    }
-  }
-  else {
-    MyThrow("Could not locate vswhere at $vswhereExe")
-  }
-  return $installationPath
-}
-
-
-function getLatestVisualStudioWithDesktopWorkloadVersion() {
-  $programFiles = getProgramFiles32bit
-  $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
-  if (Test-Path $vswhereExe) {
-    $output = & $vswhereExe -products * -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop -format xml
-    [xml]$asXml = $output
-    foreach ($instance in $asXml.instances.instance) {
-      $installationVersion = $instance.InstallationVersion
-    }
-    if (!$installationVersion) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
-      $output = & $vswhereExe -products * -latest -format xml
-      [xml]$asXml = $output
-      foreach ($instance in $asXml.instances.instance) {
-        $installationVersion = $instance.installationVersion
-      }
-    }
-    if (!$installationVersion) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
-      $output = & $vswhereExe -prerelease -products * -latest -format xml
-      [xml]$asXml = $output
-      foreach ($instance in $asXml.instances.instance) {
-        $installationVersion = $instance.installationVersion
-      }
-    }
-    if (!$installationVersion) {
-      MyThrow("Could not locate any installation of Visual Studio")
-    }
-  }
-  else {
-    MyThrow("Could not locate vswhere at $vswhereExe")
-  }
-  return $installationVersion
 }
 
 $vcpkg_root_set_by_this_script = $false

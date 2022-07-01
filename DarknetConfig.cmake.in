@@ -24,11 +24,7 @@ set(CMAKE_THREAD_PREFER_PTHREAD ON)
 find_dependency(Threads)
 
 if(MSVC)
-  if(@USE_INTEGRATED_LIBS@)
-    find_dependency(PThreads4W)
-  else()
-    find_dependency(pthreads)
-  endif()
+  find_dependency(PThreads4W)
   set(CMAKE_CXX_FLAGS "/wd4018 /wd4244 /wd4267 /wd4305 ${CMAKE_CXX_FLAGS}")
 endif()
 
