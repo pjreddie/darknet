@@ -5,6 +5,36 @@ Darknet is an open source neural network framework written in C and CUDA. It is 
 
 **Discord** invite link for for communication and questions: https://discord.gg/zSq8rtW
 
+## YOLOv7: 
+
+* **paper** - YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors: https://arxiv.org/abs/2207.02696
+
+* **source code - Pytorch (use to reproduce results):** https://github.com/WongKinYiu/yolov7
+
+----
+
+YOLOv7 is more accurate and faster than YOLOv5 by **120%** FPS, than YOLOX by **180%** FPS, than Dual-Swin-T by **1200%** FPS, than ConvNext by **550%** FPS, than SWIN-L by **500%** FPS.
+
+YOLOv7 surpasses all known object detectors in both speed and accuracy in the range from 5 FPS to 160 FPS and has the highest accuracy 56.8% AP among all known real-time object detectors with 30 FPS or higher on GPU V100, batch=1.
+
+* YOLOv7-e6 (55.9% AP, 56 FPS V100 b=1) by `+500%` FPS faster than SWIN-L Cascade-Mask R-CNN (53.9% AP, 9.2 FPS A100 b=1)
+* YOLOv7-e6 (55.9% AP, 56 FPS V100 b=1) by `+550%` FPS faster than ConvNeXt-XL C-M-RCNN (55.2% AP, 8.6 FPS A100 b=1)
+* YOLOv7-w6 (54.6% AP, 84 FPS V100 b=1) by `+120%` FPS faster than YOLOv5-X6-r6.1 (55.0% AP, 38 FPS V100 b=1)
+* YOLOv7-w6 (54.6% AP, 84 FPS V100 b=1) by `+1200%` FPS faster than Dual-Swin-T C-M-RCNN (53.6% AP, 6.5 FPS V100 b=1)
+* YOLOv7 (51.2% AP, 161 FPS V100 b=1) by `+180%` FPS faster than YOLOX-X (51.1% AP, 58 FPS V100 b=1)
+
+
+----
+
+![image](https://user-images.githubusercontent.com/4096485/177674970-0c633f50-405d-4a20-a8d9-bd467d09d6ab.png)
+
+
+----
+
+![image](https://user-images.githubusercontent.com/4096485/177675030-a929ee00-0eba-4d93-95c2-225231d0fd61.png)
+
+
+
 ## Scaled-YOLOv4: 
 
 * **paper (CVPR 2021)**: https://openaccess.thecvf.com/content/CVPR2021/html/Wang_Scaled-YOLOv4_Scaling_Cross_Stage_Partial_Network_CVPR_2021_paper.html
@@ -28,6 +58,8 @@ Darknet is an open source neural network framework written in C and CUDA. It is 
 For more information see the [Darknet project website](http://pjreddie.com/darknet).
 
 
+<details><summary> <b>Expand</b> </summary>
+
 ![yolo_progress](https://user-images.githubusercontent.com/4096485/146988929-1ed0cbec-1e01-4ad0-b42c-808dcef32994.png) https://paperswithcode.com/sota/object-detection-on-coco
 
 ----
@@ -42,6 +74,7 @@ For more information see the [Darknet project website](http://pjreddie.com/darkn
 
 ![YOLOv4](https://user-images.githubusercontent.com/4096485/90338826-06114c80-dff5-11ea-9ba2-8eb63a7409b3.png)
 
+</details>
 
 ----
 
@@ -49,6 +82,20 @@ For more information see the [Darknet project website](http://pjreddie.com/darkn
 
 
 ## Citation
+
+
+```
+@misc{https://doi.org/10.48550/arxiv.2207.02696,
+  doi = {10.48550/ARXIV.2207.02696},
+  url = {https://arxiv.org/abs/2207.02696},
+  author = {Wang, Chien-Yao and Bochkovskiy, Alexey and Liao, Hong-Yuan Mark},
+  keywords = {Computer Vision and Pattern Recognition (cs.CV), FOS: Computer and information sciences, FOS: Computer and information sciences},
+  title = {YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors},
+  publisher = {arXiv},
+  year = {2022}, 
+  copyright = {arXiv.org perpetual, non-exclusive license}
+}
+```
 
 ```
 @misc{bochkovskiy2020yolov4,
