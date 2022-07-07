@@ -13,7 +13,7 @@ Darknet is an open source neural network framework written in C and CUDA. It is 
 
 ----
 
-YOLOv7 is more accurate and faster than YOLOv5 by **120%** FPS, than YOLOX by **180%** FPS, than Dual-Swin-T by **1200%** FPS, than ConvNext by **550%** FPS, than SWIN-L by **500%** FPS.
+Official YOLOv7 is more accurate and faster than YOLOv5 by **120%** FPS, than YOLOX by **180%** FPS, than Dual-Swin-T by **1200%** FPS, than ConvNext by **550%** FPS, than SWIN-L by **500%** FPS.
 
 YOLOv7 surpasses all known object detectors in both speed and accuracy in the range from 5 FPS to 160 FPS and has the highest accuracy 56.8% AP among all known real-time object detectors with 30 FPS or higher on GPU V100, batch=1.
 
@@ -34,6 +34,11 @@ YOLOv7 surpasses all known object detectors in both speed and accuracy in the ra
 ![image](https://user-images.githubusercontent.com/4096485/177675030-a929ee00-0eba-4d93-95c2-225231d0fd61.png)
 
 
+----
+
+![yolov7_640_1280](https://user-images.githubusercontent.com/4096485/177688869-d75e0c36-63af-46ec-bdbd-81dbb281f257.png)
+
+----
 
 ## Scaled-YOLOv4: 
 
