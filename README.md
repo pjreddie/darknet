@@ -2,21 +2,21 @@
 
 ## (neural networks for object detection)
 
-* **Paper YOLOv7**: https://arxiv.org/abs/2207.02696
+* Paper **YOLOv7**: https://arxiv.org/abs/2207.02696
 
-* **source code YOLOv7 - Pytorch (use to reproduce results):** https://github.com/WongKinYiu/yolov7
-
-----
-
-* **Paper YOLOv4**: https://arxiv.org/abs/2004.10934
-
-* **source code YOLOv4 - Darknet (use to reproduce results):** https://github.com/AlexeyAB/darknet
+* source code YOLOv7 - Pytorch (use to reproduce results): https://github.com/WongKinYiu/yolov7
 
 ----
 
-* **Paper Scaled-YOLOv4 (CVPR 2021)**: https://openaccess.thecvf.com/content/CVPR2021/html/Wang_Scaled-YOLOv4_Scaling_Cross_Stage_Partial_Network_CVPR_2021_paper.html
+* Paper **YOLOv4**: https://arxiv.org/abs/2004.10934
 
-* **source code Scaled-YOLOv4 - Pytorch (use to reproduce results):** https://github.com/WongKinYiu/ScaledYOLOv4
+* source code YOLOv4 - Darknet (use to reproduce results): https://github.com/AlexeyAB/darknet
+
+----
+
+* Paper **Scaled-YOLOv4 (CVPR 2021)**: https://openaccess.thecvf.com/content/CVPR2021/html/Wang_Scaled-YOLOv4_Scaling_Cross_Stage_Partial_Network_CVPR_2021_paper.html
+
+* source code Scaled-YOLOv4 - Pytorch (use to reproduce results): https://github.com/WongKinYiu/ScaledYOLOv4
 
 ----
 
@@ -41,8 +41,7 @@ YOLOv7 surpasses all known object detectors in both speed and accuracy in the ra
 
 ----
 
-![image](https://user-images.githubusercontent.com/4096485/177674970-0c633f50-405d-4a20-a8d9-bd467d09d6ab.png)
-
+![more5](https://user-images.githubusercontent.com/4096485/179425274-f55a36d4-8450-4471-816b-8c105841effd.jpg)
 
 ----
 
