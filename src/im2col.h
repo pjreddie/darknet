@@ -7,7 +7,7 @@ void im2col_cpu(float* data_im,
 
 #ifdef GPU
 
-void im2col_ongpu(float *im,
+void im2col_gpu(float *im,
          int channels, int height, int width,
          int ksize, int stride, int pad,float *data_col);
 
