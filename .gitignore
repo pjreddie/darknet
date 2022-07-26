@@ -25,3 +25,10 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+
+# Generated Libs
+libdarknet.a
+libdarknet.so
+
+# IDEs garbage
+.idea/
