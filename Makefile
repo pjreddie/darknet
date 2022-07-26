@@ -1,6 +1,6 @@
-GPU=0
+GPU=1
 CUDNN=0
-OPENCV=0
+OPENCV=1
 OPENMP=0
 DEBUG=0
 
@@ -102,4 +102,5 @@ results:
 
 clean:
 	rm -rf $(OBJS) $(SLIB) $(ALIB) $(EXEC) $(EXECOBJ) $(OBJDIR)/*
+~/darknet$ make -j8
 
