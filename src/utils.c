@@ -359,6 +359,7 @@ char *fgetl(FILE *fp)
         curr = strlen(line);
     }
     if(line[curr-1] == '\n') line[curr-1] = '\0';
+    if(line[curr-1] == '\r') line[curr-1] = '\0';
 
     return line;
 }
