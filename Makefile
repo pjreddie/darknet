@@ -3,6 +3,7 @@ CUDNN=0
 OPENCV=0
 OPENMP=0
 DEBUG=0
+CUDAPATH=/usr/local/cuda
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
@@ -47,9 +48,9 @@ COMMON+= `pkg-config --cflags opencv`
 endif
 
 ifeq ($(GPU), 1) 
-COMMON+= -DGPU -I/usr/local/cuda/include/
+COMMON+= -DGPU -I$(CUDAPATH)/include/
 CFLAGS+= -DGPU
-LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
+LDFLAGS+= -L$(CUDAPATH)/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 
 ifeq ($(CUDNN), 1) 
