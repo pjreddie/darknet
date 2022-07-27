@@ -9,6 +9,7 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52]
 #      -gencode arch=compute_20,code=[sm_20,sm_21] \ This one is deprecated?
+# CUDA toolkit 9.1,find matching sm arch : http://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
 
 # This is what I use, uncomment if you know your arch and want to specify
 # ARCH= -gencode arch=compute_52,code=compute_52
