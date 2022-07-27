@@ -539,7 +539,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
             ++total;
             box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
             float best_iou = 0;
-            for(k = 0; k < l.w*l.h*l.n; ++k){
+            for(k = 0; k < nboxes; ++k){
                 float iou = box_iou(dets[k].bbox, t);
                 if(dets[k].objectness > thresh && iou > best_iou){
                     best_iou = iou;
