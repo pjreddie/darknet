@@ -358,6 +358,7 @@ char *fgetl(FILE *fp)
         fgets(&line[curr], readsize, fp);
         curr = strlen(line);
     }
+    if(line[curr-2] == '\r') line[curr-2] = '\0';
     if(line[curr-1] == '\n') line[curr-1] = '\0';
 
     return line;
