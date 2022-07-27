@@ -2,11 +2,25 @@
 
 #include <assert.h>
 #include <math.h>
+#ifdef WIN32
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
+
+#ifdef WIN32
+#define STDIN_FILENO 0
+#endif
+
+#ifdef WIN32
+#define popen _popen
+#define pclose _pclose
+#define sleep Sleep
+#endif
 
 int inverted = 1;
 int noi = 1;
-static const int nind = 10;
+#define nind 10
 int legal_go(float *b, float *ko, int p, int r, int c);
 int check_ko(float *x, float *ko);
 

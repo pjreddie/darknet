@@ -44,13 +44,13 @@ void train_voxel(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network net = parse_network_cfg(cfgfile);
+    network *net = parse_network_cfg(cfgfile);
     if(weightfile){
-        load_weights(&net, weightfile);
+        load_weights(net, weightfile);
     }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = net.batch*net.subdivisions;
-    int i = *net.seen/imgs;
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
+    int imgs = net->batch*net->subdivisions;
+    int i = *net->seen/imgs;
     data train, buffer;
 
 
@@ -59,8 +59,8 @@ void train_voxel(char *cfgfile, char *weightfile)
     char **paths = (char **)list_to_array(plist);
 
     load_args args = {0};
-    args.w = net.w;
-    args.h = net.h;
+    args.w = net->w;
+    args.h = net->h;
     args.scale = 4;
     args.paths = paths;
     args.n = imgs;
@@ -71,7 +71,7 @@ void train_voxel(char *cfgfile, char *weightfile)
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;
     //while(i*imgs < N*120){
-    while(get_current_batch(net) < net.max_batches){
+    while(get_current_batch(net) < net->max_batches){
         i += 1;
         time=clock();
         pthread_join(load_thread, 0);
@@ -105,11 +105,11 @@ void train_voxel(char *cfgfile, char *weightfile)
 
 void test_voxel(char *cfgfile, char *weightfile, char *filename)
 {
-    network net = parse_network_cfg(cfgfile);
+    network *net = parse_network_cfg(cfgfile);
     if(weightfile){
-        load_weights(&net, weightfile);
+        load_weights(net, weightfile);
     }
-    set_batch_network(&net, 1);
+    set_batch_network(net, 1);
     srand(2222222);
 
     clock_t time;
@@ -126,7 +126,7 @@ void test_voxel(char *cfgfile, char *weightfile, char *filename)
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        resize_network(&net, im.w, im.h);
+        resize_network(net, im.w, im.h);
         printf("%d %d\n", im.w, im.h);
 
         float *X = im.data;
