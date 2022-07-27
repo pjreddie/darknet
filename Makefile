@@ -19,6 +19,7 @@ ALIB=libdarknet.a
 EXEC=darknet
 OBJDIR=./obj/
 
+OS=$(shell uname -s)
 CC=gcc
 CPP=g++
 NVCC=nvcc 
@@ -49,7 +50,12 @@ endif
 ifeq ($(GPU), 1) 
 COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
-LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
+ifeq ($(OS), Darwin)
+LDFLAGS+= -L/usr/local/cuda/lib
+else
+LDFLAGS+= -L/usr/local/cuda/lib64
+endif
+LDFLAGS+=-lcuda -lcudart -lcublas -lcurand
 endif
 
 ifeq ($(CUDNN), 1) 
