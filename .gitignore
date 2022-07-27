@@ -1,3 +1,5 @@
+*.a
+*.so
 *.o
 *.dSYM
 *.csv
@@ -16,6 +18,7 @@ convnet/
 decaf/
 submission/
 cfg/
+backup/
 darknet
 .fuse*
 
