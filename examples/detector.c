@@ -559,7 +559,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
 }
 
 
-void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
+void test_detector(char *datacfg, char *cfgfile, char *weightfile, char **filenames, int count, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -573,9 +573,12 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char buff[256];
     char *input = buff;
     float nms=.45;
+    int i = 0;
     while(1){
-        if(filename){
-            strncpy(input, filename, 256);
+        if(count > 0) {
+            if (i >= count) break;
+            strncpy(input, filenames[i], 256);
+            i++;
         } else {
             printf("Enter Image Path: ");
             fflush(stdout);
@@ -616,7 +619,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         free_image(im);
         free_image(sized);
-        if (filename) break;
     }
 }
 
@@ -829,11 +831,18 @@ void run_detector(int argc, char **argv)
     int fps = find_int_arg(argc, argv, "-fps", 0);
     //int class = find_int_arg(argc, argv, "-class", 0);
 
+    // find_*_arg functions, remove entries from argv but don't adjust
+    // argc accordingly so we do it here:
+    while (argc > 0 && argv[argc - 1] == NULL) argc--;
+
     char *datacfg = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
-    char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
+    int filecount = (argc > 6 ) ? argc - 6 : 0;
+    char **filenames = (argc > 6) ? argv + 6 : 0;
+    char *filename = (filenames != NULL) ? filenames[0] : 0;
+
+    if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filenames, filecount, thresh, hier_thresh, outfile, fullscreen);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
