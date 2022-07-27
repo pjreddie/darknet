@@ -899,6 +899,7 @@ list *read_cfg(char *filename)
     while((line=fgetl(file)) != 0){
         ++ nu;
         strip(line);
+        line[ strcspn(line, "\r\n") ]  = '\0'; 
         switch(line[0]){
             case '[':
                 current = malloc(sizeof(section));
