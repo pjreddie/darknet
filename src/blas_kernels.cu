@@ -191,7 +191,7 @@ extern "C" void adam_update_gpu(float *w, float *d, float *m, float *v, float B1
     fill_gpu(n, 0, d, 1);
 }
 
-__global__ void normalize_kernel(int N, float *x, float *mean, float *variance, int batch, int filters, int spatial)
+__global__ void normalize_kernel(int N, float *x, float *mean, float *variance, int filters, int spatial)
 {
     int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (index >= N) return;
@@ -465,7 +465,7 @@ __global__ void mul_kernel(int N, float *X, int INCX, float *Y, int INCY)
 extern "C" void normalize_gpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
 {
     size_t N = batch*filters*spatial;
-    normalize_kernel<<<cuda_gridsize(N), BLOCK>>>(N, x, mean, variance, batch, filters, spatial);
+    normalize_kernel<<<cuda_gridsize(N), BLOCK>>>(N, x, mean, variance, filters, spatial);
     check_error(cudaPeekAtLastError());
 }
 
