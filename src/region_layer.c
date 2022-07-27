@@ -173,10 +173,11 @@ void forward_region_layer(const layer l, network net)
     }
     if (l.softmax_tree){
         int i;
-        int count = l.coords + 1;
+        int count = 0;
         for (i = 0; i < l.softmax_tree->groups; ++i) {
             int group_size = l.softmax_tree->group_size[i];
-            softmax_cpu(net.input + count, group_size, l.batch, l.inputs, l.n*l.w*l.h, 1, l.n*l.w*l.h, l.temperature, l.output + count);
+            int index = entry_index(l, 0, 0, l.coords + !l.background + count);
+            softmax_cpu(net.input + index, group_size, l.batch*l.n, l.inputs/l.n, l.w*l.h, 1, l.w*l.h, l.temperature, l.output + index);
             count += group_size;
         }
     } else if (l.softmax){
