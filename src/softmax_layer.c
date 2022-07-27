@@ -47,7 +47,11 @@ void forward_softmax_layer(const softmax_layer l, network net)
             count += group_size;
         }
     } else {
-        softmax_cpu(net.input, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output);
+        if(l.spatial){
+            softmax_cpu(net.input, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, l.temperature, l.output);
+        }else{
+            softmax_cpu(net.input, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output);
+        }
     }
 
     if(net.truth && !l.noloss){
@@ -58,14 +62,28 @@ void forward_softmax_layer(const softmax_layer l, network net)
 
 void backward_softmax_layer(const softmax_layer l, network net)
 {
-    axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, net.delta, 1);
+    if(l.softmax_tree){
+        int i;
+        int count = 0;
+        for(i = 0; i < l.softmax_tree->groups; ++i){
+            int group_size = l.softmax_tree->group_size[i];
+            backward_softmax_cpu(l.output + count, l.delta + count, group_size, l.batch, l.inputs, 1, 0, 1, l.temperature, net.delta + count);
+            count += group_size;
+        }
+    } else {
+        if(l.spatial){
+            backward_softmax_cpu(l.output, l.delta, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, l.temperature, net.delta);
+        } else {
+            backward_softmax_cpu(l.output, l.delta, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, net.delta);
+        }
+    }
 }
 
 #ifdef GPU
 
-void pull_softmax_layer_output(const softmax_layer layer)
+void pull_softmax_layer_output(const softmax_layer l)
 {
-    cuda_pull_array(layer.output_gpu, layer.output, layer.inputs*layer.batch);
+    cuda_pull_array(l.output_gpu, l.output, l.inputs*l.batch);
 }
 
 void forward_softmax_layer_gpu(const softmax_layer l, network net)
@@ -83,7 +101,7 @@ void forward_softmax_layer_gpu(const softmax_layer l, network net)
         */
     } else {
         if(l.spatial){
-            softmax_gpu(net.input_gpu, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu);
+            softmax_gpu(net.input_gpu, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, l.temperature, l.output_gpu);
         }else{
             softmax_gpu(net.input_gpu, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output_gpu);
         }
@@ -99,9 +117,23 @@ void forward_softmax_layer_gpu(const softmax_layer l, network net)
     }
 }
 
-void backward_softmax_layer_gpu(const softmax_layer layer, network net)
+void backward_softmax_layer_gpu(const softmax_layer l, network net)
 {
-    axpy_gpu(layer.batch*layer.inputs, 1, layer.delta_gpu, 1, net.delta_gpu, 1);
+    if(l.softmax_tree){
+        int i;
+        int count = 0;
+        for(i = 0; i < l.softmax_tree->groups; ++i){
+            int group_size = l.softmax_tree->group_size[i];
+            backward_softmax_gpu(l.output_gpu + count, l.delta_gpu + count, group_size, l.batch, l.inputs, 1, 0, 1, l.temperature, net.delta_gpu + count);
+            count += group_size;
+        }
+    } else {
+        if(l.spatial){
+            backward_softmax_gpu(l.output_gpu, l.delta_gpu, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, l.temperature, net.delta_gpu);
+        } else {
+            backward_softmax_gpu(l.output_gpu, l.delta_gpu, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, net.delta_gpu);
+        }
+    }
 }
 
 #endif

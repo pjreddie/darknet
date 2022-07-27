@@ -942,16 +942,17 @@ __device__ void softmax_device(float *input, int n, float temp, int stride, floa
     float sum = 0;
     float largest = -INFINITY;
     for(i = 0; i < n; ++i){
-        int val = input[i*stride];
-        largest = (val>largest) ? val : largest;
+        largest = (input[i*stride] > largest) ? input[i*stride] : largest;
     }
+    float temp_inv = 1.0 / temp;
     for(i = 0; i < n; ++i){
-        float e = expf(input[i*stride]/temp - largest/temp);
+        float e = exp((input[i*stride] - largest) * temp_inv);
         sum += e;
         output[i*stride] = e;
     }
+    float sum_inv = 1.0 / sum;
     for(i = 0; i < n; ++i){
-        output[i*stride] /= sum;
+        output[i*stride] *= sum_inv;
     }
 }
 
@@ -1003,6 +1004,35 @@ extern "C" void softmax_gpu(float *input, int n, int batch, int batch_offset, in
     check_error(cudaPeekAtLastError());
 }
 
+__device__ void backward_softmax_device(float *output, float *delta_output, int n, float temp, int stride, float *delta_input)
+{
+    int i;
+    float dot = 0;
+    for(i = 0; i < n; ++i){
+        dot += output[i*stride] * delta_output[i*stride];
+    }
+    float temp_inv = 1.0 / temp;
+    for(i = 0; i < n; ++i){
+        delta_input[i*stride] += temp_inv * output[i*stride] * (delta_output[i*stride] - dot);
+    }
+}
+
+__global__ void backward_softmax_kernel(float *output, float *delta_output, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *delta_input)
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (id >= batch*groups) return;
+    int b = id / groups;
+    int g = id % groups;
+    int offset = b*batch_offset + g*group_offset;
+    backward_softmax_device(output + offset, delta_output + offset, n, temp, stride, delta_input + offset);
+}
+
+extern "C" void backward_softmax_gpu(float *output, float *delta_output, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *delta_input)
+{
+    backward_softmax_kernel<<<cuda_gridsize(batch*groups), BLOCK>>>(output, delta_output, n, batch, batch_offset, groups, group_offset, stride, temp, delta_input);
+    check_error(cudaPeekAtLastError());
+}
+
 
 __global__ void upsample_kernel(size_t N, float *x, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
@@ -1027,6 +1057,7 @@ __global__ void upsample_kernel(size_t N, float *x, int w, int h, int c, int bat
     if(forward) out[out_index] += scale * x[in_index];
     else atomicAdd(x+in_index, scale * out[out_index]);
 }
+
 extern "C" void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
     size_t size = w*h*c*batch*stride*stride;

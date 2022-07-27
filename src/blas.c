@@ -310,13 +310,15 @@ void softmax(float *input, int n, float temp, int stride, float *output)
     for(i = 0; i < n; ++i){
         if(input[i*stride] > largest) largest = input[i*stride];
     }
+    float temp_inv = 1.0 / temp;
     for(i = 0; i < n; ++i){
-        float e = exp(input[i*stride]/temp - largest/temp);
+        float e = exp((input[i*stride] - largest) * temp_inv);
         sum += e;
         output[i*stride] = e;
     }
+    float sum_inv = 1.0 / sum;
     for(i = 0; i < n; ++i){
-        output[i*stride] /= sum;
+        output[i*stride] *= sum_inv;
     }
 }
 
@@ -330,6 +332,30 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
         }
     }
 }
+
+
+void backward_softmax(float *output, float *delta_output, int n, float temp, int stride, float *delta_input)
+{
+    int i;
+    float dot = dot_cpu(n, output, stride, delta_output, stride);
+    float temp_inv = 1.0 / temp;
+    for(i = 0; i < n; ++i){
+        delta_input[i*stride] += temp_inv * output[i*stride] * (delta_output[i*stride] - dot);
+    }
+}
+
+void backward_softmax_cpu(float *output, float *delta_output, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *delta_input)
+{
+    int g, b;
+    int offset;
+    for(b = 0; b < batch; ++b){
+        for(g = 0; g < groups; ++g){
+            offset = b*batch_offset + g*group_offset;
+            backward_softmax(output + offset, delta_output + offset, n, temp, stride, delta_input + offset);
+        }
+    }
+}
+
 
 void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out)
 {
@@ -347,5 +373,3 @@ void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int for
         }
     }
 }
-
-
