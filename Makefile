@@ -33,6 +33,9 @@ ifeq ($(OPENMP), 1)
 CFLAGS+= -fopenmp
 endif
 
+# Detect OS
+uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
 endif
@@ -50,6 +53,9 @@ ifeq ($(GPU), 1)
 COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
+ifeq ($(uname_S),Darwin)
+LDFLAGS+= -F/Library/Frameworks -framework CUDA -rpath /Library/Frameworks -rpath /usr/local/cuda/lib
+endif
 endif
 
 ifeq ($(CUDNN), 1) 
