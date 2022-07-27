@@ -289,6 +289,12 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     float nms = .45;
 
     int nthreads = 4;
+    // fix an issue with YOLO crash if number of validated examples less then 4
+    // due to trying to access to unaddressable memory path[i+t], when i+t > nthreads
+    if (m < 4) { 
+        nthreads = m;
+    }
+    
     image *val = calloc(nthreads, sizeof(image));
     image *val_resized = calloc(nthreads, sizeof(image));
     image *buf = calloc(nthreads, sizeof(image));
@@ -420,6 +426,12 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     float nms = .45;
 
     int nthreads = 4;
+    // fix an issue with YOLO crash if number of validated examples less then 4
+    // due to trying to access to unaddressable memory path[i+t], when i+t > nthreads
+    if (m < 4) { 
+        nthreads = m;
+    }
+    
     image *val = calloc(nthreads, sizeof(image));
     image *val_resized = calloc(nthreads, sizeof(image));
     image *buf = calloc(nthreads, sizeof(image));
