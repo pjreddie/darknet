@@ -1,6 +1,12 @@
+#define _GNU_SOURCE  // to use proper basename() function
+#include <string.h>
+
 #include "darknet.h"
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
+
+
+static const char GENERATED_OUTPUT_NAME_SUFFIX[] = "-predictions";
 
 
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
@@ -558,6 +564,60 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     }
 }
 
+// Tro to trim suffix and return 1 if string was modified
+static int trim_suffix(char * str, const char * suffix)
+{
+    int str_len = strlen(str);
+    int suffix_len = strlen(suffix);
+
+    if ((str_len >= suffix_len) &&
+        (0 == strcmp(str + (str_len-suffix_len), suffix)))
+    {
+        str[str_len - suffix_len] = '\0';
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+/*
+ * Generate name for output file in case if not set by user
+ * Input name might contain path and file type suffix.
+ * Output name does not contain neither path nor file type suffix
+ */
+static void make_out_filename(char* buff, int buff_len, const char* in_filename) {
+    // Remove path
+    const char* file_name_wo_path =  basename(in_filename);
+    strncpy(buff, file_name_wo_path, buff_len);
+
+    // Trim file name suffix
+
+    // https://docs.opencv.org/3.4.2/d4/da8/group__imgcodecs.html
+    const char* const known_suffixes[] = {
+        ".bmp", ".dib",
+        ".jpeg", ".jpg", ".jpe",
+        ".jp2",
+        ".png",
+        ".webp",
+        ".pbm", ".pgm", ".ppm", ".pxm", ".pnm",
+        ".sr", ".ras",
+        ".tiff", ".tif",
+        ".exr",
+        ".hdr", ".pic",
+        ".jb2",
+    };
+    int suff_cnt = sizeof(known_suffixes) / sizeof(known_suffixes[0]);
+    for (int suff_index = 0; suff_index < suff_cnt; suff_index++) {
+        int trimmed = trim_suffix(buff, known_suffixes[suff_index]);
+        if (trimmed)
+        {
+            break;
+        }
+    }
+
+    // Make result
+    strncat(buff, GENERATED_OUTPUT_NAME_SUFFIX, buff_len);
+}
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
@@ -606,8 +666,12 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if(outfile){
             save_image(im, outfile);
         }
-        else{
-            save_image(im, "predictions");
+        else
+        {
+            int name_len = strlen(input) + strlen(GENERATED_OUTPUT_NAME_SUFFIX) + 1;  // +1 for \0
+            char out_filename_buffer[name_len];
+            make_out_filename(out_filename_buffer, name_len, input);
+            save_image(im, out_filename_buffer);
 #ifdef OPENCV
             make_window("predictions", 512, 512, 0);
             show_image(im, "predictions", 0);
