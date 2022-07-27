@@ -1245,7 +1245,14 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
     int i;
     for(i = start; i < net->n && i < cutoff; ++i){
         layer l = net->layers[i];
-        if (l.dontload) continue;
+        if (l.dontload) {
+            int num = (l.n * l.c * l.size * l.size) + l.n;
+            if(l.batch_normalize && (!l.dontloadscales){
+                num = num + l.n + l.n + l.n;
+            }
+            fseek(fp, sizeof(float)*num, SEEK_CUR);
+            continue;
+        }
         if(l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL){
             load_convolutional_weights(l, fp);
         }
