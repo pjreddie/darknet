@@ -530,6 +530,10 @@ typedef struct matrix{
     float **vals;
 } matrix;
 
+typedef struct table{
+    int rows, cols;
+    char **vals;
+} table;
 
 typedef struct{
     int w, h;
@@ -753,6 +757,7 @@ void do_nms_obj(detection *dets, int total, int classes, float thresh);
 void do_nms_sort(detection *dets, int total, int classes, float thresh);
 
 matrix make_matrix(int rows, int cols);
+table make_table(int rows, int cols);
 
 #ifdef OPENCV
 void *open_video_stream(const char *f, int c, int w, int h, int fps);

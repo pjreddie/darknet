@@ -1,5 +1,7 @@
 #include "darknet.h"
 
+#include <table.h>
+#include <dirent.h>
 #include <sys/time.h>
 #include <assert.h>
 
@@ -557,7 +559,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
     }
 }
 
-void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top)
+void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top, char *folder, char *csv_file)
 {
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
@@ -573,8 +575,89 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     char **names = get_labels(name_list);
     clock_t time;
     int *indexes = calloc(top, sizeof(int));
-    char buff[256];
+    char buff[1024];
     char *input = buff;
+
+    if (folder) {
+        printf("\nUsing input images from %s\n", folder);
+
+        int sz = strlen(folder);
+        if (folder[sz-1] != '/') {
+            char* temp = malloc(sz + 1);
+            strcpy(temp, folder);
+            strcat(temp, "/");
+            folder = temp;
+        }
+
+        DIR *d;
+        struct dirent *dir;
+        d = opendir(folder);
+        if (d) {
+
+            int img_count = 0;
+            while ((dir = readdir(d)) != NULL) {
+                if (dir->d_name[0] == '.') continue;
+                img_count++;
+            }
+
+            table t_predictions = make_table(top + 1, img_count);
+            table t_classes = make_table(top + 1, img_count);
+
+            int j = 0;
+            d = opendir(folder);
+            while ((dir = readdir(d)) != NULL) {
+                if (dir->d_name[0] == '.') continue;
+                char* abs_filename = malloc(strlen(folder) + strlen(dir->d_name) + 1);
+                strcpy(abs_filename, folder);
+                strcat(abs_filename, dir->d_name);
+
+                strncpy(input, abs_filename, 1024);
+                image im = load_image_color(input, 0, 0);
+                image r = letterbox_image(im, net->w, net->h);
+
+                float *X = r.data;
+                time = clock();
+                float *predictions = network_predict(net, X);
+                if (net->hierarchy) hierarchy_predictions(predictions, net->outputs, net->hierarchy, 1, 1);
+                top_k(predictions, net->outputs, top, indexes);
+                fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+
+                t_predictions.vals[j] = (char *) malloc(1024);
+                strcpy(t_predictions.vals[j], abs_filename + 1);
+
+                t_classes.vals[j] = (char *) malloc(1024);
+                strcpy(t_classes.vals[j], abs_filename + 1);
+
+                char bf[1024];
+                for (i = 0; i < top; ++i) {
+                    int index = indexes[i];
+                    printf("%5.2f%%: %s\n", predictions[index]*100, names[index]);
+
+                    int pos = (i + 1)*t_predictions.cols + j;
+                    t_predictions.vals[pos] = (char *) malloc(1024);
+                    sprintf(bf, "%.50f", predictions[index]);
+                    strcpy(t_predictions.vals[pos], bf);
+
+                    t_classes.vals[pos] = (char *) malloc(1024);
+                    sprintf(bf, "%s", names[index]);
+                    strcpy(t_classes.vals[pos], bf);
+                }
+
+                if (r.data != im.data) free_image(r);
+                free_image(im);
+                j++;
+            }
+            closedir(d);
+
+            table_to_csv(t_predictions, t_classes, csv_file);
+
+        } else {
+            fprintf(stderr, "%s folder does not exist!\n", folder);
+        }
+
+        return;
+    }
+
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -1072,13 +1155,15 @@ void run_classifier(int argc, char **argv)
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int top = find_int_arg(argc, argv, "-t", 0);
     int clear = find_arg(argc, argv, "-clear");
+    char *dataset_folder = find_char_arg(argc, argv, "-folder", 0);
+    char *csv_file = find_char_arg(argc, argv, "-csv", 0);
     char *data = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     char *layer_s = (argc > 7) ? argv[7]: 0;
     int layer = layer_s ? atoi(layer_s) : -1;
-    if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
+    if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top, dataset_folder, csv_file);
     else if(0==strcmp(argv[2], "fout")) file_output_classifier(data, cfg, weights, filename);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
     else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear);
