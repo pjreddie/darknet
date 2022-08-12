@@ -11,11 +11,11 @@
 #include <time.h>
 
 
-static size_t get_workspace_size(layer l){
+static size_t get_workspace_size(dn_layer l){
     return (size_t)l.h*l.w*l.size*l.size*l.n*sizeof(float);
 }
 
-void bilinear_init(layer l)
+void bilinear_init(dn_layer l)
 {
     int i,j,f;
     float center = (l.size-1) / 2.;
@@ -32,10 +32,10 @@ void bilinear_init(layer l)
 }
 
 
-layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int adam)
+dn_layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int adam)
 {
     int i;
-    layer l = {0};
+    dn_layer l = {0};
     l.type = DECONVOLUTIONAL;
 
     l.h = h;
@@ -165,7 +165,7 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
     return l;
 }
 
-void denormalize_deconvolutional_layer(layer l)
+void denormalize_deconvolutional_layer(dn_layer l)
 {
     int i, j;
     for(i = 0; i < l.n; ++i){
@@ -180,7 +180,7 @@ void denormalize_deconvolutional_layer(layer l)
     }
 }
 
-void resize_deconvolutional_layer(layer *l, int h, int w)
+void resize_deconvolutional_layer(dn_layer *l, int h, int w)
 {
     l->h = h;
     l->w = w;
@@ -219,7 +219,7 @@ void resize_deconvolutional_layer(layer *l, int h, int w)
     l->workspace_size = get_workspace_size(*l);
 }
 
-void forward_deconvolutional_layer(const layer l, network net)
+void forward_deconvolutional_layer(const dn_layer l, dn_network net)
 {
     int i;
 
@@ -246,7 +246,7 @@ void forward_deconvolutional_layer(const layer l, network net)
     activate_array(l.output, l.batch*l.n*l.out_w*l.out_h, l.activation);
 }
 
-void backward_deconvolutional_layer(layer l, network net)
+void backward_deconvolutional_layer(dn_layer l, dn_network net)
 {
     int i;
 
@@ -287,7 +287,7 @@ void backward_deconvolutional_layer(layer l, network net)
     }
 }
 
-void update_deconvolutional_layer(layer l, update_args a)
+void update_deconvolutional_layer(dn_layer l, update_args a)
 {
     float learning_rate = a.learning_rate*l.learning_rate_scale;
     float momentum = a.momentum;

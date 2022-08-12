@@ -87,7 +87,7 @@ image get_image_from_stream(void *p)
     return mat_to_image(m);
 }
 
-image load_image_cv(char *filename, int channels)
+image load_image_cv(const char *filename, int channels)
 {
     int flag = -1;
     if (channels == 0) flag = -1;

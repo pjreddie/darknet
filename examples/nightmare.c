@@ -25,7 +25,7 @@ void calculate_loss(float *output, float *delta, int n, float thresh)
     }
 }
 
-void optimize_picture(network *net, image orig, int max_layer, float scale, float rate, float thresh, int norm)
+void optimize_picture(dn_network *net, dn_image orig, int max_layer, float scale, float rate, float thresh, int norm)
 {
     //scale_image(orig, 2);
     //translate_image(orig, -1);
@@ -35,15 +35,15 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
     int dy = rand()%16 - 8;
     int flip = rand()%2;
 
-    image crop = crop_image(orig, dx, dy, orig.w, orig.h);
-    image im = resize_image(crop, (int)(orig.w * scale), (int)(orig.h * scale));
+    dn_image crop = crop_image(orig, dx, dy, orig.w, orig.h);
+    dn_image im = resize_image(crop, (int)(orig.w * scale), (int)(orig.h * scale));
     if(flip) flip_image(im);
 
     resize_network(net, im.w, im.h);
-    layer last = net->layers[net->n-1];
+    dn_layer last = net->layers[net->n-1];
     //net->layers[net->n - 1].activation = LINEAR;
 
-    image delta = make_image(im.w, im.h, im.c);
+    dn_image delta = make_image(im.w, im.h, im.c);
 
 #ifdef GPU
     net->delta_gpu = cuda_make_array(delta.data, im.w*im.h*im.c);
@@ -73,8 +73,8 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
     if(flip) flip_image(delta);
     //normalize_array(delta.data, delta.w*delta.h*delta.c);
-    image resized = resize_image(delta, orig.w, orig.h);
-    image out = crop_image(resized, -dx, -dy, orig.w, orig.h);
+    dn_image resized = resize_image(delta, orig.w, orig.h);
+    dn_image out = crop_image(resized, -dx, -dy, orig.w, orig.h);
 
     /*
        image g = grayscale_image(out);
@@ -83,7 +83,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
      */
 
     //rate = rate / abs_mean(out.data, out.w*out.h*out.c);
-    image gray = make_image(out.w, out.h, out.c);
+    dn_image gray = make_image(out.w, out.h, out.c);
     fill_image(gray, .5);
     axpy_cpu(orig.w*orig.h*orig.c, -1, orig.data, 1, gray.data, 1);
     axpy_cpu(orig.w*orig.h*orig.c, .1, gray.data, 1, out.data, 1);
@@ -111,7 +111,7 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
 }
 
-void smooth(image recon, image update, float lambda, int num)
+void smooth(dn_image recon, dn_image update, float lambda, int num)
 {
     int i, j, k;
     int ii, jj;
@@ -132,11 +132,11 @@ void smooth(image recon, image update, float lambda, int num)
     }
 }
 
-void reconstruct_picture(network *net, float *features, image recon, image update, float rate, float momentum, float lambda, int smooth_size, int iters)
+void reconstruct_picture(dn_network *net, float *features, dn_image recon, dn_image update, float rate, float momentum, float lambda, int smooth_size, int iters)
 {
     int iter = 0;
     for (iter = 0; iter < iters; ++iter) {
-        image delta = make_image(recon.w, recon.h, recon.c);
+        dn_image delta = make_image(recon.w, recon.h, recon.c);
 
 #ifdef GPU
         layer l = get_network_output_layer(net);
@@ -313,26 +313,26 @@ void run_nightmare(int argc, char **argv)
     int reconstruct = find_arg(argc, argv, "-reconstruct");
     int smooth_size = find_int_arg(argc, argv, "-smooth", 1);
 
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     char *cfgbase = basecfg(cfg);
     char *imbase = basecfg(input);
 
     set_batch_network(net, 1);
-    image im = load_image_color(input, 0, 0);
+    dn_image im = load_image_color(input, 0, 0);
     if(0){
         float scale = 1;
         if(im.w > 512 || im.h > 512){
             if(im.w > im.h) scale = 512.0/im.w;
             else scale = 512.0/im.h;
         }
-        image resized = resize_image(im, scale*im.w, scale*im.h);
+        dn_image resized = resize_image(im, scale*im.w, scale*im.h);
         free_image(im);
         im = resized;
     }
     //im = letterbox_image(im, net->w, net->h);
 
     float *features = 0;
-    image update;
+    dn_image update;
     if (reconstruct){
         net->n = max_layer;
         im = letterbox_image(im, net->w, net->h);
@@ -343,7 +343,7 @@ void run_nightmare(int argc, char **argv)
             printf("region!\n");
             zero_objectness(net->layers[net->n-1]);
         }
-        image out_im = copy_image(get_network_image(net));
+        dn_image out_im = copy_image(get_network_image(net));
         /*
            image crop = crop_image(out_im, zz, zz, out_im.w-2*zz, out_im.h-2*zz);
         //flip_image(crop);
@@ -385,7 +385,7 @@ void run_nightmare(int argc, char **argv)
         }
         fprintf(stderr, "done\n");
         if(0){
-            image g = grayscale_image(im);
+            dn_image g = grayscale_image(im);
             free_image(im);
             im = g;
         }
@@ -400,12 +400,12 @@ void run_nightmare(int argc, char **argv)
         //show_image(im, buff, 0);
 
         if(rotate){
-            image rot = rotate_image(im, rotate);
+            dn_image rot = rotate_image(im, rotate);
             free_image(im);
             im = rot;
         }
-        image crop = crop_image(im, im.w * (1. - zoom)/2., im.h * (1.-zoom)/2., im.w*zoom, im.h*zoom);
-        image resized = resize_image(crop, im.w, im.h);
+        dn_image crop = crop_image(im, im.w * (1. - zoom)/2., im.h * (1.-zoom)/2., im.w*zoom, im.h*zoom);
+        dn_image resized = resize_image(crop, im.w, im.h);
         free_image(im);
         free_image(crop);
         im = resized;

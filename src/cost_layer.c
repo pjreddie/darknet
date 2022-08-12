@@ -79,7 +79,7 @@ void resize_cost_layer(cost_layer *l, int inputs)
 #endif
 }
 
-void forward_cost_layer(cost_layer l, network net)
+void forward_cost_layer(cost_layer l, dn_network net)
 {
     if (!net.truth) return;
     if(l.cost_type == MASKED){
@@ -98,7 +98,7 @@ void forward_cost_layer(cost_layer l, network net)
     l.cost[0] = sum_array(l.output, l.batch*l.inputs);
 }
 
-void backward_cost_layer(const cost_layer l, network net)
+void backward_cost_layer(const cost_layer l, dn_network net)
 {
     axpy_cpu(l.batch*l.inputs, l.scale, l.delta, 1, net.delta, 1);
 }

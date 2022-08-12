@@ -9,12 +9,12 @@
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-list *get_paths(char *filename)
+dn_list *get_paths(const char *filename)
 {
     char *path;
     FILE *file = fopen(filename, "r");
     if(!file) file_error(filename);
-    list *lines = make_list();
+    dn_list *lines = make_list();
     while((path=fgetl(file))){
         list_insert(lines, path);
     }
@@ -65,18 +65,18 @@ char **find_replace_paths(char **paths, int n, char *find, char *replace)
     return replace_paths;
 }
 
-matrix load_image_paths_gray(char **paths, int n, int w, int h)
+dn_matrix load_image_paths_gray(char **paths, int n, int w, int h)
 {
     int i;
-    matrix X;
+    dn_matrix X;
     X.rows = n;
     X.vals = calloc(X.rows, sizeof(float*));
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
-        image im = load_image(paths[i], w, h, 3);
+        dn_image im = load_image(paths[i], w, h, 3);
 
-        image gray = grayscale_image(im);
+        dn_image gray = grayscale_image(im);
         free_image(im);
         im = gray;
 
@@ -86,33 +86,33 @@ matrix load_image_paths_gray(char **paths, int n, int w, int h)
     return X;
 }
 
-matrix load_image_paths(char **paths, int n, int w, int h)
+dn_matrix load_image_paths(char **paths, int n, int w, int h)
 {
     int i;
-    matrix X;
+    dn_matrix X;
     X.rows = n;
     X.vals = calloc(X.rows, sizeof(float*));
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
-        image im = load_image_color(paths[i], w, h);
+        dn_image im = load_image_color(paths[i], w, h);
         X.vals[i] = im.data;
         X.cols = im.h*im.w*im.c;
     }
     return X;
 }
 
-matrix load_image_augment_paths(char **paths, int n, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
+dn_matrix load_image_augment_paths(char **paths, int n, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
 {
     int i;
-    matrix X;
+    dn_matrix X;
     X.rows = n;
     X.vals = calloc(X.rows, sizeof(float*));
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
-        image im = load_image_color(paths[i], 0, 0);
-        image crop;
+        dn_image im = load_image_color(paths[i], 0, 0);
+        dn_image crop;
         if(center){
             crop = center_crop_image(im, size, size);
         } else {
@@ -136,7 +136,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
 }
 
 
-box_label *read_boxes(char *filename, int *n)
+dn_box_label *read_boxes(const char *filename, int *n)
 {
     FILE *file = fopen(filename, "r");
     if(!file) file_error(filename);
@@ -144,11 +144,11 @@ box_label *read_boxes(char *filename, int *n)
     int id;
     int count = 0;
     int size = 64;
-    box_label *boxes = calloc(size, sizeof(box_label));
+    dn_box_label *boxes = calloc(size, sizeof(dn_box_label));
     while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
         if(count == size) {
             size = size * 2;
-            boxes = realloc(boxes, size*sizeof(box_label));
+            boxes = realloc(boxes, size*sizeof(dn_box_label));
         }
         boxes[count].id = id;
         boxes[count].x = x;
@@ -166,18 +166,18 @@ box_label *read_boxes(char *filename, int *n)
     return boxes;
 }
 
-void randomize_boxes(box_label *b, int n)
+void randomize_boxes(dn_box_label *b, int n)
 {
     int i;
     for(i = 0; i < n; ++i){
-        box_label swap = b[i];
+        dn_box_label swap = b[i];
         int index = rand()%n;
         b[i] = b[index];
         b[index] = swap;
     }
 }
 
-void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
+void correct_boxes(dn_box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
 {
     int i;
     for(i = 0; i < n; ++i){
@@ -224,7 +224,7 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
     int count = 0;
-    box_label *boxes = read_boxes(labelpath, &count);
+    dn_box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     float x,y,w,h;
@@ -263,7 +263,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
     int count = 0;
-    box_label *boxes = read_boxes(labelpath, &count);
+    dn_box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     float x,y,w,h;
@@ -300,7 +300,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
-void load_rle(image im, int *rle, int n)
+void load_rle(dn_image im, int *rle, int n)
 {
     int count = 0;
     int curr = 0;
@@ -316,7 +316,7 @@ void load_rle(image im, int *rle, int n)
     }
 }
 
-void or_image(image src, image dest, int c)
+void or_image(dn_image src, dn_image dest, int c)
 {
     int i;
     for(i = 0; i < src.w*src.h; ++i){
@@ -324,7 +324,7 @@ void or_image(image src, image dest, int c)
     }
 }
 
-void exclusive_image(image src)
+void exclusive_image(dn_image src)
 {
     int k, j, i;
     int s = src.w*src.h;
@@ -339,7 +339,7 @@ void exclusive_image(image src)
     }
 }
 
-box bound_image(image im)
+dn_box bound_image(dn_image im)
 {
     int x,y;
     int minx = im.w;
@@ -356,7 +356,7 @@ box bound_image(image im)
             }
         }
     }
-    box b = {minx, miny, maxx-minx + 1, maxy-miny + 1};
+    dn_box b = {minx, miny, maxx-minx + 1, maxy-miny + 1};
     //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
     return b;
 }
@@ -375,15 +375,15 @@ void fill_truth_iseg(char *path, int num_boxes, float *truth, int classes, int w
     int id;
     int i = 0;
     int j;
-    image part = make_image(w, h, 1);
+    dn_image part = make_image(w, h, 1);
     while((fscanf(file, "%d %s", &id, buff) == 2) && i < num_boxes){
         int n = 0;
         int *rle = read_intlist(buff, &n, 0);
         load_rle(part, rle, n);
-        image sized = rotate_crop_image(part, aug.rad, aug.scale, aug.w, aug.h, aug.dx, aug.dy, aug.aspect);
+        dn_image sized = rotate_crop_image(part, aug.rad, aug.scale, aug.w, aug.h, aug.dx, aug.dy, aug.aspect);
         if(flip) flip_image(sized);
 
-        image mask = resize_image(sized, mw, mh);
+        dn_image mask = resize_image(sized, mw, mh);
         truth[i*(mw*mh+1)] = id;
         for(j = 0; j < mw*mh; ++j){
             truth[i*(mw*mh + 1) + 1 + j] = mask.data[j];
@@ -412,17 +412,17 @@ void fill_truth_mask(char *path, int num_boxes, float *truth, int classes, int w
     char buff[32788];
     int id;
     int i = 0;
-    image part = make_image(w, h, 1);
+    dn_image part = make_image(w, h, 1);
     while((fscanf(file, "%d %s", &id, buff) == 2) && i < num_boxes){
         int n = 0;
         int *rle = read_intlist(buff, &n, 0);
         load_rle(part, rle, n);
-        image sized = rotate_crop_image(part, aug.rad, aug.scale, aug.w, aug.h, aug.dx, aug.dy, aug.aspect);
+        dn_image sized = rotate_crop_image(part, aug.rad, aug.scale, aug.w, aug.h, aug.dx, aug.dy, aug.aspect);
         if(flip) flip_image(sized);
-        box b = bound_image(sized);
+        dn_box b = bound_image(sized);
         if(b.w > 0){
-            image crop = crop_image(sized, b.x, b.y, b.w, b.h);
-            image mask = resize_image(crop, mw, mh);
+            dn_image crop = crop_image(sized, b.x, b.y, b.w, b.h);
+            dn_image mask = resize_image(crop, mw, mh);
             truth[i*(4 + mw*mh + 1) + 0] = (b.x + b.w/2.)/sized.w;
             truth[i*(4 + mw*mh + 1) + 1] = (b.y + b.h/2.)/sized.h;
             truth[i*(4 + mw*mh + 1) + 2] = b.w/sized.w;
@@ -456,7 +456,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
     int count = 0;
-    box_label *boxes = read_boxes(labelpath, &count);
+    dn_box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     if(count > num_boxes) count = num_boxes;
@@ -513,10 +513,10 @@ void fill_truth_captcha(char *path, int n, float *truth)
     }
 }
 
-data load_data_captcha(char **paths, int n, int m, int k, int w, int h)
+dn_data load_data_captcha(char **paths, int n, int m, int k, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
     d.y = make_matrix(n, k*NUMCHARS);
@@ -528,10 +528,10 @@ data load_data_captcha(char **paths, int n, int m, int k, int w, int h)
     return d;
 }
 
-data load_data_captcha_encode(char **paths, int n, int m, int w, int h)
+dn_data load_data_captcha_encode(char **paths, int n, int m, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
     d.X.cols = 17100;
@@ -555,7 +555,7 @@ void fill_truth(char *path, char **labels, int k, float *truth)
     if(count != 1 && (k != 1 || count != 0)) printf("Too many or too few labels: %d, %s\n", count, path);
 }
 
-void fill_hierarchy(float *truth, int k, tree *hierarchy)
+void fill_hierarchy(float *truth, int k, dn_tree *hierarchy)
 {
     int j;
     for(j = 0; j < k; ++j){
@@ -587,9 +587,9 @@ void fill_hierarchy(float *truth, int k, tree *hierarchy)
     }
 }
 
-matrix load_regression_labels_paths(char **paths, int n, int k)
+dn_matrix load_regression_labels_paths(char **paths, int n, int k)
 {
-    matrix y = make_matrix(n, k);
+    dn_matrix y = make_matrix(n, k);
     int i,j;
     for(i = 0; i < n; ++i){
         char labelpath[4096];
@@ -617,9 +617,9 @@ matrix load_regression_labels_paths(char **paths, int n, int k)
     return y;
 }
 
-matrix load_labels_paths(char **paths, int n, char **labels, int k, tree *hierarchy)
+dn_matrix load_labels_paths(char **paths, int n, char **labels, int k, dn_tree *hierarchy)
 {
-    matrix y = make_matrix(n, k);
+    dn_matrix y = make_matrix(n, k);
     int i;
     for(i = 0; i < n && labels; ++i){
         fill_truth(paths[i], labels, k, y.vals[i]);
@@ -630,9 +630,9 @@ matrix load_labels_paths(char **paths, int n, char **labels, int k, tree *hierar
     return y;
 }
 
-matrix load_tags_paths(char **paths, int n, int k)
+dn_matrix load_tags_paths(char **paths, int n, int k)
 {
-    matrix y = make_matrix(n, k);
+    dn_matrix y = make_matrix(n, k);
     int i;
     //int count = 0;
     for(i = 0; i < n; ++i){
@@ -654,15 +654,15 @@ matrix load_tags_paths(char **paths, int n, int k)
     return y;
 }
 
-char **get_labels(char *filename)
+char **get_labels(const char *filename)
 {
-    list *plist = get_paths(filename);
+    dn_list *plist = get_paths(filename);
     char **labels = (char **)list_to_array(plist);
     free_list(plist);
     return labels;
 }
 
-void free_data(data d)
+void free_data(dn_data d)
 {
     if(!d.shallow){
         free_matrix(d.X);
@@ -673,7 +673,7 @@ void free_data(data d)
     }
 }
 
-image get_segmentation_image(char *path, int w, int h, int classes)
+dn_image get_segmentation_image(char *path, int w, int h, int classes)
 {
     char labelpath[4096];
     find_replace(path, "images", "mask", labelpath);
@@ -681,12 +681,12 @@ image get_segmentation_image(char *path, int w, int h, int classes)
     find_replace(labelpath, ".jpg", ".txt", labelpath);
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
-    image mask = make_image(w, h, classes);
+    dn_image mask = make_image(w, h, classes);
     FILE *file = fopen(labelpath, "r");
     if(!file) file_error(labelpath);
     char buff[32788];
     int id;
-    image part = make_image(w, h, 1);
+    dn_image part = make_image(w, h, 1);
     while(fscanf(file, "%d %s", &id, buff) == 2){
         int n = 0;
         int *rle = read_intlist(buff, &n, 0);
@@ -700,7 +700,7 @@ image get_segmentation_image(char *path, int w, int h, int classes)
     return mask;
 }
 
-image get_segmentation_image2(char *path, int w, int h, int classes)
+dn_image get_segmentation_image2(char *path, int w, int h, int classes)
 {
     char labelpath[4096];
     find_replace(path, "images", "mask", labelpath);
@@ -708,7 +708,7 @@ image get_segmentation_image2(char *path, int w, int h, int classes)
     find_replace(labelpath, ".jpg", ".txt", labelpath);
     find_replace(labelpath, ".JPG", ".txt", labelpath);
     find_replace(labelpath, ".JPEG", ".txt", labelpath);
-    image mask = make_image(w, h, classes+1);
+    dn_image mask = make_image(w, h, classes+1);
     int i;
     for(i = 0; i < w*h; ++i){
         mask.data[w*h*classes + i] = 1;
@@ -717,7 +717,7 @@ image get_segmentation_image2(char *path, int w, int h, int classes)
     if(!file) file_error(labelpath);
     char buff[32788];
     int id;
-    image part = make_image(w, h, 1);
+    dn_image part = make_image(w, h, 1);
     while(fscanf(file, "%d %s", &id, buff) == 2){
         int n = 0;
         int *rle = read_intlist(buff, &n, 0);
@@ -734,11 +734,11 @@ image get_segmentation_image2(char *path, int w, int h, int classes)
     return mask;
 }
 
-data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int min, int max, float angle, float aspect, float hue, float saturation, float exposure, int div)
+dn_data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int min, int max, float angle, float aspect, float hue, float saturation, float exposure, int div)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -751,18 +751,18 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
     d.y.vals = calloc(d.X.rows, sizeof(float*));
 
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        dn_image orig = load_image_color(random_paths[i], 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
-        image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+        dn_image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
 
         int flip = rand()%2;
         if(flip) flip_image(sized);
         random_distort_image(sized, hue, saturation, exposure);
         d.X.vals[i] = sized.data;
 
-        image mask = get_segmentation_image(random_paths[i], orig.w, orig.h, classes);
+        dn_image mask = get_segmentation_image(random_paths[i], orig.w, orig.h, classes);
         //image mask = make_image(orig.w, orig.h, classes+1);
-        image sized_m = rotate_crop_image(mask, a.rad, a.scale/div, a.w/div, a.h/div, a.dx/div, a.dy/div, a.aspect);
+        dn_image sized_m = rotate_crop_image(mask, a.rad, a.scale/div, a.w/div, a.h/div, a.dx/div, a.dy/div, a.aspect);
 
         if(flip) flip_image(sized_m);
         d.y.vals[i] = sized_m.data;
@@ -782,11 +782,11 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
     return d;
 }
 
-data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int boxes, int div, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
+dn_data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int boxes, int div, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -796,9 +796,9 @@ data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int b
     d.y = make_matrix(n, (((w/div)*(h/div))+1)*boxes);
 
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        dn_image orig = load_image_color(random_paths[i], 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
-        image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+        dn_image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
 
         int flip = rand()%2;
         if(flip) flip_image(sized);
@@ -822,11 +822,11 @@ data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int b
     return d;
 }
 
-data load_data_mask(int n, char **paths, int m, int w, int h, int classes, int boxes, int coords, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
+dn_data load_data_mask(int n, char **paths, int m, int w, int h, int classes, int boxes, int coords, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -836,9 +836,9 @@ data load_data_mask(int n, char **paths, int m, int w, int h, int classes, int b
     d.y = make_matrix(n, (coords+1)*boxes);
 
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        dn_image orig = load_image_color(random_paths[i], 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
-        image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+        dn_image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
 
         int flip = rand()%2;
         if(flip) flip_image(sized);
@@ -862,11 +862,11 @@ data load_data_mask(int n, char **paths, int m, int w, int h, int classes, int b
     return d;
 }
 
-data load_data_region(int n, char **paths, int m, int w, int h, int size, int classes, float jitter, float hue, float saturation, float exposure)
+dn_data load_data_region(int n, char **paths, int m, int w, int h, int size, int classes, float jitter, float hue, float saturation, float exposure)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -877,7 +877,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     int k = size*size*(5+classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        dn_image orig = load_image_color(random_paths[i], 0, 0);
 
         int oh = orig.h;
         int ow = orig.w;
@@ -897,12 +897,12 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
         float sy = (float)sheight / oh;
 
         int flip = rand()%2;
-        image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
+        dn_image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
         float dx = ((float)pleft/ow)/sx;
         float dy = ((float)ptop /oh)/sy;
 
-        image sized = resize_image(cropped, w, h);
+        dn_image sized = resize_image(cropped, w, h);
         if(flip) flip_image(sized);
         random_distort_image(sized, hue, saturation, exposure);
         d.X.vals[i] = sized.data;
@@ -916,11 +916,11 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     return d;
 }
 
-data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
+dn_data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
 {
     if(m) paths = get_random_paths(paths, 2*n, m);
     int i,j;
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -930,8 +930,8 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
     int k = 2*(classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
-        image im1 = load_image_color(paths[i*2],   w, h);
-        image im2 = load_image_color(paths[i*2+1], w, h);
+        dn_image im1 = load_image_color(paths[i*2],   w, h);
+        dn_image im2 = load_image_color(paths[i*2+1], w, h);
 
         d.X.vals[i] = calloc(d.X.cols, sizeof(float));
         memcpy(d.X.vals[i],         im1.data, h*w*3*sizeof(float));
@@ -980,16 +980,16 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
     return d;
 }
 
-data load_data_swag(char **paths, int n, int classes, float jitter)
+dn_data load_data_swag(char **paths, int n, int classes, float jitter)
 {
     int index = rand()%n;
     char *random_path = paths[index];
 
-    image orig = load_image_color(random_path, 0, 0);
+    dn_image orig = load_image_color(random_path, 0, 0);
     int h = orig.h;
     int w = orig.w;
 
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.w = w;
     d.h = h;
@@ -1016,12 +1016,12 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     float sy = (float)sheight / h;
 
     int flip = rand()%2;
-    image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
+    dn_image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
     float dx = ((float)pleft/w)/sx;
     float dy = ((float)ptop /h)/sy;
 
-    image sized = resize_image(cropped, w, h);
+    dn_image sized = resize_image(cropped, w, h);
     if(flip) flip_image(sized);
     d.X.vals[0] = sized.data;
 
@@ -1033,11 +1033,11 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     return d;
 }
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter, float hue, float saturation, float exposure)
+dn_data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter, float hue, float saturation, float exposure)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
@@ -1046,8 +1046,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
-        image sized = make_image(w, h, orig.c);
+        dn_image orig = load_image_color(random_paths[i], 0, 0);
+        dn_image sized = make_image(w, h, orig.c);
         fill_image(sized, .5);
 
         float dw = jitter * orig.w;
@@ -1090,7 +1090,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 void *load_thread(void *ptr)
 {
     //printf("Loading data: %d\n", rand());
-    load_args a = *(struct load_args*)ptr;
+    dn_load_args a = *(struct dn_load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
     if(a.saturation == 0) a.saturation = 1;
     if(a.aspect == 0) a.aspect = 1;
@@ -1132,10 +1132,10 @@ void *load_thread(void *ptr)
     return 0;
 }
 
-pthread_t load_data_in_thread(load_args args)
+pthread_t load_data_in_thread(dn_load_args args)
 {
     pthread_t thread;
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct dn_load_args *ptr = calloc(1, sizeof(struct dn_load_args));
     *ptr = args;
     if(pthread_create(&thread, 0, load_thread, ptr)) error("Thread creation failed");
     return thread;
@@ -1144,12 +1144,12 @@ pthread_t load_data_in_thread(load_args args)
 void *load_threads(void *ptr)
 {
     int i;
-    load_args args = *(load_args *)ptr;
+    dn_load_args args = *(dn_load_args *)ptr;
     if (args.threads == 0) args.threads = 1;
-    data *out = args.d;
+    dn_data *out = args.d;
     int total = args.n;
     free(ptr);
-    data *buffers = calloc(args.threads, sizeof(data));
+    dn_data *buffers = calloc(args.threads, sizeof(dn_data));
     pthread_t *threads = calloc(args.threads, sizeof(pthread_t));
     for(i = 0; i < args.threads; ++i){
         args.d = buffers + i;
@@ -1170,27 +1170,27 @@ void *load_threads(void *ptr)
     return 0;
 }
 
-void load_data_blocking(load_args args)
+void load_data_blocking(dn_load_args args)
 {
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct dn_load_args *ptr = calloc(1, sizeof(struct dn_load_args));
     *ptr = args;
     load_thread(ptr);
 }
 
-pthread_t load_data(load_args args)
+pthread_t load_data(dn_load_args args)
 {
     pthread_t thread;
-    struct load_args *ptr = calloc(1, sizeof(struct load_args));
+    struct dn_load_args *ptr = calloc(1, sizeof(struct dn_load_args));
     *ptr = args;
     if(pthread_create(&thread, 0, load_threads, ptr)) error("Thread creation failed");
     return thread;
 }
 
-data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int out_h)
+dn_data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int out_h)
 {
     if(m) paths = get_random_paths(paths, n, m);
     char **replace_paths = find_replace_paths(paths, n, ".png", "-label.png");
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
     d.y = load_image_paths_gray(replace_paths, n, out_w, out_h);
@@ -1201,10 +1201,10 @@ data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int 
     return d;
 }
 
-data load_data_old(char **paths, int n, int m, char **labels, int k, int w, int h)
+dn_data load_data_old(char **paths, int n, int m, char **labels, int k, int w, int h)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.X = load_image_paths(paths, n, w, h);
     d.y = load_labels_paths(paths, n, labels, k, 0);
@@ -1226,10 +1226,10 @@ data load_data_old(char **paths, int n, int m, char **labels, int k, int w, int 
    }
  */
 
-data load_data_super(char **paths, int n, int m, int w, int h, int scale)
+dn_data load_data_super(char **paths, int n, int m, int w, int h, int scale)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
 
     int i;
@@ -1242,11 +1242,11 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     d.y.cols = w*scale * h*scale * 3;
 
     for(i = 0; i < n; ++i){
-        image im = load_image_color(paths[i], 0, 0);
-        image crop = random_crop_image(im, w*scale, h*scale);
+        dn_image im = load_image_color(paths[i], 0, 0);
+        dn_image crop = random_crop_image(im, w*scale, h*scale);
         int flip = rand()%2;
         if (flip) flip_image(crop);
-        image resize = resize_image(crop, w, h);
+        dn_image resize = resize_image(crop, w, h);
         d.X.vals[i] = resize.data;
         d.y.vals[i] = crop.data;
         free_image(im);
@@ -1256,10 +1256,10 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     return d;
 }
 
-data load_data_regression(char **paths, int n, int m, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+dn_data load_data_regression(char **paths, int n, int m, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.X = load_image_augment_paths(paths, n, min, max, size, angle, aspect, hue, saturation, exposure, 0);
     d.y = load_regression_labels_paths(paths, n, k);
@@ -1267,9 +1267,9 @@ data load_data_regression(char **paths, int n, int m, int k, int min, int max, i
     return d;
 }
 
-data select_data(data *orig, int *inds)
+dn_data select_data(dn_data *orig, int *inds)
 {
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 1;
     d.w = orig[0].w;
     d.h = orig[0].h;
@@ -1290,13 +1290,13 @@ data select_data(data *orig, int *inds)
     return d;
 }
 
-data *tile_data(data orig, int divs, int size)
+dn_data *tile_data(dn_data orig, int divs, int size)
 {
-    data *ds = calloc(divs*divs, sizeof(data));
+    dn_data *ds = calloc(divs*divs, sizeof(dn_data));
     int i, j;
 #pragma omp parallel for
     for(i = 0; i < divs*divs; ++i){
-        data d;
+        dn_data d;
         d.shallow = 0;
         d.w = orig.w/divs * size;
         d.h = orig.h/divs * size;
@@ -1309,7 +1309,7 @@ data *tile_data(data orig, int divs, int size)
         for(j = 0; j < orig.X.rows; ++j){
             int x = (i%divs) * orig.w / divs - (d.w - orig.w/divs)/2;
             int y = (i/divs) * orig.h / divs - (d.h - orig.h/divs)/2;
-            image im = float_to_image(orig.w, orig.h, 3, orig.X.vals[j]);
+            dn_image im = float_to_image(orig.w, orig.h, 3, orig.X.vals[j]);
             d.X.vals[j] = crop_image(im, x, y, d.w, d.h).data;
         }
         ds[i] = d;
@@ -1317,9 +1317,9 @@ data *tile_data(data orig, int divs, int size)
     return ds;
 }
 
-data resize_data(data orig, int w, int h)
+dn_data resize_data(dn_data orig, int w, int h)
 {
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.w = w;
     d.h = h;
@@ -1331,16 +1331,16 @@ data resize_data(data orig, int w, int h)
     d.y = copy_matrix(orig.y);
 #pragma omp parallel for
     for(i = 0; i < orig.X.rows; ++i){
-        image im = float_to_image(orig.w, orig.h, 3, orig.X.vals[i]);
+        dn_image im = float_to_image(orig.w, orig.h, 3, orig.X.vals[i]);
         d.X.vals[i] = resize_image(im, w, h).data;
     }
     return d;
 }
 
-data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
+dn_data load_data_augment(char **paths, int n, int m, char **labels, int k, dn_tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.w=size;
     d.h=size;
@@ -1350,10 +1350,10 @@ data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *h
     return d;
 }
 
-data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
+dn_data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure)
 {
     if(m) paths = get_random_paths(paths, n, m);
-    data d = {0};
+    dn_data d = {0};
     d.w = size;
     d.h = size;
     d.shallow = 0;
@@ -1363,10 +1363,10 @@ data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size
     return d;
 }
 
-matrix concat_matrix(matrix m1, matrix m2)
+dn_matrix concat_matrix(dn_matrix m1, dn_matrix m2)
 {
     int i, count = 0;
-    matrix m;
+    dn_matrix m;
     m.cols = m1.cols;
     m.rows = m1.rows+m2.rows;
     m.vals = calloc(m1.rows + m2.rows, sizeof(float*));
@@ -1379,9 +1379,9 @@ matrix concat_matrix(matrix m1, matrix m2)
     return m;
 }
 
-data concat_data(data d1, data d2)
+dn_data concat_data(dn_data d1, dn_data d2)
 {
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 1;
     d.X = concat_matrix(d1.X, d2.X);
     d.y = concat_matrix(d1.y, d2.y);
@@ -1390,26 +1390,26 @@ data concat_data(data d1, data d2)
     return d;
 }
 
-data concat_datas(data *d, int n)
+dn_data concat_datas(dn_data *d, int n)
 {
     int i;
-    data out = {0};
+    dn_data out = {0};
     for(i = 0; i < n; ++i){
-        data new = concat_data(d[i], out);
+        dn_data new = concat_data(d[i], out);
         free_data(out);
         out = new;
     }
     return out;
 }
 
-data load_categorical_data_csv(char *filename, int target, int k)
+dn_data load_categorical_data_csv(const char *filename, int target, int k)
 {
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
-    matrix X = csv_to_matrix(filename);
+    dn_matrix X = csv_to_matrix(filename);
     float *truth_1d = pop_column(&X, target);
     float **truth = one_hot_encode(truth_1d, X.rows, k);
-    matrix y;
+    dn_matrix y;
     y.rows = X.rows;
     y.cols = k;
     y.vals = truth;
@@ -1419,13 +1419,13 @@ data load_categorical_data_csv(char *filename, int target, int k)
     return d;
 }
 
-data load_cifar10_data(char *filename)
+dn_data load_cifar10_data(const char *filename)
 {
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     long i,j;
-    matrix X = make_matrix(10000, 3072);
-    matrix y = make_matrix(10000, 10);
+    dn_matrix X = make_matrix(10000, 3072);
+    dn_matrix y = make_matrix(10000, 10);
     d.X = X;
     d.y = y;
 
@@ -1446,7 +1446,7 @@ data load_cifar10_data(char *filename)
     return d;
 }
 
-void get_random_batch(data d, int n, float *X, float *y)
+void get_random_batch(dn_data d, int n, float *X, float *y)
 {
     int j;
     for(j = 0; j < n; ++j){
@@ -1456,7 +1456,7 @@ void get_random_batch(data d, int n, float *X, float *y)
     }
 }
 
-void get_next_batch(data d, int n, int offset, float *X, float *y)
+void get_next_batch(dn_data d, int n, int offset, float *X, float *y)
 {
     int j;
     for(j = 0; j < n; ++j){
@@ -1466,7 +1466,7 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)
     }
 }
 
-void smooth_data(data d)
+void smooth_data(dn_data d)
 {
     int i, j;
     float scale = 1. / d.y.cols;
@@ -1478,13 +1478,13 @@ void smooth_data(data d)
     }
 }
 
-data load_all_cifar10()
+dn_data load_all_cifar10()
 {
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     int i,j,b;
-    matrix X = make_matrix(50000, 3072);
-    matrix y = make_matrix(50000, 10);
+    dn_matrix X = make_matrix(50000, 3072);
+    dn_matrix y = make_matrix(50000, 10);
     d.X = X;
     d.y = y;
 
@@ -1511,11 +1511,11 @@ data load_all_cifar10()
     return d;
 }
 
-data load_go(char *filename)
+dn_data load_go(const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
-    matrix X = make_matrix(3363059, 361);
-    matrix y = make_matrix(3363059, 361);
+    dn_matrix X = make_matrix(3363059, 361);
+    dn_matrix y = make_matrix(3363059, 361);
     int row, col;
 
     if(!fp) file_error(filename);
@@ -1546,7 +1546,7 @@ data load_go(char *filename)
     X = resize_matrix(X, count);
     y = resize_matrix(y, count);
 
-    data d = {0};
+    dn_data d = {0};
     d.shallow = 0;
     d.X = X;
     d.y = y;
@@ -1558,7 +1558,7 @@ data load_go(char *filename)
 }
 
 
-void randomize_data(data d)
+void randomize_data(dn_data d)
 {
     int i;
     for(i = d.X.rows-1; i > 0; --i){
@@ -1573,7 +1573,7 @@ void randomize_data(data d)
     }
 }
 
-void scale_data_rows(data d, float s)
+void scale_data_rows(dn_data d, float s)
 {
     int i;
     for(i = 0; i < d.X.rows; ++i){
@@ -1581,7 +1581,7 @@ void scale_data_rows(data d, float s)
     }
 }
 
-void translate_data_rows(data d, float s)
+void translate_data_rows(dn_data d, float s)
 {
     int i;
     for(i = 0; i < d.X.rows; ++i){
@@ -1589,9 +1589,9 @@ void translate_data_rows(data d, float s)
     }
 }
 
-data copy_data(data d)
+dn_data copy_data(dn_data d)
 {
-    data c = {0};
+    dn_data c = {0};
     c.w = d.w;
     c.h = d.h;
     c.shallow = 0;
@@ -1602,7 +1602,7 @@ data copy_data(data d)
     return c;
 }
 
-void normalize_data_rows(data d)
+void normalize_data_rows(dn_data d)
 {
     int i;
     for(i = 0; i < d.X.rows; ++i){
@@ -1610,9 +1610,9 @@ void normalize_data_rows(data d)
     }
 }
 
-data get_data_part(data d, int part, int total)
+dn_data get_data_part(dn_data d, int part, int total)
 {
-    data p = {0};
+    dn_data p = {0};
     p.shallow = 1;
     p.X.rows = d.X.rows * (part + 1) / total - d.X.rows * part / total;
     p.y.rows = d.y.rows * (part + 1) / total - d.y.rows * part / total;
@@ -1623,9 +1623,9 @@ data get_data_part(data d, int part, int total)
     return p;
 }
 
-data get_random_data(data d, int num)
+dn_data get_random_data(dn_data d, int num)
 {
-    data r = {0};
+    dn_data r = {0};
     r.shallow = 1;
 
     r.X.rows = num;
@@ -1646,14 +1646,14 @@ data get_random_data(data d, int num)
     return r;
 }
 
-data *split_data(data d, int part, int total)
+dn_data *split_data(dn_data d, int part, int total)
 {
-    data *split = calloc(2, sizeof(data));
+    dn_data *split = calloc(2, sizeof(dn_data));
     int i;
     int start = part*d.X.rows/total;
     int end = (part+1)*d.X.rows/total;
-    data train;
-    data test;
+    dn_data train;
+    dn_data test;
     train.shallow = test.shallow = 1;
 
     test.X.rows = test.y.rows = end-start;

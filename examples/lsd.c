@@ -396,9 +396,9 @@ void slerp(float *start, float *end, float s, int n, float *out)
     scale_array(out, n, 1./mag);
 }
 
-image random_unit_vector_image(int w, int h, int c)
+dn_image random_unit_vector_image(int w, int h, int c)
 {
-    image im = make_image(w, h, c);
+    dn_image im = make_image(w, h, c);
     int i;
     for(i = 0; i < im.w*im.h*im.c; ++i){
         im.data[i] = rand_normal();
@@ -410,7 +410,7 @@ image random_unit_vector_image(int w, int h, int c)
 
 void inter_dcgan(char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -426,10 +426,10 @@ void inter_dcgan(char *cfgfile, char *weightfile)
             break;
         }
     }
-    image start = random_unit_vector_image(net->w, net->h, net->c);
-    image end = random_unit_vector_image(net->w, net->h, net->c);
-        image im = make_image(net->w, net->h, net->c);
-        image orig = copy_image(start);
+    dn_image start = random_unit_vector_image(net->w, net->h, net->c);
+    dn_image end = random_unit_vector_image(net->w, net->h, net->c);
+        dn_image im = make_image(net->w, net->h, net->c);
+        dn_image orig = copy_image(start);
 
     int c = 0;
     int count = 0;
@@ -454,7 +454,7 @@ void inter_dcgan(char *cfgfile, char *weightfile)
         float *X = im.data;
         time=clock();
         network_predict(net, X);
-        image out = get_network_image_layer(net, imlayer);
+        dn_image out = get_network_image_layer(net, imlayer);
         //yuv_to_rgb(out);
         normalize_image(out);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
@@ -468,7 +468,7 @@ void inter_dcgan(char *cfgfile, char *weightfile)
 
 void test_dcgan(char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -480,7 +480,7 @@ void test_dcgan(char *cfgfile, char *weightfile)
     imlayer = net->n-1;
 
     while(1){
-        image im = make_image(net->w, net->h, net->c);
+        dn_image im = make_image(net->w, net->h, net->c);
         int i;
         for(i = 0; i < im.w*im.h*im.c; ++i){
             im.data[i] = rand_normal();
@@ -491,7 +491,7 @@ void test_dcgan(char *cfgfile, char *weightfile)
         float *X = im.data;
         time=clock();
         network_predict(net, X);
-        image out = get_network_image_layer(net, imlayer);
+        dn_image out = get_network_image_layer(net, imlayer);
         //yuv_to_rgb(out);
         normalize_image(out);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
@@ -502,7 +502,7 @@ void test_dcgan(char *cfgfile, char *weightfile)
     }
 }
 
-void set_network_alpha_beta(network *net, float alpha, float beta)
+void set_network_alpha_beta(dn_network *net, float alpha, float beta)
 {
     int i;
     for(i = 0; i < net->n; ++i){
@@ -1293,7 +1293,7 @@ save_weights(net, buff);
 
 void test_lsd(char *cfg, char *weights, char *filename, int gray)
 {
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -1320,15 +1320,15 @@ void test_lsd(char *cfg, char *weights, char *filename, int gray)
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, 0, 0);
-        image resized = resize_min(im, net->w);
-        image crop = crop_image(resized, (resized.w - net->w)/2, (resized.h - net->h)/2, net->w, net->h);
+        dn_image im = load_image_color(input, 0, 0);
+        dn_image resized = resize_min(im, net->w);
+        dn_image crop = crop_image(resized, (resized.w - net->w)/2, (resized.h - net->h)/2, net->w, net->h);
         if(gray) grayscale_image_3c(crop);
 
         float *X = crop.data;
         time=clock();
         network_predict(net, X);
-        image out = get_network_image_layer(net, imlayer);
+        dn_image out = get_network_image_layer(net, imlayer);
         //yuv_to_rgb(out);
         constrain_image(out);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));

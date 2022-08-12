@@ -56,7 +56,7 @@ int *read_intlist(char *gpu_list, int *ngpus, int d)
     return gpus;
 }
 
-int *read_map(char *filename)
+int *read_map(const char *filename)
 {
     int n = 0;
     int *map = 0;
@@ -257,7 +257,7 @@ void error(const char *s)
     exit(-1);
 }
 
-unsigned char *read_file(char *filename)
+unsigned char *read_file(const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
     size_t size;
@@ -278,17 +278,17 @@ void malloc_error()
     exit(-1);
 }
 
-void file_error(char *s)
+void file_error(const char *s)
 {
     fprintf(stderr, "Couldn't open file: %s\n", s);
     exit(0);
 }
 
-list *split_str(char *s, char delim)
+dn_list *split_str(char *s, char delim)
 {
     size_t i;
     size_t len = strlen(s);
-    list *l = make_list();
+    dn_list *l = make_list();
     list_insert(l, s);
     for(i = 0; i < len; ++i){
         if(s[i] == delim){
@@ -427,9 +427,9 @@ char *copy_string(char *s)
     return copy;
 }
 
-list *parse_csv_line(char *line)
+dn_list *parse_csv_line(char *line)
 {
-    list *l = make_list();
+    dn_list *l = make_list();
     char *c, *p;
     int in = 0;
     for(c = line, p = line; *c != '\0'; ++c){

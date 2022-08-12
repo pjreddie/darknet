@@ -92,9 +92,9 @@ static int occupied(float *b, int i)
     return 0;
 }
 
-data random_go_moves(moves m, int n)
+dn_data random_go_moves(moves m, int n)
 {
-    data d = {0};
+    dn_data d = {0};
     d.X = make_matrix(n, 19*19*3);
     d.y = make_matrix(n, 19*19+2);
     int i, j;
@@ -118,8 +118,8 @@ data random_go_moves(moves m, int n)
 
         int flip = rand()%2;
         int rotate = rand()%4;
-        image in = float_to_image(19, 19, 3, board);
-        image out = float_to_image(19, 19, 1, label);
+        dn_image in = float_to_image(19, 19, 3, board);
+        dn_image out = float_to_image(19, 19, 1, label);
         if(flip){
             flip_image(in);
             flip_image(out);
@@ -138,7 +138,7 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network*));
 
     srand(time(0));
     int seed = rand();
@@ -150,7 +150,7 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
         nets[i] = load_network(cfgfile, weightfile, clear);
         nets[i]->learning_rate *= ngpus;
     }
-    network *net = nets[0];
+    dn_network *net = nets[0];
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
 
     char *backup_directory = "/home/pjreddie/backup/";
@@ -165,7 +165,7 @@ void train_go(char *cfgfile, char *weightfile, char *filename, int *gpus, int ng
     while(get_current_batch(net) < net->max_batches || net->max_batches == 0){
         double time=what_time_is_it_now();
 
-        data train = random_go_moves(m, net->batch*net->subdivisions*ngpus);
+        dn_data train = random_go_moves(m, net->batch*net->subdivisions*ngpus);
         printf("Loaded: %lf seconds\n", what_time_is_it_now() - time);
         time=what_time_is_it_now();
 
@@ -294,20 +294,20 @@ void flip_board(float *board)
     }
 }
 
-float predict_move2(network *net, float *board, float *move, int multi)
+float predict_move2(dn_network *net, float *board, float *move, int multi)
 {
     float *output = network_predict(net, board);
     copy_cpu(19*19+1, output, 1, move, 1);
     float result = output[19*19 + 1];
     int i;
     if(multi){
-        image bim = float_to_image(19, 19, 3, board);
+        dn_image bim = float_to_image(19, 19, 3, board);
         for(i = 1; i < 8; ++i){
             rotate_image_cw(bim, i);
             if(i >= 4) flip_image(bim);
 
             float *output = network_predict(net, board);
-            image oim = float_to_image(19, 19, 1, output);
+            dn_image oim = float_to_image(19, 19, 1, output);
             result += output[19*19 + 1];
 
             if(i >= 4) flip_image(oim);
@@ -390,11 +390,11 @@ void free_mcts(mcts_tree *root)
     free(root);
 }
 
-float *network_predict_rotations(network *net, float *next)
+float *network_predict_rotations(dn_network *net, float *next)
 {
     int n = net->batch;
     float *in = calloc(19*19*3*n, sizeof(float));
-    image im = float_to_image(19, 19, 3, next);
+    dn_image im = float_to_image(19, 19, 3, next);
     int i,j;
     int *inds = random_index_order(0, 8);
     for(j = 0; j < n; ++j){
@@ -408,7 +408,7 @@ float *network_predict_rotations(network *net, float *next)
     float *pred = network_predict(net, in);
     for(j = 0; j < n; ++j){
         i = inds[j];
-        image im = float_to_image(19, 19, 1, pred + j*(19*19 + 2));
+        dn_image im = float_to_image(19, 19, 1, pred + j*(19*19 + 2));
         if(i >= 4) flip_image(im);
         rotate_image_cw(im, -i);
         if(j > 0){
@@ -421,7 +421,7 @@ float *network_predict_rotations(network *net, float *next)
     return pred;
 }
 
-mcts_tree *expand(float *next, float *ko, network *net)
+mcts_tree *expand(float *next, float *ko, dn_network *net)
 {
     mcts_tree *root = calloc(1, sizeof(mcts_tree));
     root->board = next;
@@ -458,7 +458,7 @@ float *copy_board(float *board)
     return next;
 }
 
-float select_mcts(mcts_tree *root, network *net, float *prev, float cpuct)
+float select_mcts(mcts_tree *root, dn_network *net, float *prev, float cpuct)
 {
     if(root->done) return -root->result;
     int i;
@@ -507,7 +507,7 @@ float select_mcts(mcts_tree *root, network *net, float *prev, float cpuct)
     return -val;
 }
 
-mcts_tree *run_mcts(mcts_tree *tree, network *net, float *board, float *ko, int player, int n, float cpuct, float secs)
+mcts_tree *run_mcts(mcts_tree *tree, dn_network *net, float *board, float *ko, int player, int n, float cpuct, float secs)
 {
     int i;
     double t = what_time_is_it_now();
@@ -735,7 +735,7 @@ void valid_go(char *cfgfile, char *weightfile, int multi, char *filename)
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
 
@@ -797,7 +797,7 @@ int stdin_ready()
     return 0;
 }
 
-mcts_tree *ponder(mcts_tree *tree, network *net, float *b, float *ko, int player, float cpuct)
+mcts_tree *ponder(mcts_tree *tree, dn_network *net, float *b, float *ko, int player, float cpuct)
 {
     double t = what_time_is_it_now();
     int count = 0;
@@ -813,7 +813,7 @@ mcts_tree *ponder(mcts_tree *tree, network *net, float *b, float *ko, int player
 void engine_go(char *filename, char *weightfile, int mcts_iters, float secs, float temp, float cpuct, int anon, int resign)
 {
     mcts_tree *root = 0;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
     float *board = calloc(19*19*3, sizeof(float));
@@ -1098,7 +1098,7 @@ void engine_go(char *filename, char *weightfile, int mcts_iters, float secs, flo
 void test_go(char *cfg, char *weights, int multi)
 {
     int i;
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     srand(time(0));
     float *board = calloc(19*19*3, sizeof(float));
@@ -1214,17 +1214,17 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
 {
     mcts_tree *tree1 = 0;
     mcts_tree *tree2 = 0;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     //set_batch_network(net, 1);
 
-    network *net2;
+    dn_network *net2;
     if (f2) {
         net2 = parse_network_cfg(f2);
         if(w2){
             load_weights(net2, w2);
         }
     } else {
-        net2 = calloc(1, sizeof(network));
+        net2 = calloc(1, sizeof(dn_network));
         *net2 = *net;
     }
     srand(time(0));
@@ -1282,7 +1282,7 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
             //mcts_iters = 500;
             cpuct = 1;
         }
-        network *use = ((total%2==0) == (player==1)) ? net : net2;
+        dn_network *use = ((total%2==0) == (player==1)) ? net : net2;
         mcts_tree *t = ((total%2==0) == (player==1)) ? tree1 : tree2;
         t = run_mcts(t, use, board, two, player, mcts_iters, cpuct, 0);
         move m = pick_move(t, temp, player);

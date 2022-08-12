@@ -9,11 +9,11 @@ typedef struct {
 
 unsigned char **load_files(char *filename, int *n)
 {
-    list *paths = get_paths(filename);
+    dn_list *paths = get_paths(filename);
     *n = paths->size;
     unsigned char **contents = calloc(*n, sizeof(char *));
     int i;
-    node *x = paths->front;
+    dn_node *x = paths->front;
     for(i = 0; i < *n; ++i){
         contents[i] = read_file((char *)x->val);
         x = x->next;
@@ -171,7 +171,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
     float avg_loss = -1;
-    network *net = load_network(cfgfile, weightfile, clear);
+    dn_network *net = load_network(cfgfile, weightfile, clear);
 
     int inputs = net->inputs;
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g, Inputs: %d %d %d\n", net->learning_rate, net->momentum, net->decay, inputs, net->batch, net->time_steps);
@@ -254,7 +254,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int inputs = net->inputs;
 
     int i, j;
@@ -308,7 +308,7 @@ void test_tactic_rnn_multi(char *cfgfile, char *weightfile, int num, float temp,
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int inputs = net->inputs;
 
     int i, j;
@@ -353,7 +353,7 @@ void test_tactic_rnn(char *cfgfile, char *weightfile, int num, float temp, int r
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int inputs = net->inputs;
 
     int i, j;
@@ -388,7 +388,7 @@ void valid_tactic_rnn(char *cfgfile, char *weightfile, char *seed)
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int inputs = net->inputs;
 
     int count = 0;
@@ -437,7 +437,7 @@ void valid_char_rnn(char *cfgfile, char *weightfile, char *seed)
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int inputs = net->inputs;
 
     int count = 0;
@@ -475,7 +475,7 @@ void vec_char_rnn(char *cfgfile, char *weightfile, char *seed)
     char *base = basecfg(cfgfile);
     fprintf(stderr, "%s\n", base);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int inputs = net->inputs;
 
     int c;
@@ -504,7 +504,7 @@ void vec_char_rnn(char *cfgfile, char *weightfile, char *seed)
         network_predict(net, input);
         input[(int)c] = 0;
 
-        layer l = net->layers[0];
+        dn_layer l = net->layers[0];
         #ifdef GPU
         cuda_pull_array(l.output_gpu, l.output, l.outputs);
         #endif

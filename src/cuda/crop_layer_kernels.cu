@@ -180,7 +180,7 @@ __global__ void forward_crop_layer_kernel(float *input, float *rand, int size, i
     output[count] = bilinear_interpolate_kernel(input, w, h, rx, ry, k);
 }
 
-extern "C" void forward_crop_layer_gpu(crop_layer layer, network net)
+extern "C" void forward_crop_layer_gpu(crop_layer layer, dn_network net)
 {
     cuda_random(layer.rand_gpu, layer.batch*8);
 

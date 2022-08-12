@@ -3,7 +3,7 @@
 #include <sys/time.h>
 #include <assert.h>
 
-void extend_data_truth(data *d, int n, float val)
+void extend_data_truth(dn_data *d, int n, float val)
 {
     int i, j;
     for(i = 0; i < d->y.rows; ++i){
@@ -15,11 +15,11 @@ void extend_data_truth(data *d, int n, float val)
     d->y.cols += n;
 }
 
-matrix network_loss_data(network *net, data test)
+dn_matrix network_loss_data(dn_network *net, dn_data test)
 {
     int i,b;
     int k = 1;
-    matrix pred = make_matrix(test.X.rows, k);
+    dn_matrix pred = make_matrix(test.X.rows, k);
     float *X = calloc(net->batch*test.X.cols, sizeof(float));
     float *y = calloc(net->batch*test.y.cols, sizeof(float));
     for(i = 0; i < test.X.rows; i += net->batch){
@@ -29,7 +29,7 @@ matrix network_loss_data(network *net, data test)
             memcpy(y+b*test.y.cols, test.y.vals[i+b], test.y.cols*sizeof(float));
         }
 
-        network orig = *net;
+        dn_network orig = *net;
         net->input = X;
         net->truth = y;
         net->train = 0;
@@ -60,7 +60,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network*));
 
     srand(time(0));
     int seed = rand();
@@ -73,12 +73,12 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network *net = nets[0];
+    dn_network *net = nets[0];
 
     int imgs = net->batch * net->subdivisions * ngpus;
 
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
 
     char *backup_directory = option_find_str(options, "backup", "/backup/");
     char *label_list = option_find_str(options, "labels", "data/labels.list");
@@ -86,7 +86,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     int classes = option_find_int(options, "classes", 2);
 
     char **labels = get_labels(label_list);
-    list *plist = get_paths(train_list);
+    dn_list *plist = get_paths(train_list);
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
@@ -95,7 +95,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     int divs=3;
     int size=2;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = divs*net->w/size;
     args.h = divs*net->h/size;
     args.size = divs*net->w/size;
@@ -117,8 +117,8 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     args.labels = labels;
     args.type = CLASSIFICATION_DATA;
 
-    data train;
-    data buffer;
+    dn_data train;
+    dn_data buffer;
     pthread_t load_thread;
     args.d = &buffer;
     load_thread = load_data(args);
@@ -130,9 +130,9 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data(args);
-        data resized = resize_data(train, net->w, net->h);
+        dn_data resized = resize_data(train, net->w, net->h);
         extend_data_truth(&resized, divs*divs, 0);
-        data *tiles = tile_data(train, divs, size);
+        dn_data *tiles = tile_data(train, divs, size);
 
         printf("Loaded: %lf seconds\n", what_time_is_it_now()-time);
         time = what_time_is_it_now();
@@ -145,7 +145,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
             for(j = 0; j < ngpus; ++j){
                 int index = i*ngpus + j;
                 extend_data_truth(tiles+index, divs*divs, SECRET_NUM);
-                matrix deltas = network_loss_data(nets[j], tiles[index]);
+                dn_matrix deltas = network_loss_data(nets[j], tiles[index]);
                 for(z = 0; z < resized.y.rows; ++z){
                     resized.y.vals[z][train.y.cols + index] = deltas.vals[z][0];
                 }
@@ -160,7 +160,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
                 resized.y.vals[z][train.y.cols + i] = (i == index)? 1 : 0;
             }
         }
-        data best = select_data(tiles, inds);
+        dn_data best = select_data(tiles, inds);
         free(inds);
         #ifdef GPU
         if (ngpus == 1) {
@@ -176,7 +176,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         }
         free_data(best);
         printf("\n");
-        image im = float_to_image(64,64,3,resized.X.vals[0]);
+        dn_image im = float_to_image(64,64,3,resized.X.vals[0]);
         //show_image(im, "orig");
         //cvWaitKey(100);
         /*
@@ -233,11 +233,11 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 void validate_attention_single(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
 
     char *label_list = option_find_str(options, "labels", "data/labels.list");
     char *leaf_list = option_find_str(options, "leaves", 0);
@@ -247,7 +247,7 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
     int topk = option_find_int(options, "top", 1);
 
     char **labels = get_labels(label_list);
-    list *plist = get_paths(valid_list);
+    dn_list *plist = get_paths(valid_list);
 
     char **paths = (char **)list_to_array(plist);
     int m = plist->size;
@@ -271,10 +271,10 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
                 break;
             }
         }
-        image im = load_image_color(paths[i], 0, 0);
-        image resized = resize_min(im, net->w*divs/size);
-        image crop = crop_image(resized, (resized.w - net->w*divs/size)/2, (resized.h - net->h*divs/size)/2, net->w*divs/size, net->h*divs/size);
-        image rcrop = resize_image(crop, net->w, net->h);
+        dn_image im = load_image_color(paths[i], 0, 0);
+        dn_image resized = resize_min(im, net->w*divs/size);
+        dn_image crop = crop_image(resized, (resized.w - net->w*divs/size)/2, (resized.h - net->h*divs/size)/2, net->w*divs/size, net->h*divs/size);
+        dn_image rcrop = resize_image(crop, net->w, net->h);
         //show_image(im, "orig");
         //show_image(crop, "cropped");
         //cvWaitKey(0);
@@ -287,7 +287,7 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
         printf("\n");
         copy_cpu(classes, pred, 1, avgs, 1);
         top_k(pred + classes, divs*divs, divs*divs, inds);
-        show_image(crop, "crop");
+        show_image(crop, "crop", 0);
         for(j = 0; j < extra; ++j){
             int index = inds[j];
             int row = index / divs;
@@ -295,10 +295,10 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
             int y = row * crop.h / divs - (net->h - crop.h/divs)/2;
             int x = col * crop.w / divs - (net->w - crop.w/divs)/2;
             printf("%d %d %d %d\n", row, col, y, x);
-            image tile = crop_image(crop, x, y, net->w, net->h);
+            dn_image tile = crop_image(crop, x, y, net->w, net->h);
             float *pred = network_predict(net, tile.data);
             axpy_cpu(classes, 1., pred, 1, avgs, 1);
-            show_image(tile, "tile");
+            show_image(tile, "tile", 0);
             //cvWaitKey(10);
         }
         if(net->hierarchy) hierarchy_predictions(pred, net->outputs, net->hierarchy, 1, 1);
@@ -321,11 +321,11 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
 void validate_attention_multi(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network *net = load_network(filename, weightfile, 0);
+    dn_network *net = load_network(filename, weightfile, 0);
     set_batch_network(net, 1);
     srand(time(0));
 
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
 
     char *label_list = option_find_str(options, "labels", "data/labels.list");
     char *valid_list = option_find_str(options, "valid", "data/train.list");
@@ -333,7 +333,7 @@ void validate_attention_multi(char *datacfg, char *filename, char *weightfile)
     int topk = option_find_int(options, "top", 1);
 
     char **labels = get_labels(label_list);
-    list *plist = get_paths(valid_list);
+    dn_list *plist = get_paths(valid_list);
     int scales[] = {224, 288, 320, 352, 384};
     int nscales = sizeof(scales)/sizeof(scales[0]);
 
@@ -355,9 +355,9 @@ void validate_attention_multi(char *datacfg, char *filename, char *weightfile)
             }
         }
         float *pred = calloc(classes, sizeof(float));
-        image im = load_image_color(paths[i], 0, 0);
+        dn_image im = load_image_color(paths[i], 0, 0);
         for(j = 0; j < nscales; ++j){
-            image r = resize_min(im, scales[j]);
+            dn_image r = resize_min(im, scales[j]);
             resize_network(net, r.w, r.h);
             float *p = network_predict(net, r.data);
             if(net->hierarchy) hierarchy_predictions(p, net->outputs, net->hierarchy, 1 , 1);
@@ -381,11 +381,11 @@ void validate_attention_multi(char *datacfg, char *filename, char *weightfile)
 
 void predict_attention(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
 
     char *name_list = option_find_str(options, "names", 0);
     if(!name_list) name_list = option_find_str(options, "labels", "data/labels.list");
@@ -407,8 +407,8 @@ void predict_attention(char *datacfg, char *cfgfile, char *weightfile, char *fil
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, 0, 0);
-        image r = letterbox_image(im, net->w, net->h);
+        dn_image im = load_image_color(input, 0, 0);
+        dn_image r = letterbox_image(im, net->w, net->h);
         //resize_network(&net, r.w, r.h);
         //printf("%d %d\n", r.w, r.h);
 

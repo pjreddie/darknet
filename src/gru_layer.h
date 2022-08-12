@@ -6,11 +6,11 @@
 #include "layer.h"
 #include "network.h"
 
-layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_normalize, int adam);
+dn_layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_normalize, int adam);
 
-void forward_gru_layer(layer l, network state);
-void backward_gru_layer(layer l, network state);
-void update_gru_layer(layer l, update_args a);
+void forward_gru_layer(dn_layer l, dn_network state);
+void backward_gru_layer(dn_layer l, dn_network state);
+void update_gru_layer(dn_layer l, update_args a);
 
 #ifdef GPU
 void forward_gru_layer_gpu(layer l, network state);

@@ -37,7 +37,7 @@ void resize_avgpool_layer(avgpool_layer *l, int w, int h)
     l->inputs = h*w*l->c;
 }
 
-void forward_avgpool_layer(const avgpool_layer l, network net)
+void forward_avgpool_layer(const avgpool_layer l, dn_network net)
 {
     int b,i,k;
 
@@ -54,7 +54,7 @@ void forward_avgpool_layer(const avgpool_layer l, network net)
     }
 }
 
-void backward_avgpool_layer(const avgpool_layer l, network net)
+void backward_avgpool_layer(const avgpool_layer l, dn_network net)
 {
     int b,i,k;
 

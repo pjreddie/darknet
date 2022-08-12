@@ -5,7 +5,7 @@ static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,2
 
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.list");
     char *backup_directory = option_find_str(options, "backup", "/backup/");
 
@@ -13,7 +13,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network **nets = calloc(ngpus, sizeof(network));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network));
 
     srand(time(0));
     int seed = rand();
@@ -27,22 +27,22 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network *net = nets[0];
+    dn_network *net = nets[0];
 
     int imgs = net->batch * net->subdivisions * ngpus;
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
-    data train, buffer;
+    dn_data train, buffer;
 
-    layer l = net->layers[net->n - 1];
+    dn_layer l = net->layers[net->n - 1];
 
     int classes = l.classes;
     float jitter = l.jitter;
 
-    list *plist = get_paths(train_images);
+    dn_list *plist = get_paths(train_images);
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = get_base_args(net);
+    dn_load_args args = get_base_args(net);
     args.coords = l.coords;
     args.paths = paths;
     args.n = imgs;
@@ -234,7 +234,7 @@ void print_imagenet_detections(FILE *fp, int id, detection *dets, int total, int
 void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char *outfile)
 {
     int j;
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
     char *valid_images = option_find_str(options, "valid", "data/train.list");
     char *name_list = option_find_str(options, "names", "data/names.list");
     char *prefix = option_find_str(options, "results", "results");
@@ -243,15 +243,15 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 2);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
-    list *plist = get_paths(valid_images);
+    dn_list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     char buff[1024];
@@ -289,15 +289,15 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     float nms = .45;
 
     int nthreads = 4;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
+    dn_image *val = calloc(nthreads, sizeof(dn_image));
+    dn_image *val_resized = calloc(nthreads, sizeof(dn_image));
+    dn_image *buf = calloc(nthreads, sizeof(dn_image));
+    dn_image *buf_resized = calloc(nthreads, sizeof(dn_image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
 
-    image input = make_image(net->w, net->h, net->c*2);
+    dn_image input = make_image(net->w, net->h, net->c*2);
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     //args.type = IMAGE_DATA;
@@ -364,7 +364,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
 void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *outfile)
 {
     int j;
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
     char *valid_images = option_find_str(options, "valid", "data/train.list");
     char *name_list = option_find_str(options, "names", "data/names.list");
     char *prefix = option_find_str(options, "results", "results");
@@ -373,15 +373,15 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
-    list *plist = get_paths(valid_images);
+    dn_list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     char buff[1024];
@@ -420,13 +420,13 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     float nms = .45;
 
     int nthreads = 4;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
+    dn_image *val = calloc(nthreads, sizeof(dn_image));
+    dn_image *val_resized = calloc(nthreads, sizeof(dn_image));
+    dn_image *buf = calloc(nthreads, sizeof(dn_image));
+    dn_image *buf_resized = calloc(nthreads, sizeof(dn_image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     //args.type = IMAGE_DATA;
@@ -488,15 +488,15 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
 void validate_detector_recall(char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
-    list *plist = get_paths("data/coco_val_5k.list");
+    dn_list *plist = get_paths("data/coco_val_5k.list");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
 
     int j, k;
 
@@ -514,8 +514,8 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
 
     for(i = 0; i < m; ++i){
         char *path = paths[i];
-        image orig = load_image_color(path, 0, 0);
-        image sized = resize_image(orig, net->w, net->h);
+        dn_image orig = load_image_color(path, 0, 0);
+        dn_image sized = resize_image(orig, net->w, net->h);
         char *id = basecfg(path);
         network_predict(net, sized.data);
         int nboxes = 0;
@@ -529,7 +529,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
         find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
         int num_labels = 0;
-        box_label *truth = read_boxes(labelpath, &num_labels);
+        dn_box_label *truth = read_boxes(labelpath, &num_labels);
         for(k = 0; k < nboxes; ++k){
             if(dets[k].objectness > thresh){
                 ++proposals;
@@ -537,7 +537,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
         }
         for (j = 0; j < num_labels; ++j) {
             ++total;
-            box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
+            dn_box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
             float best_iou = 0;
             for(k = 0; k < l.w*l.h*l.n; ++k){
                 float iou = box_iou(dets[k].bbox, t);
@@ -561,12 +561,12 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
 
-    image **alphabet = load_alphabet();
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_image **alphabet = load_alphabet();
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
     double time;
@@ -583,13 +583,13 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input,0,0);
-        image sized = letterbox_image(im, net->w, net->h);
+        dn_image im = load_image_color(input,0,0);
+        dn_image sized = letterbox_image(im, net->w, net->h);
         //image sized = resize_image(im, net->w, net->h);
         //image sized2 = resize_max(im, net->w);
         //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
         //resize_network(net, sized.w, sized.h);
-        layer l = net->layers[net->n-1];
+        dn_layer l = net->layers[net->n-1];
 
 
         float *X = sized.data;
@@ -839,7 +839,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) {
-        list *options = read_data_cfg(datacfg);
+        dn_list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);

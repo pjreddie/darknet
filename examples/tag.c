@@ -7,19 +7,19 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
     char *base = basecfg(cfgfile);
     char *backup_directory = "/home/pjreddie/backup/";
     printf("%s\n", base);
-    network *net = load_network(cfgfile, weightfile, clear);
+    dn_network *net = load_network(cfgfile, weightfile, clear);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = 1024;
-    list *plist = get_paths("/home/pjreddie/tag/train.list");
+    dn_list *plist = get_paths("/home/pjreddie/tag/train.list");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
     clock_t time;
     pthread_t load_thread;
-    data train;
-    data buffer;
+    dn_data train;
+    dn_data buffer;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
 
@@ -82,7 +82,7 @@ void train_tag(char *cfgfile, char *weightfile, int clear)
 
 void test_tag(char *cfgfile, char *weightfile, char *filename)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
     int i = 0;
@@ -102,8 +102,8 @@ void test_tag(char *cfgfile, char *weightfile, char *filename)
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, 0, 0);
-        image r = resize_min(im, size);
+        dn_image im = load_image_color(input, 0, 0);
+        dn_image r = resize_min(im, size);
         resize_network(net, r.w, r.h);
         printf("%d %d\n", r.w, r.h);
 

@@ -27,8 +27,8 @@ void average(int argc, char *argv[])
     char *cfgfile = argv[2];
     char *outfile = argv[3];
     gpu_index = -1;
-    network *net = parse_network_cfg(cfgfile);
-    network *sum = parse_network_cfg(cfgfile);
+    dn_network *net = parse_network_cfg(cfgfile);
+    dn_network *sum = parse_network_cfg(cfgfile);
 
     char *weightfile = argv[4];   
     load_weights(sum, weightfile);
@@ -39,8 +39,8 @@ void average(int argc, char *argv[])
         weightfile = argv[i+5];   
         load_weights(net, weightfile);
         for(j = 0; j < net->n; ++j){
-            layer l = net->layers[j];
-            layer out = sum->layers[j];
+            dn_layer l = net->layers[j];
+            dn_layer out = sum->layers[j];
             if(l.type == CONVOLUTIONAL){
                 int num = l.n*l.c*l.size*l.size;
                 axpy_cpu(l.n, 1, l.biases, 1, out.biases, 1);
@@ -59,7 +59,7 @@ void average(int argc, char *argv[])
     }
     n = n+1;
     for(j = 0; j < net->n; ++j){
-        layer l = sum->layers[j];
+        dn_layer l = sum->layers[j];
         if(l.type == CONVOLUTIONAL){
             int num = l.n*l.c*l.size*l.size;
             scal_cpu(l.n, 1./n, l.biases, 1);
@@ -78,12 +78,12 @@ void average(int argc, char *argv[])
     save_weights(sum, outfile);
 }
 
-long numops(network *net)
+long numops(dn_network *net)
 {
     int i;
     long ops = 0;
     for(i = 0; i < net->n; ++i){
-        layer l = net->layers[i];
+        dn_layer l = net->layers[i];
         if(l.type == CONVOLUTIONAL){
             ops += 2l * l.n * l.size*l.size*l.c/l.groups * l.out_h*l.out_w;
         } else if(l.type == CONNECTED){
@@ -116,11 +116,11 @@ long numops(network *net)
 void speed(char *cfgfile, int tics)
 {
     if (tics == 0) tics = 1000;
-    network *net = parse_network_cfg(cfgfile);
+    dn_network *net = parse_network_cfg(cfgfile);
     set_batch_network(net, 1);
     int i;
     double time=what_time_is_it_now();
-    image im = make_image(net->w, net->h, net->c*net->batch);
+    dn_image im = make_image(net->w, net->h, net->c*net->batch);
     for(i = 0; i < tics; ++i){
         network_predict(net, im.data);
     }
@@ -136,7 +136,7 @@ void speed(char *cfgfile, int tics)
 void operations(char *cfgfile)
 {
     gpu_index = -1;
-    network *net = parse_network_cfg(cfgfile);
+    dn_network *net = parse_network_cfg(cfgfile);
     long ops = numops(net);
     printf("Floating Point Operations: %ld\n", ops);
     printf("Floating Point Operations: %.2f Bn\n", (float)ops/1000000000.);
@@ -145,7 +145,7 @@ void operations(char *cfgfile)
 void oneoff(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
-    network *net = parse_network_cfg(cfgfile);
+    dn_network *net = parse_network_cfg(cfgfile);
     int oldn = net->layers[net->n - 2].n;
     int c = net->layers[net->n - 2].c;
     scal_cpu(oldn*c, .1, net->layers[net->n - 2].weights, 1);
@@ -160,7 +160,7 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
     net->layers[net->n - 2].weights -= 5*c;
     net->layers[net->n - 2].n = oldn;
     printf("%d\n", oldn);
-    layer l = net->layers[net->n - 2];
+    dn_layer l = net->layers[net->n - 2];
     copy_cpu(l.n/3, l.biases, 1, l.biases +   l.n/3, 1);
     copy_cpu(l.n/3, l.biases, 1, l.biases + 2*l.n/3, 1);
     copy_cpu(l.n/3*l.c, l.weights, 1, l.weights +   l.n/3*l.c, 1);
@@ -172,7 +172,7 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
 void oneoff2(char *cfgfile, char *weightfile, char *outfile, int l)
 {
     gpu_index = -1;
-    network *net = parse_network_cfg(cfgfile);
+    dn_network *net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights_upto(net, weightfile, 0, net->n);
         load_weights_upto(net, weightfile, l, net->n);
@@ -184,15 +184,15 @@ void oneoff2(char *cfgfile, char *weightfile, char *outfile, int l)
 void partial(char *cfgfile, char *weightfile, char *outfile, int max)
 {
     gpu_index = -1;
-    network *net = load_network(cfgfile, weightfile, 1);
+    dn_network *net = load_network(cfgfile, weightfile, 1);
     save_weights_upto(net, outfile, max);
 }
 
 void print_weights(char *cfgfile, char *weightfile, int n)
 {
     gpu_index = -1;
-    network *net = load_network(cfgfile, weightfile, 1);
-    layer l = net->layers[n];
+    dn_network *net = load_network(cfgfile, weightfile, 1);
+    dn_layer l = net->layers[n];
     int i, j;
     //printf("[");
     for(i = 0; i < l.n; ++i){
@@ -210,10 +210,10 @@ void print_weights(char *cfgfile, char *weightfile, int n)
 void rescale_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int i;
     for(i = 0; i < net->n; ++i){
-        layer l = net->layers[i];
+        dn_layer l = net->layers[i];
         if(l.type == CONVOLUTIONAL){
             rescale_weights(l, 2, -.5);
             break;
@@ -225,10 +225,10 @@ void rescale_net(char *cfgfile, char *weightfile, char *outfile)
 void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int i;
     for(i = 0; i < net->n; ++i){
-        layer l = net->layers[i];
+        dn_layer l = net->layers[i];
         if(l.type == CONVOLUTIONAL){
             rgbgr_weights(l);
             break;
@@ -240,10 +240,10 @@ void rgbgr_net(char *cfgfile, char *weightfile, char *outfile)
 void reset_normalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int i;
     for (i = 0; i < net->n; ++i) {
-        layer l = net->layers[i];
+        dn_layer l = net->layers[i];
         if (l.type == CONVOLUTIONAL && l.batch_normalize) {
             denormalize_convolutional_layer(l);
         }
@@ -262,7 +262,7 @@ void reset_normalize_net(char *cfgfile, char *weightfile, char *outfile)
     save_weights(net, outfile);
 }
 
-layer normalize_layer(layer l, int n)
+dn_layer normalize_layer(dn_layer l, int n)
 {
     int j;
     l.batch_normalize=1;
@@ -278,10 +278,10 @@ layer normalize_layer(layer l, int n)
 void normalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int i;
     for(i = 0; i < net->n; ++i){
-        layer l = net->layers[i];
+        dn_layer l = net->layers[i];
         if(l.type == CONVOLUTIONAL && !l.batch_normalize){
             net->layers[i] = normalize_layer(l, l.n);
         }
@@ -304,10 +304,10 @@ void normalize_net(char *cfgfile, char *weightfile, char *outfile)
 void statistics_net(char *cfgfile, char *weightfile)
 {
     gpu_index = -1;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int i;
     for (i = 0; i < net->n; ++i) {
-        layer l = net->layers[i];
+        dn_layer l = net->layers[i];
         if (l.type == CONNECTED && l.batch_normalize) {
             printf("Connected Layer %d\n", i);
             statistics_connected_layer(l);
@@ -334,10 +334,10 @@ void statistics_net(char *cfgfile, char *weightfile)
 void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     int i;
     for (i = 0; i < net->n; ++i) {
-        layer l = net->layers[i];
+        dn_layer l = net->layers[i];
         if ((l.type == DECONVOLUTIONAL || l.type == CONVOLUTIONAL) && l.batch_normalize) {
             denormalize_convolutional_layer(l);
             net->layers[i].batch_normalize=0;
@@ -367,16 +367,16 @@ void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
 
 void mkimg(char *cfgfile, char *weightfile, int h, int w, int num, char *prefix)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
-    image *ims = get_weights(net->layers[0]);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
+    dn_image *ims = get_weights(net->layers[0]);
     int n = net->layers[0].n;
     int z;
     for(z = 0; z < num; ++z){
-        image im = make_image(h, w, 3);
+        dn_image im = make_image(h, w, 3);
         fill_image(im, .5);
         int i;
         for(i = 0; i < 100; ++i){
-            image r = copy_image(ims[rand()%n]);
+            dn_image r = copy_image(ims[rand()%n]);
             rotate_image_cw(r, rand()%4);
             random_distort_image(r, 1, 1.5, 1.5);
             int dx = rand()%(w-r.w);
@@ -393,7 +393,7 @@ void mkimg(char *cfgfile, char *weightfile, int h, int w, int num, char *prefix)
 
 void visualize(char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     visualize_network(net);
 }
 

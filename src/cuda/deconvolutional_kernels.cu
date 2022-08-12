@@ -14,7 +14,7 @@ extern "C" {
 #include "cuda.h"
 }
 
-extern "C" void forward_deconvolutional_layer_gpu(layer l, network net)
+extern "C" void forward_deconvolutional_layer_gpu(dn_layer l, dn_network net)
 {
     int i;
 
@@ -41,7 +41,7 @@ extern "C" void forward_deconvolutional_layer_gpu(layer l, network net)
     activate_array_gpu(l.output_gpu, l.batch*l.n*l.out_w*l.out_h, l.activation);
 }
 
-extern "C" void backward_deconvolutional_layer_gpu(layer l, network net)
+extern "C" void backward_deconvolutional_layer_gpu(dn_layer l, dn_network net)
 {
     int i;
 
@@ -83,7 +83,7 @@ extern "C" void backward_deconvolutional_layer_gpu(layer l, network net)
     }
 }
 
-extern "C" void pull_deconvolutional_layer(layer l)
+extern "C" void pull_deconvolutional_layer(dn_layer l)
 {
     cuda_pull_array(l.weights_gpu, l.weights, l.c*l.n*l.size*l.size);
     cuda_pull_array(l.biases_gpu, l.biases, l.n);
@@ -96,7 +96,7 @@ extern "C" void pull_deconvolutional_layer(layer l)
     }
 }
 
-extern "C" void push_deconvolutional_layer(layer l)
+extern "C" void push_deconvolutional_layer(dn_layer l)
 {
     cuda_push_array(l.weights_gpu, l.weights, l.c*l.n*l.size*l.size);
     cuda_push_array(l.biases_gpu, l.biases, l.n);
@@ -109,7 +109,7 @@ extern "C" void push_deconvolutional_layer(layer l)
     }
 }
 
-void update_deconvolutional_layer_gpu(layer l, update_args a)
+void update_deconvolutional_layer_gpu(dn_layer l, update_args a)
 {
     float learning_rate = a.learning_rate*l.learning_rate_scale;
     float momentum = a.momentum;

@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-void free_layer(layer l)
+void free_layer(dn_layer l)
 {
     if(l.type == DROPOUT){
         if(l.rand)           free(l.rand);

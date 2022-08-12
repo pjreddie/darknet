@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 
-layer make_normalization_layer(int batch, int w, int h, int c, int size, float alpha, float beta, float kappa)
+dn_layer make_normalization_layer(int batch, int w, int h, int c, int size, float alpha, float beta, float kappa)
 {
     fprintf(stderr, "Local Response Normalization Layer: %d x %d x %d image, %d size\n", w,h,c,size);
-    layer layer = {0};
+    dn_layer layer = {0};
     layer.type = NORMALIZATION;
     layer.batch = batch;
     layer.h = layer.out_h = h;
@@ -37,7 +37,7 @@ layer make_normalization_layer(int batch, int w, int h, int c, int size, float a
     return layer;
 }
 
-void resize_normalization_layer(layer *layer, int w, int h)
+void resize_normalization_layer(dn_layer *layer, int w, int h)
 {
     int c = layer->c;
     int batch = layer->batch;
@@ -63,7 +63,7 @@ void resize_normalization_layer(layer *layer, int w, int h)
 #endif
 }
 
-void forward_normalization_layer(const layer layer, network net)
+void forward_normalization_layer(const dn_layer layer, dn_network net)
 {
     int k,b;
     int w = layer.w;
@@ -94,7 +94,7 @@ void forward_normalization_layer(const layer layer, network net)
     mul_cpu(w*h*c*layer.batch, net.input, 1, layer.output, 1);
 }
 
-void backward_normalization_layer(const layer layer, network net)
+void backward_normalization_layer(const dn_layer layer, dn_network net)
 {
     // TODO This is approximate ;-)
     // Also this should add in to delta instead of overwritting.

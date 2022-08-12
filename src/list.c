@@ -2,9 +2,9 @@
 #include <string.h>
 #include "list.h"
 
-list *make_list()
+dn_list *make_list()
 {
-	list *l = malloc(sizeof(list));
+	dn_list *l = malloc(sizeof(dn_list));
 	l->size = 0;
 	l->front = 0;
 	l->back = 0;
@@ -25,9 +25,9 @@ void transfer_node(list *s, list *d, node *n)
 }
 */
 
-void *list_pop(list *l){
+void *list_pop(dn_list *l){
     if(!l->back) return 0;
-    node *b = l->back;
+    dn_node *b = l->back;
     void *val = b->val;
     l->back = b->prev;
     if(l->back) l->back->next = 0;
@@ -37,9 +37,9 @@ void *list_pop(list *l){
     return val;
 }
 
-void list_insert(list *l, void *val)
+void list_insert(dn_list *l, void *val)
 {
-	node *new = malloc(sizeof(node));
+	dn_node *new = malloc(sizeof(dn_node));
 	new->val = val;
 	new->next = 0;
 
@@ -54,9 +54,9 @@ void list_insert(list *l, void *val)
 	++l->size;
 }
 
-void free_node(node *n)
+void free_node(dn_node *n)
 {
-	node *next;
+	dn_node *next;
 	while(n) {
 		next = n->next;
 		free(n);
@@ -64,26 +64,26 @@ void free_node(node *n)
 	}
 }
 
-void free_list(list *l)
+void free_list(dn_list *l)
 {
 	free_node(l->front);
 	free(l);
 }
 
-void free_list_contents(list *l)
+void free_list_contents(dn_list *l)
 {
-	node *n = l->front;
+	dn_node *n = l->front;
 	while(n){
 		free(n->val);
 		n = n->next;
 	}
 }
 
-void **list_to_array(list *l)
+void **list_to_array(dn_list *l)
 {
     void **a = calloc(l->size, sizeof(void*));
     int count = 0;
-    node *n = l->front;
+    dn_node *n = l->front;
     while(n){
         a[count++] = n->val;
         n = n->next;

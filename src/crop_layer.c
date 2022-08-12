@@ -2,7 +2,7 @@
 #include "cuda.h"
 #include <stdio.h>
 
-image get_crop_image(crop_layer l)
+dn_image get_crop_image(crop_layer l)
 {
     int h = l.out_h;
     int w = l.out_w;
@@ -10,8 +10,8 @@ image get_crop_image(crop_layer l)
     return float_to_image(w,h,c,l.output);
 }
 
-void backward_crop_layer(const crop_layer l, network net){}
-void backward_crop_layer_gpu(const crop_layer l, network net){}
+void backward_crop_layer(const crop_layer l, dn_network net){}
+void backward_crop_layer_gpu(const crop_layer l, dn_network net){}
 
 crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip, float angle, float saturation, float exposure)
 {
@@ -45,7 +45,7 @@ crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int 
     return l;
 }
 
-void resize_crop_layer(layer *l, int w, int h)
+void resize_crop_layer(dn_layer *l, int w, int h)
 {
     l->w = w;
     l->h = h;
@@ -64,7 +64,7 @@ void resize_crop_layer(layer *l, int w, int h)
 }
 
 
-void forward_crop_layer(const crop_layer l, network net)
+void forward_crop_layer(const crop_layer l, dn_network net)
 {
     int i,j,c,b,row,col;
     int index;

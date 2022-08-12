@@ -2,7 +2,7 @@
 #include "cuda.h"
 #include <stdio.h>
 
-image get_maxpool_image(maxpool_layer l)
+dn_image get_maxpool_image(maxpool_layer l)
 {
     int h = l.out_h;
     int w = l.out_w;
@@ -10,7 +10,7 @@ image get_maxpool_image(maxpool_layer l)
     return float_to_image(w,h,c,l.output);
 }
 
-image get_maxpool_delta(maxpool_layer l)
+dn_image get_maxpool_delta(maxpool_layer l)
 {
     int h = l.out_h;
     int w = l.out_w;
@@ -76,7 +76,7 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     #endif
 }
 
-void forward_maxpool_layer(const maxpool_layer l, network net)
+void forward_maxpool_layer(const maxpool_layer l, dn_network net)
 {
     int b,i,j,k,m,n;
     int w_offset = -l.pad/2;
@@ -113,7 +113,7 @@ void forward_maxpool_layer(const maxpool_layer l, network net)
     }
 }
 
-void backward_maxpool_layer(const maxpool_layer l, network net)
+void backward_maxpool_layer(const maxpool_layer l, dn_network net)
 {
     int i;
     int h = l.out_h;

@@ -36,7 +36,7 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
     return l;
 }
 
-void forward_softmax_layer(const softmax_layer l, network net)
+void forward_softmax_layer(const softmax_layer l, dn_network net)
 {
     if(l.softmax_tree){
         int i;
@@ -56,7 +56,7 @@ void forward_softmax_layer(const softmax_layer l, network net)
     }
 }
 
-void backward_softmax_layer(const softmax_layer l, network net)
+void backward_softmax_layer(const softmax_layer l, dn_network net)
 {
     axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, net.delta, 1);
 }

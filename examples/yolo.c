@@ -10,24 +10,24 @@ void train_yolo(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = net->batch*net->subdivisions;
     int i = *net->seen/imgs;
-    data train, buffer;
+    dn_data train, buffer;
 
 
-    layer l = net->layers[net->n - 1];
+    dn_layer l = net->layers[net->n - 1];
 
     int side = l.side;
     int classes = l.classes;
     float jitter = l.jitter;
 
-    list *plist = get_paths(train_images);
+    dn_list *plist = get_paths(train_images);
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.paths = paths;
@@ -97,18 +97,18 @@ void print_yolo_detections(FILE **fps, char *id, int total, int classes, int w, 
 
 void validate_yolo(char *cfg, char *weights)
 {
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
     //list *plist = get_paths("data/voc.2007.test");
-    list *plist = get_paths("/home/pjreddie/data/voc/2007_test.txt");
+    dn_list *plist = get_paths("/home/pjreddie/data/voc/2007_test.txt");
     //list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
     int classes = l.classes;
 
     int j;
@@ -128,13 +128,13 @@ void validate_yolo(char *cfg, char *weights)
     float iou_thresh = .5;
 
     int nthreads = 8;
-    image *val = calloc(nthreads, sizeof(image));
-    image *val_resized = calloc(nthreads, sizeof(image));
-    image *buf = calloc(nthreads, sizeof(image));
-    image *buf_resized = calloc(nthreads, sizeof(image));
+    dn_image *val = calloc(nthreads, sizeof(dn_image));
+    dn_image *val_resized = calloc(nthreads, sizeof(dn_image));
+    dn_image *buf = calloc(nthreads, sizeof(dn_image));
+    dn_image *buf_resized = calloc(nthreads, sizeof(dn_image));
     pthread_t *thr = calloc(nthreads, sizeof(pthread_t));
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.type = IMAGE_DATA;
@@ -181,16 +181,16 @@ void validate_yolo(char *cfg, char *weights)
 
 void validate_yolo_recall(char *cfg, char *weights)
 {
-    network *net = load_network(cfg, weights, 0);
+    dn_network *net = load_network(cfg, weights, 0);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
     char *base = "results/comp4_det_test_";
-    list *plist = get_paths("data/voc.2007.test");
+    dn_list *plist = get_paths("data/voc.2007.test");
     char **paths = (char **)list_to_array(plist);
 
-    layer l = net->layers[net->n-1];
+    dn_layer l = net->layers[net->n-1];
     int classes = l.classes;
     int side = l.side;
 
@@ -216,8 +216,8 @@ void validate_yolo_recall(char *cfg, char *weights)
 
     for(i = 0; i < m; ++i){
         char *path = paths[i];
-        image orig = load_image_color(path, 0, 0);
-        image sized = resize_image(orig, net->w, net->h);
+        dn_image orig = load_image_color(path, 0, 0);
+        dn_image sized = resize_image(orig, net->w, net->h);
         char *id = basecfg(path);
         network_predict(net, sized.data);
 
@@ -232,7 +232,7 @@ void validate_yolo_recall(char *cfg, char *weights)
         find_replace(labelpath, ".JPEG", ".txt", labelpath);
 
         int num_labels = 0;
-        box_label *truth = read_boxes(labelpath, &num_labels);
+        dn_box_label *truth = read_boxes(labelpath, &num_labels);
         for(k = 0; k < side*side*l.n; ++k){
             if(dets[k].objectness > thresh){
                 ++proposals;
@@ -240,7 +240,7 @@ void validate_yolo_recall(char *cfg, char *weights)
         }
         for (j = 0; j < num_labels; ++j) {
             ++total;
-            box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
+            dn_box t = {truth[j].x, truth[j].y, truth[j].w, truth[j].h};
             float best_iou = 0;
             for(k = 0; k < side*side*l.n; ++k){
                 float iou = box_iou(dets[k].bbox, t);
@@ -264,9 +264,9 @@ void validate_yolo_recall(char *cfg, char *weights)
 
 void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
 {
-    image **alphabet = load_alphabet();
-    network *net = load_network(cfgfile, weightfile, 0);
-    layer l = net->layers[net->n-1];
+    dn_image **alphabet = load_alphabet();
+    dn_network *net = load_network(cfgfile, weightfile, 0);
+    dn_layer l = net->layers[net->n-1];
     set_batch_network(net, 1);
     srand(2222222);
     clock_t time;
@@ -283,8 +283,8 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input,0,0);
-        image sized = resize_image(im, net->w, net->h);
+        dn_image im = load_image_color(input,0,0);
+        dn_image sized = resize_image(im, net->w, net->h);
         float *X = sized.data;
         time=clock();
         network_predict(net, X);

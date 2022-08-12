@@ -969,7 +969,7 @@ __global__ void softmax_tree_kernel(float *input, int spatial, int batch, int st
     softmax_device(input + goff + boff + s, group_size[g], temp, spatial, output + goff + boff + s);
 }
 
-extern "C" void softmax_tree(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier)
+extern "C" void softmax_tree(float *input, int spatial, int batch, int stride, float temp, float *output, dn_tree hier)
 {
     int *tree_groups_size = cuda_make_int_array(hier.group_size, hier.groups);
     int *tree_groups_offset = cuda_make_int_array(hier.group_offset, hier.groups);

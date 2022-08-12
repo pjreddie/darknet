@@ -10,7 +10,7 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     printf("%d\n", ngpus);
-    network **nets = calloc(ngpus, sizeof(network*));
+    dn_network **nets = calloc(ngpus, sizeof(dn_network*));
 
     srand(time(0));
     int seed = rand();
@@ -23,24 +23,24 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
-    network *net = nets[0];
+    dn_network *net = nets[0];
 
     int imgs = net->batch * net->subdivisions * ngpus;
 
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
-    list *options = read_data_cfg(datacfg);
+    dn_list *options = read_data_cfg(datacfg);
 
     char *backup_directory = option_find_str(options, "backup", "/backup/");
     char *train_list = option_find_str(options, "train", "data/train.list");
     int classes = option_find_int(options, "classes", 1);
 
-    list *plist = get_paths(train_list);
+    dn_list *plist = get_paths(train_list);
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
     clock_t time;
 
-    load_args args = {0};
+    dn_load_args args = {0};
     args.w = net->w;
     args.h = net->h;
     args.threads = 32;
@@ -60,8 +60,8 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     args.m = N;
     args.type = REGRESSION_DATA;
 
-    data train;
-    data buffer;
+    dn_data train;
+    dn_data buffer;
     pthread_t load_thread;
     args.d = &buffer;
     load_thread = load_data(args);
@@ -115,7 +115,7 @@ void train_regressor(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 
 void predict_regressor(char *cfgfile, char *weightfile, char *filename)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    dn_network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -132,8 +132,8 @@ void predict_regressor(char *cfgfile, char *weightfile, char *filename)
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, 0, 0);
-        image sized = letterbox_image(im, net->w, net->h);
+        dn_image im = load_image_color(input, 0, 0);
+        dn_image sized = letterbox_image(im, net->w, net->h);
 
         float *X = sized.data;
         time=clock();
