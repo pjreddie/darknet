@@ -22,7 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 #>
 
-$utils_psm1_version = "0.0.2"
+$utils_psm1_version = "0.0.4"
+$IsWindowsPowerShell = switch ( $PSVersionTable.PSVersion.Major ) {
+  5 { $true }
+  4 { $true }
+  3 { $true }
+  2 { $true }
+  default { $false }
+}
 $cuda_version_full = "11.7.0"
 $cuda_version_short = "11.7"
 $cuda_version_full_dashed = $cuda_version_full.replace('.', '-')
@@ -133,7 +140,7 @@ function DownloadNinja() {
 }
 
 Function MyThrow ($Message) {
-  if ($DisableInteractive) {
+  if ($global:DisableInteractive) {
     Write-Host $Message -ForegroundColor Red
     throw
   }
@@ -187,6 +194,7 @@ Function MyThrow ($Message) {
 }
 
 Export-ModuleMember -Variable utils_psm1_version
+Export-ModuleMember -Variable IsWindowsPowerShell
 Export-ModuleMember -Variable cuda_version_full
 Export-ModuleMember -Variable cuda_version_short
 Export-ModuleMember -Variable cuda_version_full_dashed
