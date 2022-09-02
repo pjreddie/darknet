@@ -206,6 +206,9 @@ void forward_network(network *netp)
         if(l.truth) {
             net.truth = l.output;
         }
+        if(net.sleep_between_layers_forward_us > 0){
+            usleep(net.sleep_between_layers_forward_us);
+        }
     }
     calc_network_cost(netp);
 }
@@ -585,6 +588,12 @@ float *network_predict_image(network *net, image im)
     return p;
 }
 
+float *network_predict_letterbox_image(network *net, image im)
+{
+    set_batch_network(net, 1);
+    return network_predict(net, im.data);
+}
+
 int network_width(network *net){return net->w;}
 int network_height(network *net){return net->h;}
 
@@ -781,6 +790,56 @@ void forward_network_gpu(network *netp)
         if(l.truth) {
             net.truth_gpu = l.output_gpu;
             net.truth = l.output;
+        }
+        if(net.sleep_between_layers_forward_us > 0){
+            usleep(net.sleep_between_layers_forward_us);
+        }
+    }
+    pull_network_output(netp);
+    calc_network_cost(netp);
+}
+
+float *network_predict_letterbox_gpu_device_image(network *net, image im_gpu)
+{
+    set_batch_network(net, 1);
+    return network_predict_gpu_device_input(net, im_gpu.data);
+}
+
+float *network_predict_gpu_device_input(network *net, float *input_gpu)
+{
+    network orig = *net;
+    net->input_gpu = input_gpu;
+    net->truth = 0;
+    net->train = 0;
+    net->delta = 0;
+    forward_network_gpu_device_input(net);
+    float *out = net->output;
+    *net = orig;
+    return out;
+}
+
+void forward_network_gpu_device_input(network *netp)
+{
+    network net = *netp;
+    cuda_set_device(net.gpu_index);
+    if(net.truth){
+        cuda_push_array(net.truth_gpu, net.truth, net.truths*net.batch);
+    }
+
+    int i;
+    for(i = 0; i < net.n; ++i){
+        net.index = i;
+        layer l = net.layers[i];
+        if(l.delta_gpu){
+            fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
+        }
+        l.forward_gpu(l, net);
+        net.input_gpu = l.output_gpu;
+        if(l.truth) {
+            net.truth_gpu = l.output_gpu;
+        }
+        if(net.sleep_between_layers_forward_us > 0){
+            usleep(net.sleep_between_layers_forward_us);
         }
     }
     pull_network_output(netp);
