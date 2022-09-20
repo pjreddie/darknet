@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="lishen_89_docker (c96f91f6-1c12-4fb0-b3d8-cc68ccf3f77c)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.vl7Xv35G6b" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
