@@ -543,10 +543,18 @@ data load_data_captcha_encode(char **paths, int n, int m, int w, int h)
 void fill_truth(char *path, char **labels, int k, float *truth)
 {
     int i;
+    char *filename = "";
+    for (i = strlen(path) - 1; i >= 0; --i) {
+        if (path[i] == '/' || path[i] == '\\') {
+            filename = (char*)malloc(strlen(path + i) + 1);
+            strcpy(filename, path + i + 1);
+            break;
+        }
+    }
     memset(truth, 0, k*sizeof(float));
     int count = 0;
     for(i = 0; i < k; ++i){
-        if(strstr(path, labels[i])){
+        if(strstr(filename, labels[i])){
             truth[i] = 1;
             ++count;
             //printf("%s %s %d\n", path, labels[i], i);
