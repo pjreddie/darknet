@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "convolutional_layer.h"
 #include "batchnorm_layer.h"
 #include "blas.h"

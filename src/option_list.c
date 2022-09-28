@@ -1,10 +1,12 @@
+#undef OPENCV
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "option_list.h"
 #include "utils.h"
 
-list *read_data_cfg(char *filename)
+list *read_data_cfg(const char *filename)
 {
     FILE *file = fopen(filename, "r");
     if(file == 0) file_error(filename);
@@ -32,7 +34,7 @@ list *read_data_cfg(char *filename)
     return options;
 }
 
-metadata get_metadata(char *file)
+metadata get_metadata(const char *file)
 {
     metadata m = {0};
     list *options = read_data_cfg(file);
@@ -67,7 +69,7 @@ int read_option(char *s, list *options)
     return 1;
 }
 
-void option_insert(list *l, char *key, char *val)
+void option_insert(list *l, const char *key, const char *val)
 {
     kvp *p = malloc(sizeof(kvp));
     p->key = key;
@@ -88,7 +90,7 @@ void option_unused(list *l)
     }
 }
 
-char *option_find(list *l, char *key)
+char *option_find(list *l, const char *key)
 {
     node *n = l->front;
     while(n){
@@ -101,7 +103,7 @@ char *option_find(list *l, char *key)
     }
     return 0;
 }
-char *option_find_str(list *l, char *key, char *def)
+char *option_find_str(list *l, const char *key, const char *def)
 {
     char *v = option_find(l, key);
     if(v) return v;
@@ -109,7 +111,7 @@ char *option_find_str(list *l, char *key, char *def)
     return def;
 }
 
-int option_find_int(list *l, char *key, int def)
+int option_find_int(list *l, const char *key, int def)
 {
     char *v = option_find(l, key);
     if(v) return atoi(v);
@@ -117,21 +119,21 @@ int option_find_int(list *l, char *key, int def)
     return def;
 }
 
-int option_find_int_quiet(list *l, char *key, int def)
+int option_find_int_quiet(list *l, const char *key, int def)
 {
     char *v = option_find(l, key);
     if(v) return atoi(v);
     return def;
 }
 
-float option_find_float_quiet(list *l, char *key, float def)
+float option_find_float_quiet(list *l, const char *key, float def)
 {
     char *v = option_find(l, key);
     if(v) return atof(v);
     return def;
 }
 
-float option_find_float(list *l, char *key, float def)
+float option_find_float(list *l, const char *key, float def)
 {
     char *v = option_find(l, key);
     if(v) return atof(v);

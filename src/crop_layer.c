@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "crop_layer.h"
 #include "cuda.h"
 #include <stdio.h>

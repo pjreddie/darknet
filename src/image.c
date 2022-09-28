@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "image.h"
 #include "utils.h"
 #include "blas.h"
@@ -225,11 +227,13 @@ image **load_alphabet()
     int i, j;
     const int nsize = 8;
     image **alphabets = calloc(nsize, sizeof(image));
+    char darknet_src_dir[] = __FILE__;
+    *strrchr(darknet_src_dir, '/') = '\0';
     for(j = 0; j < nsize; ++j){
         alphabets[j] = calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
             char buff[256];
-            sprintf(buff, "data/labels/%d_%d.png", i, j);
+            sprintf(buff, "%s/../data/labels/%d_%d.png", darknet_src_dir, i, j);
             alphabets[j][i] = load_image_color(buff, 0, 0);
         }
     }

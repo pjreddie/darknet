@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "upsample_layer.h"
 #include "cuda.h"
 #include "blas.h"

@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "avgpool_layer.h"
 #include "cuda.h"
 #include <stdio.h>

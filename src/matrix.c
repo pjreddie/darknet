@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "matrix.h"
 #include "utils.h"
 #include "blas.h"
@@ -130,7 +132,7 @@ float *pop_column(matrix *m, int c)
     return col;
 }
 
-matrix csv_to_matrix(char *filename)
+matrix csv_to_matrix(const char *filename)
 {
     FILE *fp = fopen(filename, "r");
     if(!fp) file_error(filename);

@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "activations.h"
 
 #include <math.h>

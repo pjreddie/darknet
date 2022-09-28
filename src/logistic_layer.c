@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "logistic_layer.h"
 #include "activations.h"
 #include "blas.h"

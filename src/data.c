@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "data.h"
 #include "utils.h"
 #include "image.h"
@@ -654,7 +656,7 @@ matrix load_tags_paths(char **paths, int n, int k)
     return y;
 }
 
-char **get_labels(char *filename)
+char **get_labels(const char *filename)
 {
     list *plist = get_paths(filename);
     char **labels = (char **)list_to_array(plist);
@@ -1402,7 +1404,7 @@ data concat_datas(data *d, int n)
     return out;
 }
 
-data load_categorical_data_csv(char *filename, int target, int k)
+data load_categorical_data_csv(const char *filename, int target, int k)
 {
     data d = {0};
     d.shallow = 0;
@@ -1419,7 +1421,7 @@ data load_categorical_data_csv(char *filename, int target, int k)
     return d;
 }
 
-data load_cifar10_data(char *filename)
+data load_cifar10_data(const char *filename)
 {
     data d = {0};
     d.shallow = 0;

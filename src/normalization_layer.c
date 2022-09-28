@@ -1,3 +1,5 @@
+#undef OPENCV
+
 #include "normalization_layer.h"
 #include "blas.h"
 
