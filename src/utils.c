@@ -99,13 +99,13 @@ int *random_index_order(int min, int max)
     int *inds = calloc(max-min, sizeof(int));
     int i;
     for(i = min; i < max; ++i){
-        inds[i] = i;
+        inds[i-min] = i;
     }
     for(i = min; i < max-1; ++i){
-        int swap = inds[i];
+        int swap = inds[i-min];
         int index = i + rand()%(max-i);
-        inds[i] = inds[index];
-        inds[index] = swap;
+        inds[i-min] = inds[index-min];
+        inds[index-min] = swap;
     }
     return inds;
 }
