@@ -10,6 +10,7 @@
 #include <sys/time.h>
 
 #define DEMO 1
+#define OPENCV
 
 #ifdef OPENCV
 
@@ -18,10 +19,10 @@ static image **demo_alphabet;
 static int demo_classes;
 
 static network *net;
-static image buff [3];
+static image buff[3];
 static image buff_letter[3];
 static int buff_index = 0;
-static void * cap;
+static void *cap;
 static float fps = 0;
 static float demo_thresh = 0;
 static float demo_hier = .5;
@@ -34,6 +35,7 @@ static float *avg;
 static int demo_done = 0;
 static int demo_total = 0;
 double demo_time;
+int glob_layer_id;
 
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num);
 
@@ -41,9 +43,11 @@ int size_network(network *net)
 {
     int i;
     int count = 0;
-    for(i = 0; i < net->n; ++i){
+    for (i = 0; i < net->n; ++i)
+    {
         layer l = net->layers[i];
-        if(l.type == YOLO || l.type == REGION || l.type == DETECTION){
+        if (l.type == YOLO || l.type == REGION || l.type == DETECTION)
+        {
             count += l.outputs;
         }
     }
@@ -54,9 +58,11 @@ void remember_network(network *net)
 {
     int i;
     int count = 0;
-    for(i = 0; i < net->n; ++i){
+    for (i = 0; i < net->n; ++i)
+    {
         layer l = net->layers[i];
-        if(l.type == YOLO || l.type == REGION || l.type == DETECTION){
+        if (l.type == YOLO || l.type == REGION || l.type == DETECTION)
+        {
             memcpy(predictions[demo_index] + count, net->layers[i].output, sizeof(float) * l.outputs);
             count += l.outputs;
         }
@@ -68,12 +74,15 @@ detection *avg_predictions(network *net, int *nboxes)
     int i, j;
     int count = 0;
     fill_cpu(demo_total, 0, avg, 1);
-    for(j = 0; j < demo_frame; ++j){
-        axpy_cpu(demo_total, 1./demo_frame, predictions[j], 1, avg, 1);
+    for (j = 0; j < demo_frame; ++j)
+    {
+        axpy_cpu(demo_total, 1. / demo_frame, predictions[j], 1, avg, 1);
     }
-    for(i = 0; i < net->n; ++i){
+    for (i = 0; i < net->n; ++i)
+    {
         layer l = net->layers[i];
-        if(l.type == YOLO || l.type == REGION || l.type == DETECTION){
+        if (l.type == YOLO || l.type == REGION || l.type == DETECTION)
+        {
             memcpy(l.output, avg + count, sizeof(float) * l.outputs);
             count += l.outputs;
         }
@@ -87,8 +96,8 @@ void *detect_in_thread(void *ptr)
     running = 1;
     float nms = .4;
 
-    layer l = net->layers[net->n-1];
-    float *X = buff_letter[(buff_index+2)%3].data;
+    layer l = net->layers[net->n - 1];
+    float *X = buff_letter[(buff_index + 2) % 3].data;
     network_predict(net, X);
 
     /*
@@ -99,7 +108,6 @@ void *detect_in_thread(void *ptr)
     detection *dets = 0;
     int nboxes = 0;
     dets = avg_predictions(net, &nboxes);
-
 
     /*
        int i,j;
@@ -122,17 +130,18 @@ void *detect_in_thread(void *ptr)
     }
      */
 
-    if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
+    if (nms > 0)
+        do_nms_obj(dets, nboxes, l.classes, nms);
 
     printf("\033[2J");
     printf("\033[1;1H");
-    printf("\nFPS:%.1f\n",fps);
+    printf("\nFPS:%.1f\n", fps);
     printf("Objects:\n\n");
-    image display = buff[(buff_index+2) % 3];
+    image display = buff[(buff_index + 2) % 3];
     draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
     free_detections(dets, nboxes);
 
-    demo_index = (demo_index + 1)%demo_frame;
+    demo_index = (demo_index + 1) % demo_frame;
     running = 0;
     return 0;
 }
@@ -141,7 +150,8 @@ void *fetch_in_thread(void *ptr)
 {
     free_image(buff[buff_index]);
     buff[buff_index] = get_image_from_stream(cap);
-    if(buff[buff_index].data == 0) {
+    if (buff[buff_index].data == 0)
+    {
         demo_done = 1;
         return 0;
     }
@@ -151,35 +161,49 @@ void *fetch_in_thread(void *ptr)
 
 void *display_in_thread(void *ptr)
 {
-    int c = show_image(buff[(buff_index + 1)%3], "Demo", 1);
-    if (c != -1) c = c%256;
-    if (c == 27) {
+    int c = show_image(buff[(buff_index + 1) % 3], "Demo", 1);
+    if (c != -1)
+        c = c % 256;
+    if (c == 27)
+    {
         demo_done = 1;
         return 0;
-    } else if (c == 82) {
+    }
+    else if (c == 82)
+    {
         demo_thresh += .02;
-    } else if (c == 84) {
+    }
+    else if (c == 84)
+    {
         demo_thresh -= .02;
-        if(demo_thresh <= .02) demo_thresh = .02;
-    } else if (c == 83) {
+        if (demo_thresh <= .02)
+            demo_thresh = .02;
+    }
+    else if (c == 83)
+    {
         demo_hier += .02;
-    } else if (c == 81) {
+    }
+    else if (c == 81)
+    {
         demo_hier -= .02;
-        if(demo_hier <= .0) demo_hier = .0;
+        if (demo_hier <= .0)
+            demo_hier = .0;
     }
     return 0;
 }
 
 void *display_loop(void *ptr)
 {
-    while(1){
+    while (1)
+    {
         display_in_thread(0);
     }
 }
 
 void *detect_loop(void *ptr)
 {
-    while(1){
+    while (1)
+    {
         detect_in_thread(0);
     }
 }
@@ -203,20 +227,25 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     int i;
     demo_total = size_network(net);
-    predictions = calloc(demo_frame, sizeof(float*));
-    for (i = 0; i < demo_frame; ++i){
+    predictions = calloc(demo_frame, sizeof(float *));
+    for (i = 0; i < demo_frame; ++i)
+    {
         predictions[i] = calloc(demo_total, sizeof(float));
     }
     avg = calloc(demo_total, sizeof(float));
 
-    if(filename){
+    if (filename)
+    {
         printf("video file: %s\n", filename);
         cap = open_video_stream(filename, 0, 0, 0, 0);
-    }else{
+    }
+    else
+    {
         cap = open_video_stream(0, cam_index, w, h, frames);
     }
 
-    if(!cap) error("Couldn't connect to webcam.\n");
+    if (!cap)
+        error("Couldn't connect to webcam.\n");
 
     buff[0] = get_image_from_stream(cap);
     buff[1] = copy_image(buff[0]);
@@ -226,29 +255,168 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
 
     int count = 0;
-    if(!prefix){
+    if (!prefix)
+    {
         make_window("Demo", 1352, 1013, fullscreen);
     }
 
     demo_time = what_time_is_it_now();
 
-    while(!demo_done){
-        buff_index = (buff_index + 1) %3;
-        if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-        if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
-        if(!prefix){
-            fps = 1./(what_time_is_it_now() - demo_time);
+    while (!demo_done)
+    {
+
+        buff_index = (buff_index + 1) % 3;
+        if (pthread_create(&fetch_thread, 0, fetch_in_thread, 0))
+            error("Thread creation failed");
+        if (pthread_create(&detect_thread, 0, detect_in_thread, 0))
+            error("Thread creation failed");
+        if (!prefix)
+        {
+            fps = 1. / (what_time_is_it_now() - demo_time);
             demo_time = what_time_is_it_now();
             display_in_thread(0);
-        }else{
+        }
+        else
+        {
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
-            save_image(buff[(buff_index + 1)%3], name);
+            save_image(buff[(buff_index + 1) % 3], name);
         }
         pthread_join(fetch_thread, 0);
         pthread_join(detect_thread, 0);
         ++count;
     }
+}
+
+float * max_pooling(float *X, int size, int pooling)
+{
+    int i, j;
+    int final_size = (size/pooling) + (size%pooling);
+    float *Y = malloc(final_size * sizeof(float));
+    for (i = 0; i < final_size - 1; i++)
+    {
+        float max = X[i * pooling];
+        for (j = i * pooling; j < (i * pooling) + pooling; j++)
+        {
+            // printf("%i\n", j);
+            if (X[j] > max)
+            {
+                max = X[j];
+            }
+        }
+        Y[i] = max;
+    }
+    float max = X[final_size * pooling];
+    for (i = final_size * pooling; i < size; i++)
+    {
+        if (X[i] > max)
+        {
+            max = X[i];
+        }
+    }
+    Y[final_size - 1] = max;
+    return Y;
+}
+
+void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen, int layer_id, const char *out_filename, int final_size)
+{
+    //demo_frame = avg_frames;
+    image **alphabet = load_alphabet();
+    demo_names = names;
+    demo_alphabet = alphabet;
+    demo_classes = classes;
+    demo_thresh = thresh;
+    demo_hier = hier;
+    net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    srand(2222222);
+    glob_layer_id = layer_id;
+
+    int i;
+    demo_total = size_network(net);
+    if (filename)
+    {
+        printf("video file: %s\n", filename);
+        cap = open_video_stream(filename, 0, 0, 0, 0);
+    }
+    else
+    {
+        cap = open_video_stream(0, cam_index, w, h, frames);
+    }
+
+    if (!cap)
+        error("Couldn't connect to webcam.\n");
+
+    int count = 0;
+    demo_time = what_time_is_it_now();
+
+    layer l = net->layers[glob_layer_id];
+
+    int f_idx = 0;
+    FILE *fp;
+    printf("Features File: %s\n", out_filename);
+    fp = fopen(out_filename, "w");
+    printf("Layer %i Size: %i\n", glob_layer_id, l.outputs);
+    int pooling = 0;
+    int pooling_size = 0;
+    int achieved_size = 0;
+    if (final_size > 0)
+    {
+        pooling = 1;
+        pooling_size = l.outputs/final_size;
+        achieved_size = (l.outputs/pooling_size) + (l.outputs%pooling_size);
+        printf("Pooling %i:1. Final size: %i\n", pooling_size, achieved_size);
+    }
+
+    float *X = malloc(l.outputs * sizeof(float));
+    float *desc;// = malloc(achieved_size * sizeof(float));
+
+    while (!demo_done)
+    {
+        image im = get_image_from_stream(cap);
+
+        if (im.data == 0)
+        {
+            demo_done = 1;
+            break;
+        }
+
+        image letterbox_im = letterbox_image(im, net->w, net->h);
+
+        X = letterbox_im.data;
+        desc = network_predict_layer(net, X, glob_layer_id);
+
+        if(pooling == 1){
+            float *desc_pool = max_pooling(desc, l.outputs, pooling_size);
+            for (f_idx = 0; f_idx < achieved_size - 1; f_idx++)
+            {
+                fprintf(fp, "%f,", desc_pool[f_idx]);
+            }
+            fprintf(fp, "%f\n", desc_pool[l.outputs - 1]);
+            free(desc_pool);
+        }
+        else
+        {
+            for (f_idx = 0; f_idx < l.outputs - 1; f_idx++)
+            {
+                fprintf(fp, "%f,", desc[f_idx]);
+            }
+            fprintf(fp, "%f\n", desc[l.outputs - 1]);
+        }
+
+        fps = 1. / (what_time_is_it_now() - demo_time);
+        demo_time = what_time_is_it_now();
+
+        // printf("\033[2J");
+        // printf("\033[1;1H");
+        // printf("\nFPS:%.1f\n", fps);
+        // printf("Frame: %i\n\n", count);
+
+        free(X);
+        free_image(im);
+        ++count;
+    }
+    fclose(fp);
 }
 
 /*
@@ -345,5 +513,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
-#endif
+void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen, int layer_id, const char *out_filename)
+{
+    fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
+}
 
+#endif

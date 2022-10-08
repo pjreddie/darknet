@@ -210,6 +210,38 @@ void forward_network(network *netp)
     calc_network_cost(netp);
 }
 
+float * forward_network_to_layer(network *netp, int layer_id) //CADAR
+{
+    network net = *netp;
+    if (layer_id > net.n){
+        error("Layer_id > net size :(\n");
+    }
+
+#ifdef GPU
+    if(netp->gpu_index >= 0){
+        forward_network_gpu(netp);   
+        return;
+    }
+#endif
+    int i;
+    for(i = 0; i < net.n; ++i){
+        net.index = i;
+        layer l = net.layers[i];
+        if(l.delta){
+            fill_cpu(l.outputs * l.batch, 0, l.delta, 1);
+        }
+        l.forward(l, net);
+        net.input = l.output;
+        if(i == layer_id){
+            return l.output;
+        }
+        if(l.truth) {
+            net.truth = l.output;
+        }
+    }
+    calc_network_cost(netp);
+}
+
 void update_network(network *netp)
 {
 #ifdef GPU
@@ -507,6 +539,20 @@ float *network_predict(network *net, float *input)
     return out;
 }
 
+float *network_predict_layer(network *net, float *input, int layer_id) //CADAR
+{
+    network orig = *net;
+    net->input = input;
+    net->truth = 0;
+    net->train = 0;
+    net->delta = 0;
+    #ifdef GPU
+        return forward_network_gpu_to_layer(net, layer_id);
+    #else
+        return forward_network_to_layer(net, layer_id);
+    #endif
+}
+
 int num_detections(network *net, float thresh)
 {
     int i;
@@ -758,6 +804,44 @@ float *network_output(network *net)
 }
 
 #ifdef GPU
+
+float *forward_network_gpu_to_layer(network *netp, int layer_id) //CADAR
+{
+    network net = *netp;
+    if (layer_id > net.n)    {
+        error("Layer_id > net size :(\n");
+    }
+    cuda_set_device(net.gpu_index);
+    cuda_push_array(net.input_gpu, net.input, net.inputs*net.batch);
+    if(net.truth){
+        cuda_push_array(net.truth_gpu, net.truth, net.truths*net.batch);
+    }
+
+    int i;
+    for(i = 0; i < net.n; ++i){
+        net.index = i;
+        layer l = net.layers[i];
+        if(l.delta_gpu){
+            fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
+        }
+        l.forward_gpu(l, net);
+        net.input_gpu = l.output_gpu;
+        net.input = l.output;
+
+        if(i == layer_id){
+            pull_network_output(netp);
+            calc_network_cost(netp);
+            return l.output;
+        }
+
+        if(l.truth) {
+            net.truth_gpu = l.output_gpu;
+            net.truth = l.output;
+        }
+    }
+    pull_network_output(netp);
+    calc_network_cost(netp);
+}
 
 void forward_network_gpu(network *netp)
 {

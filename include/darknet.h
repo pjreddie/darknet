@@ -610,6 +610,7 @@ data *tile_data(data orig, int divs, int size);
 data select_data(data *orig, int *inds);
 
 void forward_network(network *net);
+float *forward_to_layer(network *net, int layer); // CADAR
 void backward_network(network *net);
 void update_network(network *net);
 
@@ -637,6 +638,7 @@ float cuda_mag_array(float *x_gpu, size_t n);
 void cuda_push_array(float *x_gpu, float *x, size_t n);
 
 void forward_network_gpu(network *net);
+float * forward_network_gpu_to_layer(network *net, int layer_id); //CADAR
 void backward_network_gpu(network *net);
 void update_network_gpu(network *net);
 
@@ -672,9 +674,10 @@ void rescale_weights(layer l, float scale, float trans);
 void rgbgr_weights(layer l);
 image *get_weights(layer l);
 
+void layer_extact(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen, int layer_id, const char *out_filename, int final_size); //CADAR
+
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
 void get_detection_detections(layer l, int w, int h, float thresh, detection *dets);
-
 char *option_find_str(list *l, char *key, char *def);
 int option_find_int(list *l, char *key, int def);
 int option_find_int_quiet(list *l, char *key, int def);
@@ -738,6 +741,7 @@ matrix network_predict_data(network *net, data test);
 image **load_alphabet();
 image get_network_image(network *net);
 float *network_predict(network *net, float *input);
+float *network_predict_layer(network *net, float *input, int layer_id); //CADAR
 
 int network_width(network *net);
 int network_height(network *net);
