@@ -111,7 +111,7 @@ void train_vid_rnn(char *cfgfile, char *weightfile)
         fprintf(stderr, "%d: %f, %f avg, %f rate, %lf seconds\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time));
         if(i%100==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         if(i%10==0){

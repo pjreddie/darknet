@@ -36,7 +36,7 @@ void train_dice(char *cfgfile, char *weightfile)
         if((i % 100) == 0) net.learning_rate *= .1;
         if(i%100==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, i);
+            sprintf(buff, "%s/%s_%06d.weights",backup_directory,base, i);
             save_weights(net, buff);
         }
     }

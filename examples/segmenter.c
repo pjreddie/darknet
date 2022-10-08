@@ -109,7 +109,7 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         if(*net->seen/N > epoch){
             epoch = *net->seen/N;
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
+            sprintf(buff, "%s/%s_%06d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
         }
         if(get_current_batch(net)%100 == 0){

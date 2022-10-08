@@ -84,7 +84,7 @@ void train_captcha(char *cfgfile, char *weightfile)
         free_data(train);
         if(i%100==0){
             char buff[256];
-            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
+            sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%06d.weights",base, i);
             save_weights(net, buff);
         }
     }
@@ -199,7 +199,7 @@ void valid_captcha(char *cfgfile, char *weightfile, char *filename)
    free_data(train);
    if(i%10==0){
    char buff[256];
-   sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
+   sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%06d.weights",base, i);
    save_weights(net, buff);
    }
    }
@@ -264,7 +264,7 @@ while(1){
     free_matrix(train.X);
     if(i%100==0){
         char buff[256];
-        sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%d.weights",base, i);
+        sprintf(buff, "/home/pjreddie/imagenet_backup/%s_%06d.weights",base, i);
         save_weights(net, buff);
     }
 }

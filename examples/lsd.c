@@ -175,9 +175,9 @@ void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg
         printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, floss, aloss, floss_avg, aloss_avg, get_current_rate(gnet), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, gbase, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, gbase, i);
             save_weights(gnet, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%100==0){
@@ -364,9 +364,9 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
         printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, gloss, aloss, gloss_avg, aloss_avg, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, base, i);
             save_weights(net, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%100==0){
@@ -844,9 +844,9 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
         printf("%d: adv: %f | adv_avg: %f, %f rate, %lf seconds, %d images\n", i, aloss, aloss_avg, get_current_rate(gnet), sec(clock()-time), i*imgs);
         if(i%10000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, base, i);
             save_weights(gnet, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%1000==0){
@@ -1015,9 +1015,9 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
         printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, gloss, aloss, gloss_avg, aloss_avg, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, base, i);
             save_weights(net, buff);
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, abase, i);
             save_weights(anet, buff);
         }
         if(i%100==0){
@@ -1172,28 +1172,144 @@ while (get_current_batch(net) < net->max_batches) {
             generated.y.vals[index][0] = 0;
         }
     }
-    harmless_update_network_gpu(anet);
 
-    data merge = concat_data(train, generated);
-    randomize_data(merge);
-    float aloss = train_network(anet, merge);
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
+    int imgs = net->batch*net->subdivisions;
+    i = *net->seen/imgs;
+    data train, buffer;
 
-    update_network_gpu(net);
-    update_network_gpu(anet);
-    free_data(merge);
-    free_data(train);
-    free_data(generated);
-    if (aloss_avg < 0) aloss_avg = aloss;
-    aloss_avg = aloss_avg*.9 + aloss*.1;
-    gloss_avg = gloss_avg*.9 + gloss*.1;
 
-    printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, gloss, aloss, gloss_avg, aloss_avg, get_current_rate(net), sec(clock()-time), i*imgs);
-    if(i%1000==0){
-        char buff[256];
-        sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
-        save_weights(net, buff);
-        sprintf(buff, "%s/%s_%d.weights", backup_directory, abase, i);
-        save_weights(anet, buff);
+    list *plist = get_paths(train_images);
+    //int N = plist->size;
+    char **paths = (char **)list_to_array(plist);
+
+    load_args args = {0};
+    args.w = net->w;
+    args.h = net->h;
+    args.paths = paths;
+    args.n = imgs;
+    args.m = plist->size;
+    args.d = &buffer;
+
+    args.min = net->min_crop;
+    args.max = net->max_crop;
+    args.angle = net->angle;
+    args.aspect = net->aspect;
+    args.exposure = net->exposure;
+    args.saturation = net->saturation;
+    args.hue = net->hue;
+    args.size = net->w;
+    args.type = CLASSIFICATION_DATA;
+    args.classes = 1;
+    char *ls[1] = {"coco"};
+    args.labels = ls;
+
+    pthread_t load_thread = load_data_in_thread(args);
+    clock_t time;
+
+    network_state gstate = {0};
+    gstate.index = 0;
+    gstate.net = net;
+    int x_size = get_network_input_size(net)*net->batch;
+    int y_size = 1*net->batch;
+    gstate.input = cuda_make_array(0, x_size);
+    gstate.truth = 0;
+    gstate.delta = 0;
+    gstate.train = 1;
+    float *X = calloc(x_size, sizeof(float));
+    float *y = calloc(y_size, sizeof(float));
+
+    network_state astate = {0};
+    astate.index = 0;
+    astate.net = anet;
+    int ay_size = get_network_output_size(anet)*anet->batch;
+    astate.input = 0;
+    astate.truth = 0;
+    astate.delta = 0;
+    astate.train = 1;
+
+    float *imerror = cuda_make_array(0, imlayer.outputs);
+    float *ones_gpu = cuda_make_array(0, ay_size);
+    fill_gpu(ay_size, 1, ones_gpu, 1);
+
+    float aloss_avg = -1;
+    float gloss_avg = -1;
+
+    //data generated = copy_data(train);
+
+    while (get_current_batch(net) < net->max_batches) {
+        i += 1;
+        time=clock();
+        pthread_join(load_thread, 0);
+        train = buffer;
+        load_thread = load_data_in_thread(args);
+
+        printf("Loaded: %lf seconds\n", sec(clock()-time));
+
+        data generated = copy_data(train);
+        time=clock();
+        float gloss = 0;
+
+        for(j = 0; j < net->subdivisions; ++j){
+            get_next_batch(train, net->batch, j*net->batch, X, y);
+            cuda_push_array(gstate.input, X, x_size);
+            *net->seen += net->batch;
+            forward_network_gpu(net, gstate);
+
+            fill_gpu(imlayer.outputs, 0, imerror, 1);
+            astate.input = imlayer.output_gpu;
+            astate.delta = imerror;
+            astate.truth = ones_gpu;
+            forward_network_gpu(anet, astate);
+            backward_network_gpu(anet, astate);
+
+            scal_gpu(imlayer.outputs, 1, imerror, 1);
+            axpy_gpu(imlayer.outputs, 1, imerror, 1, imlayer.delta_gpu, 1);
+
+            backward_network_gpu(net, gstate);
+
+            printf("features %f\n", cuda_mag_array(imlayer.delta_gpu, imlayer.outputs));
+            printf("realness %f\n", cuda_mag_array(imerror, imlayer.outputs));
+
+            gloss += get_network_cost(net) /(net->subdivisions*net->batch);
+
+            cuda_pull_array(imlayer.output_gpu, imlayer.output, imlayer.outputs*imlayer.batch);
+            for(k = 0; k < net->batch; ++k){
+                int index = j*net->batch + k;
+                copy_cpu(imlayer.outputs, imlayer.output + k*imlayer.outputs, 1, generated.X.vals[index], 1);
+                generated.y.vals[index][0] = 0;
+            }
+        }
+        harmless_update_network_gpu(anet);
+
+        data merge = concat_data(train, generated);
+        randomize_data(merge);
+        float aloss = train_network(anet, merge);
+
+        update_network_gpu(net);
+        update_network_gpu(anet);
+        free_data(merge);
+        free_data(train);
+        free_data(generated);
+        if (aloss_avg < 0) aloss_avg = aloss;
+        aloss_avg = aloss_avg*.9 + aloss*.1;
+        gloss_avg = gloss_avg*.9 + gloss*.1;
+
+        printf("%d: gen: %f, adv: %f | gen_avg: %f, adv_avg: %f, %f rate, %lf seconds, %d images\n", i, gloss, aloss, gloss_avg, aloss_avg, get_current_rate(net), sec(clock()-time), i*imgs);
+        if(i%1000==0){
+            char buff[256];
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, base, i);
+            save_weights(net, buff);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, abase, i);
+            save_weights(anet, buff);
+        }
+        if(i%100==0){
+            char buff[256];
+            sprintf(buff, "%s/%s.backup", backup_directory, base);
+            save_weights(net, buff);
+            sprintf(buff, "%s/%s.backup", backup_directory, abase);
+            save_weights(anet, buff);
+        }
     }
     if(i%100==0){
         char buff[256];
@@ -1211,83 +1327,83 @@ save_weights(net, buff);
 */
 
 /*
-   void train_lsd(char *cfgfile, char *weightfile, int clear)
-   {
-   char *train_images = "/home/pjreddie/data/coco/trainvalno5k.txt";
-   char *backup_directory = "/home/pjreddie/backup/";
-   srand(time(0));
-   char *base = basecfg(cfgfile);
-   printf("%s\n", base);
-   float avg_loss = -1;
-   network net = parse_network_cfg(cfgfile);
-   if(weightfile){
-   load_weights(&net, weightfile);
-   }
-   if(clear) *net->seen = 0;
-   printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
-   int imgs = net->batch*net->subdivisions;
-   int i = *net->seen/imgs;
-   data train, buffer;
+void train_lsd(char *cfgfile, char *weightfile, int clear)
+{
+    char *train_images = "/home/pjreddie/data/coco/trainvalno5k.txt";
+    char *backup_directory = "/home/pjreddie/backup/";
+    srand(time(0));
+    char *base = basecfg(cfgfile);
+    printf("%s\n", base);
+    float avg_loss = -1;
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    if(clear) *net->seen = 0;
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
+    int imgs = net->batch*net->subdivisions;
+    int i = *net->seen/imgs;
+    data train, buffer;
 
 
-   list *plist = get_paths(train_images);
-//int N = plist->size;
-char **paths = (char **)list_to_array(plist);
+    list *plist = get_paths(train_images);
+    //int N = plist->size;
+    char **paths = (char **)list_to_array(plist);
 
-load_args args = {0};
-args.w = net->w;
-args.h = net->h;
-args.paths = paths;
-args.n = imgs;
-args.m = plist->size;
-args.d = &buffer;
+    load_args args = {0};
+    args.w = net->w;
+    args.h = net->h;
+    args.paths = paths;
+    args.n = imgs;
+    args.m = plist->size;
+    args.d = &buffer;
 
-args.min = net->min_crop;
-args.max = net->max_crop;
-args.angle = net->angle;
-args.aspect = net->aspect;
-args.exposure = net->exposure;
-args.saturation = net->saturation;
-args.hue = net->hue;
-args.size = net->w;
-args.type = CLASSIFICATION_DATA;
-args.classes = 1;
-char *ls[1] = {"coco"};
-args.labels = ls;
+    args.min = net->min_crop;
+    args.max = net->max_crop;
+    args.angle = net->angle;
+    args.aspect = net->aspect;
+    args.exposure = net->exposure;
+    args.saturation = net->saturation;
+    args.hue = net->hue;
+    args.size = net->w;
+    args.type = CLASSIFICATION_DATA;
+    args.classes = 1;
+    char *ls[1] = {"coco"};
+    args.labels = ls;
 
-pthread_t load_thread = load_data_in_thread(args);
-clock_t time;
-//while(i*imgs < N*120){
-while(get_current_batch(net) < net->max_batches){
-i += 1;
-time=clock();
-pthread_join(load_thread, 0);
-train = buffer;
-load_thread = load_data_in_thread(args);
+    pthread_t load_thread = load_data_in_thread(args);
+    clock_t time;
+    //while(i*imgs < N*120){
+    while(get_current_batch(net) < net->max_batches){
+        i += 1;
+        time=clock();
+        pthread_join(load_thread, 0);
+        train = buffer;
+        load_thread = load_data_in_thread(args);
 
-printf("Loaded: %lf seconds\n", sec(clock()-time));
+        printf("Loaded: %lf seconds\n", sec(clock()-time));
 
-time=clock();
-float loss = train_network(net, train);
-if (avg_loss < 0) avg_loss = loss;
-avg_loss = avg_loss*.9 + loss*.1;
+        time=clock();
+        float loss = train_network(net, train);
+        if (avg_loss < 0) avg_loss = loss;
+        avg_loss = avg_loss*.9 + loss*.1;
 
-printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
-if(i%1000==0){
-char buff[256];
-sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
-save_weights(net, buff);
-}
-if(i%100==0){
-char buff[256];
-sprintf(buff, "%s/%s.backup", backup_directory, base);
-save_weights(net, buff);
-}
-free_data(train);
-}
-char buff[256];
-sprintf(buff, "%s/%s_final.weights", backup_directory, base);
-save_weights(net, buff);
+        printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
+        if(i%1000==0){
+            char buff[256];
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, base, i);
+            save_weights(net, buff);
+        }
+        if(i%100==0){
+            char buff[256];
+            sprintf(buff, "%s/%s.backup", backup_directory, base);
+            save_weights(net, buff);
+        }
+        free_data(train);
+    }
+    char buff[256];
+    sprintf(buff, "%s/%s_final.weights", backup_directory, base);
+    save_weights(net, buff);
 }
 */
 

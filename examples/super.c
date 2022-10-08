@@ -49,7 +49,7 @@ void train_super(char *cfgfile, char *weightfile, int clear)
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%06d.weights", backup_directory, base, i);
             save_weights(net, buff);
         }
         if(i%100==0){
