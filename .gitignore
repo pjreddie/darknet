@@ -10,6 +10,7 @@
 *.lib
 *.dylib
 *.pyc
+*.bak
 mnist/
 data/
 caffe/
@@ -23,6 +24,7 @@ cfg/
 temp/
 build/darknet/*
 build_*/
+debug/
 ninja/
 ninja.zip
 vcpkg_installed/

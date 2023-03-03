@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 #>
 
-$utils_psm1_version = "0.0.4"
+$utils_psm1_version = "0.3.0"
 $IsWindowsPowerShell = switch ( $PSVersionTable.PSVersion.Major ) {
   5 { $true }
   4 { $true }
@@ -30,6 +30,28 @@ $IsWindowsPowerShell = switch ( $PSVersionTable.PSVersion.Major ) {
   2 { $true }
   default { $false }
 }
+
+$ExecutableSuffix = ""
+if ($IsWindowsPowerShell -or $IsWindows) {
+  $ExecutableSuffix = ".exe"
+}
+
+Push-Location $PSScriptRoot
+$GIT_EXE = Get-Command "git" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
+if ($GIT_EXE) {
+  $IsInGitSubmoduleString = $(git rev-parse --show-superproject-working-tree 2> $null)
+  if ($IsInGitSubmoduleString.Length -eq 0) {
+    $IsInGitSubmodule = $false
+  }
+  else {
+    $IsInGitSubmodule = $true
+  }
+}
+else {
+  $IsInGitSubmodule = $false
+}
+Pop-Location
+
 $cuda_version_full = "11.7.0"
 $cuda_version_short = "11.7"
 $cuda_version_full_dashed = $cuda_version_full.replace('.', '-')
@@ -48,7 +70,7 @@ function getProgramFiles32bit() {
   return $out
 }
 
-function getLatestVisualStudioWithDesktopWorkloadPath() {
+function getLatestVisualStudioWithDesktopWorkloadPath([bool]$required = $true) {
   $programFiles = getProgramFiles32bit
   $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
   if (Test-Path $vswhereExe) {
@@ -74,16 +96,28 @@ function getLatestVisualStudioWithDesktopWorkloadPath() {
       }
     }
     if (!$installationPath) {
-      MyThrow("Could not locate any installation of Visual Studio")
+      if ($required) {
+        MyThrow("Could not locate any installation of Visual Studio")
+      }
+      else {
+        Write-Host "Could not locate any installation of Visual Studio" -ForegroundColor Red
+        return $null
+      }
     }
   }
   else {
-    MyThrow("Could not locate vswhere at $vswhereExe")
+    if ($required) {
+      MyThrow("Could not locate vswhere at $vswhereExe")
+    }
+    else {
+      Write-Host "Could not locate vswhere at $vswhereExe" -ForegroundColor Red
+      return $null
+    }
   }
   return $installationPath
 }
 
-function getLatestVisualStudioWithDesktopWorkloadVersion() {
+function getLatestVisualStudioWithDesktopWorkloadVersion([bool]$required = $true) {
   $programFiles = getProgramFiles32bit
   $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
   if (Test-Path $vswhereExe) {
@@ -109,17 +143,29 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
       }
     }
     if (!$installationVersion) {
-      MyThrow("Could not locate any installation of Visual Studio")
+      if ($required) {
+        MyThrow("Could not locate any installation of Visual Studio")
+      }
+      else {
+        Write-Host "Could not locate any installation of Visual Studio" -ForegroundColor Red
+        return $null
+      }
     }
   }
   else {
-    MyThrow("Could not locate vswhere at $vswhereExe")
+    if ($required) {
+      MyThrow("Could not locate vswhere at $vswhereExe")
+    }
+    else {
+      Write-Host "Could not locate vswhere at $vswhereExe" -ForegroundColor Red
+      return $null
+    }
   }
   return $installationVersion
 }
 
 function DownloadNinja() {
-  Write-Host "Unable to find Ninja, downloading a portable version on-the-fly" -ForegroundColor Yellow
+  Write-Host "Downloading a portable version of Ninja" -ForegroundColor Yellow
   Remove-Item -Force -Recurse -ErrorAction SilentlyContinue ninja
   Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
   if ($IsWindows -or $IsWindowsPowerShell) {
@@ -137,6 +183,88 @@ function DownloadNinja() {
   Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile "ninja.zip"
   Expand-Archive -Path ninja.zip
   Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
+  return "./ninja${ExecutableSuffix}"
+}
+
+function DownloadAria2() {
+  Write-Host "Downloading a portable version of Aria2" -ForegroundColor Yellow
+  if ($IsWindows -or $IsWindowsPowerShell) {
+    $basename = "aria2-1.35.0-win-32bit-build1"
+    $zipName = "${basename}.zip"
+    $outFolder = "$basename/$basename"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://github.com/aria2/aria2/releases/download/release-1.35.0/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    Expand-Archive -Path $zipName
+  }
+  elseif ($IsLinux) {
+    $basename = "aria2-1.36.0-linux-gnu-64bit-build1"
+    $zipName = "${basename}.tar.bz2"
+    $outFolder = $basename
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://github.com/q3aql/aria2-static-builds/releases/download/v1.36.0/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    tar xf $zipName
+  }
+  elseif ($IsMacOS) {
+    $basename = "aria2-1.35.0-osx-darwin"
+    $zipName = "${basename}.tar.bz2"
+    $outFolder = "aria2-1.35.0/bin"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://github.com/aria2/aria2/releases/download/release-1.35.0/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    tar xf $zipName
+  }
+  else {
+    MyThrow("Unknown OS, unsupported")
+  }
+  Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+  return "./$outFolder/aria2c${ExecutableSuffix}"
+}
+
+function Download7Zip() {
+  Write-Host "Downloading a portable version of 7-Zip" -ForegroundColor Yellow
+  if ($IsWindows -or $IsWindowsPowerShell) {
+    $basename = "7za920"
+    $zipName = "${basename}.zip"
+    $outFolder = "$basename"
+    $outSuffix = "a"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://www.7-zip.org/a/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    Expand-Archive -Path $zipName
+  }
+  elseif ($IsLinux) {
+    $basename = "7z2201-linux-x64"
+    $zipName = "${basename}.tar.xz"
+    $outFolder = $basename
+    $outSuffix = "z"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://www.7-zip.org/a/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    tar xf $zipName
+  }
+  elseif ($IsMacOS) {
+    $basename = "7z2107-mac"
+    $zipName = "${basename}.tar.xz"
+    $outFolder = $basename
+    $outSuffix = "z"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://www.7-zip.org/a/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    tar xf $zipName
+  }
+  else {
+    MyThrow("Unknown OS, unsupported")
+  }
+  Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+  return "./$outFolder/7z${outSuffix}${ExecutableSuffix}"
 }
 
 Function MyThrow ($Message) {
@@ -195,14 +323,16 @@ Function MyThrow ($Message) {
 
 Export-ModuleMember -Variable utils_psm1_version
 Export-ModuleMember -Variable IsWindowsPowerShell
+Export-ModuleMember -Variable IsInGitSubmodule
 Export-ModuleMember -Variable cuda_version_full
 Export-ModuleMember -Variable cuda_version_short
 Export-ModuleMember -Variable cuda_version_full_dashed
 Export-ModuleMember -Variable cuda_version_short_dashed
-
 Export-ModuleMember -Function getProgramFiles32bit
 Export-ModuleMember -Function getLatestVisualStudioWithDesktopWorkloadPath
 Export-ModuleMember -Function getLatestVisualStudioWithDesktopWorkloadVersion
 Export-ModuleMember -Function DownloadNinja
+Export-ModuleMember -Function DownloadAria2
+Export-ModuleMember -Function Download7Zip
 Export-ModuleMember -Function MyThrow
 Export-ModuleMember -Function CopyTexFile

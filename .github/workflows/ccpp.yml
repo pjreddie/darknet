@@ -384,7 +384,7 @@ jobs:
       if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
 
     - name: Install dependencies
-      run: brew install libomp yasm nasm
+      run: brew install libomp yasm nasm pkg-config
 
     - uses: lukka/get-cmake@latest
 
