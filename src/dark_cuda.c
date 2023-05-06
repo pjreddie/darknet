@@ -54,7 +54,7 @@ void *cuda_get_context()
     return (void *)pctx;
 }
 
-void check_error(cudaError_t status)
+void check_error(cudaError_t status, const char * const filename, const char * const funcname, const int line)
 {
     cudaError_t status2 = cudaGetLastError();
     if (status != cudaSuccess)
@@ -66,7 +66,7 @@ void check_error(cudaError_t status)
 #ifdef WIN32
         getchar();
 #endif
-        error(buffer, DARKNET_LOC);
+        error(buffer, filename, funcname, line);
     }
     if (status2 != cudaSuccess)
     {
@@ -77,15 +77,15 @@ void check_error(cudaError_t status)
 #ifdef WIN32
         getchar();
 #endif
-        error(buffer, DARKNET_LOC);
+        error(buffer, filename, funcname, line);
     }
 }
 
-void check_error_extended(cudaError_t status, const char *file, int line, const char *date_time)
+void check_error_extended(cudaError_t status, const char * const filename, const char * const funcname, const int line)
 {
     if (status != cudaSuccess) {
-        printf("CUDA status Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
-        check_error(status);
+        printf("CUDA status Error: file: %s: func: %s() line: %d\n", filename, funcname, line);
+        check_error(status, filename, funcname, line);
     }
 #if defined(DEBUG) || defined(CUDA_DEBUG)
     cuda_debug_sync = 1;
@@ -93,9 +93,9 @@ void check_error_extended(cudaError_t status, const char *file, int line, const 
     if (cuda_debug_sync) {
         status = cudaDeviceSynchronize();
         if (status != cudaSuccess)
-            printf("CUDA status = cudaDeviceSynchronize() Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+            printf("CUDA status = cudaDeviceSynchronize() Error: file: %s: func: %s() line: %d\n", filename, funcname, line);
     }
-    check_error(status);
+    check_error(status, filename, funcname, line);
 }
 
 dim3 cuda_gridsize(size_t n){
@@ -180,7 +180,7 @@ cudnnHandle_t cudnn_handle()
 }
 
 
-void cudnn_check_error(cudnnStatus_t status)
+void cudnn_check_error(cudnnStatus_t status, const char * const filename, const char * const function, const int line)
 {
 #if defined(DEBUG) || defined(CUDA_DEBUG)
     cudaDeviceSynchronize();
@@ -201,7 +201,7 @@ void cudnn_check_error(cudnnStatus_t status)
 #ifdef WIN32
         getchar();
 #endif
-        error(buffer, DARKNET_LOC);
+        error(buffer, filename, function, line);
     }
     if (status2 != CUDNN_STATUS_SUCCESS)
     {
@@ -212,15 +212,15 @@ void cudnn_check_error(cudnnStatus_t status)
 #ifdef WIN32
         getchar();
 #endif
-        error(buffer, DARKNET_LOC);
+        error(buffer, filename, function, line);
     }
 }
 
-void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line, const char *date_time)
+void cudnn_check_error_extended(cudnnStatus_t status, const char * const filename, const char * const function, const int line)
 {
     if (status != CUDNN_STATUS_SUCCESS) {
-        printf("\n cuDNN status Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
-        cudnn_check_error(status);
+        printf("\n cuDNN status Error in: file: %s function: %s() line: %d\n", filename, function, line);
+        cudnn_check_error(status, filename, function, line);
     }
 #if defined(DEBUG) || defined(CUDA_DEBUG)
     cuda_debug_sync = 1;
@@ -228,9 +228,9 @@ void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line
     if (cuda_debug_sync) {
         cudaError_t status = cudaDeviceSynchronize();
         if (status != CUDNN_STATUS_SUCCESS)
-            printf("\n cudaError_t status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+            printf("\n cudaError_t status = cudaDeviceSynchronize() Error in: file: %s function: %s() line: %d\n", filename, function, line);
     }
-    cudnn_check_error(status);
+    cudnn_check_error(status, filename, function, line);
 }
 
 static cudnnHandle_t switchCudnnHandle[16];
@@ -251,10 +251,10 @@ void cublas_check_error(cublasStatus_t status)
     }
 }
 
-void cublas_check_error_extended(cublasStatus_t status, const char *file, int line, const char *date_time)
+void cublas_check_error_extended(cublasStatus_t status, const char * const filename, const char * const function, const int line)
 {
     if (status != CUBLAS_STATUS_SUCCESS) {
-      printf("\n cuBLAS status Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+      printf("\n cuBLAS status Error in: file: %s function: %s() line: %d\n", filename, function, line);
     }
 #if defined(DEBUG) || defined(CUDA_DEBUG)
     cuda_debug_sync = 1;
@@ -262,7 +262,7 @@ void cublas_check_error_extended(cublasStatus_t status, const char *file, int li
     if (cuda_debug_sync) {
         cudaError_t status = cudaDeviceSynchronize();
       if (status != CUDA_SUCCESS)
-          printf("\n cudaError_t status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+          printf("\n cudaError_t status = cudaDeviceSynchronize() Error in: file: %s function: %s() line: %d\n", filename, function, line);
     }
     cublas_check_error(status);
 }
@@ -602,7 +602,7 @@ void cuda_pull_array_async(float *x_gpu, float *x, size_t n)
 {
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDefault, get_cuda_stream());
-    check_error(status);
+    check_error(status, DARKNET_LOC);
     //cudaStreamSynchronize(get_cuda_stream());
 }
 

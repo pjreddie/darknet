@@ -18,6 +18,7 @@
 #else
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <execinfo.h>
 #endif
 
 
@@ -325,10 +326,30 @@ void top_k(float *a, int n, int k, int *index)
     }
 }
 
+
+void log_backtrace()
+{
+#ifndef WIN32
+    void * buffer[50];
+    int count = backtrace(buffer, sizeof(buffer));
+    char **symbols = backtrace_symbols(buffer, count);
+
+    fprintf(stderr, "backtrace (%d entries)\n", count);
+
+    for (int idx = 0; idx < count; idx ++)
+    {
+        fprintf(stderr, "%d/%d: %s\n", idx + 1, count, symbols[idx]);
+    }
+
+    free(symbols);
+#endif
+}
+
 void error(const char * const msg, const char * const filename, const char * const funcname, const int line)
 {
-    fprintf(stderr, "Darknet error location: %s, %s, line #%d\n", filename, funcname, line);
+    fprintf(stderr, "Darknet error location: %s, %s(), line #%d\n", filename, funcname, line);
     perror(msg);
+    log_backtrace();
     exit(EXIT_FAILURE);
 }
 
