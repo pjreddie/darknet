@@ -64,8 +64,6 @@ Manual: https://github.com/AlexeyAB/darknet/wiki
 
 Discussion:
 
-- [Reddit](https://www.reddit.com/r/MachineLearning/comments/gydxzd/p_yolov4_the_most_accurate_realtime_neural/)
-- [Google-groups](https://groups.google.com/forum/#!forum/darknet)
 - [Discord](https://discord.gg/zSq8rtW)
 
 About Darknet framework: http://pjreddie.com/darknet/
