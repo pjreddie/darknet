@@ -1,5 +1,8 @@
 # Yolo v4, v3 and v2 for Windows and Linux
 
+* See the FAQ:  https://www.ccoderun.ca/programming/darknet_faq/
+* Join the Darknet/YOLO Discord:  https://discord.gg/zSq8rtW
+
 ## (neural networks for object detection)
 
 * Paper **YOLOv7**: https://arxiv.org/abs/2207.02696
