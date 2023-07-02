@@ -12,6 +12,7 @@ float abs_mean(float *x, int n)
         sum += fabs(x[i]);
     }
     return sum/n;
+    
 }
 
 void calculate_loss(float *output, float *delta, int n, float thresh)
@@ -90,16 +91,6 @@ void optimize_picture(network *net, image orig, int max_layer, float scale, floa
 
     if(norm) normalize_array(out.data, out.w*out.h*out.c);
     axpy_cpu(orig.w*orig.h*orig.c, rate, out.data, 1, orig.data, 1);
-
-    /*
-       normalize_array(orig.data, orig.w*orig.h*orig.c);
-       scale_image(orig, sqrt(var));
-       translate_image(orig, mean);
-     */
-
-    //translate_image(orig, 1);
-    //scale_image(orig, .5);
-    //normalize_image(orig);
 
     constrain_image(orig);
 
