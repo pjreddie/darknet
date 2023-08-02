@@ -33,7 +33,7 @@ else {
 }
 
 if ($CUDAisAvailable) {
-  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateTOOL
+  & $PSScriptRoot/../build.ps1 -UseVCPKG -ForceLocalVCPKG -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateTOOL
   #& $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA  -DisableInteractive -DoNotUpdateTOOL
 }
 else {

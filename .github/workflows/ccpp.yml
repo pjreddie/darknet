@@ -505,7 +505,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -ForceLocalVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
     - uses: actions/upload-artifact@v2
       with:
@@ -555,7 +555,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -InstallDARKNETthroughVCPKG -ForceVCPKGDarknetHEAD -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -ForceLocalVCPKG -InstallDARKNETthroughVCPKG -ForceVCPKGDarknetHEAD -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
 
   win-intlibs:

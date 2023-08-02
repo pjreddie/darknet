@@ -6,7 +6,7 @@
         build
         Created By: Stefano Sinigardi
         Created Date: February 18, 2019
-        Last Modified Date: February 20, 2023
+        Last Modified Date: August 1, 2023
 
 .DESCRIPTION
 Build tool using CMake, trying to properly setup the environment around compiler
@@ -36,7 +36,10 @@ Force a specific OpenCV version
 Use a CUDA-enabled OpenCV build
 
 .PARAMETER UseVCPKG
-Use VCPKG to build tool dependencies. Clone it if not already found on system
+Use vcpkg to build tool dependencies. Clone it if not already found on system
+
+.PARAMETER ForceLocalVCPKG
+Use a copy of vcpkg in a subfolder of the tool folder, even if there might be another copy already provided by the system
 
 .PARAMETER InstallDARKNETthroughVCPKG
 Use VCPKG to install darknet thanks to the port integrated in it
@@ -83,6 +86,9 @@ Force clean up of the local vcpkg binary cache before building
 .PARAMETER ForceVCPKGBuildtreesRemoval
 Force clean up of vcpkg buildtrees temp folder at the end of the script
 
+.PARAMETER ForceVCPKGBuildtreesPath
+Force using a different buildtrees dir for vcpkg
+
 .PARAMETER ForceVCPKGPackagesRemoval
 Force clean up of vcpkg packages folder at the end of the script
 
@@ -100,6 +106,9 @@ Enables building C# darknet wrapper
 
 .PARAMETER DownloadWeights
 Download pre-trained weight files
+
+.PARAMETER Use32bitTriplet
+Use 32 bit triplet for target build (windows-only)
 
 .PARAMETER ForceGCCVersion
 Force a specific GCC version
@@ -149,6 +158,7 @@ param (
   [Int32]$ForceOpenCVVersion = 0,
   [switch]$EnableOPENCV_CUDA = $false,
   [switch]$UseVCPKG = $false,
+  [switch]$ForceLocalVCPKG = $false,
   [switch]$InstallDARKNETthroughVCPKG = $false,
   [switch]$InstallDARKNETdependenciesThroughVCPKGManifest = $false,
   [switch]$ForceVCPKGDarknetHEAD = $false,
@@ -164,12 +174,14 @@ param (
   [switch]$ForceStaticLib = $false,
   [switch]$ForceVCPKGCacheRemoval = $false,
   [switch]$ForceVCPKGBuildtreesRemoval = $false,
+  [string]$ForceVCPKGBuildtreesPath = "",
   [switch]$ForceVCPKGPackagesRemoval = $false,
   [switch]$ForceSetupVS = $false,
   [switch]$ForceCMakeFromVS = $false,
   [switch]$ForceNinjaFromVS = $false,
   [switch]$EnableCSharpWrapper = $false,
   [switch]$DownloadWeights = $false,
+  [switch]$Use32bitTriplet = $false,
   [Int32]$ForceGCCVersion = 0,
   [Int32]$NumberOfBuildWorkers = 8,
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
@@ -177,7 +189,7 @@ param (
 
 $global:DisableInteractive = $DisableInteractive
 
-$build_ps1_version = "3.1.0"
+$build_ps1_version = "3.4.0"
 $script_name = $MyInvocation.MyCommand.Name
 
 Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
@@ -185,7 +197,12 @@ Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
 $ErrorActionPreference = "Continue"
-$PSCustomScriptRoot = $PSScriptRoot
+if($IsInGitSubmodule) {
+  $PSCustomScriptRoot = Split-Path $PSScriptRoot -Parent
+}
+else {
+  $PSCustomScriptRoot = $PSScriptRoot
+}
 $BuildLogPath = "$PSCustomScriptRoot/build.log"
 $ReleaseInstallPrefix = "$PSCustomScriptRoot"
 $DebugInstallPrefix = "$PSCustomScriptRoot/debug"
@@ -244,7 +261,10 @@ elseif ($IsWindows -or $IsWindowsPowerShell) {
   $bootstrap_ext = ".bat"
   $exe_ext = ".exe"
 }
-
+if ($ForceLocalVCPKG -And -Not $UseVCPKG) {
+  $UseVCPKG = $true
+  Write-Host "ForceLocalVCPKG was true but UseVCPKG was false, setting UseVCPKG to true"
+}
 if ($InstallDARKNETdependenciesThroughVCPKGManifest -and -not $InstallDARKNETthroughVCPKG) {
   Write-Host "You requested darknet dependencies to be installed by vcpkg in manifest mode but you didn't enable installation through vcpkg, doing that for you"
   $InstallDARKNETthroughVCPKG = $true
@@ -283,13 +303,27 @@ $vcpkg_triplet_set_by_this_script = $false
 $vcpkg_host_triplet_set_by_this_script = $false
 
 if (($IsWindows -or $IsWindowsPowerShell) -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
-  if($BuildDebug) {
-    $env:VCPKG_DEFAULT_TRIPLET = "x64-windows"
+  if ($Use32bitTriplet) {
+    if (-Not $BuildDebug) {
+      $BuildDebug = $true
+      Write-Host "Warning: when building for 32bit windows target, only builds with also debug version are possible. Debug has been enabled on your behalf!" -ForegroundColor Yellow
+    }
+    if (-Not $DoNotUseNinja) {
+      $DoNotUseNinja = $true
+      Write-Host "Warning: when building for 32bit windows target, only msbuild can be used and ninja will be disabled. Doing that for you!" -ForegroundColor Yellow
+    }
+    $env:VCPKG_DEFAULT_TRIPLET = "x86-windows"
     $vcpkg_triplet_set_by_this_script = $true
   }
   else {
-    $env:VCPKG_DEFAULT_TRIPLET = "x64-windows-release"
-    $vcpkg_triplet_set_by_this_script = $true
+    if($BuildDebug) {
+      $env:VCPKG_DEFAULT_TRIPLET = "x64-windows"
+      $vcpkg_triplet_set_by_this_script = $true
+    }
+    else {
+      $env:VCPKG_DEFAULT_TRIPLET = "x64-windows-release"
+      $vcpkg_triplet_set_by_this_script = $true
+    }
   }
 }
 if (($IsWindows -or $IsWindowsPowerShell) -and (-Not $env:VCPKG_DEFAULT_HOST_TRIPLET)) {
@@ -325,13 +359,15 @@ if ($IsMacOS -and (-Not $env:VCPKG_DEFAULT_HOST_TRIPLET)) {
 }
 
 if ($IsLinux -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
-  if ($BuildDebug) {
-    $env:VCPKG_DEFAULT_TRIPLET = "x64-linux"
-    $vcpkg_triplet_set_by_this_script = $true
-  }
-  else {
-    $env:VCPKG_DEFAULT_TRIPLET = "x64-linux-release"
-    $vcpkg_triplet_set_by_this_script = $true
+  if ($true) {
+    if ($BuildDebug) {
+      $env:VCPKG_DEFAULT_TRIPLET = "x64-linux"
+      $vcpkg_triplet_set_by_this_script = $true
+    }
+    else {
+      $env:VCPKG_DEFAULT_TRIPLET = "x64-linux-release"
+      $vcpkg_triplet_set_by_this_script = $true
+    }
   }
 }
 if ($IsLinux -and (-Not $env:VCPKG_DEFAULT_HOST_TRIPLET)) {
@@ -470,6 +506,7 @@ if (Test-Path "$GitRepoPath") {
   }
   else {
     Write-Host "This tool will self-update sources, please pass -DoNotUpdateTOOL to the script to disable"
+    Set-Location "$PSCustomScriptRoot"
     $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "pull"
     $handle = $proc.Handle
     $proc.WaitForExit()
@@ -477,6 +514,16 @@ if (Test-Path "$GitRepoPath") {
     if (-Not ($exitCode -eq 0)) {
       MyThrow("Updating this tool sources failed! Exited with error code $exitCode.")
     }
+    if (Test-Path "$GitModulesPath") {
+      $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "submodule update --init --recursive"
+      $handle = $proc.Handle
+      $proc.WaitForExit()
+      $exitCode = $proc.ExitCode
+      if (-Not ($exitCode -eq 0)) {
+        MyThrow("Updating this tool submodule sources failed! Exited with error code $exitCode.")
+      }
+    }
+    Set-Location "$PSCustomScriptRoot"
   }
 }
 
@@ -557,33 +604,115 @@ if (-Not $DoNotUseNinja) {
   }
 }
 
+if (-Not $DoNotSetupVS) {
+  $CL_EXE = Get-Command "cl" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
+  if ((-Not $CL_EXE) -or ($CL_EXE -match "HostX86\\x86") -or ($CL_EXE -match "HostX64\\x86")) {
+    $vsfound = getLatestVisualStudioWithDesktopWorkloadPath
+    Write-Host "Found VS in ${vsfound}"
+    Push-Location "${vsfound}/Common7/Tools"
+    cmd.exe /c "VsDevCmd.bat -arch=x64 & set" |
+    ForEach-Object {
+      if ($_ -match "=") {
+        $v = $_.split("="); Set-Item -force -path "ENV:\$($v[0])"  -value "$($v[1])"
+      }
+    }
+    Pop-Location
+    Write-Host "Visual Studio Command Prompt variables set"
+  }
+
+  $tokens = getLatestVisualStudioWithDesktopWorkloadVersion
+  $tokens = $tokens.split('.')
+  if ($DoNotUseNinja) {
+    $debugConfig = " --config Debug "
+    $releaseConfig = " --config Release "
+    if ($Use32bitTriplet) {
+      $targetArchitecture = "`"Win32`""
+    }
+    else {
+      $targetArchitecture = "`"x64`""
+    }
+    if ($tokens[0] -eq "14") {
+      $generator = "Visual Studio 14 2015"
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A $targetArchitecture"
+    }
+    elseif ($tokens[0] -eq "15") {
+      $generator = "Visual Studio 15 2017"
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A $targetArchitecture"
+    }
+    elseif ($tokens[0] -eq "16") {
+      $generator = "Visual Studio 16 2019"
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A $targetArchitecture"
+    }
+    elseif ($tokens[0] -eq "17") {
+      $generator = "Visual Studio 17 2022"
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A $targetArchitecture"
+    }
+    else {
+      MyThrow("Unknown Visual Studio version, unsupported configuration")
+    }
+  }
+  if (-Not $UseVCPKG) {
+    $dllfolder = "../3rdparty/pthreads/bin"
+  }
+}
+if ($DoNotSetupVS -and $DoNotUseNinja) {
+  $generator = "Unix Makefiles"
+}
+Write-Host "Setting up environment to use CMake generator: $generator"
+
+if (-Not $IsMacOS -and $EnableCUDA) {
+  $NVCC_EXE = Get-Command "nvcc" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
+  if (-Not $NVCC_EXE) {
+    if (Test-Path env:CUDA_PATH) {
+      $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, "${env:CUDA_PATH}/bin"
+      Write-Host "Found cuda in ${env:CUDA_PATH}"
+    }
+    else {
+      Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder" -ForegroundColor Yellow
+    }
+  }
+
+  if (Test-Path env:CUDA_PATH) {
+    if (-Not(Test-Path env:CUDA_TOOLKIT_ROOT_DIR)) {
+      $env:CUDA_TOOLKIT_ROOT_DIR = "${env:CUDA_PATH}"
+      Write-Host "Added missing env variable CUDA_TOOLKIT_ROOT_DIR" -ForegroundColor Yellow
+    }
+    if (-Not(Test-Path env:CUDACXX)) {
+      $env:CUDACXX = "${env:CUDA_PATH}/bin/nvcc"
+      Write-Host "Added missing env variable CUDACXX" -ForegroundColor Yellow
+    }
+  }
+}
+
 $vcpkg_root_set_by_this_script = $false
 
-if ((Test-Path env:VCPKG_ROOT) -and $UseVCPKG -and $VCPKGSuffix -eq "") {
-  $vcpkg_path = "$env:VCPKG_ROOT"
-  $vcpkg_path = Resolve-Path $vcpkg_path
-  Write-Host "Found vcpkg in VCPKG_ROOT: $vcpkg_path"
-  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
-}
-elseif (-not($null -eq ${env:WORKSPACE}) -and (Test-Path "${env:WORKSPACE}/vcpkg${VCPKGSuffix}") -and $UseVCPKG) {
-  $vcpkg_path = "${env:WORKSPACE}/vcpkg${VCPKGSuffix}"
-  $vcpkg_path = Resolve-Path $vcpkg_path
-  $env:VCPKG_ROOT = "$vcpkg_path"
-  $vcpkg_root_set_by_this_script = $true
-  Write-Host "Found vcpkg in WORKSPACE/vcpkg${VCPKGSuffix}: $vcpkg_path"
-  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
-}
-elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
-  if ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
-    $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
+if ($UseVCPKG -And -Not $ForceLocalVCPKG) {
+  if ((Test-Path env:VCPKG_ROOT) -and $VCPKGSuffix -eq "") {
+    $vcpkg_path = "$env:VCPKG_ROOT"
+    $vcpkg_path = Resolve-Path $vcpkg_path
+    Write-Host "Found vcpkg in VCPKG_ROOT: $vcpkg_path"
+    $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+  }
+  elseif (-not($null -eq ${env:WORKSPACE}) -and (Test-Path "${env:WORKSPACE}/vcpkg${VCPKGSuffix}")) {
+    $vcpkg_path = "${env:WORKSPACE}/vcpkg${VCPKGSuffix}"
     $vcpkg_path = Resolve-Path $vcpkg_path
     $env:VCPKG_ROOT = "$vcpkg_path"
     $vcpkg_root_set_by_this_script = $true
-    Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: $vcpkg_path"
+    Write-Host "Found vcpkg in WORKSPACE/vcpkg${VCPKGSuffix}: $vcpkg_path"
     $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
   }
+  elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
+    if ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
+      $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
+      $vcpkg_path = Resolve-Path $vcpkg_path
+      $env:VCPKG_ROOT = "$vcpkg_path"
+      $vcpkg_root_set_by_this_script = $true
+      Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: $vcpkg_path"
+      $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+    }
+  }
 }
-elseif ($UseVCPKG) {
+if (($null -eq $vcpkg_path) -and $UseVCPKG) {
   if (-Not (Test-Path "$PWD/vcpkg${VCPKGSuffix}")) {
     $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone https://github.com/microsoft/vcpkg vcpkg${VCPKGSuffix}"
     $handle = $proc.Handle
@@ -695,11 +824,6 @@ if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
 }
 
-if ($UseVCPKG -and $ForceVCPKGBuildtreesRemoval) {
-  Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
-  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$vcpkgbuildtreespath"
-}
-
 if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {
   Write-Host "You requested OpenCV version 2, so vcpkg will install that version" -ForegroundColor Yellow
   Write-Host "This requires using vcpkg.json.opencv23 as manifest file" -ForegroundColor Yellow
@@ -732,80 +856,6 @@ if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {
   }
   Write-Host "Removing local vcpkg binary cache from $vcpkgbinarycachepath" -ForegroundColor Yellow
   Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgbinarycachepath
-}
-
-if (-Not $DoNotSetupVS) {
-  $CL_EXE = Get-Command "cl" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
-  if ((-Not $CL_EXE) -or ($CL_EXE -match "HostX86\\x86") -or ($CL_EXE -match "HostX64\\x86")) {
-    $vsfound = getLatestVisualStudioWithDesktopWorkloadPath
-    Write-Host "Found VS in ${vsfound}"
-    Push-Location "${vsfound}/Common7/Tools"
-    cmd.exe /c "VsDevCmd.bat -arch=x64 & set" |
-    ForEach-Object {
-      if ($_ -match "=") {
-        $v = $_.split("="); Set-Item -force -path "ENV:\$($v[0])"  -value "$($v[1])"
-      }
-    }
-    Pop-Location
-    Write-Host "Visual Studio Command Prompt variables set"
-  }
-
-  $tokens = getLatestVisualStudioWithDesktopWorkloadVersion
-  $tokens = $tokens.split('.')
-  if ($DoNotUseNinja) {
-    $debugConfig = " --config Debug "
-    $releaseConfig = " --config Release "
-    if ($tokens[0] -eq "14") {
-      $generator = "Visual Studio 14 2015"
-      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
-    }
-    elseif ($tokens[0] -eq "15") {
-      $generator = "Visual Studio 15 2017"
-      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
-    }
-    elseif ($tokens[0] -eq "16") {
-      $generator = "Visual Studio 16 2019"
-      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
-    }
-    elseif ($tokens[0] -eq "17") {
-      $generator = "Visual Studio 17 2022"
-      $AdditionalBuildSetup = $AdditionalBuildSetup + " -T `"host=x64`" -A `"x64`""
-    }
-    else {
-      MyThrow("Unknown Visual Studio version, unsupported configuration")
-    }
-  }
-  if (-Not $UseVCPKG) {
-    $dllfolder = "../3rdparty/pthreads/bin"
-  }
-}
-if ($DoNotSetupVS -and $DoNotUseNinja) {
-  $generator = "Unix Makefiles"
-}
-Write-Host "Setting up environment to use CMake generator: $generator"
-
-if (-Not $IsMacOS -and $EnableCUDA) {
-  $NVCC_EXE = Get-Command "nvcc" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
-  if (-Not $NVCC_EXE) {
-    if (Test-Path env:CUDA_PATH) {
-      $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, "${env:CUDA_PATH}/bin"
-      Write-Host "Found cuda in ${env:CUDA_PATH}"
-    }
-    else {
-      Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder" -ForegroundColor Yellow
-    }
-  }
-
-  if (Test-Path env:CUDA_PATH) {
-    if (-Not(Test-Path env:CUDA_TOOLKIT_ROOT_DIR)) {
-      $env:CUDA_TOOLKIT_ROOT_DIR = "${env:CUDA_PATH}"
-      Write-Host "Added missing env variable CUDA_TOOLKIT_ROOT_DIR" -ForegroundColor Yellow
-    }
-    if (-Not(Test-Path env:CUDACXX)) {
-      $env:CUDACXX = "${env:CUDA_PATH}/bin/nvcc"
-      Write-Host "Added missing env variable CUDACXX" -ForegroundColor Yellow
-    }
-  }
 }
 
 if (-Not $DisableDLLcopy) {
@@ -978,8 +1028,8 @@ else {
     }
   }
   if (-Not $DoNotDeleteBuildFolder) {
-    Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
-    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
+    Write-Host "Removing folder $release_build_folder" -ForegroundColor Yellow
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $release_build_folder
   }
   Set-Location ..
 }
@@ -991,7 +1041,6 @@ if ($ForceVCPKGBuildtreesRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg buildtrees folder will not be deleted even if requested" -ForegroundColor Yellow
 }
 
-$vcpkgbuildtreespath = "$vcpkg_path/buildtrees"
 if ($UseVCPKG -and $ForceVCPKGBuildtreesRemoval) {
   Write-Host "Removing local vcpkg buildtrees folder from $vcpkgbuildtreespath" -ForegroundColor Yellow
   Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgbuildtreespath
@@ -1016,7 +1065,6 @@ if ($DownloadWeights) {
 if ($vcpkg_root_set_by_this_script) {
   $env:VCPKG_ROOT = $null
 }
-
 if ($vcpkg_triplet_set_by_this_script) {
   $env:VCPKG_DEFAULT_TRIPLET = $null
 }
