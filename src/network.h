@@ -144,7 +144,7 @@ int get_predicted_class_network(network net);
 void print_network(network net);
 void visualize_network(network net);
 int resize_network(network *net, int w, int h);
-void set_batch_network(network *net, int b);
+//LIB_API void set_batch_network(network *net, int b);
 int get_network_input_size(network net);
 float get_network_cost(network net);
 //LIB_API layer* get_network_layer(network* net, int i);
