@@ -101,7 +101,6 @@ typedef struct tree {
     int *group_offset;
 } tree;
 
-
 // activations.h
 typedef enum {
     LOGISTIC, RELU, RELU6, RELIE, LINEAR, RAMP, TANH, PLSE, REVLEAKY, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, GELU, SWISH, MISH, HARD_MISH, NORM_CHAN, NORM_CHAN_SOFTMAX, NORM_CHAN_SOFTMAX_MAXVAL
@@ -911,6 +910,20 @@ typedef struct detection{
     float sim;
     int track_id;
 } detection;
+
+// multi_label_one_anchor_choose_maxiou
+typedef struct mloam { 
+    box truth;
+    int use_or_not;
+    float best_iou;
+    int x;
+    int y;
+    int class_id;
+    int track_id;
+    int best_n;
+    int mask_n;
+    int t;
+} mloam;
 
 // network.c -batch inference
 typedef struct det_num_pair {

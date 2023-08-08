@@ -4,6 +4,7 @@
 #include "box.h"
 #include "dark_cuda.h"
 #include "utils.h"
+#include "darknet.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -384,6 +385,7 @@ typedef struct train_yolo_args {
     float tot_iou_loss;
     int count;
     int class_count;
+    mloam* mloam_ptr;
 } train_yolo_args;
 
 void *process_batch(void* ptr)
@@ -505,6 +507,8 @@ void *process_batch(void* ptr)
                 }
             }
         }
+        mloam* mloam_ptr = args->mloam_ptr;   // multi_label_one_anchor_choose_maxiou
+        int number = 0;
         for (t = 0; t < l.max_boxes; ++t) {
             box truth = float_to_box_stride(state.truth + t * l.truth_size + b * l.truths, 1);
             if (!truth.x) break;  // continue;
@@ -539,19 +543,79 @@ void *process_batch(void* ptr)
             if (mask_n >= 0) {
                 int class_id = state.truth[t * l.truth_size + b * l.truths + 4];
                 if (l.map) class_id = l.map[class_id];
+                if(number==0) {
+                    mloam choose = {truth, 1, best_iou, i, j, class_id, 1, best_n, mask_n, t};
+                    mloam_ptr[number++] = choose;
+                }
+                for(int mi = 0; mi < number; mi++) {
+                    mloam mp = mloam_ptr[mi];
+                    if(mp.mask_n == mask_n && mp.use_or_not > 0 && mp.best_iou < best_iou) {
+                        mloam choose = {truth, 1, best_iou, i, j, class_id, 1, best_n, mask_n, t};
+                        mloam_ptr[number++] = choose;
+                        mp.use_or_not = -6;
+                        break;
+                    }
+                }
+            }
+            // iou_thresh
+            for (n = 0; n < l.total; ++n) {
+                int mask_n = int_index(l.mask, n, l.n);
+                if (mask_n >= 0 && n != best_n && l.iou_thresh < 1.0f) {
+                    box pred = { 0 };
+                    pred.w = l.biases[2 * n] / state.net.w;
+                    pred.h = l.biases[2 * n + 1] / state.net.h;
+                    float iou = box_iou_kind(pred, truth_shift, l.iou_thresh_kind); // IOU, GIOU, MSE, DIOU, CIOU
+                    // iou, n
+
+                    if (iou > l.iou_thresh) {
+                        int class_id = state.truth[t * l.truth_size + b * l.truths + 4];
+                        if (l.map) class_id = l.map[class_id];
+                        if(number==0) {
+                            mloam choose = {truth, 1, best_iou, i, j, class_id, 1, best_n, mask_n, t};
+                            mloam_ptr[number++] = choose;
+                        }
+                        for(int mi = 0; mi < number; mi++) {
+                            mloam mp = mloam_ptr[mi];
+                            if(mp.mask_n == mask_n && mp.use_or_not > 0 && mp.best_iou < iou) {
+                                mloam choose = {truth, 1, iou, i, j, class_id, -1, n, mask_n, t};
+                                mloam_ptr[number++] = choose;
+                                mp.use_or_not = -6;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for(int ni = 0; ni < number; ni++) {
+            mloam mp   = mloam_ptr[ni];
+            box truth      = mp.truth;
+            int use_or_not = mp.use_or_not;
+            float best_iou = mp.best_iou;
+            int i          = mp.x;
+            int j          = mp.y;
+            int class_id   = mp.class_id;
+            int track_id   = mp.track_id;
+            int best_n     = mp.best_n;
+            int mask_n     = mp.mask_n;
+            int t          = mp.t;
+            if (use_or_not > 0) {
+                int class_id = state.truth[t * l.truth_size + b * l.truths + 4];
+                if (l.map) class_id = l.map[class_id];
 
                 int box_index = entry_index(l, b, mask_n * l.w * l.h + j * l.w + i, 0);
                 const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
                 ious all_ious = delta_yolo_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w * truth.h), l.w * l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox, l.new_coords);
                 (*state.net.total_bbox)++;
 
-                const int truth_in_index = t * l.truth_size + b * l.truths + 5;
-                const int track_id = state.truth[truth_in_index];
-                const int truth_out_index = b * l.n * l.w * l.h + mask_n * l.w * l.h + j * l.w + i;
-                l.labels[truth_out_index] = track_id;
-                l.class_ids[truth_out_index] = class_id;
-                //printf(" track_id = %d, t = %d, b = %d, truth_in_index = %d, truth_out_index = %d \n", track_id, t, b, truth_in_index, truth_out_index);
-
+                if(track_id > 0) {
+                    const int truth_in_index = t * l.truth_size + b * l.truths + 5;
+                    const int track_id = state.truth[truth_in_index];
+                    const int truth_out_index = b * l.n * l.w * l.h + mask_n * l.w * l.h + j * l.w + i;
+                    l.labels[truth_out_index] = track_id;
+                    l.class_ids[truth_out_index] = class_id;
+                    //printf(" track_id = %d, t = %d, b = %d, truth_in_index = %d, truth_out_index = %d \n", track_id, t, b, truth_in_index, truth_out_index);
+                }
                 // range is 0 <= 1
                 args->tot_iou += all_ious.iou;
                 args->tot_iou_loss += 1 - all_ious.iou;
@@ -583,57 +647,6 @@ void *process_batch(void* ptr)
                 ++(args->class_count);
                 if (all_ious.iou > .5) recall += 1;
                 if (all_ious.iou > .75) recall75 += 1;
-            }
-
-            // iou_thresh
-            for (n = 0; n < l.total; ++n) {
-                int mask_n = int_index(l.mask, n, l.n);
-                if (mask_n >= 0 && n != best_n && l.iou_thresh < 1.0f) {
-                    box pred = { 0 };
-                    pred.w = l.biases[2 * n] / state.net.w;
-                    pred.h = l.biases[2 * n + 1] / state.net.h;
-                    float iou = box_iou_kind(pred, truth_shift, l.iou_thresh_kind); // IOU, GIOU, MSE, DIOU, CIOU
-                    // iou, n
-
-                    if (iou > l.iou_thresh) {
-                        int class_id = state.truth[t * l.truth_size + b * l.truths + 4];
-                        if (l.map) class_id = l.map[class_id];
-
-                        int box_index = entry_index(l, b, mask_n * l.w * l.h + j * l.w + i, 0);
-                        const float class_multiplier = (l.classes_multipliers) ? l.classes_multipliers[class_id] : 1.0f;
-                        ious all_ious = delta_yolo_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.delta, (2 - truth.w * truth.h), l.w * l.h, l.iou_normalizer * class_multiplier, l.iou_loss, 1, l.max_delta, state.net.rewritten_bbox, l.new_coords);
-                        (*state.net.total_bbox)++;
-
-                        // range is 0 <= 1
-                        args->tot_iou += all_ious.iou;
-                        args->tot_iou_loss += 1 - all_ious.iou;
-                        // range is -1 <= giou <= 1
-                        tot_giou += all_ious.giou;
-                        args->tot_giou_loss += 1 - all_ious.giou;
-
-                        tot_diou += all_ious.diou;
-                        tot_diou_loss += 1 - all_ious.diou;
-
-                        tot_ciou += all_ious.ciou;
-                        tot_ciou_loss += 1 - all_ious.ciou;
-
-                        int obj_index = entry_index(l, b, mask_n * l.w * l.h + j * l.w + i, 4);
-                        avg_obj += l.output[obj_index];
-                        if (l.objectness_smooth) {
-                            float delta_obj = class_multiplier * l.obj_normalizer * (1 - l.output[obj_index]);
-                            if (l.delta[obj_index] == 0) l.delta[obj_index] = delta_obj;
-                        }
-                        else l.delta[obj_index] = class_multiplier * l.obj_normalizer * (1 - l.output[obj_index]);
-
-                        int class_index = entry_index(l, b, mask_n * l.w * l.h + j * l.w + i, 4 + 1);
-                        delta_yolo_class(l.output, l.delta, class_index, class_id, l.classes, l.w * l.h, &avg_cat, l.focal_loss, l.label_smooth_eps, l.classes_multipliers, l.cls_normalizer);
-
-                        ++(args->count);
-                        ++(args->class_count);
-                        if (all_ious.iou > .5) recall += 1;
-                        if (all_ious.iou > .75) recall75 += 1;
-                    }
-                }
             }
         }
 
@@ -726,6 +739,7 @@ void forward_yolo_layer(const layer l, network_state state)
         yolo_args[b].tot_giou_loss = 0;
         yolo_args[b].count = 0;
         yolo_args[b].class_count = 0;
+        yolo_args[b].mloam_ptr = (mloam *)xcalloc(l.max_boxes * 3 + 60, sizeof(mloam));     // multi_label_one_anchor_choose_maxiou
 
         if (pthread_create(&threads[b], 0, process_batch, &(yolo_args[b]))) error("Thread creation failed", DARKNET_LOC);
     }
