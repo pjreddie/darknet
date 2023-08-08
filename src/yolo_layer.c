@@ -541,16 +541,14 @@ void *process_batch(void* ptr)
 
             int mask_n = int_index(l.mask, best_n, l.n);
             if (mask_n >= 0) {
-                int class_id = state.truth[t * l.truth_size + b * l.truths + 4];
-                if (l.map) class_id = l.map[class_id];
                 if(number==0) {
-                    mloam choose = {truth, 1, best_iou, i, j, class_id, 1, best_n, mask_n, t};
+                    mloam choose = {truth, 1, best_iou, i, j, 1, best_n, mask_n, t};
                     mloam_ptr[number++] = choose;
                 }
                 for(int mi = 0; mi < number; mi++) {
                     mloam mp = mloam_ptr[mi];
                     if(mp.mask_n == mask_n && mp.use_or_not > 0 && mp.best_iou < best_iou) {
-                        mloam choose = {truth, 1, best_iou, i, j, class_id, 1, best_n, mask_n, t};
+                        mloam choose = {truth, 1, best_iou, i, j, 1, best_n, mask_n, t};
                         mloam_ptr[number++] = choose;
                         mp.use_or_not = -6;
                         break;
@@ -568,16 +566,14 @@ void *process_batch(void* ptr)
                     // iou, n
 
                     if (iou > l.iou_thresh) {
-                        int class_id = state.truth[t * l.truth_size + b * l.truths + 4];
-                        if (l.map) class_id = l.map[class_id];
                         if(number==0) {
-                            mloam choose = {truth, 1, iou, i, j, class_id, -1, n, mask_n, t};
+                            mloam choose = {truth, 1, iou, i, j, -1, n, mask_n, t};
                             mloam_ptr[number++] = choose;
                         }
                         for(int mi = 0; mi < number; mi++) {
                             mloam mp = mloam_ptr[mi];
                             if(mp.mask_n == mask_n && mp.use_or_not > 0 && mp.best_iou < iou) {
-                                mloam choose = {truth, 1, iou, i, j, class_id, -1, n, mask_n, t};
+                                mloam choose = {truth, 1, iou, i, j, -1, n, mask_n, t};
                                 mloam_ptr[number++] = choose;
                                 mp.use_or_not = -6;
                                 break;
@@ -591,10 +587,8 @@ void *process_batch(void* ptr)
             mloam mp   = mloam_ptr[ni];
             box truth      = mp.truth;
             int use_or_not = mp.use_or_not;
-            float best_iou = mp.best_iou;
             int i          = mp.x;
             int j          = mp.y;
-            int class_id   = mp.class_id;
             int track_id   = mp.track_id;
             int best_n     = mp.best_n;
             int mask_n     = mp.mask_n;
@@ -753,6 +747,7 @@ void forward_yolo_layer(const layer l, network_state state)
         tot_giou_loss += yolo_args[b].tot_giou_loss;
         count += yolo_args[b].count;
         class_count += yolo_args[b].class_count;
+        free(yolo_args[b].mloam_ptr);
     }
 
     free(yolo_args);
