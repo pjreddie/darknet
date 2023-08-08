@@ -918,7 +918,6 @@ typedef struct mloam {
     float best_iou;
     int x;
     int y;
-    int class_id;
     int track_id;
     int best_n;
     int mask_n;
