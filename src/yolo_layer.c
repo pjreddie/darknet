@@ -571,7 +571,7 @@ void *process_batch(void* ptr)
                         int class_id = state.truth[t * l.truth_size + b * l.truths + 4];
                         if (l.map) class_id = l.map[class_id];
                         if(number==0) {
-                            mloam choose = {truth, 1, best_iou, i, j, class_id, 1, best_n, mask_n, t};
+                            mloam choose = {truth, 1, iou, i, j, class_id, -1, n, mask_n, t};
                             mloam_ptr[number++] = choose;
                         }
                         for(int mi = 0; mi < number; mi++) {
