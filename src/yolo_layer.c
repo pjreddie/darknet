@@ -586,14 +586,13 @@ void *process_batch(void* ptr)
         for(int ni = 0; ni < number; ni++) {
             mloam mp   = mloam_ptr[ni];
             box truth      = mp.truth;
-            int use_or_not = mp.use_or_not;
             int i          = mp.x;
             int j          = mp.y;
             int track_id   = mp.track_id;
             int best_n     = mp.best_n;
             int mask_n     = mp.mask_n;
             int t          = mp.t;
-            if (use_or_not > 0) {
+            if (mp.use_or_not > 0) {
                 int class_id = state.truth[t * l.truth_size + b * l.truths + 4];
                 if (l.map) class_id = l.map[class_id];
 
