@@ -914,7 +914,6 @@ typedef struct detection{
 // multi_label_one_anchor_choose_maxiou
 typedef struct mloam { 
     box truth;
-    int use_or_not;
     float best_iou;
     int x;
     int y;
