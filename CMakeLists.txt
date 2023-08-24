@@ -1,13 +1,5 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.19)
 include(CMakeDependentOption)
-
-set(Darknet_MAJOR_VERSION 0)
-set(Darknet_MINOR_VERSION 2)
-set(Darknet_PATCH_VERSION 5)
-set(Darknet_TWEAK_VERSION 4)
-set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION}.${Darknet_TWEAK_VERSION})
-
-message("Darknet_VERSION: ${Darknet_VERSION}")
 
 option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" ON)
 option(CUDA_VERBOSE_BUILD "Create verbose CUDA build" ON)
@@ -85,17 +77,23 @@ endif()
 cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON "CMAKE_COMPILER_IS_GNUCC_OR_CLANG;IS_X86" OFF)
 
 if(ENABLE_VCPKG_INTEGRATION AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+  set(X_VCPKG_APPLOCAL_DEPS_INSTALL ON)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
   #set(_VCPKG_INSTALLED_DIR ${CMAKE_CURRENT_LIST_DIR}/vcpkg CACHE STRING "")  #folder for manifest-installed dependencies
   message(STATUS "VCPKG found: $ENV{VCPKG_ROOT}")
   message(STATUS "Using VCPKG integration")
-  message(STATUS "VCPKG_MANIFEST_FEATURES: ${VCPKG_MANIFEST_FEATURES}")
   set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
+  if(VCPKG_MANIFEST_FEATURES)
+    message(STATUS "VCPKG_MANIFEST_FEATURES: ${VCPKG_MANIFEST_FEATURES}")
+  endif()
 elseif(DEFINED CMAKE_TOOLCHAIN_FILE)
   message(STATUS "Using toolchain: ${CMAKE_TOOLCHAIN_FILE}")
   if(CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg.cmake")
     message(STATUS "Toolchain uses VCPKG integration")
-    message(STATUS "VCPKG_MANIFEST_FEATURES: ${VCPKG_MANIFEST_FEATURES}")
+    if(VCPKG_MANIFEST_FEATURES)
+      message(STATUS "VCPKG_MANIFEST_FEATURES: ${VCPKG_MANIFEST_FEATURES}")
+    endif()
   endif()
   set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
 elseif(WIN32)
@@ -105,6 +103,30 @@ else()
   message(WARNING "vcpkg not found, toolchain not defined, system not win32 so build might fail")
   set(USE_INTEGRATED_LIBS "TRUE" CACHE BOOL "Use libs distributed with this repo")
 endif()
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json)
+  file(READ ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json VCPKG_JSON_STRING)
+  string(JSON VERSION_STRING GET ${VCPKG_JSON_STRING} version)
+else()
+  set(VERSION_STRING "0.2.5.4")
+endif()
+
+string(REPLACE "." ";" VERSION_LIST ${VERSION_STRING})
+list(LENGTH VERSION_LIST VERSION_LIST_LENGTH)
+if(VERSION_LIST_LENGTH LESS 3)
+  message(FATAL_ERROR "Darknet needs at least major.minor.patch version numbers to properly configure")
+endif()
+list(GET VERSION_LIST 0 Darknet_MAJOR_VERSION)
+list(GET VERSION_LIST 1 Darknet_MINOR_VERSION)
+list(GET VERSION_LIST 2 Darknet_PATCH_VERSION)
+if(VERSION_LIST_LENGTH GREATER 3)
+  list(GET VERSION_LIST 3 Darknet_TWEAK_VERSION)
+else()
+  set(Darknet_TWEAK_VERSION 0)
+endif()
+
+set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION}.${Darknet_TWEAK_VERSION})
+message("Darknet_VERSION: ${Darknet_VERSION}")
 
 project(Darknet VERSION ${Darknet_VERSION})
 
@@ -602,3 +624,11 @@ endif()
 if(ENABLE_CSHARP_WRAPPER)
   add_subdirectory(src/csharp)
 endif()
+
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+include(InstallRequiredSystemLibraries)
+
+install(
+    PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
+    DESTINATION ${INSTALL_BIN_DIR}
+)

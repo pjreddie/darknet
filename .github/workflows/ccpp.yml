@@ -18,7 +18,7 @@ jobs:
   ubuntu-makefile:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Update apt
       run: sudo apt update
@@ -74,7 +74,7 @@ jobs:
   ubuntu-vcpkg-opencv4-cuda:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
@@ -125,19 +125,19 @@ jobs:
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -146,7 +146,7 @@ jobs:
   ubuntu-vcpkg-opencv3-cuda:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
@@ -197,7 +197,7 @@ jobs:
   ubuntu-vcpkg-opencv2-cuda:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
@@ -248,7 +248,7 @@ jobs:
   ubuntu:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Update apt
       run: sudo apt update
@@ -266,19 +266,19 @@ jobs:
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -287,7 +287,7 @@ jobs:
   ubuntu-cuda:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Update apt
       run: sudo apt update
@@ -315,19 +315,19 @@ jobs:
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -336,7 +336,7 @@ jobs:
   ubuntu-no-ocv-cpp:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
@@ -348,7 +348,7 @@ jobs:
   ubuntu-setup-sh:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -377,7 +377,7 @@ jobs:
   osx-vcpkg:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
@@ -411,19 +411,19 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -432,7 +432,7 @@ jobs:
   osx:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Install dependencies
       run: brew install opencv libomp
@@ -443,19 +443,19 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -464,7 +464,7 @@ jobs:
   osx-no-ocv-no-omp-cpp:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
@@ -476,7 +476,7 @@ jobs:
   win-vcpkg:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
@@ -507,23 +507,23 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -UseVCPKG -ForceLocalVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/build_release/*.dll
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -532,7 +532,7 @@ jobs:
   win-vcpkg-port:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -561,7 +561,7 @@ jobs:
   win-intlibs:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
@@ -569,23 +569,23 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/3rdparty/pthreads/bin/*.dll
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -594,7 +594,7 @@ jobs:
   win-setup-ps1:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -623,7 +623,7 @@ jobs:
   win-intlibs-cpp:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
@@ -635,7 +635,7 @@ jobs:
   win-csharp:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
@@ -647,7 +647,7 @@ jobs:
   win-intlibs-cuda:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.ps1
 
@@ -665,7 +665,7 @@ jobs:
   win-powershell51:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
@@ -677,17 +677,13 @@ jobs:
   mingw:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-G\"MinGW Makefiles\" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+      run: |
+        mkdir build_release
+        cd build_release
+        cmake .. -G"MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF
+        cmake --build . --config Release --target install
