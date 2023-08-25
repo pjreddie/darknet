@@ -8,49 +8,71 @@ Directly viewing or returning bounding-boxed images requires scikit-image to be 
 Use pip3 instead of pip on some systems to be sure to install modules for python3
 """
 
-from ctypes import *
-import math
+import ctypes as ct
 import random
 import os
+import cv2
+import numpy as np
 
 
-class BOX(Structure):
-    _fields_ = [("x", c_float),
-                ("y", c_float),
-                ("w", c_float),
-                ("h", c_float)]
+class BOX(ct.Structure):
+    _fields_ = (
+        ("x", ct.c_float),
+        ("y", ct.c_float),
+        ("w", ct.c_float),
+        ("h", ct.c_float),
+    )
 
 
-class DETECTION(Structure):
-    _fields_ = [("bbox", BOX),
-                ("classes", c_int),
-                ("best_class_idx", c_int),
-                ("prob", POINTER(c_float)),
-                ("mask", POINTER(c_float)),
-                ("objectness", c_float),
-                ("sort_class", c_int),
-                ("uc", POINTER(c_float)),
-                ("points", c_int),
-                ("embeddings", POINTER(c_float)),
-                ("embedding_size", c_int),
-                ("sim", c_float),
-                ("track_id", c_int)]
-
-class DETNUMPAIR(Structure):
-    _fields_ = [("num", c_int),
-                ("dets", POINTER(DETECTION))]
+FloatPtr = ct.POINTER(ct.c_float)
+IntPtr = ct.POINTER(ct.c_int)
 
 
-class IMAGE(Structure):
-    _fields_ = [("w", c_int),
-                ("h", c_int),
-                ("c", c_int),
-                ("data", POINTER(c_float))]
+class DETECTION(ct.Structure):
+    _fields_ = (
+        ("bbox", BOX),
+        ("classes", ct.c_int),
+        ("best_class_idx", ct.c_int),
+        ("prob", FloatPtr),
+        ("mask", FloatPtr),
+        ("objectness", ct.c_float),
+        ("sort_class", ct.c_int),
+        ("uc", FloatPtr),
+        ("points", ct.c_int),
+        ("embeddings", FloatPtr),
+        ("embedding_size", ct.c_int),
+        ("sim", ct.c_float),
+        ("track_id", ct.c_int),
+    )
 
 
-class METADATA(Structure):
-    _fields_ = [("classes", c_int),
-                ("names", POINTER(c_char_p))]
+DETECTIONPtr = ct.POINTER(DETECTION)
+
+
+class DETNUMPAIR(ct.Structure):
+    _fields_ = (
+        ("num", ct.c_int),
+        ("dets", DETECTIONPtr),
+    )
+
+
+DETNUMPAIRPtr = ct.POINTER(DETNUMPAIR)
+
+
+class IMAGE(ct.Structure):
+    _fields_ = (
+        ("w", ct.c_int),
+        ("h", ct.c_int),
+        ("c", ct.c_int),
+        ("data", FloatPtr),
+    )
+
+
+class METADATA(ct.Structure):
+    _fields_ = (
+        ("classes", ct.c_int),
+        ("names", ct.POINTER(ct.c_char_p)),
+    )
 
 
 def network_width(net):
@@ -67,10 +89,10 @@ def bbox2points(bbox):
     to corner points cv2 rectangle
     """
     x, y, w, h = bbox
-    xmin = int(round(x - (w / 2)))
-    xmax = int(round(x + (w / 2)))
-    ymin = int(round(y - (h / 2)))
-    ymax = int(round(y + (h / 2)))
+    xmin = round(x - (w / 2))
+    xmax = round(x + (w / 2))
+    ymin = round(y - (h / 2))
+    ymax = round(y + (h / 2))
     return xmin, ymin, xmax, ymax
 
 
@@ -134,6 +156,7 @@ def decode_detection(detections):
         decoded.append((str(label), confidence, bbox))
     return decoded
 
+
 # https://www.pyimagesearch.com/2015/02/16/faster-non-maximum-suppression-python/
 # Malisiewicz et al.
 def non_max_suppression_fast(detections, overlap_thresh):
@@ -185,6 +208,7 @@ def non_max_suppression_fast(detections, overlap_thresh):
         # integer data type
     return [detections[i] for i in pick]
 
+
 def remove_negatives(detections, class_names, num):
     """
     Remove all classes with 0% confidence within the detection
@@ -218,7 +242,7 @@ def detect_image(network, class_names, image, thresh=.5, hier_thresh=.5, nms=.45
     """
         Returns a list with highest confidence class and their bbox
     """
-    pnum = pointer(c_int(0))
+    pnum = ct.pointer(ct.c_int(0))
     predict_image(network, image)
     detections = get_network_boxes(network, image.w, image.h,
                                    thresh, hier_thresh, None, 0, pnum, 0)
@@ -233,102 +257,105 @@ def detect_image(network, class_names, image, thresh=.5, hier_thresh=.5, nms=.45
 
 if os.name == "posix":
     cwd = os.path.dirname(__file__)
-    lib = CDLL(cwd + "/libdarknet.so", RTLD_GLOBAL)
+    lib = ct.CDLL(cwd + "/libdarknet.so", ct.RTLD_GLOBAL)
 elif os.name == "nt":
     cwd = os.path.dirname(__file__)
-    os.environ['PATH'] = cwd + ';' + os.environ['PATH']
-    lib = CDLL("darknet.dll", RTLD_GLOBAL)
+    os.environ["PATH"] = os.path.pathsep.join((cwd, os.environ["PATH"]))
+    lib = ct.CDLL("darknet.dll", ct.RTLD_GLOBAL)
 else:
+    lib = None  # Intellisense
     print("Unsupported OS")
-    exit
+    exit()
 
-lib.network_width.argtypes = [c_void_p]
-lib.network_width.restype = c_int
-lib.network_height.argtypes = [c_void_p]
-lib.network_height.restype = c_int
+lib.network_width.argtypes = (ct.c_void_p,)
+lib.network_width.restype = ct.c_int
+lib.network_height.argtypes = (ct.c_void_p,)
+lib.network_height.restype = ct.c_int
 
 copy_image_from_bytes = lib.copy_image_from_bytes
-copy_image_from_bytes.argtypes = [IMAGE,c_char_p]
+copy_image_from_bytes.argtypes = (IMAGE, ct.c_char_p)
 
 predict = lib.network_predict_ptr
-predict.argtypes = [c_void_p, POINTER(c_float)]
-predict.restype = POINTER(c_float)
+predict.argtypes = (ct.c_void_p, FloatPtr)
+predict.restype = FloatPtr
 
 set_gpu = lib.cuda_set_device
 init_cpu = lib.init_cpu
 
 make_image = lib.make_image
-make_image.argtypes = [c_int, c_int, c_int]
+make_image.argtypes = (ct.c_int, ct.c_int, ct.c_int)
 make_image.restype = IMAGE
 
 get_network_boxes = lib.get_network_boxes
-get_network_boxes.argtypes = [c_void_p, c_int, c_int, c_float, c_float, POINTER(c_int), c_int, POINTER(c_int), c_int]
-get_network_boxes.restype = POINTER(DETECTION)
+get_network_boxes.argtypes = (ct.c_void_p, ct.c_int, ct.c_int, ct.c_float, ct.c_float, IntPtr, ct.c_int, IntPtr,
+                              ct.c_int)
+get_network_boxes.restype = DETECTIONPtr
 
 make_network_boxes = lib.make_network_boxes
-make_network_boxes.argtypes = [c_void_p]
-make_network_boxes.restype = POINTER(DETECTION)
+make_network_boxes.argtypes = (ct.c_void_p,)
+make_network_boxes.restype = DETECTIONPtr
 
 free_detections = lib.free_detections
-free_detections.argtypes = [POINTER(DETECTION), c_int]
+free_detections.argtypes = (DETECTIONPtr, ct.c_int)
 
 free_batch_detections = lib.free_batch_detections
-free_batch_detections.argtypes = [POINTER(DETNUMPAIR), c_int]
+free_batch_detections.argtypes = (DETNUMPAIRPtr, ct.c_int)
 
 free_ptrs = lib.free_ptrs
-free_ptrs.argtypes = [POINTER(c_void_p), c_int]
+free_ptrs.argtypes = (ct.POINTER(ct.c_void_p), ct.c_int)
 
 network_predict = lib.network_predict_ptr
-network_predict.argtypes = [c_void_p, POINTER(c_float)]
+network_predict.argtypes = (ct.c_void_p, FloatPtr)
 
 reset_rnn = lib.reset_rnn
-reset_rnn.argtypes = [c_void_p]
+reset_rnn.argtypes = (ct.c_void_p,)
 
 load_net = lib.load_network
-load_net.argtypes = [c_char_p, c_char_p, c_int]
-load_net.restype = c_void_p
+load_net.argtypes = (ct.c_char_p, ct.c_char_p, ct.c_int)
+load_net.restype = ct.c_void_p
 
 load_net_custom = lib.load_network_custom
-load_net_custom.argtypes = [c_char_p, c_char_p, c_int, c_int]
-load_net_custom.restype = c_void_p
+load_net_custom.argtypes = (ct.c_char_p, ct.c_char_p, ct.c_int, ct.c_int)
+load_net_custom.restype = ct.c_void_p
 
 free_network_ptr = lib.free_network_ptr
-free_network_ptr.argtypes = [c_void_p]
-free_network_ptr.restype = c_void_p
+free_network_ptr.argtypes = (ct.c_void_p,)
+free_network_ptr.restype = ct.c_void_p
 
 do_nms_obj = lib.do_nms_obj
-do_nms_obj.argtypes = [POINTER(DETECTION), c_int, c_int, c_float]
+do_nms_obj.argtypes = (DETECTIONPtr, ct.c_int, ct.c_int, ct.c_float)
 
 do_nms_sort = lib.do_nms_sort
-do_nms_sort.argtypes = [POINTER(DETECTION), c_int, c_int, c_float]
+do_nms_sort.argtypes = (DETECTIONPtr, ct.c_int, ct.c_int, ct.c_float)
 
 free_image = lib.free_image
-free_image.argtypes = [IMAGE]
+free_image.argtypes = (IMAGE,)
 
 letterbox_image = lib.letterbox_image
-letterbox_image.argtypes = [IMAGE, c_int, c_int]
+letterbox_image.argtypes = (IMAGE, ct.c_int, ct.c_int)
 letterbox_image.restype = IMAGE
 
 load_meta = lib.get_metadata
-lib.get_metadata.argtypes = [c_char_p]
+lib.get_metadata.argtypes = (ct.c_char_p,)
 lib.get_metadata.restype = METADATA
 
 load_image = lib.load_image_color
-load_image.argtypes = [c_char_p, c_int, c_int]
+load_image.argtypes = (ct.c_char_p, ct.c_int, ct.c_int)
 load_image.restype = IMAGE
 
 rgbgr_image = lib.rgbgr_image
-rgbgr_image.argtypes = [IMAGE]
+rgbgr_image.argtypes = (IMAGE,)
 
 predict_image = lib.network_predict_image
-predict_image.argtypes = [c_void_p, IMAGE]
-predict_image.restype = POINTER(c_float)
+predict_image.argtypes = (ct.c_void_p, IMAGE)
+predict_image.restype = FloatPtr
 
 predict_image_letterbox = lib.network_predict_image_letterbox
-predict_image_letterbox.argtypes = [c_void_p, IMAGE]
-predict_image_letterbox.restype = POINTER(c_float)
+predict_image_letterbox.argtypes = (ct.c_void_p, IMAGE)
+predict_image_letterbox.restype = FloatPtr
 
 network_predict_batch = lib.network_predict_batch
-network_predict_batch.argtypes = [c_void_p, IMAGE, c_int, c_int, c_int,
-                                   c_float, c_float, POINTER(c_int), c_int, c_int]
-network_predict_batch.restype = POINTER(DETNUMPAIR)
+network_predict_batch.argtypes = (ct.c_void_p, IMAGE, ct.c_int, ct.c_int, ct.c_int,
+                                  ct.c_float, ct.c_float, IntPtr, ct.c_int, ct.c_int)
+network_predict_batch.restype = DETNUMPAIRPtr
+
