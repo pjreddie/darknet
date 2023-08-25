@@ -1,0 +1,47 @@
+FROM nvidia/cuda:11.6.0-cudnn8-devel-ubuntu20.04 AS builder
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update -y
+
+RUN apt-get install -y g++ make pkg-config libopencv-dev
+
+COPY  . /darknet
+
+WORKDIR /darknet
+
+RUN rm Dockerfile.cpu
+
+RUN rm Dockerfile.gpu
+
+RUN rm Docker-compose.yml
+
+RUN make
+
+FROM nvidia/cuda:11.6.0-cudnn8-devel-ubuntu20.04
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update -y
+
+RUN apt-get install -y sudo libgomp1
+
+RUN useradd -U -m yolo
+
+RUN usermod -aG sudo yolo 
+
+RUN usermod --shell /bin/bash yolo
+
+RUN echo "yolo:yolo" | chpasswd
+
+COPY --from=builder /darknet /home/yolo/darknet
+
+RUN cp /home/yolo/darknet/libdarknet.so /usr/local/lib/libdarknet.so || echo "libso not used"
+
+RUN cp /home/yolo/darknet/include/darknet.h /usr/local/include/darknet.h
+
+RUN ldconfig
+
+WORKDIR /home/yolo/darknet
+
+USER yolo

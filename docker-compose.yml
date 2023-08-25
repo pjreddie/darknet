@@ -1,0 +1,20 @@
+version: '2'
+
+services:
+  yolo-gpu:
+    build: 
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: yolo:gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  yolo-cpu:
+    build: 
+      context: .
+      dockerfile: Dockerfile.cpu
+    image: yolo:cpu
