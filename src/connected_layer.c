@@ -363,12 +363,12 @@ void forward_connected_layer_gpu(connected_layer l, network_state state)
     gemm_ongpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
 #endif // CUDNN
 
-	if (l.batch_normalize) {
-		forward_batchnorm_layer_gpu(l, state);
-	}
-	else {
-		add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.outputs, 1);
-	}
+    if (l.batch_normalize) {
+        forward_batchnorm_layer_gpu(l, state);
+    }
+    else {
+        add_bias_gpu(l.output_gpu, l.biases_gpu, l.batch, l.outputs, 1);
+    }
     //for(i = 0; i < l.batch; ++i) axpy_ongpu(l.outputs, 1, l.biases_gpu, 1, l.output_gpu + i*l.outputs, 1);
     activate_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation);
 }

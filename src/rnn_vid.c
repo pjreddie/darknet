@@ -160,7 +160,7 @@ void generate_vid_rnn(char *cfgfile, char *weightfile)
     //CvCapture* cap = cvCaptureFromFile("extra/vid/ILSVRC2015/Data/VID/snippets/val/ILSVRC2015_val_00007030.mp4");
     float *feat;
     float *next;
-	next = NULL;
+    next = NULL;
     image last;
     for(i = 0; i < 25; ++i){
         image im = get_image_from_stream_cpp(cap);

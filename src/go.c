@@ -580,9 +580,9 @@ void engine_go(char *filename, char *weightfile, int multi)
                 fprintf(f, "final_status_list dead\n");
                 fclose(f);
 #ifdef _WIN32
-				FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
+                FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
 #else
-				FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
+                FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
 #endif
                 for(i = 0; i < count; ++i){
                     free(fgetl(p));
@@ -721,9 +721,9 @@ float score_game(float *board)
     fprintf(f, "final_score\n");
     fclose(f);
 #ifdef _WIN32
-	FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
+    FILE *p = _popen("./gnugo --mode gtp < game.txt", "r");
 #else
-	FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
+    FILE *p = popen("./gnugo --mode gtp < game.txt", "r");
 #endif
     for(i = 0; i < count; ++i){
         free(fgetl(p));
@@ -740,9 +740,9 @@ float score_game(float *board)
     }
     if(player == 'W') score = -score;
 #ifdef _WIN32
-	_pclose(p);
+    _pclose(p);
 #else
-	pclose(p);
+    pclose(p);
 #endif
     return score;
 }

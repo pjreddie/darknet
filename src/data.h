@@ -45,8 +45,8 @@ typedef struct load_args{
     char **labels;
     int h;
     int w;
-	int c; // color depth
-	int out_w;
+    int c; // color depth
+    int out_w;
     int out_h;
     int nh;
     int nw;
@@ -55,7 +55,7 @@ typedef struct load_args{
     int classes;
     int background;
     int scale;
-	int small_object;
+    int small_object;
     float jitter;
     int flip;
     float angle;

@@ -155,5 +155,3 @@ void push_implicit_layer(layer l)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 #endif
-
-

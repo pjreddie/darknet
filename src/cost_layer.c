@@ -25,8 +25,8 @@ char *get_cost_string(COST_TYPE a)
             return "masked";
         case SMOOTH:
             return "smooth";
-		default:
-			return "sse";
+        default:
+            return "sse";
     }
 }
 

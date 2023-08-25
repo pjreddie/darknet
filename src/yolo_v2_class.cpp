@@ -69,7 +69,7 @@ int get_device_count() {
     return count;
 #else
     return -1;
-#endif	// GPU
+#endif    // GPU
 }
 
 bool built_with_cuda(){
@@ -106,7 +106,7 @@ int get_device_name(int gpu, char* deviceName) {
     return 1;
 #else
     return -1;
-#endif	// GPU
+#endif    // GPU
 }
 
 #ifdef GPU

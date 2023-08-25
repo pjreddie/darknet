@@ -12,19 +12,19 @@ typedef struct{
 } dbox;
 
 //typedef struct detection {
-//	box bbox;
-//	int classes;
-//	float *prob;
-//	float *mask;
-//	float objectness;
-//	int sort_class;
+//    box bbox;
+//    int classes;
+//    float *prob;
+//    float *mask;
+//    float objectness;
+//    int sort_class;
 //} detection;
 
 typedef struct detection_with_class {
-	detection det;
-	// The most probable class id: the best class index in this->prob.
-	// Is filled temporary when processing results, otherwise not initialized
-	int best_class;
+    detection det;
+    // The most probable class id: the best class index in this->prob.
+    // Is filled temporary when processing results, otherwise not initialized
+    int best_class;
 } detection_with_class;
 
 #ifdef __cplusplus

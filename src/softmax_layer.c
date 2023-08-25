@@ -14,16 +14,16 @@
 
 void softmax_tree(float *input, int batch, int inputs, float temp, tree *hierarchy, float *output)
 {
-	int b;
-	for (b = 0; b < batch; ++b) {
-		int i;
-		int count = 0;
-		for (i = 0; i < hierarchy->groups; ++i) {
-			int group_size = hierarchy->group_size[i];
-			softmax(input + b*inputs + count, group_size, temp, output + b*inputs + count, 1);
-			count += group_size;
-		}
-	}
+    int b;
+    for (b = 0; b < batch; ++b) {
+        int i;
+        int count = 0;
+        for (i = 0; i < hierarchy->groups; ++i) {
+            int group_size = hierarchy->group_size[i];
+            softmax(input + b*inputs + count, group_size, temp, output + b*inputs + count, 1);
+            count += group_size;
+        }
+    }
 }
 
 softmax_layer make_softmax_layer(int batch, int inputs, int groups)
@@ -89,28 +89,28 @@ void pull_softmax_layer_output(const softmax_layer layer)
 void forward_softmax_layer_gpu(const softmax_layer l, network_state net)
 {
     if(l.softmax_tree){
-		softmax_tree_gpu(net.input, 1, l.batch, l.inputs, l.temperature, l.output_gpu, *l.softmax_tree);
-		/*
-		int i;
-		int count = 0;
-		for (i = 0; i < l.softmax_tree->groups; ++i) {
-		int group_size = l.softmax_tree->group_size[i];
-		softmax_gpu(net.input_gpu + count, group_size, l.batch, l.inputs, 1, 0, 1, l.temperature, l.output_gpu + count);
-		count += group_size;
-		}
-		*/
+        softmax_tree_gpu(net.input, 1, l.batch, l.inputs, l.temperature, l.output_gpu, *l.softmax_tree);
+        /*
+        int i;
+        int count = 0;
+        for (i = 0; i < l.softmax_tree->groups; ++i) {
+        int group_size = l.softmax_tree->group_size[i];
+        softmax_gpu(net.input_gpu + count, group_size, l.batch, l.inputs, 1, 0, 1, l.temperature, l.output_gpu + count);
+        count += group_size;
+        }
+        */
     } else {
         if(l.spatial){
-			softmax_gpu_new_api(net.input, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu);
+            softmax_gpu_new_api(net.input, l.c, l.batch*l.c, l.inputs/l.c, l.w*l.h, 1, l.w*l.h, 1, l.output_gpu);
         }else{
-			softmax_gpu_new_api(net.input, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output_gpu);
+            softmax_gpu_new_api(net.input, l.inputs/l.groups, l.batch, l.inputs, l.groups, l.inputs/l.groups, 1, l.temperature, l.output_gpu);
         }
     }
     if(net.truth && !l.noloss){
         softmax_x_ent_gpu(l.batch*l.inputs, l.output_gpu, net.truth, l.delta_gpu, l.loss_gpu);
         if(l.softmax_tree){
-			mask_gpu_new_api(l.batch*l.inputs, l.delta_gpu, SECRET_NUM, net.truth, 0);
-			mask_gpu_new_api(l.batch*l.inputs, l.loss_gpu, SECRET_NUM, net.truth, 0);
+            mask_gpu_new_api(l.batch*l.inputs, l.delta_gpu, SECRET_NUM, net.truth, 0);
+            mask_gpu_new_api(l.batch*l.inputs, l.loss_gpu, SECRET_NUM, net.truth, 0);
         }
         cuda_pull_array(l.loss_gpu, l.loss, l.batch*l.inputs);
         l.cost[0] = sum_array(l.loss, l.batch*l.inputs);
@@ -119,7 +119,7 @@ void forward_softmax_layer_gpu(const softmax_layer l, network_state net)
 
 void backward_softmax_layer_gpu(const softmax_layer layer, network_state state)
 {
-	axpy_ongpu(layer.batch*layer.inputs, state.net.loss_scale, layer.delta_gpu, 1, state.delta, 1);
+    axpy_ongpu(layer.batch*layer.inputs, state.net.loss_scale, layer.delta_gpu, 1, state.delta, 1);
 }
 
 #endif

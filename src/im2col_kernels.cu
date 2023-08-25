@@ -500,7 +500,7 @@ __device__ void transpose8rS32_reversed_diagonale(unsigned char* A, unsigned cha
     B[7 * n] = reverse_byte_CUDA(x >> 24);  B[6 * n] = reverse_byte_CUDA(x >> 16);  B[5 * n] = reverse_byte_CUDA(x >> 8);  B[4 * n] = reverse_byte_CUDA(x);
     B[3 * n] = reverse_byte_CUDA(y >> 24);  B[2 * n] = reverse_byte_CUDA(y >> 16);  B[1 * n] = reverse_byte_CUDA(y >> 8);  B[0 * n] = reverse_byte_CUDA(y);
 
-    //__device__ ​ unsigned int 	__brev(unsigned int  x)
+    //__device__ ​ unsigned int     __brev(unsigned int  x)
     //Reverse the bit order of a 32 bit unsigned integer.
     // https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__INTRINSIC__INT.html
 }
@@ -1750,8 +1750,8 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
 // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#wmma-subbyte
 // nvcuda::wmma::col_major ->  cutlass::MatrixLayout::kColumnMajor (matrix is not transposed)
 
-// Matrix A	Matrix B	Accumulator	Matrix Size (m-n-k)
-// precision::b1	precision::b1	int	8x8x128
+// Matrix A    Matrix B    Accumulator    Matrix Size (m-n-k)
+// precision::b1    precision::b1    int    8x8x128
 
 // The only dimensions currently supported by WMMA for XNOR
 // const int WMMA_M = 8;

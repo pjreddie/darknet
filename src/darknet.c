@@ -117,7 +117,7 @@ void operations(char *cfgfile)
             ops += 2l * l.n * l.size*l.size*l.c * l.out_h*l.out_w;
         } else if(l.type == CONNECTED){
             ops += 2l * l.inputs * l.outputs;
-		} else if (l.type == RNN){
+        } else if (l.type == RNN){
             ops += 2l * l.input_layer->inputs * l.input_layer->outputs;
             ops += 2l * l.self_layer->inputs * l.self_layer->outputs;
             ops += 2l * l.output_layer->inputs * l.output_layer->outputs;
@@ -251,7 +251,7 @@ void reset_normalize_net(char *cfgfile, char *weightfile, char *outfile)
             denormalize_connected_layer(*l.ui);
             denormalize_connected_layer(*l.ug);
             denormalize_connected_layer(*l.uo);
-		}
+        }
     }
     save_weights(net, outfile);
 }
@@ -412,7 +412,7 @@ void denormalize_net(char *cfgfile, char *weightfile, char *outfile)
             l.ug->batch_normalize = 0;
             l.uo->batch_normalize = 0;
             net.layers[i].batch_normalize=0;
-		}
+        }
     }
     save_weights(net, outfile);
 }
@@ -432,7 +432,7 @@ void visualize(char *cfgfile, char *weightfile)
 int main(int argc, char **argv)
 {
 #ifdef _DEBUG
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     printf(" _DEBUG is used \n");
 #endif
 
@@ -440,11 +440,11 @@ int main(int argc, char **argv)
     printf(" DEBUG=1 \n");
 #endif
 
-	int i;
-	for (i = 0; i < argc; ++i) {
-		if (!argv[i]) continue;
-		strip_args(argv[i]);
-	}
+    int i;
+    for (i = 0; i < argc; ++i) {
+        if (!argv[i]) continue;
+        strip_args(argv[i]);
+    }
 
     //test_resize("data/bad.jpg");
     //test_box();
@@ -493,7 +493,7 @@ int main(int argc, char **argv)
         run_detector(argc, argv);
     } else if (0 == strcmp(argv[1], "detect")){
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
-		int ext_output = find_arg(argc, argv, "-ext_output");
+        int ext_output = find_arg(argc, argv, "-ext_output");
         char *filename = (argc > 4) ? argv[4]: 0;
         test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, 0.5, 0, ext_output, 0, NULL, 0, 0);
     } else if (0 == strcmp(argv[1], "cifar")){

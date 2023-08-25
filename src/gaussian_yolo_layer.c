@@ -51,7 +51,7 @@ layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *m
     l.outputs = h*w*n*(classes + 8 + 1);
     l.inputs = l.outputs;
     l.max_boxes = max_boxes;
-	l.truth_size = 4 + 2;
+    l.truth_size = 4 + 2;
     l.truths = l.max_boxes*l.truth_size;
     l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
     l.output = (float*)calloc(batch*l.outputs, sizeof(float));

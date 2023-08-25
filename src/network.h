@@ -23,7 +23,7 @@ typedef struct network{
     float *workspace;
     int n;
     int batch;
-	uint64_t *seen;
+    uint64_t *seen;
     float epoch;
     int subdivisions;
     float momentum;
@@ -61,7 +61,7 @@ typedef struct network{
     float exposure;
     float saturation;
     float hue;
-	int small_object;
+    int small_object;
 
     int gpu_index;
     tree *hierarchy;
@@ -71,11 +71,11 @@ typedef struct network{
 
     float **input_gpu;
     float **truth_gpu;
-	float **input16_gpu;
-	float **output16_gpu;
-	size_t *max_input16_size;
-	size_t *max_output16_size;
-	int wait_stream;
+    float **input16_gpu;
+    float **output16_gpu;
+    size_t *max_input16_size;
+    size_t *max_output16_size;
+    int wait_stream;
     #endif
 } network;
 

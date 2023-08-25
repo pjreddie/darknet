@@ -75,12 +75,12 @@ extern "C" {
 
 #define REPLACE_GETOPT /* use this getopt as the system getopt(3) */
 
-//extern int optind;		/* index of first non-option in argv      */
-//extern int optopt;		/* single option character, as parsed     */
-//extern int opterr;		/* flag to enable built-in diagnostics... */
-//				/* (user may set to zero, to suppress)    */
+//extern int optind;        /* index of first non-option in argv      */
+//extern int optopt;        /* single option character, as parsed     */
+//extern int opterr;        /* flag to enable built-in diagnostics... */
+//                /* (user may set to zero, to suppress)    */
 //
-//extern char *optarg;		/* pointer to argument of current option  */
+//extern char *optarg;        /* pointer to argument of current option  */
 
 #define PRINT_ERROR ((opterr) && (*options != ':'))
 
@@ -145,7 +145,7 @@ static void permute_args(int panonopt_start, int panonopt_end, int opt_end, char
 #ifdef REPLACE_GETOPT
 /*
  * getopt --
- *	Parse argc/argv argument vector.
+ *    Parse argc/argv argument vector.
  *
  * [eventually this will replace the BSD getopt]
  */
@@ -187,26 +187,26 @@ extern "C" {
 
 /*
  * parse_long_options --
- *	Parse long options in argc/argv argument vector.
+ *    Parse long options in argc/argv argument vector.
  * Returns -1 if short_too is set and the option does not match long_options.
  */
 /* static int parse_long_options(char* const* nargv, const char* options, const struct option* long_options, int* idx, int short_too); */
 
 /*
  * getopt_internal --
- *	Parse argc/argv argument vector.  Called by user level routines.
+ *    Parse argc/argv argument vector.  Called by user level routines.
  */
 /* static int getopt_internal(int nargc, char* const* nargv, const char* options, const struct option* long_options, int* idx, int flags); */
 
 /*
  * getopt_long --
- *	Parse argc/argv argument vector.
+ *    Parse argc/argv argument vector.
  */
 int getopt_long(int nargc, char* const* nargv, const char* options, const struct option* long_options, int* idx);
 
 /*
  * getopt_long_only --
- *	Parse argc/argv argument vector.
+ *    Parse argc/argv argument vector.
  */
 int getopt_long_only(int nargc, char* const* nargv, const char* options, const struct option* long_options, int* idx);
 

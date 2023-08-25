@@ -6,7 +6,7 @@
 //    int *leaf;
 //    int n;
 //    int *parent;
-//	int *child;
+//    int *child;
 //    int *group;
 //    char **name;
 //

@@ -32,7 +32,7 @@ def parser():
 
 def str2int(video_path):
     """
-    argparse returns and string althout webcam uses int (0, 1 ...)
+    argparse returns strings although webcam uses int (0, 1 ...)
     Cast to int if needed
     """
     try:

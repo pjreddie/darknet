@@ -79,7 +79,7 @@ double WCSS(matrix data, int *assignments, matrix centers)
 {
     int i, j;
     double sum = 0;
-    
+
     for(i = 0; i < data.rows; ++i){
         int ci = assignments[i];
         sum += (1 - dist(data.vals[i], centers.vals[ci], data.cols));
@@ -143,10 +143,10 @@ model do_kmeans(matrix data, int k)
 
 int main(int argc, char *argv[])
 {
-    if(argc < 3){ 
+    if(argc < 3){
         fprintf(stderr, "usage: %s <csv-file> [points/centers/stats]\n", argv[0]);
         return 0;
-    } 
+    }
     int i,j;
     srand(time(0));
     matrix data = csv_to_matrix(argv[1], 0);
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
         int *assignments = m.assignments;
         for(i = 0; i < k; ++i){
             if(i != 0) printf("-\n");
-            for(j = 0; j < data.rows; ++j){   
+            for(j = 0; j < data.rows; ++j){
                 if(!(assignments[j] == i)) continue;
                 printf("%f, %f\n", data.vals[j][0], data.vals[j][1]);
             }
@@ -323,7 +323,7 @@ matrix csv_to_matrix(char *filename, int header)
     return m;
 }
 
-// Arguement parsing
+// Argument parsing
 
 void del_arg(int argc, char **argv, int index)
 {
@@ -389,4 +389,3 @@ char *find_char_arg(int argc, char **argv, char *arg, char *def)
     }
     return def;
 }
-
