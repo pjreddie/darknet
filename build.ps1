@@ -6,7 +6,7 @@
         build
         Created By: Stefano Sinigardi
         Created Date: February 18, 2019
-        Last Modified Date: August 1, 2023
+        Last Modified Date: August 10, 2023
 
 .DESCRIPTION
 Build tool using CMake, trying to properly setup the environment around compiler
@@ -189,7 +189,7 @@ param (
 
 $global:DisableInteractive = $DisableInteractive
 
-$build_ps1_version = "3.4.0"
+$build_ps1_version = "3.4.1"
 $script_name = $MyInvocation.MyCommand.Name
 
 Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
@@ -728,15 +728,6 @@ if (($null -eq $vcpkg_path) -and $UseVCPKG) {
   $vcpkg_root_set_by_this_script = $true
   Write-Host "Found vcpkg in $PWD/vcpkg${VCPKGSuffix}: $vcpkg_path"
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
-}
-else {
-  if (-not ($VCPKGSuffix -eq "")) {
-    MyThrow("Unable to find vcpkg${VCPKGSuffix}")
-  }
-  else {
-    Write-Host "Skipping vcpkg integration`n" -ForegroundColor Yellow
-    $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
-  }
 }
 
 $vcpkg_branch_set_by_this_script = $false

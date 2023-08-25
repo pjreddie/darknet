@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
 include(CMakeDependentOption)
 
-option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" ON)
-option(CUDA_VERBOSE_BUILD "Create verbose CUDA build" ON)
+option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" OFF)
+option(CUDA_VERBOSE_BUILD "Create verbose CUDA build" OFF)
 option(BUILD_SHARED_LIBS "Create dark as a shared library" ON)
 option(BUILD_AS_CPP "Build Darknet using C++ compiler also for C files" OFF)
 option(BUILD_USELIB_TRACK "Build uselib_track" ON)
@@ -12,7 +12,7 @@ option(ENABLE_CUDA "Enable CUDA support" ON)
 option(ENABLE_CUDNN "Enable CUDNN" ON)
 option(ENABLE_CUDNN_HALF "Enable CUDNN Half precision" ON)
 option(ENABLE_ZED_CAMERA "Enable ZED Camera support" ON)
-option(ENABLE_VCPKG_INTEGRATION "Enable VCPKG integration" ON)
+option(ENABLE_VCPKG_INTEGRATION "Enable VCPKG integration" OFF)
 option(ENABLE_DEPLOY_CUSTOM_CMAKE_MODULES "Copy custom CMake modules for downstream integration" OFF)
 option(ENABLE_CSHARP_WRAPPER "Enable building a csharp wrapper" OFF)
 option(VCPKG_BUILD_OPENCV_WITH_CUDA "Build OpenCV with CUDA extension integration" ON)
@@ -168,6 +168,8 @@ set(INSTALL_BIN_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where exe 
 set(INSTALL_LIB_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where lib will be installed")
 set(INSTALL_INCLUDE_DIR  "include/darknet"           CACHE PATH "Path where headers will be installed")
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
+
+find_library(MATH_LIBRARY m)
 
 if(ENABLE_CUDA)
   include(CheckLanguage)
@@ -453,6 +455,11 @@ if(BUILD_AS_CPP)
   set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 
+add_executable(kmeansiou ${CMAKE_CURRENT_LIST_DIR}/scripts/kmeansiou.c)
+if(MATH_LIBRARY)
+  target_link_libraries(kmeansiou PRIVATE ${MATH_LIBRARY})
+endif()
+
 target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 target_include_directories(dark PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
@@ -492,9 +499,9 @@ if(OPENMP_FOUND)
   target_link_libraries(dark PUBLIC OpenMP::OpenMP_C)
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCC)
-  target_link_libraries(darknet PRIVATE m)
-  target_link_libraries(dark PUBLIC m)
+if(CMAKE_COMPILER_IS_GNUCC AND MATH_LIBRARY)
+  target_link_libraries(darknet PRIVATE ${MATH_LIBRARY})
+  target_link_libraries(dark PUBLIC ${MATH_LIBRARY})
 endif()
 
 if(MSVC)
@@ -575,7 +582,7 @@ install(TARGETS dark EXPORT DarknetTargets
   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
   COMPONENT dev
 )
-install(TARGETS uselib darknet
+install(TARGETS uselib darknet kmeansiou
   DESTINATION "${INSTALL_BIN_DIR}"
 )
 if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND BUILD_USELIB_TRACK)
