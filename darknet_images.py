@@ -78,7 +78,7 @@ def load_images(images_path):
             glob.glob(os.path.join(images_path, "*.jpeg"))
 
 
-def prepare_batch(images, network, channels=3):
+def prepare_batch(images, network):
     width = darknet.network_width(network)
     height = darknet.network_height(network)
 
@@ -92,9 +92,7 @@ def prepare_batch(images, network, channels=3):
 
     batch_array = np.concatenate(darknet_images, axis=0)
     batch_array = np.ascontiguousarray(batch_array.flat, dtype=np.float32)/255.0
-    darknet_images = batch_array.ctypes.data_as(darknet.POINTER(darknet.c_float))
-    return darknet.IMAGE(width, height, channels, darknet_images)
-
+    return batch_array
 
 def image_detection(image_or_path, network, class_names, class_colors, thresh):
     # Darknet doesn't accept numpy images.
@@ -121,7 +119,9 @@ def image_detection(image_or_path, network, class_names, class_colors, thresh):
 def batch_detection(network, images, class_names, class_colors,
                     thresh=0.25, hier_thresh=.5, nms=.45, batch_size=4):
     image_height, image_width, _ = check_batch_shape(images, batch_size)
-    darknet_images = prepare_batch(images, network)
+    batch_array = prepare_batch(images, network)
+    batch_array = batch_array.ctypes.data_as(darknet.POINTER(darknet.c_float))
+    darknet_images = darknet.IMAGE(image_width, image_height, 3, batch_array)
     batch_detections = darknet.network_predict_batch(network, darknet_images, batch_size, image_width,
                                                      image_height, thresh, hier_thresh, None, 0, 0)
     batch_predictions = []
