@@ -55,8 +55,8 @@ else {
 }
 Pop-Location
 
-$cuda_version_full = "11.7.0"
-$cuda_version_short = "11.7"
+$cuda_version_full = "12.2.0"
+$cuda_version_short = "12.2"
 $cuda_version_full_dashed = $cuda_version_full.replace('.', '-')
 $cuda_version_short_dashed = $cuda_version_short.replace('.', '-')
 

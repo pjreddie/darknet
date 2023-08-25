@@ -20,14 +20,8 @@ else
 fi
 
 sudo apt-key del 7fa2af80
-wget https://developer.download.nvidia.com/compute/cuda/repos/$distr_name/x86_64/cuda-keyring_1.0-1_all.deb
-sudo dpkg -i cuda-keyring_1.0-1_all.deb
-sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$distr_name/x86_64/ /"
-sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/$distr_name/x86_64/ /"
-wget https://developer.download.nvidia.com/compute/cuda/repos/$distr_name/x86_64/cuda-$distr_name.pin
-sudo mv cuda-${OS}.pin /etc/apt/preferences.d/cuda-repository-pin-600
-sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$distr_name/x86_64/7fa2af80.pub
-sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/$distr_name/x86_64/ /"
+wget https://developer.download.nvidia.com/compute/cuda/repos/$distr_name/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
 sudo apt-get update
 sudo apt-get install -y build-essential g++
 sudo apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
