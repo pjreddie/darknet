@@ -214,6 +214,7 @@
     <ClCompile Include="..\..\src\rnn.c" />
     <ClCompile Include="..\..\src\rnn_layer.c" />
     <ClCompile Include="..\..\src\rnn_vid.c" />
+    <ClCompile Include="..\..\src\representation_layer.c" />
     <ClCompile Include="..\..\src\route_layer.c" />
     <ClCompile Include="..\..\src\sam_layer.c" />
     <ClCompile Include="..\..\src\scale_channels_layer.c" />
@@ -275,6 +276,7 @@
     <ClInclude Include="..\..\src\parser.h" />
     <ClInclude Include="..\..\src\region_layer.h" />
     <ClInclude Include="..\..\src\reorg_layer.h" />
+    <ClInclude Include="..\..\src\representation_layer.h" />
     <ClInclude Include="..\..\src\reorg_old_layer.h" />
     <ClInclude Include="..\..\src\rnn_layer.h" />
     <ClInclude Include="..\..\src\route_layer.h" />
