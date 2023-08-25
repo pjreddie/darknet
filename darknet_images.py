@@ -101,7 +101,7 @@ def image_detection(image_or_path, network, class_names, class_colors, thresh):
     height = darknet.network_height(network)
     darknet_image = darknet.make_image(width, height, 3)
 
-    if type(image_or_path) == "str":
+    if isinstance(image_or_path, str):
         image = cv2.imread(image_or_path)
     else:
         image = image_or_path
