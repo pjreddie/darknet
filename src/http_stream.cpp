@@ -508,7 +508,7 @@ public:
                 }
 
                 char head[400];
-                sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
+                sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", outlen);
                 _write(s, head, 0);
                 int n = _write(s, (char*)(&outbuf[0]), outlen);
                 cerr << "known client: " << s << ", sent = " << n << ", must be sent outlen = " << outlen << endl;

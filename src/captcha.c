@@ -85,7 +85,7 @@ void train_captcha(char *cfgfile, char *weightfile)
         float loss = train_network(net, train);
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d: %f, %f avg, %lf seconds, %ld images\n", i, loss, avg_loss, sec(clock()-time), *net.seen);
+        printf("%d: %f, %f avg, %lf seconds, %" PRIu64 " images\n", i, loss, avg_loss, sec(clock()-time), *net.seen);
         free_data(train);
         if(i%100==0){
             char buff[256];

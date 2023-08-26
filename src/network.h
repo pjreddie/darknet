@@ -1,6 +1,17 @@
 // Oh boy, why am I about to do this....
 #ifndef NETWORK_H
 #define NETWORK_H
+
+/*
+ * Necessary in C++ to get format macros out of inttypes.h
+ */
+#ifdef __cplusplus
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS 1
+#endif
+#endif
+#include <inttypes.h>
+
 #include "darknet.h"
 
 #include <stdint.h>
