@@ -14,7 +14,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install libopencv-dev
+      run: sudo apt install libopencv-dev libgles2-mesa-dev
 
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.sh
@@ -215,7 +215,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install libopencv-dev
+      run: sudo apt install libopencv-dev libgles2-mesa-dev
 
     - uses: lukka/get-cmake@latest
 
