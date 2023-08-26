@@ -261,7 +261,7 @@ if os.name == "posix":
 elif os.name == "nt":
     cwd = os.path.dirname(__file__)
     os.environ["PATH"] = os.path.pathsep.join((cwd, os.environ["PATH"]))
-    lib = ct.CDLL("darknet.dll", ct.RTLD_GLOBAL)
+    lib = ct.CDLL("darknet.dll", winmode = 0, mode = ct.RTLD_GLOBAL)
 else:
     lib = None  # Intellisense
     print("Unsupported OS")
@@ -358,4 +358,3 @@ network_predict_batch = lib.network_predict_batch
 network_predict_batch.argtypes = (ct.c_void_p, IMAGE, ct.c_int, ct.c_int, ct.c_int,
                                   ct.c_float, ct.c_float, IntPtr, ct.c_int, ct.c_int)
 network_predict_batch.restype = DETNUMPAIRPtr
-
