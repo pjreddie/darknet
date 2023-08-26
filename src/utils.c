@@ -240,12 +240,23 @@ void trim(char *str)
     free(buffer);
 }
 
+char *strlaststr(char *haystack, char *needle)
+{
+    char *p = strstr(haystack, needle), *r = NULL;
+    while (p != NULL)
+    {
+        r = p;
+        p = strstr(p + 1, needle);
+    }
+    return r;
+}
+
 void find_replace_extension(char *str, char *orig, char *rep, char *output)
 {
     char* buffer = (char*)calloc(8192, sizeof(char));
 
     sprintf(buffer, "%s", str);
-    char *p = strstr(buffer, orig);
+    char *p = strlaststr(buffer, orig);
     int offset = (p - buffer);
     int chars_from_end = strlen(buffer) - offset;
     if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
