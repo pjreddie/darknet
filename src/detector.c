@@ -314,14 +314,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             if (mean_average_precision > 0) printf("\n Last accuracy mAP@%0.2f = %2.2f %%, best = %2.2f %% ", iou_thresh, mean_average_precision * 100, best_map * 100);
         }
 
-        #ifndef WIN32
+        printf("\033[H\033[J");
         if (mean_average_precision > 0.0) {
-            printf("\033]2;%d/%d: loss=%0.1f map=%0.2f best=%0.2f hours left=%0.1f\007", iteration, net.max_batches, loss, mean_average_precision, best_map, avg_time);
+            printf("%d/%d: loss=%0.1f map=%0.2f best=%0.2f hours left=%0.1f\007", iteration, net.max_batches, loss, mean_average_precision, best_map, avg_time);
         }
         else {
-            printf("\033]2;%d/%d: loss=%0.1f hours left=%0.1f\007", iteration, net.max_batches, loss, avg_time);
+            printf("%d/%d: loss=%0.1f hours left=%0.1f\007", iteration, net.max_batches, loss, avg_time);
         }
-        #endif
 
         if (net.cudnn_half) {
             if (iteration < net.burn_in * 3) fprintf(stderr, "\n Tensor Cores are disabled until the first %d iterations are reached.\n", 3 * net.burn_in);
