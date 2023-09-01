@@ -2006,12 +2006,12 @@ void save_weights_upto(network net, char *filename, int cutoff, int save_ema)
     FILE *fp = fopen(filename, "wb");
     if(!fp) file_error(filename);
 
-    int major = MAJOR_VERSION;
-    int minor = MINOR_VERSION;
-    int revision = PATCH_VERSION;
-    fwrite(&major, sizeof(int), 1, fp);
-    fwrite(&minor, sizeof(int), 1, fp);
-    fwrite(&revision, sizeof(int), 1, fp);
+    int32_t major = MAJOR_VERSION;
+    int32_t minor = MINOR_VERSION;
+    int32_t revision = PATCH_VERSION;
+    fwrite(&major, sizeof(int32_t), 1, fp);
+    fwrite(&minor, sizeof(int32_t), 1, fp);
+    fwrite(&revision, sizeof(int32_t), 1, fp);
     (*net.seen) = get_current_iteration(net) * net.batch * net.subdivisions; // remove this line, when you will save to weights-file both: seen & cur_iteration
     fwrite(net.seen, sizeof(uint64_t), 1, fp);
 
@@ -2267,12 +2267,12 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     FILE *fp = fopen(filename, "rb");
     if(!fp) file_error(filename);
 
-    int major;
-    int minor;
-    int revision;
-    fread(&major, sizeof(int), 1, fp);
-    fread(&minor, sizeof(int), 1, fp);
-    fread(&revision, sizeof(int), 1, fp);
+    int32_t major;
+    int32_t minor;
+    int32_t revision;
+    fread(&major, sizeof(int32_t), 1, fp);
+    fread(&minor, sizeof(int32_t), 1, fp);
+    fread(&revision, sizeof(int32_t), 1, fp);
     if ((major * 10 + minor) >= 2) {
         printf("\n seen 64");
         uint64_t iseen = 0;
