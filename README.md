@@ -581,6 +581,8 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
 
 8.1. For training with mAP (mean average precisions) calculation for each 4 Epochs (set `valid=valid.txt` or `train.txt` in `obj.data` file) and run: `darknet.exe detector train data/obj.data yolo-obj.cfg yolov4.conv.137 -map`
 
+8.2. One can also set the `-mAP_epochs` in the training command if less or more frequent mAP calculation is needed. For example in order to calculate mAP for each 2 Epochs run `darknet.exe detector train data/obj.data yolo-obj.cfg yolov4.conv.137 -map -mAP_epochs 2`
+
 9. After training is complete - get result `yolo-obj_final.weights` from path `build\darknet\x64\backup\`
 
    - After each 100 iterations you can stop and later start training from this point. For example, after 2000 iterations you can stop training, and later just start training using: `darknet.exe detector train data/obj.data yolo-obj.cfg backup\yolo-obj_2000.weights`

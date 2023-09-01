@@ -23,7 +23,7 @@ int check_mistakes = 0;
 
 static int coco_ids[] = { 1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90 };
 
-void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, float thresh, float iou_thresh, int mjpeg_port, int show_imgs, int benchmark_layers, char* chart_path)
+void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, float thresh, float iou_thresh, int mjpeg_port, int show_imgs, int benchmark_layers, char* chart_path, int mAP_epochs)
 {
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.txt");
@@ -304,7 +304,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         const int iteration = get_current_iteration(net);
         //i = get_current_batch(net);
 
-        int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
+        int calc_map_for_each = mAP_epochs * train_images_num / (net.batch * net.subdivisions);  // calculate mAP every mAP_epochs
         calc_map_for_each = fmax(calc_map_for_each, 100);
         int next_map_calc = iter_map + calc_map_for_each;
         next_map_calc = fmax(next_map_calc, net.burn_in);
@@ -2000,6 +2000,8 @@ void run_detector(int argc, char **argv)
     int ext_output = find_arg(argc, argv, "-ext_output");
     int save_labels = find_arg(argc, argv, "-save_labels");
     char* chart_path = find_char_arg(argc, argv, "-chart", 0);
+    // While training, decide after how many epochs mAP will be calculated. Default value is 4 which means the mAP will be calculated after each 4 epochs
+    int mAP_epochs = find_int_arg(argc, argv, "-mAP_epochs", 4);
     if (argc < 4) {
         fprintf(stderr, "usage: %s %s [train/test/valid/demo/map] [data] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
@@ -2038,7 +2040,7 @@ void run_detector(int argc, char **argv)
             if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6] : 0;
     if (0 == strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels, outfile, letter_box, benchmark_layers);
-    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, thresh, iou_thresh, mjpeg_port, show_imgs, benchmark_layers, chart_path);
+    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, thresh, iou_thresh, mjpeg_port, show_imgs, benchmark_layers, chart_path, mAP_epochs);
     else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
     else if (0 == strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh, iou_thresh, map_points, letter_box, NULL);
