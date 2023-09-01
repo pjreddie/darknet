@@ -1238,6 +1238,15 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int swidth = ow - pleft - pright;
             int sheight = oh - ptop - pbot;
 
+            if (swidth <=  0 || sheight <= 0 || (ow - pleft) <= 0 || (oh - ptop) <= 0 ) {
+                printf("\n WARNING: invalid resize. Resetting swidth: %d , sheight:  %d, pleft: %d, ptop: %d \n", dw, dh, 0 ,0);
+                printf("\n Original values: \n swidth = %d, sheight = %d, pleft = %d, pright = %d, ptop = %d, pbot = %d, ow = %d, oh = %d \n", swidth, sheight, pleft, pright, ptop, pbot, ow, oh);
+                swidth = ow;
+                sheight = oh;
+                pleft = 0;
+                ptop = 0;
+            }
+
             float sx = (float)swidth / ow;
             float sy = (float)sheight / oh;
 
