@@ -88,6 +88,7 @@ image load_image(char *filename, int w, int h, int c);
 image load_image_stb_resize(char *filename, int w, int h, int c);
 //LIB_API image load_image_color(char *filename, int w, int h);
 image **load_alphabet();
+void free_alphabet(image **alphabet);
 
 //float get_pixel(image m, int x, int y, int c);
 //float get_pixel_extend(image m, int x, int y, int c);

@@ -328,11 +328,11 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
 
         free_image(im);
         free_image(sized);
-
+        free_alphabet(alphabet);
         wait_until_press_key_cv();
         destroy_all_windows_cv();
 
-        if (filename) break;
+      if (filename) break;
     }
     free(boxes);
     for(j = 0; j < l.side*l.side*l.n; ++j) {
