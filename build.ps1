@@ -6,7 +6,7 @@
         build
         Created By: Stefano Sinigardi
         Created Date: February 18, 2019
-        Last Modified Date: August 31, 2023
+        Last Modified Date: September 10, 2023
 
 .DESCRIPTION
 Build tool using CMake, trying to properly setup the environment around compiler
@@ -193,7 +193,7 @@ param (
 
 $global:DisableInteractive = $DisableInteractive
 
-$build_ps1_version = "3.5.0"
+$build_ps1_version = "3.5.1"
 $script_name = $MyInvocation.MyCommand.Name
 
 Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
@@ -210,9 +210,12 @@ else {
 $BuildLogPath = "$PSCustomScriptRoot/build.log"
 $ReleaseInstallPrefix = "$PSCustomScriptRoot"
 $DebugInstallPrefix = "$PSCustomScriptRoot/debug"
-$DebugBuildSetup = " -DCMAKE_INSTALL_PREFIX=$DebugInstallPrefix -DCMAKE_BUILD_TYPE=Debug"
-$ReleaseBuildSetup = " -DCMAKE_INSTALL_PREFIX=$ReleaseInstallPrefix -DCMAKE_BUILD_TYPE=Release"
-
+$DebugBuildSetup = " -DCMAKE_BUILD_TYPE=Debug "
+$ReleaseBuildSetup = " -DCMAKE_BUILD_TYPE=Release "
+if (-Not $BuildInstaller) {
+  $DebugBuildSetup = $DebugBuildSetup + " -DCMAKE_INSTALL_PREFIX=$DebugInstallPrefix "
+  $ReleaseBuildSetup = $ReleaseBuildSetup + " -DCMAKE_INSTALL_PREFIX=$ReleaseInstallPrefix "
+}
 Start-Transcript -Path $BuildLogPath
 
 Write-Host "Build script version ${build_ps1_version}, utils module version ${utils_psm1_version}"
@@ -819,6 +822,11 @@ if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
 }
 
+if ($BuildInstaller) {
+  Write-Host "You requested to build an installer, so enabling this option if supported" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_INSTALLER=ON"
+}
+
 if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {
   Write-Host "You requested OpenCV version 2, so vcpkg will install that version" -ForegroundColor Yellow
   Write-Host "This requires using vcpkg.json.opencv23 as manifest file" -ForegroundColor Yellow
@@ -1012,7 +1020,12 @@ else {
     MyThrow("Config failed! Exited with error code $exitCode.")
   }
   Write-Host "Building release CMake project" -ForegroundColor Green
-  $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers} --target install"
+  if ($BuildInstaller) {
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers}"
+  }
+  else {
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers} --target install"
+  }
   $handle = $proc.Handle
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
