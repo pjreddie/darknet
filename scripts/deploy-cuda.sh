@@ -23,13 +23,15 @@ sudo apt-key del 7fa2af80
 wget https://developer.download.nvidia.com/compute/cuda/repos/$distr_name/x86_64/cuda-keyring_1.1-1_all.deb
 sudo dpkg -i cuda-keyring_1.1-1_all.deb
 sudo apt-get update
-sudo apt-get install -y build-essential g++
-sudo apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
-sudo apt-get install -y zlib1g
+sudo apt-get install -y --no-install-recommends build-essential g++
+sudo apt-get install -y --no-install-recommends apt-transport-https ca-certificates gnupg software-properties-common wget
+sudo apt-get install -y --no-install-recommends zlib1g
 sudo apt-get dist-upgrade -y
 sudo apt-get install -y --no-install-recommends cuda-${CUDA_VERSION_DASHED}
-sudo apt-get install -y libcudnn8
-sudo apt-get install -y libcudnn8-dev
+sudo apt-get install -y --no-install-recommends libcudnn8
+sudo apt-get install -y --no-install-recommends libcudnn8-dev
 
 sudo rm -rf /usr/local/cuda
 sudo ln -s /usr/local/cuda-${CUDA_VERSION} /usr/local/cuda
+
+sudo apt-get clean

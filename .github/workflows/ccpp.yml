@@ -86,7 +86,9 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+    - name: Clean downloads
+      run: sudo apt-get clean
 
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.sh
@@ -101,7 +103,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -154,7 +156,9 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+    - name: Clean downloads
+      run: sudo apt-get clean
 
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.sh
@@ -205,7 +209,9 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+    - name: Clean downloads
+      run: sudo apt-get clean
 
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.sh
@@ -354,7 +360,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -392,7 +398,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -488,7 +494,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -538,7 +544,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -600,7 +606,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"

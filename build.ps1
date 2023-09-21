@@ -721,7 +721,11 @@ if ($UseVCPKG -And -Not $ForceLocalVCPKG) {
 }
 if (($null -eq $vcpkg_path) -and $UseVCPKG) {
   if (-Not (Test-Path "$PWD/vcpkg${VCPKGSuffix}")) {
-    $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone https://github.com/microsoft/vcpkg vcpkg${VCPKGSuffix}"
+    $shallow_copy = ""
+    if($ForceOpenCVVersion -eq 0) {
+      $shallow_copy = " --depth 1 "
+    }
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone $shallow_copy https://github.com/microsoft/vcpkg vcpkg${VCPKGSuffix}"
     $handle = $proc.Handle
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
