@@ -7,7 +7,7 @@ elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
   distr_name="$(cut -f2 <<< $(lsb_release -i) | tr '[:upper:]' '[:lower:]')$(cut -f2 <<< $(lsb_release -r) | tr -d '.')"
 else
   echo "Unable to deploy CUDA on this OS, please wait for a future script update"
-  exit 3
+  exit 2
 fi
 
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -16,7 +16,7 @@ if [ -f $script_dir/requested_cuda_version.sh ]; then
   source $script_dir/requested_cuda_version.sh
 else
   echo "Unable to find requested_cuda_version.sh script"
-  exit 1
+  exit 3
 fi
 
 sudo apt-key del 7fa2af80

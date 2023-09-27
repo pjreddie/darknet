@@ -782,8 +782,7 @@ int check_prob(detection det, float thresh)
 int check_classes_id(detection det1, detection det2, float thresh)
 {
     if (det1.classes != det2.classes) {
-        printf(" Error: det1.classes != det2.classes \n");
-        getchar();
+        error("Error: det1.classes != det2.classes", DARKNET_LOC);
     }
 
     int det1_id = -1;

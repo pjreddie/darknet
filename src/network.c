@@ -1048,7 +1048,7 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
                 send_buf = (char *)realloc(send_buf, total_len * sizeof(char));
                 if (!send_buf) {
                     if (buf) free(buf);
-                    return 0;// exit(-1);
+                    return 0;
                 }
                 strcat(send_buf, buf);
                 free(buf);

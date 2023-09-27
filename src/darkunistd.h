@@ -9,7 +9,7 @@
 
 #include <winsock2.h>
 #include <direct.h> /* for _getcwd() and _chdir() */
-#include "getopt.h"
+#include <getopt.h>
 #include <io.h>
 #include <process.h> /* for getpid() and the exec..() family */
 #include <stdlib.h>

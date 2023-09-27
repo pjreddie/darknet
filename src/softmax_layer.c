@@ -151,12 +151,10 @@ contrastive_layer make_contrastive_layer(int batch, int w, int h, int c, int cla
         l.truths = yolo_layer->truths;
         if (l.embedding_size != yolo_layer->embedding_size) {
             printf(" Error: [contrastive] embedding_size=%d isn't equal to [yolo] embedding_size=%d. They should use the same [convolutional] layer \n", l.embedding_size, yolo_layer->embedding_size);
-            getchar();
-            exit(0);
+            error("Error!", DARKNET_LOC);
         }
         if (l.inputs % (l.n*l.h*l.w) != 0) {
             printf(" Warning: filters= number in the previous (embedding) layer isn't divisable by number of anchors %d \n", l.n);
-            getchar();
         }
     }
     else {
@@ -350,7 +348,7 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
                                     }
 
                                     if (sim > 1.001 || sim < -1.001) {
-                                        printf(" sim = %f, ", sim); getchar();
+                                        printf(" sim = %f, ", sim);
                                     }
                                 }
                             }
@@ -406,7 +404,7 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
                 const float P = P_constrastive(b, b2, l.labels, l.batch, z, l.embedding_size, l.temperature, l.cos_sim);
                 l.p_constrastive[b*l.batch + b2] = P;
                 if (P > 1 || P < -1) {
-                    printf(" p = %f, ", P); getchar();
+                    printf(" p = %f, ", P);
                 }
             }
         }
@@ -421,7 +419,7 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
         const int max_contr_size = (l.max_boxes*l.batch)*(l.max_boxes*l.batch);
         if (max_contr_size < contr_size) {
             printf(" Error: too large number of bboxes: contr_size = %d > max_contr_size  = %d \n", contr_size, max_contr_size);
-            exit(0);
+            error("Error!", DARKNET_LOC);
         }
         int *labels = NULL;
         if (contr_size > 2) {
@@ -480,11 +478,8 @@ void forward_contrastive_layer(contrastive_layer l, network_state state)
                                                 break;
                                             }
 
-                                        //if (q == contr_size) getchar();
-
-
                                         //if (P > 1 || P < -1) {
-                                        //    printf(" p = %f, z_index = %d, z_index2 = %d ", P, z_index, z_index2); getchar();
+                                        //    printf(" p = %f, z_index = %d, z_index2 = %d ", P, z_index, z_index2);
                                         //}
                                     }
                                 }

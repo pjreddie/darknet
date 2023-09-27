@@ -354,9 +354,7 @@ int main(int argc, char *argv[])
                 if (filename == "zed_camera" || file_ext == "svo") {
                     std::cout << "ZED 3D Camera " << zed.open(init_params) << std::endl;
                     if (!zed.isOpened()) {
-                        std::cout << " Error: ZED Camera should be connected to USB 3.0. And ZED_SDK should be installed. \n";
-                        getchar();
-                        return 0;
+                        error("Error: ZED Camera should be connected to USB 3.0. And ZED_SDK should be installed", DARKNET_LOC);
                     }
                     cur_frame = zed_capture_rgb(zed);
                     use_zed_camera = true;
@@ -691,8 +689,12 @@ int main(int argc, char *argv[])
             show_console_result(result_vec, obj_names);
 #endif  // OPENCV
         }
-        catch (std::exception &e) { std::cerr << "exception: " << e.what() << "\n"; getchar(); }
-        catch (...) { std::cerr << "unknown exception \n"; getchar(); }
+        catch (std::exception &e) {
+            std::cerr << "exception: " << e.what() << "\n";
+        }
+        catch (...) {
+            std::cerr << "unknown exception \n";
+        }
         filename.clear();
     }
 

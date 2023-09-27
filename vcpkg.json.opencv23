@@ -1,9 +1,13 @@
 {
   "name": "darknet",
-  "version": "0.2.5.5",
+  "version": "0.2.5.7",
   "description": "Darknet is an open source neural network framework written in C and CUDA. You only look once (YOLO) is a state-of-the-art, real-time object detection system, best example of darknet functionalities.",
   "homepage": "https://github.com/alexeyab/darknet",
   "dependencies": [
+    {
+      "name": "getopt",
+      "platform": "windows & !mingw"
+    },
     "pthreads",
     "stb"
   ],

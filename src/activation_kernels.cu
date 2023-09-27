@@ -185,7 +185,7 @@ __global__ void binary_gradient_array_kernel(float *x, float *dy, int n, int s, 
 
 extern "C" void binary_gradient_array_gpu(float *x, float *dx, int n, int size, BINARY_ACTIVATION a, float *y)
 {
-    binary_gradient_array_kernel << <cuda_gridsize(n / 2), BLOCK, 0, get_cuda_stream() >> >(x, dx, n / 2, size, a, y);
+    binary_gradient_array_kernel <<<cuda_gridsize(n / 2), BLOCK, 0, get_cuda_stream() >>>(x, dx, n / 2, size, a, y);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 __global__ void binary_activate_array_kernel(float *x, int n, int s, BINARY_ACTIVATION a, float *y)
@@ -200,7 +200,7 @@ __global__ void binary_activate_array_kernel(float *x, int n, int s, BINARY_ACTI
 
 extern "C" void binary_activate_array_gpu(float *x, int n, int size, BINARY_ACTIVATION a, float *y)
 {
-    binary_activate_array_kernel << <cuda_gridsize(n / 2), BLOCK, 0, get_cuda_stream() >> >(x, n / 2, size, a, y);
+    binary_activate_array_kernel <<<cuda_gridsize(n / 2), BLOCK, 0, get_cuda_stream() >>>(x, n / 2, size, a, y);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -260,7 +260,7 @@ __global__ void activate_array_mish_kernel(float *x, int n, float *activation_in
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if (i < n) {
-        const float MISH_THRESHOLD = 20;
+        //const float MISH_THRESHOLD = 20;
         float x_val = x[i];
         if (activation_input) activation_input[i] = x_val;    // store value before activation
         //output_gpu[i] = x_val * tanh_activate_kernel(logf(1 + expf(x_val)));
@@ -495,14 +495,14 @@ extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
     if (a == LINEAR) return;
-    else if (a == LEAKY || a == REVLEAKY) activate_array_leaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == LOGISTIC) activate_array_logistic_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == TANH) activate_array_tanh_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == HARDTAN) activate_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == RELU) activate_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == RELU6) activate_array_relu6_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == SELU) activate_array_selu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
-    else if (a == GELU) activate_array_gelu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n);
+    else if (a == LEAKY || a == REVLEAKY) activate_array_leaky_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n);
+    else if (a == LOGISTIC) activate_array_logistic_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n);
+    else if (a == TANH) activate_array_tanh_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n);
+    else if (a == HARDTAN) activate_array_hardtan_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n);
+    else if (a == RELU) activate_array_relu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n);
+    else if (a == RELU6) activate_array_relu6_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n);
+    else if (a == SELU) activate_array_selu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n);
+    else if (a == GELU) activate_array_gelu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n);
     else
         activate_array_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(x, n, a);
     CHECK_CUDA(cudaPeekAtLastError());
@@ -511,21 +511,21 @@ extern "C" void activate_array_ongpu(float *x, int n, ACTIVATION a)
 extern "C" void activate_array_swish_ongpu(float *x, int n, float *output_sigmoid_gpu, float *output_gpu)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
-    activate_array_swish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> >(x, n, output_sigmoid_gpu, output_gpu);
+    activate_array_swish_kernel <<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(x, n, output_sigmoid_gpu, output_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
 extern "C" void activate_array_mish_ongpu(float *x, int n, float *activation_input_gpu, float *output_gpu)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
-    activate_array_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> >(x, n, activation_input_gpu, output_gpu);
+    activate_array_mish_kernel <<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(x, n, activation_input_gpu, output_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
 extern "C" void activate_array_hard_mish_ongpu(float *x, int n, float *activation_input_gpu, float *output_gpu)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
-    activate_array_hard_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> >(x, n, activation_input_gpu, output_gpu);
+    activate_array_hard_mish_kernel <<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(x, n, activation_input_gpu, output_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -533,22 +533,21 @@ extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
     if (a == LINEAR) return;
-    else if (a == LEAKY) gradient_array_leaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
-    else if (a == REVLEAKY) gradient_array_revleaky_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
-    else if (a == LOGISTIC) gradient_array_logistic_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
-    else if (a == TANH) gradient_array_tanh_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
-    else if (a == HARDTAN) gradient_array_hardtan_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
-    else if (a == RELU) gradient_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
-    else if (a == RELU6) gradient_array_relu6_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
-    //else if (a == NORM_CHAN) gradient_array_relu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == LEAKY) gradient_array_leaky_kernel <<< num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, n, delta);
+    else if (a == REVLEAKY) gradient_array_revleaky_kernel <<< num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, n, delta);
+    else if (a == LOGISTIC) gradient_array_logistic_kernel <<< num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, n, delta);
+    else if (a == TANH) gradient_array_tanh_kernel <<< num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, n, delta);
+    else if (a == HARDTAN) gradient_array_hardtan_kernel <<< num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, n, delta);
+    else if (a == RELU) gradient_array_relu_kernel <<< num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, n, delta);
+    else if (a == RELU6) gradient_array_relu6_kernel <<< num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, n, delta);
+    //else if (a == NORM_CHAN) gradient_array_relu_kernel <<< num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n, delta);
     else if (a == NORM_CHAN_SOFTMAX || a == NORM_CHAN) {
-        printf(" Error: should be used custom NORM_CHAN_SOFTMAX-function for gradient \n");
-        exit(0);
+        error("Error: should be used custom NORM_CHAN_SOFTMAX-function for gradient", DARKNET_LOC);
     }
-    else if (a == SELU) gradient_array_selu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
-    else if (a == GELU) gradient_array_gelu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(x, n, delta);
+    else if (a == SELU) gradient_array_selu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n, delta);
+    else if (a == GELU) gradient_array_gelu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(x, n, delta);
     else
-        gradient_array_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (x, n, a, delta);
+        gradient_array_kernel <<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>> (x, n, a, delta);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -556,21 +555,21 @@ extern "C" void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta
 extern "C" void gradient_array_swish_ongpu(float *x, int n, float *sigmoid_gpu, float *delta)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
-    gradient_array_swish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (x, n, sigmoid_gpu, delta);
+    gradient_array_swish_kernel <<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>> (x, n, sigmoid_gpu, delta);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
 extern "C" void gradient_array_mish_ongpu(int n, float *activation_input_gpu, float *delta)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
-    gradient_array_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, activation_input_gpu, delta);
+    gradient_array_mish_kernel <<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>> (n, activation_input_gpu, delta);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
 extern "C" void gradient_array_hard_mish_ongpu(int n, float *activation_input_gpu, float *delta)
 {
     const int num_blocks = get_number_of_blocks(n, BLOCK);
-    gradient_array_hard_mish_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, activation_input_gpu, delta);
+    gradient_array_hard_mish_kernel <<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>> (n, activation_input_gpu, delta);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -607,7 +606,7 @@ extern "C" void activate_array_normalize_channels_ongpu(float *x, int n, int bat
 
     const int num_blocks = get_number_of_blocks(size, BLOCK);
 
-    activate_array_normalize_channels_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (x, size, batch, channels, wh_step, output_gpu);
+    activate_array_normalize_channels_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, size, batch, channels, wh_step, output_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -655,7 +654,7 @@ extern "C" void activate_array_normalize_channels_softmax_ongpu(float *x, int n,
 
     const int num_blocks = get_number_of_blocks(size, BLOCK);
 
-    activate_array_normalize_channels_softmax_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (x, size, batch, channels, wh_step, output_gpu, use_max_val);
+    activate_array_normalize_channels_softmax_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (x, size, batch, channels, wh_step, output_gpu, use_max_val);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -698,7 +697,7 @@ extern "C" void gradient_array_normalize_channels_softmax_ongpu(float *output_gp
 
     const int num_blocks = get_number_of_blocks(size, BLOCK);
 
-    gradient_array_normalize_channels_softmax_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (output_gpu, size, batch, channels, wh_step, delta_gpu);
+    gradient_array_normalize_channels_softmax_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (output_gpu, size, batch, channels, wh_step, delta_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -741,6 +740,6 @@ extern "C" void gradient_array_normalize_channels_ongpu(float *output_gpu, int n
 
     const int num_blocks = get_number_of_blocks(size, BLOCK);
 
-    gradient_array_normalize_channels_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (output_gpu, size, batch, channels, wh_step, delta_gpu);
+    gradient_array_normalize_channels_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (output_gpu, size, batch, channels, wh_step, delta_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }

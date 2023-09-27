@@ -412,7 +412,6 @@ list(APPEND headers
 if(NOT MSVC)
   list(REMOVE_ITEM headers
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.h
-    ${CMAKE_CURRENT_LIST_DIR}/src/getopt.h
   )
 endif()
 #set(exported_headers ${headers})
@@ -432,8 +431,17 @@ list(REMOVE_ITEM sources
 if(NOT MSVC)
   list(REMOVE_ITEM sources
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.c
-    ${CMAKE_CURRENT_LIST_DIR}/src/getopt.c
   )
+endif()
+
+if(USE_INTEGRATED_LIBS AND MSVC)
+  list(APPEND sources
+    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/getopt/getopt.c
+    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/getopt/getopt.h
+  )
+endif()
+if((NOT USE_INTEGRATED_LIBS) AND MSVC)
+  find_package(unofficial-getopt-win32 REQUIRED)
 endif()
 
 if(ENABLE_CUDA)
@@ -530,6 +538,13 @@ if(MSVC)
   target_link_libraries(dark PUBLIC PThreads4W::PThreads4W)
   target_link_libraries(dark PUBLIC wsock32)
   target_link_libraries(uselib PRIVATE PThreads4W::PThreads4W)
+  if(USE_INTEGRATED_LIBS)
+    target_include_directories(dark PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/getopt)
+    target_include_directories(darknet PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/getopt)
+  else()
+    target_link_libraries(dark PRIVATE unofficial::getopt-win32::getopt)
+    target_link_libraries(darknet PRIVATE unofficial::getopt-win32::getopt)
+  endif()
   target_compile_definitions(darknet PRIVATE -D_CRT_RAND_S -DNOMINMAX -D_USE_MATH_DEFINES)
   target_compile_definitions(dark PRIVATE -D_CRT_RAND_S -DNOMINMAX -D_USE_MATH_DEFINES)
   target_compile_definitions(dark PUBLIC -D_CRT_SECURE_NO_WARNINGS)

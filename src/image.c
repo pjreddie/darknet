@@ -13,15 +13,12 @@
 
 #ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <stb_image.h>
 #endif
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include <stb_image_write.h>
 #endif
-
-extern int check_mistakes;
-//int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
 
@@ -1511,12 +1508,7 @@ image load_image_stb(char *filename, int channels)
         char *new_line = "\n";
         fwrite(new_line, sizeof(char), strlen(new_line), fw);
         fclose(fw);
-        if (check_mistakes) {
-            printf("\n Error in load_image_stb() \n");
-            getchar();
-        }
         return make_image(10, 10, 3);
-        //exit(EXIT_FAILURE);
     }
     if(channels) c = channels;
     int i,j,k;
@@ -1536,7 +1528,7 @@ image load_image_stb(char *filename, int channels)
 
 image load_image_stb_resize(char *filename, int w, int h, int c)
 {
-    image out = load_image_stb(filename, c);    // without OpenCV
+    image out = load_image_stb(filename, c);
 
     if ((h && w) && (h != out.h || w != out.w)) {
         image resized = resize_image(out, w, h);
@@ -1549,10 +1541,9 @@ image load_image_stb_resize(char *filename, int w, int h, int c)
 image load_image(char *filename, int w, int h, int c)
 {
 #ifdef OPENCV
-    //image out = load_image_stb(filename, c);
     image out = load_image_cv(filename, c);
 #else
-    image out = load_image_stb(filename, c);    // without OpenCV
+    image out = load_image_stb(filename, c);
 #endif  // OPENCV
 
     if((h && w) && (h != out.h || w != out.w)){

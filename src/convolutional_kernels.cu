@@ -65,7 +65,7 @@ __global__ void binarize_weights_kernel(float *weights, int n, int size, float *
 
 void binarize_weights_gpu(float *weights, int n, int size, float *binary)
 {
-    binarize_weights_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> >(weights, n, size, binary);
+    binarize_weights_kernel <<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(weights, n, size, binary);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -113,9 +113,9 @@ void fast_binarize_weights_gpu(float *weights, int n, int size, float *binary, f
         size_t gridsize = n * size;
         const int num_blocks = get_number_of_blocks(gridsize, BLOCK);// gridsize / BLOCK + 1;
 
-        set_zero_kernel << <(n/BLOCK + 1), BLOCK, 0, get_cuda_stream() >> > (mean_arr_gpu, n);
-        reduce_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (weights, n, size, mean_arr_gpu);
-        binarize_weights_mean_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (weights, n, size, binary, mean_arr_gpu);
+        set_zero_kernel <<<(n/BLOCK + 1), BLOCK, 0, get_cuda_stream() >>> (mean_arr_gpu, n);
+        reduce_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (weights, n, size, mean_arr_gpu);
+        binarize_weights_mean_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (weights, n, size, binary, mean_arr_gpu);
         CHECK_CUDA(cudaPeekAtLastError());
     }
     else {
@@ -351,7 +351,6 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                     im2col_align_ongpu(state.input + i*l.c*l.h*l.w, l.c, l.h, l.w, l.size, l.stride, l.pad, l.align_workspace_gpu, l.bit_align);
                     //cudaDeviceSynchronize();
                     //stop_timer_and_show_name("im2col_align_ongpu");
-                    //getchar();
 
                     // should be optimized
                     //start_timer();
@@ -383,7 +382,6 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //}
                 //cudaDeviceSynchronize();
                 //check_error(status);
-                //getchar();
             }
 
 
@@ -533,11 +531,11 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         /*
         int input_nan_inf = is_nan_or_inf(state.input, l.inputs * l.batch);
         printf("\n is_nan_or_inf(state.input) = %d \n", input_nan_inf);
-        if (input_nan_inf) getchar();
+        if (input_nan_inf) error();
 
         int weights_nan_inf = is_nan_or_inf(l.weights_gpu, l.nweights);
         printf("\n is_nan_or_inf(l.weights_gpu) = %d \n", weights_nan_inf);
-        if (weights_nan_inf) getchar();
+        if (weights_nan_inf) error();
         */
 
         CHECK_CUDNN(cudnnConvolutionForward(cudnn_handle(),
@@ -997,7 +995,7 @@ void calc_avg_activation_gpu(float *src, float *dst, int size, int channels, int
 {
     const int num_blocks = get_number_of_blocks(size*batches, BLOCK);
 
-    calc_avg_activation_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (src, dst, size, channels, batches);
+    calc_avg_activation_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (src, dst, size, channels, batches);
 }
 
 
@@ -1021,7 +1019,7 @@ void assisted_activation_gpu(float alpha, float *output, float *gt_gpu, float *a
 {
     const int num_blocks = get_number_of_blocks(size*batches, BLOCK);
 
-    assisted_activation_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (alpha, output, gt_gpu, a_avg_gpu, size, channels, batches);
+    assisted_activation_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (alpha, output, gt_gpu, a_avg_gpu, size, channels, batches);
 }
 
 
@@ -1045,7 +1043,7 @@ void assisted_activation2_gpu(float alpha, float *output, float *gt_gpu, float *
 {
     const int num_blocks = get_number_of_blocks(size*batches, BLOCK);
 
-    assisted_activation2_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (alpha, output, gt_gpu, a_avg_gpu, size, channels, batches);
+    assisted_activation2_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (alpha, output, gt_gpu, a_avg_gpu, size, channels, batches);
 }
 
 void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)

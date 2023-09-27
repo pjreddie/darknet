@@ -206,8 +206,8 @@ void im2col_align_ongpu(float *im,
     int height_col = (height + 2 * pad - ksize) / stride + 1;
     int width_col = (width + 2 * pad - ksize) / stride + 1;
     int num_kernels = channels * height_col * width_col;
-    im2col_align_gpu_kernel << <(num_kernels + BLOCK - 1) / BLOCK,
-        BLOCK, 0, get_cuda_stream() >> >(
+    im2col_align_gpu_kernel <<<(num_kernels + BLOCK - 1) / BLOCK,
+        BLOCK, 0, get_cuda_stream() >>>(
             num_kernels, im, height, width, ksize, pad,
             stride, height_col,
             width_col, data_col, bit_align);
@@ -334,9 +334,9 @@ void im2col_align_bin_ongpu(float *im,
     int num_kernels = channels * ksize * ksize;
     int num_blocks = num_kernels / BLOCK + 1;
 
-    //im2col_align_bin_gpu_kernel << <(num_kernels + BLOCK - 1) / BLOCK,
-    im2col_align_bin_gpu_kernel << <num_blocks,
-        BLOCK, 0, get_cuda_stream() >> >(
+    //im2col_align_bin_gpu_kernel <<<(num_kernels + BLOCK - 1) / BLOCK,
+    im2col_align_bin_gpu_kernel <<<num_blocks,
+        BLOCK, 0, get_cuda_stream() >>>(
             num_kernels, im, height, width, ksize, channels, pad,
             stride, height_col,
             width_col, data_col, bit_align);
@@ -648,8 +648,8 @@ void transpose_bin_gpu(unsigned char *A, unsigned char *B, const int n, const in
     int size32 = n*m / (32*32) + 1;
     //const int num_blocks = size / BLOCK + 1;
     const int num_blocks32 = size32 / BLOCK_TRANSPOSE32 + 1;
-    transpose_bin_gpu_kernel_32 << <num_blocks32, BLOCK_TRANSPOSE32, 0, get_cuda_stream() >> >((uint32_t *)A, (uint32_t *)B, n, m, lda, ldb, block_size);
-    //transpose_bin_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(A, B, n, m, lda, ldb, block_size);
+    transpose_bin_gpu_kernel_32 <<<num_blocks32, BLOCK_TRANSPOSE32, 0, get_cuda_stream() >>>((uint32_t *)A, (uint32_t *)B, n, m, lda, ldb, block_size);
+    //transpose_bin_gpu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(A, B, n, m, lda, ldb, block_size);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
@@ -676,7 +676,7 @@ void transpose_uint32_gpu(uint32_t *src, uint32_t *dst, int src_h, int src_w, in
 {
     int size = src_w * src_h;
     const int num_blocks = size / BLOCK + 1;
-    transpose_uint32_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(src, dst, src_h, src_w, src_align, dst_align);
+    transpose_uint32_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(src, dst, src_h, src_w, src_align, dst_align);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
@@ -742,7 +742,7 @@ void transpose_uint32_gpu_2(uint32_t *src, uint32_t *dst, int src_h, int src_w, 
 
     int size = src_w_align * src_h_align;
     int num_blocks = size / TRANS_BLOCK;
-    transpose_uint32_kernel_2 << <num_blocks, TRANS_BLOCK, 0, get_cuda_stream() >> >(src, dst, src_h, src_w, src_align, dst_align);
+    transpose_uint32_kernel_2 <<<num_blocks, TRANS_BLOCK, 0, get_cuda_stream() >>>(src, dst, src_h, src_w, src_align, dst_align);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
@@ -780,7 +780,7 @@ void repack_input_gpu(float *input, float *re_packed_input, int w, int h, int c)
 {
     int size = w * h * c;
     const int num_blocks = size / BLOCK + 1;
-    repack_input_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(input, re_packed_input, w, h, c);
+    repack_input_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(input, re_packed_input, w, h, c);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
@@ -820,7 +820,7 @@ void repack_input_gpu_2(float *input, float *re_packed_input, int w, int h, int 
 {
     int size = w * h * c;
     const int num_blocks = size / BLOCK + 1;
-    repack_input_kernel_2 << <num_blocks, BLOCK, 0, get_cuda_stream() >> >(input, re_packed_input, w, h, c);
+    repack_input_kernel_2 <<<num_blocks, BLOCK, 0, get_cuda_stream() >>>(input, re_packed_input, w, h, c);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 // --------------------------------
@@ -870,7 +870,7 @@ void repack_input_gpu_bin(float *input, uint32_t *re_packed_input_bin, int w, in
     const int block_size = BLOCK;
     const int num_blocks = get_number_of_blocks(size, block_size);
     //printf("\n num_blocks = %d, num_blocks/32 = %d,  block_size = %d \n", num_blocks, num_blocks / 32, block_size);
-    repack_input_kernel_bin << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c);
+    repack_input_kernel_bin <<<num_blocks, block_size, 0, get_cuda_stream() >>>(input, re_packed_input_bin, w, h, c);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -921,7 +921,7 @@ void repack_input_gpu_bin(float *input, uint32_t *re_packed_input_bin, int w, in
     const int block_size = 256;// 128;
     const int num_blocks = get_number_of_blocks(size, block_size);
     printf("\n num_blocks = %d, num_blocks/32 = %d,  block_size = %d \n", num_blocks, num_blocks/32, block_size);
-    repack_input_kernel_bin << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c);
+    repack_input_kernel_bin <<<num_blocks, block_size, 0, get_cuda_stream() >>>(input, re_packed_input_bin, w, h, c);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 */
@@ -1351,17 +1351,17 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
 
                     // wmma::bmma_sync(c_frag, a_frag, b_frag, c_frag);
                     int32_t c_val[8];  // 8 x 32 threads = 256
-                    #pragma UNROLL
+                    #pragma unroll
                     for (int local_j = 0; local_j < 8; ++local_j)
                     {
                         uint32_t b_val_cur = __shfl_custom(b_val, local_j * 4 + k_d);
                         c_val[local_j] = __popc(xor_int32(a_val, b_val_cur));
                     }
 
-                    #pragma UNROLL
+                    #pragma unroll
                     for (int local_j = 0; local_j < 8; ++local_j)
                     {
-                        #pragma UNROLL
+                        #pragma unroll
                         for (int local_k = 0; local_k < 4; ++local_k) {
                             accum_c_val[local_j + c_x*8] += __shfl_custom(c_val[local_j], i_d * 4 + local_k);
                         }
@@ -1386,7 +1386,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
             {
                 int j_d = lane_id % WMMA_N;
                 {
-                    #pragma UNROLL
+                    #pragma unroll
                     for (int i_d = lane_id / WMMA_N; i_d < WMMA_M; i_d += WMMA_M / 2)
                     {
                         int count = C_s[warp_id*WMMA_M*WMMA_N + i_d*WMMA_N + j_d + WMMA_M*WMMA_N*32*c_x];
@@ -1506,17 +1506,17 @@ __global__ void gemm_nn_custom_bin_mean_transposed_tensor_kernel(int M, int N, i
 
                 // wmma::bmma_sync(c_frag, a_frag, b_frag, c_frag);
                 int32_t c_val[8];  // 8 x 32 threads = 256
-                #pragma UNROLL
+                #pragma unroll
                 for (int local_j = 0; local_j < 8; ++local_j)
                 {
                     uint32_t b_val_cur = __shfl_custom(b_val, local_j *4 + k_d);
                     c_val[local_j] = __popc(xor_int32(a_val, b_val_cur));
                 }
 
-                #pragma UNROLL
+                #pragma unroll
                 for (int local_j = 0; local_j < 8; ++local_j)
                 {
-                    #pragma UNROLL
+                    #pragma unroll
                     for (int local_k = 0; local_k < 4; ++local_k) {
                         accum_c_val[local_j] += __shfl_custom(c_val[local_j], i_d * 4 + local_k);
                     }
@@ -1791,7 +1791,7 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
 
         //printf(" lda = %d, ldb = %d, ldc = %d, lda/32 = %d, ldb/32 = %d, ldc/32 = %d \n", lda, ldb, ldc, lda / 32, ldb / 32, ldc / 32);
         //printf("  l.c (K/9) = %d, M (l.n) = %d \n", (K%9 == 0)? K / 9: K, M);
-        gemm_nn_custom_bin_mean_transposed_tensor_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
+        gemm_nn_custom_bin_mean_transposed_tensor_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (
             M, N, K,
             A, lda,
             B, ldb,
@@ -1800,12 +1800,11 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
             shortcut_in_gpu, shortcut_out_gpu);
 
         //cudaDeviceSynchronize();
-        //getchar();
     }
     else
 #endif  //# CUDART_VERSION >= 10000
     {
-        gemm_nn_custom_bin_mean_transposed_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
+        gemm_nn_custom_bin_mean_transposed_gpu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (
             M, N, K,
             A, lda,
             B, ldb,
@@ -1993,7 +1992,7 @@ void convolve_gpu(float *input, float *weights, float *output, int in_w, int in_
     const int num_blocks = array_size / BLOCK + 1;
     //printf("\n array_size = %d, num_blocks = %d, w = %d, h = %d, n = %d, c = %d, pad = %d \n", array_size, num_blocks, in_w, in_h, n, in_c, pad);
 
-    convolve_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (input, weights, output, in_w, in_h, in_c, n, size, pad);
+    convolve_gpu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (input, weights, output, in_w, in_h, in_c, n, size, pad);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -2209,7 +2208,7 @@ void convolve_bin_gpu(float *input, float *weights, float *output, int in_w, int
     const int num_blocks = array_size / BLOCK + 1;
     //printf("\n array_size = %d, num_blocks = %d, w = %d, h = %d, n = %d, c = %d, pad = %d \n", array_size, num_blocks, in_w, in_h, n, in_c, pad);
 
-    convolve_bin_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (input, weights, output, in_w, in_h, in_c, n, size, pad, new_lda, mean_arr_gpu);
+    convolve_bin_gpu_kernel <<<num_blocks, BLOCK, 0, get_cuda_stream() >>> (input, weights, output, in_w, in_h, in_c, n, size, pad, new_lda, mean_arr_gpu);
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
@@ -2278,8 +2277,8 @@ void im2col_gpu_ext(const float* data_im, const int channels,
         (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
     int num_kernels = channels * height_col * width_col;
     // NOLINT_NEXT_LINE(whitespace/operators)
-    im2col_gpu_kernel_ext << <CAFFE_GET_BLOCKS(num_kernels),
-        CAFFE_CUDA_NUM_THREADS >> >(
+    im2col_gpu_kernel_ext <<<CAFFE_GET_BLOCKS(num_kernels),
+        CAFFE_CUDA_NUM_THREADS >>>(
             num_kernels, data_im, height, width, kernel_h, kernel_w, pad_h,
             pad_w, stride_h, stride_w, dilation_h, dilation_w, height_col,
             width_col, data_col);

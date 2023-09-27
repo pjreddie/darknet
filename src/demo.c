@@ -73,7 +73,6 @@ void *fetch_in_thread(void *ptr)
             printf("Stream closed.\n");
             custom_atomic_store_int(&flag_exit, 1);
             custom_atomic_store_int(&run_fetch_in_thread, 0);
-            //exit(EXIT_FAILURE);
             return 0;
         }
         //in_s = resize_image(in, net.w, net.h);
@@ -210,8 +209,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     if (l.classes != demo_classes) {
         printf("\n Parameters don't match: in cfg-file classes=%d, in data-file classes=%d \n", l.classes, demo_classes);
-        getchar();
-        exit(0);
+        error("Error!", DARKNET_LOC);
     }
 
     flag_exit = 0;

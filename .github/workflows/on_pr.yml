@@ -4,6 +4,7 @@ on: [pull_request]
 
 env:
   VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,read'
+  VCPKG_FORCE_DOWNLOADED_BINARIES: "TRUE"
 
 jobs:
   ubuntu-makefile:
@@ -256,6 +257,12 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateTOOL
 
+    - name: Test on data/dog.jpg
+      shell: bash
+      run: >
+        wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights -O ${{ github.workspace }}/yolov4-tiny.weights;
+        ${{ github.workspace }}/build_release/darknet detect ${{ github.workspace }}/cfg/yolov4-tiny.cfg ${{ github.workspace }}/yolov4-tiny.weights ${{ github.workspace }}/data/dog.jpg -dont_show
+
 
   ubuntu-setup-sh:
     runs-on: ubuntu-20.04
@@ -379,16 +386,30 @@ jobs:
       run: ${{ github.workspace }}/scripts/setup.ps1 -InstallCUDA
 
 
-  win-intlibs-cpp:
+  win-vcpkg-base-cpp:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
+
     - name: 'Build'
       shell: pwsh
-      run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateTOOL
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -ForceLocalVCPKG -DoNotUpdateVCPKG -ForceCPP -DisableInteractive -DoNotUpdateTOOL
+
+    - name: Download yolov4-tiny.weights
+      run: curl.exe -L https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights -o ${{ github.workspace }}\yolov4-tiny.weights
+    - name: Test on data/dog.jpg
+      run: ${{ github.workspace }}\build_release\darknet.exe detect ${{ github.workspace }}\cfg\yolov4-tiny.cfg ${{ github.workspace }}\yolov4-tiny.weights ${{ github.workspace }}\data\dog.jpg
 
 
   win-csharp:

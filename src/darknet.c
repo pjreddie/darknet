@@ -454,11 +454,6 @@ int main(int argc, char **argv)
         return 0;
     }
     gpu_index = find_int_arg(argc, argv, "-i", 0);
-    if(find_arg(argc, argv, "-nogpu")) {
-        gpu_index = -1;
-        printf("\n Currently Darknet doesn't support -nogpu flag. If you want to use CPU - please compile Darknet with GPU=0 in the Makefile, or compile darknet_no_gpu.sln on Windows.\n");
-        exit(-1);
-    }
 
 #ifndef GPU
     gpu_index = -1;

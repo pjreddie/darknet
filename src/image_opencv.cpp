@@ -113,7 +113,6 @@ extern "C" mat_cv *load_image_mat_cv(const char *filename, int flag)
             cerr << "Cannot load image " << shrinked_filename << std::endl;
             std::ofstream bad_list("bad.list", std::ios::out | std::ios::app);
             bad_list << shrinked_filename << std::endl;
-            //if (check_mistakes) getchar();
             return NULL;
         }
         cv::Mat dst;

@@ -4,6 +4,7 @@
 *.csv
 *.out
 *.png
+*.jpg
 *.so
 *.exe
 *.dll
@@ -65,4 +66,5 @@ include/darknet/
 uselib
 uselib_track
 darknet
+kmeansiou
 vcpkg/

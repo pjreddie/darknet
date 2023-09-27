@@ -13,7 +13,7 @@ extern "C" {
 #include "image.h"
 #include "demo.h"
 #include "option_list.h"
-#include "stb_image.h"
+#include <stb_image.h>
 }
 //#include <sys/time.h>
 
