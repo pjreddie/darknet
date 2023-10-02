@@ -117,7 +117,7 @@ def main(argv):
     args = parser.parse_args()
     
     if not os.path.exists(args.output_dir):
-        os.mkdir(args.output_dir)
+        os.makedirs(args.output_dir)
 
     f = open(args.filelist)
   
