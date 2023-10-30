@@ -75,7 +75,7 @@ elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
   if [ "$install_tools" = true ] ; then
     echo "Installing tools"
     sudo apt-get update
-    sudo apt-get install -y  --no-install-recommends git ninja-build build-essential g++ nasm yasm gperf
+    sudo apt-get install -y --no-install-recommends git ninja-build build-essential g++ nasm yasm gperf
     sudo apt-get install -y --no-install-recommends apt-transport-https ca-certificates gnupg software-properties-common wget
     sudo apt-get install -y --no-install-recommends libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
     wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
@@ -88,7 +88,8 @@ elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
     sudo apt-get install -y --no-install-recommends cmake
     sudo apt-get install -y --no-install-recommends powershell
     sudo apt-get install -y --no-install-recommends curl zip unzip tar
-    sudo apt-get install -y --no-install-recommends pkg-config autoconf libtool bison
+    sudo apt-get install -y --no-install-recommends bison
+    sudo apt-get install -y --no-install-recommends automake autoconf libtool pkg-config autoconf-archive
     sudo apt-get clean
   fi
 else

@@ -87,7 +87,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf automake autoconf libtool pkg-config autoconf-archive libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
     - name: Clean downloads
       run: sudo apt-get clean
 
@@ -157,7 +157,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf automake autoconf libtool pkg-config autoconf-archive libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
     - name: Clean downloads
       run: sudo apt-get clean
 
@@ -210,7 +210,7 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf automake autoconf libtool pkg-config autoconf-archive libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
     - name: Clean downloads
       run: sudo apt-get clean
 
@@ -398,7 +398,7 @@ jobs:
       if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
 
     - name: Install dependencies
-      run: brew install libomp yasm nasm pkg-config
+      run: brew install libomp yasm nasm pkg-config automake autoconf-archive
 
     - uses: lukka/get-cmake@latest
 
