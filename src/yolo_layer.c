@@ -28,6 +28,7 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.classes = classes;
     l.cost = calloc(1, sizeof(float));
     l.biases = calloc(total*2, sizeof(float));
+    l.nbiases = total*2;
     if(mask) l.mask = mask;
     else{
         l.mask = calloc(n, sizeof(int));
