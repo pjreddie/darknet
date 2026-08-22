@@ -24,19 +24,28 @@ node *list_find(list *l, void *val)
   return 0;
 }
 
-/*
 void transfer_node(list *s, list *d, node *n)
 {
-    node *prev, *next;
-    prev = n->prev;
-    next = n->next;
-    if(prev) prev->next = next;
-    if(next) next->prev = prev;
-    --s->size;
-    if(s->front == n) s->front = next;
-    if(s->back == n) s->back = prev;
+  node *p;
+
+  p = s->front;
+  while (p) {
+    if (p == n) break;
+    p = p->next;
+  }
+  if (!p) return;
+
+  if (n->prev) n->prev->next = n->next;
+  else         s->front = n->next;
+  if (n->next) n->next->prev = n->prev;
+  else         s->back  = n->prev;
+  --s->size;
+
+  if (d->back) d->back->next = n, n->prev = d->back;
+  else         d->front = d->back = n, n->prev = 0;
+  n->next = 0;
+  ++d->size;
 }
-*/
 
 void *list_pop(list *l){
     if(!l->back) return 0;
