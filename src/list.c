@@ -11,6 +11,19 @@ list *make_list()
 	return l;
 }
 
+node *list_find(list *l, void *val)
+{
+  node *st = l->front;
+
+  while (st) {
+    if (st->val == val)
+      return st;
+    st = st->next;
+  }
+
+  return 0;
+}
+
 /*
 void transfer_node(list *s, list *d, node *n)
 {
@@ -33,7 +46,7 @@ void *list_pop(list *l){
     if(l->back) l->back->next = 0;
     free(b);
     --l->size;
-    
+
     return val;
 }
 
